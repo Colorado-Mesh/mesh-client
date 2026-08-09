@@ -194,9 +194,12 @@ export default function DiagnosticsPanel({
     [t],
   );
   const showMqttControls = capabilities?.hasMqttHybrid !== false;
-  // LoRa Node/Offense tables are Meshtastic/MeshCore only. On Reticulum, native
-  // rows already render in ReticulumDiagnosticsSection — never as !00000000 peers.
-  const showLoRaMeshDiagnostics = protocol !== 'reticulum' && capabilities?.hasHopCount !== false;
+  // LoRa Node/Offense tables are Meshtastic/MeshCore only. Derive from
+  // capabilities.protocol (not the tab prop alone) so a mismatched protocol
+  // prop cannot resurrect LoRa mesh tables on Reticulum. Native Reticulum rows
+  // render in ReticulumDiagnosticsSection — never as !00000000 peers.
+  const showLoRaMeshDiagnostics =
+    capabilities?.protocol !== 'reticulum' && capabilities?.hasHopCount !== false;
   const showForeignLoraDiagnostics = capabilities?.hasDiagnosticsPanel !== false;
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const diagnosticRowsRestoredAt = useDiagnosticsStore((s) => s.diagnosticRowsRestoredAt);
@@ -1390,127 +1393,129 @@ export default function DiagnosticsPanel({
         </div>
       )}
 
-      {/* Anomaly Table */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-muted text-sm font-medium">
-            {t('diagnosticsPanel.diagnosticsHeading', { count: visibleDiagnosticRows.length })}
-          </h3>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-            }}
-            placeholder={t('diagnosticsPanel.searchAnomalies')}
-            aria-label={t('diagnosticsPanel.searchAnomalies')}
-            className="bg-secondary-dark/80 focus:border-brand-green/50 w-48 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
-          />
-        </div>
+      {/* Anomaly Table — LoRa mesh only; Reticulum-only rows live in ReticulumDiagnosticsSection */}
+      {showLoRaMeshDiagnostics && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-muted text-sm font-medium">
+              {t('diagnosticsPanel.diagnosticsHeading', { count: visibleDiagnosticRows.length })}
+            </h3>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+              }}
+              placeholder={t('diagnosticsPanel.searchAnomalies')}
+              aria-label={t('diagnosticsPanel.searchAnomalies')}
+              className="bg-secondary-dark/80 focus:border-brand-green/50 w-48 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
+            />
+          </div>
 
-        {anomalyList.length === 0 ? (
-          <div className="bg-secondary-dark text-muted rounded-lg p-8 text-center text-sm">
-            {visibleDiagnosticRows.length === 0
-              ? t('diagnosticsPanel.noDiagnosticsHealthy')
-              : t('diagnosticsPanel.noAnomaliesMatchSearch')}
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {selfRows.length > 0 && (
-              <div>
-                <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
-                  {t('diagnosticsPanel.connectedNodeYouHeading', { count: selfRows.length })}
-                </h4>
-                <div className="border-brand-green/20 overflow-auto rounded-lg border border-gray-700">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-deep-black text-muted sticky top-0 text-left">
-                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableNode')}</th>
-                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableOffense')}</th>
-                        <th className="px-4 py-2.5 text-right">
-                          {t('diagnosticsPanel.tableHops')}
-                        </th>
-                        <th className="px-4 py-2.5 text-right">
-                          {t('diagnosticsPanel.tableDetected')}
-                        </th>
-                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableSuggestedFix')}</th>
-                        <th className="px-4 py-2.5 text-right">
-                          {t('diagnosticsPanel.tableAction')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-700/50">
-                      {renderTableBody(selfRows)}
-                    </tbody>
-                  </table>
+          {anomalyList.length === 0 ? (
+            <div className="bg-secondary-dark text-muted rounded-lg p-8 text-center text-sm">
+              {visibleDiagnosticRows.length === 0
+                ? t('diagnosticsPanel.noDiagnosticsHealthy')
+                : t('diagnosticsPanel.noAnomaliesMatchSearch')}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {selfRows.length > 0 && (
+                <div>
+                  <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                    {t('diagnosticsPanel.connectedNodeYouHeading', { count: selfRows.length })}
+                  </h4>
+                  <div className="border-brand-green/20 overflow-auto rounded-lg border border-gray-700">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-deep-black text-muted sticky top-0 text-left">
+                          <th className="px-4 py-2.5">{t('diagnosticsPanel.tableNode')}</th>
+                          <th className="px-4 py-2.5">{t('diagnosticsPanel.tableOffense')}</th>
+                          <th className="px-4 py-2.5 text-right">
+                            {t('diagnosticsPanel.tableHops')}
+                          </th>
+                          <th className="px-4 py-2.5 text-right">
+                            {t('diagnosticsPanel.tableDetected')}
+                          </th>
+                          <th className="px-4 py-2.5">{t('diagnosticsPanel.tableSuggestedFix')}</th>
+                          <th className="px-4 py-2.5 text-right">
+                            {t('diagnosticsPanel.tableAction')}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-700/50">
+                        {renderTableBody(selfRows)}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            )}
-            {otherCrossProtocolRows.length > 0 && (
-              <div>
-                <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
-                  {t('diagnosticsPanel.otherCrossProtocolHeading', {
-                    count: otherCrossProtocolRows.length,
-                  })}
-                </h4>
-                <div className="overflow-auto rounded-lg border border-amber-500/20 border-gray-700">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-deep-black text-muted sticky top-0 text-left">
-                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableNode')}</th>
-                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableOffense')}</th>
-                        <th className="px-4 py-2.5 text-right">
-                          {t('diagnosticsPanel.tableHops')}
-                        </th>
-                        <th className="px-4 py-2.5 text-right">
-                          {t('diagnosticsPanel.tableDetected')}
-                        </th>
-                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableSuggestedFix')}</th>
-                        <th className="px-4 py-2.5 text-right">
-                          {t('diagnosticsPanel.tableAction')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-700/50">
-                      {renderTableBody(otherCrossProtocolRows)}
-                    </tbody>
-                  </table>
+              )}
+              {otherCrossProtocolRows.length > 0 && (
+                <div>
+                  <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                    {t('diagnosticsPanel.otherCrossProtocolHeading', {
+                      count: otherCrossProtocolRows.length,
+                    })}
+                  </h4>
+                  <div className="overflow-auto rounded-lg border border-amber-500/20 border-gray-700">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-deep-black text-muted sticky top-0 text-left">
+                          <th className="px-4 py-2.5">{t('diagnosticsPanel.tableNode')}</th>
+                          <th className="px-4 py-2.5">{t('diagnosticsPanel.tableOffense')}</th>
+                          <th className="px-4 py-2.5 text-right">
+                            {t('diagnosticsPanel.tableHops')}
+                          </th>
+                          <th className="px-4 py-2.5 text-right">
+                            {t('diagnosticsPanel.tableDetected')}
+                          </th>
+                          <th className="px-4 py-2.5">{t('diagnosticsPanel.tableSuggestedFix')}</th>
+                          <th className="px-4 py-2.5 text-right">
+                            {t('diagnosticsPanel.tableAction')}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-700/50">
+                        {renderTableBody(otherCrossProtocolRows)}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            )}
-            {meshRows.length > 0 && (
-              <div>
-                <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
-                  {t('diagnosticsPanel.meshDiagnosticsHeading', { count: meshRows.length })}
-                </h4>
-                <div className="overflow-auto rounded-lg border border-gray-700">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-deep-black text-muted sticky top-0 text-left">
-                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableNode')}</th>
-                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableOffense')}</th>
-                        <th className="px-4 py-2.5 text-right">
-                          {t('diagnosticsPanel.tableHops')}
-                        </th>
-                        <th className="px-4 py-2.5 text-right">
-                          {t('diagnosticsPanel.tableDetected')}
-                        </th>
-                        <th className="px-4 py-2.5">{t('diagnosticsPanel.tableSuggestedFix')}</th>
-                        <th className="px-4 py-2.5 text-right">
-                          {t('diagnosticsPanel.tableAction')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-700/50">
-                      {renderTableBody(meshRows)}
-                    </tbody>
-                  </table>
+              )}
+              {meshRows.length > 0 && (
+                <div>
+                  <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                    {t('diagnosticsPanel.meshDiagnosticsHeading', { count: meshRows.length })}
+                  </h4>
+                  <div className="overflow-auto rounded-lg border border-gray-700">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-deep-black text-muted sticky top-0 text-left">
+                          <th className="px-4 py-2.5">{t('diagnosticsPanel.tableNode')}</th>
+                          <th className="px-4 py-2.5">{t('diagnosticsPanel.tableOffense')}</th>
+                          <th className="px-4 py-2.5 text-right">
+                            {t('diagnosticsPanel.tableHops')}
+                          </th>
+                          <th className="px-4 py-2.5 text-right">
+                            {t('diagnosticsPanel.tableDetected')}
+                          </th>
+                          <th className="px-4 py-2.5">{t('diagnosticsPanel.tableSuggestedFix')}</th>
+                          <th className="px-4 py-2.5 text-right">
+                            {t('diagnosticsPanel.tableAction')}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-700/50">
+                        {renderTableBody(meshRows)}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -29,7 +29,7 @@ import { useTranslation } from 'react-i18next';
 import { useMeshcoreRoomAuth } from '@/renderer/hooks/useMeshcoreRoomAuth';
 import { useMeshcoreRoomLoginQueueRevision } from '@/renderer/hooks/useMeshcoreRoomLoginQueueRevision';
 import { useMeshcoreRoomSessionRevision } from '@/renderer/hooks/useMeshcoreRoomSessionRevision';
-import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
+import { useAppWindowActivity } from '@/renderer/lib/appWindowActivity';
 import {
   loadMutedViews,
   loadPersistedRoomsLastRead,
@@ -264,6 +264,7 @@ export default function RoomsPanel({
   alwaysShowMessageActions = false,
 }: Props) {
   const { t } = useTranslation();
+  const { inactive: appWindowInactive } = useAppWindowActivity();
   const parentIconTrigger = useParentIconTrigger();
   const { ensureRoomAuth, RemoteAuthModal } = useMeshcoreRoomAuth();
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(
@@ -567,13 +568,13 @@ export default function RoomsPanel({
 
   const applyNearBottomReadState = useCallback(
     (distFromBottom: number) => {
-      if (!isActive || isAppWindowInactive()) return;
+      if (!isActive || appWindowInactive) return;
       if (distFromBottom < 50) {
         markSelectedRoomRead();
         setUnreadDividerTimestamp(0);
       }
     },
-    [isActive, markSelectedRoomRead],
+    [appWindowInactive, isActive, markSelectedRoomRead],
   );
 
   const handleStreamScroll = useCallback(() => {
@@ -628,7 +629,7 @@ export default function RoomsPanel({
   }, [updateScrollButtonVisibility]);
 
   useEffect(() => {
-    if (!isActive || isAppWindowInactive() || selectedRoomId == null) return;
+    if (!isActive || appWindowInactive || selectedRoomId == null) return;
     // An explicit row-key jump (Starred → Go to message) or its room-switch guard
     // owns scroll for this transition — skip pinned-bottom follow so we do not race
     // scrollToEnd ahead of scrollToRowKey (effect order: this runs before both).
@@ -642,6 +643,7 @@ export default function RoomsPanel({
     });
   }, [
     applyNearBottomReadState,
+    appWindowInactive,
     isActive,
     roomPosts.length,
     scrollToBottom,

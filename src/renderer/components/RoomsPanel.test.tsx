@@ -1300,4 +1300,98 @@ describe('RoomsPanel', () => {
     expect(screen.getByText('CR')).toBeInTheDocument();
     expect(screen.getByLabelText('Collapse Room')).toBeInTheDocument();
   });
+
+  it('holds room unread while visible but unfocused, then advances watermark on refocus', async () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x1040, 'Focus Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const firstTs = 1000;
+    const secondTs = 5000;
+    savePersistedRoomsLastRead(mergeRoomLastReadWatermark({}, room.node_id, firstTs));
+    const readStored = () =>
+      JSON.parse(localStorage.getItem('mesh-client:roomsLastRead:meshcore') ?? '{}') as Record<
+        string,
+        number
+      >;
+    const firstMsg = buildMeshcoreRoomIncomingMessage({
+      rawText: 'first',
+      roomServerId: room.node_id,
+      authorId: 0x200,
+      authorName: 'Alice',
+      timestamp: firstTs,
+      receivedVia: 'rf',
+    });
+    const distSpy = vi.spyOn(chatScrollUtils, 'getDistFromChatBottom').mockReturnValue(0);
+    const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+
+    try {
+      const { rerender } = render(
+        <RoomsPanel
+          nodes={nodes}
+          messages={[firstMsg]}
+          myNodeNum={1}
+          isConnected
+          isActive
+          initialRoomTarget={room.node_id}
+          onLoginRoom={vi.fn().mockResolvedValue(undefined)}
+          onCancelRoomLogin={vi.fn()}
+          onLeaveRoom={vi.fn().mockResolvedValue(undefined)}
+          onSendRoomPost={vi.fn()}
+          onSendRoomAdminCli={vi.fn()}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('first')).toBeInTheDocument();
+      });
+
+      hasFocusSpy.mockReturnValue(false);
+      fireEvent(window, new Event('blur'));
+
+      const secondMsg = buildMeshcoreRoomIncomingMessage({
+        rawText: 'second',
+        roomServerId: room.node_id,
+        authorId: 0x201,
+        authorName: 'Bob',
+        timestamp: secondTs,
+        receivedVia: 'rf',
+      });
+      rerender(
+        <RoomsPanel
+          nodes={nodes}
+          messages={[firstMsg, secondMsg]}
+          myNodeNum={1}
+          isConnected
+          isActive
+          initialRoomTarget={room.node_id}
+          onLoginRoom={vi.fn().mockResolvedValue(undefined)}
+          onCancelRoomLogin={vi.fn()}
+          onLeaveRoom={vi.fn().mockResolvedValue(undefined)}
+          onSendRoomPost={vi.fn()}
+          onSendRoomAdminCli={vi.fn()}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('second')).toBeInTheDocument();
+      });
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      expect(readStored()[String(room.node_id)]).toBe(firstTs);
+
+      hasFocusSpy.mockReturnValue(true);
+      fireEvent(window, new Event('focus'));
+
+      await waitFor(() => {
+        expect(readStored()[String(room.node_id)]).toBe(secondTs);
+      });
+    } finally {
+      distSpy.mockRestore();
+      hasFocusSpy.mockRestore();
+    }
+  });
 });

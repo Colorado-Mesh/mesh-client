@@ -1,7 +1,9 @@
 import { act, renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { isAppWindowInactive, useAppWindowActivity } from './appWindowActivity';
+
+const PLATFORMS = ['linux', 'darwin', 'win32'] as const;
 
 function setVisibility(hidden: boolean): void {
   Object.defineProperty(document, 'hidden', { value: hidden, configurable: true });
@@ -11,12 +13,21 @@ function setFocus(focused: boolean): void {
   vi.spyOn(document, 'hasFocus').mockReturnValue(focused);
 }
 
+beforeEach(() => {
+  vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
   setVisibility(false);
+  vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
 });
 
-describe('isAppWindowInactive', () => {
+describe.each(PLATFORMS)('isAppWindowInactive (%s)', (platform) => {
+  beforeEach(() => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+  });
+
   it('is active only when visible and focused', () => {
     setVisibility(false);
     setFocus(true);
@@ -42,7 +53,11 @@ describe('isAppWindowInactive', () => {
   });
 });
 
-describe('useAppWindowActivity', () => {
+describe.each(PLATFORMS)('useAppWindowActivity (%s)', (platform) => {
+  beforeEach(() => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+  });
+
   it('reports the initial visible + focused state', () => {
     setVisibility(false);
     setFocus(true);

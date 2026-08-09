@@ -2714,104 +2714,112 @@ describe('ChatPanel unread watermarks', () => {
     });
   });
 
-  it('holds unread on the open DM while the window is visible but unfocused, then clears on refocus', async () => {
-    const user = userEvent.setup();
-    const ts = Date.now();
-    const selfId = 0x12345678;
-    const peerId = 2;
-    // Seed the open DM as already read so any advance is attributable to the new inbound.
-    localStorage.setItem('mesh-client:lastRead:meshcore', JSON.stringify({ [`dm:${peerId}`]: ts }));
-    const readStored = () =>
-      JSON.parse(localStorage.getItem('mesh-client:lastRead:meshcore') ?? '{}') as Record<
-        string,
-        number
-      >;
-    const nodes = new Map<number, MeshNode>([
-      [
-        peerId,
-        {
-          node_id: peerId,
-          long_name: 'Alice',
-          short_name: 'Alice',
-          hw_model: '',
-          snr: 0,
-          battery: 0,
-          last_heard: ts,
-          latitude: null,
-          longitude: null,
-        },
-      ],
-    ]);
-    const firstMsg = {
-      sender_id: peerId,
-      sender_name: 'Alice',
-      payload: 'first',
-      channel: -1,
-      timestamp: ts,
-      status: 'acked' as const,
-      to: selfId,
-    };
-    const { rerender } = render(
-      <ToastProvider>
-        <ChatPanel
-          {...baseProps}
-          protocol="meshcore"
-          myNodeNum={selfId}
-          ownNodeIds={[selfId]}
-          nodes={nodes}
-          messages={[firstMsg]}
-        />
-      </ToastProvider>,
-    );
-
-    await user.click(screen.getByRole('button', { name: 'Alice' }));
-    await waitFor(() => {
-      expect(screen.getByText('first')).toBeInTheDocument();
-    });
-
-    // Window is visible but not focused (e.g. user switched to another app).
-    const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(false);
-
-    const secondTs = ts + 5000;
-    const withSecond = [
-      firstMsg,
-      {
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'holds unread on the open DM while the window is visible but unfocused, then clears on refocus (%s)',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const user = userEvent.setup();
+      const ts = Date.now();
+      const selfId = 0x12345678;
+      const peerId = 2;
+      // Seed the open DM as already read so any advance is attributable to the new inbound.
+      localStorage.setItem(
+        'mesh-client:lastRead:meshcore',
+        JSON.stringify({ [`dm:${peerId}`]: ts }),
+      );
+      const readStored = () =>
+        JSON.parse(localStorage.getItem('mesh-client:lastRead:meshcore') ?? '{}') as Record<
+          string,
+          number
+        >;
+      const nodes = new Map<number, MeshNode>([
+        [
+          peerId,
+          {
+            node_id: peerId,
+            long_name: 'Alice',
+            short_name: 'Alice',
+            hw_model: '',
+            snr: 0,
+            battery: 0,
+            last_heard: ts,
+            latitude: null,
+            longitude: null,
+          },
+        ],
+      ]);
+      const firstMsg = {
         sender_id: peerId,
         sender_name: 'Alice',
-        payload: 'second',
+        payload: 'first',
         channel: -1,
-        timestamp: secondTs,
+        timestamp: ts,
         status: 'acked' as const,
         to: selfId,
-      },
-    ];
-    rerender(
-      <ToastProvider>
-        <ChatPanel
-          {...baseProps}
-          protocol="meshcore"
-          myNodeNum={selfId}
-          ownNodeIds={[selfId]}
-          nodes={nodes}
-          messages={withSecond}
-        />
-      </ToastProvider>,
-    );
+      };
+      const { rerender } = render(
+        <ToastProvider>
+          <ChatPanel
+            {...baseProps}
+            protocol="meshcore"
+            myNodeNum={selfId}
+            ownNodeIds={[selfId]}
+            nodes={nodes}
+            messages={[firstMsg]}
+          />
+        </ToastProvider>,
+      );
 
-    // Give the inbound mark-read effect (rAF) a chance to run and confirm it stayed read-gated.
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(readStored()[`dm:${peerId}`]).toBe(ts);
+      await user.click(screen.getByRole('button', { name: 'Alice' }));
+      await waitFor(() => {
+        expect(screen.getByText('first')).toBeInTheDocument();
+      });
 
-    // Refocusing (clicking the dock/taskbar badge) clears unread on the open conversation.
-    hasFocusSpy.mockReturnValue(true);
-    fireEvent(window, new Event('focus'));
+      // Window is visible but not focused (e.g. user switched to another app).
+      const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(false);
 
-    await waitFor(() => {
-      expect(readStored()[`dm:${peerId}`]).toBe(secondTs);
-    });
+      const secondTs = ts + 5000;
+      const withSecond = [
+        firstMsg,
+        {
+          sender_id: peerId,
+          sender_name: 'Alice',
+          payload: 'second',
+          channel: -1,
+          timestamp: secondTs,
+          status: 'acked' as const,
+          to: selfId,
+        },
+      ];
+      rerender(
+        <ToastProvider>
+          <ChatPanel
+            {...baseProps}
+            protocol="meshcore"
+            myNodeNum={selfId}
+            ownNodeIds={[selfId]}
+            nodes={nodes}
+            messages={withSecond}
+          />
+        </ToastProvider>,
+      );
 
-    hasFocusSpy.mockRestore();
-  });
+      // Give the inbound mark-read effect (rAF) a chance to run and confirm it stayed read-gated.
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      expect(readStored()[`dm:${peerId}`]).toBe(ts);
+
+      // Refocusing (clicking the dock/taskbar badge) clears unread on the open conversation.
+      hasFocusSpy.mockReturnValue(true);
+      fireEvent(window, new Event('focus'));
+
+      await waitFor(() => {
+        expect(readStored()[`dm:${peerId}`]).toBe(secondTs);
+      });
+
+      hasFocusSpy.mockRestore();
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    },
+  );
 });
 
 describe('ChatPanel compose emoji picker', () => {
