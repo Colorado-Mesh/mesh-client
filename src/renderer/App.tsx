@@ -1421,31 +1421,9 @@ function AppContent() {
     [meshcoreUiNodes],
   );
   const meshcorePublicKeyHexByNodeId = useMemo(() => {
-    const m = new Map<number, string>();
-    if (!meshcoreCapabilities.hasContactImportExport) return m;
-    const self = meshcoreRuntime.selfInfo;
-    if (self?.publicKey?.length === 32) {
-      m.set(
-        pubkeyToNodeId(self.publicKey),
-        Array.from(self.publicKey)
-          .map((b) => b.toString(16).padStart(2, '0'))
-          .join(''),
-      );
-    }
-    for (const c of meshcoreRuntime.meshcoreContactsForTelemetry) {
-      m.set(
-        pubkeyToNodeId(c.publicKey),
-        Array.from(c.publicKey)
-          .map((b) => b.toString(16).padStart(2, '0'))
-          .join(''),
-      );
-    }
-    return m;
-  }, [
-    meshcoreCapabilities.hasContactImportExport,
-    meshcoreRuntime.selfInfo,
-    meshcoreRuntime.meshcoreContactsForTelemetry,
-  ]);
+    if (!meshcoreCapabilities.hasContactImportExport) return new Map<number, string>();
+    return meshcoreRuntime.meshcorePubKeyHexByNodeId;
+  }, [meshcoreCapabilities.hasContactImportExport, meshcoreRuntime.meshcorePubKeyHexByNodeId]);
 
   const capabilities = activeProtocolCapabilities;
   const nodeCountLabel = capabilities.nodeListTabUsesContactsLabel

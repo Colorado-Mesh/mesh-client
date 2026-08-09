@@ -2888,7 +2888,9 @@
     "currentRouteHeading": "Поточний маршрут",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Поділитися контактним QR-кодом",
-    "shareContactQrAria": "Показати контактний QR-код MeshCore для офіційного імпорту додатка"
+    "shareContactQrAria": "Показати контактний QR-код MeshCore для офіційного імпорту додатка",
+    "copyPublicKey": "Відкритий ключ",
+    "publicKeyCopied": "Відкритий ключ скопійовано в буфер обміну."
   },
   "nodeInfoBody": {
     "longName": "Довге ім'я",

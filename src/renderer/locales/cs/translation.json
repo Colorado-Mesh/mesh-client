@@ -2888,7 +2888,9 @@
     "currentRouteHeading": "Aktuální trasa",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Sdílet kontakt",
-    "shareContactQrAria": "Zobrazit QR kód kontaktu MeshCore pro oficiální import aplikace"
+    "shareContactQrAria": "Zobrazit QR kód kontaktu MeshCore pro oficiální import aplikace",
+    "copyPublicKey": "Licenční klíč",
+    "publicKeyCopied": "Veřejný klíč zkopírován do schránky."
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",

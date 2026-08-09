@@ -2886,7 +2886,9 @@
     "currentRouteHeading": "Itinéraire actuel",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Partager le contact via",
-    "shareContactQrAria": "Afficher le code QR du contact MeshCore pour l'importation officielle de l'application"
+    "shareContactQrAria": "Afficher le code QR du contact MeshCore pour l'importation officielle de l'application",
+    "copyPublicKey": "Copier la clé publique",
+    "publicKeyCopied": "Clé publique copiée dans le presse-papiers."
   },
   "nodeInfoBody": {
     "longName": "Nom long",

@@ -620,6 +620,47 @@ describe('NodeListPanel import contacts', () => {
     );
     expect(screen.getByText(hex)).toBeInTheDocument();
   });
+
+  it('renders pubkey-derived short id in the MeshCore ID cell when the key is known', () => {
+    const nodeId = 0xdeadbeef;
+    const hex = 'aabbccdd' + '00'.repeat(28);
+    const nodes = new Map<number, MeshNode>([
+      [nodeId, makeNode({ node_id: nodeId, long_name: 'Peer' })],
+    ]);
+    const pubkeyMap = new Map<number, string>([[nodeId, hex]]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshcore"
+        meshcorePublicKeyHexByNodeId={pubkeyMap}
+      />,
+    );
+    expect(screen.getByText('!aabbccdd')).toBeInTheDocument();
+    expect(screen.queryByText('!deadbeef')).not.toBeInTheDocument();
+  });
+
+  it('falls back to the XOR node id in the MeshCore ID cell when the key is unknown', () => {
+    const nodeId = 0xdeadbeef;
+    const nodes = new Map<number, MeshNode>([
+      [nodeId, makeNode({ node_id: nodeId, long_name: 'Peer' })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshcore"
+        meshcorePublicKeyHexByNodeId={new Map()}
+      />,
+    );
+    expect(screen.getByText('!deadbeef')).toBeInTheDocument();
+  });
 });
 
 describe('NodeListPanel flood advert (MeshCore)', () => {

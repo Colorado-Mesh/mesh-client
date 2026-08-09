@@ -2886,7 +2886,9 @@
     "currentRouteHeading": "Mevcut rota",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Kişi Paylaş",
-    "shareContactQrAria": "Resmi uygulama içe aktarma için MeshCore iletişim QR kodunu göster"
+    "shareContactQrAria": "Resmi uygulama içe aktarma için MeshCore iletişim QR kodunu göster",
+    "copyPublicKey": "genel anahtarı kopyala",
+    "publicKeyCopied": "Genel anahtar panoya kopyalandı."
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",

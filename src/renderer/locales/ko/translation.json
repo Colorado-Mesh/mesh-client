@@ -2886,7 +2886,9 @@
     "currentRouteHeading": "현재 경로",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "연락처 공유",
-    "shareContactQrAria": "공식 앱 가져오기를 위한 MeshCore 연락처 QR 코드 표시"
+    "shareContactQrAria": "공식 앱 가져오기를 위한 MeshCore 연락처 QR 코드 표시",
+    "copyPublicKey": "공개 키",
+    "publicKeyCopied": "공개 키가 클립보드에 복사되었습니다."
   },
   "nodeInfoBody": {
     "longName": "긴 이름",

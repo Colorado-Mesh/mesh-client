@@ -253,6 +253,13 @@ export function pubKeyPrefixHex(publicKey: Uint8Array): string {
     .join('');
 }
 
+/** `!` + first 8 hex chars (4 bytes) of a MeshCore public key hex, for UI identity. */
+export function meshcorePubkeyShortId(publicKeyHex: string | undefined | null): string | null {
+  const h = (publicKeyHex ?? '').replace(/\s/g, '').toLowerCase();
+  if (h.length < 8) return null;
+  return `!${h.slice(0, 8)}`;
+}
+
 /**
  * XOR-fold pubkey bytes into a stable unsigned 32-bit node ID.
  * Expects a 32-byte MeshCore public key; returns 0 for any other length.

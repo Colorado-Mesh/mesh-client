@@ -1,4 +1,7 @@
-import { meshcoreContactRawFromDevice } from '../../hooks/meshcore/meshcoreHookPreamble';
+import {
+  meshcoreContactRawFromDevice,
+  retryRadioRemoveDeletedContacts,
+} from '../../hooks/meshcore/meshcoreHookPreamble';
 import { usePathHistoryStore } from '../../stores/pathHistoryStore';
 import { errLikeToLogString } from '../errLikeToLogString';
 import type {
@@ -82,7 +85,10 @@ export async function rebuildMeshcoreContactsAfterPathUpdated(
 ): Promise<void> {
   try {
     const contactsRaw = await deps.conn.getContacts();
-    const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
+    const contacts = await retryRadioRemoveDeletedContacts(
+      deps.conn,
+      contactsRaw.map(meshcoreContactRawFromDevice),
+    );
     deps.onContacts(contacts);
     const newNodes = await deps.buildNodesFromContacts(contacts, {
       self: deps.self,

@@ -2886,7 +2886,9 @@
     "currentRouteHeading": "Huidige route",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Deel contact",
-    "shareContactQrAria": "Toon MeshCore-contact QR-code voor officiële app-import"
+    "shareContactQrAria": "Toon MeshCore-contact QR-code voor officiële app-import",
+    "copyPublicKey": "Openbare sleutel",
+    "publicKeyCopied": "Openbare sleutel gekopieerd naar klembord."
   },
   "nodeInfoBody": {
     "longName": "Lange naam",

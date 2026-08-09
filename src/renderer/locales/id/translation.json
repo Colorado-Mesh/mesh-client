@@ -2886,7 +2886,9 @@
     "currentRouteHeading": "Rute saat ini",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Bagikan QR kontak",
-    "shareContactQrAria": "Tampilkan kode QR kontak MeshCore untuk impor aplikasi resmi"
+    "shareContactQrAria": "Tampilkan kode QR kontak MeshCore untuk impor aplikasi resmi",
+    "copyPublicKey": "Kunci Publik",
+    "publicKeyCopied": "Kunci publik disalin ke clipboard."
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",

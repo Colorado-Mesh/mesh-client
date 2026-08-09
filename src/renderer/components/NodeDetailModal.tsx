@@ -12,6 +12,7 @@ import {
   normalizeMeshtasticAdminKeyInput,
 } from '@/renderer/lib/meshtasticRemoteAdminKeyStorage';
 import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { buildMeshcoreContactAddUri, type MeshcoreContactType } from '@/shared/meshClientDeepLink';
 import { isDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
@@ -47,6 +48,7 @@ import {
   MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
   MESHCORE_MAX_CONTACTS,
   meshcoreContactTypeFromHwModel,
+  meshcorePubkeyShortId,
   meshcoreTracePathLenToHops,
 } from '../lib/meshcoreUtils';
 import {
@@ -602,7 +604,10 @@ export default function NodeDetailModal({
 
   if (!node) return null;
 
-  const hexId = formatMeshtasticNodeId(node.node_id);
+  const hexId =
+    protocol === 'meshcore'
+      ? (meshcorePubkeyShortId(contactPubkey) ?? formatMeshtasticNodeId(node.node_id))
+      : formatMeshtasticNodeId(node.node_id);
   const awaitingNodeInfo =
     protocol === 'meshtastic' && meshtasticNodeAwaitingNodeInfo(node, { isConnected });
   const displayName = node.short_name || node.long_name || hexId;
@@ -778,6 +783,32 @@ export default function NodeDetailModal({
                     </span>
                   )}
               </div>
+              {protocol === 'meshcore' && contactPubkey && (
+                <div className="mt-1 flex w-full items-start gap-2">
+                  <span className="text-muted font-mono text-[10px] break-all whitespace-normal">
+                    {contactPubkey}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={t('nodeDetailModal.copyPublicKey')}
+                    title={t('nodeDetailModal.copyPublicKey')}
+                    onClick={() => {
+                      void writeClipboardText(contactPubkey)
+                        .then(() => {
+                          setActionStatus(t('nodeDetailModal.publicKeyCopied'));
+                        })
+                        .catch((e: unknown) => {
+                          console.warn(
+                            '[NodeDetailModal] copy pubkey failed ' + errLikeToLogString(e),
+                          );
+                        });
+                    }}
+                    className="shrink-0 text-xs text-gray-400 hover:text-gray-200"
+                  >
+                    📋
+                  </button>
+                </div>
+              )}
             </div>
             <div className="ml-3 flex shrink-0 flex-col items-end gap-1">
               <div className="flex items-center gap-1">

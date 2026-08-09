@@ -2886,7 +2886,9 @@
     "currentRouteHeading": "当前路线",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "分享联系人",
-    "shareContactQrAria": "显示MeshCore联系人二维码以进行官方应用导入"
+    "shareContactQrAria": "显示MeshCore联系人二维码以进行官方应用导入",
+    "copyPublicKey": "公钥",
+    "publicKeyCopied": "公钥已复制到剪贴板。"
   },
   "nodeInfoBody": {
     "longName": "长名称",

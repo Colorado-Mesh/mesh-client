@@ -56,6 +56,7 @@ import {
   isMeshcoreDmExcludedHwModel,
   MESHCORE_CONTACTS_WARNING_THRESHOLD,
   MESHCORE_MAX_CONTACTS,
+  meshcorePubkeyShortId,
 } from '../lib/meshcoreUtils';
 import {
   MESHTASTIC_BUILTIN_CONTACT_GROUP_FILTERS,
@@ -1413,7 +1414,11 @@ export default function NodeListPanel({
                         )}
                       </td>
                       <td className="text-muted px-3 py-2 font-mono text-xs">
-                        {formatMeshtasticNodeId(node.node_id)}
+                        {mode === 'meshcore'
+                          ? (meshcorePubkeyShortId(
+                              meshcorePublicKeyHexByNodeId?.get(node.node_id),
+                            ) ?? formatMeshtasticNodeId(node.node_id))
+                          : formatMeshtasticNodeId(node.node_id)}
                         {mode === 'meshcore' && meshcorePublicKeyHexByNodeId?.has(node.node_id) && (
                           <span className="ml-1">🔑</span>
                         )}

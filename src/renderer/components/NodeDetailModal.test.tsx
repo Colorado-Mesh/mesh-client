@@ -25,6 +25,10 @@ vi.mock('../lib/downloadBlob', () => ({
   downloadBlob: vi.fn(),
 }));
 
+vi.mock('@/renderer/lib/writeClipboardText', () => ({
+  writeClipboardText: vi.fn().mockResolvedValue(undefined),
+}));
+
 const mockNode: MeshNode = {
   node_id: 0xdeadbeef,
   short_name: 'TEST',
@@ -302,6 +306,25 @@ describe('NodeDetailModal MeshCore actions', () => {
     renderMeshcoreModal({ isConnected: false });
 
     expect(screen.getByRole('button', { name: '📊 Request Status' })).toBeDisabled();
+  });
+
+  it('renders the full public key with a copy button and copies it on click', async () => {
+    const { writeClipboardText } = await import('@/renderer/lib/writeClipboardText');
+    const pubkeyHex = 'ab'.repeat(32);
+    vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue({
+      public_key: pubkeyHex,
+      on_radio: 1,
+    } as unknown as Awaited<ReturnType<typeof window.electronAPI.db.getMeshcoreContactById>>);
+    const user = userEvent.setup();
+    renderMeshcoreModal();
+
+    const pubkeyEl = await screen.findByText(pubkeyHex);
+    expect(pubkeyEl).toBeInTheDocument();
+
+    const copyButton = screen.getByRole('button', { name: 'Copy public key' });
+    await user.click(copyButton);
+    expect(writeClipboardText).toHaveBeenCalledWith(pubkeyHex);
+    expect(await screen.findByText('Public key copied to clipboard.')).toBeInTheDocument();
   });
 
   it('enables Message when live store has pubkey but DB contact row does not', async () => {

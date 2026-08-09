@@ -3,6 +3,7 @@ import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 import { isValidLatLon } from '../../../shared/geoCoords';
 import { meshcoreContactDisplayName } from '../../../shared/meshcoreContactSanitize';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../../lib/chatInMemoryBuffer';
+import { errLikeToLogString } from '../../lib/errLikeToLogString';
 import type {
   MeshCoreConnection,
   MeshcoreContactDbRow,
@@ -18,7 +19,10 @@ import {
   meshcorePayloadIsTapbackEmojiOnly,
   normalizeMeshcoreIncomingText,
 } from '../../lib/meshcoreChannelText';
-import { shouldApplyMeshcoreContact } from '../../lib/meshcoreLocallyDeletedContacts';
+import {
+  isMeshcoreLocallyDeletedContact,
+  shouldApplyMeshcoreContact,
+} from '../../lib/meshcoreLocallyDeletedContacts';
 import {
   CONTACT_TYPE_LABELS,
   isMeshcoreTransportStatusChatLine,
@@ -1127,4 +1131,35 @@ export function mergeStubNodesFromMeshcoreMessages(
     );
   }
   return next;
+}
+
+/**
+ * Prune contacts that the user deleted locally but the radio still holds: re-request
+ * `conn.removeContact(pubkey)` so an offline delete propagates on the next sync.
+ * Returns the contacts minus ids whose radio removal succeeded; failed removals are kept
+ * so the radio (authority) can revive them via the `fromRadio` apply path.
+ */
+export async function retryRadioRemoveDeletedContacts(
+  conn: Pick<MeshCoreConnection, 'removeContact'>,
+  contacts: MeshCoreContactRaw[],
+): Promise<MeshCoreContactRaw[]> {
+  const kept: MeshCoreContactRaw[] = [];
+  for (const c of contacts) {
+    const id = pubkeyToNodeId(c.publicKey);
+    if (id !== 0 && isMeshcoreLocallyDeletedContact(id)) {
+      try {
+        await conn.removeContact(c.publicKey);
+        console.debug(
+          `[meshcore] retry removeContact: dropped tombstoned contact 0x${id.toString(16)}`,
+        );
+        continue;
+      } catch (e) {
+        console.warn(
+          '[meshcore] retry removeContact (tombstoned contact) failed ' + errLikeToLogString(e),
+        );
+      }
+    }
+    kept.push(c);
+  }
+  return kept;
 }

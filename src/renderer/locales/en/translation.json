@@ -2887,6 +2887,8 @@
     "sensorTelemetryLpp": "Sensor telemetry LPP",
     "nodeIncomplete": "Node data incomplete - waiting for full NodeInfo packet",
     "hasPublicKey": "Has public key - can send DMs",
+    "copyPublicKey": "Copy public key",
+    "publicKeyCopied": "Public key copied to clipboard.",
     "chatOnlyNode": "Chat-only node (no public key)",
     "dbOnlyContact": "Contact stored in database only, not on radio",
     "syncedContact": "Contact synced: stored in database and on radio",

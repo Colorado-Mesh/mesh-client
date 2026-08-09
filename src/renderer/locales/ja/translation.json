@@ -2886,7 +2886,9 @@
     "currentRouteHeading": "現在のルート",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "連絡先QRを共有",
-    "shareContactQrAria": "公式アプリインポートのためにMeshCore連絡先QRコードを表示する"
+    "shareContactQrAria": "公式アプリインポートのためにMeshCore連絡先QRコードを表示する",
+    "copyPublicKey": "公開鍵をコピー",
+    "publicKeyCopied": "公開鍵をクリップボードにコピーしました。"
   },
   "nodeInfoBody": {
     "longName": "長い名前",
