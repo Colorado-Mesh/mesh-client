@@ -68,6 +68,7 @@ use super::pn_hosting_apply::{apply_pn_hosting_policy_to_node, apply_pn_hosting_
 use super::pn_hosting_policy::PnHostingPolicy;
 use super::propagation_announce::PropagationAnnounceLoop;
 use super::propagation_bridge::PropagationBridge;
+use super::propagation_download::ClientDownloadPoll;
 use super::propagation_serve::PropagationServeHandle;
 use super::rncp_transfer::RncpTransferManager;
 use super::rnsh_session::RnshSessionManager;
@@ -3665,6 +3666,11 @@ impl LiveBridge {
             }
             return Err("propagation sync unavailable".into());
         }
+        // Retrieval half of Sync (Python `request_messages_from_propagation_node`):
+        // pull our own store-and-forward mail from this PN via the client `/get`
+        // download and deliver it into Chat. Runs alongside the `/offer` peer sync
+        // above, which only replicates inventory and never fills our inbox.
+        self.spawn_client_download_driver(hash, dest_hex.clone(), Arc::clone(&cancel), run_id);
         let outbound = Arc::clone(&self.outbound);
         let on_terminal: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
             if let Ok(mut driver) = outbound.lock() {
@@ -3680,6 +3686,150 @@ impl LiveBridge {
             Some(on_terminal),
         );
         Ok(())
+    }
+
+    /// Drive the client `/get` download to completion off the sync request path.
+    ///
+    /// Ticks [`PropagationBridge::poll_client_download`] on a short interval,
+    /// feeding it the current known-identity map (for link-proof validation) and,
+    /// on a terminal Complete, delivering each decoded message through the router
+    /// delivery callback — the same path Direct/opportunistic inbound uses, so WS
+    /// `lxmf_message`, the recent ring, and renderer catch-up all fire unchanged.
+    fn spawn_client_download_driver(
+        &self,
+        pn_hash: [u8; 16],
+        pn_hex: String,
+        cancel: Arc<AtomicBool>,
+        run_id: u64,
+    ) {
+        if !self.propagation.start_client_download(pn_hash) {
+            tracing::debug!(
+                target: "propagation-retrieve",
+                pn_hash = %pn_hex,
+                "client /get download not started (already active or unavailable)"
+            );
+            return;
+        }
+        let bridge = Arc::clone(&self.propagation);
+        let router = Arc::clone(&self.router);
+        let outbound = Arc::clone(&self.outbound);
+        let active_run_id = Arc::clone(&self.sync_run_id);
+        tokio::spawn(async move {
+            // Client tick cadence; the client's own 120s timeout bounds a stuck link.
+            const POLL_INTERVAL: Duration = Duration::from_millis(500);
+            const DOWNLOAD_WATCHDOG: Duration = Duration::from_secs(180);
+            let mut interval = tokio::time::interval(POLL_INTERVAL);
+            let started = Instant::now();
+            loop {
+                interval.tick().await;
+                // Superseded by a newer sync run: that run now owns the client,
+                // so exit without touching shared client state.
+                if !PropagationBridge::is_current_sync_run(
+                    active_run_id.load(Ordering::SeqCst),
+                    run_id,
+                ) {
+                    break;
+                }
+                // This run was cancelled: cancel the client only while we are
+                // still the active run (lifecycle-lock guarded via run_if_current).
+                if cancel.load(Ordering::SeqCst) {
+                    bridge.run_if_current(&active_run_id, run_id, || {
+                        bridge.cancel_client_download();
+                    });
+                    break;
+                }
+                if started.elapsed() > DOWNLOAD_WATCHDOG {
+                    tracing::info!(
+                        target: "propagation-retrieve",
+                        pn_hash = %pn_hex,
+                        "client /get download watchdog timeout"
+                    );
+                    bridge.run_if_current(&active_run_id, run_id, || {
+                        bridge.cancel_client_download();
+                    });
+                    break;
+                }
+                let known = outbound
+                    .lock()
+                    .ok()
+                    .map(|d| d.known_identities_for_propagation())
+                    .unwrap_or_default();
+                match bridge.poll_client_download(&known) {
+                    ClientDownloadPoll::Idle => break,
+                    // Keep polling on the next interval tick.
+                    ClientDownloadPoll::InProgress => {}
+                    ClientDownloadPoll::Failed => {
+                        tracing::info!(
+                            target: "propagation-retrieve",
+                            pn_hash = %pn_hex,
+                            "client /get download failed"
+                        );
+                        // Consume the terminal failed state → Idle so a later
+                        // sync can start a fresh retrieval.
+                        bridge.cancel_client_download();
+                        break;
+                    }
+                    ClientDownloadPoll::Complete {
+                        messages,
+                        listed,
+                        downloaded,
+                    } => {
+                        let delivered = messages.len();
+                        {
+                            let router = router.lock().await;
+                            if let Some(ref cb) = router.delivery_callback {
+                                for msg in &messages {
+                                    cb(msg);
+                                }
+                            }
+                        }
+                        // Empty list is success (result=0), not failure.
+                        tracing::info!(
+                            target: "propagation-retrieve",
+                            pn_hash = %pn_hex,
+                            listed,
+                            downloaded,
+                            delivered,
+                            retrieve_mode = "get",
+                            "client /get download Completes"
+                        );
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
+    /// Drain the in-process (`local-prop`) PN store of our own mail into Chat.
+    ///
+    /// `local-prop` Sync has no remote link to `/get` against, so we replay the
+    /// local node's own list → serve → purge and deliver each decoded message
+    /// through the router callback (same ingest as remote retrieval). Returns the
+    /// number of messages delivered.
+    pub async fn drain_local_propagation_inbox(&self) -> usize {
+        // The drain does blocking file I/O + per-message decryption; run it off
+        // the async worker so it cannot stall the runtime.
+        let bridge = Arc::clone(&self.propagation);
+        let (messages, listed) = tokio::task::spawn_blocking(move || bridge.drain_local_inbox())
+            .await
+            .unwrap_or_else(|_| (Vec::new(), 0));
+        let delivered = messages.len();
+        if delivered > 0 {
+            let router = self.router.lock().await;
+            if let Some(ref cb) = router.delivery_callback {
+                for msg in &messages {
+                    cb(msg);
+                }
+            }
+        }
+        tracing::info!(
+            target: "propagation-retrieve",
+            listed,
+            delivered,
+            retrieve_mode = "local",
+            "local-prop inbox drain Completes"
+        );
+        delivered
     }
 
     /// Resolve identity hashes + peering stamp for a remote LXMF PN `/offer`.
@@ -3791,6 +3941,7 @@ impl LiveBridge {
             slot.store(true, Ordering::SeqCst);
         }
         self.propagation.cancel_sync();
+        self.propagation.cancel_client_download();
         if let Ok(mut driver) = self.outbound.lock() {
             driver.clear_propagation_identity_pins();
             driver.set_propagation_sync_target(None);

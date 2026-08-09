@@ -52,6 +52,8 @@ mod propagation_announce;
 #[cfg(feature = "rns-stack")]
 mod propagation_bridge;
 #[cfg(feature = "rns-stack")]
+mod propagation_download;
+#[cfg(feature = "rns-stack")]
 mod propagation_serve;
 #[cfg(feature = "rns-stack")]
 mod rncp_transfer;
@@ -1499,8 +1501,13 @@ impl StackHandle {
         let sync_self = is_local
             || prop_hash.eq_ignore_ascii_case(&lxmf)
             || (!local_prop_hash.is_empty() && prop_hash.eq_ignore_ascii_case(&local_prop_hash));
-        // Local inbox lives in this process — settle without a self LinkRequest.
+        // Local inbox lives in this process — settle without a self LinkRequest,
+        // but still drain our own mail out of the local PN store into Chat.
         if is_local {
+            #[cfg(feature = "rns-stack")]
+            if let Some(live) = self.live.get() {
+                live.drain_local_propagation_inbox().await;
+            }
             self.emit_event(
                 "propagation_sync",
                 serde_json::json!({

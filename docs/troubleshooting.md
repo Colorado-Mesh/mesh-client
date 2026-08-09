@@ -1337,10 +1337,12 @@ Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the
 
 **Cause (any-node model)**: LXMF does **not** require both parties to prefer the same PN. Deposit on PN A and retrieve via Sync from PN B is valid when autopeer/static peering moves inventory. Empty Chat after Sync is usually a fabric/retrieve/ingest gap (mail never reached the synced node, stamp/admission drop on a host PN, or inbound ring not catch-up’d into Chat) — not “wrong preferred PN.”
 
+**Progress bar ≠ retrieval.** Sync runs two independent operations against the PN: the **`/offer` peer sync** (inventory replication — this is what drives the progress bar and the `have_all`/`transfer` outcome) and the **client `/get` download** (the part that actually pulls _your_ mail into Chat). A Sync reaching **Complete / HaveAll** only tells you the peer-offer finished; it does **not** mean anything was retrieved. Look for the `/get` retrieve counts, not the peer-offer outcome.
+
 **Do not** tell users they must share the same preferred PN. Prefer log correlation instead:
 
 1. Sender Device log: `propagation-deposit` with `message_hash`, `transient_id`, `pn_hash` (deposit Completes).
-2. Recipient (or Host PN) log: `propagation-retrieve` with matching `message_hash` / `transient_id` after Sync, plus `retrieve_mode=have_all|transfer`.
+2. Recipient log (the real retrieval): `propagation-retrieve … retrieve_mode=get pn_hash=… listed=N downloaded=N delivered=N` (the client `/get` download; `listed=0` is a valid empty-inbox success). Per-message `propagation-retrieve` with matching `message_hash` / `transient_id` fires as each downloaded message hits the delivery callback. `local-prop` Sync logs `retrieve_mode=local`. The peer-offer side logs `propagation-sync … peer_outcome=have_all|transfer` — that is **not** retrieval.
 3. Renderer: `[catchUpRecentInboundLxmf] … reason=propagation_sync` or `propagation-retrieve catch-up after sync Completes count=N` (`count=0 (empty ring)` means Sync Completes with no new inbound for Chat).
 4. Confirm remote Sync Completes and that Host PN (if used) shows `[propagation-deposit] local PN accepted stamped propagated blob`.
 

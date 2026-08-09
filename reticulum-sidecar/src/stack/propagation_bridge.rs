@@ -6,13 +6,18 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant};
 
+use lxmf_core::message::LxMessage;
 use lxmf_core::peer::OutboundOfferPolicy;
+use lxmf_core::propagation_client::{PropagationClient, PropagationClientState};
 use lxmf_core::propagation_node::{PropagationNode, PropagationNodeConfig};
 use lxmf_core::propagation_sync::{PeerSyncTerminalState, PropagationSyncTask, SyncTaskState};
 use lxmf_core::router::LxmRouter;
+use rns_identity::destination::Destination;
 use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
 use tokio::sync::{Notify, broadcast, mpsc};
+
+use super::propagation_download::{ClientDownloadPoll, decode_downloaded_propagated_blob};
 
 /// Completed host-peer peering PoW (stamp, value) awaiting apply onto `LxmPeer`.
 type PeeringKeyResult = ([u8; 16], [u8; 32], u32);
@@ -24,6 +29,12 @@ pub struct PropagationBridge {
     local_dest_hash: [u8; 16],
     local_node: Arc<Mutex<PropagationNode>>,
     sync_task: Mutex<PropagationSyncTask>,
+    /// Client `/get` pull for retrieving our own store-and-forward mail from a
+    /// remote PN into Chat (Python `request_messages_from_propagation_node`).
+    /// Distinct from `sync_task`, which is the `/offer` peer-replication path.
+    client: Mutex<PropagationClient>,
+    /// Local identity clone used to decrypt downloaded propagated blobs.
+    identity: Identity,
     local_serving: AtomicBool,
     /// Terminal result of background `load_messagestore_from_disk` (`None` while in flight).
     messagestore_result: Mutex<Option<Result<(), String>>>,
@@ -66,15 +77,25 @@ impl PropagationBridge {
             PropagationNode::with_storage_unloaded(node_config, local_dest_hash, storage_dir)
                 .map_err(|e| format!("propagation storage init: {e}"))?,
         ));
-        let mut sync_task = PropagationSyncTask::with_shared_node(transport_tx, local_node.clone());
+        let mut sync_task =
+            PropagationSyncTask::with_shared_node(transport_tx.clone(), local_node.clone());
         let signing_key = identity
             .get_signing_key()
             .ok_or_else(|| "propagation sync: identity has no signing key".to_string())?;
         sync_task.set_identity(identity.get_public_key(), signing_key);
+        // Client `/get` pull uses the same identity to identify on the PN link
+        // and to decrypt downloaded blobs addressed to our `lxmf.delivery` hash.
+        let client = PropagationClient::new(
+            transport_tx,
+            Some(identity.get_public_key()),
+            identity.get_signing_key(),
+        );
         Ok(Self {
             local_dest_hash,
             local_node,
             sync_task: Mutex::new(sync_task),
+            client: Mutex::new(client),
+            identity: identity.clone(),
             local_serving: AtomicBool::new(false),
             messagestore_result: Mutex::new(None),
             messagestore_notify: Notify::new(),
@@ -377,6 +398,171 @@ impl PropagationBridge {
         last_finished_ok != Some(false)
     }
 
+    /// Start a client `/get` download of our own mail from `pn_hash`.
+    ///
+    /// This is the retrieval half of Sync (Python
+    /// `request_messages_from_propagation_node`): list → get → purge over an
+    /// `lxmf.propagation.client` link. Returns false when a download is already
+    /// in flight or the client refuses to start.
+    pub fn start_client_download(&self, pn_hash: [u8; 16]) -> bool {
+        let Ok(mut client) = self.client.lock() else {
+            return false;
+        };
+        client.set_propagation_node(pn_hash);
+        client.start_download()
+    }
+
+    /// Cancel any in-flight client download (best-effort). The next
+    /// [`Self::start_client_download`] re-arms from Idle.
+    pub fn cancel_client_download(&self) {
+        if let Ok(mut client) = self.client.lock() {
+            // Consuming the terminal snapshot returns the client to Idle so the
+            // next download can start; also drops any half-received blobs.
+            let _ = client.acknowledge_transfer();
+            let _ = client.take_received_messages();
+        }
+    }
+
+    /// Drive the client download one step: drain inbound events, advance the
+    /// state machine, and on a terminal Complete decode the downloaded blobs
+    /// into inbound [`LxMessage`]s ready for the router delivery callback.
+    pub(crate) fn poll_client_download(
+        &self,
+        known_identities: &HashMap<String, [u8; 64]>,
+    ) -> ClientDownloadPoll {
+        let Ok(mut client) = self.client.lock() else {
+            return ClientDownloadPoll::Failed;
+        };
+        if matches!(client.state(), PropagationClientState::Idle) {
+            return ClientDownloadPoll::Idle;
+        }
+        client.drain_events(known_identities);
+        client.tick();
+        match client.state() {
+            PropagationClientState::Idle => ClientDownloadPoll::Idle,
+            PropagationClientState::Failed => ClientDownloadPoll::Failed,
+            PropagationClientState::Complete => {
+                let listed = client.available_messages().len();
+                let downloaded = client.received_count();
+                let blobs = client.take_received_messages();
+                // Consume the terminal snapshot → Idle so the next
+                // start_client_download can proceed without a cancel first.
+                let _ = client.acknowledge_transfer();
+                drop(client);
+                let messages = blobs
+                    .iter()
+                    .filter_map(|blob| decode_downloaded_propagated_blob(&self.identity, blob))
+                    .collect::<Vec<_>>();
+                ClientDownloadPoll::Complete {
+                    messages,
+                    listed,
+                    downloaded,
+                }
+            }
+            _ => ClientDownloadPoll::InProgress,
+        }
+    }
+
+    /// Drain our own store-and-forward mail out of the **local** PN store into
+    /// inbound [`LxMessage`]s for Chat, without a network link.
+    ///
+    /// `local-prop` Sync hosts our inbox in-process, so there is no remote
+    /// `/get` to run. We replay the node's own `/get` list → serve → purge
+    /// against our `lxmf.delivery` hash (identical ownership gate + stamp strip
+    /// the server applies to remote clients), decode each blob with the local
+    /// identity, and hand them back for delivery. Returns `(messages, listed)`.
+    pub(crate) fn drain_local_inbox(&self) -> (Vec<LxMessage>, usize) {
+        use rmpv::Value;
+
+        let our_delivery =
+            Destination::hash_from_name_and_identity("lxmf.delivery", Some(&self.identity.hash));
+
+        // Hold the node lock only for the list + serve reads, then release it
+        // before per-message decryption/decode (CPU work off the shared lock).
+        let (blobs, listed) = {
+            let Ok(mut node) = self.local_node.lock() else {
+                return (Vec::new(), 0);
+            };
+
+            // Phase 1: list our available transient IDs.
+            let list_req = Self::encode_value(&Value::Array(vec![Value::Nil, Value::Nil]));
+            let tids = Self::decode_binary_array(
+                &node
+                    .handle_get_request(&list_req, &our_delivery)
+                    .into_response(),
+            );
+            if tids.is_empty() {
+                return (Vec::new(), 0);
+            }
+
+            // Phase 2: fetch every listed message (server strips the stamp).
+            let wants: Vec<Value> = tids.iter().map(|t| Value::Binary(t.clone())).collect();
+            let get_req = Self::encode_value(&Value::Array(vec![
+                Value::Array(wants),
+                Value::Array(Vec::new()),
+            ]));
+            let blobs = Self::decode_binary_array(
+                &node
+                    .handle_get_request(&get_req, &our_delivery)
+                    .into_response(),
+            );
+            (blobs, tids.len())
+        };
+
+        // Decode without holding the node lock.
+        let messages = blobs
+            .iter()
+            .filter_map(|blob| decode_downloaded_propagated_blob(&self.identity, blob))
+            .collect::<Vec<_>>();
+        let skipped = blobs.len().saturating_sub(messages.len());
+        if skipped > 0 {
+            tracing::warn!(
+                target: "propagation-retrieve",
+                skipped,
+                served = blobs.len(),
+                "local-prop drain skipped undecodable blob(s)"
+            );
+        }
+
+        // Phase 3: purge only what we successfully decoded, keyed by the exact
+        // transient id `compute_propagation_transient_id` stamped on each
+        // message. Undecodable blobs stay in the store for a later retry.
+        let purge_ids: Vec<Value> = messages
+            .iter()
+            .filter_map(|msg| msg.transient_id.map(|tid| Value::Binary(tid.to_vec())))
+            .collect();
+        if !purge_ids.is_empty() {
+            if let Ok(mut node) = self.local_node.lock() {
+                let purge_req =
+                    Self::encode_value(&Value::Array(vec![Value::Nil, Value::Array(purge_ids)]));
+                let _ = node.handle_get_request(&purge_req, &our_delivery);
+            }
+        }
+
+        (messages, listed)
+    }
+
+    /// Encode an rmpv value to msgpack bytes (the `/get` request wire form).
+    fn encode_value(value: &rmpv::Value) -> Vec<u8> {
+        let mut buf = Vec::new();
+        // Writing into a Vec is infallible.
+        let _ = rmpv::encode::write_value(&mut buf, value);
+        buf
+    }
+
+    /// Decode a msgpack array of binaries (the `/get` list and serve responses).
+    fn decode_binary_array(bytes: &[u8]) -> Vec<Vec<u8>> {
+        let Ok(value) = rmpv::decode::read_value(&mut &bytes[..]) else {
+            return Vec::new();
+        };
+        let Some(arr) = value.as_array() else {
+            return Vec::new();
+        };
+        arr.iter()
+            .filter_map(|v| v.as_slice().map(<[u8]>::to_vec))
+            .collect()
+    }
+
     /// Whether this emitter still owns the active sync run (generation match).
     pub fn is_current_sync_run(active_run_id: u64, run_id: u64) -> bool {
         active_run_id == run_id
@@ -461,14 +647,17 @@ impl PropagationBridge {
             }
             if ok {
                 let peak = self.last_peak_progress();
-                // Peak ≥ Transferring (70) means WantSome/WantAll pulled blobs; lower ≈ HaveAll.
-                let retrieve_mode = if peak >= 70.0 { "transfer" } else { "have_all" };
+                // This is the `/offer` peer-sync (inventory replication) outcome, NOT
+                // inbox retrieval — HaveAll means the peer wanted nothing, transfer means
+                // we pushed blobs to it. Real inbox retrieval is logged by the client
+                // `/get` download path (`propagation-retrieve`) in live.rs.
+                let peer_outcome = if peak >= 70.0 { "transfer" } else { "have_all" };
                 tracing::info!(
-                    target: "propagation-retrieve",
+                    target: "propagation-sync",
                     pn_hash = %hex::encode(peer_hash),
                     peak_progress = peak,
-                    retrieve_mode,
-                    "remote/host PN sync Completes"
+                    peer_outcome,
+                    "remote/host PN peer sync Completes"
                 );
             } else {
                 let peak = self.last_peak_progress();
@@ -588,13 +777,13 @@ impl PropagationBridge {
                 if !active && (progress >= 99.0 || finished_ok.is_some()) {
                     if finished_ok == Some(true) {
                         let peak = bridge.last_peak_progress();
-                        let retrieve_mode = if peak >= 70.0 { "transfer" } else { "have_all" };
+                        let peer_outcome = if peak >= 70.0 { "transfer" } else { "have_all" };
                         tracing::info!(
-                            target: "propagation-retrieve",
+                            target: "propagation-sync",
                             progress,
                             peak_progress = peak,
-                            retrieve_mode,
-                            "propagation sync completed successfully"
+                            peer_outcome,
+                            "propagation peer sync completed successfully"
                         );
                     } else if let Some(ref msg) = fail_message {
                         tracing::info!(
@@ -631,6 +820,96 @@ impl PropagationBridge {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use lxmf_core::constants::DeliveryMethod;
+
+    /// local-prop loopback (plan acceptance gate): deposit stamped mail addressed
+    /// to our own `lxmf.delivery` hash into the local PN store, then confirm
+    /// `drain_local_inbox` runs the node's `/get` list → serve (stamp strip) →
+    /// purge, decrypts with the local identity, and yields the message once.
+    #[test]
+    fn drain_local_inbox_delivers_then_purges_own_mail() {
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-drain-loopback-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let recipient = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &recipient,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+
+        // Deposit a stamped blob addressed to the bridge's own lxmf.delivery hash.
+        let sender = Identity::new();
+        let blob = super::super::propagation_download::build_client_download_blob(
+            &sender,
+            &recipient,
+            "loopback mail",
+        );
+        {
+            let mut node = bridge.local_node.lock().expect("node lock");
+            // stamp_value high enough to clear any policy min_stamp_cost.
+            assert!(node.accept_stamped_propagated_blob(&blob, &[0u8; 32], u8::MAX));
+        }
+
+        let (messages, listed) = bridge.drain_local_inbox();
+        assert_eq!(listed, 1, "one message listed for our delivery hash");
+        assert_eq!(messages.len(), 1, "one message decoded");
+        assert_eq!(messages[0].content, "loopback mail");
+        assert!(messages[0].incoming, "delivered mail is inbound");
+        assert_eq!(messages[0].method, DeliveryMethod::Propagated);
+
+        // Phase-3 purge must have removed the entry: a second drain is empty.
+        let (again, listed_again) = bridge.drain_local_inbox();
+        assert!(again.is_empty(), "purged mail is not re-delivered");
+        assert_eq!(listed_again, 0);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A blob addressed to someone else must never leak into our inbox drain
+    /// (server ownership gate + decrypt both reject it).
+    #[test]
+    fn drain_local_inbox_ignores_mail_for_other_recipients() {
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-drain-foreign-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+
+        let sender = Identity::new();
+        let other_recipient = Identity::new();
+        let blob = super::super::propagation_download::build_client_download_blob(
+            &sender,
+            &other_recipient,
+            "not for us",
+        );
+        {
+            let mut node = bridge.local_node.lock().expect("node lock");
+            assert!(node.accept_stamped_propagated_blob(&blob, &[0u8; 32], u8::MAX));
+        }
+
+        let (messages, listed) = bridge.drain_local_inbox();
+        assert!(
+            messages.is_empty() && listed == 0,
+            "mail addressed to another identity must not drain into our inbox"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn should_emit_terminal_success_skips_explicit_failure() {
@@ -790,9 +1069,25 @@ mod tests {
             bridge.contains("start_sync_with_policy"),
             "bridge must expose policy sync for host peer loop"
         );
+        // Inbox retrieval is the client `/get` download, driven from live.rs; the
+        // bridge only logs peer-sync (`/offer`) outcomes, never inbox retrieval.
         assert!(
-            bridge.contains("propagation-retrieve"),
-            "sync Completes must log retrieve telemetry"
+            bridge.contains("peer_outcome"),
+            "peer sync Completes must log peer-sync (not retrieve) telemetry"
+        );
+        assert!(
+            live.contains("propagation-retrieve"),
+            "client /get download must log inbox retrieve telemetry"
+        );
+        // The `/get` pull must stay wired: PropagationClient owned by the bridge,
+        // driven from live.rs, so PN→inbox retrieval cannot silently regress.
+        assert!(
+            bridge.contains("PropagationClient") && bridge.contains("poll_client_download"),
+            "bridge must own the PropagationClient `/get` pull"
+        );
+        assert!(
+            live.contains("spawn_client_download_driver") && live.contains("start_client_download"),
+            "live sync must drive the client `/get` download"
         );
     }
 
