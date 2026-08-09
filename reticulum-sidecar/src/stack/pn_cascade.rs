@@ -16,7 +16,7 @@ pub const MAX_AUTO_DISCOVERED_PN_CANDIDATES: usize = 3;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PnCascadeCandidate {
     pub hash: [u8; 16],
-    /// True for local-prop / self LXMF hash (offline inbox — last resort only).
+    /// True for local-prop hosted PN (last in cascade; still a full PN for peer sync).
     pub is_local: bool,
     /// True for an ephemeral Auto candidate heard from an announce (never persisted).
     pub is_discovered: bool,
@@ -28,7 +28,7 @@ pub struct PnCascadeCandidate {
 pub enum PnCascadePick {
     /// Deposit via a remote propagation node.
     Remote([u8; 16]),
-    /// Deposit into local-prop (offline inbox; not peer-delivered).
+    /// Deposit into local-prop (hosted PN Completes as `stored_locally`).
     Local([u8; 16]),
     /// No remaining candidates.
     Exhausted,
