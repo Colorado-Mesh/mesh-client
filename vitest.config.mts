@@ -68,6 +68,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/hooks/meshcore/meshcoreHookPreamble.reconcile.test.ts',
   'src/renderer/hooks/meshcore/meshcoreHookPreamble.resolvePubKey.test.ts',
   'src/renderer/lib/appSettingsStorage.test.ts',
+  'src/renderer/lib/appWindowActivity.test.ts',
   'src/renderer/lib/bleReconnectHelper.test.ts',
   'src/renderer/lib/chatNotifications.test.ts',
   'src/renderer/lib/reticulumVoiceCallTones.test.ts',

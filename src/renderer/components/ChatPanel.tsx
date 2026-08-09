@@ -37,6 +37,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
@@ -1177,7 +1178,7 @@ function ChatPanel({
       const peer = resolveDmPeer(msg);
       const msgViewKey = peer != null ? `dm:${peer}` : `ch:${msg.channel}`;
       if (mutedViews.has(msgViewKey)) return false;
-      return isActive && msgViewKey !== viewKey && !document.hidden;
+      return isActive && msgViewKey !== viewKey && !isAppWindowInactive();
     });
     const type = pickAudibleNotificationType(
       gated,
@@ -1215,7 +1216,7 @@ function ChatPanel({
 
   const applyNearBottomReadState = useCallback(
     (distFromBottom: number) => {
-      if (document.hidden) return;
+      if (isAppWindowInactive()) return;
       if (distFromBottom < 50) {
         markCurrentViewRead();
         setUnreadDividerTimestamp(0); // hide divider once user has read to bottom
@@ -1229,7 +1230,7 @@ function ChatPanel({
     const prevLen = prevUnreadSourceLengthRef.current;
     const newLen = unreadSourceMessages.length;
     prevUnreadSourceLengthRef.current = newLen;
-    if (!isActive || document.hidden || newLen <= prevLen) return;
+    if (!isActive || isAppWindowInactive() || newLen <= prevLen) return;
 
     const newMsgs = unreadSourceMessages.slice(prevLen);
     const hasInboundForView = newMsgs.some((msg) => {
@@ -1285,10 +1286,27 @@ function ChatPanel({
     });
   }, [updateScrollButtonVisibility]);
 
+  // Regaining window focus (e.g. clicking the dock/taskbar icon on a new-message
+  // badge) should clear unread and follow to newest when pinned near bottom —
+  // mirrors the pinned/scrolled-to-bottom read logic that is skipped while unfocused.
+  useEffect(() => {
+    if (!isActive) return;
+    const onFocus = () => {
+      requestAnimationFrame(() => {
+        const dist = updateScrollButtonVisibility();
+        if (dist !== undefined) applyNearBottomReadState(dist);
+      });
+    };
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [applyNearBottomReadState, isActive, updateScrollButtonVisibility]);
+
   // Refresh scroll button + mark-read when message list changes; scrollToEnd when app-pinned
   // (followOnAppend uses the tighter VIRTUALIZER_SCROLL_END_THRESHOLD).
   useEffect(() => {
-    if (!isActive || document.hidden) return;
+    if (!isActive || isAppWindowInactive()) return;
     if (isPinnedToBottomRef.current) {
       messageVirtualizerRef.current.scrollToEnd();
     }

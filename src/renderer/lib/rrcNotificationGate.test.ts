@@ -7,7 +7,7 @@ describe('shouldPlayRrcNotification', () => {
     expect(
       shouldPlayRrcNotification({
         onRrcPanel: true,
-        documentHidden: false,
+        windowInactive: false,
         forOtherRoom: false,
         type: 'dm',
       }),
@@ -15,18 +15,18 @@ describe('shouldPlayRrcNotification', () => {
     expect(
       shouldPlayRrcNotification({
         onRrcPanel: true,
-        documentHidden: false,
+        windowInactive: false,
         forOtherRoom: false,
         type: 'channel',
       }),
     ).toBe(false);
   });
 
-  it('plays channel when off panel, hidden, or other room', () => {
+  it('plays channel when off panel, inactive window, or other room', () => {
     expect(
       shouldPlayRrcNotification({
         onRrcPanel: false,
-        documentHidden: false,
+        windowInactive: false,
         forOtherRoom: false,
         type: 'channel',
       }),
@@ -34,7 +34,7 @@ describe('shouldPlayRrcNotification', () => {
     expect(
       shouldPlayRrcNotification({
         onRrcPanel: true,
-        documentHidden: true,
+        windowInactive: true,
         forOtherRoom: false,
         type: 'channel',
       }),
@@ -42,7 +42,7 @@ describe('shouldPlayRrcNotification', () => {
     expect(
       shouldPlayRrcNotification({
         onRrcPanel: true,
-        documentHidden: false,
+        windowInactive: false,
         forOtherRoom: true,
         type: 'channel',
       }),
@@ -53,7 +53,7 @@ describe('shouldPlayRrcNotification', () => {
     expect(
       shouldPlayRrcNotification({
         onRrcPanel: false,
-        documentHidden: false,
+        windowInactive: false,
         forOtherRoom: false,
         type: null,
       }),

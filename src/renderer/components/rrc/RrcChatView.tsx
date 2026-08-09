@@ -14,6 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import MentionAutocomplete from '@/renderer/components/MentionAutocomplete';
+import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { isSafeChatUrl } from '@/renderer/lib/chatMentionSegments';
 import {
   CHAT_SCROLL_END_THRESHOLD,
@@ -332,7 +333,7 @@ export function RrcChatView({
 
   // Follow new messages when pinned (Rooms/Chat contract).
   useEffect(() => {
-    if (!isActive || document.hidden || !activeRoom) return;
+    if (!isActive || isAppWindowInactive() || !activeRoom) return;
     if (isPinnedToBottomRef.current) {
       messageVirtualizerRef.current.scrollToEnd();
     }
