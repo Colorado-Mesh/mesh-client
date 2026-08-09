@@ -643,7 +643,7 @@ export default function NodeListPanel({
   ]);
 
   const nodeTableScrollRef = useRef<HTMLDivElement>(null);
-  const nodeTableColSpan = (mode === 'meshcore' ? 10 : 19) - (coordinateFormat === 'mgrs' ? 1 : 0);
+  const nodeTableColSpan = (mode === 'meshcore' ? 11 : 19) - (coordinateFormat === 'mgrs' ? 1 : 0);
   const shouldVirtualizeNodeRows = nodeList.length > 100;
   const nodeRowVirtualizer = useVirtualizer({
     count: nodeList.length,

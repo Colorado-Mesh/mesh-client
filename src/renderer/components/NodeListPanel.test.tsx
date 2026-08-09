@@ -643,12 +643,12 @@ describe('NodeListPanel import contacts', () => {
 
   it.each(['Chat', 'Sensor', 'Repeater', 'Room'])(
     'shows the key icon for any MeshCore %s contact with a known public key',
-    (hwModel) => {
+    async (hwModel) => {
       const nodeId = 0xdeadbeef;
       const nodes = new Map<number, MeshNode>([
         [nodeId, makeNode({ node_id: nodeId, long_name: 'Peer', hw_model: hwModel })],
       ]);
-      render(
+      const { container } = render(
         <NodeListPanel
           nodes={nodes}
           myNodeNum={0}
@@ -660,6 +660,8 @@ describe('NodeListPanel import contacts', () => {
         />,
       );
       expect(screen.getByLabelText('Has public key')).toBeInTheDocument();
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
     },
   );
 

@@ -316,10 +316,13 @@ describe('NodeDetailModal MeshCore actions', () => {
       on_radio: 1,
     } as unknown as Awaited<ReturnType<typeof window.electronAPI.db.getMeshcoreContactById>>);
     const user = userEvent.setup();
-    renderMeshcoreModal();
+    const { container } = renderMeshcoreModal();
 
     const pubkeyEl = await screen.findByText(pubkeyHex);
     expect(pubkeyEl).toBeInTheDocument();
+
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
 
     const copyButton = screen.getByRole('button', { name: 'Copy public key' });
     await user.click(copyButton);
@@ -334,11 +337,15 @@ describe('NodeDetailModal MeshCore actions', () => {
         public_key: 'ab'.repeat(32),
         on_radio: 1,
       } as unknown as Awaited<ReturnType<typeof window.electronAPI.db.getMeshcoreContactById>>);
-      renderMeshcoreModal({ node: { ...meshcoreRepeaterNode, hw_model: hwModel } });
+      const { container } = renderMeshcoreModal({
+        node: { ...meshcoreRepeaterNode, hw_model: hwModel },
+      });
 
       const badge = await screen.findByTitle('Has public key - can send DMs');
       expect(badge).toHaveTextContent('🔑 DM');
       expect(screen.queryByTitle('Has public key (no direct messages)')).not.toBeInTheDocument();
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
     },
   );
 
@@ -349,12 +356,16 @@ describe('NodeDetailModal MeshCore actions', () => {
         public_key: 'ab'.repeat(32),
         on_radio: 1,
       } as unknown as Awaited<ReturnType<typeof window.electronAPI.db.getMeshcoreContactById>>);
-      renderMeshcoreModal({ node: { ...meshcoreRepeaterNode, hw_model: hwModel } });
+      const { container } = renderMeshcoreModal({
+        node: { ...meshcoreRepeaterNode, hw_model: hwModel },
+      });
 
       const badge = await screen.findByTitle('Has public key (no direct messages)');
       expect(badge).toHaveTextContent('🔑');
       expect(badge).not.toHaveTextContent('DM');
       expect(screen.queryByTitle('Has public key - can send DMs')).not.toBeInTheDocument();
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
     },
   );
 

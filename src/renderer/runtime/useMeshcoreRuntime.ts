@@ -522,21 +522,29 @@ function meshcorePathUpdatedNodesMergeUpdater(
     filterOutMeshcoreLocallyDeletedContacts(mergeMeshcoreChatStubNodes(prev, newNodes));
 }
 
-/** Node id → full public-key hex, derived from live radio contacts (for UI identity + copy). */
-function meshcorePubKeyHexMapFromContacts(
+/**
+ * Merge live radio-contact pubkeys into the existing node-id → hex map (same style as
+ * `offloadContactsFromRadio`). Replacing the map would drop SQLite-hydrated off-radio entries
+ * that are no longer on the radio but still shown in the Contacts list, so start from `prev`,
+ * prune locally-deleted ids (so a removed contact's key does not linger), then upsert self +
+ * current radio contacts.
+ */
+function mergeMeshcorePubKeyHexFromContacts(
   contacts: MeshCoreContactRaw[],
   self?: MeshCoreSelfInfo | null,
-): Map<number, string> {
-  const m = new Map<number, string>();
-  if (self?.publicKey?.length === 32) {
-    const selfId = pubkeyToNodeId(self.publicKey);
-    if (selfId !== 0) m.set(selfId, bytesToHex(self.publicKey));
-  }
-  for (const c of contacts) {
-    const id = pubkeyToNodeId(c.publicKey);
-    if (id !== 0) m.set(id, bytesToHex(c.publicKey));
-  }
-  return m;
+): (prev: Map<number, string>) => Map<number, string> {
+  return (prev) => {
+    const next = filterOutMeshcoreLocallyDeletedContacts(new Map(prev));
+    if (self?.publicKey?.length === 32) {
+      const selfId = pubkeyToNodeId(self.publicKey);
+      if (selfId !== 0) next.set(selfId, bytesToHex(self.publicKey));
+    }
+    for (const c of contacts) {
+      const id = pubkeyToNodeId(c.publicKey);
+      if (id !== 0) next.set(id, bytesToHex(c.publicKey));
+    }
+    return next;
+  };
 }
 
 export function useMeshcoreRuntime() {
@@ -1791,7 +1799,7 @@ export function useMeshcoreRuntime() {
           onContacts: (contacts) => {
             setMeshcoreContactsForTelemetry(contacts);
             setMeshcorePubKeyHexByNodeId(
-              meshcorePubKeyHexMapFromContacts(contacts, selfInfoRef.current),
+              mergeMeshcorePubKeyHexFromContacts(contacts, selfInfoRef.current),
             );
           },
           onNodes: (newNodes) => {
@@ -2570,7 +2578,7 @@ export function useMeshcoreRuntime() {
           );
           assertInitConnStillLive();
           setMeshcoreContactsForTelemetry(contacts);
-          setMeshcorePubKeyHexByNodeId(meshcorePubKeyHexMapFromContacts(contacts, info));
+          setMeshcorePubKeyHexByNodeId(mergeMeshcorePubKeyHexFromContacts(contacts, info));
           previousNodesBaseline = meshcorePreviousNodesBaselineForBuild();
           newNodes = await awaitUnlessMeshcoreSetupCancelled(
             setupGen,
@@ -4383,7 +4391,7 @@ export function useMeshcoreRuntime() {
         contactsRaw.map(meshcoreContactRawFromDevice),
       );
       setMeshcoreContactsForTelemetry(contacts);
-      setMeshcorePubKeyHexByNodeId(meshcorePubKeyHexMapFromContacts(contacts, selfInfo));
+      setMeshcorePubKeyHexByNodeId(mergeMeshcorePubKeyHexFromContacts(contacts, selfInfo));
       const previousNodesBaseline = meshcorePreviousNodesBaselineForBuild();
       const newNodes = await buildNodesFromContacts(contacts, {
         self: selfInfo,

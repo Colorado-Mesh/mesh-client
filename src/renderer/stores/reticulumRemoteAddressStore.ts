@@ -20,6 +20,10 @@ interface ReticulumRemoteAddressStoreState {
   clear: () => void;
 }
 
+// Bumped by clear() so an in-flight hydrate() cannot restore cleared state after its
+// listReticulumRemoteAddresses() promise resolves late (module-level to avoid re-renders).
+let clearGeneration = 0;
+
 export const useReticulumRemoteAddressStore = create<ReticulumRemoteAddressStoreState>(
   (set, get) => ({
     addresses: new Map(),
@@ -33,9 +37,12 @@ export const useReticulumRemoteAddressStore = create<ReticulumRemoteAddressStore
       // row and surface to callers as upsert_failed (concurrent RNCP receive-dest shares).
       const prior = get().loadingPromise ?? Promise.resolve();
       const run = async (): Promise<void> => {
+        // Snapshot the clear-generation so a clear() during the awaited IPC drops this write.
+        const gen = clearGeneration;
         set({ loading: true });
         try {
           const rows = await window.electronAPI.db.listReticulumRemoteAddresses();
+          if (gen !== clearGeneration) return;
           const map = new Map<string, RemoteAddressBookRow>();
           for (const row of rows) {
             map.set(row.id, row);
@@ -43,7 +50,7 @@ export const useReticulumRemoteAddressStore = create<ReticulumRemoteAddressStore
           set({ addresses: map, hydrated: true, loading: false });
         } catch (e) {
           console.warn('[reticulumRemoteAddressStore] hydrate ' + errLikeToLogString(e));
-          set({ loading: false });
+          if (gen === clearGeneration) set({ loading: false });
         }
       };
       const p = prior.then(run);
@@ -103,6 +110,7 @@ export const useReticulumRemoteAddressStore = create<ReticulumRemoteAddressStore
     },
 
     clear: () => {
+      clearGeneration += 1;
       set({ addresses: new Map(), hydrated: false, loading: false, loadingPromise: null });
     },
   }),

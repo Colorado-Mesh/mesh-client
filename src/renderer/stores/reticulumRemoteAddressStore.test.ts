@@ -72,6 +72,29 @@ describe('reticulumRemoteAddressStore', () => {
     expect(resultB?.id).toBe('addrB');
   });
 
+  it('drops a stale hydrate response when clear() runs before the list IPC resolves', async () => {
+    let resolveList: (rows: (typeof ROW)[]) => void = () => {};
+    vi.mocked(window.electronAPI.db.listReticulumRemoteAddresses).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveList = resolve;
+        }),
+    );
+
+    const hydratePromise = useReticulumRemoteAddressStore.getState().hydrate();
+    // Let the chained run() start and invoke the list IPC (which assigns resolveList).
+    await new Promise((r) => setTimeout(r, 0));
+    // clear() the store while the list IPC is still in flight.
+    useReticulumRemoteAddressStore.getState().clear();
+    // The now-stale response must not repopulate the cleared store.
+    resolveList([ROW]);
+    await hydratePromise;
+
+    const state = useReticulumRemoteAddressStore.getState();
+    expect(state.addresses.size).toBe(0);
+    expect(state.hydrated).toBe(false);
+  });
+
   it('removes an address from local state after a successful delete', async () => {
     useReticulumRemoteAddressStore.setState({
       addresses: new Map([[ROW.id, ROW]]),

@@ -2,6 +2,7 @@
 import type { MeshDevice } from '@meshtastic/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { errLikeToLogString } from '../errLikeToLogString';
 import { attachMeshtasticTransportLossWatch } from './meshtasticTransportLossDetection';
 import { pushMeshtasticTransportSideEffectUnsubs } from './meshtasticTransportSideEffects';
 
@@ -105,6 +106,36 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
     vi.advanceTimersByTime(60_000);
     expect(device.heartbeat).toHaveBeenCalledTimes(1);
     expect(unsubs).toHaveLength(2);
+  });
+
+  it('logs a normalized debug line and does not surface an unhandled rejection when heartbeat rejects with a non-Error', async () => {
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const unhandledSpy = vi.fn();
+    window.addEventListener('unhandledrejection', unhandledSpy);
+    const rejectionValue = 'queue-gone: Packet does not exist';
+    const device = {
+      heartbeat: vi.fn().mockRejectedValue(rejectionValue),
+    } as unknown as MeshDevice;
+    try {
+      pushMeshtasticTransportSideEffectUnsubs(
+        device,
+        'tcp',
+        (unsub) => unsubs.push(unsub),
+        onTransportLost,
+      );
+
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      expect(device.heartbeat).toHaveBeenCalledTimes(1);
+      expect(debugSpy).toHaveBeenCalledWith(
+        `[meshtasticTransportSideEffects] tcp: heartbeat send failed ` +
+          errLikeToLogString(rejectionValue),
+      );
+      expect(unhandledSpy).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener('unhandledrejection', unhandledSpy);
+      debugSpy.mockRestore();
+    }
   });
 
   it('stops the heartbeat after its unsubscribe runs', () => {
