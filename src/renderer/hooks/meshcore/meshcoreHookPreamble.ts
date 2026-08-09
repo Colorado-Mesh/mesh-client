@@ -2,7 +2,9 @@ import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 
 import { isValidLatLon } from '../../../shared/geoCoords';
 import { meshcoreContactDisplayName } from '../../../shared/meshcoreContactSanitize';
+import { withTimeout } from '../../../shared/withTimeout';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../../lib/chatInMemoryBuffer';
+import { errLikeToLogString } from '../../lib/errLikeToLogString';
 import type {
   MeshCoreConnection,
   MeshcoreContactDbRow,
@@ -18,7 +20,10 @@ import {
   meshcorePayloadIsTapbackEmojiOnly,
   normalizeMeshcoreIncomingText,
 } from '../../lib/meshcoreChannelText';
-import { shouldApplyMeshcoreContact } from '../../lib/meshcoreLocallyDeletedContacts';
+import {
+  isMeshcoreLocallyDeletedContact,
+  shouldApplyMeshcoreContact,
+} from '../../lib/meshcoreLocallyDeletedContacts';
 import {
   CONTACT_TYPE_LABELS,
   isMeshcoreTransportStatusChatLine,
@@ -173,6 +178,8 @@ export function messageToDbRow(
 export const MESHCORE_INIT_TIMEOUT_MS = 60_000;
 /** Companion Ok/Err for `sendFloodAdvert` — meshcore.js has no internal timeout. */
 export const MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS = 25_000;
+/** Companion Ok/Err for `removeContact` — meshcore.js has no internal timeout. */
+export const MESHCORE_REMOVE_CONTACT_TIMEOUT_MS = 25_000;
 /** Base wait for PathUpdated (129) after a flood advert when priming trace route. */
 export const MESHCORE_TRACE_PRIME_WAIT_BASE_MS = 15_000;
 /** Per-hop add-on for {@link computeMeshcoreTracePrimeWaitMs}. */
@@ -1127,4 +1134,39 @@ export function mergeStubNodesFromMeshcoreMessages(
     );
   }
   return next;
+}
+
+/**
+ * Prune contacts that the user deleted locally but the radio still holds: re-request
+ * `conn.removeContact(pubkey)` so an offline delete propagates on the next sync.
+ * Returns the contacts minus ids whose radio removal succeeded; failed removals are kept
+ * so the radio (authority) can revive them via the `fromRadio` apply path.
+ */
+export async function retryRadioRemoveDeletedContacts(
+  conn: Pick<MeshCoreConnection, 'removeContact'>,
+  contacts: MeshCoreContactRaw[],
+): Promise<MeshCoreContactRaw[]> {
+  const kept: MeshCoreContactRaw[] = [];
+  for (const c of contacts) {
+    const id = pubkeyToNodeId(c.publicKey);
+    if (id !== 0 && isMeshcoreLocallyDeletedContact(id)) {
+      try {
+        await withTimeout(
+          conn.removeContact(c.publicKey),
+          MESHCORE_REMOVE_CONTACT_TIMEOUT_MS,
+          'removeContact',
+        );
+        console.debug(
+          `[meshcore] retry removeContact: dropped tombstoned contact 0x${id.toString(16)}`,
+        );
+        continue;
+      } catch (e) {
+        console.warn(
+          '[meshcore] retry removeContact (tombstoned contact) failed ' + errLikeToLogString(e),
+        );
+      }
+    }
+    kept.push(c);
+  }
+  return kept;
 }

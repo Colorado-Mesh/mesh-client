@@ -1,10 +1,4 @@
-import { errLikeToLogString } from '../errLikeToLogString';
-import {
-  armMeshtasticLateConfigureRetryableSwallow,
-  beginMeshtasticSessionRejectionSwallow,
-  endMeshtasticSessionRejectionSwallow,
-  isMeshtasticConfigureRetryableError,
-} from './meshtasticConfigureRetry';
+import { armMeshtasticLateConfigureRetryableSwallow } from './meshtasticConfigureRetry';
 import {
   parseMeshtasticSdkQueueRejection,
   parseMeshtasticSdkRoutingErrorLog,
@@ -60,8 +54,11 @@ export function installMeshtasticSdkRoutingErrorConsoleHook(
 /**
  * Swallow unhandled `@meshtastic/core` queue rejections (`{ id, error }`) after applying
  * outbound chat failure state when a matching row exists.
- * Also swallows disconnect mid-send `Packet does not exist` so teardown races are not logged
- * as unhandled rejections.
+ *
+ * Disconnect mid-send `Packet does not exist` rejects are intentionally NOT swallowed for the
+ * whole session — only during the short post-teardown window (armed here on cleanup and at
+ * `safeDisconnect`). The renderer-wide logger owns that window, so genuine mid-session
+ * `Packet does not exist` anomalies stay visible instead of being hidden as "disconnect mid-send".
  */
 export function installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(
   onQueueRejection: (reason: unknown) => boolean,
@@ -70,23 +67,12 @@ export function installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(
     if (parseMeshtasticSdkQueueRejection(event.reason)) {
       const applied = onQueueRejection(event.reason);
       if (applied) event.preventDefault();
-      return;
-    }
-    if (isMeshtasticConfigureRetryableError(event.reason)) {
-      console.debug(
-        '[Meshtastic] Ignoring disconnect mid-send rejection: ' + errLikeToLogString(event.reason),
-      );
-      event.preventDefault();
     }
   };
   // Capture phase so preventDefault runs before the bubble-phase renderer logger.
   window.addEventListener('unhandledrejection', handler, { capture: true });
-  // Mark a session swallow active so the app-lifetime renderer logger defers to this handler
-  // even though at_target listeners fire in registration order (renderer logger is installed first).
-  beginMeshtasticSessionRejectionSwallow();
   return () => {
     window.removeEventListener('unhandledrejection', handler, { capture: true });
-    endMeshtasticSessionRejectionSwallow();
     // Late SDK queue rejects can settle after wire-effects teardown removes this handler.
     armMeshtasticLateConfigureRetryableSwallow();
   };

@@ -2886,7 +2886,10 @@
     "currentRouteHeading": "Percorso attuale",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Condividi QR contatto",
-    "shareContactQrAria": "Mostra il codice QR del contatto MeshCore per l'importazione ufficiale dell'app"
+    "shareContactQrAria": "Mostra il codice QR del contatto MeshCore per l'importazione ufficiale dell'app",
+    "copyPublicKey": "Public key",
+    "publicKeyCopied": "Chiave pubblica copiata negli appunti.",
+    "hasPublicKeyNoDm": "Ha una chiave pubblica (nessun messaggio diretto)"
   },
   "nodeInfoBody": {
     "longName": "Nome lungo",
@@ -3008,7 +3011,6 @@
     "summaryOffline_one": "{{count}} offline",
     "summaryOffline_other": "{{count}} offline",
     "tableCaptionMeshNodes": "Nodi mesh connessi",
-    "columnStatus": "Stato",
     "columnFavorite": "Preferito",
     "columnId": "ID",
     "columnLongName": "Nome lungo",
@@ -3056,7 +3058,9 @@
     "emptyHistory": "Ancora nessun messaggio diretto: invia o ricevi un DM per vedere i peer qui.",
     "meshcoreTypeSensor": "Sensore",
     "meshcoreTypeNone": "Nessuna",
-    "meshcoreTypeUnknown": "Sconosciuto"
+    "meshcoreTypeUnknown": "Sconosciuto",
+    "columnHealth": "Salute",
+    "hasPublicKeyTitle": "Public key"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

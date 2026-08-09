@@ -27,6 +27,7 @@ import {
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreMinimalNodeFromAdvertEvent,
+  meshcorePubkeyShortId,
   meshcoreRemoveContactErrorMessage,
   meshcoreResolvedTxPowerMax,
   meshcoreScaledAdvLatLonToDeg,
@@ -46,6 +47,24 @@ describe('MeshCore contact capacity thresholds', () => {
     expect(MESHCORE_CONTACTS_CRITICAL_THRESHOLD).toBeGreaterThan(
       MESHCORE_CONTACTS_WARNING_THRESHOLD,
     );
+  });
+});
+
+describe('meshcorePubkeyShortId', () => {
+  it('returns `!` + first 8 hex chars of the key', () => {
+    expect(meshcorePubkeyShortId('0102030405060708090a0b0c0d0e0f10')).toBe('!01020304');
+  });
+
+  it('normalizes uppercase and whitespace', () => {
+    expect(meshcorePubkeyShortId('  01 02 03 04 05 06  ')).toBe('!01020304');
+    expect(meshcorePubkeyShortId('ABCDEF0123')).toBe('!abcdef01');
+  });
+
+  it('returns null for missing or too-short keys', () => {
+    expect(meshcorePubkeyShortId(undefined)).toBeNull();
+    expect(meshcorePubkeyShortId(null)).toBeNull();
+    expect(meshcorePubkeyShortId('')).toBeNull();
+    expect(meshcorePubkeyShortId('abcd')).toBeNull();
   });
 });
 

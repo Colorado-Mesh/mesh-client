@@ -2886,7 +2886,10 @@
     "currentRouteHeading": "Mevcut rota",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Kişi Paylaş",
-    "shareContactQrAria": "Resmi uygulama içe aktarma için MeshCore iletişim QR kodunu göster"
+    "shareContactQrAria": "Resmi uygulama içe aktarma için MeshCore iletişim QR kodunu göster",
+    "copyPublicKey": "genel anahtarı kopyala",
+    "publicKeyCopied": "Genel anahtar panoya kopyalandı.",
+    "hasPublicKeyNoDm": "Genel anahtarı var (doğrudan mesaj yok)"
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",
@@ -3008,7 +3011,6 @@
     "summaryOffline_one": "{{count}} çevrimdışı",
     "summaryOffline_other": "{{count}} çevrimdışı",
     "tableCaptionMeshNodes": "Bağlı ağ düğümleri",
-    "columnStatus": "Durum",
     "columnFavorite": "Favori",
     "columnId": "İD",
     "columnLongName": "Uzun Ad",
@@ -3056,7 +3058,9 @@
     "emptyHistory": "Henüz doğrudan mesaj yok — buradaki eşleri görmek için bir DM gönderin veya alın.",
     "meshcoreTypeSensor": "Sensörü",
     "meshcoreTypeNone": "Yok",
-    "meshcoreTypeUnknown": "Bilinmiyor"
+    "meshcoreTypeUnknown": "Bilinmiyor",
+    "columnHealth": "Sağlık",
+    "hasPublicKeyTitle": "Genel anahtar"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

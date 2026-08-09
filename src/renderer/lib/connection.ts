@@ -14,6 +14,7 @@ import {
   logMeshtasticSerialStreamDiagnostics,
 } from './connectionWebStreams';
 import { notifyNobleBlePrimaryRfLinkReady } from './meshcoreDualNobleBleInit';
+import { armMeshtasticLateConfigureRetryableSwallow } from './meshtastic/meshtasticConfigureRetry';
 import { parseMeshtasticTcpAddress } from './parseMeshtasticTcpAddress';
 import {
   isBlePeripheralConflictErrorMessage,
@@ -570,6 +571,10 @@ async function closeMeshtasticTransportStreamsBestEffort(
 }
 
 export async function safeDisconnect(device: MeshDevice): Promise<void> {
+  // Arm the swallow window before teardown: device.disconnect() clears the SDK queue, so any
+  // in-flight sendPacket().wait() then rejects with "Packet does not exist". These are expected
+  // teardown races and must not surface as unhandled-rejection error logs.
+  armMeshtasticLateConfigureRetryableSwallow();
   try {
     await device.disconnect();
   } catch (err) {

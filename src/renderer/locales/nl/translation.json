@@ -2886,7 +2886,10 @@
     "currentRouteHeading": "Huidige route",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Deel contact",
-    "shareContactQrAria": "Toon MeshCore-contact QR-code voor officiële app-import"
+    "shareContactQrAria": "Toon MeshCore-contact QR-code voor officiële app-import",
+    "copyPublicKey": "Openbare sleutel",
+    "publicKeyCopied": "Openbare sleutel gekopieerd naar klembord.",
+    "hasPublicKeyNoDm": "Heeft een openbare sleutel (geen directe berichten)"
   },
   "nodeInfoBody": {
     "longName": "Lange naam",
@@ -3008,7 +3011,6 @@
     "summaryOffline_one": "{{count}} offline",
     "summaryOffline_other": "{{count}} offline",
     "tableCaptionMeshNodes": "Verbonden mesh-knooppunten",
-    "columnStatus": "Status",
     "columnFavorite": "Favoriet",
     "columnId": "Identiteitskaart",
     "columnLongName": "Lange naam",
@@ -3056,7 +3058,9 @@
     "emptyHistory": "Nog geen directe berichten — stuur of ontvang een DM om peers hier te zien.",
     "meshcoreTypeSensor": "Sensor",
     "meshcoreTypeNone": "Geen",
-    "meshcoreTypeUnknown": "Onbekend"
+    "meshcoreTypeUnknown": "Onbekend",
+    "columnHealth": "Gezondheid",
+    "hasPublicKeyTitle": "Openbare sleutel"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

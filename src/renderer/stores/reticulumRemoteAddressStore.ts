@@ -7,6 +7,8 @@ interface ReticulumRemoteAddressStoreState {
   addresses: Map<string, RemoteAddressBookRow>;
   hydrated: boolean;
   loading: boolean;
+  /** In-flight fetch, so concurrent callers chain instead of reading stale data. */
+  loadingPromise: Promise<void> | null;
   hydrate: () => Promise<void>;
   upsert: (row: UpsertRemoteAddressRequest) => Promise<RemoteAddressBookRow | null>;
   remove: (id: string) => Promise<void>;
@@ -18,26 +20,45 @@ interface ReticulumRemoteAddressStoreState {
   clear: () => void;
 }
 
+// Bumped by clear() so an in-flight hydrate() cannot restore cleared state after its
+// listReticulumRemoteAddresses() promise resolves late (module-level to avoid re-renders).
+let clearGeneration = 0;
+
 export const useReticulumRemoteAddressStore = create<ReticulumRemoteAddressStoreState>(
   (set, get) => ({
     addresses: new Map(),
     hydrated: false,
     loading: false,
+    loadingPromise: null,
 
     hydrate: async () => {
-      if (get().loading) return;
-      set({ loading: true });
-      try {
-        const rows = await window.electronAPI.db.listReticulumRemoteAddresses();
-        const map = new Map<string, RemoteAddressBookRow>();
-        for (const row of rows) {
-          map.set(row.id, row);
+      // Chain onto any in-flight fetch so a hydrate requested after a write always runs
+      // once the current one settles. Early-returning stale data would drop a just-upserted
+      // row and surface to callers as upsert_failed (concurrent RNCP receive-dest shares).
+      const prior = get().loadingPromise ?? Promise.resolve();
+      const run = async (): Promise<void> => {
+        // Snapshot the clear-generation so a clear() during the awaited IPC drops this write.
+        const gen = clearGeneration;
+        set({ loading: true });
+        try {
+          const rows = await window.electronAPI.db.listReticulumRemoteAddresses();
+          if (gen !== clearGeneration) return;
+          const map = new Map<string, RemoteAddressBookRow>();
+          for (const row of rows) {
+            map.set(row.id, row);
+          }
+          set({ addresses: map, hydrated: true, loading: false });
+        } catch (e) {
+          console.warn('[reticulumRemoteAddressStore] hydrate ' + errLikeToLogString(e));
+          if (gen === clearGeneration) set({ loading: false });
         }
-        set({ addresses: map, hydrated: true, loading: false });
-      } catch (e) {
-        console.warn('[reticulumRemoteAddressStore] hydrate ' + errLikeToLogString(e));
-        set({ loading: false });
-      }
+      };
+      const p = prior.then(run);
+      set({ loadingPromise: p });
+      void p.finally(() => {
+        if (get().loadingPromise === p) set({ loadingPromise: null });
+      });
+      return p;
     },
 
     upsert: async (row) => {
@@ -89,7 +110,8 @@ export const useReticulumRemoteAddressStore = create<ReticulumRemoteAddressStore
     },
 
     clear: () => {
-      set({ addresses: new Map(), hydrated: false, loading: false });
+      clearGeneration += 1;
+      set({ addresses: new Map(), hydrated: false, loading: false, loadingPromise: null });
     },
   }),
 );

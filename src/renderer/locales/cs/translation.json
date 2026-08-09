@@ -2888,7 +2888,10 @@
     "currentRouteHeading": "Aktuální trasa",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Sdílet kontakt",
-    "shareContactQrAria": "Zobrazit QR kód kontaktu MeshCore pro oficiální import aplikace"
+    "shareContactQrAria": "Zobrazit QR kód kontaktu MeshCore pro oficiální import aplikace",
+    "copyPublicKey": "Licenční klíč",
+    "publicKeyCopied": "Veřejný klíč zkopírován do schránky.",
+    "hasPublicKeyNoDm": "Má veřejný klíč (žádné přímé zprávy)"
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",
@@ -3010,7 +3013,6 @@
     "summaryOffline_one": "{{count}} offline",
     "summaryOffline_other": "{{count}} offline",
     "tableCaptionMeshNodes": "Propojené uzly sítě",
-    "columnStatus": "Postavení",
     "columnFavorite": "Oblíbený",
     "columnId": "ID",
     "columnLongName": "Dlouhé jméno",
@@ -3058,7 +3060,9 @@
     "emptyHistory": "Zatím žádné přímé zprávy — odešlete nebo přijměte DM, abyste zde viděli peery.",
     "meshcoreTypeSensor": "Snímač",
     "meshcoreTypeNone": "neuvedeny",
-    "meshcoreTypeUnknown": "Neznámo"
+    "meshcoreTypeUnknown": "Neznámo",
+    "columnHealth": "Zdravotnictví",
+    "hasPublicKeyTitle": "Licenční klíč"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

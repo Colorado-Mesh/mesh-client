@@ -473,7 +473,7 @@ describe('installMeshtasticSdkRoutingErrorUnhandledRejectionHandler', () => {
     restore();
   });
 
-  it('preventDefault for disconnect mid-send Packet does not exist', () => {
+  it('does not swallow mid-session Packet does not exist (only the late window does)', () => {
     const onQueueRejection = vi.fn();
     const restore = installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(onQueueRejection);
     const handler = vi.mocked(window.addEventListener).mock.calls[0]?.[1] as (event: {
@@ -484,7 +484,7 @@ describe('installMeshtasticSdkRoutingErrorUnhandledRejectionHandler', () => {
     const preventDefault = vi.fn();
     handler({ reason, preventDefault });
     expect(onQueueRejection).not.toHaveBeenCalled();
-    expect(preventDefault).toHaveBeenCalled();
+    expect(preventDefault).not.toHaveBeenCalled();
     restore();
   });
 

@@ -25,6 +25,10 @@ vi.mock('../lib/downloadBlob', () => ({
   downloadBlob: vi.fn(),
 }));
 
+vi.mock('@/renderer/lib/writeClipboardText', () => ({
+  writeClipboardText: vi.fn().mockResolvedValue(undefined),
+}));
+
 const mockNode: MeshNode = {
   node_id: 0xdeadbeef,
   short_name: 'TEST',
@@ -303,6 +307,67 @@ describe('NodeDetailModal MeshCore actions', () => {
 
     expect(screen.getByRole('button', { name: '📊 Request Status' })).toBeDisabled();
   });
+
+  it('renders the full public key with a copy button and copies it on click', async () => {
+    const { writeClipboardText } = await import('@/renderer/lib/writeClipboardText');
+    const pubkeyHex = 'ab'.repeat(32);
+    vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue({
+      public_key: pubkeyHex,
+      on_radio: 1,
+    } as unknown as Awaited<ReturnType<typeof window.electronAPI.db.getMeshcoreContactById>>);
+    const user = userEvent.setup();
+    const { container } = renderMeshcoreModal();
+
+    const pubkeyEl = await screen.findByText(pubkeyHex);
+    expect(pubkeyEl).toBeInTheDocument();
+
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+
+    const copyButton = screen.getByRole('button', { name: 'Copy public key' });
+    await user.click(copyButton);
+    expect(writeClipboardText).toHaveBeenCalledWith(pubkeyHex);
+    expect(await screen.findByText('Public key copied to clipboard.')).toBeInTheDocument();
+  });
+
+  it.each(['Chat', 'Sensor'])(
+    'shows a DM-capable key badge for a MeshCore %s contact with a public key',
+    async (hwModel) => {
+      vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue({
+        public_key: 'ab'.repeat(32),
+        on_radio: 1,
+      } as unknown as Awaited<ReturnType<typeof window.electronAPI.db.getMeshcoreContactById>>);
+      const { container } = renderMeshcoreModal({
+        node: { ...meshcoreRepeaterNode, hw_model: hwModel },
+      });
+
+      const badge = await screen.findByTitle('Has public key - can send DMs');
+      expect(badge).toHaveTextContent('🔑 DM');
+      expect(screen.queryByTitle('Has public key (no direct messages)')).not.toBeInTheDocument();
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
+    },
+  );
+
+  it.each(['Repeater', 'Room'])(
+    'shows a key-only badge (no DM) for a MeshCore %s contact with a public key',
+    async (hwModel) => {
+      vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue({
+        public_key: 'ab'.repeat(32),
+        on_radio: 1,
+      } as unknown as Awaited<ReturnType<typeof window.electronAPI.db.getMeshcoreContactById>>);
+      const { container } = renderMeshcoreModal({
+        node: { ...meshcoreRepeaterNode, hw_model: hwModel },
+      });
+
+      const badge = await screen.findByTitle('Has public key (no direct messages)');
+      expect(badge).toHaveTextContent('🔑');
+      expect(badge).not.toHaveTextContent('DM');
+      expect(screen.queryByTitle('Has public key - can send DMs')).not.toBeInTheDocument();
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
+    },
+  );
 
   it('enables Message when live store has pubkey but DB contact row does not', async () => {
     const chatNode: MeshNode = { ...meshcoreRepeaterNode, hw_model: 'Chat' };

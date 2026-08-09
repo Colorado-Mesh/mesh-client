@@ -1012,25 +1012,27 @@ export default function NodeListPanel({
           <caption className="sr-only">{t('nodeListPanel.tableCaptionMeshNodes')}</caption>
           <thead>
             <tr className="bg-deep-black text-muted sticky top-0 z-10 text-left whitespace-nowrap">
-              <th scope="col" className="w-8 px-3 py-2">
-                <span className="sr-only">{t('nodeListPanel.columnStatus')}</span>
+              <th scope="col" className="w-16 px-3 py-2">
+                {t('nodeListPanel.columnHealth')}
               </th>
               <th scope="col" className="w-6 px-2 py-2" title={t('nodeListPanel.favoritesColumn')}>
                 <span className="sr-only">{t('nodeListPanel.columnFavorite')}</span>
               </th>
-              <th
-                scope="col"
-                aria-sort={
-                  sortField === 'node_id' ? (sortAsc ? 'ascending' : 'descending') : 'none'
-                }
-                className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
-                onClick={() => {
-                  handleSort('node_id');
-                }}
-              >
-                {t('nodeListPanel.columnId')}{' '}
-                <SortIcon field="node_id" sortField={sortField} sortAsc={sortAsc} />
-              </th>
+              {mode !== 'meshcore' && (
+                <th
+                  scope="col"
+                  aria-sort={
+                    sortField === 'node_id' ? (sortAsc ? 'ascending' : 'descending') : 'none'
+                  }
+                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
+                  onClick={() => {
+                    handleSort('node_id');
+                  }}
+                >
+                  {t('nodeListPanel.columnId')}{' '}
+                  <SortIcon field="node_id" sortField={sortField} sortAsc={sortAsc} />
+                </th>
+              )}
               <th
                 scope="col"
                 aria-sort={
@@ -1412,12 +1414,11 @@ export default function NodeListPanel({
                           </button>
                         )}
                       </td>
-                      <td className="text-muted px-3 py-2 font-mono text-xs">
-                        {formatMeshtasticNodeId(node.node_id)}
-                        {mode === 'meshcore' && meshcorePublicKeyHexByNodeId?.has(node.node_id) && (
-                          <span className="ml-1">🔑</span>
-                        )}
-                      </td>
+                      {mode !== 'meshcore' && (
+                        <td className="text-muted px-3 py-2 font-mono text-xs">
+                          {formatMeshtasticNodeId(node.node_id)}
+                        </td>
+                      )}
                       <td
                         className={`px-3 py-2 ${isSelf ? 'text-bright-green font-medium' : 'text-gray-200'} ${isMqttOnlyDimmed ? 'line-through' : ''}`}
                       >
@@ -1433,6 +1434,17 @@ export default function NodeListPanel({
                                 </span>
                               )}
                             </span>
+                            {mode === 'meshcore' &&
+                              meshcorePublicKeyHexByNodeId?.has(node.node_id) && (
+                                <span
+                                  role="img"
+                                  className="shrink-0"
+                                  aria-label={t('nodeListPanel.hasPublicKeyTitle')}
+                                  title={t('nodeListPanel.hasPublicKeyTitle')}
+                                >
+                                  🔑
+                                </span>
+                              )}
                             {!isSelf &&
                               (() => {
                                 const routingRow = getRoutingRowForNode(

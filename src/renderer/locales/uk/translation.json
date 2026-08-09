@@ -2888,7 +2888,10 @@
     "currentRouteHeading": "Поточний маршрут",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Поділитися контактним QR-кодом",
-    "shareContactQrAria": "Показати контактний QR-код MeshCore для офіційного імпорту додатка"
+    "shareContactQrAria": "Показати контактний QR-код MeshCore для офіційного імпорту додатка",
+    "copyPublicKey": "Відкритий ключ",
+    "publicKeyCopied": "Відкритий ключ скопійовано в буфер обміну.",
+    "hasPublicKeyNoDm": "Має відкритий ключ (немає прямих повідомлень)"
   },
   "nodeInfoBody": {
     "longName": "Довге ім'я",
@@ -3010,7 +3013,6 @@
     "summaryOffline_one": "{{count}} в автономному режимі",
     "summaryOffline_other": "{{count}} в автономному режимі",
     "tableCaptionMeshNodes": "З'єднані вузли сіті",
-    "columnStatus": "Статус",
     "columnFavorite": "Обране",
     "columnId": "ID",
     "columnLongName": "Довга назва",
@@ -3058,7 +3060,9 @@
     "emptyHistory": "Поки немає прямих повідомлень — надішліть або отримайте DM, щоб побачити вузли тут.",
     "meshcoreTypeSensor": "Прилад виявлення",
     "meshcoreTypeNone": "None (Немає)",
-    "meshcoreTypeUnknown": "Невідомо"
+    "meshcoreTypeUnknown": "Невідомо",
+    "columnHealth": "Здоров’я",
+    "hasPublicKeyTitle": "Відкритий ключ"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

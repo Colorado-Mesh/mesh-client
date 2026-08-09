@@ -2886,7 +2886,10 @@
     "currentRouteHeading": "Rute saat ini",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Bagikan QR kontak",
-    "shareContactQrAria": "Tampilkan kode QR kontak MeshCore untuk impor aplikasi resmi"
+    "shareContactQrAria": "Tampilkan kode QR kontak MeshCore untuk impor aplikasi resmi",
+    "copyPublicKey": "Kunci Publik",
+    "publicKeyCopied": "Kunci publik disalin ke clipboard.",
+    "hasPublicKeyNoDm": "Memiliki kunci publik (tidak ada pesan langsung)"
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",
@@ -3008,7 +3011,6 @@
     "summaryOffline_one": "{{count}} luring",
     "summaryOffline_other": "{{count}} luring",
     "tableCaptionMeshNodes": "Node mesh yang terhubung",
-    "columnStatus": "Status",
     "columnFavorite": "Favorit",
     "columnId": "PENGENAL",
     "columnLongName": "Nama Panjang",
@@ -3056,7 +3058,9 @@
     "emptyHistory": "Belum ada pesan langsung — kirim atau terima DM untuk melihat peer di sini.",
     "meshcoreTypeSensor": "Sensor",
     "meshcoreTypeNone": "Tidak Ada",
-    "meshcoreTypeUnknown": "Tidak Diketahui"
+    "meshcoreTypeUnknown": "Tidak Diketahui",
+    "columnHealth": "Kesehatan",
+    "hasPublicKeyTitle": "Kunci Publik"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

@@ -3,6 +3,11 @@ import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { closeSerialPortIfOpen, reconnectSerial, safeDisconnect } from './connection';
+import {
+  MESHTASTIC_LATE_CONFIGURE_RETRYABLE_SWALLOW_MS,
+  resetMeshtasticLateConfigureRetryableSwallowForTests,
+  shouldSwallowLateMeshtasticConfigureRetryableRejection,
+} from './meshtastic/meshtasticConfigureRetry';
 import { SERIAL_OPEN_TIMEOUT_MS } from './serialPortRecovery';
 
 vi.mock('@meshtastic/transport-web-serial', () => ({
@@ -164,6 +169,37 @@ describe('connection serial cleanup', () => {
 
     expect(transportDisconnect).toHaveBeenCalledTimes(1);
     expect(device.complete).toHaveBeenCalledTimes(1);
+  });
+
+  it('safeDisconnect arms the late-configure swallow window before device.disconnect()', async () => {
+    vi.useFakeTimers();
+    try {
+      resetMeshtasticLateConfigureRetryableSwallowForTests();
+      const packetGoneError = new Error('Packet does not exist');
+      // device.disconnect() clears the SDK queue, so its in-flight sends reject with this
+      // error; assert the swallow window is already armed when disconnect() is invoked.
+      const armedAtDisconnect = { value: false };
+      const device = {
+        disconnect: vi.fn().mockImplementation(() => {
+          armedAtDisconnect.value =
+            shouldSwallowLateMeshtasticConfigureRetryableRejection(packetGoneError);
+          return Promise.resolve();
+        }),
+        complete: vi.fn(),
+        transport: undefined,
+      } as unknown as MeshDevice;
+
+      await safeDisconnect(device);
+
+      expect(armedAtDisconnect.value).toBe(true);
+      expect(shouldSwallowLateMeshtasticConfigureRetryableRejection(packetGoneError)).toBe(true);
+
+      vi.advanceTimersByTime(MESHTASTIC_LATE_CONFIGURE_RETRYABLE_SWALLOW_MS + 1);
+      expect(shouldSwallowLateMeshtasticConfigureRetryableRejection(packetGoneError)).toBe(false);
+    } finally {
+      resetMeshtasticLateConfigureRetryableSwallowForTests();
+      vi.useRealTimers();
+    }
   });
 
   it('safeDisconnect treats undefined transport close as benign during disconnect', async () => {

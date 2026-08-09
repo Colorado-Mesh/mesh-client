@@ -2886,7 +2886,10 @@
     "currentRouteHeading": "現在のルート",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "連絡先QRを共有",
-    "shareContactQrAria": "公式アプリインポートのためにMeshCore連絡先QRコードを表示する"
+    "shareContactQrAria": "公式アプリインポートのためにMeshCore連絡先QRコードを表示する",
+    "copyPublicKey": "公開鍵をコピー",
+    "publicKeyCopied": "公開鍵をクリップボードにコピーしました。",
+    "hasPublicKeyNoDm": "公開鍵があります（ダイレクトメッセージはありません）"
   },
   "nodeInfoBody": {
     "longName": "長い名前",
@@ -3008,7 +3011,6 @@
     "summaryOffline_one": "{{count}} オフライン",
     "summaryOffline_other": "{{count}} オフライン",
     "tableCaptionMeshNodes": "接続されたメッシュノード",
-    "columnStatus": "状態",
     "columnFavorite": "お気に入り",
     "columnId": "ID",
     "columnLongName": "長い名前",
@@ -3056,7 +3058,9 @@
     "emptyHistory": "ダイレクトメッセージはまだありません—ここでピアを見るためにDMを送受信します。",
     "meshcoreTypeSensor": "センサー",
     "meshcoreTypeNone": "なし",
-    "meshcoreTypeUnknown": "不明"
+    "meshcoreTypeUnknown": "不明",
+    "columnHealth": "健康",
+    "hasPublicKeyTitle": "公開鍵"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

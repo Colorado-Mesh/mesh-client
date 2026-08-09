@@ -2886,7 +2886,10 @@
     "currentRouteHeading": "Aktuelle Route",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Kontakt teilen",
-    "shareContactQrAria": "MeshCore-Kontakt-QR-Code für offiziellen App-Import anzeigen"
+    "shareContactQrAria": "MeshCore-Kontakt-QR-Code für offiziellen App-Import anzeigen",
+    "copyPublicKey": "Öffentlichen Schlüssel kopieren",
+    "publicKeyCopied": "Öffentlicher Schlüssel in die Zwischenablage kopiert.",
+    "hasPublicKeyNoDm": "Verfügt über einen öffentlichen Schlüssel (keine direkten Nachrichten)"
   },
   "nodeInfoBody": {
     "longName": "Langer Name",
@@ -3008,7 +3011,6 @@
     "summaryOffline_one": "{{count}} offline",
     "summaryOffline_other": "{{count}} offline",
     "tableCaptionMeshNodes": "Verbundene Mesh-Knoten",
-    "columnStatus": "Status",
     "columnFavorite": "Favorit",
     "columnId": "ID",
     "columnLongName": "Langname",
@@ -3056,7 +3058,9 @@
     "emptyHistory": "Noch keine Direktnachrichten — senden oder empfangen Sie einen DM, um Peers hier zu sehen.",
     "meshcoreTypeSensor": "Sensor",
     "meshcoreTypeNone": "None",
-    "meshcoreTypeUnknown": "Unbekannt"
+    "meshcoreTypeUnknown": "Unbekannt",
+    "columnHealth": "Gesundheit",
+    "hasPublicKeyTitle": "Öffentlicher Schlüssel:"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
