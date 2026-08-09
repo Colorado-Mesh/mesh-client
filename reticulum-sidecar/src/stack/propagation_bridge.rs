@@ -52,6 +52,10 @@ pub struct PropagationBridge {
     /// In-flight peering-key PoW jobs for local-host outbound peer sync.
     peering_key_jobs: Mutex<HashSet<[u8; 16]>>,
     peering_key_results: Mutex<Vec<PeeringKeyResult>>,
+    /// Set when inbound peer Resource accept should drain our inbox into Chat.
+    inbox_drain_requested: AtomicBool,
+    /// After host peer `/offer` Completes, `/get` this peer for our mail (sequenced).
+    pending_post_peer_get: Mutex<Option<[u8; 16]>>,
 }
 
 impl PropagationBridge {
@@ -106,7 +110,44 @@ impl PropagationBridge {
             peak_progress: Mutex::new(0.0),
             peering_key_jobs: Mutex::new(HashSet::new()),
             peering_key_results: Mutex::new(Vec::new()),
+            inbox_drain_requested: AtomicBool::new(false),
+            pending_post_peer_get: Mutex::new(None),
         })
+    }
+
+    /// Ask maintenance to drain our `lxmf.delivery` mail from the local PN store into Chat.
+    pub fn request_inbox_drain(&self) {
+        self.inbox_drain_requested.store(true, Ordering::SeqCst);
+    }
+
+    /// Consume a pending inbox-drain request (coalesced; one drain per take).
+    pub fn take_inbox_drain_request(&self) -> bool {
+        self.inbox_drain_requested.swap(false, Ordering::SeqCst)
+    }
+
+    /// Queue a silent client `/get` against `peer_hash` after host peer `/offer` Completes.
+    pub fn queue_post_peer_get(&self, peer_hash: [u8; 16]) {
+        if let Ok(mut slot) = self.pending_post_peer_get.lock() {
+            *slot = Some(peer_hash);
+        }
+    }
+
+    /// Take a queued post-peer `/get` target when the client is idle.
+    pub fn take_pending_post_peer_get(&self) -> Option<[u8; 16]> {
+        if self.client_download_active() {
+            return None;
+        }
+        self.pending_post_peer_get
+            .lock()
+            .ok()
+            .and_then(|mut slot| slot.take())
+    }
+
+    /// Drop a queued post-peer `/get` (user Sync cancel / supersession).
+    pub fn clear_pending_post_peer_get(&self) {
+        if let Ok(mut slot) = self.pending_post_peer_get.lock() {
+            *slot = None;
+        }
     }
 
     /// Load historical PN messages off the live-ready path (spawn_blocking).
@@ -904,6 +945,242 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
+    #[test]
+    fn inbox_drain_request_coalesces_until_taken() {
+        let dir = std::env::temp_dir().join(format!("mesh-prop-drain-req-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+        assert!(!bridge.take_inbox_drain_request());
+        bridge.request_inbox_drain();
+        bridge.request_inbox_drain();
+        assert!(bridge.take_inbox_drain_request());
+        assert!(!bridge.take_inbox_drain_request());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn peer_ingress_accept_signals_drain_and_delivers_our_mail() {
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-ingress-drain-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xcd; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+
+        let sender = Identity::new();
+        let blob = super::super::propagation_download::build_client_download_blob(
+            &sender,
+            &us,
+            "peer ingress mail",
+        );
+        {
+            let mut node = bridge.local_node.lock().expect("node lock");
+            assert!(node.accept_stamped_propagated_blob(&blob, &[0u8; 32], u8::MAX));
+        }
+        // Serve completion path calls this after accepted > 0.
+        bridge.request_inbox_drain();
+        assert!(bridge.take_inbox_drain_request());
+
+        let (messages, listed) = bridge.drain_local_inbox();
+        assert_eq!(listed, 1);
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0].content, "peer ingress mail");
+
+        let (again, listed_again) = bridge.drain_local_inbox();
+        assert!(again.is_empty());
+        assert_eq!(listed_again, 0);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn peer_ingress_other_recipient_accepted_but_drain_delivers_zero() {
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-ingress-foreign-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xce; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+
+        let sender = Identity::new();
+        let other = Identity::new();
+        let blob = super::super::propagation_download::build_client_download_blob(
+            &sender,
+            &other,
+            "stays for peer offer",
+        );
+        {
+            let mut node = bridge.local_node.lock().expect("node lock");
+            assert!(node.accept_stamped_propagated_blob(&blob, &[0x5A; 32], u8::MAX));
+            assert_eq!(node.message_count(), 1);
+        }
+        bridge.request_inbox_drain();
+        assert!(bridge.take_inbox_drain_request());
+        let (messages, listed) = bridge.drain_local_inbox();
+        assert!(messages.is_empty());
+        assert_eq!(listed, 0);
+        assert_eq!(
+            bridge.local_node.lock().expect("lock").message_count(),
+            1,
+            "foreign mail must remain for later peer /offer"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn two_node_inventory_handoff_then_drain_on_recipient_pn() {
+        use lxmf_core::propagation_node::{PropagationNode, PropagationNodeConfig};
+
+        let base = std::env::temp_dir().join(format!("mesh-prop-two-node-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let dir_a = base.join("a");
+        let dir_b = base.join("b");
+        std::fs::create_dir_all(&dir_a).expect("dir a");
+        std::fs::create_dir_all(&dir_b).expect("dir b");
+
+        let sender = Identity::new();
+        let recipient = Identity::new();
+        let hash_a = [0xa1u8; 16];
+        let hash_b = [0xb2u8; 16];
+
+        let mut node_a = PropagationNode::with_storage(
+            PropagationNodeConfig {
+                min_stamp_cost: 0,
+                ..Default::default()
+            },
+            hash_a,
+            dir_a,
+        )
+        .expect("node a");
+        let mut node_b = PropagationNode::with_storage(
+            PropagationNodeConfig {
+                min_stamp_cost: 0,
+                ..Default::default()
+            },
+            hash_b,
+            dir_b,
+        )
+        .expect("node b");
+
+        let blob = super::super::propagation_download::build_client_download_blob(
+            &sender,
+            &recipient,
+            "pn to pn handoff",
+        );
+        let stamp = [0x11u8; 32];
+        assert!(node_a.accept_stamped_propagated_blob(&blob, &stamp, u8::MAX));
+
+        let offer = node_a.prepare_sync_offer(hash_b);
+        assert!(
+            !offer.transient_ids.is_empty(),
+            "A must offer inventory toward B"
+        );
+
+        let wanted: Vec<[u8; 32]> = offer
+            .transient_ids
+            .iter()
+            .filter_map(|id| {
+                if id.len() != 32 {
+                    return None;
+                }
+                let mut tid = [0u8; 32];
+                tid.copy_from_slice(id);
+                Some(tid)
+            })
+            .collect();
+        let packed = node_a.message_get_request(&wanted);
+        assert!(!packed.is_empty());
+
+        let (tx, _rx) = mpsc::channel(8);
+        let bridge_b = PropagationBridge::new(
+            tx,
+            hash_b,
+            base.join("bridge-b"),
+            &recipient,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge b");
+
+        for (tid, stored) in &packed {
+            assert!(stored.len() >= 32);
+            let lxmf_data = &stored[..stored.len() - 32];
+            let mut stamp_data = [0u8; 32];
+            stamp_data.copy_from_slice(&stored[stored.len() - 32..]);
+            assert!(node_b.accept_stamped_propagated_blob(lxmf_data, &stamp_data, u8::MAX));
+            node_a.mark_peer_handled(&hash_b, tid);
+            // Chat path uses the same stamped accept + drain_local_inbox seam.
+            assert!(
+                bridge_b
+                    .local_node
+                    .lock()
+                    .expect("lock")
+                    .accept_stamped_propagated_blob(lxmf_data, &stamp_data, u8::MAX)
+            );
+        }
+        node_a.complete_sync(&hash_b);
+        assert_eq!(node_b.message_count(), 1);
+
+        let (messages, listed) = bridge_b.drain_local_inbox();
+        assert_eq!(listed, 1);
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0].content, "pn to pn handoff");
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn post_peer_get_queue_respects_client_active_guard() {
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-post-peer-q-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xdf; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+        let peer = [0xeeu8; 16];
+        bridge.queue_post_peer_get(peer);
+        assert_eq!(bridge.take_pending_post_peer_get(), Some(peer));
+        assert!(bridge.take_pending_post_peer_get().is_none());
+        bridge.queue_post_peer_get(peer);
+        bridge.clear_pending_post_peer_get();
+        assert!(bridge.take_pending_post_peer_get().is_none());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     /// A blob addressed to someone else must never leak into our inbox drain
     /// (server ownership gate + decrypt both reject it).
     #[test]
@@ -1090,12 +1367,31 @@ mod tests {
         assert!(
             live.contains("is_local_serving()")
                 && live.contains("!propagation.sync_active()")
+                && live.contains("!propagation.client_download_active()")
                 && live.contains("propagation_sync_target().is_none()"),
-            "peer sync tick must require serving + idle + no user sync target"
+            "peer sync tick must require serving + idle + no client /get + no sync target"
         );
         assert!(
             live.contains("start_sync_with_policy"),
             "host peer loop must start policy-aware sync"
+        );
+        assert!(
+            live.contains("queue_post_peer_get")
+                && live.contains("take_pending_post_peer_get")
+                && live.contains("emit_ui")
+                && live.contains("get_post_peer"),
+            "peer /offer Complete must sequence silent client /get"
+        );
+        assert!(
+            live.contains("request_inbox_drain")
+                && live.contains("take_inbox_drain_request")
+                && live.contains("local-prop inbox auto-drain Completes"),
+            "inbound peer accept must auto-drain store into Chat"
+        );
+        let serve = include_str!("propagation_serve.rs");
+        assert!(
+            serve.contains("on_inbound_accepted") && serve.contains("accepted > 0"),
+            "serve Resource accept must signal inbox drain"
         );
         let bridge = include_str!("propagation_bridge.rs");
         assert!(
@@ -1189,6 +1485,55 @@ mod tests {
         assert!(
             by_id[..by_id_end].contains("#[cfg(not(feature = \"rns-stack\"))]"),
             "persistence stub Sync must stay gated behind not(rns-stack)"
+        );
+    }
+
+    /// End-to-end wiring graph for Host PN fabric → Chat (non-flaky source contracts).
+    #[test]
+    fn source_local_pn_fabric_to_chat_wiring() {
+        let serve = include_str!("propagation_serve.rs");
+        let bridge = include_str!("propagation_bridge.rs");
+        let live = include_str!("live.rs");
+        assert!(
+            serve.contains("on_inbound_accepted") && serve.contains("accepted > 0"),
+            "serve accept → drain signal"
+        );
+        assert!(
+            bridge.contains("fn request_inbox_drain")
+                && bridge.contains("fn take_inbox_drain_request"),
+            "bridge must expose coalesced inbox drain request"
+        );
+        assert!(
+            live.contains("take_inbox_drain_request")
+                && live.contains("drain_local_inbox")
+                && live.contains("local-prop inbox auto-drain Completes"),
+            "maintenance drain when requested"
+        );
+        assert!(
+            live.contains("queue_post_peer_get")
+                && live.contains("spawn_client_download_driver_task")
+                && live.contains("false,"),
+            "peer terminal → silent /get (emit_ui false)"
+        );
+        assert!(
+            live.contains("delivery_callback") && live.contains("get_post_peer"),
+            "/get Complete → delivery_callback (post-peer path)"
+        );
+        let sync_fn_start = live
+            .find("pub async fn start_propagation_sync")
+            .expect("start_propagation_sync");
+        let sync_fn = &live[sync_fn_start..];
+        let sync_fn_end = sync_fn[1..]
+            .find("\n    pub ")
+            .map_or(sync_fn.len(), |idx| idx + 1);
+        let sync_body = &sync_fn[..sync_fn_end];
+        assert!(
+            !sync_body.contains("start_sync(hash"),
+            "user Sync remains /get-primary (no peer start_sync)"
+        );
+        assert!(
+            sync_body.contains("spawn_client_download_driver") && sync_body.contains("true,"),
+            "user Sync still drives UI client /get"
         );
     }
 

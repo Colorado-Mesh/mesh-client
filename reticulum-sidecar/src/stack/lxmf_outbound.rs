@@ -2840,4 +2840,95 @@ mod tests {
             "timeout advance path must be logged for Prefer PN storms"
         );
     }
+
+    /// Outbound fabric: mail for someone else stays in peer `/offer` inventory;
+    /// our delivery-hash drain must not consume it.
+    #[test]
+    fn local_prop_deposit_for_other_recipient_stays_in_offer_not_drained() {
+        use lxmf_core::constants::DeliveryMethod;
+        use lxmf_core::message::LxMessage;
+        use lxmf_core::router::{LxmRouter, RouterConfig};
+        use rns_identity::destination::Destination;
+        use tokio::sync::broadcast;
+
+        let dir = std::env::temp_dir().join(format!("mesh-prop-offer-keep-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+
+        let sender = Identity::new();
+        let us = Identity::new();
+        let other = Identity::new();
+        let local_prop = [0xadu8; 16];
+        let peer_pn = [0xbfu8; 16];
+        let zero_stamp_policy = crate::stack::pn_hosting_policy::PnHostingPolicy {
+            propagation_stamp_cost: 0,
+            propagation_stamp_flex: 0,
+            ..Default::default()
+        };
+        let (tx, _rx) = mpsc::channel(32);
+        let bridge = crate::stack::propagation_bridge::PropagationBridge::new(
+            tx.clone(),
+            local_prop,
+            dir.clone(),
+            &us,
+            &zero_stamp_policy,
+        )
+        .expect("bridge");
+
+        let sender_delivery =
+            Destination::hash_from_name_and_identity("lxmf.delivery", Some(&sender.hash));
+        let other_delivery =
+            Destination::hash_from_name_and_identity("lxmf.delivery", Some(&other.hash));
+        let mut driver =
+            LxmfOutboundDriver::new(tx, &sender, hex::encode(sender_delivery), "me".into());
+        driver.register_identity_key(&hex::encode(other_delivery), other.get_public_key());
+        driver.set_local_prop_node(Some(bridge.local_node()));
+        driver.set_pn_cascade_candidates(vec![PnCascadeCandidate {
+            hash: local_prop,
+            is_local: true,
+            is_discovered: false,
+            hops: Some(0),
+            id: "local-prop".into(),
+        }]);
+
+        let mut router = LxmRouter::new(RouterConfig::default());
+        let (event_tx, _event_rx) = broadcast::channel(8);
+        let mut msg = LxMessage::new(
+            other_delivery,
+            sender_delivery,
+            "",
+            "reprop inventory",
+            DeliveryMethod::Direct,
+        );
+        msg.sign(&sender.get_signing_key().expect("sk"))
+            .expect("sign");
+        assert!(
+            driver
+                .try_advance_pn_cascade(&mut router, &event_tx, msg)
+                .is_ok()
+        );
+        driver.process_tick(&mut router, &event_tx);
+
+        let offer = {
+            let node_arc = bridge.local_node();
+            let mut node = node_arc.lock().expect("lock");
+            assert_eq!(node.message_count(), 1);
+            node.prepare_sync_offer(peer_pn)
+        };
+        assert!(
+            !offer.transient_ids.is_empty(),
+            "peer /offer must still list mail for other recipients"
+        );
+
+        let (messages, listed) = bridge.drain_local_inbox();
+        assert!(messages.is_empty());
+        assert_eq!(listed, 0);
+        assert_eq!(
+            bridge.local_node().lock().expect("lock").message_count(),
+            1,
+            "drain must not purge re-propagation inventory"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }
