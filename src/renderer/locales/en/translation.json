@@ -3337,7 +3337,8 @@
     "errors": {
       "linkProofTimeout": "Timed out waiting for the hub link (link proof). Try again, or check path/hops to the hub.",
       "pathTimeout": "Could not find a path to the hub. Wait for a fresher announce, then reconnect.",
-      "welcomeTimeout": "Connected but the hub did not send WELCOME in time. Try again."
+      "welcomeTimeout": "Connected but the hub did not send WELCOME in time. Try again.",
+      "proxyRateLimit": "Too many requests right now (proxy rate limit hit). Please wait a few moments and try again."
     },
     "moderation": {
       "hubParted": "The hub parted you from the room.",

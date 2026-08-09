@@ -4884,7 +4884,8 @@
     "errors": {
       "linkProofTimeout": "等待集线器链接（链接证明）超时。重试，或检查到集线器的路径/跳数。",
       "pathTimeout": "找不到集线器的路径。等待更新的公告，然后重新连接。",
-      "welcomeTimeout": "已连接，但集线器未及时发送欢迎。请重试。"
+      "welcomeTimeout": "已连接，但集线器未及时发送欢迎。请重试。",
+      "proxyRateLimit": "当前请求过多（已达到代理速率限制）。请稍等片刻，然后重试。"
     },
     "expandMembers": "扩大成员",
     "collapseMembers": "折叠成员列表",

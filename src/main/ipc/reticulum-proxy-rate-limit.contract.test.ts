@@ -54,6 +54,26 @@ describe('reticulum proxy rate limit + 100k peer ceilings (source contract)', ()
     }
   });
 
+  it('settles shared proxy rate-limit rejections inside try (soft envelope, not raw throw)', () => {
+    // checkOrThrow must run after `try {` so settleReticulumProxyFailure can return an
+    // expected envelope — otherwise Electron logs `[error] Error occurred in handler`.
+    for (const channel of [
+      'reticulum:proxyGet',
+      'reticulum:proxyPost',
+      'reticulum:proxyPut',
+      'reticulum:proxyDelete',
+    ] as const) {
+      const handleIdx = HANDLERS_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
+      expect(handleIdx, channel).toBeGreaterThanOrEqual(0);
+      const afterHandle = HANDLERS_SOURCE.slice(handleIdx, handleIdx + 900);
+      const tryIdx = afterHandle.indexOf('try {');
+      const checkIdx = afterHandle.indexOf('reticulumProxyIpcRateLimit.checkOrThrow()');
+      expect(tryIdx, channel).toBeGreaterThanOrEqual(0);
+      expect(checkIdx, channel).toBeGreaterThan(tryIdx);
+      expect(afterHandle).toContain('settleReticulumProxyFailure');
+    }
+  });
+
   it('routes LXST PCM through a dedicated higher-budget IPC channel', () => {
     expect(HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:voiceSendAudio'");
     expect(HANDLERS_SOURCE).toMatch(/max:\s*2000/);

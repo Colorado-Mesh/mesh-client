@@ -4886,7 +4886,8 @@
     "errors": {
       "linkProofTimeout": "Vypršel časový limit čekání na odkaz na centrum (důkaz odkazu). Zkuste to znovu nebo zkontrolujte cestu/přechody k rozbočovači.",
       "pathTimeout": "Nelze najít cestu k rozbočovači. Počkej na čerstvější oznámení a pak se znovu připoj.",
-      "welcomeTimeout": "Připojeno, ale centrum neposlalo UVÍTÁNÍ včas. Zkuste to znovu."
+      "welcomeTimeout": "Připojeno, ale centrum neposlalo UVÍTÁNÍ včas. Zkuste to znovu.",
+      "proxyRateLimit": "Momentálně je příliš mnoho žádostí (dosáhl se limitu proxy sazby). Chvíli počkejte a zkuste to znovu."
     },
     "expandMembers": "Rozbalit seznam členů",
     "collapseMembers": "Sbalit seznam členů",

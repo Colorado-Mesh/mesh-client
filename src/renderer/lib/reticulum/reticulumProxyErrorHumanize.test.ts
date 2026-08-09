@@ -28,4 +28,18 @@ describe('reticulumProxyErrorHumanize', () => {
       'T:rrc.sidecarNotRunning',
     );
   });
+
+  it('maps bare and Electron-wrapped proxy rate-limit errors', () => {
+    expect(reticulumProxyErrorToI18nKey('reticulum:proxy: rate limit exceeded')).toBe(
+      'rrc.errors.proxyRateLimit',
+    );
+    expect(
+      reticulumProxyErrorToI18nKey(
+        "Error invoking remote method 'reticulum:proxyPost': Error: reticulum:proxy: rate limit exceeded",
+      ),
+    ).toBe('rrc.errors.proxyRateLimit');
+    expect(
+      formatReticulumProxyErrorMessage('reticulum:proxy: rate limit exceeded', (k) => `T:${k}`),
+    ).toBe('T:rrc.errors.proxyRateLimit');
+  });
 });

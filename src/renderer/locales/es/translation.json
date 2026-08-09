@@ -4884,7 +4884,8 @@
     "errors": {
       "linkProofTimeout": "Se agotó el tiempo de espera para el enlace del hub (prueba del enlace). Inténtalo de nuevo o comprueba la ruta/saltos al centro.",
       "pathTimeout": "No se ha podido encontrar una ruta al hub. Espere un anuncio más reciente y, a continuación, vuelva a conectarse.",
-      "welcomeTimeout": "Conectado pero el hub no ha enviado la BIENVENIDA A tiempo. Inténtalo de nuevo."
+      "welcomeTimeout": "Conectado pero el hub no ha enviado la BIENVENIDA A tiempo. Inténtalo de nuevo.",
+      "proxyRateLimit": "Demasiadas solicitudes en este momento (límite de tasa de proxy alcanzado). Espera unos momentos e inténtalo de nuevo."
     },
     "expandMembers": "Expandir la lista de miembros",
     "collapseMembers": "Contraer lista de miembros",

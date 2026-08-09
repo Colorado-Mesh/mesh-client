@@ -17,6 +17,11 @@ import {
   scheduleReticulumLocalInterfaceBurst,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
 import {
+  isReticulumProxyRateLimitBackoffActive,
+  noteReticulumProxyRateLimitHit,
+} from '@/renderer/lib/reticulum/reticulumProxyRateLimitBackoff';
+import { reticulumSidecarEventRefreshActions } from '@/renderer/lib/reticulum/reticulumSidecarPeerRefreshEvents';
+import {
   fetchReticulumInterfaces,
   fetchReticulumSerialPortOptions,
   getCachedReticulumEffectivePrimaryLocalSerialInterfaceId,
@@ -116,11 +121,16 @@ export function useReticulumInterfaceSnapshot({
 
   const refresh = useCallback(async () => {
     if (!sidecarRunning) return undefined;
+    if (isReticulumProxyRateLimitBackoffActive('shared')) {
+      return { interfaces: [], paths: [], rateLimited: true as const };
+    }
     try {
       const [rows, ports] = await Promise.all([
         fetchReticulumInterfaces({ propagateRateLimit: true }),
         fetchReticulumSerialPortOptions({ propagateRateLimit: true }),
       ]);
+      // Do not clear shared backoff here — warm interface/serial caches can succeed
+      // without a proxy round-trip and would incorrectly shorten peer-store backoff.
       const paths = ports.map((p) => p.path);
       setInterfaces(rows);
       setSerialPorts(ports);
@@ -134,6 +144,7 @@ export function useReticulumInterfaceSnapshot({
     } catch (e) {
       console.debug('[useReticulumInterfaceSnapshot] refresh ' + errLikeToLogString(e));
       if (isReticulumSidecarRateLimitError(e)) {
+        noteReticulumProxyRateLimitHit('shared');
         return { interfaces: [], paths: [], rateLimited: true as const };
       }
       return undefined;
@@ -146,18 +157,21 @@ export function useReticulumInterfaceSnapshot({
 
   const handleSidecarEvent = useCallback(
     (evt: ReticulumSidecarEvent) => {
-      if (
-        evt.type === 'interface.state' ||
-        evt.type === 'stats_update' ||
-        evt.type === 'announce.received' ||
-        evt.type === 'stack_restart_requested'
-      ) {
-        if (evt.type === 'stack_restart_requested') {
-          beginBleConnectGrace();
+      // stack_restart is not flagged interfaces:true on the shared helper (runtime
+      // restarts the stack instead), but Connection still needs a local refresh + grace.
+      if (evt.type === 'stack_restart_requested') {
+        beginBleConnectGrace();
+        invalidateReticulumInterfacesCache();
+        if (!isReticulumProxyRateLimitBackoffActive('shared')) {
+          void refreshRef.current?.();
         }
-        if (evt.type === 'interface.state' || evt.type === 'stack_restart_requested') {
-          invalidateReticulumInterfacesCache();
-        }
+        return;
+      }
+      // announce.received / stats_update must not refresh interfaces — they flood
+      // the shared 900/min proxy bucket after wake on large peer tables.
+      if (!reticulumSidecarEventRefreshActions(evt.type).interfaces) return;
+      invalidateReticulumInterfacesCache();
+      if (!isReticulumProxyRateLimitBackoffActive('shared')) {
         void refreshRef.current?.();
       }
     },
@@ -210,6 +224,10 @@ export function useReticulumInterfaceSnapshot({
     };
 
     const tick = async () => {
+      if (isReticulumProxyRateLimitBackoffActive('shared')) {
+        scheduleNextPoll(RETICULUM_LOCAL_HEALTH_POLL_MS);
+        return;
+      }
       const snapshot = await refreshRef.current?.();
       if (cancelled || !snapshot) return;
       if ('rateLimited' in snapshot && snapshot.rateLimited) {

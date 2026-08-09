@@ -4884,7 +4884,8 @@
     "errors": {
       "linkProofTimeout": "Délai expiré en attendant le lien du hub (preuve de lien). Réessayez ou vérifiez le chemin/les sauts vers le hub.",
       "pathTimeout": "Impossible de trouver un chemin vers le hub. Attendez une annonce plus fraîche, puis reconnectez-vous.",
-      "welcomeTimeout": "Connecté mais le hub n'a pas envoyé l'ACCUEIL à temps. Réessayez."
+      "welcomeTimeout": "Connecté mais le hub n'a pas envoyé l'ACCUEIL à temps. Réessayez.",
+      "proxyRateLimit": "Trop de demandes en ce moment (taux limite de proxy atteint). Veuillez patienter quelques instants et réessayer."
     },
     "expandMembers": "Élargir la liste des membres",
     "collapseMembers": "Réduire la liste des membres",
