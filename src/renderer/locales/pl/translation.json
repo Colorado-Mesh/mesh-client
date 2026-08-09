@@ -4296,7 +4296,15 @@
     "showChatNoticeHint": "Wyłącz tę opcję, aby ukryć baner czatu, który pojawia się, gdy żaden węzeł propagacji nie jest dostępny.",
     "syncPathUnknown": "Nie ma jeszcze ścieżki sieciowej do tego węzła propagacji. Sprawdź interfejsy lub koncentrator, ogłoś, a następnie spróbuj ponownie.",
     "syncStackNotLive": "Odroczona synchronizacja propagacji — stos Reticulum nadal się rozpoczyna.",
-    "syncRetrieveBusy": "Synchronizacja propagacji odroczona — trwa już pobieranie skrzynki odbiorczej."
+    "syncRetrieveBusy": "Synchronizacja propagacji odroczona — trwa już pobieranie skrzynki odbiorczej.",
+    "ignoreForAuto": "Ignoruj dla trybu automatycznego",
+    "ignoreForAutoAria": "Zignoruj węzeł propagacji {{name}} dla automatycznej synchronizacji i depozytu",
+    "ignoreForAutoFailed": "Nie można zignorować tego węzła propagacji dla trybu automatycznego.",
+    "allowForAuto": "Zezwól na tryb automatyczny",
+    "allowForAutoAria": "Zezwalaj na automatyczną synchronizację węzła propagacji {{name}} i ponownie wpłać depozyt",
+    "allowForAutoFailed": "Nie można ponownie zezwolić na automatyczną propagację tego węzła.",
+    "ignoredForAutoTitle": "Zignorowano dla trybu automatycznego",
+    "ignoredForAutoHint": "Auto nie będzie synchronizować się z tymi węzłami ani ich nie zdeponuje. Ręczna preferencja/synchronizacja nadal działa."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Wykrywanie RMAP v4",

@@ -4,6 +4,7 @@ import {
   listConfiguredRemotePropagationIds,
   listFiniteHopDiscoveredPropagationTargets,
   listUnknownHopDiscoveredPropagationTargets,
+  propagationAutoBlacklistSet,
   propagationTargetDestinationHash,
   readReticulumPropagationMode,
   resolveManualCascadeSeed,
@@ -164,13 +165,18 @@ async function runConfiguredRemoteAttempts(args: {
   attempts: CascadeAttempts;
   generation: number;
   remoteDeadlineMs: number;
+  /** When set (Auto), skip remotes whose destination hash is ignored for Auto. */
+  autoBlacklist?: ReadonlySet<string>;
 }): Promise<RemoteAttemptsResult> {
-  const { mode, tried, attempts, generation, remoteDeadlineMs } = args;
+  const { mode, tried, attempts, generation, remoteDeadlineMs, autoBlacklist } = args;
   const superseded = (): boolean =>
     readReticulumPropagationMode() !== mode || cascadeGeneration !== generation;
 
   for (const id of omitRecentlyFailedPropagationTargets(
-    listConfiguredRemotePropagationIds(useReticulumPropagationStore.getState().nodes),
+    listConfiguredRemotePropagationIds(
+      useReticulumPropagationStore.getState().nodes,
+      autoBlacklist,
+    ),
     (remoteId) => remoteId,
   )) {
     if (superseded()) return 'stop';
@@ -231,7 +237,8 @@ async function runPropagationSyncCascade(
   if (mode === 'off') return false;
 
   const state = useReticulumPropagationStore.getState();
-  const { nodes, preferredId, discovered } = state;
+  const { nodes, preferredId, discovered, autoBlacklist: blacklistRows } = state;
+  const autoBlacklist = propagationAutoBlacklistSet(blacklistRows);
   const first = opts?.firstTargetId ?? null;
   const attempts: CascadeAttempts = { any: false, deferred: false };
   const remoteDeadlineMs = Date.now() + PROPAGATION_CASCADE_BUDGET_MS;
@@ -272,7 +279,7 @@ async function runPropagationSyncCascade(
     // Prefer path-known discovered PNs before configured remotes; leave hops-unknown
     // vanity announces until after configured so they cannot starve Preferred/added PNs.
     const finiteOutcome = await tryDiscoveredBatch(
-      listFiniteHopDiscoveredPropagationTargets(nodes, discovered),
+      listFiniteHopDiscoveredPropagationTargets(nodes, discovered, autoBlacklist),
     );
     if (finiteOutcome === 'success') return true;
     if (finiteOutcome === 'cancelled') return false;
@@ -283,12 +290,13 @@ async function runPropagationSyncCascade(
       attempts,
       generation,
       remoteDeadlineMs,
+      autoBlacklist,
     });
     if (remotes === 'success') return true;
     if (remotes === 'stop') return false;
 
     const unknownOutcome = await tryDiscoveredBatch(
-      listUnknownHopDiscoveredPropagationTargets(nodes, discovered),
+      listUnknownHopDiscoveredPropagationTargets(nodes, discovered, autoBlacklist),
     );
     if (unknownOutcome === 'success') return true;
     if (unknownOutcome === 'cancelled') return false;

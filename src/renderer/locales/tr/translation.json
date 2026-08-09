@@ -4292,7 +4292,15 @@
     "showChatNoticeHint": "Yayılma düğümü bulunmadığında görünen Sohbet başlığını gizlemek için bunu kapatın.",
     "syncPathUnknown": "Bu yayılım düğümüne henüz bir ağ yolu yok. Arayüzlerinizi veya hub'ınızı kontrol edin, anons yapın ve tekrar deneyin.",
     "syncStackNotLive": "Yayılma senkronizasyonu ertelendi — Reticulum yığını hala başlıyor.",
-    "syncRetrieveBusy": "Yayılma senkronizasyonu ertelendi — gelen kutusu alma işlemi zaten devam ediyor."
+    "syncRetrieveBusy": "Yayılma senkronizasyonu ertelendi — gelen kutusu alma işlemi zaten devam ediyor.",
+    "ignoreForAuto": "Otomatik için yoksay",
+    "ignoreForAutoAria": "Otomatik senkronizasyon ve para yatırma için {{name}} yayılma düğümünü yoksay",
+    "ignoreForAutoFailed": "Otomatik için bu yayılma düğümü göz ardı edilemedi.",
+    "allowForAuto": "Otomatike İzin Ver",
+    "allowForAutoAria": "Otomatik senkronizasyon ve tekrar para yatırma için {{name}} yayılma düğümüne izin ver",
+    "allowForAutoFailed": "Bu yayılma düğümüne Otomatik için tekrar izin verilemedi.",
+    "ignoredForAutoTitle": "Otomatik için yoksayıldı",
+    "ignoredForAutoHint": "Otomatik, bu düğümlerden eşitlenmeyecek veya bunlara para yatırılmayacak. Manuel Tercih/Senkronizasyon hala çalışıyor."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 keşfi",

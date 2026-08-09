@@ -108,6 +108,7 @@ describe('reticulumPropagationAutoApply', () => {
         },
       ],
       discovered: [],
+      autoBlacklist: [],
       preferredId: null,
       sync: { active: false, progress: 0, message: null },
       lastSyncError: null,
@@ -146,6 +147,7 @@ describe('reticulumPropagationAutoApply', () => {
           hops: 0,
         },
       ],
+      autoBlacklist: [],
       addFromDiscovered,
       setPreferredOnSidecar: setPreferred,
       startSync,
@@ -155,6 +157,25 @@ describe('reticulumPropagationAutoApply', () => {
     expect(addFromDiscovered).not.toHaveBeenCalled();
     expect(setPreferred).not.toHaveBeenCalled();
     expect(startSync).not.toHaveBeenCalledWith('local-prop');
+  });
+
+  it('Auto skips blacklisted discovered hashes and uses the next candidate', async () => {
+    const blocked = 'aaaa'.repeat(8);
+    const ok = 'bbbb'.repeat(8);
+    const startSync = deferredStartSync((id) => (id === ok ? 'success' : 'failure'));
+    useReticulumPropagationStore.setState({
+      preferredId: null,
+      nodes: [{ id: 'local-prop', name: 'Local', enabled: true, status: 'known' }],
+      discovered: [
+        { destination_hash: blocked, node_state: true, peering_cost: 0, hops: 0 },
+        { destination_hash: ok, node_state: true, peering_cost: 0, hops: 1 },
+      ],
+      autoBlacklist: [blocked],
+      startSync,
+    });
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
+    expect(startSync.mock.calls.map((c) => c[0])).toEqual([ok]);
+    expect(startSync).not.toHaveBeenCalledWith(blocked);
   });
 
   it('Auto with no enabled interfaces settles local only', async () => {

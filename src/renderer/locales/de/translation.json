@@ -4292,7 +4292,15 @@
     "showChatNoticeHint": "Deaktivieren Sie diese Option, um das Chat-Banner auszublenden, das angezeigt wird, wenn kein Ausbreitungsknoten verfügbar ist.",
     "syncPathUnknown": "Noch kein Netzwerkpfad zu diesem Ausbreitungsknoten. Überprüfen Sie Ihre Schnittstellen oder Ihren Hub, kündigen Sie an und versuchen Sie es dann erneut.",
     "syncStackNotLive": "Ausbreitungssynchronisation verschoben — der Reticulum-Stack wird noch gestartet.",
-    "syncRetrieveBusy": "Die Propagationssynchronisierung wurde verschoben — der Abruf des Posteingangs wird bereits ausgeführt."
+    "syncRetrieveBusy": "Die Propagationssynchronisierung wurde verschoben — der Abruf des Posteingangs wird bereits ausgeführt.",
+    "ignoreForAuto": "Für Auto ignorieren",
+    "ignoreForAutoAria": "Ausbreitungsknoten {{name}} für automatische Synchronisierung und Einzahlung ignorieren",
+    "ignoreForAutoFailed": "Dieser Ausbreitungsknoten für Auto konnte nicht ignoriert werden.",
+    "allowForAuto": "Automatisch zulassen",
+    "allowForAutoAria": "Ausbreitungsknoten {{name}} für automatische Synchronisierung zulassen und erneut ablegen",
+    "allowForAutoFailed": "Dieser Ausbreitungsknoten konnte nicht erneut für Auto zugelassen werden.",
+    "ignoredForAutoTitle": "Ignoriert für Auto",
+    "ignoredForAutoHint": "Auto wird nicht von diesen Knoten synchronisiert oder auf ihnen deponiert. Manuelle Präferenz/Synchronisierung funktioniert immer noch."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 Entdeckung",

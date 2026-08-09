@@ -4292,7 +4292,15 @@
     "showChatNoticeHint": "关闭此选项可隐藏在没有可用传播节点时显示的聊天横幅。",
     "syncPathUnknown": "还没有到此传播节点的网络路径。请检查您的接口或集线器，宣布，然后重试。",
     "syncStackNotLive": "传播同步延迟—Reticulum 堆栈仍在启动。",
-    "syncRetrieveBusy": "传播同步已延迟—收件箱检索已在进行中。"
+    "syncRetrieveBusy": "传播同步已延迟—收件箱检索已在进行中。",
+    "ignoreForAuto": "忽略自动",
+    "ignoreForAutoAria": "忽略自动同步和存款的传播节点{{name}}",
+    "ignoreForAutoFailed": "无法忽略此自动传播节点。",
+    "allowForAuto": "允许自动",
+    "allowForAutoAria": "允许传播节点{{name}}自动同步并再次存款",
+    "allowForAutoFailed": "无法再次允许此自动传播节点。",
+    "ignoredForAutoTitle": "因自动而忽略",
+    "ignoredForAutoHint": "自动不会从这些节点同步或存入。手动首选项/同步仍然有效。"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4发现",

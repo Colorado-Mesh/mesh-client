@@ -4292,7 +4292,15 @@
     "showChatNoticeHint": "Desactive esta opción para ocultar el banner de chat que aparece cuando no hay ningún nodo de propagación disponible.",
     "syncPathUnknown": "Aún no hay ruta de red a este nodo de propagación. Comprueba tus interfaces o hub, anuncia y vuelve a intentarlo.",
     "syncStackNotLive": "Sincronización de propagación diferida: la pila de Reticulum todavía está comenzando.",
-    "syncRetrieveBusy": "Sincronización de propagación diferida: la recuperación de la bandeja de entrada ya está en curso."
+    "syncRetrieveBusy": "Sincronización de propagación diferida: la recuperación de la bandeja de entrada ya está en curso.",
+    "ignoreForAuto": "Ignorar para Automático",
+    "ignoreForAutoAria": "Ignorar nodo de propagación {{name}} para sincronización automática y depósito",
+    "ignoreForAutoFailed": "No se ha podido ignorar este nodo de propagación para Auto.",
+    "allowForAuto": "Permitir Automático",
+    "allowForAutoAria": "Permitir nodo de propagación {{name}} para sincronización automática y volver a depositar",
+    "allowForAutoFailed": "No se ha podido volver a permitir este nodo de propagación para Auto.",
+    "ignoredForAutoTitle": "Ignorado para Automático",
+    "ignoredForAutoHint": "Auto no se sincronizará ni depositará en estos nodos. La preferencia/sincronización manual sigue funcionando."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descubrimiento de RMAP v4",

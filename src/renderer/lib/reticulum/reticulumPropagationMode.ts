@@ -48,6 +48,24 @@ export function configuredPropagationDestinationHashes(
   );
 }
 
+const EMPTY_AUTO_BLACKLIST: ReadonlySet<string> = new Set();
+
+/** Lowercased destination-hash set for Auto ignore filtering. */
+export function propagationAutoBlacklistSet(
+  blacklist: readonly string[] | null | undefined,
+): ReadonlySet<string> {
+  if (blacklist == null || blacklist.length === 0) return EMPTY_AUTO_BLACKLIST;
+  return new Set(blacklist.map((h) => h.toLowerCase()));
+}
+
+export function isPropagationHashAutoBlacklisted(
+  hash: string | null | undefined,
+  blacklist: ReadonlySet<string>,
+): boolean {
+  if (!hash) return false;
+  return blacklist.has(hash.toLowerCase());
+}
+
 /**
  * Ranking helper for UI (e.g. “Add closest”), diagnostics, and Auto sync order.
  *
@@ -92,6 +110,7 @@ export function hasFinitePropagationHops(hops: number): boolean {
 export function listDiscoveredPropagationTargets(
   nodes: PropagationNodeRow[],
   discovered: readonly DiscoveredPropagationRow[],
+  autoBlacklist: ReadonlySet<string> = EMPTY_AUTO_BLACKLIST,
 ): DiscoveredPropagationTarget[] {
   const configuredHashes = configuredPropagationDestinationHashes(nodes);
   const rows: { destinationHash: string; hops: number; sortKey: string }[] = [];
@@ -99,6 +118,7 @@ export function listDiscoveredPropagationTargets(
     if (!row.node_state) continue;
     const hash = row.destination_hash.toLowerCase();
     if (configuredHashes.has(hash)) continue;
+    if (autoBlacklist.has(hash)) continue;
     rows.push({
       destinationHash: row.destination_hash,
       hops: row.hops ?? Number.POSITIVE_INFINITY,
@@ -113,8 +133,9 @@ export function listDiscoveredPropagationTargets(
 export function listFiniteHopDiscoveredPropagationTargets(
   nodes: PropagationNodeRow[],
   discovered: readonly DiscoveredPropagationRow[],
+  autoBlacklist: ReadonlySet<string> = EMPTY_AUTO_BLACKLIST,
 ): DiscoveredPropagationTarget[] {
-  return listDiscoveredPropagationTargets(nodes, discovered).filter((t) =>
+  return listDiscoveredPropagationTargets(nodes, discovered, autoBlacklist).filter((t) =>
     hasFinitePropagationHops(t.hops),
   );
 }
@@ -123,17 +144,25 @@ export function listFiniteHopDiscoveredPropagationTargets(
 export function listUnknownHopDiscoveredPropagationTargets(
   nodes: PropagationNodeRow[],
   discovered: readonly DiscoveredPropagationRow[],
+  autoBlacklist: ReadonlySet<string> = EMPTY_AUTO_BLACKLIST,
 ): DiscoveredPropagationTarget[] {
-  return listDiscoveredPropagationTargets(nodes, discovered).filter(
+  return listDiscoveredPropagationTargets(nodes, discovered, autoBlacklist).filter(
     (t) => !hasFinitePropagationHops(t.hops),
   );
 }
 
-/** Enabled configured remotes (excludes local-prop), best (lowest hops) first. */
-export function listConfiguredRemotePropagationIds(nodes: PropagationNodeRow[]): string[] {
+/**
+ * Enabled configured remotes (excludes local-prop), best (lowest hops) first.
+ * Pass `autoBlacklist` when ranking for Auto so ignored hashes are omitted.
+ */
+export function listConfiguredRemotePropagationIds(
+  nodes: PropagationNodeRow[],
+  autoBlacklist: ReadonlySet<string> = EMPTY_AUTO_BLACKLIST,
+): string[] {
   const rows: { id: string; hops: number; sortKey: string }[] = [];
   for (const node of nodes) {
     if (node.id === 'local-prop' || !node.enabled) continue;
+    if (isPropagationHashAutoBlacklisted(node.destination_hash, autoBlacklist)) continue;
     rows.push({
       id: node.id,
       hops: node.hops ?? Number.POSITIVE_INFINITY,
@@ -205,11 +234,13 @@ export function hasPropagationCascadeCandidate(
   mode: ReticulumPropagationMode,
   nodes: PropagationNodeRow[],
   discovered: readonly DiscoveredPropagationRow[] = [],
+  autoBlacklist: ReadonlySet<string> = EMPTY_AUTO_BLACKLIST,
 ): boolean {
   if (mode === 'off') return false;
+  const autoOmit = mode === 'auto' ? autoBlacklist : EMPTY_AUTO_BLACKLIST;
   return (
-    (mode === 'auto' && listDiscoveredPropagationTargets(nodes, discovered).length > 0) ||
-    listConfiguredRemotePropagationIds(nodes).length > 0 ||
+    (mode === 'auto' && listDiscoveredPropagationTargets(nodes, discovered, autoOmit).length > 0) ||
+    listConfiguredRemotePropagationIds(nodes, autoOmit).length > 0 ||
     hasReadyEnabledLocalPropagationNode(nodes)
   );
 }
@@ -217,19 +248,26 @@ export function hasPropagationCascadeCandidate(
 export function pickAutoPropagationTarget(
   nodes: PropagationNodeRow[],
   discovered: readonly DiscoveredPropagationRow[] = [],
+  autoBlacklist: ReadonlySet<string> = EMPTY_AUTO_BLACKLIST,
 ): AutoPropagationTarget | null {
   // Finite-hop discovered → configured → unknown-hop discovered → local (matches cascade).
-  const finiteBest = listFiniteHopDiscoveredPropagationTargets(nodes, discovered).at(0);
+  const finiteBest = listFiniteHopDiscoveredPropagationTargets(nodes, discovered, autoBlacklist).at(
+    0,
+  );
   if (finiteBest != null) {
     return { kind: 'discovered', destinationHash: finiteBest.destinationHash };
   }
 
-  const configuredBest = listConfiguredRemotePropagationIds(nodes).at(0);
+  const configuredBest = listConfiguredRemotePropagationIds(nodes, autoBlacklist).at(0);
   if (configuredBest != null) {
     return { kind: 'configured', id: configuredBest };
   }
 
-  const unknownBest = listUnknownHopDiscoveredPropagationTargets(nodes, discovered).at(0);
+  const unknownBest = listUnknownHopDiscoveredPropagationTargets(
+    nodes,
+    discovered,
+    autoBlacklist,
+  ).at(0);
   if (unknownBest != null) {
     return { kind: 'discovered', destinationHash: unknownBest.destinationHash };
   }
@@ -261,6 +299,7 @@ export function resolvePropagationSyncTargetId(
   nodes: PropagationNodeRow[],
   preferredId: string | null,
   discovered: readonly DiscoveredPropagationRow[] = [],
+  autoBlacklist: ReadonlySet<string> = EMPTY_AUTO_BLACKLIST,
 ): string | null {
   if (mode === 'off') return null;
   if (mode === 'manual') {
@@ -269,7 +308,7 @@ export function resolvePropagationSyncTargetId(
     if (configuredBest != null) return configuredBest;
     return hasReadyEnabledLocalPropagationNode(nodes) ? 'local-prop' : null;
   }
-  const target = pickAutoPropagationTarget(nodes, discovered);
+  const target = pickAutoPropagationTarget(nodes, discovered, autoBlacklist);
   if (target?.kind === 'discovered') return target.destinationHash.toLowerCase();
   if (target?.kind === 'configured') return target.id;
   if (target?.kind === 'local') return 'local-prop';

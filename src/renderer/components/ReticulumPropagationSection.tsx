@@ -7,7 +7,9 @@ import { startPropagationSyncWithTarget } from '@/renderer/lib/reticulum/reticul
 import {
   configuredPropagationDestinationHashes,
   hasPropagationCascadeCandidate,
+  isPropagationHashAutoBlacklisted,
   isReticulumPropagationMode,
+  propagationAutoBlacklistSet,
   resolvePropagationSyncTargetId,
   type ReticulumPropagationMode,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
@@ -50,19 +52,38 @@ function formatPropagationNodeStatus(status: string, t: (key: string) => string)
 interface DiscoveredPropagationListProps {
   discovered: DiscoveredPropagationRow[];
   configuredHashes: ReadonlySet<string>;
+  autoBlacklist: ReadonlySet<string>;
   onAdd: (destinationHash: string, prefer?: boolean) => void;
+  onIgnoreForAuto: (destinationHash: string) => void;
+  onAllowForAuto: (destinationHash: string) => void;
   adding?: boolean;
+  ignoreBusy?: boolean;
 }
 
 function DiscoveredPropagationList({
   discovered,
   configuredHashes,
+  autoBlacklist,
   onAdd,
+  onIgnoreForAuto,
+  onAllowForAuto,
   adding = false,
+  ignoreBusy = false,
 }: Readonly<DiscoveredPropagationListProps>) {
   const { t } = useTranslation();
   const visibleDiscovered = discovered.filter(
     (d) => !configuredHashes.has(d.destination_hash.toLowerCase()),
+  );
+  const activeRows = visibleDiscovered.filter(
+    (d) => !autoBlacklist.has(d.destination_hash.toLowerCase()),
+  );
+  const ignoredFromDiscovered = visibleDiscovered.filter((d) =>
+    autoBlacklist.has(d.destination_hash.toLowerCase()),
+  );
+  const ignoredOrphanHashes = [...autoBlacklist].filter(
+    (hash) =>
+      !configuredHashes.has(hash) &&
+      !visibleDiscovered.some((d) => d.destination_hash.toLowerCase() === hash),
   );
 
   return (
@@ -70,11 +91,11 @@ function DiscoveredPropagationList({
       <h4 className="text-xs font-medium text-gray-300">
         {t('reticulumPropagation.discoveredTitle')}
       </h4>
-      {visibleDiscovered.length === 0 ? (
+      {activeRows.length === 0 ? (
         <p className="text-muted mt-1 text-xs">{t('reticulumPropagation.discoveredEmpty')}</p>
       ) : (
         <ul className="mt-2 space-y-2 text-sm">
-          {visibleDiscovered.map((row) => {
+          {activeRows.map((row) => {
             const label = row.display_name?.trim() || row.destination_hash.slice(0, 8);
             return (
               <li
@@ -127,12 +148,93 @@ function DiscoveredPropagationList({
                   >
                     {t('reticulumPropagation.discoveredAddPrefer')}
                   </button>
+                  <button
+                    type="button"
+                    disabled={ignoreBusy}
+                    className="rounded border border-gray-600 px-2 py-0.5 text-xs text-gray-300 disabled:opacity-40"
+                    aria-label={t('reticulumPropagation.ignoreForAutoAria', { name: label })}
+                    onClick={() => {
+                      onIgnoreForAuto(row.destination_hash);
+                    }}
+                  >
+                    {t('reticulumPropagation.ignoreForAuto')}
+                  </button>
                 </div>
               </li>
             );
           })}
         </ul>
       )}
+      {ignoredFromDiscovered.length > 0 || ignoredOrphanHashes.length > 0 ? (
+        <div className="mt-3">
+          <h5 className="text-muted text-[11px] font-medium tracking-wide uppercase">
+            {t('reticulumPropagation.ignoredForAutoTitle')}
+          </h5>
+          <p className="text-muted mt-0.5 text-[11px]">
+            {t('reticulumPropagation.ignoredForAutoHint')}
+          </p>
+          <ul className="mt-2 space-y-2 text-sm">
+            {ignoredFromDiscovered.map((row) => {
+              const label = row.display_name?.trim() || row.destination_hash.slice(0, 8);
+              return (
+                <li
+                  key={row.destination_hash}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-800/80 bg-slate-950/40 px-2 py-1.5 opacity-80"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-gray-400">{label}</div>
+                    <div className="text-muted font-mono text-[11px]">
+                      {t('reticulumPropagation.discoveredHash', {
+                        hash: row.destination_hash.slice(0, 12),
+                      })}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={ignoreBusy}
+                    className="rounded border border-gray-600 px-2 py-0.5 text-xs text-gray-300 disabled:opacity-40"
+                    aria-label={t('reticulumPropagation.allowForAutoAria', { name: label })}
+                    onClick={() => {
+                      onAllowForAuto(row.destination_hash);
+                    }}
+                  >
+                    {t('reticulumPropagation.allowForAuto')}
+                  </button>
+                </li>
+              );
+            })}
+            {ignoredOrphanHashes.map((hash) => {
+              const label = hash.slice(0, 8);
+              return (
+                <li
+                  key={hash}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-800/80 bg-slate-950/40 px-2 py-1.5 opacity-80"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-gray-400">{label}</div>
+                    <div className="text-muted font-mono text-[11px]">
+                      {t('reticulumPropagation.discoveredHash', {
+                        hash: hash.slice(0, 12),
+                      })}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={ignoreBusy}
+                    className="rounded border border-gray-600 px-2 py-0.5 text-xs text-gray-300 disabled:opacity-40"
+                    aria-label={t('reticulumPropagation.allowForAutoAria', { name: label })}
+                    onClick={() => {
+                      onAllowForAuto(hash);
+                    }}
+                  >
+                    {t('reticulumPropagation.allowForAuto')}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -150,6 +252,7 @@ export default function ReticulumPropagationSection({
   const { addToast } = useToast();
   const nodes = useReticulumPropagationStore((s) => s.nodes);
   const discovered = useReticulumPropagationStore((s) => s.discovered);
+  const autoBlacklistRows = useReticulumPropagationStore((s) => s.autoBlacklist);
   const preferredId = useReticulumPropagationStore((s) => s.preferredId);
   const autoSyncIntervalSec = useReticulumPropagationStore((s) => s.autoSyncIntervalSec);
   const lastPropagationSyncAt = useReticulumPropagationStore((s) => s.lastPropagationSyncAt);
@@ -169,6 +272,9 @@ export default function ReticulumPropagationSection({
   const addFromDiscovered = useReticulumPropagationStore((s) => s.addFromDiscovered);
   const removePropagationNode = useReticulumPropagationStore((s) => s.removePropagationNode);
   const renamePropagationNode = useReticulumPropagationStore((s) => s.renamePropagationNode);
+  const addAutoBlacklist = useReticulumPropagationStore((s) => s.addAutoBlacklist);
+  const removeAutoBlacklist = useReticulumPropagationStore((s) => s.removeAutoBlacklist);
+  const autoBlacklist = propagationAutoBlacklistSet(autoBlacklistRows);
   const [addHash, setAddHash] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -177,6 +283,7 @@ export default function ReticulumPropagationSection({
   const [pendingEnableLocal, setPendingEnableLocal] = useState(false);
   const [adding, setAdding] = useState(false);
   const [syncStarting, setSyncStarting] = useState(false);
+  const [ignoreBusy, setIgnoreBusy] = useState(false);
 
   const handleSyncNow = (targetId: string) => {
     if (syncStarting || sync.active) return;
@@ -232,10 +339,46 @@ export default function ReticulumPropagationSection({
       });
     if (next !== 'auto') return;
     // Auto: kick discovered hash sync → configured → local (no Add, no Preferred).
-    if (!hasPropagationCascadeCandidate('auto', nodes, discovered)) return;
-    const target = resolvePropagationSyncTargetId('auto', nodes, preferredId, discovered);
+    if (!hasPropagationCascadeCandidate('auto', nodes, discovered, autoBlacklist)) return;
+    const target = resolvePropagationSyncTargetId(
+      'auto',
+      nodes,
+      preferredId,
+      discovered,
+      autoBlacklist,
+    );
     if (target == null) return;
     handleSyncNow(target);
+  };
+
+  const handleIgnoreForAuto = (destinationHash: string) => {
+    if (ignoreBusy) return;
+    setIgnoreBusy(true);
+    void addAutoBlacklist(destinationHash)
+      .then((ok) => {
+        setIgnoreBusy(false);
+        if (!ok) addToast(t('reticulumPropagation.ignoreForAutoFailed'), 'error');
+      })
+      .catch((err: unknown) => {
+        setIgnoreBusy(false);
+        console.warn('[ReticulumPropagationSection] ignoreForAuto rejected', err);
+        addToast(t('reticulumPropagation.ignoreForAutoFailed'), 'error');
+      });
+  };
+
+  const handleAllowForAuto = (destinationHash: string) => {
+    if (ignoreBusy) return;
+    setIgnoreBusy(true);
+    void removeAutoBlacklist(destinationHash)
+      .then((ok) => {
+        setIgnoreBusy(false);
+        if (!ok) addToast(t('reticulumPropagation.allowForAutoFailed'), 'error');
+      })
+      .catch((err: unknown) => {
+        setIgnoreBusy(false);
+        console.warn('[ReticulumPropagationSection] allowForAuto rejected', err);
+        addToast(t('reticulumPropagation.allowForAutoFailed'), 'error');
+      });
   };
 
   const handleRefresh = async () => {
@@ -286,7 +429,13 @@ export default function ReticulumPropagationSection({
         ? 'reticulumPropagation.modeHelpManual'
         : 'reticulumPropagation.modeHelpOff';
 
-  const bottomSyncTargetId = resolvePropagationSyncTargetId(mode, nodes, preferredId, discovered);
+  const bottomSyncTargetId = resolvePropagationSyncTargetId(
+    mode,
+    nodes,
+    preferredId,
+    discovered,
+    autoBlacklist,
+  );
   // Manual resolves Preferred, else a picked remote, else local settle; Off disables Sync.
   // Auto Sync (bottom or per-row) runs the full cascade — ignore firstTargetId.
   const bottomSyncDisabled =
@@ -294,7 +443,7 @@ export default function ReticulumPropagationSection({
     syncStarting ||
     mode === 'off' ||
     (mode === 'manual' && !bottomSyncTargetId) ||
-    (mode === 'auto' && !hasPropagationCascadeCandidate('auto', nodes, discovered));
+    (mode === 'auto' && !hasPropagationCascadeCandidate('auto', nodes, discovered, autoBlacklist));
 
   const body = (
     <>
@@ -346,6 +495,11 @@ export default function ReticulumPropagationSection({
           const isLocal = node.id === 'local-prop';
           const isLoading = node.status === 'loading';
           const isRenaming = renamingId === node.id;
+          const destHash = node.destination_hash ?? null;
+          const ignoredForAuto =
+            !isLocal && destHash != null
+              ? isPropagationHashAutoBlacklisted(destHash, autoBlacklist)
+              : false;
           return (
             <li
               key={node.id}
@@ -496,6 +650,29 @@ export default function ReticulumPropagationSection({
                     ? t('connectionPanel.reticulumPropagation.disable')
                     : t('connectionPanel.reticulumPropagation.enable')}
                 </button>
+                {!isLocal && destHash ? (
+                  <button
+                    type="button"
+                    className="text-xs text-gray-400 hover:underline disabled:opacity-40"
+                    disabled={ignoreBusy}
+                    onClick={() => {
+                      if (ignoredForAuto) handleAllowForAuto(destHash);
+                      else handleIgnoreForAuto(destHash);
+                    }}
+                    aria-label={t(
+                      ignoredForAuto
+                        ? 'reticulumPropagation.allowForAutoAria'
+                        : 'reticulumPropagation.ignoreForAutoAria',
+                      { name: node.name },
+                    )}
+                  >
+                    {t(
+                      ignoredForAuto
+                        ? 'reticulumPropagation.allowForAuto'
+                        : 'reticulumPropagation.ignoreForAuto',
+                    )}
+                  </button>
+                ) : null}
                 {!isLocal && !isRenaming ? (
                   <>
                     <button
@@ -629,8 +806,12 @@ export default function ReticulumPropagationSection({
       <DiscoveredPropagationList
         discovered={discovered}
         configuredHashes={configuredHashes}
+        autoBlacklist={autoBlacklist}
         onAdd={handleAddFromDiscovered}
+        onIgnoreForAuto={handleIgnoreForAuto}
+        onAllowForAuto={handleAllowForAuto}
         adding={adding}
+        ignoreBusy={ignoreBusy}
       />
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-xs">

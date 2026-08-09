@@ -1576,6 +1576,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
               propState.preferredId,
               readReticulumPropagationMode(),
               propState.discovered,
+              propState.autoBlacklist,
             );
             console.debug(
               `[useReticulumRuntime] link-timeout bridge apply=${applyBridge} preferred=${propState.preferredId ?? 'none'} nodes=${propState.nodes.length}`,

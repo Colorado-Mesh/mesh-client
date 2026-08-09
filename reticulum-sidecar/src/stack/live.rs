@@ -5746,7 +5746,7 @@ async fn rebuild_pn_cascade_candidates(
     pn_hosting_policy: &Arc<Mutex<PnHostingPolicy>>,
 ) {
     use pn_cascade::{auto_discovered_candidates, candidates_for_propagation_mode};
-    let (rows, self_hash, mode) = {
+    let (rows, self_hash, mode, auto_blacklist) = {
         let state = persisted.read().await;
         let rows: Vec<(String, bool, Option<String>, Option<u8>)> = state
             .propagation
@@ -5754,9 +5754,18 @@ async fn rebuild_pn_cascade_candidates(
             .map(|p| (p.id.clone(), p.enabled, p.destination_hash.clone(), p.hops))
             .collect();
         let self_hash = state.identity.lxmf_hash.clone();
-        (rows, self_hash, state.propagation_mode)
+        let auto_blacklist: std::collections::HashSet<[u8; 16]> = state
+            .propagation_auto_blacklist
+            .iter()
+            .filter_map(|h| parse_hash16(h).ok())
+            .collect();
+        (rows, self_hash, state.propagation_mode, auto_blacklist)
     };
     let mut candidates = candidates_for_propagation_mode(&rows, &self_hash, mode);
+    // Auto ignores blacklisted remotes for outbound deposit; Manual Prefer/deposit still may.
+    if mode.is_auto() {
+        candidates.retain(|c| c.is_local || !auto_blacklist.contains(&c.hash));
+    }
     let discovered_rows: Vec<super::DiscoveredPropagationRow> = discovered_propagation
         .lock()
         .map(|cache| cache.values().cloned().collect())
@@ -5771,6 +5780,7 @@ async fn rebuild_pn_cascade_candidates(
         &self_hash,
         mode,
         max_peering_cost,
+        &auto_blacklist,
     ));
     if let Ok(mut driver) = outbound.lock() {
         driver.set_pn_cascade_candidates(candidates);

@@ -95,6 +95,8 @@ interface PropagationSyncState {
 interface ReticulumPropagationStoreState {
   nodes: PropagationNodeRow[];
   discovered: DiscoveredPropagationRow[];
+  /** Destination hashes Auto must never sync or deposit on (sidecar-persisted). */
+  autoBlacklist: string[];
   preferredId: string | null;
   autoSyncIntervalSec: number;
   hostingPolicy: PnHostingPolicy;
@@ -150,11 +152,14 @@ interface ReticulumPropagationStoreState {
   addFromDiscovered: (destinationHash: string, opts?: { prefer?: boolean }) => Promise<boolean>;
   removePropagationNode: (id: string) => Promise<boolean>;
   renamePropagationNode: (id: string, name: string) => Promise<boolean>;
+  addAutoBlacklist: (destinationHash: string) => Promise<boolean>;
+  removeAutoBlacklist: (destinationHash: string) => Promise<boolean>;
 }
 
 export const useReticulumPropagationStore = create<ReticulumPropagationStoreState>((set, get) => ({
   nodes: [],
   discovered: [],
+  autoBlacklist: [],
   preferredId: null,
   autoSyncIntervalSec: RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC,
   hostingPolicy: { ...DEFAULT_PN_HOSTING_POLICY },
@@ -239,6 +244,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         propagation?: PropagationNodeRow[];
         preferred_id?: string | null;
         auto_sync_interval_sec?: number;
+        propagation_auto_blacklist?: string[];
         pn_hosting_policy?: unknown;
         last_propagation_sync_at?: number | null;
       };
@@ -257,11 +263,15 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         }
       }
       const syncActive = get().sync.active;
+      const autoBlacklist = (body.propagation_auto_blacklist ?? [])
+        .filter((h): h is string => typeof h === 'string' && h.length > 0)
+        .map((h) => h.toLowerCase());
       set({
         nodes,
         preferredId: body.preferred_id ?? null,
         autoSyncIntervalSec:
           body.auto_sync_interval_sec ?? RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC,
+        autoBlacklist,
         hostingPolicy: parsePnHostingPolicy(body.pn_hosting_policy),
         lastRefreshedAt: nowMs,
         lastPropagationSyncAt,
@@ -551,6 +561,44 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       }
     } catch (e) {
       console.warn('[reticulumPropagationStore] rename node ' + errLikeToLogString(e));
+    }
+    return false;
+  },
+
+  addAutoBlacklist: async (destinationHash) => {
+    try {
+      const res = (await window.electronAPI.reticulum.proxyPost(
+        '/api/v1/propagation/auto-blacklist',
+        { destination_hash: destinationHash },
+      )) as { ok?: boolean; error?: string };
+      if (res.ok) {
+        await get().refreshFromSidecar();
+        return true;
+      }
+      if (res.error) {
+        console.warn('[reticulumPropagationStore] auto-blacklist add: ' + res.error);
+      }
+    } catch (e) {
+      console.warn('[reticulumPropagationStore] auto-blacklist add ' + errLikeToLogString(e));
+    }
+    return false;
+  },
+
+  removeAutoBlacklist: async (destinationHash) => {
+    try {
+      const encoded = encodeURIComponent(destinationHash.toLowerCase());
+      const res = (await window.electronAPI.reticulum.proxyDelete(
+        `/api/v1/propagation/auto-blacklist/${encoded}`,
+      )) as { ok?: boolean; error?: string };
+      if (res.ok) {
+        await get().refreshFromSidecar();
+        return true;
+      }
+      if (res.error) {
+        console.warn('[reticulumPropagationStore] auto-blacklist remove: ' + res.error);
+      }
+    } catch (e) {
+      console.warn('[reticulumPropagationStore] auto-blacklist remove ' + errLikeToLogString(e));
     }
     return false;
   },

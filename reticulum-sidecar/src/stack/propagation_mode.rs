@@ -27,6 +27,10 @@ impl PropagationMode {
     pub fn is_off(self) -> bool {
         matches!(self, PropagationMode::Off)
     }
+
+    pub fn is_auto(self) -> bool {
+        matches!(self, PropagationMode::Auto)
+    }
 }
 
 /// Parse a renderer mode string; unknown values are rejected so a typo cannot

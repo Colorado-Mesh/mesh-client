@@ -4292,7 +4292,15 @@
     "showChatNoticeHint": "Nonaktifkan ini untuk menyembunyikan spanduk Obrolan yang muncul ketika tidak ada node propagasi yang tersedia.",
     "syncPathUnknown": "Belum ada jalur jaringan ke simpul propagasi ini. Periksa antarmuka atau hub Anda, umumkan, lalu coba lagi.",
     "syncStackNotLive": "Sinkronisasi propagasi ditangguhkan — tumpukan Reticulum masih dimulai.",
-    "syncRetrieveBusy": "Sinkronisasi propagasi ditangguhkan — pengambilan kotak masuk sudah berlangsung."
+    "syncRetrieveBusy": "Sinkronisasi propagasi ditangguhkan — pengambilan kotak masuk sudah berlangsung.",
+    "ignoreForAuto": "Abaikan untuk Auto",
+    "ignoreForAutoAria": "Abaikan simpul propagasi {{name}} untuk Sinkronisasi dan deposit otomatis",
+    "ignoreForAutoFailed": "Tidak dapat mengabaikan simpul propagasi ini untuk Auto.",
+    "allowForAuto": "Izinkan Gabung Otomatis",
+    "allowForAutoAria": "Izinkan simpul propagasi {{name}} untuk Sinkronisasi otomatis dan deposit lagi",
+    "allowForAutoFailed": "Tidak dapat mengizinkan simpul propagasi ini untuk Otomatis lagi.",
+    "ignoredForAutoTitle": "Diabaikan untuk Otomatis",
+    "ignoredForAutoHint": "Auto tidak akan menyinkronkan atau menyetor ke node ini. Prefer/Sync Manual masih berfungsi."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Penemuan RMAP v4",

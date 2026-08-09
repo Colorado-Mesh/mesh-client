@@ -4294,7 +4294,15 @@
     "showChatNoticeHint": "Vypnutím tohoto tlačítka skryjete banner chatu, který se zobrazí, když není k dispozici žádný propagační uzel.",
     "syncPathUnknown": "Zatím neexistuje síťová cesta k tomuto propagačnímu uzlu. Zkontrolujte rozhraní nebo rozbočovač, oznamte to a zkuste to znovu.",
     "syncStackNotLive": "Synchronizace propagace odložena — zásobník Reticulum se stále spouští.",
-    "syncRetrieveBusy": "Synchronizace propagace odložena — vyhledávání doručené pošty již probíhá."
+    "syncRetrieveBusy": "Synchronizace propagace odložena — vyhledávání doručené pošty již probíhá.",
+    "ignoreForAuto": "Ignorovat pro automatické",
+    "ignoreForAutoAria": "Ignorovat uzel šíření {{name}} pro automatickou synchronizaci a vklad",
+    "ignoreForAutoFailed": "Nelze ignorovat tento propagační uzel pro Auto.",
+    "allowForAuto": "Povolit auto",
+    "allowForAutoAria": "Povolit uzel šíření {{name}} pro automatickou synchronizaci a opětovný vklad",
+    "allowForAutoFailed": "Nelze znovu povolit tento propagační uzel pro auto.",
+    "ignoredForAutoTitle": "Ignorováno pro auto",
+    "ignoredForAutoHint": "Auto se z těchto uzlů nesynchronizuje ani do nich neukládá. Ruční nastavení/synchronizace stále funguje."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Objevení RMAP v4",

@@ -33,6 +33,9 @@ pub struct PersistedState {
     pub auto_sync_interval_sec: u32,
     /// Renderer propagation mode; `Off` disables the outbound Direct→PN cascade.
     pub propagation_mode: PropagationMode,
+    /// Destination hashes (32 lowercase hex) Auto must never sync or deposit on.
+    /// Manual Prefer/Sync and explicit Add remain available.
+    pub propagation_auto_blacklist: Vec<String>,
     /// LXMF local PN hosting / peering policy (defaults match rsLXMF / lxmd).
     pub pn_hosting_policy: PnHostingPolicy,
     pub nomad_nodes: Vec<NomadNodeRow>,
@@ -89,6 +92,7 @@ impl PersistedState {
             propagation_sync: serde_json::Value::Null,
             auto_sync_interval_sec: 3600,
             propagation_mode: PropagationMode::default(),
+            propagation_auto_blacklist: Vec::new(),
             pn_hosting_policy: PnHostingPolicy::default(),
             nomad_nodes: Vec::new(),
             rrc_hubs: Vec::new(),
@@ -413,6 +417,47 @@ impl PersistedState {
 
     pub fn set_propagation_mode(&mut self, mode: PropagationMode) {
         self.propagation_mode = mode;
+    }
+
+    /// Cap so a misbehaving UI cannot grow the Auto ignore list without bound.
+    const PROPAGATION_AUTO_BLACKLIST_CAP: usize = 256;
+
+    /// Normalize and validate a PN destination hash for the Auto blacklist.
+    pub fn normalize_propagation_auto_blacklist_hash(raw: &str) -> Result<String, String> {
+        let clean: String = raw
+            .chars()
+            .filter(char::is_ascii_hexdigit)
+            .collect::<String>()
+            .to_lowercase();
+        if clean.len() != 32 {
+            return Err("destination_hash must be 32 hex characters".into());
+        }
+        Ok(clean)
+    }
+
+    pub fn add_propagation_auto_blacklist(&mut self, destination_hash: &str) -> Result<(), String> {
+        let hash = Self::normalize_propagation_auto_blacklist_hash(destination_hash)?;
+        if self.propagation_auto_blacklist.iter().any(|h| h == &hash) {
+            return Ok(());
+        }
+        if self.propagation_auto_blacklist.len() >= Self::PROPAGATION_AUTO_BLACKLIST_CAP {
+            return Err("propagation Auto blacklist is full".into());
+        }
+        self.propagation_auto_blacklist.push(hash);
+        Ok(())
+    }
+
+    pub fn remove_propagation_auto_blacklist(
+        &mut self,
+        destination_hash: &str,
+    ) -> Result<(), String> {
+        let hash = Self::normalize_propagation_auto_blacklist_hash(destination_hash)?;
+        let before = self.propagation_auto_blacklist.len();
+        self.propagation_auto_blacklist.retain(|h| h != &hash);
+        if self.propagation_auto_blacklist.len() == before {
+            return Err(format!("destination_hash not in Auto blacklist: {hash}"));
+        }
+        Ok(())
     }
 
     pub fn set_pn_hosting_policy(&mut self, policy: PnHostingPolicy) -> Result<(), String> {
@@ -817,7 +862,7 @@ impl serde::Serialize for PersistedState {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut s = serializer.serialize_struct("PersistedState", 28)?;
+        let mut s = serializer.serialize_struct("PersistedState", 29)?;
         s.serialize_field("identity", &self.identity)?;
         s.serialize_field("interfaces", &self.interfaces)?;
         s.serialize_field("contacts", &self.contacts)?;
@@ -834,6 +879,10 @@ impl serde::Serialize for PersistedState {
         s.serialize_field("propagation_sync", &self.propagation_sync)?;
         s.serialize_field("auto_sync_interval_sec", &self.auto_sync_interval_sec)?;
         s.serialize_field("propagation_mode", &self.propagation_mode)?;
+        s.serialize_field(
+            "propagation_auto_blacklist",
+            &self.propagation_auto_blacklist,
+        )?;
         s.serialize_field("pn_hosting_policy", &self.pn_hosting_policy)?;
         s.serialize_field("nomad_nodes", &self.nomad_nodes)?;
         s.serialize_field("rrc_hubs", &self.rrc_hubs)?;
@@ -886,6 +935,8 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             #[serde(default)]
             propagation_mode: PropagationMode,
             #[serde(default)]
+            propagation_auto_blacklist: Vec<String>,
+            #[serde(default)]
             pn_hosting_policy: PnHostingPolicy,
             #[serde(default)]
             nomad_nodes: Vec<NomadNodeRow>,
@@ -935,6 +986,7 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             },
             auto_sync_interval_sec: raw.auto_sync_interval_sec,
             propagation_mode: raw.propagation_mode,
+            propagation_auto_blacklist: raw.propagation_auto_blacklist,
             pn_hosting_policy: raw.pn_hosting_policy,
             nomad_nodes: raw.nomad_nodes,
             rrc_hubs: raw.rrc_hubs,
@@ -1111,6 +1163,28 @@ mod tests {
                 .and_then(serde_json::Value::as_bool),
             Some(false)
         );
+    }
+
+    #[test]
+    fn propagation_auto_blacklist_add_remove_normalizes_hash() {
+        let mut state = PersistedState::default_empty();
+        let hash = "DEADBEEFcafeBABE0123456789ABCDEF";
+        state
+            .add_propagation_auto_blacklist(hash)
+            .expect("add blacklist");
+        assert_eq!(
+            state.propagation_auto_blacklist,
+            vec!["deadbeefcafebabe0123456789abcdef".to_string()]
+        );
+        // Idempotent re-add.
+        state.add_propagation_auto_blacklist(hash).expect("re-add");
+        assert_eq!(state.propagation_auto_blacklist.len(), 1);
+        assert!(state.add_propagation_auto_blacklist("not-a-hash").is_err());
+        state
+            .remove_propagation_auto_blacklist(hash)
+            .expect("remove");
+        assert!(state.propagation_auto_blacklist.is_empty());
+        assert!(state.remove_propagation_auto_blacklist(hash).is_err());
     }
 
     #[test]

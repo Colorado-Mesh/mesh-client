@@ -4292,7 +4292,15 @@
     "showChatNoticeHint": "Schakel dit uit om de chatbanner te verbergen die verschijnt als er geen propagatieknooppunt beschikbaar is.",
     "syncPathUnknown": "Nog geen netwerkpad naar dit propagatieknooppunt. Controleer uw interfaces of hub, kondig aan en probeer het opnieuw.",
     "syncStackNotLive": "Uitgestelde propagatiesynchronisatie — de Reticulum-stack begint nog steeds.",
-    "syncRetrieveBusy": "Voortplantingssynchronisatie uitgesteld — het ophalen van de inbox is al bezig."
+    "syncRetrieveBusy": "Voortplantingssynchronisatie uitgesteld — het ophalen van de inbox is al bezig.",
+    "ignoreForAuto": "Negeren voor Auto",
+    "ignoreForAutoAria": "Negeer propagatieknooppunt {{name}} voor automatische synchronisatie en storting",
+    "ignoreForAutoFailed": "Kon dit propagatieknooppunt voor Auto niet negeren.",
+    "allowForAuto": "Automatisch toestaan",
+    "allowForAutoAria": "Sta propagatieknooppunt {{name}} toe voor automatische synchronisatie en opnieuw storten",
+    "allowForAutoFailed": "Kon dit voortplantingsknooppunt voor Auto niet opnieuw toestaan.",
+    "ignoredForAutoTitle": "Genegeerd voor Auto",
+    "ignoredForAutoHint": "Automatisch wordt niet gesynchroniseerd vanaf of gestort op deze knooppunten. Handmatige voorkeur/synchronisatie werkt nog steeds."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4-detectie",

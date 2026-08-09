@@ -36,6 +36,7 @@ describe('reticulumPropagationStore', () => {
     useReticulumPropagationStore.setState({
       nodes: [],
       discovered: [],
+      autoBlacklist: [],
       preferredId: null,
       autoSyncIntervalSec: RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC,
       hostingPolicy: { ...DEFAULT_PN_HOSTING_POLICY },
@@ -57,6 +58,7 @@ describe('reticulumPropagationStore', () => {
     proxyGet
       .mockResolvedValueOnce({
         propagation: [{ id: 'p1', name: 'Node', enabled: true, status: 'ok' }],
+        propagation_auto_blacklist: ['AA'.repeat(16)],
         preferred_id: 'p1',
         auto_sync_interval_sec: 120,
       })
@@ -77,6 +79,7 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().nodes).toHaveLength(1);
     expect(useReticulumPropagationStore.getState().preferredId).toBe('p1');
     expect(useReticulumPropagationStore.getState().autoSyncIntervalSec).toBe(120);
+    expect(useReticulumPropagationStore.getState().autoBlacklist).toEqual(['aa'.repeat(16)]);
     expect(useReticulumPropagationStore.getState().lastRefreshedAt).toBeTypeOf('number');
     expect(useReticulumPropagationStore.getState().discovered).toHaveLength(1);
   });

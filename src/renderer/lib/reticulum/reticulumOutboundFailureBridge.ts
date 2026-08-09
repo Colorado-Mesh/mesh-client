@@ -29,8 +29,9 @@ export function shouldApplyLinkDeliveryTimeoutFailureBridge(
   preferredId: string | null,
   mode: ReticulumPropagationMode = readReticulumPropagationMode(),
   discovered: readonly DiscoveredPropagationRow[] = [],
+  autoBlacklist: readonly string[] = [],
 ): boolean {
-  return !hasReticulumPnCascadeCapacity(nodes, preferredId, mode, discovered);
+  return !hasReticulumPnCascadeCapacity(nodes, preferredId, mode, discovered, autoBlacklist);
 }
 
 function destHashMatchesPeer(storedHash: string, targetNorm: string): boolean {

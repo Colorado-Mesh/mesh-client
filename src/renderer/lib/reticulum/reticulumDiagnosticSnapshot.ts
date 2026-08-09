@@ -10,6 +10,7 @@ import { getReticulumInboundLxmfDiagnostics } from './reticulumInboundLxmfDiagno
 import {
   formatAutoPropagationTargetLabel,
   pickAutoPropagationTarget,
+  propagationAutoBlacklistSet,
   readReticulumPropagationMode,
   resolvePropagationSyncTargetId,
   type ReticulumPropagationMode,
@@ -93,7 +94,8 @@ export interface ReticulumPropagationClientSnapshot {
 export function getReticulumPropagationClientSnapshot(): ReticulumPropagationClientSnapshot {
   const s = useReticulumPropagationStore.getState();
   const mode = readReticulumPropagationMode();
-  const auto = pickAutoPropagationTarget(s.nodes, s.discovered);
+  const autoBlacklist = propagationAutoBlacklistSet(s.autoBlacklist);
+  const auto = pickAutoPropagationTarget(s.nodes, s.discovered, autoBlacklist);
   return {
     mode,
     preferredId: s.preferredId,
@@ -102,6 +104,7 @@ export function getReticulumPropagationClientSnapshot(): ReticulumPropagationCli
       s.nodes,
       s.preferredId,
       s.discovered,
+      autoBlacklist,
     ),
     autoTarget: formatAutoPropagationTargetLabel(auto),
     lastSyncError: s.lastSyncError,

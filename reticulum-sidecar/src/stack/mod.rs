@@ -1357,13 +1357,47 @@ impl StackHandle {
                 row
             })
             .collect();
+        let auto_blacklist = inner.propagation_auto_blacklist.clone();
         serde_json::json!({
             "propagation": propagation,
             "preferred_id": preferred_id,
             "auto_sync_interval_sec": auto_sync_interval_sec,
             "propagation_mode": propagation_mode.as_str(),
+            "propagation_auto_blacklist": auto_blacklist,
             "pn_hosting_policy": pn_hosting_policy,
         })
+    }
+
+    pub async fn add_propagation_auto_blacklist(
+        &self,
+        destination_hash: &str,
+    ) -> Result<(), String> {
+        {
+            let mut inner = self.inner.write().await;
+            inner.add_propagation_auto_blacklist(destination_hash)?;
+            inner.save(&self.config_dir, &self.storage_dir)?;
+        }
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live.get() {
+            live.refresh_pn_cascade_candidates().await;
+        }
+        Ok(())
+    }
+
+    pub async fn remove_propagation_auto_blacklist(
+        &self,
+        destination_hash: &str,
+    ) -> Result<(), String> {
+        {
+            let mut inner = self.inner.write().await;
+            inner.remove_propagation_auto_blacklist(destination_hash)?;
+            inner.save(&self.config_dir, &self.storage_dir)?;
+        }
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live.get() {
+            live.refresh_pn_cascade_candidates().await;
+        }
+        Ok(())
     }
 
     pub fn list_discovered_propagation(&self) -> Vec<DiscoveredPropagationRow> {

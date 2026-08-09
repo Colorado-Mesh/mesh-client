@@ -4292,7 +4292,15 @@
     "showChatNoticeHint": "전파 노드를 사용할 수 없을 때 나타나는 채팅 배너를 숨기려면 이 옵션을 끄십시오.",
     "syncPathUnknown": "이 전파 노드에 대한 네트워크 경로가 아직 없습니다. 인터페이스 또는 허브를 확인하고 공지한 다음 다시 시도하십시오.",
     "syncStackNotLive": "전파 동기화 지연 — Reticulum 스택이 아직 시작 중입니다.",
-    "syncRetrieveBusy": "전파 동기화 연기됨 — 받은 편지함 검색이 이미 진행 중입니다."
+    "syncRetrieveBusy": "전파 동기화 연기됨 — 받은 편지함 검색이 이미 진행 중입니다.",
+    "ignoreForAuto": "자동 무시",
+    "ignoreForAutoAria": "자동 동기화 및 입금에 대한 전파 노드 {{name}} 무시",
+    "ignoreForAutoFailed": "자동에 대한 이 전파 노드를 무시할 수 없습니다.",
+    "allowForAuto": "자동 가입 사용",
+    "allowForAutoAria": "자동 동기화 및 입금을 위한 전파 노드 {{name}} 허용",
+    "allowForAutoFailed": "자동에 대해 이 전파 노드를 다시 허용할 수 없습니다.",
+    "ignoredForAutoTitle": "자동에 대해 무시됨",
+    "ignoredForAutoHint": "이 노드에서 자동 동기화되거나 이 노드에 입금되지 않습니다. 수동 선호/동기화는 여전히 작동합니다."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 검색",

@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { startPropagationSyncCascade } from '@/renderer/lib/reticulum/reticulumPropagationAutoApply';
 import {
   hasPropagationCascadeCandidate,
+  propagationAutoBlacklistSet,
   readReticulumPropagationMode,
   type ReticulumPropagationMode,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
@@ -89,8 +90,13 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
       });
 
     const cascadeCandidate = (mode: ReticulumPropagationMode): boolean => {
-      const { nodes, discovered } = useReticulumPropagationStore.getState();
-      return hasPropagationCascadeCandidate(mode, nodes, discovered);
+      const { nodes, discovered, autoBlacklist } = useReticulumPropagationStore.getState();
+      return hasPropagationCascadeCandidate(
+        mode,
+        nodes,
+        discovered,
+        propagationAutoBlacklistSet(autoBlacklist),
+      );
     };
 
     const tick = async () => {
