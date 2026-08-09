@@ -4289,7 +4289,8 @@
     "syncErrorWithTarget": "{{name}} ： {{message}}",
     "showChatNotice": "チャットに伝播リマインダーを表示",
     "showChatNoticeAria": "チャットで伝播ノードのリマインダーバナーを表示する",
-    "showChatNoticeHint": "これをオフにすると、伝播ノードが利用できないときに表示されるチャットバナーが非表示になります。"
+    "showChatNoticeHint": "これをオフにすると、伝播ノードが利用できないときに表示されるチャットバナーが非表示になります。",
+    "syncPathUnknown": "この伝播ノードへのネットワークパスはまだありません。インターフェースまたはハブを確認し、お知らせしてから、もう一度お試しください。"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v 4検出",

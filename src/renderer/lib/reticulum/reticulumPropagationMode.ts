@@ -71,11 +71,21 @@ function sortByHopsThenKey<T extends RankedRemote>(a: T, b: T): number {
   return a.sortKey.localeCompare(b.sortKey);
 }
 
+export interface DiscoveredPropagationTarget {
+  destinationHash: string;
+  hops: number;
+}
+
+/** True when hops came from the path table (not “unknown” / Infinity). */
+export function hasFinitePropagationHops(hops: number): boolean {
+  return Number.isFinite(hops);
+}
+
 /** Active discovered remotes not already configured, best (lowest hops) first. */
 export function listDiscoveredPropagationTargets(
   nodes: PropagationNodeRow[],
   discovered: readonly DiscoveredPropagationRow[],
-): { destinationHash: string; hops: number }[] {
+): DiscoveredPropagationTarget[] {
   const configuredHashes = configuredPropagationDestinationHashes(nodes);
   const rows: { destinationHash: string; hops: number; sortKey: string }[] = [];
   for (const row of discovered) {
@@ -90,6 +100,26 @@ export function listDiscoveredPropagationTargets(
   }
   rows.sort(sortByHopsThenKey);
   return rows.map(({ destinationHash, hops }) => ({ destinationHash, hops }));
+}
+
+/** Discovered PNs with a known hop count (path table), best first. */
+export function listFiniteHopDiscoveredPropagationTargets(
+  nodes: PropagationNodeRow[],
+  discovered: readonly DiscoveredPropagationRow[],
+): DiscoveredPropagationTarget[] {
+  return listDiscoveredPropagationTargets(nodes, discovered).filter((t) =>
+    hasFinitePropagationHops(t.hops),
+  );
+}
+
+/** Discovered PNs with unknown hops (announce heard, no path yet), name/hash sorted. */
+export function listUnknownHopDiscoveredPropagationTargets(
+  nodes: PropagationNodeRow[],
+  discovered: readonly DiscoveredPropagationRow[],
+): DiscoveredPropagationTarget[] {
+  return listDiscoveredPropagationTargets(nodes, discovered).filter(
+    (t) => !hasFinitePropagationHops(t.hops),
+  );
 }
 
 /** Enabled configured remotes (excludes local-prop), best (lowest hops) first. */
@@ -181,14 +211,20 @@ export function pickAutoPropagationTarget(
   nodes: PropagationNodeRow[],
   discovered: readonly DiscoveredPropagationRow[] = [],
 ): AutoPropagationTarget | null {
-  const discoveredBest = listDiscoveredPropagationTargets(nodes, discovered).at(0);
-  if (discoveredBest != null) {
-    return { kind: 'discovered', destinationHash: discoveredBest.destinationHash };
+  // Finite-hop discovered → configured → unknown-hop discovered → local (matches cascade).
+  const finiteBest = listFiniteHopDiscoveredPropagationTargets(nodes, discovered).at(0);
+  if (finiteBest != null) {
+    return { kind: 'discovered', destinationHash: finiteBest.destinationHash };
   }
 
   const configuredBest = listConfiguredRemotePropagationIds(nodes).at(0);
   if (configuredBest != null) {
     return { kind: 'configured', id: configuredBest };
+  }
+
+  const unknownBest = listUnknownHopDiscoveredPropagationTargets(nodes, discovered).at(0);
+  if (unknownBest != null) {
+    return { kind: 'discovered', destinationHash: unknownBest.destinationHash };
   }
 
   if (hasReadyEnabledLocalPropagationNode(nodes)) {
@@ -209,9 +245,9 @@ export function pickAutoPropagationNodeId(nodes: PropagationNodeRow[]): string |
 /**
  * Sync target hint for UI enablement.
  *
- * Auto: best discovered destination hash (one-time sync), else best configured remote,
- * else local-prop. Manual uses Preferred (including `local-prop`), else picks the best
- * configured remote for this sync only (no Preferred write), else local-prop. Off → null.
+ * Auto: finite-hop discovered → configured remote → unknown-hop discovered → local-prop.
+ * Manual uses Preferred (including `local-prop`), else picks the best configured remote
+ * for this sync only (no Preferred write), else local-prop. Off → null.
  */
 export function resolvePropagationSyncTargetId(
   mode: ReticulumPropagationMode,
@@ -226,13 +262,10 @@ export function resolvePropagationSyncTargetId(
     if (configuredBest != null) return configuredBest;
     return hasReadyEnabledLocalPropagationNode(nodes) ? 'local-prop' : null;
   }
-  const discoveredBest = listDiscoveredPropagationTargets(nodes, discovered).at(0);
-  if (discoveredBest != null) {
-    return discoveredBest.destinationHash.toLowerCase();
-  }
-  const configured = listConfiguredRemotePropagationIds(nodes).at(0);
-  if (configured != null) return configured;
-  if (hasReadyEnabledLocalPropagationNode(nodes)) return 'local-prop';
+  const target = pickAutoPropagationTarget(nodes, discovered);
+  if (target?.kind === 'discovered') return target.destinationHash.toLowerCase();
+  if (target?.kind === 'configured') return target.id;
+  if (target?.kind === 'local') return 'local-prop';
   return null;
 }
 

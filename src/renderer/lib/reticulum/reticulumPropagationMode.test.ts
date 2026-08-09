@@ -191,6 +191,16 @@ describe('reticulumPropagationMode', () => {
       });
     });
 
+    it('prefers configured remotes over hops-unknown discovered announces', () => {
+      const nodes = [row({ id: 'pn-aaaa', name: 'Added', hops: 4 })];
+      const rows = [discovered({ destination_hash: '2222'.repeat(8) })];
+      expect(pickAutoPropagationTarget(nodes, rows)).toEqual({
+        kind: 'configured',
+        id: 'pn-aaaa',
+      });
+      expect(resolvePropagationSyncTargetId('auto', nodes, null, rows)).toBe('pn-aaaa');
+    });
+
     it('ignores discovered rows already configured or inactive', () => {
       const hash = 'aabb'.repeat(8);
       const nodes = [row({ id: 'pn-aabb', name: 'Configured', hops: 2, destination_hash: hash })];

@@ -4291,7 +4291,8 @@
     "syncErrorWithTarget": "{{name}}: {{message}}",
     "showChatNotice": "Zobrazit připomenutí propagace v chatu",
     "showChatNoticeAria": "Zobrazit banner připomenutí propagačního uzlu v chatu",
-    "showChatNoticeHint": "Vypnutím tohoto tlačítka skryjete banner chatu, který se zobrazí, když není k dispozici žádný propagační uzel."
+    "showChatNoticeHint": "Vypnutím tohoto tlačítka skryjete banner chatu, který se zobrazí, když není k dispozici žádný propagační uzel.",
+    "syncPathUnknown": "Zatím neexistuje síťová cesta k tomuto propagačnímu uzlu. Zkontrolujte rozhraní nebo rozbočovač, oznamte to a zkuste to znovu."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Objevení RMAP v4",

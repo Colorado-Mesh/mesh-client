@@ -3559,9 +3559,9 @@ impl LiveBridge {
         // Re-apply persisted PN pubkey before identity wait (announce flood may have evicted it).
         self.rehydrate_propagation_identities_from_persisted();
         // Link proofs are ignored unless the destination pubkey is in known_identities.
-        // Resolve identity (+ path when possible) before Establishing, same as LXMF delivery.
+        // Resolve identity before Establishing; hard path gate comes after announce settle
+        // (same code as probe_propagation_offer — never start Establishing without a path).
         let identity_ok = self.ensure_identity_for_direct(&dest_hex).await;
-        let _path_ok = self.ensure_path_for_direct(&dest_hex, true).await;
         let identity_known_after = self
             .outbound
             .lock()
@@ -3620,7 +3620,23 @@ impl LiveBridge {
             );
             return Err("PROPAGATION_SYNC_OUTBOUND_BUSY".into());
         }
+        // Hard path gate after announce settle so RequestPath can benefit from the announce.
+        // Ignoring path failure used to stall in Establishing until the renderer 45s timeout.
+        let path_ok = self.ensure_path_for_direct(&dest_hex, true).await;
         let hops = self.hops_to_destination(&dest_hex).await;
+        if !path_ok {
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.set_propagation_sync_target(None);
+            }
+            tracing::info!(
+                target: "propagation-sync",
+                dest = %dest_hex,
+                path_ok,
+                hops = ?hops,
+                "propagation sync aborted — no path to PN"
+            );
+            return Err("PROPAGATION_PATH_UNKNOWN".into());
+        }
         // Pin PN pubkey for the duration of Establishing so announce-flood eviction
         // cannot drop it before LRPROOF validation (see known_identities cap).
         let pinned = if let Ok(mut driver) = self.outbound.lock() {
@@ -3636,6 +3652,7 @@ impl LiveBridge {
         tracing::info!(
             target: "propagation-sync",
             dest = %dest_hex,
+            path_ok,
             hops = ?hops,
             pinned,
             "starting remote propagation sync"

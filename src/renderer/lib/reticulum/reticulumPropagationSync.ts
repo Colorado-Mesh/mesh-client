@@ -56,6 +56,7 @@ export function isPropagationSyncCancelledMessage(message: string | null | undef
 }
 const SYNC_IDENTITY_UNKNOWN_KEY = 'reticulumPropagation.syncIdentityUnknown';
 const SYNC_TARGET_NOT_PN_KEY = 'reticulumPropagation.syncTargetNotPropagationNode';
+const SYNC_PATH_UNKNOWN_KEY = 'reticulumPropagation.syncPathUnknown';
 const SYNC_PEERAGE_STAMP_FAILED_KEY = 'reticulumPropagation.syncPeeringStampFailed';
 const SYNC_ESTABLISH_IDENTITY_KEY = 'reticulumPropagation.syncEstablishIdentityMissing';
 const SYNC_ESTABLISH_INVALID_KEY = 'reticulumPropagation.syncEstablishInvalidProof';
@@ -140,6 +141,7 @@ export function mapPropagationSyncError(error: string | null | undefined): strin
   const byPrefix = mapPropagationSyncErrorByPrefix(error);
   if (byPrefix) return byPrefix;
   if (error === 'PROPAGATION_TARGET_NOT_PN') return SYNC_TARGET_NOT_PN_KEY;
+  if (error === 'PROPAGATION_PATH_UNKNOWN') return SYNC_PATH_UNKNOWN_KEY;
   if (error === 'PROPAGATION_PEER_COST_EXCEEDS_MAX') return SYNC_PEER_COST_EXCEEDS_MAX_KEY;
   if (error === 'PROPAGATION_OFFER_UNSUPPORTED') return SYNC_OFFER_UNSUPPORTED_KEY;
   if (error === 'PROPAGATION_OFFER_PROBE_TIMEOUT') return SYNC_OFFER_PROBE_TIMEOUT_KEY;

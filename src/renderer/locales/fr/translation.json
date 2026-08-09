@@ -4289,7 +4289,8 @@
     "syncErrorWithTarget": "{{name}} : {{message}}",
     "showChatNotice": "Afficher le rappel de propagation dans le chat",
     "showChatNoticeAria": "Afficher la bannière de rappel du nœud de propagation dans le chat",
-    "showChatNoticeHint": "Désactivez cette option pour masquer la bannière de chat qui apparaît lorsqu'aucun nœud de propagation n'est disponible."
+    "showChatNoticeHint": "Désactivez cette option pour masquer la bannière de chat qui apparaît lorsqu'aucun nœud de propagation n'est disponible.",
+    "syncPathUnknown": "Pas encore de chemin réseau vers ce nœud de propagation. Vérifiez vos interfaces ou votre hub, annoncez, puis réessayez."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Découverte RMAP v4",
