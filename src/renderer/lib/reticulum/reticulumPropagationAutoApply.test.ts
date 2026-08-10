@@ -108,6 +108,7 @@ describe('reticulumPropagationAutoApply', () => {
         },
       ],
       discovered: [],
+      autoBlacklist: [],
       preferredId: null,
       sync: { active: false, progress: 0, message: null },
       lastSyncError: null,
@@ -146,6 +147,7 @@ describe('reticulumPropagationAutoApply', () => {
           hops: 0,
         },
       ],
+      autoBlacklist: [],
       addFromDiscovered,
       setPreferredOnSidecar: setPreferred,
       startSync,
@@ -155,6 +157,25 @@ describe('reticulumPropagationAutoApply', () => {
     expect(addFromDiscovered).not.toHaveBeenCalled();
     expect(setPreferred).not.toHaveBeenCalled();
     expect(startSync).not.toHaveBeenCalledWith('local-prop');
+  });
+
+  it('Auto skips blacklisted discovered hashes and uses the next candidate', async () => {
+    const blocked = 'aaaa'.repeat(8);
+    const ok = 'bbbb'.repeat(8);
+    const startSync = deferredStartSync((id) => (id === ok ? 'success' : 'failure'));
+    useReticulumPropagationStore.setState({
+      preferredId: null,
+      nodes: [{ id: 'local-prop', name: 'Local', enabled: true, status: 'known' }],
+      discovered: [
+        { destination_hash: blocked, node_state: true, peering_cost: 0, hops: 0 },
+        { destination_hash: ok, node_state: true, peering_cost: 0, hops: 1 },
+      ],
+      autoBlacklist: [blocked],
+      startSync,
+    });
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
+    expect(startSync.mock.calls.map((c) => c[0])).toEqual([ok]);
+    expect(startSync).not.toHaveBeenCalledWith(blocked);
   });
 
   it('Auto with no enabled interfaces settles local only', async () => {
@@ -621,6 +642,124 @@ describe('reticulumPropagationAutoApply', () => {
       await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
       // Near was deferred, not failed — next cascade may try it again.
       expect(startSync.mock.calls.map((c) => c[0])[0]).toBe(near);
+    });
+
+    it('soft-defer restores a prior real lastSyncError from the cascade', async () => {
+      const priorKey = 'reticulumPropagation.syncPathUnknown';
+      const startSync = vi.fn((id?: string): Promise<PropagationStartSyncResult> => {
+        // Mirror store.startSync clearing lastSyncError on entry.
+        useReticulumPropagationStore.setState({ lastSyncError: null });
+        if (id === near) {
+          useReticulumPropagationStore.setState({
+            sync: { active: false, progress: 0, message: null },
+            lastSyncError: priorKey,
+            syncTargetId: near,
+          });
+          return Promise.resolve('failed');
+        }
+        useReticulumPropagationStore.setState({
+          sync: { active: false, progress: 0, message: null },
+          activePropagationSyncAttemptAt: null,
+        });
+        return Promise.resolve('deferred');
+      });
+      useReticulumPropagationStore.setState({
+        nodes: [{ id: 'local-prop', name: 'Local', enabled: false, status: 'idle' }],
+        discovered: [
+          { destination_hash: near, node_state: true, peering_cost: 0, hops: 1 },
+          { destination_hash: far, node_state: true, peering_cost: 0, hops: 2 },
+        ],
+        preferredId: null,
+        sync: { active: false, progress: 0, message: null },
+        lastSyncError: null,
+        startSync,
+      });
+
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(
+        false,
+      );
+      // near failed then far soft-deferred — do not leave lastSyncError wiped.
+      expect(useReticulumPropagationStore.getState().lastSyncError).toBe(priorKey);
+    });
+
+    it('RETRIEVE_BUSY-only cascade does not claim syncNoTarget when local is off', async () => {
+      const startSync = vi.fn(() => Promise.resolve('deferred' as const));
+      useReticulumPropagationStore.setState({
+        nodes: [{ id: 'local-prop', name: 'Local', enabled: false, status: 'idle' }],
+        discovered: [
+          { destination_hash: near, node_state: true, peering_cost: 0, hops: 1 },
+          { destination_hash: far, node_state: true, peering_cost: 0, hops: 2 },
+        ],
+        preferredId: null,
+        sync: { active: false, progress: 0, message: null },
+        lastSyncError: null,
+      });
+      useReticulumPropagationStore.setState({ startSync });
+
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(
+        false,
+      );
+      expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+        'reticulumPropagation.syncRetrieveBusy',
+      );
+      expect(useReticulumPropagationStore.getState().lastSyncError).not.toBe(
+        'reticulumPropagation.syncNoTarget',
+      );
+    });
+
+    it('all-remote soft-defer + local settle does not count as full cascade success', async () => {
+      const priorSuccess = 1_700_000_000_000;
+      const startSync = vi.fn((id?: string): Promise<PropagationStartSyncResult> => {
+        if (id === 'local-prop') {
+          useReticulumPropagationStore.setState({
+            sync: { active: false, progress: 0, message: null },
+            lastSyncError: null,
+            lastPropagationSyncAt: Date.now(),
+            syncTargetId: 'local-prop',
+          });
+          return Promise.resolve('accepted');
+        }
+        return Promise.resolve('deferred');
+      });
+      useReticulumPropagationStore.setState({
+        nodes: [{ id: 'local-prop', name: 'Local', enabled: true, status: 'known' }],
+        discovered: [
+          { destination_hash: near, node_state: true, peering_cost: 0, hops: 1 },
+          { destination_hash: far, node_state: true, peering_cost: 0, hops: 2 },
+        ],
+        preferredId: null,
+        lastPropagationSyncAt: priorSuccess,
+        lastSyncError: null,
+        startSync,
+      });
+
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(
+        false,
+      );
+      expect(startSync.mock.calls.map((c) => c[0])).toEqual([near, far, 'local-prop']);
+      expect(useReticulumPropagationStore.getState().lastPropagationSyncAt).toBe(priorSuccess);
+      expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+        'reticulumPropagation.syncRetrieveBusy',
+      );
+    });
+
+    it('local soft-defer with no remote contact surfaces retrieve busy', async () => {
+      const startSync = vi.fn(() => Promise.resolve('deferred' as const));
+      useReticulumPropagationStore.setState({
+        nodes: [{ id: 'local-prop', name: 'Local', enabled: true, status: 'known' }],
+        discovered: [],
+        preferredId: null,
+        lastSyncError: null,
+        startSync,
+      });
+
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: false })).resolves.toBe(
+        false,
+      );
+      expect(startSync).toHaveBeenCalledWith('local-prop');
+      expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+        'reticulumPropagation.syncRetrieveBusy',
+      );
     });
 
     it('skips a configured remote whose hash was already tried as the Manual seed', async () => {

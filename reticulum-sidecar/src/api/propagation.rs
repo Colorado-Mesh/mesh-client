@@ -41,6 +41,11 @@ pub struct RenamePropagationBody {
     pub name: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct PropagationAutoBlacklistBody {
+    pub destination_hash: String,
+}
+
 pub async fn set_pn_hosting_policy(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<crate::stack::PnHostingPolicy>,
@@ -125,6 +130,32 @@ pub async fn set_propagation_mode(
     Json(body): Json<PropagationModeBody>,
 ) -> Json<serde_json::Value> {
     match stack.set_propagation_mode(&body.mode).await {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn add_propagation_auto_blacklist(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<PropagationAutoBlacklistBody>,
+) -> Json<serde_json::Value> {
+    match stack
+        .add_propagation_auto_blacklist(&body.destination_hash)
+        .await
+    {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn remove_propagation_auto_blacklist(
+    State(stack): State<Arc<StackHandle>>,
+    Path(destination_hash): Path<String>,
+) -> Json<serde_json::Value> {
+    match stack
+        .remove_propagation_auto_blacklist(&destination_hash)
+        .await
+    {
         Ok(()) => Json(serde_json::json!({ "ok": true })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }

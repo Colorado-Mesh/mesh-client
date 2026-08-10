@@ -489,6 +489,49 @@ describe('ReticulumPropagationSection', () => {
     ).toBeInTheDocument();
   });
 
+  it('Ignore for Auto posts blacklist then Allow removes it', async () => {
+    const user = userEvent.setup();
+    const hash = 'beef'.repeat(8);
+    const addAutoBlacklist = vi.fn().mockResolvedValue(true);
+    const removeAutoBlacklist = vi.fn().mockImplementation(() => {
+      useReticulumPropagationStore.setState({ autoBlacklist: [] });
+      return Promise.resolve(true);
+    });
+    useReticulumPropagationStore.setState({
+      discovered: [
+        {
+          destination_hash: hash,
+          display_name: 'IgnoreMe',
+          node_state: true,
+          peering_cost: 0,
+          hops: 2,
+        },
+      ],
+      autoBlacklist: [],
+      addAutoBlacklist,
+      removeAutoBlacklist,
+    });
+    const { rerender } = render(<ReticulumPropagationSection embedded />);
+
+    await user.click(
+      screen.getByRole('button', { name: 'reticulumPropagation.ignoreForAutoAria:IgnoreMe' }),
+    );
+    await waitFor(() => {
+      expect(addAutoBlacklist).toHaveBeenCalledWith(hash);
+    });
+
+    useReticulumPropagationStore.setState({ autoBlacklist: [hash.toLowerCase()] });
+    rerender(<ReticulumPropagationSection embedded />);
+
+    expect(screen.getByText('reticulumPropagation.ignoredForAutoTitle')).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', { name: 'reticulumPropagation.allowForAutoAria:IgnoreMe' }),
+    );
+    await waitFor(() => {
+      expect(removeAutoBlacklist).toHaveBeenCalledWith(hash);
+    });
+  });
+
   it('persists mode to localStorage on change', async () => {
     const user = userEvent.setup();
     render(<ReticulumPropagationSection embedded />);

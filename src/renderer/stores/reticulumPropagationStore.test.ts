@@ -36,6 +36,7 @@ describe('reticulumPropagationStore', () => {
     useReticulumPropagationStore.setState({
       nodes: [],
       discovered: [],
+      autoBlacklist: [],
       preferredId: null,
       autoSyncIntervalSec: RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC,
       hostingPolicy: { ...DEFAULT_PN_HOSTING_POLICY },
@@ -57,6 +58,7 @@ describe('reticulumPropagationStore', () => {
     proxyGet
       .mockResolvedValueOnce({
         propagation: [{ id: 'p1', name: 'Node', enabled: true, status: 'ok' }],
+        propagation_auto_blacklist: ['AA'.repeat(16)],
         preferred_id: 'p1',
         auto_sync_interval_sec: 120,
       })
@@ -77,6 +79,7 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().nodes).toHaveLength(1);
     expect(useReticulumPropagationStore.getState().preferredId).toBe('p1');
     expect(useReticulumPropagationStore.getState().autoSyncIntervalSec).toBe(120);
+    expect(useReticulumPropagationStore.getState().autoBlacklist).toEqual(['aa'.repeat(16)]);
     expect(useReticulumPropagationStore.getState().lastRefreshedAt).toBeTypeOf('number');
     expect(useReticulumPropagationStore.getState().discovered).toHaveLength(1);
   });
@@ -335,6 +338,87 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBeNull();
   });
 
+  it('late local-prop success does not clobber a newer sync attempt', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    let resolveLocal!: (value: { ok: boolean }) => void;
+    const localPost = new Promise<{ ok: boolean }>((resolve) => {
+      resolveLocal = resolve;
+    });
+    // 1) local-prop sync (held) → 2) cancel from superseding start → 3) remote sync accept
+    proxyPost
+      .mockImplementationOnce(() => localPost)
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: true });
+    const localPromise = useReticulumPropagationStore.getState().startSync('local-prop');
+
+    await expect(useReticulumPropagationStore.getState().startSync('pn-remote')).resolves.toBe(
+      'accepted',
+    );
+    const remoteAttempt = useReticulumPropagationStore.getState().activePropagationSyncAttemptAt;
+    expect(remoteAttempt).toBeTypeOf('number');
+    expect(useReticulumPropagationStore.getState().syncTargetId).toBe('pn-remote');
+
+    resolveLocal({ ok: true });
+    await expect(localPromise).resolves.toBe('deferred');
+    expect(useReticulumPropagationStore.getState().syncTargetId).toBe('pn-remote');
+    expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBe(
+      remoteAttempt,
+    );
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(true);
+  });
+
+  it('stale remote success returns deferred without accepting for a superseded attempt', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    let resolveRemote!: (value: { ok: boolean }) => void;
+    const remotePost = new Promise<{ ok: boolean }>((resolve) => {
+      resolveRemote = resolve;
+    });
+    proxyPost
+      .mockImplementationOnce(() => remotePost)
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: true });
+    const stalePromise = useReticulumPropagationStore.getState().startSync('pn-stale');
+
+    await expect(useReticulumPropagationStore.getState().startSync('pn-new')).resolves.toBe(
+      'accepted',
+    );
+    const newerAttempt = useReticulumPropagationStore.getState().activePropagationSyncAttemptAt;
+
+    resolveRemote({ ok: true });
+    await expect(stalePromise).resolves.toBe('deferred');
+    expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBe(
+      newerAttempt,
+    );
+    expect(useReticulumPropagationStore.getState().syncTargetId).toBe('pn-new');
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(true);
+  });
+
+  it('stale rejection returns deferred without clearing the newer attempt', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    let rejectRemote!: (reason?: unknown) => void;
+    const remotePost = new Promise<{ ok: boolean }>((_resolve, reject) => {
+      rejectRemote = reject;
+    });
+    proxyPost
+      .mockImplementationOnce(() => remotePost)
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: true });
+    const stalePromise = useReticulumPropagationStore.getState().startSync('pn-stale');
+
+    await expect(useReticulumPropagationStore.getState().startSync('pn-new')).resolves.toBe(
+      'accepted',
+    );
+    const newerAttempt = useReticulumPropagationStore.getState().activePropagationSyncAttemptAt;
+
+    rejectRemote(new Error('proxy down'));
+    await expect(stalePromise).resolves.toBe('deferred');
+    expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBe(
+      newerAttempt,
+    );
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(true);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBeNull();
+  });
+
   it('startSync posts destination_hash for a 32-hex one-time sync', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyPost.mockResolvedValueOnce({ ok: true });
@@ -418,6 +502,51 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
     expect(useReticulumPropagationStore.getState().lastSyncError).toBeNull();
     expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBeNull();
+  });
+
+  it('addAutoBlacklist posts then refreshes', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    const hash = 'aa'.repeat(16);
+    proxyPost.mockResolvedValueOnce({ ok: true });
+    proxyGet
+      .mockResolvedValueOnce({
+        propagation: [],
+        propagation_auto_blacklist: [hash],
+      })
+      .mockResolvedValueOnce({ discovered: [] });
+    await expect(useReticulumPropagationStore.getState().addAutoBlacklist(hash)).resolves.toBe(
+      true,
+    );
+    expect(proxyPost).toHaveBeenCalledWith('/api/v1/propagation/auto-blacklist', {
+      destination_hash: hash,
+    });
+    expect(useReticulumPropagationStore.getState().autoBlacklist).toEqual([hash]);
+  });
+
+  it('addAutoBlacklist returns false without throw on proxy reject', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValueOnce({ ok: false, error: 'propagation Auto blacklist is full' });
+    await expect(
+      useReticulumPropagationStore.getState().addAutoBlacklist('bb'.repeat(16)),
+    ).resolves.toBe(false);
+  });
+
+  it('removeAutoBlacklist deletes then refreshes', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    const hash = 'cc'.repeat(16);
+    useReticulumPropagationStore.setState({ autoBlacklist: [hash] });
+    proxyDelete.mockResolvedValueOnce({ ok: true });
+    proxyGet
+      .mockResolvedValueOnce({
+        propagation: [],
+        propagation_auto_blacklist: [],
+      })
+      .mockResolvedValueOnce({ discovered: [] });
+    await expect(useReticulumPropagationStore.getState().removeAutoBlacklist(hash)).resolves.toBe(
+      true,
+    );
+    expect(proxyDelete).toHaveBeenCalledWith(`/api/v1/propagation/auto-blacklist/${hash}`);
+    expect(useReticulumPropagationStore.getState().autoBlacklist).toEqual([]);
   });
 
   it('removePropagationNode deletes then refreshes', async () => {

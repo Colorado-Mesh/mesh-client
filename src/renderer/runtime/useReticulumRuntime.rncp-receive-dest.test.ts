@@ -7,6 +7,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { applyRncpReceiveDestShareFromLxmf } from '@/renderer/lib/applyRncpReceiveDestShare';
+import { OFFLINE_RETICULUM_IDENTITY_ID } from '@/renderer/lib/offlineProtocolIdentities';
 import { fetchRecentInboundLxmfDetailed } from '@/renderer/lib/reticulum/fetchRecentInboundLxmf';
 import { resetReticulumManualStackStopSuppressForTests } from '@/renderer/lib/reticulum/reticulumManualStackStopSuppress';
 import {
@@ -187,6 +188,44 @@ describe('useReticulumRuntime RNCP receive-dest share reservation', () => {
   it('skips apply when tryReserve returns no reservation (already handled)', async () => {
     const hash = `${'c'.repeat(62)}03`;
     expect(tryMarkRncpLxmfControlHandled(hash)).toBe(true);
+    vi.mocked(applyRncpReceiveDestShareFromLxmf).mockResolvedValue({
+      ok: true,
+      receiveHash: RECEIVE,
+      lxmfPeerHash: SENDER,
+    });
+
+    const { onEvent, unmount } = await connectAndGetOnEvent();
+    act(() => {
+      onEvent({ type: 'lxmf_message', payload: shareInbound(hash) });
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(applyRncpReceiveDestShareFromLxmf).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it('skips apply when messageStore already has the control hash (cold-start hydrate)', async () => {
+    const hash = `${'f'.repeat(62)}06`;
+    // Simulate SQLite hydrate: row present, in-memory RNCP dedup map empty after restart.
+    useMessageStore.setState({
+      messages: {
+        [OFFLINE_RETICULUM_IDENTITY_ID]: {
+          [hash]: {
+            id: hash,
+            from: 1,
+            to: 0,
+            payload: SHARE_TEXT,
+            channelIndex: 0,
+            timestamp: 1_000,
+            reticulumMessageHash: hash,
+            reticulumSenderHash: SENDER,
+          },
+        },
+      },
+    });
+    resetRncpLxmfControlSideEffectDedupForTests();
     vi.mocked(applyRncpReceiveDestShareFromLxmf).mockResolvedValue({
       ok: true,
       receiveHash: RECEIVE,

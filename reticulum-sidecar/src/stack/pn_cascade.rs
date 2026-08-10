@@ -12,6 +12,18 @@ use crate::stack::propagation_mode::PropagationMode;
 /// `MAX_DISCOVERED_SYNC_ATTEMPTS` so both sides work the same shortlist.
 pub const MAX_AUTO_DISCOVERED_PN_CANDIDATES: usize = 3;
 
+/// Path-table hop counts above this are treated as unknown for Auto deposit ranking.
+/// Mirrors renderer `MAX_PLAUSIBLE_PROPAGATION_HOPS` (reticulumPropagationMode.ts).
+pub const MAX_PLAUSIBLE_PROPAGATION_HOPS: u8 = 32;
+
+/// Rank hops for sorting: finite plausible first, absurd/unknown last (`u8::MAX`).
+pub fn hops_rank(hops: Option<u8>) -> u8 {
+    match hops {
+        Some(h) if h <= MAX_PLAUSIBLE_PROPAGATION_HOPS => h,
+        _ => u8::MAX,
+    }
+}
+
 /// One PN eligible for Direct→Propagated cascade.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PnCascadeCandidate {
@@ -66,8 +78,8 @@ pub fn build_pn_cascade_order(
     let mut remotes: Vec<PnCascadeCandidate> =
         candidates.iter().filter(|c| !c.is_local).cloned().collect();
     remotes.sort_by(|a, b| {
-        let ah = a.hops.unwrap_or(u8::MAX);
-        let bh = b.hops.unwrap_or(u8::MAX);
+        let ah = hops_rank(a.hops);
+        let bh = hops_rank(b.hops);
         a.is_discovered
             .cmp(&b.is_discovered)
             .then_with(|| ah.cmp(&bh))
@@ -177,6 +189,7 @@ pub fn auto_discovered_candidates(
     self_lxmf_hash_hex: &str,
     mode: PropagationMode,
     max_peering_cost: u8,
+    auto_blacklist: &HashSet<[u8; 16]>,
 ) -> Vec<PnCascadeCandidate> {
     if mode != PropagationMode::Auto {
         return Vec::new();
@@ -192,20 +205,29 @@ pub fn auto_discovered_candidates(
         let Some(hash) = parse_hash16(&row.destination_hash) else {
             continue;
         };
+        if auto_blacklist.contains(&hash) {
+            continue;
+        }
         if is_self_lxmf_hash(&hash, &self_norm) || !seen.insert(hash) {
             continue;
         }
+        // Demote absurd hop counts (e.g. 100+ ghosts) to unknown so they cannot
+        // outrank path-known remotes — same policy as renderer Auto sync ranking.
+        let hops = match row.hops {
+            Some(h) if h <= MAX_PLAUSIBLE_PROPAGATION_HOPS => Some(h),
+            _ => None,
+        };
         out.push(PnCascadeCandidate {
             hash,
             is_local: false,
             is_discovered: true,
-            hops: row.hops,
+            hops,
             id: format!("discovered-{}", &hex::encode(hash)[..8]),
         });
     }
     out.sort_by(|a, b| {
-        let ah = a.hops.unwrap_or(u8::MAX);
-        let bh = b.hops.unwrap_or(u8::MAX);
+        let ah = hops_rank(a.hops);
+        let bh = hops_rank(b.hops);
         ah.cmp(&bh).then_with(|| a.id.cmp(&b.id))
     });
     out.truncate(MAX_AUTO_DISCOVERED_PN_CANDIDATES);
@@ -420,6 +442,7 @@ mod tests {
             "",
             PropagationMode::Auto,
             u8::MAX,
+            &HashSet::new(),
         );
         assert_eq!(extra.len(), 1);
         let mut all = configured;
@@ -436,7 +459,8 @@ mod tests {
         let discovered = vec![discovered_row(&"ab".repeat(16), Some(1))];
         for mode in [PropagationMode::Manual, PropagationMode::Off] {
             assert!(
-                auto_discovered_candidates(&discovered, &[], "", mode, u8::MAX).is_empty(),
+                auto_discovered_candidates(&discovered, &[], "", mode, u8::MAX, &HashSet::new())
+                    .is_empty(),
                 "{mode:?} must not deposit on a node the user never added"
             );
         }
@@ -467,6 +491,7 @@ mod tests {
             &self_hex,
             PropagationMode::Auto,
             26,
+            &HashSet::new(),
         );
         assert_eq!(extra.len(), 1);
         assert_eq!(hex::encode(extra[0].hash), "ee".repeat(16));
@@ -481,14 +506,41 @@ mod tests {
             discovered_row(&"33".repeat(16), Some(3)),
             discovered_row(&"22".repeat(16), Some(2)),
         ];
-        let extra =
-            auto_discovered_candidates(&discovered, &[], "", PropagationMode::Auto, u8::MAX);
+        let extra = auto_discovered_candidates(
+            &discovered,
+            &[],
+            "",
+            PropagationMode::Auto,
+            u8::MAX,
+            &HashSet::new(),
+        );
         assert_eq!(extra.len(), MAX_AUTO_DISCOVERED_PN_CANDIDATES);
         assert_eq!(
             extra.iter().map(|c| c.hops).collect::<Vec<_>>(),
             vec![Some(1), Some(2), Some(3)],
             "unknown-hop announces must never displace a known-close node"
         );
+    }
+
+    #[test]
+    fn auto_discovered_demotes_absurd_hop_counts() {
+        let close = "11".repeat(16);
+        let ghost = "99".repeat(16);
+        let extra = auto_discovered_candidates(
+            &[
+                discovered_row(&ghost, Some(100)),
+                discovered_row(&close, Some(2)),
+            ],
+            &[],
+            "",
+            PropagationMode::Auto,
+            u8::MAX,
+            &HashSet::new(),
+        );
+        assert_eq!(extra.len(), 2);
+        assert_eq!(hex::encode(extra[0].hash), close);
+        assert_eq!(extra[0].hops, Some(2));
+        assert_eq!(extra[1].hops, None, "hops>32 must rank as unknown");
     }
 
     #[test]
@@ -499,6 +551,7 @@ mod tests {
             "",
             PropagationMode::Auto,
             u8::MAX,
+            &HashSet::new(),
         );
         let ordered = build_pn_cascade_order(&extra, None);
         assert!(cascade_has_capacity(&ordered, &HashSet::new()));
@@ -506,6 +559,28 @@ mod tests {
             pick_next_pn_cascade(&ordered, &HashSet::new()),
             PnCascadePick::Remote(extra[0].hash)
         );
+    }
+
+    #[test]
+    fn auto_discovered_skips_auto_blacklist() {
+        let blocked = "ab".repeat(16);
+        let ok = "cd".repeat(16);
+        let mut blocked_hash = [0u8; 16];
+        blocked_hash.copy_from_slice(&hex::decode(&blocked).expect("hex"));
+        let blacklist = HashSet::from([blocked_hash]);
+        let extra = auto_discovered_candidates(
+            &[
+                discovered_row(&blocked, Some(0)),
+                discovered_row(&ok, Some(2)),
+            ],
+            &[],
+            "",
+            PropagationMode::Auto,
+            u8::MAX,
+            &blacklist,
+        );
+        assert_eq!(extra.len(), 1);
+        assert_eq!(hex::encode(extra[0].hash), ok);
     }
 
     #[test]

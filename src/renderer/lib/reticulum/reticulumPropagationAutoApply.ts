@@ -4,6 +4,7 @@ import {
   listConfiguredRemotePropagationIds,
   listFiniteHopDiscoveredPropagationTargets,
   listUnknownHopDiscoveredPropagationTargets,
+  propagationAutoBlacklistSet,
   propagationTargetDestinationHash,
   readReticulumPropagationMode,
   resolveManualCascadeSeed,
@@ -44,6 +45,8 @@ export const PROPAGATION_CASCADE_ATTEMPT_TIMEOUT_MS =
 export const PROPAGATION_SYNC_NO_TARGET_KEY = 'reticulumPropagation.syncNoTarget';
 /** Local inbox is enabled but its messagestore is still loading, so it cannot settle yet. */
 export const PROPAGATION_SYNC_LOCAL_LOADING_KEY = 'reticulumPropagation.syncLocalLoading';
+/** Remotes existed but every start was soft-deferred (retrieve already in flight). */
+export const PROPAGATION_SYNC_RETRIEVE_BUSY_KEY = 'reticulumPropagation.syncRetrieveBusy';
 
 /** Shared run for overlapping auto-sync ticks. */
 let inFlightCascade: Promise<boolean> | null = null;
@@ -59,6 +62,8 @@ export function resetPropagationSyncCascadeState(): void {
 /** Tracks whether any node was actually contacted, so a real error is never overwritten. */
 interface CascadeAttempts {
   any: boolean;
+  /** Soft-defer (retrieve/outbound/not-live busy) — not a missing-target condition. */
+  deferred: boolean;
 }
 
 /**
@@ -71,9 +76,15 @@ async function attemptSync(
   id: string,
   attempts: CascadeAttempts,
 ): Promise<PropagationAttemptOutcome> {
+  // startSync clears lastSyncError on entry; restore a prior real failure after soft-defer.
+  const priorError = useReticulumPropagationStore.getState().lastSyncError;
   const startResult = await useReticulumPropagationStore.getState().startSync(id);
   if (startResult === 'deferred') {
-    // Soft defer: do not count as contacted and do not 15-minute-backoff the node.
+    // Soft defer: do not 15-minute-backoff the node, but remember we had targets.
+    attempts.deferred = true;
+    if (priorError) {
+      useReticulumPropagationStore.getState().setLastSyncError(priorError);
+    }
     return 'deferred';
   }
   if (startResult !== 'accepted') {
@@ -104,17 +115,24 @@ function finishWithoutTarget(attempts: CascadeAttempts): boolean {
   if (attempts.any) return false;
   const { nodes } = useReticulumPropagationStore.getState();
   const loading = isLocalPropagationLoading(nodes);
-  useReticulumPropagationStore
-    .getState()
-    .setLastSyncError(
-      loading ? PROPAGATION_SYNC_LOCAL_LOADING_KEY : PROPAGATION_SYNC_NO_TARGET_KEY,
-    );
+  // Discovered/configured targets existed but every startSync soft-deferred
+  // (stuck prior /get). Do not claim "none discovered".
+  const errorKey = loading
+    ? PROPAGATION_SYNC_LOCAL_LOADING_KEY
+    : attempts.deferred
+      ? PROPAGATION_SYNC_RETRIEVE_BUSY_KEY
+      : PROPAGATION_SYNC_NO_TARGET_KEY;
+  useReticulumPropagationStore.getState().setLastSyncError(errorKey);
   // No node was called, so nothing may be named alongside this error.
   useReticulumPropagationStore.getState().setSyncTargetId(null);
   return false;
 }
 
 async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boolean> {
+  // Capture before local settle: remotes soft-deferred with no real contact must not
+  // look like a full cascade success (would advance Auto interval and suppress retries).
+  const remotesSoftDeferredOnly = attempts.deferred && !attempts.any;
+  const hadRemoteContact = attempts.any;
   let { nodes } = useReticulumPropagationStore.getState();
   // Auto ticks can start with a stale nodes list (local still "disabled" until refresh).
   if (!hasEnabledLocalPropagationNode(nodes)) {
@@ -127,20 +145,42 @@ async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boole
     }
   }
   if (!hasEnabledLocalPropagationNode(nodes)) return finishWithoutTarget(attempts);
-  return (await attemptSync('local-prop', attempts)) === 'success';
+  const priorSuccessAt = useReticulumPropagationStore.getState().lastPropagationSyncAt;
+  const outcome = await attemptSync('local-prop', attempts);
+  if (outcome === 'success') {
+    if (remotesSoftDeferredOnly) {
+      // Undo local settle's success stamp so Auto retries remotes after retrieve idle.
+      useReticulumPropagationStore.getState().setLastPropagationSyncAt(priorSuccessAt);
+      useReticulumPropagationStore.getState().setLastSyncError(PROPAGATION_SYNC_RETRIEVE_BUSY_KEY);
+      return false;
+    }
+    return true;
+  }
+  if (outcome === 'cancelled') return false;
+  // Local soft-defer/fail with no prior remote contact → surface why (busy / loading / none).
+  if (!hadRemoteContact) return finishWithoutTarget(attempts);
+  return false;
 }
 
-/** True when the sidecar reports at least one enabled interface. Fail open on read errors. */
+/**
+ * True when the sidecar reports at least one enabled interface.
+ * Fail closed on read/rate-limit errors so Auto does not burn remote cascade budget.
+ */
 export async function fetchHasEnabledReticulumInterfaces(): Promise<boolean> {
   try {
     const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/interfaces')) as {
       interfaces?: { enabled?: boolean }[];
+      ok?: boolean;
+      error?: string;
     };
+    if (body.ok === false || typeof body.error === 'string') {
+      return false;
+    }
     const rows = body.interfaces ?? [];
     return rows.some((row) => row.enabled === true);
   } catch (e) {
     console.warn('[reticulumPropagationAutoApply] interfaces read failed', e);
-    return true;
+    return false;
   }
 }
 
@@ -156,13 +196,18 @@ async function runConfiguredRemoteAttempts(args: {
   attempts: CascadeAttempts;
   generation: number;
   remoteDeadlineMs: number;
+  /** When set (Auto), skip remotes whose destination hash is ignored for Auto. */
+  autoBlacklist?: ReadonlySet<string>;
 }): Promise<RemoteAttemptsResult> {
-  const { mode, tried, attempts, generation, remoteDeadlineMs } = args;
+  const { mode, tried, attempts, generation, remoteDeadlineMs, autoBlacklist } = args;
   const superseded = (): boolean =>
     readReticulumPropagationMode() !== mode || cascadeGeneration !== generation;
 
   for (const id of omitRecentlyFailedPropagationTargets(
-    listConfiguredRemotePropagationIds(useReticulumPropagationStore.getState().nodes),
+    listConfiguredRemotePropagationIds(
+      useReticulumPropagationStore.getState().nodes,
+      autoBlacklist,
+    ),
     (remoteId) => remoteId,
   )) {
     if (superseded()) return 'stop';
@@ -223,9 +268,10 @@ async function runPropagationSyncCascade(
   if (mode === 'off') return false;
 
   const state = useReticulumPropagationStore.getState();
-  const { nodes, preferredId, discovered } = state;
+  const { nodes, preferredId, discovered, autoBlacklist: blacklistRows } = state;
+  const autoBlacklist = propagationAutoBlacklistSet(blacklistRows);
   const first = opts?.firstTargetId ?? null;
-  const attempts: CascadeAttempts = { any: false };
+  const attempts: CascadeAttempts = { any: false, deferred: false };
   const remoteDeadlineMs = Date.now() + PROPAGATION_CASCADE_BUDGET_MS;
   /** Mode changed under us, or a newer cascade took over — abandon this run entirely. */
   const superseded = (forMode: ReticulumPropagationMode): boolean =>
@@ -264,7 +310,7 @@ async function runPropagationSyncCascade(
     // Prefer path-known discovered PNs before configured remotes; leave hops-unknown
     // vanity announces until after configured so they cannot starve Preferred/added PNs.
     const finiteOutcome = await tryDiscoveredBatch(
-      listFiniteHopDiscoveredPropagationTargets(nodes, discovered),
+      listFiniteHopDiscoveredPropagationTargets(nodes, discovered, autoBlacklist),
     );
     if (finiteOutcome === 'success') return true;
     if (finiteOutcome === 'cancelled') return false;
@@ -275,12 +321,13 @@ async function runPropagationSyncCascade(
       attempts,
       generation,
       remoteDeadlineMs,
+      autoBlacklist,
     });
     if (remotes === 'success') return true;
     if (remotes === 'stop') return false;
 
     const unknownOutcome = await tryDiscoveredBatch(
-      listUnknownHopDiscoveredPropagationTargets(nodes, discovered),
+      listUnknownHopDiscoveredPropagationTargets(nodes, discovered, autoBlacklist),
     );
     if (unknownOutcome === 'success') return true;
     if (unknownOutcome === 'cancelled') return false;

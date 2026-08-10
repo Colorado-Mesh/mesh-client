@@ -684,7 +684,7 @@ describe('NodeListPanel import contacts', () => {
     expect(screen.queryByLabelText('Has public key')).not.toBeInTheDocument();
   });
 
-  it('labels the first column "Health" for both Meshtastic and MeshCore', () => {
+  it('labels the first column "Node health" for both Meshtastic and MeshCore', () => {
     const meshtastic = render(
       <NodeListPanel
         nodes={new Map()}
@@ -695,7 +695,7 @@ describe('NodeListPanel import contacts', () => {
         mode="meshtastic"
       />,
     );
-    expect(meshtastic.getByRole('columnheader', { name: /Health/ })).toBeInTheDocument();
+    expect(meshtastic.getByRole('columnheader', { name: /Node health/i })).toBeInTheDocument();
     meshtastic.unmount();
 
     render(
@@ -708,7 +708,7 @@ describe('NodeListPanel import contacts', () => {
         mode="meshcore"
       />,
     );
-    expect(screen.getByRole('columnheader', { name: /Health/ })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /Node health/i })).toBeInTheDocument();
   });
 });
 

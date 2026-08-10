@@ -167,6 +167,14 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             post(propagation::set_propagation_mode),
         )
         .route(
+            "/api/v1/propagation/auto-blacklist",
+            post(propagation::add_propagation_auto_blacklist),
+        )
+        .route(
+            "/api/v1/propagation/auto-blacklist/{destination_hash}",
+            delete(propagation::remove_propagation_auto_blacklist),
+        )
+        .route(
             "/api/v1/propagation/hosting-policy",
             post(propagation::set_pn_hosting_policy),
         )

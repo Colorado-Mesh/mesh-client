@@ -1331,7 +1331,11 @@ impl StackHandle {
                                 "storage_bytes".into(),
                                 serde_json::Value::Number(stats.bytes.into()),
                             );
-                            obj.insert("enabled".into(), serde_json::Value::Bool(stats.serving));
+                            // Keep the user's Host toggle (persisted). Serving is
+                            // reflected in `status` (`active` / `loading` / `idle`) —
+                            // overwriting enabled with serving hid local-prop from
+                            // Auto settle whenever the node was not yet announcing.
+                            obj.insert("enabled".into(), serde_json::Value::Bool(p.enabled));
                             obj.insert(
                                 "status".into(),
                                 serde_json::Value::String(
@@ -1353,13 +1357,47 @@ impl StackHandle {
                 row
             })
             .collect();
+        let auto_blacklist = inner.propagation_auto_blacklist.clone();
         serde_json::json!({
             "propagation": propagation,
             "preferred_id": preferred_id,
             "auto_sync_interval_sec": auto_sync_interval_sec,
             "propagation_mode": propagation_mode.as_str(),
+            "propagation_auto_blacklist": auto_blacklist,
             "pn_hosting_policy": pn_hosting_policy,
         })
+    }
+
+    pub async fn add_propagation_auto_blacklist(
+        &self,
+        destination_hash: &str,
+    ) -> Result<(), String> {
+        {
+            let mut inner = self.inner.write().await;
+            inner.add_propagation_auto_blacklist(destination_hash)?;
+            inner.save(&self.config_dir, &self.storage_dir)?;
+        }
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live.get() {
+            live.refresh_pn_cascade_candidates().await;
+        }
+        Ok(())
+    }
+
+    pub async fn remove_propagation_auto_blacklist(
+        &self,
+        destination_hash: &str,
+    ) -> Result<(), String> {
+        {
+            let mut inner = self.inner.write().await;
+            inner.remove_propagation_auto_blacklist(destination_hash)?;
+            inner.save(&self.config_dir, &self.storage_dir)?;
+        }
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live.get() {
+            live.refresh_pn_cascade_candidates().await;
+        }
+        Ok(())
     }
 
     pub fn list_discovered_propagation(&self) -> Vec<DiscoveredPropagationRow> {
@@ -1505,7 +1543,11 @@ impl StackHandle {
         // but still drain our own mail out of the local PN store into Chat.
         if is_local {
             #[cfg(feature = "rns-stack")]
-            if let Some(live) = self.live.get() {
+            {
+                let Some(live) = self.live.get() else {
+                    // Match remotes: Auto cascade soft-defers and retries when attach lags.
+                    return Err("PROPAGATION_STACK_NOT_LIVE".into());
+                };
                 live.drain_local_propagation_inbox().await;
             }
             self.emit_event(

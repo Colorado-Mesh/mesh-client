@@ -5,6 +5,7 @@ import { hasEffectiveReticulumPropagationTarget } from '@/renderer/lib/reticulum
 import {
   listDiscoveredPropagationTargets,
   pickAutoPropagationTarget,
+  propagationAutoBlacklistSet,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
 
@@ -24,12 +25,17 @@ export function ReticulumPropagationNotice({
   const { addToast } = useToast();
   const nodes = useReticulumPropagationStore((s) => s.nodes);
   const discovered = useReticulumPropagationStore((s) => s.discovered);
+  const autoBlacklistRows = useReticulumPropagationStore((s) => s.autoBlacklist);
   const preferredId = useReticulumPropagationStore((s) => s.preferredId);
   const refreshFromSidecar = useReticulumPropagationStore((s) => s.refreshFromSidecar);
   const addFromDiscovered = useReticulumPropagationStore((s) => s.addFromDiscovered);
   const dismissed = useReticulumPropagationStore((s) => s.chatNoticeDismissed);
   const setChatNoticeDismissed = useReticulumPropagationStore((s) => s.setChatNoticeDismissed);
   const mode = useReticulumPropagationStore((s) => s.propagationMode);
+  const autoBlacklist = useMemo(
+    () => propagationAutoBlacklistSet(autoBlacklistRows),
+    [autoBlacklistRows],
+  );
 
   useEffect(() => {
     if (!stackLive) return;
@@ -37,8 +43,8 @@ export function ReticulumPropagationNotice({
   }, [stackLive, refreshFromSidecar]);
 
   const unconfiguredDiscovered = useMemo(
-    () => listDiscoveredPropagationTargets(nodes, discovered),
-    [nodes, discovered],
+    () => listDiscoveredPropagationTargets(nodes, discovered, autoBlacklist),
+    [nodes, discovered, autoBlacklist],
   );
 
   if (!stackLive) return null;
@@ -46,13 +52,15 @@ export function ReticulumPropagationNotice({
   if (mode === 'off') return null;
   // Re-enable from Network → Propagation nodes.
   if (dismissed) return null;
-  if (hasEffectiveReticulumPropagationTarget(nodes, preferredId, mode, discovered)) {
+  if (
+    hasEffectiveReticulumPropagationTarget(nodes, preferredId, mode, discovered, autoBlacklistRows)
+  ) {
     return null;
   }
 
   const discoveryCount = unconfiguredDiscovered.length;
   // Rank discovered for “Add closest”; Auto never soft-upserts — user must add explicitly.
-  const closestTarget = pickAutoPropagationTarget(nodes, discovered);
+  const closestTarget = pickAutoPropagationTarget(nodes, discovered, autoBlacklist);
   const closestHash =
     closestTarget?.kind === 'discovered'
       ? closestTarget.destinationHash

@@ -294,7 +294,7 @@ describe('useReticulumRuntime outbound delivery persistence', () => {
   it('skips link-timeout failure bridge when PN cascade is available', () => {
     expect(SOURCE).toContain('shouldApplyLinkDeliveryTimeoutFailureBridge');
     expect(SOURCE).toMatch(
-      /shouldApplyLinkDeliveryTimeoutFailureBridge\(\s*propState\.nodes,\s*propState\.preferredId,\s*readReticulumPropagationMode\(\),\s*propState\.discovered,\s*\)/,
+      /shouldApplyLinkDeliveryTimeoutFailureBridge\(\s*propState\.nodes,\s*propState\.preferredId,\s*readReticulumPropagationMode\(\),\s*propState\.discovered,\s*propState\.autoBlacklist,\s*\)/,
     );
     expect(SOURCE).toContain('propagationHydratedForBridgeRef');
     expect(SOURCE).toContain('identityIdRef');

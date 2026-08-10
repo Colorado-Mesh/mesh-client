@@ -1,7 +1,9 @@
 import {
   findPropagationNodeByIdOrHash,
   hasEnabledLocalPropagationNode,
+  isPropagationHashAutoBlacklisted,
   pickAutoPropagationTarget,
+  propagationAutoBlacklistSet,
   readReticulumPropagationMode,
   type ReticulumPropagationMode,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
@@ -28,17 +30,36 @@ export function hasEffectiveReticulumPropagationTarget(
   preferredId: string | null,
   mode: ReticulumPropagationMode = readReticulumPropagationMode(),
   discovered: readonly DiscoveredPropagationRow[] = [],
+  autoBlacklistRows: readonly string[] = [],
 ): boolean {
   if (mode === 'off') return false;
+  const autoBlacklist = propagationAutoBlacklistSet(autoBlacklistRows);
 
   if (isRemotePropagationId(preferredId)) {
     const preferred = findPropagationNodeByIdOrHash(nodes, preferredId);
     // Prefer sidecar preferred_id even while the node list is still loading.
     if (!preferred) return true;
-    return preferred.enabled;
+    if (!preferred.enabled) return false;
+    // Auto must not treat an ignored Preferred as capacity for deposit/timeout bridge.
+    if (
+      mode === 'auto' &&
+      isPropagationHashAutoBlacklisted(preferred.destination_hash, autoBlacklist)
+    ) {
+      // Fall through to other Auto targets.
+    } else {
+      return true;
+    }
   }
 
-  if (nodes.some((n) => n.preferred === true && isRemotePropagationId(n.id) && n.enabled)) {
+  if (
+    nodes.some((n) => {
+      if (!(n.preferred === true && isRemotePropagationId(n.id) && n.enabled)) return false;
+      if (mode === 'auto' && isPropagationHashAutoBlacklisted(n.destination_hash, autoBlacklist)) {
+        return false;
+      }
+      return true;
+    })
+  ) {
     return true;
   }
 
@@ -47,7 +68,7 @@ export function hasEffectiveReticulumPropagationTarget(
     return pickAutoPropagationTarget(nodes, [])?.kind === 'configured';
   }
 
-  const target = pickAutoPropagationTarget(nodes, discovered);
+  const target = pickAutoPropagationTarget(nodes, discovered, autoBlacklist);
   return target?.kind === 'configured' || target?.kind === 'discovered';
 }
 
@@ -64,8 +85,13 @@ export function hasReticulumPnCascadeCapacity(
   preferredId: string | null,
   mode: ReticulumPropagationMode = readReticulumPropagationMode(),
   discovered: readonly DiscoveredPropagationRow[] = [],
+  autoBlacklistRows: readonly string[] = [],
 ): boolean {
   if (mode === 'off') return false;
-  if (hasEffectiveReticulumPropagationTarget(nodes, preferredId, mode, discovered)) return true;
+  if (
+    hasEffectiveReticulumPropagationTarget(nodes, preferredId, mode, discovered, autoBlacklistRows)
+  ) {
+    return true;
+  }
   return hasEnabledLocalPropagation(nodes);
 }

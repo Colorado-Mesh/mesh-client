@@ -117,6 +117,50 @@ describe('hasEffectiveReticulumPropagationTarget', () => {
   it('returns true when manual mode has a preferred remote node', () => {
     expect(hasEffectiveReticulumPropagationTarget([remoteNode], 'remote-1', 'manual')).toBe(true);
   });
+
+  it('Auto falls through when Preferred hash is Auto-blacklisted', () => {
+    const hash = 'aa'.repeat(16);
+    const preferred: PropagationNodeRow = {
+      ...remoteNode,
+      destination_hash: hash,
+    };
+    expect(
+      hasEffectiveReticulumPropagationTarget([preferred], 'remote-1', 'auto', [], [hash]),
+    ).toBe(false);
+    expect(
+      hasEffectiveReticulumPropagationTarget(
+        [preferred],
+        'remote-1',
+        'auto',
+        [activeDiscovered],
+        [hash],
+      ),
+    ).toBe(true);
+  });
+
+  it('Auto with only blacklisted discoveries has no effective remote target', () => {
+    const blocked = activeDiscovered.destination_hash;
+    expect(
+      hasEffectiveReticulumPropagationTarget(
+        [localOnlyNode],
+        null,
+        'auto',
+        [activeDiscovered],
+        [blocked],
+      ),
+    ).toBe(false);
+  });
+
+  it('Manual still honors Prefer on an Auto-blacklisted hash', () => {
+    const hash = 'bb'.repeat(16);
+    const preferred: PropagationNodeRow = {
+      ...remoteNode,
+      destination_hash: hash,
+    };
+    expect(
+      hasEffectiveReticulumPropagationTarget([preferred], 'remote-1', 'manual', [], [hash]),
+    ).toBe(true);
+  });
 });
 
 describe('hasReticulumPnCascadeCapacity', () => {
@@ -146,6 +190,13 @@ describe('hasReticulumPnCascadeCapacity', () => {
   // Sidecar still has somewhere to deposit, so the link-timeout bridge must not fail rows.
   it('is true in auto with only a discovered node', () => {
     expect(hasReticulumPnCascadeCapacity([], null, 'auto', [activeDiscovered])).toBe(true);
+  });
+
+  it('is false in auto when discoveries are blacklisted and local-prop is off', () => {
+    const blocked = activeDiscovered.destination_hash;
+    expect(hasReticulumPnCascadeCapacity([], null, 'auto', [activeDiscovered], [blocked])).toBe(
+      false,
+    );
   });
 
   it('is false when local-prop is present but disabled', () => {

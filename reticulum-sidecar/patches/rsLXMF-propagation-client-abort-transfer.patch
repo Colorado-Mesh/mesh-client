@@ -1,0 +1,27 @@
+--- a/crates/lxmf-core/src/propagation_client.rs
++++ b/crates/lxmf-core/src/propagation_client.rs
+@@ -182,6 +182,24 @@
+         self.status = PropagationTransferStatus::default();
+         true
+     }
++
++    /// Abort an in-flight or terminal download and return to [`Idle`].
++    ///
++    /// Unlike [`Self::acknowledge_transfer`], this also tears down mid-transfer
++    /// states (`LinkEstablishing` … `PurgeRequested`) so a cancelled Sync cannot
++    /// leave the client permanently busy (`start_download` would keep failing).
++    pub fn abort_transfer(&mut self) {
++        if matches!(self.status.state, PropagationClientState::Idle) {
++            return;
++        }
++        self.cleanup();
++        self.available_messages.clear();
++        self.received_messages.clear();
++        self.received_ids.clear();
++        self.status = PropagationTransferStatus::default();
++        self.identified = false;
++        self.started_at = None;
++    }
+ 
+     pub fn start_download(&mut self) -> bool {
+         let node_hash = match self.outbound_propagation_node {

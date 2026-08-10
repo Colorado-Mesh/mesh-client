@@ -2889,9 +2889,9 @@
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Sdílet kontakt",
     "shareContactQrAria": "Zobrazit QR kód kontaktu MeshCore pro oficiální import aplikace",
-    "copyPublicKey": "Licenční klíč",
     "publicKeyCopied": "Veřejný klíč zkopírován do schránky.",
-    "hasPublicKeyNoDm": "Má veřejný klíč (žádné přímé zprávy)"
+    "hasPublicKeyNoDm": "Má veřejný klíč (žádné přímé zprávy)",
+    "copyPublicKey": "Kopírovat veřejný klíč"
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",
@@ -3061,8 +3061,8 @@
     "meshcoreTypeSensor": "Snímač",
     "meshcoreTypeNone": "neuvedeny",
     "meshcoreTypeUnknown": "Neznámo",
-    "columnHealth": "Zdravotnictví",
-    "hasPublicKeyTitle": "Licenční klíč"
+    "columnHealth": "Stav uzlu",
+    "hasPublicKeyTitle": "Má veřejný klíč"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -4258,16 +4258,13 @@
     "syncOfferUnknown": "Propagační uzel vrátil neznámou chybu nabídky synchronizace — zkuste to znovu za chvíli.",
     "syncPathHint": "Vzdálená synchronizace vyžaduje cestu oběma směry. Synchronizace nejprve odešle krátké oznámení LXMF, aby mohl uzel odpovědět.",
     "setPreferredFailed": "Nelze nastavit preferovaný uzel šíření.",
-    "preferredLocalWarning": "Upřednostňovaný uzel je pouze místní — offline kolegové stále potřebují vzdálený propagační uzel pro doručování v obchodě.",
     "localHostStats": "{{count}} ve frontě · {{bytes}} bajtů",
     "localHostName": "Uzel šíření hostitele",
-    "localHostHint": "Je-li povoleno, toto zařízení se oznámí jako uzel šíření LXMF a obsluhuje /offer a /get. Upřednostněte vzdálený uzel pro odchozí ukládání a přeposílání před nedostupnými partnery.",
     "syncPeerCostExceedsMax": "Náklady na peering tohoto uzlu propagace jsou vyšší než vaše maximální náklady na peering – zvyšte maximum v části Síť → Pokročilé hostování PN nebo vyberte jiný uzel.",
     "offerUnsupported": "Tento cíl nepodporuje synchronizaci LXMF /offer — mesh-client jej nemůže použít jako uzel propagace.",
     "offerProbeTimeout": "Při kontrole / nabídněte podporu vypršel časový limit — uzel může být nedostupný. Zkuste to znovu, až bude k dispozici cesta.",
     "offerProbeFailed": "Nepodařilo se ověřit / nabídnout podporu pro tento uzel šíření – zkuste to znovu za chvíli.",
     "enableLocalHostConfirmTitle": "Povolit místní hosting uzlu propagace?",
-    "enableLocalHostConfirmBody": "Toto zařízení se oznámí jako uzel šíření LXMF a bude sloužit /offer a /get. To využívá úložiště, CPU a může být rovnocenné s jinými uzly v síti. Upřednostněte vzdálený uzel pro odchozí ukládání a přeposílání, pokud nemáte v úmyslu hostovat.",
     "enableLocalHostConfirm": "Povolit hosting",
     "addProbing": "Kontrola podpory /offer…",
     "syncLocalNotSupported": "Místní uzel šíření hostitele nelze synchronizovat přes síť jako vzdálený uzel šíření LXMF.",
@@ -4279,11 +4276,8 @@
     "modeAuto": "Auto",
     "modeManual": "Manuální",
     "modeOff": "Vypnuto",
-    "modeHelpAuto": "Auto: jednorázově synchronizuje nejlepší objevený šířící uzel (nepřidá ho ani nezmění Preferred), pak nakonfigurované vzdálené a nakonec místní schránku. Bez síťových rozhraní dokončí jen místně.",
     "syncStarting": "Spuštění synchronizace",
-    "syncLocalSettled": "Synchronizováno s místní doručenou poštou.",
     "modeHelpOff": "Vypnuto: žádná podpora propagačního uzlu. Nic se nesynchronizuje a offline zprávy nejsou uloženy v žádném propagačním uzlu. Upřednostňovaný uzel zůstane uložený, ale nepoužitý, dokud nevyberete možnost Automaticky nebo Ručně.",
-    "modeHelpManual": "Ručně: synchronizuje váš preferovaný uzel nebo vybere nejbližší přidaný uzel pro tuto synchronizaci, pokud není preferován žádný. Pokud se to nepodaří, jsou vyzkoušeny další přidané uzly, pak místní schránku.",
     "syncNoTarget": "Zatím není k dispozici žádný propagační uzel — žádný nebyl objeven a nemáte žádné přidané uzly. Synchronizace se spustí sama, jakmile je k dispozici.",
     "syncLocalLoading": "Místní šířící uzel stále načítá uložené zprávy. Synchronizace se spustí sama, jakmile načítání skončí.",
     "syncLocalSettledFor": "Synchronizováno s {{name}}.",
@@ -4294,7 +4288,21 @@
     "showChatNoticeHint": "Vypnutím tohoto tlačítka skryjete banner chatu, který se zobrazí, když není k dispozici žádný propagační uzel.",
     "syncPathUnknown": "Zatím neexistuje síťová cesta k tomuto propagačnímu uzlu. Zkontrolujte rozhraní nebo rozbočovač, oznamte to a zkuste to znovu.",
     "syncStackNotLive": "Synchronizace propagace odložena — zásobník Reticulum se stále spouští.",
-    "syncRetrieveBusy": "Synchronizace propagace odložena — vyhledávání doručené pošty již probíhá."
+    "syncLocalSettled": "Synchronizováno s uzlem místního šíření.",
+    "localHostHint": "Pokud je povoleno, toto zařízení oznamuje jako LXMF propagační uzel a slouží /offer a /get (plná lxmd parita). Protějšky nemusí Preferovat vás; dodávka tkaniny stále závisí na peeringu s jinými propagačními uzly.",
+    "preferredLocalWarning": "Preferovaný uzel je váš místní propagační uzel — kolegové nemusí Preferovat vás; dodávka tkaniny stále závisí na peeringu s jinými propagačními uzly.",
+    "enableLocalHostConfirmBody": "Toto zařízení bude oznámeno jako úplný LXMF propagační uzel (přijmout poštu typu store-and-forward, /offer peer sync, /get retrieve) jako oficiální lxmd. Využívá úložiště, procesor a může se peerovat s jinými uzly. Klienti, kteří objeví vaše oznámení, vás mohou upřednostnit/synchronizovat; nemusí vás upřednostňovat, aby látka fungovala, když je peering zdravý.",
+    "syncRetrieveBusy": "Synchronizace propagace odložena — vyhledávání doručené pošty již probíhá.",
+    "ignoreForAuto": "Ignorovat pro Auto",
+    "ignoreForAutoAria": "Ignorovat uzel šíření {{name}} pro automatickou synchronizaci režimu a ukládání a přeposílání",
+    "ignoreForAutoFailed": "Nelze ignorovat tento propagační uzel pro automatický režim.",
+    "allowForAuto": "Povolit auto",
+    "allowForAutoAria": "Povolit uzel šíření {{name}} pro synchronizaci automatického režimu a opětovné ukládání a přeposílání",
+    "allowForAutoFailed": "Nelze znovu povolit tento propagační uzel pro automatický režim.",
+    "ignoredForAutoTitle": "Ignorováno pro Auto",
+    "ignoredForAutoHint": "Režim Auto nebude z těchto uzlů synchronizovat ani přes ně ukládat a přeposílat. Ruční Prefer/Sync stále funguje.",
+    "modeHelpAuto": "Auto: jednorázově synchronizuje nejlepší objevený propagační uzel (nepřidá jej ani nezmění preferovaný), poté nakonfigurované dálkové ovladače a poté místní propagační uzel. Ignorované uzly jsou přeskočeny. Bez síťových rozhraní se nastavuje pouze lokálně.",
+    "modeHelpManual": "Manuálně: synchronizuje váš preferovaný uzel nebo vybere nejbližší přidaný uzel pro tuto synchronizaci, pokud není preferován žádný. Pokud selže, jsou vyzkoušeny další přidané uzly, pak lokální propagační uzel."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Objevení RMAP v4",
@@ -4890,7 +4898,7 @@
       "linkProofTimeout": "Vypršel časový limit čekání na odkaz na centrum (důkaz odkazu). Zkuste to znovu nebo zkontrolujte cestu/přechody k rozbočovači.",
       "pathTimeout": "Nelze najít cestu k rozbočovači. Počkej na čerstvější oznámení a pak se znovu připoj.",
       "welcomeTimeout": "Připojeno, ale centrum neposlalo UVÍTÁNÍ včas. Zkuste to znovu.",
-      "proxyRateLimit": "Momentálně je příliš mnoho žádostí (dosáhl se limitu proxy sazby). Chvíli počkejte a zkuste to znovu."
+      "proxyRateLimit": "Příliš mnoho požadavků (dosažen limit frekvence proxy). Chvíli počkejte a zkuste to znovu."
     },
     "expandMembers": "Rozbalit seznam členů",
     "collapseMembers": "Sbalit seznam členů",

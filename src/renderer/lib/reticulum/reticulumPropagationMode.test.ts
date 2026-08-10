@@ -8,6 +8,9 @@ import type {
 import {
   hasPropagationCascadeCandidate,
   isLocalPropagationLoading,
+  listConfiguredRemotePropagationIds,
+  listFiniteHopDiscoveredPropagationTargets,
+  listUnknownHopDiscoveredPropagationTargets,
   pickAutoPropagationNodeId,
   pickAutoPropagationTarget,
   readReticulumPropagationMode,
@@ -56,6 +59,78 @@ describe('reticulumPropagationMode', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('treats absurd path-table hop counts as unknown for Auto ordering', () => {
+    const ghost = '54c454aa'.padEnd(32, '0');
+    const near = 'aabbccdd'.repeat(4);
+    const rows = [
+      discovered({ destination_hash: ghost, hops: 114, peering_cost: 18 }),
+      discovered({ destination_hash: near, hops: 2, peering_cost: 5 }),
+    ];
+    expect(
+      listFiniteHopDiscoveredPropagationTargets([], rows).map((t) => t.destinationHash),
+    ).toEqual([near]);
+    expect(
+      listUnknownHopDiscoveredPropagationTargets([], rows).map((t) => t.destinationHash),
+    ).toEqual([ghost]);
+  });
+
+  it('omits Auto-blacklisted hashes from discovered and configured Auto ranking', () => {
+    const blocked = 'aabbccdd'.repeat(4);
+    const okDiscovered = '11223344'.repeat(4);
+    const okConfigured = '55667788'.repeat(4);
+    const blacklist = new Set([blocked]);
+    const rows = [
+      discovered({ destination_hash: blocked, hops: 1 }),
+      discovered({ destination_hash: okDiscovered, hops: 3 }),
+    ];
+    expect(
+      listFiniteHopDiscoveredPropagationTargets([], rows, blacklist).map((t) => t.destinationHash),
+    ).toEqual([okDiscovered]);
+    const nodes = [
+      row({
+        id: 'pn-blocked',
+        name: 'Bad',
+        enabled: true,
+        destination_hash: blocked,
+        hops: 1,
+      }),
+      row({
+        id: 'pn-ok',
+        name: 'Good',
+        enabled: true,
+        destination_hash: okConfigured,
+        hops: 2,
+      }),
+    ];
+    expect(listConfiguredRemotePropagationIds(nodes, blacklist)).toEqual(['pn-ok']);
+    expect(pickAutoPropagationTarget(nodes, rows, blacklist)).toEqual({
+      kind: 'discovered',
+      destinationHash: okDiscovered,
+    });
+  });
+
+  it('sorts configured remotes with hops above 32 as unknown-hop', () => {
+    const near = 'aa'.repeat(16);
+    const absurd = 'bb'.repeat(16);
+    const nodes = [
+      row({
+        id: 'pn-absurd',
+        name: 'Ghost',
+        enabled: true,
+        destination_hash: absurd,
+        hops: 99,
+      }),
+      row({
+        id: 'pn-near',
+        name: 'Near',
+        enabled: true,
+        destination_hash: near,
+        hops: 2,
+      }),
+    ];
+    expect(listConfiguredRemotePropagationIds(nodes)).toEqual(['pn-near', 'pn-absurd']);
   });
 
   it('reports no cascade candidate for a fresh stack with a loading local inbox', () => {

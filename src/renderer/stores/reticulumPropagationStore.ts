@@ -9,6 +9,7 @@ import {
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import {
   clearPropagationSyncStallWatchdog,
+  isPropagationSyncSoftDeferError,
   mapPropagationSyncError,
   RETICULUM_PROPAGATION_SYNC_IDLE,
   schedulePropagationSyncStallWatchdog,
@@ -95,6 +96,8 @@ interface PropagationSyncState {
 interface ReticulumPropagationStoreState {
   nodes: PropagationNodeRow[];
   discovered: DiscoveredPropagationRow[];
+  /** Destination hashes Auto must never sync or deposit on (sidecar-persisted). */
+  autoBlacklist: string[];
   preferredId: string | null;
   autoSyncIntervalSec: number;
   hostingPolicy: PnHostingPolicy;
@@ -150,11 +153,14 @@ interface ReticulumPropagationStoreState {
   addFromDiscovered: (destinationHash: string, opts?: { prefer?: boolean }) => Promise<boolean>;
   removePropagationNode: (id: string) => Promise<boolean>;
   renamePropagationNode: (id: string, name: string) => Promise<boolean>;
+  addAutoBlacklist: (destinationHash: string) => Promise<boolean>;
+  removeAutoBlacklist: (destinationHash: string) => Promise<boolean>;
 }
 
 export const useReticulumPropagationStore = create<ReticulumPropagationStoreState>((set, get) => ({
   nodes: [],
   discovered: [],
+  autoBlacklist: [],
   preferredId: null,
   autoSyncIntervalSec: RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC,
   hostingPolicy: { ...DEFAULT_PN_HOSTING_POLICY },
@@ -239,6 +245,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         propagation?: PropagationNodeRow[];
         preferred_id?: string | null;
         auto_sync_interval_sec?: number;
+        propagation_auto_blacklist?: string[];
         pn_hosting_policy?: unknown;
         last_propagation_sync_at?: number | null;
       };
@@ -257,11 +264,25 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         }
       }
       const syncActive = get().sync.active;
+      const autoBlacklist = (body.propagation_auto_blacklist ?? [])
+        .filter(
+          (h): h is string =>
+            typeof h === 'string' && /^[0-9a-fA-F]{32}$/.test(h.replace(/[^0-9a-fA-F]/g, '')),
+        )
+        .map((h) =>
+          h
+            .replace(/[^0-9a-fA-F]/g, '')
+            .toLowerCase()
+            .slice(0, 32),
+        )
+        .filter((h, i, arr) => h.length === 32 && arr.indexOf(h) === i)
+        .slice(0, 256);
       set({
         nodes,
         preferredId: body.preferred_id ?? null,
         autoSyncIntervalSec:
           body.auto_sync_interval_sec ?? RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC,
+        autoBlacklist,
         hostingPolicy: parsePnHostingPolicy(body.pn_hosting_policy),
         lastRefreshedAt: nowMs,
         lastPropagationSyncAt,
@@ -375,7 +396,16 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
     if (get().sync.active) {
       await get().cancelSync();
     }
-    const attemptAt = Date.now();
+    // Wall-clock for Auto interval/cooldown, but never reuse a stamp from a prior
+    // attempt in the same millisecond (late HTTP could otherwise clobber a newer sync).
+    let attemptAt = Date.now();
+    const priorStamp = Math.max(
+      get().activePropagationSyncAttemptAt ?? 0,
+      get().lastPropagationSyncAttemptAt ?? 0,
+    );
+    if (attemptAt <= priorStamp) {
+      attemptAt = priorStamp + 1;
+    }
     clearPropagationSyncStallWatchdog();
     set({
       sync: { active: true, progress: 0, message: null },
@@ -396,15 +426,15 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         '/api/v1/propagation/sync',
         body,
       )) as { ok?: boolean; error?: string };
+      // A newer startSync/cancel may have superseded this attempt while we awaited.
+      const stillCurrent = () => get().activePropagationSyncAttemptAt === attemptAt;
+      // Stale responses must not clear the newer attempt's stall watchdog.
+      if (!stillCurrent()) return 'deferred';
       if (!res.ok) {
         clearPropagationSyncStallWatchdog();
         // Soft defer: outbound LXMF deposit owns the PN Link — retry without backoff.
-        if (
-          res.error === 'PROPAGATION_SYNC_OUTBOUND_BUSY' ||
-          res.error === 'PROPAGATION_RETRIEVE_BUSY' ||
-          res.error === 'PROPAGATION_STACK_NOT_LIVE' ||
-          res.error === 'RNS stack not live'
-        ) {
+        // Do not invent an error; leave lastSyncError as-is for cascade preserve.
+        if (isPropagationSyncSoftDeferError(res.error)) {
           set({
             sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
             lastSyncError: null,
@@ -429,6 +459,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       }
       return 'accepted';
     } catch (e) {
+      if (get().activePropagationSyncAttemptAt !== attemptAt) return 'deferred';
       clearPropagationSyncStallWatchdog();
       console.warn('[reticulumPropagationStore] sync ' + errLikeToLogString(e));
       set({
@@ -551,6 +582,44 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       }
     } catch (e) {
       console.warn('[reticulumPropagationStore] rename node ' + errLikeToLogString(e));
+    }
+    return false;
+  },
+
+  addAutoBlacklist: async (destinationHash) => {
+    try {
+      const res = (await window.electronAPI.reticulum.proxyPost(
+        '/api/v1/propagation/auto-blacklist',
+        { destination_hash: destinationHash },
+      )) as { ok?: boolean; error?: string };
+      if (res.ok) {
+        await get().refreshFromSidecar();
+        return true;
+      }
+      if (res.error) {
+        console.warn('[reticulumPropagationStore] auto-blacklist add: ' + res.error);
+      }
+    } catch (e) {
+      console.warn('[reticulumPropagationStore] auto-blacklist add ' + errLikeToLogString(e));
+    }
+    return false;
+  },
+
+  removeAutoBlacklist: async (destinationHash) => {
+    try {
+      const encoded = encodeURIComponent(destinationHash.toLowerCase());
+      const res = (await window.electronAPI.reticulum.proxyDelete(
+        `/api/v1/propagation/auto-blacklist/${encoded}`,
+      )) as { ok?: boolean; error?: string };
+      if (res.ok) {
+        await get().refreshFromSidecar();
+        return true;
+      }
+      if (res.error) {
+        console.warn('[reticulumPropagationStore] auto-blacklist remove: ' + res.error);
+      }
+    } catch (e) {
+      console.warn('[reticulumPropagationStore] auto-blacklist remove ' + errLikeToLogString(e));
     }
     return false;
   },
