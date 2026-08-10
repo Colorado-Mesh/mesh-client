@@ -215,6 +215,51 @@ export async function patchRelease(releaseId, token, patch) {
   return json;
 }
 
+/**
+ * PATCH release metadata, returning null on failure instead of exiting.
+ * Used after asset consolidation so a metadata 403 cannot undo a successful merge.
+ *
+ * Do not send `target_commitish` here: Actions `GITHUB_TOKEN` cannot retarget a release
+ * when the commit differs in `.github/workflows/` from the default branch (HTTP 403
+ * "Resource not accessible by integration"). The git tag already pins the SHA.
+ */
+export async function patchReleaseMetadataBestEffort(releaseId, token, patch, log = console.debug) {
+  if (!patch || Object.keys(patch).length === 0) {
+    return null;
+  }
+  const { response, json } = await githubRequest(`/releases/${releaseId}`, {
+    token,
+    method: 'PATCH',
+    body: patch,
+  });
+  if (response.ok) {
+    return json;
+  }
+  // Only HTTP 403 is non-fatal after assets are merged (GITHUB_TOKEN cannot retarget
+  // across workflow diffs). Other statuses still fail the job for investigation.
+  if (response.status === 403) {
+    log(
+      `[github-release] PATCH release ${releaseId} failed (403): ` +
+        `${json?.message ?? response.statusText} — leaving metadata unchanged after asset merge`,
+    );
+    return null;
+  }
+  fail(
+    `PATCH release ${releaseId} failed (${response.status}): ${json?.message ?? response.statusText}`,
+  );
+  return null;
+}
+
+export async function getRelease(releaseId, token) {
+  const { response, json } = await githubRequest(`/releases/${releaseId}`, { token });
+  if (!response.ok) {
+    fail(
+      `GET release ${releaseId} failed (${response.status}): ${json?.message ?? response.statusText}`,
+    );
+  }
+  return json;
+}
+
 export async function uploadReleaseAsset(releaseId, fileName, bytes, token) {
   const uploadUrl = `https://uploads.github.com/repos/${OWNER}/${REPO}/releases/${releaseId}/assets?name=${encodeURIComponent(fileName)}`;
   const response = await fetch(uploadUrl, {
@@ -248,6 +293,34 @@ export async function uploadReleaseAsset(releaseId, fileName, bytes, token) {
 }
 
 /**
+ * Upload (or replace) a single asset on an existing release. Never creates a release.
+ * @param {{
+ *   releaseId: number,
+ *   token: string,
+ *   fileName: string,
+ *   bytes: Uint8Array,
+ *   existingAssets?: Array<{ id: number, name: string }>,
+ *   log?: (...args: unknown[]) => void,
+ * }} opts
+ */
+export async function uploadOrReplaceReleaseAsset({
+  releaseId,
+  token,
+  fileName,
+  bytes,
+  existingAssets,
+  log = console.debug,
+}) {
+  const assets = existingAssets ?? (await getRelease(releaseId, token)).assets ?? [];
+  const prior = assets.find((asset) => asset.name === fileName);
+  if (prior) {
+    log(`[github-release] Replacing existing asset ${fileName} on release ${releaseId}`);
+    await deleteReleaseAsset(prior.id, token);
+  }
+  return uploadReleaseAsset(releaseId, fileName, bytes, token);
+}
+
+/**
  * Delete empty duplicate draft releases for a tag. Returns the canonical release, if any.
  * @deprecated Prefer normalizeDraftReleasesForTag, which also merges duplicates that hold assets.
  */
@@ -270,7 +343,17 @@ export async function downloadReleaseAsset(assetId, token) {
   return new Uint8Array(await response.arrayBuffer());
 }
 
-export async function consolidateReleases({ tag, token, targetCommitish, log = console.debug }) {
+/**
+ * @param {{
+ *   tag: string,
+ *   token: string,
+ *   targetCommitish?: string,
+ *   log?: (...args: unknown[]) => void,
+ * }} opts
+ * `targetCommitish` is accepted for call-site compatibility but never PATCHed
+ * (GITHUB_TOKEN 403 — see patchReleaseMetadataBestEffort).
+ */
+export async function consolidateReleases({ tag, token, log = console.debug }) {
   const releases = await listReleasesForTag(tag, token);
   if (releases.length === 0) {
     fail(`No releases found for ${tag}`);
@@ -325,36 +408,39 @@ export async function consolidateReleases({ tag, token, targetCommitish, log = c
     name: versionFromTag(tag),
     draft: true,
   };
-  if (targetCommitish) {
-    patch.target_commitish = targetCommitish;
-  }
   if (bestBody && bestBody !== keeper.body) {
     patch.body = bestBody;
   }
 
-  const updated = await patchRelease(keeper.id, token, patch);
+  const updated = await patchReleaseMetadataBestEffort(keeper.id, token, patch, log);
+  const result = updated ?? keeper;
   log(
-    `[github-release] Consolidated ${tag} — release ${updated.id} has ${updated.assets?.length ?? keeperAssetNames.size} assets (moved ${moved})`,
+    `[github-release] Consolidated ${tag} — release ${result.id} has ${result.assets?.length ?? keeperAssetNames.size} assets (moved ${moved})`,
   );
-  return updated;
+  return result;
 }
 
 /**
  * Ensure at most one draft release exists for a tag. Merges split assets when parallel
  * publish jobs forked duplicate drafts (including untagged-e* names matched by release name).
+ *
+ * @param {string} tag
+ * @param {string} token
+ * @param {{
+ *   targetCommitish?: string,
+ *   log?: (...args: unknown[]) => void,
+ * }} [opts]
+ * `targetCommitish` is accepted for call-site compatibility but never PATCHed
+ * (GITHUB_TOKEN 403 — see patchReleaseMetadataBestEffort).
  */
-export async function normalizeDraftReleasesForTag(
-  tag,
-  token,
-  { targetCommitish, log = console.debug } = {},
-) {
+export async function normalizeDraftReleasesForTag(tag, token, { log = console.debug } = {}) {
   const releases = await listReleasesForTag(tag, token);
   if (releases.length === 0) {
     return null;
   }
 
   if (releases.length > 1) {
-    return consolidateReleases({ tag, token, targetCommitish, log });
+    return consolidateReleases({ tag, token, log });
   }
 
   const release = releases[0];
@@ -364,26 +450,37 @@ export async function normalizeDraftReleasesForTag(
     patch.name = versionFromTag(tag);
     patch.draft = true;
   }
-  if (targetCommitish && release.target_commitish !== targetCommitish) {
-    patch.target_commitish = targetCommitish;
-    patch.draft = true;
-  }
   if (Object.keys(patch).length === 0) {
     return release;
   }
 
-  const updated = await patchRelease(release.id, token, patch);
+  const updated = await patchReleaseMetadataBestEffort(release.id, token, patch, log);
+  if (!updated) {
+    return release;
+  }
   log(`[github-release] Repaired release ${updated.id} metadata for ${tag}`);
   return updated;
 }
 
+/**
+ * @param {{
+ *   tag: string,
+ *   token: string,
+ *   targetCommitish?: string,
+ *   allowCreate?: boolean,
+ *   log?: (...args: unknown[]) => void,
+ * }} opts
+ * Create only when `allowCreate` is true (prepare job sets MESH_CLIENT_ALLOW_DRAFT_CREATE=1).
+ * Upload jobs must reuse the prepare draft and never POST /releases.
+ */
 export async function ensureGithubDraftRelease({
   tag,
   token,
   targetCommitish,
+  allowCreate = false,
   log = console.debug,
 }) {
-  let keeper = await normalizeDraftReleasesForTag(tag, token, { targetCommitish, log });
+  let keeper = await normalizeDraftReleasesForTag(tag, token, { log });
   // Only reuse an existing *draft*. A published release for the same tag must not be
   // treated as the CI upload target (schema-note patches and artifact uploads are draft-only).
   if (keeper?.draft === true) {
@@ -391,7 +488,54 @@ export async function ensureGithubDraftRelease({
     return keeper;
   }
 
+  if (!allowCreate) {
+    fail(
+      `No draft release for ${tag}. prepare-github-release must create it first ` +
+        `(set MESH_CLIENT_ALLOW_DRAFT_CREATE=1 only in that job).`,
+    );
+    return /** @type {never} */ (undefined);
+  }
+
   keeper = await createDraftRelease(tag, token, targetCommitish);
   log(`[ci-ensure-github-draft-release] Created draft release ${keeper.id} for ${tag}`);
   return keeper;
+}
+
+/**
+ * Poll until a draft exists for the tag (Flatpak may start before Electron prepare finishes).
+ * @param {{
+ *   tag: string,
+ *   token: string,
+ *   attempts?: number,
+ *   delayMs?: number,
+ *   sleep?: (ms: number) => Promise<void>,
+ *   log?: (...args: unknown[]) => void,
+ * }} opts
+ */
+export async function waitForGithubDraftRelease({
+  tag,
+  token,
+  attempts = 30,
+  delayMs = 10_000,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  log = console.debug,
+}) {
+  assertSafeReleaseTag(tag);
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const releases = await listReleasesForTag(tag, token);
+    const draft = releases.find((release) => release.draft === true);
+    if (draft) {
+      log(
+        `[github-release] Found draft release ${draft.id} for ${tag} (attempt ${attempt}/${attempts})`,
+      );
+      return draft;
+    }
+    if (attempt < attempts) {
+      log(
+        `[github-release] No draft for ${tag} yet (attempt ${attempt}/${attempts}); waiting ${delayMs}ms`,
+      );
+      await sleep(delayMs);
+    }
+  }
+  fail(`Timed out waiting for draft release ${tag} after ${attempts} attempts`);
 }

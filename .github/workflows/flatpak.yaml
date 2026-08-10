@@ -276,18 +276,16 @@ jobs:
         id: release_tag
         run: echo "value=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - name: Ensure draft GitHub release exists
+      # Never POST /releases here — wait for Electron prepare-github-release draft.
+      - name: Wait for draft GitHub release
+        id: draft
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_SHA: ${{ github.sha }}
           RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
-        run: node scripts/ci-ensure-github-draft-release.mjs
+        run: node scripts/ci-wait-github-draft-release.mjs
 
-      - name: Attach Flatpak to release
-        # softprops/action-gh-release v3 (Node 24)
-        # draft: true — required so we do not auto-publish an existing draft release
-        # after uploading assets (default behavior when draft is omitted).
-        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
-        with:
-          draft: true
-          files: flatpak-dist/*.flatpak
+      - name: Attach Flatpak to draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_ID: ${{ steps.draft.outputs.release_id }}
+        run: node scripts/ci-upload-release-assets.mjs flatpak-dist/*.flatpak

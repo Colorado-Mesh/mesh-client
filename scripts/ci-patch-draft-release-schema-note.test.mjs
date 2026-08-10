@@ -90,27 +90,52 @@ describe('patchDraftReleaseSchemaNote', () => {
     expect(patch).not.toHaveBeenCalled();
   });
 
-  it('PATCHes using the ensure return value without re-listing', async () => {
+  it('PATCHes using RELEASE_ID without ensure or list', async () => {
     const patch = vi.fn().mockResolvedValue({ id: 2 });
+    const ensureDraft = vi.fn();
     const listReleases = vi.fn();
     await patchDraftReleaseSchemaNote({
       tag: 'v1.0.0',
       token: 'token',
       markdown: '# Schema bumped',
-      ensureDraft: vi.fn().mockResolvedValue({
+      releaseId: 2,
+      ensureDraft,
+      listReleases,
+      getReleaseById: vi.fn().mockResolvedValue({
         id: 2,
         draft: true,
         body: 'Draft release for v1.0.0.\n',
       }),
-      listReleases,
       patch,
     });
 
+    expect(ensureDraft).not.toHaveBeenCalled();
     expect(listReleases).not.toHaveBeenCalled();
     expect(patch).toHaveBeenCalledTimes(1);
     expect(patch.mock.calls[0][0]).toBe(2);
     expect(patch.mock.calls[0][2].body).toContain('# Schema bumped');
     expect(patch.mock.calls[0][2].body).toContain('Draft release for v1.0.0.');
+  });
+
+  it('rejects RELEASE_ID when the release is published', async () => {
+    const patch = vi.fn();
+    await expect(
+      patchDraftReleaseSchemaNote({
+        tag: 'v1.0.0',
+        token: 'token',
+        markdown: '# Schema bumped',
+        releaseId: 2,
+        ensureDraft: vi.fn(),
+        listReleases: vi.fn(),
+        getReleaseById: vi.fn().mockResolvedValue({
+          id: 2,
+          draft: false,
+          body: 'published',
+        }),
+        patch,
+      }),
+    ).rejects.toThrow('Release 2 for v1.0.0 is not a draft');
+    expect(patch).not.toHaveBeenCalled();
   });
 
   it('falls back to list when ensure returns a non-draft', async () => {

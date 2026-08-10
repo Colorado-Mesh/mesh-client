@@ -7,21 +7,27 @@ const ROWS = [
   {
     os: 'macos-latest',
     platform_key: 'mac',
-    build_script: 'pnpm run dist:mac:publish',
+    // Build only — GitHub upload is ci-upload-release-assets.mjs (never POST /releases).
+    build_script: 'pnpm run dist:mac',
+    upload_globs:
+      'release/*.dmg release/*.zip release/*.blockmap release/latest-mac.yml release/mac*/*.dmg release/mac*/*.zip release/mac*/*.blockmap',
     sidecar_platform: 'darwin',
     rust_targets: 'aarch64-apple-darwin',
   },
   {
     os: 'ubuntu-latest',
     platform_key: 'linux',
-    build_script: 'pnpm run dist:linux:publish',
+    build_script: 'pnpm run dist:linux',
+    upload_globs:
+      'release/*.AppImage release/*.rpm release/*.deb release/*.blockmap release/latest-linux.yml release/latest-linux-arm64.yml',
     sidecar_platform: 'linux',
     rust_targets: 'x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu',
   },
   {
     os: 'windows-latest',
     platform_key: 'win',
-    build_script: 'pnpm run dist:win:publish',
+    build_script: 'pnpm run dist:win',
+    upload_globs: 'release/*.exe release/*.blockmap release/latest.yml',
     sidecar_platform: 'win32',
     rust_targets: 'x86_64-pc-windows-msvc,aarch64-pc-windows-msvc',
   },

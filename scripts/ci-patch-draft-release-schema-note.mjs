@@ -15,6 +15,7 @@ import {
 import {
   authToken,
   ensureGithubDraftRelease,
+  getRelease,
   listReleasesForTag,
   patchRelease,
   resolveTag,
@@ -74,33 +75,59 @@ export function schemaMarkdownFromCompareOutputs(env = process.env) {
 }
 
 /**
+ * @param {string | undefined} raw
+ * @returns {number | undefined}
+ */
+export function parseOptionalReleaseId(raw) {
+  if (typeof raw !== 'string' || raw === '') {
+    return undefined;
+  }
+  if (!/^\d+$/.test(raw)) {
+    throw new Error(`RELEASE_ID must be numeric (got ${JSON.stringify(raw)})`);
+  }
+  return Number(raw);
+}
+
+/**
  * @param {{
  *   tag: string,
  *   token: string,
  *   markdown: string,
+ *   releaseId?: number,
  *   targetCommitish?: string,
  *   ensureDraft?: typeof ensureGithubDraftRelease,
+ *   getReleaseById?: typeof getRelease,
  *   listReleases?: typeof listReleasesForTag,
  *   patch?: typeof patchRelease,
  * }} opts
  */
 export async function patchDraftReleaseSchemaNote(opts) {
   const ensureDraft = opts.ensureDraft ?? ensureGithubDraftRelease;
+  const getReleaseById = opts.getReleaseById ?? getRelease;
   const listReleases = opts.listReleases ?? listReleasesForTag;
   const patch = opts.patch ?? patchRelease;
 
-  // Prefer the draft returned by ensure (POST/PATCH response). Re-listing immediately
-  // after create can miss the draft — GitHub List Releases lags briefly, which caused
-  // prepare-github-release to fail with "No release found" right after creating one.
-  const ensured = await ensureDraft({
-    tag: opts.tag,
-    token: opts.token,
-    targetCommitish: opts.targetCommitish,
-  });
-  const draft =
-    ensured?.draft === true
-      ? ensured
-      : requireDraftReleaseForSchemaPatch(await listReleases(opts.tag, opts.token), opts.tag);
+  /** @type {{ id: number, draft?: boolean, body?: string | null }} */
+  let draft;
+  if (opts.releaseId != null) {
+    // Prefer prepare's release_id — avoids List Releases lag right after create.
+    draft = await getReleaseById(opts.releaseId, opts.token);
+    if (draft.draft !== true) {
+      throw new Error(`Release ${opts.releaseId} for ${opts.tag} is not a draft`);
+    }
+  } else {
+    const ensured = await ensureDraft({
+      tag: opts.tag,
+      token: opts.token,
+      targetCommitish: opts.targetCommitish,
+      allowCreate: false,
+    });
+    draft =
+      ensured?.draft === true
+        ? ensured
+        : requireDraftReleaseForSchemaPatch(await listReleases(opts.tag, opts.token), opts.tag);
+  }
+
   const body = mergeSchemaNoteIntoReleaseBody(draft.body ?? '', opts.markdown);
   await patch(draft.id, opts.token, { body });
   console.debug(`[ci-patch-draft-release-schema-note] Updated draft body for ${opts.tag}`);
@@ -121,6 +148,7 @@ async function main() {
     tag,
     token,
     markdown,
+    releaseId: parseOptionalReleaseId(process.env.RELEASE_ID),
     targetCommitish: resolveTargetCommitish(process.env),
   });
 }
