@@ -3782,8 +3782,11 @@ impl LiveBridge {
         // when there is no path (would previously burn CPU then stall into syncTimedOut).
         let hops = self.hops_to_destination(&dest_hex).await;
         if let Err(err) = self.ensure_propagation_path_or_unknown(&dest_hex).await {
+            // Path gate awaits; only clear if we still own this attempt's latch.
             if let Ok(mut driver) = self.outbound.lock() {
-                driver.set_propagation_sync_target(None);
+                if driver.propagation_sync_target() == Some(hash) {
+                    driver.set_propagation_sync_target(None);
+                }
             }
             tracing::info!(
                 target: "propagation-sync",

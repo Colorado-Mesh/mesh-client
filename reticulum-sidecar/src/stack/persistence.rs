@@ -423,13 +423,11 @@ impl PersistedState {
     const PROPAGATION_AUTO_BLACKLIST_CAP: usize = 256;
 
     /// Normalize and validate a PN destination hash for the Auto blacklist.
+    /// Trim + lowercase only — reject unless the whole string is exactly 32 ASCII hex chars
+    /// (do not strip arbitrary non-hex characters).
     pub fn normalize_propagation_auto_blacklist_hash(raw: &str) -> Result<String, String> {
-        let clean: String = raw
-            .chars()
-            .filter(char::is_ascii_hexdigit)
-            .collect::<String>()
-            .to_lowercase();
-        if clean.len() != 32 {
+        let clean = raw.trim().to_lowercase();
+        if clean.len() != 32 || !clean.chars().all(|c| c.is_ascii_hexdigit()) {
             return Err("destination_hash must be 32 hex characters".into());
         }
         Ok(clean)
@@ -1189,6 +1187,17 @@ mod tests {
             state.propagation_auto_blacklist,
             vec!["deadbeefcafebabe0123456789abcdef".to_string()]
         );
+        // Trim + case fold only — do not strip embedded non-hex.
+        state
+            .add_propagation_auto_blacklist(&format!("  {hash}  "))
+            .expect("trim whitespace");
+        assert_eq!(state.propagation_auto_blacklist.len(), 1);
+        assert!(
+            state
+                .add_propagation_auto_blacklist(&format!("{hash}!"))
+                .is_err(),
+            "must reject hashes with non-hex junk instead of stripping"
+        );
         // Idempotent re-add.
         state.add_propagation_auto_blacklist(hash).expect("re-add");
         assert_eq!(state.propagation_auto_blacklist.len(), 1);
@@ -1198,6 +1207,26 @@ mod tests {
             .expect("remove");
         assert!(state.propagation_auto_blacklist.is_empty());
         assert!(state.remove_propagation_auto_blacklist(hash).is_err());
+    }
+
+    #[test]
+    fn propagation_auto_blacklist_rejects_add_when_at_cap() {
+        let mut state = PersistedState::default_empty();
+        for i in 0..PersistedState::PROPAGATION_AUTO_BLACKLIST_CAP {
+            let hash = format!("{i:032x}");
+            state
+                .add_propagation_auto_blacklist(&hash)
+                .unwrap_or_else(|e| panic!("add {i}: {e}"));
+        }
+        assert_eq!(
+            state.propagation_auto_blacklist.len(),
+            PersistedState::PROPAGATION_AUTO_BLACKLIST_CAP
+        );
+        let overflow = format!("{:032x}", PersistedState::PROPAGATION_AUTO_BLACKLIST_CAP);
+        assert_eq!(
+            state.add_propagation_auto_blacklist(&overflow).unwrap_err(),
+            "propagation Auto blacklist is full"
+        );
     }
 
     #[test]

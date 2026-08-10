@@ -644,6 +644,44 @@ describe('reticulumPropagationAutoApply', () => {
       expect(startSync.mock.calls.map((c) => c[0])[0]).toBe(near);
     });
 
+    it('soft-defer restores a prior real lastSyncError from the cascade', async () => {
+      const priorKey = 'reticulumPropagation.syncPathUnknown';
+      const startSync = vi.fn((id?: string): Promise<PropagationStartSyncResult> => {
+        // Mirror store.startSync clearing lastSyncError on entry.
+        useReticulumPropagationStore.setState({ lastSyncError: null });
+        if (id === near) {
+          useReticulumPropagationStore.setState({
+            sync: { active: false, progress: 0, message: null },
+            lastSyncError: priorKey,
+            syncTargetId: near,
+          });
+          return Promise.resolve('failed');
+        }
+        useReticulumPropagationStore.setState({
+          sync: { active: false, progress: 0, message: null },
+          activePropagationSyncAttemptAt: null,
+        });
+        return Promise.resolve('deferred');
+      });
+      useReticulumPropagationStore.setState({
+        nodes: [{ id: 'local-prop', name: 'Local', enabled: false, status: 'idle' }],
+        discovered: [
+          { destination_hash: near, node_state: true, peering_cost: 0, hops: 1 },
+          { destination_hash: far, node_state: true, peering_cost: 0, hops: 2 },
+        ],
+        preferredId: null,
+        sync: { active: false, progress: 0, message: null },
+        lastSyncError: null,
+        startSync,
+      });
+
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(
+        false,
+      );
+      // near failed then far soft-deferred — do not leave lastSyncError wiped.
+      expect(useReticulumPropagationStore.getState().lastSyncError).toBe(priorKey);
+    });
+
     it('RETRIEVE_BUSY-only cascade does not claim syncNoTarget when local is off', async () => {
       const startSync = vi.fn(() => Promise.resolve('deferred' as const));
       useReticulumPropagationStore.setState({

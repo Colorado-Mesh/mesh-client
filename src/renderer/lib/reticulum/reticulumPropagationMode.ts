@@ -164,9 +164,12 @@ export function listConfiguredRemotePropagationIds(
   for (const node of nodes) {
     if (node.id === 'local-prop' || !node.enabled) continue;
     if (isPropagationHashAutoBlacklisted(node.destination_hash, autoBlacklist)) continue;
+    const rawHops = node.hops;
     rows.push({
       id: node.id,
-      hops: node.hops ?? Number.POSITIVE_INFINITY,
+      // Absurd / non-finite hops sort with unknown (not ahead of real peers).
+      hops:
+        rawHops != null && hasFinitePropagationHops(rawHops) ? rawHops : Number.POSITIVE_INFINITY,
       sortKey: node.name,
     });
   }

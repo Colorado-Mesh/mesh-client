@@ -1,7 +1,7 @@
 //! LXMF outbound delivery loop (Direct / Propagated) via LinkDeliveryManager.
 
 use std::collections::{HashMap, HashSet};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard, TryLockError};
 
 use bytes::Bytes;
 use lxmf_core::constants::{
@@ -606,27 +606,49 @@ impl LxmfOutboundDriver {
         // try_lock: never block outbound tick on a contended PropagationNode mutex —
         // defer (do not pack at cost 0 / self-Link) when the node lock is busy.
         let target_cost = if local_in_process {
-            let Some(node) = self.local_prop_node.as_ref() else {
+            let Some(node) = self.local_prop_node.clone() else {
                 // local_in_process requires the node; defensive.
                 return;
             };
-            let Ok(guard) = node.try_lock() else {
-                let now = now_f64();
-                message.next_delivery_attempt = now + f64::from(PATH_REQUEST_WAIT as u32);
-                tracing::debug!(
-                    target: "lxmf-outbound",
-                    prop = %prop_hex,
-                    "DeliverPropagated: local-prop node busy — deferring in-process deposit"
-                );
-                if let Some(hash) = message.hash.or(message.message_id) {
-                    self.pending_pn_targets.insert(hash, prop_hash);
+            let lock_outcome = try_lock_local_prop_node(&node);
+            match lock_outcome {
+                Ok(guard) => {
+                    let local_floor = guard.min_stamp_cost();
+                    drop(guard);
+                    local_floor.max(router.get_stamp_cost(&prop_hash).unwrap_or(0))
                 }
-                router.send(message);
-                return;
-            };
-            let local_floor = guard.min_stamp_cost();
-            drop(guard);
-            local_floor.max(router.get_stamp_cost(&prop_hash).unwrap_or(0))
+                Err(InProcessDepositOutcome::Busy) => {
+                    let now = now_f64();
+                    message.next_delivery_attempt = now + f64::from(PATH_REQUEST_WAIT as u32);
+                    tracing::debug!(
+                        target: "lxmf-outbound",
+                        prop = %prop_hex,
+                        "DeliverPropagated: local-prop node busy — deferring in-process deposit"
+                    );
+                    if let Some(hash) = message.hash.or(message.message_id) {
+                        self.pending_pn_targets.insert(hash, prop_hash);
+                    }
+                    router.send(message);
+                    return;
+                }
+                Err(InProcessDepositOutcome::Failed | InProcessDepositOutcome::Completed) => {
+                    tracing::error!(
+                        target: "lxmf-outbound",
+                        prop = %prop_hex,
+                        "DeliverPropagated: local-prop node mutex poisoned — advancing PN cascade"
+                    );
+                    if let Some(hash) = message.hash.or(message.message_id) {
+                        self.mark_pn_tried(hash, prop_hash);
+                    }
+                    match self.try_advance_pn_cascade(router, event_tx, message) {
+                        Ok(()) => return,
+                        Err(message) => {
+                            self.emit_outbound_failed(router, event_tx, *message);
+                            return;
+                        }
+                    }
+                }
+            }
         } else {
             router.get_stamp_cost(&prop_hash).unwrap_or(0)
         };
@@ -647,26 +669,6 @@ impl LxmfOutboundDriver {
                 }
             }
         };
-        // lxmd parity: count the attempt before packed link delivery so Failed can budget retries.
-        let attempts = mark_propagated_delivery_attempt(&mut message);
-        if attempts >= MAX_DELIVERY_ATTEMPTS {
-            tracing::warn!(
-                prop = %prop_hex,
-                attempts,
-                max_attempts = MAX_DELIVERY_ATTEMPTS,
-                "propagated delivery attempt budget reached — advancing PN cascade"
-            );
-            if let Some(hash) = message.hash.or(message.message_id) {
-                self.mark_pn_tried(hash, prop_hash);
-            }
-            match self.try_advance_pn_cascade(router, event_tx, message) {
-                Ok(()) => return,
-                Err(message) => {
-                    self.emit_outbound_failed(router, event_tx, *message);
-                    return;
-                }
-            }
-        }
         let hops = route_hops_for(&self.route_hops, prop_hash);
         let message_hash_hex = message.hash.as_ref().map(hex::encode);
         let transient_id_hex = message.transient_id.as_ref().map(hex::encode);
@@ -675,6 +677,7 @@ impl LxmfOutboundDriver {
                 .insert(hash, (prop_hash, message.transient_id));
         }
         // Local-prop cascade: deposit in-process (full hosted PN store) — never self-Link.
+        // Do not count a delivery attempt here: Busy must requeue without burning budget.
         if is_local_cascade && self.local_prop_node.is_some() {
             match self.try_local_prop_in_process_deposit(
                 router,
@@ -716,6 +719,27 @@ impl LxmfOutboundDriver {
                             return;
                         }
                     }
+                }
+            }
+        }
+        // lxmd parity: count the attempt immediately before packed link delivery.
+        let attempts = mark_propagated_delivery_attempt(&mut message);
+        if attempts >= MAX_DELIVERY_ATTEMPTS {
+            tracing::warn!(
+                prop = %prop_hex,
+                attempts,
+                max_attempts = MAX_DELIVERY_ATTEMPTS,
+                "propagated delivery attempt budget reached — advancing PN cascade"
+            );
+            if let Some(hash) = message.hash.or(message.message_id) {
+                self.pending_pn_deposits.remove(&hash);
+                self.mark_pn_tried(hash, prop_hash);
+            }
+            match self.try_advance_pn_cascade(router, event_tx, message) {
+                Ok(()) => return,
+                Err(message) => {
+                    self.emit_outbound_failed(router, event_tx, *message);
+                    return;
                 }
             }
         }
@@ -778,11 +802,9 @@ impl LxmfOutboundDriver {
             return InProcessDepositOutcome::Failed;
         };
         // Read admit floor without holding the lock across PoW validation.
-        let min_cost = {
-            let Ok(guard) = node.try_lock() else {
-                return InProcessDepositOutcome::Busy;
-            };
-            guard.min_stamp_cost()
+        let min_cost = match try_lock_local_prop_node(&node) {
+            Ok(guard) => guard.min_stamp_cost(),
+            Err(outcome) => return outcome,
         };
         let mut validated: Vec<ValidatedPnStamp> = Vec::new();
         for entry in &entries {
@@ -807,8 +829,9 @@ impl LxmfOutboundDriver {
         let mut accepted = 0usize;
         let mut last_tid: Option<[u8; 32]> = None;
         {
-            let Ok(mut guard) = node.try_lock() else {
-                return InProcessDepositOutcome::Busy;
+            let mut guard = match try_lock_local_prop_node(&node) {
+                Ok(g) => g,
+                Err(outcome) => return outcome,
             };
             for (transient_id, lxmf_data, stamp_u8, stamp_data) in &validated {
                 if guard.accept_stamped_propagated_blob(lxmf_data, stamp_data, *stamp_u8) {
@@ -1577,6 +1600,23 @@ fn mark_propagated_delivery_attempt(message: &mut LxMessage) -> u32 {
     message.last_delivery_attempt = now;
     message.next_delivery_attempt = now + f64::from(DELIVERY_RETRY_WAIT as u32);
     message.delivery_attempts
+}
+
+/// Classify local-prop `try_lock`: WouldBlock → Busy (requeue); Poisoned → Failed (advance).
+fn try_lock_local_prop_node(
+    node: &Mutex<PropagationNode>,
+) -> Result<MutexGuard<'_, PropagationNode>, InProcessDepositOutcome> {
+    match node.try_lock() {
+        Ok(guard) => Ok(guard),
+        Err(TryLockError::WouldBlock) => Err(InProcessDepositOutcome::Busy),
+        Err(TryLockError::Poisoned(_)) => {
+            tracing::error!(
+                target: "lxmf-outbound",
+                "local-prop PropagationNode mutex poisoned — treating deposit as failed"
+            );
+            Err(InProcessDepositOutcome::Failed)
+        }
+    }
 }
 
 /// Whether a Propagated link `Failed` should requeue instead of going terminal.
@@ -2798,6 +2838,111 @@ mod tests {
         let (again, listed_again) = bridge.drain_local_inbox();
         assert!(again.is_empty());
         assert_eq!(listed_again, 0);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Busy local-node lock must requeue without consuming delivery_attempts.
+    #[test]
+    fn local_prop_in_process_busy_does_not_consume_delivery_attempt() {
+        use lxmf_core::constants::DeliveryMethod;
+        use lxmf_core::message::LxMessage;
+        use lxmf_core::router::{LxmRouter, RouterConfig};
+        use rns_identity::destination::Destination;
+        use tokio::sync::broadcast;
+
+        let dir = std::env::temp_dir().join(format!(
+            "mesh-prop-outbound-busy-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos()
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+
+        let sender = Identity::new();
+        let recipient = Identity::new();
+        let local_prop = [0xadu8; 16];
+        let zero_stamp_policy = crate::stack::pn_hosting_policy::PnHostingPolicy {
+            propagation_stamp_cost: 0,
+            propagation_stamp_flex: 0,
+            ..Default::default()
+        };
+        let (tx, _rx) = mpsc::channel(32);
+        let bridge = crate::stack::propagation_bridge::PropagationBridge::new(
+            tx.clone(),
+            local_prop,
+            dir.clone(),
+            &recipient,
+            &zero_stamp_policy,
+        )
+        .expect("bridge");
+
+        let sender_delivery =
+            Destination::hash_from_name_and_identity("lxmf.delivery", Some(&sender.hash));
+        let recipient_delivery =
+            Destination::hash_from_name_and_identity("lxmf.delivery", Some(&recipient.hash));
+        let mut driver =
+            LxmfOutboundDriver::new(tx, &sender, hex::encode(sender_delivery), "me".into());
+        driver.register_identity_key(&hex::encode(recipient_delivery), recipient.get_public_key());
+        driver.set_local_prop_node(Some(bridge.local_node()));
+        driver.set_pn_cascade_candidates(vec![PnCascadeCandidate {
+            hash: local_prop,
+            is_local: true,
+            is_discovered: false,
+            hops: Some(0),
+            id: "local-prop".into(),
+        }]);
+
+        let mut router = LxmRouter::new(RouterConfig::default());
+        let (event_tx, mut event_rx) = broadcast::channel(16);
+
+        let mut msg = LxMessage::new(
+            recipient_delivery,
+            sender_delivery,
+            "",
+            "busy lock must not burn attempts",
+            DeliveryMethod::Direct,
+        );
+        msg.sign(&sender.get_signing_key().expect("sk"))
+            .expect("sign");
+        let msg_hash = msg.hash.expect("hash after sign");
+        assert!(
+            driver
+                .try_advance_pn_cascade(&mut router, &event_tx, msg)
+                .is_ok()
+        );
+
+        let local_node = bridge.local_node();
+        let held = local_node.lock().expect("hold local node");
+        driver.process_tick(&mut router, &event_tx);
+        assert_eq!(router.pending_outbound.len(), 1);
+        assert_eq!(
+            router.pending_outbound[0].delivery_attempts, 0,
+            "WouldBlock Busy must not mark a delivery attempt"
+        );
+        router.pending_outbound[0].next_delivery_attempt = 0.0;
+        driver.process_tick(&mut router, &event_tx);
+        assert_eq!(router.pending_outbound.len(), 1);
+        assert_eq!(router.pending_outbound[0].delivery_attempts, 0);
+        assert_eq!(router.pending_outbound[0].hash, Some(msg_hash));
+        drop(held);
+
+        router.pending_outbound[0].next_delivery_attempt = 0.0;
+        driver.process_tick(&mut router, &event_tx);
+        let mut saw_stored = false;
+        while let Ok(frame) = event_rx.try_recv() {
+            if frame.contains("\"status\":\"stored_locally\"") {
+                saw_stored = true;
+            }
+        }
+        assert!(
+            saw_stored,
+            "deposit must succeed after the local-node lock is released"
+        );
+        assert_eq!(bridge.local_node().lock().expect("lock").message_count(), 1);
 
         let _ = std::fs::remove_dir_all(&dir);
     }

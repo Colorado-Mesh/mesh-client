@@ -367,6 +367,58 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().sync.active).toBe(true);
   });
 
+  it('stale remote success returns deferred without accepting for a superseded attempt', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    let resolveRemote!: (value: { ok: boolean }) => void;
+    const remotePost = new Promise<{ ok: boolean }>((resolve) => {
+      resolveRemote = resolve;
+    });
+    proxyPost
+      .mockImplementationOnce(() => remotePost)
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: true });
+    const stalePromise = useReticulumPropagationStore.getState().startSync('pn-stale');
+
+    await expect(useReticulumPropagationStore.getState().startSync('pn-new')).resolves.toBe(
+      'accepted',
+    );
+    const newerAttempt = useReticulumPropagationStore.getState().activePropagationSyncAttemptAt;
+
+    resolveRemote({ ok: true });
+    await expect(stalePromise).resolves.toBe('deferred');
+    expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBe(
+      newerAttempt,
+    );
+    expect(useReticulumPropagationStore.getState().syncTargetId).toBe('pn-new');
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(true);
+  });
+
+  it('stale rejection returns deferred without clearing the newer attempt', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    let rejectRemote!: (reason?: unknown) => void;
+    const remotePost = new Promise<{ ok: boolean }>((_resolve, reject) => {
+      rejectRemote = reject;
+    });
+    proxyPost
+      .mockImplementationOnce(() => remotePost)
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: true });
+    const stalePromise = useReticulumPropagationStore.getState().startSync('pn-stale');
+
+    await expect(useReticulumPropagationStore.getState().startSync('pn-new')).resolves.toBe(
+      'accepted',
+    );
+    const newerAttempt = useReticulumPropagationStore.getState().activePropagationSyncAttemptAt;
+
+    rejectRemote(new Error('proxy down'));
+    await expect(stalePromise).resolves.toBe('deferred');
+    expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBe(
+      newerAttempt,
+    );
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(true);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBeNull();
+  });
+
   it('startSync posts destination_hash for a 32-hex one-time sync', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyPost.mockResolvedValueOnce({ ok: true });

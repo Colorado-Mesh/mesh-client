@@ -428,10 +428,12 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       )) as { ok?: boolean; error?: string };
       // A newer startSync/cancel may have superseded this attempt while we awaited.
       const stillCurrent = () => get().activePropagationSyncAttemptAt === attemptAt;
+      // Stale responses must not clear the newer attempt's stall watchdog.
+      if (!stillCurrent()) return 'deferred';
       if (!res.ok) {
         clearPropagationSyncStallWatchdog();
-        if (!stillCurrent()) return 'deferred';
         // Soft defer: outbound LXMF deposit owns the PN Link — retry without backoff.
+        // Do not invent an error; leave lastSyncError as-is for cascade preserve.
         if (isPropagationSyncSoftDeferError(res.error)) {
           set({
             sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
@@ -449,7 +451,6 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       }
       // Local settle has no WS progress stream if the emitter races; mark success here.
       if (propId === 'local-prop') {
-        if (!stillCurrent()) return 'deferred';
         set({
           sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
           lastSyncError: null,
@@ -458,8 +459,8 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       }
       return 'accepted';
     } catch (e) {
-      clearPropagationSyncStallWatchdog();
       if (get().activePropagationSyncAttemptAt !== attemptAt) return 'deferred';
+      clearPropagationSyncStallWatchdog();
       console.warn('[reticulumPropagationStore] sync ' + errLikeToLogString(e));
       set({
         sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },

@@ -111,6 +111,28 @@ describe('reticulumPropagationMode', () => {
     });
   });
 
+  it('sorts configured remotes with hops above 32 as unknown-hop', () => {
+    const near = 'aa'.repeat(16);
+    const absurd = 'bb'.repeat(16);
+    const nodes = [
+      row({
+        id: 'pn-absurd',
+        name: 'Ghost',
+        enabled: true,
+        destination_hash: absurd,
+        hops: 99,
+      }),
+      row({
+        id: 'pn-near',
+        name: 'Near',
+        enabled: true,
+        destination_hash: near,
+        hops: 2,
+      }),
+    ];
+    expect(listConfiguredRemotePropagationIds(nodes)).toEqual(['pn-near', 'pn-absurd']);
+  });
+
   it('reports no cascade candidate for a fresh stack with a loading local inbox', () => {
     const loadingLocal = [
       row({ id: 'local-prop', name: 'Local', enabled: false, status: 'loading' }),

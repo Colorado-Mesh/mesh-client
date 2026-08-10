@@ -46,6 +46,8 @@ pub struct PropagationBridge {
     /// Persisted have-ids so the next `/get` (any PN) reports haves and does not
     /// re-download mail we already retrieved (Python local_messages parity).
     client_have_path: PathBuf,
+    /// Serializes load→merge→atomic write for [`Self::client_have_path`].
+    client_have_lock: Mutex<()>,
     /// Local identity clone used to decrypt downloaded propagated blobs.
     identity: Identity,
     local_serving: AtomicBool,
@@ -131,6 +133,7 @@ impl PropagationBridge {
             sync_task: Mutex::new(sync_task),
             client: Mutex::new(client),
             client_have_path,
+            client_have_lock: Mutex::new(()),
             identity: identity.clone(),
             local_serving: AtomicBool::new(false),
             cached_local_stats: Mutex::new((0, 0)),
@@ -563,27 +566,29 @@ impl PropagationBridge {
                 let listed = client.available_messages().len();
                 let downloaded = client.received_count();
                 let blobs = client.take_received_messages();
-                // Remember retrieved tids as haves (survives acknowledge/cleanup)
-                // so the next `/get` (same or other PN) purges instead of re-serving.
-                let tids: Vec<PropagationTransientId> = blobs
-                    .iter()
-                    .map(|blob| LxMessage::compute_propagation_transient_id(blob))
-                    .collect();
-                for tid in &tids {
-                    client.add_local_message(*tid);
-                }
-                let have_added = tids.len();
-                // Consume the terminal snapshot → Idle so the next
-                // start_client_download can proceed without a cancel first.
-                let _ = client.acknowledge_transfer();
-                drop(client);
-                if have_added > 0 {
-                    merge_persist_client_have_ids(&self.client_have_path, &tids);
-                }
+                // Decode first (parity with drain_local_inbox): only successfully
+                // decoded mail becomes a have-id. Undecodable blobs are not persisted
+                // as haves so a later `/get` can retry them.
                 let messages = blobs
                     .iter()
                     .filter_map(|blob| decode_downloaded_propagated_blob(&self.identity, blob))
                     .collect::<Vec<_>>();
+                let tids: Vec<PropagationTransientId> =
+                    messages.iter().filter_map(|msg| msg.transient_id).collect();
+                for tid in &tids {
+                    client.add_local_message(*tid);
+                }
+                // Consume the terminal snapshot → Idle so the next
+                // start_client_download can proceed without a cancel first.
+                let _ = client.acknowledge_transfer();
+                drop(client);
+                if !tids.is_empty() {
+                    merge_persist_client_have_ids(
+                        &self.client_have_lock,
+                        &self.client_have_path,
+                        &tids,
+                    );
+                }
                 ClientDownloadPoll::Complete {
                     messages,
                     listed,
@@ -677,7 +682,7 @@ impl PropagationBridge {
                     client.add_local_message(*tid);
                 }
             }
-            merge_persist_client_have_ids(&self.client_have_path, &tids);
+            merge_persist_client_have_ids(&self.client_have_lock, &self.client_have_path, &tids);
         }
 
         (messages, listed)
@@ -735,10 +740,22 @@ fn load_client_have_ids(path: &Path) -> Vec<PropagationTransientId> {
 }
 
 /// Merge newly retrieved transient IDs into the on-disk have set (capped).
-fn merge_persist_client_have_ids(path: &Path, new_ids: &[PropagationTransientId]) {
+fn merge_persist_client_have_ids(
+    lock: &Mutex<()>,
+    path: &Path,
+    new_ids: &[PropagationTransientId],
+) {
     if new_ids.is_empty() {
         return;
     }
+    let Ok(_guard) = lock.lock() else {
+        tracing::warn!(
+            target: "propagation-retrieve",
+            path = %path.display(),
+            "client have-ids persist lock poisoned — skipping merge"
+        );
+        return;
+    };
     let mut ordered: Vec<PropagationTransientId> = load_client_have_ids(path);
     let mut seen: HashSet<PropagationTransientId> = ordered.iter().copied().collect();
     for tid in new_ids {
@@ -1791,8 +1808,9 @@ mod tests {
         let path = dir.join(CLIENT_RETRIEVED_IDS_FILE);
         let tid_a = [0x11u8; 32];
         let tid_b = [0x22u8; 32];
-        merge_persist_client_have_ids(&path, &[tid_a]);
-        merge_persist_client_have_ids(&path, &[tid_a, tid_b]);
+        let lock = Mutex::new(());
+        merge_persist_client_have_ids(&lock, &path, &[tid_a]);
+        merge_persist_client_have_ids(&lock, &path, &[tid_a, tid_b]);
         let loaded = load_client_have_ids(&path);
         assert_eq!(loaded.len(), 2);
         assert!(loaded.contains(&tid_a));

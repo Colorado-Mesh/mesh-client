@@ -76,10 +76,15 @@ async function attemptSync(
   id: string,
   attempts: CascadeAttempts,
 ): Promise<PropagationAttemptOutcome> {
+  // startSync clears lastSyncError on entry; restore a prior real failure after soft-defer.
+  const priorError = useReticulumPropagationStore.getState().lastSyncError;
   const startResult = await useReticulumPropagationStore.getState().startSync(id);
   if (startResult === 'deferred') {
     // Soft defer: do not 15-minute-backoff the node, but remember we had targets.
     attempts.deferred = true;
+    if (priorError) {
+      useReticulumPropagationStore.getState().setLastSyncError(priorError);
+    }
     return 'deferred';
   }
   if (startResult !== 'accepted') {
