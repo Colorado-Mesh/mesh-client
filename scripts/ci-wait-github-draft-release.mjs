@@ -3,17 +3,15 @@
  * Wait for prepare-github-release to create the draft, then export release_id.
  * Used by Flatpak publish so it never POSTs a competing draft.
  */
-import { appendFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { writeReleaseIdOutput } from './ci-ensure-github-draft-release.mjs';
 import { authToken, resolveTag, waitForGithubDraftRelease } from './github-release-api.mjs';
 
 async function main() {
   const tag = resolveTag(process.argv.slice(2), process.env);
   const token = authToken(process.env);
   const release = await waitForGithubDraftRelease({ tag, token });
-  if (typeof process.env.GITHUB_OUTPUT === 'string' && process.env.GITHUB_OUTPUT) {
-    appendFileSync(process.env.GITHUB_OUTPUT, `release_id=${release.id}\n`, 'utf8');
-  }
+  writeReleaseIdOutput(process.env.GITHUB_OUTPUT, release.id);
   console.debug(`[ci-wait-github-draft-release] release_id=${release.id}`);
 }
 

@@ -239,12 +239,19 @@ jobs:
         run: ${{ matrix.build_script }}
 
       - name: Upload assets to draft GitHub release
+        if: >-
+          ${{ needs.prepare-github-release.result == 'success'
+          && needs.prepare-github-release.outputs.release_id != '' }}
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_ID: ${{ needs.prepare-github-release.outputs.release_id }}
+          UPLOAD_GLOBS: ${{ matrix.upload_globs }}
         # Attach only — never create a release (prepare owns POST /releases).
-        run: node scripts/ci-upload-release-assets.mjs ${{ matrix.upload_globs }}
+        # UPLOAD_GLOBS is an intentional space-separated glob list from the matrix.
+        run: |
+          # shellcheck disable=SC2086
+          node scripts/ci-upload-release-assets.mjs $UPLOAD_GLOBS
 
       # Do not upload raw Mesh-client.app — upload-artifact@v7 dereferences framework
       # symlinks (~3× Electron Framework size). DMG/ZIP preserve correct layout.

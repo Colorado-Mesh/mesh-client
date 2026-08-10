@@ -170,7 +170,7 @@ Build jobs also run `verify-reticulum-sidecar-staged.mjs` after staging sidecars
 1. **`schema-release-compare`** — compares this SHA’s schema to the last published release; uploads `READ-ME-FIRST-flatpak.md` (included again beside Flatpak Actions artifacts)
 2. **`reticulum-sidecar`** — builds `mesh-client-reticulum` per arch (x86_64 on `ubuntu-latest`, aarch64 on `ubuntu-24.04-arm`) with full RNS stack features
 3. **`flatpak`** — stamps CI build info, writes schema upgrade notice when bumped, generates offline pnpm sources, builds `org.coloradomesh.MeshClient.flatpak` per arch inside the Flathub freedesktop 24.08 container, smoke-installs the unstamped bundle (manual **Build Flatpak (no release)** dispatch also renames downloadable artifacts to `…-run{N}.flatpak`; tag runs keep clean names)
-4. **`publish`** (tag only) — attaches both clean-named `.flatpak` files to the GitHub Release with **`draft: true`** (does not auto-publish an existing draft)
+4. **`publish`** (tag only) — waits for the Electron prepare draft (`ci-wait-github-draft-release.mjs`), then attaches both clean-named `.flatpak` files with `ci-upload-release-assets.mjs` using the shared `release_id` (never creates or publishes a release)
 
 Both tag-triggered workflows must complete before the release is fully populated. Flatpak bundles often arrive a few minutes after the Electron artifacts.
 
@@ -254,7 +254,7 @@ Follow [Semantic Versioning](https://semver.org/):
 ### Duplicate draft releases for one tag
 
 - Historically caused when parallel `dist:*:publish` / softprops jobs each `POST`ed a draft after a List Releases miss. Current CI: only `prepare-github-release` may create (`MESH_CLIENT_ALLOW_DRAFT_CREATE=1`); builds/Flatpak upload by id; Flatpak waits with `ci-wait-github-draft-release.mjs`.
-- **Finalize PATCH 403 (`Resource not accessible by integration`):** Actions `GITHUB_TOKEN` cannot PATCH `target_commitish` when the tagged commit differs in `.github/workflows/` from the default branch. Consolidation skips that field and treats metadata PATCH failures as non-fatal after assets are merged.
+- **Finalize PATCH 403 (`Resource not accessible by integration`):** Actions `GITHUB_TOKEN` cannot PATCH `target_commitish` when the tagged commit differs in `.github/workflows/` from the default branch. Consolidation skips that field. After assets are merged, only metadata PATCH **HTTP 403** is non-fatal; any other status should fail the job and be investigated.
 - **Assets still split (external fork):** `finalize-github-release` merges via `ci-ensure-github-draft-release.mjs`; outside CI run `node scripts/consolidate-github-release-duplicates.mjs --tag vX.Y.Z` (requires `GH_TOKEN`).
 - **Do not force-move the `v*` tag while a release workflow is in progress.** Retagging starts another run and (with workflow concurrency) cancels the in-flight build; smoke jobs also assume a stable workflow `github.sha`.
 - **Smoke tests fail with “ref does not point to the expected commit”:** the tag was moved after the workflow started. Re-run failed jobs only after the tag matches the run’s `headSha`, or merge the checkout `ref: ${{ github.sha }}` fix and trigger a fresh tag run.
@@ -277,12 +277,12 @@ pnpm run rebuild
 pnpm run build
 ```
 
-Release jobs run `pnpm run rebuild` automatically before `dist:*:publish`.
+Release jobs run `pnpm run rebuild` automatically before `dist:*`.
 
 ### Flatpak publish did not attach bundles
 
 - Confirm `flatpak.yaml` **`publish`** job ran on the tag (not only manual `workflow_dispatch`)
-- The publish step uses `draft: true` so it will not promote a draft to live — it only adds files
+- Publish waits for the prepare draft, then uploads with `ci-upload-release-assets.mjs` + `RELEASE_ID` (it does not create or publish a release)
 
 ---
 

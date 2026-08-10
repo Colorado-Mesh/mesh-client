@@ -113,7 +113,7 @@ export async function patchDraftReleaseSchemaNote(opts) {
     // Prefer prepare's release_id — avoids List Releases lag right after create.
     draft = await getReleaseById(opts.releaseId, opts.token);
     if (draft.draft !== true) {
-      throw new Error(`No release found for ${opts.tag}`);
+      throw new Error(`Release ${opts.releaseId} for ${opts.tag} is not a draft`);
     }
   } else {
     const ensured = await ensureDraft({

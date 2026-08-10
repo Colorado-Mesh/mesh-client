@@ -408,4 +408,59 @@ describe('consolidateReleases', () => {
     );
     expect(patchBody.target_commitish).toBeUndefined();
   });
+
+  it('fails consolidate when metadata PATCH returns a non-403 error', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined);
+    const fetchMock = vi.fn(async (url, init) => {
+      const method = init?.method ?? 'GET';
+      const href = String(url);
+      if (method === 'GET' && href.includes('/releases?')) {
+        return new Response(
+          JSON.stringify([
+            {
+              id: 1,
+              tag_name: TAG,
+              name: '5.21.0',
+              draft: true,
+              body: '',
+              assets: [
+                { id: 101, name: 'a' },
+                { id: 103, name: 'c' },
+              ],
+            },
+            {
+              id: 2,
+              tag_name: TAG,
+              name: '5.21.0',
+              draft: true,
+              body: 'dup',
+              assets: [{ id: 102, name: 'b' }],
+            },
+          ]),
+          { status: 200 },
+        );
+      }
+      if (method === 'GET' && href.endsWith('/releases/assets/102')) {
+        return new Response(new Uint8Array([1]), { status: 200 });
+      }
+      if (method === 'POST' && href.includes('/releases/1/assets')) {
+        return new Response(JSON.stringify({ id: 999, name: 'b' }), { status: 201 });
+      }
+      if (
+        method === 'DELETE' &&
+        (href.endsWith('/releases/assets/102') || href.endsWith('/releases/2'))
+      ) {
+        return new Response('', { status: 200 });
+      }
+      if (method === 'PATCH' && href.endsWith('/releases/1')) {
+        return new Response(JSON.stringify({ message: 'Server Error' }), { status: 500 });
+      }
+      throw new Error(`Unexpected fetch ${method} ${href}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await consolidateReleases({ tag: TAG, token: 'token', log: () => {} });
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockRestore();
+  });
 });

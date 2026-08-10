@@ -117,6 +117,27 @@ describe('patchDraftReleaseSchemaNote', () => {
     expect(patch.mock.calls[0][2].body).toContain('Draft release for v1.0.0.');
   });
 
+  it('rejects RELEASE_ID when the release is published', async () => {
+    const patch = vi.fn();
+    await expect(
+      patchDraftReleaseSchemaNote({
+        tag: 'v1.0.0',
+        token: 'token',
+        markdown: '# Schema bumped',
+        releaseId: 2,
+        ensureDraft: vi.fn(),
+        listReleases: vi.fn(),
+        getReleaseById: vi.fn().mockResolvedValue({
+          id: 2,
+          draft: false,
+          body: 'published',
+        }),
+        patch,
+      }),
+    ).rejects.toThrow('Release 2 for v1.0.0 is not a draft');
+    expect(patch).not.toHaveBeenCalled();
+  });
+
   it('falls back to list when ensure returns a non-draft', async () => {
     const patch = vi.fn().mockResolvedValue({ id: 2 });
     await patchDraftReleaseSchemaNote({

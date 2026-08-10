@@ -232,14 +232,22 @@ export async function patchReleaseMetadataBestEffort(releaseId, token, patch, lo
     method: 'PATCH',
     body: patch,
   });
-  if (!response.ok) {
+  if (response.ok) {
+    return json;
+  }
+  // Only HTTP 403 is non-fatal after assets are merged (GITHUB_TOKEN cannot retarget
+  // across workflow diffs). Other statuses still fail the job for investigation.
+  if (response.status === 403) {
     log(
-      `[github-release] PATCH release ${releaseId} failed (${response.status}): ` +
+      `[github-release] PATCH release ${releaseId} failed (403): ` +
         `${json?.message ?? response.statusText} — leaving metadata unchanged after asset merge`,
     );
     return null;
   }
-  return json;
+  fail(
+    `PATCH release ${releaseId} failed (${response.status}): ${json?.message ?? response.statusText}`,
+  );
+  return null;
 }
 
 export async function getRelease(releaseId, token) {

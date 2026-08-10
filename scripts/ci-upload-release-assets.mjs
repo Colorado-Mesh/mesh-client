@@ -41,18 +41,39 @@ export function resolveUploadFiles(patterns, cwd = process.cwd()) {
       try {
         if (statSync(abs).isFile()) {
           files.add(abs);
-          continue;
         }
       } catch {
-        // catch-no-log-ok missing path checked below via empty matches
+        // catch-no-log-ok optional glob with no matches — skip
       }
-      fail(`No files matched upload pattern: ${pattern}`);
+      continue;
     }
     for (const match of matches) {
       files.add(match);
     }
   }
+  if (files.size === 0) {
+    fail(`No files matched upload patterns: ${patterns.join(' ')}`);
+  }
   return [...files].sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * @param {string[]} files
+ * @returns {string[]}
+ */
+export function findDuplicateBasenames(files) {
+  /** @type {Map<string, string[]>} */
+  const byBase = new Map();
+  for (const filePath of files) {
+    const base = path.basename(filePath);
+    const list = byBase.get(base) ?? [];
+    list.push(filePath);
+    byBase.set(base, list);
+  }
+  return [...byBase.entries()]
+    .filter(([, paths]) => paths.length > 1)
+    .map(([base]) => base)
+    .sort((a, b) => a.localeCompare(b));
 }
 
 /**
@@ -75,6 +96,12 @@ export async function uploadReleaseAssets(opts) {
   const release = await get(opts.releaseId, opts.token);
   if (release.draft !== true) {
     fail(`Release ${opts.releaseId} is not a draft; refusing to upload`);
+    return 0;
+  }
+
+  const duplicates = findDuplicateBasenames(opts.files);
+  if (duplicates.length > 0) {
+    fail(`Duplicate basename(s) in upload set (refusing to upload): ${duplicates.join(', ')}`);
     return 0;
   }
 
