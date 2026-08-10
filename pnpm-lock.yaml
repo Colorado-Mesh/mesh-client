@@ -119,6 +119,9 @@ importers:
       systeminformation:
         specifier: ^5.33.1
         version: 5.33.1
+      ws:
+        specifier: ^8.21.0
+        version: 8.21.3
     devDependencies:
       '@axe-core/react':
         specifier: ^4.12.1
@@ -180,6 +183,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.4
         version: 19.2.4(@types/react@19.2.18)
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.66.0
         version: 8.66.0(@typescript-eslint/parser@8.66.0(eslint@10.8.1(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3))(eslint@10.8.1(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)

@@ -15,8 +15,9 @@ describe('BrowserWindow creation', () => {
   });
 
   it('sets minimum window dimensions', () => {
-    expect(INDEX_SOURCE).toContain('minWidth: 900');
-    expect(INDEX_SOURCE).toContain('minHeight: 600');
+    // Desktop builds clamp to 900x600 minimums; headless locks min == fixed viewport.
+    expect(INDEX_SOURCE).toContain('headlessConfig ? bounds.width : 900');
+    expect(INDEX_SOURCE).toContain('headlessConfig ? bounds.height : 600');
   });
 });
 
@@ -26,7 +27,7 @@ describe('app lifecycle handlers', () => {
   it("handles 'window-all-closed' to quit on non-darwin platforms", () => {
     const handlerIdx = INDEX_SOURCE.indexOf("app.on('window-all-closed'");
     expect(handlerIdx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 700);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1100);
     // Must check platform before quitting (darwin keeps the process alive)
     expect(body).toContain("process.platform !== 'darwin'");
     expect(body).toContain('app.quit()');

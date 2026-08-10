@@ -1,7 +1,9 @@
 import { app, dialog } from 'electron';
 
+import { isHeadlessServerMode } from '../shared/headless';
 import type { DatabaseSchemaTooNewError } from './db-schema-sync';
 import { getLogPath } from './log-service';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 /** Env: set to `1`/`true` to auto-accept schema upgrade (E2E / automation). */
 export const MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE_ENV = 'MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE';
@@ -28,10 +30,17 @@ export function formatSchemaUpgradeConfirmMessage(fromVersion: number, toVersion
 /**
  * Blocking confirm before irreversible SQLite schema upgrade.
  * Default button is Quit (index 0). Returns true only when the user chooses Upgrade.
+ * Headless server mode always returns true so the container boots unattended (logged).
  */
 export function confirmDatabaseSchemaUpgrade(fromVersion: number, toVersion: number): boolean {
   const auto = process.env[MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE_ENV];
   if (auto === '1' || auto?.toLowerCase() === 'true') {
+    return true;
+  }
+  if (isHeadlessServerMode()) {
+    console.warn(
+      `[db] headless server mode: auto-accepting schema upgrade ${fromVersion} → ${toVersion}`,
+    );
     return true;
   }
 
@@ -55,6 +64,13 @@ export function confirmDatabaseSchemaUpgrade(fromVersion: number, toVersion: num
 
 /** Synchronous native dialog for fatal errors before a BrowserWindow exists (packaged-safe). */
 export function showFatalStartupError(title: string, message: string): void {
+  if (isHeadlessServerMode()) {
+    // No desktop to show a dialog on (container/Xvfb); the error must not deadlock startup.
+    console.error(
+      `[main] (headless) ${sanitizeLogMessage(title)} — ${sanitizeLogMessage(message)}`,
+    );
+    return;
+  }
   try {
     dialog.showErrorBox(title, message);
   } catch {

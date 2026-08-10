@@ -37,6 +37,11 @@ import {
 import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
 import { clampQueryLimit } from '../shared/clampQueryLimit';
 import { formatHostForSocket, parseConnectHostPort } from '../shared/connectHost';
+import {
+  getHeadlessRemoteConfig,
+  type HeadlessRemoteConfig,
+  isHeadlessServerMode,
+} from '../shared/headless';
 import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
 import { findLxmUrlInArgv, isForwardableMeshClientOpenUrl } from '../shared/meshClientDeepLink';
 import {
@@ -112,6 +117,7 @@ import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from './db-ip
 import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fatal-startup-dialog';
 import { fetchLinkPreview } from './fetchLinkPreview';
 import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
+import { HeadlessRemoteServer } from './headless/remote-server';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
@@ -189,7 +195,12 @@ try {
 
 // Linux: SIGSEGV in Electron GPU process on some Wayland / driver stacks (electron#41980).
 // Must run before app.whenReady(). CLI flags --disable-gpu also work; env avoids wrapper scripts.
-if (process.platform === 'linux' && process.env.MESH_CLIENT_DISABLE_GPU === '1') {
+// Headless server mode always disables hardware acceleration (container/Xvfb raster; no real GPU).
+const IS_HEADLESS_SERVER_MODE = isHeadlessServerMode();
+if (
+  IS_HEADLESS_SERVER_MODE ||
+  (process.platform === 'linux' && process.env.MESH_CLIENT_DISABLE_GPU === '1')
+) {
   app.disableHardwareAcceleration();
 }
 
@@ -341,6 +352,8 @@ function isAnyMqttConnected(): boolean {
 }
 
 let mainWindow: BrowserWindow | null = null;
+/** Headless server-mode HTTP/WS frontend (null when not in server mode / not yet started). */
+let headlessRemoteServer: HeadlessRemoteServer | null = null;
 const rendererHeartbeatWatchdog = createRendererHeartbeatWatchdog();
 /** Win32 About: native About panel can hard-crash; use a small HTML BrowserWindow instead (#406). */
 let windowsAboutWindow: BrowserWindow | null = null;
@@ -357,6 +370,15 @@ let shutdownDone = false;
 async function shutdownAppResources(): Promise<void> {
   if (shutdownDone) return;
   isQuitting = true;
+  try {
+    await headlessRemoteServer?.stop();
+    headlessRemoteServer = null;
+  } catch (err) {
+    console.debug(
+      '[main] headless remote server stop during shutdown (ignored):',
+      err instanceof Error ? err.message : err,
+    ); // log-injection-ok internal cleanup
+  }
   try {
     takServerManager?.stop();
   } catch (err) {
@@ -495,6 +517,7 @@ process.on('uncaughtException', (error) => {
     sanitizeLogMessage(error?.stack ?? error?.message ?? String(error)),
   );
   void flushLogBeforeQuit();
+  if (IS_HEADLESS_SERVER_MODE) return; // headless: no dialog; /health reports liveness
   try {
     dialog.showErrorBox(
       'Mesh-Client — Unexpected Error',
@@ -518,6 +541,7 @@ process.on('unhandledRejection', (reason) => {
   const now = Date.now();
   if (now - lastUnhandledRejectionDialogAt < UNHANDLED_REJECTION_DIALOG_COOLDOWN_MS) return;
   lastUnhandledRejectionDialogAt = now;
+  if (IS_HEADLESS_SERVER_MODE) return; // headless: no dialog; /health reports liveness
   const message =
     reason instanceof Error ? `${reason.message}\n\n${reason.stack ?? ''}` : String(reason);
   try {
@@ -1602,20 +1626,33 @@ function openExternalHttpOrHttpsIfExternal(currentUrl: string, targetUrl: string
 }
 
 function createWindow() {
-  const savedState = loadWindowState();
-  const bounds = isWindowStateOnScreen(savedState) ? savedState : DEFAULT_WINDOW_STATE;
-  const center = bounds === DEFAULT_WINDOW_STATE;
+  const headlessConfig = IS_HEADLESS_SERVER_MODE ? getHeadlessRemoteConfig() : null;
+  const savedState = IS_HEADLESS_SERVER_MODE ? null : loadWindowState();
+  type WindowViewport = Pick<WindowState, 'width' | 'height'> &
+    Partial<Pick<WindowState, 'x' | 'y'>>;
+  const bounds: WindowViewport = headlessConfig
+    ? { width: headlessConfig.viewportWidth, height: headlessConfig.viewportHeight }
+    : savedState && isWindowStateOnScreen(savedState)
+      ? savedState
+      : DEFAULT_WINDOW_STATE;
+  const center = !IS_HEADLESS_SERVER_MODE && bounds === DEFAULT_WINDOW_STATE;
 
   const win = new BrowserWindow({
     width: bounds.width,
     height: bounds.height,
-    x: center ? undefined : bounds.x,
-    y: center ? undefined : bounds.y,
-    minWidth: 900,
-    minHeight: 600,
+    x: headlessConfig ? undefined : center ? undefined : bounds.x,
+    y: headlessConfig ? undefined : center ? undefined : bounds.y,
+    minWidth: headlessConfig ? bounds.width : 900,
+    minHeight: headlessConfig ? bounds.height : 600,
     title: 'Mesh Client',
     // Use the helper to select .ico, .icns, or .png automatically
     icon: getAppIconPath(),
+    // headless server mode: fixed content size, non-resizable, mapped frame (capture + input need it).
+    useContentSize: Boolean(headlessConfig),
+    resizable: !headlessConfig,
+    maximizable: !headlessConfig,
+    minimizable: !headlessConfig,
+    fullscreenable: !headlessConfig,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       webviewTag: false,
@@ -1625,6 +1662,8 @@ function createWindow() {
       // Inline misspelling marks and context-menu suggestions (all platforms). macOS app menu
       // stays minimal (no role-based Edit menu) to reduce WeakPtr menu-bridge noise.
       spellcheck: true,
+      // Headless server mode renders into a fixed off-desktop framebuffer: never throttle it.
+      ...(headlessConfig ? { backgroundThrottling: false } : {}),
       // Security note: experimentalFeatures enables the Web Bluetooth and Web Serial APIs
       // required for direct device communication. These APIs are permission-gated via
       // setPermissionCheckHandler/setPermissionRequestHandler (serial, geolocation, media).
@@ -1635,6 +1674,7 @@ function createWindow() {
 
   let windowStateSaveTimer: ReturnType<typeof setTimeout> | null = null;
   const scheduleSaveWindowState = () => {
+    if (IS_HEADLESS_SERVER_MODE) return; // fixed viewport; nothing to persist
     if (windowStateSaveTimer) clearTimeout(windowStateSaveTimer);
     windowStateSaveTimer = setTimeout(() => {
       if (!win.isMinimized() && !win.isMaximized()) {
@@ -1919,6 +1959,7 @@ function createWindow() {
       sanitizeLogMessage(details.reason),
       details.exitCode,
     );
+    if (IS_HEADLESS_SERVER_MODE) return; // headless: no dialog; /health reports liveness
     try {
       dialog.showErrorBox(
         'Mesh-Client — Renderer Stopped',
@@ -1945,6 +1986,7 @@ function createWindow() {
     );
     // ERR_ABORTED (-3) often means navigation was cancelled; avoid noisy dialog
     if (errorCode === -3) return;
+    if (IS_HEADLESS_SERVER_MODE) return; // headless: no dialog; /health reports liveness
     try {
       const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
       const hint = isDev
@@ -1972,7 +2014,9 @@ function createWindow() {
     console.debug('[Startup] userData:', sanitizeLogMessage(app.getPath('userData')));
     void mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
 
-    mainWindow.webContents.openDevTools();
+    if (!IS_HEADLESS_SERVER_MODE) {
+      mainWindow.webContents.openDevTools();
+    }
   } else {
     const indexPath = path.join(__dirname, '../../dist/renderer/index.html');
     const indexUrl = pathToFileURL(indexPath).toString();
@@ -1984,12 +2028,21 @@ function createWindow() {
     });
   }
 
+  if (IS_HEADLESS_SERVER_MODE) {
+    // Start the HTTP/WS remote surface only once the renderer is actually on screen;
+    // capturePage before that returns blank frames.
+    win.webContents.once('did-finish-load', () => {
+      void initHeadlessRemoteServer(win);
+    });
+  }
+
   mainWindow.on('closed', () => {
     setMainWindow(null);
     mainWindow = null;
   });
   win.on('close', () => {
     if (windowStateSaveTimer) clearTimeout(windowStateSaveTimer);
+    if (IS_HEADLESS_SERVER_MODE) return; // fixed viewport; nothing to persist
     if (!win.isMinimized() && !win.isMaximized()) {
       saveWindowState(win.getBounds());
     }
@@ -2009,9 +2062,28 @@ function createWindow() {
     }
   });
 
-  setupTray(mainWindow);
+  if (!IS_HEADLESS_SERVER_MODE) {
+    setupTray(mainWindow);
+    initUpdater(mainWindow);
+  }
+}
 
-  initUpdater(mainWindow);
+/**
+ * Start the headless HTTP/WS remote surface for a loaded window. Never throws: a
+ * bind failure is logged and the app keeps running (the browser /health endpoint
+ * simply stays unreachable from the LAN).
+ */
+async function initHeadlessRemoteServer(win: BrowserWindow): Promise<void> {
+  const config: HeadlessRemoteConfig = getHeadlessRemoteConfig();
+  const server = new HeadlessRemoteServer();
+  headlessRemoteServer = server;
+  const started = await server.start(win, config);
+  if (started) {
+    const port = server.getPort() ?? config.port;
+    console.debug(
+      `[headless] server mode active — open http://${sanitizeLogMessage(config.host)}:${port} in a browser`,
+    );
+  }
 }
 
 // ─── Tray unread badge ──────────────────────────────────────────────
@@ -6814,7 +6886,9 @@ void app
         );
       }, MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS).unref();
 
-      setupAppMenu();
+      if (!IS_HEADLESS_SERVER_MODE) {
+        setupAppMenu();
+      }
 
       // ─── Power monitor: notify renderer on suspend/resume ──────────
       powerMonitor.on('suspend', () => {
@@ -6859,6 +6933,7 @@ void app
     }
 
     app.on('activate', () => {
+      if (IS_HEADLESS_SERVER_MODE) return; // no dock / desktop activation in server mode
       if (BrowserWindow.getAllWindows().length === 0) {
         try {
           createWindow();
@@ -7005,6 +7080,12 @@ app.on('window-all-closed', () => {
   if (linuxWebBluetoothDeviceSelection.hasPendingSelection()) {
     console.debug('[main] window-all-closed: cleaning up pending Bluetooth callback');
     linuxWebBluetoothDeviceSelection.cancelSelection();
+  }
+  // Headless server mode: the window must not take the app down — keep serving the
+  // remote surface (the server is stopped explicitly in shutdownAppResources on quit).
+  if (IS_HEADLESS_SERVER_MODE) {
+    console.debug('[main] window-all-closed: headless mode, keeping app + remote server alive');
+    return;
   }
   const hasConnection = isConnected || isAnyMqttConnected();
   // On macOS: quit when user chose Quit, or when there's no connection (window closed with nothing to keep running for)
