@@ -146,6 +146,35 @@ describe('ensureGithubDraftRelease', () => {
 
     expect(release.id).toBe(99);
   });
+
+  it('creates a draft when only a published release matches the tag', async () => {
+    const fetchMock = vi.fn(async (url, init) => {
+      const method = init?.method ?? 'GET';
+      const href = String(url);
+      if (method === 'GET' && href.includes('/releases?')) {
+        return new Response(
+          JSON.stringify([{ id: 1, tag_name: TAG, name: '5.21.0', draft: false, assets: [] }]),
+          { status: 200 },
+        );
+      }
+      if (method === 'POST' && href.endsWith('/releases')) {
+        return new Response(JSON.stringify({ id: 99, tag_name: TAG, draft: true, assets: [] }), {
+          status: 201,
+        });
+      }
+      throw new Error(`Unexpected fetch ${method} ${href}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const release = await ensureGithubDraftRelease({
+      tag: TAG,
+      token: 'test-token',
+      log: () => {},
+    });
+
+    expect(release.id).toBe(99);
+    expect(release.draft).toBe(true);
+  });
 });
 
 describe('normalizeDraftReleasesForTag', () => {

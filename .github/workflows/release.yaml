@@ -282,7 +282,8 @@ jobs:
   finalize-github-release:
     name: Consolidate draft release assets
     needs: release
-    if: ${{ !cancelled() && needs.release.result != 'failure' }}
+    # Require a successful build matrix — skipped/cancelled release must not consolidate.
+    if: ${{ !cancelled() && needs.release.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

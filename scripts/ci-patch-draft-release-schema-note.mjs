@@ -89,13 +89,18 @@ export async function patchDraftReleaseSchemaNote(opts) {
   const listReleases = opts.listReleases ?? listReleasesForTag;
   const patch = opts.patch ?? patchRelease;
 
-  await ensureDraft({
+  // Prefer the draft returned by ensure (POST/PATCH response). Re-listing immediately
+  // after create can miss the draft — GitHub List Releases lags briefly, which caused
+  // prepare-github-release to fail with "No release found" right after creating one.
+  const ensured = await ensureDraft({
     tag: opts.tag,
     token: opts.token,
     targetCommitish: opts.targetCommitish,
   });
-  const releases = await listReleases(opts.tag, opts.token);
-  const draft = requireDraftReleaseForSchemaPatch(releases, opts.tag);
+  const draft =
+    ensured?.draft === true
+      ? ensured
+      : requireDraftReleaseForSchemaPatch(await listReleases(opts.tag, opts.token), opts.tag);
   const body = mergeSchemaNoteIntoReleaseBody(draft.body ?? '', opts.markdown);
   await patch(draft.id, opts.token, { body });
   console.debug(`[ci-patch-draft-release-schema-note] Updated draft body for ${opts.tag}`);

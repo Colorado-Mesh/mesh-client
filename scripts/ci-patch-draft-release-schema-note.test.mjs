@@ -67,9 +67,9 @@ describe('schemaMarkdownFromCompareOutputs', () => {
 });
 
 describe('patchDraftReleaseSchemaNote', () => {
-  it('does not PATCH when list returns only published releases', async () => {
+  it('does not PATCH when ensure returns a published release and list has no draft', async () => {
     const patch = vi.fn();
-    const ensureDraft = vi.fn().mockResolvedValue({ id: 99, draft: true });
+    const ensureDraft = vi.fn().mockResolvedValue({ id: 1, draft: false, body: 'published' });
     const listReleases = vi
       .fn()
       .mockResolvedValue([{ id: 1, draft: false, body: 'published release notes' }]);
@@ -90,13 +90,36 @@ describe('patchDraftReleaseSchemaNote', () => {
     expect(patch).not.toHaveBeenCalled();
   });
 
-  it('PATCHes the draft body when a draft exists', async () => {
+  it('PATCHes using the ensure return value without re-listing', async () => {
+    const patch = vi.fn().mockResolvedValue({ id: 2 });
+    const listReleases = vi.fn();
+    await patchDraftReleaseSchemaNote({
+      tag: 'v1.0.0',
+      token: 'token',
+      markdown: '# Schema bumped',
+      ensureDraft: vi.fn().mockResolvedValue({
+        id: 2,
+        draft: true,
+        body: 'Draft release for v1.0.0.\n',
+      }),
+      listReleases,
+      patch,
+    });
+
+    expect(listReleases).not.toHaveBeenCalled();
+    expect(patch).toHaveBeenCalledTimes(1);
+    expect(patch.mock.calls[0][0]).toBe(2);
+    expect(patch.mock.calls[0][2].body).toContain('# Schema bumped');
+    expect(patch.mock.calls[0][2].body).toContain('Draft release for v1.0.0.');
+  });
+
+  it('falls back to list when ensure returns a non-draft', async () => {
     const patch = vi.fn().mockResolvedValue({ id: 2 });
     await patchDraftReleaseSchemaNote({
       tag: 'v1.0.0',
       token: 'token',
       markdown: '# Schema bumped',
-      ensureDraft: vi.fn().mockResolvedValue({ id: 2, draft: true }),
+      ensureDraft: vi.fn().mockResolvedValue({ id: 1, draft: false, body: 'published' }),
       listReleases: vi.fn().mockResolvedValue([
         { id: 1, draft: false, body: 'published' },
         { id: 2, draft: true, body: 'Draft release for v1.0.0.\n' },
@@ -106,7 +129,5 @@ describe('patchDraftReleaseSchemaNote', () => {
 
     expect(patch).toHaveBeenCalledTimes(1);
     expect(patch.mock.calls[0][0]).toBe(2);
-    expect(patch.mock.calls[0][2].body).toContain('# Schema bumped');
-    expect(patch.mock.calls[0][2].body).toContain('Draft release for v1.0.0.');
   });
 });

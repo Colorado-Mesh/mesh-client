@@ -185,9 +185,10 @@ export async function createDraftRelease(tag, token, targetCommitish) {
   });
 
   if (response.status === 422) {
-    const existing = (await listReleasesForTag(tag, token))[0];
-    if (existing) {
-      return existing;
+    const matches = await listReleasesForTag(tag, token);
+    const existingDraft = matches.find((release) => release.draft === true);
+    if (existingDraft) {
+      return existingDraft;
     }
   }
 
@@ -383,7 +384,9 @@ export async function ensureGithubDraftRelease({
   log = console.debug,
 }) {
   let keeper = await normalizeDraftReleasesForTag(tag, token, { targetCommitish, log });
-  if (keeper) {
+  // Only reuse an existing *draft*. A published release for the same tag must not be
+  // treated as the CI upload target (schema-note patches and artifact uploads are draft-only).
+  if (keeper?.draft === true) {
     log(`[ci-ensure-github-draft-release] Using release ${keeper.id} for ${tag}`);
     return keeper;
   }
