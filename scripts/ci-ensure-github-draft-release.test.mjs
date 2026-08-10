@@ -7,6 +7,7 @@ import {
   normalizeDraftReleasesForTag,
   pickCanonicalRelease,
   resolveTag,
+  waitForGithubDraftRelease,
 } from './github-release-api.mjs';
 
 const TAG = 'v5.21.0';
@@ -122,7 +123,7 @@ describe('ensureGithubDraftRelease', () => {
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(true);
   });
 
-  it('creates a draft when no release exists', async () => {
+  it('creates a draft when no release exists and allowCreate is true', async () => {
     const fetchMock = vi.fn(async (url, init) => {
       const method = init?.method ?? 'GET';
       const href = String(url);
@@ -141,13 +142,14 @@ describe('ensureGithubDraftRelease', () => {
     const release = await ensureGithubDraftRelease({
       tag: TAG,
       token: 'test-token',
+      allowCreate: true,
       log: () => {},
     });
 
     expect(release.id).toBe(99);
   });
 
-  it('creates a draft when only a published release matches the tag', async () => {
+  it('creates a draft when only a published release matches and allowCreate is true', async () => {
     const fetchMock = vi.fn(async (url, init) => {
       const method = init?.method ?? 'GET';
       const href = String(url);
@@ -169,11 +171,29 @@ describe('ensureGithubDraftRelease', () => {
     const release = await ensureGithubDraftRelease({
       tag: TAG,
       token: 'test-token',
+      allowCreate: true,
       log: () => {},
     });
 
     expect(release.id).toBe(99);
     expect(release.draft).toBe(true);
+  });
+
+  it('does not create when allowCreate is false and no draft exists', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined);
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify([]), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await ensureGithubDraftRelease({
+      tag: TAG,
+      token: 'test-token',
+      allowCreate: false,
+      log: () => {},
+    });
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(fetchMock.mock.calls.some(([, init]) => (init?.method ?? 'GET') === 'POST')).toBe(false);
+    exitSpy.mockRestore();
   });
 });
 
@@ -277,6 +297,33 @@ describe('normalizeDraftReleasesForTag', () => {
   });
 });
 
+describe('waitForGithubDraftRelease', () => {
+  it('returns the draft after a list miss then hit', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify([{ id: 7, tag_name: TAG, name: '5.21.0', draft: true, assets: [] }]),
+          { status: 200 },
+        ),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const release = await waitForGithubDraftRelease({
+      tag: TAG,
+      token: 'token',
+      attempts: 3,
+      delayMs: 1,
+      sleep: async () => {},
+      log: () => {},
+    });
+
+    expect(release.id).toBe(7);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe('consolidateReleases', () => {
   it('is a no-op when only one release exists', async () => {
     const fetchMock = vi.fn(
@@ -291,5 +338,74 @@ describe('consolidateReleases', () => {
     const release = await consolidateReleases({ tag: TAG, token: 'token', log: () => {} });
     expect(release.id).toBe(1);
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+  });
+
+  it('treats metadata PATCH 403 as non-fatal after assets are merged', async () => {
+    const logs = [];
+    const fetchMock = vi.fn(async (url, init) => {
+      const method = init?.method ?? 'GET';
+      const href = String(url);
+      if (method === 'GET' && href.includes('/releases?')) {
+        return new Response(
+          JSON.stringify([
+            {
+              id: 1,
+              tag_name: TAG,
+              name: '5.21.0',
+              draft: true,
+              body: '',
+              assets: [
+                { id: 101, name: 'a' },
+                { id: 103, name: 'c' },
+              ],
+            },
+            {
+              id: 2,
+              tag_name: TAG,
+              name: '5.21.0',
+              draft: true,
+              body: 'longer body from duplicate',
+              assets: [{ id: 102, name: 'b' }],
+            },
+          ]),
+          { status: 200 },
+        );
+      }
+      if (method === 'GET' && href.endsWith('/releases/assets/102')) {
+        return new Response(new Uint8Array([1, 2, 3]), { status: 200 });
+      }
+      if (method === 'POST' && href.includes('/releases/1/assets')) {
+        return new Response(JSON.stringify({ id: 999, name: 'b' }), { status: 201 });
+      }
+      if (
+        method === 'DELETE' &&
+        (href.endsWith('/releases/assets/102') || href.endsWith('/releases/2'))
+      ) {
+        return new Response('', { status: 200 });
+      }
+      if (method === 'PATCH' && href.endsWith('/releases/1')) {
+        return new Response(JSON.stringify({ message: 'Resource not accessible by integration' }), {
+          status: 403,
+        });
+      }
+      throw new Error(`Unexpected fetch ${method} ${href}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const release = await consolidateReleases({
+      tag: TAG,
+      token: 'token',
+      targetCommitish: 'a'.repeat(40),
+      log: (message) => logs.push(message),
+    });
+
+    expect(release.id).toBe(1);
+    expect(logs.some((line) => line.includes('PATCH release 1 failed (403)'))).toBe(true);
+    const patchBody = JSON.parse(
+      fetchMock.mock.calls.find(
+        ([url, init]) => init?.method === 'PATCH' && String(url).endsWith('/releases/1'),
+      )?.[1]?.body ?? '{}',
+    );
+    expect(patchBody.target_commitish).toBeUndefined();
   });
 });

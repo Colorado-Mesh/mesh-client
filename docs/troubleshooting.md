@@ -154,7 +154,7 @@ Optional persistent mitigation:
 
 ### `pnpm run dist:mac` fails with `GH_TOKEN` / "Cannot cleanup"
 
-electron-builder publishes to GitHub when it thinks it's in CI. Local builds use `--publish never` so artifacts land in `release/` without a token. Tag releases use `pnpm run dist:mac:publish` (and `:linux:publish` / `:win:publish`) with `GH_TOKEN` set; see `.github/workflows/release.yaml`.
+electron-builder publishes to GitHub when it thinks it's in CI. Local builds use `--publish never` so artifacts land in `release/` without a token. Tag release CI also builds with `dist:*` (`--publish never`) and attaches via `ci-upload-release-assets.mjs` to the prepare draft; see `.github/workflows/release.yaml`.
 
 ### `[DEP0190]` when running electron-builder
 

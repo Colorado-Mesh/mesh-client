@@ -90,22 +90,26 @@ describe('patchDraftReleaseSchemaNote', () => {
     expect(patch).not.toHaveBeenCalled();
   });
 
-  it('PATCHes using the ensure return value without re-listing', async () => {
+  it('PATCHes using RELEASE_ID without ensure or list', async () => {
     const patch = vi.fn().mockResolvedValue({ id: 2 });
+    const ensureDraft = vi.fn();
     const listReleases = vi.fn();
     await patchDraftReleaseSchemaNote({
       tag: 'v1.0.0',
       token: 'token',
       markdown: '# Schema bumped',
-      ensureDraft: vi.fn().mockResolvedValue({
+      releaseId: 2,
+      ensureDraft,
+      listReleases,
+      getReleaseById: vi.fn().mockResolvedValue({
         id: 2,
         draft: true,
         body: 'Draft release for v1.0.0.\n',
       }),
-      listReleases,
       patch,
     });
 
+    expect(ensureDraft).not.toHaveBeenCalled();
     expect(listReleases).not.toHaveBeenCalled();
     expect(patch).toHaveBeenCalledTimes(1);
     expect(patch.mock.calls[0][0]).toBe(2);

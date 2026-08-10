@@ -98,15 +98,15 @@ PR review comments come from [CodeRabbit](https://docs.coderabbit.ai/) via [`.co
 Triggered by pushing a version tag (e.g., `v1.2.3`):
 
 1. **`schema-release-compare`** — first job; compares this SHA’s `CURRENT_SCHEMA_VERSION` to the last **published** GitHub Release, writes the Actions step summary, and uploads a schema readme artifact. Job outputs feed installer notices and the draft release body.
-2. **`prepare-github-release`** — creates a single draft GitHub release for the tag (prevents parallel electron-builder jobs from creating duplicate drafts and 404 asset uploads), then prepends the schema compare note to the draft body. On `workflow_dispatch`, the tag is resolved in the workflow from `package.json` and passed as `RELEASE_TAG` (not read inside the release API script — avoids CodeQL `js/file-access-to-http`). The schema note is rebuilt from `schema-release-compare` job outputs (`MESH_CLIENT_SCHEMA_*`), not from a downloaded markdown artifact (same CodeQL rule).
+2. **`prepare-github-release`** — **sole** creator of the draft GitHub release for the tag (`MESH_CLIENT_ALLOW_DRAFT_CREATE=1`), exports `release_id`, then prepends the schema compare note (via `RELEASE_ID`, not List Releases). On `workflow_dispatch`, the tag is resolved in the workflow from `package.json` and passed as `RELEASE_TAG` (not read inside the release API script — avoids CodeQL `js/file-access-to-http`). The schema note is rebuilt from `schema-release-compare` job outputs (`MESH_CLIENT_SCHEMA_*`), not from a downloaded markdown artifact (same CodeQL rule).
 3. Installs Linux build dependencies (`libudev-dev`, `rpm`, …) on `ubuntu-latest` runners
 4. Rebuilds native dependencies (`pnpm run rebuild`)
-5. **Stamp CI build info** — `scripts/ci-write-build-info-env.mjs` writes `MESH_CLIENT_BUILD_INFO` (`buildChannel=release` + tag + Actions `runUrl`) into `$GITHUB_ENV` before `dist:*:publish` so support-bundle `manifest.json` and startup logs identify an official release build (see [Build channel stamp](#build-channel-stamp-test-vs-release)).
-6. Builds for all three platforms in parallel (or a filtered subset on `workflow_dispatch`):
-   - `macos-latest` → `pnpm run dist:mac:publish`
-   - `ubuntu-latest` → `pnpm run dist:linux:publish`
-   - `windows-latest` → `pnpm run dist:win:publish`
-7. Publishes artifacts to GitHub Releases
+5. **Stamp CI build info** — `scripts/ci-write-build-info-env.mjs` writes `MESH_CLIENT_BUILD_INFO` (`buildChannel=release` + tag + Actions `runUrl`) into `$GITHUB_ENV` before `dist:*` so support-bundle `manifest.json` and startup logs identify an official release build (see [Build channel stamp](#build-channel-stamp-test-vs-release)).
+6. Builds for all three platforms in parallel (or a filtered subset on `workflow_dispatch`) with **`--publish never`**:
+   - `macos-latest` → `pnpm run dist:mac`
+   - `ubuntu-latest` → `pnpm run dist:linux`
+   - `windows-latest` → `pnpm run dist:win`
+7. **`ci-upload-release-assets.mjs`** attaches installers / update metadata to the prepare `release_id` (never `POST /releases`). `finalize-github-release` still consolidates if anything external forked drafts.
 
 Linux packaging smoke (`verify-linux-packaging.mjs`) asserts `.deb` **Description** metadata is ASCII-only. See [Release Process](release-process.md).
 
@@ -128,7 +128,7 @@ A matrix builds **x86_64** and **aarch64** in parallel. Both use the same privil
 4. Smoke-installs the unstamped local bundle; on **dispatch only**, renames to `org.coloradomesh.MeshClient-run{N}.flatpak`
 5. Uploads `org.coloradomesh.MeshClient.flatpak-{x86_64,aarch64}.flatpak` artifacts (file basename stamped on test builds) plus per-arch `flatpak-schema-warning-*`
 
-On **version tag pushes**, a `publish` job attaches both **clean-named** bundles to the GitHub Release. aarch64 is the primary ARM Linux install path (release `build.yaml` only produces x86_64 AppImage/deb/rpm).
+On **version tag pushes**, a `publish` job waits for the Electron `prepare-github-release` draft (`ci-wait-github-draft-release.mjs`), then attaches both **clean-named** bundles with `ci-upload-release-assets.mjs` (never creates a release). aarch64 is the primary ARM Linux install path (release `build.yaml` only produces x86_64 AppImage/deb/rpm).
 
 `flatpak/generated-sources.json` is generated automatically in CI by `flatpak-node-generator` before each build — it does not need to be committed to the repo. For local builds, generate it manually; see [development-environment.md](development-environment.md) for steps. If submitting to Flathub's dedicated submission repo, the file must be committed there.
 
@@ -299,7 +299,7 @@ CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage 
 
 - Verify the tag follows semantic versioning (`v1.2.3`)
 - Ensure `GH_TOKEN` secret is set in repository settings
-- Check that `dist:*:publish` scripts exist in `package.json`
+- Check that `dist:*` / `dist:*:publish` scripts exist in `package.json` (tag release CI uses `dist:*` + `ci-upload-release-assets.mjs`)
 
 ### Docs deployment fails
 

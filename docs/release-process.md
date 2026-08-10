@@ -8,14 +8,14 @@ This document describes how maintainers create releases for Mesh-Client.
 
 Releases are driven by **annotated version tags** (`v*`) on `main`. Pushing a tag triggers:
 
-| Workflow                                            | Purpose                                                                                       |
-| --------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [`release.yaml`](../.github/workflows/release.yaml) | Build and publish macOS, Linux, and Windows installers via `electron-builder`                 |
-| [`flatpak.yaml`](../.github/workflows/flatpak.yaml) | Build Reticulum sidecar + Flatpak bundles (x86_64 and aarch64) and attach them to the release |
+| Workflow                                            | Purpose                                                                                              |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [`release.yaml`](../.github/workflows/release.yaml) | Build macOS/Linux/Windows via `electron-builder` (`--publish never`) and attach to the prepare draft |
+| [`flatpak.yaml`](../.github/workflows/flatpak.yaml) | Build Reticulum sidecar + Flatpak bundles (x86_64 and aarch64) and attach them to the same draft     |
 
 Both workflows upload to a **draft** GitHub Release. A maintainer reviews artifacts and publishes manually when ready.
 
-`electron-builder.yml` sets `releaseType: draft`, so the Electron jobs also create/update a draft release rather than publishing live immediately.
+`prepare-github-release` is the **only** job that creates the draft (`MESH_CLIENT_ALLOW_DRAFT_CREATE=1`). Matrix builds and Flatpak attach with `ci-upload-release-assets.mjs` by `release_id` so parallel jobs cannot fork duplicate drafts. `electron-builder.yml` still sets `releaseType: draft` for local `dist:*:publish` use.
 
 Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) runs on every push to `main` (including the version-bump commit from `pnpm run release`).
 
@@ -150,11 +150,11 @@ git push origin vX.Y.Z
 
 Matrix build jobs:
 
-- **`macos-latest`** → `pnpm run dist:mac:publish`
-- **`ubuntu-latest`** → `pnpm run dist:linux:publish` (x64 + arm64 AppImage, `.deb`, `.rpm`)
-- **`windows-latest`** → `pnpm run dist:win:publish` (x64 + arm64 NSIS installers)
+- **`macos-latest`** → `pnpm run dist:mac` then `ci-upload-release-assets.mjs`
+- **`ubuntu-latest`** → `pnpm run dist:linux` (x64 + arm64 AppImage, `.deb`, `.rpm`) then upload
+- **`windows-latest`** → `pnpm run dist:win` (x64 + arm64 NSIS installers) then upload
 
-Each job runs `pnpm install --frozen-lockfile`, `pnpm run rebuild`, then publishes via `electron-builder` using the built-in **`GITHUB_TOKEN`** (exported as `GH_TOKEN` for electron-publish).
+Each job runs `pnpm install --frozen-lockfile`, `pnpm run rebuild`, builds with `--publish never`, then attaches artifacts to the prepare draft with **`GITHUB_TOKEN`** as `GH_TOKEN`.
 
 After builds finish, **`packaging-smoke`** runs on:
 
@@ -245,17 +245,17 @@ Follow [Semantic Versioning](https://semver.org/):
 - Platform failures are often native-module or packaging related
 - Fix on `main`, then cut a new patch release (`pnpm run release patch`)
 
-### Electron-builder fails to publish
+### Upload to draft release fails
 
-- Confirm the workflow job has `contents: write`
-- Publishing uses `GITHUB_TOKEN` as `GH_TOKEN`; forked or restricted workflows may lack upload permission
-- **404 uploading to `/releases/{id}/assets`:** parallel `dist:*:publish` jobs raced and created duplicate draft releases. Re-run the failed release workflow after merging the `prepare-github-release` gate (or delete orphan drafts and re-run). Do not PATCH release `tag_name` via API while CI is uploading — that orphans in-flight upload targets.
+- Confirm the workflow job has `contents: write` and `RELEASE_ID` is set from `prepare-github-release`
+- Uploads use `GITHUB_TOKEN` as `GH_TOKEN` via `ci-upload-release-assets.mjs`; forked or restricted workflows may lack upload permission
+- Tag CI builds with `dist:*` (`--publish never`) and attaches by id — do **not** reintroduce `dist:*:publish` in `release.yaml` (electron-builder `POST /releases` forks drafts)
 
 ### Duplicate draft releases for one tag
 
-- Caused when GitHub’s `GET /releases/tags/{tag}` returns **404** while multiple draft releases share the same `tag_name` — parallel `dist:*:publish` jobs each create another draft. `release.yaml` runs `scripts/ci-ensure-github-draft-release.mjs` before builds and again in `finalize-github-release` (list + merge split assets + delete duplicates + set `target_commitish`).
-- **Assets spread across duplicates:** CI now merges automatically; for a broken tag outside CI, run `node scripts/consolidate-github-release-duplicates.mjs --tag vX.Y.Z` (requires `GH_TOKEN`), then re-run the release workflow for any missing platform artifacts.
-- To recover on a broken tag: consolidate duplicates, keep the draft with merged assets, re-run **Build/Release Electron App** on the tag.
+- Historically caused when parallel `dist:*:publish` / softprops jobs each `POST`ed a draft after a List Releases miss. Current CI: only `prepare-github-release` may create (`MESH_CLIENT_ALLOW_DRAFT_CREATE=1`); builds/Flatpak upload by id; Flatpak waits with `ci-wait-github-draft-release.mjs`.
+- **Finalize PATCH 403 (`Resource not accessible by integration`):** Actions `GITHUB_TOKEN` cannot PATCH `target_commitish` when the tagged commit differs in `.github/workflows/` from the default branch. Consolidation skips that field and treats metadata PATCH failures as non-fatal after assets are merged.
+- **Assets still split (external fork):** `finalize-github-release` merges via `ci-ensure-github-draft-release.mjs`; outside CI run `node scripts/consolidate-github-release-duplicates.mjs --tag vX.Y.Z` (requires `GH_TOKEN`).
 - **Do not force-move the `v*` tag while a release workflow is in progress.** Retagging starts another run and (with workflow concurrency) cancels the in-flight build; smoke jobs also assume a stable workflow `github.sha`.
 - **Smoke tests fail with “ref does not point to the expected commit”:** the tag was moved after the workflow started. Re-run failed jobs only after the tag matches the run’s `headSha`, or merge the checkout `ref: ${{ github.sha }}` fix and trigger a fresh tag run.
 
