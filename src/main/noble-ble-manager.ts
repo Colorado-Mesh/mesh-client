@@ -435,6 +435,11 @@ export class NobleBleManager extends EventEmitter {
     return session;
   }
 
+  /** True on Linux, where Noble is never initialized (Web Bluetooth is used in renderer instead). */
+  private isLinuxNotInitialized(): boolean {
+    return this.sessions.size === 0;
+  }
+
   private clearSessionState(session: NobleBleSession): void {
     const peri = session.connectedPeripheral;
     const mtuHandler = session.peripheralMtuHandler;
@@ -694,7 +699,27 @@ export class NobleBleManager extends EventEmitter {
       meshcore: ReturnType<typeof sessionDetail>;
     };
   } {
+    // On Linux, Noble is not initialized (Web Bluetooth is used in renderer instead), so
+    // getSession() below would throw. Report a benign "not initialized" snapshot instead.
+    const linuxNotInitialized = this.isLinuxNotInitialized();
+    if (linuxNotInitialized) {
+      console.debug(
+        '[NobleBleManager] getLongSessionHealthSnapshot: skipping session detail (not initialized on Linux)',
+      );
+    }
     const sessionDetail = (sessionId: 'meshtastic' | 'meshcore') => {
+      if (linuxNotInitialized) {
+        return {
+          connected: false,
+          peripheralId: null,
+          sessionAgeSec: null,
+          postWriteTimer: false,
+          notifyWatchdog: false,
+          gattInflight: false,
+          readPumpActive: false,
+          fromRadioPackets: 0,
+        };
+      }
       const session = this.getSession(sessionId);
       const established = session.sessionEstablishedAtMs;
       return {
@@ -783,7 +808,7 @@ export class NobleBleManager extends EventEmitter {
 
   /** Stop all scanning immediately — used for app quit and force-quit IPC. */
   async stopAllScanning(): Promise<void> {
-    if (this.sessions.size === 0) return;
+    if (this.isLinuxNotInitialized()) return;
     this.scanRequesters.clear();
     await this.doStopScanning();
     bleCoexistenceCoordinator.releaseScan('noble');
@@ -1715,8 +1740,7 @@ export class NobleBleManager extends EventEmitter {
   }
 
   async disconnectAll(): Promise<void> {
-    // On Linux, Noble is not initialized (Web Bluetooth is used in renderer instead)
-    if (this.sessions.size === 0) {
+    if (this.isLinuxNotInitialized()) {
       console.debug('[NobleBleManager] disconnectAll: skipping (not initialized on Linux)');
       return;
     }
