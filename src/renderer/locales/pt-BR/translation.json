@@ -2213,7 +2213,8 @@
     "noAckTooltip": "Sem ACK (a mensagem ainda pode ter sido transmitida; nenhum outro nó no intervalo para confirmar)",
     "failed": "Falha",
     "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Dispositivo"
+    "tooltipPrefixDevice": "Dispositivo",
+    "noAckTooltipWifi": "Sem mesh ACK — seu link WiFi/TCP para o rádio está bom. A mensagem ainda pode ter sido enviada; nenhum outro nó LoRa foi reconhecido."
   },
   "modulePanel": {
     "sectionSent": "{{name}} enviado. O dispositivo pode reiniciar brevemente.",

@@ -2213,7 +2213,8 @@
     "noAckTooltip": "无确认（消息可能仍已广播；范围内没有其他节点需要确认）",
     "failed": "失败",
     "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "设备"
+    "tooltipPrefixDevice": "设备",
+    "noAckTooltipWifi": "无网状确认—您可以使用无线网络/TCP连接到收音机。消息可能仍已发送；未确认其他LoRa节点。"
   },
   "modulePanel": {
     "sectionSent": "{{name}}已发送。设备可能会短暂重新启动。",

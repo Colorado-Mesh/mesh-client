@@ -2215,7 +2215,8 @@
     "noAckTooltip": "Žádný ACK (zpráva mohla být stále vysílána; žádný jiný uzel v dosahu k potvrzení)",
     "failed": "Nezdařilo se",
     "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Zařízení"
+    "tooltipPrefixDevice": "Zařízení",
+    "noAckTooltipWifi": "No mesh ACK — vaše WiFi/TCP spojení s rádiem je v pořádku. Zpráva mohla být stále odeslána; žádný jiný uzel LoRa nebyl potvrzen."
   },
   "modulePanel": {
     "sectionSent": "{{name}} odesláno. Zařízení se může krátce restartovat.",

@@ -2213,7 +2213,8 @@
     "noAckTooltip": "Kein ACK (Nachricht darf noch gesendet worden sein; kein anderer Knoten in Reichweite zu quittieren)",
     "failed": "Nicht bestanden",
     "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Vorrichtung"
+    "tooltipPrefixDevice": "Vorrichtung",
+    "noAckTooltipWifi": "Kein Mesh-ACK — Ihre WiFi/TCP-Verbindung zum Radio ist in Ordnung. Die Nachricht wurde möglicherweise noch gesendet; kein anderer LoRa-Knoten wurde bestätigt."
   },
   "modulePanel": {
     "sectionSent": "{{name}} gesendet. Das Gerät kann kurzzeitig neu gestartet werden.",

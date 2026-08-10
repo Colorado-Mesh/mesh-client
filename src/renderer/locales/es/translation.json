@@ -2213,7 +2213,8 @@
     "noAckTooltip": "Sin ACK (es posible que el mensaje aún se haya transmitido; no hay otro nodo en el rango para reconocer)",
     "failed": "Error",
     "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Dispositivo"
+    "tooltipPrefixDevice": "Dispositivo",
+    "noAckTooltipWifi": "Sin ACK de malla: su enlace WiFi/TCP a la radio está bien. Es posible que aún se haya enviado el mensaje; no se ha reconocido ningún otro nodo LoRa."
   },
   "modulePanel": {
     "sectionSent": "{{name}} enviado. El dispositivo puede reiniciarse brevemente.",

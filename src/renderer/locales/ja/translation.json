@@ -2213,7 +2213,8 @@
     "noAckTooltip": "ACKなし（メッセージはまだブロードキャストされている可能性があります。確認応答する範囲内の他のノードはありません）",
     "failed": "失敗しました",
     "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "デバイス"
+    "tooltipPrefixDevice": "デバイス",
+    "noAckTooltipWifi": "メッシュACKなし—無線へのWi - Fi/TCPリンクは問題ありません。メッセージはまだ送信されている可能性があります。他のLoRaノードは確認応答していません。"
   },
   "modulePanel": {
     "sectionSent": "{{name}} が送信されました。デバイスが短時間再起動する場合があります。",
