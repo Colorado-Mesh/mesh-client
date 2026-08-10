@@ -2217,7 +2217,8 @@
     "noAckTooltip": "Brak ACK (komunikat mógł nadal zostać wyemitowany; brak innego węzła w zasięgu do potwierdzenia)",
     "failed": "Zakończone niepowodzeniem",
     "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Urządzenie"
+    "tooltipPrefixDevice": "Urządzenie",
+    "noAckTooltipWifi": "Brak ACK siatki — Twoje łącze WiFi/TCP do radia jest w porządku. Wiadomość mogła nadal zostać wysłana; żaden inny węzeł LoRa nie został potwierdzony."
   },
   "modulePanel": {
     "sectionSent": "Wysłano: {{name}}. Urządzenie może się na chwilę zrestartować.",

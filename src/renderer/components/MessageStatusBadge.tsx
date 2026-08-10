@@ -70,7 +70,9 @@ export function MessageStatusBadge({
     status === 'failed' && context === 'room'
       ? (displayError ?? t('messageStatusBadge.failedPost'))
       : status === 'failed' && transport === 'device'
-        ? t('messageStatusBadge.noAckTooltip')
+        ? connectionType === 'http' || connectionType === 'tcp'
+          ? t('messageStatusBadge.noAckTooltipWifi')
+          : t('messageStatusBadge.noAckTooltip')
         : displayError || t('messageStatusBadge.failed');
   const tooltipPrefix =
     transport === 'mqtt'

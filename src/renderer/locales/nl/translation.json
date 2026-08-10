@@ -2213,7 +2213,8 @@
     "noAckTooltip": "Geen ACK (bericht kan nog steeds zijn uitgezonden; geen ander knooppunt binnen bereik om te bevestigen)",
     "failed": "Mislukt",
     "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Toestel"
+    "tooltipPrefixDevice": "Toestel",
+    "noAckTooltipWifi": "Geen mesh ACK — uw WiFi/TCP-link naar de radio is prima. Mogelijk is er nog steeds een bericht verzonden; er is geen ander LoRa-knooppunt bevestigd."
   },
   "modulePanel": {
     "sectionSent": "{{name}} verzonden. Het apparaat kan kortstondig opnieuw opstarten.",

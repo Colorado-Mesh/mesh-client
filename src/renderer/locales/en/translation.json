@@ -2382,6 +2382,7 @@
     "posted": "Posted",
     "failedPost": "Failed to post",
     "noAckTooltip": "No ACK (message may still have been broadcast; no other node in range to acknowledge)",
+    "noAckTooltipWifi": "No mesh ACK — your WiFi/TCP link to the radio is fine. Message may still have been sent; no other LoRa node acknowledged.",
     "failed": "Failed",
     "tooltipPrefixMqtt": "MQTT",
     "tooltipPrefixDevice": "Device"

@@ -2213,7 +2213,8 @@
     "noAckTooltip": "Aucun ACK (le message peut encore avoir été diffusé ; aucun autre nœud à portée pour accuser réception)",
     "failed": "Échec",
     "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Dispositif"
+    "tooltipPrefixDevice": "Dispositif",
+    "noAckTooltipWifi": "Pas d'ACK maillé — votre connexion WiFi/TCP à la radio est correcte. Le message peut encore avoir été envoyé ; aucun autre nœud LoRa n'a été accusé de réception."
   },
   "modulePanel": {
     "sectionSent": "{{name}} envoyé. L'appareil peut redémarrer brièvement.",

@@ -186,6 +186,51 @@ describe('meshtasticSdkRoutingErrorLog', () => {
     expect(updateMessageStatus).toHaveBeenCalled();
   });
 
+  it('does not fall back unmatched TIMEOUT onto a sole sending outbound', () => {
+    seedOutbound([{ packetId: 55, timestamp: Date.now() }]);
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Packet 41841545 of type packet timed out',
+      { myNodeNum: 42, identityId: IDENTITY },
+    );
+    expect(applied).toBe(false);
+    expect(updateMessageStatus).not.toHaveBeenCalled();
+  });
+
+  it('does not fall back unmatched MAX_RETRANSMIT onto a sole sending outbound', () => {
+    seedOutbound([{ packetId: 55, timestamp: Date.now() }]);
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 985918657: MAX_RETRANSMIT',
+      { myNodeNum: 42, identityId: IDENTITY },
+    );
+    expect(applied).toBe(false);
+    expect(updateMessageStatus).not.toHaveBeenCalled();
+  });
+
+  it('does not fall back unmatched NO_RESPONSE onto a sole sending outbound', () => {
+    seedOutbound([{ packetId: 55, timestamp: Date.now() }]);
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 424242: NO_RESPONSE',
+      { myNodeNum: 42, identityId: IDENTITY },
+    );
+    expect(applied).toBe(false);
+    expect(updateMessageStatus).not.toHaveBeenCalled();
+  });
+
+  it('still exact-matches MAX_RETRANSMIT when the wire id matches the outbound row', () => {
+    seedOutbound([{ packetId: 985918657, timestamp: Date.now() }]);
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 985918657: MAX_RETRANSMIT',
+      { myNodeNum: 42, identityId: IDENTITY },
+    );
+    expect(applied).toBe(true);
+    expect(updateMessageStatus).toHaveBeenCalledWith(
+      IDENTITY,
+      '985918657',
+      'failed',
+      'chatPanel.routingErrors.timeout',
+    );
+  });
+
   it('does not apply when no outbound rows exist', () => {
     seedOutbound([]);
     const applied = applyMeshtasticOutboundRoutingErrorFromLog(

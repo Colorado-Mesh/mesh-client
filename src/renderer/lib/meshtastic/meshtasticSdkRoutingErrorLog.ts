@@ -154,9 +154,15 @@ function storeOutboundMessagesAsChat(identityId: string, myNodeNum: number): Cha
   return messageRecordsToChatMessages(records);
 }
 
+/** Errors that are unsafe to attribute via the single-sending fallback. */
+function shouldAvoidSendingFallback(errorName: string): boolean {
+  return errorName === 'TIMEOUT' || errorName === 'NO_RESPONSE' || errorName === 'MAX_RETRANSMIT';
+}
+
 function findOutboundTargetForWirePacketId(
   wirePacketId: number,
   ctx: ApplyMeshtasticOutboundRoutingErrorContext,
+  errorName: string,
 ): ChatMessage | undefined {
   const { myNodeNum, identityId, tempIdToWirePacketId } = ctx;
   if (!identityId) return undefined;
@@ -170,6 +176,14 @@ function findOutboundTargetForWirePacketId(
   // An unmatched wire id may belong to a non-chat wantAck packet (e.g. the
   // share-location Waypoint) — do not misattribute its NAK to a pending chat row.
   if (hasMeshtasticNonChatOutboundInFlight()) return undefined;
+
+  // Unmatched TIMEOUT / MAX_RETRANSMIT / NO_RESPONSE must not steal the sole
+  // in-flight chat row (leftover queue TIMEOUTs were marking unrelated broadcasts
+  // failed). TransportManager still fails the matching sendText by tempId when
+  // the NAK belongs to that send.
+  if (shouldAvoidSendingFallback(errorName)) {
+    return undefined;
+  }
 
   return findFallbackSendingOutbound(messages, myNodeNum);
 }
@@ -196,7 +210,7 @@ export function applyMeshtasticOutboundRoutingError(
   if (isMeshtasticNonChatWirePacketId(parsed.packetId)) {
     return false;
   }
-  const target = findOutboundTargetForWirePacketId(parsed.packetId, ctx);
+  const target = findOutboundTargetForWirePacketId(parsed.packetId, ctx, parsed.errorName);
   if (!target || !identityId) {
     return false;
   }

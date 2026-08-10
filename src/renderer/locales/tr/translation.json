@@ -2213,7 +2213,8 @@
     "noAckTooltip": "ACK yok (mesaj hala yayınlanmış olabilir; onaylanacak başka bir düğüm yok)",
     "failed": "Başarısız",
     "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Cihaz"
+    "tooltipPrefixDevice": "Cihaz",
+    "noAckTooltipWifi": "Ağ ACK'si yok; telsize WiFi/TCP bağlantınız iyi durumda. Mesaj hala gönderilmiş olabilir; başka hiçbir LoRa düğümü onaylanmadı."
   },
   "modulePanel": {
     "sectionSent": "{{name}} gönderildi. Cihaz kısa süreliğine yeniden başlatılabilir.",

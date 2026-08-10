@@ -2213,7 +2213,8 @@
     "noAckTooltip": "Tidak ada ack (pesan mungkin masih disiarkan; tidak ada simpul lain dalam jangkauan untuk dikenali)",
     "failed": "Gagal",
     "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Perangkat"
+    "tooltipPrefixDevice": "Perangkat",
+    "noAckTooltipWifi": "Tidak ada ack mesh — tautan WiFi/TCP Anda ke radio baik - baik saja. Pesan mungkin masih telah dikirim; tidak ada simpul LoRa lain yang diakui."
   },
   "modulePanel": {
     "sectionSent": "{{name}} terkirim. Perangkat mungkin akan reboot sebentar.",
