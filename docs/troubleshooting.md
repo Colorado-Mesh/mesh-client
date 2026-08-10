@@ -1309,19 +1309,23 @@ Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the
 
 ### Reticulum remote propagation sync fails or never completes
 
-**Symptoms**: **Sync messages** stays Establishing, fails with “not an LXMF propagation node”, “no link proof”, or marks Complete incorrectly after cancel.
+**Symptoms**: **Sync messages** stays Establishing, fails with “not an LXMF propagation node”, “no link proof”, “no network path”, or marks Complete incorrectly after cancel.
 
 **Cause / behavior**:
 
-- Remote sync needs a known identity (and prefers a path). Missing identity → `PROPAGATION_IDENTITY_UNKNOWN`.
+- User Sync is **client `/get`-primary** (inbox into Chat). Peer `/offer` inventory push is Host peer-loop only when serving.
+- **No path yet** → `PROPAGATION_PATH_UNKNOWN` (hard-fail after announce settle; UI `syncPathUnknown`) — not a 45s Establishing stall. Wait for a path / **Announce now**, retry.
+- Remote sync needs a known identity. Missing identity → `PROPAGATION_IDENTITY_UNKNOWN`.
 - Destinations that announce as delivery/other (including TCP hubs) → `PROPAGATION_TARGET_NOT_PN`. Add a destination that announces `lxmf.propagation`.
 - Establishing with **no LRPROOF** often means the PN lacks a reverse path to your LXMF identity. Sync always sends an LXMF delivery announce and waits briefly before Linking; if that still stalls, use Network → **Announce now** and retry.
+- Soft-defer `PROPAGATION_RETRIEVE_BUSY` means Host silent `/get` or another retrieve owns the client — wait or Cancel; Cancel must call rsLXMF `abort_transfer` or the next Sync stays busy.
+- Auto keeps picking a bad Discovered PN → **Ignore for Auto** on that row (Manual Prefer/Sync still works).
 - HaveAll / Complete is success (not failure). Cancel or Establishing stall (~45s) must not advance “last synced”.
 - Transfer-phase hangs use a renderer hard ceiling (~180s) plus lxmf-core’s own timeouts.
-- Auto/Manual **Sync** runs a multi-step cascade that waits for each attempt to settle (terminal WS frame or stall/ceiling). Failed remotes are omitted for ~15 minutes; the remote half of a cascade is capped (~5 min budget, ~60s per remote attempt) before falling through to local-prop. Soft defer `PROPAGATION_SYNC_OUTBOUND_BUSY` (outbound deposit owns the PN link) does **not** start that backoff — the next tick may retry the same node.
-- Auto-sync interval counts from the last _successful_ sync; failed attempts only apply a short cooldown (~2 min) so they do not postpone the next scheduled sync forever. Nothing-to-sync (`syncNoTarget` / local messagestore still loading) is not treated as a failure.
+- Auto/Manual **Sync** runs a multi-step cascade that waits for each attempt to settle (terminal WS frame or stall/ceiling). Failed remotes are omitted for ~15 minutes; the remote half of a cascade is capped (~5 min budget, ~60s per remote attempt) before falling through to local-prop. Soft defer `PROPAGATION_SYNC_OUTBOUND_BUSY` / `PROPAGATION_RETRIEVE_BUSY` / `PROPAGATION_STACK_NOT_LIVE` does **not** start that backoff — the next tick may retry the same node.
+- Auto-sync interval counts from the last _successful_ sync; failed attempts only apply a short cooldown (~2 min). Nothing-to-sync (`syncNoTarget` / local messagestore still loading / retrieve busy) is not treated as a full remote success.
 
-**Fix**: Prefer a discovered `lxmf.propagation` node, wait for an announce/path, retry **Sync** (or **Announce now** then Sync), and check Device logs for `[propagation-sync]` / offer errors. If Add fails with **offer unsupported**, the destination does not speak LXMF `/offer`. If Sync/Add fails with **peering cost exceeds max**, raise **Network → Advanced PN hosting → Max peering cost**.
+**Fix**: Prefer a discovered `lxmf.propagation` node, wait for an announce/path, retry **Sync** (or **Announce now** then Sync), and check Device logs for `propagation-retrieve` (`retrieve_mode=get`) and path-gate `PROPAGATION_PATH_UNKNOWN`. Peer `/offer` errors under `propagation-sync` apply to Host peer loop, not the Sync button. If Add fails with **offer unsupported**, the destination does not speak LXMF `/offer`. If Sync/Add fails with **peering cost exceeds max**, raise **Network → Advanced PN hosting → Max peering cost**.
 
 ### Reticulum local PN hosting not discoverable
 

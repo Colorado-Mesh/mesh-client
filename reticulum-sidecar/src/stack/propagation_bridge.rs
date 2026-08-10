@@ -698,9 +698,19 @@ fn load_client_have_ids(path: &Path) -> Vec<PropagationTransientId> {
         return Vec::new();
     };
     let Ok(value) = serde_json::from_slice::<serde_json::Value>(&bytes) else {
+        tracing::warn!(
+            target: "propagation-retrieve",
+            path = %path.display(),
+            "corrupt client /get have-ids JSON — starting empty (will re-fetch until rewritten)"
+        );
         return Vec::new();
     };
     let Some(arr) = value.get("ids").and_then(|v| v.as_array()) else {
+        tracing::warn!(
+            target: "propagation-retrieve",
+            path = %path.display(),
+            "client /get have-ids missing ids array — starting empty"
+        );
         return Vec::new();
     };
     let mut out = Vec::new();
@@ -745,13 +755,25 @@ fn merge_persist_client_have_ids(path: &Path, new_ids: &[PropagationTransientId]
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
-    if let Err(e) = std::fs::write(path, body.to_string()) {
+    // Atomic replace: crash mid-write must not truncate the have set to empty.
+    let tmp = path.with_extension("json.tmp");
+    if let Err(e) = std::fs::write(&tmp, body.to_string()) {
+        tracing::warn!(
+            target: "propagation-retrieve",
+            error = %e,
+            path = %tmp.display(),
+            "failed to write client /get have-ids temp file"
+        );
+        return;
+    }
+    if let Err(e) = std::fs::rename(&tmp, path) {
         tracing::warn!(
             target: "propagation-retrieve",
             error = %e,
             path = %path.display(),
-            "failed to persist client /get have-ids"
+            "failed to atomically replace client /get have-ids"
         );
+        let _ = std::fs::remove_file(&tmp);
     }
 }
 
@@ -1716,6 +1738,45 @@ mod tests {
     }
 
     #[test]
+    fn cancel_client_download_allows_a_second_start() {
+        let dir = std::env::temp_dir().join(format!(
+            "mesh-prop-cancel-get-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let us = Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &us,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+        let pn = [0x44u8; 16];
+        // First start may or may not enter a non-Idle state without a live Link —
+        // cancel must still leave the client restartable.
+        let _ = bridge.start_client_download(pn);
+        bridge.cancel_client_download();
+        assert!(
+            !bridge.client_download_active(),
+            "abort_transfer must leave download inactive"
+        );
+        assert!(
+            bridge.start_client_download(pn),
+            "second Sync after cancel must start (not permanent RETRIEVE_BUSY)"
+        );
+        bridge.cancel_client_download();
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn client_have_ids_persist_and_seed_across_bridge_restart() {
         let dir = std::env::temp_dir().join(format!(
             "mesh-prop-client-haves-{}-{}",
@@ -1902,7 +1963,13 @@ mod tests {
             "live sync must drive the client `/get` download"
         );
         // Remote sync must hard-fail when no path exists (same as offer probe) instead of
-        // starting Establishing and timing out in the renderer.
+        // starting Establishing and timing out in the renderer. Shared helper keeps probe +
+        // Sync on one PATH_UNKNOWN gate (no discarded `let _path_ok`).
+        assert!(
+            live.contains("async fn ensure_propagation_path_or_unknown")
+                && live.contains("Err(\"PROPAGATION_PATH_UNKNOWN\".into())"),
+            "shared path gate must return PROPAGATION_PATH_UNKNOWN"
+        );
         let sync_fn_start = live
             .find("pub async fn start_propagation_sync")
             .expect("start_propagation_sync");
@@ -1912,16 +1979,16 @@ mod tests {
             .map_or(sync_fn.len(), |idx| idx + 1);
         let sync_body = &sync_fn[..sync_fn_end];
         assert!(
-            sync_body.contains("PROPAGATION_PATH_UNKNOWN"),
-            "start_propagation_sync must return PROPAGATION_PATH_UNKNOWN when path is missing"
+            sync_body.contains("ensure_propagation_path_or_unknown"),
+            "start_propagation_sync must use shared path gate"
         );
         assert!(
             !sync_body.contains("let _path_ok"),
             "start_propagation_sync must not discard ensure_path_for_direct"
         );
         let path_gate_at = sync_body
-            .find("PROPAGATION_PATH_UNKNOWN")
-            .expect("PATH_UNKNOWN in start_propagation_sync");
+            .find("ensure_propagation_path_or_unknown")
+            .expect("path gate in start_propagation_sync");
         let get_at = sync_body
             .find("spawn_client_download_driver")
             .expect("client /get driver in start_propagation_sync");
@@ -1940,7 +2007,7 @@ mod tests {
                 || sync_body.contains("peerOfferSkipped"),
             "user Sync must document /get-primary peer-offer skip"
         );
-        // Offer probe still validates remotes speak `/offer`.
+        // Offer probe: same path gate as Sync, and still validates remotes speak `/offer`.
         let probe_start = live
             .find("pub async fn probe_propagation_offer")
             .expect("probe_propagation_offer");
@@ -1948,8 +2015,13 @@ mod tests {
         let probe_end = probe_fn[1..]
             .find("\n    pub ")
             .map_or(probe_fn.len(), |idx| idx + 1);
+        let probe_body = &probe_fn[..probe_end];
         assert!(
-            probe_fn[..probe_end].contains("start_sync(hash"),
+            probe_body.contains("ensure_propagation_path_or_unknown"),
+            "offer probe must use the same shared path gate as Sync"
+        );
+        assert!(
+            probe_body.contains("start_sync(hash"),
             "offer probe must still exercise peer /offer"
         );
         // Configured-row Sync must not accept via the persistence stub while live is None.
@@ -1961,12 +2033,19 @@ mod tests {
         let by_id_end = by_id[1..]
             .find("\n    pub ")
             .map_or(by_id.len(), |idx| idx + 1);
+        let by_id_body = &by_id[..by_id_end];
         assert!(
-            by_id[..by_id_end].contains("PROPAGATION_STACK_NOT_LIVE"),
+            by_id_body.contains("PROPAGATION_STACK_NOT_LIVE"),
             "by-id Sync must hard-fail when RNS live is not attached"
         );
         assert!(
-            by_id[..by_id_end].contains("#[cfg(not(feature = \"rns-stack\"))]"),
+            by_id_body.contains("if is_local")
+                && by_id_body.contains("let Some(live) = self.live.get() else")
+                && by_id_body.contains("PROPAGATION_STACK_NOT_LIVE"),
+            "local-prop Sync must return PROPAGATION_STACK_NOT_LIVE when live is None (not Ok+100%)"
+        );
+        assert!(
+            by_id_body.contains("#[cfg(not(feature = \"rns-stack\"))]"),
             "persistence stub Sync must stay gated behind not(rns-stack)"
         );
     }

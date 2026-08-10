@@ -9,6 +9,7 @@ import {
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import {
   clearPropagationSyncStallWatchdog,
+  isPropagationSyncSoftDeferError,
   mapPropagationSyncError,
   RETICULUM_PROPAGATION_SYNC_IDLE,
   schedulePropagationSyncStallWatchdog,
@@ -264,8 +265,18 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       }
       const syncActive = get().sync.active;
       const autoBlacklist = (body.propagation_auto_blacklist ?? [])
-        .filter((h): h is string => typeof h === 'string' && h.length > 0)
-        .map((h) => h.toLowerCase());
+        .filter(
+          (h): h is string =>
+            typeof h === 'string' && /^[0-9a-fA-F]{32}$/.test(h.replace(/[^0-9a-fA-F]/g, '')),
+        )
+        .map((h) =>
+          h
+            .replace(/[^0-9a-fA-F]/g, '')
+            .toLowerCase()
+            .slice(0, 32),
+        )
+        .filter((h, i, arr) => h.length === 32 && arr.indexOf(h) === i)
+        .slice(0, 256);
       set({
         nodes,
         preferredId: body.preferred_id ?? null,
@@ -385,7 +396,16 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
     if (get().sync.active) {
       await get().cancelSync();
     }
-    const attemptAt = Date.now();
+    // Wall-clock for Auto interval/cooldown, but never reuse a stamp from a prior
+    // attempt in the same millisecond (late HTTP could otherwise clobber a newer sync).
+    let attemptAt = Date.now();
+    const priorStamp = Math.max(
+      get().activePropagationSyncAttemptAt ?? 0,
+      get().lastPropagationSyncAttemptAt ?? 0,
+    );
+    if (attemptAt <= priorStamp) {
+      attemptAt = priorStamp + 1;
+    }
     clearPropagationSyncStallWatchdog();
     set({
       sync: { active: true, progress: 0, message: null },
@@ -406,15 +426,13 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         '/api/v1/propagation/sync',
         body,
       )) as { ok?: boolean; error?: string };
+      // A newer startSync/cancel may have superseded this attempt while we awaited.
+      const stillCurrent = () => get().activePropagationSyncAttemptAt === attemptAt;
       if (!res.ok) {
         clearPropagationSyncStallWatchdog();
+        if (!stillCurrent()) return 'deferred';
         // Soft defer: outbound LXMF deposit owns the PN Link — retry without backoff.
-        if (
-          res.error === 'PROPAGATION_SYNC_OUTBOUND_BUSY' ||
-          res.error === 'PROPAGATION_RETRIEVE_BUSY' ||
-          res.error === 'PROPAGATION_STACK_NOT_LIVE' ||
-          res.error === 'RNS stack not live'
-        ) {
+        if (isPropagationSyncSoftDeferError(res.error)) {
           set({
             sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
             lastSyncError: null,
@@ -431,6 +449,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       }
       // Local settle has no WS progress stream if the emitter races; mark success here.
       if (propId === 'local-prop') {
+        if (!stillCurrent()) return 'deferred';
         set({
           sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
           lastSyncError: null,
@@ -440,6 +459,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       return 'accepted';
     } catch (e) {
       clearPropagationSyncStallWatchdog();
+      if (get().activePropagationSyncAttemptAt !== attemptAt) return 'deferred';
       console.warn('[reticulumPropagationStore] sync ' + errLikeToLogString(e));
       set({
         sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },

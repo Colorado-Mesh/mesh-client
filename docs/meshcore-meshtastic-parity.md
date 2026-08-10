@@ -75,7 +75,7 @@ MeshCore **regions** (on repeaters) and **scopes** (on outbound flood messages) 
 
 ## MeshCore: identity-scoped UI stores
 
-Live Chat and Nodes read **identity-scoped** `nodeStore` / `messageStore` (keyed by `identityId`) via `identityStoreReads` (`getIdentityNode` / `getIdentityChatMessages`). DM/trace pubkeys live in `meshcorePubKeyRegistry` (mirrored into runtime maps for send/RPC). Hydration: [`hydrateIdentityStoresFromDb.ts`](../src/renderer/lib/hydrateIdentityStoresFromDb.ts). **Chat-driven `last_heard`** (`meshcoreIngest`, `ensureMeshcoreChatSenderInNodeStore`) updates node freshness on text traffic, not only adverts.
+Live Chat and Nodes read **identity-scoped** `nodeStore` / `messageStore` (keyed by `identityId`) via `identityStoreReads` (`getIdentityNode` / `getIdentityChatMessages`). DM/trace pubkeys live in `meshcorePubKeyRegistry` (mirrored into runtime maps for send/RPC; Nodes also keep `meshcorePubKeyHexByNodeId` for offline short ids). Nodes table shows **Node health** (not a MeshCore ID column) and pubkey short id (`!` + 8 hex) with a key icon. Hydration: [`hydrateIdentityStoresFromDb.ts`](../src/renderer/lib/hydrateIdentityStoresFromDb.ts). **Chat-driven `last_heard`** (`meshcoreIngest`, `ensureMeshcoreChatSenderInNodeStore`) updates node freshness on text traffic, not only adverts.
 
 ## MeshCore: Rooms scroll UX
 

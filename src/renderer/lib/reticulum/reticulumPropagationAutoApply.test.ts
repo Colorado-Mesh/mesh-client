@@ -669,6 +669,61 @@ describe('reticulumPropagationAutoApply', () => {
       );
     });
 
+    it('all-remote soft-defer + local settle does not count as full cascade success', async () => {
+      const priorSuccess = 1_700_000_000_000;
+      const startSync = vi.fn((id?: string): Promise<PropagationStartSyncResult> => {
+        if (id === 'local-prop') {
+          useReticulumPropagationStore.setState({
+            sync: { active: false, progress: 0, message: null },
+            lastSyncError: null,
+            lastPropagationSyncAt: Date.now(),
+            syncTargetId: 'local-prop',
+          });
+          return Promise.resolve('accepted');
+        }
+        return Promise.resolve('deferred');
+      });
+      useReticulumPropagationStore.setState({
+        nodes: [{ id: 'local-prop', name: 'Local', enabled: true, status: 'known' }],
+        discovered: [
+          { destination_hash: near, node_state: true, peering_cost: 0, hops: 1 },
+          { destination_hash: far, node_state: true, peering_cost: 0, hops: 2 },
+        ],
+        preferredId: null,
+        lastPropagationSyncAt: priorSuccess,
+        lastSyncError: null,
+        startSync,
+      });
+
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(
+        false,
+      );
+      expect(startSync.mock.calls.map((c) => c[0])).toEqual([near, far, 'local-prop']);
+      expect(useReticulumPropagationStore.getState().lastPropagationSyncAt).toBe(priorSuccess);
+      expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+        'reticulumPropagation.syncRetrieveBusy',
+      );
+    });
+
+    it('local soft-defer with no remote contact surfaces retrieve busy', async () => {
+      const startSync = vi.fn(() => Promise.resolve('deferred' as const));
+      useReticulumPropagationStore.setState({
+        nodes: [{ id: 'local-prop', name: 'Local', enabled: true, status: 'known' }],
+        discovered: [],
+        preferredId: null,
+        lastSyncError: null,
+        startSync,
+      });
+
+      await expect(startPropagationSyncCascade({ hasEnabledInterfaces: false })).resolves.toBe(
+        false,
+      );
+      expect(startSync).toHaveBeenCalledWith('local-prop');
+      expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+        'reticulumPropagation.syncRetrieveBusy',
+      );
+    });
+
     it('skips a configured remote whose hash was already tried as the Manual seed', async () => {
       writeReticulumPropagationMode('manual');
       const shared = 'ccccdddd'.repeat(4);

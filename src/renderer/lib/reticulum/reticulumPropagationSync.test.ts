@@ -6,6 +6,7 @@ import {
   applyPropagationSyncEvent,
   awaitPropagationSyncSettled,
   clearPropagationSyncStallWatchdog,
+  isPropagationSyncSoftDeferError,
   mapPropagationSyncError,
   normalizePropagationSyncProgress,
   PROPAGATION_SYNC_SUPERSEDED,
@@ -134,6 +135,11 @@ describe('reticulumPropagationSync', () => {
     expect(mapPropagationSyncError('RNS stack not live')).toBe(
       'reticulumPropagation.syncStackNotLive',
     );
+    expect(isPropagationSyncSoftDeferError('PROPAGATION_SYNC_OUTBOUND_BUSY')).toBe(true);
+    expect(isPropagationSyncSoftDeferError('PROPAGATION_RETRIEVE_BUSY')).toBe(true);
+    expect(isPropagationSyncSoftDeferError('PROPAGATION_STACK_NOT_LIVE')).toBe(true);
+    expect(isPropagationSyncSoftDeferError('RNS stack not live')).toBe(true);
+    expect(isPropagationSyncSoftDeferError('PROPAGATION_PATH_UNKNOWN')).toBe(false);
     expect(mapPropagationSyncError('propagation sync cancelled')).toBe(
       'reticulumPropagation.syncCancelled',
     );

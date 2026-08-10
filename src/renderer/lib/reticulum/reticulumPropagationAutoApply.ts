@@ -124,6 +124,10 @@ function finishWithoutTarget(attempts: CascadeAttempts): boolean {
 }
 
 async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boolean> {
+  // Capture before local settle: remotes soft-deferred with no real contact must not
+  // look like a full cascade success (would advance Auto interval and suppress retries).
+  const remotesSoftDeferredOnly = attempts.deferred && !attempts.any;
+  const hadRemoteContact = attempts.any;
   let { nodes } = useReticulumPropagationStore.getState();
   // Auto ticks can start with a stale nodes list (local still "disabled" until refresh).
   if (!hasEnabledLocalPropagationNode(nodes)) {
@@ -136,20 +140,42 @@ async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boole
     }
   }
   if (!hasEnabledLocalPropagationNode(nodes)) return finishWithoutTarget(attempts);
-  return (await attemptSync('local-prop', attempts)) === 'success';
+  const priorSuccessAt = useReticulumPropagationStore.getState().lastPropagationSyncAt;
+  const outcome = await attemptSync('local-prop', attempts);
+  if (outcome === 'success') {
+    if (remotesSoftDeferredOnly) {
+      // Undo local settle's success stamp so Auto retries remotes after retrieve idle.
+      useReticulumPropagationStore.getState().setLastPropagationSyncAt(priorSuccessAt);
+      useReticulumPropagationStore.getState().setLastSyncError(PROPAGATION_SYNC_RETRIEVE_BUSY_KEY);
+      return false;
+    }
+    return true;
+  }
+  if (outcome === 'cancelled') return false;
+  // Local soft-defer/fail with no prior remote contact → surface why (busy / loading / none).
+  if (!hadRemoteContact) return finishWithoutTarget(attempts);
+  return false;
 }
 
-/** True when the sidecar reports at least one enabled interface. Fail open on read errors. */
+/**
+ * True when the sidecar reports at least one enabled interface.
+ * Fail closed on read/rate-limit errors so Auto does not burn remote cascade budget.
+ */
 export async function fetchHasEnabledReticulumInterfaces(): Promise<boolean> {
   try {
     const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/interfaces')) as {
       interfaces?: { enabled?: boolean }[];
+      ok?: boolean;
+      error?: string;
     };
+    if (body.ok === false || typeof body.error === 'string') {
+      return false;
+    }
     const rows = body.interfaces ?? [];
     return rows.some((row) => row.enabled === true);
   } catch (e) {
     console.warn('[reticulumPropagationAutoApply] interfaces read failed', e);
-    return true;
+    return false;
   }
 }
 

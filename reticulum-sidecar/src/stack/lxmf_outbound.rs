@@ -133,6 +133,16 @@ type PendingPnDeposit = ([u8; 16], Option<[u8; 32]>);
 /// Validated PN stamp entry: (transient_id, lxmf_data, stamp_u8, stamp_data).
 type ValidatedPnStamp = ([u8; 32], Vec<u8>, u8, [u8; 32]);
 
+/// Result of depositing into the local hosted PN without LinkDelivery.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum InProcessDepositOutcome {
+    Completed,
+    /// PropagationNode mutex contended — requeue; never self-Link.
+    Busy,
+    /// Unpack/stamp/accept failed — advance cascade; never self-Link.
+    Failed,
+}
+
 pub struct LxmfOutboundDriver {
     transport_tx: mpsc::Sender<TransportMessage>,
     link_delivery: LinkDeliveryManager,
@@ -593,13 +603,29 @@ impl LxmfOutboundDriver {
         }
         // Hosted PN admit floor is min_stamp_cost (stamp_cost − flex). Pack at least that
         // when depositing in-process so accept_stamped_propagated_blob does not reject.
-        // try_lock: never block outbound tick on a contended PropagationNode mutex.
+        // try_lock: never block outbound tick on a contended PropagationNode mutex —
+        // defer (do not pack at cost 0 / self-Link) when the node lock is busy.
         let target_cost = if local_in_process {
-            let local_floor = self
-                .local_prop_node
-                .as_ref()
-                .and_then(|n| n.try_lock().ok().map(|g| g.min_stamp_cost()))
-                .unwrap_or(0);
+            let Some(node) = self.local_prop_node.as_ref() else {
+                // local_in_process requires the node; defensive.
+                return;
+            };
+            let Ok(guard) = node.try_lock() else {
+                let now = now_f64();
+                message.next_delivery_attempt = now + f64::from(PATH_REQUEST_WAIT as u32);
+                tracing::debug!(
+                    target: "lxmf-outbound",
+                    prop = %prop_hex,
+                    "DeliverPropagated: local-prop node busy — deferring in-process deposit"
+                );
+                if let Some(hash) = message.hash.or(message.message_id) {
+                    self.pending_pn_targets.insert(hash, prop_hash);
+                }
+                router.send(message);
+                return;
+            };
+            let local_floor = guard.min_stamp_cost();
+            drop(guard);
             local_floor.max(router.get_stamp_cost(&prop_hash).unwrap_or(0))
         } else {
             router.get_stamp_cost(&prop_hash).unwrap_or(0)
@@ -648,17 +674,50 @@ impl LxmfOutboundDriver {
             self.pending_pn_deposits
                 .insert(hash, (prop_hash, message.transient_id));
         }
-        // Local-prop cascade: deposit in-process (full hosted PN store) — avoid self-Link.
-        if is_local_cascade
-            && self.try_local_prop_in_process_deposit(
+        // Local-prop cascade: deposit in-process (full hosted PN store) — never self-Link.
+        if is_local_cascade && self.local_prop_node.is_some() {
+            match self.try_local_prop_in_process_deposit(
                 router,
                 event_tx,
                 &mut message,
                 prop_hash,
                 &packed,
-            )
-        {
-            return;
+            ) {
+                InProcessDepositOutcome::Completed => return,
+                InProcessDepositOutcome::Busy => {
+                    let now = now_f64();
+                    message.next_delivery_attempt = now + f64::from(PATH_REQUEST_WAIT as u32);
+                    tracing::debug!(
+                        target: "lxmf-outbound",
+                        prop = %prop_hex,
+                        "local-prop in-process deposit busy — deferring (no self-Link)"
+                    );
+                    if let Some(hash) = message.hash.or(message.message_id) {
+                        self.pending_pn_deposits.remove(&hash);
+                        self.pending_pn_targets.insert(hash, prop_hash);
+                    }
+                    router.send(message);
+                    return;
+                }
+                InProcessDepositOutcome::Failed => {
+                    tracing::warn!(
+                        target: "propagation-deposit",
+                        pn_hash = %prop_hex,
+                        "local-prop in-process deposit failed — advancing PN cascade (no self-Link)"
+                    );
+                    if let Some(hash) = message.hash.or(message.message_id) {
+                        self.pending_pn_deposits.remove(&hash);
+                        self.mark_pn_tried(hash, prop_hash);
+                    }
+                    match self.try_advance_pn_cascade(router, event_tx, message) {
+                        Ok(()) => return,
+                        Err(message) => {
+                            self.emit_outbound_failed(router, event_tx, *message);
+                            return;
+                        }
+                    }
+                }
+            }
         }
         tracing::info!(
             target: "propagation-deposit",
@@ -689,8 +748,6 @@ impl LxmfOutboundDriver {
     }
 
     /// Accept a packed propagation wrapper into the local hosted PN without LinkDelivery.
-    ///
-    /// Returns true when the deposit Completes (or failed terminal after accept miss).
     fn try_local_prop_in_process_deposit(
         &mut self,
         router: &mut LxmRouter,
@@ -698,46 +755,60 @@ impl LxmfOutboundDriver {
         message: &mut LxMessage,
         prop_hash: [u8; 16],
         packed: &[u8],
-    ) -> bool {
+    ) -> InProcessDepositOutcome {
         let Some(node) = self.local_prop_node.clone() else {
-            return false;
+            return InProcessDepositOutcome::Failed;
         };
         let prop_hex = hex::encode(prop_hash);
         let Ok((_, entries)) = LxMessage::unpack_propagation_wrapper(packed) else {
             tracing::warn!(
                 target: "propagation-deposit",
                 pn_hash = %prop_hex,
-                "local-prop in-process deposit: unpack wrapper failed — falling back to Link"
+                "local-prop in-process deposit: unpack wrapper failed"
             );
-            return false;
+            return InProcessDepositOutcome::Failed;
         };
         let Some(hash) = message.hash.or(message.message_id) else {
-            // Without a hash we cannot emit Completes — fall back to Link so
-            // requeue/status paths can run (do not accept into the store first).
+            // Without a hash we cannot emit Completes — advance cascade (never self-Link).
             tracing::warn!(
                 target: "propagation-deposit",
                 pn_hash = %prop_hex,
                 "local-prop in-process deposit missing message hash"
             );
-            return false;
+            return InProcessDepositOutcome::Failed;
         };
-        // Validate outside the node mutex (PoW/stamp work must not hold PropagationNode).
-        // min_cost 0: stamp already generated against the PN cost at pack time.
+        // Read admit floor without holding the lock across PoW validation.
+        let min_cost = {
+            let Ok(guard) = node.try_lock() else {
+                return InProcessDepositOutcome::Busy;
+            };
+            guard.min_stamp_cost()
+        };
         let mut validated: Vec<ValidatedPnStamp> = Vec::new();
         for entry in &entries {
             let Some((transient_id, lxmf_data, stamp_value, stamp_data)) =
-                stamper::validate_pn_stamp(entry, 0)
+                stamper::validate_pn_stamp(entry, min_cost)
             else {
                 continue;
             };
             let stamp_u8 = u8::try_from(stamp_value).unwrap_or(u8::MAX);
             validated.push((transient_id, lxmf_data, stamp_u8, stamp_data));
         }
+        if validated.is_empty() {
+            tracing::warn!(
+                target: "propagation-deposit",
+                pn_hash = %prop_hex,
+                min_cost,
+                entries = entries.len(),
+                "local-prop in-process deposit: no entries met stamp floor"
+            );
+            return InProcessDepositOutcome::Failed;
+        }
         let mut accepted = 0usize;
         let mut last_tid: Option<[u8; 32]> = None;
         {
             let Ok(mut guard) = node.try_lock() else {
-                return false;
+                return InProcessDepositOutcome::Busy;
             };
             for (transient_id, lxmf_data, stamp_u8, stamp_data) in &validated {
                 if guard.accept_stamped_propagated_blob(lxmf_data, stamp_data, *stamp_u8) {
@@ -759,9 +830,9 @@ impl LxmfOutboundDriver {
                 target: "propagation-deposit",
                 pn_hash = %prop_hex,
                 entries = entries.len(),
-                "local-prop in-process deposit accepted zero entries — falling back to Link"
+                "local-prop in-process deposit accepted zero entries"
             );
-            return false;
+            return InProcessDepositOutcome::Failed;
         }
         self.pending_pn_deposits
             .insert(hash, (prop_hash, last_tid.or(message.transient_id)));
@@ -773,7 +844,7 @@ impl LxmfOutboundDriver {
                 msg_hash: Some(hash),
             },
         );
-        true
+        InProcessDepositOutcome::Completed
     }
 
     /// After a Propagated Link failure: advance cascade when other PNs remain; otherwise

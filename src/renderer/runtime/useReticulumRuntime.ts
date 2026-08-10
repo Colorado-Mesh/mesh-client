@@ -122,6 +122,7 @@ import {
   commitRncpLxmfControlHandled,
   releaseRncpLxmfControlHandled,
   resolveRncpLxmfControlMessageHash,
+  takeRncpLxmfControlRetryAllowed,
   tryMarkRncpLxmfControlHandled,
   tryReserveRncpLxmfControlHandled,
 } from '@/renderer/lib/rncpLxmfControlSideEffectDedup';
@@ -687,8 +688,19 @@ export function useReticulumRuntime(): ProtocolRuntime {
           }
         }
         if (p.direction !== 'outbound' && p.sender_hash && parseRncpReceiveDestShare(p.text)) {
-          // Reservation dedup (not messageStore): upsert_failed must be allowed to retry.
+          // Hydrated rows already in messageStore must not re-apply after cold start (empty
+          // dedup map). upsert_failed releases leave a one-shot retry token so catch-up can
+          // still re-apply even though ingest already stored the chat row.
           const controlHash = controlHashForKnown;
+          if (alreadyKnownControl) {
+            const retryAllowed =
+              controlHash != null && takeRncpLxmfControlRetryAllowed(controlHash);
+            if (!retryAllowed) {
+              if (controlHash) tryMarkRncpLxmfControlHandled(controlHash);
+              return;
+            }
+          }
+          // Reservation dedup (not messageStore): upsert_failed must be allowed to retry.
           const reservation = controlHash ? tryReserveRncpLxmfControlHandled(controlHash) : null;
           if (controlHash && !reservation) {
             return;

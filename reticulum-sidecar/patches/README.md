@@ -496,3 +496,26 @@ Log when `LinkManager` opportunistic inbound-raw `try_send` fails because the bo
 ### Sunset
 
 When upstream logs (or otherwise surfaces) inbound-raw saturation the same way, remove this patch and the apply step.
+
+## rsLXMF-propagation-client-abort-transfer.patch
+
+Adds `PropagationClient::abort_transfer` so Cancel / mid-transfer abort leaves the client **Idle**. Without it, a cancelled Sync can leave `/get` stuck busy and the next Sync returns `PROPAGATION_RETRIEVE_BUSY` forever (or Auto falsely concludes there are no PNs).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | floated `origin/main` (regenerate; record short SHA in PR) |
+| **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsLXMF) |
+
+**Touches:** rsLXMF `PropagationClient` (abort in-flight list/get transfer → Idle)
+
+### Apply locally
+
+```bash
+./scripts/apply-rsLXMF-propagation-client-abort-transfer.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`. Sidecar `PropagationBridge::cancel_client_download` must call `abort_transfer`.
+
+### Sunset
+
+When upstream rsLXMF exposes equivalent abort / cancel mid-transfer cleanup, remove this patch and the apply step.

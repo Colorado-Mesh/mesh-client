@@ -1543,7 +1543,11 @@ impl StackHandle {
         // but still drain our own mail out of the local PN store into Chat.
         if is_local {
             #[cfg(feature = "rns-stack")]
-            if let Some(live) = self.live.get() {
+            {
+                let Some(live) = self.live.get() else {
+                    // Match remotes: Auto cascade soft-defers and retries when attach lags.
+                    return Err("PROPAGATION_STACK_NOT_LIVE".into());
+                };
                 live.drain_local_propagation_inbox().await;
             }
             self.emit_event(

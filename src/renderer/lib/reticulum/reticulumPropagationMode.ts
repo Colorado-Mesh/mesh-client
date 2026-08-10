@@ -98,6 +98,7 @@ export interface DiscoveredPropagationTarget {
  * Path-table hop counts above this are treated as unusable for Auto ordering
  * (seen in the wild as 100+ hop ghosts that still advertise a low peering cost).
  * Matches the practical clamp used for Reticulum link initiator hops.
+ * Mirrored by sidecar `pn_cascade::MAX_PLAUSIBLE_PROPAGATION_HOPS` for Auto deposit.
  */
 export const MAX_PLAUSIBLE_PROPAGATION_HOPS = 32;
 

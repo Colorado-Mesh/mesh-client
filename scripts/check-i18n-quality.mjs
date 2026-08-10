@@ -1357,6 +1357,48 @@ function checkReticulumPropagationModeHelpIssues(ctx) {
   const issues = [];
   if (!flatKey.startsWith('reticulumPropagation.') || locale === 'en') return issues;
 
+  // Wire paths must stay English literals in hosting/sync copy.
+  if (
+    (flatKey === 'reticulumPropagation.localHostHint' ||
+      flatKey === 'reticulumPropagation.enableLocalHostConfirmBody') &&
+    /\/offer/.test(enVal) &&
+    /\/get/.test(enVal)
+  ) {
+    if (!/\/offer/.test(val) || !/\/get/.test(val)) {
+      issues.push(
+        `${flatKey} must keep wire paths /offer and /get (do not translate protocol routes)`,
+      );
+    }
+  }
+
+  // EN moved from "local inbox" → "local propagation node"; catch leftover mailbox copy.
+  if (
+    (flatKey === 'reticulumPropagation.syncLocalSettled' ||
+      flatKey === 'reticulumPropagation.modeHelpAuto' ||
+      flatKey === 'reticulumPropagation.modeHelpManual') &&
+    /local propagation node/i.test(enVal)
+  ) {
+    const inboxMarkers = [
+      /Posteingang/i,
+      /boîte de réception/i,
+      /bandeja de entrada/i,
+      /casella di posta/i,
+      /收件箱/,
+      /受信トレイ/,
+      /받은편지함/,
+      /doručenou poštou/i,
+      /lokalen Posteingang/i,
+    ];
+    for (const re of inboxMarkers) {
+      if (re.test(val)) {
+        issues.push(
+          `${flatKey} is stale: still says inbox/mailbox (must say local propagation node)`,
+        );
+        break;
+      }
+    }
+  }
+
   if (
     flatKey === 'reticulumPropagation.modeHelpAuto' &&
     /one-time syncs the best Discovered/i.test(enVal)
@@ -4221,6 +4263,37 @@ function checkFloodRoutingUiIssues(ctx) {
   return issues;
 }
 
+/** MeshCore Nodes: Health column + copy-public-key must not use healthcare/license MT. */
+function checkMeshcoreNodeHealthAndPubkeyIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (locale === 'en') return issues;
+
+  if (
+    (flatKey === 'nodeDetailModal.copyPublicKey' ||
+      flatKey === 'nodeListPanel.hasPublicKeyTitle') &&
+    /public key/i.test(enVal)
+  ) {
+    if (/Licenční klíč/i.test(val) || /license key/i.test(val)) {
+      issues.push(`${flatKey} false friend: license key instead of public key`);
+    }
+  }
+
+  if (flatKey === 'nodeListPanel.columnHealth' && /Node health|Health/i.test(enVal)) {
+    const healthcare = [/Zdravotnictví/i, /Ochrona zdrowia/i, /Здравоохранение/i, /체력/, /\bHP\b/];
+    for (const re of healthcare) {
+      if (re.test(val)) {
+        issues.push(
+          'nodeListPanel.columnHealth false friend: healthcare/stamina wording (use node health/status)',
+        );
+        break;
+      }
+    }
+  }
+
+  return issues;
+}
+
 const LOCALE_STRING_QUALITY_CHECKS = [
   checkCatEncodingAndMeshtasticIssues,
   checkMustTranslateAndFormFieldIssues,
@@ -4237,6 +4310,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkMeshcoreOpenWireIssues,
   checkReticulumConnectionPanelIssues,
   checkReticulumPropagationModeHelpIssues,
+  checkMeshcoreNodeHealthAndPubkeyIssues,
   checkReticulumRemoteIssues,
   checkReticulumPeerAndPingIssues,
   checkUkrainianApostropheIssues,

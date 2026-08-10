@@ -30,6 +30,8 @@ interface DedupEntry {
 
 const handledAtByHash = new Map<string, DedupEntry>();
 const alreadyEnabledShareAtByPeer = new Map<string, DedupEntry>();
+/** Hashes released after recoverable failure — allow one more apply despite messageStore hits. */
+const retryAllowedHashes = new Set<string>();
 let handledTokenSeq = 1;
 let peerTokenSeq = 1;
 
@@ -130,11 +132,13 @@ export function commitRncpLxmfControlHandled(
   if (entry?.token !== reservation.token) return;
   entry.committed = true;
   entry.at = now;
+  retryAllowedHashes.delete(reservation.key);
 }
 
 /**
  * Drop an in-flight reservation after a recoverable failure.
  * No-ops when a newer reservation already replaced this token.
+ * Marks the hash retry-allowed so a messageStore-known cold path can still re-apply.
  */
 export function releaseRncpLxmfControlHandled(
   reservation: RncpLxmfControlHandledReservation,
@@ -142,6 +146,23 @@ export function releaseRncpLxmfControlHandled(
   const entry = handledAtByHash.get(reservation.key);
   if (entry?.token !== reservation.token) return;
   handledAtByHash.delete(reservation.key);
+  retryAllowedHashes.add(reservation.key);
+  while (retryAllowedHashes.size > HANDLED_CAP) {
+    const oldest = retryAllowedHashes.values().next().value;
+    if (oldest == null) break;
+    retryAllowedHashes.delete(oldest);
+  }
+}
+
+/**
+ * Consume a one-shot retry token left by {@link releaseRncpLxmfControlHandled}.
+ * Used when messageStore already has the row (ingest succeeded) but share apply must retry.
+ */
+export function takeRncpLxmfControlRetryAllowed(messageHash: string): boolean {
+  const key = normalizeMessageHash(messageHash);
+  if (!key || !retryAllowedHashes.has(key)) return false;
+  retryAllowedHashes.delete(key);
+  return true;
 }
 
 /**
@@ -212,6 +233,7 @@ export function tryConsumeRncpAlreadyEnabledAutoShareSlot(
 export function resetRncpLxmfControlSideEffectDedupForTests(): void {
   handledAtByHash.clear();
   alreadyEnabledShareAtByPeer.clear();
+  retryAllowedHashes.clear();
   handledTokenSeq = 1;
   peerTokenSeq = 1;
 }

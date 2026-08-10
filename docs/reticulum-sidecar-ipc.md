@@ -116,7 +116,7 @@ Routing bias between **RF** (LoRa / RNode) and **network** (TCP/UDP/I2P/gateway/
 **WS `rmap.discovery`:** sidecar polls DiscoveryStore every **10s**; emits full `{ discovered: [...] }` snapshot when JSON fingerprint changes. Stub builds return `{ discovered: [] }`.
 | GET | `/api/v1/packets` | `?limit=500` (1–2500) | `{ packets: [] }` — recent wire tap ring buffer |
 | DELETE | `/api/v1/packets` | | `{ ok }` — clear wire tap buffer |
-| GET | `/api/v1/propagation` | | `{ propagation, preferred_id, auto_sync_interval_sec, pn_hosting_policy }` — `local-prop` rows include `message_count`, `storage_bytes` when live |
+| GET | `/api/v1/propagation` | | `{ propagation, preferred_id, auto_sync_interval_sec, propagation_mode, propagation_auto_blacklist, pn_hosting_policy, last_propagation_sync_at? }` — `local-prop` rows include `message_count`, `storage_bytes` when live |
 | GET | `/api/v1/propagation/discovered` | | `{ discovered: DiscoveredPropagationRow[] }` — heard `lxmf.propagation` announces (not auto-configured) |
 | POST | `/api/v1/propagation/add` | `{ destination_hash, name?, skip_probe? }` | `{ ok, node }` or `{ ok: false, error }` — probes `/offer` unless `skip_probe`; may return `PROPAGATION_OFFER_UNSUPPORTED`, `PROPAGATION_PEER_COST_EXCEEDS_MAX`, identity/path errors |
 | POST | `/api/v1/propagation/hosting-policy` | `PnHostingPolicy` | `{ ok }` — persist + apply local PN hosting / peering policy |
@@ -125,8 +125,11 @@ Routing bias between **RF** (LoRa / RNode) and **network** (TCP/UDP/I2P/gateway/
 | POST | `/api/v1/propagation/{id}/enable` | | `{ ok }` — for `local-prop`, starts PN serve + announce (waits for messagestore load — see below) |
 | POST | `/api/v1/propagation/{id}/disable` | | `{ ok }` — for `local-prop`, stops PN serve + announce |
 | POST | `/api/v1/propagation/{id}/preferred` | | `{ ok }` |
-| POST | `/api/v1/propagation/sync` | | `{ ok }` |
-| POST | `/api/v1/propagation/sync/cancel` | | `{ ok }` |
+| POST | `/api/v1/propagation/mode` | `{ mode: "off"\|"auto"\|"manual" }` | `{ ok }` — gates outbound PN cascade + Auto sync eligibility |
+| POST | `/api/v1/propagation/auto-blacklist` | `{ destination_hash }` | `{ ok }` — Ignore for Auto (sync + deposit); 32-hex; cap 256 |
+| DELETE | `/api/v1/propagation/auto-blacklist/{hash}` | | `{ ok }` — Allow Auto again |
+| POST | `/api/v1/propagation/sync` | `{ propagation_id? }` or `{ destination_hash? }` | `{ ok }` — **client `/get`-primary** for remotes; `local-prop` drains in-process. Errors include `PROPAGATION_PATH_UNKNOWN`, `PROPAGATION_RETRIEVE_BUSY`, `PROPAGATION_SYNC_OUTBOUND_BUSY`, `PROPAGATION_STACK_NOT_LIVE`, identity/non-PN/peering codes |
+| POST | `/api/v1/propagation/sync/cancel` | | `{ ok }` — cancels Sync UI run and aborts in-flight client `/get` (`abort_transfer`) |
 | POST | `/api/v1/propagation/auto-sync-interval` | `{ interval_sec }` | `{ ok }` — `0` disables periodic sync; persists with stack |
 
 **Deferred PN messagestore:** On live attach, the local propagation messagestore loads in the background (`spawn_blocking`) so a large disk store does not gate TCP/LXMF/RRC readiness. New writes still go to `storage_dir`. If `local-prop` is enabled, serve/announce starts only after that load finishes (avoids advertising an empty PN while the scan runs).
@@ -306,7 +309,7 @@ Shared `reticulum:proxy*` IPC is capped at **900/min**. `GET /api/v1/lxmf/recent
 
 `getStatus` / `onStatus` may include `interfaceIssueAlert` (TCP connect failures, TX queue drops — including BLE / bond-stale cause keys used by Diagnostics and Connection hints, link-delivery timeouts, transport saturation / slow queries, **`bleBondRemoved`** stale RNode bonds (sticky until stack stop / interface remove; not pruned solely by the 5‑minute window), **`blePairingTimedOut`** OS passkey / TX-read timeouts). Per-entry latch timestamps use a **5-minute** stale window (`RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS`) for most issues; Connection syncs **enabled** interface names via `syncInterfaceIssueScope` so disabling or removing an interface clears that name immediately and rejects re-latch from lagging log lines. Stopping the stack (or unexpected process exit) clears the tracker.
 
-**`propagation_sync` WebSocket payload:** `{ active: boolean, progress: number, message: string | null }`. Progress uses 0–100 (Establishing ≈10, Offering ≈25, …, Complete ≈100). Sticky success after HaveAll emits `active:false, progress:100`; cancel/stall/failure emit `active:false, progress:0` (and must not emit a trailing 100). Sync `POST /api/v1/propagation/sync` may return `PROPAGATION_IDENTITY_UNKNOWN`, `PROPAGATION_TARGET_NOT_PN`, `PROPAGATION_PEERING_STAMP_FAILED`, `PROPAGATION_PEER_COST_EXCEEDS_MAX`, or `LOCAL_PROPAGATION_SYNC_UNSUPPORTED`. Add may return `PROPAGATION_OFFER_UNSUPPORTED` / probe timeout failures.
+**`propagation_sync` WebSocket payload:** `{ active: boolean, progress: number, message: string | null }`. Progress uses 0–100 driven by the **client `/get` download** (Establishing ≈10 … Complete ≈100). Sticky success emits `active:false, progress:100`; cancel/stall/failure emit `active:false, progress:0` (and must not emit a trailing 100). Sync `POST /api/v1/propagation/sync` may return `PROPAGATION_PATH_UNKNOWN`, `PROPAGATION_RETRIEVE_BUSY`, `PROPAGATION_SYNC_OUTBOUND_BUSY`, `PROPAGATION_STACK_NOT_LIVE`, `PROPAGATION_IDENTITY_UNKNOWN`, `PROPAGATION_TARGET_NOT_PN`, `PROPAGATION_PEERING_STAMP_FAILED`, `PROPAGATION_PEER_COST_EXCEEDS_MAX`, or `LOCAL_PROPAGATION_SYNC_UNSUPPORTED`. Add may return `PROPAGATION_OFFER_UNSUPPORTED` / probe timeout failures.
 
 SQLite chat history uses separate `db:*` handlers (`getReticulumMessages`, `saveReticulumMessage`, `searchReticulumMessages`, `deleteReticulumMessage`, destination upserts), not sidecar HTTP. Remote saved addresses / inbound policy and RRC room history also use dedicated `db:*` handlers (not sidecar HTTP).
 

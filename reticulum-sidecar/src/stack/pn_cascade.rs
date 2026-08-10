@@ -12,6 +12,18 @@ use crate::stack::propagation_mode::PropagationMode;
 /// `MAX_DISCOVERED_SYNC_ATTEMPTS` so both sides work the same shortlist.
 pub const MAX_AUTO_DISCOVERED_PN_CANDIDATES: usize = 3;
 
+/// Path-table hop counts above this are treated as unknown for Auto deposit ranking.
+/// Mirrors renderer `MAX_PLAUSIBLE_PROPAGATION_HOPS` (reticulumPropagationMode.ts).
+pub const MAX_PLAUSIBLE_PROPAGATION_HOPS: u8 = 32;
+
+/// Rank hops for sorting: finite plausible first, absurd/unknown last (`u8::MAX`).
+pub fn hops_rank(hops: Option<u8>) -> u8 {
+    match hops {
+        Some(h) if h <= MAX_PLAUSIBLE_PROPAGATION_HOPS => h,
+        _ => u8::MAX,
+    }
+}
+
 /// One PN eligible for Direct→Propagated cascade.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PnCascadeCandidate {
@@ -66,8 +78,8 @@ pub fn build_pn_cascade_order(
     let mut remotes: Vec<PnCascadeCandidate> =
         candidates.iter().filter(|c| !c.is_local).cloned().collect();
     remotes.sort_by(|a, b| {
-        let ah = a.hops.unwrap_or(u8::MAX);
-        let bh = b.hops.unwrap_or(u8::MAX);
+        let ah = hops_rank(a.hops);
+        let bh = hops_rank(b.hops);
         a.is_discovered
             .cmp(&b.is_discovered)
             .then_with(|| ah.cmp(&bh))
@@ -199,17 +211,23 @@ pub fn auto_discovered_candidates(
         if is_self_lxmf_hash(&hash, &self_norm) || !seen.insert(hash) {
             continue;
         }
+        // Demote absurd hop counts (e.g. 100+ ghosts) to unknown so they cannot
+        // outrank path-known remotes — same policy as renderer Auto sync ranking.
+        let hops = match row.hops {
+            Some(h) if h <= MAX_PLAUSIBLE_PROPAGATION_HOPS => Some(h),
+            _ => None,
+        };
         out.push(PnCascadeCandidate {
             hash,
             is_local: false,
             is_discovered: true,
-            hops: row.hops,
+            hops,
             id: format!("discovered-{}", &hex::encode(hash)[..8]),
         });
     }
     out.sort_by(|a, b| {
-        let ah = a.hops.unwrap_or(u8::MAX);
-        let bh = b.hops.unwrap_or(u8::MAX);
+        let ah = hops_rank(a.hops);
+        let bh = hops_rank(b.hops);
         ah.cmp(&bh).then_with(|| a.id.cmp(&b.id))
     });
     out.truncate(MAX_AUTO_DISCOVERED_PN_CANDIDATES);
@@ -502,6 +520,27 @@ mod tests {
             vec![Some(1), Some(2), Some(3)],
             "unknown-hop announces must never displace a known-close node"
         );
+    }
+
+    #[test]
+    fn auto_discovered_demotes_absurd_hop_counts() {
+        let close = "11".repeat(16);
+        let ghost = "99".repeat(16);
+        let extra = auto_discovered_candidates(
+            &[
+                discovered_row(&ghost, Some(100)),
+                discovered_row(&close, Some(2)),
+            ],
+            &[],
+            "",
+            PropagationMode::Auto,
+            u8::MAX,
+            &HashSet::new(),
+        );
+        assert_eq!(extra.len(), 2);
+        assert_eq!(hex::encode(extra[0].hash), close);
+        assert_eq!(extra[0].hops, Some(2));
+        assert_eq!(extra[1].hops, None, "hops>32 must rank as unknown");
     }
 
     #[test]

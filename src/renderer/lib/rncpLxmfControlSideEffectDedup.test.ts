@@ -11,6 +11,7 @@ import {
   resetRncpLxmfControlSideEffectDedupForTests,
   resolveRncpLxmfControlMessageHash,
   RNCP_LXMF_CONTROL_HANDLED_TTL_MS,
+  takeRncpLxmfControlRetryAllowed,
   tryConsumeRncpAlreadyEnabledAutoShareSlot,
   tryMarkRncpLxmfControlHandled,
   tryReserveRncpAlreadyEnabledAutoShareSlot,
@@ -81,6 +82,8 @@ describe('rncpLxmfControlSideEffectDedup', () => {
     expect(first).not.toBeNull();
     expect(tryReserveRncpLxmfControlHandled(hash, now + 1)).toBeNull();
     releaseRncpLxmfControlHandled(first!);
+    expect(takeRncpLxmfControlRetryAllowed(hash)).toBe(true);
+    expect(takeRncpLxmfControlRetryAllowed(hash)).toBe(false);
     const retry = tryReserveRncpLxmfControlHandled(hash, now + 2);
     expect(retry).not.toBeNull();
     commitRncpLxmfControlHandled(retry!, now + 2);

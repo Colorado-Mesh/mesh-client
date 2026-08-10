@@ -129,6 +129,19 @@ function mapPropagationSyncErrorBySubstring(error: string): string | null {
   return null;
 }
 
+/** Soft-defer codes: clear lastSyncError, skip 15‑min backoff, cascade may retry. */
+export const PROPAGATION_SYNC_SOFT_DEFER_ERRORS = [
+  'PROPAGATION_SYNC_OUTBOUND_BUSY',
+  'PROPAGATION_RETRIEVE_BUSY',
+  'PROPAGATION_STACK_NOT_LIVE',
+  'RNS stack not live',
+] as const;
+
+export function isPropagationSyncSoftDeferError(error: string | null | undefined): boolean {
+  if (!error) return false;
+  return (PROPAGATION_SYNC_SOFT_DEFER_ERRORS as readonly string[]).includes(error);
+}
+
 /**
  * Map sidecar/API sync error codes or WS failure messages to i18n keys.
  * Returns `null` for quiet supersede (delete/replace) — caller must not show unreachable.

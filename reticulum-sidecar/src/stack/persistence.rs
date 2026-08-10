@@ -986,7 +986,20 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             },
             auto_sync_interval_sec: raw.auto_sync_interval_sec,
             propagation_mode: raw.propagation_mode,
-            propagation_auto_blacklist: raw.propagation_auto_blacklist,
+            propagation_auto_blacklist: {
+                let mut cleaned = Vec::new();
+                for raw_hash in raw.propagation_auto_blacklist {
+                    if let Ok(hash) = Self::normalize_propagation_auto_blacklist_hash(&raw_hash) {
+                        if !cleaned.iter().any(|h| h == &hash) {
+                            cleaned.push(hash);
+                        }
+                    }
+                    if cleaned.len() >= Self::PROPAGATION_AUTO_BLACKLIST_CAP {
+                        break;
+                    }
+                }
+                cleaned
+            },
             pn_hosting_policy: raw.pn_hosting_policy,
             nomad_nodes: raw.nomad_nodes,
             rrc_hubs: raw.rrc_hubs,

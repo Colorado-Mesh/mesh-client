@@ -2748,10 +2748,14 @@ impl LiveBridge {
                 if let Some((peer_hash, retrieve_mode)) = start_silent_get {
                     let pn_hex = hex::encode(peer_hash);
                     let outbound_for_clear = Arc::clone(&outbound);
+                    // Only clear the sync latch when we still own this peer — a newer
+                    // user Sync may have claimed the target after cancel_client_download.
                     let on_terminal: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
                         if let Ok(mut driver) = outbound_for_clear.lock() {
-                            driver.clear_propagation_identity_pins();
-                            driver.set_propagation_sync_target(None);
+                            if driver.propagation_sync_target() == Some(peer_hash) {
+                                driver.clear_propagation_identity_pins();
+                                driver.set_propagation_sync_target(None);
+                            }
                         }
                     });
                     // Dedicated cancel; user Sync cancel_propagation_sync still
@@ -2779,7 +2783,9 @@ impl LiveBridge {
                             "silent client /get queued"
                         );
                     } else if let Ok(mut driver) = outbound.lock() {
-                        driver.set_propagation_sync_target(None);
+                        if driver.propagation_sync_target() == Some(peer_hash) {
+                            driver.set_propagation_sync_target(None);
+                        }
                         if retrieve_mode == "get_post_peer" {
                             propagation.queue_post_peer_get(peer_hash);
                         }
@@ -2943,6 +2949,15 @@ impl LiveBridge {
         self.ensure_path_for_direct_with_opts(destination_hex, force, Duration::from_secs(8), false)
             .await
             .ok
+    }
+
+    /// Shared path gate for offer probe + Sync (`PROPAGATION_PATH_UNKNOWN`).
+    async fn ensure_propagation_path_or_unknown(&self, dest_hex: &str) -> Result<(), String> {
+        if self.ensure_path_for_direct(dest_hex, true).await {
+            Ok(())
+        } else {
+            Err("PROPAGATION_PATH_UNKNOWN".into())
+        }
     }
 
     /// Like [`Self::ensure_path_for_direct`], with a custom wait and optional
@@ -3586,9 +3601,7 @@ impl LiveBridge {
         self.cancel_propagation_sync().await;
         self.rehydrate_propagation_identities_from_persisted();
         let identity_ok = self.ensure_identity_for_direct(&dest_hex).await;
-        if !self.ensure_path_for_direct(&dest_hex, true).await {
-            return Err("PROPAGATION_PATH_UNKNOWN".into());
-        }
+        self.ensure_propagation_path_or_unknown(&dest_hex).await?;
         let identity_known_after = self
             .outbound
             .lock()
@@ -3767,20 +3780,18 @@ impl LiveBridge {
         // Hard path gate after announce settle so RequestPath can benefit from the announce.
         // Do this before peering PoW — nonzero peering_cost stamps are expensive and useless
         // when there is no path (would previously burn CPU then stall into syncTimedOut).
-        let path_ok = self.ensure_path_for_direct(&dest_hex, true).await;
         let hops = self.hops_to_destination(&dest_hex).await;
-        if !path_ok {
+        if let Err(err) = self.ensure_propagation_path_or_unknown(&dest_hex).await {
             if let Ok(mut driver) = self.outbound.lock() {
                 driver.set_propagation_sync_target(None);
             }
             tracing::info!(
                 target: "propagation-sync",
                 dest = %dest_hex,
-                path_ok,
                 hops = ?hops,
                 "propagation sync aborted — no path to PN"
             );
-            return Err("PROPAGATION_PATH_UNKNOWN".into());
+            return Err(err);
         }
         // Pin PN pubkey for the duration of the client `/get` link so announce-flood
         // eviction cannot drop it before LRPROOF validation (see known_identities cap).
@@ -3799,7 +3810,7 @@ impl LiveBridge {
         tracing::info!(
             target: "propagation-sync",
             dest = %dest_hex,
-            path_ok,
+            path_ok = true,
             hops = ?hops,
             pinned,
             local_serving,
@@ -3834,8 +3845,11 @@ impl LiveBridge {
         let outbound = Arc::clone(&self.outbound);
         let on_terminal: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
             if let Ok(mut driver) = outbound.lock() {
-                driver.clear_propagation_identity_pins();
-                driver.set_propagation_sync_target(None);
+                // Guard against clearing a superseded Sync/silent owner.
+                if driver.propagation_sync_target() == Some(hash) {
+                    driver.clear_propagation_identity_pins();
+                    driver.set_propagation_sync_target(None);
+                }
             }
         });
         if !self.spawn_client_download_driver(
@@ -3847,9 +3861,13 @@ impl LiveBridge {
             Some(on_terminal),
             true,
         ) {
+            // Download did not start — drop our claim only if we still own this hash.
+            // Never wipe another owner's latch (overlapping silent `/get` / Sync).
             if let Ok(mut driver) = self.outbound.lock() {
-                driver.clear_propagation_identity_pins();
-                driver.set_propagation_sync_target(None);
+                if driver.propagation_sync_target() == Some(hash) {
+                    driver.clear_propagation_identity_pins();
+                    driver.set_propagation_sync_target(None);
+                }
             }
             // Client `/get` already in flight (host silent retrieve / prior Sync).
             return Err("PROPAGATION_RETRIEVE_BUSY".into());
