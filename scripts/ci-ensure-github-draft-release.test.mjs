@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  assertSafeReleaseAssetName,
   assertSafeReleaseTag,
   consolidateReleases,
   ensureGithubDraftRelease,
@@ -7,8 +8,15 @@ import {
   normalizeDraftReleasesForTag,
   pickCanonicalRelease,
   resolveTag,
+  trustedGithubReleaseId,
+  uploadOrReplaceReleaseAsset,
+  uploadReleaseAssetFromFile,
   waitForGithubDraftRelease,
 } from './github-release-api.mjs';
+import { writeReleaseIdOutput } from './ci-ensure-github-draft-release.mjs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 
 const TAG = 'v5.21.0';
 
@@ -26,6 +34,158 @@ describe('assertSafeReleaseTag', () => {
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined);
     assertSafeReleaseTag('v5.21.0-evil/../../../etc/passwd');
     expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockRestore();
+  });
+});
+
+describe('trustedGithubReleaseId', () => {
+  it('rebuilds a positive integer from digits', () => {
+    expect(trustedGithubReleaseId(368221738)).toBe(368221738);
+    expect(trustedGithubReleaseId('99')).toBe(99);
+  });
+
+  it('rejects zero, negatives, and non-digits', () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined);
+    trustedGithubReleaseId(0);
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockClear();
+    trustedGithubReleaseId('-1');
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockClear();
+    trustedGithubReleaseId('12ab');
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockRestore();
+  });
+
+  it('rejects ids above Number.MAX_SAFE_INTEGER', () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined);
+    trustedGithubReleaseId('9007199254740993');
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockRestore();
+  });
+});
+
+describe('assertSafeReleaseAssetName', () => {
+  it('accepts basename-only names', () => {
+    expect(assertSafeReleaseAssetName('mesh-client.dmg')).toBe('mesh-client.dmg');
+  });
+
+  it('rejects path separators', () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined);
+    assertSafeReleaseAssetName('../evil.bin');
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockRestore();
+  });
+});
+
+describe('writeReleaseIdOutput', () => {
+  it('writes a trusted release_id line', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'mesh-gh-out-'));
+    const out = path.join(dir, 'github_output');
+    writeFileSync(out, '');
+    writeReleaseIdOutput(out, '368221738');
+    expect(readFileSync(out, 'utf8')).toBe('release_id=368221738\n');
+  });
+});
+
+describe('uploadReleaseAssetFromFile', () => {
+  it('invokes gh api --input with the file path (no JS readFile→fetch)', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'mesh-gh-upload-'));
+    const filePath = path.join(dir, 'a.deb');
+    writeFileSync(filePath, 'bytes');
+    const execFile = vi.fn(() => JSON.stringify({ id: 1, name: 'a.deb' }));
+    const result = uploadReleaseAssetFromFile(9, 'a.deb', filePath, 'token', {
+      execFileSync: execFile,
+    });
+    expect(result).toEqual({ id: 1, name: 'a.deb' });
+    expect(execFile).toHaveBeenCalledTimes(1);
+    const [cmd, args] = execFile.mock.calls[0];
+    expect(cmd).toBe('gh');
+    expect(args).toContain('--input');
+    expect(args).toContain(filePath);
+    expect(args.some((a) => String(a).includes('/releases/9/assets'))).toBe(true);
+  });
+});
+
+describe('uploadOrReplaceReleaseAsset', () => {
+  it('validates releaseId and fileName before lookup or delete', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((code) => {
+      throw new Error(`exit:${code}`);
+    });
+    const getReleaseById = vi.fn();
+    const deleteAsset = vi.fn();
+    await expect(
+      uploadOrReplaceReleaseAsset({
+        releaseId: 'not-a-number',
+        token: 'token',
+        fileName: 'a.deb',
+        bytes: new Uint8Array([1]),
+        getReleaseById,
+        deleteAsset,
+        log: () => {},
+      }),
+    ).rejects.toThrow(/exit:1/);
+    expect(getReleaseById).not.toHaveBeenCalled();
+    expect(deleteAsset).not.toHaveBeenCalled();
+    exitSpy.mockRestore();
+  });
+
+  it('restores the prior asset when replacement upload fails', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'mesh-replace-'));
+    const filePath = path.join(dir, 'a.deb');
+    writeFileSync(filePath, 'new');
+    const priorBytes = new Uint8Array([9, 9, 9]);
+    const restored = [];
+    const logs = [];
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((code) => {
+      throw new Error(`exit:${code}`);
+    });
+
+    await expect(
+      uploadOrReplaceReleaseAsset({
+        releaseId: 42,
+        token: 'token',
+        fileName: 'a.deb',
+        filePath,
+        existingAssets: [{ id: 7, name: 'a.deb' }],
+        downloadAsset: async () => priorBytes,
+        deleteAsset: async () => {},
+        uploadFromFile: () => {
+          throw new Error('gh upload exploded');
+        },
+        uploadBytes: async (_id, name, bytes) => {
+          restored.push({ name, bytes });
+          return { id: 99, name };
+        },
+        log: (message) => logs.push(message),
+      }),
+    ).rejects.toThrow(/exit:1/);
+
+    expect(restored).toEqual([{ name: 'a.deb', bytes: priorBytes }]);
+    expect(logs.some((line) => line.includes('Restored prior asset a.deb'))).toBe(true);
+    exitSpy.mockRestore();
+  });
+
+  it('does not delete a prior asset when the upload path is missing', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((code) => {
+      throw new Error(`exit:${code}`);
+    });
+    const deleteAsset = vi.fn();
+    const downloadAsset = vi.fn();
+    await expect(
+      uploadOrReplaceReleaseAsset({
+        releaseId: 42,
+        token: 'token',
+        fileName: 'a.deb',
+        filePath: path.join(mkdtempSync(path.join(tmpdir(), 'mesh-miss-')), 'a.deb'),
+        existingAssets: [{ id: 7, name: 'a.deb' }],
+        deleteAsset,
+        downloadAsset,
+        log: () => {},
+      }),
+    ).rejects.toThrow(/exit:1/);
+    expect(downloadAsset).not.toHaveBeenCalled();
+    expect(deleteAsset).not.toHaveBeenCalled();
     exitSpy.mockRestore();
   });
 });

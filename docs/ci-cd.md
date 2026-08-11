@@ -97,8 +97,8 @@ PR review comments come from [CodeRabbit](https://docs.coderabbit.ai/) via [`.co
 
 Triggered by pushing a version tag (e.g., `v1.2.3`):
 
-1. **`schema-release-compare`** — first job; compares this SHA’s `CURRENT_SCHEMA_VERSION` to the last **published** GitHub Release, writes the Actions step summary, and uploads a schema readme artifact. Job outputs feed installer notices and the draft release body.
-2. **`prepare-github-release`** — **sole** creator of the draft GitHub release for the tag (`MESH_CLIENT_ALLOW_DRAFT_CREATE=1`), exports `release_id`, then prepends the schema compare note (via `RELEASE_ID`, not List Releases). On `workflow_dispatch`, the tag is resolved in the workflow from `package.json` and passed as `RELEASE_TAG` (not read inside the release API script — avoids CodeQL `js/file-access-to-http`). The schema note is rebuilt from `schema-release-compare` job outputs (`MESH_CLIENT_SCHEMA_*`), not from a downloaded markdown artifact (same CodeQL rule).
+1. **`schema-release-compare`** — first job; compares this SHA’s `CURRENT_SCHEMA_VERSION` to the last **published** GitHub Release (paginated Releases API; highest semver among non-draft/non-prerelease rows; recovers `vX.Y.Z` from release **name** only when `tag_name` is missing or `untagged-*`), writes the Actions step summary, and uploads a schema readme artifact. Job outputs feed installer notices and the draft release body.
+2. **`prepare-github-release`** — **sole** creator of the draft GitHub release for the tag (`MESH_CLIENT_ALLOW_DRAFT_CREATE=1`), exports `release_id` (reconstructed from validated digits before `GITHUB_OUTPUT` — CodeQL `js/http-to-file-access`), then prepends the schema compare note (via `RELEASE_ID`, not List Releases). On `workflow_dispatch`, the tag is resolved in the workflow from `package.json` and passed as `RELEASE_TAG` (not read inside the release API script — avoids CodeQL `js/file-access-to-http`). The schema note is rebuilt from `schema-release-compare` job outputs (`MESH_CLIENT_SCHEMA_*`), not from a downloaded markdown artifact (same CodeQL rule).
 3. Installs Linux build dependencies (`libudev-dev`, `rpm`, …) on `ubuntu-latest` runners
 4. Rebuilds native dependencies (`pnpm run rebuild`)
 5. **Stamp CI build info** — `scripts/ci-write-build-info-env.mjs` writes `MESH_CLIENT_BUILD_INFO` (`buildChannel=release` + tag + Actions `runUrl`) into `$GITHUB_ENV` before `dist:*` so support-bundle `manifest.json` and startup logs identify an official release build (see [Build channel stamp](#build-channel-stamp-test-vs-release)).
@@ -106,7 +106,7 @@ Triggered by pushing a version tag (e.g., `v1.2.3`):
    - `macos-latest` → `pnpm run dist:mac`
    - `ubuntu-latest` → `pnpm run dist:linux`
    - `windows-latest` → `pnpm run dist:win`
-7. **`ci-upload-release-assets.mjs`** attaches installers / update metadata to the prepare `release_id` (never `POST /releases`). `finalize-github-release` still consolidates if anything external forked drafts.
+7. **`ci-upload-release-assets.mjs`** attaches installers / update metadata to the prepare `release_id` (never `POST /releases`) via `gh api --input` path uploads (avoids CodeQL `js/file-access-to-http` from `readFile` → `fetch`). `finalize-github-release` still consolidates if anything external forked drafts.
 
 Linux packaging smoke (`verify-linux-packaging.mjs`) asserts `.deb` **Description** metadata is ASCII-only. See [Release Process](release-process.md).
 
