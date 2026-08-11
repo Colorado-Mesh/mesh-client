@@ -187,6 +187,7 @@ describe('toSendInputEvent (pure mapping)', () => {
         x: 5,
         y: 6,
         button: 'right',
+        clickCount: 1,
       },
     );
     expect(toSendInputEvent({ type: 'mouseup', x: 1, y: 2, button: 'middle' }, 1280, 800)).toEqual({
@@ -194,6 +195,7 @@ describe('toSendInputEvent (pure mapping)', () => {
       x: 1,
       y: 2,
       button: 'middle',
+      clickCount: 1,
     });
     expect(
       toSendInputEvent({ type: 'wheel', x: 3, y: 4, deltaX: -10, deltaY: 25 }, 1280, 800),

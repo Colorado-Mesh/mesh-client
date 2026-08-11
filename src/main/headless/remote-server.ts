@@ -131,6 +131,9 @@ export function toSendInputEvent(
         x: clampHeadlessCoordinate(input.x, viewportWidth),
         y: clampHeadlessCoordinate(input.y, viewportHeight),
         button: input.button,
+        // Chromium only synthesizes a DOM `click` when clickCount >= 1; sendInputEvent
+        // defaults it to 0, so without this the renderer never fires click handlers.
+        clickCount: 1,
       };
     case 'mouseup':
       return {
@@ -138,6 +141,7 @@ export function toSendInputEvent(
         x: clampHeadlessCoordinate(input.x, viewportWidth),
         y: clampHeadlessCoordinate(input.y, viewportHeight),
         button: input.button,
+        clickCount: 1,
       };
     case 'wheel':
       return {
