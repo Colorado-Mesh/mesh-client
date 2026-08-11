@@ -115,6 +115,51 @@ export function trustedReleaseTag(tag) {
   return `v${Number(m[1])}.${Number(m[2])}.${Number(m[3])}`;
 }
 
+/** Release display names are X.Y.Z (no leading v) on GitHub Releases. */
+export const SAFE_RELEASE_NAME_RE = /^(\d+)\.(\d+)\.(\d+)$/;
+
+/**
+ * Compare two trusted `vX.Y.Z` tags. Negative if a < b.
+ * @param {string} a
+ * @param {string} b
+ */
+export function compareReleaseTags(a, b) {
+  const pa = trustedReleaseTag(a).slice(1).split('.').map(Number);
+  const pb = trustedReleaseTag(b).slice(1).split('.').map(Number);
+  for (let i = 0; i < 3; i += 1) {
+    if (pa[i] !== pb[i]) return pa[i] - pb[i];
+  }
+  return 0;
+}
+
+/**
+ * Map a GitHub Releases API row to a trusted git tag for schema lookup.
+ * Skips drafts/prereleases. Accepts normal `tag_name: vX.Y.Z`, and published
+ * releases that lost their tag (`untagged-*`) when `name` is still `X.Y.Z`
+ * (seen after draft-fork / publish races — otherwise test builds warn against
+ * an older release/schema).
+ *
+ * @param {{ tag_name?: unknown, name?: unknown, draft?: unknown, prerelease?: unknown } | null | undefined} release
+ * @returns {string | null}
+ */
+export function publishedReleaseGitTag(release) {
+  if (!release || release.draft === true || release.prerelease === true) {
+    return null;
+  }
+  const tag = release.tag_name;
+  if (typeof tag === 'string' && /^v\d+\.\d+\.\d+$/.test(tag)) {
+    return trustedReleaseTag(tag);
+  }
+  const name = release.name;
+  if (typeof name === 'string') {
+    const m = SAFE_RELEASE_NAME_RE.exec(name);
+    if (m) {
+      return trustedReleaseTag(`v${Number(m[1])}.${Number(m[2])}.${Number(m[3])}`);
+    }
+  }
+  return null;
+}
+
 /**
  * Coerce a schema version to a trusted positive integer.
  * @param {unknown} value
@@ -143,6 +188,33 @@ export function readSchemaVersionFromGitTag(tag, cwd = ROOT) {
 }
 
 /**
+ * Pick the highest-semver published release tag from a GitHub Releases list.
+ * @param {Array<{ tag_name?: unknown, name?: unknown, draft?: unknown, prerelease?: unknown }>} releases
+ * @param {string} [excludeTag]
+ * @returns {string | null}
+ */
+export function pickLatestPublishedReleaseTag(releases, excludeTag) {
+  if (!Array.isArray(releases)) {
+    return null;
+  }
+  /** @type {string[]} */
+  const candidates = [];
+  for (const release of releases) {
+    const tag = publishedReleaseGitTag(release);
+    if (!tag) continue;
+    if (excludeTag && tag === excludeTag) continue;
+    candidates.push(tag);
+  }
+  if (candidates.length === 0) {
+    return null;
+  }
+  // Prefer highest semver — API order is not reliable when drafts / untagged
+  // rows interleave with published releases.
+  candidates.sort((a, b) => compareReleaseTags(b, a));
+  return candidates[0];
+}
+
+/**
  * @param {{ token?: string, owner?: string, repo?: string, excludeTag?: string }} [opts]
  * @returns {Promise<{ tag: string, schema: number } | null>}
  */
@@ -158,30 +230,22 @@ export async function fetchLatestPublishedReleaseSchema(opts = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const listUrl = `https://api.github.com/repos/${owner}/${repo}/releases?per_page=20`;
+  const listUrl = `https://api.github.com/repos/${owner}/${repo}/releases?per_page=30`;
   const listRes = await fetch(listUrl, { headers });
   if (!listRes.ok) {
     throw new Error(`List releases failed (${listRes.status}): ${await listRes.text()}`);
   }
-  /** @type {Array<{ tag_name?: string, draft?: boolean, prerelease?: boolean }>} */
+  /** @type {Array<{ tag_name?: string, name?: string, draft?: boolean, prerelease?: boolean }>} */
   const releases = await listRes.json();
   if (!Array.isArray(releases)) {
     throw new Error('Unexpected releases list payload');
   }
 
-  const candidate = releases.find((r) => {
-    if (!r || r.draft === true || r.prerelease === true) return false;
-    const tag = r.tag_name;
-    if (typeof tag !== 'string' || !/^v\d+\.\d+\.\d+$/.test(tag)) return false;
-    if (opts.excludeTag && tag === opts.excludeTag) return false;
-    return true;
-  });
-  if (!candidate?.tag_name) {
+  const tag = pickLatestPublishedReleaseTag(releases, opts.excludeTag);
+  if (!tag) {
     return null;
   }
 
-  // Rebuild tag/schema from validated digits so later disk writes are not network-tainted.
-  const tag = trustedReleaseTag(candidate.tag_name);
   try {
     execFileSync('git', ['fetch', '--depth', '1', 'origin', `refs/tags/${tag}:refs/tags/${tag}`], {
       cwd: ROOT,
