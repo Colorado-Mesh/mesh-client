@@ -1,0 +1,12 @@
+# Local build/source cruft that must not bloat the Docker build context when
+# building from the repo root (release/*.deb is intentionally NOT excluded).
+node_modules
+.git
+.dockerignore
+dist
+dist-electron
+dist-renderer
+*.log
+.coverage
+coverage
+*.tsbuildinfo
