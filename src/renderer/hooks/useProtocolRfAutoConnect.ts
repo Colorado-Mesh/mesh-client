@@ -147,6 +147,7 @@ export function useProtocolRfAutoConnect({
       console.warn(
         `[useProtocolRfAutoConnect] ${protocol} ${transport} auto-connect failed: ${errLikeToLogString(error)}`,
       );
+      notifyPrimaryAutoConnectSettledIfNeeded(protocol);
     };
     const isAutoConnectAbortError = (error: unknown): boolean =>
       error instanceof DOMException && error.name === 'AbortError';
@@ -233,17 +234,21 @@ export function useProtocolRfAutoConnect({
           bleDeviceName: lastConnection.bleDeviceName,
         };
         saveLastConnection(protocol, bleLast);
-        runBleAutoConnect(lastBleId).catch((bleError: unknown) => {
-          if (isCancelled() || isAutoConnectAbortError(bleError)) {
-            onAutoConnectCancelled();
-            return;
-          }
-          onAutoConnectFailed(bleError);
-        });
+        runBleAutoConnect(lastBleId)
+          .then(() => {
+            clearAutoConnectTimeout();
+            notifyPrimaryAutoConnectSettledIfNeeded(protocol);
+          })
+          .catch((bleError: unknown) => {
+            if (isCancelled() || isAutoConnectAbortError(bleError)) {
+              onAutoConnectCancelled();
+              return;
+            }
+            onAutoConnectFailed(bleError);
+          });
         return;
       }
       onAutoConnectFailed(error, 'serial');
-      notifyPrimaryAutoConnectSettledIfNeeded(protocol);
     };
 
     const onTcpAutoConnectFailed = (error: unknown) => {
@@ -253,7 +258,6 @@ export function useProtocolRfAutoConnect({
       }
       const transport = lastConnection.type === 'http' ? 'http' : 'tcp';
       onAutoConnectFailed(error, transport);
-      notifyPrimaryAutoConnectSettledIfNeeded(protocol);
     };
 
     const runStartupAutoConnect = async (): Promise<void> => {
@@ -279,18 +283,27 @@ export function useProtocolRfAutoConnect({
         startAutoConnectTimeout();
         connectAutomaticRef
           .current('serial', undefined, lastConnection.serialPortId)
+          .then(() => {
+            clearAutoConnectTimeout();
+            notifyPrimaryAutoConnectSettledIfNeeded(protocol);
+          })
           .catch(onSerialAutoConnectFailed);
         return;
       }
 
       if (lastConnection.type === 'ble' && lastBleId && !isLinux) {
-        runBleAutoConnect(lastBleId).catch((error: unknown) => {
-          if (isCancelled() || isAutoConnectAbortError(error)) {
-            onAutoConnectCancelled();
-            return;
-          }
-          onAutoConnectFailed(error);
-        });
+        runBleAutoConnect(lastBleId)
+          .then(() => {
+            clearAutoConnectTimeout();
+            notifyPrimaryAutoConnectSettledIfNeeded(protocol);
+          })
+          .catch((error: unknown) => {
+            if (isCancelled() || isAutoConnectAbortError(error)) {
+              onAutoConnectCancelled();
+              return;
+            }
+            onAutoConnectFailed(error);
+          });
         return;
       }
 
@@ -298,7 +311,13 @@ export function useProtocolRfAutoConnect({
         const addr = lastConnection.httpAddress?.trim();
         if (addr) {
           startAutoConnectTimeout();
-          connectAutomaticRef.current(lastConnection.type, addr).catch(onTcpAutoConnectFailed);
+          connectAutomaticRef
+            .current(lastConnection.type, addr)
+            .then(() => {
+              clearAutoConnectTimeout();
+              notifyPrimaryAutoConnectSettledIfNeeded(protocol);
+            })
+            .catch(onTcpAutoConnectFailed);
           return;
         }
       }
@@ -312,7 +331,6 @@ export function useProtocolRfAutoConnect({
         return;
       }
       onAutoConnectFailed(error);
-      notifyPrimaryAutoConnectSettledIfNeeded(protocol);
     });
 
     return () => {

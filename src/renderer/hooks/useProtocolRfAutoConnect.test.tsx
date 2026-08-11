@@ -265,6 +265,31 @@ describe('useProtocolRfAutoConnect cold-start TCP/HTTP', () => {
     },
   );
 
+  it('settles dual-radio primary gate after TCP auto-connect succeeds', async () => {
+    mocks.loadLastConnection.mockReturnValue({
+      type: 'tcp',
+      httpAddress: '192.168.1.50:4403',
+    });
+    mocks.dualNobleBleBothRadiosConfigured.mockReturnValue(true);
+    mocks.getNobleBleDualRadioPrimaryProtocol.mockReturnValue('meshtastic');
+    const connectAutomatic = vi.fn().mockResolvedValue(undefined);
+
+    renderHook(() => {
+      useProtocolRfAutoConnect({
+        protocol: 'meshtastic',
+        state: disconnected,
+        connectAutomatic,
+      });
+    });
+
+    await waitFor(() => {
+      expect(connectAutomatic).toHaveBeenCalledWith('tcp', '192.168.1.50:4403');
+    });
+    await waitFor(() => {
+      expect(mocks.notifyNobleBlePrimaryAutoConnectSettled).toHaveBeenCalled();
+    });
+  });
+
   it.each(['linux', 'darwin', 'win32'] as const)(
     'auto-connects meshcore HTTP (TCP/IP) with stored address and skips Reticulum gate (%s)',
     async (platform) => {
@@ -289,6 +314,31 @@ describe('useProtocolRfAutoConnect cold-start TCP/HTTP', () => {
       expect(mocks.awaitReticulumBleCoexistenceClear).not.toHaveBeenCalled();
     },
   );
+
+  it('settles dual-radio primary gate after HTTP auto-connect succeeds', async () => {
+    mocks.loadLastConnection.mockReturnValue({
+      type: 'http',
+      httpAddress: '10.0.0.1:5000',
+    });
+    mocks.dualNobleBleBothRadiosConfigured.mockReturnValue(true);
+    mocks.getNobleBleDualRadioPrimaryProtocol.mockReturnValue('meshcore');
+    const connectAutomatic = vi.fn().mockResolvedValue(undefined);
+
+    renderHook(() => {
+      useProtocolRfAutoConnect({
+        protocol: 'meshcore',
+        state: disconnected,
+        connectAutomatic,
+      });
+    });
+
+    await waitFor(() => {
+      expect(connectAutomatic).toHaveBeenCalledWith('http', '10.0.0.1:5000');
+    });
+    await waitFor(() => {
+      expect(mocks.notifyNobleBlePrimaryAutoConnectSettled).toHaveBeenCalled();
+    });
+  });
 
   it.each(['linux', 'darwin', 'win32'] as const)(
     'skips TCP auto-connect when httpAddress is blank and settles primary gate if needed (%s)',
@@ -385,6 +435,28 @@ describe('useProtocolRfAutoConnect cold-start serial + BLE', () => {
     expect(mocks.awaitReticulumBleCoexistenceClear).not.toHaveBeenCalled();
   });
 
+  it('settles dual-radio primary gate after serial auto-connect succeeds', async () => {
+    mocks.loadLastConnection.mockReturnValue({ type: 'serial', serialPortId: 'port-1' });
+    mocks.dualNobleBleBothRadiosConfigured.mockReturnValue(true);
+    mocks.getNobleBleDualRadioPrimaryProtocol.mockReturnValue('meshtastic');
+    const connectAutomatic = vi.fn().mockResolvedValue(undefined);
+
+    renderHook(() => {
+      useProtocolRfAutoConnect({
+        protocol: 'meshtastic',
+        state: disconnected,
+        connectAutomatic,
+      });
+    });
+
+    await waitFor(() => {
+      expect(connectAutomatic).toHaveBeenCalledWith('serial', undefined, 'port-1');
+    });
+    await waitFor(() => {
+      expect(mocks.notifyNobleBlePrimaryAutoConnectSettled).toHaveBeenCalled();
+    });
+  });
+
   it('falls back to Noble BLE when serial auto-connect fails and lastBleDevice exists', async () => {
     mocks.loadLastConnection.mockReturnValue({
       type: 'serial',
@@ -438,6 +510,32 @@ describe('useProtocolRfAutoConnect cold-start serial + BLE', () => {
       });
       expect(mocks.awaitReticulumBleCoexistenceClear).toHaveBeenCalled();
       expect(mocks.awaitNobleBlePrimaryAutoConnectSettled).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['darwin', 'win32'] as const)(
+    'settles dual-radio primary gate after Noble BLE auto-connect succeeds (%s)',
+    async (platform) => {
+      vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue(platform);
+      mocks.loadLastConnection.mockReturnValue({ type: 'ble', bleDeviceId: 'primary-ble' });
+      mocks.dualNobleBleBothRadiosConfigured.mockReturnValue(true);
+      mocks.getNobleBleDualRadioPrimaryProtocol.mockReturnValue('meshtastic');
+      const connectAutomatic = vi.fn().mockResolvedValue(undefined);
+
+      renderHook(() => {
+        useProtocolRfAutoConnect({
+          protocol: 'meshtastic',
+          state: disconnected,
+          connectAutomatic,
+        });
+      });
+
+      await waitFor(() => {
+        expect(connectAutomatic).toHaveBeenCalledWith('ble', undefined, undefined, 'primary-ble');
+      });
+      await waitFor(() => {
+        expect(mocks.notifyNobleBlePrimaryAutoConnectSettled).toHaveBeenCalled();
+      });
     },
   );
 
