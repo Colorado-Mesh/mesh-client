@@ -85,26 +85,57 @@ describe('uploadReleaseAssets', () => {
     exitSpy.mockRestore();
   });
 
-  it('uploads each file to a draft release', async () => {
+  it('uploads each file to a draft release by path', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'mesh-upload-ok-'));
+    const a = path.join(dir, 'a.deb');
+    const b = path.join(dir, 'b.yml');
+    writeFileSync(a, 'a');
+    writeFileSync(b, 'b');
     const uploads = [];
     const count = await uploadReleaseAssets({
       releaseId: 9,
       token: 'token',
-      files: ['/tmp/a.deb', '/tmp/b.yml'],
+      files: [a, b],
       get: async () => ({
         id: 9,
         draft: true,
         assets: [{ id: 3, name: 'a.deb' }],
       }),
-      readFile: (filePath) => new Uint8Array(Buffer.from(path.basename(filePath))),
       upload: async (opts) => {
-        uploads.push(opts.fileName);
+        uploads.push({ fileName: opts.fileName, filePath: opts.filePath });
         return { id: 1, name: opts.fileName };
       },
       log: () => {},
     });
 
     expect(count).toBe(2);
-    expect(uploads).toEqual(['a.deb', 'b.yml']);
+    expect(uploads).toEqual([
+      { fileName: 'a.deb', filePath: a },
+      { fileName: 'b.yml', filePath: b },
+    ]);
+  });
+
+  it('refuses a missing upload path before calling upload (preserves prior assets)', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((code) => {
+      throw new Error(`exit:${code}`);
+    });
+    const upload = vi.fn();
+    const missing = path.join(mkdtempSync(path.join(tmpdir(), 'mesh-upload-miss-')), 'gone.deb');
+    await expect(
+      uploadReleaseAssets({
+        releaseId: 9,
+        token: 'token',
+        files: [missing],
+        get: async () => ({
+          id: 9,
+          draft: true,
+          assets: [{ id: 3, name: 'gone.deb' }],
+        }),
+        upload,
+        log: () => {},
+      }),
+    ).rejects.toThrow(/exit:1/);
+    expect(upload).not.toHaveBeenCalled();
+    exitSpy.mockRestore();
   });
 });

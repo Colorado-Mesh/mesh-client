@@ -3,9 +3,14 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  compareReleaseTags,
+  fetchAllGithubReleases,
   formatSchemaCompareMarkdown,
   isSchemaBumped,
   parseCurrentSchemaVersion,
+  parseGithubLinkNext,
+  pickLatestPublishedReleaseTag,
+  publishedReleaseGitTag,
   runSchemaReleaseCompare,
   trustedReleaseTag,
   trustedSchemaVersion,
@@ -32,6 +37,159 @@ describe('trustedReleaseTag / trustedSchemaVersion', () => {
     expect(() => trustedReleaseTag('../evil')).toThrow(/Unsafe release tag/);
     expect(() => trustedSchemaVersion(0)).toThrow(/Invalid schema version/);
     expect(() => trustedSchemaVersion('nope')).toThrow(/Invalid schema version/);
+  });
+});
+
+describe('publishedReleaseGitTag', () => {
+  it('uses tag_name when it is a normal vX.Y.Z release', () => {
+    expect(
+      publishedReleaseGitTag({
+        tag_name: 'v5.25.0',
+        name: '5.25.0',
+        draft: false,
+        prerelease: false,
+      }),
+    ).toBe('v5.25.0');
+  });
+
+  it('recovers vX.Y.Z from release name when tag_name is untagged-*', () => {
+    // Regression: published 5.27.0 lost its git tag after draft-fork races;
+    // compare used to skip it and warn against older v5.25.0 / schema 47.
+    expect(
+      publishedReleaseGitTag({
+        tag_name: 'untagged-56bb16db7c14eda58971',
+        name: '5.27.0',
+        draft: false,
+        prerelease: false,
+      }),
+    ).toBe('v5.27.0');
+  });
+
+  it('rejects a numeric name paired with an unrelated invalid tag_name', () => {
+    expect(
+      publishedReleaseGitTag({
+        tag_name: 'broken',
+        name: '5.27.0',
+        draft: false,
+        prerelease: false,
+      }),
+    ).toBeNull();
+  });
+
+  it('skips drafts and prereleases even with a valid tag_name', () => {
+    expect(
+      publishedReleaseGitTag({
+        tag_name: 'v5.26.0',
+        name: '5.26.0',
+        draft: true,
+        prerelease: false,
+      }),
+    ).toBeNull();
+    expect(
+      publishedReleaseGitTag({
+        tag_name: 'v5.21.0',
+        name: '5.21.0',
+        draft: false,
+        prerelease: true,
+      }),
+    ).toBeNull();
+  });
+});
+
+describe('compareReleaseTags', () => {
+  it('orders semver tags', () => {
+    expect(compareReleaseTags('v5.25.0', 'v5.27.0')).toBeLessThan(0);
+    expect(compareReleaseTags('v5.27.0', 'v5.25.0')).toBeGreaterThan(0);
+    expect(compareReleaseTags('v5.27.0', 'v5.27.0')).toBe(0);
+  });
+});
+
+describe('pickLatestPublishedReleaseTag', () => {
+  it('prefers untagged published 5.27.0 over older tagged releases and skips drafts', () => {
+    // Mirrors production list shape after the v5.27.0 publish race.
+    const tag = pickLatestPublishedReleaseTag([
+      { tag_name: 'v5.26.0', name: '5.26.0', draft: true, prerelease: false },
+      {
+        tag_name: 'untagged-56bb16db7c14eda58971',
+        name: '5.27.0',
+        draft: false,
+        prerelease: false,
+      },
+      { tag_name: 'v5.25.0', name: '5.25.0', draft: false, prerelease: false },
+    ]);
+    expect(tag).toBe('v5.27.0');
+  });
+
+  it('honors excludeTag for the release being published', () => {
+    const tag = pickLatestPublishedReleaseTag(
+      [
+        { tag_name: 'v5.28.0', name: '5.28.0', draft: false, prerelease: false },
+        { tag_name: 'v5.27.0', name: '5.27.0', draft: false, prerelease: false },
+      ],
+      'v5.28.0',
+    );
+    expect(tag).toBe('v5.27.0');
+  });
+
+  it('selects the highest version when it appears after the first page worth of rows', () => {
+    /** @type {Array<{ tag_name: string, name: string, draft: boolean, prerelease: boolean }>} */
+    const page1 = Array.from({ length: 30 }, (_, i) => {
+      const patch = 30 - i;
+      return {
+        tag_name: `v5.0.${patch}`,
+        name: `5.0.${patch}`,
+        draft: false,
+        prerelease: false,
+      };
+    });
+    const all = [
+      ...page1,
+      { tag_name: 'v5.99.0', name: '5.99.0', draft: false, prerelease: false },
+    ];
+    expect(pickLatestPublishedReleaseTag(all)).toBe('v5.99.0');
+  });
+});
+
+describe('parseGithubLinkNext / fetchAllGithubReleases', () => {
+  it('parses rel=next from a GitHub Link header', () => {
+    expect(
+      parseGithubLinkNext(
+        '<https://api.github.com/repos/o/r/releases?page=2>; rel="next", <https://api.github.com/repos/o/r/releases?page=3>; rel="last"',
+      ),
+    ).toBe('https://api.github.com/repos/o/r/releases?page=2');
+    expect(parseGithubLinkNext(null)).toBeNull();
+  });
+
+  it('accumulates releases across pages so a late high version is visible', async () => {
+    const page1 = Array.from({ length: 30 }, (_, i) => ({
+      tag_name: `v4.0.${i}`,
+      name: `4.0.${i}`,
+      draft: false,
+      prerelease: false,
+    }));
+    const page2 = [
+      { tag_name: 'v9.0.0', name: '9.0.0', draft: false, prerelease: false },
+      { tag_name: 'v5.0.0', name: '5.0.0', draft: false, prerelease: false },
+    ];
+    const fetchImpl = vi.fn(async (url) => {
+      if (String(url).includes('page=2')) {
+        return new Response(JSON.stringify(page2), {
+          status: 200,
+          headers: { link: '' },
+        });
+      }
+      return new Response(JSON.stringify(page1), {
+        status: 200,
+        headers: {
+          link: '<https://api.github.com/repos/Colorado-Mesh/mesh-client/releases?page=2>; rel="next"',
+        },
+      });
+    });
+
+    const releases = await fetchAllGithubReleases({ fetchImpl });
+    expect(releases).toHaveLength(32);
+    expect(pickLatestPublishedReleaseTag(releases)).toBe('v9.0.0');
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 });
 

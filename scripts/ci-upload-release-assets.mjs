@@ -2,20 +2,28 @@
 /**
  * Upload local files to an existing GitHub release by id.
  * Never creates a release (prevents duplicate draft forks from electron-builder / softprops).
+ *
+ * Files are passed as paths into `gh api --input` (via uploadOrReplaceReleaseAsset) so this
+ * process never joins readFile → fetch (CodeQL `js/file-access-to-http`).
  */
-import { readFileSync, globSync, statSync } from 'node:fs';
+import { globSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { authToken, fail, getRelease, uploadOrReplaceReleaseAsset } from './github-release-api.mjs';
+import {
+  assertReadableReleaseUploadFile,
+  assertSafeReleaseAssetName,
+  authToken,
+  fail,
+  getRelease,
+  trustedGithubReleaseId,
+  uploadOrReplaceReleaseAsset,
+} from './github-release-api.mjs';
 
 /**
  * @param {string | undefined} raw
  */
 export function parseReleaseId(raw) {
-  if (typeof raw !== 'string' || !/^\d+$/.test(raw)) {
-    fail(`RELEASE_ID must be a numeric GitHub release id (got ${JSON.stringify(raw)})`);
-  }
-  return Number(raw);
+  return trustedGithubReleaseId(raw);
 }
 
 /**
@@ -78,24 +86,23 @@ export function findDuplicateBasenames(files) {
 
 /**
  * @param {{
- *   releaseId: number,
+ *   releaseId: number | string,
  *   token: string,
  *   files: string[],
  *   get?: typeof getRelease,
  *   upload?: typeof uploadOrReplaceReleaseAsset,
- *   readFile?: (path: string) => Uint8Array,
  *   log?: (...args: unknown[]) => void,
  * }} opts
  */
 export async function uploadReleaseAssets(opts) {
   const get = opts.get ?? getRelease;
   const upload = opts.upload ?? uploadOrReplaceReleaseAsset;
-  const readFile = opts.readFile ?? ((filePath) => new Uint8Array(readFileSync(filePath)));
   const log = opts.log ?? console.debug;
+  const releaseId = trustedGithubReleaseId(opts.releaseId);
 
-  const release = await get(opts.releaseId, opts.token);
+  const release = await get(releaseId, opts.token);
   if (release.draft !== true) {
-    fail(`Release ${opts.releaseId} is not a draft; refusing to upload`);
+    fail(`Release ${releaseId} is not a draft; refusing to upload`);
     return 0;
   }
 
@@ -110,16 +117,15 @@ export async function uploadReleaseAssets(opts) {
   let uploaded = 0;
 
   for (const filePath of opts.files) {
-    const fileName = path.basename(filePath);
-    const bytes = readFile(filePath);
-    log(
-      `[ci-upload-release-assets] Uploading ${fileName} (${bytes.byteLength} bytes) → release ${opts.releaseId}`,
-    );
+    const fileName = assertSafeReleaseAssetName(path.basename(filePath));
+    // Validate readability before upload/replace can delete a prior asset.
+    assertReadableReleaseUploadFile(filePath, fileName);
+    log(`[ci-upload-release-assets] Uploading ${fileName} → release ${releaseId}`);
     await upload({
-      releaseId: opts.releaseId,
+      releaseId,
       token: opts.token,
       fileName,
-      bytes,
+      filePath,
       existingAssets,
       log,
     });
@@ -128,7 +134,7 @@ export async function uploadReleaseAssets(opts) {
     uploaded += 1;
   }
 
-  log(`[ci-upload-release-assets] Uploaded ${uploaded} asset(s) to release ${opts.releaseId}`);
+  log(`[ci-upload-release-assets] Uploaded ${uploaded} asset(s) to release ${releaseId}`);
   return uploaded;
 }
 

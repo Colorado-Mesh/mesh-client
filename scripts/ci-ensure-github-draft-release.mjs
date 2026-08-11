@@ -6,9 +6,13 @@ import {
   ensureGithubDraftRelease,
   resolveTag,
   resolveTargetCommitish,
+  trustedGithubReleaseId,
 } from './github-release-api.mjs';
 
 /**
+ * Write prepare/wait `release_id` to GITHUB_OUTPUT.
+ * Id is reconstructed from validated digits so network JSON cannot taint the disk write
+ * (CodeQL `js/http-to-file-access`).
  * @param {string | undefined} githubOutput
  * @param {number | string} releaseId
  */
@@ -16,7 +20,8 @@ export function writeReleaseIdOutput(githubOutput, releaseId) {
   if (typeof githubOutput !== 'string' || !githubOutput) {
     return;
   }
-  appendFileSync(githubOutput, `release_id=${releaseId}\n`, 'utf8');
+  const id = trustedGithubReleaseId(releaseId);
+  appendFileSync(githubOutput, `release_id=${id}\n`, 'utf8');
 }
 
 async function main() {
@@ -30,7 +35,9 @@ async function main() {
     allowCreate,
   });
   writeReleaseIdOutput(process.env.GITHUB_OUTPUT, release.id);
-  console.debug(`[ci-ensure-github-draft-release] release_id=${release.id}`);
+  console.debug(
+    `[ci-ensure-github-draft-release] release_id=${trustedGithubReleaseId(release.id)}`,
+  );
 }
 
 const entry = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
