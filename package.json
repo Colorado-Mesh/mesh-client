@@ -84,6 +84,8 @@
     "dist": "pnpm run build && electron-builder --publish never",
     "dist:linux": "pnpm run dedupe:dist && pnpm run build && electron-builder --linux --x64 --arm64 --publish never && node scripts/verify-linux-packaging.mjs",
     "dist:linux:publish": "pnpm run dedupe:dist && pnpm run build && electron-builder --linux --x64 --arm64 --publish always && node scripts/verify-linux-packaging.mjs",
+    "dist:linux:headless": "pnpm run dedupe:dist && pnpm run build && electron-builder --linux --x64 --arm64 --config electron-builder.headless.yml --publish never && node scripts/verify-headless-linux-packaging.mjs",
+    "dist:linux:headless:publish": "pnpm run dedupe:dist && pnpm run build && electron-builder --linux --x64 --arm64 --config electron-builder.headless.yml --publish always && node scripts/verify-headless-linux-packaging.mjs",
     "dist:mac": "pnpm run dedupe:dist && pnpm run build && electron-builder --mac --publish never && node scripts/verify-mac-packaging.mjs",
     "dist:mac:publish": "pnpm run dedupe:dist && pnpm run build && electron-builder --mac --publish always && node scripts/verify-mac-packaging.mjs",
     "dist:win": "pnpm run build && node scripts/dist-win-hoisted-install.mjs && electron-builder --win --publish never && node scripts/verify-win-packaging.mjs && node scripts/dist-win-restore-node-modules.mjs",

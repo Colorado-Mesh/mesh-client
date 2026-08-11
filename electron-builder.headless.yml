@@ -1,0 +1,42 @@
+# Headless "server mode" packaging — slim Linux tar.gz for the Docker image.
+#
+# Standalone config (does NOT extend electron-builder.yml): intentionally omits
+# desktop-only weight — icons, mac/win assets, copyright, AppImage/deb/rpm — and
+# keeps only English Chromium locales (electronLanguages). It reuses the base
+# beforePack hook so the per-arch Reticulum sidecar is still staged and the
+# SCHEMA-UPGRADE.txt notice still rides along.
+#
+# Build:
+#   pnpm run dist:linux:headless
+# Output lands in release-headless/ (kept separate from release/ so the desktop
+# packaging verifier and packaging-smoke stay untouched).
+appId: com.mesh-client.app
+productName: Mesh-client
+directories:
+  buildResources: resources
+  output: release-headless
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - node_modules/**/*
+  - package.json
+asarUnpack:
+  - 'node_modules/systeminformation/**/*'
+  - 'node_modules/@stoprocent/**/*'
+beforePack: scripts/electron-builder-before-pack.mjs
+extraResources:
+  - from: resources/reticulum-sidecar
+    to: reticulum-sidecar
+    filter:
+      - '**/*'
+# Only the remote-control page is served (English by design); the streamed UI
+# keeps all app locales, but Chromium only needs en-US in a container.
+electronLanguages:
+  - en-US
+linux:
+  target:
+    - target: tar.gz
+      arch:
+        - x64
+        - arm64
+  category: Utility

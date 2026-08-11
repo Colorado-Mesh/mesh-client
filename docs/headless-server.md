@@ -45,15 +45,21 @@ Open: `http://<host>:<port>/?token=<secret>` (sets an HttpOnly cookie `mesh-remo
 
 ## Docker image
 
-Build from a Linux `.deb` produced by the **Build Binaries (no release)** workflow (or staged under `release/`):
+Build from a Linux `.deb` produced by the **Build Binaries (no release)** workflow (or staged under `release/`). The Linux artifact is a self-contained Docker build context: it includes `Dockerfile` + `docker/entrypoint.sh` alongside the installers.
 
 ```bash
 gh run download <run-id> -n mesh-client-linux-<sha>
-docker build -t mesh-client-headless --platform linux/amd64 .
+# pick one architecture's .deb and pass its basename
+docker build -t mesh-client-headless --platform linux/amd64 \
+  --build-arg DEB_BASENAME=<name>.deb release
 docker run -d --name mesh-client -p 8000:8000 \
   -e MESH_CLIENT_REMOTE_TOKEN=sekrit \
   mesh-client-headless
 ```
+
+The `DEB_BASENAME` build arg is required so exactly one architecture's `.deb` is installed (the artifact carries both `amd64` and `arm64`).
+
+> **Slim headless build (future):** `pnpm run dist:linux:headless` produces a lighter `release-headless/*.tar.gz` (English-only Chromium locales, no icons) for the image — not yet wired into the Dockerfile.
 
 Entrypoint starts Xvfb `:99`, waits for the display socket, then runs Electron with `--no-sandbox --disable-dev-shm-usage --disable-gpu --disable-gpu-compositing`. Optional radio passthrough: `--device=/dev/ttyUSB0` / `--privileged` (elevated trust).
 

@@ -167,6 +167,17 @@ jobs:
           mkdir -p release
           cp release-warnings/READ-ME-FIRST-test-build.md release/READ-ME-FIRST-test-build.md
 
+      # The Docker build context (Dockerfile + entrypoint) rides along in the artifact
+      # so testers can `docker build` the headless image straight from the download.
+      - name: Stage Docker build context into release output
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release/docker
+          cp Dockerfile release/Dockerfile
+          cp docker/entrypoint.sh release/docker/entrypoint.sh
+
       # Do not upload raw Mesh-client.app — upload-artifact@v7 dereferences framework
       # symlinks (~3× Electron Framework size). DMG/ZIP preserve correct layout.
       - name: Upload macOS Artifact
@@ -196,6 +207,8 @@ jobs:
             release/*.deb
             release/*.rpm
             release/READ-ME-FIRST-test-build.md
+            release/Dockerfile
+            release/docker/entrypoint.sh
           retention-days: 30
 
       - name: Upload Windows Artifact

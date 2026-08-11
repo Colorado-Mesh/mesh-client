@@ -7,12 +7,15 @@
 # Build:
 #   1. Grab the Linux artifact (Actions run summary page) or:
 #        gh run download <run-id> -n mesh-client-linux-<sha>
-#      which yields <dir>/release/<name>.deb
-#   2. Build from that <dir> (context = the downloaded artifact folder), or from the
-#      repo root with the deb staged at release/:
-#        docker build -t mesh-client-headless --platform linux/amd64 .
-#      Keep only ONE architecture's .deb in the context (x64 -> linux/amd64,
-#      arm64 -> linux/arm64).
+#      which yields <dir>/release/ containing the .deb installers, READ-ME-FIRST,
+#      this Dockerfile, and docker/entrypoint.sh (the artifact is a self-contained
+#      build context).
+#   2. Pick the architecture's .deb and pass its basename via DEB_BASENAME, building
+#      with the release/ directory as the build context:
+#        docker build -t mesh-client-headless --platform linux/amd64 \
+#          --build-arg DEB_BASENAME=mesh-client_1.2.3_amd64.deb release
+#      Only ONE architecture's deb is installed (x64 -> linux/amd64,
+#      arm64 -> linux/arm64); the build arg prevents multi-arch installs.
 #
 # Run (MESH_CLIENT_REMOTE_TOKEN is required when binding 0.0.0.0):
 #   docker run -d --name mesh-client -p 8000:8000 \
@@ -27,6 +30,10 @@
 
 ARG BASE_IMAGE=ubuntu:24.04
 FROM ${BASE_IMAGE}
+
+# Basename of the single-architecture .deb to install (see header comment).
+ARG DEB_BASENAME
+RUN test -n "$DEB_BASENAME" || (echo "error: DEB_BASENAME build arg is required" >&2 && exit 1)
 
 # Electron GUI/runtime baseline + Xvfb for the private virtual display.
 RUN apt-get update \
@@ -57,8 +64,9 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 # Install the packaged client (apt resolves its declared dependencies).
-COPY release/*.deb /install/
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends /install/*.deb \
+# Build context is the release/ dir, so the deb sits at the context root.
+COPY ${DEB_BASENAME} /install/
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends /install/${DEB_BASENAME} \
   && rm -rf /install
 
 COPY docker/entrypoint.sh /usr/local/bin/mesh-client-entrypoint.sh
