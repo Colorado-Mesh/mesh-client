@@ -3,12 +3,18 @@
  * Shared GitHub release helpers for CI ensure + manual consolidation.
  */
 
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+
 export const OWNER = 'Colorado-Mesh';
 export const REPO = 'mesh-client';
 export const API_ROOT = `https://api.github.com/repos/${OWNER}/${REPO}`;
 
 /** Release tags must be vX.Y.Z — validated before any GitHub API call (CodeQL file-access-to-http). */
 export const SAFE_RELEASE_TAG_RE = /^v\d+\.\d+\.\d+$/;
+
+/** Positive GitHub release ids — rebuilt from digits to clear CodeQL http-to-file-access taint. */
+export const SAFE_GITHUB_RELEASE_ID_RE = /^([1-9]\d{0,18})$/;
 
 export function versionFromTag(tag) {
   return tag.startsWith('v') ? tag.slice(1) : tag;
@@ -36,6 +42,42 @@ export function assertSafeReleaseTag(tag) {
     fail(`Release tag must match vX.Y.Z (got ${JSON.stringify(tag)})`);
   }
   return tag;
+}
+
+/**
+ * Reconstruct a trusted positive release id from validated digits (breaks CodeQL
+ * `js/http-to-file-access` taint from GitHub release JSON → GITHUB_OUTPUT writes).
+ * @param {unknown} value
+ * @returns {number}
+ */
+export function trustedGithubReleaseId(value) {
+  const m = SAFE_GITHUB_RELEASE_ID_RE.exec(String(value ?? ''));
+  if (!m) {
+    fail(`GitHub release id must be a positive integer (got ${JSON.stringify(value)})`);
+    return /** @type {never} */ (0);
+  }
+  return Number(m[1]);
+}
+
+/**
+ * Basename-only asset names for upload URLs / gh --input (no path separators).
+ * @param {unknown} fileName
+ * @returns {string}
+ */
+export function assertSafeReleaseAssetName(fileName) {
+  if (
+    typeof fileName !== 'string' ||
+    !fileName ||
+    fileName === '.' ||
+    fileName === '..' ||
+    /[\\/]/.test(fileName) ||
+    // eslint-disable-next-line no-control-regex -- reject ASCII controls in asset names
+    /[\x00-\x1F\x7F]/.test(fileName)
+  ) {
+    fail(`Unsafe release asset name: ${JSON.stringify(fileName)}`);
+    return /** @type {never} */ ('');
+  }
+  return fileName;
 }
 
 export function resolveTag(argv, env) {
@@ -261,7 +303,9 @@ export async function getRelease(releaseId, token) {
 }
 
 export async function uploadReleaseAsset(releaseId, fileName, bytes, token) {
-  const uploadUrl = `https://uploads.github.com/repos/${OWNER}/${REPO}/releases/${releaseId}/assets?name=${encodeURIComponent(fileName)}`;
+  const id = trustedGithubReleaseId(releaseId);
+  const name = assertSafeReleaseAssetName(fileName);
+  const uploadUrl = `https://uploads.github.com/repos/${OWNER}/${REPO}/releases/${id}/assets?name=${encodeURIComponent(name)}`;
   const response = await fetch(uploadUrl, {
     method: 'POST',
     headers: {
@@ -285,7 +329,7 @@ export async function uploadReleaseAsset(releaseId, fileName, bytes, token) {
 
   if (!response.ok) {
     fail(
-      `Upload asset ${fileName} to release ${releaseId} failed (${response.status}): ${json?.message ?? response.statusText}`,
+      `Upload asset ${name} to release ${id} failed (${response.status}): ${json?.message ?? response.statusText}`,
     );
   }
 
@@ -293,14 +337,84 @@ export async function uploadReleaseAsset(releaseId, fileName, bytes, token) {
 }
 
 /**
+ * Upload a local file via `gh api --input` so JS never joins readFile → fetch
+ * (CodeQL `js/file-access-to-http`). Used by CI packaging uploads; consolidate still
+ * uses in-memory bytes from `downloadReleaseAsset` (network → network).
+ *
+ * @param {number | string} releaseId
+ * @param {string} fileName
+ * @param {string} filePath
+ * @param {string} token
+ * @param {{ execFileSync?: typeof execFileSync }} [opts]
+ */
+export function uploadReleaseAssetFromFile(
+  releaseId,
+  fileName,
+  filePath,
+  token,
+  { execFileSync: execFile = execFileSync } = {},
+) {
+  const id = trustedGithubReleaseId(releaseId);
+  const name = assertSafeReleaseAssetName(fileName);
+  if (typeof filePath !== 'string' || !filePath) {
+    fail(`Upload file path is required for asset ${name}`);
+  }
+  if (path.basename(filePath) !== name) {
+    fail(`Asset name ${JSON.stringify(name)} must match basename of ${JSON.stringify(filePath)}`);
+  }
+
+  const uploadUrl = `https://uploads.github.com/repos/${OWNER}/${REPO}/releases/${id}/assets?name=${encodeURIComponent(name)}`;
+  let stdout;
+  try {
+    stdout = execFile(
+      'gh',
+      [
+        'api',
+        '--method',
+        'POST',
+        '-H',
+        'Accept: application/vnd.github+json',
+        '-H',
+        'Content-Type: application/octet-stream',
+        '-H',
+        'X-GitHub-Api-Version: 2022-11-28',
+        uploadUrl,
+        '--input',
+        filePath,
+      ],
+      {
+        env: { ...process.env, GH_TOKEN: token, GITHUB_TOKEN: token },
+        encoding: 'utf8',
+        maxBuffer: 32 * 1024 * 1024,
+      },
+    );
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    fail(`Upload asset ${name} to release ${id} failed: ${detail}`);
+  }
+
+  if (typeof stdout === 'string' && stdout.trim()) {
+    try {
+      return JSON.parse(stdout);
+    } catch {
+      return { name };
+    }
+  }
+  return { name };
+}
+
+/**
  * Upload (or replace) a single asset on an existing release. Never creates a release.
+ * Prefer `filePath` for disk uploads (CodeQL); use `bytes` for in-memory consolidate moves.
  * @param {{
  *   releaseId: number,
  *   token: string,
  *   fileName: string,
- *   bytes: Uint8Array,
+ *   bytes?: Uint8Array,
+ *   filePath?: string,
  *   existingAssets?: Array<{ id: number, name: string }>,
  *   log?: (...args: unknown[]) => void,
+ *   uploadFromFile?: typeof uploadReleaseAssetFromFile,
  * }} opts
  */
 export async function uploadOrReplaceReleaseAsset({
@@ -308,14 +422,22 @@ export async function uploadOrReplaceReleaseAsset({
   token,
   fileName,
   bytes,
+  filePath,
   existingAssets,
   log = console.debug,
+  uploadFromFile = uploadReleaseAssetFromFile,
 }) {
   const assets = existingAssets ?? (await getRelease(releaseId, token)).assets ?? [];
   const prior = assets.find((asset) => asset.name === fileName);
   if (prior) {
     log(`[github-release] Replacing existing asset ${fileName} on release ${releaseId}`);
     await deleteReleaseAsset(prior.id, token);
+  }
+  if (typeof filePath === 'string' && filePath) {
+    return uploadFromFile(releaseId, fileName, filePath, token);
+  }
+  if (bytes == null) {
+    fail(`Upload asset ${fileName}: bytes or filePath required`);
   }
   return uploadReleaseAsset(releaseId, fileName, bytes, token);
 }

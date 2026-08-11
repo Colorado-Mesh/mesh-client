@@ -85,7 +85,7 @@ describe('uploadReleaseAssets', () => {
     exitSpy.mockRestore();
   });
 
-  it('uploads each file to a draft release', async () => {
+  it('uploads each file to a draft release by path', async () => {
     const uploads = [];
     const count = await uploadReleaseAssets({
       releaseId: 9,
@@ -96,15 +96,17 @@ describe('uploadReleaseAssets', () => {
         draft: true,
         assets: [{ id: 3, name: 'a.deb' }],
       }),
-      readFile: (filePath) => new Uint8Array(Buffer.from(path.basename(filePath))),
       upload: async (opts) => {
-        uploads.push(opts.fileName);
+        uploads.push({ fileName: opts.fileName, filePath: opts.filePath });
         return { id: 1, name: opts.fileName };
       },
       log: () => {},
     });
 
     expect(count).toBe(2);
-    expect(uploads).toEqual(['a.deb', 'b.yml']);
+    expect(uploads).toEqual([
+      { fileName: 'a.deb', filePath: '/tmp/a.deb' },
+      { fileName: 'b.yml', filePath: '/tmp/b.yml' },
+    ]);
   });
 });

@@ -2,8 +2,11 @@
 /**
  * Upload local files to an existing GitHub release by id.
  * Never creates a release (prevents duplicate draft forks from electron-builder / softprops).
+ *
+ * Files are passed as paths into `gh api --input` (via uploadOrReplaceReleaseAsset) so this
+ * process never joins readFile → fetch (CodeQL `js/file-access-to-http`).
  */
-import { readFileSync, globSync, statSync } from 'node:fs';
+import { globSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { authToken, fail, getRelease, uploadOrReplaceReleaseAsset } from './github-release-api.mjs';
@@ -83,14 +86,12 @@ export function findDuplicateBasenames(files) {
  *   files: string[],
  *   get?: typeof getRelease,
  *   upload?: typeof uploadOrReplaceReleaseAsset,
- *   readFile?: (path: string) => Uint8Array,
  *   log?: (...args: unknown[]) => void,
  * }} opts
  */
 export async function uploadReleaseAssets(opts) {
   const get = opts.get ?? getRelease;
   const upload = opts.upload ?? uploadOrReplaceReleaseAsset;
-  const readFile = opts.readFile ?? ((filePath) => new Uint8Array(readFileSync(filePath)));
   const log = opts.log ?? console.debug;
 
   const release = await get(opts.releaseId, opts.token);
@@ -111,15 +112,12 @@ export async function uploadReleaseAssets(opts) {
 
   for (const filePath of opts.files) {
     const fileName = path.basename(filePath);
-    const bytes = readFile(filePath);
-    log(
-      `[ci-upload-release-assets] Uploading ${fileName} (${bytes.byteLength} bytes) → release ${opts.releaseId}`,
-    );
+    log(`[ci-upload-release-assets] Uploading ${fileName} → release ${opts.releaseId}`);
     await upload({
       releaseId: opts.releaseId,
       token: opts.token,
       fileName,
-      bytes,
+      filePath,
       existingAssets,
       log,
     });

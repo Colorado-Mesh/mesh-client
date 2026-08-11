@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  assertSafeReleaseAssetName,
   assertSafeReleaseTag,
   consolidateReleases,
   ensureGithubDraftRelease,
@@ -7,8 +8,14 @@ import {
   normalizeDraftReleasesForTag,
   pickCanonicalRelease,
   resolveTag,
+  trustedGithubReleaseId,
+  uploadReleaseAssetFromFile,
   waitForGithubDraftRelease,
 } from './github-release-api.mjs';
+import { writeReleaseIdOutput } from './ci-ensure-github-draft-release.mjs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 
 const TAG = 'v5.21.0';
 
@@ -27,6 +34,65 @@ describe('assertSafeReleaseTag', () => {
     assertSafeReleaseTag('v5.21.0-evil/../../../etc/passwd');
     expect(exitSpy).toHaveBeenCalledWith(1);
     exitSpy.mockRestore();
+  });
+});
+
+describe('trustedGithubReleaseId', () => {
+  it('rebuilds a positive integer from digits', () => {
+    expect(trustedGithubReleaseId(368221738)).toBe(368221738);
+    expect(trustedGithubReleaseId('99')).toBe(99);
+  });
+
+  it('rejects zero, negatives, and non-digits', () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined);
+    trustedGithubReleaseId(0);
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockClear();
+    trustedGithubReleaseId('-1');
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockClear();
+    trustedGithubReleaseId('12ab');
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockRestore();
+  });
+});
+
+describe('assertSafeReleaseAssetName', () => {
+  it('accepts basename-only names', () => {
+    expect(assertSafeReleaseAssetName('mesh-client.dmg')).toBe('mesh-client.dmg');
+  });
+
+  it('rejects path separators', () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined);
+    assertSafeReleaseAssetName('../evil.bin');
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockRestore();
+  });
+});
+
+describe('writeReleaseIdOutput', () => {
+  it('writes a trusted release_id line', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'mesh-gh-out-'));
+    const out = path.join(dir, 'github_output');
+    writeFileSync(out, '');
+    writeReleaseIdOutput(out, '368221738');
+    expect(readFileSync(out, 'utf8')).toBe('release_id=368221738\n');
+  });
+});
+
+describe('uploadReleaseAssetFromFile', () => {
+  it('invokes gh api --input with the file path (no JS readFile→fetch)', () => {
+    const execFile = vi.fn(() => JSON.stringify({ id: 1, name: 'a.deb' }));
+    const result = uploadReleaseAssetFromFile(9, 'a.deb', '/tmp/a.deb', 'token', {
+      execFileSync: execFile,
+    });
+    expect(result).toEqual({ id: 1, name: 'a.deb' });
+    expect(execFile).toHaveBeenCalledTimes(1);
+    const [cmd, args] = execFile.mock.calls[0];
+    expect(cmd).toBe('gh');
+    expect(args).toContain('--input');
+    expect(args).toContain('/tmp/a.deb');
+    expect(args.some((a) => String(a).includes('/releases/9/assets'))).toBe(true);
   });
 });
 
