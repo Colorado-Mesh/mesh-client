@@ -33,7 +33,7 @@ describe('write-schema-upgrade-notice', () => {
     expect(nsh).toContain('$\\r$\\n');
   });
 
-  it('writes notice files when bumped and clears them when not', () => {
+  it('writes notice files when bumped; on no-bump keeps an empty NSIS stub', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-notice-'));
     temps.push(dir);
 
@@ -51,6 +51,10 @@ describe('write-schema-upgrade-notice', () => {
 
     writeSchemaUpgradeNoticeFiles({ MESH_CLIENT_SCHEMA_BUMPED: '0' }, dir);
     expect(fs.existsSync(path.join(dir, 'SCHEMA-UPGRADE.txt'))).toBe(false);
-    expect(fs.existsSync(path.join(dir, 'schema-upgrade-notice.nsh'))).toBe(false);
+    // installer.nsh always includes the .nsh, so it stays as an empty stub
+    // (no define) instead of being deleted — otherwise NSIS warns 7000 under -WX.
+    expect(fs.existsSync(path.join(dir, 'schema-upgrade-notice.nsh'))).toBe(true);
+    const stub = fs.readFileSync(path.join(dir, 'schema-upgrade-notice.nsh'), 'utf8');
+    expect(stub).not.toContain('MESH_CLIENT_SCHEMA_UPGRADE_NOTICE');
   });
 });
