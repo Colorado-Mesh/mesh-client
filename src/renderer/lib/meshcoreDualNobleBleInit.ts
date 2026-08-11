@@ -139,7 +139,7 @@ export function initNobleBleDualRadioStartup(): void {
     nobleBlePrimaryAutoConnectSettledPromise = Promise.resolve();
     resolveNobleBlePrimaryAutoConnectSettled = null;
   }
-  notifyNobleBleMutexListeners();
+  refreshNobleBleMutexSnapshot();
 }
 
 /** Primary protocol auto-connect finished (success or failure) — unblocks secondary. */
@@ -148,7 +148,7 @@ export function notifyNobleBlePrimaryAutoConnectSettled(): void {
   nobleBlePrimaryAutoConnectSettled = true;
   resolveNobleBlePrimaryAutoConnectSettled?.();
   resolveNobleBlePrimaryAutoConnectSettled = null;
-  notifyNobleBleMutexListeners();
+  refreshNobleBleMutexSnapshot();
 }
 
 /**
@@ -250,6 +250,15 @@ function buildNobleBleMutexSnapshot(
 function setNobleBleMutexSnapshot(next: NobleBleConnectMutexSnapshot): void {
   nobleBleMutexSnapshot = next;
   notifyNobleBleMutexListeners();
+}
+
+function refreshNobleBleMutexSnapshot(): void {
+  setNobleBleMutexSnapshot(
+    buildNobleBleMutexSnapshot({
+      queued: nobleBleMutexSnapshot.queued,
+      active: nobleBleMutexSnapshot.active,
+    }),
+  );
 }
 
 export function getNobleBleConnectMutexSnapshot(): NobleBleConnectMutexSnapshot {
