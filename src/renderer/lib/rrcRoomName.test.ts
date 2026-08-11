@@ -5,6 +5,8 @@ import {
   resolveRrcJoinRoomName,
   rrcRoomMatchKey,
   rrcRoomsMatch,
+  rrcWhoCommandToken,
+  rrcWhoNoticeJoinedRoom,
 } from './rrcRoomName';
 
 describe('rrcRoomMatchKey', () => {
@@ -45,5 +47,23 @@ describe('resolveRrcJoinRoomName', () => {
 
   it('preserves normalizeRrcRoomName for exact wire form when needed', () => {
     expect(normalizeRrcRoomName('  #Lobby ')).toBe('#lobby');
+  });
+});
+
+describe('rrcWhoCommandToken', () => {
+  it('returns a bare room token and rejects injection', () => {
+    expect(rrcWhoCommandToken('#General')).toBe('general');
+    expect(rrcWhoCommandToken('general')).toBe('general');
+    expect(rrcWhoCommandToken('[hub]')).toBeNull();
+    expect(rrcWhoCommandToken('@alice')).toBeNull();
+    expect(rrcWhoCommandToken('gen eral')).toBeNull();
+    expect(rrcWhoCommandToken('general/extra')).toBeNull();
+    expect(rrcWhoCommandToken('')).toBeNull();
+  });
+
+  it('maps a /who NOTICE onto a joined room only', () => {
+    expect(rrcWhoNoticeJoinedRoom('#General', ['general', 'lobby'])).toBe('general');
+    expect(rrcWhoNoticeJoinedRoom('evil', ['general'])).toBeNull();
+    expect(rrcWhoNoticeJoinedRoom('[hub]', ['[hub]'])).toBeNull();
   });
 });

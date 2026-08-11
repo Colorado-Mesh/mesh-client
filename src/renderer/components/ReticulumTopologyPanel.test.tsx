@@ -243,4 +243,70 @@ describe('ReticulumTopologyPanel', () => {
       expect(screen.queryByRole('button', { name: 'RF Far' })).not.toBeInTheDocument();
     });
   });
+
+  it('shows all matching RF 1-hop peers under rfOnly without the 48-cap hide', async () => {
+    fetchReticulumInterfaces.mockResolvedValue([
+      { id: 'rnode-1', name: 'RNode 41F4', type: 'rnode', enabled: true, status: 'up' },
+      { id: 'tcp-east', name: 'RNS_Transport_US-East', type: 'tcp', enabled: true, status: 'up' },
+    ]);
+    const rfNodes = Array.from({ length: 80 }, (_, i) => ({
+      destination_hash: `rf${i.toString(16).padStart(8, '0')}`,
+      display_name: `RF ${i}`,
+      hops: 1,
+      interface: 'RNode 41F4',
+    }));
+    const tcpNodes = Array.from({ length: 80 }, (_, i) => ({
+      destination_hash: `tcp${i.toString(16).padStart(8, '0')}`,
+      display_name: `TCP ${i}`,
+      hops: 1,
+      interface: 'RNS_Transport_US-East',
+    }));
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/topology') {
+        return Promise.resolve({ nodes: [...rfNodes, ...tcpNodes], edges: [] });
+      }
+      if (path === '/api/v1/identity/status') {
+        return Promise.resolve({ display_name: 'NV0N' });
+      }
+      return Promise.resolve({});
+    });
+
+    render(<ReticulumTopologyPanel onPeerClick={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'RF 0' })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText('reticulumTopology.rfOnly'));
+    fireEvent.change(screen.getByLabelText('reticulumTopology.maxHopsFilter'), {
+      target: { value: '1' },
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'RF 79' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'TCP 0' })).not.toBeInTheDocument();
+      expect(screen.queryByText(/reticulumTopology\.hiddenCountLimit:/)).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows 168 nodes when distant peers are on and max hops is all', async () => {
+    const nodes = Array.from({ length: 167 }, (_, i) => ({
+      destination_hash: `p${i.toString(16).padStart(8, '0')}`,
+      display_name: `Peer ${i}`,
+      hops: 1,
+      interface: 'RNS_Transport_US-East',
+    }));
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/topology') {
+        return Promise.resolve({ nodes, edges: [] });
+      }
+      if (path === '/api/v1/identity/status') {
+        return Promise.resolve({ display_name: 'NV0N' });
+      }
+      return Promise.resolve({});
+    });
+
+    render(<ReticulumTopologyPanel />);
+    await waitFor(() => {
+      expect(screen.getByText(/reticulumTopology\.nodeCount:169/)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/reticulumTopology\.hiddenCountLimit:/)).not.toBeInTheDocument();
+  });
 });

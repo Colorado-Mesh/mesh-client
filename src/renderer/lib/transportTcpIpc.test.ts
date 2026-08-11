@@ -77,6 +77,18 @@ describe('TransportTcpIpc', () => {
     expect(done).toBe(true);
   });
 
+  it('toDevice.write rejects when meshtastic tcp-write has no active socket', async () => {
+    vi.mocked(window.electronAPI.meshtastic.tcp.write).mockRejectedValueOnce(
+      new Error('meshtastic:tcp-write: no active socket'),
+    );
+    const transport = new TransportTcpIpc('192.168.200.4', 4403);
+    const writer = transport.toDevice.getWriter();
+    await expect(writer.write(new Uint8Array([1, 2, 3]))).rejects.toThrow(
+      'meshtastic:tcp-write: no active socket',
+    );
+    writer.releaseLock();
+  });
+
   it('disconnect() calls the IPC disconnect and is safe to call twice', async () => {
     const transport = new TransportTcpIpc('192.168.200.4', 4403);
     await transport.disconnect();

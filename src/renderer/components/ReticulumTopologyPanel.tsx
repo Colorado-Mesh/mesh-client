@@ -244,6 +244,11 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
   const refreshGenerationRef = useRef(0);
   const refreshInFlightRef = useRef(false);
   const refreshPendingRef = useRef(false);
+  const lastFetchRef = useRef<{
+    interfaces: ReticulumSidecarInterfaceRow[];
+    peers: ReticulumPeerWireRow[];
+    selfLabel: string;
+  } | null>(null);
   const publishSnapshotFromSim = useCallback((opts?: { immediate?: boolean }) => {
     const publish = () => {
       const renderNodes = simRef.current
@@ -315,6 +320,38 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
     [publishSnapshotFromSim],
   );
 
+  const rebuildFromCache = useCallback(() => {
+    const cached = lastFetchRef.current;
+    if (!cached) return;
+    const uniquePeers = selectReticulumTopologyPeersForRender(cached.peers, cached.interfaces, {
+      rfOnly,
+    });
+    const width = svgRef.current?.clientWidth ?? 800;
+    const height = svgRef.current?.clientHeight ?? 600;
+    const graph = buildReticulumMeshTopologyGraph(
+      cached.interfaces.map((iface) => ({
+        id: iface.id,
+        name: iface.name,
+        type: iface.type,
+        enabled: iface.enabled,
+        status: iface.status,
+        serial_port: iface.serial_port,
+      })),
+      uniquePeers,
+      {
+        selfLabel: cached.selfLabel,
+        unassignedInterfaceLabel: t('reticulumTopology.unassignedInterface'),
+        cx: width / 2,
+        cy: height / 2,
+        filter: { includeDistantPeers, maxHops, rfOnly },
+        serverPeerHashes: new Set(
+          [...useNomadNetworkStore.getState().nodes.keys()].map((h) => h.toLowerCase()),
+        ),
+      },
+    );
+    applyGraph(graph);
+  }, [applyGraph, includeDistantPeers, maxHops, rfOnly, t]);
+
   const refresh = useCallback(async () => {
     if (refreshInFlightRef.current) {
       refreshPendingRef.current = true;
@@ -344,17 +381,16 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
 
           const peerNodes = enrichTopologyPeers(topologyBody.nodes ?? []);
           const seenHashes = new Set<string>();
-          const uniquePeers = selectReticulumTopologyPeersForRender(
-            peerNodes.filter((peer) => {
-              if (!peer.destination_hash || seenHashes.has(peer.destination_hash)) return false;
-              seenHashes.add(peer.destination_hash);
-              return true;
-            }),
-            interfaces,
-            { rfOnly: rfOnlyRef.current },
-          );
-
+          const uniqueByHash = peerNodes.filter((peer) => {
+            if (!peer.destination_hash || seenHashes.has(peer.destination_hash)) return false;
+            seenHashes.add(peer.destination_hash);
+            return true;
+          });
           const selfLabel = identityBody.display_name?.trim() || t('reticulumTopology.self');
+          lastFetchRef.current = { interfaces, peers: uniqueByHash, selfLabel };
+          const uniquePeers = selectReticulumTopologyPeersForRender(uniqueByHash, interfaces, {
+            rfOnly: rfOnlyRef.current,
+          });
 
           const serverPeerHashes = new Set(
             [...useNomadNetworkStore.getState().nodes.keys()].map((h) => h.toLowerCase()),
@@ -400,6 +436,10 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
   }, [applyGraph, t]);
 
   useEffect(() => {
+    rebuildFromCache();
+  }, [rebuildFromCache]);
+
+  useEffect(() => {
     void refresh();
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const unsub = window.electronAPI.reticulum.onEvent((evt) => {
@@ -429,7 +469,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
       if (debounceTimer != null) clearTimeout(debounceTimer);
       unsub();
     };
-  }, [includeDistantPeers, maxHops, refresh, rfOnly]);
+  }, [refresh]);
 
   useEffect(() => {
     let stop: (() => void) | null = null;

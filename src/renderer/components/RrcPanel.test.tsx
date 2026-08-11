@@ -440,7 +440,7 @@ describe('RrcPanel', () => {
     expect(whoCalls.some((args) => (args[0] as { room?: string }).room === `@${peerHash}`)).toBe(
       false,
     );
-    expect(whoCalls.some((args) => (args[0] as { body?: string }).body === '/who #general')).toBe(
+    expect(whoCalls.some((args) => (args[0] as { body?: string }).body === '/who general')).toBe(
       true,
     );
     expect(whoCalls.every((args) => (args[0] as { room?: string }).room == null)).toBe(true);
@@ -458,8 +458,9 @@ describe('RrcPanel', () => {
     vi.mocked(window.electronAPI.reticulum.rrc.disconnect).mockClear();
 
     const { unmount } = render(<RrcPanel isActive />);
-    await new Promise((r) => setTimeout(r, 40));
-    expect(whoSendCalls()).toHaveLength(0);
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+    });
     expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
     expect(window.electronAPI.reticulum.rrc.disconnect).not.toHaveBeenCalled();
 
@@ -487,7 +488,10 @@ describe('RrcPanel', () => {
     vi.mocked(window.electronAPI.reticulum.rrc.disconnect).mockClear();
 
     const { rerender } = render(<RrcPanel isActive={false} />);
-    await new Promise((r) => setTimeout(r, 40));
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+    });
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
     rerender(<RrcPanel isActive />);
     await new Promise((r) => setTimeout(r, 40));
     expect(whoSendCalls()).toHaveLength(0);
@@ -549,8 +553,10 @@ describe('RrcPanel', () => {
     vi.mocked(window.electronAPI.reticulum.rrc.join).mockClear();
 
     render(<RrcPanel isActive />);
-    await new Promise((r) => setTimeout(r, 40));
-    expect(whoSendCalls()).toHaveLength(0);
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+    });
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
 
     const composer = screen.getByRole('textbox', { name: /Message or \/command/i });
     await user.clear(composer);
@@ -575,8 +581,10 @@ describe('RrcPanel', () => {
     vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
 
     render(<RrcPanel isActive />);
-    await new Promise((r) => setTimeout(r, 40));
-    expect(whoSendCalls()).toHaveLength(0);
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+    });
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
 
     await user.click(screen.getByRole('button', { name: 'Refresh members (/who)' }));
     await waitFor(() => {
@@ -638,6 +646,60 @@ describe('RrcPanel', () => {
       body: '/who general',
       type: 'msg',
     });
+  });
+
+  it('retries auto /who after a failed send', async () => {
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockRejectedValueOnce(new Error('offline'));
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general');
+    store.setActiveRoom('general');
+
+    const { unmount } = render(<RrcPanel isActive />);
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+    });
+    unmount();
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValue({ ok: true });
+    render(<RrcPanel isActive />);
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+    });
+  });
+
+  it('sends one /who per hub when switching focus', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general', undefined, hubA);
+    store.setFocusedHub(hubA);
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+    render(<RrcPanel isActive />);
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+      expect(whoSendCalls()[0]?.[0]).toMatchObject({
+        hub_dest_hash: hubA,
+        body: '/who general',
+      });
+    });
+
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    store.applyStatus('active', hubB, 'Hub B');
+    store.roomJoined('lobby', undefined, hubB);
+    store.setFocusedHub(hubB);
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+      expect(whoSendCalls()[0]?.[0]).toMatchObject({
+        hub_dest_hash: hubB,
+        body: '/who lobby',
+      });
+    });
+
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    store.setFocusedHub(hubA);
+    await new Promise((r) => setTimeout(r, 40));
+    expect(whoSendCalls()).toHaveLength(0);
   });
 
   it('rejects plain text in [hub] with join-room prompt', async () => {

@@ -1,8 +1,4 @@
-import {
-  classifyReticulumInterfaceRow,
-  classifyReticulumPathInterfaceName,
-  classifyReticulumVia,
-} from './classifyReticulumVia';
+import { classifyReticulumInterfaceRow } from './classifyReticulumVia';
 import { pathMediumFromInterfaceNameOrType } from './reticulumPathMedium';
 
 /** Configured topology interface fields needed to classify RF vs network. */
@@ -29,24 +25,31 @@ export function isReticulumTopologyInterfaceRf(iface: ReticulumTopologyRfInterfa
   return pathMediumFromInterfaceNameOrType(iface.type || iface.name) === 'rf';
 }
 
-/** True when the path-table interface name is RF, using configured rows when they match. */
+function exactRfInterfaceMatch(
+  peerInterface: string,
+  iface: ReticulumTopologyRfInterface,
+): boolean {
+  const needle = peerInterface.trim().toLowerCase();
+  if (needle.length < 2) return false;
+  const name = iface.name.trim();
+  if (name.length >= 2 && name.toLowerCase() === needle) return true;
+  const id = iface.id.trim();
+  return id.length >= 2 && id.toLowerCase() === needle;
+}
+
+/**
+ * True when the path-table interface name exactly matches a configured RF spoke
+ * (name or id). No substring matching — "RNode" must not keep "RNode_TCP_East".
+ */
 export function isReticulumTopologyPeerRf(
   peer: ReticulumTopologyRfPeer,
   interfaces: readonly ReticulumTopologyRfInterface[],
 ): boolean {
   const name = peer.interface?.trim();
   if (!name) return false;
-  const via = classifyReticulumPathInterfaceName(
-    name,
-    interfaces.map((iface) => ({
-      id: iface.id,
-      type: iface.type ?? '',
-      name: iface.name,
-      serial_port: iface.serial_port,
-    })),
-  );
-  if (via === 'rf' || via === 'ble') return true;
-  return pathMediumFromInterfaceNameOrType(name) === 'rf' || classifyReticulumVia(name) === 'rf';
+  return interfaces.filter(isReticulumTopologyInterfaceRf).some((iface) => {
+    return exactRfInterfaceMatch(name, iface);
+  });
 }
 
 export function filterReticulumTopologyRfOnly<
@@ -54,23 +57,6 @@ export function filterReticulumTopologyRfOnly<
   P extends ReticulumTopologyRfPeer,
 >(interfaces: readonly I[], peers: readonly P[]): { interfaces: I[]; peers: P[] } {
   const rfInterfaces = interfaces.filter(isReticulumTopologyInterfaceRf);
-  const rfIdSet = new Set(rfInterfaces.map((iface) => iface.id));
-  const rfPeers = peers.filter((peer) => {
-    const needle = peer.interface?.trim();
-    if (!needle) return false;
-    const lower = needle.toLowerCase();
-    for (const iface of rfInterfaces) {
-      if (iface.name.toLowerCase() === lower || iface.id.toLowerCase() === lower) {
-        return rfIdSet.has(iface.id);
-      }
-    }
-    for (const iface of rfInterfaces) {
-      const name = iface.name.toLowerCase();
-      if (name.includes(lower) || lower.includes(name)) {
-        return rfIdSet.has(iface.id);
-      }
-    }
-    return false;
-  });
+  const rfPeers = peers.filter((peer) => isReticulumTopologyPeerRf(peer, rfInterfaces));
   return { interfaces: rfInterfaces, peers: rfPeers };
 }

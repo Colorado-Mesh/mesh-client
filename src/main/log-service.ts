@@ -410,8 +410,15 @@ export function isDroppableMeshtasticSdkLogLine(message: string): boolean {
  * Keep real application errors.
  */
 export function isDroppableRendererConsoleNoise(message: string): boolean {
-  return /ResizeObserver loop (completed with undelivered notifications|limit exceeded)\.?/i.test(
-    message,
+  let text = message.trim();
+  const violationPrefix = '[violation] ';
+  if (text.toLowerCase().startsWith(violationPrefix)) {
+    text = text.slice(violationPrefix.length).trim();
+  }
+  const body = (text.endsWith('.') ? text.slice(0, -1) : text).toLowerCase();
+  return (
+    body === 'resizeobserver loop completed with undelivered notifications' ||
+    body === 'resizeobserver loop limit exceeded'
   );
 }
 

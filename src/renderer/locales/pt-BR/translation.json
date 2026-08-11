@@ -3255,7 +3255,7 @@
     "resetView": "Resetar a visualização",
     "compactLeafCount": "{{count}} pares diretos compactos",
     "hiddenCountLimit": "Mostrando {{shown}} de {{total}} nós (limite {{limit}})",
-    "visibleNodeLimitNote": "O gráfico mostra no máximo nós {{distantLimit}} ({{nearbyLimit}} quando pares distantes estão ocultos)."
+    "visibleNodeLimitNote": "O grafo mostra no máximo {{distantLimit}} nós ({{nearbyLimit}} quando pares distantes estão ocultos)."
   },
   "peerListPanel": {
     "heading": "Pares",
@@ -4367,7 +4367,7 @@
     "glyphTcp": "Interface TCP",
     "glyphSerial": "Interface Serial",
     "hiddenCountLimit": "Mostrando {{shown}} de {{total}} nós (limite {{limit}})",
-    "visibleNodeLimitNote": "O gráfico mostra no máximo nós {{distantLimit}} ({{nearbyLimit}} quando pares distantes estão ocultos).",
+    "visibleNodeLimitNote": "O grafo mostra no máximo {{distantLimit}} nós ({{nearbyLimit}} quando pares distantes estão ocultos).",
     "rfOnly": "Apenas RF"
   },
   "rfHistograms": {

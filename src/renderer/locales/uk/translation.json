@@ -3257,7 +3257,7 @@
     "resetView": "Скинути перегляд",
     "compactLeafCount": "{{count}} компактні прямі однорангові вузли",
     "hiddenCountLimit": "Відображається {{shown}} з {{total}} вузлів (ліміт {{limit}})",
-    "visibleNodeLimitNote": "Графік показує щонайбільше {{distantLimit}} вузлів ({{nearbyLimit}}, коли приховані віддалені вузли)."
+    "visibleNodeLimitNote": "Граф показує щонайбільше {{distantLimit}} вузлів ({{nearbyLimit}}, коли приховані віддалені вузли)."
   },
   "peerListPanel": {
     "heading": "Вузли",
@@ -4369,7 +4369,7 @@
     "glyphTcp": "Інтерфейс TCP",
     "glyphSerial": "Послідовний інтерфейс",
     "hiddenCountLimit": "Відображається {{shown}} з {{total}} вузлів (ліміт {{limit}})",
-    "visibleNodeLimitNote": "Графік показує щонайбільше {{distantLimit}} вузлів ({{nearbyLimit}}, коли приховані віддалені вузли).",
+    "visibleNodeLimitNote": "Граф показує щонайбільше {{distantLimit}} вузлів ({{nearbyLimit}}, коли приховані віддалені вузли).",
     "rfOnly": "Лише RF"
   },
   "rfHistograms": {

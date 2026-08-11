@@ -320,6 +320,26 @@ describe('buildReticulumMeshTopologyGraph RF-only', () => {
     expect(graph.nodes[0]?.kind).toBe('self');
   });
 
+  it('keeps all 80 RF 1-hop peers with rfOnly, distant on, and maxHops 1', () => {
+    const tcpPeers = Array.from({ length: 80 }, (_, i) => ({
+      destination_hash: `tcp${i.toString(16).padStart(8, '0')}`,
+      hops: 1,
+      interface: 'RNS_Transport_US-East',
+    }));
+    const graph = buildReticulumMeshTopologyGraph(
+      [rnodeIface, tcpIface],
+      [...rfPeers(80, 1), ...tcpPeers],
+      {
+        selfLabel: 'You',
+        unassignedInterfaceLabel: 'Other paths',
+        filter: { includeDistantPeers: true, maxHops: 1, rfOnly: true },
+      },
+    );
+    expect(graph.nodes.filter((n) => n.kind === 'peer')).toHaveLength(80);
+    expect(graph.hiddenCount).toBe(0);
+    expect(graph.nodes.some((n) => n.id.startsWith('tcp'))).toBe(false);
+  });
+
   it('combines RF-only with maxHops', () => {
     const graph = buildReticulumMeshTopologyGraph(
       [rnodeIface, tcpIface],

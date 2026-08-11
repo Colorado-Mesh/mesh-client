@@ -1,8 +1,8 @@
-import { rrcRoomMatchKey } from '@/renderer/lib/rrcRoomName';
+import { RRC_HUB_STREAM_ROOM, rrcRoomMatchKey } from '@/renderer/lib/rrcRoomName';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
-/** Hub-scoped stream for inbound notices with no K_ROOM (must match RRC_HUB_STREAM_ROOM). */
-export const RRC_UNSCOPED_NOTICE_ROOM = '[hub]';
+/** @deprecated Use {@link RRC_HUB_STREAM_ROOM}. */
+export const RRC_UNSCOPED_NOTICE_ROOM = RRC_HUB_STREAM_ROOM;
 
 /**
  * Empty notice/system/error rows render as a lone IRC `*` — hide them.
@@ -29,12 +29,13 @@ export function shouldDropEmptyRrcInbound(kind: string, body: string): boolean {
  */
 export function resolveRrcInboundChatRoom(wireRoom: string | null | undefined): string {
   const room = wireRoom?.trim() ?? '';
-  return room || RRC_UNSCOPED_NOTICE_ROOM;
+  return room || RRC_HUB_STREAM_ROOM;
 }
 
 /**
  * First `/who` NOTICE per room join may appear in chat; later snapshots update the
  * nicklist only. `shownMatchKeys` holds `rrcRoomMatchKey` values already shown.
+ * Ingest must call `consumeWhoTranscriptSlot`, not this predicate alone.
  */
 export function shouldShowRrcWhoTranscript(
   shownMatchKeys: ReadonlySet<string>,

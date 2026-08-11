@@ -1,5 +1,6 @@
 import type { ReticulumPeerWireRow } from '@/shared/reticulum-types';
 
+import { normalizeLastHeardMs } from '../nodeStatus';
 import {
   filterReticulumTopologyRfOnly,
   type ReticulumTopologyRfInterface,
@@ -26,5 +27,13 @@ export function selectReticulumTopologyPeersForRender(
   const rfOnly = opts?.rfOnly === true;
   const selected = rfOnly ? filterReticulumTopologyRfOnly(interfaces, peers).peers : [...peers];
   if (selected.length <= cap) return selected;
-  return [...selected].sort((a, b) => (b.last_seen ?? 0) - (a.last_seen ?? 0)).slice(0, cap);
+  return [...selected]
+    .sort((a, b) => lastSeenRank(b.last_seen) - lastSeenRank(a.last_seen))
+    .slice(0, cap);
+}
+
+/** Newest-first ingest rank. Missing / NaN / non-positive last_seen sort as oldest. */
+export function lastSeenRank(value: number | null | undefined): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return 0;
+  return normalizeLastHeardMs(value);
 }

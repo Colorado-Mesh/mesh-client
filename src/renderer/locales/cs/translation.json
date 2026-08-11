@@ -3257,7 +3257,7 @@
     "resetView": "Přenastavit pohled",
     "compactLeafCount": "{{count}} kompaktní přímé protějšky",
     "hiddenCountLimit": "Zobrazeno {{shown}} z {{total}} uzlů (limit {{limit}})",
-    "visibleNodeLimitNote": "Graf zobrazuje nejvýše {{distantLimit}} uzlů ({{nearbyLimit}} při skrytí vzdálených vrstevníků)."
+    "visibleNodeLimitNote": "Graf zobrazuje nejvýše {{distantLimit}} uzlů ({{nearbyLimit}} při skrytí vzdálených peerů)."
   },
   "peerListPanel": {
     "heading": "Vazby",
@@ -4369,7 +4369,7 @@
     "glyphTcp": "Rozhraní TCP",
     "glyphSerial": "Sériové rozhraní",
     "hiddenCountLimit": "Zobrazeno {{shown}} z {{total}} uzlů (limit {{limit}})",
-    "visibleNodeLimitNote": "Graf zobrazuje nejvýše {{distantLimit}} uzlů ({{nearbyLimit}} při skrytí vzdálených vrstevníků).",
+    "visibleNodeLimitNote": "Graf zobrazuje nejvýše {{distantLimit}} uzlů ({{nearbyLimit}} při skrytí vzdálených peerů).",
     "rfOnly": "Pouze RF"
   },
   "rfHistograms": {

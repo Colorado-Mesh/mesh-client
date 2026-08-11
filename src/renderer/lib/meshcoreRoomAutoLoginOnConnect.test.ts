@@ -67,6 +67,26 @@ describe('meshcoreRoomAutoLoginReadyKey', () => {
     rooms.add(7);
     expect(meshcoreRoomAutoLoginReadyKey([7], (id) => rooms.has(id))).toBe('7');
   });
+
+  it('changes when a room pubkey hydrates', () => {
+    const rooms = new Set([7]);
+    const keys = new Set<number>();
+    expect(
+      meshcoreRoomAutoLoginReadyKey(
+        [7],
+        (id) => rooms.has(id),
+        (id) => keys.has(id),
+      ),
+    ).toBe('7');
+    keys.add(7);
+    expect(
+      meshcoreRoomAutoLoginReadyKey(
+        [7],
+        (id) => rooms.has(id),
+        (id) => keys.has(id),
+      ),
+    ).toBe('7:pk');
+  });
 });
 
 describe('runMeshcoreRoomAutoLoginSingleFlight', () => {
@@ -93,7 +113,7 @@ describe('runMeshcoreRoomAutoLoginSingleFlight', () => {
 
     release();
     await Promise.all([first, second]);
-    expect(started).toBe(1);
+    expect(started).toBe(2);
     expect(isMeshcoreRoomAutoLoginInFlight()).toBe(false);
   });
 
@@ -107,6 +127,53 @@ describe('runMeshcoreRoomAutoLoginSingleFlight', () => {
       started += 1;
       return Promise.resolve();
     });
+    expect(started).toBe(2);
+  });
+
+  it('re-runs after the in-flight pass when a later trigger arrived', async () => {
+    let started = 0;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const run = async (): Promise<void> => {
+      started += 1;
+      if (started === 1) await gate;
+    };
+
+    const first = runMeshcoreRoomAutoLoginSingleFlight(run);
+    const second = runMeshcoreRoomAutoLoginSingleFlight(run);
+    expect(started).toBe(1);
+    release();
+    await Promise.all([first, second]);
+    expect(started).toBe(2);
+  });
+
+  it('does not overlap run() bodies when reset during flight; queued trigger runs after', async () => {
+    let started = 0;
+    let inRun = 0;
+    let maxOverlap = 0;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const run = async (): Promise<void> => {
+      started += 1;
+      inRun += 1;
+      maxOverlap = Math.max(maxOverlap, inRun);
+      if (started === 1) await gate;
+      inRun -= 1;
+    };
+
+    const first = runMeshcoreRoomAutoLoginSingleFlight(run);
+    resetMeshcoreRoomAutoLoginSingleFlight();
+    const second = runMeshcoreRoomAutoLoginSingleFlight(run);
+    expect(first).toBe(second);
+    expect(started).toBe(1);
+
+    release();
+    await Promise.all([first, second]);
+    expect(maxOverlap).toBe(1);
     expect(started).toBe(2);
   });
 });

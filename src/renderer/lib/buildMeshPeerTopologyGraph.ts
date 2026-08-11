@@ -136,6 +136,7 @@ function filterMeshPeers(
   let filtered = peers.filter((peer) => {
     const hops = effectiveHops(peer);
     if (maxHops != null && hops != null && hops > maxHops) return false;
+    // Distant-off: LoRa 0–1 hop maps (direct RF / MQTT neighbors). Reticulum uses hops > 2.
     if (!includeDistant && hops != null && hops > 1) return false;
     return true;
   });

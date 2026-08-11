@@ -345,6 +345,7 @@ function filterMeshTopologyPeers(
   let filtered = peers.filter((peer) => {
     if (!peer.destination_hash) return false;
     if (maxHops != null && peer.hops != null && peer.hops > maxHops) return false;
+    // Distant-off: RNS hops 0–2 (on-interface / next hop). Mesh Graph uses hops > 1.
     if (!includeDistant && peer.hops != null && peer.hops > 2) return false;
     return true;
   });

@@ -120,6 +120,7 @@ export function resetMeshcoreWaitingMessagesDrainSchedule(): void {
     clearTimeout(debounceTimer);
     debounceTimer = null;
   }
+  silentBulkAttemptId += 1;
   resetMeshcoreSilentBulkBreaker();
 }
 

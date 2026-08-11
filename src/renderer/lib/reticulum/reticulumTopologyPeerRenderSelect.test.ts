@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  lastSeenRank,
   selectReticulumTopologyPeersForRender,
   TOPOLOGY_PEER_RENDER_CAP,
 } from './reticulumTopologyPeerRenderSelect';
@@ -47,5 +48,25 @@ describe('selectReticulumTopologyPeersForRender', () => {
     });
     expect(selected).toHaveLength(50);
     expect(selected.some((p) => p.destination_hash.startsWith('tcp'))).toBe(false);
+  });
+
+  it('ranks missing, NaN, and non-positive last_seen as oldest', () => {
+    expect(lastSeenRank(undefined)).toBe(0);
+    expect(lastSeenRank(null)).toBe(0);
+    expect(lastSeenRank(Number.NaN)).toBe(0);
+    expect(lastSeenRank(Number.POSITIVE_INFINITY)).toBe(0);
+    expect(lastSeenRank(0)).toBe(0);
+    expect(lastSeenRank(-1)).toBe(0);
+    expect(lastSeenRank(1_700_000_000_000)).toBeGreaterThan(0);
+  });
+
+  it('drops NaN last_seen rows before finite ones when slicing', () => {
+    const peers = [
+      peer('nan', 'RNS_Transport_US-East', Number.NaN),
+      ...Array.from({ length: 800 }, (_, i) => peer(`p${i}`, 'RNS_Transport_US-East', 1_000 + i)),
+    ];
+    const selected = selectReticulumTopologyPeersForRender(peers, [tcp], { rfOnly: false });
+    expect(selected).toHaveLength(TOPOLOGY_PEER_RENDER_CAP);
+    expect(selected.some((p) => p.destination_hash === 'nan')).toBe(false);
   });
 });

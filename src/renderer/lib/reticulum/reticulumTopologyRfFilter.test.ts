@@ -49,6 +49,21 @@ describe('isReticulumTopologyPeerRf', () => {
     expect(isReticulumTopologyPeerRf({ interface: 'unknown_iface' }, ifaces)).toBe(false);
     expect(isReticulumTopologyPeerRf({ interface: null }, ifaces)).toBe(false);
   });
+
+  it('does not keep a TCP path whose name merely contains an RF iface token', () => {
+    const ifaces = [{ id: 'rnode-1', name: 'RNode', type: 'rnode' }];
+    expect(isReticulumTopologyPeerRf({ interface: 'RNode' }, ifaces)).toBe(true);
+    expect(isReticulumTopologyPeerRf({ interface: 'RNode_TCP_East' }, ifaces)).toBe(false);
+  });
+
+  it('ignores empty and one-character interface names', () => {
+    const ifaces = [{ id: 'rnode-1', name: 'R', type: 'rnode' }];
+    expect(isReticulumTopologyPeerRf({ interface: 'Radio' }, ifaces)).toBe(false);
+    expect(isReticulumTopologyPeerRf({ interface: 'R' }, ifaces)).toBe(false);
+    expect(
+      isReticulumTopologyPeerRf({ interface: 'anything' }, [{ id: 'x', name: '', type: 'rnode' }]),
+    ).toBe(false);
+  });
 });
 
 describe('filterReticulumTopologyRfOnly', () => {
@@ -73,6 +88,17 @@ describe('filterReticulumTopologyRfOnly', () => {
       [{ destination_hash: 'orphan', interface: 'unknown_iface' }],
     );
     expect(peers).toEqual([]);
+  });
+
+  it('does not keep RNode_TCP_East when the RF iface is named RNode', () => {
+    const { peers } = filterReticulumTopologyRfOnly(
+      [{ id: 'rnode-1', name: 'RNode', type: 'rnode' }],
+      [
+        { destination_hash: 'rf', interface: 'RNode' },
+        { destination_hash: 'tcp', interface: 'RNode_TCP_East' },
+      ],
+    );
+    expect(peers.map((p) => p.destination_hash)).toEqual(['rf']);
   });
 
   it('returns no interfaces when nothing is RF', () => {

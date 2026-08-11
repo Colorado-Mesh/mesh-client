@@ -3255,7 +3255,7 @@
     "resetView": "Atur ulang tampilan",
     "compactLeafCount": "{{count}} rekan langsung ringkas",
     "hiddenCountLimit": "Menampilkan {{shown}} dari {{total}} node (batas {{limit}})",
-    "visibleNodeLimitNote": "Grafik menunjukkan paling banyak {{distantLimit}} node ({{nearbyLimit}} ketika rekan - rekan jauh disembunyikan)."
+    "visibleNodeLimitNote": "Graf menunjukkan paling banyak {{distantLimit}} node ({{nearbyLimit}} ketika rekan-rekan jauh disembunyikan)."
   },
   "peerListPanel": {
     "heading": "Peer",
@@ -4367,7 +4367,7 @@
     "glyphTcp": "Antarmuka TCP",
     "glyphSerial": "Antarmuka Serial",
     "hiddenCountLimit": "Menampilkan {{shown}} dari {{total}} node (batas {{limit}})",
-    "visibleNodeLimitNote": "Grafik menunjukkan paling banyak {{distantLimit}} node ({{nearbyLimit}} ketika rekan - rekan jauh disembunyikan).",
+    "visibleNodeLimitNote": "Graf menunjukkan paling banyak {{distantLimit}} node ({{nearbyLimit}} ketika rekan-rekan jauh disembunyikan).",
     "rfOnly": "RF saja"
   },
   "rfHistograms": {

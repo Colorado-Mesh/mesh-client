@@ -3254,8 +3254,8 @@
     "maxHopsOption": "{{count}} Hops",
     "resetView": "Ansicht zurücksetzen",
     "compactLeafCount": "{{count}} kompakte Direkt-Peers",
-    "hiddenCountLimit": "Anzeigen von {{shown}} von {{total}} Knoten (Limit {{limit}})",
-    "visibleNodeLimitNote": "Das Diagramm zeigt höchstens {{distantLimit}} Knoten ({{nearbyLimit}}, wenn entfernte Kollegen ausgeblendet sind)."
+    "hiddenCountLimit": "Anzeige von {{shown}} von {{total}} Knoten (Limit {{limit}})",
+    "visibleNodeLimitNote": "Der Graph zeigt höchstens {{distantLimit}} Knoten ({{nearbyLimit}}, wenn entfernte Peers ausgeblendet sind)."
   },
   "peerListPanel": {
     "heading": "Peers",
@@ -4366,8 +4366,8 @@
     "glyphWifi": "WLAN-Schnittstelle",
     "glyphLora": "LoRa-Schnittstelle",
     "glyphTcp": "TCP-Schnittstelle",
-    "hiddenCountLimit": "Anzeigen von {{shown}} von {{total}} Knoten (Limit {{limit}})",
-    "visibleNodeLimitNote": "Das Diagramm zeigt höchstens {{distantLimit}} Knoten ({{nearbyLimit}}, wenn entfernte Kollegen ausgeblendet sind).",
+    "hiddenCountLimit": "Anzeige von {{shown}} von {{total}} Knoten (Limit {{limit}})",
+    "visibleNodeLimitNote": "Der Graph zeigt höchstens {{distantLimit}} Knoten ({{nearbyLimit}}, wenn entfernte Peers ausgeblendet sind).",
     "rfOnly": "Nur RF"
   },
   "rfHistograms": {

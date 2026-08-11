@@ -3254,8 +3254,8 @@
     "maxHopsOption": "{{count}} hops",
     "resetView": "Görünümü sıfırla",
     "compactLeafCount": "{{count}} kompakt doğrudan eşler",
-    "hiddenCountLimit": "{{shown}}/{{total}} düğüm gösteriliyor (limit {{limit}})",
-    "visibleNodeLimitNote": "Grafikte en fazla {{distantLimit}} düğüm gösterilmektedir (uzaktaki eşler gizlendiğinde {{nearbyLimit}})."
+    "hiddenCountLimit": "{{shown}}/{{total}} düğüm gösteriliyor (sınır {{limit}})",
+    "visibleNodeLimitNote": "Çizgede en fazla {{distantLimit}} düğüm gösterilmektedir (uzaktaki eşler gizlendiğinde {{nearbyLimit}})."
   },
   "peerListPanel": {
     "heading": "Meslektaşlar",
@@ -4366,8 +4366,8 @@
     "glyphLora": "LoRa arayüzü",
     "glyphTcp": "TCP arayüzü",
     "glyphSerial": "Seri arayüz",
-    "hiddenCountLimit": "{{shown}}/{{total}} düğüm gösteriliyor (limit {{limit}})",
-    "visibleNodeLimitNote": "Grafikte en fazla {{distantLimit}} düğüm gösterilmektedir (uzaktaki eşler gizlendiğinde {{nearbyLimit}}).",
+    "hiddenCountLimit": "{{shown}}/{{total}} düğüm gösteriliyor (sınır {{limit}})",
+    "visibleNodeLimitNote": "Çizgede en fazla {{distantLimit}} düğüm gösterilmektedir (uzaktaki eşler gizlendiğinde {{nearbyLimit}}).",
     "rfOnly": "Sadece RF"
   },
   "rfHistograms": {

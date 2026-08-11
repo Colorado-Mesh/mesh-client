@@ -321,6 +321,13 @@ describe('resetMeshcoreWaitingMessagesDrainSchedule', () => {
     vi.useRealTimers();
   });
 
+  it('invalidates in-flight silent bulk attempts so late timeouts cannot trip the next connection', () => {
+    const id = beginMeshcoreSilentBulkAttempt();
+    expect(isMeshcoreSilentBulkAttemptCurrent(id)).toBe(true);
+    resetMeshcoreWaitingMessagesDrainSchedule();
+    expect(isMeshcoreSilentBulkAttemptCurrent(id)).toBe(false);
+  });
+
   it('cancels a pending debounced drain', async () => {
     const drain = vi.fn().mockResolvedValue(undefined);
 

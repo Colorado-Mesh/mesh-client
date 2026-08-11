@@ -3255,7 +3255,7 @@
     "resetView": "Weergave opnieuw instellen (reset)",
     "compactLeafCount": "{{count}} compacte directe collega's",
     "hiddenCountLimit": "Toont {{shown}} van {{total}} knooppunten (limiet {{limit}})",
-    "visibleNodeLimitNote": "Grafiek toont maximaal {{distantLimit}} knooppunten ({{nearbyLimit}} wanneer collega's op afstand verborgen zijn)."
+    "visibleNodeLimitNote": "De graaf toont maximaal {{distantLimit}} knooppunten ({{nearbyLimit}} wanneer verre peers verborgen zijn)."
   },
   "peerListPanel": {
     "heading": "Collega's",
@@ -4367,7 +4367,7 @@
     "glyphTcp": "TCP-interface",
     "glyphSerial": "Seriële interface",
     "hiddenCountLimit": "Toont {{shown}} van {{total}} knooppunten (limiet {{limit}})",
-    "visibleNodeLimitNote": "Grafiek toont maximaal {{distantLimit}} knooppunten ({{nearbyLimit}} wanneer collega's op afstand verborgen zijn).",
+    "visibleNodeLimitNote": "De graaf toont maximaal {{distantLimit}} knooppunten ({{nearbyLimit}} wanneer verre peers verborgen zijn).",
     "rfOnly": "Alleen RF"
   },
   "rfHistograms": {

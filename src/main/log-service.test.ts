@@ -429,6 +429,11 @@ describe('isDroppableRendererConsoleNoise', () => {
     const { isDroppableRendererConsoleNoise } = await import('./log-service');
     expect(isDroppableRendererConsoleNoise('Error sending packet 123')).toBe(false);
     expect(isDroppableRendererConsoleNoise('ResizeObserver is not defined')).toBe(false);
+    expect(
+      isDroppableRendererConsoleNoise(
+        'Send failed: ResizeObserver loop limit exceeded while laying out',
+      ),
+    ).toBe(false);
   });
 });
 

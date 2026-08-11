@@ -3255,7 +3255,7 @@
     "resetView": "Réinitialisation de Vue",
     "compactLeafCount": "{{count}} pairs directs compacts",
     "hiddenCountLimit": "Affichage de {{shown}} sur {{total}} nœuds (limite {{limit}})",
-    "visibleNodeLimitNote": "Le graphique montre au plus {{distantLimit}} nœuds ({{nearbyLimit}} lorsque des pairs distants sont masqués)."
+    "visibleNodeLimitNote": "Le graphe montre au plus {{distantLimit}} nœuds ({{nearbyLimit}} lorsque des pairs distants sont masqués)."
   },
   "peerListPanel": {
     "heading": "Pairs",
@@ -4367,7 +4367,7 @@
     "glyphTcp": "Interface TCP",
     "glyphSerial": "Interface série",
     "hiddenCountLimit": "Affichage de {{shown}} sur {{total}} nœuds (limite {{limit}})",
-    "visibleNodeLimitNote": "Le graphique montre au plus {{distantLimit}} nœuds ({{nearbyLimit}} lorsque des pairs distants sont masqués).",
+    "visibleNodeLimitNote": "Le graphe montre au plus {{distantLimit}} nœuds ({{nearbyLimit}} lorsque des pairs distants sont masqués).",
     "rfOnly": "RF uniquement"
   },
   "rfHistograms": {

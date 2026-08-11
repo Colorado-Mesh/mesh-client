@@ -171,7 +171,7 @@ import {
   parseRrcTopicNotice,
   parseRrcWhoNotice,
 } from '../lib/rrcNoticeParsers';
-import { rrcRoomsMatch } from '../lib/rrcRoomName';
+import { rrcRoomsMatch, rrcWhoNoticeJoinedRoom } from '../lib/rrcRoomName';
 import type { DeviceState, MeshNode } from '../lib/types';
 import { useBlockStore } from '../stores/blockStore';
 import { setConnection, useConnectionStore } from '../stores/connectionStore';
@@ -1164,8 +1164,18 @@ export function useReticulumRuntime(): ProtocolRuntime {
             const listed = parseRrcListNotice(p.body);
             if (listed) session.setListedRooms(listed, hubDestHash);
             const who = parseRrcWhoNotice(p.body);
+            const hubKey = hubDestHash?.toLowerCase();
+            const hubSession = hubKey ? session.sessionsByHub.get(hubKey) : undefined;
+            const whoRoom = who
+              ? rrcWhoNoticeJoinedRoom(
+                  who.room,
+                  hubDestHash ? (hubSession?.rooms.keys() ?? []) : session.rooms.keys(),
+                )
+              : null;
             // Full roster snapshot — replace so departed nicks disappear.
-            if (who) session.mergeRoomMembers(who.room, who.members, 'replace', hubDestHash);
+            if (who && whoRoom) {
+              session.mergeRoomMembers(whoRoom, who.members, 'replace', hubDestHash);
+            }
             const topic = parseRrcTopicNotice(p.body);
             if (topic) session.setRoomTopic(topic.room, topic.topic || null, hubDestHash);
             // rrcd may emit join-info NOTICE without a usable JOINED member list —
@@ -1184,11 +1194,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
               session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
             }
             // First `/who` snapshot may appear in the named room; later ones are nicklist-only.
-            if (who) {
-              if (!session.consumeWhoTranscriptSlot(who.room, hubDestHash)) {
+            if (who && whoRoom) {
+              if (!session.consumeWhoTranscriptSlot(whoRoom, hubDestHash)) {
                 return;
               }
-              room = who.room;
+              room = whoRoom;
             }
           }
 

@@ -636,4 +636,27 @@ describe('rrcSessionStore', () => {
     expect(store.markWhoRequested('general', hubA)).toBe(false);
     expect(store.consumeWhoTranscriptSlot('general', hubA)).toBe(false);
   });
+
+  it('releaseWhoRequested allows a later auto /who', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('general');
+    expect(store.markWhoRequested('general')).toBe(true);
+    expect(store.markWhoRequested('general')).toBe(false);
+    store.releaseWhoRequested('general');
+    expect(useRrcSessionStore.getState().markWhoRequested('general')).toBe(true);
+  });
+
+  it('shows a later /who NOTICE after reserveWhoTranscriptForce', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('general');
+    expect(store.consumeWhoTranscriptSlot('general')).toBe(true);
+    expect(store.consumeWhoTranscriptSlot('general')).toBe(false);
+    store.reserveWhoTranscriptForce('general');
+    expect(useRrcSessionStore.getState().consumeWhoTranscriptSlot('general')).toBe(true);
+    expect(useRrcSessionStore.getState().consumeWhoTranscriptSlot('general')).toBe(false);
+  });
 });

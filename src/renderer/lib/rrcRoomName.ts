@@ -6,6 +6,9 @@
  * keys collapse those spellings for favourites, sidebar dedupe, and join resolve.
  */
 
+/** Synthetic room key for hub-scoped NOTICE/ERROR with no K_ROOM. */
+export const RRC_HUB_STREAM_ROOM = '[hub]';
+
 /** Trim + lowercase only (preserves leading `#` / `@`). */
 export function normalizeRrcRoomName(room: string): string {
   return room.trim().toLowerCase();
@@ -24,6 +27,27 @@ export function rrcRoomMatchKey(room: string): string {
 
 export function rrcRoomsMatch(a: string, b: string): boolean {
   return rrcRoomMatchKey(a) === rrcRoomMatchKey(b);
+}
+
+/** Safe `/who` body token — rejects whitespace or extra slash (command injection). */
+export function rrcWhoCommandToken(room: string): string | null {
+  const token = rrcRoomMatchKey(room);
+  if (!token || token.startsWith('[') || token.startsWith('@') || /[\s/]/.test(token)) {
+    return null;
+  }
+  return token;
+}
+
+/** Apply a parsed `/who` NOTICE only to a room this hub has joined. */
+export function rrcWhoNoticeJoinedRoom(
+  parsedRoom: string,
+  joinedRoomNames: Iterable<string>,
+): string | null {
+  if (!rrcWhoCommandToken(parsedRoom)) return null;
+  for (const name of joinedRoomNames) {
+    if (rrcRoomsMatch(name, parsedRoom)) return name;
+  }
+  return null;
 }
 
 /**

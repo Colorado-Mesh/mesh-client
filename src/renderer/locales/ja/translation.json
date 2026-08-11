@@ -3254,8 +3254,8 @@
     "maxHopsOption": "{{count}}ホップ",
     "resetView": "ビューをリセット",
     "compactLeafCount": "{{count}}コンパクトダイレクトピア",
-    "hiddenCountLimit": "{{shown}}/{{total}}ノードを表示しています（制限{{limit}} ）",
-    "visibleNodeLimitNote": "グラフは、最大{{distantLimit}}ノードを示しています（離れたピアが非表示の場合は{{nearbyLimit}} ）。"
+    "hiddenCountLimit": "{{shown}}/{{total}}ノードを表示しています（制限{{limit}}）",
+    "visibleNodeLimitNote": "グラフは最大{{distantLimit}}ノードを示しています（離れたピアが非表示の場合は{{nearbyLimit}}）。"
   },
   "peerListPanel": {
     "heading": "ピア",
@@ -4366,8 +4366,8 @@
     "glyphLora": "LoRaインターフェース",
     "glyphTcp": "TCPインターフェース",
     "glyphSerial": "シリアル通信",
-    "hiddenCountLimit": "{{shown}}/{{total}}ノードを表示しています（制限{{limit}} ）",
-    "visibleNodeLimitNote": "グラフは、最大{{distantLimit}}ノードを示しています（離れたピアが非表示の場合は{{nearbyLimit}} ）。",
+    "hiddenCountLimit": "{{shown}}/{{total}}ノードを表示しています（制限{{limit}}）",
+    "visibleNodeLimitNote": "グラフは最大{{distantLimit}}ノードを示しています（離れたピアが非表示の場合は{{nearbyLimit}}）。",
     "rfOnly": "RFのみ"
   },
   "rfHistograms": {

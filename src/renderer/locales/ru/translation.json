@@ -3257,7 +3257,7 @@
     "resetView": "Сбросить Вид",
     "compactLeafCount": "{{count}} компактные прямые одноранговые узлы",
     "hiddenCountLimit": "Отображение {{shown}} из {{total}} узлов (лимит {{limit}})",
-    "visibleNodeLimitNote": "График показывает не более {{distantLimit}} узлов ({{nearbyLimit}}, когда удаленные одноранговые узлы скрыты)."
+    "visibleNodeLimitNote": "Граф показывает не более {{distantLimit}} узлов ({{nearbyLimit}}, когда скрыты удалённые пиры)."
   },
   "peerListPanel": {
     "heading": "Пиры",
@@ -4369,7 +4369,7 @@
     "glyphTcp": "Интерфейс TCP",
     "glyphSerial": "Последовательный интерфейс",
     "hiddenCountLimit": "Отображение {{shown}} из {{total}} узлов (лимит {{limit}})",
-    "visibleNodeLimitNote": "График показывает не более {{distantLimit}} узлов ({{nearbyLimit}}, когда удаленные одноранговые узлы скрыты).",
+    "visibleNodeLimitNote": "Граф показывает не более {{distantLimit}} узлов ({{nearbyLimit}}, когда скрыты удалённые пиры).",
     "rfOnly": "Только RF"
   },
   "rfHistograms": {

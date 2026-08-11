@@ -3258,8 +3258,8 @@
     "maxHopsOption": "{{count}} hops",
     "resetView": "Resetuj widok",
     "compactLeafCount": "{{count}} kompaktowych partnerów bezpośrednich",
-    "hiddenCountLimit": "Wyświetlanie węzłów {{shown}} z {{total}} (limit {{limit}})",
-    "visibleNodeLimitNote": "Wykres pokazuje maksymalnie {{distantLimit}} węzłów ({{nearbyLimit}}, gdy ukryte są odległe równorzędne węzły)."
+    "hiddenCountLimit": "Wyświetlanie {{shown}} z {{total}} węzłów (limit {{limit}})",
+    "visibleNodeLimitNote": "Graf pokazuje maksymalnie {{distantLimit}} węzłów ({{nearbyLimit}}, gdy ukryte są odległe węzły równorzędne)."
   },
   "peerListPanel": {
     "heading": "Partnerzy",
@@ -4370,8 +4370,8 @@
     "glyphLora": "Interfejs LoRa",
     "glyphTcp": "Interfejs TCP",
     "glyphSerial": "Transmisja szeregowa",
-    "hiddenCountLimit": "Wyświetlanie węzłów {{shown}} z {{total}} (limit {{limit}})",
-    "visibleNodeLimitNote": "Wykres pokazuje maksymalnie {{distantLimit}} węzłów ({{nearbyLimit}}, gdy ukryte są odległe równorzędne węzły).",
+    "hiddenCountLimit": "Wyświetlanie {{shown}} z {{total}} węzłów (limit {{limit}})",
+    "visibleNodeLimitNote": "Graf pokazuje maksymalnie {{distantLimit}} węzłów ({{nearbyLimit}}, gdy ukryte są odległe węzły równorzędne).",
     "rfOnly": "Tylko RF"
   },
   "rfHistograms": {
