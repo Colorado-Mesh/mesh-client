@@ -4,12 +4,13 @@
  * A single self-contained HTML document (no build step, no external assets): the
  * browser connects a WebSocket, receives `hello` dimensions, streams JPEG frames
  * into a canvas scaled to the window, and forwards pointer / wheel / keyboard
- * events back to the Electron main process. English-only (non-goal: i18n).
+ * events back to the Electron main process. English-only (non-goal: i18n) —
+ * `check:i18n` does not scan this surface; see docs/agents/i18n.md.
  *
  * Security: the page is served with a restrictive CSP (no remote origins, inline
  * script only) and is the only external surface besides `/health`. The token is
  * never embedded in HTML; it travels via the `/?token=` query (cookie) and the
- * WS handshake only.
+ * WS handshake only. Auth UX for missing tokens is `buildMissingTokenPageHtml`.
  */
 export function buildRemoteControlPageHtml(): string {
   return `<!doctype html>
@@ -17,7 +18,7 @@ export function buildRemoteControlPageHtml(): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; img-src 'self' data: blob:; style-src 'unsafe-inline';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; img-src 'self' data: blob:; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Mesh-Client — Remote</title>
 <style>
@@ -29,37 +30,24 @@ export function buildRemoteControlPageHtml(): string {
     background: rgba(15,23,42,0.85); color: #94a3b8; font-size: 12px; user-select: none; pointer-events: none; }
   #status.error { color: #f87171; }
   #status.live { color: #4ade80; }
-  form { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 12px;
-    align-items: center; justify-content: center; background: #0b1220; }
-  form h1 { margin: 0; font-size: 16px; }
-  form input { padding: 8px 10px; border-radius: 8px; border: 1px solid #334155;
-    background: #0f172a; color: #e2e8f0; min-width: 260px; }
-  form button { padding: 8px 18px; border-radius: 8px; border: 0; background: #16a34a;
-    color: #fff; cursor: pointer; }
 </style>
 </head>
 <body>
 <div id="wrap"><canvas id="screen" aria-label="Mesh-Client remote display"></canvas></div>
 <div id="status" role="status" aria-live="polite">Connecting\u2026</div>
-<form id="token-form" hidden>
-  <h1>Mesh-Client — Remote access is token-protected</h1>
-  <input id="token-input" type="password" autocomplete="off" aria-label="Access token" placeholder="Enter the access token">
-  <button type="submit">Connect</button>
-</form>
 <script>
 (function () {
   'use strict';
   var canvas = document.getElementById('screen');
   var ctx = canvas.getContext('2d');
   var statusEl = document.getElementById('status');
-  var tokenForm = document.getElementById('token-form');
-  var tokenInput = document.getElementById('token-input');
   var ws = null;
   var dims = null;
   var reconnectTimer = null;
   var connectedAt = 0;
   var framesSinceReport = 0;
   var fpsTimer = null;
+  var stopReconnect = false;
 
   function setStatus(text, cls) {
     statusEl.textContent = text;
@@ -76,13 +64,8 @@ export function buildRemoteControlPageHtml(): string {
     return url;
   }
 
-  function showTokenPrompt() {
-    setStatus('Token required');
-    tokenForm.hidden = false;
-    tokenInput.focus();
-  }
-
   function connect() {
+    if (stopReconnect) return;
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
     clearTimeout(reconnectTimer);
     setStatus('Connecting\u2026');
@@ -112,6 +95,11 @@ export function buildRemoteControlPageHtml(): string {
 
     ws.onclose = function (ev) {
       ws = null;
+      if (ev.code === 1008 || ev.code === 4401) {
+        stopReconnect = true;
+        setStatus('Unauthorized \u2014 reload with a valid token', 'error');
+        return;
+      }
       setStatus('Disconnected (code ' + ev.code + ') \u2014 retrying', 'error');
       scheduleReconnect();
     };
@@ -122,6 +110,7 @@ export function buildRemoteControlPageHtml(): string {
   }
 
   function scheduleReconnect() {
+    if (stopReconnect) return;
     clearTimeout(reconnectTimer);
     reconnectTimer = setTimeout(connect, 2500);
   }
@@ -141,8 +130,6 @@ export function buildRemoteControlPageHtml(): string {
       fitCanvas();
       setStatus('Connected \u2014 ' + dims.width + 'x' + dims.height, 'live');
       startFpsReport();
-    } else if (msg && msg.type === 'status') {
-      if (dims) setStatus('Live \u2014 renderer ' + (msg.rendererLoaded ? 'ready' : 'loading'), 'live');
     }
   }
 
@@ -179,16 +166,13 @@ export function buildRemoteControlPageHtml(): string {
     canvas.style.height = Math.floor(dims.height * scale) + 'px';
   }
 
-  function logicalPos(clientX, clientY) {
-    var r = canvas.getBoundingClientRect();
-    var sx = dims ? dims.width / r.width : 1;
-    var sy = dims ? dims.height / r.height : 1;
-    return { x: Math.round((clientX - r.left) * sx), y: Math.round((clientY - r.top) * sy) };
-  }
-
   function send(msg) {
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(msg));
+      try {
+        ws.send(JSON.stringify(msg));
+      } catch (err) {
+        // catch-no-log-ok transient send failure; reconnect path handles teardown
+      }
     }
   }
 
@@ -222,6 +206,13 @@ export function buildRemoteControlPageHtml(): string {
     e.preventDefault();
   }, { passive: false });
 
+  function logicalPos(clientX, clientY) {
+    var r = canvas.getBoundingClientRect();
+    var sx = dims ? dims.width / r.width : 1;
+    var sy = dims ? dims.height / r.height : 1;
+    return { x: Math.round((clientX - r.left) * sx), y: Math.round((clientY - r.top) * sy) };
+  }
+
   function modifiersFromEvent(e) {
     var out = [];
     if (e.ctrlKey) out.push('ctrl');
@@ -239,13 +230,6 @@ export function buildRemoteControlPageHtml(): string {
   window.addEventListener('keyup', function (e) {
     send({ type: 'keyup', key: e.key, code: e.code, modifiers: modifiersFromEvent(e) });
     e.preventDefault();
-  });
-
-  tokenForm.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var token = tokenInput.value.trim();
-    if (!token) return;
-    location.href = location.pathname + '?token=' + encodeURIComponent(token);
   });
 
   window.addEventListener('resize', fitCanvas);
@@ -276,7 +260,7 @@ export function buildMissingTokenPageHtml(): string {
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'">
 <title>Mesh-Client — Token required</title>
 <style> body { margin: 0; height: 100vh; display: flex; flex-direction: column; gap: 12px;
   align-items: center; justify-content: center; background: #0b1220; color: #cbd5e1;
@@ -288,7 +272,7 @@ export function buildMissingTokenPageHtml(): string {
 <body>
 <form method="get" action="/">
   <label for="token">This Mesh-Client is token-protected. Enter the access token to continue.</label>
-  <input id="token" name="token" type="password" autocomplete="off">
+  <input id="token" name="token" type="password" autocomplete="off" aria-label="Access token">
   <button type="submit">Connect</button>
 </form>
 </body>

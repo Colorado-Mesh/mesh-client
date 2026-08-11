@@ -187,6 +187,8 @@ Do not use `npm install`; it will create a `package-lock.json` and may not respe
 
 Container mode runs GitHub Actions jobs inside Linux containers using a Docker-compatible engine (Podman preferred). Host mode runs the same pnpm/cargo steps directly — use this when no container engine is available or act cannot reach the daemon. `pnpm run check:environment` warns if no container engine or act is missing but does not block commits. Use **native** scripts when no Docker-compatible engine is available or act cannot reach the daemon.
 
+**Note:** The product **headless server** [`Dockerfile`](../Dockerfile) (Xvfb + remote HTTP/WS) is separate from act/Podman CI containers. CI does not currently build or publish `mesh-client-headless`; see [headless-server.md](headless-server.md).
+
 **macOS note:** [Podman Desktop](https://podman.io/) is the preferred Docker-compatible engine for local CI. When Docker compatibility is enabled, Podman exposes a Docker-compatible socket at `/var/run/docker.sock`; pass that path to `act` via `ACT_DOCKER_SOCKET`, or let `act` detect it automatically if Podman created the symlink. If you use Docker Desktop instead, its socket is typically under `~/.docker/run/docker.sock`.
 
 Install act (container mode only):

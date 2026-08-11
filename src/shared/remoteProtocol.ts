@@ -1,31 +1,23 @@
 /**
  * Wire protocol for headless server mode (issue #824).
  *
- * JSON text frames carry control traffic (auth, hello, status, input); JPEG
- * frames travel as single binary WebSocket messages. Types are shared so the
+ * JSON text frames carry control traffic (auth, hello, input); JPEG frames
+ * travel as single binary WebSocket messages. Types are shared so the
  * main-process server and tests agree on the exact shape.
  */
 
-/** Control-page request authentication state used by the page itself. */
-export type HeadlessAuthMode = 'open' | 'token';
+/** Max length for key / code / char wire strings (DoS guard before Electron inject). */
+export const HEADLESS_INPUT_STRING_MAX = 64;
 
 /** Server → client control frames (JSON text). */
-export type ServerControlMessage =
-  | {
-      type: 'hello';
-      sessionId: string;
-      width: number;
-      height: number;
-      fps: number;
-      jpegQuality: number;
-    }
-  | {
-      type: 'status';
-      ready: boolean;
-      rendererLoaded: boolean;
-      connectedSockets: number;
-      uptimeSec: number;
-    };
+export interface ServerControlMessage {
+  type: 'hello';
+  sessionId: string;
+  width: number;
+  height: number;
+  fps: number;
+  jpegQuality: number;
+}
 
 /** Client → server control frames (JSON text). */
 export type ClientInputMessage =
@@ -44,6 +36,14 @@ export type HeadlessMouseButton = (typeof HEADLESS_MOUSE_BUTTONS)[number];
 export const HEADLESS_INPUT_MODIFIERS = ['ctrl', 'alt', 'shift', 'meta'] as const;
 export type HeadlessInputModifier = (typeof HEADLESS_INPUT_MODIFIERS)[number];
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function isBoundedString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0 && value.length <= HEADLESS_INPUT_STRING_MAX;
+}
+
 /** Guard: reject non-object control frames with unknown/dangerous shapes. */
 export function isClientInputMessage(value: unknown): value is ClientInputMessage {
   if (!value || typeof value !== 'object') return false;
@@ -51,37 +51,35 @@ export function isClientInputMessage(value: unknown): value is ClientInputMessag
   const type = msg.type;
   switch (type) {
     case 'mousemove':
-      return (
-        typeof msg.x === 'number' && typeof msg.y === 'number' && typeof msg.buttons === 'number'
-      );
+      return isFiniteNumber(msg.x) && isFiniteNumber(msg.y) && isFiniteNumber(msg.buttons);
     case 'mousedown':
     case 'mouseup':
       return (
-        typeof msg.x === 'number' &&
-        typeof msg.y === 'number' &&
+        isFiniteNumber(msg.x) &&
+        isFiniteNumber(msg.y) &&
         (HEADLESS_MOUSE_BUTTONS as readonly string[]).includes(String(msg.button))
       );
     case 'wheel':
       return (
-        typeof msg.x === 'number' &&
-        typeof msg.y === 'number' &&
-        typeof msg.deltaX === 'number' &&
-        typeof msg.deltaY === 'number'
+        isFiniteNumber(msg.x) &&
+        isFiniteNumber(msg.y) &&
+        isFiniteNumber(msg.deltaX) &&
+        isFiniteNumber(msg.deltaY)
       );
     case 'keydown':
     case 'keyup':
       return (
-        typeof msg.key === 'string' &&
-        typeof msg.code === 'string' &&
+        isBoundedString(msg.key) &&
+        isBoundedString(msg.code) &&
         Array.isArray(msg.modifiers) &&
         msg.modifiers.every((m) =>
           (HEADLESS_INPUT_MODIFIERS as readonly string[]).includes(String(m)),
         )
       );
     case 'char':
-      return typeof msg.char === 'string' && msg.char.length > 0;
+      return isBoundedString(msg.char);
     case 'resize':
-      return typeof msg.width === 'number' && typeof msg.height === 'number';
+      return isFiniteNumber(msg.width) && isFiniteNumber(msg.height);
     default:
       return false;
   }

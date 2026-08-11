@@ -14,11 +14,13 @@
 #      Keep only ONE architecture's .deb in the context (x64 -> linux/amd64,
 #      arm64 -> linux/arm64).
 #
-# Run:
+# Run (MESH_CLIENT_REMOTE_TOKEN is required when binding 0.0.0.0):
 #   docker run -d --name mesh-client -p 8000:8000 \
 #     -e MESH_CLIENT_REMOTE_TOKEN=sekrit \
 #     mesh-client-headless
 #   open http://<container-host-ip>:8000/?token=sekrit
+#
+# See docs/headless-server.md for env vars, security, and reverse-proxy TLS.
 #
 # Optional: attach LoRa radios over USB serial / BLE -
 #   docker run ... --device=/dev/ttyUSB0 --privileged mesh-client-headless

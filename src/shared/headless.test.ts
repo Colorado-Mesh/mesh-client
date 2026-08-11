@@ -2,15 +2,18 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  formatViewport,
   getHeadlessRemoteConfig,
   HEADLESS_FPS_MAX,
   HEADLESS_FPS_MIN,
   HEADLESS_HOST_DEFAULT,
+  HEADLESS_JPEG_QUALITY_MAX,
   HEADLESS_JPEG_QUALITY_MIN,
   HEADLESS_PORT_DEFAULT,
   HEADLESS_VIEWPORT_HEIGHT_DEFAULT,
   HEADLESS_VIEWPORT_WIDTH_DEFAULT,
   HEADLESS_WS_HEARTBEAT_SEC_DEFAULT,
+  headlessBindRequiresToken,
   isDockerContainer,
   isHeadlessServerMode,
   parseBooleanEnv,
@@ -137,6 +140,7 @@ describe('getHeadlessRemoteConfig defaults', () => {
 describe('parseViewportSize', () => {
   it('parses WxH', () => {
     expect(parseViewportSize('1920x1080', 1280, 800)).toEqual({ width: 1920, height: 1080 });
+    expect(parseViewportSize('1920X1080', 1280, 800)).toEqual({ width: 1920, height: 1080 });
   });
 
   it('rejects non-numeric, zero, huge, or malformed sizes', () => {
@@ -145,5 +149,35 @@ describe('parseViewportSize', () => {
     expect(parseViewportSize('100x', 1, 2)).toEqual({ width: 1, height: 2 });
     expect(parseViewportSize('100x200x300', 1, 2)).toEqual({ width: 1, height: 2 });
     expect(parseViewportSize('20000x20000', 1, 2)).toEqual({ width: 1, height: 2 });
+  });
+});
+
+describe('formatViewport / headlessBindRequiresToken', () => {
+  it('formats WxH', () => {
+    expect(formatViewport(1280, 800)).toBe('1280x800');
+  });
+
+  it('requires a token for non-loopback binds', () => {
+    expect(headlessBindRequiresToken('0.0.0.0')).toBe(true);
+    expect(headlessBindRequiresToken('192.168.1.10')).toBe(true);
+    expect(headlessBindRequiresToken('')).toBe(true);
+    expect(headlessBindRequiresToken('127.0.0.1')).toBe(false);
+    expect(headlessBindRequiresToken('localhost')).toBe(false);
+    expect(headlessBindRequiresToken('::1')).toBe(false);
+  });
+
+  it('clamps jpeg quality and heartbeat extremes', () => {
+    const high = getHeadlessRemoteConfig({
+      MESH_CLIENT_REMOTE_JPEG_QUALITY: '200',
+      MESH_CLIENT_REMOTE_WS_HEARTBEAT_SEC: '999',
+    });
+    expect(high.jpegQuality).toBe(HEADLESS_JPEG_QUALITY_MAX);
+    expect(high.wsHeartbeatSec).toBe(300);
+    const low = getHeadlessRemoteConfig({
+      MESH_CLIENT_REMOTE_WS_HEARTBEAT_SEC: '0',
+      MESH_CLIENT_REMOTE_HOST: '   ',
+    });
+    expect(low.wsHeartbeatSec).toBe(1);
+    expect(low.host).toBe(HEADLESS_HOST_DEFAULT);
   });
 });

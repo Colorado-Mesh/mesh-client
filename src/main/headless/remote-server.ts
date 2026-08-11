@@ -5,8 +5,16 @@ import type { Duplex } from 'stream';
 import WebSocket, { WebSocketServer } from 'ws';
 
 import {
+  HEADLESS_AUTH_FAIL_MAX,
+  HEADLESS_AUTH_FAIL_WINDOW_MS,
+  HEADLESS_INPUT_RATE_MAX,
+  HEADLESS_INPUT_RATE_WINDOW_MS,
+  HEADLESS_MAX_WS_CLIENTS,
   HEADLESS_REMOTE_COOKIE_NAME,
+  HEADLESS_STOP_TIMEOUT_MS,
+  HEADLESS_WS_MAX_PAYLOAD_BYTES,
   HEADLESS_WS_PATH,
+  headlessBindRequiresToken,
   type HeadlessRemoteConfig,
 } from '../../shared/headless';
 import {
@@ -161,24 +169,59 @@ export function toSendInputEvent(
   }
 }
 
-function parseCookie(header: string): Record<string, string> {
+/** Parse Cookie header; values are URI-decoded to match `encodeURIComponent` on Set-Cookie. */
+export function parseCookie(header: string): Record<string, string> {
   const out: Record<string, string> = {};
   for (const part of header.split(';')) {
     const idx = part.indexOf('=');
     if (idx === -1) continue;
     const key = part.slice(0, idx).trim();
-    const value = part.slice(idx + 1).trim();
-    if (key) out[key] = value;
+    const raw = part.slice(idx + 1).trim();
+    if (!key) continue;
+    try {
+      out[key] = decodeURIComponent(raw);
+    } catch {
+      // catch-no-log-ok malformed percent-encoding; keep raw so wrong cookies fail closed
+      out[key] = raw;
+    }
   }
   return out;
 }
 
-/** Constant-time token comparison (defeats length/timing probes on the shared gate token). */
-function tokenMatches(candidate: string, expected: string): boolean {
-  const a = Buffer.from(candidate);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length) return false;
+/** Constant-time token comparison via SHA-256 digests (hides length). */
+export function tokenMatches(candidate: string, expected: string): boolean {
+  const a = createHash('sha256').update(candidate).digest();
+  const b = createHash('sha256').update(expected).digest();
   return timingSafeEqual(a, b);
+}
+
+function extractRequestTokens(
+  req: IncomingMessage,
+  url: URL,
+): { queryToken: string; cookieToken: string } {
+  const queryToken = url.searchParams.get('token') ?? '';
+  const cookieToken = parseCookie(req.headers.cookie ?? '')[HEADLESS_REMOTE_COOKIE_NAME] ?? '';
+  return { queryToken, cookieToken };
+}
+
+/** True when the request carries a matching query or cookie token (or gate is disabled). */
+export function authorizeRemoteRequest(
+  req: IncomingMessage,
+  url: URL,
+  expectedToken: string,
+): boolean {
+  if (!expectedToken) return true;
+  const { queryToken, cookieToken } = extractRequestTokens(req, url);
+  return tokenMatches(queryToken, expectedToken) || tokenMatches(cookieToken, expectedToken);
+}
+
+function safeParseUrl(reqUrl: string | undefined): URL | null {
+  try {
+    return new URL(reqUrl ?? '/', 'http://localhost');
+  } catch {
+    // catch-no-log-ok malformed request target
+    return null;
+  }
 }
 
 interface HeadlessRemoteServerStartOpts {
@@ -186,19 +229,28 @@ interface HeadlessRemoteServerStartOpts {
   captureIntervalMs?: number;
 }
 
+type AliveSocket = WebSocket & { isAlive?: boolean };
+
 export class HeadlessRemoteServer {
   private win: HeadlessTargetWindow | null = null;
   private config: HeadlessRemoteConfig | null = null;
   private httpServer: Server | null = null;
   private wss: WebSocketServer | null = null;
   private readonly sockets = new Set<WebSocket>();
+  /** First connected socket may inject input; others are view-only until it leaves. */
+  private controllerSocket: WebSocket | null = null;
   private captureTimer: ReturnType<typeof setInterval> | null = null;
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private captureInFlight = false;
+  private captureInFlightPromise: Promise<void> | null = null;
   private lastSignature: string | null = null;
   private sessionId = '';
   private running = false;
+  private starting = false;
+  private startGeneration = 0;
   private readonly encoder: FrameEncoder;
+  private readonly failedAuthPeers = new Map<string, { count: number; resetAt: number }>();
+  private readonly inputTimestamps = new WeakMap<WebSocket, number[]>();
 
   constructor(encoder: FrameEncoder = jpegBitmapFrameEncoder) {
     this.encoder = encoder;
@@ -220,42 +272,88 @@ export class HeadlessRemoteServer {
     return null;
   }
 
+  /** Rebind the capture/input target after a window recreate (same HTTP/WS listeners). */
+  setTargetWindow(win: HeadlessTargetWindow): void {
+    this.win = win;
+  }
+
   /** Bind the HTTP server (empty `config.port` = ephemeral). Resolves false on bind failure. */
   start(
     win: HeadlessTargetWindow,
     config: HeadlessRemoteConfig,
     opts: HeadlessRemoteServerStartOpts = {},
   ): Promise<boolean> {
-    if (this.running) {
-      console.debug('[headless] remote server already running; start ignored');
+    if (this.running || this.starting) {
+      console.debug('[headless] remote server already running or starting; start ignored');
       return Promise.resolve(false);
     }
+    if (headlessBindRequiresToken(config.host) && !config.token) {
+      console.error(
+        '[headless] remote access secret env is required when binding to a non-loopback host',
+        sanitizeLogMessage(config.host),
+      );
+      return Promise.resolve(false);
+    }
+
+    this.starting = true;
     this.win = win;
     this.config = config;
     this.sessionId = randomUUID();
     this.captureTimer = null;
+    this.lastSignature = null;
     const captureIntervalMs = opts.captureIntervalMs ?? Math.max(1, Math.round(1000 / config.fps));
+    const generation = ++this.startGeneration;
 
     return new Promise<boolean>((resolve) => {
+      let settled = false;
+      const settle = (ok: boolean): void => {
+        if (settled) return;
+        settled = true;
+        this.starting = false;
+        resolve(ok);
+      };
+
       const httpServer = createServer((req, res) => {
         this.handleHttpRequest(req, res);
       });
-      httpServer.on('error', (err) => {
+      this.httpServer = httpServer;
+
+      const onListenError = (err: Error): void => {
+        if (settled || generation !== this.startGeneration) return;
         this.running = false;
+        this.starting = false;
         console.error(
           '[headless] remote server failed to bind',
           sanitizeLogMessage(`${config.host}:${config.port}`),
-          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+          sanitizeLogMessage(err.message),
         );
+        try {
+          wss.close();
+        } catch {
+          // catch-no-log-ok wss never accepted connections
+        }
         try {
           httpServer.close();
         } catch {
           // catch-no-log-ok server never started listening
         }
-        resolve(false);
-      });
+        if (this.httpServer === httpServer) {
+          this.httpServer = null;
+          this.wss = null;
+          this.win = null;
+          this.config = null;
+        }
+        settle(false);
+      };
 
-      const wss = new WebSocketServer({ noServer: true, perMessageDeflate: false });
+      httpServer.once('error', onListenError);
+
+      const wss = new WebSocketServer({
+        noServer: true,
+        perMessageDeflate: false,
+        maxPayload: HEADLESS_WS_MAX_PAYLOAD_BYTES,
+      });
+      this.wss = wss;
       wss.on('connection', (socket, req) => {
         this.handleSocket(socket, req);
       });
@@ -264,11 +362,20 @@ export class HeadlessRemoteServer {
       });
 
       httpServer.listen(config.port, config.host, () => {
+        if (generation !== this.startGeneration) {
+          try {
+            httpServer.close();
+          } catch {
+            // catch-no-log-ok superseded start
+          }
+          settle(false);
+          return;
+        }
+        httpServer.off('error', onListenError);
         const address = httpServer.address();
         const actualPort = typeof address === 'object' && address ? address.port : config.port;
-        this.httpServer = httpServer;
-        this.wss = wss;
         this.running = true;
+        this.starting = false;
         const safeDescription = config.token
           ? '[headless] remote server listening (token gate enabled)'
           : '[headless] remote server listening (no token gate)';
@@ -278,48 +385,75 @@ export class HeadlessRemoteServer {
         this.startCaptureLoop(captureIntervalMs);
         this.startHeartbeat(config.wsHeartbeatSec);
         console.debug('[headless] capture interval ms =', captureIntervalMs);
-        resolve(true);
+        settle(true);
       });
     });
   }
 
   /** Close HTTP/WS servers and clear timers. Idempotent; safe to call on a never-started instance. */
   async stop(): Promise<void> {
-    if (!this.httpServer && !this.wss && this.sockets.size === 0) {
-      this.running = false;
-      return;
-    }
+    this.startGeneration += 1;
+    this.starting = false;
     this.running = false;
     this.stopCaptureLoop();
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = null;
     }
+    if (this.captureInFlightPromise) {
+      await Promise.race([
+        this.captureInFlightPromise,
+        new Promise<void>((resolve) => {
+          setTimeout(resolve, HEADLESS_STOP_TIMEOUT_MS).unref?.();
+        }),
+      ]);
+    }
     for (const socket of this.sockets) {
       try {
-        socket.close(1001, 'server stopping');
+        socket.terminate();
       } catch {
         // catch-no-log-ok socket already closing
       }
     }
     this.sockets.clear();
-    try {
-      this.wss?.close();
-    } catch {
-      // catch-no-log-ok wss already closed
+    this.controllerSocket = null;
+    const wss = this.wss;
+    this.wss = null;
+    if (wss) {
+      await Promise.race([
+        new Promise<void>((resolveClose) => {
+          wss.close(() => {
+            resolveClose();
+          });
+        }),
+        new Promise<void>((resolve) => {
+          setTimeout(resolve, HEADLESS_STOP_TIMEOUT_MS).unref?.();
+        }),
+      ]);
     }
     const httpServer = this.httpServer;
     this.httpServer = null;
     if (httpServer) {
-      await new Promise<void>((resolveClose) => {
-        httpServer.close(() => {
-          resolveClose();
-        });
-      });
+      try {
+        httpServer.closeAllConnections?.();
+      } catch {
+        // catch-no-log-ok older Node without closeAllConnections
+      }
+      await Promise.race([
+        new Promise<void>((resolveClose) => {
+          httpServer.close(() => {
+            resolveClose();
+          });
+        }),
+        new Promise<void>((resolve) => {
+          setTimeout(resolve, HEADLESS_STOP_TIMEOUT_MS).unref?.();
+        }),
+      ]);
     }
-    this.wss = null;
     this.win = null;
+    this.config = null;
     this.lastSignature = null;
+    this.failedAuthPeers.clear();
     console.debug('[headless] remote server stopped');
   }
 
@@ -329,22 +463,27 @@ export class HeadlessRemoteServer {
     const win = this.win;
     if (!win || win.webContents.isDestroyed()) return;
     this.captureInFlight = true;
-    try {
-      const image = await win.webContents.capturePage();
-      if (image.isEmpty()) return;
-      const signature = this.encoder.signature(image);
-      if (signature === this.lastSignature) return;
-      const jpeg = this.encoder.encode(image, this.config?.jpegQuality ?? 70);
-      this.lastSignature = signature;
-      this.broadcastBinary(jpeg);
-    } catch (err) {
-      console.debug(
-        '[headless] frame capture failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-    } finally {
-      this.captureInFlight = false;
-    }
+    const work = (async (): Promise<void> => {
+      try {
+        const image = await win.webContents.capturePage();
+        if (image.isEmpty()) return;
+        const signature = this.encoder.signature(image);
+        if (signature === this.lastSignature) return;
+        const jpeg = this.encoder.encode(image, this.config?.jpegQuality ?? 70);
+        this.lastSignature = signature;
+        this.broadcastBinary(jpeg);
+      } catch (err) {
+        console.debug(
+          '[headless] frame capture failed:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+      } finally {
+        this.captureInFlight = false;
+        this.captureInFlightPromise = null;
+      }
+    })();
+    this.captureInFlightPromise = work;
+    await work;
   }
 
   private startCaptureLoop(intervalMs: number): void {
@@ -365,8 +504,20 @@ export class HeadlessRemoteServer {
   private startHeartbeat(intervalSec: number): void {
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
     this.heartbeatTimer = setInterval(() => {
-      for (const socket of this.sockets) {
-        const aliveCheck = socket as WebSocket & { isAlive?: boolean };
+      for (const socket of [...this.sockets]) {
+        const aliveCheck = socket as AliveSocket;
+        if (aliveCheck.isAlive === false) {
+          try {
+            socket.terminate();
+          } catch {
+            // catch-no-log-ok already closing
+          }
+          this.sockets.delete(socket);
+          if (this.controllerSocket === socket) {
+            this.controllerSocket = this.sockets.values().next().value ?? null;
+          }
+          continue;
+        }
         aliveCheck.isAlive = false;
         try {
           socket.ping();
@@ -393,33 +544,98 @@ export class HeadlessRemoteServer {
     }
   }
 
+  private peerKey(req: IncomingMessage): string {
+    return req.socket.remoteAddress ?? 'unknown';
+  }
+
+  /** Returns true when this peer should be silently dropped (rate limited). */
+  private noteAuthFailure(peerKey: string): boolean {
+    const now = Date.now();
+    for (const [key, entry] of this.failedAuthPeers) {
+      if (now >= entry.resetAt) this.failedAuthPeers.delete(key);
+    }
+    const prior = this.failedAuthPeers.get(peerKey);
+    if (!prior || now >= prior.resetAt) {
+      this.failedAuthPeers.set(peerKey, {
+        count: 1,
+        resetAt: now + HEADLESS_AUTH_FAIL_WINDOW_MS,
+      });
+      return false;
+    }
+    prior.count += 1;
+    return prior.count > HEADLESS_AUTH_FAIL_MAX;
+  }
+
+  private allowInput(socket: WebSocket): boolean {
+    const now = Date.now();
+    let stamps = this.inputTimestamps.get(socket);
+    if (!stamps) {
+      stamps = [];
+      this.inputTimestamps.set(socket, stamps);
+    }
+    const cutoff = now - HEADLESS_INPUT_RATE_WINDOW_MS;
+    while (stamps.length > 0) {
+      const oldest = stamps[0];
+      if (oldest === undefined || oldest >= cutoff) break;
+      stamps.shift();
+    }
+    if (stamps.length >= HEADLESS_INPUT_RATE_MAX) return false;
+    stamps.push(now);
+    return true;
+  }
+
   private handleHttpRequest(req: IncomingMessage, res: ServerResponse): void {
-    const url = new URL(req.url ?? '/', 'http://localhost');
-    if (url.pathname === '/health') {
-      const ready = this.running;
-      const rendererLoaded = ready ? !this.win?.webContents.isLoading() : false;
-      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(remoteHealthJson(ready, rendererLoaded, Math.floor(process.uptime())));
-      return;
+    try {
+      const url = safeParseUrl(req.url);
+      if (!url) {
+        res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('Bad request');
+        return;
+      }
+      if (url.pathname === '/health') {
+        const ready = this.running;
+        const win = this.win;
+        const rendererLoaded =
+          ready && win && !win.webContents.isDestroyed() ? !win.webContents.isLoading() : false;
+        res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+        res.end(remoteHealthJson(ready, rendererLoaded, Math.floor(process.uptime())));
+        return;
+      }
+      if (url.pathname === '/') {
+        this.serveControlPage(req, res, url);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('Not found');
+    } catch (err) {
+      console.debug(
+        '[headless] HTTP handler error:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      try {
+        res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('Internal error');
+      } catch {
+        // catch-no-log-ok response already started
+      }
     }
-    if (url.pathname === '/') {
-      this.serveControlPage(req, res, url);
-      return;
-    }
-    res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
-    res.end('Not found');
   }
 
   private serveControlPage(req: IncomingMessage, res: ServerResponse, url: URL): void {
     const token = this.config?.token ?? '';
     if (token) {
-      const queryToken = url.searchParams.get('token') ?? '';
-      const cookieToken = parseCookie(req.headers.cookie ?? '')[HEADLESS_REMOTE_COOKIE_NAME] ?? '';
-      if (!tokenMatches(queryToken, token) && !tokenMatches(cookieToken, token)) {
+      if (!authorizeRemoteRequest(req, url, token)) {
+        const peer = this.peerKey(req);
+        if (this.noteAuthFailure(peer)) {
+          res.writeHead(429, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('Too many requests');
+          return;
+        }
         res.writeHead(401, { 'content-type': 'text/html; charset=utf-8' });
         res.end(buildMissingTokenPageHtml());
         return;
       }
+      const { queryToken } = extractRequestTokens(req, url);
       if (tokenMatches(queryToken, token)) {
         res.setHeader(
           'Set-Cookie',
@@ -434,49 +650,54 @@ export class HeadlessRemoteServer {
     res.end(buildRemoteControlPageHtml());
   }
 
-  private readonly failedUpgradePeers = new Map<string, { count: number; resetAt: number }>();
-
   private handleUpgrade(
     wss: WebSocketServer,
     req: IncomingMessage,
     socket: Duplex,
     head: Buffer,
   ): void {
-    const url = new URL(req.url ?? '/', 'http://localhost');
-    if (url.pathname !== HEADLESS_WS_PATH) {
-      socket.destroy();
-      return;
-    }
-    const token = this.config?.token ?? '';
-    if (token) {
-      const queryToken = url.searchParams.get('token') ?? '';
-      const cookieToken = parseCookie(req.headers.cookie ?? '')[HEADLESS_REMOTE_COOKIE_NAME] ?? '';
-      if (!tokenMatches(queryToken, token) && !tokenMatches(cookieToken, token)) {
+    try {
+      const url = safeParseUrl(req.url);
+      if (url?.pathname !== HEADLESS_WS_PATH) {
+        socket.destroy();
+        return;
+      }
+      const token = this.config?.token ?? '';
+      if (token && !authorizeRemoteRequest(req, url, token)) {
         console.debug(
           '[headless] rejected unauthorized WebSocket upgrade from',
           sanitizeLogMessage(req.socket.remoteAddress ?? 'unknown'),
         );
-        const peerKey = req.socket.remoteAddress ?? 'unknown';
-        const now = Date.now();
-        const prior = this.failedUpgradePeers.get(peerKey);
-        if (!prior || now >= prior.resetAt) {
-          this.failedUpgradePeers.set(peerKey, { count: 1, resetAt: now + 60_000 });
-        } else if (prior.count >= 5) {
+        const peer = this.peerKey(req);
+        if (this.noteAuthFailure(peer)) {
           socket.destroy();
           return;
-        } else {
-          prior.count += 1;
         }
         socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
         socket.destroy();
         return;
       }
+      if (this.sockets.size >= HEADLESS_MAX_WS_CLIENTS) {
+        socket.write('HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\n\r\n');
+        socket.destroy();
+        return;
+      }
+      wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
+    } catch (err) {
+      console.debug(
+        '[headless] upgrade handler error:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      try {
+        socket.destroy();
+      } catch {
+        // catch-no-log-ok already destroyed
+      }
     }
-    wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
   }
 
   private handleSocket(socket: WebSocket, req: IncomingMessage): void {
-    const alive = socket as WebSocket & { isAlive?: boolean };
+    const alive = socket as AliveSocket;
     alive.isAlive = true;
     socket.on('pong', () => {
       alive.isAlive = true;
@@ -488,15 +709,9 @@ export class HeadlessRemoteServer {
       );
     });
     this.sockets.add(socket);
-    const hello: {
-      type: 'hello';
-      sessionId: string;
-      width: number;
-      height: number;
-      fps: number;
-      jpegQuality: number;
-    } = {
-      type: 'hello',
+    this.controllerSocket ??= socket;
+    const hello = {
+      type: 'hello' as const,
       sessionId: this.sessionId,
       width: this.config?.viewportWidth ?? 1280,
       height: this.config?.viewportHeight ?? 800,
@@ -513,10 +728,15 @@ export class HeadlessRemoteServer {
     }
     socket.on('message', (data, isBinary) => {
       if (isBinary) return;
+      if (socket !== this.controllerSocket) return;
+      if (!this.allowInput(socket)) return;
       this.handleClientControl(Buffer.from(data as unknown as ArrayBuffer).toString('utf8'));
     });
     socket.on('close', () => {
       this.sockets.delete(socket);
+      if (this.controllerSocket === socket) {
+        this.controllerSocket = this.sockets.values().next().value ?? null;
+      }
     });
     const peerRef = req.socket.remoteAddress
       ? ` (${sanitizeLogMessage(req.socket.remoteAddress)})`
@@ -544,14 +764,12 @@ export class HeadlessRemoteServer {
     const win = this.win;
     if (!win || win.webContents.isDestroyed()) return;
     if (input.type === 'char') {
-      try {
-        void win.webContents.insertText(input.char);
-      } catch (err) {
+      void Promise.resolve(win.webContents.insertText(input.char)).catch((err: unknown) => {
         console.debug(
           '[headless] char insert failed:',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
-      }
+      });
       return;
     }
     const event = toSendInputEvent(

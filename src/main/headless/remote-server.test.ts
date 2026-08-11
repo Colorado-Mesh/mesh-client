@@ -426,6 +426,153 @@ describe('HeadlessRemoteServer lifecycle', () => {
     );
     cookieAllowed.close();
   });
+
+  it('refuses non-loopback binds without a token', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const server = new HeadlessRemoteServer();
+      track(server);
+      const fake = makeFakeWin({ bitmap: Buffer.from('x'), captureCount: 0 });
+      const started = await server.start(fake.win, baseConfig({ host: '0.0.0.0', token: '' }));
+      expect(started).toBe(false);
+      expect(server.isRunning).toBe(false);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it('ignores a second overlapping start', async () => {
+    const fake = makeFakeWin({ bitmap: Buffer.from('x'), captureCount: 0 });
+    const server = new HeadlessRemoteServer();
+    track(server);
+    const first = server.start(fake.win, baseConfig());
+    const second = server.start(fake.win, baseConfig());
+    expect(await first).toBe(true);
+    expect(await second).toBe(false);
+    expect(server.isRunning).toBe(true);
+  });
+
+  it('accepts cookie-only HTTP auth and special-character token round-trips', async () => {
+    const token = 'a=b%20c;d';
+    const server = new HeadlessRemoteServer();
+    track(server);
+    await server.start(
+      makeFakeWin({ bitmap: Buffer.from('b'), captureCount: 0 }).win,
+      baseConfig({ token }),
+    );
+    const port = server.getPort()!;
+
+    const withQuery = await fetch(`http://127.0.0.1:${port}/?token=${encodeURIComponent(token)}`);
+    expect(withQuery.status).toBe(200);
+    const setCookie = withQuery.headers.get('set-cookie') ?? '';
+    expect(setCookie).toContain('mesh-remote-token=');
+
+    const cookieOnly = await fetch(`http://127.0.0.1:${port}/`, {
+      headers: { Cookie: `mesh-remote-token=${encodeURIComponent(token)}` },
+    });
+    expect(cookieOnly.status).toBe(200);
+    expect(cookieOnly.headers.get('set-cookie')).toBeNull();
+
+    const wrong = await fetch(`http://127.0.0.1:${port}/`, {
+      headers: { Cookie: 'mesh-remote-token=wrong-token' },
+    });
+    expect(wrong.status).toBe(401);
+
+    const sameLen = await fetch(`http://127.0.0.1:${port}/?token=sekrit!!`);
+    expect(sameLen.status).toBe(401);
+  });
+
+  it('rate-limits repeated unauthorized upgrades from the same peer', async () => {
+    const server = new HeadlessRemoteServer();
+    track(server);
+    await server.start(
+      makeFakeWin({ bitmap: Buffer.from('b'), captureCount: 0 }).win,
+      baseConfig({ token: 'sekrit' }),
+    );
+    const port = server.getPort()!;
+
+    const attempt = (): Promise<number | 'destroy'> =>
+      withTimeout(
+        new Promise<number | 'destroy'>((resolve) => {
+          const denied = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+          denied.on('unexpected-response', (_req, res) => {
+            resolve(res.statusCode ?? 0);
+          });
+          denied.on('close', () => {
+            resolve('destroy');
+          });
+          denied.on('error', () => {
+            resolve('destroy');
+          });
+          denied.on('open', () => {
+            denied.close();
+            resolve(0);
+          });
+        }),
+        5000,
+        'rate-limit upgrade',
+      );
+
+    for (let i = 0; i < 5; i += 1) {
+      expect(await attempt()).toBe(401);
+    }
+    // 6th failure within the window is silently destroyed (no 401 body).
+    expect(await attempt()).toBe('destroy');
+  });
+
+  it('stops with connected clients and reports destroyed webContents as not loaded', async () => {
+    const fake = makeFakeWin({ bitmap: Buffer.from('b'), captureCount: 0 });
+    let destroyed = false;
+    fake.win.webContents.isDestroyed = () => destroyed;
+    fake.win.webContents.isLoading = () => true;
+    const server = new HeadlessRemoteServer();
+    track(server);
+    await server.start(fake.win, baseConfig());
+    const port = server.getPort()!;
+    const client = await connectWs(port);
+    await client.waitForString();
+
+    const loadingHealth = (await (await fetch(`http://127.0.0.1:${port}/health`)).json()) as {
+      rendererLoaded: boolean;
+    };
+    expect(loadingHealth.rendererLoaded).toBe(false);
+
+    destroyed = true;
+    const destroyedHealth = (await (await fetch(`http://127.0.0.1:${port}/health`)).json()) as {
+      rendererLoaded: boolean;
+      ok: boolean;
+    };
+    expect(destroyedHealth.rendererLoaded).toBe(false);
+    expect(destroyedHealth.ok).toBe(true);
+
+    await server.stop();
+    expect(server.isRunning).toBe(false);
+    expect(server.getPort()).toBeNull();
+    client.close();
+  });
+
+  it('only the first connected client may inject input', async () => {
+    const fake = makeFakeWin({ bitmap: Buffer.from('b'), captureCount: 0 });
+    const server = new HeadlessRemoteServer();
+    track(server);
+    await server.start(fake.win, baseConfig());
+    const port = server.getPort()!;
+    const controller = await connectWs(port);
+    const viewer = await connectWs(port);
+    try {
+      await controller.waitForString();
+      await viewer.waitForString();
+      viewer.ws.send(JSON.stringify({ type: 'mousedown', x: 1, y: 1, button: 'left' }));
+      await sleepMs(80);
+      expect(fake.sendInputEvents).toHaveLength(0);
+      controller.ws.send(JSON.stringify({ type: 'mousedown', x: 2, y: 3, button: 'left' }));
+      await sleepMs(80);
+      expect(fake.sendInputEvents).toHaveLength(1);
+    } finally {
+      controller.close();
+      viewer.close();
+    }
+  });
 });
 
 describe('remote-server source hygiene', () => {

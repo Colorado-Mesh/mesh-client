@@ -53,6 +53,7 @@ Also useful:
 
 - [Troubleshooting](troubleshooting.md)
 - [Contributing](contributing.md)
+- [Headless server mode / Docker](headless-server.md) — browser remote control (`MESH_CLIENT_HEADLESS` or container); not the same as act/Podman CI containers
 
 **Reticulum tab:** packaged builds include the `mesh-client-reticulum` sidecar. Dev builds need Rust and `pnpm run reticulum:sidecar:build` — see [Reticulum in mesh-client](reticulum.md) and [Reticulum sidecar (optional)](development-environment.md#reticulum-sidecar-optional).
 
@@ -62,6 +63,7 @@ Also useful:
 
 - **Engineering**
   - [Development Guide](development-environment.md) — prerequisites, all `pnpm` scripts, pre-commit hook, i18n workflow
+  - [Headless server mode / Docker](headless-server.md) — HTTP/WS remote control image
   - [Accessibility Checklist](accessibility-checklist.md)
   - [Contributing](contributing.md)
   - Renderer hook/runtime/store boundaries — [docs/agents/renderer-hooks.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/agents/renderer-hooks.md) and [ARCHITECTURE.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/ARCHITECTURE.md)

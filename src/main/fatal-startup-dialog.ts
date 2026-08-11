@@ -1,11 +1,11 @@
 import { app, dialog } from 'electron';
 
-import { isHeadlessServerMode } from '../shared/headless';
+import { isHeadlessServerMode, parseBooleanEnv } from '../shared/headless';
 import type { DatabaseSchemaTooNewError } from './db-schema-sync';
 import { getLogPath } from './log-service';
 import { sanitizeLogMessage } from './sanitize-log-message';
 
-/** Env: set to `1`/`true` to auto-accept schema upgrade (E2E / automation). */
+/** Env: set to `1`/`true`/`yes`/`on` to auto-accept schema upgrade (E2E / headless containers). */
 export const MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE_ENV = 'MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE';
 
 export function formatDatabaseSchemaTooNewMessage(err: DatabaseSchemaTooNewError): string {
@@ -30,18 +30,22 @@ export function formatSchemaUpgradeConfirmMessage(fromVersion: number, toVersion
 /**
  * Blocking confirm before irreversible SQLite schema upgrade.
  * Default button is Quit (index 0). Returns true only when the user chooses Upgrade.
- * Headless server mode always returns true so the container boots unattended (logged).
+ * Unattended accept requires explicit `MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE` (container
+ * entrypoint sets this). Headless without that env refuses the upgrade (no dialog).
  */
 export function confirmDatabaseSchemaUpgrade(fromVersion: number, toVersion: number): boolean {
-  const auto = process.env[MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE_ENV];
-  if (auto === '1' || auto?.toLowerCase() === 'true') {
+  if (parseBooleanEnv(process.env[MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE_ENV])) {
+    console.warn(
+      `[db] MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE: auto-accepting schema upgrade ${fromVersion} → ${toVersion}`,
+    );
     return true;
   }
   if (isHeadlessServerMode()) {
-    console.warn(
-      `[db] headless server mode: auto-accepting schema upgrade ${fromVersion} → ${toVersion}`,
+    console.error(
+      `[db] headless server mode: refusing schema upgrade ${fromVersion} → ${toVersion} ` +
+        `(set ${MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE_ENV}=1 to allow)`,
     );
-    return true;
+    return false;
   }
 
   try {

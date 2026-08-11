@@ -16,5 +16,6 @@ Deep, file-level subsystem detail for AI assistants, split out of [`AGENTS.md`](
 | i18n / localization workflow, auto-translate, language selector                          | [i18n.md](i18n.md)                             |
 | Connection panel helpers (error hints, rehydrate, storage migrations)                    | [connection-panel.md](connection-panel.md)     |
 | Symptom → where-to-check index                                                           | [common-issues.md](common-issues.md)           |
+| Headless server mode, Docker image, HTTP/WS remote control                               | [headless.md](headless.md)                     |
 
 For human-facing deep dives, see the top-level docs (e.g. [../reticulum.md](../reticulum.md), [../diagnostics.md](../diagnostics.md), [../meshcore-meshtastic-parity.md](../meshcore-meshtastic-parity.md), [../troubleshooting.md](../troubleshooting.md)).

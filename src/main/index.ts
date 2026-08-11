@@ -354,6 +354,8 @@ function isAnyMqttConnected(): boolean {
 let mainWindow: BrowserWindow | null = null;
 /** Headless server-mode HTTP/WS frontend (null when not in server mode / not yet started). */
 let headlessRemoteServer: HeadlessRemoteServer | null = null;
+/** Prevents overlapping recreate paths while the previous window is closing. */
+let headlessRecreatingWindow = false;
 const rendererHeartbeatWatchdog = createRendererHeartbeatWatchdog();
 /** Win32 About: native About panel can hard-crash; use a small HTML BrowserWindow instead (#406). */
 let windowsAboutWindow: BrowserWindow | null = null;
@@ -1959,7 +1961,10 @@ function createWindow() {
       sanitizeLogMessage(details.reason),
       details.exitCode,
     );
-    if (IS_HEADLESS_SERVER_MODE) return; // headless: no dialog; /health reports liveness
+    if (IS_HEADLESS_SERVER_MODE) {
+      // No dialog; recreate the window so /health and remote capture recover.
+      return;
+    }
     try {
       dialog.showErrorBox(
         'Mesh-Client — Renderer Stopped',
@@ -1986,7 +1991,11 @@ function createWindow() {
     );
     // ERR_ABORTED (-3) often means navigation was cancelled; avoid noisy dialog
     if (errorCode === -3) return;
-    if (IS_HEADLESS_SERVER_MODE) return; // headless: no dialog; /health reports liveness
+    if (IS_HEADLESS_SERVER_MODE) {
+      console.error('[headless] renderer failed to load; exiting so the orchestrator can restart');
+      app.exit(1);
+      return;
+    }
     try {
       const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
       const hint = isDev
@@ -2006,13 +2015,23 @@ function createWindow() {
     forwardRendererConsoleMessage(details);
   });
 
+  const loadFailure = (err: unknown): void => {
+    console.error(
+      '[main] loadURL failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    if (IS_HEADLESS_SERVER_MODE) {
+      app.exit(1);
+    }
+  };
+
   // Load the app
   if (process.env.VITE_DEV_SERVER_URL) {
     // Same startup diagnostics as packaged build so Log panel captures them in dev too
     console.debug('[Startup] dev server URL:', sanitizeLogMessage(process.env.VITE_DEV_SERVER_URL));
     console.debug('[Startup] app.isPackaged:', app.isPackaged);
     console.debug('[Startup] userData:', sanitizeLogMessage(app.getPath('userData')));
-    void mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+    void mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL).catch(loadFailure);
 
     if (!IS_HEADLESS_SERVER_MODE) {
       mainWindow.webContents.openDevTools();
@@ -2023,22 +2042,30 @@ function createWindow() {
     // Use loadURL with an explicit HTTP referrer so OpenStreetMap tile requests
     // from the packaged app include a valid Referer header and comply with the
     // OSM tile usage policy for web-style traffic.
-    void mainWindow.loadURL(indexUrl, {
-      httpReferrer: OSM_HTTP_REFERRER,
-    });
+    void mainWindow
+      .loadURL(indexUrl, {
+        httpReferrer: OSM_HTTP_REFERRER,
+      })
+      .catch(loadFailure);
   }
 
-  if (IS_HEADLESS_SERVER_MODE) {
-    // Start the HTTP/WS remote surface only once the renderer is actually on screen;
+  if (IS_HEADLESS_SERVER_MODE && headlessConfig) {
+    // Start (or rebind) the HTTP/WS remote surface once the renderer is on screen;
     // capturePage before that returns blank frames.
     win.webContents.once('did-finish-load', () => {
-      void initHeadlessRemoteServer(win);
+      void initHeadlessRemoteServer(win, headlessConfig);
     });
   }
 
   mainWindow.on('closed', () => {
     setMainWindow(null);
     mainWindow = null;
+    if (IS_HEADLESS_SERVER_MODE && !isQuitting) {
+      // Keep the process + remote listener; recreate the fixed viewport.
+      setImmediate(() => {
+        recreateHeadlessMainWindow();
+      });
+    }
   });
   win.on('close', () => {
     if (windowStateSaveTimer) clearTimeout(windowStateSaveTimer);
@@ -2069,20 +2096,55 @@ function createWindow() {
 }
 
 /**
- * Start the headless HTTP/WS remote surface for a loaded window. Never throws: a
- * bind failure is logged and the app keeps running (the browser /health endpoint
- * simply stays unreachable from the LAN).
+ * Start the headless HTTP/WS remote surface for a loaded window.
+ * Publishes the global only after a successful bind. Bind / token failures exit
+ * non-zero so containers restart instead of sitting unhealthy without a listener.
  */
-async function initHeadlessRemoteServer(win: BrowserWindow): Promise<void> {
-  const config: HeadlessRemoteConfig = getHeadlessRemoteConfig();
-  const server = new HeadlessRemoteServer();
-  headlessRemoteServer = server;
-  const started = await server.start(win, config);
-  if (started) {
+async function initHeadlessRemoteServer(
+  win: BrowserWindow,
+  config: HeadlessRemoteConfig = getHeadlessRemoteConfig(),
+): Promise<void> {
+  try {
+    if (headlessRemoteServer?.isRunning) {
+      headlessRemoteServer.setTargetWindow(win);
+      console.debug('[headless] rebound remote server to recreated window');
+      return;
+    }
+    const server = new HeadlessRemoteServer();
+    const started = await server.start(win, config);
+    if (!started) {
+      console.error('[headless] remote server failed to start; exiting');
+      app.exit(1);
+      return;
+    }
+    headlessRemoteServer = server;
     const port = server.getPort() ?? config.port;
     console.debug(
       `[headless] server mode active — open http://${sanitizeLogMessage(config.host)}:${port} in a browser`,
     );
+  } catch (err) {
+    console.error(
+      '[headless] remote server init failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    app.exit(1);
+  }
+}
+
+/** Recreate the fixed viewport; keep HTTP/WS up and rebind on did-finish-load. */
+function recreateHeadlessMainWindow(): void {
+  if (!IS_HEADLESS_SERVER_MODE || isQuitting || headlessRecreatingWindow) return;
+  headlessRecreatingWindow = true;
+  try {
+    createWindow();
+  } catch (err) {
+    console.error(
+      '[headless] failed to recreate window:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    app.exit(1);
+  } finally {
+    headlessRecreatingWindow = false;
   }
 }
 
@@ -7081,8 +7143,8 @@ app.on('window-all-closed', () => {
     console.debug('[main] window-all-closed: cleaning up pending Bluetooth callback');
     linuxWebBluetoothDeviceSelection.cancelSelection();
   }
-  // Headless server mode: the window must not take the app down — keep serving the
-  // remote surface (the server is stopped explicitly in shutdownAppResources on quit).
+  // Headless server mode: the window must not take the app down — recreate runs from
+  // `closed`; remote server is stopped explicitly in shutdownAppResources on quit.
   if (IS_HEADLESS_SERVER_MODE) {
     console.debug('[main] window-all-closed: headless mode, keeping app + remote server alive');
     return;

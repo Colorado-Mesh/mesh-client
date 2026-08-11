@@ -25,7 +25,7 @@ Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) ru
 
 - **CI:** `schema-release-compare` (Build Binaries, Build Flatpak, and Release) warns when this build’s schema is newer than the last published release. Test builds also upload a `READ-ME-FIRST-*.md` artifact with the download set.
 - **Installers:** when bumped, Windows NSIS shows an advisory MessageBox; macOS/Linux/Flatpak packages may include `SCHEMA-UPGRADE.txt` in app resources.
-- **App launch:** if an existing database’s `user_version` is behind this build, Mesh-Client shows a blocking **Quit / Upgrade** dialog **before** running `runSchemaUpgrade`. Quit leaves the database unchanged. Set `MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE=1` to auto-accept (E2E / automation only).
+- **App launch:** if an existing database’s `user_version` is behind this build, Mesh-Client shows a blocking **Quit / Upgrade** dialog **before** running `runSchemaUpgrade`. Quit leaves the database unchanged. Set `MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE=1` (or `true`/`yes`/`on`) to auto-accept (E2E / automation / headless containers). Headless server mode **refuses** upgrades without that env (no dialog); the Docker entrypoint defaults it to `1`.
 - **Too new:** opening a database upgraded by a newer app with an older build still fails with the existing schema-too-new fatal dialog.
 
 ---

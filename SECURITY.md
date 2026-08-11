@@ -2,6 +2,15 @@
 
 We take the security of our project seriously and appreciate your efforts to help us keep it safe.
 
+## Headless / Docker remote surface
+
+When Mesh-Client runs in **server mode** (`MESH_CLIENT_HEADLESS` or inside a container), it exposes an HTTP + WebSocket remote-control endpoint (default bind `0.0.0.0:8000`). Treat this as a trusted-operator surface:
+
+- Set `MESH_CLIENT_REMOTE_TOKEN` for any non-loopback bind (empty token is refused on `0.0.0.0` / LAN hosts).
+- Terminate TLS at a reverse proxy; prefer private networks.
+- `/health` is intentionally unauthenticated (liveness only).
+- See [docs/headless-server.md](docs/headless-server.md).
+
 ## Reporting a Vulnerability
 
 If you believe you have found a security vulnerability, please **do not report it via a public GitHub issue**. Instead, please

@@ -119,3 +119,43 @@ describe('renderer load error handling', () => {
     expect(INDEX_SOURCE).toContain("on('did-fail-load'");
   });
 });
+
+// ─── Headless server mode wiring ─────────────────────────────────────────────
+
+describe('headless server mode lifecycle contracts', () => {
+  it('disables GPU and skips tray/updater/menu/devtools in server mode', () => {
+    expect(INDEX_SOURCE).toContain('IS_HEADLESS_SERVER_MODE');
+    expect(INDEX_SOURCE).toContain('app.disableHardwareAcceleration()');
+    expect(INDEX_SOURCE).toMatch(
+      /if\s*\(\s*!IS_HEADLESS_SERVER_MODE\s*\)\s*\{\s*setupTray\(mainWindow\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(/if\s*\(\s*!IS_HEADLESS_SERVER_MODE\s*\)\s*\{\s*setupAppMenu\(\)/);
+    expect(INDEX_SOURCE).toContain('backgroundThrottling: false');
+    expect(INDEX_SOURCE).toContain('useContentSize: Boolean(headlessConfig)');
+    expect(INDEX_SOURCE).toContain('initUpdater(mainWindow)');
+  });
+
+  it('starts or rebinds the remote server after did-finish-load', () => {
+    expect(INDEX_SOURCE).toContain("once('did-finish-load'");
+    expect(INDEX_SOURCE).toContain('initHeadlessRemoteServer(win, headlessConfig)');
+    expect(INDEX_SOURCE).toContain('setTargetWindow(win)');
+    expect(INDEX_SOURCE).toContain('headlessRemoteServer = server');
+  });
+
+  it('stops the remote server during shutdown and recreates the window on close', () => {
+    expect(INDEX_SOURCE).toContain('await headlessRemoteServer?.stop()');
+    expect(INDEX_SOURCE).toContain('recreateHeadlessMainWindow()');
+    const closedIdx = INDEX_SOURCE.indexOf("app.on('window-all-closed'");
+    expect(closedIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(closedIdx, closedIdx + 900);
+    expect(body).toContain('IS_HEADLESS_SERVER_MODE');
+    expect(body).toContain('keeping app + remote server alive');
+  });
+
+  it('exits non-zero on headless load failure', () => {
+    expect(INDEX_SOURCE).toContain(
+      '[headless] renderer failed to load; exiting so the orchestrator can restart',
+    );
+    expect(INDEX_SOURCE).toContain('app.exit(1)');
+  });
+});

@@ -18,6 +18,7 @@ Setup (clone, prerequisites, Flatpak build steps) is in [development-environment
 - [Reticulum](#reticulum)
 - [Chat, nodes, and notifications](#chat-nodes-and-notifications)
 - [Diagnostics and map](#diagnostics-and-map)
+- [Headless server mode and Docker](#headless-server-mode-and-docker)
 - [App, updates, and localization](#app-updates-and-localization)
 
 ## Quick reference
@@ -1780,6 +1781,34 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 1. Confirm the app **window loads** and core tabs work; connect via **USB serial** or **BLE** to a local radio if you need RF features.
 2. Open the **Map** tab: expect **missing or stale basemap tiles** as described above; **markers and trails** may still appear when position data exists.
 3. A non-fatal **update check** message in the console is expected without WAN; see **Update check fails / footer update status** above.
+
+## Headless server mode and Docker
+
+Product headless/Docker remote control is documented in [headless-server.md](headless-server.md). This is **not** act/Podman CI container mode.
+
+### Browser shows 401 / “Token required”
+
+**Cause**: `MESH_CLIENT_REMOTE_TOKEN` is set (or required for non-loopback bind) and the URL/cookie lacks a matching secret.
+
+**Fix**: Open `http://<host>:<port>/?token=<secret>`. Cookie auth uses the `mesh-remote-token` cookie set after a successful query login.
+
+### `/health` unreachable / container exits immediately
+
+**Cause**: Bind failed (port in use), token missing on `0.0.0.0`, renderer failed to load, or Xvfb never became ready.
+
+**Fix**: Check container logs for `[headless] remote access secret env is required`, bind errors, or `Xvfb failed to start`. Ensure `-p 8000:8000` and a non-empty `MESH_CLIENT_REMOTE_TOKEN` when publishing the port.
+
+### Remote canvas stays blank
+
+**Cause**: No WebSocket client connected (capture pauses with zero clients), wrong viewport vs Xvfb size, or window destroyed mid-session (app should recreate).
+
+**Fix**: Confirm WS connects (`Connected — WxH` status). Recreate the container if `/health` shows `ready: true` but `rendererLoaded: false` for a long time.
+
+### Schema upgrade refused in headless
+
+**Cause**: Headless refuses irreversible DB upgrades unless `MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE=1` (container entrypoint sets this by default).
+
+**Fix**: Export/backup data if unsure, then set the env and restart.
 
 ## App, updates, and localization
 

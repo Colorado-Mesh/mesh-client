@@ -563,6 +563,8 @@ Constraints:
 - **Linux:** set `MESH_CLIENT_DISABLE_GPU=1` (harness does this); CI uses `xvfb-run -a`. Local headless Linux needs `DISPLAY` for direct `pnpm run test:e2e`, or wrap with `xvfb-run -a` (`pnpm run check:environment` warns when `DISPLAY` is unset).
 - **Not** wired into pre-commit, `pnpm run test:run`, or `pnpm run check:pr`. Daily + manual CI: [`.github/workflows/e2e.yaml`](../.github/workflows/e2e.yaml).
 
+**Naming note:** E2E “headless Linux” (no GUI for Playwright) is unrelated to product **server mode** (`MESH_CLIENT_HEADLESS` / Docker remote control). For the latter see [headless-server.md](headless-server.md).
+
 Monolithic protocol runtimes (`useMeshtasticRuntime`, `useMeshcoreRuntime`) also use **source contract tests** (read `.ts` files and assert wiring strings) where full `renderHook` integration would require heavy BLE/MQTT mocking; see `*.reconnect*.test.ts` beside those runtimes. Another example: [`meshtasticRuntimeWireEffects.diagnostics.contract.test.ts`](../src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.diagnostics.contract.test.ts) asserts LocalStats / RF hop-SNR still call `processNodeUpdate` from `meshtasticNodeSideEffects` / `meshtasticRawPacketSideEffects`.
 
 #### Browser dev without Electron

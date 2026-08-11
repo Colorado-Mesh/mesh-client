@@ -27,6 +27,10 @@ The following languages are currently supported:
 
 ---
 
+## Surfaces outside locale bundles
+
+The in-app UI (renderer) uses i18next locale JSON. The **headless remote-control page** served by the main process (`src/main/headless/remote-control-page.ts`) is intentionally **English-only** and is not part of the translation workflow or `pnpm run check:i18n`. See [headless-server.md](headless-server.md).
+
 ## Changing Languages
 
 To change the interface language:

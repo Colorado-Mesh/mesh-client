@@ -1,5 +1,6 @@
 import { existsSync } from 'fs';
 
+import { isLoopbackHost } from './connectHost';
 import { clampTcpPort } from './tcpPort';
 
 /**
@@ -32,6 +33,18 @@ export const HEADLESS_WS_HEARTBEAT_SEC_DEFAULT = 30;
 export const HEADLESS_REMOTE_COOKIE_NAME = 'mesh-remote-token';
 /** Path under which the WebSocket endpoint is served. */
 export const HEADLESS_WS_PATH = '/ws';
+/** Max concurrent browser WebSocket sessions (viewers + controller). */
+export const HEADLESS_MAX_WS_CLIENTS = 8;
+/** Max inbound WS text/binary payload (bytes). */
+export const HEADLESS_WS_MAX_PAYLOAD_BYTES = 64 * 1024;
+/** Per-socket input frames allowed per rolling window. */
+export const HEADLESS_INPUT_RATE_MAX = 120;
+export const HEADLESS_INPUT_RATE_WINDOW_MS = 1000;
+/** Failed auth attempts per peer before silent reject (HTTP + WS). */
+export const HEADLESS_AUTH_FAIL_MAX = 5;
+export const HEADLESS_AUTH_FAIL_WINDOW_MS = 60_000;
+/** Cap how long `stop()` waits for `httpServer.close`. */
+export const HEADLESS_STOP_TIMEOUT_MS = 5_000;
 
 export interface HeadlessRemoteConfig {
   /** HTTP/WS bind host (default `0.0.0.0` so containers accept LAN browsers). */
@@ -150,4 +163,16 @@ export function getHeadlessRemoteConfig(
 /** Format a viewport as `WxH` for logging / control-page `hello`. */
 export function formatViewport(width: number, height: number): string {
   return `${width}x${height}`;
+}
+
+/**
+ * True when binding this host without a token would expose the remote desktop
+ * beyond the local machine. Loopback (`127.0.0.0/8`, `::1`) and `localhost`
+ * may run open for local tooling; `0.0.0.0` / LAN / public hosts require a token.
+ */
+export function headlessBindRequiresToken(host: string): boolean {
+  const bare = host.trim().toLowerCase();
+  if (!bare) return true;
+  if (bare === 'localhost') return false;
+  return !isLoopbackHost(bare);
 }

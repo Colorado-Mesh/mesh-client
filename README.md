@@ -440,6 +440,8 @@ See [Troubleshooting; macOS: File is damaged…](docs/troubleshooting.md#macos-f
 
 **Building from source / development setup:** see [docs/development-environment.md](docs/development-environment.md) for complete shared requirements, clone/install steps, test harness setup, and detailed macOS/Windows/Linux instructions.
 
+**Headless / Docker server mode:** run the full UI in a container (or with `MESH_CLIENT_HEADLESS=1`) and control it from a browser over HTTP/WebSocket. Build the image from a Linux `.deb` (see [`Dockerfile`](Dockerfile)); set `MESH_CLIENT_REMOTE_TOKEN` when binding `0.0.0.0`. Details: [docs/headless-server.md](docs/headless-server.md).
+
 ---
 
 ## Run Locally

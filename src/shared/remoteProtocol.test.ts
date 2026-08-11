@@ -29,6 +29,7 @@ describe('isClientInputMessage', () => {
     expect(isClientInputMessage({})).toBe(false);
     expect(isClientInputMessage({ type: 'nope' })).toBe(false);
     expect(isClientInputMessage({ type: 'mousedown', x: 1, y: 2, button: 'sideways' })).toBe(false);
+    expect(isClientInputMessage({ type: 'mousedown', x: 1, y: 2, button: 0 })).toBe(false);
     expect(isClientInputMessage({ type: 'keydown', key: 'a' })).toBe(false);
     expect(
       isClientInputMessage({ type: 'keydown', key: 'a', code: 'KeyA', modifiers: 'ctrl' }),
@@ -37,6 +38,17 @@ describe('isClientInputMessage', () => {
       isClientInputMessage({ type: 'keydown', key: 'a', code: 'KeyA', modifiers: ['sudo'] }),
     ).toBe(false);
     expect(isClientInputMessage({ type: 'char', char: '' })).toBe(false);
+    expect(isClientInputMessage({ type: 'mousemove', x: Number.NaN, y: 1, buttons: 0 })).toBe(
+      false,
+    );
+    expect(
+      isClientInputMessage({ type: 'mousemove', x: Number.POSITIVE_INFINITY, y: 1, buttons: 0 }),
+    ).toBe(false);
+    expect(isClientInputMessage({ type: 'char', char: 'x'.repeat(100) })).toBe(false);
+  });
+
+  it('accepts middle mouse button', () => {
+    expect(isClientInputMessage({ type: 'mousedown', x: 1, y: 2, button: 'middle' })).toBe(true);
   });
 });
 

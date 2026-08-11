@@ -31,6 +31,8 @@ pnpm run format:check
 
 To approximate **Linux CI** from any host, use container mode (`pnpm run act:ci`) or host mode without a container engine (`pnpm run act:ci:native`). See [CI/CD — Running locally with act](ci-cd.md#running-ci-locally-with-act).
 
+**Product Docker image** (headless remote control, not act): stage a Linux `.deb` under `release/`, then `docker build -t mesh-client-headless .` — see [headless-server.md](headless-server.md). There are no `pnpm` docker scripts yet.
+
 ## Documentation Workflow
 
 - Create/activate a local Python virtualenv first (required on many macOS setups):

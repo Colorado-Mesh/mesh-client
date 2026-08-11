@@ -6,24 +6,24 @@ Project layout, data flow, and code placement for human reference. For AI coding
 
 Path alias `@/*` maps to `src/*` (see `tsconfig.json`).
 
-| Boundary | Path            | Role                                                                                                                                                                                                                                                                                                |
-| -------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Main     | `src/main/`     | SQLite (`database.ts`, `db-compat.ts`), BLE (`noble-ble-manager.ts`), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers (`index.ts` plus namespaced modules in `src/main/ipc/` — Reticulum, TAK, GPS), window, GPS, updater |
-| Preload  | `src/preload/`  | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                                                                                                  |
-| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/` (protocol runtimes, single mount), `stores/`, `lib/`, `locales/`, `workers/`                                                                                                                                                         |
+| Boundary | Path            | Role                                                                                                                                                                                                                                                                                                                                       |
+| -------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Main     | `src/main/`     | SQLite (`database.ts`, `db-compat.ts`), BLE (`noble-ble-manager.ts`), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers (`index.ts` plus namespaced modules in `src/main/ipc/` — Reticulum, TAK, GPS), window, GPS, updater, headless remote HTTP/WS (`headless/`) |
+| Preload  | `src/preload/`  | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                                                                                                                                         |
+| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/` (protocol runtimes, single mount), `stores/`, `lib/`, `locales/`, `workers/`                                                                                                                                                                                                |
 
 | Shared | `src/shared/` | IPC contracts (`electron-api.types.ts`), protocol-neutral helpers |
 
 **Entry points:** `src/main/index.ts`, `src/preload/index.ts`, `src/renderer/main.tsx`, `src/renderer/App.tsx`.
 
-**Repo root (not exhaustive):** `.github/workflows/`, `scripts/check-*.mjs` (IPC, migrations, log injection, etc.), `docs/`, `resources/`, `vite.config.mts`, `electron-builder.yml`, `package.json`.
+**Repo root (not exhaustive):** `.github/workflows/`, `scripts/check-*.mjs` (IPC, migrations, log injection, etc.), `docs/`, `resources/`, `vite.config.mts`, `electron-builder.yml`, `package.json`, product `Dockerfile` / `docker/entrypoint.sh` (headless server image; not act CI).
 
 ## Process boundaries
 
-- **Main:** Node runtime; all privileged I/O and IPC handlers.
+- **Main:** Node runtime; all privileged I/O and IPC handlers. In headless server mode, also owns the HTTP/WS remote-control surface (`src/main/headless/`) driving a fixed-viewport `BrowserWindow` (no tray/updater/menu).
 - **Preload:** Thin bridge; namespaced channels (`db:*`, `mqtt:*`, `log:*`, `ble:*`, `serial:*`, `session:*`, etc.).
 - **Renderer:** UI only; talk to main via `window.electronAPI` from preload.
-- **Shared:** Types and safe helpers imported by main and renderer.
+- **Shared:** Types and safe helpers imported by main and renderer (`headless.ts`, `remoteProtocol.ts`).
 
 **Tests:** Co-located `*.test.ts` / `*.test.tsx`; update `src/main/index.contract.test.ts` when CSP, build config, IPC limits, or log filters change (see [Testing protocols](CONTRIBUTING.md#testing-protocols) in CONTRIBUTING.md).
 
