@@ -348,7 +348,7 @@ CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage 
 3. Uploads `READ-ME-FIRST-test-build.md` (build) / `READ-ME-FIRST-flatpak.md` (flatpak) / `READ-ME-FIRST-schema.md` (release). **Build Binaries** stages the note into `release/` before platform uploads so `upload-artifact`’s least-common-ancestor stays under `release/` (mixing `release-warnings/` nests installers as `release/release/*.exe` and breaks `packaging-smoke`). Flatpak keeps a separate per-arch `flatpak-schema-warning-*` artifact beside the bundle
 4. Exposes `schema_bumped` / `curr_schema` / `prev_schema` / `prev_tag` for packaging
 
-When schema is bumped, packaging runs `scripts/write-schema-upgrade-notice.mjs` so Windows NSIS can show a MessageBox and macOS/Linux/Flatpak bundles can include `SCHEMA-UPGRADE.txt` in app resources (`electron-builder-before-pack.mjs` / Flatpak `resources/` copy).
+Packaging always runs `scripts/write-schema-upgrade-notice.mjs`. On a schema bump it writes the Windows NSIS MessageBox include and `SCHEMA-UPGRADE.txt` for macOS/Linux/Flatpak (`electron-builder-before-pack.mjs` / Flatpak `resources/` copy). With no bump it still writes a no-op `resources/schema-upgrade-notice.nsh` stub — NSIS `!include` of a missing file is warning 7000, and electron-builder treats warnings as errors.
 
 On first launch after a schema bump against an existing database, the app shows a blocking **Quit / Upgrade** dialog before mutating SQLite (see [Release Process — Database schema upgrades](release-process.md#database-schema-upgrades)).
 
