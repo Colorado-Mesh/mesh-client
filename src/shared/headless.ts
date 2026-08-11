@@ -1,12 +1,15 @@
+import { existsSync } from 'fs';
+
 import { clampTcpPort } from './tcpPort';
 
 /**
  * Headless "server mode" configuration (issue #824).
  *
- * When `MESH_CLIENT_HEADLESS=1`, the Electron main process runs the full existing
- * client in a mapped (mapped-into-Xvfb) BrowserWindow and exposes it to browsers
- * over HTTP + WebSocket. All knobs live in this single module so renderer, main,
- * and tests read one source of truth.
+ * When `MESH_CLIENT_HEADLESS=1` (or the process runs inside a container), the
+ * Electron main process runs the full existing client in a mapped
+ * (mapped-into-Xvfb) BrowserWindow and exposes it to browsers over HTTP +
+ * WebSocket. All knobs live in this single module so renderer, main, and tests
+ * read one source of truth.
  */
 
 export const HEADLESS_HOST_DEFAULT = '0.0.0.0';
@@ -55,6 +58,28 @@ export function parseBooleanEnv(value: string | undefined): boolean {
   return v === '1' || v === 'true' || v === 'yes' || v === 'on';
 }
 
+/**
+ * True when running inside a container. Docker always mounts a bare
+ * `/.dockerenv`; Podman uses `/run/.containerenv`. `checkExists` is injectable so
+ * tests do not depend on the host.
+ */
+export function isDockerContainer(checkExists: (path: string) => boolean = existsSync): boolean {
+  return checkExists('/.dockerenv') || checkExists('/run/.containerenv');
+}
+
+/**
+ * Server mode is selected by `MESH_CLIENT_HEADLESS=1` — and always when running
+ * inside a container, where there is no desktop/display to show the window on.
+ * Parsed per call (cheap); main caches it once. `dockerDetect` is injectable for
+ * deterministic tests.
+ */
+export function isHeadlessServerMode(
+  env: NodeJS.ProcessEnv = process.env,
+  dockerDetect: () => boolean = isDockerContainer,
+): boolean {
+  return parseBooleanEnv(env.MESH_CLIENT_HEADLESS) || dockerDetect();
+}
+
 /** Parse a `WxH` viewport string; returns the fallback width/height on garbage. */
 export function parseViewportSize(
   value: string,
@@ -81,11 +106,6 @@ function clampInt(value: string | undefined, fallback: number, min: number, max:
   const n = Number(value);
   if (!Number.isInteger(n)) return fallback;
   return Math.max(min, Math.min(max, n));
-}
-
-/** `MESH_CLIENT_HEADLESS=1` selects server mode. Parsed per call (cheap); main caches it once. */
-export function isHeadlessServerMode(env: NodeJS.ProcessEnv = process.env): boolean {
-  return parseBooleanEnv(env.MESH_CLIENT_HEADLESS);
 }
 
 /**

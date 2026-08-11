@@ -6,7 +6,7 @@
 # process shuts down cleanly on container stop (exec keeps PID 1 = the app).
 set -euo pipefail
 
-: "${MESH_CLIENT_HEADLESS:=1}" && export MESH_CLIENT_HEADLESS
+# Container mode is auto-detected (no MESH_CLIENT_HEADLESS needed).
 : "${MESH_CLIENT_REMOTE_HOST:=0.0.0.0}" && export MESH_CLIENT_REMOTE_HOST
 : "${MESH_CLIENT_REMOTE_PORT:=8000}" && export MESH_CLIENT_REMOTE_PORT
 : "${MESH_CLIENT_REMOTE_VIEWPORT:=1280x800}" && export MESH_CLIENT_REMOTE_VIEWPORT

@@ -11,12 +11,15 @@ import {
   HEADLESS_VIEWPORT_HEIGHT_DEFAULT,
   HEADLESS_VIEWPORT_WIDTH_DEFAULT,
   HEADLESS_WS_HEARTBEAT_SEC_DEFAULT,
+  isDockerContainer,
   isHeadlessServerMode,
   parseBooleanEnv,
   parseViewportSize,
 } from './headless';
 
 const WITHOUT_HEADLESS: NodeJS.ProcessEnv = {};
+const NOT_DOCKER = (): boolean => false;
+const IN_DOCKER = (): boolean => true;
 
 describe('isHeadlessServerMode / parseBooleanEnv', () => {
   it('treats 1/true/yes/on as enabled', () => {
@@ -32,9 +35,28 @@ describe('isHeadlessServerMode / parseBooleanEnv', () => {
   });
 
   it('isHeadlessServerMode reads MESH_CLIENT_HEADLESS', () => {
-    expect(isHeadlessServerMode({})).toBe(false);
-    expect(isHeadlessServerMode({ MESH_CLIENT_HEADLESS: '1' })).toBe(true);
-    expect(isHeadlessServerMode({ MESH_CLIENT_HEADLESS: '0' })).toBe(false);
+    expect(isHeadlessServerMode({}, NOT_DOCKER)).toBe(false);
+    expect(isHeadlessServerMode({ MESH_CLIENT_HEADLESS: '1' }, NOT_DOCKER)).toBe(true);
+    expect(isHeadlessServerMode({ MESH_CLIENT_HEADLESS: '0' }, NOT_DOCKER)).toBe(false);
+  });
+
+  it('isHeadlessServerMode forces headless inside a container regardless of env', () => {
+    expect(isHeadlessServerMode({}, IN_DOCKER)).toBe(true);
+    expect(isHeadlessServerMode({ MESH_CLIENT_HEADLESS: '0' }, IN_DOCKER)).toBe(true);
+  });
+});
+
+describe('isDockerContainer', () => {
+  it('detects Docker via /.dockerenv', () => {
+    expect(isDockerContainer((path) => path === '/.dockerenv')).toBe(true);
+  });
+
+  it('detects Podman via /run/.containerenv', () => {
+    expect(isDockerContainer((path) => path === '/run/.containerenv')).toBe(true);
+  });
+
+  it('returns false on a plain host', () => {
+    expect(isDockerContainer(() => false)).toBe(false);
   });
 });
 
@@ -108,7 +130,7 @@ describe('getHeadlessRemoteConfig defaults', () => {
       MESH_CLIENT_REMOTE_HOST: '',
     };
     expect(() => getHeadlessRemoteConfig(weird)).not.toThrow();
-    expect(() => isHeadlessServerMode(weird)).not.toThrow();
+    expect(() => isHeadlessServerMode(weird, NOT_DOCKER)).not.toThrow();
   });
 });
 

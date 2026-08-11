@@ -62,8 +62,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends /i
 COPY docker/entrypoint.sh /usr/local/bin/mesh-client-entrypoint.sh
 RUN chmod +x /usr/local/bin/mesh-client-entrypoint.sh
 
-ENV MESH_CLIENT_HEADLESS=1 \
-  MESH_CLIENT_REMOTE_HOST=0.0.0.0 \
+ENV MESH_CLIENT_REMOTE_HOST=0.0.0.0 \
   MESH_CLIENT_REMOTE_PORT=8000 \
   MESH_CLIENT_REMOTE_VIEWPORT=1280x800
 
