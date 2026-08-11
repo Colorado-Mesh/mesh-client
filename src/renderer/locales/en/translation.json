@@ -3566,6 +3566,8 @@
     "directLink": "Direct link",
     "relayLink": "Via relay",
     "hiddenCount": "Showing {{shown}} of {{total}} nodes (distant peers hidden)",
+    "hiddenCountLimit": "Showing {{shown}} of {{total}} nodes (limit {{limit}})",
+    "visibleNodeLimitNote": "Graph shows at most {{distantLimit}} nodes ({{nearbyLimit}} when distant peers are hidden).",
     "resetView": "Reset view",
     "compactLeafCount": "{{count}} compact direct peers"
   },
@@ -4691,6 +4693,9 @@
     "nodeCount": "{{count}} nodes",
     "edgeCount": "{{count}} links",
     "hiddenCount": "Showing {{shown}} of {{total}} nodes (distant peers hidden)",
+    "hiddenCountLimit": "Showing {{shown}} of {{total}} nodes (limit {{limit}})",
+    "visibleNodeLimitNote": "Graph shows at most {{distantLimit}} nodes ({{nearbyLimit}} when distant peers are hidden).",
+    "rfOnly": "RF only",
     "showDistantPeers": "Show distant peers",
     "maxHopsFilter": "Max hops",
     "maxHopsAll": "All hops",

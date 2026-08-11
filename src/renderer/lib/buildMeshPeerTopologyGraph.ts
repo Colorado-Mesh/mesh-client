@@ -1,6 +1,11 @@
 import type { ForceEdge } from './forceDirectedGraphLayout';
 import { nodeHealthScore, type NodeHealthTier, nodeHealthTier } from './nodeHealthScore';
 import { MS_PER_HOUR } from './timeConstants';
+import {
+  TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
+  TOPOLOGY_GRAPH_NEARBY_NODE_CAP,
+  topologyGraphVisibleNodeCap,
+} from './topologyGraphLimits';
 import type { MeshNode } from './types';
 
 export type MeshPeerGraphNodeKind = 'self' | 'relay' | 'peer';
@@ -46,8 +51,10 @@ export interface BuildMeshPeerTopologyGraphOptions {
   nowMs?: number;
 }
 
-/** Default visible node budget — tuned for readable force layout without label pile-up. */
-export const MESH_PEER_MAX_VISIBLE_NODES = 48;
+/** Default visible node budget when distant peers are hidden. */
+export const MESH_PEER_MAX_VISIBLE_NODES = TOPOLOGY_GRAPH_NEARBY_NODE_CAP;
+/** Visible node budget when distant peers are shown. */
+export const MESH_PEER_MAX_VISIBLE_NODES_UNFILTERED = TOPOLOGY_GRAPH_DISTANT_NODE_CAP;
 /** Max relay hubs with thick self spokes; excess direct peers render as compact leaf dots. */
 export const MESH_PEER_MAX_RELAY_HUBS = 20;
 export const MESH_PEER_UNASSIGNED_RELAY_ID = -1;
@@ -133,7 +140,7 @@ function filterMeshPeers(
     return true;
   });
 
-  const peerBudget = Math.max(0, MESH_PEER_MAX_VISIBLE_NODES - 1);
+  const peerBudget = Math.max(0, topologyGraphVisibleNodeCap(includeDistant) - 1);
   const hiddenCount = Math.max(0, filtered.length - peerBudget);
   if (filtered.length > peerBudget) {
     filtered = [...filtered]

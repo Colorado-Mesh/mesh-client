@@ -3253,7 +3253,9 @@
     "maxHopsAll": "Todos los saltos",
     "maxHopsOption": "{{count}} saltos",
     "resetView": "Reset view",
-    "compactLeafCount": "{{count}} compañeros directos compactos"
+    "compactLeafCount": "{{count}} compañeros directos compactos",
+    "hiddenCountLimit": "Mostrando {{shown}} de {{total}} nodos (límite {{limit}})",
+    "visibleNodeLimitNote": "El gráfico muestra como máximo los nodos {{distantLimit}} ({{nearbyLimit}} cuando los compañeros distantes están ocultos)."
   },
   "peerListPanel": {
     "heading": "Pares",
@@ -4363,7 +4365,10 @@
     "glyphWifi": "Interfaz Wi-Fi",
     "glyphLora": "Interfaz LoRa",
     "glyphTcp": "Interfaz TCP",
-    "glyphSerial": "Interfaz en serie"
+    "glyphSerial": "Interfaz en serie",
+    "hiddenCountLimit": "Mostrando {{shown}} de {{total}} nodos (límite {{limit}})",
+    "visibleNodeLimitNote": "El gráfico muestra como máximo los nodos {{distantLimit}} ({{nearbyLimit}} cuando los compañeros distantes están ocultos).",
+    "rfOnly": "Solo RF"
   },
   "rfHistograms": {
     "title": "Distribución de señal de RF",

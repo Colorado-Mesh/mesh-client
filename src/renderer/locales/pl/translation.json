@@ -3257,7 +3257,9 @@
     "maxHopsAll": "Wszystkie hops",
     "maxHopsOption": "{{count}} hops",
     "resetView": "Resetuj widok",
-    "compactLeafCount": "{{count}} kompaktowych partnerów bezpośrednich"
+    "compactLeafCount": "{{count}} kompaktowych partnerów bezpośrednich",
+    "hiddenCountLimit": "Wyświetlanie węzłów {{shown}} z {{total}} (limit {{limit}})",
+    "visibleNodeLimitNote": "Wykres pokazuje maksymalnie {{distantLimit}} węzłów ({{nearbyLimit}}, gdy ukryte są odległe równorzędne węzły)."
   },
   "peerListPanel": {
     "heading": "Partnerzy",
@@ -4367,7 +4369,10 @@
     "glyphWifi": "Interfejs Wi-Fi",
     "glyphLora": "Interfejs LoRa",
     "glyphTcp": "Interfejs TCP",
-    "glyphSerial": "Transmisja szeregowa"
+    "glyphSerial": "Transmisja szeregowa",
+    "hiddenCountLimit": "Wyświetlanie węzłów {{shown}} z {{total}} (limit {{limit}})",
+    "visibleNodeLimitNote": "Wykres pokazuje maksymalnie {{distantLimit}} węzłów ({{nearbyLimit}}, gdy ukryte są odległe równorzędne węzły).",
+    "rfOnly": "Tylko RF"
   },
   "rfHistograms": {
     "title": "Dystrybucja sygnału RF",

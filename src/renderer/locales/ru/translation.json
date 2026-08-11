@@ -3255,7 +3255,9 @@
     "maxHopsAll": "Все hops",
     "maxHopsOption": "{{count}} hops",
     "resetView": "Сбросить Вид",
-    "compactLeafCount": "{{count}} компактные прямые одноранговые узлы"
+    "compactLeafCount": "{{count}} компактные прямые одноранговые узлы",
+    "hiddenCountLimit": "Отображение {{shown}} из {{total}} узлов (лимит {{limit}})",
+    "visibleNodeLimitNote": "График показывает не более {{distantLimit}} узлов ({{nearbyLimit}}, когда удаленные одноранговые узлы скрыты)."
   },
   "peerListPanel": {
     "heading": "Пиры",
@@ -4365,7 +4367,10 @@
     "glyphWifi": "Интерфейс Wi-Fi",
     "glyphLora": "Интерфейс LoRa",
     "glyphTcp": "Интерфейс TCP",
-    "glyphSerial": "Последовательный интерфейс"
+    "glyphSerial": "Последовательный интерфейс",
+    "hiddenCountLimit": "Отображение {{shown}} из {{total}} узлов (лимит {{limit}})",
+    "visibleNodeLimitNote": "График показывает не более {{distantLimit}} узлов ({{nearbyLimit}}, когда удаленные одноранговые узлы скрыты).",
+    "rfOnly": "Только RF"
   },
   "rfHistograms": {
     "title": "Распределение радиочастотных сигналов",

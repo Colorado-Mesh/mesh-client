@@ -3253,7 +3253,9 @@
     "maxHopsAll": "Semua hop",
     "maxHopsOption": "{{count}} hop",
     "resetView": "Atur ulang tampilan",
-    "compactLeafCount": "{{count}} rekan langsung ringkas"
+    "compactLeafCount": "{{count}} rekan langsung ringkas",
+    "hiddenCountLimit": "Menampilkan {{shown}} dari {{total}} node (batas {{limit}})",
+    "visibleNodeLimitNote": "Grafik menunjukkan paling banyak {{distantLimit}} node ({{nearbyLimit}} ketika rekan - rekan jauh disembunyikan)."
   },
   "peerListPanel": {
     "heading": "Peer",
@@ -4363,7 +4365,10 @@
     "glyphWifi": "Antarmuka Wi-Fi",
     "glyphLora": "Antarmuka LoRa",
     "glyphTcp": "Antarmuka TCP",
-    "glyphSerial": "Antarmuka Serial"
+    "glyphSerial": "Antarmuka Serial",
+    "hiddenCountLimit": "Menampilkan {{shown}} dari {{total}} node (batas {{limit}})",
+    "visibleNodeLimitNote": "Grafik menunjukkan paling banyak {{distantLimit}} node ({{nearbyLimit}} ketika rekan - rekan jauh disembunyikan).",
+    "rfOnly": "RF saja"
   },
   "rfHistograms": {
     "title": "Distribusi Sinyal RF",

@@ -3253,7 +3253,9 @@
     "maxHopsAll": "Tous les sauts",
     "maxHopsOption": "{{count}} sauts",
     "resetView": "Réinitialisation de Vue",
-    "compactLeafCount": "{{count}} pairs directs compacts"
+    "compactLeafCount": "{{count}} pairs directs compacts",
+    "hiddenCountLimit": "Affichage de {{shown}} sur {{total}} nœuds (limite {{limit}})",
+    "visibleNodeLimitNote": "Le graphique montre au plus {{distantLimit}} nœuds ({{nearbyLimit}} lorsque des pairs distants sont masqués)."
   },
   "peerListPanel": {
     "heading": "Pairs",
@@ -4363,7 +4365,10 @@
     "glyphWifi": "Interface Wi-Fi",
     "glyphLora": "Interface LoRa",
     "glyphTcp": "Interface TCP",
-    "glyphSerial": "Interface série"
+    "glyphSerial": "Interface série",
+    "hiddenCountLimit": "Affichage de {{shown}} sur {{total}} nœuds (limite {{limit}})",
+    "visibleNodeLimitNote": "Le graphique montre au plus {{distantLimit}} nœuds ({{nearbyLimit}} lorsque des pairs distants sont masqués).",
+    "rfOnly": "RF uniquement"
   },
   "rfHistograms": {
     "title": "REPARTITION DE SIGNAUX",

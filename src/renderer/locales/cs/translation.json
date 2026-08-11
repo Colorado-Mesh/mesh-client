@@ -3255,7 +3255,9 @@
     "maxHopsAll": "Všechny hops",
     "maxHopsOption": "{{count}} hops",
     "resetView": "Přenastavit pohled",
-    "compactLeafCount": "{{count}} kompaktní přímé protějšky"
+    "compactLeafCount": "{{count}} kompaktní přímé protějšky",
+    "hiddenCountLimit": "Zobrazeno {{shown}} z {{total}} uzlů (limit {{limit}})",
+    "visibleNodeLimitNote": "Graf zobrazuje nejvýše {{distantLimit}} uzlů ({{nearbyLimit}} při skrytí vzdálených vrstevníků)."
   },
   "peerListPanel": {
     "heading": "Vazby",
@@ -4365,7 +4367,10 @@
     "glyphWifi": "Rozhraní Wi-Fi:",
     "glyphLora": "Rozhraní LoRa",
     "glyphTcp": "Rozhraní TCP",
-    "glyphSerial": "Sériové rozhraní"
+    "glyphSerial": "Sériové rozhraní",
+    "hiddenCountLimit": "Zobrazeno {{shown}} z {{total}} uzlů (limit {{limit}})",
+    "visibleNodeLimitNote": "Graf zobrazuje nejvýše {{distantLimit}} uzlů ({{nearbyLimit}} při skrytí vzdálených vrstevníků).",
+    "rfOnly": "Pouze RF"
   },
   "rfHistograms": {
     "title": "Distribuce vysokofrekvenčního signálu",

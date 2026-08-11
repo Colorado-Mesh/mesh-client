@@ -3253,7 +3253,9 @@
     "maxHopsAll": "Alle hops",
     "maxHopsOption": "{{count}} hops",
     "resetView": "Weergave opnieuw instellen (reset)",
-    "compactLeafCount": "{{count}} compacte directe collega's"
+    "compactLeafCount": "{{count}} compacte directe collega's",
+    "hiddenCountLimit": "Toont {{shown}} van {{total}} knooppunten (limiet {{limit}})",
+    "visibleNodeLimitNote": "Grafiek toont maximaal {{distantLimit}} knooppunten ({{nearbyLimit}} wanneer collega's op afstand verborgen zijn)."
   },
   "peerListPanel": {
     "heading": "Collega's",
@@ -4363,7 +4365,10 @@
     "glyphWifi": "Wi-Fi-interface",
     "glyphLora": "LoRa-interface",
     "glyphTcp": "TCP-interface",
-    "glyphSerial": "Seriële interface"
+    "glyphSerial": "Seriële interface",
+    "hiddenCountLimit": "Toont {{shown}} van {{total}} knooppunten (limiet {{limit}})",
+    "visibleNodeLimitNote": "Grafiek toont maximaal {{distantLimit}} knooppunten ({{nearbyLimit}} wanneer collega's op afstand verborgen zijn).",
+    "rfOnly": "Alleen RF"
   },
   "rfHistograms": {
     "title": "RF-signaalverdeling",

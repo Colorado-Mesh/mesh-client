@@ -14,6 +14,8 @@ import {
   isReticulumPeerOnline,
   matchPeerToInterfaceId,
   mergeReticulumTopologyEdgeNodes,
+  RETICULUM_TOPOLOGY_DISTANT_NODE_CAP,
+  RETICULUM_TOPOLOGY_NEARBY_NODE_CAP,
   shouldUseReticulumStarFallbackEdges,
 } from './buildReticulumTopologyLayout';
 
@@ -97,6 +99,255 @@ describe('buildReticulumMeshTopologyGraph', () => {
       },
     );
     expect(graph.nodes.find((n) => n.id === 'nomad01')?.peerKind).toBe('server');
+  });
+});
+
+const rnodeIface = {
+  id: 'rnode-1',
+  name: 'RNode 41F4',
+  type: 'rnode',
+  enabled: true,
+  status: 'up',
+};
+const tcpIface = {
+  id: 'tcp-east',
+  name: 'RNS_Transport_US-East',
+  type: 'tcp',
+  enabled: true,
+  status: 'up',
+};
+
+function rfPeers(
+  count: number,
+  hops: number,
+): { destination_hash: string; hops: number; interface: string }[] {
+  return Array.from({ length: count }, (_, i) => ({
+    destination_hash: `rf${i.toString(16).padStart(8, '0')}`,
+    hops,
+    interface: 'RNode 41F4',
+  }));
+}
+
+describe('buildReticulumMeshTopologyGraph filter/cap matrix', () => {
+  it('shows 168 peers when distant is on and under the distant cap', () => {
+    const graph = buildReticulumMeshTopologyGraph(
+      sampleInterfaces,
+      rfPeers(167, 1).map((p) => ({
+        ...p,
+        interface: 'RNS_Transport_US-East',
+      })),
+      {
+        selfLabel: 'You',
+        unassignedInterfaceLabel: 'Other paths',
+        filter: { includeDistantPeers: true, maxHops: null },
+      },
+    );
+    expect(graph.hiddenCount).toBe(0);
+    expect(graph.nodes.filter((n) => n.kind === 'peer')).toHaveLength(167);
+  });
+
+  it('caps nearby graphs at 48 total nodes including interface hubs', () => {
+    const graph = buildReticulumMeshTopologyGraph([rnodeIface], rfPeers(80, 1), {
+      selfLabel: 'You',
+      unassignedInterfaceLabel: 'Other paths',
+      filter: { includeDistantPeers: false },
+    });
+    expect(graph.nodes.length).toBeLessThanOrEqual(RETICULUM_TOPOLOGY_NEARBY_NODE_CAP);
+    expect(graph.hiddenCount).toBeGreaterThan(0);
+    expect(graph.nodes.some((n) => n.kind === 'self')).toBe(true);
+  });
+
+  it('drops Reticulum hops > 2 when distant peers are off even under the cap', () => {
+    const graph = buildReticulumMeshTopologyGraph(
+      [rnodeIface],
+      [
+        { destination_hash: 'near', hops: 2, interface: 'RNode 41F4' },
+        { destination_hash: 'far', hops: 4, interface: 'RNode 41F4' },
+      ],
+      {
+        selfLabel: 'You',
+        unassignedInterfaceLabel: 'Other paths',
+        filter: { includeDistantPeers: false },
+      },
+    );
+    expect(graph.nodes.some((n) => n.id === 'near')).toBe(true);
+    expect(graph.nodes.some((n) => n.id === 'far')).toBe(false);
+  });
+
+  it('changes visible count across maxHops 1, 2, 8, and all', () => {
+    const peers = [
+      ...rfPeers(30, 1),
+      ...rfPeers(40, 2).map((p, i) => ({ ...p, destination_hash: `h2${i}` })),
+      ...rfPeers(80, 3).map((p, i) => ({ ...p, destination_hash: `h3${i}` })),
+      ...rfPeers(50, 5).map((p, i) => ({ ...p, destination_hash: `h5${i}` })),
+    ];
+    const counts = ([1, 2, 8, null] as const).map(
+      (maxHops) =>
+        buildReticulumMeshTopologyGraph([rnodeIface], peers, {
+          selfLabel: 'You',
+          unassignedInterfaceLabel: 'Other paths',
+          filter: { includeDistantPeers: true, maxHops },
+        }).nodes.filter((n) => n.kind === 'peer').length,
+    );
+    expect(counts[0]).toBeLessThan(counts[1]);
+    expect(counts[1]).toBeLessThan(counts[2]);
+    expect(counts[2]).toBe(counts[3]);
+  });
+
+  it('includes unknown hops when maxHops is numeric', () => {
+    const graph = buildReticulumMeshTopologyGraph(
+      [rnodeIface],
+      [
+        { destination_hash: 'known', hops: 2, interface: 'RNode 41F4' },
+        { destination_hash: 'unknown', interface: 'RNode 41F4' },
+      ],
+      {
+        selfLabel: 'You',
+        unassignedInterfaceLabel: 'Other paths',
+        filter: { includeDistantPeers: true, maxHops: 2 },
+      },
+    );
+    expect(graph.nodes.some((n) => n.id === 'unknown')).toBe(true);
+  });
+
+  it('counts totalNodeCount before the layout cap', () => {
+    const graph = buildReticulumMeshTopologyGraph([rnodeIface], rfPeers(80, 1), {
+      selfLabel: 'You',
+      unassignedInterfaceLabel: 'Other paths',
+      filter: { includeDistantPeers: false },
+    });
+    expect(graph.totalNodeCount).toBe(80 + 1 + 1);
+    expect(graph.nodes.length + graph.hiddenCount).toBe(graph.totalNodeCount);
+  });
+});
+
+describe('buildReticulumMeshTopologyGraph RF-only', () => {
+  it('keeps the RNode spoke and drops TCP when rfOnly is on', () => {
+    const graph = buildReticulumMeshTopologyGraph(
+      [rnodeIface, tcpIface],
+      [
+        { destination_hash: 'rfpeer', hops: 1, interface: 'RNode 41F4' },
+        { destination_hash: 'tcppeer', hops: 1, interface: 'RNS_Transport_US-East' },
+      ],
+      {
+        selfLabel: 'You',
+        unassignedInterfaceLabel: 'Other paths',
+        filter: { includeDistantPeers: true, rfOnly: true },
+      },
+    );
+    expect(graph.nodes.some((n) => n.id === interfaceNodeId('rnode-1'))).toBe(true);
+    expect(graph.nodes.some((n) => n.id === 'rfpeer')).toBe(true);
+    expect(graph.nodes.some((n) => n.id === interfaceNodeId('tcp-east'))).toBe(false);
+    expect(graph.nodes.some((n) => n.id === 'tcppeer')).toBe(false);
+  });
+
+  it('is unchanged when rfOnly is off', () => {
+    const graph = buildReticulumMeshTopologyGraph(
+      [rnodeIface, tcpIface],
+      [
+        { destination_hash: 'rfpeer', hops: 1, interface: 'RNode 41F4' },
+        { destination_hash: 'tcppeer', hops: 1, interface: 'RNS_Transport_US-East' },
+      ],
+      {
+        selfLabel: 'You',
+        unassignedInterfaceLabel: 'Other paths',
+        filter: { includeDistantPeers: true, rfOnly: false },
+      },
+    );
+    expect(graph.nodes.some((n) => n.id === 'tcppeer')).toBe(true);
+    expect(graph.nodes.some((n) => n.id === 'rfpeer')).toBe(true);
+  });
+
+  it('keeps BLE RNode and KISS interfaces', () => {
+    const ble = {
+      id: 'ble-1',
+      name: 'RNode BLE',
+      type: 'rnode',
+      serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+      enabled: true,
+      status: 'up',
+    };
+    const kiss = {
+      id: 'kiss-1',
+      name: 'KISS TNC',
+      type: 'kiss',
+      enabled: true,
+      status: 'up',
+    };
+    const graph = buildReticulumMeshTopologyGraph(
+      [ble, kiss, tcpIface],
+      [
+        { destination_hash: 'blepeer', hops: 1, interface: 'RNode BLE' },
+        { destination_hash: 'kisspeer', hops: 1, interface: 'KISS TNC' },
+        { destination_hash: 'tcppeer', hops: 1, interface: 'RNS_Transport_US-East' },
+      ],
+      {
+        selfLabel: 'You',
+        unassignedInterfaceLabel: 'Other paths',
+        filter: { rfOnly: true },
+      },
+    );
+    expect(graph.nodes.some((n) => n.id === 'blepeer')).toBe(true);
+    expect(graph.nodes.some((n) => n.id === 'kisspeer')).toBe(true);
+    expect(graph.nodes.some((n) => n.id === 'tcppeer')).toBe(false);
+  });
+
+  it('drops unmatched peers and has no Other paths hub when RF-only', () => {
+    const graph = buildReticulumMeshTopologyGraph(
+      [rnodeIface],
+      [{ destination_hash: 'orphan', hops: 1, interface: 'unknown_iface' }],
+      {
+        selfLabel: 'You',
+        unassignedInterfaceLabel: 'Other paths',
+        filter: { rfOnly: true },
+      },
+    );
+    expect(graph.nodes.some((n) => n.id === 'orphan')).toBe(false);
+    expect(graph.nodes.some((n) => n.id === interfaceNodeId('__unassigned__'))).toBe(false);
+  });
+
+  it('shows self only when RF-only and there are no RF interfaces', () => {
+    const graph = buildReticulumMeshTopologyGraph(
+      [tcpIface],
+      [{ destination_hash: 'tcppeer', hops: 1, interface: 'RNS_Transport_US-East' }],
+      {
+        selfLabel: 'You',
+        unassignedInterfaceLabel: 'Other paths',
+        filter: { rfOnly: true },
+      },
+    );
+    expect(graph.nodes).toHaveLength(1);
+    expect(graph.nodes[0]?.kind).toBe('self');
+  });
+
+  it('combines RF-only with maxHops', () => {
+    const graph = buildReticulumMeshTopologyGraph(
+      [rnodeIface, tcpIface],
+      [
+        { destination_hash: 'tcppeer', hops: 1, interface: 'RNS_Transport_US-East' },
+        { destination_hash: 'rf1', hops: 1, interface: 'RNode 41F4' },
+        { destination_hash: 'rf3', hops: 3, interface: 'RNode 41F4' },
+      ],
+      {
+        selfLabel: 'You',
+        unassignedInterfaceLabel: 'Other paths',
+        filter: { includeDistantPeers: true, maxHops: 1, rfOnly: true },
+      },
+    );
+    expect(graph.nodes.some((n) => n.id === 'tcppeer')).toBe(false);
+    expect(graph.nodes.some((n) => n.id === 'rf1')).toBe(true);
+    expect(graph.nodes.some((n) => n.id === 'rf3')).toBe(false);
+  });
+
+  it('applies the distant cap after RF-only', () => {
+    const graph = buildReticulumMeshTopologyGraph([rnodeIface], rfPeers(500, 1), {
+      selfLabel: 'You',
+      unassignedInterfaceLabel: 'Other paths',
+      filter: { includeDistantPeers: true, rfOnly: true },
+    });
+    expect(graph.nodes.length).toBeLessThanOrEqual(RETICULUM_TOPOLOGY_DISTANT_NODE_CAP);
+    expect(graph.hiddenCount).toBeGreaterThan(0);
+    expect(graph.nodes.filter((n) => n.kind === 'peer').length + graph.hiddenCount).toBe(500);
   });
 });
 
@@ -278,7 +529,10 @@ describe('buildReticulumTopologyLayout (via-hash legacy)', () => {
     expect(visible.has('peer0')).toBe(true);
     expect(visible.has('peer50')).toBe(false);
 
-    const graph = buildReticulumTopologyGraph(nodes, edges, { selfLabel: 'You' });
+    const graph = buildReticulumTopologyGraph(nodes, edges, {
+      selfLabel: 'You',
+      filter: { includeDistantPeers: false },
+    });
     expect(graph.hiddenCount).toBeGreaterThan(0);
     expect(graph.nodes.some((n) => n.id === 'hub')).toBe(true);
   });

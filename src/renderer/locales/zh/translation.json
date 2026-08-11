@@ -3253,7 +3253,9 @@
     "maxHopsAll": "所有跃点",
     "maxHopsOption": "{{count}}跳",
     "resetView": "重设视角",
-    "compactLeafCount": "{{count}}紧凑型直接同行"
+    "compactLeafCount": "{{count}}紧凑型直接同行",
+    "hiddenCountLimit": "显示{{shown}}/{{total}}节点（限制{{limit}} ）",
+    "visibleNodeLimitNote": "图表显示最多{{distantLimit}}个节点（当远程同行被隐藏时{{nearbyLimit}} ）。"
   },
   "peerListPanel": {
     "heading": "Pee对端",
@@ -4363,7 +4365,10 @@
     "glyphWifi": "Wi-Fi接口",
     "glyphLora": "LoRa接口",
     "glyphTcp": "TCP接口",
-    "glyphSerial": "串口"
+    "glyphSerial": "串口",
+    "hiddenCountLimit": "显示{{shown}}/{{total}}节点（限制{{limit}} ）",
+    "visibleNodeLimitNote": "图表显示最多{{distantLimit}}个节点（当远程同行被隐藏时{{nearbyLimit}} ）。",
+    "rfOnly": "仅RF"
   },
   "rfHistograms": {
     "title": "射频信号分布",

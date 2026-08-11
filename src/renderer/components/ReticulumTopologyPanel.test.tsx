@@ -1,23 +1,30 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, opts?: Record<string, number | string>) => {
-      if (opts && 'count' in opts) return `${key}:${opts.count}`;
-      if (opts && 'shown' in opts && 'total' in opts) {
-        return `${key}:${opts.shown}/${opts.total}`;
-      }
-      if (opts && 'online' in opts && 'offline' in opts) {
-        return `${key}:${opts.online}/${opts.offline}`;
-      }
-      if (opts && 'name' in opts && 'status' in opts) {
-        return `${key}:${opts.name}:${opts.status}`;
-      }
-      return key;
-    },
-  }),
-}));
+vi.mock('react-i18next', () => {
+  const t = (key: string, opts?: Record<string, number | string>) => {
+    if (opts && 'distantLimit' in opts && 'nearbyLimit' in opts) {
+      return `${key}:${opts.distantLimit}/${opts.nearbyLimit}`;
+    }
+    if (opts && 'shown' in opts && 'total' in opts && 'limit' in opts) {
+      return `${key}:${opts.shown}/${opts.total}/${opts.limit}`;
+    }
+    if (opts && 'count' in opts) return `${key}:${opts.count}`;
+    if (opts && 'shown' in opts && 'total' in opts) {
+      return `${key}:${opts.shown}/${opts.total}`;
+    }
+    if (opts && 'online' in opts && 'offline' in opts) {
+      return `${key}:${opts.online}/${opts.offline}`;
+    }
+    if (opts && 'name' in opts && 'status' in opts) {
+      return `${key}:${opts.name}:${opts.status}`;
+    }
+    return key;
+  };
+  return {
+    useTranslation: () => ({ t }),
+  };
+});
 
 vi.mock('@/renderer/lib/forceDirectedGraphLayout', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
@@ -118,5 +125,122 @@ describe('ReticulumTopologyPanel', () => {
       expect(container.querySelector('title')).toBeTruthy();
     });
     expect(container.querySelector('title')?.textContent).toContain('Home Wi-Fi');
+  });
+
+  it('always shows the 400/48 limit note and RF-only default off', async () => {
+    render(<ReticulumTopologyPanel />);
+    await waitFor(() => {
+      expect(screen.getByText('reticulumTopology.visibleNodeLimitNote:400/48')).toBeInTheDocument();
+    });
+    expect(
+      screen.getByLabelText<HTMLInputElement>('reticulumTopology.showDistantPeers').checked,
+    ).toBe(true);
+    expect(screen.getByLabelText<HTMLSelectElement>('reticulumTopology.maxHopsFilter').value).toBe(
+      'all',
+    );
+    expect(screen.getByLabelText<HTMLInputElement>('reticulumTopology.rfOnly').checked).toBe(false);
+  });
+
+  it('hides TCP peers when RF only is checked and restores them when unchecked', async () => {
+    fetchReticulumInterfaces.mockResolvedValue([
+      { id: 'rnode-1', name: 'RNode 41F4', type: 'rnode', enabled: true, status: 'up' },
+      { id: 'tcp-east', name: 'RNS_Transport_US-East', type: 'tcp', enabled: true, status: 'up' },
+    ]);
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/topology') {
+        return Promise.resolve({
+          nodes: [
+            {
+              destination_hash: 'rfpeer01',
+              display_name: 'RF Peer',
+              hops: 1,
+              interface: 'RNode 41F4',
+            },
+            {
+              destination_hash: 'tcppeer01',
+              display_name: 'TCP Peer',
+              hops: 1,
+              interface: 'RNS_Transport_US-East',
+            },
+          ],
+          edges: [],
+        });
+      }
+      if (path === '/api/v1/identity/status') {
+        return Promise.resolve({ display_name: 'NV0N' });
+      }
+      return Promise.resolve({});
+    });
+
+    render(<ReticulumTopologyPanel onPeerClick={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'RF Peer' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'TCP Peer' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText('reticulumTopology.rfOnly'));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'RF Peer' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'TCP Peer' })).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText('reticulumTopology.rfOnly'));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'TCP Peer' })).toBeInTheDocument();
+    });
+  });
+
+  it('applies RF-only together with max hops', async () => {
+    fetchReticulumInterfaces.mockResolvedValue([
+      { id: 'rnode-1', name: 'RNode 41F4', type: 'rnode', enabled: true, status: 'up' },
+      { id: 'tcp-east', name: 'RNS_Transport_US-East', type: 'tcp', enabled: true, status: 'up' },
+    ]);
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/topology') {
+        return Promise.resolve({
+          nodes: [
+            {
+              destination_hash: 'tcppeer01',
+              display_name: 'TCP Peer',
+              hops: 1,
+              interface: 'RNS_Transport_US-East',
+            },
+            {
+              destination_hash: 'rfnear01',
+              display_name: 'RF Near',
+              hops: 1,
+              interface: 'RNode 41F4',
+            },
+            {
+              destination_hash: 'rffar001',
+              display_name: 'RF Far',
+              hops: 3,
+              interface: 'RNode 41F4',
+            },
+          ],
+          edges: [],
+        });
+      }
+      if (path === '/api/v1/identity/status') {
+        return Promise.resolve({ display_name: 'NV0N' });
+      }
+      return Promise.resolve({});
+    });
+
+    render(<ReticulumTopologyPanel onPeerClick={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'RF Far' })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText('reticulumTopology.rfOnly'));
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'TCP Peer' })).not.toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByLabelText('reticulumTopology.maxHopsFilter'), {
+      target: { value: '1' },
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'RF Near' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'RF Far' })).not.toBeInTheDocument();
+    });
   });
 });

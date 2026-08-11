@@ -3253,7 +3253,9 @@
     "maxHopsAll": "모든 홉",
     "maxHopsOption": "{{count}} 홉",
     "resetView": "초기화",
-    "compactLeafCount": "{{count}} 컴팩트 직접 피어"
+    "compactLeafCount": "{{count}} 컴팩트 직접 피어",
+    "hiddenCountLimit": "{{total}} 개의 노드 중 {{shown}} 개 표시 (LIMIT {{limit}})",
+    "visibleNodeLimitNote": "그래프에는 최대 {{distantLimit}} 개의 노드 (멀리 있는 동료가 숨겨져 있는 경우 {{nearbyLimit}}) 가 표시됩니다."
   },
   "peerListPanel": {
     "heading": "통신자",
@@ -4363,7 +4365,10 @@
     "glyphWifi": "Wi-Fi 인터페이스",
     "glyphLora": "LoRa 인터페이스",
     "glyphTcp": "TCP 인터페이스",
-    "glyphSerial": "직렬 통신"
+    "glyphSerial": "직렬 통신",
+    "hiddenCountLimit": "{{total}} 개의 노드 중 {{shown}} 개 표시 (LIMIT {{limit}})",
+    "visibleNodeLimitNote": "그래프에는 최대 {{distantLimit}} 개의 노드 (멀리 있는 동료가 숨겨져 있는 경우 {{nearbyLimit}}) 가 표시됩니다.",
+    "rfOnly": "RF 전용"
   },
   "rfHistograms": {
     "title": "RF 신호 분포",
