@@ -1759,6 +1759,14 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 
 **Fix**: Foreign-LoRa overhear tables render on the **Meshtastic** and **MeshCore** Diagnostics tabs (keyed by that protocol’s self node id). Reticulum RNode promiscuous foreign LoRa is not implemented (sidecar tap exposes parsed RNS frames only).
 
+### Graph or Topology does not show all nodes
+
+**Symptoms**: MeshCore/Meshtastic **Graph** or Reticulum **Topology** says it is showing 400 of N nodes even with **Show distant peers** ticked and **Max hops** set to **All hops**.
+
+**Cause**: The force-directed layout has a hard visible-node budget of **400** after hop filters. Numeric **Max hops** is not gated by Show distant. Unknown hops are omitted unless Max hops is **All hops** and Show distant is on. The nearby hop ceiling applies only when Max hops is **All hops**. Leftover nodes beyond the layout budget are omitted on purpose. Reticulum Topology also ingests at most 800 path-table rows after hop filters (sidecar 2,000).
+
+**Fix**: This is expected. The toolbar note states the 400-node limit. Turn on **Show distant peers** and set **Max hops** to **All hops** to include multi-hop peers up to 400. On Topology, use **RF only** to drop TCP/I2P hubs if you only want RNode/KISS/BLE. Narrow **Max hops** if the graph is too dense.
+
 ### No signal bars on some nodes
 
 **Cause**: Signal strength is only available for **direct (0-hop) RF** neighbors. Multi-hop and MQTT-heard nodes have no client-side signal strength.

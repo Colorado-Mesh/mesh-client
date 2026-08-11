@@ -3242,7 +3242,6 @@
     "me": "Bu düğüm",
     "directLink": "Direkt (0 atlama)",
     "relayLink": "Röle üzerinden (1 atlama)",
-    "hiddenCount": "{{shown}}/{{total}} düğüm gösteriliyor (bağlantısız düğümler gizli)",
     "noConnectedNodes": "Görüntülenecek bağlı eş yok — filtreleri ayarlayın veya ağ trafiğini bekleyin.",
     "meShort": "Sen",
     "relayHub": "Doğrudan röle",
@@ -3253,7 +3252,9 @@
     "maxHopsAll": "Tüm hops",
     "maxHopsOption": "{{count}} hops",
     "resetView": "Görünümü sıfırla",
-    "compactLeafCount": "{{count}} kompakt doğrudan eşler"
+    "compactLeafCount": "{{count}} kompakt doğrudan eşler",
+    "hiddenCountLimit": "{{shown}}/{{total}} düğüm gösteriliyor (sınır {{limit}})",
+    "visibleNodeLimitNote": "Çizgede en fazla {{distantLimit}} düğüm gösterilmektedir."
   },
   "peerListPanel": {
     "heading": "Meslektaşlar",
@@ -4342,7 +4343,6 @@
     "noNodes": "Henüz topoloji verisi yok; Reticulum yığınını bağlayın ve yenileyin.",
     "nodeCount": "{{count}} düğümleri",
     "edgeCount": "{{count}} bağlantılar",
-    "hiddenCount": "{{shown}} / {{total}} düğümleri gösteriliyor (uzak eşler gizlendi)",
     "legendSelf": "Bu düğüm",
     "centerRns": "RN'ler",
     "showDistantPeers": "Uzak akranları göster",
@@ -4363,7 +4363,10 @@
     "glyphWifi": "Wi-Fi arayüzü",
     "glyphLora": "LoRa arayüzü",
     "glyphTcp": "TCP arayüzü",
-    "glyphSerial": "Seri arayüz"
+    "glyphSerial": "Seri arayüz",
+    "hiddenCountLimit": "{{shown}}/{{total}} düğüm gösteriliyor (sınır {{limit}})",
+    "visibleNodeLimitNote": "Çizgede en fazla {{distantLimit}} düğüm gösterilmektedir.",
+    "rfOnly": "Sadece RF"
   },
   "rfHistograms": {
     "title": "RF Sinyal Dağılımı",

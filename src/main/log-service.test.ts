@@ -414,6 +414,34 @@ describe('isDroppableMeshtasticSdkLogLine', () => {
   });
 });
 
+describe('isDroppableRendererConsoleNoise', () => {
+  it('drops ResizeObserver loop completed warnings', async () => {
+    const { isDroppableRendererConsoleNoise } = await import('./log-service');
+    expect(
+      isDroppableRendererConsoleNoise(
+        'ResizeObserver loop completed with undelivered notifications.',
+      ),
+    ).toBe(true);
+    expect(isDroppableRendererConsoleNoise('ResizeObserver loop limit exceeded')).toBe(true);
+    expect(
+      isDroppableRendererConsoleNoise(
+        '  [Violation] ResizeObserver loop completed with undelivered notifications.  ',
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps other renderer errors', async () => {
+    const { isDroppableRendererConsoleNoise } = await import('./log-service');
+    expect(isDroppableRendererConsoleNoise('Error sending packet 123')).toBe(false);
+    expect(isDroppableRendererConsoleNoise('ResizeObserver is not defined')).toBe(false);
+    expect(
+      isDroppableRendererConsoleNoise(
+        'Send failed: ResizeObserver loop limit exceeded while laying out',
+      ),
+    ).toBe(false);
+  });
+});
+
 describe('formatRuntimeLogTag', () => {
   it('includes platform, arch, electron, node, packaged, and buildChannel fields', async () => {
     const { formatRuntimeLogTag } = await import('./log-service');

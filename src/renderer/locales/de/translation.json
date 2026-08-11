@@ -3242,7 +3242,6 @@
     "me": "Dieser Knoten",
     "directLink": "Direkt (0 Sprünge)",
     "relayLink": "Über Relais (1 Hop)",
-    "hiddenCount": "Anzeigen von {{shown}} von {{total}} Knoten (nicht verbundene Knoten ausgeblendet)",
     "noConnectedNodes": "Keine verbundenen Peers zum Anzeigen — Filter anpassen oder auf Netzwerkverkehr warten.",
     "meShort": "You",
     "relayHub": "Direktrelais",
@@ -3253,7 +3252,9 @@
     "maxHopsAll": "Alle Hops",
     "maxHopsOption": "{{count}} Hops",
     "resetView": "Ansicht zurücksetzen",
-    "compactLeafCount": "{{count}} kompakte Direkt-Peers"
+    "compactLeafCount": "{{count}} kompakte Direkt-Peers",
+    "hiddenCountLimit": "Anzeige von {{shown}} von {{total}} Knoten (Limit {{limit}})",
+    "visibleNodeLimitNote": "Der Graph zeigt höchstens {{distantLimit}} Knoten."
   },
   "peerListPanel": {
     "heading": "Peers",
@@ -4342,7 +4343,6 @@
     "noNodes": "Noch keine Topologiedaten – verbinden Sie den Reticulum-Stack und aktualisieren Sie ihn.",
     "nodeCount": "{{count}}-Knoten",
     "edgeCount": "{{count}}-Links",
-    "hiddenCount": "Zeigt {{shown}} von {{total}} Knoten (entfernte Peers ausgeblendet)",
     "legendSelf": "Dieser Knoten",
     "showDistantPeers": "Entfernte Peers anzeigen",
     "maxHopsFilter": "Max. Hops",
@@ -4363,7 +4363,10 @@
     "interfaceStatusOffline": "offline",
     "glyphWifi": "WLAN-Schnittstelle",
     "glyphLora": "LoRa-Schnittstelle",
-    "glyphTcp": "TCP-Schnittstelle"
+    "glyphTcp": "TCP-Schnittstelle",
+    "hiddenCountLimit": "Anzeige von {{shown}} von {{total}} Knoten (Limit {{limit}})",
+    "visibleNodeLimitNote": "Der Graph zeigt höchstens {{distantLimit}} Knoten.",
+    "rfOnly": "Nur RF"
   },
   "rfHistograms": {
     "title": "Signalverteilung",

@@ -3242,7 +3242,6 @@
     "me": "Questo nodo",
     "directLink": "Diretto (0 salti)",
     "relayLink": "Tramite relè (1 hop)",
-    "hiddenCount": "Mostra {{shown}} di {{total}} nodi (nodi non connessi nascosti)",
     "noConnectedNodes": "Nessun peer connesso da visualizzare: regola i filtri o attendi il traffico di rete.",
     "meShort": "Tu",
     "relayHub": "Relè diretto",
@@ -3253,7 +3252,9 @@
     "maxHopsAll": "Tutti gli hops",
     "maxHopsOption": "{{count}} hops",
     "resetView": "Resetta visualizzazione",
-    "compactLeafCount": "{{count}} peer diretti compatti"
+    "compactLeafCount": "{{count}} peer diretti compatti",
+    "hiddenCountLimit": "Mostra {{shown}} di {{total}} nodi (limite {{limit}})",
+    "visibleNodeLimitNote": "Il grafo mostra al massimo {{distantLimit}} nodi."
   },
   "peerListPanel": {
     "heading": "Compagni",
@@ -4342,7 +4343,6 @@
     "noNodes": "Ancora nessun dato sulla topologia: collega lo stack Reticulum e aggiorna.",
     "nodeCount": "{{count}} nodi",
     "edgeCount": "{{count}} collegamenti",
-    "hiddenCount": "Visualizzazione di {{shown}} di {{total}} nodi (peer distanti nascosti)",
     "legendSelf": "Questo nodo",
     "showDistantPeers": "Mostra colleghi distanti",
     "maxHopsFilter": "Max hops",
@@ -4363,7 +4363,10 @@
     "glyphWifi": "Interfaccia Wi-Fi",
     "glyphLora": "Interfaccia LoRa",
     "glyphTcp": "Interfaccia TCP",
-    "glyphSerial": "Interfaccia seriale"
+    "glyphSerial": "Interfaccia seriale",
+    "hiddenCountLimit": "Mostra {{shown}} di {{total}} nodi (limite {{limit}})",
+    "visibleNodeLimitNote": "Il grafo mostra al massimo {{distantLimit}} nodi.",
+    "rfOnly": "Solo RF"
   },
   "rfHistograms": {
     "title": "Distribuzione del segnale RF",

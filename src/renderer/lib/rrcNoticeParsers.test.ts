@@ -51,6 +51,17 @@ describe('parseRrcWhoNotice', () => {
       members: [],
     });
   });
+
+  it('classifies /who lines and rejects join-info and /list', () => {
+    expect(parseRrcWhoNotice('members in general: Alice (aabbccddeeff)')).not.toBeNull();
+    expect(parseRrcWhoNotice('members in general: (none)')).not.toBeNull();
+    expect(
+      parseRrcWhoNotice('room general: registered; mode=+r; topic=General chat - Colorado Mesh'),
+    ).toBeNull();
+    expect(
+      parseRrcWhoNotice('Registered public rooms:\n  general - General chat - Colorado Mesh'),
+    ).toBeNull();
+  });
 });
 
 describe('parseRrcTopicNotice', () => {

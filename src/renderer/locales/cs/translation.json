@@ -3244,7 +3244,6 @@
     "me": "Tento uzel",
     "directLink": "Přímý (0 skoků)",
     "relayLink": "Přes relé (1 hop)",
-    "hiddenCount": "Zobrazeno {{shown}} z {{total}} uzlů (skryté nespojené uzly)",
     "noConnectedNodes": "Žádné připojené peery k zobrazení — upravte filtry nebo počkejte na síťový provoz.",
     "meShort": "Vy",
     "relayHub": "Přímé relé",
@@ -3255,7 +3254,9 @@
     "maxHopsAll": "Všechny hops",
     "maxHopsOption": "{{count}} hops",
     "resetView": "Přenastavit pohled",
-    "compactLeafCount": "{{count}} kompaktní přímé protějšky"
+    "compactLeafCount": "{{count}} kompaktní přímé protějšky",
+    "hiddenCountLimit": "Zobrazeno {{shown}} z {{total}} uzlů (limit {{limit}})",
+    "visibleNodeLimitNote": "Graf zobrazuje nejvýše {{distantLimit}} uzlů."
   },
   "peerListPanel": {
     "heading": "Vazby",
@@ -4344,7 +4345,6 @@
     "noNodes": "Zatím žádná data topologie – připojte zásobník Reticulum a obnovte jej.",
     "nodeCount": "{{count}} uzly",
     "edgeCount": "{{count}} odkazy",
-    "hiddenCount": "Zobrazeno {{shown}} z {{total}} uzlů (vzdálení kolegové skryti)",
     "legendSelf": "Tento uzel",
     "centerRns": "RNS",
     "showDistantPeers": "Zobrazit vzdálené kolegy",
@@ -4365,7 +4365,10 @@
     "glyphWifi": "Rozhraní Wi-Fi:",
     "glyphLora": "Rozhraní LoRa",
     "glyphTcp": "Rozhraní TCP",
-    "glyphSerial": "Sériové rozhraní"
+    "glyphSerial": "Sériové rozhraní",
+    "hiddenCountLimit": "Zobrazeno {{shown}} z {{total}} uzlů (limit {{limit}})",
+    "visibleNodeLimitNote": "Graf zobrazuje nejvýše {{distantLimit}} uzlů.",
+    "rfOnly": "Pouze RF"
   },
   "rfHistograms": {
     "title": "Distribuce vysokofrekvenčního signálu",

@@ -3246,7 +3246,6 @@
     "me": "Ten węzeł",
     "directLink": "Bezpośredni (0 przeskoków)",
     "relayLink": "Przez przekaźnik (1 przeskok)",
-    "hiddenCount": "Wyświetlanie {{shown}} z węzłów {{total}} (niepołączone węzły ukryte)",
     "noConnectedNodes": "Brak połączonych partnerów do wyświetlenia — dostosuj filtry lub poczekaj na ruch sieciowy.",
     "meShort": "Ty",
     "relayHub": "Przekaźnik bezpośredni",
@@ -3257,7 +3256,9 @@
     "maxHopsAll": "Wszystkie hops",
     "maxHopsOption": "{{count}} hops",
     "resetView": "Resetuj widok",
-    "compactLeafCount": "{{count}} kompaktowych partnerów bezpośrednich"
+    "compactLeafCount": "{{count}} kompaktowych partnerów bezpośrednich",
+    "hiddenCountLimit": "Wyświetlanie {{shown}} z {{total}} węzłów (limit {{limit}})",
+    "visibleNodeLimitNote": "Graf pokazuje maksymalnie {{distantLimit}} węzłów."
   },
   "peerListPanel": {
     "heading": "Partnerzy",
@@ -4346,7 +4347,6 @@
     "noNodes": "Brak jeszcze danych o topologii — podłącz stos Reticulum i odśwież.",
     "nodeCount": "{{count}} węzły",
     "edgeCount": "{{count}} linki",
-    "hiddenCount": "Wyświetlanie {{shown}} z {{total}} węzłów (ukryte odległe urządzenia równorzędne)",
     "legendSelf": "Ten węzeł",
     "centerRns": "RNS",
     "showDistantPeers": "Pokaż odległych partnerów",
@@ -4367,7 +4367,10 @@
     "glyphWifi": "Interfejs Wi-Fi",
     "glyphLora": "Interfejs LoRa",
     "glyphTcp": "Interfejs TCP",
-    "glyphSerial": "Transmisja szeregowa"
+    "glyphSerial": "Transmisja szeregowa",
+    "hiddenCountLimit": "Wyświetlanie {{shown}} z {{total}} węzłów (limit {{limit}})",
+    "visibleNodeLimitNote": "Graf pokazuje maksymalnie {{distantLimit}} węzłów.",
+    "rfOnly": "Tylko RF"
   },
   "rfHistograms": {
     "title": "Dystrybucja sygnału RF",

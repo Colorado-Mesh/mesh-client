@@ -5,7 +5,7 @@ Living matrix for [issue #773](https://github.com/Colorado-Mesh/mesh-client/issu
 - `crates/ratspeak-tauri/src/commands/games.rs`
 - `dashboard/static/js/games_tab.js`
 
-Update this file when Games PRs land. `pnpm run update` warns on new Ratspeak releases with stub-kind `games-parity`.
+Update this file when Games PRs land. `pnpm run update` warns only when a **published** Ratspeak GitHub Release is newer than the `reviewed-ref` pin on the `games-parity` entry in `scripts/update.sh` (bump that pin after review). Tags, `main`, and RCs without a GitHub Release are ignored.
 
 **Last review:** 2026-08-08 (Ratspeak v1.0.25 — no Games protocol/API delta, CSS-only; added win confetti; LXMF `FIELD_REACTION` 0x40 interop for Chat tapbacks). Prior: 2026-08-06 (delivery_state / envelope persist / optimistic board / Chess promotion+claims).
 

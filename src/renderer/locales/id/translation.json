@@ -3242,7 +3242,6 @@
     "me": "Node ini",
     "directLink": "Langsung (0 hop)",
     "relayLink": "Melalui relai (1 hop)",
-    "hiddenCount": "Menampilkan {{shown}} dari {{total}} node (node yang tidak terhubung disembunyikan)",
     "noConnectedNodes": "Tidak ada rekan yang terhubung untuk ditampilkan — sesuaikan filter atau tunggu lalu lintas jaringan.",
     "meShort": "Kau",
     "relayHub": "Relai langsung",
@@ -3253,7 +3252,9 @@
     "maxHopsAll": "Semua hop",
     "maxHopsOption": "{{count}} hop",
     "resetView": "Atur ulang tampilan",
-    "compactLeafCount": "{{count}} rekan langsung ringkas"
+    "compactLeafCount": "{{count}} rekan langsung ringkas",
+    "hiddenCountLimit": "Menampilkan {{shown}} dari {{total}} node (batas {{limit}})",
+    "visibleNodeLimitNote": "Graf menunjukkan paling banyak {{distantLimit}} node."
   },
   "peerListPanel": {
     "heading": "Peer",
@@ -4342,7 +4343,6 @@
     "noNodes": "Belum ada data topologi — sambungkan tumpukan Reticulum dan segarkan.",
     "nodeCount": "{{count}} node",
     "edgeCount": "Tautan {{count}}",
-    "hiddenCount": "Menampilkan {{shown}} dari {{total}} node (rekan jauh disembunyikan)",
     "legendSelf": "simpul ini",
     "centerRns": "RNS",
     "showDistantPeers": "Tampilkan rekan yang jauh",
@@ -4363,7 +4363,10 @@
     "glyphWifi": "Antarmuka Wi-Fi",
     "glyphLora": "Antarmuka LoRa",
     "glyphTcp": "Antarmuka TCP",
-    "glyphSerial": "Antarmuka Serial"
+    "glyphSerial": "Antarmuka Serial",
+    "hiddenCountLimit": "Menampilkan {{shown}} dari {{total}} node (batas {{limit}})",
+    "visibleNodeLimitNote": "Graf menunjukkan paling banyak {{distantLimit}} node.",
+    "rfOnly": "RF saja"
   },
   "rfHistograms": {
     "title": "Distribusi Sinyal RF",

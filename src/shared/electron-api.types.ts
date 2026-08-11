@@ -1024,6 +1024,13 @@ export interface ElectronAPI {
   meshtastic: {
     tcp: {
       connect: (host: string, port: number) => Promise<void>;
+      /**
+       * Write one length-prefixed toRadio frame. Rejects with
+       * `meshtastic:tcp-write: no active socket` when main has no socket
+       * (reconnect race). Main resolves a sentinel so Electron does not log
+       * handler [error]; preload maps that to this rejection. Do not replay
+       * the payload on a later socket.
+       */
       write: (bytes: number[]) => Promise<void>;
       disconnect: () => Promise<void>;
       onData: (cb: (bytes: Uint8Array) => void) => () => void;

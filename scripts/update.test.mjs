@@ -97,14 +97,16 @@ describe('update.sh Reticulum stack functionality check', () => {
     const result = runUpdate([], { UPDATE_SH_TEST_HOOK: 'upstream-catalog-only' });
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toContain('RATSPEAK_RELEASE_WATCH_ENTRIES:');
-    expect(result.stdout).toContain('ratspeak/rsLXST||rsLXST voice (lxst-telephony)');
-    expect(result.stdout).toContain('ratspeak/lrgp-rs||lrgp-rs games (LRGP)');
+    expect(result.stdout).toContain('ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.1.2');
+    expect(result.stdout).toContain('ratspeak/lrgp-rs||lrgp-rs games (LRGP)|');
     expect(result.stdout).toContain(
-      'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)',
+      'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.25',
     );
     expect(result.stdout).toContain('ratspeak/LXMFace||');
+    expect(result.stdout).toContain('file:js/lxmface.js@308a729d5bf951880633e5e174b3b7628203106b');
     expect(updateScript).toContain('"${stub}" = \'games-parity\'');
     expect(updateScript).toContain('docs/reticulum-games-parity.md');
+    expect(updateScript).toContain('reviewed-ref');
     expect(result.stdout).toContain('RATSPEAK_KNOWN_ORG_REPOS:');
     expect(result.stdout).toContain('  rsReticulum');
     expect(result.stdout).toContain('  rsLXMF');
@@ -125,14 +127,23 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(upstreamCall).toBeGreaterThan(patchesCall);
   });
 
+  const LXMFACE_REVIEWED_SHA = '308a729d5bf951880633e5e174b3b7628203106b';
+
   /**
    * @param {'release' | 'rate-limit' | 'malformed' | 'missing'} mode
+   * @param {{
+   *   releases?: Record<string, unknown>
+   *   commits?: Record<string, unknown>
+   *   compare?: unknown
+   * }} [extra]
    */
-  function prepareUpstreamGhFixture(mode) {
+  function prepareUpstreamGhFixture(mode, extra = {}) {
     const work = mkdtempSync(path.join(os.tmpdir(), 'mesh-update-upstream-'));
     tempDirs.push(work);
     const binDir = path.join(work, 'bin');
     mkdirSync(binDir, { recursive: true });
+    mkdirSync(path.join(work, 'releases'), { recursive: true });
+    mkdirSync(path.join(work, 'commits'), { recursive: true });
     const releasePath = path.join(work, 'release.json');
     const reposPath = path.join(work, 'repos.json');
     if (mode === 'release') {
@@ -155,6 +166,19 @@ describe('update.sh Reticulum stack functionality check', () => {
       writeFileSync(releasePath, JSON.stringify({ message: 'Not Found' }));
       writeFileSync(reposPath, '[]');
     }
+    for (const [repo, payload] of Object.entries(extra.releases ?? {})) {
+      writeFileSync(
+        path.join(work, 'releases', `${repo.replaceAll('/', '-')}.json`),
+        typeof payload === 'string' ? payload : JSON.stringify(payload),
+      );
+    }
+    for (const [repo, payload] of Object.entries(extra.commits ?? {})) {
+      writeFileSync(
+        path.join(work, 'commits', `${repo.replaceAll('/', '-')}.json`),
+        typeof payload === 'string' ? payload : JSON.stringify(payload),
+      );
+    }
+    writeFileSync(path.join(work, 'compare.json'), JSON.stringify(extra.compare ?? { files: [] }));
     const ghPath = path.join(binDir, 'gh');
     writeFileSync(
       ghPath,
@@ -166,7 +190,31 @@ if [[ "\${1:-}" != "api" ]]; then
 fi
 path="\${2:-}"
 if [[ "$path" == repos/*/releases/latest ]]; then
+  repo="\${path#repos/}"
+  repo="\${repo%/releases/latest}"
+  slug="\${repo//\\//-}"
+  per=${JSON.stringify(path.join(work, 'releases'))}/"\${slug}.json"
+  if [[ -f "$per" ]]; then
+    cat "$per"
+    exit 0
+  fi
   cat ${JSON.stringify(releasePath)}
+  exit 0
+fi
+if [[ "$path" == repos/*/commits* ]]; then
+  repo="\${path#repos/}"
+  repo="\${repo%%/commits*}"
+  slug="\${repo//\\//-}"
+  per=${JSON.stringify(path.join(work, 'commits'))}/"\${slug}.json"
+  if [[ -f "$per" ]]; then
+    cat "$per"
+    exit 0
+  fi
+  printf '%s' '[]'
+  exit 0
+fi
+if [[ "$path" == repos/*/compare/* ]]; then
+  cat ${JSON.stringify(path.join(work, 'compare.json'))}
   exit 0
 fi
 if [[ "$path" == orgs/ratspeak/repos* ]]; then
@@ -180,6 +228,28 @@ exit 0
     );
     chmodSync(ghPath, 0o755);
     return { work, binDir };
+  }
+
+  /** Current reviewed-ref pins: no warn_box. */
+  function currentBaselineExtra() {
+    return {
+      releases: {
+        'ratspeak/rsLXST': {
+          tag_name: 'v0.1.2',
+          published_at: '2026-07-26T19:52:43Z',
+          body: 'rsLXST v0.1.2',
+        },
+        'ratspeak/lrgp-rs': { message: 'Not Found' },
+        'ratspeak/Ratspeak': {
+          tag_name: 'v1.0.25',
+          published_at: '2026-07-19T05:00:50Z',
+          body: 'Protocol refresh: byte-exact parity with Reticulum 1.3.8 and LXMF 1.0.1',
+        },
+      },
+      commits: {
+        'ratspeak/LXMFace': [{ sha: LXMFACE_REVIEWED_SHA }],
+      },
+    };
   }
 
   it('upstream-check-only parses a valid release non-fatally', () => {
@@ -211,7 +281,8 @@ exit 0
       PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
-    expect(result.stdout).toContain('no GitHub release (or query failed)');
+    expect(result.stdout).toContain('no published GitHub release');
+    expect(result.stdout).not.toContain('query failed');
   });
 
   it('upstream-check-only tolerates missing releases', () => {
@@ -221,7 +292,123 @@ exit 0
       PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
-    expect(result.stdout).toContain('no GitHub release (or query failed)');
+    expect(result.stdout).toContain('no published GitHub release');
+    expect(result.stdout).not.toContain('query failed');
+    expect(result.stdout).not.toContain('WARNING:');
+  });
+
+  it('upstream-check-only stays quiet when published releases match reviewed-ref', () => {
+    const fixture = prepareUpstreamGhFixture('release', currentBaselineExtra());
+    const result = runUpdate([], {
+      UPDATE_SH_TEST_HOOK: 'upstream-check-only',
+      PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
+    });
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain('v1.0.25');
+    expect(result.stdout).toContain('reviewed; current');
+    expect(result.stdout).toContain('js/lxmface.js @ 308a729d5bf9 (reviewed; current)');
+    expect(result.stdout).toContain('no published GitHub release');
+    expect(result.stdout).toContain(
+      'Ratspeak upstream watch complete (reviewed baselines current; no new-repo warnings).',
+    );
+    expect(result.stdout).not.toContain('WARNING:');
+    expect(result.stdout).not.toContain('Four in a Row');
+    expect(result.stdout).not.toContain('query failed');
+  });
+
+  it('upstream-check-only warns when a published Ratspeak release is newer than the pin', () => {
+    const fixture = prepareUpstreamGhFixture('release', {
+      ...currentBaselineExtra(),
+      releases: {
+        ...currentBaselineExtra().releases,
+        'ratspeak/Ratspeak': {
+          tag_name: 'v9.9.9',
+          published_at: '2026-08-01T00:00:00Z',
+          body: 'First line\nSecond',
+        },
+      },
+    });
+    const result = runUpdate([], {
+      UPDATE_SH_TEST_HOOK: 'upstream-check-only',
+      PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
+    });
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain('WARNING:');
+    expect(result.stdout).toContain('v1.0.25');
+    expect(result.stdout).toContain('v9.9.9');
+    expect(result.stdout).toContain('docs/reticulum-games-parity.md');
+    expect(result.stdout).not.toContain('Four in a Row');
+  });
+
+  it('upstream-check-only hints Four in a Row when the published release body mentions it', () => {
+    const fixture = prepareUpstreamGhFixture('release', {
+      ...currentBaselineExtra(),
+      releases: {
+        ...currentBaselineExtra().releases,
+        'ratspeak/Ratspeak': {
+          tag_name: 'v9.9.9',
+          published_at: '2026-08-01T00:00:00Z',
+          body: 'Added Four in a Row\nOther notes',
+        },
+      },
+    });
+    const result = runUpdate([], {
+      UPDATE_SH_TEST_HOOK: 'upstream-check-only',
+      PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
+    });
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain('WARNING:');
+    expect(result.stdout).toContain(
+      'This published release includes Four in a Row — update Games UI + docs/reticulum-games-parity.md',
+    );
+  });
+
+  it('upstream-check-only hints Four in a Row when the compare diff mentions it', () => {
+    const fixture = prepareUpstreamGhFixture('release', {
+      ...currentBaselineExtra(),
+      releases: {
+        ...currentBaselineExtra().releases,
+        'ratspeak/Ratspeak': {
+          tag_name: 'v9.9.9',
+          published_at: '2026-08-01T00:00:00Z',
+          body: 'Protocol refresh only',
+        },
+      },
+      compare: {
+        files: [
+          {
+            filename: 'crates/ratspeak-tauri/src/commands/games.rs',
+            patch: '+    "four_in_a_row",',
+          },
+        ],
+      },
+    });
+    const result = runUpdate([], {
+      UPDATE_SH_TEST_HOOK: 'upstream-check-only',
+      PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
+    });
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain(
+      'This published release includes Four in a Row — update Games UI + docs/reticulum-games-parity.md',
+    );
+  });
+
+  it('upstream-check-only warns when the vendored LXMFace file commit changes', () => {
+    const fixture = prepareUpstreamGhFixture('release', {
+      ...currentBaselineExtra(),
+      commits: {
+        'ratspeak/LXMFace': [{ sha: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }],
+      },
+    });
+    const result = runUpdate([], {
+      UPDATE_SH_TEST_HOOK: 'upstream-check-only',
+      PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
+    });
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain('WARNING:');
+    expect(result.stdout).toContain('308a729d5bf9');
+    expect(result.stdout).toContain('aaaaaaaaaaaa');
+    expect(result.stdout).toContain('src/renderer/lib/reticulum/lxmface.ts');
   });
 
   it('runs cargo clean after a successful rebuild when CLEAN_SIDECAR_TARGET=1', () => {

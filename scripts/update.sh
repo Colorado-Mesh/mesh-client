@@ -367,7 +367,9 @@ warn_github_api_rate_limit_once() {
   fi
 }
 
-# Latest release summary: "tag|published_at|first_body_line" or empty.
+# Latest release summary: "tag|published_at|first_body_line|four" or empty.
+# four is 1 when the published release body mentions Four in a Row.
+# /releases/latest ignores drafts and prereleases (in-flight tags/main/RCs).
 github_latest_release_summary() {
   local repo="$1"
   local json=''
@@ -395,12 +397,14 @@ process.stdin.on("end", () => {
     }
     const tag = String(j.tag_name || j.name || "").replace(/\|/g, "/");
     const published = String(j.published_at || "").slice(0, 10);
-    const body = String(j.body || "").split(/\r?\n/).find((l) => l.trim()) || "";
+    const rawBody = String(j.body || "");
+    const body = rawBody.split(/\r?\n/).find((l) => l.trim()) || "";
     const first = body
       .replace(/[\u0000-\u001F\u007F]/g, "")
       .replace(/\|/g, "/")
       .slice(0, 120);
-    process.stdout.write(`${tag}|${published}|${first}`);
+    const four = /four[\s_-]*in[\s_-]*a[\s_-]*row/i.test(rawBody) ? "1" : "0";
+    process.stdout.write(`${tag}|${published}|${first}|${four}`);
   } catch {
     process.stdout.write("");
   }
@@ -408,16 +412,108 @@ process.stdin.on("end", () => {
 ' 2> /dev/null || echo ''
 }
 
+# Latest commit SHA that touched path, or empty.
+github_file_latest_commit() {
+  local repo="$1" file_path="$2"
+  local json=''
+  local api_rc=0
+  json="$(github_api_get "repos/${repo}/commits?path=${file_path}&per_page=1")" || api_rc=$?
+  if [ "${api_rc}" -eq 2 ]; then
+    warn_github_api_rate_limit_once
+    echo ''
+    return 0
+  fi
+  if [ -z "${json}" ]; then
+    echo ''
+    return 0
+  fi
+  printf '%s' "${json}" | node -e '
+let s = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (c) => { s += c; });
+process.stdin.on("end", () => {
+  try {
+    const j = JSON.parse(s);
+    if (!Array.isArray(j) || !j[0] || !j[0].sha) {
+      process.stdout.write("");
+      return;
+    }
+    process.stdout.write(String(j[0].sha).replace(/\|/g, ""));
+  } catch {
+    process.stdout.write("");
+  }
+});
+' 2> /dev/null || echo ''
+}
+
+# 1 if GitHub compare base...head mentions Four in a Row; else 0.
+github_compare_mentions_four_in_a_row() {
+  local repo="$1" base="$2" head="$3"
+  local json=''
+  local api_rc=0
+  json="$(github_api_get "repos/${repo}/compare/${base}...${head}")" || api_rc=$?
+  if [ "${api_rc}" -eq 2 ]; then
+    warn_github_api_rate_limit_once
+    echo '0'
+    return 0
+  fi
+  if [ -z "${json}" ]; then
+    echo '0'
+    return 0
+  fi
+  printf '%s' "${json}" | node -e '
+let s = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (c) => { s += c; });
+process.stdin.on("end", () => {
+  try {
+    const j = JSON.parse(s);
+    const files = Array.isArray(j.files) ? j.files : [];
+    const hay = files
+      .map((f) => `${f.filename || ""}\n${f.patch || ""}`)
+      .join("\n");
+    process.stdout.write(/four[\s_-]*in[\s_-]*a[\s_-]*row/i.test(hay) ? "1" : "0");
+  } catch {
+    process.stdout.write("0");
+  }
+});
+' 2> /dev/null || echo '0'
+}
+
+# Compare published release tags (strip a leading v; case-insensitive).
+release_refs_equal() {
+  node -e '
+const norm = (t) => String(t).trim().replace(/^v/i, "").toLowerCase();
+const a = norm(process.argv[1]);
+const b = norm(process.argv[2]);
+process.exit(a && b && a === b ? 0 : 1);
+' "$1" "$2" 2> /dev/null
+}
+
+# Compare git SHAs (lowercase hex; prefix match allowed).
+commit_shas_equal() {
+  node -e '
+const norm = (s) => String(s).toLowerCase().replace(/[^0-9a-f]/g, "");
+const a = norm(process.argv[1]);
+const b = norm(process.argv[2]);
+if (!a || !b) process.exit(1);
+process.exit(a === b || a.startsWith(b) || b.startsWith(a) ? 0 : 1);
+' "$1" "$2" 2> /dev/null
+}
+
 # Curated release watch + known org repos (keep in sync when adopting new ratspeak libs).
-# Format: "owner/repo|stub-kind-or-empty|display-label"
+# Format: "owner/repo|stub-kind-or-empty|display-label|reviewed-ref"
+# reviewed-ref: last published GitHub Release tag we reviewed, or
+#   file:<path>@<sha> for repos without releases (vendored file commit).
+#   Empty = no published release expected yet; tags/main/RCs are ignored.
 # stub-kind: games → warn while mesh-client still has sidecar stubs only.
-# stub-kind: games-parity → non-fatal reminder to review Ratspeak Games tab vs mesh-client.
+# stub-kind: games-parity → warn only when a published release is newer than reviewed-ref.
 # (voice/games stubs cleared after lxst-telephony / lrgp-rs integration; empty stub = informational.)
 RATSPEAK_RELEASE_WATCH_ENTRIES=(
-  'ratspeak/rsLXST||rsLXST voice (lxst-telephony)'
-  'ratspeak/lrgp-rs||lrgp-rs games (LRGP)'
-  'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)'
-  'ratspeak/LXMFace||LXMFace identicons (vendored in renderer)'
+  'ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.1.2'
+  'ratspeak/lrgp-rs||lrgp-rs games (LRGP)|'
+  'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.25'
+  'ratspeak/LXMFace||LXMFace identicons (vendored in renderer)|file:js/lxmface.js@308a729d5bf951880633e5e174b3b7628203106b'
 )
 
 RATSPEAK_KNOWN_ORG_REPOS=(
@@ -454,38 +550,80 @@ print_ratspeak_upstream_catalog() {
 }
 
 # Surface new Ratspeak library releases and brand-new org repos (stack floats via clone).
+# Warn only when a published GitHub Release (or vendored file commit) differs from reviewed-ref.
 check_ratspeak_upstream() {
   local has_upstream_warning=0
-  local entry repo stub label summary tag published first url
+  local entry repo stub label reviewed summary tag published first four url
+  local file_spec file_path file_sha latest_sha short_pin short_latest cmp_four
 
   echo ''
-  echo 'Checking Ratspeak upstream releases and new org repos...'
-  echo '  (rsReticulum/rsLXMF float to origin/main via clone-ratspeak-stack.sh)'
+  echo 'Checking Ratspeak upstream published releases and new org repos...'
+  echo '  (tags/main/RCs without a GitHub Release are ignored; rsReticulum/rsLXMF float via clone-ratspeak-stack.sh)'
 
   for entry in "${RATSPEAK_RELEASE_WATCH_ENTRIES[@]}"; do
-    IFS='|' read -r repo stub label <<< "${entry}"
+    IFS='|' read -r repo stub label reviewed <<< "${entry}"
     url="https://github.com/${repo}/releases"
-    summary="$(github_latest_release_summary "${repo}")"
-    if [ -z "${summary}" ]; then
-      echo "  ${label}: no GitHub release (or query failed) — ${url}"
-      continue
-    fi
-    IFS='|' read -r tag published first <<< "${summary}"
-    echo "  ${label}: ${tag} (${published}) — ${first}"
-    if [ "${stub}" = 'voice' ] || [ "${stub}" = 'games' ]; then
-      warn_box "${label}" "sidecar stub" "${tag} available" "${url}"
-      echo "  Reason tracked: mesh-client still stubs this feature; review integrating ${repo} @ ${tag}"
+
+    if [[ "${reviewed}" == file:* ]]; then
+      file_spec="${reviewed#file:}"
+      file_path="${file_spec%@*}"
+      file_sha="${file_spec##*@}"
+      if [ -z "${file_path}" ] || [ -z "${file_sha}" ] || [ "${file_path}" = "${file_spec}" ]; then
+        continue
+      fi
+      latest_sha="$(github_file_latest_commit "${repo}" "${file_path}")"
+      if [ -z "${latest_sha}" ]; then
+        continue
+      fi
+      short_pin="${file_sha:0:12}"
+      short_latest="${latest_sha:0:12}"
+      if commit_shas_equal "${latest_sha}" "${file_sha}"; then
+        echo "  ${label}: ${file_path} @ ${short_pin} (reviewed; current)"
+        continue
+      fi
+      warn_box "${label}" "${short_pin}" "${short_latest}" \
+        "https://github.com/${repo}/commits?path=${file_path}"
+      echo "  Reason tracked: vendored ${file_path} changed — compare with src/renderer/lib/reticulum/lxmface.ts"
       has_upstream_warning=1
       HAS_WARNING=1
+      continue
+    fi
+
+    summary="$(github_latest_release_summary "${repo}")"
+    if [ -z "${summary}" ]; then
+      if [ -n "${reviewed}" ]; then
+        echo "  ${label}: no published GitHub release (reviewed ${reviewed})"
+      else
+        echo "  ${label}: no published GitHub release"
+      fi
+      continue
+    fi
+    IFS='|' read -r tag published first four <<< "${summary}"
+    if [ -n "${reviewed}" ] && release_refs_equal "${tag}" "${reviewed}"; then
+      echo "  ${label}: ${tag} (${published}; reviewed; current)"
+      continue
+    fi
+    echo "  ${label}: ${tag} (${published}) — ${first}"
+    warn_box "${label}" "${reviewed:-none}" "${tag}" "${url}"
+    if [ "${stub}" = 'voice' ] || [ "${stub}" = 'games' ]; then
+      echo "  Reason tracked: mesh-client still stubs this feature; review integrating ${repo} @ ${tag}"
     elif [ "${stub}" = 'games-parity' ]; then
-      warn_box "${label}" "Games parity review" "${tag} available" "${url}"
       echo "  Reason tracked: compare Ratspeak Games tab with mesh-client:"
       echo "    crates/ratspeak-tauri/src/commands/games.rs"
       echo "    dashboard/static/js/games_tab.js"
       echo "    docs/reticulum-games-parity.md"
-      has_upstream_warning=1
-      HAS_WARNING=1
+      cmp_four='0'
+      if [ "${four}" != '1' ] && [ -n "${reviewed}" ]; then
+        cmp_four="$(github_compare_mentions_four_in_a_row "${repo}" "${reviewed}" "${tag}")"
+      fi
+      if [ "${four}" = '1' ] || [ "${cmp_four}" = '1' ]; then
+        echo "  This published release includes Four in a Row — update Games UI + docs/reticulum-games-parity.md"
+      fi
+    else
+      echo "  Reason tracked: published release is newer than reviewed-ref ${reviewed:-none} — bump the pin after review"
     fi
+    has_upstream_warning=1
+    HAS_WARNING=1
   done
 
   local repos_json=''
@@ -536,7 +674,7 @@ process.stdin.on("end", () => {
   fi
 
   if [ "${has_upstream_warning}" -eq 0 ]; then
-    echo '  Ratspeak upstream watch complete (no stub/new-repo warnings).'
+    echo '  Ratspeak upstream watch complete (reviewed baselines current; no new-repo warnings).'
   fi
 }
 

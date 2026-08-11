@@ -129,7 +129,11 @@ import {
 import { consumeRncpReceiveDestSharePending } from '@/renderer/lib/rncpReceiveDestSharePending';
 import { applyRrcDirectMessageRoom } from '@/renderer/lib/rrcDirectMessageRoute';
 import { isRrcRoomMuted } from '@/renderer/lib/rrcMention';
-import { shouldDropEmptyRrcInbound } from '@/renderer/lib/rrcMessageDisplay';
+import {
+  resolveRrcInboundChatRoom,
+  shouldDropEmptyRrcInbound,
+} from '@/renderer/lib/rrcMessageDisplay';
+import { applyRrcWhoInboundNotice } from '@/renderer/lib/rrcWhoInbound';
 import {
   LARGE_MESH_NODE_THRESHOLD,
   MEGA_MESH_FULL_PEER_REFRESH_MAX_AGE_MS,
@@ -166,7 +170,6 @@ import {
   isRrcModerationLanguage,
   parseRrcListNotice,
   parseRrcTopicNotice,
-  parseRrcWhoNotice,
 } from '../lib/rrcNoticeParsers';
 import { rrcRoomsMatch } from '../lib/rrcRoomName';
 import type { DeviceState, MeshNode } from '../lib/types';
@@ -1154,18 +1157,26 @@ export function useReticulumRuntime(): ProtocolRuntime {
               },
             });
           } else {
-            room =
-              typeof p.room === 'string' && p.room.trim()
-                ? p.room
-                : (view.activeRoom ?? RRC_HUB_STREAM_ROOM);
+            room = resolveRrcInboundChatRoom(typeof p.room === 'string' ? p.room : undefined);
           }
 
           if (kind === 'notice') {
             const listed = parseRrcListNotice(p.body);
             if (listed) session.setListedRooms(listed, hubDestHash);
-            const who = parseRrcWhoNotice(p.body);
-            // Full roster snapshot — replace so departed nicks disappear.
-            if (who) session.mergeRoomMembers(who.room, who.members, 'replace', hubDestHash);
+            const hubKey = hubDestHash?.toLowerCase();
+            const hubSession = hubKey ? session.sessionsByHub.get(hubKey) : undefined;
+            const whoResult = applyRrcWhoInboundNotice(
+              p.body,
+              hubDestHash ? (hubSession?.rooms.keys() ?? []) : session.rooms.keys(),
+              {
+                hubDestHash,
+                mergeRoomMembers: (whoRoom, members, mode, hub) => {
+                  session.mergeRoomMembers(whoRoom, members, mode, hub);
+                },
+                consumeWhoTranscriptSlot: (whoRoom, hub) =>
+                  session.consumeWhoTranscriptSlot(whoRoom, hub),
+              },
+            );
             const topic = parseRrcTopicNotice(p.body);
             if (topic) session.setRoomTopic(topic.room, topic.topic || null, hubDestHash);
             // rrcd may emit join-info NOTICE without a usable JOINED member list —
@@ -1182,6 +1193,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
             if (isRrcModerationLanguage(p.body)) {
               // Reserve kick/ban banner copy for moderation notices; transcript keeps hub text.
               session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
+            }
+            // Unmatched / nicklist-only `/who` must not reach addMessage or [hub] persistence.
+            if (whoResult.action === 'unjoined' || whoResult.action === 'nicklist-only') {
+              return;
+            }
+            if (whoResult.action === 'transcript') {
+              room = whoResult.room;
             }
           }
 

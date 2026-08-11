@@ -9,7 +9,7 @@ This document is the authoritative reference for every diagnostic output in Mesh
 - **NodeListPanel**: inline anomaly badges, redundancy `+N` echo count, MQTT-only node dimming, Node Health Score badge, JSON export
 - **MapPanel**: channel utilization halos, routing anomaly aura circles
 - **RF Histograms panel**: SNR, RSSI, and hop-count bar charts across all nodes
-- **Peer Graph panel**: SVG force-directed graph of directly connected nodes (hops 0–1) — **Meshtastic and MeshCore only**; Reticulum uses the **Topology** tab instead
+- **Peer Graph panel**: SVG force-directed graph of mesh peers with hop filters — **Meshtastic and MeshCore only**; Reticulum uses the **Topology** tab instead (same 48/400 visible-node cap)
 
 All three protocols share one **Diagnostics** sidebar tab; sections differ by `ProtocolCapabilities` (see **Multi-protocol tab scoping** below).
 
@@ -416,9 +416,10 @@ Data is read directly from the node store; no additional telemetry required.
 
 Accessible via the graph icon in the sidebar.
 
-SVG force-directed graph of nodes within direct reach (hops 0–1 from the connected device).
+SVG force-directed graph of Meshtastic and MeshCore peers (Reticulum uses the **Topology** tab with the same hop controls and visible-node cap).
 
-- Only nodes with `hops_away` 0 or 1 are included; avoids O(n²) edge explosion on large meshes
+- **Show distant peers** (Peer Graph default **off**; Topology default **on**) and **Max hops** (Peer Graph default **2**; Topology default **All hops**) filter the node set first. Numeric **Max hops** is applied even when Show distant is off. Unknown hops are omitted unless Max hops is **All hops** and Show distant is on. The nearby hop ceiling (Mesh hops > 1, Reticulum hops > 2) applies only when Max hops is **All hops**. 1-hop Mesh nodes are not distant.
+- Layout budget (known limitation): at most **400** nodes after hop filters (`FORCE_REPULSION_FULL_PAIR_CAP`). The toolbar states this limit; when the cap hides nodes the status reads “limit 400”
 - Both Meshtastic and MeshCore use the `hops_away` field for edge inference
 - Nodes are clickable; clicking opens NodeDetailModal for that node
 - Layout uses D3-style force simulation; positions stabilize after initial render
