@@ -157,7 +157,8 @@ Automated dependency updates are configured in `.github/dependabot.yml`:
 - **Open PRs:** `open-pull-requests-limit: 0` — Dependabot scans but does **not** open PRs.
   Dependency bumps are applied manually via `pnpm run update` (`scripts/update.sh`), which
   also runs dedupe, Ratspeak overlay PR checks, and an upstream release / new-org-repo watch
-  (rsLXST, lrgp-rs, Ratspeak with Games-parity nudge, LXMFace). Sibling **rsReticulum** /
+  (rsLXST, lrgp-rs, Ratspeak Games-parity when a newer published release exists, LXMFace
+  `js/lxmface.js` commit). Sibling **rsReticulum** /
   **rsLXMF** / **rsNomad** / **rsLXST** / **lrgp-rs** float to `origin/main` via
   `clone-ratspeak-stack.sh` (overlays must apply). See AGENTS.md §6.
 
