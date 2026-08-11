@@ -3242,7 +3242,6 @@
     "me": "Este nó",
     "directLink": "Direto (0 saltos)",
     "relayLink": "Via relé (1 salto)",
-    "hiddenCount": "Mostrando {{shown}} de {{total}} nós (nós não conectados ocultos)",
     "noConnectedNodes": "Sem pares conectados para exibir — ajuste os filtros ou aguarde o tráfego da rede.",
     "meShort": "Você",
     "relayHub": "Relé direto",
@@ -3255,7 +3254,7 @@
     "resetView": "Resetar a visualização",
     "compactLeafCount": "{{count}} pares diretos compactos",
     "hiddenCountLimit": "Mostrando {{shown}} de {{total}} nós (limite {{limit}})",
-    "visibleNodeLimitNote": "O grafo mostra no máximo {{distantLimit}} nós ({{nearbyLimit}} quando pares distantes estão ocultos)."
+    "visibleNodeLimitNote": "O grafo mostra no máximo {{distantLimit}} nós."
   },
   "peerListPanel": {
     "heading": "Pares",
@@ -4344,7 +4343,6 @@
     "noNodes": "Ainda não há dados de topologia – conecte a pilha Reticulum e atualize.",
     "nodeCount": "{{count}} nós",
     "edgeCount": "links {{count}}",
-    "hiddenCount": "Mostrando {{shown}} de nós {{total}} (pontos distantes ocultos)",
     "legendSelf": "Este nó",
     "showDistantPeers": "Mostrar colegas distantes",
     "maxHopsFilter": "Máx. hops",
@@ -4367,7 +4365,7 @@
     "glyphTcp": "Interface TCP",
     "glyphSerial": "Interface Serial",
     "hiddenCountLimit": "Mostrando {{shown}} de {{total}} nós (limite {{limit}})",
-    "visibleNodeLimitNote": "O grafo mostra no máximo {{distantLimit}} nós ({{nearbyLimit}} quando pares distantes estão ocultos).",
+    "visibleNodeLimitNote": "O grafo mostra no máximo {{distantLimit}} nós.",
     "rfOnly": "Apenas RF"
   },
   "rfHistograms": {

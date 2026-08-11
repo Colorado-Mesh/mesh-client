@@ -17,8 +17,9 @@ export const MESH_TOPOLOGY_NEARBY_MAX_HOPS = 1;
  */
 export const RETICULUM_TOPOLOGY_NEARBY_MAX_HOPS = 2;
 
-export function topologyGraphVisibleNodeCap(includeDistantPeers: boolean): number {
-  return includeDistantPeers ? TOPOLOGY_GRAPH_DISTANT_NODE_CAP : TOPOLOGY_GRAPH_NEARBY_NODE_CAP;
+/** Layout budget after hop filters. Not gated by Show distant (48 hid 1-hop neighbors). */
+export function topologyGraphVisibleNodeCap(): number {
+  return TOPOLOGY_GRAPH_DISTANT_NODE_CAP;
 }
 
 export interface TopologyHopFilterState {
@@ -29,14 +30,17 @@ export interface TopologyHopFilterState {
 
 /**
  * Hop visibility for Graph / Topology.
- * Numeric Max hops always applies (unknown hops pass). The distant-off nearby
- * ceiling applies only when Max hops is All — otherwise hop 2/8 is a no-op.
+ * Numeric Max hops always applies. Unknown hops are included only when Max hops
+ * is All and Show distant is on — they are not 1-hop neighbors.
+ * Distant-off nearby ceiling applies only when Max hops is All.
  */
 export function topologyPeerPassesHopFilters(
   hops: number | null | undefined,
   opts: TopologyHopFilterState,
 ): boolean {
-  if (hops == null || !Number.isFinite(hops)) return true;
+  if (hops == null || !Number.isFinite(hops)) {
+    return opts.includeDistantPeers && opts.maxHops == null;
+  }
   if (opts.maxHops != null && hops > opts.maxHops) return false;
   if (!opts.includeDistantPeers && opts.maxHops == null && hops > opts.nearbyMaxHops) {
     return false;

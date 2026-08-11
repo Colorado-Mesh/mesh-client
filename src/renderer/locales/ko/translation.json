@@ -3242,7 +3242,6 @@
     "me": "이 노드",
     "directLink": "직접 (0홉)",
     "relayLink": "비아 릴레이 (1 홉)",
-    "hiddenCount": "{{shown}} / {{total}} 개 노드 표시 (연결되지 않은 노드 숨김)",
     "noConnectedNodes": "표시할 연결된 피어가 없습니다 — 필터를 조정하거나 네트워크 트래픽을 기다리십시오.",
     "meShort": "나",
     "relayHub": "직접 릴레이",
@@ -3255,7 +3254,7 @@
     "resetView": "초기화",
     "compactLeafCount": "{{count}} 컴팩트 직접 피어",
     "hiddenCountLimit": "{{total}}개의 노드 중 {{shown}}개 표시 (제한 {{limit}})",
-    "visibleNodeLimitNote": "그래프에는 최대 {{distantLimit}}개의 노드(멀리 있는 피어가 숨겨져 있는 경우 {{nearbyLimit}})가 표시됩니다."
+    "visibleNodeLimitNote": "그래프에는 최대 {{distantLimit}}개의 노드가 표시됩니다."
   },
   "peerListPanel": {
     "heading": "통신자",
@@ -4344,7 +4343,6 @@
     "noNodes": "아직 토폴로지 데이터가 없습니다. Reticulum 스택을 연결하고 새로 고치세요.",
     "nodeCount": "{{count}} 노드",
     "edgeCount": "{{count}} 링크",
-    "hiddenCount": "{{total}} 노드 중 {{shown}} 표시 중(먼 피어는 숨겨짐)",
     "legendSelf": "이 노드",
     "centerRns": "RNS",
     "showDistantPeers": "멀리 있는 동료 표시",
@@ -4367,7 +4365,7 @@
     "glyphTcp": "TCP 인터페이스",
     "glyphSerial": "직렬 통신",
     "hiddenCountLimit": "{{total}}개의 노드 중 {{shown}}개 표시 (제한 {{limit}})",
-    "visibleNodeLimitNote": "그래프에는 최대 {{distantLimit}}개의 노드(멀리 있는 피어가 숨겨져 있는 경우 {{nearbyLimit}})가 표시됩니다.",
+    "visibleNodeLimitNote": "그래프에는 최대 {{distantLimit}}개의 노드가 표시됩니다.",
     "rfOnly": "RF 전용"
   },
   "rfHistograms": {

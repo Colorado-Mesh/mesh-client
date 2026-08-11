@@ -418,8 +418,8 @@ Accessible via the graph icon in the sidebar.
 
 SVG force-directed graph of Meshtastic and MeshCore peers (Reticulum uses the **Topology** tab with the same hop controls and visible-node cap).
 
-- **Show distant peers** (Peer Graph default **off**; Topology default **on**) and **Max hops** (Peer Graph default **2**; Topology default **All hops**) filter the node set first. Numeric **Max hops** is applied even when Show distant is off. The nearby hop ceiling (Mesh hops > 1, Reticulum hops > 2) applies only when Max hops is **All hops**.
-- Layout budget (known limitation): at most **48** nodes when distant peers are hidden; at most **400** when they are shown (`FORCE_REPULSION_FULL_PAIR_CAP`). The toolbar states this limit; when the cap hides nodes the status reads “limit 48” / “limit 400”, not “distant peers hidden” if that checkbox is on
+- **Show distant peers** (Peer Graph default **off**; Topology default **on**) and **Max hops** (Peer Graph default **2**; Topology default **All hops**) filter the node set first. Numeric **Max hops** is applied even when Show distant is off. Unknown hops are omitted unless Max hops is **All hops** and Show distant is on. The nearby hop ceiling (Mesh hops > 1, Reticulum hops > 2) applies only when Max hops is **All hops**. 1-hop Mesh nodes are not distant.
+- Layout budget (known limitation): at most **400** nodes after hop filters (`FORCE_REPULSION_FULL_PAIR_CAP`). The toolbar states this limit; when the cap hides nodes the status reads “limit 400”
 - Both Meshtastic and MeshCore use the `hops_away` field for edge inference
 - Nodes are clickable; clicking opens NodeDetailModal for that node
 - Layout uses D3-style force simulation; positions stabilize after initial render

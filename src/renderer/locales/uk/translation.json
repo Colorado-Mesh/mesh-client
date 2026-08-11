@@ -3244,7 +3244,6 @@
     "me": "Цей вузол",
     "directLink": "Прямий (0 переходів)",
     "relayLink": "Через реле (1 стрибок)",
-    "hiddenCount": "Відображаються {{shown}} з {{total}} вузлів (непідключені вузли приховані)",
     "noConnectedNodes": "Немає підключених вузлів для відображення — налаштуйте фільтри або дочекайтеся мережевого трафіку.",
     "meShort": "Ви",
     "relayHub": "Пряме реле",
@@ -3257,7 +3256,7 @@
     "resetView": "Скинути перегляд",
     "compactLeafCount": "{{count}} компактні прямі однорангові вузли",
     "hiddenCountLimit": "Відображається {{shown}} з {{total}} вузлів (ліміт {{limit}})",
-    "visibleNodeLimitNote": "Граф показує щонайбільше {{distantLimit}} вузлів ({{nearbyLimit}}, коли приховані віддалені вузли)."
+    "visibleNodeLimitNote": "Граф показує щонайбільше {{distantLimit}} вузлів."
   },
   "peerListPanel": {
     "heading": "Вузли",
@@ -4346,7 +4345,6 @@
     "noNodes": "Ще немає даних про топологію — підключіть стек Reticulum і оновіть.",
     "nodeCount": "{{count}} вузлів",
     "edgeCount": "{{count}} посилань",
-    "hiddenCount": "Показано {{shown}} з {{total}} вузлів (віддалені вузли приховано)",
     "legendSelf": "Цей вузол",
     "showDistantPeers": "Показати віддалені вузли",
     "maxHopsFilter": "Макс. hops",
@@ -4369,7 +4367,7 @@
     "glyphTcp": "Інтерфейс TCP",
     "glyphSerial": "Послідовний інтерфейс",
     "hiddenCountLimit": "Відображається {{shown}} з {{total}} вузлів (ліміт {{limit}})",
-    "visibleNodeLimitNote": "Граф показує щонайбільше {{distantLimit}} вузлів ({{nearbyLimit}}, коли приховані віддалені вузли).",
+    "visibleNodeLimitNote": "Граф показує щонайбільше {{distantLimit}} вузлів.",
     "rfOnly": "Лише RF"
   },
   "rfHistograms": {

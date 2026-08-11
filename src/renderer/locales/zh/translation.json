@@ -3242,7 +3242,6 @@
     "me": "此节点",
     "directLink": "直接（ 0跳）",
     "relayLink": "通过继电器（ 1跳）",
-    "hiddenCount": "显示{{shown}}/{{total}}节点（未连接节点隐藏）",
     "noConnectedNodes": "没有可显示的连接对等项—调整过滤器或等待网络流量。",
     "meShort": "你",
     "relayHub": "直接继电器",
@@ -3255,7 +3254,7 @@
     "resetView": "重设视角",
     "compactLeafCount": "{{count}}紧凑型直接同行",
     "hiddenCountLimit": "显示{{shown}}/{{total}}节点（限制{{limit}}）",
-    "visibleNodeLimitNote": "拓扑图最多显示{{distantLimit}}个节点（隐藏远距离对等节点时为{{nearbyLimit}}）。"
+    "visibleNodeLimitNote": "拓扑图最多显示{{distantLimit}}个节点。"
   },
   "peerListPanel": {
     "heading": "Pee对端",
@@ -4344,7 +4343,6 @@
     "noNodes": "尚无拓扑数据 — 连接 Reticulum 堆栈并刷新。",
     "nodeCount": "{{count}} 节点",
     "edgeCount": "{{count}} 链接",
-    "hiddenCount": "显示 {{total}} 节点的 {{shown}}（远距离对等点隐藏）",
     "legendSelf": "该节点",
     "showDistantPeers": "显示远程同行",
     "maxHopsFilter": "最大 hops",
@@ -4367,7 +4365,7 @@
     "glyphTcp": "TCP接口",
     "glyphSerial": "串口",
     "hiddenCountLimit": "显示{{shown}}/{{total}}节点（限制{{limit}}）",
-    "visibleNodeLimitNote": "拓扑图最多显示{{distantLimit}}个节点（隐藏远距离对等节点时为{{nearbyLimit}}）。",
+    "visibleNodeLimitNote": "拓扑图最多显示{{distantLimit}}个节点。",
     "rfOnly": "仅RF"
   },
   "rfHistograms": {

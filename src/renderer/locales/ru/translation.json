@@ -3244,7 +3244,6 @@
     "me": "Этот узел",
     "directLink": "Прямой (0 прыжков)",
     "relayLink": "Через реле (1 переход)",
-    "hiddenCount": "Отображение {{shown}} из {{total}} узлов (несвязанные узлы скрыты)",
     "noConnectedNodes": "Нет подключенных одноранговых узлов для отображения — настройте фильтры или дождитесь сетевого трафика.",
     "meShort": "Вы",
     "relayHub": "Прямое реле",
@@ -3257,7 +3256,7 @@
     "resetView": "Сбросить Вид",
     "compactLeafCount": "{{count}} компактные прямые одноранговые узлы",
     "hiddenCountLimit": "Отображение {{shown}} из {{total}} узлов (лимит {{limit}})",
-    "visibleNodeLimitNote": "Граф показывает не более {{distantLimit}} узлов ({{nearbyLimit}}, когда скрыты удалённые пиры)."
+    "visibleNodeLimitNote": "Граф показывает не более {{distantLimit}} узлов."
   },
   "peerListPanel": {
     "heading": "Пиры",
@@ -4346,7 +4345,6 @@
     "noNodes": "Данных о топологии пока нет — подключите стек Reticulum и обновите.",
     "nodeCount": "{{count}} узлы",
     "edgeCount": "{{count}} ссылки",
-    "hiddenCount": "Показаны {{shown}} из {{total}} узлов (удаленные узлы скрыты)",
     "legendSelf": "Этот узел",
     "centerRns": "RNS",
     "showDistantPeers": "Показать удалённые пиры",
@@ -4369,7 +4367,7 @@
     "glyphTcp": "Интерфейс TCP",
     "glyphSerial": "Последовательный интерфейс",
     "hiddenCountLimit": "Отображение {{shown}} из {{total}} узлов (лимит {{limit}})",
-    "visibleNodeLimitNote": "Граф показывает не более {{distantLimit}} узлов ({{nearbyLimit}}, когда скрыты удалённые пиры).",
+    "visibleNodeLimitNote": "Граф показывает не более {{distantLimit}} узлов.",
     "rfOnly": "Только RF"
   },
   "rfHistograms": {

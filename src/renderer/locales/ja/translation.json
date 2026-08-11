@@ -3242,7 +3242,6 @@
     "me": "このノード",
     "directLink": "ダイレクト（ 0ホップ）",
     "relayLink": "リレー経由（ 1ホップ）",
-    "hiddenCount": "{{shown}}/{{total}}ノードを表示しています（接続されていないノードは非表示）",
     "noConnectedNodes": "表示する接続されたピアがありません—フィルタを調整するか、ネットワークトラフィックを待ちます。",
     "meShort": "あなたは",
     "relayHub": "ダイレクトリレー",
@@ -3255,7 +3254,7 @@
     "resetView": "ビューをリセット",
     "compactLeafCount": "{{count}}コンパクトダイレクトピア",
     "hiddenCountLimit": "{{shown}}/{{total}}ノードを表示しています（制限{{limit}}）",
-    "visibleNodeLimitNote": "グラフは最大{{distantLimit}}ノードを示しています（離れたピアが非表示の場合は{{nearbyLimit}}）。"
+    "visibleNodeLimitNote": "グラフは最大{{distantLimit}}ノードを示しています。"
   },
   "peerListPanel": {
     "heading": "ピア",
@@ -4344,7 +4343,6 @@
     "noNodes": "トポロジ データがまだありません。Reticulum スタックに接続して更新します。",
     "nodeCount": "{{count}} ノード",
     "edgeCount": "{{count}} リンク",
-    "hiddenCount": "{{total}} ノードの {{shown}} を表示しています (遠くのピアは非表示)",
     "legendSelf": "このノード",
     "centerRns": "RNS",
     "showDistantPeers": "遠隔地の同僚を表示",
@@ -4367,7 +4365,7 @@
     "glyphTcp": "TCPインターフェース",
     "glyphSerial": "シリアル通信",
     "hiddenCountLimit": "{{shown}}/{{total}}ノードを表示しています（制限{{limit}}）",
-    "visibleNodeLimitNote": "グラフは最大{{distantLimit}}ノードを示しています（離れたピアが非表示の場合は{{nearbyLimit}}）。",
+    "visibleNodeLimitNote": "グラフは最大{{distantLimit}}ノードを示しています。",
     "rfOnly": "RFのみ"
   },
   "rfHistograms": {

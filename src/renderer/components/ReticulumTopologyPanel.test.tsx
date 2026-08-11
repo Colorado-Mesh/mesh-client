@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-i18next', () => {
   const t = (key: string, opts?: Record<string, number | string>) => {
-    if (opts && 'distantLimit' in opts && 'nearbyLimit' in opts) {
-      return `${key}:${opts.distantLimit}/${opts.nearbyLimit}`;
+    if (opts && 'distantLimit' in opts) {
+      return `${key}:${opts.distantLimit}`;
     }
     if (opts && 'shown' in opts && 'total' in opts && 'limit' in opts) {
       return `${key}:${opts.shown}/${opts.total}/${opts.limit}`;
@@ -130,7 +130,7 @@ describe('ReticulumTopologyPanel', () => {
   it('always shows the 400/48 limit note and RF-only default off', async () => {
     render(<ReticulumTopologyPanel />);
     await waitFor(() => {
-      expect(screen.getByText('reticulumTopology.visibleNodeLimitNote:400/48')).toBeInTheDocument();
+      expect(screen.getByText('reticulumTopology.visibleNodeLimitNote:400')).toBeInTheDocument();
     });
     expect(
       screen.getByLabelText<HTMLInputElement>('reticulumTopology.showDistantPeers').checked,

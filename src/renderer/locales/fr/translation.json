@@ -3242,7 +3242,6 @@
     "me": "Ce nœud",
     "directLink": "Direct (0 saut)",
     "relayLink": "Par relais (1 saut)",
-    "hiddenCount": "Affichage de {{shown}} sur {{total}} nœuds (nœuds non connectés masqués)",
     "noConnectedNodes": "Aucun homologue connecté à afficher — ajustez les filtres ou attendez le trafic réseau.",
     "meShort": "pour vous",
     "relayHub": "Relais direct",
@@ -3255,7 +3254,7 @@
     "resetView": "Réinitialisation de Vue",
     "compactLeafCount": "{{count}} pairs directs compacts",
     "hiddenCountLimit": "Affichage de {{shown}} sur {{total}} nœuds (limite {{limit}})",
-    "visibleNodeLimitNote": "Le graphe montre au plus {{distantLimit}} nœuds ({{nearbyLimit}} lorsque des pairs distants sont masqués)."
+    "visibleNodeLimitNote": "Le graphe montre au plus {{distantLimit}} nœuds."
   },
   "peerListPanel": {
     "heading": "Pairs",
@@ -4344,7 +4343,6 @@
     "noNodes": "Aucune donnée topologique pour l'instant : connectez la pile Reticulum et actualisez.",
     "nodeCount": "Nœuds {{count}}",
     "edgeCount": "Liens {{count}}",
-    "hiddenCount": "Affichage de {{shown}} sur {{total}} nœuds (pairs distants masqués)",
     "legendSelf": "Ce nœud",
     "showDistantPeers": "Afficher les pairs distants",
     "maxHopsFilter": "Sauts max",
@@ -4367,7 +4365,7 @@
     "glyphTcp": "Interface TCP",
     "glyphSerial": "Interface série",
     "hiddenCountLimit": "Affichage de {{shown}} sur {{total}} nœuds (limite {{limit}})",
-    "visibleNodeLimitNote": "Le graphe montre au plus {{distantLimit}} nœuds ({{nearbyLimit}} lorsque des pairs distants sont masqués).",
+    "visibleNodeLimitNote": "Le graphe montre au plus {{distantLimit}} nœuds.",
     "rfOnly": "RF uniquement"
   },
   "rfHistograms": {

@@ -240,7 +240,7 @@ export function filterReticulumVisibleNodeIds(
 ): Set<string> {
   const includeDistant = opts?.includeDistantPeers !== false;
   const maxHops = opts?.maxHops ?? null;
-  const cap = topologyGraphVisibleNodeCap(includeDistant);
+  const cap = topologyGraphVisibleNodeCap();
   const hopsById = new Map(nodes.map((n) => [n.destination_hash, n.hops]));
 
   const passesHopsFilter = (id: string): boolean =>
@@ -356,7 +356,7 @@ function filterMeshTopologyPeers(
     });
   });
 
-  const peerBudget = Math.max(0, topologyGraphVisibleNodeCap(includeDistant) - interfaceCount - 1);
+  const peerBudget = Math.max(0, topologyGraphVisibleNodeCap() - interfaceCount - 1);
   const hiddenCount = Math.max(0, filtered.length - peerBudget);
   if (filtered.length > peerBudget) {
     filtered = [...filtered].sort((a, b) => (a.hops ?? 99) - (b.hops ?? 99)).slice(0, peerBudget);

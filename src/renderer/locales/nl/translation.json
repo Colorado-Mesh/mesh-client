@@ -3242,7 +3242,6 @@
     "me": "Dit onderdeel",
     "directLink": "Direct (0 hops)",
     "relayLink": "Via relais (1 hop)",
-    "hiddenCount": "Toont {{shown}} van {{total}} knooppunten (niet-verbonden knooppunten verborgen)",
     "noConnectedNodes": "Geen verbonden peers om weer te geven — pas filters aan of wacht op netwerkverkeer.",
     "meShort": "Jij",
     "relayHub": "Direct relais",
@@ -3255,7 +3254,7 @@
     "resetView": "Weergave opnieuw instellen (reset)",
     "compactLeafCount": "{{count}} compacte directe collega's",
     "hiddenCountLimit": "Toont {{shown}} van {{total}} knooppunten (limiet {{limit}})",
-    "visibleNodeLimitNote": "De graaf toont maximaal {{distantLimit}} knooppunten ({{nearbyLimit}} wanneer verre peers verborgen zijn)."
+    "visibleNodeLimitNote": "De graaf toont maximaal {{distantLimit}} knooppunten."
   },
   "peerListPanel": {
     "heading": "Collega's",
@@ -4344,7 +4343,6 @@
     "noNodes": "Nog geen topologiegegevens: sluit de Reticulum-stack aan en vernieuw.",
     "nodeCount": "{{count}} knooppunten",
     "edgeCount": "{{count}}-koppelingen",
-    "hiddenCount": "Toont {{shown}} van {{total}} knooppunten (verre peers verborgen)",
     "legendSelf": "Dit knooppunt",
     "centerRns": "RNS",
     "showDistantPeers": "Toon collega's op afstand",
@@ -4367,7 +4365,7 @@
     "glyphTcp": "TCP-interface",
     "glyphSerial": "Seriële interface",
     "hiddenCountLimit": "Toont {{shown}} van {{total}} knooppunten (limiet {{limit}})",
-    "visibleNodeLimitNote": "De graaf toont maximaal {{distantLimit}} knooppunten ({{nearbyLimit}} wanneer verre peers verborgen zijn).",
+    "visibleNodeLimitNote": "De graaf toont maximaal {{distantLimit}} knooppunten.",
     "rfOnly": "Alleen RF"
   },
   "rfHistograms": {

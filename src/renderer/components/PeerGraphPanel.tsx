@@ -14,7 +14,6 @@ import {
 } from '@/renderer/lib/forceDirectedGraphLayout';
 import {
   TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
-  TOPOLOGY_GRAPH_NEARBY_NODE_CAP,
   topologyGraphVisibleNodeCap,
 } from '@/renderer/lib/topologyGraphLimits';
 import type { MeshNode } from '@/renderer/lib/types';
@@ -239,7 +238,6 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
         <TopologyVisibleLimitNote
           label={t('peerGraph.visibleNodeLimitNote', {
             distantLimit: TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
-            nearbyLimit: TOPOLOGY_GRAPH_NEARBY_NODE_CAP,
           })}
         />
         <button
@@ -261,16 +259,11 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
         <span className="ml-auto flex items-center gap-2">
           {hiddenCount > 0 && (
             <span className="text-slate-500">
-              {includeDistantPeers
-                ? t('peerGraph.hiddenCountLimit', {
-                    shown: renderNodes.length,
-                    total: totalNodeCount,
-                    limit: topologyGraphVisibleNodeCap(true),
-                  })
-                : t('peerGraph.hiddenCount', {
-                    shown: renderNodes.length,
-                    total: totalNodeCount,
-                  })}
+              {t('peerGraph.hiddenCountLimit', {
+                shown: renderNodes.length,
+                total: totalNodeCount,
+                limit: topologyGraphVisibleNodeCap(),
+              })}
             </span>
           )}
           {hasGraph && (

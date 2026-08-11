@@ -15,7 +15,6 @@ import {
   matchPeerToInterfaceId,
   mergeReticulumTopologyEdgeNodes,
   RETICULUM_TOPOLOGY_DISTANT_NODE_CAP,
-  RETICULUM_TOPOLOGY_NEARBY_NODE_CAP,
   shouldUseReticulumStarFallbackEdges,
 } from './buildReticulumTopologyLayout';
 
@@ -146,14 +145,14 @@ describe('buildReticulumMeshTopologyGraph filter/cap matrix', () => {
     expect(graph.nodes.filter((n) => n.kind === 'peer')).toHaveLength(167);
   });
 
-  it('caps nearby graphs at 48 total nodes including interface hubs', () => {
+  it('shows all 80 one-hop RF peers when distant peers are hidden (under the 400 cap)', () => {
     const graph = buildReticulumMeshTopologyGraph([rnodeIface], rfPeers(80, 1), {
       selfLabel: 'You',
       unassignedInterfaceLabel: 'Other paths',
       filter: { includeDistantPeers: false },
     });
-    expect(graph.nodes.length).toBeLessThanOrEqual(RETICULUM_TOPOLOGY_NEARBY_NODE_CAP);
-    expect(graph.hiddenCount).toBeGreaterThan(0);
+    expect(graph.nodes.filter((n) => n.kind === 'peer')).toHaveLength(80);
+    expect(graph.hiddenCount).toBe(0);
     expect(graph.nodes.some((n) => n.kind === 'self')).toBe(true);
   });
 
@@ -213,7 +212,7 @@ describe('buildReticulumMeshTopologyGraph filter/cap matrix', () => {
     expect(counts[2]).toBe(counts[3]);
   });
 
-  it('includes unknown hops when maxHops is numeric', () => {
+  it('excludes unknown hops when maxHops is numeric', () => {
     const graph = buildReticulumMeshTopologyGraph(
       [rnodeIface],
       [
@@ -226,7 +225,8 @@ describe('buildReticulumMeshTopologyGraph filter/cap matrix', () => {
         filter: { includeDistantPeers: true, maxHops: 2 },
       },
     );
-    expect(graph.nodes.some((n) => n.id === 'unknown')).toBe(true);
+    expect(graph.nodes.some((n) => n.id === 'unknown')).toBe(false);
+    expect(graph.nodes.some((n) => n.id === 'known')).toBe(true);
   });
 
   it('counts totalNodeCount before the layout cap', () => {

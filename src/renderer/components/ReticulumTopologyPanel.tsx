@@ -30,7 +30,6 @@ import { selectReticulumTopologyPeersForRender } from '@/renderer/lib/reticulum/
 import { LARGE_MESH_NODE_THRESHOLD } from '@/renderer/lib/sessionMemoryCaps';
 import {
   TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
-  TOPOLOGY_GRAPH_NEARBY_NODE_CAP,
   topologyGraphVisibleNodeCap,
 } from '@/renderer/lib/topologyGraphLimits';
 import type { ReticulumPeerWireRow } from '@/shared/reticulum-types';
@@ -551,7 +550,6 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
         <TopologyVisibleLimitNote
           label={t('reticulumTopology.visibleNodeLimitNote', {
             distantLimit: TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
-            nearbyLimit: TOPOLOGY_GRAPH_NEARBY_NODE_CAP,
           })}
         />
         {hasGraph && (
@@ -565,16 +563,11 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
         <span className="ml-auto flex items-center gap-2">
           {hiddenCount > 0 && (
             <span className="text-slate-500">
-              {includeDistantPeers
-                ? t('reticulumTopology.hiddenCountLimit', {
-                    shown: nodes.length,
-                    total: totalNodeCount,
-                    limit: topologyGraphVisibleNodeCap(true),
-                  })
-                : t('reticulumTopology.hiddenCount', {
-                    shown: nodes.length,
-                    total: totalNodeCount,
-                  })}
+              {t('reticulumTopology.hiddenCountLimit', {
+                shown: nodes.length,
+                total: totalNodeCount,
+                limit: topologyGraphVisibleNodeCap(),
+              })}
             </span>
           )}
           {hasGraph && (

@@ -146,7 +146,7 @@ function filterMeshPeers(
     }),
   );
 
-  const peerBudget = Math.max(0, topologyGraphVisibleNodeCap(includeDistant) - 1);
+  const peerBudget = Math.max(0, topologyGraphVisibleNodeCap() - 1);
   const hiddenCount = Math.max(0, filtered.length - peerBudget);
   if (filtered.length > peerBudget) {
     filtered = [...filtered]
