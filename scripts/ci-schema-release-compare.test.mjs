@@ -4,9 +4,11 @@ import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   compareReleaseTags,
+  fetchAllGithubReleases,
   formatSchemaCompareMarkdown,
   isSchemaBumped,
   parseCurrentSchemaVersion,
+  parseGithubLinkNext,
   pickLatestPublishedReleaseTag,
   publishedReleaseGitTag,
   runSchemaReleaseCompare,
@@ -63,6 +65,17 @@ describe('publishedReleaseGitTag', () => {
     ).toBe('v5.27.0');
   });
 
+  it('rejects a numeric name paired with an unrelated invalid tag_name', () => {
+    expect(
+      publishedReleaseGitTag({
+        tag_name: 'broken',
+        name: '5.27.0',
+        draft: false,
+        prerelease: false,
+      }),
+    ).toBeNull();
+  });
+
   it('skips drafts and prereleases even with a valid tag_name', () => {
     expect(
       publishedReleaseGitTag({
@@ -116,6 +129,67 @@ describe('pickLatestPublishedReleaseTag', () => {
       'v5.28.0',
     );
     expect(tag).toBe('v5.27.0');
+  });
+
+  it('selects the highest version when it appears after the first page worth of rows', () => {
+    /** @type {Array<{ tag_name: string, name: string, draft: boolean, prerelease: boolean }>} */
+    const page1 = Array.from({ length: 30 }, (_, i) => {
+      const patch = 30 - i;
+      return {
+        tag_name: `v5.0.${patch}`,
+        name: `5.0.${patch}`,
+        draft: false,
+        prerelease: false,
+      };
+    });
+    const all = [
+      ...page1,
+      { tag_name: 'v5.99.0', name: '5.99.0', draft: false, prerelease: false },
+    ];
+    expect(pickLatestPublishedReleaseTag(all)).toBe('v5.99.0');
+  });
+});
+
+describe('parseGithubLinkNext / fetchAllGithubReleases', () => {
+  it('parses rel=next from a GitHub Link header', () => {
+    expect(
+      parseGithubLinkNext(
+        '<https://api.github.com/repos/o/r/releases?page=2>; rel="next", <https://api.github.com/repos/o/r/releases?page=3>; rel="last"',
+      ),
+    ).toBe('https://api.github.com/repos/o/r/releases?page=2');
+    expect(parseGithubLinkNext(null)).toBeNull();
+  });
+
+  it('accumulates releases across pages so a late high version is visible', async () => {
+    const page1 = Array.from({ length: 30 }, (_, i) => ({
+      tag_name: `v4.0.${i}`,
+      name: `4.0.${i}`,
+      draft: false,
+      prerelease: false,
+    }));
+    const page2 = [
+      { tag_name: 'v9.0.0', name: '9.0.0', draft: false, prerelease: false },
+      { tag_name: 'v5.0.0', name: '5.0.0', draft: false, prerelease: false },
+    ];
+    const fetchImpl = vi.fn(async (url) => {
+      if (String(url).includes('page=2')) {
+        return new Response(JSON.stringify(page2), {
+          status: 200,
+          headers: { link: '' },
+        });
+      }
+      return new Response(JSON.stringify(page1), {
+        status: 200,
+        headers: {
+          link: '<https://api.github.com/repos/Colorado-Mesh/mesh-client/releases?page=2>; rel="next"',
+        },
+      });
+    });
+
+    const releases = await fetchAllGithubReleases({ fetchImpl });
+    expect(releases).toHaveLength(32);
+    expect(pickLatestPublishedReleaseTag(releases)).toBe('v9.0.0');
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 });
 

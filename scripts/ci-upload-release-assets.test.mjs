@@ -86,11 +86,16 @@ describe('uploadReleaseAssets', () => {
   });
 
   it('uploads each file to a draft release by path', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'mesh-upload-ok-'));
+    const a = path.join(dir, 'a.deb');
+    const b = path.join(dir, 'b.yml');
+    writeFileSync(a, 'a');
+    writeFileSync(b, 'b');
     const uploads = [];
     const count = await uploadReleaseAssets({
       releaseId: 9,
       token: 'token',
-      files: ['/tmp/a.deb', '/tmp/b.yml'],
+      files: [a, b],
       get: async () => ({
         id: 9,
         draft: true,
@@ -105,8 +110,32 @@ describe('uploadReleaseAssets', () => {
 
     expect(count).toBe(2);
     expect(uploads).toEqual([
-      { fileName: 'a.deb', filePath: '/tmp/a.deb' },
-      { fileName: 'b.yml', filePath: '/tmp/b.yml' },
+      { fileName: 'a.deb', filePath: a },
+      { fileName: 'b.yml', filePath: b },
     ]);
+  });
+
+  it('refuses a missing upload path before calling upload (preserves prior assets)', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((code) => {
+      throw new Error(`exit:${code}`);
+    });
+    const upload = vi.fn();
+    const missing = path.join(mkdtempSync(path.join(tmpdir(), 'mesh-upload-miss-')), 'gone.deb');
+    await expect(
+      uploadReleaseAssets({
+        releaseId: 9,
+        token: 'token',
+        files: [missing],
+        get: async () => ({
+          id: 9,
+          draft: true,
+          assets: [{ id: 3, name: 'gone.deb' }],
+        }),
+        upload,
+        log: () => {},
+      }),
+    ).rejects.toThrow(/exit:1/);
+    expect(upload).not.toHaveBeenCalled();
+    exitSpy.mockRestore();
   });
 });

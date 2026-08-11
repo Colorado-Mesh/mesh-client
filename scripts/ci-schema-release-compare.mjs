@@ -135,7 +135,7 @@ export function compareReleaseTags(a, b) {
 /**
  * Map a GitHub Releases API row to a trusted git tag for schema lookup.
  * Skips drafts/prereleases. Accepts normal `tag_name: vX.Y.Z`, and published
- * releases that lost their tag (`untagged-*`) when `name` is still `X.Y.Z`
+ * releases that lost their tag (`untagged-*` or empty) when `name` is still `X.Y.Z`
  * (seen after draft-fork / publish races — otherwise test builds warn against
  * an older release/schema).
  *
@@ -149,6 +149,13 @@ export function publishedReleaseGitTag(release) {
   const tag = release.tag_name;
   if (typeof tag === 'string' && /^v\d+\.\d+\.\d+$/.test(tag)) {
     return trustedReleaseTag(tag);
+  }
+  // Name fallback only when tag is missing or GitHub's untagged-* placeholder —
+  // not for arbitrary invalid tags (e.g. tag_name "broken" + name "5.27.0").
+  const tagMissing = tag == null || tag === '';
+  const tagUntagged = typeof tag === 'string' && /^untagged-/i.test(tag);
+  if (!tagMissing && !tagUntagged) {
+    return null;
   }
   const name = release.name;
   if (typeof name === 'string') {
@@ -215,6 +222,61 @@ export function pickLatestPublishedReleaseTag(releases, excludeTag) {
 }
 
 /**
+ * Parse the next page URL from a GitHub `Link` response header.
+ * @param {string | null | undefined} linkHeader
+ * @returns {string | null}
+ */
+export function parseGithubLinkNext(linkHeader) {
+  if (typeof linkHeader !== 'string' || !linkHeader) {
+    return null;
+  }
+  for (const segment of linkHeader.split(',')) {
+    const match = segment.match(/<([^>]+)>\s*;\s*rel="next"/i);
+    if (match) {
+      return match[1];
+    }
+  }
+  return null;
+}
+
+/**
+ * Fetch every Releases API page (follows `Link: rel="next"`).
+ * @param {{
+ *   owner?: string,
+ *   repo?: string,
+ *   headers?: Record<string, string>,
+ *   fetchImpl?: typeof fetch,
+ * }} [opts]
+ * @returns {Promise<Array<{ tag_name?: string, name?: string, draft?: boolean, prerelease?: boolean }>>}
+ */
+export async function fetchAllGithubReleases(opts = {}) {
+  const owner = opts.owner ?? 'Colorado-Mesh';
+  const repo = opts.repo ?? 'mesh-client';
+  const headers = opts.headers ?? {
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+  };
+  const fetchImpl = opts.fetchImpl ?? fetch;
+
+  /** @type {Array<{ tag_name?: string, name?: string, draft?: boolean, prerelease?: boolean }>} */
+  const releases = [];
+  let url = `https://api.github.com/repos/${owner}/${repo}/releases?per_page=100`;
+  while (url) {
+    const listRes = await fetchImpl(url, { headers });
+    if (!listRes.ok) {
+      throw new Error(`List releases failed (${listRes.status}): ${await listRes.text()}`);
+    }
+    const page = await listRes.json();
+    if (!Array.isArray(page)) {
+      throw new Error('Unexpected releases list payload');
+    }
+    releases.push(...page);
+    url = parseGithubLinkNext(listRes.headers.get('link'));
+  }
+  return releases;
+}
+
+/**
  * @param {{ token?: string, owner?: string, repo?: string, excludeTag?: string }} [opts]
  * @returns {Promise<{ tag: string, schema: number } | null>}
  */
@@ -230,17 +292,7 @@ export async function fetchLatestPublishedReleaseSchema(opts = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const listUrl = `https://api.github.com/repos/${owner}/${repo}/releases?per_page=30`;
-  const listRes = await fetch(listUrl, { headers });
-  if (!listRes.ok) {
-    throw new Error(`List releases failed (${listRes.status}): ${await listRes.text()}`);
-  }
-  /** @type {Array<{ tag_name?: string, name?: string, draft?: boolean, prerelease?: boolean }>} */
-  const releases = await listRes.json();
-  if (!Array.isArray(releases)) {
-    throw new Error('Unexpected releases list payload');
-  }
-
+  const releases = await fetchAllGithubReleases({ owner, repo, headers });
   const tag = pickLatestPublishedReleaseTag(releases, opts.excludeTag);
   if (!tag) {
     return null;
