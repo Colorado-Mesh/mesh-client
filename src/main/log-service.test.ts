@@ -423,6 +423,11 @@ describe('isDroppableRendererConsoleNoise', () => {
       ),
     ).toBe(true);
     expect(isDroppableRendererConsoleNoise('ResizeObserver loop limit exceeded')).toBe(true);
+    expect(
+      isDroppableRendererConsoleNoise(
+        '  [Violation] ResizeObserver loop completed with undelivered notifications.  ',
+      ),
+    ).toBe(true);
   });
 
   it('keeps other renderer errors', async () => {

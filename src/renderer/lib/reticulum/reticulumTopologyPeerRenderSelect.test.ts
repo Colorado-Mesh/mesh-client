@@ -13,8 +13,9 @@ function peer(
   hash: string,
   iface: string,
   lastSeen: number,
-): { destination_hash: string; interface: string; last_seen: number } {
-  return { destination_hash: hash, interface: iface, last_seen: lastSeen };
+  hops?: number,
+): { destination_hash: string; interface: string; last_seen: number; hops?: number } {
+  return { destination_hash: hash, interface: iface, last_seen: lastSeen, hops };
 }
 
 describe('selectReticulumTopologyPeersForRender', () => {
@@ -58,6 +59,21 @@ describe('selectReticulumTopologyPeersForRender', () => {
     expect(lastSeenRank(0)).toBe(0);
     expect(lastSeenRank(-1)).toBe(0);
     expect(lastSeenRank(1_700_000_000_000)).toBeGreaterThan(0);
+  });
+
+  it('keeps older hop-eligible peers when 800+ fresh ineligible rows would fill the ingest cap', () => {
+    const ineligible = Array.from({ length: 900 }, (_, i) =>
+      peer(`far${i}`, 'RNS_Transport_US-East', 10_000 + i, 8),
+    );
+    const eligible = [
+      peer('near-old-a', 'RNS_Transport_US-East', 1, 1),
+      peer('near-old-b', 'RNS_Transport_US-East', 2, 2),
+    ];
+    const selected = selectReticulumTopologyPeersForRender([...ineligible, ...eligible], [tcp], {
+      rfOnly: false,
+      maxHops: 2,
+    });
+    expect(selected.map((p) => p.destination_hash).sort()).toEqual(['near-old-a', 'near-old-b']);
   });
 
   it('drops NaN last_seen rows before finite ones when slicing', () => {

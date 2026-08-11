@@ -251,6 +251,8 @@ export function filterReticulumVisibleNodeIds(
     });
 
   const filteredIds = allIds.filter(passesHopsFilter);
+  /** Non-self slots so SELF_ID + visible never exceeds the layout cap. */
+  const peerCap = Math.max(0, cap - 1);
 
   if (filteredIds.length + 1 <= cap) {
     return new Set(filteredIds);
@@ -258,6 +260,7 @@ export function filterReticulumVisibleNodeIds(
 
   const visible = new Set<string>();
   for (const id of filteredIds) {
+    if (visible.size >= peerCap) break;
     if (isReticulumHubNode(id, edges) || (depths.get(id) ?? 99) === 1) {
       visible.add(id);
     }
@@ -267,7 +270,7 @@ export function filterReticulumVisibleNodeIds(
     const adj = buildAdjacency(edges);
     const queue = [SELF_ID, ...visible];
     const visited = new Set<string>([SELF_ID, ...visible]);
-    while (queue.length > 0 && visible.size < cap) {
+    while (queue.length > 0 && visible.size < peerCap) {
       const current = queue.shift()!;
       for (const neighbor of adj.get(current) ?? []) {
         if (neighbor === SELF_ID || visited.has(neighbor)) continue;
@@ -275,7 +278,7 @@ export function filterReticulumVisibleNodeIds(
         visited.add(neighbor);
         visible.add(neighbor);
         queue.push(neighbor);
-        if (visible.size >= cap) break;
+        if (visible.size >= peerCap) break;
       }
     }
   }

@@ -150,6 +150,7 @@ import {
 } from './log-service';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
+import { meshtasticTcpWriteErrorIsNoSocket } from './meshtasticTcpWriteResult';
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
@@ -6402,9 +6403,18 @@ ipcMain.handle('meshtastic:tcp-write', (event, bytes: number[]) => {
     return 'no-socket';
   }
   const sock = meshtasticTcpSocket;
-  return new Promise<void>((resolve, reject) => {
+  if (sock.destroyed || sock.writableEnded) {
+    console.debug('[IPC] meshtastic:tcp-write: no active socket');
+    return 'no-socket';
+  }
+  return new Promise<'no-socket' | undefined>((resolve, reject) => {
     sock.write(new Uint8Array(bytes), (err) => {
       if (err) {
+        if (meshtasticTcpWriteErrorIsNoSocket(sock, err)) {
+          console.debug('[IPC] meshtastic:tcp-write: no active socket');
+          resolve('no-socket');
+          return;
+        }
         console.error('[IPC] meshtastic:tcp-write error:', sanitizeLogMessage(err.message));
         reject(err);
       } else {
@@ -6412,7 +6422,7 @@ ipcMain.handle('meshtastic:tcp-write', (event, bytes: number[]) => {
         if (meshtasticTcpSocket === sock) {
           noteLiveSessionWrite('meshtastic');
         }
-        resolve();
+        resolve(undefined);
       }
     });
   });

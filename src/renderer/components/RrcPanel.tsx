@@ -31,6 +31,7 @@ import { clearRrcRoomHistory, hydrateRrcRoomMessages } from '@/renderer/lib/rrcR
 import { dedupeRrcMembers, rrcIdentityHashesMatch } from '@/renderer/lib/rrcRoomMembers';
 import {
   resolveRrcJoinRoomName,
+  resolveRrcWhoTranscriptForceRoom,
   rrcRoomMatchKey,
   rrcRoomsMatch,
   rrcWhoCommandToken,
@@ -243,23 +244,32 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
         !isWho && activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)
           ? activeRoom
           : undefined;
-      if (isWho && activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)) {
-        useRrcSessionStore.getState().reserveWhoTranscriptForce(activeRoom, hubDestHash);
+      const whoForceRoom = isWho
+        ? resolveRrcWhoTranscriptForceRoom(body, activeRoom, rooms.keys())
+        : null;
+      if (whoForceRoom) {
+        useRrcSessionStore.getState().reserveWhoTranscriptForce(whoForceRoom, hubDestHash);
       }
       try {
-        await rrcSendBounded({
+        const res = await rrcSendBounded({
           hub_dest_hash: hubDestHash,
           room: hubRoom,
           body,
           type: 'msg',
         });
+        if (!res.ok && whoForceRoom) {
+          useRrcSessionStore.getState().releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
+        }
       } catch (e: unknown) {
+        if (whoForceRoom) {
+          useRrcSessionStore.getState().releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
+        }
         const msg = errLikeToLogString(e);
         console.debug('[RrcPanel] sendHubCommand failed ' + msg);
         setError(formatRrcErrorMessage(msg, t), hubDestHash);
       }
     },
-    [activeRoom, hubDestHash, setError, status, t],
+    [activeRoom, hubDestHash, rooms, setError, status, t],
   );
 
   const requestRoomWho = useCallback(
@@ -281,12 +291,25 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
         session.reserveWhoTranscriptForce(room, hubDestHash);
       }
       // Hub-global slash command — omit K_ROOM so rrcd does not treat this as room chat.
-      void window.electronAPI.reticulum.rrc
-        .send({ hub_dest_hash: hubDestHash, body: `/who ${token}`, type: 'msg' })
-        .catch((e: unknown) => {
-          if (!force) useRrcSessionStore.getState().releaseWhoRequested(room, hubDestHash);
+      void (async () => {
+        try {
+          const res = await window.electronAPI.reticulum.rrc.send({
+            hub_dest_hash: hubDestHash,
+            body: `/who ${token}`,
+            type: 'msg',
+          });
+          if (!res.ok) {
+            const next = useRrcSessionStore.getState();
+            next.releaseWhoRequested(room, hubDestHash);
+            if (force) next.releaseWhoTranscriptForce(room, hubDestHash);
+          }
+        } catch (e: unknown) {
+          const next = useRrcSessionStore.getState();
+          next.releaseWhoRequested(room, hubDestHash);
+          if (force) next.releaseWhoTranscriptForce(room, hubDestHash);
           console.debug('[RrcPanel] /who ' + errLikeToLogString(e));
-        });
+        }
+      })();
     },
     [status, hubDestHash, listedRooms, rooms],
   );
@@ -800,19 +823,33 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             return;
           }
           const isWho = /^\s*\/who(?:\s|$)/i.test(parsed.body);
-          if (isWho && activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)) {
-            useRrcSessionStore.getState().reserveWhoTranscriptForce(activeRoom, hubDestHash);
+          const whoForceRoom = isWho
+            ? resolveRrcWhoTranscriptForceRoom(parsed.body, activeRoom, rooms.keys())
+            : null;
+          if (whoForceRoom) {
+            useRrcSessionStore.getState().reserveWhoTranscriptForce(whoForceRoom, hubDestHash);
           }
-          const res = await rrcSendBounded({
-            hub_dest_hash: hubDestHash,
-            room:
-              !isWho && activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)
-                ? activeRoom
-                : undefined,
-            body: parsed.body,
-            type: 'msg',
-          });
+          let res: RrcSendResult;
+          try {
+            res = await rrcSendBounded({
+              hub_dest_hash: hubDestHash,
+              room:
+                !isWho && activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)
+                  ? activeRoom
+                  : undefined,
+              body: parsed.body,
+              type: 'msg',
+            });
+          } catch (e) {
+            if (whoForceRoom) {
+              useRrcSessionStore.getState().releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
+            }
+            throw e;
+          }
           if (!res.ok) {
+            if (whoForceRoom) {
+              useRrcSessionStore.getState().releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
+            }
             useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
             return;
           }

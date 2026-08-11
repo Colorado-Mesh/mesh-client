@@ -668,6 +668,87 @@ describe('RrcPanel', () => {
     });
   });
 
+  it('retries auto /who after a resolved { ok: false } send', async () => {
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValueOnce({
+      ok: false,
+      error: 'hub down',
+    });
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general');
+    store.setActiveRoom('general');
+
+    const { unmount } = render(<RrcPanel isActive />);
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+    });
+    unmount();
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValue({ ok: true });
+    render(<RrcPanel isActive />);
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+    });
+  });
+
+  it('clears a forced /who transcript reservation when the forced send fails', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValue({ ok: true });
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: 'Alice' },
+    ]);
+    store.setActiveRoom('general');
+
+    render(<RrcPanel isActive />);
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+    });
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValueOnce({
+      ok: false,
+      error: 'timeout',
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Refresh members (/who)' }));
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+    });
+    const session = useRrcSessionStore.getState().sessionsByHub.get(hubA);
+    expect(session?.whoTranscriptForceRooms.has('general')).toBe(false);
+  });
+
+  it('reserves /who transcript force for the command target, not always activeRoom', async () => {
+    const user = userEvent.setup();
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general');
+    store.roomJoined('lobby');
+    store.setActiveRoom('general');
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValue({ ok: true });
+
+    render(<RrcPanel isActive />);
+    await waitFor(() => {
+      expect(whoSendCalls().length).toBeGreaterThan(0);
+    });
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+    const composer = screen.getByRole('textbox', { name: /Message or \/command/i });
+    await user.clear(composer);
+    await user.type(composer, '/who lobby');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => {
+      const session = useRrcSessionStore.getState().sessionsByHub.get(hubA);
+      expect(session?.whoTranscriptForceRooms.has('lobby')).toBe(true);
+    });
+    expect(
+      useRrcSessionStore.getState().sessionsByHub.get(hubA)?.whoTranscriptForceRooms.has('general'),
+    ).toBe(false);
+  });
+
   it('sends one /who per hub when switching focus', async () => {
     const store = useRrcSessionStore.getState();
     store.applyStatus('active', hubA, 'Hub A');

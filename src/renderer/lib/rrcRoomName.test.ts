@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   normalizeRrcRoomName,
   resolveRrcJoinRoomName,
+  resolveRrcWhoTranscriptForceRoom,
   rrcRoomMatchKey,
   rrcRoomsMatch,
   rrcWhoCommandToken,
@@ -65,5 +66,24 @@ describe('rrcWhoCommandToken', () => {
     expect(rrcWhoNoticeJoinedRoom('#General', ['general', 'lobby'])).toBe('general');
     expect(rrcWhoNoticeJoinedRoom('evil', ['general'])).toBeNull();
     expect(rrcWhoNoticeJoinedRoom('[hub]', ['[hub]'])).toBeNull();
+  });
+});
+
+describe('resolveRrcWhoTranscriptForceRoom', () => {
+  it('uses the /who argument when it matches a joined room', () => {
+    expect(resolveRrcWhoTranscriptForceRoom('/who lobby', 'general', ['general', 'lobby'])).toBe(
+      'lobby',
+    );
+    expect(resolveRrcWhoTranscriptForceRoom('/who #Lobby', 'general', ['general', 'lobby'])).toBe(
+      'lobby',
+    );
+  });
+
+  it('falls back to the focused joined room for bare /who', () => {
+    expect(resolveRrcWhoTranscriptForceRoom('/who', 'general', ['general', 'lobby'])).toBe(
+      'general',
+    );
+    expect(resolveRrcWhoTranscriptForceRoom('/who', '[hub]', ['general'])).toBeNull();
+    expect(resolveRrcWhoTranscriptForceRoom('/who evil', 'general', ['general'])).toBeNull();
   });
 });

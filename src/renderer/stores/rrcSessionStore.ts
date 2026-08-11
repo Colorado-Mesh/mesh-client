@@ -368,6 +368,8 @@ interface RrcSessionStoreState {
   consumeWhoTranscriptSlot: (room: string, hubHash?: string) => boolean;
   /** Next `/who` NOTICE for this room should appear in chat (Refresh / composer). */
   reserveWhoTranscriptForce: (room: string, hubHash?: string) => void;
+  /** Drop a forced transcript reservation after a failed `/who` send. */
+  releaseWhoTranscriptForce: (room: string, hubHash?: string) => void;
   /** Sum of live unread across every session, plus stashed unread for removed hubs. */
   totalUnread: () => number;
   unreadForHub: (hubHash: string) => number;
@@ -1019,5 +1021,17 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const mirror = hub === s.focusedHubHash ? mirrorFromSession(hub, nextSession) : {};
       return { sessionsByHub, ...mirror };
     });
+  },
+
+  releaseWhoTranscriptForce: (room, hubHash) => {
+    set((s) =>
+      mutateHubSession(s, hubHash, (session) => ({
+        ...session,
+        whoTranscriptForceRooms: dropMatchingWhoKeys(
+          session.whoTranscriptForceRooms ?? new Set<string>(),
+          room,
+        ),
+      })),
+    );
   },
 }));

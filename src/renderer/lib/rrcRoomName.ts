@@ -51,6 +51,23 @@ export function rrcWhoNoticeJoinedRoom(
 }
 
 /**
+ * Joined room whose next `/who` NOTICE should appear in chat.
+ * Uses the `/who` argument when present; otherwise the focused non-DM room.
+ */
+export function resolveRrcWhoTranscriptForceRoom(
+  body: string,
+  activeRoom: string | null | undefined,
+  joinedRoomNames: Iterable<string>,
+): string | null {
+  if (!/^\s*\/who(?:\s|$)/i.test(body)) return null;
+  const arg = body.replace(/^\s*\/who(?:\s+|$)/i, '').trim();
+  const candidate = arg || activeRoom || '';
+  const token = rrcWhoCommandToken(candidate);
+  if (!token) return null;
+  return rrcWhoNoticeJoinedRoom(token, joinedRoomNames);
+}
+
+/**
  * Prefer an already-joined or hub-listed spelling; otherwise bare name (no `#`)
  * so JOIN hits typical `rooms.toml` registry keys like `lobby`.
  */

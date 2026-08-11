@@ -133,6 +133,7 @@ import {
   resolveRrcInboundChatRoom,
   shouldDropEmptyRrcInbound,
 } from '@/renderer/lib/rrcMessageDisplay';
+import { applyRrcWhoInboundNotice } from '@/renderer/lib/rrcWhoInbound';
 import {
   LARGE_MESH_NODE_THRESHOLD,
   MEGA_MESH_FULL_PEER_REFRESH_MAX_AGE_MS,
@@ -169,9 +170,8 @@ import {
   isRrcModerationLanguage,
   parseRrcListNotice,
   parseRrcTopicNotice,
-  parseRrcWhoNotice,
 } from '../lib/rrcNoticeParsers';
-import { rrcRoomsMatch, rrcWhoNoticeJoinedRoom } from '../lib/rrcRoomName';
+import { rrcRoomsMatch } from '../lib/rrcRoomName';
 import type { DeviceState, MeshNode } from '../lib/types';
 import { useBlockStore } from '../stores/blockStore';
 import { setConnection, useConnectionStore } from '../stores/connectionStore';
@@ -1163,19 +1163,20 @@ export function useReticulumRuntime(): ProtocolRuntime {
           if (kind === 'notice') {
             const listed = parseRrcListNotice(p.body);
             if (listed) session.setListedRooms(listed, hubDestHash);
-            const who = parseRrcWhoNotice(p.body);
             const hubKey = hubDestHash?.toLowerCase();
             const hubSession = hubKey ? session.sessionsByHub.get(hubKey) : undefined;
-            const whoRoom = who
-              ? rrcWhoNoticeJoinedRoom(
-                  who.room,
-                  hubDestHash ? (hubSession?.rooms.keys() ?? []) : session.rooms.keys(),
-                )
-              : null;
-            // Full roster snapshot — replace so departed nicks disappear.
-            if (who && whoRoom) {
-              session.mergeRoomMembers(whoRoom, who.members, 'replace', hubDestHash);
-            }
+            const whoResult = applyRrcWhoInboundNotice(
+              p.body,
+              hubDestHash ? (hubSession?.rooms.keys() ?? []) : session.rooms.keys(),
+              {
+                hubDestHash,
+                mergeRoomMembers: (whoRoom, members, mode, hub) => {
+                  session.mergeRoomMembers(whoRoom, members, mode, hub);
+                },
+                consumeWhoTranscriptSlot: (whoRoom, hub) =>
+                  session.consumeWhoTranscriptSlot(whoRoom, hub),
+              },
+            );
             const topic = parseRrcTopicNotice(p.body);
             if (topic) session.setRoomTopic(topic.room, topic.topic || null, hubDestHash);
             // rrcd may emit join-info NOTICE without a usable JOINED member list —
@@ -1193,12 +1194,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
               // Reserve kick/ban banner copy for moderation notices; transcript keeps hub text.
               session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
             }
-            // First `/who` snapshot may appear in the named room; later ones are nicklist-only.
-            if (who && whoRoom) {
-              if (!session.consumeWhoTranscriptSlot(whoRoom, hubDestHash)) {
-                return;
-              }
-              room = whoRoom;
+            // Unmatched / nicklist-only `/who` must not reach addMessage or [hub] persistence.
+            if (whoResult.action === 'unjoined' || whoResult.action === 'nicklist-only') {
+              return;
+            }
+            if (whoResult.action === 'transcript') {
+              room = whoResult.room;
             }
           }
 

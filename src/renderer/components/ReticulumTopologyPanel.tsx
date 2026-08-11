@@ -324,6 +324,8 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
     if (!cached) return;
     const uniquePeers = selectReticulumTopologyPeersForRender(cached.peers, cached.interfaces, {
       rfOnly,
+      includeDistantPeers,
+      maxHops,
     });
     const width = svgRef.current?.clientWidth ?? 800;
     const height = svgRef.current?.clientHeight ?? 600;
@@ -389,6 +391,8 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
           lastFetchRef.current = { interfaces, peers: uniqueByHash, selfLabel };
           const uniquePeers = selectReticulumTopologyPeersForRender(uniqueByHash, interfaces, {
             rfOnly: rfOnlyRef.current,
+            includeDistantPeers: includeDistantPeersRef.current,
+            maxHops: maxHopsRef.current,
           });
 
           const serverPeerHashes = new Set(

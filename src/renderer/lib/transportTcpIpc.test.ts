@@ -86,6 +86,7 @@ describe('TransportTcpIpc', () => {
     await expect(writer.write(new Uint8Array([1, 2, 3]))).rejects.toThrow(
       'meshtastic:tcp-write: no active socket',
     );
+    expect(window.electronAPI.meshtastic.tcp.write).toHaveBeenCalledTimes(1);
     writer.releaseLock();
   });
 

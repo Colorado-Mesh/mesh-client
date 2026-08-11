@@ -3027,6 +3027,7 @@ export function useMeshcoreRuntime() {
       // (BLE auto-connect vs manual TCP race — openMeshCoreTransport can leave a live
       // meshcore:tcp socket before attachRfSession sets driverConnected).
       meshcoreSetupGenerationRef.current += 1;
+      resetMeshcoreRoomAutoLoginSingleFlight();
       if (type === 'ble' && bleConnectInProgressRef.current) {
         console.debug('[useMeshcoreRuntime] prepareRfConnect BLE superseding in-flight connect');
         bleConnectInProgressRef.current = false;
@@ -3592,6 +3593,7 @@ export function useMeshcoreRuntime() {
     // Abort in-flight initConn immediately (before async driver teardown). Neal TCP: peer FIN
     // after getContacts raced past a gen bump that used to live only inside the async IIFE.
     meshcoreSetupGenerationRef.current += 1;
+    resetMeshcoreRoomAutoLoginSingleFlight();
     if (
       !meshcoreEverConfiguredRef.current &&
       meshcoreReconnectAttemptRef.current === 0 &&
@@ -3677,6 +3679,7 @@ export function useMeshcoreRuntime() {
     return () => {
       serialRediscoveryStopRef.current?.();
       serialRediscoveryStopRef.current = null;
+      resetMeshcoreRoomAutoLoginSingleFlight();
       teardownMeshcoreConnEventListeners({ driverDisconnect: true });
       const conn = connRef.current;
       connRef.current = null;
@@ -6035,6 +6038,9 @@ export function useMeshcoreRuntime() {
               throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
             }
             await repeaterRemoteRpcRef.current(async () => {
+              if (opts?.abortIfStale?.()) {
+                throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
+              }
               const rpcConn = connRef.current;
               if (!rpcConn) {
                 throw new Error(MESHCORE_ERR_NOT_CONNECTED);

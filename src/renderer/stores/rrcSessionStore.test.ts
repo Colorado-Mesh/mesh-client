@@ -659,4 +659,15 @@ describe('rrcSessionStore', () => {
     expect(useRrcSessionStore.getState().consumeWhoTranscriptSlot('general')).toBe(true);
     expect(useRrcSessionStore.getState().consumeWhoTranscriptSlot('general')).toBe(false);
   });
+
+  it('releaseWhoTranscriptForce drops a pending forced snapshot', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('general');
+    expect(store.consumeWhoTranscriptSlot('general')).toBe(true);
+    store.reserveWhoTranscriptForce('general');
+    store.releaseWhoTranscriptForce('general');
+    expect(useRrcSessionStore.getState().consumeWhoTranscriptSlot('general')).toBe(false);
+  });
 });

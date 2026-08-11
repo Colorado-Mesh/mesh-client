@@ -449,6 +449,13 @@ describe('attachMeshcoreConnSideEffects', () => {
     expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
     expect(h.syncNextMessage).toHaveBeenCalled();
     expect(h.handleConnectionLost).not.toHaveBeenCalled();
+
+    vi.mocked(h.conn.getWaitingMessages).mockClear();
+    vi.mocked(h.conn.getWaitingMessages).mockResolvedValue([]);
+    const retried = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
+    await vi.runAllTimersAsync();
+    await retried;
+    expect(h.conn.getWaitingMessages).toHaveBeenCalledTimes(1);
   });
 
   it('ignores late bulk resolve after timeout fallback has started', async () => {

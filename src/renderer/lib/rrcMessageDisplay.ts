@@ -1,9 +1,6 @@
 import { RRC_HUB_STREAM_ROOM, rrcRoomMatchKey } from '@/renderer/lib/rrcRoomName';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
-/** @deprecated Use {@link RRC_HUB_STREAM_ROOM}. */
-export const RRC_UNSCOPED_NOTICE_ROOM = RRC_HUB_STREAM_ROOM;
-
 /**
  * Empty notice/system/error rows render as a lone IRC `*` — hide them.
  * MSG/ACTION with empty body are still shown (rare).

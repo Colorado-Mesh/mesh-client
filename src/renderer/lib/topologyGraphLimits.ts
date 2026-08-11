@@ -17,7 +17,7 @@ export const MESH_TOPOLOGY_NEARBY_MAX_HOPS = 1;
  */
 export const RETICULUM_TOPOLOGY_NEARBY_MAX_HOPS = 2;
 
-/** Layout budget after hop filters. Not gated by Show distant (48 hid 1-hop neighbors). */
+/** Post-hop-filter layout budget remains 400 nodes (not gated by Show distant). */
 export function topologyGraphVisibleNodeCap(): number {
   return TOPOLOGY_GRAPH_DISTANT_NODE_CAP;
 }

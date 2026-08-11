@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { topologyGraphVisibleNodeCap } from '../topologyGraphLimits';
 import {
   buildReticulumMeshTopologyGraph,
   buildReticulumTopologyGraph,
@@ -599,5 +600,20 @@ describe('buildReticulumTopologyLayout (via-hash legacy)', () => {
     );
     expect(visible.has('hub')).toBe(true);
     expect(visible.has('peer50')).toBe(true);
+  });
+
+  it('keeps self plus visible peers within the layout cap', () => {
+    const cap = topologyGraphVisibleNodeCap();
+    const nodes = Array.from({ length: cap + 50 }, (_, i) => ({
+      destination_hash: `peer${i}`,
+      hops: 1,
+    }));
+    const edges = nodes.map((n) => ({ source: 'self' as const, target: n.destination_hash }));
+    const graph = buildReticulumTopologyGraph(nodes, edges, {
+      selfLabel: 'You',
+      filter: { includeDistantPeers: true },
+    });
+    expect(graph.nodes.length).toBeLessThanOrEqual(cap);
+    expect(graph.nodes.some((n) => n.id === 'self')).toBe(true);
   });
 });

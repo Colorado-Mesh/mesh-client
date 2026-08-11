@@ -5,7 +5,6 @@ import { RRC_HUB_STREAM_ROOM } from '@/renderer/stores/rrcSessionStore';
 import {
   parseRrcWhisperEcho,
   resolveRrcInboundChatRoom,
-  RRC_UNSCOPED_NOTICE_ROOM,
   shouldDisplayRrcChatMessage,
   shouldDropEmptyRrcInbound,
   shouldShowRrcWhoTranscript,
@@ -38,7 +37,6 @@ describe('resolveRrcInboundChatRoom', () => {
     expect(resolveRrcInboundChatRoom('')).toBe(RRC_HUB_STREAM_ROOM);
     expect(resolveRrcInboundChatRoom(null)).toBe(RRC_HUB_STREAM_ROOM);
     expect(resolveRrcInboundChatRoom(undefined)).toBe(RRC_HUB_STREAM_ROOM);
-    expect(RRC_UNSCOPED_NOTICE_ROOM).toBe(RRC_HUB_STREAM_ROOM);
   });
 });
 
