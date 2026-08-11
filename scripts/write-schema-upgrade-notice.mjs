@@ -66,6 +66,87 @@ export function formatNsisSchemaUpgradeInclude(message) {
 }
 
 /**
+ * @param {string} filePath
+ * @returns {string | null}
+ */
+function readIfExists(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+  return fs.readFileSync(filePath, 'utf8');
+}
+
+/**
+ * @param {string} filePath
+ * @param {string | null} snapshot
+ */
+function restoreFile(filePath, snapshot) {
+  if (snapshot === null) {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    return;
+  }
+  fs.writeFileSync(filePath, snapshot, 'utf8');
+}
+
+/**
+ * @param {string} op
+ * @param {{ nshPath: string, txtPath: string, stagedNsh?: string }} paths
+ * @param {unknown} error
+ */
+function logNoticeFsFailure(op, paths, error) {
+  const detail = error instanceof Error ? error.message : String(error);
+  const staged = paths.stagedNsh ? ` staged=${paths.stagedNsh}` : '';
+  console.error(
+    `[write-schema-upgrade-notice] ${op} failed; rolling back nsh=${paths.nshPath} txt=${paths.txtPath}${staged}: ${detail}`,
+  );
+}
+
+/**
+ * No-bump: commit the NSIS stub first, then drop SCHEMA-UPGRADE.txt.
+ * Failure point: any mkdir/write/rename/unlink. Fallback: restore prior nsh+txt
+ * (and drop the staged temp) so a retry starts from a consistent pair.
+ *
+ * @param {string} txtPath
+ * @param {string} nshPath
+ * @param {string} resourcesDir
+ */
+function writeNoBumpNoticeFiles(txtPath, nshPath, resourcesDir) {
+  fs.mkdirSync(resourcesDir, { recursive: true });
+  const priorNsh = readIfExists(nshPath);
+  const priorTxt = readIfExists(txtPath);
+  const stagedNsh = `${nshPath}.${process.pid}.${Date.now()}.tmp`;
+  const paths = { nshPath, txtPath, stagedNsh };
+  let op = 'stage NSIS stub';
+  try {
+    fs.writeFileSync(stagedNsh, NSIS_SCHEMA_UPGRADE_STUB, 'utf8');
+    op = 'commit NSIS stub';
+    // OS-specific: Windows rename cannot replace an existing file.
+    if (process.platform === 'win32' && fs.existsSync(nshPath)) {
+      fs.unlinkSync(nshPath);
+    }
+    fs.renameSync(stagedNsh, nshPath);
+    op = 'remove SCHEMA-UPGRADE.txt';
+    if (fs.existsSync(txtPath)) fs.unlinkSync(txtPath);
+  } catch (error) {
+    logNoticeFsFailure(op, paths, error);
+    try {
+      if (fs.existsSync(stagedNsh)) fs.unlinkSync(stagedNsh);
+    } catch {
+      // catch-no-log-ok best-effort staged file cleanup
+    }
+    try {
+      restoreFile(nshPath, priorNsh);
+    } catch (restoreErr) {
+      logNoticeFsFailure('rollback NSIS stub', paths, restoreErr);
+    }
+    try {
+      restoreFile(txtPath, priorTxt);
+    } catch (restoreErr) {
+      logNoticeFsFailure('rollback SCHEMA-UPGRADE.txt', paths, restoreErr);
+    }
+    throw error;
+  }
+}
+
+/**
  * @param {NodeJS.ProcessEnv} [env]
  * @param {string} [resourcesDir]
  */
@@ -75,9 +156,7 @@ export function writeSchemaUpgradeNoticeFiles(env = process.env, resourcesDir = 
   const nshPath = path.join(resourcesDir, NSH_NAME);
 
   if (!bumped) {
-    if (fs.existsSync(txtPath)) fs.unlinkSync(txtPath);
-    fs.mkdirSync(resourcesDir, { recursive: true });
-    fs.writeFileSync(nshPath, NSIS_SCHEMA_UPGRADE_STUB, 'utf8');
+    writeNoBumpNoticeFiles(txtPath, nshPath, resourcesDir);
     console.debug('[write-schema-upgrade-notice] No schema bump; NSIS stub written, txt cleared');
     return { bumped: false, txtPath, nshPath };
   }
