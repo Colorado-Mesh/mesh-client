@@ -286,6 +286,53 @@ describe('ReticulumTopologyPanel', () => {
     });
   });
 
+  it('keeps hop-4 RF peers when distant is off and max hops is 8', async () => {
+    fetchReticulumInterfaces.mockResolvedValue([
+      { id: 'rnode-1', name: 'RNode 41F4', type: 'rnode', enabled: true, status: 'up' },
+    ]);
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/topology') {
+        return Promise.resolve({
+          nodes: [
+            {
+              destination_hash: 'rfnear01',
+              display_name: 'RF Near',
+              hops: 2,
+              interface: 'RNode 41F4',
+            },
+            {
+              destination_hash: 'rffar001',
+              display_name: 'RF Far',
+              hops: 4,
+              interface: 'RNode 41F4',
+            },
+          ],
+          edges: [],
+        });
+      }
+      if (path === '/api/v1/identity/status') {
+        return Promise.resolve({ display_name: 'NV0N' });
+      }
+      return Promise.resolve({});
+    });
+
+    render(<ReticulumTopologyPanel onPeerClick={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'RF Far' })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText('reticulumTopology.showDistantPeers'));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'RF Near' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'RF Far' })).not.toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByLabelText('reticulumTopology.maxHopsFilter'), {
+      target: { value: '8' },
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'RF Far' })).toBeInTheDocument();
+    });
+  });
+
   it('shows 168 nodes when distant peers are on and max hops is all', async () => {
     const nodes = Array.from({ length: 167 }, (_, i) => ({
       destination_hash: `p${i.toString(16).padStart(8, '0')}`,

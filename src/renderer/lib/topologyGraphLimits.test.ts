@@ -10,9 +10,12 @@ import {
   RETICULUM_TOPOLOGY_NEARBY_NODE_CAP,
 } from './reticulum/buildReticulumTopologyLayout';
 import {
+  MESH_TOPOLOGY_NEARBY_MAX_HOPS,
+  RETICULUM_TOPOLOGY_NEARBY_MAX_HOPS,
   TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
   TOPOLOGY_GRAPH_NEARBY_NODE_CAP,
   topologyGraphVisibleNodeCap,
+  topologyPeerPassesHopFilters,
 } from './topologyGraphLimits';
 
 describe('topologyGraphLimits', () => {
@@ -29,5 +32,39 @@ describe('topologyGraphLimits', () => {
     expect(RETICULUM_TOPOLOGY_NEARBY_NODE_CAP).toBe(TOPOLOGY_GRAPH_NEARBY_NODE_CAP);
     expect(RETICULUM_TOPOLOGY_DISTANT_NODE_CAP).toBe(TOPOLOGY_GRAPH_DISTANT_NODE_CAP);
     expect(RETICULUM_TOPOLOGY_NEARBY_NODE_CAP).not.toBe(90);
+  });
+});
+
+describe('topologyPeerPassesHopFilters', () => {
+  it('lets numeric max hops win when distant peers are off', () => {
+    const meshOff = {
+      includeDistantPeers: false,
+      nearbyMaxHops: MESH_TOPOLOGY_NEARBY_MAX_HOPS,
+    };
+    expect(topologyPeerPassesHopFilters(2, { ...meshOff, maxHops: 2 })).toBe(true);
+    expect(topologyPeerPassesHopFilters(4, { ...meshOff, maxHops: 2 })).toBe(false);
+    expect(topologyPeerPassesHopFilters(8, { ...meshOff, maxHops: 8 })).toBe(true);
+    expect(topologyPeerPassesHopFilters(4, { ...meshOff, maxHops: null })).toBe(false);
+    expect(topologyPeerPassesHopFilters(1, { ...meshOff, maxHops: null })).toBe(true);
+  });
+
+  it('uses the RNS nearby ceiling of 2 only when max hops is all', () => {
+    const rnsOff = {
+      includeDistantPeers: false,
+      nearbyMaxHops: RETICULUM_TOPOLOGY_NEARBY_MAX_HOPS,
+    };
+    expect(topologyPeerPassesHopFilters(2, { ...rnsOff, maxHops: null })).toBe(true);
+    expect(topologyPeerPassesHopFilters(3, { ...rnsOff, maxHops: null })).toBe(false);
+    expect(topologyPeerPassesHopFilters(4, { ...rnsOff, maxHops: 8 })).toBe(true);
+  });
+
+  it('always includes unknown hops', () => {
+    expect(
+      topologyPeerPassesHopFilters(null, {
+        includeDistantPeers: false,
+        maxHops: 2,
+        nearbyMaxHops: MESH_TOPOLOGY_NEARBY_MAX_HOPS,
+      }),
+    ).toBe(true);
   });
 });

@@ -2,9 +2,11 @@ import type { ForceEdge } from './forceDirectedGraphLayout';
 import { nodeHealthScore, type NodeHealthTier, nodeHealthTier } from './nodeHealthScore';
 import { MS_PER_HOUR } from './timeConstants';
 import {
+  MESH_TOPOLOGY_NEARBY_MAX_HOPS,
   TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
   TOPOLOGY_GRAPH_NEARBY_NODE_CAP,
   topologyGraphVisibleNodeCap,
+  topologyPeerPassesHopFilters,
 } from './topologyGraphLimits';
 import type { MeshNode } from './types';
 
@@ -36,7 +38,10 @@ export interface MeshPeerTopologyGraph {
 }
 
 export interface MeshPeerTopologyFilterOptions {
-  /** When true (default), include multi-hop peers reachable via relay attachment. */
+  /**
+   * When false and Max hops is All, hide hops above the Mesh nearby ceiling (1).
+   * Numeric Max hops is not gated by this checkbox.
+   */
   includeDistantPeers?: boolean;
   /** When set, hide peers whose hop count exceeds this value. */
   maxHops?: number | null;
@@ -133,13 +138,13 @@ function filterMeshPeers(
   const includeDistant = opts?.includeDistantPeers !== false;
   const maxHops = opts?.maxHops ?? null;
 
-  let filtered = peers.filter((peer) => {
-    const hops = effectiveHops(peer);
-    if (maxHops != null && hops != null && hops > maxHops) return false;
-    // Distant-off: LoRa 0–1 hop maps (direct RF / MQTT neighbors). Reticulum uses hops > 2.
-    if (!includeDistant && hops != null && hops > 1) return false;
-    return true;
-  });
+  let filtered = peers.filter((peer) =>
+    topologyPeerPassesHopFilters(effectiveHops(peer), {
+      includeDistantPeers: includeDistant,
+      maxHops,
+      nearbyMaxHops: MESH_TOPOLOGY_NEARBY_MAX_HOPS,
+    }),
+  );
 
   const peerBudget = Math.max(0, topologyGraphVisibleNodeCap(includeDistant) - 1);
   const hiddenCount = Math.max(0, filtered.length - peerBudget);

@@ -97,6 +97,29 @@ describe('PeerGraphPanel', () => {
     expect(screen.queryByText(/peerGraph\.hiddenCount:\d/)).not.toBeInTheDocument();
   });
 
+  it('shows 2-hop nodes at the Graph default (distant off, max hops 2)', () => {
+    const nodes = new Map<number, MeshNode>([
+      [1, node(1, 0)],
+      [2, node(2, 1)],
+      [3, node(3, 2)],
+      [4, node(4, 5)],
+    ]);
+    render(<PeerGraphPanel nodes={nodes} myNodeId={1} />);
+    expect(screen.getByText('N2')).toBeInTheDocument();
+    expect(screen.getByText('N3')).toBeInTheDocument();
+    expect(screen.queryByText('N4')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('peerGraph.maxHopsFilter'), {
+      target: { value: '8' },
+    });
+    expect(screen.getByText('N4')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('peerGraph.maxHopsFilter'), {
+      target: { value: 'all' },
+    });
+    expect(screen.getByText('N2')).toBeInTheDocument();
+    expect(screen.queryByText('N3')).not.toBeInTheDocument();
+    expect(screen.queryByText('N4')).not.toBeInTheDocument();
+  });
+
   it('changes the rendered node count when max hops changes with distant peers on', () => {
     const nodes = new Map<number, MeshNode>([[1, node(1, 0)]]);
     for (let i = 2; i <= 31; i++) nodes.set(i, node(i, 1));

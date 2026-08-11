@@ -1,8 +1,10 @@
 import type { ForceEdge } from '../forceDirectedGraphLayout';
 import {
+  RETICULUM_TOPOLOGY_NEARBY_MAX_HOPS,
   TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
   TOPOLOGY_GRAPH_NEARBY_NODE_CAP,
   topologyGraphVisibleNodeCap,
+  topologyPeerPassesHopFilters,
 } from '../topologyGraphLimits';
 import { filterReticulumTopologyRfOnly } from './reticulumTopologyRfFilter';
 
@@ -74,7 +76,10 @@ export const RETICULUM_TOPOLOGY_NEARBY_NODE_CAP = TOPOLOGY_GRAPH_NEARBY_NODE_CAP
 export const RETICULUM_TOPOLOGY_DISTANT_NODE_CAP = TOPOLOGY_GRAPH_DISTANT_NODE_CAP;
 
 export interface ReticulumTopologyFilterOptions {
-  /** When true (default), include multi-hop peers reachable via edge paths. */
+  /**
+   * When false and Max hops is All, hide hops above the RNS nearby ceiling (2).
+   * Numeric Max hops is not gated by this checkbox.
+   */
   includeDistantPeers?: boolean;
   /** When set, hide peers whose reported hop count exceeds this value. */
   maxHops?: number | null;
@@ -238,12 +243,12 @@ export function filterReticulumVisibleNodeIds(
   const cap = topologyGraphVisibleNodeCap(includeDistant);
   const hopsById = new Map(nodes.map((n) => [n.destination_hash, n.hops]));
 
-  const passesHopsFilter = (id: string): boolean => {
-    if (maxHops == null) return true;
-    const hops = hopsById.get(id);
-    if (hops == null) return true;
-    return hops <= maxHops;
-  };
+  const passesHopsFilter = (id: string): boolean =>
+    topologyPeerPassesHopFilters(hopsById.get(id), {
+      includeDistantPeers: includeDistant,
+      maxHops,
+      nearbyMaxHops: RETICULUM_TOPOLOGY_NEARBY_MAX_HOPS,
+    });
 
   const filteredIds = allIds.filter(passesHopsFilter);
 
@@ -344,10 +349,11 @@ function filterMeshTopologyPeers(
 
   let filtered = peers.filter((peer) => {
     if (!peer.destination_hash) return false;
-    if (maxHops != null && peer.hops != null && peer.hops > maxHops) return false;
-    // Distant-off: RNS hops 0–2 (on-interface / next hop). Mesh Graph uses hops > 1.
-    if (!includeDistant && peer.hops != null && peer.hops > 2) return false;
-    return true;
+    return topologyPeerPassesHopFilters(peer.hops, {
+      includeDistantPeers: includeDistant,
+      maxHops,
+      nearbyMaxHops: RETICULUM_TOPOLOGY_NEARBY_MAX_HOPS,
+    });
   });
 
   const peerBudget = Math.max(0, topologyGraphVisibleNodeCap(includeDistant) - interfaceCount - 1);

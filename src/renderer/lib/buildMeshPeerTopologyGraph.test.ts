@@ -279,7 +279,7 @@ describe('buildMeshPeerTopologyGraph filter/cap matrix', () => {
     expect(graph.nodes.some((n) => n.nodeId === 3)).toBe(true);
   });
 
-  it('hides hops > 1 when distant peers are off even under the nearby cap', () => {
+  it('hides hops > 1 when distant peers are off and max hops is all', () => {
     const nodes = new Map<number, MeshNode>([
       [1, node(1, { hops_away: 0 })],
       [2, node(2, { hops_away: 1 })],
@@ -288,10 +288,46 @@ describe('buildMeshPeerTopologyGraph filter/cap matrix', () => {
     const graph = buildMeshPeerTopologyGraph(nodes, {
       myNodeId: 1,
       selfLabel: 'Me',
-      filter: { includeDistantPeers: false },
+      filter: { includeDistantPeers: false, maxHops: null },
     });
     expect(graph.nodes.some((n) => n.nodeId === 3)).toBe(false);
     expect(graph.nodes.some((n) => n.nodeId === 2)).toBe(true);
+  });
+
+  it('does not gate numeric max hops behind show-distant (Graph default combo)', () => {
+    const nodes = new Map<number, MeshNode>([
+      [1, node(1, { hops_away: 0 })],
+      [2, node(2, { hops_away: 1 })],
+      [3, node(3, { hops_away: 2 })],
+      [4, node(4, { hops_away: 5 })],
+    ]);
+    const graph = buildMeshPeerTopologyGraph(nodes, {
+      myNodeId: 1,
+      selfLabel: 'Me',
+      filter: { includeDistantPeers: false, maxHops: 2 },
+    });
+    expect(graph.nodes.some((n) => n.nodeId === 3)).toBe(true);
+    expect(graph.nodes.some((n) => n.nodeId === 4)).toBe(false);
+  });
+
+  it('changes visible count across maxHops with distant peers off', () => {
+    const nodes = new Map<number, MeshNode>([[1, node(1, { hops_away: 0 })]]);
+    let id = 2;
+    for (let i = 0; i < 10; i++, id++) nodes.set(id, node(id, { hops_away: 1 }));
+    for (let i = 0; i < 10; i++, id++) nodes.set(id, node(id, { hops_away: 2 }));
+    for (let i = 0; i < 10; i++, id++) nodes.set(id, node(id, { hops_away: 5 }));
+
+    const counts = ([1, 2, 8] as const).map(
+      (maxHops) =>
+        buildMeshPeerTopologyGraph(nodes, {
+          myNodeId: 1,
+          selfLabel: 'Me',
+          filter: { includeDistantPeers: false, maxHops },
+        }).nodes.length,
+    );
+    expect(counts[0]).toBe(11);
+    expect(counts[1]).toBe(21);
+    expect(counts[2]).toBe(31);
   });
 
   it('keeps lowest-hop peers when the distant cap slices', () => {

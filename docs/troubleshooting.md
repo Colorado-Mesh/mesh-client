@@ -1763,7 +1763,7 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 
 **Symptoms**: MeshCore/Meshtastic **Graph** or Reticulum **Topology** says it is showing 48 (or 400) of N nodes even with **Show distant peers** ticked and **Max hops** set to **All hops**.
 
-**Cause**: The force-directed layout has a hard visible-node budget: **48** when distant peers are hidden, **400** when they are shown. Hop filters apply first; leftover nodes beyond that budget are omitted on purpose. Reticulum Topology also ingests at most 800 path-table rows (sidecar 2,000).
+**Cause**: The force-directed layout has a hard visible-node budget: **48** when distant peers are hidden, **400** when they are shown. Numeric **Max hops** is not gated by Show distant (the nearby hop ceiling applies only when Max hops is **All hops**). Leftover nodes beyond the layout budget are omitted on purpose. Reticulum Topology also ingests at most 800 path-table rows (sidecar 2,000).
 
 **Fix**: This is expected. The toolbar note states the 400 / 48 limit. Turn on **Show distant peers** and set **Max hops** to **All hops** to include multi-hop peers up to 400. On Topology, use **RF only** to drop TCP/I2P hubs if you only want RNode/KISS/BLE. Narrow **Max hops** if the graph is too dense.
 

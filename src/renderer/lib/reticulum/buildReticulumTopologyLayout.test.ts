@@ -157,7 +157,7 @@ describe('buildReticulumMeshTopologyGraph filter/cap matrix', () => {
     expect(graph.nodes.some((n) => n.kind === 'self')).toBe(true);
   });
 
-  it('drops Reticulum hops > 2 when distant peers are off even under the cap', () => {
+  it('drops Reticulum hops > 2 when distant peers are off and max hops is all', () => {
     const graph = buildReticulumMeshTopologyGraph(
       [rnodeIface],
       [
@@ -167,10 +167,29 @@ describe('buildReticulumMeshTopologyGraph filter/cap matrix', () => {
       {
         selfLabel: 'You',
         unassignedInterfaceLabel: 'Other paths',
-        filter: { includeDistantPeers: false },
+        filter: { includeDistantPeers: false, maxHops: null },
       },
     );
     expect(graph.nodes.some((n) => n.id === 'near')).toBe(true);
+    expect(graph.nodes.some((n) => n.id === 'far')).toBe(false);
+  });
+
+  it('does not gate numeric max hops behind show-distant', () => {
+    const graph = buildReticulumMeshTopologyGraph(
+      [rnodeIface],
+      [
+        { destination_hash: 'near', hops: 2, interface: 'RNode 41F4' },
+        { destination_hash: 'mid', hops: 4, interface: 'RNode 41F4' },
+        { destination_hash: 'far', hops: 9, interface: 'RNode 41F4' },
+      ],
+      {
+        selfLabel: 'You',
+        unassignedInterfaceLabel: 'Other paths',
+        filter: { includeDistantPeers: false, maxHops: 8 },
+      },
+    );
+    expect(graph.nodes.some((n) => n.id === 'near')).toBe(true);
+    expect(graph.nodes.some((n) => n.id === 'mid')).toBe(true);
     expect(graph.nodes.some((n) => n.id === 'far')).toBe(false);
   });
 
