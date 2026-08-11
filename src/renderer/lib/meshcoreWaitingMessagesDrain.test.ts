@@ -13,11 +13,15 @@ import {
   logMeshcoreWaitingMessagesDrainError,
   markMeshcoreCompanionTx,
   markMeshcoreMsgWaitingEvent,
+  noteMeshcoreSilentBulkSuccess,
+  noteMeshcoreSilentBulkTimeout,
+  resetMeshcoreSilentBulkBreaker,
   resetMeshcoreWaitingMessagesDrainSchedule,
   resetMeshcoreWaitingMessagesDrainState,
   scheduleMeshcoreWaitingMessagesDrain,
   shouldActivateWaitingMessagesBanner,
   shouldRunMeshcoreWaitingMessagesPeriodicPoll,
+  shouldSkipMeshcoreSilentBulkGetWaitingMessages,
   waitingMessagesDrainTimeoutMs,
 } from './meshcoreWaitingMessagesDrain';
 import {
@@ -26,6 +30,7 @@ import {
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
   MESHCORE_WAITING_MESSAGES_POLL_MS,
   MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
+  MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP,
   MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS,
 } from './timeConstants';
@@ -327,5 +332,43 @@ describe('resetMeshcoreWaitingMessagesDrainSchedule', () => {
     await Promise.resolve();
 
     expect(drain).not.toHaveBeenCalled();
+  });
+});
+
+describe('silent bulk timeout circuit breaker', () => {
+  afterEach(() => {
+    resetMeshcoreSilentBulkBreaker();
+  });
+
+  it('stays closed before the trip count', () => {
+    expect(noteMeshcoreSilentBulkTimeout()).toBe(false);
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(false);
+  });
+
+  it('opens on the trip timeout and only reports the trip once', () => {
+    for (let i = 1; i < MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP; i += 1) {
+      expect(noteMeshcoreSilentBulkTimeout()).toBe(false);
+    }
+    expect(noteMeshcoreSilentBulkTimeout()).toBe(true);
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(true);
+    expect(noteMeshcoreSilentBulkTimeout()).toBe(false);
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(true);
+  });
+
+  it('resets on successful bulk', () => {
+    for (let i = 0; i < MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP; i += 1) {
+      noteMeshcoreSilentBulkTimeout();
+    }
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(true);
+    noteMeshcoreSilentBulkSuccess();
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(false);
+  });
+
+  it('resets on drain state reset (reconnect)', () => {
+    for (let i = 0; i < MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP; i += 1) {
+      noteMeshcoreSilentBulkTimeout();
+    }
+    resetMeshcoreWaitingMessagesDrainState(0);
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(false);
   });
 });

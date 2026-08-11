@@ -6397,9 +6397,9 @@ ipcMain.handle('meshtastic:tcp-write', (event, bytes: number[]) => {
     return Promise.reject(new Error('meshtastic:tcp-write: byte values must be integers 0-255'));
   }
   if (!meshtasticTcpSocket) {
-    const msg = 'meshtastic:tcp-write: no active socket';
-    console.warn(`[IPC] ${msg}`);
-    return Promise.reject(new Error(msg));
+    // Expected reconnect race — resolve so Electron does not log handler [error].
+    console.debug('[IPC] meshtastic:tcp-write: no active socket');
+    return 'no-socket';
   }
   const sock = meshtasticTcpSocket;
   return new Promise<void>((resolve, reject) => {

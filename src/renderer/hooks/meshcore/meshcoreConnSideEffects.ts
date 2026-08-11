@@ -38,9 +38,12 @@ import {
   isMeshcoreWaitingMessagesTransportDeadError,
   logMeshcoreWaitingMessagesDrainError,
   markMeshcoreMsgWaitingEvent,
+  noteMeshcoreSilentBulkSuccess,
+  noteMeshcoreSilentBulkTimeout,
   resetMeshcoreWaitingMessagesDrainSchedule,
   scheduleMeshcoreWaitingMessagesDrain,
   shouldActivateWaitingMessagesBanner,
+  shouldSkipMeshcoreSilentBulkGetWaitingMessages,
   waitingMessagesDrainTimeoutMs,
 } from '../../lib/meshcoreWaitingMessagesDrain';
 import type { DomainEvent } from '../../lib/protocols/Protocol';
@@ -306,6 +309,11 @@ async function drainWaitingMessagesSilent(
   state: MeshcoreWaitingMessagesDrainState,
   deps: MeshcoreWaitingMessagesDrainDeps,
 ): Promise<void> {
+  if (shouldSkipMeshcoreSilentBulkGetWaitingMessages()) {
+    await drainWaitingMessagesIncremental(conn, state, deps);
+    return;
+  }
+
   const attemptId = beginMeshcoreSilentBulkAttempt();
 
   try {
@@ -319,6 +327,7 @@ async function drainWaitingMessagesSilent(
       return;
     }
     if (!deps.meshcoreHookMountedRef.current) return;
+    noteMeshcoreSilentBulkSuccess();
     const arr = normalizeMeshcoreWaitingMessageBatch(msgs);
     if (arr.length === 0) {
       return;
@@ -359,6 +368,14 @@ async function drainWaitingMessagesSilent(
       // Abandon bulk ownership so a late getWaitingMessages resolve cannot ingest.
       abandonMeshcoreSilentBulkAttempt(attemptId);
       if (!stillOwner || !deps.meshcoreHookMountedRef.current) return;
+      if (isMeshcoreGetWaitingMessagesTimeoutError(e)) {
+        const tripped = noteMeshcoreSilentBulkTimeout();
+        if (tripped) {
+          console.debug(
+            '[useMeshcoreRuntime] silent bulk getWaitingMessages circuit-open; skipping bulk until reconnect',
+          );
+        }
+      }
       logMeshcoreWaitingMessagesDrainError('silent bulk fallback to syncNextMessage', e, false);
       state.syncTotal = 0;
       state.progressActive = true;

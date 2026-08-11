@@ -406,6 +406,16 @@ export function isDroppableMeshtasticSdkLogLine(message: string): boolean {
 }
 
 /**
+ * Chromium ResizeObserver loop warnings — harmless, logged as error by the renderer.
+ * Keep real application errors.
+ */
+export function isDroppableRendererConsoleNoise(message: string): boolean {
+  return /ResizeObserver loop (completed with undelivered notifications|limit exceeded)\.?/i.test(
+    message,
+  );
+}
+
+/**
  * Renderer console-message (Electron 40+): single event object with message, level, lineNumber, sourceId.
  * level is 'info' | 'warning' | 'error' | 'debug'.
  */
@@ -428,5 +438,6 @@ export function forwardRendererConsoleMessage(details: {
     : 'renderer';
   const msg = sanitizeLogMessage(stripConsoleStyles(details.message));
   if (isDroppableMeshtasticSdkLogLine(msg)) return;
+  if (isDroppableRendererConsoleNoise(msg)) return;
   appendLine(mapped, src, msg);
 }

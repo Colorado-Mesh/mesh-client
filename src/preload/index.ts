@@ -1025,7 +1025,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     tcp: {
       connect: (host: string, port: number): Promise<void> =>
         ipcRenderer.invoke('meshtastic:tcp-connect', host, port),
-      write: (bytes: number[]): Promise<void> => ipcRenderer.invoke('meshtastic:tcp-write', bytes),
+      write: async (bytes: number[]): Promise<void> => {
+        const result: unknown = await ipcRenderer.invoke('meshtastic:tcp-write', bytes);
+        // Main resolves 'no-socket' on expected reconnect races (no handler [error]).
+        if (result === 'no-socket') return;
+      },
       disconnect: (): Promise<void> => ipcRenderer.invoke('meshtastic:tcp-disconnect'),
       onData: (cb: (bytes: Uint8Array) => void): (() => void) => {
         const handler = (_: unknown, bytes: Uint8Array) => {

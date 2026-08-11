@@ -29,6 +29,13 @@ describe('Noble BLE disconnect handling (source contract)', () => {
     );
   });
 
+  it('resolves meshtastic:tcp-write with no-socket instead of rejecting when the socket is gone', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /meshtastic:tcp-write[\s\S]{0,800}console\.debug\('\[IPC\] meshtastic:tcp-write: no active socket'\)[\s\S]{0,80}return 'no-socket'/,
+    );
+    expect(PRELOAD_SOURCE).toMatch(/result === 'no-socket'/);
+  });
+
   it('returns scan_busy result instead of throwing when Reticulum holds the scan mutex', () => {
     expect(INDEX_SOURCE).toContain('BleScanBusyError');
     expect(INDEX_SOURCE).toMatch(
