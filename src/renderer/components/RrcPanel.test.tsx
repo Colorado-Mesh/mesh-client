@@ -24,6 +24,13 @@ vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
 const hubA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const hubB = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
+function whoSendCalls(): unknown[][] {
+  return vi.mocked(window.electronAPI.reticulum.rrc.send).mock.calls.filter((args) => {
+    const body = (args[0] as { body?: string } | undefined)?.body;
+    return typeof body === 'string' && body.startsWith('/who');
+  });
+}
+
 describe('RrcPanel', () => {
   beforeEach(() => {
     useRrcSessionStore.getState().clearSession();
@@ -36,6 +43,12 @@ describe('RrcPanel', () => {
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({ ok: true });
     vi.mocked(window.electronAPI.reticulum.rrc.disconnect).mockReset();
     vi.mocked(window.electronAPI.reticulum.rrc.disconnect).mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockReset();
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.reticulum.rrc.join).mockReset();
+    vi.mocked(window.electronAPI.reticulum.rrc.join).mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.reticulum.rrc.setNickname).mockReset();
+    vi.mocked(window.electronAPI.reticulum.rrc.setNickname).mockResolvedValue({ ok: true });
     vi.mocked(window.electronAPI.db.deleteRrcMessagesByRoom).mockClear();
     vi.mocked(window.electronAPI.db.deleteRrcMessagesByRoom).mockResolvedValue({ changes: 1 });
     localStorage.removeItem('mesh-client:rrc:hubAutoJoin');
@@ -427,6 +440,204 @@ describe('RrcPanel', () => {
     expect(whoCalls.some((args) => (args[0] as { room?: string }).room === `@${peerHash}`)).toBe(
       false,
     );
+    expect(whoCalls.some((args) => (args[0] as { body?: string }).body === '/who #general')).toBe(
+      true,
+    );
+    expect(whoCalls.every((args) => (args[0] as { room?: string }).room == null)).toBe(true);
+  });
+
+  it('does not re-send /who or reconnect when remounting a populated roster', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: 'Alice' },
+    ]);
+    store.setActiveRoom('general');
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.disconnect).mockClear();
+
+    const { unmount } = render(<RrcPanel isActive />);
+    await new Promise((r) => setTimeout(r, 40));
+    expect(whoSendCalls()).toHaveLength(0);
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
+    expect(window.electronAPI.reticulum.rrc.disconnect).not.toHaveBeenCalled();
+
+    unmount();
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.disconnect).mockClear();
+
+    render(<RrcPanel isActive />);
+    await new Promise((r) => setTimeout(r, 40));
+    expect(whoSendCalls()).toHaveLength(0);
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
+    expect(window.electronAPI.reticulum.rrc.disconnect).not.toHaveBeenCalled();
+  });
+
+  it('does not re-send /who when isActive toggles on a still-mounted panel', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: 'Alice' },
+    ]);
+    store.setActiveRoom('general');
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.disconnect).mockClear();
+
+    const { rerender } = render(<RrcPanel isActive={false} />);
+    await new Promise((r) => setTimeout(r, 40));
+    rerender(<RrcPanel isActive />);
+    await new Promise((r) => setTimeout(r, 40));
+    expect(whoSendCalls()).toHaveLength(0);
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
+    expect(window.electronAPI.reticulum.rrc.disconnect).not.toHaveBeenCalled();
+  });
+
+  it('sends one hub-global /who for an empty joined roster', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general');
+    store.setActiveRoom('general');
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+    render(<RrcPanel isActive />);
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+    });
+    expect(whoSendCalls()[0]?.[0]).toEqual({
+      hub_dest_hash: hubA,
+      body: '/who general',
+      type: 'msg',
+    });
+  });
+
+  it('sends one /who per empty joined room and none after remount', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general');
+    store.roomJoined('lobby');
+    store.setActiveRoom('general');
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+    const { unmount } = render(<RrcPanel isActive />);
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(2);
+    });
+    const bodies = whoSendCalls()
+      .map((args) => (args[0] as { body: string }).body)
+      .sort();
+    expect(bodies).toEqual(['/who general', '/who lobby']);
+
+    unmount();
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    render(<RrcPanel isActive />);
+    await new Promise((r) => setTimeout(r, 40));
+    expect(whoSendCalls()).toHaveLength(0);
+  });
+
+  it('does not force /who when /join targets an already-joined room', async () => {
+    const user = userEvent.setup();
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: 'Alice' },
+    ]);
+    store.setActiveRoom('[hub]');
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.join).mockClear();
+
+    render(<RrcPanel isActive />);
+    await new Promise((r) => setTimeout(r, 40));
+    expect(whoSendCalls()).toHaveLength(0);
+
+    const composer = screen.getByRole('textbox', { name: /Message or \/command/i });
+    await user.clear(composer);
+    await user.type(composer, '/join general');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => {
+      expect(useRrcSessionStore.getState().activeRoom).toBe('general');
+    });
+    expect(window.electronAPI.reticulum.rrc.join).not.toHaveBeenCalled();
+    expect(whoSendCalls()).toHaveLength(0);
+  });
+
+  it('still sends /who from the nicklist refresh button', async () => {
+    const user = userEvent.setup();
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: 'Alice' },
+    ]);
+    store.setActiveRoom('general');
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+    render(<RrcPanel isActive />);
+    await new Promise((r) => setTimeout(r, 40));
+    expect(whoSendCalls()).toHaveLength(0);
+
+    await user.click(screen.getByRole('button', { name: 'Refresh members (/who)' }));
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+    });
+    expect(whoSendCalls()[0]?.[0]).toEqual({
+      hub_dest_hash: hubA,
+      body: '/who general',
+      type: 'msg',
+    });
+  });
+
+  it('still sends hub /who after /nick', async () => {
+    const user = userEvent.setup();
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: 'Alice' },
+    ]);
+    store.setActiveRoom('general');
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+    render(<RrcPanel isActive />);
+    const composer = screen.getByRole('textbox', { name: /Message or \/command/i });
+    await user.clear(composer);
+    await user.type(composer, '/nick NewNick');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rrc.setNickname).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(whoSendCalls().some((args) => (args[0] as { body?: string }).body === '/who')).toBe(
+        true,
+      );
+    });
+  });
+
+  it('allows auto /who again after part then rejoin', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general');
+    store.setActiveRoom('general');
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+    render(<RrcPanel isActive />);
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+    });
+
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    store.roomParted('general');
+    store.roomJoined('general');
+    await waitFor(() => {
+      expect(whoSendCalls()).toHaveLength(1);
+    });
+    expect(whoSendCalls()[0]?.[0]).toEqual({
+      hub_dest_hash: hubA,
+      body: '/who general',
+      type: 'msg',
+    });
   });
 
   it('rejects plain text in [hub] with join-room prompt', async () => {

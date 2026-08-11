@@ -39,6 +39,14 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
     expect(SOURCE).toMatch(/addMessage\([\s\S]*?\{ hubDestHash \}/);
   });
 
+  it('suppresses later /who notices after mergeRoomMembers and consumeWhoTranscriptSlot', () => {
+    expect(SOURCE).toContain('resolveRrcInboundChatRoom');
+    expect(SOURCE).toMatch(/room = resolveRrcInboundChatRoom\(/);
+    expect(SOURCE).toMatch(/mergeRoomMembers\(who\.room, who\.members, 'replace', hubDestHash\)/);
+    expect(SOURCE).toMatch(/consumeWhoTranscriptSlot\(who\.room, hubDestHash\)[\s\S]*?return;/);
+    expect(SOURCE).toMatch(/if \(who\) \{[\s\S]*?room = who\.room/);
+  });
+
   it('routes direct NOTICE into per-peer @hash DMs via applyRrcDirectMessageRoom', () => {
     expect(SOURCE).toContain('applyRrcDirectMessageRoom');
     expect(SOURCE).toMatch(/applyRrcDirectMessageRoom\(\{[\s\S]*?openDm:/);

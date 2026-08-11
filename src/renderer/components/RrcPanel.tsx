@@ -1,5 +1,5 @@
 import { Bell, BellOff, Clock, LogOut, Trash2, X } from 'lucide-react-motion';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ConfirmModal } from '@/renderer/components/ConfirmModal';
@@ -155,8 +155,6 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
   const [mutedViews, setMutedViews] = useState(() => loadMutedViews('reticulum'));
   const [draft, setDraft] = useState('');
   const [confirmClearHistory, setConfirmClearHistory] = useState(false);
-  /** Per-hub room keys we already requested `/who` for (rrcd JOINED often has no roster). */
-  const whoRequestedRef = useRef(new Set<string>());
 
   useEffect(() => {
     try {
@@ -255,12 +253,6 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
     [activeRoom, hubDestHash, setError, status, t],
   );
 
-  useEffect(() => {
-    if (sessionsByHub.size === 0) {
-      whoRequestedRef.current.clear();
-    }
-  }, [sessionsByHub]);
-
   const requestRoomWho = useCallback(
     (roomRaw: string, force = false) => {
       if (status !== 'active' || !hubDestHash) return;
@@ -270,34 +262,34 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
       });
       // Never /who synthetic streams or per-peer DMs (client-local only).
       if (!room || room.startsWith('[') || isRrcDmRoom(room)) return;
-      const reqKey = `${hubDestHash}::${rrcRoomMatchKey(room)}`;
-      if (!force && whoRequestedRef.current.has(reqKey)) return;
-      whoRequestedRef.current.add(reqKey);
+      const session = useRrcSessionStore.getState();
+      if (!force) {
+        const info = [...rooms.values()].find((r) => rrcRoomsMatch(r.name, room));
+        if ((info?.members?.length ?? 0) > 0) {
+          session.markWhoRequested(room, hubDestHash);
+          return;
+        }
+        if (!session.markWhoRequested(room, hubDestHash)) return;
+      } else {
+        session.markWhoRequested(room, hubDestHash);
+      }
+      // Hub-global slash command — omit K_ROOM so rrcd does not treat this as room chat.
       void window.electronAPI.reticulum.rrc
-        .send({ hub_dest_hash: hubDestHash, room, body: `/who ${room}`, type: 'msg' })
+        .send({ hub_dest_hash: hubDestHash, body: `/who ${room}`, type: 'msg' })
         .catch((e: unknown) => {
-          whoRequestedRef.current.delete(reqKey);
+          if (!force) useRrcSessionStore.getState().releaseWhoRequested(room, hubDestHash);
           console.debug('[RrcPanel] /who ' + errLikeToLogString(e));
         });
     },
     [status, hubDestHash, listedRooms, rooms],
   );
 
-  // rrcd JOINED member lists are optional (off by default) — request `/who` per joined room.
+  // rrcd JOINED member lists are optional (off by default) — request `/who` once per join.
   useEffect(() => {
     if (status !== 'active' || !hubDestHash) return;
-    const live = new Set<string>();
     for (const key of rooms.keys()) {
       if (!key || key.startsWith('[') || isRrcDmRoom(key)) continue;
-      const reqKey = `${hubDestHash}::${rrcRoomMatchKey(key)}`;
-      live.add(reqKey);
       requestRoomWho(key, false);
-    }
-    // Drop parted rooms so a later re-join triggers a fresh `/who`.
-    for (const prev of [...whoRequestedRef.current]) {
-      if (prev.startsWith(`${hubDestHash}::`) && !live.has(prev)) {
-        whoRequestedRef.current.delete(prev);
-      }
     }
   }, [status, hubDestHash, rooms, requestRoomWho]);
 
@@ -560,11 +552,10 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
         if (isRrcDmRoom(room)) setActiveRoom(room);
         return;
       }
-      // Already in this channel (possibly under `#name` vs `name`) — focus + refresh roster.
+      // Already in this channel (possibly under `#name` vs `name`) — focus only.
       const existingKey = [...rooms.keys()].find((k) => rrcRoomsMatch(k, room));
       if (existingKey) {
         setActiveRoom(existingKey);
-        requestRoomWho(existingKey, true);
         return;
       }
       setActionBusy(true);
@@ -580,8 +571,6 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
           setActiveRoom(room);
           pushRrcRecentRoom(hubDestHash, rrcRoomMatchKey(room));
           setRecentRoomsEpoch((n) => n + 1);
-          // Always refresh people list — rrcd JOINED often has no member body.
-          requestRoomWho(room, true);
         }
       } catch (e) {
         // catch-no-log-ok error surfaced via setError
@@ -590,7 +579,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
         setActionBusy(false);
       }
     },
-    [hubDestHash, listedRooms, rooms, requestRoomWho, setActiveRoom, setError, t],
+    [hubDestHash, listedRooms, rooms, setActiveRoom, setError, t],
   );
 
   const handlePart = useCallback(

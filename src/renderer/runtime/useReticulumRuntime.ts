@@ -129,7 +129,10 @@ import {
 import { consumeRncpReceiveDestSharePending } from '@/renderer/lib/rncpReceiveDestSharePending';
 import { applyRrcDirectMessageRoom } from '@/renderer/lib/rrcDirectMessageRoute';
 import { isRrcRoomMuted } from '@/renderer/lib/rrcMention';
-import { shouldDropEmptyRrcInbound } from '@/renderer/lib/rrcMessageDisplay';
+import {
+  resolveRrcInboundChatRoom,
+  shouldDropEmptyRrcInbound,
+} from '@/renderer/lib/rrcMessageDisplay';
 import {
   LARGE_MESH_NODE_THRESHOLD,
   MEGA_MESH_FULL_PEER_REFRESH_MAX_AGE_MS,
@@ -1154,10 +1157,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
               },
             });
           } else {
-            room =
-              typeof p.room === 'string' && p.room.trim()
-                ? p.room
-                : (view.activeRoom ?? RRC_HUB_STREAM_ROOM);
+            room = resolveRrcInboundChatRoom(typeof p.room === 'string' ? p.room : undefined);
           }
 
           if (kind === 'notice') {
@@ -1182,6 +1182,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
             if (isRrcModerationLanguage(p.body)) {
               // Reserve kick/ban banner copy for moderation notices; transcript keeps hub text.
               session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
+            }
+            // First `/who` snapshot may appear in the named room; later ones are nicklist-only.
+            if (who) {
+              if (!session.consumeWhoTranscriptSlot(who.room, hubDestHash)) {
+                return;
+              }
+              room = who.room;
             }
           }
 
