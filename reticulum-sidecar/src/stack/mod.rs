@@ -846,8 +846,17 @@ impl StackHandle {
         identity_apply::identity_requires_rns_stack()?;
         #[cfg(feature = "rns-stack")]
         {
-            let inner = self.inner.read().await;
-            identity_backup::export_rsi_backup(&self.config_dir, &inner, passphrase)
+            let snapshot = {
+                let inner = self.inner.read().await;
+                identity_backup::IdentityExportSnapshot::from_state(&inner)
+            };
+            let config_dir = self.config_dir.clone();
+            let pin = passphrase.to_string();
+            tokio::task::spawn_blocking(move || {
+                identity_backup::export_rsi_backup(&config_dir, &snapshot, &pin)
+            })
+            .await
+            .map_err(|e| format!("identity export task failed: {e}"))?
         }
         #[cfg(not(feature = "rns-stack"))]
         {
@@ -856,15 +865,25 @@ impl StackHandle {
         }
     }
 
-    pub async fn identity_export_raw(&self) -> Result<serde_json::Value, String> {
+    pub async fn identity_export_raw(&self, passphrase: &str) -> Result<serde_json::Value, String> {
         identity_apply::identity_requires_rns_stack()?;
         #[cfg(feature = "rns-stack")]
         {
-            let inner = self.inner.read().await;
-            identity_backup::export_raw_identity(&self.config_dir, &inner)
+            identity_backup::validate_backup_pin(passphrase)?;
+            let snapshot = {
+                let inner = self.inner.read().await;
+                identity_backup::IdentityExportSnapshot::from_state(&inner)
+            };
+            let config_dir = self.config_dir.clone();
+            tokio::task::spawn_blocking(move || {
+                identity_backup::export_raw_identity(&config_dir, &snapshot)
+            })
+            .await
+            .map_err(|e| format!("identity export task failed: {e}"))?
         }
         #[cfg(not(feature = "rns-stack"))]
         {
+            let _ = passphrase;
             Err("identity operations require an rns-stack sidecar build".into())
         }
     }
@@ -881,8 +900,12 @@ impl StackHandle {
         self.ensure_identity_replace_allowed(replace).await?;
         #[cfg(feature = "rns-stack")]
         {
-            // Argon2 decrypt outside the write lock to avoid stalling the stack.
-            let parsed = identity_backup::parse_identity_backup(backup, passphrase)?;
+            let pin = passphrase.to_string();
+            let parsed = tokio::task::spawn_blocking(move || {
+                identity_backup::parse_identity_backup(backup, &pin)
+            })
+            .await
+            .map_err(|e| format!("identity import task failed: {e}"))??;
             let mut inner = self.inner.write().await;
             if inner.identity.configured && !replace {
                 return Err("identity_already_configured".into());

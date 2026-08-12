@@ -150,10 +150,10 @@ describe('ReticulumNetworkPanel', () => {
       screen.getByText('connectionPanel.reticulumIdentity.replaceIdentitySection'),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'connectionPanel.reticulumIdentity.export' }),
+      screen.getByRole('button', { name: 'connectionPanel.reticulumIdentity.exportAria' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'connectionPanel.reticulumIdentity.exportRaw' }),
+      screen.getByRole('button', { name: 'connectionPanel.reticulumIdentity.exportRawAria' }),
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText('connectionPanel.reticulumIdentity.exportPassphraseConfirm'),
@@ -240,7 +240,7 @@ describe('ReticulumNetworkPanel', () => {
       '654321',
     );
     await user.click(
-      screen.getByRole('button', { name: 'connectionPanel.reticulumIdentity.export' }),
+      screen.getByRole('button', { name: 'connectionPanel.reticulumIdentity.exportAria' }),
     );
 
     expect(
@@ -272,7 +272,7 @@ describe('ReticulumNetworkPanel', () => {
     await user.type(pin, '123456');
     await user.type(confirm, '123456');
     await user.click(
-      screen.getByRole('button', { name: 'connectionPanel.reticulumIdentity.export' }),
+      screen.getByRole('button', { name: 'connectionPanel.reticulumIdentity.exportAria' }),
     );
 
     await waitFor(() => {
@@ -285,7 +285,7 @@ describe('ReticulumNetworkPanel', () => {
     expect(screen.queryByDisplayValue(/ratspeak\.identity\.v2/)).not.toBeInTheDocument();
   });
 
-  it('confirms before raw identity export', async () => {
+  it('confirms before raw identity export and sends backup PIN', async () => {
     const user = userEvent.setup();
     const saveDialog = vi.fn().mockResolvedValue({ path: '/tmp/out.identity', error: null });
     window.electronAPI.reticulum.saveIdentityExportDialog = saveDialog;
@@ -300,8 +300,18 @@ describe('ReticulumNetworkPanel', () => {
     });
     render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
 
+    await user.type(
+      await screen.findByLabelText('connectionPanel.reticulumIdentity.exportPassphrase'),
+      '123456',
+    );
+    await user.type(
+      screen.getByLabelText('connectionPanel.reticulumIdentity.exportPassphraseConfirm'),
+      '123456',
+    );
     await user.click(
-      await screen.findByRole('button', { name: 'connectionPanel.reticulumIdentity.exportRaw' }),
+      await screen.findByRole('button', {
+        name: 'connectionPanel.reticulumIdentity.exportRawAria',
+      }),
     );
     expect(
       await screen.findByText('connectionPanel.reticulumIdentity.exportRawConfirmTitle'),
@@ -314,10 +324,42 @@ describe('ReticulumNetworkPanel', () => {
     await waitFor(() => {
       expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith(
         '/api/v1/identity/export-raw',
-        {},
+        { passphrase: '123456' },
       );
     });
     expect(saveDialog).toHaveBeenCalled();
+  });
+
+  it('rejects non-object .rsi JSON (null and array) without calling import-backup', async () => {
+    const user = userEvent.setup();
+    const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPost = proxyPost;
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    const textarea = await screen.findByLabelText(
+      'connectionPanel.reticulumIdentity.importBackupLabel',
+    );
+    await user.clear(textarea);
+    await user.click(textarea);
+    await user.paste('null');
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumIdentity.importBackupAria',
+      }),
+    );
+    expect(await screen.findByText('connectionPanel.reticulumIdentity.failed')).toBeInTheDocument();
+    expect(proxyPost).not.toHaveBeenCalledWith('/api/v1/identity/import-backup', expect.anything());
+
+    await user.clear(textarea);
+    await user.click(textarea);
+    await user.paste('[]');
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumIdentity.importBackupAria',
+      }),
+    );
+    expect(await screen.findByText('connectionPanel.reticulumIdentity.failed')).toBeInTheDocument();
+    expect(proxyPost).not.toHaveBeenCalledWith('/api/v1/identity/import-backup', expect.anything());
   });
 
   it('loads .rsi backup text from the open dialog', async () => {
@@ -331,7 +373,7 @@ describe('ReticulumNetworkPanel', () => {
 
     await user.click(
       await screen.findByRole('button', {
-        name: 'connectionPanel.reticulumIdentity.importBackupFromFile',
+        name: 'connectionPanel.reticulumIdentity.importBackupFromFileAria',
       }),
     );
     expect(

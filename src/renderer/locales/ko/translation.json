@@ -1011,7 +1011,11 @@
       "importPrivateKeyHint": "공식 Reticulum 64바이트 개인 키 (X25519 비밀 + Ed25519 시드) 는 16진수, base64, base32 또는 raw .identity 파일입니다.",
       "export": ".rsi 백업 내보내기",
       "exportPassphrase": "백업 PIN",
-      "exportPassphraseRequired": "6자 이상의 예비 PIN을 입력하세요."
+      "exportPassphraseRequired": "6자 이상의 예비 PIN을 입력하세요.",
+      "importBackupAria": "붙여넣은 JSON에서 Ratspeak .rsi 백업 가져오기",
+      "importBackupFromFileAria": "가져올 Ratspeak .rsi 백업 파일 선택",
+      "exportAria": "PIN 암호화 Ratspeak .rsi ID 백업 내보내기",
+      "exportRawAria": "암호화되지 않은 원시 Reticulum ID 파일 내보내기"
     },
     "reticulumInterfaces": {
       "title": "연계 문서",

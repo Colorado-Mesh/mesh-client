@@ -1009,7 +1009,11 @@
       "importPrivateKeyHint": "Chiave privata ufficiale Reticulum a 64 byte (segreto X25519 + seme Ed25519) come esadecimale, base64, base32 o file di identità grezzo.",
       "export": "Esporta backup .rsi",
       "exportPassphrase": "PIN di backup",
-      "exportPassphraseRequired": "Inserisci un PIN di backup di almeno 6 caratteri."
+      "exportPassphraseRequired": "Inserisci un PIN di backup di almeno 6 caratteri.",
+      "importBackupAria": "Importa il backup Ratspeak .rsi da JSON incollato",
+      "importBackupFromFileAria": "Scegli un file di backup Ratspeak .rsi da importare",
+      "exportAria": "Esporta il backup dell'identità Ratspeak .rsi crittografato con PIN",
+      "exportRawAria": "Esporta file di identità RAW Reticulum non crittografato"
     },
     "reticulumInterfaces": {
       "title": "interfacce",

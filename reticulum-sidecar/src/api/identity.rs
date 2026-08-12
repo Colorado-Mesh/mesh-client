@@ -178,8 +178,12 @@ pub async fn identity_export(
     }
 }
 
-pub async fn identity_export_raw(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
-    match stack.identity_export_raw().await {
+pub async fn identity_export_raw(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<ExportBody>,
+) -> Json<serde_json::Value> {
+    // Same PIN gate as .rsi export — reject unauthenticated empty-body callers.
+    match stack.identity_export_raw(&body.passphrase).await {
         Ok(raw) => Json(serde_json::json!({ "ok": true, "raw": raw })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }

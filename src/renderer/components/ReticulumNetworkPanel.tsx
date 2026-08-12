@@ -290,15 +290,26 @@ export function ReticulumNetworkPanel({
 
   const handleExportRawIdentity = async () => {
     if (identityActionBusy) return;
+    const passphrase = exportPassphrase.trim();
+    const confirm = exportPassphraseConfirm.trim();
+    if (passphrase.length < 6) {
+      setShowExportRawConfirm(false);
+      setIdentityError(t('connectionPanel.reticulumIdentity.exportPassphraseRequired'));
+      return;
+    }
+    if (passphrase !== confirm) {
+      setShowExportRawConfirm(false);
+      setIdentityError(t('connectionPanel.reticulumIdentity.exportPassphraseMismatch'));
+      return;
+    }
     setShowExportRawConfirm(false);
     setIdentityError(null);
     setIdentityNotice(null);
     setIdentityActionBusy(true);
     try {
-      const res = (await window.electronAPI.reticulum.proxyPost(
-        '/api/v1/identity/export-raw',
-        {},
-      )) as {
+      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/export-raw', {
+        passphrase,
+      })) as {
         ok?: boolean;
         raw?: { data_base64?: string; file_name?: string };
         error?: string;
@@ -311,6 +322,7 @@ export function ReticulumNetworkPanel({
         defaultPath: res.raw.file_name ?? 'reticulum-identity.identity',
         contentBase64: res.raw.data_base64,
       });
+      clearExportPins();
       if (saved.error) {
         setIdentityError(t('connectionPanel.reticulumIdentity.exportSaveFailed'));
         return;
@@ -411,14 +423,19 @@ export function ReticulumNetworkPanel({
     if (!sidecarApiReady || identityActionBusy) return;
     const raw = importBackupJson.trim();
     if (!raw) return;
-    let backup: { format?: unknown } & Record<string, unknown>;
+    let parsedJson: unknown;
     try {
-      backup = JSON.parse(raw) as { format?: unknown } & Record<string, unknown>;
+      parsedJson = JSON.parse(raw) as unknown;
     } catch {
       // catch-no-log-ok: invalid JSON shown via setIdentityError
       setIdentityError(t('connectionPanel.reticulumIdentity.failed'));
       return;
     }
+    if (parsedJson == null || typeof parsedJson !== 'object' || Array.isArray(parsedJson)) {
+      setIdentityError(t('connectionPanel.reticulumIdentity.failed'));
+      return;
+    }
+    const backup = parsedJson as { format?: unknown } & Record<string, unknown>;
     const pin = importBackupPin.trim();
     const format = typeof backup.format === 'string' ? backup.format : '';
     if (format === 'ratspeak.identity.v2' && pin.length < 6) {
@@ -1097,6 +1114,7 @@ function IdentityImportExtras({
           type="button"
           disabled={disabled || !importBackupJson.trim()}
           onClick={onImportBackup}
+          aria-label={t('connectionPanel.reticulumIdentity.importBackupAria')}
           className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm hover:bg-slate-800 disabled:opacity-40"
         >
           {t('connectionPanel.reticulumIdentity.importBackup')}
@@ -1105,6 +1123,7 @@ function IdentityImportExtras({
           type="button"
           disabled={disabled}
           onClick={onImportBackupFromFile}
+          aria-label={t('connectionPanel.reticulumIdentity.importBackupFromFileAria')}
           className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm hover:bg-slate-800 disabled:opacity-40"
         >
           {t('connectionPanel.reticulumIdentity.importBackupFromFile')}
@@ -1539,6 +1558,7 @@ function IdentityConfiguredView({
           type="button"
           disabled={exportDisabled}
           onClick={onExport}
+          aria-label={t('connectionPanel.reticulumIdentity.exportAria')}
           className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
         >
           {t('connectionPanel.reticulumIdentity.export')}
@@ -1547,6 +1567,7 @@ function IdentityConfiguredView({
           type="button"
           disabled={exportDisabled}
           onClick={onExportRaw}
+          aria-label={t('connectionPanel.reticulumIdentity.exportRawAria')}
           className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
         >
           {t('connectionPanel.reticulumIdentity.exportRaw')}

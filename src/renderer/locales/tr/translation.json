@@ -1011,7 +1011,11 @@
       "importPrivateKeyHint": "Hex, base64, base32 veya raw .identity dosyası olarak resmi Reticulum 64 baytlık özel anahtar (X25519 secret + Ed25519 seed).",
       "export": ".rsi yedeğini dışa aktar",
       "exportPassphrase": "Yedek PIN",
-      "exportPassphraseRequired": "En az 6 karakterlik bir yedek PIN girin."
+      "exportPassphraseRequired": "En az 6 karakterlik bir yedek PIN girin.",
+      "importBackupAria": "Yapıştırılan JSON'dan Ratspeak .rsi yedeklemesini içe aktar",
+      "importBackupFromFileAria": "İçe aktarmak için bir Ratspeak .rsi yedek dosyası seçin",
+      "exportAria": "PIN şifreli Ratspeak .rsi kimlik yedeklemesini dışa aktarın",
+      "exportRawAria": "Şifrelenmemiş ham Reticulum kimlik dosyasını dışa aktar"
     },
     "reticulumInterfaces": {
       "title": "Ara birimler",

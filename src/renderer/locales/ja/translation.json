@@ -1011,7 +1011,11 @@
       "importPrivateKeyHint": "16進数、base 64、base 32、またはraw .identityファイルとしての公式Reticulum 64バイト秘密鍵（ X 25519シークレット+ Ed 25519シード）。",
       "export": ".rsiバックアップをエクスポート",
       "exportPassphrase": "バックアップPIN",
-      "exportPassphraseRequired": "6文字以上のバックアップPINを入力してください。"
+      "exportPassphraseRequired": "6文字以上のバックアップPINを入力してください。",
+      "importBackupAria": "貼り付けられたJSONからRatspeak .rsiバックアップをインポートする",
+      "importBackupFromFileAria": "インポートするRatspeak .rsiバックアップファイルを選択してください",
+      "exportAria": "PIN暗号化されたRatspeak .rsi IDバックアップをエクスポート",
+      "exportRawAria": "暗号化されていないRAW Reticulum IDファイルをエクスポート"
     },
     "reticulumInterfaces": {
       "title": "インターフェース",

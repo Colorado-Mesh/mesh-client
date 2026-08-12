@@ -1012,7 +1012,11 @@
       "importPrivateKeyHint": "Oficiální 64bajtový soukromý klíč Reticulum (X25519 SECRET + Ed25519 Seed) jako soubor HEX, base64, base32 nebo RAW .identity.",
       "export": "Exportovat zálohu .rsi",
       "exportPassphrase": "Záložní PIN",
-      "exportPassphraseRequired": "Zadejte záložní PIN nejméně 6 znaků."
+      "exportPassphraseRequired": "Zadejte záložní PIN nejméně 6 znaků.",
+      "importBackupAria": "Importovat zálohu Ratspeak .rsi z vloženého JSON",
+      "importBackupFromFileAria": "Vyberte záložní soubor Ratspeak .rsi, který chcete importovat",
+      "exportAria": "Exportovat zálohu identity Ratspeak .rsi šifrovanou pomocí kódu PIN",
+      "exportRawAria": "Exportovat nešifrovaný soubor identity RAW Reticulum"
     },
     "reticulumInterfaces": {
       "title": "Rozhraní",

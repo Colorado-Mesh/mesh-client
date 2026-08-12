@@ -1,3 +1,5 @@
+import os from 'os';
+import path from 'path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -19,6 +21,10 @@ const {
   chmodSyncMock,
   getFocusedWindowMock,
   getAllWindowsMock,
+  writeSyncMock,
+  fsyncSyncMock,
+  renameSyncMock,
+  unlinkSyncMock,
 } = vi.hoisted(() => ({
   showOpenDialogMock: vi.fn(),
   showSaveDialogMock: vi.fn(),
@@ -30,6 +36,10 @@ const {
   chmodSyncMock: vi.fn(),
   getFocusedWindowMock: vi.fn(),
   getAllWindowsMock: vi.fn(),
+  writeSyncMock: vi.fn(),
+  fsyncSyncMock: vi.fn(),
+  renameSyncMock: vi.fn(),
+  unlinkSyncMock: vi.fn(),
 }));
 
 vi.mock('electron', () => ({
@@ -43,16 +53,25 @@ vi.mock('electron', () => ({
   },
 }));
 
-vi.mock('fs', () => ({
-  default: {
-    openSync: openSyncMock,
-    fstatSync: fstatSyncMock,
-    readSync: readSyncMock,
-    closeSync: closeSyncMock,
-    writeFileSync: writeFileSyncMock,
-    chmodSync: chmodSyncMock,
-  },
-}));
+vi.mock('fs', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('fs');
+  return {
+    default: {
+      ...actual,
+      openSync: openSyncMock,
+      fstatSync: fstatSyncMock,
+      readSync: readSyncMock,
+      closeSync: closeSyncMock,
+      writeFileSync: writeFileSyncMock,
+      chmodSync: chmodSyncMock,
+      writeSync: writeSyncMock,
+      fsyncSync: fsyncSyncMock,
+      renameSync: renameSyncMock,
+      unlinkSync: unlinkSyncMock,
+      constants: actual.constants,
+    },
+  };
+});
 
 vi.mock('./reticulum-config-read', () => ({
   readUtf8FileBounded: vi.fn(),
@@ -61,6 +80,19 @@ vi.mock('./reticulum-config-read', () => ({
 import { readUtf8FileBounded } from './reticulum-config-read';
 
 const readUtf8FileBoundedMock = vi.mocked(readUtf8FileBounded);
+
+interface ActualFs {
+  openSync: (...args: unknown[]) => number;
+  writeSync: (...args: unknown[]) => number;
+  fsyncSync: (...args: unknown[]) => void;
+  closeSync: (...args: unknown[]) => void;
+  chmodSync: (...args: unknown[]) => void;
+  unlinkSync: (...args: unknown[]) => void;
+  mkdtempSync: (prefix: string) => string;
+  existsSync: (p: string) => boolean;
+  readdirSync: (p: string) => string[];
+  rmSync: (p: string, opts: { recursive: boolean; force: boolean }) => void;
+}
 
 describe('showReticulumIdentityImportDialog', () => {
   beforeEach(() => {
@@ -152,10 +184,16 @@ describe('showReticulumIdentityBackupImportDialog', () => {
 describe('saveReticulumIdentityExportDialog', () => {
   beforeEach(() => {
     showSaveDialogMock.mockReset();
-    writeFileSyncMock.mockReset();
+    openSyncMock.mockReset();
+    writeSyncMock.mockReset();
+    fsyncSyncMock.mockReset();
+    closeSyncMock.mockReset();
     chmodSyncMock.mockReset();
+    renameSyncMock.mockReset();
+    unlinkSyncMock.mockReset();
     getFocusedWindowMock.mockReturnValue(null);
     getAllWindowsMock.mockReturnValue([]);
+    openSyncMock.mockReturnValue(7);
   });
 
   it('rejects invalid opts without opening the dialog', async () => {
@@ -166,7 +204,7 @@ describe('saveReticulumIdentityExportDialog', () => {
     expect(showSaveDialogMock).not.toHaveBeenCalled();
   });
 
-  it('uses basename-only defaultPath and writes mode 0o600', async () => {
+  it('uses basename-only defaultPath and writes via exclusive temp + rename', async () => {
     showSaveDialogMock.mockResolvedValue({ canceled: false, filePath: '/tmp/out.identity' });
     const bytes = Buffer.alloc(RNS_PRIVATE_KEY_LEN, 0x11);
     await expect(
@@ -176,8 +214,16 @@ describe('saveReticulumIdentityExportDialog', () => {
       }),
     ).resolves.toEqual({ path: '/tmp/out.identity', error: null });
     expect(showSaveDialogMock).toHaveBeenCalledWith({ defaultPath: 'x.identity' });
-    expect(writeFileSyncMock).toHaveBeenCalledWith('/tmp/out.identity', bytes, { mode: 0o600 });
-    expect(chmodSyncMock).toHaveBeenCalledWith('/tmp/out.identity', 0o600);
+    // Temp name is based on the chosen save path basename, not defaultPath.
+    expect(openSyncMock.mock.calls[0][0]).toMatch(/\/tmp\/\.out\.identity\.\d+\.\d+\.tmp$/);
+    expect(openSyncMock.mock.calls[0][2]).toBe(0o600);
+    expect(writeSyncMock).toHaveBeenCalledWith(7, bytes);
+    expect(fsyncSyncMock).toHaveBeenCalledWith(7);
+    expect(chmodSyncMock).toHaveBeenCalledWith(expect.stringContaining('.tmp'), 0o600);
+    expect(renameSyncMock).toHaveBeenCalledWith(
+      expect.stringContaining('.tmp'),
+      '/tmp/out.identity',
+    );
   });
 
   it('rejects decoded content over the export size cap', async () => {
@@ -189,5 +235,43 @@ describe('saveReticulumIdentityExportDialog', () => {
       }),
     ).resolves.toEqual({ path: null, error: 'content_too_large' });
     expect(showSaveDialogMock).not.toHaveBeenCalled();
+  });
+
+  it('returns write_failed and removes temp when rename fails on a real temp dir', async () => {
+    const actualFs: ActualFs = await vi.importActual('fs');
+    openSyncMock.mockImplementation((...args: unknown[]) => actualFs.openSync(...args));
+    writeSyncMock.mockImplementation((...args: unknown[]) => actualFs.writeSync(...args));
+    fsyncSyncMock.mockImplementation((...args: unknown[]) => {
+      actualFs.fsyncSync(...args);
+    });
+    closeSyncMock.mockImplementation((...args: unknown[]) => {
+      actualFs.closeSync(...args);
+    });
+    chmodSyncMock.mockImplementation((...args: unknown[]) => {
+      actualFs.chmodSync(...args);
+    });
+    unlinkSyncMock.mockImplementation((...args: unknown[]) => {
+      actualFs.unlinkSync(...args);
+    });
+    renameSyncMock.mockImplementation(() => {
+      throw new Error('rename failed');
+    });
+
+    const tmpDir = actualFs.mkdtempSync(path.join(os.tmpdir(), 'reticulum-identity-export-'));
+    try {
+      const dest = path.join(tmpDir, 'out.identity');
+      showSaveDialogMock.mockResolvedValue({ canceled: false, filePath: dest });
+      const bytes = Buffer.alloc(RNS_PRIVATE_KEY_LEN, 0x22);
+      await expect(
+        saveReticulumIdentityExportDialog({
+          defaultPath: 'out.identity',
+          contentBase64: bytes.toString('base64'),
+        }),
+      ).resolves.toEqual({ path: null, error: 'write_failed' });
+      expect(actualFs.existsSync(dest)).toBe(false);
+      expect(actualFs.readdirSync(tmpDir)).toEqual([]);
+    } finally {
+      actualFs.rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 });

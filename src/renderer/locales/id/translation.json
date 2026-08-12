@@ -1011,7 +1011,11 @@
       "importPrivateKeyHint": "Kunci pribadi Reticulum 64-byte resmi (rahasia X25519 + biji Ed25519) sebagai hex, base64, base32, atau file identitas mentah.",
       "export": "Ekspor cadangan .rsi",
       "exportPassphrase": "PIN CADANGAN",
-      "exportPassphraseRequired": "Masukkan PIN cadangan minimal 6 karakter."
+      "exportPassphraseRequired": "Masukkan PIN cadangan minimal 6 karakter.",
+      "importBackupAria": "Impor cadangan Ratspeak .rsi dari JSON yang ditempelkan",
+      "importBackupFromFileAria": "Pilih file cadangan Ratspeak .rsi untuk diimpor",
+      "exportAria": "Ekspor cadangan identitas Ratspeak .rsi terenkripsi PIN",
+      "exportRawAria": "Ekspor file identitas Reticulum mentah yang tidak terenkripsi"
     },
     "reticulumInterfaces": {
       "title": "Interface",

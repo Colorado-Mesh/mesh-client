@@ -152,6 +152,44 @@ function validateExportOpts(opts: unknown):
   return { defaultPath, contentBase64: record.contentBase64 };
 }
 
+function unlinkQuiet(filePath: string): void {
+  try {
+    fs.unlinkSync(filePath);
+  } catch {
+    // catch-no-log-ok: best-effort temp cleanup
+  }
+}
+
+/** Atomically write identity export bytes with exclusive 0o600 temp + rename. */
+export function writeIdentityExportAtomic(destPath: string, data: Buffer): void {
+  const dir = path.dirname(destPath);
+  const tmpPath = path.join(dir, `.${path.basename(destPath)}.${process.pid}.${Date.now()}.tmp`);
+  let fd: number | undefined;
+  try {
+    fd = fs.openSync(
+      tmpPath,
+      fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL,
+      0o600,
+    );
+    fs.writeSync(fd, data);
+    fs.fsyncSync(fd);
+    fs.closeSync(fd);
+    fd = undefined;
+    fs.chmodSync(tmpPath, 0o600);
+    fs.renameSync(tmpPath, destPath);
+  } catch (err) {
+    if (fd != null) {
+      try {
+        fs.closeSync(fd);
+      } catch {
+        // catch-no-log-ok: close after write failure
+      }
+    }
+    unlinkQuiet(tmpPath);
+    throw err;
+  }
+}
+
 /** Save exported identity bytes (raw 64-byte or UTF-8 `.rsi` JSON as base64). */
 export async function saveReticulumIdentityExportDialog(
   opts: unknown,
@@ -178,12 +216,7 @@ export async function saveReticulumIdentityExportDialog(
     return { path: null, error: null };
   }
   try {
-    fs.writeFileSync(result.filePath, data, { mode: 0o600 });
-    try {
-      fs.chmodSync(result.filePath, 0o600);
-    } catch {
-      // catch-no-log-ok: chmod best-effort on platforms that ignore mode
-    }
+    writeIdentityExportAtomic(result.filePath, data);
     return { path: result.filePath, error: null };
   } catch {
     // catch-no-log-ok: save failure returned to UI

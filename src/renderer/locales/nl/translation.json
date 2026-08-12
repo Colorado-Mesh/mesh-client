@@ -1010,7 +1010,11 @@
       "importBackupHint": "PIN-gecodeerde Ratspeak-identiteitsback-up (.rsi). Herstelt uw privésleutel en activeert de identiteit.",
       "importPrivateKeyHint": "Officiële Reticulum 64-byte privésleutel (X25519 Secret + Ed25519 Seed) als hex, base64, base32 of een RAW .identity-bestand.",
       "export": "Exporteer .rsi back-up",
-      "exportPassphraseRequired": "Voer een back-up-PIN van ten minste 6 tekens in."
+      "exportPassphraseRequired": "Voer een back-up-PIN van ten minste 6 tekens in.",
+      "importBackupAria": "Importeer Ratspeak .rsi back-up van geplakte JSON",
+      "importBackupFromFileAria": "Kies een Ratspeak .rsi back-upbestand om te importeren",
+      "exportAria": "Export PIN-gecodeerde Ratspeak .rsi identiteitsback-up",
+      "exportRawAria": "Exporteer niet-versleuteld RAW Reticulum-identiteitsbestand"
     },
     "reticulumInterfaces": {
       "title": "Raakvlakken",

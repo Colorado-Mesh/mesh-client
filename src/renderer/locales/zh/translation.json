@@ -1011,7 +1011,11 @@
       "importBackupHint": "PIN加密的Ratspeak身份备份(.rsi)。恢复您的私钥并激活身份。",
       "importPrivateKeyHint": "官方 Reticulum 64 字节私钥（X25519 secret + Ed25519 seed），格式为 hex、base64、base32 或原始 .identity 文件。",
       "export": "导出.rsi备份",
-      "exportPassphraseRequired": "请输入至少6个字符的备用PIN码。"
+      "exportPassphraseRequired": "请输入至少6个字符的备用PIN码。",
+      "importBackupAria": "从粘贴的JSON导入Ratspeak .rsi备份",
+      "importBackupFromFileAria": "选择要导入的Ratspeak .rsi备份文件",
+      "exportAria": "导出PIN加密的Ratspeak .rsi身份备份",
+      "exportRawAria": "导出未加密的原始 Reticulum 身份文件"
     },
     "reticulumInterfaces": {
       "title": "接口",

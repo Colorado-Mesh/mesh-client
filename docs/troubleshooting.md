@@ -1238,9 +1238,9 @@ TCP/network Nomad Links use path-scaled initiator hops (`link_hops = clamp(path_
 
 **Cause / fix**:
 
-1. **`.rsi` PIN** — use the same PIN (≥6 characters) chosen at export; wrong PIN or a tampered vault fails closed.
+1. **`.rsi` PIN** — use the same PIN (≥6 characters) chosen at export; wrong PIN or a tampered vault fails closed. Raw identity export also requires this PIN gate on the sidecar API.
 2. **mesh-client.identity.v1** — metadata-only backups are no longer supported; re-export from a current build (`.rsi` or raw 64-byte identity).
-3. **Raw file length** — official Reticulum identity files must be exactly **64 bytes** (not hex text pasted into the file picker).
+3. **Private key text vs file picker** — the Network panel textarea accepts **hex / base64 / URL-safe base64 / base32** text. `reticulum:showIdentityImportDialog` accepts only a **raw binary 64-byte** identity file (not a text file of hex/base64).
 4. **Oversized `.rsi`** — import is size-capped; use a normal Ratspeak/mesh-client backup, not an unrelated huge JSON dump.
 
 ### Reticulum Map empty or no markers

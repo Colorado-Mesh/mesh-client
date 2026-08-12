@@ -1009,7 +1009,11 @@
       "importPrivateKeyHint": "Offizieller privater 64-Byte-Schlüssel von Reticulum (X25519 Secret + Ed25519 Seed) als Hex, base64, base32 oder eine RAW-Identitätsdatei.",
       "export": ".rsi-Backup exportieren",
       "exportPassphrase": "BACKUP-PIN",
-      "exportPassphraseRequired": "Geben Sie eine SICHERUNGS-PIN von mindestens 6 Zeichen ein."
+      "exportPassphraseRequired": "Geben Sie eine SICHERUNGS-PIN von mindestens 6 Zeichen ein.",
+      "importBackupAria": "Ratspeak .rsi-Backup aus eingefügtem json importieren",
+      "importBackupFromFileAria": "Wählen Sie eine Ratspeak .rsi Backup-Datei zum Importieren",
+      "exportAria": "PIN-verschlüsselte Ratspeak .rsi-Identitätssicherung exportieren",
+      "exportRawAria": "Unverschlüsselte RAW-Reticulum-Identitätsdatei exportieren"
     },
     "reticulumInterfaces": {
       "title": "Schnittstellen",
