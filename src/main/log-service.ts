@@ -394,11 +394,20 @@ const SDK_FAILURE_CONTEXT_REGEX =
 
 /**
  * True for high-volume `@meshtastic/core` console noise with no triage value:
- * routine `TRACE [iMeshDevice]` chatter and periodic `DEBUG [iMeshDevice] Ping`
- * heartbeats. INFO/WARN/ERROR and decode-failure TRACE lines are kept.
+ * routine `TRACE [iMeshDevice]` chatter, periodic `DEBUG [iMeshDevice] Ping`
+ * heartbeats, and DEBUG encrypted-packet ignores (other channel / PKI we cannot
+ * decrypt; no RSSI/SNR/hex for Foreign LoRa). INFO/WARN/ERROR and decode-failure
+ * TRACE lines are kept.
  */
 export function isDroppableMeshtasticSdkLogLine(message: string): boolean {
   if (/\bDEBUG \[iMeshDevice\] Ping\b/.test(message)) return true;
+  if (
+    /\bDEBUG \[iMeshDevice\]/.test(message) &&
+    /encrypted data packet/i.test(message) &&
+    /ignor/i.test(message)
+  ) {
+    return true;
+  }
   if (/\bTRACE \[iMeshDevice\]/.test(message) && !SDK_FAILURE_CONTEXT_REGEX.test(message)) {
     return true;
   }
