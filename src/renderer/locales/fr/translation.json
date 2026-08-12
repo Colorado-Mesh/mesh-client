@@ -998,7 +998,19 @@
       "exportSaved": "Exportation d'identité enregistrée.",
       "exportSaveFailed": "Impossible d'enregistrer l'exportation d'identité.",
       "exportPassphraseConfirm": "Confirmer le CODE PIN DE",
-      "exportPassphraseMismatch": "Les codes PIN de sauvegarde ne correspondent pas."
+      "exportPassphraseMismatch": "Les codes PIN de sauvegarde ne correspondent pas.",
+      "importBackupTooLarge": "Le fichier de sauvegarde d'identité est trop volumineux.",
+      "exportRawConfirmTitle": "Exporter le fichier d'identité brut ?",
+      "exportRawConfirmMessage": "Cela écrit votre clé privée Reticulum de 64 octets non cryptée sur le disque. Toute personne disposant de ce fichier peut usurper cette identité.",
+      "exportRawConfirmAction": "Exporter l'identité brute",
+      "hint": "Commencez la pile ci-dessus, puis créez ou importez une phrase de récupération BIP-39, un fichier d'identité Reticulum brut ou une sauvegarde Ratspeak .rsi chiffrée par code PIN.",
+      "importBackupLabel": "Importer la sauvegarde Ratspeak .rsi",
+      "importBackup": "Importer la sauvegarde .rsi",
+      "importBackupHint": "Sauvegarde d'identité Ratspeak chiffrée par code PIN (.rsi). Restaure votre clé privée et active l'identité.",
+      "importPrivateKeyHint": "Clé privée officielle de 64 octets Reticulum (X25519 secret + Ed25519 seed) sous forme de fichier hexadécimal, base64, base32 ou .identity brut.",
+      "export": "Exporter la sauvegarde .rsi",
+      "exportPassphrase": "CODE PIN de sauvegarde",
+      "exportPassphraseRequired": "Saisissez un CODE PIN de sauvegarde d'au moins 6 caractères."
     },
     "reticulumInterfaces": {
       "title": "Interfaces",
@@ -1901,13 +1913,14 @@
     "statusNotConfigured": "Non configuré",
     "statusLocked": "Verrouillé",
     "statusUnlocked": "Déverrouillé",
-    "passcodeTooShort": "Le mot de passe doit contenir au moins 4 caractères",
     "passcodeMismatch": "Les codes d'accès ne correspondent pas.",
     "setSuccess": "Code d'accès du coffre-fort enregistré.",
     "setFailed": "Impossible d'enregistrer le mot de passe du coffre-fort.",
     "unlockSuccess": "Coffre déverrouillé.",
     "unlockFailed": "Code d'accès incorrect ou erreur de coffre-fort.",
-    "lockSuccess": "Coffre-fort verrouillé."
+    "lockSuccess": "Coffre-fort verrouillé.",
+    "hint": "Chiffrez éventuellement un secret de coffre-fort local avec un code d'accès (8 caractères minimum). Cela ne remplace pas l'exportation d'un fichier d'identité portable .rsi ou brut.",
+    "passcodeTooShort": "Le mot de passe doit comporter au moins 8 caractères."
   },
   "logAnalyzeModal": {
     "title": "Analyse des journaux",

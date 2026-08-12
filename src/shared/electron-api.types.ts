@@ -86,12 +86,12 @@ export interface ReticulumIdentityImportDialogResult {
 export interface ReticulumIdentityBackupImportDialogResult {
   path: string | null;
   contentText: string | null;
-  error: 'read_failed' | null;
+  error: 'read_failed' | 'too_large' | null;
 }
 
 export interface ReticulumIdentityExportSaveResult {
   path: string | null;
-  error: 'write_failed' | null;
+  error: 'write_failed' | 'invalid_opts' | 'content_too_large' | null;
 }
 //
 // Rules for maintaining this file:

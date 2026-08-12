@@ -1001,7 +1001,19 @@
       "exportSaved": "Zapisano eksport tożsamości.",
       "exportSaveFailed": "Nie można zapisać eksportu tożsamości.",
       "exportPassphraseConfirm": "Potwierdź KOD PIN kopii zapasowej",
-      "exportPassphraseMismatch": "Numery PIN kopii zapasowej nie są zgodne."
+      "exportPassphraseMismatch": "Numery PIN kopii zapasowej nie są zgodne.",
+      "importBackupTooLarge": "Plik kopii zapasowej tożsamości jest zbyt duży.",
+      "exportRawConfirmTitle": "Wyeksportować surowy plik tożsamości?",
+      "exportRawConfirmMessage": "Spowoduje to zapisanie niezaszyfrowanego 64-bajtowego klucza prywatnego Reticulum na dysku. Każda osoba posiadająca ten plik może podszywać się pod tę tożsamość.",
+      "exportRawConfirmAction": "Eksport surowej tożsamości",
+      "hint": "Uruchom powyższy stos, a następnie utwórz lub zaimportuj frazę odzyskiwania BIP-39, surowy plik tożsamości Reticulum lub zaszyfrowaną kodem PIN kopię zapasową Ratspeak .rsi.",
+      "importBackupLabel": "Importuj kopię zapasową Ratspeak .rsi",
+      "importBackup": "Importuj kopię zapasową .rsi",
+      "importBackupHint": "Kopia zapasowa tożsamości Ratspeak zaszyfrowana kodem PIN (.rsi). Przywraca klucz prywatny i aktywuje tożsamość.",
+      "importPrivateKeyHint": "Oficjalny 64-bajtowy klucz prywatny Reticulum (X25519 Secret + Ed25519 Seed) jako plik hex, base64, base32 lub surowy plik .identity.",
+      "export": "Eksport kopii zapasowej .rsi",
+      "exportPassphrase": "KOD PIN kopii zapasowej",
+      "exportPassphraseRequired": "Wprowadź kod PIN kopii zapasowej składający się z co najmniej 6 znaków."
     },
     "reticulumInterfaces": {
       "title": "Interfejsy",
@@ -1905,13 +1917,14 @@
     "statusNotConfigured": "Brak konfiguracji",
     "statusLocked": "Zablokowany",
     "statusUnlocked": "Odblokowany",
-    "passcodeTooShort": "Kod dostępu musi składać się z co najmniej 4 znaków.",
     "passcodeMismatch": "Kody dostępu nie są zgodne.",
     "setSuccess": "Zapisano kod dostępu do skarbca.",
     "setFailed": "Nie można zapisać kodu dostępu do skarbca.",
     "unlockSuccess": "Skarbiec odblokowany.",
     "unlockFailed": "Nieprawidłowy kod dostępu lub błąd skarbca.",
-    "lockSuccess": "Skarbiec zablokowany."
+    "lockSuccess": "Skarbiec zablokowany.",
+    "hint": "Opcjonalnie zaszyfruj lokalny sekret skarbca kodem dostępu (minimum 8 znaków). Nie zastępuje to eksportowania przenośnego pliku .rsi lub surowego pliku tożsamości.",
+    "passcodeTooShort": "Kod dostępu musi mieć co najmniej 8 znaków."
   },
   "logAnalyzeModal": {
     "title": "Analiza dziennika",

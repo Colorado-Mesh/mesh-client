@@ -15,6 +15,10 @@ pub const RATSPEAK_IDENTITY_V1: &str = "ratspeak.identity.v1";
 pub const RAW_PRIVATE_KEY_FORMAT: &str = "reticulum.raw-private-key";
 pub const MIN_BACKUP_PIN_LEN: usize = 6;
 pub const MAX_BACKUP_PIN_LEN: usize = 128;
+/// Reject crafted `.rsi` vaults that would DoS via Argon2 (Ratspeak desktop default is 47 MiB).
+const MAX_VAULT_M_COST: u32 = 128 * 1024;
+const MAX_VAULT_T_COST: u32 = 10;
+const MAX_VAULT_P_COST: u32 = 4;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct EncryptedIdentityBackupV2 {
@@ -152,10 +156,29 @@ pub fn export_raw_identity(
 }
 
 #[derive(Debug)]
-struct ParsedBackup {
-    key_bytes: [u8; RNS_PRIVATE_KEY_LEN],
-    display_name: Option<String>,
-    mnemonic: Option<String>,
+pub struct ParsedBackup {
+    pub key_bytes: [u8; RNS_PRIVATE_KEY_LEN],
+    pub display_name: Option<String>,
+    pub mnemonic: Option<String>,
+}
+
+fn validate_vault_kdf_costs(vault: &ratspeak_vault::EncryptedVault) -> Result<(), String> {
+    if vault.m_cost == 0 || vault.m_cost > MAX_VAULT_M_COST {
+        return Err(format!(
+            "Identity backup Argon2 m_cost out of range (max {MAX_VAULT_M_COST})"
+        ));
+    }
+    if vault.t_cost == 0 || vault.t_cost > MAX_VAULT_T_COST {
+        return Err(format!(
+            "Identity backup Argon2 t_cost out of range (max {MAX_VAULT_T_COST})"
+        ));
+    }
+    if vault.p_cost == 0 || vault.p_cost > MAX_VAULT_P_COST {
+        return Err(format!(
+            "Identity backup Argon2 p_cost out of range (max {MAX_VAULT_P_COST})"
+        ));
+    }
+    Ok(())
 }
 
 fn parse_v2_backup(backup: serde_json::Value, passphrase: &str) -> Result<ParsedBackup, String> {
@@ -165,11 +188,17 @@ fn parse_v2_backup(backup: serde_json::Value, passphrase: &str) -> Result<Parsed
     if parsed.kind != "private" {
         return Err("Public identity backups are not activatable identities".into());
     }
+    validate_vault_kdf_costs(&parsed.vault)?;
+    // Decrypt key first (one Argon2). Only re-derive when a sealed mnemonic is present.
     let key = ratspeak_vault::decrypt_key(pin, &parsed.vault)
         .map_err(|_| "Incorrect backup PIN or corrupt identity backup".to_string())?;
-    let mnemonic = ratspeak_vault::decrypt_mnemonic(pin, &parsed.vault)
-        .map_err(|_| "Incorrect backup PIN or corrupt identity backup".to_string())?
-        .map(|m| m.as_str().to_string());
+    let mnemonic = if parsed.vault.mnemonic_token.is_some() {
+        ratspeak_vault::decrypt_mnemonic(pin, &parsed.vault)
+            .map_err(|_| "Incorrect backup PIN or corrupt identity backup".to_string())?
+            .map(|m| m.as_str().to_string())
+    } else {
+        None
+    };
     let key_bytes = identity_import::decode_private_key_bytes(key.as_ref())?;
     let identity = identity_apply::identity_from_private_bytes(&key_bytes)?;
     let hash_hex = hex::encode(identity.hash);
@@ -213,7 +242,8 @@ fn parse_v1_backup(backup: serde_json::Value) -> Result<ParsedBackup, String> {
 }
 
 /// Parse a Ratspeak backup JSON into private-key material (does not write disk).
-fn parse_identity_backup(
+/// Callers should run this outside the stack write lock (Argon2 is CPU/memory heavy).
+pub fn parse_identity_backup(
     backup: serde_json::Value,
     passphrase: &str,
 ) -> Result<ParsedBackup, String> {
@@ -229,16 +259,14 @@ fn parse_identity_backup(
     }
 }
 
-/// Import backup → apply private key to working identity file.
-pub fn import_and_apply_backup(
+/// Apply an already-parsed backup under the stack write lock.
+pub fn apply_parsed_backup(
     state: &mut PersistedState,
     config_dir: &std::path::Path,
     storage_dir: &std::path::Path,
-    backup: serde_json::Value,
-    passphrase: &str,
+    parsed: ParsedBackup,
     display_name_override: Option<String>,
 ) -> Result<StackIdentity, String> {
-    let parsed = parse_identity_backup(backup, passphrase)?;
     let identity = identity_apply::identity_from_private_bytes(&parsed.key_bytes)?;
     let display_name = display_name_override.or(parsed.display_name);
     identity_apply::apply_unified_identity(
@@ -248,6 +276,26 @@ pub fn import_and_apply_backup(
         &identity,
         display_name,
         parsed.mnemonic,
+    )
+}
+
+/// Import backup → apply private key to working identity file.
+#[cfg(all(test, feature = "rns-stack"))]
+pub fn import_and_apply_backup(
+    state: &mut PersistedState,
+    config_dir: &std::path::Path,
+    storage_dir: &std::path::Path,
+    backup: serde_json::Value,
+    passphrase: &str,
+    display_name_override: Option<String>,
+) -> Result<StackIdentity, String> {
+    let parsed = parse_identity_backup(backup, passphrase)?;
+    apply_parsed_backup(
+        state,
+        config_dir,
+        storage_dir,
+        parsed,
+        display_name_override,
     )
 }
 
@@ -446,5 +494,25 @@ mod tests {
         );
         let err = parse_identity_backup(backup, "123456").unwrap_err();
         assert!(err.contains("does not match"));
+    }
+
+    #[test]
+    fn rejects_excessive_argon2_costs() {
+        let (_root, config_dir, storage_dir) = temp_dirs();
+        let (identity, _) = generate_identity_with_mnemonic().unwrap();
+        let mut state = PersistedState::default_empty();
+        apply_unified_identity(&mut state, &config_dir, &storage_dir, &identity, None, None)
+            .unwrap();
+        let mut backup = export_rsi_backup(&config_dir, &state, "123456").unwrap();
+        backup
+            .as_object_mut()
+            .unwrap()
+            .get_mut("vault")
+            .unwrap()
+            .as_object_mut()
+            .unwrap()
+            .insert("m_cost".into(), serde_json::json!(MAX_VAULT_M_COST + 1));
+        let err = parse_identity_backup(backup, "123456").unwrap_err();
+        assert!(err.contains("m_cost"));
     }
 }

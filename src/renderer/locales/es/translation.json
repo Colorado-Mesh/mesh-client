@@ -999,7 +999,19 @@
       "exportSaved": "Exportación de identidad guardada.",
       "exportSaveFailed": "No se ha podido guardar la exportación de identidad.",
       "exportPassphraseConfirm": "Confirmar PIN de copia DE",
-      "exportPassphraseMismatch": "Los PIN de copia de seguridad no coinciden."
+      "exportPassphraseMismatch": "Los PIN de copia de seguridad no coinciden.",
+      "importBackupTooLarge": "El archivo de copia de seguridad de identidad es demasiado grande.",
+      "exportRawConfirmTitle": "¿Exportar archivo de identidad sin procesar?",
+      "exportRawConfirmMessage": "Esto escribe su clave privada Reticulum de 64 bytes sin cifrar en el disco. Cualquier persona con ese archivo puede hacerse pasar por esta identidad.",
+      "exportRawConfirmAction": "Exportar identidad sin procesar",
+      "hint": "Inicie la pila anterior, luego cree o importe una frase de recuperación BIP-39, un archivo de identidad Reticulum sin formato o una copia de seguridad Ratspeak .rsi cifrada con PIN.",
+      "importBackupLabel": "Importar copia de seguridad de Ratspeak .rsi",
+      "importBackup": "Importar copia de seguridad .rsi",
+      "importBackupHint": "Copia de seguridad de identidad de Ratspeak cifrada con PIN (.rsi). Restaura tu clave privada y activa la identidad.",
+      "importPrivateKeyHint": "Reticulum oficial clave privada de 64 bytes (X25519 secreto + semilla Ed25519) como hexadecimal, base64, base32 o un archivo .identity sin procesar.",
+      "export": "Exportar copia de seguridad .rsi",
+      "exportPassphrase": "PIN de copia de SEGURIDAD",
+      "exportPassphraseRequired": "Introduzca un PIN de copia de seguridad de al menos 6 caracteres."
     },
     "reticulumInterfaces": {
       "title": "Interfaces",
@@ -1901,13 +1913,14 @@
     "statusNotConfigured": "Sin configurar",
     "statusLocked": "Bloqueado",
     "statusUnlocked": "Desbloqueado",
-    "passcodeTooShort": "debe tener al menos 4 caracteres",
     "passcodeMismatch": "Los códigos de acceso no coinciden.",
     "setSuccess": "Código de acceso de bóveda guardado.",
     "setFailed": "No se ha podido guardar el código de acceso de la bóveda.",
     "unlockSuccess": "Bóveda desbloqueada.",
     "unlockFailed": "Código de acceso incorrecto o error de bóveda.",
-    "lockSuccess": "Bóveda bloqueada."
+    "lockSuccess": "Bóveda bloqueada.",
+    "hint": "Opcionalmente, encripte un secreto de bóveda local con un código de acceso (mínimo 8 caracteres). Esto no reemplaza la exportación de un archivo de identidad .rsi o RAW portátil.",
+    "passcodeTooShort": "Debe contener al menos 8 caracteres"
   },
   "logAnalyzeModal": {
     "title": "Análisis de registros",

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  RETICULUM_IDENTITY_EXPORT_MAX_BYTES,
   RNS_PRIVATE_KEY_LEN,
   saveReticulumIdentityExportDialog,
   showReticulumIdentityBackupImportDialog,
@@ -14,8 +15,10 @@ const {
   fstatSyncMock,
   readSyncMock,
   closeSyncMock,
-  readFileSyncMock,
   writeFileSyncMock,
+  chmodSyncMock,
+  getFocusedWindowMock,
+  getAllWindowsMock,
 } = vi.hoisted(() => ({
   showOpenDialogMock: vi.fn(),
   showSaveDialogMock: vi.fn(),
@@ -23,11 +26,17 @@ const {
   fstatSyncMock: vi.fn(),
   readSyncMock: vi.fn(),
   closeSyncMock: vi.fn(),
-  readFileSyncMock: vi.fn(),
   writeFileSyncMock: vi.fn(),
+  chmodSyncMock: vi.fn(),
+  getFocusedWindowMock: vi.fn(),
+  getAllWindowsMock: vi.fn(),
 }));
 
 vi.mock('electron', () => ({
+  BrowserWindow: {
+    getFocusedWindow: getFocusedWindowMock,
+    getAllWindows: getAllWindowsMock,
+  },
   dialog: {
     showOpenDialog: showOpenDialogMock,
     showSaveDialog: showSaveDialogMock,
@@ -40,10 +49,18 @@ vi.mock('fs', () => ({
     fstatSync: fstatSyncMock,
     readSync: readSyncMock,
     closeSync: closeSyncMock,
-    readFileSync: readFileSyncMock,
     writeFileSync: writeFileSyncMock,
+    chmodSync: chmodSyncMock,
   },
 }));
+
+vi.mock('./reticulum-config-read', () => ({
+  readUtf8FileBounded: vi.fn(),
+}));
+
+import { readUtf8FileBounded } from './reticulum-config-read';
+
+const readUtf8FileBoundedMock = vi.mocked(readUtf8FileBounded);
 
 describe('showReticulumIdentityImportDialog', () => {
   beforeEach(() => {
@@ -52,6 +69,8 @@ describe('showReticulumIdentityImportDialog', () => {
     fstatSyncMock.mockReset();
     readSyncMock.mockReset();
     closeSyncMock.mockReset();
+    getFocusedWindowMock.mockReturnValue(null);
+    getAllWindowsMock.mockReturnValue([]);
     openSyncMock.mockReturnValue(3);
   });
 
@@ -96,12 +115,14 @@ describe('showReticulumIdentityImportDialog', () => {
 describe('showReticulumIdentityBackupImportDialog', () => {
   beforeEach(() => {
     showOpenDialogMock.mockReset();
-    readFileSyncMock.mockReset();
+    readUtf8FileBoundedMock.mockReset();
+    getFocusedWindowMock.mockReturnValue(null);
+    getAllWindowsMock.mockReturnValue([]);
   });
 
-  it('reads .rsi text content', async () => {
+  it('reads .rsi text content via bounded reader', async () => {
     showOpenDialogMock.mockResolvedValue({ canceled: false, filePaths: ['/tmp/id.rsi'] });
-    readFileSyncMock.mockReturnValue('{"format":"ratspeak.identity.v2"}');
+    readUtf8FileBoundedMock.mockReturnValue('{"format":"ratspeak.identity.v2"}');
     await expect(showReticulumIdentityBackupImportDialog()).resolves.toEqual({
       path: '/tmp/id.rsi',
       contentText: '{"format":"ratspeak.identity.v2"}',
@@ -112,6 +133,19 @@ describe('showReticulumIdentityBackupImportDialog', () => {
         filters: [expect.objectContaining({ extensions: ['rsi', 'json'] })],
       }),
     );
+    expect(readUtf8FileBoundedMock).toHaveBeenCalledWith('/tmp/id.rsi', expect.any(Number));
+  });
+
+  it('maps oversized backups to too_large', async () => {
+    showOpenDialogMock.mockResolvedValue({ canceled: false, filePaths: ['/tmp/big.rsi'] });
+    readUtf8FileBoundedMock.mockImplementation(() => {
+      throw new Error('config file exceeds 2097152 byte limit');
+    });
+    await expect(showReticulumIdentityBackupImportDialog()).resolves.toEqual({
+      path: '/tmp/big.rsi',
+      contentText: null,
+      error: 'too_large',
+    });
   });
 });
 
@@ -119,17 +153,41 @@ describe('saveReticulumIdentityExportDialog', () => {
   beforeEach(() => {
     showSaveDialogMock.mockReset();
     writeFileSyncMock.mockReset();
+    chmodSyncMock.mockReset();
+    getFocusedWindowMock.mockReturnValue(null);
+    getAllWindowsMock.mockReturnValue([]);
   });
 
-  it('writes base64 content to the chosen path', async () => {
+  it('rejects invalid opts without opening the dialog', async () => {
+    await expect(saveReticulumIdentityExportDialog(null)).resolves.toEqual({
+      path: null,
+      error: 'invalid_opts',
+    });
+    expect(showSaveDialogMock).not.toHaveBeenCalled();
+  });
+
+  it('uses basename-only defaultPath and writes mode 0o600', async () => {
     showSaveDialogMock.mockResolvedValue({ canceled: false, filePath: '/tmp/out.identity' });
     const bytes = Buffer.alloc(RNS_PRIVATE_KEY_LEN, 0x11);
     await expect(
       saveReticulumIdentityExportDialog({
-        defaultPath: 'x.identity',
+        defaultPath: '../../evil/x.identity',
         contentBase64: bytes.toString('base64'),
       }),
     ).resolves.toEqual({ path: '/tmp/out.identity', error: null });
-    expect(writeFileSyncMock).toHaveBeenCalledWith('/tmp/out.identity', bytes);
+    expect(showSaveDialogMock).toHaveBeenCalledWith({ defaultPath: 'x.identity' });
+    expect(writeFileSyncMock).toHaveBeenCalledWith('/tmp/out.identity', bytes, { mode: 0o600 });
+    expect(chmodSyncMock).toHaveBeenCalledWith('/tmp/out.identity', 0o600);
+  });
+
+  it('rejects decoded content over the export size cap', async () => {
+    const oversized = Buffer.alloc(RETICULUM_IDENTITY_EXPORT_MAX_BYTES + 1, 1);
+    await expect(
+      saveReticulumIdentityExportDialog({
+        defaultPath: 'x.rsi',
+        contentBase64: oversized.toString('base64'),
+      }),
+    ).resolves.toEqual({ path: null, error: 'content_too_large' });
+    expect(showSaveDialogMock).not.toHaveBeenCalled();
   });
 });

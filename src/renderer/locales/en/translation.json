@@ -1048,7 +1048,11 @@
       "exportPassphrase": "Backup PIN",
       "exportPassphraseConfirm": "Confirm backup PIN",
       "exportPassphraseRequired": "Enter a backup PIN of at least 6 characters.",
-      "exportPassphraseMismatch": "Backup PINs do not match."
+      "exportPassphraseMismatch": "Backup PINs do not match.",
+      "importBackupTooLarge": "Identity backup file is too large.",
+      "exportRawConfirmTitle": "Export raw identity file?",
+      "exportRawConfirmMessage": "This writes your unencrypted 64-byte Reticulum private key to disk. Anyone with that file can impersonate this identity.",
+      "exportRawConfirmAction": "Export raw identity"
     },
     "reticulumInterfaces": {
       "title": "Interfaces",
@@ -2066,7 +2070,7 @@
   },
   "identityVault": {
     "title": "Identity vault",
-    "hint": "Optionally store a local encrypted copy of your last exported .rsi backup with a vault passcode. This does not replace saving the .rsi file.",
+    "hint": "Optionally encrypt a local vault secret with a passcode (minimum 8 characters). This does not replace exporting a portable .rsi or raw identity file.",
     "passcode": "Vault passcode",
     "confirmPasscode": "Confirm passcode",
     "setPasscode": "Enable vault",
@@ -2075,7 +2079,7 @@
     "statusNotConfigured": "Not configured",
     "statusLocked": "Locked",
     "statusUnlocked": "Unlocked",
-    "passcodeTooShort": "Passcode must be at least 4 characters.",
+    "passcodeTooShort": "Passcode must be at least 8 characters.",
     "passcodeMismatch": "Passcodes do not match.",
     "setSuccess": "Vault passcode saved.",
     "setFailed": "Could not save vault passcode.",

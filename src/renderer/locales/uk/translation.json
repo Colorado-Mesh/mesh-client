@@ -1001,7 +1001,19 @@
       "exportSaved": "Експорт посвідчень збережено.",
       "exportSaveFailed": "Не вдалося зберегти експорт посвідчень.",
       "exportPassphraseConfirm": "Підтвердьте резервний PIN-КОД",
-      "exportPassphraseMismatch": "PIN-коди резервних копій не збігаються."
+      "exportPassphraseMismatch": "PIN-коди резервних копій не збігаються.",
+      "importBackupTooLarge": "Файл резервної копії профілю завеликий.",
+      "exportRawConfirmTitle": "Експортувати RAW-файл ідентифікації?",
+      "exportRawConfirmMessage": "Це записує ваш незашифрований 64-байтовий закритий ключ Reticulum на диск. Будь-хто, хто має цей файл, може видавати себе за цю особу.",
+      "exportRawConfirmAction": "Експортувати необроблену іден",
+      "hint": "Запустіть стек вище, а потім створіть або імпортуйте фразу відновлення BIP-39, необроблений файл ідентифікації Reticulum або зашифровану PIN-кодом резервну копію Ratspeak .rsi.",
+      "importBackupLabel": "Імпортувати резервну копію Ratspeak .rsi",
+      "importBackup": "Імпорт резервної копії .rsi",
+      "importBackupHint": "Резервне копіювання ідентифікатора Ratspeak, зашифроване PIN-кодом (.rsi). Відновлення закритого ключа та активація ідентифікатора.",
+      "importPrivateKeyHint": "Офіційний 64-байтовий закритий ключ Reticulum (X25519 secret + Ed25519 seed) у вигляді hex, base64, base32 або RAW-файлу .identity.",
+      "export": "Експортувати резервну копію .rsi",
+      "exportPassphrase": "Резервний PIN-КОД",
+      "exportPassphraseRequired": "Введіть резервний PIN-КОД щонайменше з 6 символів."
     },
     "reticulumInterfaces": {
       "title": "Інтерфейси",
@@ -1903,13 +1915,14 @@
     "statusNotConfigured": "Не налаштовано",
     "statusLocked": "Заблоковано",
     "statusUnlocked": "Розблоковано",
-    "passcodeTooShort": "Пароль має містити щонайменше 4 символи.",
     "passcodeMismatch": "Коди доступу не збігаються.",
     "setSuccess": "Код доступу до сховища збережено.",
     "setFailed": "Не вдалося зберегти код доступу до сховища.",
     "unlockSuccess": "Сейф розблоковано.",
     "unlockFailed": "Неправильний код доступу або помилка сховища.",
-    "lockSuccess": "Сховище заблоковано."
+    "lockSuccess": "Сховище заблоковано.",
+    "hint": "За бажанням зашифруйте секрет локального сховища за допомогою пароля (мінімум 8 символів). Це не замінює експорт портативного .rsi або RAW-файлу ідентифікації.",
+    "passcodeTooShort": "Пароль має містити щонайменше 8 символів."
   },
   "logAnalyzeModal": {
     "title": "Аналіз журналу",

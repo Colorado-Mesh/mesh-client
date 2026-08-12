@@ -877,16 +877,21 @@ impl StackHandle {
         replace: bool,
     ) -> Result<StackIdentity, String> {
         identity_apply::identity_requires_rns_stack()?;
+        // Fast path UX check; real gate is under the write lock after Argon2.
         self.ensure_identity_replace_allowed(replace).await?;
         #[cfg(feature = "rns-stack")]
         {
+            // Argon2 decrypt outside the write lock to avoid stalling the stack.
+            let parsed = identity_backup::parse_identity_backup(backup, passphrase)?;
             let mut inner = self.inner.write().await;
-            let identity = identity_backup::import_and_apply_backup(
+            if inner.identity.configured && !replace {
+                return Err("identity_already_configured".into());
+            }
+            let identity = identity_backup::apply_parsed_backup(
                 &mut inner,
                 &self.config_dir,
                 &self.storage_dir,
-                backup,
-                passphrase,
+                parsed,
                 display_name,
             )?;
             drop(inner);

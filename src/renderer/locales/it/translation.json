@@ -997,7 +997,19 @@
       "exportSaved": "Esportazione identità salvata.",
       "exportSaveFailed": "Impossibile salvare l'esportazione dell'identità.",
       "exportPassphraseConfirm": "Conferma PIN di backup",
-      "exportPassphraseMismatch": "I pin di backup non corrispondono."
+      "exportPassphraseMismatch": "I pin di backup non corrispondono.",
+      "importBackupTooLarge": "Il file di backup dell'identità è troppo grande.",
+      "exportRawConfirmTitle": "Esportare il file di identità grezzo?",
+      "exportRawConfirmMessage": "Questo scrive la tua chiave privata Reticulum a 64 byte non crittografata sul disco. Chiunque abbia quel file può impersonare questa identità.",
+      "exportRawConfirmAction": "Esporta identità grezza",
+      "hint": "Avviare lo stack sopra, quindi creare o importare una frase di ripristino BIP-39, un file di identità Reticulum raw o un backup Ratspeak .rsi crittografato con PIN.",
+      "importBackupLabel": "Importa backup Ratspeak .rsi",
+      "importBackup": "Importa backup .rsi",
+      "importBackupHint": "Backup dell'identità Ratspeak crittografato con PIN (.rsi). Ripristina la tua chiave privata e attiva l'identità.",
+      "importPrivateKeyHint": "Chiave privata ufficiale Reticulum a 64 byte (segreto X25519 + seme Ed25519) come esadecimale, base64, base32 o file di identità grezzo.",
+      "export": "Esporta backup .rsi",
+      "exportPassphrase": "PIN di backup",
+      "exportPassphraseRequired": "Inserisci un PIN di backup di almeno 6 caratteri."
     },
     "reticulumInterfaces": {
       "title": "interfacce",
@@ -1901,13 +1913,14 @@
     "statusNotConfigured": "Non configurata",
     "statusLocked": "Bloccato",
     "statusUnlocked": "Mantenere la",
-    "passcodeTooShort": "Il codice di accesso deve essere di almeno 4 caratteri.",
     "passcodeMismatch": "Le password inserite non coincidono.",
     "setSuccess": "Codice di accesso al vault salvato.",
     "setFailed": "Impossibile salvare il codice di accesso al vault.",
     "unlockSuccess": "Caveau sbloccato.",
     "unlockFailed": "Codice di accesso errato o errore di vaulting.",
-    "lockSuccess": "Caveau bloccato."
+    "lockSuccess": "Caveau bloccato.",
+    "hint": "Opzionalmente, crittografa un segreto del vault locale con un codice di accesso (minimo 8 caratteri). Ciò non sostituisce l'esportazione di un file .rsi portatile o di un file di identità grezzo.",
+    "passcodeTooShort": "Il codice di accesso deve essere di almeno 8 caratteri."
   },
   "logAnalyzeModal": {
     "title": "Analisi del registro",

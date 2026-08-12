@@ -999,7 +999,19 @@
       "exportSaved": "IDのエクスポートが保存されました。",
       "exportSaveFailed": "IDエクスポートを保存できませんでした。",
       "exportPassphraseConfirm": "バックアップPINを確認する",
-      "exportPassphraseMismatch": "バックアップPINが一致しません。"
+      "exportPassphraseMismatch": "バックアップPINが一致しません。",
+      "importBackupTooLarge": "IDバックアップファイルが大きすぎます。",
+      "exportRawConfirmTitle": "RAW IDファイルをエクスポートしますか？",
+      "exportRawConfirmMessage": "これにより、暗号化されていない64バイトのReticulum秘密鍵がディスクに書き込まれます。そのファイルを持っている人は誰でもこのIDになりすますことができます。",
+      "exportRawConfirmAction": "生のアイデンティティをエクスポート",
+      "hint": "上記のスタックを開始し、BIP -39リカバリフレーズ、生のReticulum IDファイル、またはPIN暗号化されたRatspeak .rsiバックアップを作成またはインポートします。",
+      "importBackupLabel": "Ratspeak .rsiバックアップをインポート",
+      "importBackup": ".rsiバックアップをインポート",
+      "importBackupHint": "暗号化されたRatspeak IDバックアップ（.rsi ）。秘密鍵を復元し、IDをアクティブにします。",
+      "importPrivateKeyHint": "16進数、base 64、base 32、またはraw .identityファイルとしての公式Reticulum 64バイト秘密鍵（ X 25519シークレット+ Ed 25519シード）。",
+      "export": ".rsiバックアップをエクスポート",
+      "exportPassphrase": "バックアップPIN",
+      "exportPassphraseRequired": "6文字以上のバックアップPINを入力してください。"
     },
     "reticulumInterfaces": {
       "title": "インターフェース",
@@ -1901,13 +1913,14 @@
     "statusNotConfigured": "Not configured",
     "statusLocked": "ロック",
     "statusUnlocked": "ロック解除",
-    "passcodeTooShort": "少なくとも 4 文字必要です。",
     "passcodeMismatch": "パスコードが一致しません。",
     "setSuccess": "Vaultのパスコードが保存されました。",
     "setFailed": "Vaultパスコードを保存できませんでした。",
     "unlockSuccess": "ボールトがアンロックされました。",
     "unlockFailed": "パスコードが正しくないか、Vaultエラーが発生しました。",
-    "lockSuccess": "ボールトがロックされています。"
+    "lockSuccess": "ボールトがロックされています。",
+    "hint": "オプションで、パスコード（最小8文字）を使用してローカルVaultシークレットを暗号化します。これは、ポータブル.rsiまたはraw IDファイルのエクスポートに代わるものではありません。",
+    "passcodeTooShort": "最低でも8文字以上でなければなりません。"
   },
   "logAnalyzeModal": {
     "title": "ログ分析",

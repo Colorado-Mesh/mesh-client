@@ -1232,6 +1232,17 @@ TCP/network Nomad Links use path-scaled initiator hops (`link_hops = clamp(path_
 
 **Fix**: Generate or import identity with the stack running; restart the stack after identity changes. Compare `GET /api/v1/identity/status` with your Ratspeak identity file.
 
+### Reticulum `.rsi` / raw identity backup restore fails
+
+**Symptoms**: Importing a Ratspeak `.rsi` fails with an incorrect PIN message, or raw identity file import rejects the file.
+
+**Cause / fix**:
+
+1. **`.rsi` PIN** — use the same PIN (≥6 characters) chosen at export; wrong PIN or a tampered vault fails closed.
+2. **mesh-client.identity.v1** — metadata-only backups are no longer supported; re-export from a current build (`.rsi` or raw 64-byte identity).
+3. **Raw file length** — official Reticulum identity files must be exactly **64 bytes** (not hex text pasted into the file picker).
+4. **Oversized `.rsi`** — import is size-capped; use a normal Ratspeak/mesh-client backup, not an unrelated huge JSON dump.
+
 ### Reticulum Map empty or no markers
 
 **Symptoms**: Map tab shows empty state, sidebar list only, or no markers despite peers on the Peers tab.

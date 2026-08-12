@@ -999,7 +999,19 @@
       "exportSaved": "ID 내보내기가 저장되었습니다.",
       "exportSaveFailed": "ID 내보내기를 저장할 수 없습니다.",
       "exportPassphraseConfirm": "예비 PIN 확인",
-      "exportPassphraseMismatch": "백업 PIN이 일치하지 않습니다."
+      "exportPassphraseMismatch": "백업 PIN이 일치하지 않습니다.",
+      "importBackupTooLarge": "ID 백업 파일이 너무 큽니다.",
+      "exportRawConfirmTitle": "원시 ID 파일을 내보내시겠습니까?",
+      "exportRawConfirmMessage": "이렇게 하면 암호화되지 않은 64바이트 Reticulum 개인 키가 디스크에 기록됩니다. 해당 파일이 있는 모든 사용자가 이 ID를 가장할 수 있습니다.",
+      "exportRawConfirmAction": "원시 ID 내보내기",
+      "hint": "위의 스택을 시작한 다음 BIP-39 복구 문구, 원시 Reticulum ID 파일 또는 PIN 암호화 Ratspeak .rsi 백업을 만들거나 가져옵니다.",
+      "importBackupLabel": "Ratspeak .rsi 백업 가져오기",
+      "importBackup": ".rsi 백업 가져오기",
+      "importBackupHint": "PIN 암호화 Ratspeak ID 백업 (.rsi). 개인 키를 복원하고 ID를 활성화합니다.",
+      "importPrivateKeyHint": "공식 Reticulum 64바이트 개인 키 (X25519 비밀 + Ed25519 시드) 는 16진수, base64, base32 또는 raw .identity 파일입니다.",
+      "export": ".rsi 백업 내보내기",
+      "exportPassphrase": "백업 PIN",
+      "exportPassphraseRequired": "6자 이상의 예비 PIN을 입력하세요."
     },
     "reticulumInterfaces": {
       "title": "연계 문서",
@@ -1901,13 +1913,14 @@
     "statusNotConfigured": "구성되지 않음",
     "statusLocked": "잠김",
     "statusUnlocked": "잠금 해제",
-    "passcodeTooShort": "최소한 4자 이상이어야 합니다",
     "passcodeMismatch": "비밀번호가 일치하지 않습니다.",
     "setSuccess": "Vault 암호가 저장되었습니다.",
     "setFailed": "볼트 암호를 저장할 수 없습니다.",
     "unlockSuccess": "금고가 잠금 해제되었습니다.",
     "unlockFailed": "잘못된 암호 또는 볼트 오류입니다.",
-    "lockSuccess": "금고가 잠겼습니다."
+    "lockSuccess": "금고가 잠겼습니다.",
+    "hint": "필요에 따라 로컬 볼트 암호를 암호 (최소 8자) 로 암호화합니다. 이것은 휴대용 .rsi 또는 원시 ID 파일 내보내기를 대체하지 않습니다.",
+    "passcodeTooShort": "비밀번호는 8자 이상이어야 합니다."
   },
   "logAnalyzeModal": {
     "title": "로그 분석",

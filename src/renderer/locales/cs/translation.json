@@ -1000,7 +1000,19 @@
       "exportSaved": "Export identity uložen.",
       "exportSaveFailed": "Export identity se nepodařilo uložit.",
       "exportPassphraseConfirm": "Potvrď záložní PIN",
-      "exportPassphraseMismatch": "Záložní PINy se neshodují."
+      "exportPassphraseMismatch": "Záložní PINy se neshodují.",
+      "importBackupTooLarge": "Soubor zálohy identity je příliš velký.",
+      "exportRawConfirmTitle": "Exportovat surový soubor identity?",
+      "exportRawConfirmMessage": "Tím se na disk zapíše váš nešifrovaný 64bajtový soukromý klíč Reticulum. Každý, kdo má tento soubor, se může za tuto identitu vydávat.",
+      "exportRawConfirmAction": "Exportovat nezpracovanou identitu",
+      "hint": "Spusťte výše uvedený zásobník a poté vytvořte nebo importujte frázi pro obnovení BIP-39, surový soubor identity Reticulum nebo zálohu Ratspeak .rsi šifrovanou kódem PIN.",
+      "importBackupLabel": "Importovat zálohu Ratspeak .rsi",
+      "importBackup": "Importovat zálohu .rsi",
+      "importBackupHint": "PIN-encrypted Ratspeak identity backup (.rsi). Obnoví váš soukromý klíč a aktivuje identitu.",
+      "importPrivateKeyHint": "Oficiální 64bajtový soukromý klíč Reticulum (X25519 SECRET + Ed25519 Seed) jako soubor HEX, base64, base32 nebo RAW .identity.",
+      "export": "Exportovat zálohu .rsi",
+      "exportPassphrase": "Záložní PIN",
+      "exportPassphraseRequired": "Zadejte záložní PIN nejméně 6 znaků."
     },
     "reticulumInterfaces": {
       "title": "Rozhraní",
@@ -1903,13 +1915,14 @@
     "statusNotConfigured": "Nenastaveno",
     "statusLocked": "Uzamčeno",
     "statusUnlocked": "Odemčeno",
-    "passcodeTooShort": "Heslo musí mít alespoň 4 znaky.",
     "passcodeMismatch": "Hesla se neshodují.",
     "setSuccess": "Heslo trezoru uloženo.",
     "setFailed": "Heslo trezoru se nepodařilo uložit.",
     "unlockSuccess": "Trezor odemčen.",
     "unlockFailed": "Nesprávný přístupový kód nebo chyba trezoru.",
-    "lockSuccess": "Trezor je uzamčen."
+    "lockSuccess": "Trezor je uzamčen.",
+    "hint": "Volitelně zašifrujte tajemství místního trezoru pomocí přístupového kódu (minimálně 8 znaků). Toto nenahrazuje export přenosného souboru identity .rsi nebo RAW.",
+    "passcodeTooShort": "Heslo musí mít alespoň 8 znaků."
   },
   "logAnalyzeModal": {
     "title": "Analýza protokolu",

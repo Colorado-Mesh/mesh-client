@@ -225,6 +225,120 @@ describe('ReticulumNetworkPanel', () => {
     ).toBeInTheDocument();
   });
 
+  it('blocks .rsi export when backup PINs do not match', async () => {
+    const user = userEvent.setup();
+    const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPost = proxyPost;
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    await user.type(
+      await screen.findByLabelText('connectionPanel.reticulumIdentity.exportPassphrase'),
+      '123456',
+    );
+    await user.type(
+      screen.getByLabelText('connectionPanel.reticulumIdentity.exportPassphraseConfirm'),
+      '654321',
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumIdentity.export' }),
+    );
+
+    expect(
+      await screen.findByText('connectionPanel.reticulumIdentity.exportPassphraseMismatch'),
+    ).toBeInTheDocument();
+    expect(proxyPost).not.toHaveBeenCalledWith('/api/v1/identity/export', expect.anything());
+  });
+
+  it('saves .rsi export via dialog and clears PIN fields', async () => {
+    const user = userEvent.setup();
+    const saveDialog = vi.fn().mockResolvedValue({ path: '/tmp/out.rsi', error: null });
+    window.electronAPI.reticulum.saveIdentityExportDialog = saveDialog;
+    window.electronAPI.reticulum.proxyPost = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/identity/export') {
+        return Promise.resolve({
+          ok: true,
+          backup: { format: 'ratspeak.identity.v2', file_name: 'abc-ratspeak-identity.rsi' },
+          file_name: 'abc-ratspeak-identity.rsi',
+        });
+      }
+      return Promise.resolve({ ok: true });
+    });
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    const pin = await screen.findByLabelText('connectionPanel.reticulumIdentity.exportPassphrase');
+    const confirm = screen.getByLabelText(
+      'connectionPanel.reticulumIdentity.exportPassphraseConfirm',
+    );
+    await user.type(pin, '123456');
+    await user.type(confirm, '123456');
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumIdentity.export' }),
+    );
+
+    await waitFor(() => {
+      expect(saveDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ defaultPath: 'abc-ratspeak-identity.rsi' }),
+      );
+    });
+    expect(pin).toHaveValue('');
+    expect(confirm).toHaveValue('');
+    expect(screen.queryByDisplayValue(/ratspeak\.identity\.v2/)).not.toBeInTheDocument();
+  });
+
+  it('confirms before raw identity export', async () => {
+    const user = userEvent.setup();
+    const saveDialog = vi.fn().mockResolvedValue({ path: '/tmp/out.identity', error: null });
+    window.electronAPI.reticulum.saveIdentityExportDialog = saveDialog;
+    window.electronAPI.reticulum.proxyPost = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/identity/export-raw') {
+        return Promise.resolve({
+          ok: true,
+          raw: { data_base64: Buffer.alloc(64, 1).toString('base64'), file_name: 'id.identity' },
+        });
+      }
+      return Promise.resolve({ ok: true });
+    });
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    await user.click(
+      await screen.findByRole('button', { name: 'connectionPanel.reticulumIdentity.exportRaw' }),
+    );
+    expect(
+      await screen.findByText('connectionPanel.reticulumIdentity.exportRawConfirmTitle'),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumIdentity.exportRawConfirmAction',
+      }),
+    );
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith(
+        '/api/v1/identity/export-raw',
+        {},
+      );
+    });
+    expect(saveDialog).toHaveBeenCalled();
+  });
+
+  it('loads .rsi backup text from the open dialog', async () => {
+    const user = userEvent.setup();
+    window.electronAPI.reticulum.showIdentityBackupImportDialog = vi.fn().mockResolvedValue({
+      path: '/tmp/id.rsi',
+      contentText: '{"format":"ratspeak.identity.v2"}',
+      error: null,
+    });
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'connectionPanel.reticulumIdentity.importBackupFromFile',
+      }),
+    );
+    expect(
+      await screen.findByDisplayValue('{"format":"ratspeak.identity.v2"}'),
+    ).toBeInTheDocument();
+  });
+
   it('renders Check config ok result via validateConfig', async () => {
     const user = userEvent.setup();
     const validateConfig = vi.fn().mockResolvedValue({ ok: true, issues: [] });
