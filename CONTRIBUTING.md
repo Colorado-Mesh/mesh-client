@@ -6,6 +6,7 @@ Thank you for your interest in contributing.
 | ------------------------------------------------------------- | ------------------------------------------------------------------ |
 | Clone, prerequisites, commands, test harness, git hooks, i18n | [docs/development-environment.md](docs/development-environment.md) |
 | Code style, testing, architecture, security (AI assistants)   | [AGENTS.md](AGENTS.md)                                             |
+| Protocol additions (RF mesh only)                             | [Protocol scope](#protocol-scope)                                  |
 | PR flow and contribution expectations                         | **This file**                                                      |
 
 ## Code style & standards
@@ -26,6 +27,10 @@ See [Test harness setup and local quality checks](docs/development-environment.m
 - Mock console before spying logged errors (e.g. `vi.spyOn(console, 'warn').mockImplementation(() => {})`; use `beforeEach` when shared).
 - Update `src/main/index.contract.test.ts` when CSP, build config, IPC limits, or log filters change.
 - Accessibility: vitest-axe in component tests; see **Accessibility / axe** in [AGENTS.md](AGENTS.md#5-testing).
+
+## Protocol scope
+
+Mesh-Client focuses on **RF mesh** networking (LoRa and related radio meshes). Additional protocols are in scope when they support that kind of RF mesh path. Internet-only messaging is out of scope. Ham protocols are welcome under the same RF-mesh criteria; Mesh-Client is for everyone, everywhere, and is not gated or targeted specifically at people with a ham radio license. Protocols that already ship may still use internet transports _alongside_ RF. Product framing: [README — Why](README.md#why).
 
 ## PR process
 

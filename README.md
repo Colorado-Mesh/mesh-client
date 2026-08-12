@@ -37,6 +37,8 @@ With a dedicated local SQLite database, Mesh-Client keeps message history and me
 
 From real-time diagnostics to permanent message archives, Mesh-Client delivers the desktop visibility serious mesh users require.
 
+**Protocol scope:** Mesh-Client focuses on **RF mesh** networking—LoRa and related radio meshes. Additional protocols are in scope when they support that kind of RF mesh path. Internet-only messaging stacks are out of scope. Amateur-radio (ham) protocols are welcome when they meet the same RF-mesh bar; Mesh-Client is for everyone, everywhere, and is not gated or targeted specifically at people with a ham radio license. Protocols that already ship may still use internet transports _alongside_ RF.
+
 **Known Bugs:**
 
 - **Linux BLE**: uses Web Bluetooth (Chromium's built-in BLE API), with a user-visible picker and user gesture requirement to select a device. **MeshCore** may prompt for the radio's PIN and run OS-level pairing (`bluetoothctl`) before the connection completes when BlueZ reports the device as not paired (see [docs/development-environment.md](docs/development-environment.md#linux-bluetooth-ble)).
