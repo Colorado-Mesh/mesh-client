@@ -18,7 +18,7 @@ Key outcomes:
 - Multi-language support (16 languages) with offline static bundles.
 - Cross-platform desktop support for macOS, Linux, and Windows.
 
-**Protocol scope:** Mesh-Client focuses on RF mesh (LoRa and related). Internet-only stacks are out of scope; ham protocols are fine when they meet the RF-mesh bar. Mesh-Client is for everyone, everywhere—not gated or targeted specifically at licensed amateurs. See [README — Why](https://github.com/Colorado-Mesh/mesh-client/blob/main/README.md#why).
+**Protocol scope:** Mesh-Client focuses on RF mesh (LoRa and related). Additional protocols are in scope when they support that RF mesh path. Internet-only stacks are out of scope; ham protocols are fine when they meet the RF-mesh bar. Mesh-Client is for everyone, everywhere—not gated or targeted specifically at licensed amateurs. Protocols that already ship may still use internet transports _alongside_ RF. See [README — Why](https://github.com/Colorado-Mesh/mesh-client/blob/main/README.md#why).
 
 ---
 
