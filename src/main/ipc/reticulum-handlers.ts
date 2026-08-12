@@ -25,7 +25,11 @@ import {
   showReticulumConfigImportDialog,
 } from '../reticulum-config-paths';
 import { validateReticulumUserConfig } from '../reticulum-config-validate';
-import { showReticulumIdentityImportDialog } from '../reticulum-identity-import';
+import {
+  saveReticulumIdentityExportDialog,
+  showReticulumIdentityBackupImportDialog,
+  showReticulumIdentityImportDialog,
+} from '../reticulum-identity-import';
 import {
   isAllowedRncpRevealPath,
   isAllowedRncpSaveDirectoryPath,
@@ -481,6 +485,35 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       throw err;
     }
   });
+
+  ipcMain.handle('reticulum:showIdentityBackupImportDialog', async (event) => {
+    assertIpcSender(event, 'reticulum:showIdentityBackupImportDialog');
+    try {
+      return await showReticulumIdentityBackupImportDialog();
+    } catch (err) {
+      console.error(
+        '[ReticulumIPC] showIdentityBackupImportDialog failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
+  });
+
+  ipcMain.handle(
+    'reticulum:saveIdentityExportDialog',
+    async (event, opts: { defaultPath: string; contentBase64: string }) => {
+      assertIpcSender(event, 'reticulum:saveIdentityExportDialog');
+      try {
+        return await saveReticulumIdentityExportDialog(opts);
+      } catch (err) {
+        console.error(
+          '[ReticulumIPC] saveIdentityExportDialog failed:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+        throw err;
+      }
+    },
+  );
 
   ipcMain.handle('reticulum:showNomadContentSourceDialog', async (event) => {
     assertIpcSender(event, 'reticulum:showNomadContentSourceDialog');

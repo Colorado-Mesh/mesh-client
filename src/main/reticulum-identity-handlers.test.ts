@@ -21,6 +21,7 @@ describe('validateVaultPasscodeInput', () => {
 
   it('rejects passcodes shorter than 8 or longer than 256', () => {
     expect(validateVaultPasscodeInput('short')).toBe('passcode length out of range');
+    expect(validateVaultPasscodeInput('1234567')).toBe('passcode length out of range');
     expect(validateVaultPasscodeInput('a'.repeat(257))).toBe('passcode length out of range');
   });
 

@@ -53,6 +53,10 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         )
         .route("/api/v1/identity/export", post(identity::identity_export))
         .route(
+            "/api/v1/identity/export-raw",
+            post(identity::identity_export_raw),
+        )
+        .route(
             "/api/v1/identity/display-name",
             post(identity::identity_set_display_name),
         )

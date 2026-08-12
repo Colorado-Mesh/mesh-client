@@ -33,7 +33,7 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
   }, [refreshStatus]);
 
   const handleSetPasscode = async () => {
-    if (passcode.length < 4) {
+    if (passcode.length < 8) {
       setError(t('identityVault.passcodeTooShort'));
       return;
     }

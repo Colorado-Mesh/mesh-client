@@ -330,7 +330,7 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 
 **Network & identity (Network tab)**
 
-- Generate or import LXMF identity (mnemonic); **identity vault** (passcode) and encrypted identity export; import/export rnsd-style config from standard system paths
+- Generate or import LXMF identity (mnemonic); Ratspeak `.rsi` PIN backup and official raw identity file export/import; optional **identity vault**; import/export rnsd-style config from standard system paths
 - Stack settings (`enable_transport`, `share_instance`, log level), announce interval, **Clear announces**, **RMAP v4 discovery** publish controls
 - **Propagation nodes** (Network tab): **Propagation mode** Off (default) / Auto / Manual, Preferred node for offline DMs, per-node sync, optional **local propagation inbox** / Advanced PN hosting policy
 
