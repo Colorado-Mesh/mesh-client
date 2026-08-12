@@ -176,6 +176,58 @@ The renderer **must not** call the sidecar URL directly (sandbox). All HTTP/WS g
 
 **Listen-first connect:** The sidecar binds HTTP first, then `attach_live` brings up RNS/LXMF (path table, BLE Peer, deferred PN messagestore). Electron health is `GET /api/v1/status` with `status: "ok"` — not `rns_ready` / `lxmf_ready`. `useReticulumRuntime` marks connection **configured** once start succeeds and identity is known, then hydrates peers/DB in the background and dispatches `RETICULUM_CONFIGURED_EVENT`. TCP hubs and RRC can proceed after live attach; Chat LXMF send/reaction fail closed with `requires live rns-stack sidecar` until the bridge is up. **Cancel** / stop does not wait on cargo or BLE; Noble yield for an enabled BLE RNode starts only after health (fire-and-forget). Renderer LXMF/RRC proxy sends use a **15 s** IPC deadline (`RETICULUM_IPC_SEND_TIMEOUT_MS`).
 
+### Ownership: RNS vs LXMF client vs mesh-client policy
+
+Reticulum is not one blob that “does everything automatically.” Before adding sidecar or UI automation, classify the work:
+
+```mermaid
+flowchart TB
+  subgraph rns [RNS transport - library]
+    PathTable[Path table / RequestPath]
+    AnnounceFlood[Announce flood / Auto beacons]
+    Links[Links / proofs / Resources]
+  end
+  subgraph lxmf [LXMF app layer - client or lxmd must own]
+    DeliveryAnnounce[lxmf.delivery announces]
+    OutboundDriver[Direct then Propagated delivery]
+    PnHost[PN serve /get /offer]
+    IdentityLearn[Pubkey from announces / path responses]
+  end
+  subgraph mesh [mesh-client product policy]
+    AutoDemote[Auto vs private LAN demotion]
+    PnCascade[Multi-PN deposit and sync cascade]
+    PathMedium[Prefer RF vs network slots]
+    UiProbe[DM probe / Nomad force-path]
+  end
+  rns --> lxmf
+  lxmf --> mesh
+```
+
+| Layer                                                 | Owns                                                                                                                                                                                                            | mesh-client role                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RNS transport** (rsReticulum)                       | Path table, announce flooding, AutoInterface beacons, RMAP discovery announce signing, Links / proofs / Resources                                                                                               | Call transport APIs (`RequestPath`, path table reads, destination register). Do **not** reimplement pathfinding or beacon loops in the sidecar or UI. Library gaps belong in overlays under [`reticulum-sidecar/patches/`](../reticulum-sidecar/patches/README.md), not a second routing plane.                                                                                             |
+| **LXMF client / PN** (rsLXMF + sidecar orchestration) | `lxmf.delivery` announce schedules, Direct→Propagated outbound driver, identity learning for LRPROOF, local PN serve (`/offer`/`/get`), client inbox retrieve                                                   | Intentional **lxmd / Ratspeak parity**. rsLXMF is a library, not a full daemon — the sidecar owns these loops (`lxmf_delivery.rs`, `lxmf_outbound.rs`, `propagation_*`, `pn_inbound.rs`). Without them, Chat and offline delivery do not work. Documented elsewhere as “Host PN fabric → Chat (lxmd-style glue)”: mesh-client is PN + end-client on rsLXMF, **not** a second `lxmd` binary. |
+| **mesh-client product policy**                        | AutoInterface demotion toward private TCP/UDP, multi-slot path failover before PN fallback, prefer path medium, multi-PN deposit/sync cascade (Off/Auto/Manual), Chat DM auto-probe, Nomad `force_path_refresh` | **Not** required by bare RNS. Exists for multi-hub / Auto+LAN / UX. Treat as intentional product behavior; do not mistake it for transport.                                                                                                                                                                                                                                                 |
+
+**Renderer rule:** UI mirrors sidecar events and configures policy (announce interval, Propagation mode, Path/Probe buttons, RMAP publish toggles, topology layout). It must not invent peer discovery, announce flooding, or a second pathfinder. Optimistic `announce.received` peer rows and Topology graphs are **views** over the RNS path table, not routing.
+
+**What looks “automatic” but is correct to own in the sidecar**
+
+- Periodic / startup **LXMF delivery** announces and Network **Announce now** (Ratspeak/lxmd parity; see Network tab).
+- `LxmfOutboundDriver` Direct planning, path-request gating, retries, then Propagated cascade.
+- PN hosting admission, peer `/offer` bookkeeping, silent `/get` catch-up, and renderer Auto/Manual **sync cascades** that call into those APIs.
+- Registering announce/path-response handlers so Direct LRPROOF has peer public keys.
+
+**What is product policy above RNS** (keep intentional; cite when changing)
+
+- [`auto_path_policy.rs`](../reticulum-sidecar/src/stack/auto_path_policy.rs) — RNS correctly prefers 0-hop Auto; sidecar demotes unhealthy Auto toward a live **private** path for LXMF Direct (see [Path routing](#path-routing)).
+- [`path_failover.rs`](../reticulum-sidecar/src/stack/path_failover.rs) + path-medium overlays — ranked slots / medium preference before giving up Direct.
+- [`pn_cascade.rs`](../reticulum-sidecar/src/stack/pn_cascade.rs) + [`reticulumPropagationAutoApply.ts`](../src/renderer/lib/reticulum/reticulumPropagationAutoApply.ts) — multi-PN deposit and sync order.
+- Chat DM auto-probe (`useReticulumDmPathProbe`) — reachability UX; RNS would still path on send.
+- Nomad `force_path_refresh` — DropPath→RequestPath recovery for stale TCP hub paths.
+
+**Gate for new automation:** Is this RNS transport, LXMF client/PN (lxmd parity), or mesh-client policy? Prefer library/overlay for transport; prefer sidecar lxmd-shaped loops for LXMF; prefer explicit, documented policy modules for product overrides — never a parallel path table or announce flood in the renderer.
+
 ---
 
 ## Interface management (Connection tab)
@@ -324,7 +376,7 @@ IRC-style multi-pane client (`RrcPanel` + `rrcHubStore` / `rrcSessionStore`):
 
 ## Path routing
 
-When a destination is reachable over more than one next hop, the sidecar keeps up to **three ranked path slots** (one active + backups). Failover promotes a backup (or rediscovers via another live interface) before giving up — Nomad page loads exhaust alternate paths inside one request; LXMF Direct does the same before the **multi-PN cascade**. See [troubleshooting](troubleshooting.md#nomad-network-pages-hang-or-almost-never-load) for triage.
+When a destination is reachable over more than one next hop, the sidecar keeps up to **three ranked path slots** (one active + backups). Failover promotes a backup (or rediscovers via another live interface) before giving up — Nomad page loads exhaust alternate paths inside one request; LXMF Direct does the same before the **multi-PN cascade**. These failover / medium / Auto-demotion behaviors are **mesh-client product policy** on top of the RNS path table — see [Ownership](#ownership-rns-vs-lxmf-client-vs-mesh-client-policy). Triage: [troubleshooting](troubleshooting.md#nomad-network-pages-hang-or-almost-never-load).
 
 **AutoInterface vs private TCP/UDP:** Peers learned on Auto are normal 0-hop neighbors; RNS may keep Auto active even when a private LAN hub path exists (including equal-hop ties). For LXMF Direct, the sidecar **automatically** demotes Auto toward a live **private** path when Auto is unhealthy for delivery or Direct fails on Auto — then fails over private → public → multi-PN cascade (preferred remote → other enabled remotes hop-sorted → in Auto, up to 3 Discovered PNs → local-prop last). It does **not** rewrite healthy Auto Direct, and does **not** preempt Auto to public internet hubs. See [troubleshooting — local DMs hang with AutoInterface + private TCP hub](troubleshooting.md#reticulum-local-dms-hang-with-autointerface--private-tcp-hub).
 
