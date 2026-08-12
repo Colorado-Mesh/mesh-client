@@ -376,6 +376,20 @@ describe('isDroppableMeshtasticSdkLogLine', () => {
     ).toBe(true);
   });
 
+  it('drops DEBUG [iMeshDevice] encrypted data packet ignores', async () => {
+    const { isDroppableMeshtasticSdkLogLine } = await import('./log-service');
+    expect(
+      isDroppableMeshtasticSdkLogLine(
+        '20:20:09:810 DEBUG [iMeshDevice] HandleMeshPacket 🔐 Device received encrypted data packet, ignoring.',
+      ),
+    ).toBe(true);
+    expect(
+      isDroppableMeshtasticSdkLogLine(
+        'DEBUG [iMeshDevice] HandleMeshPacket Device received encrypted data packet, ignoring',
+      ),
+    ).toBe(true);
+  });
+
   it('keeps INFO / WARN / ERROR SDK lines', async () => {
     const { isDroppableMeshtasticSdkLogLine } = await import('./log-service');
     expect(
