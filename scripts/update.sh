@@ -514,6 +514,7 @@ RATSPEAK_RELEASE_WATCH_ENTRIES=(
   'ratspeak/lrgp-rs||lrgp-rs games (LRGP)|'
   'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.25'
   'ratspeak/LXMFace||LXMFace identicons (vendored in renderer)|file:js/lxmface.js@308a729d5bf951880633e5e174b3b7628203106b'
+  'ratspeak/Ratspeak||Ratspeak identity vault (vendored in sidecar)|file:crates/ratspeak-runtime/src/vault.rs@19e2a0d19202d4c7562adba79ac706ec352fdb86'
 )
 
 RATSPEAK_KNOWN_ORG_REPOS=(

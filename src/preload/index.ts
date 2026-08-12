@@ -17,6 +17,8 @@ import type {
   OutboxStatus,
   ReadReticulumAttachmentAsDataUrlOpts,
   ReadReticulumAttachmentAsDataUrlResult,
+  ReticulumIdentityBackupImportDialogResult,
+  ReticulumIdentityExportSaveResult,
   ReticulumIdentityImportDialogResult,
   SerialPort,
   SpellcheckReplacePayload,
@@ -1111,6 +1113,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('reticulum:showConfigImportDialog'),
     showIdentityImportDialog: (): Promise<ReticulumIdentityImportDialogResult> =>
       ipcRenderer.invoke('reticulum:showIdentityImportDialog'),
+    showIdentityBackupImportDialog: (): Promise<ReticulumIdentityBackupImportDialogResult> =>
+      ipcRenderer.invoke('reticulum:showIdentityBackupImportDialog'),
+    saveIdentityExportDialog: (opts: {
+      defaultPath: string;
+      contentBase64: string;
+    }): Promise<ReticulumIdentityExportSaveResult> =>
+      ipcRenderer.invoke('reticulum:saveIdentityExportDialog', opts),
     showNomadContentSourceDialog: (): Promise<{ canceled: boolean; path: string | null }> =>
       ipcRenderer.invoke('reticulum:showNomadContentSourceDialog'),
     setNomadContentSource: (path: string): Promise<unknown> =>

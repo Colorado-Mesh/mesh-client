@@ -6,6 +6,8 @@ mod ble;
 pub mod config;
 pub mod config_audit;
 mod identity_apply;
+#[cfg(feature = "rns-stack")]
+mod identity_backup;
 mod identity_import;
 mod identity_slots;
 mod local_rnode_primary;
@@ -27,6 +29,11 @@ mod pn_hosting_policy;
 #[cfg(feature = "rns-stack")]
 mod pn_inbound;
 mod propagation_mode;
+#[cfg(feature = "rns-stack")]
+#[allow(dead_code)] // Vendored Ratspeak vault surface; .rsi uses encrypt/decrypt helpers.
+#[allow(clippy::struct_field_names)] // Upstream VaultParams keeps m_cost/t_cost/p_cost names.
+#[path = "../../vendor/ratspeak_vault.rs"]
+mod ratspeak_vault;
 pub mod rf_profiles;
 mod rmap_discovery;
 mod rrc_codec;
@@ -836,8 +843,30 @@ impl StackHandle {
         &self,
         passphrase: &str,
     ) -> Result<serde_json::Value, String> {
-        let inner = self.inner.read().await;
-        inner.export_identity_backup(passphrase)
+        identity_apply::identity_requires_rns_stack()?;
+        #[cfg(feature = "rns-stack")]
+        {
+            let inner = self.inner.read().await;
+            identity_backup::export_rsi_backup(&self.config_dir, &inner, passphrase)
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = passphrase;
+            Err("identity operations require an rns-stack sidecar build".into())
+        }
+    }
+
+    pub async fn identity_export_raw(&self) -> Result<serde_json::Value, String> {
+        identity_apply::identity_requires_rns_stack()?;
+        #[cfg(feature = "rns-stack")]
+        {
+            let inner = self.inner.read().await;
+            identity_backup::export_raw_identity(&self.config_dir, &inner)
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            Err("identity operations require an rns-stack sidecar build".into())
+        }
     }
 
     pub async fn identity_import_backup(
@@ -847,42 +876,28 @@ impl StackHandle {
         display_name: Option<String>,
         replace: bool,
     ) -> Result<StackIdentity, String> {
-        if self.inner.read().await.identity.configured && !replace {
-            return Err("identity_already_configured".into());
-        }
-
-        let format = backup.get("format").and_then(|v| v.as_str()).unwrap_or("");
-        if format != "mesh-client.identity.v1" && format != "ratspeak.identity.v2" {
-            return Err("unsupported backup format".into());
-        }
-        let backup_identity_hash = backup
-            .get("identity_hash")
-            .and_then(|v| v.as_str())
-            .ok_or("missing identity_hash")?;
-        let backup_lxmf_hash = backup
-            .get("lxmf_hash")
-            .and_then(|v| v.as_str())
-            .ok_or("missing lxmf_hash")?;
-
+        identity_apply::identity_requires_rns_stack()?;
+        self.ensure_identity_replace_allowed(replace).await?;
         #[cfg(feature = "rns-stack")]
-        if identity_apply::backup_conflicts_with_file(
-            &self.config_dir,
-            backup_identity_hash,
-            backup_lxmf_hash,
-        )? {
-            return Err("backup_hash_mismatch_with_identity_file".into());
+        {
+            let mut inner = self.inner.write().await;
+            let identity = identity_backup::import_and_apply_backup(
+                &mut inner,
+                &self.config_dir,
+                &self.storage_dir,
+                backup,
+                passphrase,
+                display_name,
+            )?;
+            drop(inner);
+            self.maybe_emit_identity_restart();
+            Ok(identity)
         }
-
-        let mut inner = self.inner.write().await;
-        let mut identity = inner.import_identity_backup(backup, passphrase)?;
-        if let Some(name) = display_name {
-            identity.display_name = Some(name.clone());
-            inner.identity.display_name = Some(name);
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = (backup, passphrase, display_name);
+            Err("identity operations require an rns-stack sidecar build".into())
         }
-        inner.save(&self.config_dir, &self.storage_dir)?;
-        drop(inner);
-        self.maybe_emit_identity_restart();
-        Ok(identity)
     }
 
     pub async fn set_display_name(&self, name: &str) -> Result<(), String> {

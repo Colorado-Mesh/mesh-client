@@ -42,6 +42,8 @@ vi.mock('../reticulum-config-validate', () => ({
 
 vi.mock('../reticulum-identity-import', () => ({
   showReticulumIdentityImportDialog: vi.fn(),
+  showReticulumIdentityBackupImportDialog: vi.fn(),
+  saveReticulumIdentityExportDialog: vi.fn(),
 }));
 
 vi.mock('../reticulum-remote-paths', () => ({
@@ -154,6 +156,8 @@ describe('registerReticulumIpcHandlers', () => {
         'reticulum:readDefaultConfigFile',
         'reticulum:showConfigImportDialog',
         'reticulum:showIdentityImportDialog',
+        'reticulum:showIdentityBackupImportDialog',
+        'reticulum:saveIdentityExportDialog',
         'reticulum:showNomadContentSourceDialog',
         'reticulum:setNomadContentSource',
         'reticulum:validateConfig',
@@ -184,11 +188,16 @@ describe('registerReticulumIpcHandlers', () => {
       handlers.get('reticulum:readDefaultConfigFile')?.(event);
       await handlers.get('reticulum:showConfigImportDialog')?.(event);
       await handlers.get('reticulum:showIdentityImportDialog')?.(event);
+      await handlers.get('reticulum:showIdentityBackupImportDialog')?.(event);
+      await handlers.get('reticulum:saveIdentityExportDialog')?.(event, {
+        defaultPath: 'x.rsi',
+        contentBase64: 'YQ==',
+      });
       await handlers.get('reticulum:showNomadContentSourceDialog')?.(event);
       await handlers.get('reticulum:setNomadContentSource')?.(event, '/tmp/site');
       await handlers.get('reticulum:validateConfig')?.(event);
 
-      expect(assertIpcSenderMock).toHaveBeenCalledTimes(15);
+      expect(assertIpcSenderMock).toHaveBeenCalledTimes(17);
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:start');
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:proxyPost');
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:voiceSendAudio');

@@ -2,22 +2,35 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   RNS_PRIVATE_KEY_LEN,
+  saveReticulumIdentityExportDialog,
+  showReticulumIdentityBackupImportDialog,
   showReticulumIdentityImportDialog,
 } from './reticulum-identity-import';
 
-const { showOpenDialogMock, openSyncMock, fstatSyncMock, readSyncMock, closeSyncMock } = vi.hoisted(
-  () => ({
-    showOpenDialogMock: vi.fn(),
-    openSyncMock: vi.fn(),
-    fstatSyncMock: vi.fn(),
-    readSyncMock: vi.fn(),
-    closeSyncMock: vi.fn(),
-  }),
-);
+const {
+  showOpenDialogMock,
+  showSaveDialogMock,
+  openSyncMock,
+  fstatSyncMock,
+  readSyncMock,
+  closeSyncMock,
+  readFileSyncMock,
+  writeFileSyncMock,
+} = vi.hoisted(() => ({
+  showOpenDialogMock: vi.fn(),
+  showSaveDialogMock: vi.fn(),
+  openSyncMock: vi.fn(),
+  fstatSyncMock: vi.fn(),
+  readSyncMock: vi.fn(),
+  closeSyncMock: vi.fn(),
+  readFileSyncMock: vi.fn(),
+  writeFileSyncMock: vi.fn(),
+}));
 
 vi.mock('electron', () => ({
   dialog: {
     showOpenDialog: showOpenDialogMock,
+    showSaveDialog: showSaveDialogMock,
   },
 }));
 
@@ -27,6 +40,8 @@ vi.mock('fs', () => ({
     fstatSync: fstatSyncMock,
     readSync: readSyncMock,
     closeSync: closeSyncMock,
+    readFileSync: readFileSyncMock,
+    writeFileSync: writeFileSyncMock,
   },
 }));
 
@@ -75,5 +90,46 @@ describe('showReticulumIdentityImportDialog', () => {
     expect(result.byteLength).toBe(RNS_PRIVATE_KEY_LEN);
     expect(result.contentBase64).toBe(bytes.toString('base64'));
     expect(closeSyncMock).toHaveBeenCalledWith(3);
+  });
+});
+
+describe('showReticulumIdentityBackupImportDialog', () => {
+  beforeEach(() => {
+    showOpenDialogMock.mockReset();
+    readFileSyncMock.mockReset();
+  });
+
+  it('reads .rsi text content', async () => {
+    showOpenDialogMock.mockResolvedValue({ canceled: false, filePaths: ['/tmp/id.rsi'] });
+    readFileSyncMock.mockReturnValue('{"format":"ratspeak.identity.v2"}');
+    await expect(showReticulumIdentityBackupImportDialog()).resolves.toEqual({
+      path: '/tmp/id.rsi',
+      contentText: '{"format":"ratspeak.identity.v2"}',
+      error: null,
+    });
+    expect(showOpenDialogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filters: [expect.objectContaining({ extensions: ['rsi', 'json'] })],
+      }),
+    );
+  });
+});
+
+describe('saveReticulumIdentityExportDialog', () => {
+  beforeEach(() => {
+    showSaveDialogMock.mockReset();
+    writeFileSyncMock.mockReset();
+  });
+
+  it('writes base64 content to the chosen path', async () => {
+    showSaveDialogMock.mockResolvedValue({ canceled: false, filePath: '/tmp/out.identity' });
+    const bytes = Buffer.alloc(RNS_PRIVATE_KEY_LEN, 0x11);
+    await expect(
+      saveReticulumIdentityExportDialog({
+        defaultPath: 'x.identity',
+        contentBase64: bytes.toString('base64'),
+      }),
+    ).resolves.toEqual({ path: '/tmp/out.identity', error: null });
+    expect(writeFileSyncMock).toHaveBeenCalledWith('/tmp/out.identity', bytes);
   });
 });

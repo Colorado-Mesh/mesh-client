@@ -346,6 +346,10 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
       "ipcMain.handle('reticulum:showIdentityImportDialog'",
     );
     expect(RETICULUM_HANDLERS_SOURCE).toContain(
+      "ipcMain.handle('reticulum:showIdentityBackupImportDialog'",
+    );
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("'reticulum:saveIdentityExportDialog'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain(
       "ipcMain.handle('reticulum:showNomadContentSourceDialog'",
     );
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:setNomadContentSource'");

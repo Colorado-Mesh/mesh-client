@@ -132,10 +132,13 @@ export function ReticulumNetworkPanel({
   const [importPhrase, setImportPhrase] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [identityError, setIdentityError] = useState<string | null>(null);
+  const [identityNotice, setIdentityNotice] = useState<string | null>(null);
   const [confirmSaved, setConfirmSaved] = useState(false);
   const [exportJson, setExportJson] = useState<string | null>(null);
   const [exportPassphrase, setExportPassphrase] = useState('');
+  const [exportPassphraseConfirm, setExportPassphraseConfirm] = useState('');
   const [importBackupJson, setImportBackupJson] = useState('');
+  const [importBackupPin, setImportBackupPin] = useState('');
   const [importPrivateKey, setImportPrivateKey] = useState('');
   const [showReplaceIdentityConfirm, setShowReplaceIdentityConfirm] = useState(false);
   const [pendingReplaceAction, setPendingReplaceAction] = useState<IdentityReplaceAction | null>(
@@ -222,22 +225,85 @@ export function ReticulumNetworkPanel({
 
   const handleExportIdentity = async () => {
     const passphrase = exportPassphrase.trim();
-    if (!passphrase) {
+    const confirm = exportPassphraseConfirm.trim();
+    if (passphrase.length < 6) {
       setIdentityError(t('connectionPanel.reticulumIdentity.exportPassphraseRequired'));
       return;
     }
+    if (passphrase !== confirm) {
+      setIdentityError(t('connectionPanel.reticulumIdentity.exportPassphraseMismatch'));
+      return;
+    }
     setIdentityError(null);
+    setIdentityNotice(null);
     try {
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/export', {
         passphrase,
-      })) as { ok?: boolean; backup?: unknown; error?: string };
-      if (!res.ok) {
+      })) as { ok?: boolean; backup?: unknown; file_name?: string; error?: string };
+      if (!res.ok || res.backup == null) {
         setIdentityError(res.error ?? t('connectionPanel.reticulumIdentity.failed'));
         return;
       }
-      setExportJson(
-        typeof res.backup === 'string' ? res.backup : JSON.stringify(res.backup, null, 2),
-      );
+      const json =
+        typeof res.backup === 'string' ? res.backup : JSON.stringify(res.backup, null, 2);
+      setExportJson(json);
+      const fileName =
+        res.file_name ||
+        (typeof res.backup === 'object' &&
+        res.backup &&
+        'file_name' in res.backup &&
+        typeof (res.backup as { file_name?: unknown }).file_name === 'string'
+          ? (res.backup as { file_name: string }).file_name
+          : 'ratspeak-identity.rsi');
+      const utf8Bytes = new TextEncoder().encode(json);
+      let binary = '';
+      for (const byte of utf8Bytes) {
+        binary += String.fromCharCode(byte);
+      }
+      const saved = await window.electronAPI.reticulum.saveIdentityExportDialog({
+        defaultPath: fileName,
+        contentBase64: btoa(binary),
+      });
+      if (saved.error) {
+        setIdentityError(t('connectionPanel.reticulumIdentity.exportSaveFailed'));
+        return;
+      }
+      if (saved.path) {
+        setIdentityNotice(t('connectionPanel.reticulumIdentity.exportSaved'));
+      }
+    } catch (e) {
+      // catch-no-log-ok: export failure shown via setIdentityError
+      setIdentityError(errLikeToLogString(e));
+    }
+  };
+
+  const handleExportRawIdentity = async () => {
+    setIdentityError(null);
+    setIdentityNotice(null);
+    try {
+      const res = (await window.electronAPI.reticulum.proxyPost(
+        '/api/v1/identity/export-raw',
+        {},
+      )) as {
+        ok?: boolean;
+        raw?: { data_base64?: string; file_name?: string };
+        error?: string;
+      };
+      if (!res.ok || !res.raw?.data_base64) {
+        setIdentityError(res.error ?? t('connectionPanel.reticulumIdentity.failed'));
+        return;
+      }
+      const saved = await window.electronAPI.reticulum.saveIdentityExportDialog({
+        defaultPath: res.raw.file_name ?? 'reticulum-identity.identity',
+        contentBase64: res.raw.data_base64,
+      });
+      if (saved.error) {
+        setIdentityError(t('connectionPanel.reticulumIdentity.exportSaveFailed'));
+        return;
+      }
+      if (saved.path) {
+        setIdentityNotice(t('connectionPanel.reticulumIdentity.exportSaved'));
+      }
     } catch (e) {
       // catch-no-log-ok: export failure shown via setIdentityError
       setIdentityError(errLikeToLogString(e));
@@ -329,6 +395,11 @@ export function ReticulumNetworkPanel({
     if (!sidecarApiReady) return;
     const raw = importBackupJson.trim();
     if (!raw) return;
+    const pin = importBackupPin.trim();
+    if (pin.length < 6 && raw.includes('ratspeak.identity.v2')) {
+      setIdentityError(t('connectionPanel.reticulumIdentity.importBackupPinRequired'));
+      return;
+    }
     setIdentityError(null);
     let backup: unknown;
     try {
@@ -341,9 +412,10 @@ export function ReticulumNetworkPanel({
     try {
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/import-backup', {
         backup,
+        passphrase: pin,
         display_name: displayName.trim() || null,
         replace,
-      })) as { ok?: boolean; error?: string; metadata_only?: boolean };
+      })) as { ok?: boolean; error?: string };
       if (!res.ok) {
         if (res.error === 'identity_already_configured' && !replace) {
           setPendingReplaceAction('importBackup');
@@ -354,9 +426,26 @@ export function ReticulumNetworkPanel({
         return;
       }
       setImportBackupJson('');
+      setImportBackupPin('');
       await refreshIdentity();
     } catch (e) {
       // catch-no-log-ok: import failure shown via setIdentityError
+      setIdentityError(errLikeToLogString(e));
+    }
+  };
+
+  const handleImportBackupFromFile = async () => {
+    try {
+      const result = await window.electronAPI.reticulum.showIdentityBackupImportDialog();
+      if (!result.contentText) {
+        if (result.error === 'read_failed') {
+          setIdentityError(t('connectionPanel.reticulumIdentity.failed'));
+        }
+        return;
+      }
+      setImportBackupJson(result.contentText);
+    } catch (e) {
+      // catch-no-log-ok: dialog failure shown via setIdentityError
       setIdentityError(errLikeToLogString(e));
     }
   };
@@ -623,6 +712,11 @@ export function ReticulumNetworkPanel({
             {identityError}
           </p>
         ) : null}
+        {identityNotice ? (
+          <p className="text-readable-green mt-2 text-sm" role="status">
+            {identityNotice}
+          </p>
+        ) : null}
         {identityReady ? (
           <>
             <IdentitySlotsSection
@@ -643,12 +737,17 @@ export function ReticulumNetworkPanel({
             <IdentityConfiguredView
               identity={identity}
               exportPassphrase={exportPassphrase}
+              exportPassphraseConfirm={exportPassphraseConfirm}
               exportJson={exportJson}
               exportDisabled={!sidecarApiReady}
               saveDisabled={!sidecarApiReady}
               onExportPassphraseChange={setExportPassphrase}
+              onExportPassphraseConfirmChange={setExportPassphraseConfirm}
               onExport={() => {
                 void handleExportIdentity();
+              }}
+              onExportRaw={() => {
+                void handleExportRawIdentity();
               }}
               onSaveDisplayName={(name) => handleSaveDisplayName(name)}
             />
@@ -674,11 +773,16 @@ export function ReticulumNetworkPanel({
         <IdentityImportExtras
           disabled={identityActionsDisabled}
           importBackupJson={importBackupJson}
+          importBackupPin={importBackupPin}
           importPrivateKey={importPrivateKey}
           onImportBackupJsonChange={setImportBackupJson}
+          onImportBackupPinChange={setImportBackupPin}
           onImportPrivateKeyChange={setImportPrivateKey}
           onImportBackup={() => {
             void handleImportBackup();
+          }}
+          onImportBackupFromFile={() => {
+            void handleImportBackupFromFile();
           }}
           onImportPrivateKey={() => {
             void handleImportPrivateKey();
@@ -886,20 +990,26 @@ export function ReticulumNetworkPanel({
 function IdentityImportExtras({
   disabled,
   importBackupJson,
+  importBackupPin,
   importPrivateKey,
   onImportBackupJsonChange,
+  onImportBackupPinChange,
   onImportPrivateKeyChange,
   onImportBackup,
+  onImportBackupFromFile,
   onImportPrivateKey,
   onImportPrivateKeyFromFile,
   showReplaceHint,
 }: {
   disabled: boolean;
   importBackupJson: string;
+  importBackupPin: string;
   importPrivateKey: string;
   onImportBackupJsonChange: (v: string) => void;
+  onImportBackupPinChange: (v: string) => void;
   onImportPrivateKeyChange: (v: string) => void;
   onImportBackup: () => void;
+  onImportBackupFromFile: () => void;
   onImportPrivateKey: () => void;
   onImportPrivateKeyFromFile: () => void;
   showReplaceHint: boolean;
@@ -933,14 +1043,38 @@ function IdentityImportExtras({
           aria-label={t('connectionPanel.reticulumIdentity.importBackupLabel')}
         />
       </label>
-      <button
-        type="button"
-        disabled={disabled || !importBackupJson.trim()}
-        onClick={onImportBackup}
-        className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm hover:bg-slate-800 disabled:opacity-40"
-      >
-        {t('connectionPanel.reticulumIdentity.importBackup')}
-      </button>
+      <label className="block text-xs text-gray-400">
+        {t('connectionPanel.reticulumIdentity.importBackupPin')}
+        <input
+          type="password"
+          value={importBackupPin}
+          onChange={(e) => {
+            onImportBackupPinChange(e.target.value);
+          }}
+          disabled={disabled}
+          autoComplete="off"
+          className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm disabled:opacity-50"
+          aria-label={t('connectionPanel.reticulumIdentity.importBackupPin')}
+        />
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={disabled || !importBackupJson.trim()}
+          onClick={onImportBackup}
+          className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm hover:bg-slate-800 disabled:opacity-40"
+        >
+          {t('connectionPanel.reticulumIdentity.importBackup')}
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onImportBackupFromFile}
+          className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm hover:bg-slate-800 disabled:opacity-40"
+        >
+          {t('connectionPanel.reticulumIdentity.importBackupFromFile')}
+        </button>
+      </div>
       <label className="block text-xs text-gray-400">
         {t('connectionPanel.reticulumIdentity.importPrivateKeyLabel')}
         <p className="text-muted mt-1 text-[11px]">
@@ -1193,20 +1327,26 @@ function IdentitySlotsSection({
 function IdentityConfiguredView({
   identity,
   exportPassphrase,
+  exportPassphraseConfirm,
   exportJson,
   exportDisabled,
   saveDisabled,
   onExportPassphraseChange,
+  onExportPassphraseConfirmChange,
   onExport,
+  onExportRaw,
   onSaveDisplayName,
 }: {
   identity: ReticulumIdentityStatus | null;
   exportPassphrase: string;
+  exportPassphraseConfirm: string;
   exportJson: string | null;
   exportDisabled: boolean;
   saveDisabled: boolean;
   onExportPassphraseChange: (v: string) => void;
+  onExportPassphraseConfirmChange: (v: string) => void;
   onExport: () => void;
+  onExportRaw: () => void;
   onSaveDisplayName: (name: string) => Promise<boolean>;
 }) {
   const { t } = useTranslation();
@@ -1345,16 +1485,40 @@ function IdentityConfiguredView({
           }}
           autoComplete="new-password"
           className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200"
+          aria-label={t('connectionPanel.reticulumIdentity.exportPassphrase')}
         />
       </label>
-      <button
-        type="button"
-        disabled={exportDisabled}
-        onClick={onExport}
-        className="mt-2 rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
-      >
-        {t('connectionPanel.reticulumIdentity.export')}
-      </button>
+      <label className="mt-2 block text-xs text-gray-400">
+        {t('connectionPanel.reticulumIdentity.exportPassphraseConfirm')}
+        <input
+          type="password"
+          value={exportPassphraseConfirm}
+          onChange={(e) => {
+            onExportPassphraseConfirmChange(e.target.value);
+          }}
+          autoComplete="new-password"
+          className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200"
+          aria-label={t('connectionPanel.reticulumIdentity.exportPassphraseConfirm')}
+        />
+      </label>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={exportDisabled}
+          onClick={onExport}
+          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+        >
+          {t('connectionPanel.reticulumIdentity.export')}
+        </button>
+        <button
+          type="button"
+          disabled={exportDisabled}
+          onClick={onExportRaw}
+          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+        >
+          {t('connectionPanel.reticulumIdentity.exportRaw')}
+        </button>
+      </div>
       {exportJson ? (
         <textarea readOnly value={exportJson} rows={3} className="mt-2 w-full font-mono text-xs" />
       ) : null}

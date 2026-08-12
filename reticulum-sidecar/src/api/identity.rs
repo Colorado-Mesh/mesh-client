@@ -135,7 +135,6 @@ pub async fn identity_import_backup(
             "identity_hash": id.identity_hash,
             "lxmf_hash": id.lxmf_hash,
             "display_name": id.display_name,
-            "metadata_only": true,
         })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
@@ -164,7 +163,24 @@ pub async fn identity_export(
     Json(body): Json<ExportBody>,
 ) -> Json<serde_json::Value> {
     match stack.identity_export_backup(&body.passphrase).await {
-        Ok(backup) => Json(serde_json::json!({ "ok": true, "backup": backup })),
+        Ok(backup) => {
+            let file_name = backup
+                .get("file_name")
+                .and_then(|v| v.as_str())
+                .map(str::to_string);
+            let mut body = serde_json::json!({ "ok": true, "backup": backup });
+            if let Some(name) = file_name {
+                body["file_name"] = serde_json::Value::String(name);
+            }
+            Json(body)
+        }
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn identity_export_raw(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
+    match stack.identity_export_raw().await {
+        Ok(raw) => Json(serde_json::json!({ "ok": true, "raw": raw })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
 }

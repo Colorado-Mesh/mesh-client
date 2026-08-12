@@ -144,7 +144,19 @@ describe('ReticulumNetworkPanel', () => {
       screen.getByLabelText('connectionPanel.reticulumIdentity.importBackupLabel'),
     ).toBeInTheDocument();
     expect(
+      screen.getByLabelText('connectionPanel.reticulumIdentity.importBackupPin'),
+    ).toBeInTheDocument();
+    expect(
       screen.getByText('connectionPanel.reticulumIdentity.replaceIdentitySection'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumIdentity.export' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumIdentity.exportRaw' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('connectionPanel.reticulumIdentity.exportPassphraseConfirm'),
     ).toBeInTheDocument();
   });
 
