@@ -384,7 +384,9 @@
     "themeSaveFailed": "Kan kleurcontrolepunt niet opslaan.",
     "themeRestoreFailed": "Kan kleurcontrolepunt niet herstellen.",
     "themeResetFailed": "Kan kleuren niet resetten.",
-    "messageActionsBarBgVisible": "Achtergrond tonen"
+    "messageActionsBarBgVisible": "Achtergrond tonen",
+    "rrcUnreadAllRoomMessages": "RRC ongelezen voor alle kamerberichten",
+    "rrcUnreadAllRoomMessagesHint": "Wanneer ingeschakeld, markeert elk nieuw RRC-kamerbericht ongelezen en kan een kanaalgeluid worden afgespeeld. Schakel uit voor waarschuwingen in IRC-stijl: alleen directe berichten en @vermeldingen."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

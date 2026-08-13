@@ -384,7 +384,9 @@
     "themeSaveFailed": "Falha ao salvar o ponto de verificação de cores.",
     "themeRestoreFailed": "Falha ao restaurar o ponto de verificação de cores.",
     "themeResetFailed": "Falha ao redefinir as cores.",
-    "messageActionsBarBgVisible": "Mostrar fundo"
+    "messageActionsBarBgVisible": "Mostrar fundo",
+    "rrcUnreadAllRoomMessages": "RRC não lido para todas as mensagens da sala",
+    "rrcUnreadAllRoomMessagesHint": "Quando ativada, qualquer nova mensagem da sala RRC marca como não lida e pode reproduzir um som de canal. Desativar para alertas no estilo IRC: apenas mensagens diretas e @menções."
   },
   "aria": {
     "closeDialog": "Fechar janela",

@@ -384,7 +384,9 @@
     "themeSaveFailed": "Gagal menyimpan pos pemeriksaan warna.",
     "themeRestoreFailed": "Gagal memulihkan pos pemeriksaan warna.",
     "themeResetFailed": "Gagal mengatur ulang warna.",
-    "messageActionsBarBgVisible": "Tampilkan latar belakang"
+    "messageActionsBarBgVisible": "Tampilkan latar belakang",
+    "rrcUnreadAllRoomMessages": "RRC belum dibaca untuk semua pesan kamar",
+    "rrcUnreadAllRoomMessagesHint": "Saat aktif, setiap pesan ruang RRC baru menandai belum dibaca dan dapat memutar suara saluran. Nonaktifkan untuk peringatan bergaya IRC: hanya pesan langsung dan @mention."
   },
   "aria": {
     "closeDialog": "Tutup dialog",

@@ -384,7 +384,9 @@
     "themeSaveFailed": "カラーチェックポイントの保存に失敗しました。",
     "themeRestoreFailed": "カラーチェックポイントの復元に失敗しました。",
     "themeResetFailed": "色をリセットできませんでした。",
-    "messageActionsBarBgVisible": "背景を表示"
+    "messageActionsBarBgVisible": "背景を表示",
+    "rrcUnreadAllRoomMessages": "すべてのルームメッセージのRRC未読",
+    "rrcUnreadAllRoomMessagesHint": "オンにすると、新しいRRCルームメッセージは未読になり、チャンネルサウンドを再生できます。IRCスタイルのアラートをオフにする：ダイレクトメッセージと@メンションのみ。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

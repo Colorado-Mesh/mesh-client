@@ -384,7 +384,9 @@
     "themeSaveFailed": "Farbprüfpunkt konnte nicht gespeichert werden.",
     "themeRestoreFailed": "Farbprüfpunkt konnte nicht wiederhergestellt werden.",
     "themeResetFailed": "Farben konnten nicht zurückgesetzt werden.",
-    "messageActionsBarBgVisible": "Zeige Hintergrund"
+    "messageActionsBarBgVisible": "Zeige Hintergrund",
+    "rrcUnreadAllRoomMessages": "RRC ungelesen für alle Raumnachrichten",
+    "rrcUnreadAllRoomMessagesHint": "Wenn eingeschaltet, markiert jede neue RRC-Raumnachricht ungelesen und kann einen Kanalton wiedergeben. Deaktivieren Sie für Warnungen im IRC-Stil: nur Direktnachrichten und @Erwähnungen."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

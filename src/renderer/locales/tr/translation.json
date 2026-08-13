@@ -384,7 +384,9 @@
     "themeSaveFailed": "Renk kontrol noktası kaydedilemedi.",
     "themeRestoreFailed": "Renk kontrol noktası geri yüklenemedi.",
     "themeResetFailed": "Renkler sıfırlanamadı.",
-    "messageActionsBarBgVisible": "Arka planı göster"
+    "messageActionsBarBgVisible": "Arka planı göster",
+    "rrcUnreadAllRoomMessages": "Tüm oda mesajları için RRC okunmadı",
+    "rrcUnreadAllRoomMessagesHint": "Açık olduğunda, herhangi bir yeni RRC odası mesajı okunmadı olarak işaretlenir ve bir kanal sesi çalabilir. IRC tarzı uyarılar için kapatın: yalnızca doğrudan mesajlar ve @bahsetmeler."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

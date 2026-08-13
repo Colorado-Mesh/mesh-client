@@ -384,7 +384,9 @@
     "themeSaveFailed": "Uložení kontrolního bodu barev se nezdařilo.",
     "themeRestoreFailed": "Obnovení kontrolního bodu barev se nezdařilo.",
     "themeResetFailed": "Obnovení barev se nezdařilo.",
-    "messageActionsBarBgVisible": "Zobrazit pozadí"
+    "messageActionsBarBgVisible": "Zobrazit pozadí",
+    "rrcUnreadAllRoomMessages": "RRC nepřečteno pro všechny zprávy z místnosti",
+    "rrcUnreadAllRoomMessagesHint": "Když je zapnuto, jakákoli nová zpráva RRC místnosti označí nepřečtené a může přehrát zvuk kanálu. Vypnout pro upozornění ve stylu IRC: pouze přímé zprávy a @zmínky."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

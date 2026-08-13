@@ -384,7 +384,9 @@
     "themeSaveFailed": "Nie udało się zapisać punktu kontrolnego koloru.",
     "themeRestoreFailed": "Nie udało się przywrócić punktu kontrolnego koloru.",
     "themeResetFailed": "Nie udało się zresetować kolorów.",
-    "messageActionsBarBgVisible": "Pokaż tło"
+    "messageActionsBarBgVisible": "Pokaż tło",
+    "rrcUnreadAllRoomMessages": "Nieprzeczytany RRC dla wszystkich wiadomości w pokoju",
+    "rrcUnreadAllRoomMessagesHint": "Gdy włączone, każdy nowy komunikat pokoju RRC oznacza nieprzeczytany i może odtwarzać dźwięk kanału. Wyłącz dla alertów w stylu IRC: tylko wiadomości bezpośrednie i @wzmianki."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

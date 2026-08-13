@@ -175,6 +175,7 @@ interface AppSettings {
   use24HourTime: boolean;
   meshcoreOpenWireCompatEnabled: boolean;
   meshcorePathHashMode: 0 | 1 | 2;
+  rrcUnreadAllRoomMessages: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -302,7 +303,7 @@ export default function AppPanel({
     };
   }, [t]);
 
-  const { nodeStaleThresholdMs, nodeOfflineThresholdMs, hasReticulumInterfaceConfig } =
+  const { nodeStaleThresholdMs, nodeOfflineThresholdMs, hasReticulumInterfaceConfig, hasRrcPanel } =
     useRadioProvider(protocol);
   const isReticulumDmOnly = hasReticulumInterfaceConfig;
 
@@ -2135,6 +2136,31 @@ export default function AppPanel({
             {t('appPanel.soundNotifications')}
           </label>
         </div>
+        {hasRrcPanel && (
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="rrcUnreadAllRoomMessages"
+                checked={settings.rrcUnreadAllRoomMessages}
+                onChange={(e) => {
+                  updateSetting('rrcUnreadAllRoomMessages', e.target.checked);
+                }}
+                aria-label={t('appPanel.rrcUnreadAllRoomMessages')}
+                className="accent-brand-green h-4 w-4 rounded"
+              />
+              <label
+                htmlFor="rrcUnreadAllRoomMessages"
+                className="cursor-pointer text-sm text-gray-300"
+              >
+                {t('appPanel.rrcUnreadAllRoomMessages')}
+              </label>
+            </div>
+            <p className="text-muted pl-7 text-xs leading-relaxed">
+              {t('appPanel.rrcUnreadAllRoomMessagesHint')}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Danger Zone — collapsible; same pattern as Appearance → Color scheme */}

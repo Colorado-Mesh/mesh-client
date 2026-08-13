@@ -384,7 +384,9 @@
     "themeSaveFailed": "Échec de l'enregistrement du point de contrôle de couleur.",
     "themeRestoreFailed": "Échec de la restauration du point de contrôle des couleurs.",
     "themeResetFailed": "Impossible de réinitialiser les couleurs.",
-    "messageActionsBarBgVisible": "Afficher l'arrière-plan"
+    "messageActionsBarBgVisible": "Afficher l'arrière-plan",
+    "rrcUnreadAllRoomMessages": "RRC non lu pour tous les messages de la pièce",
+    "rrcUnreadAllRoomMessagesHint": "Lorsque cette option est activée, tout nouveau message de la salle RRC est non lu et peut lire un son de chaîne. Désactiver pour les alertes de type IRC : uniquement les messages directs et les @mentions."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

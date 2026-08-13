@@ -6,7 +6,10 @@ import {
   applyRncpReceiveDestShareFromLxmf,
   rncpReceiveDestShareSavedToastMessage,
 } from '@/renderer/lib/applyRncpReceiveDestShare';
-import { isReticulumAutostartEnabled } from '@/renderer/lib/appSettingsStorage';
+import {
+  isReticulumAutostartEnabled,
+  isRrcUnreadAllRoomMessagesEnabled,
+} from '@/renderer/lib/appSettingsStorage';
 import { BatchedRingBufferAppender } from '@/renderer/lib/batchedRingBufferAppender';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 import { loadMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
@@ -128,7 +131,7 @@ import {
 } from '@/renderer/lib/rncpLxmfControlSideEffectDedup';
 import { consumeRncpReceiveDestSharePending } from '@/renderer/lib/rncpReceiveDestSharePending';
 import { applyRrcDirectMessageRoom } from '@/renderer/lib/rrcDirectMessageRoute';
-import { isRrcRoomMuted } from '@/renderer/lib/rrcMention';
+import { isRrcRoomMuted, resolveRrcAlertType } from '@/renderer/lib/rrcMention';
 import {
   resolveRrcInboundChatRoom,
   shouldDropEmptyRrcInbound,
@@ -1244,7 +1247,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
             },
             {
               bumpUnread:
-                Boolean(view.hub) && !isRrcRoomMuted(view.hub!, room, loadMutedViews('reticulum')),
+                Boolean(view.hub) &&
+                resolveRrcAlertType({
+                  msg: { body: p.body, room, kind, dst_hash: p.dst_hash },
+                  nickname: session.nickname,
+                  notifyMode: isRrcUnreadAllRoomMessagesEnabled() ? 'all' : 'mentions',
+                  muted: isRrcRoomMuted(view.hub!, room, loadMutedViews('reticulum')),
+                }) != null,
               hubDestHash,
             },
           );
