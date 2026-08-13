@@ -11,6 +11,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Merge queue temporary refs (required when main uses a merge queue ruleset).
+  merge_group:
   workflow_dispatch:
 
 jobs:

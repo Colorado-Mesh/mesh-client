@@ -8,13 +8,14 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 | Workflow                    | Trigger                                      | Purpose                                                                         |
 | --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| `ci.yaml`                   | Push/PR to `main`                            | Lint, typecheck, build, Flatpak manifest validation                             |
-| `tests.yaml`                | Push/PR to `main`                            | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
+| `ci.yaml`                   | Push/PR/`merge_group` to `main`              | Lint, typecheck, build, Flatpak manifest validation                             |
+| `tests.yaml`                | Push/PR/`merge_group` to `main`              | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
 | `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS; not a PR gate)                 |
 | `build.yaml`                | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build (+ schema compare vs last official)           |
 | `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                       |
 | `release.yaml`              | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                     |
 | `flatpak.yaml`              | Version tags (`v*`), manual                  | Build Flatpak (+ schema compare vs last official); publish to release on tags   |
+| `cut-release.yaml`          | Manual `workflow_dispatch`                   | Optional Actions-driven `pnpm run release --yes` (needs `RELEASE_PUSH_TOKEN`)   |
 | `docs.yml`                  | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                   |
 | `third-party-licenses.yaml` | Path-filtered push to `main` + dispatch      | Regenerate `docs/third-party-licenses.md` after dependency changes              |
 
@@ -22,7 +23,7 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## CI Build (`ci.yaml`)
 
-Runs on every push and pull request to `main` (and `workflow_dispatch`):
+Runs on every push, pull request, and merge-queue `merge_group` for `main` (and `workflow_dispatch`):
 
 1. Checkout code
 2. Setup pnpm
@@ -45,7 +46,7 @@ All blocking steps must pass before a PR can be merged.
 
 ## Tests (`tests.yaml`)
 
-Runs on every push and pull request to `main`:
+Runs on every push, pull request, and merge-queue `merge_group` for `main`:
 
 1. Checkout code, setup pnpm + Node 22, install dependencies
 2. **Parallel matrix** — coverage per Vitest project (`renderer-ui`, `renderer-logic`, `main`) with blob reporter (`VITEST_COVERAGE_SHARD=1` skips per-shard threshold checks)
@@ -273,16 +274,80 @@ Note: The test results artifact upload step is automatically skipped when runnin
 
 ---
 
+## Pipeline status (issue #378)
+
+| Area                                             | Status                                                              |
+| ------------------------------------------------ | ------------------------------------------------------------------- |
+| PR lint / typecheck / build / tests              | Done (`ci.yaml`, `tests.yaml`)                                      |
+| CodeQL / CodeRabbit                              | Done (CodeQL **default setup** — PR/push/schedule; not merge-queue) |
+| Tag → draft multi-OS + Flatpak + packaging smoke | Done (`release.yaml`, `flatpak.yaml`, `build.yaml`)                 |
+| `pnpm run release` preflight + bump/tag          | Done (`scripts/release.sh`; `--yes` for non-interactive)            |
+| Manual draft **Publish** on GitHub               | Intentional (human review of artifacts)                             |
+| Dep bumps                                        | Manual (`pnpm run update`; Dependabot PRs disabled)                 |
+| Merge queue + required status checks             | Repository ruleset on `main` (see below)                            |
+| E2E                                              | Daily / `workflow_dispatch` only — **not** a merge gate             |
+
+---
+
+## Merge queue and rulesets
+
+`main` is protected by a **repository ruleset** (not classic branch protection) that:
+
+1. Requires a pull request before merging
+2. Requires a **merge queue**
+3. Requires **strict** status checks (must pass on the merge group / up-to-date tip)
+4. Blocks force-pushes and branch deletion on `main`
+
+### Required check names (always-on)
+
+Only checks that report on every PR and every `merge_group` run are required:
+
+| Check name                  | Workflow     |
+| --------------------------- | ------------ |
+| `Build & Test`              | `ci.yaml`    |
+| `Coverage (renderer-ui)`    | `tests.yaml` |
+| `Coverage (renderer-logic)` | `tests.yaml` |
+| `Coverage (main)`           | `tests.yaml` |
+| `Merge coverage`            | `tests.yaml` |
+
+**Do not** add these as required (they skip or are not PR/`merge_group` gates and would stall the queue):
+
+- `Reticulum sidecar coverage` (path-filtered)
+- `fmt + clippy` / sidecar build matrix (`reticulum-sidecar.yaml`, path-filtered)
+- CodeQL `Analyze (*)` — **default setup does not run on `merge_group`**; CodeQL still runs on PRs/pushes. Requiring it would hang the merge queue until advanced setup + `merge_group` exists.
+- E2E, packaging smoke, Flatpak, release jobs
+
+`ci.yaml` and `tests.yaml` both listen for `merge_group` so the queue’s temporary ref re-runs the same gates.
+
+### Applying / updating the ruleset
+
+Canonical JSON lives at [`.github/rulesets/main-merge-queue.json`](../.github/rulesets/main-merge-queue.json).
+
+```bash
+# Create (first time)
+gh api repos/Colorado-Mesh/mesh-client/rulesets \
+  --method POST \
+  --input .github/rulesets/main-merge-queue.json
+
+# Update (after noting the ruleset id from `gh api .../rulesets`)
+gh api repos/Colorado-Mesh/mesh-client/rulesets/RULESET_ID \
+  --method PUT \
+  --input .github/rulesets/main-merge-queue.json
+```
+
+Bypass actors: repository **Admin** role (`actor_id` 5) and the **GitHub Actions** app (`Integration` 15368) for `third-party-licenses.yaml` pushes.
+
+**Rollout:** merge the PR that adds `merge_group` triggers to `ci.yaml` / `tests.yaml` **before** flipping this ruleset to `enforcement: active`. Enabling the queue without those triggers leaves required checks pending forever.
+
+---
+
 ## Required Status Checks
 
-All PRs to `main` must pass:
+All PRs (and merge-queue groups) for `main` must pass the **required check names** listed above. Those jobs cover:
 
-- Lint (`pnpm run lint`)
-- Typecheck (`pnpm run typecheck`)
-- Build (`pnpm run build`)
-- Tests with coverage (`pnpm run test:coverage` — same as CI; `locale-quality.test.ts` runs `check:i18n` as part of the Vitest suite)
-
-Branch protection is configured to require these checks before merging.
+- Lint, format, markdown, licenses, actionlint, yamllint (`pnpm run lint` and related steps in `ci.yaml`)
+- Typecheck and build (`pnpm run typecheck`, `pnpm run build`)
+- Tests with coverage (`pnpm run test:coverage` merge — `locale-quality.test.ts` runs `check:i18n` as part of the Vitest suite)
 
 ---
 

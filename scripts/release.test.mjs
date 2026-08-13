@@ -71,7 +71,8 @@ describe('release.sh full-suite gate', () => {
   });
 
   it('supports --finish to complete a mid-release without re-bumping', () => {
-    expect(script).toMatch(/\[ "\$\{1:-\}" = "--finish" \]/);
+    expect(script).toMatch(/--finish\)/);
+    expect(script).toMatch(/FINISH_ONLY=true/);
     expect(script).toMatch(/finish_pending_release/);
     expect(script).toMatch(/pnpm run release --finish/);
     // Finish path must not re-enter full preflight / update.
@@ -80,6 +81,25 @@ describe('release.sh full-suite gate', () => {
     expect(finishBody).not.toMatch(/pnpm update\b/);
     expect(finishBody).not.toMatch(/pnpm version\b/);
     expect(finishBody).not.toMatch(/pnpm run test:run/);
+  });
+
+  it('supports --yes / MESH_CLIENT_RELEASE_YES to skip confirmation prompts', () => {
+    expect(script).toMatch(/confirm_or_yes/);
+    expect(script).toMatch(/--yes \| -y\)/);
+    expect(script).toMatch(/MESH_CLIENT_RELEASE_YES/);
+    expect(script).toMatch(/RELEASE_YES=true/);
+    // All interactive confirms go through confirm_or_yes (no bare read -r for y/N).
+    expect(script).not.toMatch(/Continue with pre-flight validation\?\$\{NC\} \[y\/N\]/);
+    expect(script).toMatch(/confirm_or_yes "Continue with pre-flight validation\?"/);
+    expect(script).toMatch(
+      /confirm_or_yes "All validations passed\. Proceed with actual release\?"/,
+    );
+  });
+
+  it('supports --skip-dep-update to skip pnpm update/dedupe', () => {
+    expect(script).toMatch(/--skip-dep-update\)/);
+    expect(script).toMatch(/SKIP_DEP_UPDATE=true/);
+    expect(script).toMatch(/Skipping pnpm update\/dedupe/);
   });
 
   it('requires actionlint and yamllint (no soft-skip)', () => {

@@ -57,18 +57,29 @@ The release script (`scripts/release.sh`) is the supported maintainer path. It:
 ```bash
 git checkout main
 git pull origin main
-pnpm run release          # auto-detect bump from commits since last tag
-pnpm run release minor    # force minor
-pnpm run release 5.21.0   # force exact version
-pnpm run release --auto   # explicit auto-detect
-pnpm run release --finish # complete a mid-release after package.json was already bumped
+pnpm run release                                  # auto-detect bump from commits since last tag
+pnpm run release minor                            # force minor
+pnpm run release 5.21.0                           # force exact version
+pnpm run release --auto                           # explicit auto-detect
+pnpm run release --finish                         # complete a mid-release after package.json was already bumped
+pnpm run release -- --yes                         # non-interactive (skip both confirmation prompts)
+pnpm run release -- --yes --skip-dep-update patch # CI-style: no pnpm update
+MESH_CLIENT_RELEASE_YES=1 pnpm run release        # same as --yes (avoids pnpm's own -y)
 ```
 
-The script prompts twice (start pre-flight, then confirm after checks pass). **Expect several minutes** for the full validation chain.
+The script prompts twice by default (start pre-flight, then confirm after checks pass). Pass **`-- --yes`** after `pnpm run release` (or set `MESH_CLIENT_RELEASE_YES=1`) to skip those prompts — useful for automation. Use `--` so pnpm does not swallow `-y`/`--yes`. **Expect several minutes** for the full validation chain.
 
 **Full suite only:** Release must never use `test:staged`, `test:changed`, or `vitest related`. Pre-commit may run a staged subset for speed; release matches PR CI by running the unrestricted `pnpm run test:run` (`vitest run`) and does not soft-skip actionlint/yamllint when those tools are missing.
 
 If pre-flight fails, fix the issue on `main` and run `pnpm run release` again — do not tag manually until checks pass.
+
+### Optional: cut release from Actions
+
+[`cut-release.yaml`](../.github/workflows/cut-release.yaml) is a **manual** `workflow_dispatch` that runs `pnpm run release --yes` on `ubuntu-latest`. Prefer local `pnpm run release --yes` for day-to-day cuts (full preflight is heavy and needs `cargo`, Flatpak tooling, etc.).
+
+**Required secret:** `RELEASE_PUSH_TOKEN` — a fine-grained PAT (or GitHub App installation token) with **contents: write** and **workflows: write**. Do **not** use the default `GITHUB_TOKEN`: pushes authenticated with it will **not** trigger `release.yaml` / `flatpak.yaml` on the new tag (GitHub recursion guard).
+
+The workflow never publishes the GitHub Release draft — maintainers still review artifacts and click **Publish**.
 
 ### Mid-release MetaInfo failure
 
