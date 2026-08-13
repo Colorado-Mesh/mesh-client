@@ -163,11 +163,21 @@ export function evaluatePnpmLicensesJson(licensesJson) {
   }
 
   for (const [license, entries] of Object.entries(licensesJson)) {
-    if (!Array.isArray(entries)) continue;
+    if (!Array.isArray(entries)) {
+      throw new Error(
+        `check:licenses: expected array for license ${JSON.stringify(license)}, got ${typeof entries}`,
+      );
+    }
     counts.set(license, entries.length);
     const allowed = isLicenseAllowed(license);
     for (const entry of entries) {
-      if (!entry || typeof entry !== 'object') continue;
+      if (!entry || typeof entry !== 'object') {
+        throw new Error(
+          `check:licenses: expected package object under ${JSON.stringify(license)}, got ${
+            entry === null ? 'null' : typeof entry
+          }`,
+        );
+      }
       const rec = /** @type {Record<string, unknown>} */ (entry);
       const name = typeof rec.name === 'string' ? rec.name : '(unknown)';
       const versions = Array.isArray(rec.versions)
@@ -235,22 +245,21 @@ export function formatLicenseCheckReport(evaluation) {
  * @returns {number}
  */
 export function runLicenseCheck() {
-  let json;
   try {
-    json = loadPnpmLicensesJson();
+    const json = loadPnpmLicensesJson();
+    const evaluation = evaluatePnpmLicensesJson(json);
+    const report = formatLicenseCheckReport(evaluation);
+    if (evaluation.violations.length > 0) {
+      process.stderr.write(report);
+      return 1;
+    }
+    process.stdout.write(report);
+    return 0;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     process.stderr.write(`${message}\n`);
     return 1;
   }
-  const evaluation = evaluatePnpmLicensesJson(json);
-  const report = formatLicenseCheckReport(evaluation);
-  if (evaluation.violations.length > 0) {
-    process.stderr.write(report);
-    return 1;
-  }
-  process.stdout.write(report);
-  return 0;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -101,6 +101,15 @@ describe('evaluatePnpmLicensesJson', () => {
     expect(report).toMatch(/disallowed license/);
     expect(report).toMatch(/GPL-3\.0: bad-pkg@2\.0\.0/);
   });
+
+  it('throws when a license group is not an array', () => {
+    expect(() => evaluatePnpmLicensesJson({ MIT: 'not-an-array' })).toThrow(/expected array/);
+  });
+
+  it('throws when a license entry is null or not an object', () => {
+    expect(() => evaluatePnpmLicensesJson({ MIT: [null] })).toThrow(/expected package object/);
+    expect(() => evaluatePnpmLicensesJson({ MIT: ['bad'] })).toThrow(/expected package object/);
+  });
 });
 
 describe('ALLOWED_LICENSE_IDS', () => {

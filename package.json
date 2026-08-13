@@ -213,7 +213,6 @@
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^29.1.1",
     "leaflet": "^1.9.4",
-    "license-checker-rseidelsohn": "^4.4.2",
     "markdownlint-cli2": "^0.22.1",
     "postcss": "^8.5.26",
     "prettier": "^3.9.6",

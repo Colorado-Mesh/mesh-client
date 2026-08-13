@@ -83,13 +83,76 @@ ${dev}
 `;
 }
 
+function defaultCheckLicenses() {
+  run(process.execPath, [path.join(ROOT, 'scripts', 'check-licenses.mjs')], { stdio: 'inherit' });
+}
+
+function defaultLoadReportTables() {
+  process.stderr.write('docs:licenses: license-report --only=prod\n');
+  const prodTable = runLicenseReportMarkdown('prod');
+  process.stderr.write('docs:licenses: license-report --only=dev\n');
+  const devTable = runLicenseReportMarkdown('dev');
+  return { prodTable, devTable };
+}
+
 /**
+ * @param {string} filePath
+ */
+function defaultFormatMarkdownFile(filePath) {
+  run('pnpm', ['exec', 'prettier', '--write', filePath], { stdio: 'inherit' });
+}
+
+/**
+ * Write markdown to a temp file next to the target, format it, then rename over the target.
+ * Leaves the existing target unchanged if formatting or rename fails.
+ *
+ * @param {string} targetPath
+ * @param {string} markdown
+ * @param {(filePath: string) => void} formatMarkdownFile
+ * @param {typeof fs} fsModule
+ */
+export function writeFormattedMarkdownAtomically(
+  targetPath,
+  markdown,
+  formatMarkdownFile,
+  fsModule = fs,
+) {
+  const targetDir = path.dirname(targetPath);
+  fsModule.mkdirSync(targetDir, { recursive: true });
+  const tmpDir = fsModule.mkdtempSync(path.join(targetDir, '.third-party-licenses-'));
+  const tmpFile = path.join(tmpDir, 'third-party-licenses.md');
+  try {
+    fsModule.writeFileSync(tmpFile, markdown, 'utf8');
+    formatMarkdownFile(tmpFile);
+    fsModule.renameSync(tmpFile, targetPath);
+  } finally {
+    fsModule.rmSync(tmpDir, { recursive: true, force: true });
+  }
+}
+
+/**
+ * @typedef {object} GenerateThirdPartyLicensesOptions
+ * @property {() => void} [checkLicenses]
+ * @property {() => { prodTable: string, devTable: string }} [loadReportTables]
+ * @property {(filePath: string) => void} [formatMarkdownFile]
+ * @property {string} [targetPath]
+ * @property {typeof fs} [fsModule]
+ */
+
+/**
+ * @param {GenerateThirdPartyLicensesOptions} [options]
  * @returns {number}
  */
-export function generateThirdPartyLicenses() {
+export function generateThirdPartyLicenses(options = {}) {
+  const checkLicenses = options.checkLicenses ?? defaultCheckLicenses;
+  const loadReportTables = options.loadReportTables ?? defaultLoadReportTables;
+  const formatMarkdownFile = options.formatMarkdownFile ?? defaultFormatMarkdownFile;
+  const targetPath = options.targetPath ?? THIRD_PARTY_LICENSES_PATH;
+  const fsModule = options.fsModule ?? fs;
+
   process.stderr.write('docs:licenses: running check:licenses\n');
   try {
-    run(process.execPath, [path.join(ROOT, 'scripts', 'check-licenses.mjs')], { stdio: 'inherit' });
+    checkLicenses();
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     process.stderr.write(`${message}\n`);
@@ -99,10 +162,7 @@ export function generateThirdPartyLicenses() {
   let prodTable;
   let devTable;
   try {
-    process.stderr.write('docs:licenses: license-report --only=prod\n');
-    prodTable = runLicenseReportMarkdown('prod');
-    process.stderr.write('docs:licenses: license-report --only=dev\n');
-    devTable = runLicenseReportMarkdown('dev');
+    ({ prodTable, devTable } = loadReportTables());
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     process.stderr.write(`${message}\n`);
@@ -110,20 +170,15 @@ export function generateThirdPartyLicenses() {
   }
 
   const markdown = buildThirdPartyLicensesMarkdown({ prodTable, devTable });
-  fs.mkdirSync(path.dirname(THIRD_PARTY_LICENSES_PATH), { recursive: true });
-  fs.writeFileSync(THIRD_PARTY_LICENSES_PATH, markdown, 'utf8');
-
   try {
-    run('pnpm', ['exec', 'prettier', '--write', 'docs/third-party-licenses.md'], {
-      stdio: 'inherit',
-    });
+    writeFormattedMarkdownAtomically(targetPath, markdown, formatMarkdownFile, fsModule);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     process.stderr.write(`${message}\n`);
     return 1;
   }
 
-  process.stderr.write(`docs:licenses: wrote ${path.relative(ROOT, THIRD_PARTY_LICENSES_PATH)}\n`);
+  process.stderr.write(`docs:licenses: wrote ${path.relative(ROOT, targetPath)}\n`);
   return 0;
 }
 

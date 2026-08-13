@@ -86,7 +86,6 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | fake-indexeddb                        | Apache-2.0      | ^6.2.5          | 6.2.5             | git://github.com/dumbmatter/fakeIndexedDB.git                                        |
 | jsdom                                 | MIT             | ^29.1.1         | 29.1.1            | git+https://github.com/jsdom/jsdom.git                                               |
 | leaflet                               | BSD-2-Clause    | ^1.9.4          | 1.9.4             | git://github.com/Leaflet/Leaflet.git                                                 |
-| license-checker-rseidelsohn           | BSD-3-Clause    | ^4.4.2          | 4.4.2             | git+https://github.com/RSeidelsohn/license-checker-rseidelsohn.git                   |
 | markdownlint-cli2                     | MIT             | ^0.22.1         | 0.22.1            | git+https://github.com/DavidAnson/markdownlint-cli2.git                              |
 | postcss                               | MIT             | ^8.5.26         | 8.5.26            | git+https://github.com/postcss/postcss.git                                           |
 | prettier                              | MIT             | ^3.9.6          | 3.9.6             | git+https://github.com/prettier/prettier.git                                         |
