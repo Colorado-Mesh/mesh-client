@@ -6,16 +6,17 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## Workflows
 
-| Workflow                 | Trigger                                      | Purpose                                                                         |
-| ------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| `ci.yaml`                | Push/PR to `main`                            | Lint, typecheck, build, Flatpak manifest validation                             |
-| `tests.yaml`             | Push/PR to `main`                            | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
-| `e2e.yaml`               | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS; not a PR gate)                 |
-| `build.yaml`             | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build (+ schema compare vs last official)           |
-| `reticulum-sidecar.yaml` | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                       |
-| `release.yaml`           | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                     |
-| `flatpak.yaml`           | Version tags (`v*`), manual                  | Build Flatpak (+ schema compare vs last official); publish to release on tags   |
-| `docs.yml`               | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                   |
+| Workflow                    | Trigger                                      | Purpose                                                                         |
+| --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
+| `ci.yaml`                   | Push/PR to `main`                            | Lint, typecheck, build, Flatpak manifest validation                             |
+| `tests.yaml`                | Push/PR to `main`                            | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
+| `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS; not a PR gate)                 |
+| `build.yaml`                | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build (+ schema compare vs last official)           |
+| `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                       |
+| `release.yaml`              | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                     |
+| `flatpak.yaml`              | Version tags (`v*`), manual                  | Build Flatpak (+ schema compare vs last official); publish to release on tags   |
+| `docs.yml`                  | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                   |
+| `third-party-licenses.yaml` | Path-filtered push to `main` + dispatch      | Regenerate `docs/third-party-licenses.md` after dependency changes              |
 
 ---
 
@@ -30,7 +31,7 @@ Runs on every push and pull request to `main` (and `workflow_dispatch`):
 5. Format check (`pnpm run format:check`)
 6. Markdown lint (`pnpm run lint:md`)
 7. Run lint (`pnpm run lint`)
-8. License check (`pnpm run check:licenses`)
+8. Audit Open Source Licenses (`pnpm run check:licenses` — SPDX allowlist via `pnpm licenses list`)
 9. actionlint (via `pnpm run setup:actionlint`)
 10. `pnpm audit --audit-level=high` (non-blocking warning)
 11. Run `yamllint` on workflow/config YAML
@@ -131,6 +132,21 @@ A matrix builds **x86_64** and **aarch64** in parallel. Both use the same privil
 On **version tag pushes**, a `publish` job waits for the Electron `prepare-github-release` draft (`ci-wait-github-draft-release.mjs`), then attaches both **clean-named** bundles with `ci-upload-release-assets.mjs` (never creates a release). aarch64 is the primary ARM Linux install path (release `build.yaml` only produces x86_64 AppImage/deb/rpm).
 
 `flatpak/generated-sources.json` is generated automatically in CI by `flatpak-node-generator` before each build — it does not need to be committed to the repo. For local builds, generate it manually; see [development-environment.md](development-environment.md) for steps. If submitting to Flathub's dedicated submission repo, the file must be committed there.
+
+---
+
+## Third-party licenses (`third-party-licenses.yaml`)
+
+After merges to `main` that change `package.json`, `pnpm-lock.yaml`, the generator script, or this workflow (and on `workflow_dispatch`):
+
+1. Checkout code
+2. Setup pnpm + Node 22
+3. Install dependencies (`pnpm install --frozen-lockfile`)
+4. Audit licenses (`pnpm run check:licenses`)
+5. Regenerate `docs/third-party-licenses.md` (`pnpm run docs:licenses`)
+6. Commit and push as `github-actions[bot]` only if the file changed
+
+Path filters omit the generated markdown so the bot commit does not retrigger the workflow. Branch protection must allow `GITHUB_TOKEN` to push to `main` (or the job will fail until that is granted).
 
 ---
 
