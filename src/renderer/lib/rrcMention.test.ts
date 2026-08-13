@@ -151,6 +151,25 @@ describe('resolveRrcAlertType', () => {
     ).toBeNull();
   });
 
+  it('does not alert on @nick hub notices', () => {
+    const hubNotice = {
+      body: 'hey @nv0n topic changed',
+      room: '#lobby',
+      kind: 'notice' as const,
+    };
+    expect(
+      resolveRrcAlertType({ msg: hubNotice, nickname: 'nv0n', notifyMode: 'all', muted: false }),
+    ).toBeNull();
+    expect(
+      resolveRrcAlertType({
+        msg: { ...hubNotice, room: '[hub]' },
+        nickname: 'nv0n',
+        notifyMode: 'mentions',
+        muted: false,
+      }),
+    ).toBeNull();
+  });
+
   it('returns null when muted even for @nick in all mode', () => {
     expect(
       resolveRrcAlertType({ msg: mention, nickname: 'nv0n', notifyMode: 'all', muted: true }),

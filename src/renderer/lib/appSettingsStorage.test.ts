@@ -72,6 +72,14 @@ describe('appSettingsStorage', () => {
     expect(isRrcUnreadAllRoomMessagesEnabled()).toBe(false);
   });
 
+  it('ignores malformed rrcUnreadAllRoomMessages string values', () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ rrcUnreadAllRoomMessages: 'false' }),
+    );
+    expect(isRrcUnreadAllRoomMessagesEnabled()).toBe(true);
+  });
+
   it('setAppSettingsRaw replaces after migrating legacy', () => {
     localStorage.setItem(LEGACY_KEY, JSON.stringify({ old: 1 }));
     setAppSettingsRaw(JSON.stringify({ fresh: 2 }));

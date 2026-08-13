@@ -110,14 +110,17 @@ export interface ResolveRrcAlertTypeArgs {
 
 /**
  * Shared badge + sound gate. Mute and IRC-style mention mode drop channel traffic;
- * hub notices never alert. DMs / @nick stay `dm` in both modes.
+ * non-direct hub notice/system/error never alert (even with @nick). Direct NOTICE
+ * whispers stay eligible. Room `msg`/`action` @nick stay `dm` in both modes.
  */
 export function resolveRrcAlertType(args: ResolveRrcAlertTypeArgs): ChatNotificationType | null {
   if (args.muted) return null;
+  if (args.msg.kind !== 'msg' && args.msg.kind !== 'action' && !isRrcDirectMessage(args.msg)) {
+    return null;
+  }
   const type = classifyRrcNotificationType(args.msg, args.nickname);
   if (!type) return null;
   if (type === 'dm') return 'dm';
-  if (args.msg.kind !== 'msg' && args.msg.kind !== 'action') return null;
   return args.notifyMode === 'all' ? 'channel' : null;
 }
 

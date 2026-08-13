@@ -77,11 +77,13 @@ export function isShareLocationSendWaypointEnabled(): boolean {
 
 /** Whether RRC badges/sounds fire for every room msg/action (false = IRC-style mention/DM). */
 export function isRrcUnreadAllRoomMessagesEnabled(): boolean {
-  const parsed = parseStoredJson<{ rrcUnreadAllRoomMessages?: boolean }>(
+  const parsed = parseStoredJson<{ rrcUnreadAllRoomMessages?: unknown }>(
     getAppSettingsRaw(),
     'isRrcUnreadAllRoomMessagesEnabled',
   );
-  return parsed?.rrcUnreadAllRoomMessages ?? DEFAULT_APP_SETTINGS_SHARED.rrcUnreadAllRoomMessages;
+  return typeof parsed?.rrcUnreadAllRoomMessages === 'boolean'
+    ? parsed.rrcUnreadAllRoomMessages
+    : DEFAULT_APP_SETTINGS_SHARED.rrcUnreadAllRoomMessages;
 }
 
 /** Whether the Reticulum sidecar should start when the Reticulum connection panel mounts. */

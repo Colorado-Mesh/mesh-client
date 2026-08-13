@@ -303,7 +303,7 @@ export default function AppPanel({
     };
   }, [t]);
 
-  const { nodeStaleThresholdMs, nodeOfflineThresholdMs, hasReticulumInterfaceConfig } =
+  const { nodeStaleThresholdMs, nodeOfflineThresholdMs, hasReticulumInterfaceConfig, hasRrcPanel } =
     useRadioProvider(protocol);
   const isReticulumDmOnly = hasReticulumInterfaceConfig;
 
@@ -2136,7 +2136,7 @@ export default function AppPanel({
             {t('appPanel.soundNotifications')}
           </label>
         </div>
-        {protocol === 'reticulum' && (
+        {hasRrcPanel && (
           <div className="space-y-1">
             <div className="flex items-center gap-3">
               <input
