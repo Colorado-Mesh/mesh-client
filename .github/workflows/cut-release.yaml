@@ -1,0 +1,124 @@
+# Optional maintainer path: cut a release from Actions.
+# Prefer local `pnpm run release --yes` when practical — full preflight needs
+# cargo, flatpak-node-generator, actionlint, and several minutes of Vitest.
+#
+# Requires repository secret RELEASE_PUSH_TOKEN (PAT / GitHub App) with
+# contents:write + workflows:write so the tag push can trigger release.yaml /
+# flatpak.yaml. Default GITHUB_TOKEN will not re-trigger those workflows.
+#
+# Does NOT publish the draft GitHub Release — review artifacts, then Publish.
+
+name: Cut release
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump (auto, patch, minor, major, or exact X.Y.Z)'
+        required: false
+        default: auto
+        type: string
+      skip_dep_update:
+        description: 'Skip pnpm update/dedupe (use when lockfile is already current)'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: cut-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Cut release (--yes)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Require RELEASE_PUSH_TOKEN
+        env:
+          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
+        run: |
+          if [ -z "${RELEASE_PUSH_TOKEN}" ]; then
+            echo '::error::Set repository secret RELEASE_PUSH_TOKEN (contents+workflows).'
+            echo 'Default GITHUB_TOKEN cannot trigger release.yaml / flatpak.yaml on tag push.'
+            echo 'Prefer local: pnpm run release --yes'
+            exit 1
+          fi
+
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PUSH_TOKEN }}
+          persist-credentials: true
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install actionlint
+        run: pnpm run setup:actionlint
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Install flatpak-node-generator
+        run: |
+          FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
+          # Keep in sync with scripts/flatpakPnpmStoreVersion.mjs FLATPAK_NODE_GENERATOR_COMMIT.
+          pip3 install --force-reinstall --no-cache-dir \
+            "${FBTOOLS}@b97a6e66f3fa46efad54738168e34e61b2b8c6f4#subdirectory=node"
+
+      - name: Install Linux build deps (sidecar / Flatpak checks)
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+
+      - name: Add actionlint to PATH
+        run: echo "${{ github.workspace }}/.githooks/bin" >> "$GITHUB_PATH"
+
+      - name: Configure git identity
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      - name: Run release (MESH_CLIENT_RELEASE_YES)
+        env:
+          MESH_CLIENT_RELEASE_YES: '1'
+        run: |
+          set -euo pipefail
+          BUMP='${{ inputs.bump }}'
+          EXTRA=()
+          if [ '${{ inputs.skip_dep_update }}' = 'true' ]; then
+            EXTRA+=(--skip-dep-update)
+          fi
+          case "$BUMP" in
+            auto|'')
+              pnpm run release -- --auto "${EXTRA[@]}"
+              ;;
+            patch|minor|major)
+              pnpm run release -- "$BUMP" "${EXTRA[@]}"
+              ;;
+            *)
+              if [[ "$BUMP" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                pnpm run release -- "$BUMP" "${EXTRA[@]}"
+              else
+                echo "::error::Invalid bump input: $BUMP"
+                exit 1
+              fi
+              ;;
+          esac
