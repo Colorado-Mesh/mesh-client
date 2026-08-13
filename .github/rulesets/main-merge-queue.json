@@ -39,11 +39,11 @@
         "strict_required_status_checks_policy": true,
         "do_not_enforce_on_create": false,
         "required_status_checks": [
-          { "context": "Build & Test" },
-          { "context": "Coverage (renderer-ui)" },
-          { "context": "Coverage (renderer-logic)" },
-          { "context": "Coverage (main)" },
-          { "context": "Merge coverage" }
+          { "context": "Build & Test", "integration_id": 15368 },
+          { "context": "Coverage (renderer-ui)", "integration_id": 15368 },
+          { "context": "Coverage (renderer-logic)", "integration_id": 15368 },
+          { "context": "Coverage (main)", "integration_id": 15368 },
+          { "context": "Merge coverage", "integration_id": 15368 }
         ]
       }
     },

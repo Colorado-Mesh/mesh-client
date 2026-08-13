@@ -1,5 +1,7 @@
 // @vitest-environment node
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -118,5 +120,95 @@ describe('release.sh full-suite gate', () => {
 
   it.each(REQUIRED_PNPM_CHECKS)('invokes pnpm run %s', (scriptName) => {
     expect(script).toContain(`pnpm run ${scriptName}`);
+  });
+
+  it('rejects --auto combined with an explicit bump (text contract)', () => {
+    expect(script).toMatch(/--auto cannot be combined with patch\|minor\|major/);
+  });
+});
+
+describe('release.sh argv subprocess', () => {
+  it('rejects --auto patch before side effects', () => {
+    const r = spawnSync('bash', [RELEASE_SH, '--auto', 'patch'], { encoding: 'utf8' });
+    expect(r.status).toBe(1);
+    expect(`${r.stdout}${r.stderr}`).toMatch(/--auto cannot be combined/);
+  });
+
+  it('PARSE_ONLY: --yes enables RELEASE_YES without prompts', () => {
+    const r = spawnSync('bash', [RELEASE_SH, '--yes', '--auto'], {
+      encoding: 'utf8',
+      env: { ...process.env, MESH_CLIENT_RELEASE_PARSE_ONLY: '1' },
+    });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toMatch(/^RELEASE_YES=true$/m);
+    expect(r.stdout).toMatch(/^AUTO_DETECT=true$/m);
+  });
+
+  it('PARSE_ONLY: --skip-dep-update sets SKIP_DEP_UPDATE', () => {
+    const r = spawnSync('bash', [RELEASE_SH, '--yes', '--skip-dep-update', 'patch'], {
+      encoding: 'utf8',
+      env: { ...process.env, MESH_CLIENT_RELEASE_PARSE_ONLY: '1' },
+    });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toMatch(/^SKIP_DEP_UPDATE=true$/m);
+    expect(r.stdout).toMatch(/^VERSION_TYPE=patch$/m);
+  });
+
+  it('skip-dep-update does not run pnpm update/dedupe (stubbed git + pnpm)', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-release-argv-'));
+    const bin = path.join(tmp, 'bin');
+    const pnpmLog = path.join(tmp, 'pnpm.log');
+    fs.mkdirSync(bin);
+    fs.writeFileSync(
+      path.join(bin, 'git'),
+      `#!/usr/bin/env bash
+set -e
+case "$*" in
+  *'rev-parse --abbrev-ref HEAD'*|*rev-parse*abbrev-ref*)
+    echo main
+    exit 0
+    ;;
+  *pull*)
+    exit 0
+    ;;
+  *'describe --tags'*|*describe*)
+    echo v9.9.9
+    exit 0
+    ;;
+  *log*)
+    echo "deadbeef feat: stub commit"
+    exit 0
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+`,
+      { mode: 0o755 },
+    );
+    fs.writeFileSync(
+      path.join(bin, 'pnpm'),
+      `#!/usr/bin/env bash
+printf '%s\\n' "$*" >> ${JSON.stringify(pnpmLog)}
+# Fail after recording so preflight cannot mutate the repo.
+exit 1
+`,
+      { mode: 0o755 },
+    );
+
+    const r = spawnSync('bash', [RELEASE_SH, '--yes', '--skip-dep-update', 'patch'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        PATH: `${bin}${path.delimiter}${process.env.PATH ?? ''}`,
+        MESH_CLIENT_RELEASE_YES: '1',
+      },
+    });
+    expect(r.status).not.toBe(0);
+    const log = fs.existsSync(pnpmLog) ? fs.readFileSync(pnpmLog, 'utf8') : '';
+    expect(log).not.toMatch(/(^|\n)update(\s|$)/);
+    expect(log).not.toMatch(/(^|\n)dedupe(\s|$)/);
+    expect(`${r.stdout}${r.stderr}`).toMatch(/Skipping pnpm update\/dedupe/);
   });
 });

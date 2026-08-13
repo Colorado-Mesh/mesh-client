@@ -304,6 +304,12 @@ if [ "$FINISH_ONLY" = true ] && { [ -n "$VERSION_TYPE" ] || [ "$AUTO_DETECT" = t
   exit 1
 fi
 
+if [ "$AUTO_DETECT" = true ] && [ -n "$VERSION_TYPE" ]; then
+  print_error "--auto cannot be combined with patch|minor|major|x.x.x."
+  print_release_usage
+  exit 1
+fi
+
 if [ "$POSITIONAL_COUNT" -gt 1 ]; then
   print_error "Specify at most one of patch|minor|major|x.x.x."
   print_release_usage
@@ -313,6 +319,16 @@ fi
 if [ "$FINISH_ONLY" = false ] && [ -z "$VERSION_TYPE" ] && [ "$AUTO_DETECT" = false ]; then
   # No bump arg and no --auto → same as historical bare `pnpm run release`.
   AUTO_DETECT=true
+fi
+
+# Test hook: dump parsed flags and exit before git/network side effects.
+if [ "${MESH_CLIENT_RELEASE_PARSE_ONLY:-}" = "1" ]; then
+  printf 'RELEASE_YES=%s\n' "$RELEASE_YES"
+  printf 'SKIP_DEP_UPDATE=%s\n' "$SKIP_DEP_UPDATE"
+  printf 'FINISH_ONLY=%s\n' "$FINISH_ONLY"
+  printf 'AUTO_DETECT=%s\n' "$AUTO_DETECT"
+  printf 'VERSION_TYPE=%s\n' "$VERSION_TYPE"
+  exit 0
 fi
 
 # 2. Ensure we are on the main branch

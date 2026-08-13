@@ -87,12 +87,15 @@ jobs:
 
       - name: Preview version bump
         id: preview
+        env:
+          BUMP_INPUT: ${{ inputs.bump }}
+          DRY_RUN_INPUT: ${{ inputs.dry_run }}
+          SKIP_DEP_UPDATE_INPUT: ${{ inputs.skip_dep_update }}
         run: |
           set -euo pipefail
           LAST_TAG=$(git describe --tags --abbrev=0)
           CURRENT=$(node -p "require('./package.json').version")
-          BUMP_INPUT='${{ inputs.bump }}'
-          case "$BUMP_INPUT" in
+          case "${BUMP_INPUT}" in
             auto|'')
               JSON=$(node scripts/detectReleaseBump.mjs --since "$LAST_TAG" --current "$CURRENT")
               BUMP=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).bump)" "$JSON")
@@ -116,7 +119,7 @@ jobs:
                 SUBJECTS=$(git log "$LAST_TAG"..HEAD --oneline | wc -l | tr -d ' ')
                 MODE=exact
               else
-                echo "::error::Invalid bump input: $BUMP_INPUT"
+                echo "::error::Invalid bump input: ${BUMP_INPUT}"
                 exit 1
               fi
               ;;
@@ -132,8 +135,8 @@ jobs:
             echo "| Detected / chosen bump | \`$BUMP\` |"
             echo "| Next version | **\`v$NEXT\`** |"
             echo "| Commits since tag | $SUBJECTS |"
-            echo "| dry_run | \`${{ inputs.dry_run }}\` |"
-            echo "| skip_dep_update | \`${{ inputs.skip_dep_update }}\` |"
+            echo "| dry_run | \`$DRY_RUN_INPUT\` |"
+            echo "| skip_dep_update | \`$SKIP_DEP_UPDATE_INPUT\` |"
           } >> "$GITHUB_STEP_SUMMARY"
           {
             echo "bump=$BUMP"
@@ -189,23 +192,24 @@ jobs:
         if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
         env:
           MESH_CLIENT_RELEASE_YES: '1'
+          RELEASE_BUMP: ${{ steps.preview.outputs.bump }}
+          SKIP_DEP_UPDATE: ${{ inputs.skip_dep_update }}
         run: |
           set -euo pipefail
-          BUMP='${{ steps.preview.outputs.bump }}'
           EXTRA=()
-          if [ '${{ inputs.skip_dep_update }}' = 'true' ]; then
+          if [ "${SKIP_DEP_UPDATE}" = 'true' ]; then
             EXTRA+=(--skip-dep-update)
           fi
-          case "$BUMP" in
+          case "${RELEASE_BUMP}" in
             patch|minor|major)
-              pnpm run release -- "$BUMP" "${EXTRA[@]}"
+              pnpm run release -- "${RELEASE_BUMP}" "${EXTRA[@]}"
               ;;
             *)
               # Exact X.Y.Z from preview (auto resolves to patch|minor|major already)
-              if [[ "$BUMP" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                pnpm run release -- "$BUMP" "${EXTRA[@]}"
+              if [[ "${RELEASE_BUMP}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                pnpm run release -- "${RELEASE_BUMP}" "${EXTRA[@]}"
               else
-                echo "::error::Unexpected bump from preview: $BUMP"
+                echo "::error::Unexpected bump from preview: ${RELEASE_BUMP}"
                 exit 1
               fi
               ;;
