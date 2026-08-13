@@ -143,6 +143,12 @@ enum InProcessDepositOutcome {
     Failed,
 }
 
+fn enqueue_router(router: &mut LxmRouter, message: LxMessage) {
+    if let Err(error) = router.try_send(message) {
+        tracing::warn!(target: "lxmf-outbound", error = %error, "router.try_send failed");
+    }
+}
+
 pub struct LxmfOutboundDriver {
     transport_tx: mpsc::Sender<TransportMessage>,
     link_delivery: LinkDeliveryManager,
@@ -554,7 +560,7 @@ impl LxmfOutboundDriver {
                     Some(prop_hex.clone()),
                 );
             }
-            router.send(message);
+            enqueue_router(router, message);
             return;
         }
         if let Some(hash) = message.hash.or(message.message_id) {
@@ -628,7 +634,7 @@ impl LxmfOutboundDriver {
                     if let Some(hash) = message.hash.or(message.message_id) {
                         self.pending_pn_targets.insert(hash, prop_hash);
                     }
-                    router.send(message);
+                    enqueue_router(router, message);
                     return;
                 }
                 Err(InProcessDepositOutcome::Failed | InProcessDepositOutcome::Completed) => {
@@ -699,7 +705,7 @@ impl LxmfOutboundDriver {
                         self.pending_pn_deposits.remove(&hash);
                         self.pending_pn_targets.insert(hash, prop_hash);
                     }
-                    router.send(message);
+                    enqueue_router(router, message);
                     return;
                 }
                 InProcessDepositOutcome::Failed => {
@@ -947,7 +953,7 @@ impl LxmfOutboundDriver {
         match plan {
             DirectDeliveryPlan::WaitForReusableLink => {
                 if !router_owned {
-                    router.send(message);
+                    enqueue_router(router, message);
                 }
             }
             DirectDeliveryPlan::RequestPath { drop_existing } => {
@@ -974,7 +980,7 @@ impl LxmfOutboundDriver {
                         message.method = DeliveryMethod::Direct;
                         message.last_delivery_attempt = now;
                         message.next_delivery_attempt = now + f64::from(PATH_REQUEST_WAIT as u32);
-                        router.send(message);
+                        enqueue_router(router, message);
                     }
                     // router_owned: message remains in pending_outbound; cleared path
                     // forces RequestPath on the next tick after Auto suppress.
@@ -993,7 +999,7 @@ impl LxmfOutboundDriver {
                         error = %err.error,
                         "direct link delivery start failed"
                     );
-                    router.send(*err.message);
+                    enqueue_router(router, *err.message);
                 }
             }
         }
@@ -1049,7 +1055,7 @@ impl LxmfOutboundDriver {
                 if try_queue_path_request(&self.transport_tx, request_hash, drop_existing, reason) {
                     self.path_request_gate.record_send(request_hash, now);
                     if !router_owned {
-                        router.send(message);
+                        enqueue_router(router, message);
                     }
                 } else {
                     self.path_request_gate
@@ -1062,13 +1068,13 @@ impl LxmfOutboundDriver {
                         );
                     }
                     if !router_owned {
-                        router.send(message);
+                        enqueue_router(router, message);
                     }
                 }
             }
             PathRequestDecision::Backoff => {
                 if !router_owned {
-                    router.send(message);
+                    enqueue_router(router, message);
                 }
             }
             PathRequestDecision::MaxAttempts => {
@@ -1269,7 +1275,7 @@ impl LxmfOutboundDriver {
             is_local = pick.is_local(),
             "LXMF advancing PN cascade"
         );
-        router.send(message);
+        enqueue_router(router, message);
         emit_outbound_status_with_via(
             event_tx,
             Some(serde_json::Value::String(hex::encode(msg_hash))),
@@ -1542,7 +1548,7 @@ impl LxmfOutboundDriver {
             Some(tried),
             Some(rounds),
         );
-        router.send(message);
+        enqueue_router(router, message);
         Ok(())
     }
 
@@ -1581,7 +1587,7 @@ impl LxmfOutboundDriver {
                 Some(hex::encode(prop_hash)),
             );
         }
-        router.send(message);
+        enqueue_router(router, message);
     }
 }
 

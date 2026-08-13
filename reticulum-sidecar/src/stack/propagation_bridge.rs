@@ -1115,8 +1115,20 @@ pub(crate) fn apply_peer_sync_terminal(
     let Some(peer) = router.peers.get_mut(&result.peer_hash) else {
         return;
     };
+    // lxmd parity: apply link/sync accounting before terminal state (Ratspeak
+    // `lxmd.rs` peer_terminal_result).
+    if let Some(rate) = result.link_establishment_rate {
+        peer.link_establishment_rate = rate;
+        peer.heard();
+    }
     match result.state {
         PeerSyncTerminalState::Complete => {
+            peer.offered = peer.offered.saturating_add(result.offered);
+            peer.outgoing = peer.outgoing.saturating_add(result.outgoing);
+            peer.tx_bytes = peer.tx_bytes.saturating_add(result.tx_bytes);
+            if let Some(rate) = result.sync_transfer_rate {
+                peer.sync_transfer_rate = rate;
+            }
             peer.sync_complete();
             if result.generation_exhausted {
                 if let Some(generation) = result.offer_generation {
@@ -1652,10 +1664,20 @@ mod tests {
                 state: PeerSyncTerminalState::Complete,
                 offer_generation: Some(5),
                 generation_exhausted: true,
+                offered: 4,
+                outgoing: 2,
+                tx_bytes: 128,
+                link_establishment_rate: Some(1234.0),
+                sync_transfer_rate: Some(56.0),
             },
         );
         let peer = router.peers.get(&peer_hash).expect("peer");
         assert_eq!(peer.state, PeerState::Idle);
+        assert_eq!(peer.offered, 4);
+        assert_eq!(peer.outgoing, 2);
+        assert_eq!(peer.tx_bytes, 128);
+        assert!((peer.link_establishment_rate - 1234.0).abs() < 1e-9);
+        assert!((peer.sync_transfer_rate - 56.0).abs() < 1e-9);
         assert!(
             !peer.needs_offer_generation(5),
             "exhausted generation must not remain due"
@@ -1705,10 +1727,19 @@ mod tests {
                 state: PeerSyncTerminalState::Failed,
                 offer_generation: Some(3),
                 generation_exhausted: false,
+                offered: 9,
+                outgoing: 9,
+                tx_bytes: 9,
+                link_establishment_rate: None,
+                sync_transfer_rate: Some(99.0),
             },
         );
         let peer = router.peers.get(&peer_hash).expect("peer");
         assert_eq!(peer.state, PeerState::Idle);
+        assert_eq!(peer.offered, 0, "failed sync must not count offered");
+        assert_eq!(peer.outgoing, 0);
+        assert_eq!(peer.tx_bytes, 0);
+        assert!(peer.sync_transfer_rate.abs() < 1e-9);
         assert!(
             peer.needs_offer_generation(3),
             "failed sync must leave generation retryable"

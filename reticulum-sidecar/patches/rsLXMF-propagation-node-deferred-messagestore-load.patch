@@ -1,9 +1,12 @@
+diff --git a/crates/lxmf-core/src/propagation_node.rs b/crates/lxmf-core/src/propagation_node.rs
+index 26a6c6f..2cdc924 100644
 --- a/crates/lxmf-core/src/propagation_node.rs
 +++ b/crates/lxmf-core/src/propagation_node.rs
-@@ -333,8 +333,21 @@
+@@ -416,9 +416,22 @@ impl PropagationNode {
+         config: PropagationNodeConfig,
          dest_hash: [u8; 16],
          storage_path: PathBuf,
-     ) -> std::io::Result<Self> {
++    ) -> std::io::Result<Self> {
 +        let mut node = Self::with_storage_unloaded(config, dest_hash, storage_path)?;
 +        node.load_messagestore_from_disk()?;
 +        Ok(node)
@@ -16,17 +19,17 @@
 +        config: PropagationNodeConfig,
 +        dest_hash: [u8; 16],
 +        storage_path: PathBuf,
-+    ) -> std::io::Result<Self> {
+     ) -> std::io::Result<Self> {
          std::fs::create_dir_all(&storage_path)?;
 -        let mut node = Self {
 +        Ok(Self {
              config,
              store: PropagationStore::new(),
              sync_sessions: HashMap::new(),
-@@ -342,9 +355,13 @@
-             storage_path: Some(storage_path),
-             last_offer_times: HashMap::new(),
+@@ -428,9 +441,13 @@ impl PropagationNode {
              offer_generation: 0,
+             pending_write_ids: HashSet::new(),
+             pending_write_bytes: 0,
 -        };
 -        node.load_from_disk()?;
 -        Ok(node)
@@ -39,4 +42,4 @@
 +        self.load_from_disk()
      }
  
-     /// Returns `true` if the message was stored, `false` on duplicate, overflow,
+     fn reserve_store_write(

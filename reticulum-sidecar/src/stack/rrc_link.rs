@@ -457,13 +457,17 @@ async fn recall_destination_public_key(
     send_msg(
         transport_tx,
         TransportMessage::Rpc {
-            query: TransportQuery::RecallDestinationPublicKey { dest: dest_hash },
+            query: TransportQuery::RecallDestination { dest: dest_hash },
             response_tx,
         },
     )
     .await?;
     match timeout(Duration::from_secs(5), response_rx).await {
-        Ok(Ok(TransportQueryResponse::PublicKeyResult(pk))) => Ok(pk),
+        Ok(Ok(TransportQueryResponse::RecalledDestination(Some(destination))))
+            if destination.dest_hash == dest_hash =>
+        {
+            Ok(Some(destination.public_key))
+        }
         Ok(Ok(_)) => Ok(None),
         Ok(Err(_)) => Err(RrcLinkError::TransportUnavailable),
         Err(_) => Err(RrcLinkError::Timeout("pubkey recall")),
@@ -635,5 +639,42 @@ mod tests {
             guard.disarm();
         }
         assert!(rx.try_recv().is_err());
+    }
+
+    #[tokio::test]
+    async fn recall_destination_public_key_uses_upstream_recall_destination() {
+        let dest_hash = [0xD4; 16];
+        let public_key = [0x42u8; 64];
+        let (transport_tx, mut transport_rx) = mpsc::channel(4);
+        let responder = tokio::spawn(async move {
+            let Some(TransportMessage::Rpc { query, response_tx }) = transport_rx.recv().await
+            else {
+                panic!("expected destination recall");
+            };
+            assert!(matches!(
+                query,
+                TransportQuery::RecallDestination { dest } if dest == dest_hash
+            ));
+            response_tx
+                .send(TransportQueryResponse::RecalledDestination(Some(
+                    rns_transport::messages::RecalledDestinationRpcEntry {
+                        dest_hash,
+                        public_key,
+                        app_data: None,
+                        ratchet: None,
+                        hops: 1,
+                        timestamp: 1.0,
+                    },
+                )))
+                .unwrap();
+        });
+
+        assert_eq!(
+            recall_destination_public_key(&transport_tx, dest_hash)
+                .await
+                .unwrap(),
+            Some(public_key)
+        );
+        responder.await.unwrap();
     }
 }
