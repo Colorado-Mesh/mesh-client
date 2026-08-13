@@ -102,6 +102,13 @@ describe('release.sh full-suite gate', () => {
     expect(script).toMatch(/Skipping pnpm update\/dedupe/);
   });
 
+  it('delegates conventional bump detection to detectReleaseBump.mjs (scoped feats)', () => {
+    expect(script).toMatch(/detectReleaseBump\.mjs/);
+    expect(script).toMatch(/detect_version_bump/);
+    // Historical bug: unscoped-only feat: regex missed feat(scope):
+    expect(script).not.toMatch(/\^feat\[\[:space:\]\]\*:/);
+  });
+
   it('requires actionlint and yamllint (no soft-skip)', () => {
     expect(script).toMatch(/actionlint not found/);
     expect(script).toMatch(/yamllint not found/);

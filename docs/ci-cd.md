@@ -15,7 +15,7 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 | `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                       |
 | `release.yaml`              | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                     |
 | `flatpak.yaml`              | Version tags (`v*`), manual                  | Build Flatpak (+ schema compare vs last official); publish to release on tags   |
-| `cut-release.yaml`          | Manual `workflow_dispatch`                   | Optional Actions-driven `pnpm run release --yes` (needs `RELEASE_PUSH_TOKEN`)   |
+| `cut-release.yaml`          | Manual `workflow_dispatch`                   | **Primary** release cut in Actions (needs admin `RELEASE_PUSH_TOKEN`)           |
 | `docs.yml`                  | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                   |
 | `third-party-licenses.yaml` | Path-filtered push to `main` + dispatch      | Regenerate `docs/third-party-licenses.md` after dependency changes              |
 

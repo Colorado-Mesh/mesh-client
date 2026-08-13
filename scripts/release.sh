@@ -231,8 +231,8 @@ EOF
 
   echo ""
   echo "### Breaking Changes"
-  if printf '%s\n' "$commit_logs" | grep -qE "(BREAKING CHANGE|!)"; then
-    printf '%s\n' "$commit_logs" | grep -E "(BREAKING CHANGE|!)" | sed 's/^/* /'
+  if printf '%s\n' "$commit_logs" | grep -qE "(BREAKING CHANGE:|^\* [^:]+!:)"; then
+    printf '%s\n' "$commit_logs" | grep -E "(BREAKING CHANGE:|^\* [^:]+!:)" | sed 's/^/* /'
   else
     echo "*(None)*"
   fi
@@ -246,46 +246,15 @@ EOF
   echo "-> Copy the text above and paste it into your GitHub Release"
 }
 
-# Function to detect version bump from conventional commits
+# Function to detect version bump from conventional commits (scoped + unscoped).
+# Implementation lives in scripts/detectReleaseBump.mjs (unit-tested) so squash
+# titles like feat(rrc): … count as minor — the old bash regex missed scopes.
 detect_version_bump() {
   local last_tag="$1"
-  local commits
-  commits=$(git log "$last_tag"..HEAD --pretty=format:"%s%n%b" 2> /dev/null || echo "")
-
-  if [ -z "$commits" ]; then
-    echo "none"
-    return
-  fi
-
-  local has_breaking=false
-  local has_feat=false
-  local has_other=false
-
-  if echo "$commits" | grep -q "BREAKING CHANGE:"; then
-    has_breaking=true
-  fi
-
-  if echo "$commits" | grep -qE "^(feat|fix|chore|docs|refactor|test|style|perf|build|ci)!:"; then
-    has_breaking=true
-  fi
-
-  if echo "$commits" | grep -qE "^feat[[:space:]]*:"; then
-    has_feat=true
-  fi
-
-  if echo "$commits" | grep -qE "^(feat|fix|chore|docs|refactor|test|style|perf|build|ci)[[:space:]]*:"; then
-    has_other=true
-  fi
-
-  if [ "$has_breaking" = true ]; then
-    echo "major"
-  elif [ "$has_feat" = true ]; then
-    echo "minor"
-  elif [ "$has_other" = true ]; then
-    echo "patch"
-  else
-    echo "patch"
-  fi
+  local current
+  current=$(read_package_version)
+  node scripts/detectReleaseBump.mjs --since "$last_tag" --current "$current" \
+    | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const j=JSON.parse(s);process.stdout.write(j.bump);});"
 }
 
 # 1. Parse version / finish / non-interactive flags (order-independent).
