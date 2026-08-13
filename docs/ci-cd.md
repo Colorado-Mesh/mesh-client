@@ -8,8 +8,8 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 | Workflow                    | Trigger                                      | Purpose                                                                         |
 | --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| `ci.yaml`                   | Push/PR/`merge_group` to `main`              | Lint, typecheck, build, Flatpak manifest validation                             |
-| `tests.yaml`                | Push/PR/`merge_group` to `main`              | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
+| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`    | Lint, typecheck, build, Flatpak manifest validation                             |
+| `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`    | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
 | `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS; not a PR gate)                 |
 | `build.yaml`                | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build (+ schema compare vs last official)           |
 | `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                       |
@@ -294,9 +294,10 @@ Note: The test results artifact upload step is automatically skipped when runnin
 `main` is protected by a **repository ruleset** (not classic branch protection) that:
 
 1. Requires a pull request before merging
-2. Requires a **merge queue**
-3. Requires **strict** status checks (must pass on the merge group / up-to-date tip)
-4. Blocks force-pushes and branch deletion on `main`
+2. Requires **at least one approving review** before the merge queue
+3. Requires a **merge queue**
+4. Requires **strict** status checks (must pass on the merge group / up-to-date tip)
+5. Blocks force-pushes and branch deletion on `main`
 
 ### Required check names (always-on)
 
@@ -309,6 +310,8 @@ Only checks that report on every PR and every `merge_group` run are required:
 | `Coverage (renderer-logic)` | `tests.yaml` |
 | `Coverage (main)`           | `tests.yaml` |
 | `Merge coverage`            | `tests.yaml` |
+
+Each required check is pinned with `integration_id` **15368** (GitHub Actions) in [`.github/rulesets/main-merge-queue.json`](../.github/rulesets/main-merge-queue.json).
 
 **Do not** add these as required (they skip or are not PR/`merge_group` gates and would stall the queue):
 
@@ -348,7 +351,7 @@ All PRs (and merge-queue groups) for `main` must pass the **required check names
 
 - Lint, format, markdown, licenses, actionlint, yamllint (`pnpm run lint` and related steps in `ci.yaml`)
 - Typecheck and build (`pnpm run typecheck`, `pnpm run build`)
-- Tests with coverage (`pnpm run test:coverage` merge — `locale-quality.test.ts` runs `check:i18n` as part of the Vitest suite)
+- Tests with coverage (`pnpm run test:coverage:merge` — `locale-quality.test.ts` runs `check:i18n` as part of the Vitest suite)
 
 ---
 
