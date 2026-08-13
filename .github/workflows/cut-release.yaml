@@ -1,12 +1,16 @@
-# Optional maintainer path: cut a release from Actions.
-# Prefer local `pnpm run release --yes` when practical — full preflight needs
-# cargo, flatpak-node-generator, actionlint, and several minutes of Vitest.
+# Primary maintainer path: cut a release from Actions.
 #
-# Requires repository secret RELEASE_PUSH_TOKEN (PAT / GitHub App) with
-# contents:write + workflows:write so the tag push can trigger release.yaml /
-# flatpak.yaml. Default GITHUB_TOKEN will not re-trigger those workflows.
+# Requires repository secret RELEASE_PUSH_TOKEN — a PAT (or GitHub App token)
+# owned by a repo **admin** (so the main merge-queue ruleset bypass applies)
+# with contents:write + workflows:write. Default GITHUB_TOKEN will not trigger
+# release.yaml / flatpak.yaml on the tag push (GitHub recursion guard).
 #
-# Does NOT publish the draft GitHub Release — review artifacts, then Publish.
+# Does NOT publish the GitHub Release draft — review artifacts, then Publish.
+#
+# Version bump: default `auto` uses scripts/detectReleaseBump.mjs (scoped
+# Conventional Commits: feat(scope): → minor). Override with patch|minor|major
+# or an exact X.Y.Z. Dep bumps stay on separate PRs (`pnpm run update`); this
+# workflow defaults to --skip-dep-update.
 
 name: Cut release
 
@@ -21,10 +25,15 @@ on:
         required: false
         default: auto
         type: string
-      skip_dep_update:
-        description: 'Skip pnpm update/dedupe (use when lockfile is already current)'
+      dry_run:
+        description: 'Preview auto/computed version only — do not bump, tag, or push'
         required: false
         default: false
+        type: boolean
+      skip_dep_update:
+        description: 'Skip pnpm update/dedupe (recommended; bump deps in a prior PR)'
+        required: false
+        default: true
         type: boolean
 
 concurrency:
@@ -33,19 +42,20 @@ concurrency:
 
 jobs:
   release:
-    name: Cut release (--yes)
+    name: Cut release
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Require RELEASE_PUSH_TOKEN
+      - name: Require RELEASE_PUSH_TOKEN (unless dry-run)
+        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
         env:
           RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
         run: |
           if [ -z "${RELEASE_PUSH_TOKEN}" ]; then
-            echo '::error::Set repository secret RELEASE_PUSH_TOKEN (contents+workflows).'
-            echo 'Default GITHUB_TOKEN cannot trigger release.yaml / flatpak.yaml on tag push.'
-            echo 'Prefer local: pnpm run release --yes'
+            echo '::error::Set repository secret RELEASE_PUSH_TOKEN (admin PAT: contents+workflows).'
+            echo 'Default GITHUB_TOKEN cannot trigger release.yaml / flatpak.yaml on tag push,'
+            echo 'and cannot bypass the main merge-queue ruleset.'
             exit 1
           fi
 
@@ -54,7 +64,11 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_PUSH_TOKEN }}
+          # dry_run uses GITHUB_TOKEN; real cuts need admin RELEASE_PUSH_TOKEN.
+          token: >-
+            ${{ (inputs.dry_run == true || inputs.dry_run == 'true')
+              && github.token
+              || secrets.RELEASE_PUSH_TOKEN }}
           persist-credentials: true
 
       - name: Setup pnpm
@@ -67,57 +81,131 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
+        # dry_run only needs the detect script + package.json; still install so
+        # node_modules layout matches (detect has no deps beyond node builtins).
         run: pnpm install --frozen-lockfile
 
+      - name: Preview version bump
+        id: preview
+        run: |
+          set -euo pipefail
+          LAST_TAG=$(git describe --tags --abbrev=0)
+          CURRENT=$(node -p "require('./package.json').version")
+          BUMP_INPUT='${{ inputs.bump }}'
+          case "$BUMP_INPUT" in
+            auto|'')
+              JSON=$(node scripts/detectReleaseBump.mjs --since "$LAST_TAG" --current "$CURRENT")
+              BUMP=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).bump)" "$JSON")
+              NEXT=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).nextVersion)" "$JSON")
+              SUBJECTS=$(node -e "process.stdout.write(String(JSON.parse(process.argv[1]).subjectCount))" "$JSON")
+              MODE=auto
+              ;;
+            patch|minor|major)
+              BUMP=$BUMP_INPUT
+              NEXT=$(node --input-type=module -e "
+                import { previewNextVersion } from './scripts/detectReleaseBump.mjs';
+                process.stdout.write(previewNextVersion(process.argv[1], process.argv[2]));
+              " "$CURRENT" "$BUMP")
+              SUBJECTS=$(git log "$LAST_TAG"..HEAD --oneline | wc -l | tr -d ' ')
+              MODE=manual
+              ;;
+            *)
+              if [[ "$BUMP_INPUT" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                BUMP=$BUMP_INPUT
+                NEXT=$BUMP_INPUT
+                SUBJECTS=$(git log "$LAST_TAG"..HEAD --oneline | wc -l | tr -d ' ')
+                MODE=exact
+              else
+                echo "::error::Invalid bump input: $BUMP_INPUT"
+                exit 1
+              fi
+              ;;
+          esac
+          {
+            echo "## Cut release preview"
+            echo ""
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| Last tag | \`$LAST_TAG\` |"
+            echo "| Current package.json | \`$CURRENT\` |"
+            echo "| Mode | \`$MODE\` (input=\`$BUMP_INPUT\`) |"
+            echo "| Detected / chosen bump | \`$BUMP\` |"
+            echo "| Next version | **\`v$NEXT\`** |"
+            echo "| Commits since tag | $SUBJECTS |"
+            echo "| dry_run | \`${{ inputs.dry_run }}\` |"
+            echo "| skip_dep_update | \`${{ inputs.skip_dep_update }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "bump=$BUMP"
+            echo "next=$NEXT"
+            echo "last_tag=$LAST_TAG"
+          } >> "$GITHUB_OUTPUT"
+          echo "Preview: $LAST_TAG → v$NEXT (bump=$BUMP, mode=$MODE)"
+
+      - name: Stop after dry-run preview
+        if: ${{ inputs.dry_run == true || inputs.dry_run == 'true' }}
+        run: |
+          echo "dry_run=true — not bumping or tagging."
+          echo "Re-run with dry_run unchecked to cut v${{ steps.preview.outputs.next }}."
+
       - name: Install actionlint
+        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
         run: pnpm run setup:actionlint
 
       - name: Install yamllint
+        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
         run: pip install yamllint
 
       - name: Install flatpak-node-generator
+        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
         run: |
-          FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
-          # Keep in sync with scripts/flatpakPnpmStoreVersion.mjs FLATPAK_NODE_GENERATOR_COMMIT.
+          # Keep pin in sync with scripts/flatpakPnpmStoreVersion.mjs FLATPAK_NODE_GENERATOR_COMMIT.
+          COMMIT=$(node --input-type=module -e "
+            import { FLATPAK_NODE_GENERATOR_COMMIT } from './scripts/flatpakPnpmStoreVersion.mjs';
+            process.stdout.write(FLATPAK_NODE_GENERATOR_COMMIT);
+          ")
           pip3 install --force-reinstall --no-cache-dir \
-            "${FBTOOLS}@b97a6e66f3fa46efad54738168e34e61b2b8c6f4#subdirectory=node"
+            "git+https://github.com/flatpak/flatpak-builder-tools@${COMMIT}#subdirectory=node"
 
       - name: Install Linux build deps (sidecar / Flatpak checks)
+        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
         run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
 
       - name: Setup Rust
+        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
         uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
 
       - name: Add actionlint to PATH
+        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
         run: echo "${{ github.workspace }}/.githooks/bin" >> "$GITHUB_PATH"
 
       - name: Configure git identity
+        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 
       - name: Run release (MESH_CLIENT_RELEASE_YES)
+        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
         env:
           MESH_CLIENT_RELEASE_YES: '1'
         run: |
           set -euo pipefail
-          BUMP='${{ inputs.bump }}'
+          BUMP='${{ steps.preview.outputs.bump }}'
           EXTRA=()
           if [ '${{ inputs.skip_dep_update }}' = 'true' ]; then
             EXTRA+=(--skip-dep-update)
           fi
           case "$BUMP" in
-            auto|'')
-              pnpm run release -- --auto "${EXTRA[@]}"
-              ;;
             patch|minor|major)
               pnpm run release -- "$BUMP" "${EXTRA[@]}"
               ;;
             *)
+              # Exact X.Y.Z from preview (auto resolves to patch|minor|major already)
               if [[ "$BUMP" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
                 pnpm run release -- "$BUMP" "${EXTRA[@]}"
               else
-                echo "::error::Invalid bump input: $BUMP"
+                echo "::error::Unexpected bump from preview: $BUMP"
                 exit 1
               fi
               ;;
