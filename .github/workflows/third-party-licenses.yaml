@@ -5,6 +5,7 @@ env:
 
 permissions:
   contents: write
+  pull-requests: write
 
 on:
   push:
@@ -22,8 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
@@ -43,17 +42,20 @@ jobs:
       - name: Generate third-party licenses
         run: pnpm run docs:licenses
 
-      - name: Commit license report
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/third-party-licenses.md
-          if git diff --cached --quiet; then
-            echo 'No third-party license changes'
-            exit 0
-          fi
-          git commit -m 'docs: update third-party licenses'
-          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
-            "HEAD:${GITHUB_REF_NAME}"
+      # Open a PR instead of pushing to main — the merge-queue ruleset blocks
+      # direct pushes, and GitHub Actions cannot be added as a bypass actor
+      # on this org (“must be part of the ruleset source or owner organization”).
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
+        with:
+          commit-message: 'docs: update third-party licenses'
+          title: 'docs: update third-party licenses'
+          body: |
+            Regenerated `docs/third-party-licenses.md` after dependency changes.
+
+            Opened automatically by `third-party-licenses.yaml` (direct pushes to
+            `main` are blocked by the merge-queue ruleset).
+          branch: chore/third-party-licenses
+          delete-branch: true
+          add-paths: |
+            docs/third-party-licenses.md

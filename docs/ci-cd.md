@@ -145,9 +145,9 @@ After merges to `main` that change `package.json`, `pnpm-lock.yaml`, the generat
 3. Install dependencies (`pnpm install --frozen-lockfile`)
 4. Audit licenses (`pnpm run check:licenses`)
 5. Regenerate `docs/third-party-licenses.md` (`pnpm run docs:licenses`)
-6. Commit and push as `github-actions[bot]` only if the file changed
+6. Open a PR via `peter-evans/create-pull-request` when the file changed (branch `chore/third-party-licenses`)
 
-Path filters omit the generated markdown so the bot commit does not retrigger the workflow. Branch protection must allow `GITHUB_TOKEN` to push to `main` (or the job will fail until that is granted).
+Direct pushes to `main` are blocked by the merge-queue ruleset, and GitHub Actions cannot bypass it on this org — hence the PR flow.
 
 ---
 
@@ -284,7 +284,7 @@ Note: The test results artifact upload step is automatically skipped when runnin
 | `pnpm run release` preflight + bump/tag          | Done (`scripts/release.sh`; `--yes` for non-interactive)            |
 | Manual draft **Publish** on GitHub               | Intentional (human review of artifacts)                             |
 | Dep bumps                                        | Manual (`pnpm run update`; Dependabot PRs disabled)                 |
-| Merge queue + required status checks             | Repository ruleset on `main` (see below)                            |
+| Merge queue + required status checks             | Done (ruleset **20821455** on `main`; see below)                    |
 | E2E                                              | Daily / `workflow_dispatch` only — **not** a merge gate             |
 
 ---
@@ -319,23 +319,24 @@ Only checks that report on every PR and every `merge_group` run are required:
 
 `ci.yaml` and `tests.yaml` both listen for `merge_group` so the queue’s temporary ref re-runs the same gates.
 
+### Bypass actors
+
+- **Repository admins** (`RepositoryRole` id 5) — emergency hotfixes and local `pnpm run release` (direct push of bump commit + tag to `main`)
+
+GitHub Actions **cannot** be added as a bypass actor on this organization (“must be part of the ruleset source or owner organization”). [`third-party-licenses.yaml`](../.github/workflows/third-party-licenses.yaml) therefore opens a PR instead of pushing to `main`.
+
 ### Applying / updating the ruleset
 
-Canonical JSON lives at [`.github/rulesets/main-merge-queue.json`](../.github/rulesets/main-merge-queue.json).
+Canonical JSON lives at [`.github/rulesets/main-merge-queue.json`](../.github/rulesets/main-merge-queue.json) (live ruleset id **20821455**).
 
 ```bash
-# Create (first time)
-gh api repos/Colorado-Mesh/mesh-client/rulesets \
-  --method POST \
-  --input .github/rulesets/main-merge-queue.json
-
-# Update (after noting the ruleset id from `gh api .../rulesets`)
-gh api repos/Colorado-Mesh/mesh-client/rulesets/RULESET_ID \
+# Update
+gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
   --method PUT \
   --input .github/rulesets/main-merge-queue.json
 ```
 
-Bypass actors: repository **Admin** role (`actor_id` 5) and the **GitHub Actions** app (`Integration` 15368) for `third-party-licenses.yaml` pushes.
+`gh api --input` can hit HTTP/2 content-length issues on create; if that fails, POST the JSON body with Python `urllib` (same payload).
 
 **Rollout:** merge the PR that adds `merge_group` triggers to `ci.yaml` / `tests.yaml` **before** flipping this ruleset to `enforcement: active`. Enabling the queue without those triggers leaves required checks pending forever.
 

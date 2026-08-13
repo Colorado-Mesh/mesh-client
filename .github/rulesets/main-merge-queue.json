@@ -13,11 +13,6 @@
       "actor_id": 5,
       "actor_type": "RepositoryRole",
       "bypass_mode": "always"
-    },
-    {
-      "actor_id": 15368,
-      "actor_type": "Integration",
-      "bypass_mode": "always"
     }
   ],
   "rules": [
@@ -31,7 +26,7 @@
       "type": "pull_request",
       "parameters": {
         "required_approving_review_count": 0,
-        "dismiss_stale_reviews": false,
+        "dismiss_stale_reviews_on_push": false,
         "require_code_owner_review": false,
         "require_last_push_approval": false,
         "required_review_thread_resolution": false,
