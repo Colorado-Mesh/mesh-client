@@ -1652,6 +1652,11 @@ mod tests {
         let peer_hash = [0x11u8; 16];
         let mut router = LxmRouter::new(RouterConfig::default());
         let mut peer = LxmPeer::new(peer_hash);
+        peer.offered = 10;
+        peer.outgoing = 3;
+        peer.tx_bytes = 50;
+        peer.link_establishment_rate = 100.0;
+        peer.sync_transfer_rate = 20.0;
         peer.begin_sync();
         assert_ne!(peer.state, PeerState::Idle);
         router.peers.insert(peer_hash, peer);
@@ -1673,9 +1678,9 @@ mod tests {
         );
         let peer = router.peers.get(&peer_hash).expect("peer");
         assert_eq!(peer.state, PeerState::Idle);
-        assert_eq!(peer.offered, 4);
-        assert_eq!(peer.outgoing, 2);
-        assert_eq!(peer.tx_bytes, 128);
+        assert_eq!(peer.offered, 14);
+        assert_eq!(peer.outgoing, 5);
+        assert_eq!(peer.tx_bytes, 178);
         assert!((peer.link_establishment_rate - 1234.0).abs() < 1e-9);
         assert!((peer.sync_transfer_rate - 56.0).abs() < 1e-9);
         assert!(
@@ -1716,6 +1721,11 @@ mod tests {
         let peer_hash = [0x22u8; 16];
         let mut router = LxmRouter::new(RouterConfig::default());
         let mut peer = LxmPeer::new(peer_hash);
+        peer.offered = 7;
+        peer.outgoing = 3;
+        peer.tx_bytes = 11;
+        peer.link_establishment_rate = 88.0;
+        peer.sync_transfer_rate = 12.0;
         peer.begin_sync();
         router.peers.insert(peer_hash, peer);
 
@@ -1736,10 +1746,11 @@ mod tests {
         );
         let peer = router.peers.get(&peer_hash).expect("peer");
         assert_eq!(peer.state, PeerState::Idle);
-        assert_eq!(peer.offered, 0, "failed sync must not count offered");
-        assert_eq!(peer.outgoing, 0);
-        assert_eq!(peer.tx_bytes, 0);
-        assert!(peer.sync_transfer_rate.abs() < 1e-9);
+        assert_eq!(peer.offered, 7, "failed sync must not count offered");
+        assert_eq!(peer.outgoing, 3);
+        assert_eq!(peer.tx_bytes, 11);
+        assert!((peer.link_establishment_rate - 88.0).abs() < 1e-9);
+        assert!((peer.sync_transfer_rate - 12.0).abs() < 1e-9);
         assert!(
             peer.needs_offer_generation(3),
             "failed sync must leave generation retryable"

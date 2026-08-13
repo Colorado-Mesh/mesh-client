@@ -26,9 +26,26 @@ const LXMF_ABORT_PATCH = path.join(
   'reticulum-sidecar/patches/rsLXMF-propagation-client-abort-transfer.patch',
 );
 
-const ALREADY_PRESENT = `impl LinkClient {
-    async fn discover_remote_public_key() {}
-    fn gc_closed_announce_handlers() {}
+const GIT_TEST_ENV = {
+  ...process.env,
+  GIT_CONFIG_NOSYSTEM: '1',
+  GIT_CONFIG_GLOBAL: '/dev/null',
+};
+
+/** Marker fallback: recall + GC semantics without matching the exact patch hunks. */
+const MARKER_FALLBACK = `impl LinkClient {
+    async fn discover_remote_public_key() {
+        match self.transport_query(TransportQuery::RecallDestination { dest: dest_hash }).await? {
+            TransportQueryResponse::RecalledDestination(Some(destination)) => destination.public_key,
+            _ => return Err(LinkClientError::PubkeyNotDiscovered),
+        };
+        await_path(&self.transport_tx, dest_hash, PATH_LOOKUP_TIMEOUT).await?;
+    }
+    fn gc_closed_announce_handlers() {
+        let _ = self.transport_tx.try_send(TransportMessage::DeregisterAnnounceHandler {
+            aspect_filter: None,
+        });
+    }
 }
 const PATH_LOOKUP_TIMEOUT: Duration = Duration::from_secs(15);
 `;
@@ -40,18 +57,93 @@ const INCOMPATIBLE = `impl LinkClient {
 
 const temps = [];
 
+function git(cwd, args) {
+  return spawnSync('git', args, {
+    cwd,
+    encoding: 'utf8',
+    env: GIT_TEST_ENV,
+  });
+}
+
+function parseUnifiedHunkHeader(line) {
+  if (!line.startsWith('@@ -')) {
+    return null;
+  }
+  const close = line.indexOf(' @@', 4);
+  if (close < 0) {
+    return null;
+  }
+  const [oldSpec, newSpec] = line.slice(4, close).split(' +');
+  if (!oldSpec || !newSpec) {
+    return null;
+  }
+  const oldStart = Number(oldSpec.split(',')[0]);
+  const newStart = Number(newSpec.split(',')[0]);
+  if (!Number.isInteger(oldStart) || !Number.isInteger(newStart)) {
+    return null;
+  }
+  return { oldStart, newStart };
+}
+
+function materializeLinkClientFromPatch(patchText, side) {
+  const lines = [];
+  const patchLines = patchText.replace(/\n$/, '').split('\n');
+  let i = 0;
+  while (i < patchLines.length && !patchLines[i].startsWith('@@ ')) {
+    i += 1;
+  }
+  while (i < patchLines.length) {
+    const hunk = parseUnifiedHunkHeader(patchLines[i]);
+    if (!hunk) {
+      i += 1;
+      continue;
+    }
+    const start = side === 'old' ? hunk.oldStart : hunk.newStart;
+    while (lines.length < start - 1) {
+      lines.push(`// overlay-fixture-pad ${lines.length + 1}`);
+    }
+    i += 1;
+    while (i < patchLines.length && !patchLines[i].startsWith('@@ ')) {
+      const line = patchLines[i];
+      if (line.startsWith('\\')) {
+        i += 1;
+        continue;
+      }
+      if (
+        line.startsWith('diff ') ||
+        line.startsWith('index ') ||
+        line.startsWith('--- ') ||
+        line.startsWith('+++ ')
+      ) {
+        break;
+      }
+      const tag = line[0];
+      const body = line.slice(1);
+      if (tag === ' ') {
+        lines.push(body);
+      } else if (tag === '-' && side === 'old') {
+        lines.push(body);
+      } else if (tag === '+' && side === 'new') {
+        lines.push(body);
+      }
+      i += 1;
+    }
+  }
+  return `${lines.join('\n')}\n`;
+}
+
 function makeFakeRsReticulum(linkClientSource) {
   const root = mkdtempSync(path.join(os.tmpdir(), 'mesh-link-client-nomad-rns-'));
   temps.push(root);
   const linkClientPath = path.join(root, 'crates/rns-runtime/src/link_client.rs');
   mkdirSync(path.dirname(linkClientPath), { recursive: true });
   writeFileSync(linkClientPath, linkClientSource);
-  const gitInit = spawnSync('git', ['init'], { cwd: root, encoding: 'utf8' });
+  const gitInit = git(root, ['init']);
   expect(gitInit.status).toBe(0);
-  spawnSync('git', ['config', 'user.email', 'test@example.com'], { cwd: root });
-  spawnSync('git', ['config', 'user.name', 'test'], { cwd: root });
-  spawnSync('git', ['add', '.'], { cwd: root });
-  const commit = spawnSync('git', ['commit', '-m', 'init'], { cwd: root, encoding: 'utf8' });
+  git(root, ['config', 'user.email', 'test@example.com']);
+  git(root, ['config', 'user.name', 'test']);
+  git(root, ['add', '.']);
+  const commit = git(root, ['commit', '-m', 'init']);
   expect(commit.status).toBe(0);
   return root;
 }
@@ -60,7 +152,7 @@ function runApply(rnsDir) {
   return spawnSync('bash', [APPLY_SCRIPT], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
-    env: { ...process.env, RS_RETICULUM_DIR: rnsDir },
+    env: { ...GIT_TEST_ENV, RS_RETICULUM_DIR: rnsDir },
   });
 }
 
@@ -83,11 +175,15 @@ describe('apply-rsReticulum-link-client-nomad.sh', () => {
     expect(rrcLink).not.toContain('PublicKeyResult');
   });
 
-  it('uses LinkClient markers, not the retired RecallDestinationPublicKey RPC', () => {
+  it('uses LinkClient recall/GC semantics, not the retired RecallDestinationPublicKey RPC', () => {
     const applyScript = readFileSync(APPLY_SCRIPT, 'utf8');
     expect(applyScript).toContain('discover_remote_public_key');
     expect(applyScript).toContain('gc_closed_announce_handlers');
     expect(applyScript).toContain('PATH_LOOKUP_TIMEOUT');
+    expect(applyScript).toContain('TransportQuery::RecallDestination');
+    expect(applyScript).toContain('await_path\\(');
+    expect(applyScript).toContain('aspect_filter: None');
+    expect(applyScript).toContain('TransportQuery::HasPath');
     expect(applyScript).not.toContain('RecallDestinationPublicKey');
     expect(applyScript).not.toContain('MESSAGES_RS');
   });
@@ -125,8 +221,21 @@ describe('apply-rsReticulum-link-client-nomad.sh', () => {
     expect(patch).toContain('start_download_with_limit');
   });
 
-  it('is a no-op when discover_remote_public_key + GC markers are already present', () => {
-    const rns = makeFakeRsReticulum(ALREADY_PRESENT);
+  it('is a no-op when the exact applied overlay reverse-checks', () => {
+    const patch = readFileSync(PATCH_FILE, 'utf8');
+    const applied = materializeLinkClientFromPatch(patch, 'new');
+    const rns = makeFakeRsReticulum(applied);
+    const reverse = git(rns, ['apply', '--reverse', '--check', PATCH_FILE]);
+    expect(reverse.status, reverse.stderr || reverse.stdout).toBe(0);
+    const result = runApply(rns);
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toMatch(/already present/);
+  });
+
+  it('is a no-op when recall/GC markers are present but reverse-check misses', () => {
+    const rns = makeFakeRsReticulum(MARKER_FALLBACK);
+    const reverse = git(rns, ['apply', '--reverse', '--check', PATCH_FILE]);
+    expect(reverse.status).not.toBe(0);
     const result = runApply(rns);
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toMatch(/already present/);
