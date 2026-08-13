@@ -129,17 +129,16 @@ When [ratspeak/rsReticulum#11](https://github.com/ratspeak/rsReticulum/pull/11) 
 
 Recall cached destination public keys in `LinkClient` before waiting on path-response announces; GC temporary announce handlers without wiping long-lived Nomad directory listeners. Fixes Nomad page loads hanging until overall timeout.
 
+Upstream `a945ba0` landed HasPath-gated `RecallDestination`, but still waits on a fresh announce when the path table is cold and still Deregisters handlers by `aspect_filter`. This overlay uses `RecallDestination` without the HasPath gate, then `await_path`, and GCs closed handlers only.
+
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `9928abed269a83ec5a7ef165ff1142d938cad706` |
+| **Base commit** | `70b7399` (`ratspeak/rsReticulum` `origin/main`) |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/14 |
 
-**Modifies (4 files):**
+**Modifies (1 file):**
 
-- `crates/rns-runtime/src/link_client.rs` — recall + `await_path`; safe announce-handler GC
-- `crates/rns-transport/src/messages.rs` — `RecallDestinationPublicKey`, `PublicKeyResult`
-- `crates/rns-transport/src/actor/rpc.rs` — recall handler
-- `crates/rns-transport/src/actor/mod.rs` — unit tests
+- `crates/rns-runtime/src/link_client.rs` — `discover_remote_public_key` + `await_path`; safe announce-handler GC
 
 ### Apply locally
 
@@ -202,7 +201,7 @@ Debounce BLE RNode reconnect after mid-SMP disconnect (`BLE pairing in progress`
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `9928abed269a83ec5a7ef165ff1142d938cad706` (after prior overlays) |
+| **Base commit** | `70b7399` (`ratspeak/rsReticulum` `origin/main`) |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/20 |
 
 **Modifies (1 file):**
@@ -399,7 +398,7 @@ When [ratspeak/rsLXMF#6](https://github.com/ratspeak/rsLXMF/pull/6) merges and f
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | tip of `ratspeak/rsLXMF` `main` + `rsLXMF-propagation-node-policy-setters` overlay |
+| **Base commit** | `f9ed81e` (`ratspeak/rsLXMF` `origin/main`) + `rsLXMF-propagation-node-policy-setters` overlay |
 | **Upstream PR** | (none yet — mesh-client local API) |
 
 **Modifies (1 file):**
@@ -461,7 +460,7 @@ Ranked multi-path slots (up to 3 per destination) plus global / per-peer RF-vs-n
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `9928abed269a83ec5a7ef165ff1142d938cad706` (+ prior mesh-client overlays) |
+| **Base commit** | `70b7399` (+ prior mesh-client overlays) |
 | **Upstream PR** | none yet (mesh-client-local) |
 
 **Touches:** `constants.rs`, `path_table.rs`, `messages.rs`, `actor/{inbound,mod,rpc,outbound,persistence}.rs`
@@ -503,7 +502,7 @@ Adds `PropagationClient::abort_transfer` so Cancel / mid-transfer abort leaves t
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | floated `origin/main` (regenerate; record short SHA in PR) |
+| **Base commit** | `f9ed81e` (`ratspeak/rsLXMF` `origin/main`) |
 | **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsLXMF) |
 
 **Touches:** rsLXMF `PropagationClient` (abort in-flight list/get transfer → Idle)

@@ -333,14 +333,14 @@ impl StackHandle {
             return;
         }
         let started = std::time::Instant::now();
-        match live::LiveBridge::spawn(
+        match Box::pin(live::LiveBridge::spawn(
             self.config_dir.clone(),
             self.storage_dir.clone(),
             self.event_tx.clone(),
             self.packet_log.clone(),
             self.inbound_lxmf.clone(),
             self.inner.clone(),
-        )
+        ))
         .await
         {
             Ok(bridge) => {
