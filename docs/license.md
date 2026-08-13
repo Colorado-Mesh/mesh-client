@@ -9,6 +9,7 @@ Release builds may bundle `mesh-client-reticulum`, a separate executable built f
 - Sidecar source: [`reticulum-sidecar/`](../reticulum-sidecar/) in this repository
 - Architecture: [docs/reticulum.md](reticulum.md)
 - Attribution: [docs/credits.md](credits.md) (Ratspeak / rsReticulum / rsLXMF)
+- npm dependencies: [docs/third-party-licenses.md](third-party-licenses.md)
 
 If you distribute builds that include the sidecar, comply with AGPL-3.0 source-offer requirements for that component.
 

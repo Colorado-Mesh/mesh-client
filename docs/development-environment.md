@@ -415,7 +415,7 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `check:i18n:branch`                   | Run i18n quality checks on keys new/changed vs `HEAD` only             |
 | `check:insecure-temp-files`           | Predictable `os.tmpdir()` writes (CodeQL `js/insecure-temporary-file`) |
 | `check:ipc-contract`                  | Verify IPC channel contracts between main/preload/renderer             |
-| `check:licenses`                      | Summarize dependency licenses (`license-checker-rseidelsohn`)          |
+| `check:licenses`                      | Allowlist dependency licenses (`pnpm licenses list` + SPDX policy)     |
 | `check:log-injection`                 | Detect unsanitized user data in log calls                              |
 | `check:log-panel-filter`              | Verify log panel filter wiring                                         |
 | `check:log-service-sinks`             | Verify log service sink configuration                                  |
@@ -429,11 +429,12 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### Documentation
 
-| Script         | Description                         |
-| -------------- | ----------------------------------- |
-| `docs:install` | Install MkDocs Python dependencies  |
-| `docs:build`   | Build static docs to `site/`        |
-| `docs:serve`   | Serve docs locally with live reload |
+| Script          | Description                                                |
+| --------------- | ---------------------------------------------------------- |
+| `docs:install`  | Install MkDocs Python dependencies                         |
+| `docs:build`    | Build static docs to `site/`                               |
+| `docs:licenses` | Regenerate `docs/third-party-licenses.md` (runs allowlist) |
+| `docs:serve`    | Serve docs locally with live reload                        |
 
 #### CI (act)
 

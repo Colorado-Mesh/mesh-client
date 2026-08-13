@@ -41,7 +41,7 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
-      - name: License check
+      - name: Audit Open Source Licenses
         run: pnpm run check:licenses
 
       - name: Install actionlint

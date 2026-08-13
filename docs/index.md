@@ -88,6 +88,7 @@ Also useful:
 - **Project**
   - [License](license.md)
   - [Credits](credits.md)
+  - [Third-party licenses](third-party-licenses.md)
 
 ---
 
