@@ -294,9 +294,10 @@ Note: The test results artifact upload step is automatically skipped when runnin
 `main` is protected by a **repository ruleset** (not classic branch protection) that:
 
 1. Requires a pull request before merging
-2. Requires a **merge queue**
-3. Requires **strict** status checks (must pass on the merge group / up-to-date tip)
-4. Blocks force-pushes and branch deletion on `main`
+2. Requires **at least one approving review** before the merge queue
+3. Requires a **merge queue**
+4. Requires **strict** status checks (must pass on the merge group / up-to-date tip)
+5. Blocks force-pushes and branch deletion on `main`
 
 ### Required check names (always-on)
 
