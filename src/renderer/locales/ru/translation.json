@@ -384,7 +384,9 @@
     "themeSaveFailed": "Не удалось сохранить цветовую контрольную точку.",
     "themeRestoreFailed": "Не удалось восстановить контрольную точку",
     "themeResetFailed": "Не удалось сбросить цвета.",
-    "messageActionsBarBgVisible": "Показать фон"
+    "messageActionsBarBgVisible": "Показать фон",
+    "rrcUnreadAllRoomMessages": "Непрочитанные RRC для всех сообщений комнаты",
+    "rrcUnreadAllRoomMessagesHint": "Когда включено, любое новое сообщение о помещении RRC помечается как непрочитанное и может воспроизводить звук канала. Отключите оповещения в стиле IRC: только прямые сообщения и @упоминания."
   },
   "aria": {
     "closeDialog": "Закрыть диалог",

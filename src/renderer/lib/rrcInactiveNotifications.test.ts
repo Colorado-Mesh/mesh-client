@@ -9,6 +9,7 @@ describe('resolveInactiveRrcNotificationType', () => {
     mutedViews: new Set<string>(),
     notifGloballyMuted: false,
     localIdentityHash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    notifyMode: 'all' as const,
   };
 
   it('returns null when globally muted', () => {
@@ -21,7 +22,7 @@ describe('resolveInactiveRrcNotificationType', () => {
     ).toBeNull();
   });
 
-  it('prefers dm for whispers and @mentions', () => {
+  it('prefers dm for whispers and @mentions in all mode', () => {
     expect(
       resolveInactiveRrcNotificationType({
         ...base,
@@ -39,13 +40,40 @@ describe('resolveInactiveRrcNotificationType', () => {
     ).toBe('dm');
   });
 
-  it('returns channel for ordinary room traffic', () => {
+  it('returns channel for ordinary room traffic in all mode', () => {
     expect(
       resolveInactiveRrcNotificationType({
         ...base,
         newMessages: [{ id: '1', room: '#lobby', kind: 'msg', body: 'hello', timestamp: 1 }],
       }),
     ).toBe('channel');
+  });
+
+  it('drops plain room traffic in mentions mode; still alerts on mention/whisper', () => {
+    expect(
+      resolveInactiveRrcNotificationType({
+        ...base,
+        notifyMode: 'mentions',
+        newMessages: [{ id: '1', room: '#lobby', kind: 'msg', body: 'hello', timestamp: 1 }],
+      }),
+    ).toBeNull();
+    expect(
+      resolveInactiveRrcNotificationType({
+        ...base,
+        notifyMode: 'mentions',
+        newMessages: [{ id: '1', room: '#lobby', kind: 'msg', body: 'hey @nv0n', timestamp: 1 }],
+      }),
+    ).toBe('dm');
+    expect(
+      resolveInactiveRrcNotificationType({
+        ...base,
+        notifyMode: 'mentions',
+        newMessages: [
+          { id: '1', room: '#lobby', kind: 'msg', body: 'hello', timestamp: 1 },
+          { id: '2', room: '[whispers]', kind: 'notice', body: 'psst', timestamp: 2 },
+        ],
+      }),
+    ).toBe('dm');
   });
 
   it('skips muted rooms and self messages', () => {

@@ -5,6 +5,7 @@ import {
   classifyRrcNotificationType,
   isRrcRoomMuted,
   isRrcWhisperRoom,
+  resolveRrcAlertType,
   rrcMuteViewKey,
   stripRrcMsgTargetAt,
 } from './rrcMention';
@@ -81,6 +82,91 @@ describe('classifyRrcNotificationType', () => {
     expect(
       classifyRrcNotificationType({ body: 'fail', room: '#lobby', kind: 'error' }, 'nv0n'),
     ).toBeNull();
+  });
+});
+
+describe('resolveRrcAlertType', () => {
+  const dmHash = 'aa'.repeat(16);
+  const whisper = { body: 'psst', room: '[whispers]', kind: 'notice' as const };
+  const dstHash = { body: 'hi', room: '#lobby', kind: 'notice' as const, dst_hash: dmHash };
+  const peerDm = { body: 'hi', room: `@${dmHash}`, kind: 'notice' as const };
+  const mention = { body: 'hey @nv0n', room: '#lobby', kind: 'msg' as const };
+  const mentionAction = { body: 'waves at @NV0N', room: '#lobby', kind: 'action' as const };
+  const plain = { body: 'hello all', room: '#lobby', kind: 'msg' as const };
+  const plainAction = { body: 'waves', room: '#lobby', kind: 'action' as const };
+  const notice = { body: 'topic set', room: '#lobby', kind: 'notice' as const };
+  const system = { body: '@nv0n', room: '#lobby', kind: 'system' as const };
+  const error = { body: 'fail', room: '#lobby', kind: 'error' as const };
+
+  it.each(['all', 'mentions'] as const)('classifies DMs as dm in %s mode', (notifyMode) => {
+    expect(resolveRrcAlertType({ msg: whisper, nickname: 'nv0n', notifyMode, muted: false })).toBe(
+      'dm',
+    );
+    expect(resolveRrcAlertType({ msg: dstHash, nickname: 'nv0n', notifyMode, muted: false })).toBe(
+      'dm',
+    );
+    expect(resolveRrcAlertType({ msg: peerDm, nickname: 'nv0n', notifyMode, muted: false })).toBe(
+      'dm',
+    );
+  });
+
+  it.each(['all', 'mentions'] as const)('classifies @nick as dm in %s mode', (notifyMode) => {
+    expect(resolveRrcAlertType({ msg: mention, nickname: 'nv0n', notifyMode, muted: false })).toBe(
+      'dm',
+    );
+    expect(
+      resolveRrcAlertType({ msg: mentionAction, nickname: 'nv0n', notifyMode, muted: false }),
+    ).toBe('dm');
+  });
+
+  it('returns channel for plain room msg/action only in all mode', () => {
+    expect(
+      resolveRrcAlertType({ msg: plain, nickname: 'nv0n', notifyMode: 'all', muted: false }),
+    ).toBe('channel');
+    expect(
+      resolveRrcAlertType({ msg: plainAction, nickname: 'nv0n', notifyMode: 'all', muted: false }),
+    ).toBe('channel');
+    expect(
+      resolveRrcAlertType({ msg: plain, nickname: 'nv0n', notifyMode: 'mentions', muted: false }),
+    ).toBeNull();
+    expect(
+      resolveRrcAlertType({
+        msg: plainAction,
+        nickname: 'nv0n',
+        notifyMode: 'mentions',
+        muted: false,
+      }),
+    ).toBeNull();
+  });
+
+  it.each(['all', 'mentions'] as const)('drops notice/system/error in %s mode', (notifyMode) => {
+    expect(
+      resolveRrcAlertType({ msg: notice, nickname: 'nv0n', notifyMode, muted: false }),
+    ).toBeNull();
+    expect(
+      resolveRrcAlertType({ msg: system, nickname: 'nv0n', notifyMode, muted: false }),
+    ).toBeNull();
+    expect(
+      resolveRrcAlertType({ msg: error, nickname: 'nv0n', notifyMode, muted: false }),
+    ).toBeNull();
+  });
+
+  it('returns null when muted even for @nick in all mode', () => {
+    expect(
+      resolveRrcAlertType({ msg: mention, nickname: 'nv0n', notifyMode: 'all', muted: true }),
+    ).toBeNull();
+  });
+
+  it('does not false-match mentions with empty nickname; DMs still alert', () => {
+    expect(
+      resolveRrcAlertType({ msg: mention, nickname: '', notifyMode: 'all', muted: false }),
+    ).toBe('channel');
+    expect(
+      resolveRrcAlertType({ msg: mention, nickname: '   ', notifyMode: 'mentions', muted: false }),
+    ).toBeNull();
+    expect(
+      resolveRrcAlertType({ msg: whisper, nickname: '', notifyMode: 'mentions', muted: false }),
+    ).toBe('dm');
   });
 });
 

@@ -384,7 +384,9 @@
     "themeSaveFailed": "Impossibile salvare il checkpoint del colore.",
     "themeRestoreFailed": "Impossibile ripristinare il checkpoint del colore.",
     "themeResetFailed": "Impossibile reimpostare i colori.",
-    "messageActionsBarBgVisible": "Mostra lo sfondo"
+    "messageActionsBarBgVisible": "Mostra lo sfondo",
+    "rrcUnreadAllRoomMessages": "RRC non letto per tutti i messaggi della stanza",
+    "rrcUnreadAllRoomMessagesHint": "Quando è acceso, qualsiasi nuovo messaggio della stanza RRC indica che non è stato letto ed è in grado di riprodurre un suono del canale. Disattiva per gli avvisi in stile IRC: solo messaggi diretti e @menzioni."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

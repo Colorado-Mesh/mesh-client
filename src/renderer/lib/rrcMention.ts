@@ -98,6 +98,29 @@ export function classifyRrcNotificationType(
   return null;
 }
 
+/** Global (or effective per-room) RRC notify level: all chat lines vs IRC-style mention/DM. */
+export type RrcNotifyMode = 'all' | 'mentions';
+
+export interface ResolveRrcAlertTypeArgs {
+  msg: Pick<RrcChatMessage, 'body' | 'room' | 'dst_hash' | 'kind'>;
+  nickname: string;
+  notifyMode: RrcNotifyMode;
+  muted: boolean;
+}
+
+/**
+ * Shared badge + sound gate. Mute and IRC-style mention mode drop channel traffic;
+ * hub notices never alert. DMs / @nick stay `dm` in both modes.
+ */
+export function resolveRrcAlertType(args: ResolveRrcAlertTypeArgs): ChatNotificationType | null {
+  if (args.muted) return null;
+  const type = classifyRrcNotificationType(args.msg, args.nickname);
+  if (!type) return null;
+  if (type === 'dm') return 'dm';
+  if (args.msg.kind !== 'msg' && args.msg.kind !== 'action') return null;
+  return args.notifyMode === 'all' ? 'channel' : null;
+}
+
 /** Mute storage key used by RrcPanel (`rrc:${hubHash}:${room}`). */
 export function rrcMuteViewKey(hubHash: string, room: string): string {
   return `rrc:${hubHash.trim().toLowerCase()}:${room.trim()}`;

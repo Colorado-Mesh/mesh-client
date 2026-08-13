@@ -274,6 +274,8 @@
     "shareLocationSendWaypointHint": "When enabled, Meshtastic location shares send both a text message and a Waypoint packet so official apps show a map pin. Disable on busy meshes to send text only.",
     "notificationsSection": "Notifications",
     "soundNotifications": "Sound notifications",
+    "rrcUnreadAllRoomMessages": "RRC unread for all room messages",
+    "rrcUnreadAllRoomMessagesHint": "When on, any new RRC room message marks unread and can play a channel sound. Turn off for IRC-style alerts: only direct messages and @mentions.",
     "unknownError": "Unknown error",
     "resetDiagnosticsConfirm": "This will clear all routing anomalies, hop history, and packet stats. The engine will rebuild from new incoming packets. Continue?",
     "clearGpsDataConfirm": "This will remove stored GPS coordinates from all nodes. Nodes will remain but their positions will be blank until new data is received. Continue?",

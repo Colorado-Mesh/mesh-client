@@ -384,7 +384,9 @@
     "themeSaveFailed": "Error al guardar el punto de verificación de color.",
     "themeRestoreFailed": "Error al restaurar el punto de verificación de color.",
     "themeResetFailed": "Error al restablecer los colores.",
-    "messageActionsBarBgVisible": "Mostrar fondo"
+    "messageActionsBarBgVisible": "Mostrar fondo",
+    "rrcUnreadAllRoomMessages": "RRC no leído para todos los mensajes de la habitación",
+    "rrcUnreadAllRoomMessagesHint": "Cuando está activado, cualquier mensaje nuevo de la sala RRC marca como no leído y puede reproducir un sonido de canal. Desactivar para alertas estilo IRC: solo mensajes directos y @menciones."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

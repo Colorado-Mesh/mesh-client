@@ -158,7 +158,7 @@ import {
   resolvePanelRebootHandler,
 } from './lib/appPanelHandlerSelection';
 import { protocolRecord, selectByProtocol } from './lib/appProtocolSelect';
-import { getAppSettingsRaw } from './lib/appSettingsStorage';
+import { getAppSettingsRaw, isRrcUnreadAllRoomMessagesEnabled } from './lib/appSettingsStorage';
 import {
   ADMIN_PANEL_INDEX,
   APP_PANEL_INDEX,
@@ -2460,6 +2460,7 @@ function AppContent() {
       mutedViews: loadMutedViews('reticulum'),
       notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
       localIdentityHash: rrcLocalIdentityHash,
+      notifyMode: isRrcUnreadAllRoomMessagesEnabled() ? 'all' : 'mentions',
     });
     // Watching the active room: still ping on whisper / @nick (IRC highlight); stay silent on channel.
     if (

@@ -384,7 +384,9 @@
     "themeSaveFailed": "无法保存颜色检查点。",
     "themeRestoreFailed": "无法还原颜色检查点。",
     "themeResetFailed": "无法重置颜色。",
-    "messageActionsBarBgVisible": "显示背景"
+    "messageActionsBarBgVisible": "显示背景",
+    "rrcUnreadAllRoomMessages": "所有房间消息的RRC未读",
+    "rrcUnreadAllRoomMessagesHint": "开启时，任何新的RRC房间消息都会标记为未读，并且可以播放频道声音。关闭IRC样式警报：仅限直接消息和@提及。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
