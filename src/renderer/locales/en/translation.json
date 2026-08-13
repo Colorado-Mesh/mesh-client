@@ -1053,10 +1053,7 @@
       "exportPassphraseConfirm": "Confirm backup PIN",
       "exportPassphraseRequired": "Enter a backup PIN of at least 6 characters.",
       "exportPassphraseMismatch": "Backup PINs do not match.",
-      "importBackupTooLarge": "Identity backup file is too large.",
-      "exportRawConfirmTitle": "Export raw identity file?",
-      "exportRawConfirmMessage": "This writes your unencrypted 64-byte Reticulum private key to disk. Anyone with that file can impersonate this identity. Requires the same backup PIN (≥6 characters) used for .rsi export.",
-      "exportRawConfirmAction": "Export raw identity"
+      "importBackupTooLarge": "Identity backup file is too large."
     },
     "reticulumInterfaces": {
       "title": "Interfaces",

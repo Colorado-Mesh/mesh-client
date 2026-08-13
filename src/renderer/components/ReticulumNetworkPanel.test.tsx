@@ -249,6 +249,58 @@ describe('ReticulumNetworkPanel', () => {
     expect(proxyPost).not.toHaveBeenCalledWith('/api/v1/identity/export', expect.anything());
   });
 
+  it('blocks .rsi export when backup PIN is empty', async () => {
+    const user = userEvent.setup();
+    const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPost = proxyPost;
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    await user.click(
+      await screen.findByRole('button', { name: 'connectionPanel.reticulumIdentity.exportAria' }),
+    );
+
+    expect(
+      await screen.findByText('connectionPanel.reticulumIdentity.exportPassphraseRequired'),
+    ).toBeInTheDocument();
+    expect(proxyPost).not.toHaveBeenCalledWith('/api/v1/identity/export', expect.anything());
+  });
+
+  it('blocks raw identity export when backup PIN is empty', async () => {
+    const user = userEvent.setup();
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'connectionPanel.reticulumIdentity.exportRawAria',
+      }),
+    );
+
+    expect(
+      await screen.findByText('connectionPanel.reticulumIdentity.exportPassphraseRequired'),
+    ).toBeInTheDocument();
+  });
+
+  it('blocks raw identity export when backup PINs do not match', async () => {
+    const user = userEvent.setup();
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    await user.type(
+      await screen.findByLabelText('connectionPanel.reticulumIdentity.exportPassphrase'),
+      '123456',
+    );
+    await user.type(
+      screen.getByLabelText('connectionPanel.reticulumIdentity.exportPassphraseConfirm'),
+      '654321',
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumIdentity.exportRawAria' }),
+    );
+
+    expect(
+      await screen.findByText('connectionPanel.reticulumIdentity.exportPassphraseMismatch'),
+    ).toBeInTheDocument();
+  });
+
   it('saves .rsi export via dialog and clears PIN fields', async () => {
     const user = userEvent.setup();
     const saveDialog = vi.fn().mockResolvedValue({ path: '/tmp/out.rsi', error: null });
@@ -285,7 +337,7 @@ describe('ReticulumNetworkPanel', () => {
     expect(screen.queryByDisplayValue(/ratspeak\.identity\.v2/)).not.toBeInTheDocument();
   });
 
-  it('confirms before raw identity export and sends backup PIN', async () => {
+  it('sends backup PIN and opens save dialog for raw identity export', async () => {
     const user = userEvent.setup();
     const saveDialog = vi.fn().mockResolvedValue({ path: '/tmp/out.identity', error: null });
     window.electronAPI.reticulum.saveIdentityExportDialog = saveDialog;
@@ -311,14 +363,6 @@ describe('ReticulumNetworkPanel', () => {
     await user.click(
       await screen.findByRole('button', {
         name: 'connectionPanel.reticulumIdentity.exportRawAria',
-      }),
-    );
-    expect(
-      await screen.findByText('connectionPanel.reticulumIdentity.exportRawConfirmTitle'),
-    ).toBeInTheDocument();
-    await user.click(
-      screen.getByRole('button', {
-        name: 'connectionPanel.reticulumIdentity.exportRawConfirmAction',
       }),
     );
     await waitFor(() => {
