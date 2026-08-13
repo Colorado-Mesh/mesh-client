@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { Copy } from 'lucide-react-motion';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -109,6 +109,22 @@ export interface ReticulumNetworkPanelProps {
   propagationSectionOpenKey?: number;
 }
 
+function reticulumExportPinError(
+  passphrase: string,
+  confirm: string,
+  t: (key: string) => string,
+): string | null {
+  const pin = passphrase.trim();
+  const pinConfirm = confirm.trim();
+  if (pin.length < 6) {
+    return t('connectionPanel.reticulumIdentity.exportPassphraseRequired');
+  }
+  if (pin !== pinConfirm) {
+    return t('connectionPanel.reticulumIdentity.exportPassphraseMismatch');
+  }
+  return null;
+}
+
 /** Network tab: identity, stack settings, propagation, config import. */
 export function ReticulumNetworkPanel({
   connecting,
@@ -137,10 +153,10 @@ export function ReticulumNetworkPanel({
   const [confirmSaved, setConfirmSaved] = useState(false);
   const [exportPassphrase, setExportPassphrase] = useState('');
   const [exportPassphraseConfirm, setExportPassphraseConfirm] = useState('');
+  const [exportPinError, setExportPinError] = useState<string | null>(null);
   const [importBackupJson, setImportBackupJson] = useState('');
   const [importBackupPin, setImportBackupPin] = useState('');
   const [identityActionBusy, setIdentityActionBusy] = useState(false);
-  const [showExportRawConfirm, setShowExportRawConfirm] = useState(false);
   const [importPrivateKey, setImportPrivateKey] = useState('');
   const [showReplaceIdentityConfirm, setShowReplaceIdentityConfirm] = useState(false);
   const [pendingReplaceAction, setPendingReplaceAction] = useState<IdentityReplaceAction | null>(
@@ -228,20 +244,18 @@ export function ReticulumNetworkPanel({
   const clearExportPins = () => {
     setExportPassphrase('');
     setExportPassphraseConfirm('');
+    setExportPinError(null);
   };
 
   const handleExportIdentity = async () => {
     if (identityActionBusy) return;
+    const pinError = reticulumExportPinError(exportPassphrase, exportPassphraseConfirm, t);
+    if (pinError) {
+      setExportPinError(pinError);
+      return;
+    }
+    setExportPinError(null);
     const passphrase = exportPassphrase.trim();
-    const confirm = exportPassphraseConfirm.trim();
-    if (passphrase.length < 6) {
-      setIdentityError(t('connectionPanel.reticulumIdentity.exportPassphraseRequired'));
-      return;
-    }
-    if (passphrase !== confirm) {
-      setIdentityError(t('connectionPanel.reticulumIdentity.exportPassphraseMismatch'));
-      return;
-    }
     setIdentityError(null);
     setIdentityNotice(null);
     setIdentityActionBusy(true);
@@ -290,19 +304,13 @@ export function ReticulumNetworkPanel({
 
   const handleExportRawIdentity = async () => {
     if (identityActionBusy) return;
+    const pinError = reticulumExportPinError(exportPassphrase, exportPassphraseConfirm, t);
+    if (pinError) {
+      setExportPinError(pinError);
+      return;
+    }
+    setExportPinError(null);
     const passphrase = exportPassphrase.trim();
-    const confirm = exportPassphraseConfirm.trim();
-    if (passphrase.length < 6) {
-      setShowExportRawConfirm(false);
-      setIdentityError(t('connectionPanel.reticulumIdentity.exportPassphraseRequired'));
-      return;
-    }
-    if (passphrase !== confirm) {
-      setShowExportRawConfirm(false);
-      setIdentityError(t('connectionPanel.reticulumIdentity.exportPassphraseMismatch'));
-      return;
-    }
-    setShowExportRawConfirm(false);
     setIdentityError(null);
     setIdentityNotice(null);
     setIdentityActionBusy(true);
@@ -778,15 +786,22 @@ export function ReticulumNetworkPanel({
               identity={identity}
               exportPassphrase={exportPassphrase}
               exportPassphraseConfirm={exportPassphraseConfirm}
+              exportPinError={exportPinError}
               exportDisabled={identityActionsDisabled}
               saveDisabled={identityActionsDisabled}
-              onExportPassphraseChange={setExportPassphrase}
-              onExportPassphraseConfirmChange={setExportPassphraseConfirm}
+              onExportPassphraseChange={(v) => {
+                setExportPassphrase(v);
+                if (exportPinError) setExportPinError(null);
+              }}
+              onExportPassphraseConfirmChange={(v) => {
+                setExportPassphraseConfirm(v);
+                if (exportPinError) setExportPinError(null);
+              }}
               onExport={() => {
                 void handleExportIdentity();
               }}
               onExportRaw={() => {
-                setShowExportRawConfirm(true);
+                void handleExportRawIdentity();
               }}
               onSaveDisplayName={(name) => handleSaveDisplayName(name)}
             />
@@ -1017,21 +1032,6 @@ export function ReticulumNetworkPanel({
           onCancel={() => {
             setShowReplaceIdentityConfirm(false);
             setPendingReplaceAction(null);
-          }}
-        />
-      ) : null}
-
-      {showExportRawConfirm ? (
-        <ConfirmModal
-          title={t('connectionPanel.reticulumIdentity.exportRawConfirmTitle')}
-          message={t('connectionPanel.reticulumIdentity.exportRawConfirmMessage')}
-          confirmLabel={t('connectionPanel.reticulumIdentity.exportRawConfirmAction')}
-          danger
-          onConfirm={() => {
-            void handleExportRawIdentity();
-          }}
-          onCancel={() => {
-            setShowExportRawConfirm(false);
           }}
         />
       ) : null}
@@ -1382,6 +1382,7 @@ function IdentityConfiguredView({
   identity,
   exportPassphrase,
   exportPassphraseConfirm,
+  exportPinError,
   exportDisabled,
   saveDisabled,
   onExportPassphraseChange,
@@ -1393,6 +1394,7 @@ function IdentityConfiguredView({
   identity: ReticulumIdentityStatus | null;
   exportPassphrase: string;
   exportPassphraseConfirm: string;
+  exportPinError: string | null;
   exportDisabled: boolean;
   saveDisabled: boolean;
   onExportPassphraseChange: (v: string) => void;
@@ -1402,6 +1404,7 @@ function IdentityConfiguredView({
   onSaveDisplayName: (name: string) => Promise<boolean>;
 }) {
   const { t } = useTranslation();
+  const exportPinErrorId = useId();
   const [nameDraft, setNameDraft] = useState(identity?.display_name?.trim() ?? '');
   const [saving, setSaving] = useState(false);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
@@ -1536,7 +1539,11 @@ function IdentityConfiguredView({
             onExportPassphraseChange(e.target.value);
           }}
           autoComplete="new-password"
-          className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200"
+          aria-invalid={exportPinError != null}
+          aria-describedby={exportPinError ? exportPinErrorId : undefined}
+          className={`mt-1 block w-full rounded border bg-slate-900 px-2 py-1.5 text-sm text-gray-200 ${
+            exportPinError ? 'border-red-500' : 'border-gray-600'
+          }`}
           aria-label={t('connectionPanel.reticulumIdentity.exportPassphrase')}
         />
       </label>
@@ -1549,10 +1556,19 @@ function IdentityConfiguredView({
             onExportPassphraseConfirmChange(e.target.value);
           }}
           autoComplete="new-password"
-          className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200"
+          aria-invalid={exportPinError != null}
+          aria-describedby={exportPinError ? exportPinErrorId : undefined}
+          className={`mt-1 block w-full rounded border bg-slate-900 px-2 py-1.5 text-sm text-gray-200 ${
+            exportPinError ? 'border-red-500' : 'border-gray-600'
+          }`}
           aria-label={t('connectionPanel.reticulumIdentity.exportPassphraseConfirm')}
         />
       </label>
+      {exportPinError ? (
+        <p id={exportPinErrorId} className="mt-2 text-sm text-red-400" role="alert">
+          {exportPinError}
+        </p>
+      ) : null}
       <div className="mt-2 flex flex-wrap gap-2">
         <button
           type="button"
