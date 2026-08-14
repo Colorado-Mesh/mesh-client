@@ -124,6 +124,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
   const capabilities = useRrcSessionStore((s) => s.capabilities);
   const setNickname = useRrcSessionStore((s) => s.setNickname);
   const setFocusedHub = useRrcSessionStore((s) => s.setFocusedHub);
+  const setRrcPanelFocused = useRrcSessionStore((s) => s.setRrcPanelFocused);
   const setActiveRoom = useRrcSessionStore((s) => s.setActiveRoom);
   const setShowTimestamps = useRrcSessionStore((s) => s.setShowTimestamps);
   const clearUnread = useRrcSessionStore((s) => s.clearUnread);
@@ -231,6 +232,13 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
       unsub();
     };
   }, [refreshFromSidecar]);
+
+  useEffect(() => {
+    setRrcPanelFocused(isActive);
+    return () => {
+      setRrcPanelFocused(false);
+    };
+  }, [isActive, setRrcPanelFocused]);
 
   useEffect(() => {
     if (isActive && activeRoom) clearUnread(activeRoom);

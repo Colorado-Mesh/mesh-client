@@ -279,6 +279,12 @@ interface RrcSessionStoreState {
   /** Per-hub unread totals stashed when a hub session is removed (survives disconnect). */
   unreadByHub: Map<string, number>;
   showTimestamps: boolean;
+  /**
+   * True while the RRC panel tab is focused (not merely mounted / last-visited).
+   * Unread bumps are suppressed only when this is true and the message matches
+   * the focused hub's activeRoom — sticky activeRoom alone must not suppress.
+   */
+  rrcPanelFocused: boolean;
 
   // ── Mirror fields: always reflect `sessionsByHub.get(focusedHubHash)`. ──
   status: RrcSessionStatus;
@@ -296,6 +302,8 @@ interface RrcSessionStoreState {
 
   /** Focus a hub in the main pane. Never disconnects or wipes other hubs. */
   setFocusedHub: (hash: string | null) => void;
+  /** Whether the RRC panel is the focused tab (drives unread suppress). */
+  setRrcPanelFocused: (focused: boolean) => void;
   setNickname: (nick: string) => void;
   setLocalIdentityHash: (hash: string | null) => void;
   setActiveRoom: (room: string | null, hubHash?: string) => void;
@@ -397,6 +405,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   messages: new Map(),
   unreadByHub: new Map(),
   showTimestamps: false,
+  rrcPanelFocused: false,
 
   status: 'disconnected',
   hubDestHash: null,
@@ -417,6 +426,10 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const session = hub ? (s.sessionsByHub.get(hub) ?? emptyHubSession()) : emptyHubSession();
       return { focusedHubHash: hub, ...mirrorFromSession(hub, session) };
     });
+  },
+
+  setRrcPanelFocused: (focused) => {
+    set({ rrcPanelFocused: focused });
   },
 
   setNickname: (nick) => {
@@ -809,9 +822,11 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const isSelf =
         Boolean(selfHash && msg.sender_hash?.toLowerCase() === selfHash) ||
         Boolean(msg.nickname && msg.nickname === s.nickname && !msg.sender_hash);
-      // Only the focused hub+room counts as "viewing" — a background hub's
-      // activeRoom must not suppress unread for that hub.
+      // Only the focused RRC panel + hub+room counts as "viewing" — sticky
+      // activeRoom after leaving the panel (or switching protocols) must not
+      // suppress unread. A background hub's activeRoom also must not suppress.
       const viewing =
+        s.rrcPanelFocused &&
         hub === s.focusedHubHash &&
         session.activeRoom != null &&
         rrcRoomsMatch(session.activeRoom, roomKey);
