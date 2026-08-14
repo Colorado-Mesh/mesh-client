@@ -53,7 +53,16 @@ export function aggregateReticulumLocalRfTxQueue(
     }
     const max = row.tx_queue_max;
     const usedRaw = row.tx_queue_used;
-    if (max == null || max <= 0 || usedRaw == null || usedRaw < 0) {
+    if (
+      max == null ||
+      usedRaw == null ||
+      typeof max !== 'number' ||
+      typeof usedRaw !== 'number' ||
+      !Number.isFinite(max) ||
+      !Number.isFinite(usedRaw) ||
+      max <= 0 ||
+      usedRaw < 0
+    ) {
       continue;
     }
     const used = Math.min(usedRaw, max);
@@ -61,7 +70,12 @@ export function aggregateReticulumLocalRfTxQueue(
       anyBuffering = true;
     }
     const ratio = fillRatio(used, max);
-    if (!best || ratio > best.ratio || (ratio === best.ratio && row.name < best.name)) {
+    if (
+      !best ||
+      ratio > best.ratio ||
+      (ratio === best.ratio && used > best.used) ||
+      (ratio === best.ratio && used === best.used && row.name < best.name)
+    ) {
       best = { name: row.name, used, max, ratio };
     }
   }

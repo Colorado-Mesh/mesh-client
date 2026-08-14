@@ -300,6 +300,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
    * whether an already-in-flight connect's result is still safe to apply.
    */
   const resumeGenerationRef = useRef(0);
+  /** Bumped on disconnect/teardown so delayed interface refreshes cannot stamp stale queueStatus. */
+  const queueRefreshGenerationRef = useRef(0);
   const peerRefreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const diagnosticsRefreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localInterfaceBurstCancelRef = useRef<(() => void) | null>(null);
@@ -481,10 +483,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
   }, [identityId, selfLxmfHash, syncSelfNodeFromIdentityStatus]);
 
   const refreshLocalInterfacesFromSidecar = useCallback(async () => {
+    const generation = queueRefreshGenerationRef.current;
     const [interfaces, osSerialPorts] = await Promise.all([
       fetchReticulumInterfaces(),
       fetchReticulumSerialPorts(),
     ]);
+    if (generation !== queueRefreshGenerationRef.current) {
+      return { interfaces, osSerialPorts };
+    }
     localInterfacesRef.current = interfaces;
     logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
     setQueueStatus(aggregateReticulumLocalRfTxQueue(interfaces));
@@ -1534,6 +1540,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     unsubVoiceAudioRef.current?.();
     unsubVoiceAudioRef.current = null;
     localInterfacesRef.current = [];
+    queueRefreshGenerationRef.current += 1;
     setQueueStatus(null);
     setSelfLxmfHash(null);
     rawPacketAppenderRef.current?.clearPending();
@@ -1835,6 +1842,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       console.warn('[useReticulumRuntime] disconnect stop failed ' + errLikeToLogString(e));
     }
     localInterfacesRef.current = [];
+    queueRefreshGenerationRef.current += 1;
     setQueueStatus(null);
     setSelfLxmfHash(null);
     rawPacketAppenderRef.current?.clearPending();
@@ -2054,15 +2062,18 @@ export function useReticulumRuntime(): ProtocolRuntime {
       try {
         // Propagate rate-limit so we can back off; other refreshLocalInterfaces
         // callers keep the cached-fallback default.
+        const generation = queueRefreshGenerationRef.current;
         const [interfaces, osSerialPorts] = await Promise.all([
           fetchReticulumInterfaces({ propagateRateLimit: true }),
           fetchReticulumSerialPorts({ propagateRateLimit: true }),
         ]);
+        if (cancelled || generation !== queueRefreshGenerationRef.current) {
+          return;
+        }
         localInterfacesRef.current = interfaces;
         logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
         setQueueStatus(aggregateReticulumLocalRfTxQueue(interfaces));
         const health = { interfaces, osSerialPorts };
-        if (cancelled) return;
         const peerCount = useReticulumPeerStore.getState().peers.size;
         // Large meshes: rely on WS-debounced diagnostics; avoid pairing a heavy
         // diagnostics bundle with every interface health tick.

@@ -737,4 +737,16 @@ mod tests {
         assert_eq!(merged[0].tx_queue_used, Some(64));
         assert_eq!(merged[0].tx_queue_max, Some(256));
     }
+
+    #[test]
+    fn merge_keeps_offline_live_tx_queue_unset() {
+        let config = vec![sample_iface("cfg-1", "RNode USB", "rnode", true, "up")];
+        let mut live = sample_iface("rns-0", "RNode USB", "AccessPoint", true, "down");
+        live.tx_queue_used = None;
+        live.tx_queue_max = None;
+        let merged = merge_live_interfaces_with_config(&config, vec![live]);
+        assert_eq!(merged[0].status, "down");
+        assert_eq!(merged[0].tx_queue_used, None);
+        assert_eq!(merged[0].tx_queue_max, None);
+    }
 }

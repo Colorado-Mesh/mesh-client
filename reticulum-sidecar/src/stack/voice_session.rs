@@ -1028,6 +1028,156 @@ mod tests {
         }
     }
 
+    fn manager_with_control(
+        control_tx: mpsc::Sender<TelephonyControl>,
+        active_call: Option<serde_json::Value>,
+    ) -> VoiceSessionManager {
+        let (event_tx, _) = broadcast::channel::<String>(4);
+        let (voice_audio_tx, _) = broadcast::channel::<String>(4);
+        VoiceSessionManager {
+            shared: Arc::new(ManagerShared {
+                control_tx: Some(control_tx),
+                event_tx,
+                voice_audio_tx,
+                state: RwLock::new(VoiceState {
+                    running: true,
+                    active_call,
+                    ..VoiceState::default()
+                }),
+                muted: AtomicBool::new(false),
+                register_error: None,
+            }),
+        }
+    }
+
+    #[tokio::test]
+    async fn answer_errors_when_no_incoming_link_id() {
+        let (control_tx, mut control_rx) = mpsc::channel::<TelephonyControl>(4);
+        let mgr = manager_with_control(
+            control_tx,
+            Some(json!({
+                "link_id": "",
+                "role": "outgoing",
+                "status": "calling",
+            })),
+        );
+        let resp = mgr.answer().await;
+        assert_eq!(resp["ok"], false);
+        assert_eq!(resp["error"], "no incoming call to answer");
+        assert!(control_rx.try_recv().is_err());
+    }
+
+    #[tokio::test]
+    async fn answer_errors_on_invalid_link_id() {
+        let (control_tx, mut control_rx) = mpsc::channel::<TelephonyControl>(4);
+        let mgr = manager_with_control(
+            control_tx,
+            Some(json!({
+                "link_id": "not-valid-hex",
+                "role": "incoming",
+                "status": "ringing",
+            })),
+        );
+        let resp = mgr.answer().await;
+        assert_eq!(resp["ok"], false);
+        assert!(
+            resp["error"]
+                .as_str()
+                .unwrap_or("")
+                .starts_with("invalid link_id:"),
+            "{resp}"
+        );
+        assert!(control_rx.try_recv().is_err());
+    }
+
+    #[tokio::test]
+    async fn answer_succeeds_when_control_acks_connecting() {
+        let (control_tx, mut control_rx) = mpsc::channel::<TelephonyControl>(4);
+        let link = [0x41u8; 16];
+        let link_hex = hex::encode(link);
+        let mgr = manager_with_control(
+            control_tx,
+            Some(json!({
+                "link_id": link_hex,
+                "role": "incoming",
+                "status": "ringing",
+                "answered": false,
+            })),
+        );
+        let answer_task = tokio::spawn(async move { mgr.answer().await });
+        match control_rx.recv().await {
+            Some(TelephonyControl::Answer {
+                expected_link_id,
+                reply,
+            }) => {
+                assert_eq!(expected_link_id, link);
+                let _ = reply.send(Ok(lxst_telephony::ActiveCallSnapshot {
+                    link_id: link,
+                    remote_identity: [0x22u8; 16],
+                    role: CallRole::Incoming,
+                    status: SignallingStatus::Connecting,
+                    profile: None,
+                    answered: true,
+                }));
+            }
+            other => panic!("expected Answer control, got {other:?}"),
+        }
+        let resp = answer_task.await.expect("join");
+        assert_eq!(resp["ok"], true, "{resp}");
+        assert_eq!(resp["link_id"], link_hex);
+        assert_eq!(resp["status"], "connecting");
+    }
+
+    #[tokio::test]
+    async fn answer_propagates_request_errors() {
+        let (control_tx, mut control_rx) = mpsc::channel::<TelephonyControl>(4);
+        let link = [0x42u8; 16];
+        let mgr = manager_with_control(
+            control_tx,
+            Some(json!({
+                "link_id": hex::encode(link),
+                "role": "incoming",
+                "status": "ringing",
+            })),
+        );
+        let answer_task = tokio::spawn(async move { mgr.answer().await });
+        match control_rx.recv().await {
+            Some(TelephonyControl::Answer { reply, .. }) => {
+                let _ = reply.send(Err(lxst_telephony::Error::CallNotAnswerable));
+            }
+            other => panic!("expected Answer control, got {other:?}"),
+        }
+        let resp = answer_task.await.expect("join");
+        assert_eq!(resp["ok"], false);
+        assert!(
+            resp["error"]
+                .as_str()
+                .unwrap_or("")
+                .contains("not an incoming ringing call"),
+            "{resp}"
+        );
+    }
+
+    #[tokio::test]
+    async fn answer_rejects_when_control_channel_closed() {
+        let (control_tx, control_rx) = mpsc::channel::<TelephonyControl>(4);
+        drop(control_rx);
+        let mgr = manager_with_control(
+            control_tx,
+            Some(json!({
+                "link_id": hex::encode([0x43u8; 16]),
+                "role": "incoming",
+                "status": "ringing",
+            })),
+        );
+        let resp = mgr.answer().await;
+        assert_eq!(resp["ok"], false);
+        assert!(
+            resp["error"].as_str().unwrap_or("").contains("control"),
+            "{resp}"
+        );
+    }
+
     #[tokio::test]
     async fn bridge_emits_incoming_update_terminated_and_error() {
         let (event_tx, mut event_rx) = broadcast::channel::<String>(16);

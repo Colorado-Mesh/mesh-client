@@ -103,6 +103,20 @@ struct BlePeerRuntimeState {
     foreground_wake: Arc<tokio::sync::Notify>,
 }
 
+/// Map GetInterfaceStats TX fill into API Option fields.
+/// Offline interfaces and zero-capacity queues stay unset (unavailable).
+pub(crate) fn live_interface_tx_queue_fields(
+    online: bool,
+    tx_queue_used: u64,
+    tx_queue_max: u64,
+) -> (Option<u64>, Option<u64>) {
+    if !online || tx_queue_max == 0 {
+        (None, None)
+    } else {
+        (Some(tx_queue_used), Some(tx_queue_max))
+    }
+}
+
 pub struct LiveBridge {
     config_dir: PathBuf,
     storage_dir: PathBuf,
@@ -2464,39 +2478,46 @@ impl LiveBridge {
                         let live_rows: Vec<InterfaceRow> = stats
                             .iter()
                             .enumerate()
-                            .map(|(i, s)| InterfaceRow {
-                                id: format!("rns-{i}"),
-                                name: s.name.clone(),
-                                iface_type: s.mode.clone(),
-                                enabled: s.online,
-                                status: if s.online { "up" } else { "down" }.into(),
-                                host: None,
-                                port: None,
-                                preset: None,
-                                serial_port: None,
-                                frequency: None,
-                                bandwidth: None,
-                                txpower: None,
-                                spreading_factor: None,
-                                coding_rate: None,
-                                callsign: None,
-                                id_interval: None,
-                                mode: None,
-                                seed_addresses: Vec::new(),
-                                discoverable: None,
-                                latitude: None,
-                                longitude: None,
-                                height: None,
-                                discovery_name: None,
-                                announce_interval_min: None,
-                                connectable: None,
-                                reachable_on: None,
-                                network_name: None,
-                                passphrase: None,
-                                flow_control: None,
-                                tx_queue_used: Some(s.tx_queue_used),
-                                tx_queue_max: Some(s.tx_queue_max),
-                                extra_config: std::collections::HashMap::new(),
+                            .map(|(i, s)| {
+                                let (tx_queue_used, tx_queue_max) = live_interface_tx_queue_fields(
+                                    s.online,
+                                    s.tx_queue_used,
+                                    s.tx_queue_max,
+                                );
+                                InterfaceRow {
+                                    id: format!("rns-{i}"),
+                                    name: s.name.clone(),
+                                    iface_type: s.mode.clone(),
+                                    enabled: s.online,
+                                    status: if s.online { "up" } else { "down" }.into(),
+                                    host: None,
+                                    port: None,
+                                    preset: None,
+                                    serial_port: None,
+                                    frequency: None,
+                                    bandwidth: None,
+                                    txpower: None,
+                                    spreading_factor: None,
+                                    coding_rate: None,
+                                    callsign: None,
+                                    id_interval: None,
+                                    mode: None,
+                                    seed_addresses: Vec::new(),
+                                    discoverable: None,
+                                    latitude: None,
+                                    longitude: None,
+                                    height: None,
+                                    discovery_name: None,
+                                    announce_interval_min: None,
+                                    connectable: None,
+                                    reachable_on: None,
+                                    network_name: None,
+                                    passphrase: None,
+                                    flow_control: None,
+                                    tx_queue_used,
+                                    tx_queue_max,
+                                    extra_config: std::collections::HashMap::new(),
+                                }
                             })
                             .collect();
                         merge_live_interfaces_with_config(&config_rows, live_rows)
@@ -4108,39 +4129,43 @@ impl LiveBridge {
         let live_rows: Vec<InterfaceRow> = stats
             .iter()
             .enumerate()
-            .map(|(i, s)| InterfaceRow {
-                id: format!("rns-{i}"),
-                name: s.name.clone(),
-                iface_type: s.mode.clone(),
-                enabled: s.online,
-                status: if s.online { "up" } else { "down" }.into(),
-                host: None,
-                port: None,
-                preset: None,
-                serial_port: None,
-                frequency: None,
-                bandwidth: None,
-                txpower: None,
-                spreading_factor: None,
-                coding_rate: None,
-                callsign: None,
-                id_interval: None,
-                mode: None,
-                seed_addresses: Vec::new(),
-                discoverable: None,
-                latitude: None,
-                longitude: None,
-                height: None,
-                discovery_name: None,
-                announce_interval_min: None,
-                connectable: None,
-                reachable_on: None,
-                network_name: None,
-                passphrase: None,
-                flow_control: None,
-                tx_queue_used: Some(s.tx_queue_used),
-                tx_queue_max: Some(s.tx_queue_max),
-                extra_config: std::collections::HashMap::new(),
+            .map(|(i, s)| {
+                let (tx_queue_used, tx_queue_max) =
+                    live_interface_tx_queue_fields(s.online, s.tx_queue_used, s.tx_queue_max);
+                InterfaceRow {
+                    id: format!("rns-{i}"),
+                    name: s.name.clone(),
+                    iface_type: s.mode.clone(),
+                    enabled: s.online,
+                    status: if s.online { "up" } else { "down" }.into(),
+                    host: None,
+                    port: None,
+                    preset: None,
+                    serial_port: None,
+                    frequency: None,
+                    bandwidth: None,
+                    txpower: None,
+                    spreading_factor: None,
+                    coding_rate: None,
+                    callsign: None,
+                    id_interval: None,
+                    mode: None,
+                    seed_addresses: Vec::new(),
+                    discoverable: None,
+                    latitude: None,
+                    longitude: None,
+                    height: None,
+                    discovery_name: None,
+                    announce_interval_min: None,
+                    connectable: None,
+                    reachable_on: None,
+                    network_name: None,
+                    passphrase: None,
+                    flow_control: None,
+                    tx_queue_used,
+                    tx_queue_max,
+                    extra_config: std::collections::HashMap::new(),
+                }
             })
             .collect();
         Ok(merge_live_interfaces_with_config(&config_rows, live_rows))
@@ -7052,5 +7077,31 @@ mod reply_field_tests {
             .expect("set field");
         let decoded = reaction_fields_from_message(&ok_msg).expect("reaction fields");
         assert_eq!(decoded.reaction_target, hex::encode(target));
+    }
+}
+
+#[cfg(test)]
+mod live_tx_queue_fields_tests {
+    use super::live_interface_tx_queue_fields;
+
+    #[test]
+    fn online_stats_populate_used_and_max() {
+        assert_eq!(
+            live_interface_tx_queue_fields(true, 64, 256),
+            (Some(64), Some(256))
+        );
+        assert_eq!(
+            live_interface_tx_queue_fields(true, 0, 256),
+            (Some(0), Some(256))
+        );
+    }
+
+    #[test]
+    fn offline_or_zero_capacity_remain_unset() {
+        assert_eq!(live_interface_tx_queue_fields(false, 64, 256), (None, None));
+        assert_eq!(live_interface_tx_queue_fields(false, 0, 0), (None, None));
+        // Zero-capacity must stay unavailable rather than Some(0).
+        assert_eq!(live_interface_tx_queue_fields(true, 0, 0), (None, None));
+        assert_eq!(live_interface_tx_queue_fields(true, 10, 0), (None, None));
     }
 }

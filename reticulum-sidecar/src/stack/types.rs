@@ -298,3 +298,93 @@ pub struct LxmfReactionRequest {
     pub target_hash: String,
     pub emoji: String,
 }
+
+#[cfg(test)]
+mod tx_queue_serde_tests {
+    use super::InterfaceRow;
+    use serde_json::Value;
+    use std::collections::HashMap;
+
+    fn minimal_row() -> InterfaceRow {
+        InterfaceRow {
+            id: "rnode-1".into(),
+            name: "RNode USB".into(),
+            iface_type: "rnode".into(),
+            enabled: true,
+            status: "up".into(),
+            host: None,
+            port: None,
+            preset: None,
+            serial_port: None,
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: None,
+            seed_addresses: Vec::new(),
+            discoverable: None,
+            latitude: None,
+            longitude: None,
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            flow_control: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
+            extra_config: HashMap::default(),
+        }
+    }
+
+    #[test]
+    fn none_tx_queue_fields_omitted_from_serialization() {
+        let row = minimal_row();
+        let value = serde_json::to_value(&row).expect("serialize");
+        let obj = value.as_object().expect("object");
+        assert!(!obj.contains_key("tx_queue_used"));
+        assert!(!obj.contains_key("tx_queue_max"));
+    }
+
+    #[test]
+    fn missing_payload_fields_deserialize_as_none() {
+        let row = minimal_row();
+        let value = serde_json::to_value(&row).expect("serialize");
+        let obj = value.as_object().expect("object");
+        assert!(!obj.contains_key("tx_queue_used"));
+        assert!(!obj.contains_key("tx_queue_max"));
+        let roundtrip: InterfaceRow = serde_json::from_value(value).expect("deserialize");
+        assert_eq!(roundtrip.tx_queue_used, None);
+        assert_eq!(roundtrip.tx_queue_max, None);
+    }
+
+    #[test]
+    fn online_live_stats_preserve_both_values() {
+        let mut row = minimal_row();
+        row.tx_queue_used = Some(64);
+        row.tx_queue_max = Some(256);
+        let value = serde_json::to_value(&row).expect("serialize");
+        assert_eq!(value.get("tx_queue_used"), Some(&Value::from(64)));
+        assert_eq!(value.get("tx_queue_max"), Some(&Value::from(256)));
+        let roundtrip: InterfaceRow = serde_json::from_value(value).expect("deserialize");
+        assert_eq!(roundtrip.tx_queue_used, Some(64));
+        assert_eq!(roundtrip.tx_queue_max, Some(256));
+    }
+
+    #[test]
+    fn offline_live_statistics_yield_none() {
+        let mut row = minimal_row();
+        row.status = "down".into();
+        row.tx_queue_used = None;
+        row.tx_queue_max = None;
+        let value = serde_json::to_value(&row).expect("serialize");
+        let obj = value.as_object().expect("object");
+        assert!(!obj.contains_key("tx_queue_used"));
+        assert!(!obj.contains_key("tx_queue_max"));
+    }
+}

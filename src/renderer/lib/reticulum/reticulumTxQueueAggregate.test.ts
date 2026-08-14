@@ -77,14 +77,34 @@ describe('aggregateReticulumLocalRfTxQueue', () => {
     expect(agg?.buffering).toBe(true);
   });
 
-  it('tie-breaks equal ratios by name when absolute sizes differ', () => {
-    const agg = aggregateReticulumLocalRfTxQueue([
+  it('tie-breaks equal ratios by higher used, then name', () => {
+    const byUsed = aggregateReticulumLocalRfTxQueue([
       row({ name: 'Zebra', type: 'rnode', tx_queue_used: 512, tx_queue_max: 1024 }),
       row({ name: 'Alpha', type: 'rnode', tx_queue_used: 128, tx_queue_max: 256 }),
     ]);
-    expect(agg?.interfaceName).toBe('Alpha');
-    expect(agg?.maxlen).toBe(256);
-    expect(agg?.free).toBe(128);
+    expect(byUsed?.interfaceName).toBe('Zebra');
+    expect(byUsed?.maxlen).toBe(1024);
+    expect(byUsed?.free).toBe(512);
+
+    const byName = aggregateReticulumLocalRfTxQueue([
+      row({ name: 'Zebra', type: 'rnode', tx_queue_used: 128, tx_queue_max: 256 }),
+      row({ name: 'Alpha', type: 'rnode', tx_queue_used: 128, tx_queue_max: 256 }),
+    ]);
+    expect(byName?.interfaceName).toBe('Alpha');
+  });
+
+  it('rejects non-finite queue statistics', () => {
+    expect(
+      aggregateReticulumLocalRfTxQueue([
+        row({ name: 'NaN', type: 'rnode', tx_queue_used: Number.NaN, tx_queue_max: 256 }),
+        row({
+          name: 'Inf',
+          type: 'rnode',
+          tx_queue_used: 10,
+          tx_queue_max: Number.POSITIVE_INFINITY,
+        }),
+      ]),
+    ).toBeNull();
   });
 
   it('ignores fuller TCP hubs and picks the local RF interface', () => {
