@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import {
+  bodyHasBreakingChange,
   detectReleaseBump,
   parseConventionalSubject,
   previewNextVersion,
@@ -16,7 +17,28 @@ describe('parseConventionalSubject', () => {
       type: 'fix',
       breakingBang: true,
     });
+    expect(parseConventionalSubject('Feat: Case')).toEqual({
+      type: 'feat',
+      breakingBang: false,
+    });
     expect(parseConventionalSubject('not conventional')).toBeNull();
+    expect(parseConventionalSubject('feat(unclosed: missing paren')).toBeNull();
+    expect(parseConventionalSubject('feat!(scope): bang before scope')).toBeNull();
+  });
+});
+
+describe('bodyHasBreakingChange', () => {
+  it('matches line-anchored BREAKING CHANGE and BREAKING-CHANGE', () => {
+    expect(bodyHasBreakingChange('BREAKING CHANGE: renamed\n')).toBe(true);
+    expect(bodyHasBreakingChange('  BREAKING-CHANGE: renamed\n')).toBe(true);
+    expect(bodyHasBreakingChange('subject\n\nBREAKING CHANGE: x')).toBe(true);
+  });
+
+  it('ignores unanchored substring mentions', () => {
+    expect(
+      bodyHasBreakingChange('See docs: never put BREAKING CHANGE: in examples casually\n'),
+    ).toBe(false);
+    expect(bodyHasBreakingChange('mentions BREAKING CHANGE: mid-sentence')).toBe(false);
   });
 });
 
@@ -29,6 +51,10 @@ describe('detectReleaseBump', () => {
         'chore: bump deps',
       ]),
     ).toBe('minor');
+  });
+
+  it('treats unscoped feat: as minor', () => {
+    expect(detectReleaseBump(['feat: add thing', 'fix: nudge'])).toBe('minor');
   });
 
   it('does not miss feat when only scoped feats exist (historical bash bug)', () => {
@@ -63,12 +89,29 @@ describe('detectReleaseBump', () => {
     ).toBe('major');
   });
 
+  it('detects BREAKING-CHANGE hyphen footer', () => {
+    expect(detectReleaseBump(['chore: prep'], 'BREAKING-CHANGE: drop flag\n')).toBe('major');
+  });
+
+  it('does not major on unanchored BREAKING CHANGE mention', () => {
+    expect(
+      detectReleaseBump(
+        ['docs: explain footers'],
+        'Do not confuse with inline BREAKING CHANGE: examples in prose.\n',
+      ),
+    ).toBe('patch');
+  });
+
   it('ignores body bullet lines that look like commits (subjects-only)', () => {
     expect(detectReleaseBump(['chore: release prep'])).toBe('patch');
   });
 
   it('defaults to patch when no conventional subjects', () => {
     expect(detectReleaseBump(['Merge branch main', 'WIP'])).toBe('patch');
+  });
+
+  it('defaults to patch for empty subject list', () => {
+    expect(detectReleaseBump([])).toBe('patch');
   });
 });
 
@@ -81,5 +124,10 @@ describe('previewNextVersion', () => {
 
   it('accepts exact versions', () => {
     expect(previewNextVersion('5.27.1', '5.30.0')).toBe('5.30.0');
+  });
+
+  it('rejects invalid current / bump', () => {
+    expect(() => previewNextVersion('nope', 'patch')).toThrow(/Invalid current version/);
+    expect(() => previewNextVersion('1.2.3', 'weird')).toThrow(/Invalid bump/);
   });
 });

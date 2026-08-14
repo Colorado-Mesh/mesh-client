@@ -137,8 +137,13 @@ describe('release.sh argv subprocess', () => {
   it('PARSE_ONLY: --yes enables RELEASE_YES without prompts', () => {
     const r = spawnSync('bash', [RELEASE_SH, '--yes', '--auto'], {
       encoding: 'utf8',
-      env: { ...process.env, MESH_CLIENT_RELEASE_PARSE_ONLY: '1' },
+      env: {
+        ...process.env,
+        MESH_CLIENT_RELEASE_PARSE_ONLY: '1',
+        MESH_CLIENT_ALLOW_PARSE_ONLY_IN_CI: '1',
+      },
     });
+    expect(r.error).toBeUndefined();
     expect(r.status).toBe(0);
     expect(r.stdout).toMatch(/^RELEASE_YES=true$/m);
     expect(r.stdout).toMatch(/^AUTO_DETECT=true$/m);
@@ -147,21 +152,57 @@ describe('release.sh argv subprocess', () => {
   it('PARSE_ONLY: --skip-dep-update sets SKIP_DEP_UPDATE', () => {
     const r = spawnSync('bash', [RELEASE_SH, '--yes', '--skip-dep-update', 'patch'], {
       encoding: 'utf8',
-      env: { ...process.env, MESH_CLIENT_RELEASE_PARSE_ONLY: '1' },
+      env: {
+        ...process.env,
+        MESH_CLIENT_RELEASE_PARSE_ONLY: '1',
+        MESH_CLIENT_ALLOW_PARSE_ONLY_IN_CI: '1',
+      },
     });
+    expect(r.error).toBeUndefined();
     expect(r.status).toBe(0);
     expect(r.stdout).toMatch(/^SKIP_DEP_UPDATE=true$/m);
     expect(r.stdout).toMatch(/^VERSION_TYPE=patch$/m);
   });
 
+  it('PARSE_ONLY: rejects under GitHub Actions without allow flag', () => {
+    const r = spawnSync('bash', [RELEASE_SH, '--yes', '--auto'], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        MESH_CLIENT_RELEASE_PARSE_ONLY: '1',
+        GITHUB_ACTIONS: 'true',
+        MESH_CLIENT_ALLOW_PARSE_ONLY_IN_CI: '',
+      },
+    });
+    expect(r.error).toBeUndefined();
+    expect(r.status).toBe(1);
+    expect(`${r.stdout}${r.stderr}`).toMatch(/cannot run under GitHub Actions/);
+  });
+
+  it('PARSE_ONLY: MESH_CLIENT_RELEASE_YES without --yes', () => {
+    const r = spawnSync('bash', [RELEASE_SH, '--auto'], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        MESH_CLIENT_RELEASE_PARSE_ONLY: '1',
+        MESH_CLIENT_ALLOW_PARSE_ONLY_IN_CI: '1',
+        MESH_CLIENT_RELEASE_YES: '1',
+      },
+    });
+    expect(r.error).toBeUndefined();
+    expect(r.status).toBe(0);
+    expect(r.stdout).toMatch(/^RELEASE_YES=true$/m);
+  });
+
   it('skip-dep-update does not run pnpm update/dedupe (stubbed git + pnpm)', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-release-argv-'));
-    const bin = path.join(tmp, 'bin');
-    const pnpmLog = path.join(tmp, 'pnpm.log');
-    fs.mkdirSync(bin);
-    fs.writeFileSync(
-      path.join(bin, 'git'),
-      `#!/usr/bin/env bash
+    try {
+      const bin = path.join(tmp, 'bin');
+      const pnpmLog = path.join(tmp, 'pnpm.log');
+      fs.mkdirSync(bin);
+      fs.writeFileSync(
+        path.join(bin, 'git'),
+        `#!/usr/bin/env bash
 set -e
 case "$*" in
   *'rev-parse --abbrev-ref HEAD'*|*rev-parse*abbrev-ref*)
@@ -184,31 +225,34 @@ case "$*" in
     ;;
 esac
 `,
-      { mode: 0o755 },
-    );
-    fs.writeFileSync(
-      path.join(bin, 'pnpm'),
-      `#!/usr/bin/env bash
+        { mode: 0o755 },
+      );
+      fs.writeFileSync(
+        path.join(bin, 'pnpm'),
+        `#!/usr/bin/env bash
 printf '%s\\n' "$*" >> ${JSON.stringify(pnpmLog)}
 # Fail after recording so preflight cannot mutate the repo.
 exit 1
 `,
-      { mode: 0o755 },
-    );
+        { mode: 0o755 },
+      );
 
-    const r = spawnSync('bash', [RELEASE_SH, '--yes', '--skip-dep-update', 'patch'], {
-      cwd: ROOT,
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        PATH: `${bin}${path.delimiter}${process.env.PATH ?? ''}`,
-        MESH_CLIENT_RELEASE_YES: '1',
-      },
-    });
-    expect(r.status).not.toBe(0);
-    const log = fs.existsSync(pnpmLog) ? fs.readFileSync(pnpmLog, 'utf8') : '';
-    expect(log).not.toMatch(/(^|\n)update(\s|$)/);
-    expect(log).not.toMatch(/(^|\n)dedupe(\s|$)/);
-    expect(`${r.stdout}${r.stderr}`).toMatch(/Skipping pnpm update\/dedupe/);
+      const r = spawnSync('bash', [RELEASE_SH, '--yes', '--skip-dep-update', 'patch'], {
+        cwd: ROOT,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PATH: `${bin}${path.delimiter}${process.env.PATH ?? ''}`,
+          MESH_CLIENT_RELEASE_YES: '1',
+        },
+      });
+      expect(r.status).not.toBe(0);
+      const log = fs.existsSync(pnpmLog) ? fs.readFileSync(pnpmLog, 'utf8') : '';
+      expect(log).not.toMatch(/(^|\n)update(\s|$)/);
+      expect(log).not.toMatch(/(^|\n)dedupe(\s|$)/);
+      expect(`${r.stdout}${r.stderr}`).toMatch(/Skipping pnpm update\/dedupe/);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });

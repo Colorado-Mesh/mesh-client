@@ -147,9 +147,11 @@ jobs:
 
       - name: Stop after dry-run preview
         if: ${{ inputs.dry_run == true || inputs.dry_run == 'true' }}
+        env:
+          NEXT_VERSION: ${{ steps.preview.outputs.next }}
         run: |
           echo "dry_run=true — not bumping or tagging."
-          echo "Re-run with dry_run unchecked to cut v${{ steps.preview.outputs.next }}."
+          echo "Re-run with dry_run unchecked to cut v${NEXT_VERSION}."
 
       - name: Install actionlint
         if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
@@ -180,7 +182,9 @@ jobs:
 
       - name: Add actionlint to PATH
         if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
-        run: echo "${{ github.workspace }}/.githooks/bin" >> "$GITHUB_PATH"
+        env:
+          HOOKS_BIN: ${{ github.workspace }}/.githooks/bin
+        run: echo "${HOOKS_BIN}" >> "$GITHUB_PATH"
 
       - name: Configure git identity
         if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
@@ -192,6 +196,8 @@ jobs:
         if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
         env:
           MESH_CLIENT_RELEASE_YES: '1'
+          # Never inherit a repo/org PARSE_ONLY var — that would green-exit with no tag.
+          MESH_CLIENT_RELEASE_PARSE_ONLY: ''
           RELEASE_BUMP: ${{ steps.preview.outputs.bump }}
           SKIP_DEP_UPDATE: ${{ inputs.skip_dep_update }}
         run: |

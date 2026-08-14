@@ -17,7 +17,7 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 | `flatpak.yaml`              | Version tags (`v*`), manual                  | Build Flatpak (+ schema compare vs last official); publish to release on tags   |
 | `cut-release.yaml`          | Manual `workflow_dispatch`                   | **Primary** release cut in Actions (needs admin `RELEASE_PUSH_TOKEN`)           |
 | `docs.yml`                  | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                   |
-| `third-party-licenses.yaml` | Path-filtered push to `main` + dispatch      | Regenerate `docs/third-party-licenses.md` after dependency changes              |
+| `third-party-licenses.yaml` | Path-filtered push to `main` + dispatch      | Regenerate licenses doc and open a PR (needs `RELEASE_PUSH_TOKEN`)              |
 
 ---
 
@@ -140,14 +140,14 @@ On **version tag pushes**, a `publish` job waits for the Electron `prepare-githu
 
 After merges to `main` that change `package.json`, `pnpm-lock.yaml`, the generator script, or this workflow (and on `workflow_dispatch`):
 
-1. Checkout code
+1. Checkout with `persist-credentials: false` (avoids Duplicate Authorization with create-pull-request)
 2. Setup pnpm + Node 22
 3. Install dependencies (`pnpm install --frozen-lockfile`)
 4. Audit licenses (`pnpm run check:licenses`)
 5. Regenerate `docs/third-party-licenses.md` (`pnpm run docs:licenses`)
-6. Open a PR via `peter-evans/create-pull-request` when the file changed (branch `chore/third-party-licenses`)
+6. Open a PR via `peter-evans/create-pull-request` when the file changed (branch `chore/third-party-licenses-<run_id>`)
 
-Direct pushes to `main` are blocked by the merge-queue ruleset, and GitHub Actions cannot bypass it on this org — hence the PR flow.
+**Secret:** reuse **`RELEASE_PUSH_TOKEN`** (admin PAT with **contents**, **workflows**, and **pull requests** write). Default `GITHUB_TOKEN` PRs do not auto-run required checks, so they cannot enter the merge queue cleanly. Direct pushes to `main` remain blocked by the merge-queue ruleset.
 
 ---
 
@@ -326,14 +326,16 @@ Each required check is pinned with `integration_id` **15368** (GitHub Actions) i
 
 - **Repository admins** (`RepositoryRole` id 5) — emergency hotfixes and local `pnpm run release` (direct push of bump commit + tag to `main`)
 
-GitHub Actions **cannot** be added as a bypass actor on this organization (“must be part of the ruleset source or owner organization”). [`third-party-licenses.yaml`](../.github/workflows/third-party-licenses.yaml) therefore opens a PR instead of pushing to `main`.
+GitHub Actions **cannot** be added as a bypass actor on this organization (“must be part of the ruleset source or owner organization”). [`third-party-licenses.yaml`](../.github/workflows/third-party-licenses.yaml) therefore opens a PR (via `RELEASE_PUSH_TOKEN`) instead of pushing to `main`.
+
+**Pull request gate:** one approving review, **dismiss stale reviews on push**, and **require last push approval** so an approved PR cannot enter the merge queue after unreviewed follow-up commits.
 
 ### Applying / updating the ruleset
 
-Canonical JSON lives at [`.github/rulesets/main-merge-queue.json`](../.github/rulesets/main-merge-queue.json) (live ruleset id **20821455**).
+Canonical JSON lives at [`.github/rulesets/main-merge-queue.json`](../.github/rulesets/main-merge-queue.json) (live ruleset id **20821455**). Vitest contract: `scripts/main-merge-queue-ruleset.test.mjs` (pinned checks + review gates). After changing the JSON, **PUT the live ruleset** or drift will remain until someone syncs:
 
 ```bash
-# Update
+# Update live ruleset from canonical JSON
 gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
   --method PUT \
   --input .github/rulesets/main-merge-queue.json
@@ -341,7 +343,7 @@ gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
 
 `gh api --input` can hit HTTP/2 content-length issues on create; if that fails, POST the JSON body with Python `urllib` (same payload).
 
-**Rollout:** merge the PR that adds `merge_group` triggers to `ci.yaml` / `tests.yaml` **before** flipping this ruleset to `enforcement: active`. Enabling the queue without those triggers leaves required checks pending forever.
+The ruleset is already **active** with `merge_group` triggers on `ci.yaml` / `tests.yaml`. Keep those triggers if you ever recreate the ruleset — enabling the queue without them leaves required checks pending forever.
 
 ---
 

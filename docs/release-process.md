@@ -50,9 +50,9 @@ Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) ru
 4. The workflow sets `MESH_CLIENT_RELEASE_YES=1` (non-interactive). Locally use `pnpm run release -- --yes` or the same env var.
 5. Wait for `release.yaml` + `flatpak.yaml` to attach draft artifacts, then **Publish** on GitHub.
 
-**Secret:** `RELEASE_PUSH_TOKEN` — fine-grained PAT (or GitHub App installation token) owned by a repo **admin** (so the merge-queue ruleset bypass applies), with **contents: write** and **workflows: write**. Plain `GITHUB_TOKEN` cannot trigger tag workflows and cannot push past the ruleset.
+**Secret:** `RELEASE_PUSH_TOKEN` — fine-grained PAT (or GitHub App installation token) owned by a repo **admin** (so the merge-queue ruleset bypass applies), with **contents: write**, **workflows: write**, and **pull requests: write** (also used by `third-party-licenses.yaml` so bot PRs run required checks). Plain `GITHUB_TOKEN` cannot trigger tag workflows, cannot push past the ruleset, and cannot open check-running license PRs.
 
-Version detection lives in [`scripts/detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs) (handles scoped Conventional Commits such as `feat(rrc): …`).
+Version detection lives in [`scripts/detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs) (handles scoped Conventional Commits such as `feat(rrc): …`). Do not set `MESH_CLIENT_RELEASE_PARSE_ONLY` in Actions (test-only hook; Cut release clears it).
 
 ---
 
@@ -81,9 +81,10 @@ pnpm run release --finish                         # complete a mid-release after
 pnpm run release -- --yes                         # non-interactive (skip both confirmation prompts)
 pnpm run release -- --yes --skip-dep-update patch # CI-style: no pnpm update
 MESH_CLIENT_RELEASE_YES=1 pnpm run release        # same as --yes (avoids pnpm's own -y)
+# Invalid: --auto cannot be combined with patch|minor|major|x.x.x
 ```
 
-The script prompts twice by default (start pre-flight, then confirm after checks pass). Pass **`-- --yes`** after `pnpm run release` (or set `MESH_CLIENT_RELEASE_YES=1`) to skip those prompts — useful for automation. Use `--` so pnpm does not swallow `-y`/`--yes`. **Expect several minutes** for the full validation chain.
+The script prompts twice by default (start pre-flight, then confirm after checks pass). Pass **`-- --yes`** after `pnpm run release` (or set `MESH_CLIENT_RELEASE_YES=1`) to skip those prompts — useful for automation. Use `--` so pnpm does not swallow `-y`/`--yes`. **`--auto` plus an explicit bump is rejected.** **Expect several minutes** for the full validation chain.
 
 **Full suite only:** Release must never use `test:staged`, `test:changed`, or `vitest related`. Pre-commit may run a staged subset for speed; release matches PR CI by running the unrestricted `pnpm run test:run` (`vitest run`) and does not soft-skip actionlint/yamllint when those tools are missing.
 
@@ -235,13 +236,13 @@ When artifacts and notes look correct:
 
 ## Version naming
 
-Follow [Semantic Versioning](https://semver.org/):
+Follow [Semantic Versioning](https://semver.org/). Auto-detect is implemented in [`scripts/detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs) (called from `release.sh` / Cut release):
 
-- **Major (X.0.0):** Breaking changes (`BREAKING CHANGE:` footer or `feat!:` / `fix!:`)
-- **Minor (0.X.0):** New features (`feat:`), backward compatible
+- **Major (X.0.0):** `type!:` / `type(scope)!:`, or a line-anchored `BREAKING CHANGE:` / `BREAKING-CHANGE:` footer in a commit body
+- **Minor (0.X.0):** New features (`feat:` or `feat(scope):`), backward compatible
 - **Patch (0.0.X):** Fixes and other conventional commits without `feat:`
 
-`release.sh` applies these rules when auto-detecting the bump.
+Release notes “Breaking Changes” use the same subject bang + footer rules (not subject-only).
 
 ---
 
