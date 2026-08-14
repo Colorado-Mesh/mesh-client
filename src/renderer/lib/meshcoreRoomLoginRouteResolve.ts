@@ -1,10 +1,13 @@
+import { meshcorePubkeyPathPrefix } from '@/shared/meshcorePathHash';
 import { withTimeout } from '@/shared/withTimeout';
 
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
 import { meshcoreSnapshotContactPathFromContacts } from './meshcoreRadioContactPath';
+import { runMeshcoreRepeaterRpcOnce } from './meshcoreRepeaterRpcInFlight';
+import { meshcoreHashSizeForTraceSeed } from './meshcoreRepeaterTracePath';
 import {
   type MeshcoreTracePathConnection,
-  runMeshcoreTracePathMultiplexed,
+  startMeshcoreTracePathMultiplexed,
 } from './meshcoreTracePathMultiplex';
 import {
   meshcoreTracePrimeFloodWhenForRoomLogin,
@@ -27,31 +30,39 @@ export interface MeshcoreRoomLoginRouteResolveConn {
 
 async function traceRouteForRoomLogin(
   conn: MeshcoreRoomLoginRouteResolveConn,
+  nodeId: number,
   pubKey: Uint8Array,
   seedPath: Uint8Array | undefined,
+  radioContactPathLen: number | null,
   traceTimeoutMs: number,
   runSerialized: <T>(fn: () => Promise<T>) => Promise<T>,
 ): Promise<Uint8Array | undefined> {
   if (!conn.sendCommandSendTracePath) return undefined;
-  let seed = seedPath && seedPath.length > 0 ? seedPath : new Uint8Array([pubKey[0] & 0xff]);
-  if (seed.length === 1 && seed[0] === 0 && pubKey[0] !== 0) {
-    seed = new Uint8Array([pubKey[0] & 0xff]);
+  const hashSize = meshcoreHashSizeForTraceSeed(radioContactPathLen, null);
+  let seed =
+    seedPath && seedPath.length > 0 ? seedPath : meshcorePubkeyPathPrefix(pubKey, hashSize);
+  if (seed.length === hashSize && seed.every((b) => b === 0) && pubKey[0] !== 0) {
+    seed = meshcorePubkeyPathPrefix(pubKey, hashSize);
   }
   try {
     const traceCapMs = Math.min(
       MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
       MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
     );
-    const result = await withTimeout(
-      runMeshcoreTracePathMultiplexed(
+    const result = await runMeshcoreRepeaterRpcOnce('trace', nodeId, async () => {
+      const handle = startMeshcoreTracePathMultiplexed(
         conn as unknown as MeshcoreTracePathConnection,
         seed,
         Math.min(traceTimeoutMs, traceCapMs),
         runSerialized,
-      ),
-      traceCapMs,
-      'meshcoreRoomLoginTrace',
-    );
+      );
+      try {
+        return await withTimeout(handle.promise, traceCapMs, 'meshcoreRoomLoginTrace');
+      } catch (e: unknown) {
+        handle.cancel(e instanceof Error ? e.message : 'meshcoreRoomLoginTrace cancelled');
+        throw e;
+      }
+    });
     const bytes = meshcoreTraceResultToOutPathBytes(
       result.pathLenByte,
       result.pathHashes,
@@ -98,9 +109,12 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
     return opts.pathFromHistory;
   }
 
+  let radioContactPathLen: number | null = null;
   try {
     const contacts = await conn.getContacts();
-    const fromRadio = meshcoreSnapshotContactPathFromContacts(nodeId, contacts).path;
+    const snap = meshcoreSnapshotContactPathFromContacts(nodeId, contacts);
+    radioContactPathLen = snap.radioContactPathLen;
+    const fromRadio = snap.path;
     if (fromRadio && fromRadio.length > 1) return fromRadio;
     if (fromRadio && fromRadio.length > 0) path = fromRadio;
   } catch {
@@ -135,8 +149,10 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
   if (opts.runSerialized && opts.traceTimeoutMs != null && opts.traceTimeoutMs > 0) {
     const traced = await traceRouteForRoomLogin(
       conn,
+      nodeId,
       opts.pubKey,
       path,
+      radioContactPathLen,
       opts.traceTimeoutMs,
       opts.runSerialized,
     );

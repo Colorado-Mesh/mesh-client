@@ -4171,7 +4171,8 @@
     "filterRepeaters": "Tekrarlayıcılar",
     "filterRooms": "Oda",
     "openRoom": "Açık oda",
-    "savedPasswordOrphanRoomLabel": "Oda {{nodeId}}"
+    "savedPasswordOrphanRoomLabel": "Oda {{nodeId}}",
+    "roomCliNeedsAdminPassword": "Uzak oda CLI, oda yönetici şifresine ihtiyaç duyar (SendLogin ACL). Bu oda için Tekrarlayıcılar → şifresinin altına kaydedin, ardından tekrar deneyin. Misafir BBS girişi yeterli değil."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",

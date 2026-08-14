@@ -10,6 +10,7 @@ import {
   meshcoreIsRoomLoggedIn,
   meshcoreIsRoomLoginAbortError,
   meshcoreRoomCanPost,
+  meshcoreRoomCliRequiresAdmin,
   meshcoreRoomLogin,
   meshcoreRoomLoginErrorIsAuthFailure,
   meshcoreRoomLoginErrorIsNoRoute,
@@ -104,6 +105,14 @@ describe('meshcoreRoomSession', () => {
 
     expect(mockRunMeshcoreRoomLogin).not.toHaveBeenCalled();
     expect(meshcoreGetRoomSession(42)?.role).toBe('readwrite');
+  });
+
+  it('meshcoreRoomCliRequiresAdmin detects ACL mutation tokens', () => {
+    expect(meshcoreRoomCliRequiresAdmin('allow.read.only on')).toBe(true);
+    expect(meshcoreRoomCliRequiresAdmin('allow.read.only off')).toBe(true);
+    expect(meshcoreRoomCliRequiresAdmin('setperm 01 3')).toBe(true);
+    expect(meshcoreRoomCliRequiresAdmin('get acl')).toBe(false);
+    expect(meshcoreRoomCliRequiresAdmin('clock')).toBe(false);
   });
 
   it('forceRelogin upgrades an existing read-only session to admin', async () => {
@@ -214,6 +223,57 @@ describe('meshcoreRoomSession', () => {
       hopsAway: undefined,
       signal: expect.any(AbortSignal),
     });
+  });
+
+  it('tryRelogin admin uses facade admin when session only has guest', async () => {
+    meshcoreClearAllRoomSessions();
+    const { setMeshcoreRoomCredential } = await import('./meshcoreRoomCredentialStorage');
+    const { clearAllRoomEphemeralAdminPasswords } = await import('./meshcoreInfraAdminSecrets');
+    clearAllRoomEphemeralAdminPasswords();
+    localStorage.clear();
+    await setMeshcoreRoomCredential(42, { guestPassword: 'hello', adminPassword: 'ops-admin' });
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 3 });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    meshcoreApplyRoomSession(42, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const ok = await meshcoreRoomTryRelogin(conn, 42, pubKey, 'admin');
+    expect(ok).toBe(true);
+    expect(mockRunMeshcoreRoomLogin).toHaveBeenCalledWith(conn, pubKey, 'ops-admin', {
+      hopsAway: undefined,
+      signal: expect.any(AbortSignal),
+    });
+    expect(meshcoreGetRoomSession(42)?.role).toBe('admin');
+  });
+
+  it('tryRelogin admin returns false for guest-only session without admin password', async () => {
+    meshcoreClearAllRoomSessions();
+    const { clearAllRoomEphemeralAdminPasswords } = await import('./meshcoreInfraAdminSecrets');
+    clearAllRoomEphemeralAdminPasswords();
+    localStorage.clear();
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    meshcoreApplyRoomSession(42, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const ok = await meshcoreRoomTryRelogin(conn, 42, pubKey, 'admin');
+    expect(ok).toBe(false);
+    expect(mockRunMeshcoreRoomLogin).not.toHaveBeenCalled();
   });
 
   it('cancel before second retry stops after first login attempt', async () => {
@@ -333,6 +393,29 @@ describe('meshcoreRoomSession', () => {
     expect(meshcoreGetRoomSession(55)?.role).toBe('admin');
   });
 
+  it('meshcoreRoomTryAdminLogin passes hopsAway into room login RPC opts', async () => {
+    meshcoreClearAllRoomSessions();
+    const { setMeshcoreRoomCredential } = await import('./meshcoreRoomCredentialStorage');
+    const { clearAllRoomEphemeralAdminPasswords } = await import('./meshcoreInfraAdminSecrets');
+    clearAllRoomEphemeralAdminPasswords();
+    localStorage.clear();
+    await setMeshcoreRoomCredential(56, { adminPassword: 'saved-admin' });
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 3 });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    await meshcoreRoomTryAdminLogin(conn, 56, pubKey, { hopsAway: 0, companionTransport: 'ble' });
+    expect(mockRunMeshcoreRoomLogin).toHaveBeenCalledWith(conn, pubKey, 'saved-admin', {
+      hopsAway: 0,
+      companionTransport: 'ble',
+      signal: expect.any(AbortSignal),
+    });
+  });
+
   it('meshcoreTryRemoteServerLogin for Room does not call repeater login', async () => {
     meshcoreClearAllRoomSessions();
     mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 3 });
@@ -347,5 +430,24 @@ describe('meshcoreRoomSession', () => {
     const pubKey = new Uint8Array(32);
     await meshcoreTryRemoteServerLogin(conn, 66, pubKey, 'Room');
     expect(mockRunMeshcoreRoomLogin).toHaveBeenCalled();
+  });
+
+  it('meshcoreTryRemoteServerLogin for Room skips login when session already exists', async () => {
+    meshcoreClearAllRoomSessions();
+    meshcoreApplyRoomSession(67, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    await meshcoreTryRemoteServerLogin(conn, 67, pubKey, 'Room');
+    expect(mockRunMeshcoreRoomLogin).not.toHaveBeenCalled();
+    expect(meshcoreGetRoomSession(67)?.role).toBe('readwrite');
   });
 });

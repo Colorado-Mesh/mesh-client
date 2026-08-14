@@ -28,7 +28,17 @@ describe('meshcore repeater CLI working state', () => {
   it('awaits ping settle and login with companion queue before CLI send', () => {
     const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
     expect(cliBody).toContain('awaitMeshcoreRepeaterPingSettleForNode');
+    expect(cliBody).toContain('MESHCORE_CLI_PREEMPT_TRACE_REASON');
+    expect(cliBody).toContain('cancelAllPendingMeshcoreTracePaths');
+    expect(cliBody).toContain('beginMeshcoreCliReplyHold');
+    expect(cliBody).toContain('endMeshcoreCliReplyHold');
+    expect(cliBody).toContain('preemptMeshcoreSilentBulkForCli');
+    expect(cliBody).toContain('restartPendingTimeoutFromNow');
+    expect(cliBody).toContain('force: true');
+    expect(cliBody).toContain('incrementalOnly: true');
     expect(cliBody).toContain('meshcoreTryRemoteServerLogin');
+    expect(cliBody).toContain('meshcoreRepeaterTryLoginWithPassword');
+    expect(cliBody).toContain('resolveRoomAdminPassword');
     expect(cliBody).toContain('repeaterRemoteRpcRef.current');
   });
 
@@ -45,12 +55,15 @@ describe('meshcore repeater CLI working state', () => {
 
   it('waits for waiting-message drain idle before runMeshcoreRepeaterRpcOnce', () => {
     const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
-    const drainWaitIdx = cliBody.indexOf('await awaitMeshcoreWaitingMessagesDrainIdle');
+    // 0-hop skips the wait (drainWaitMs=0); multi-hop still awaits drain idle.
+    expect(cliBody).toContain('awaitMeshcoreWaitingMessagesDrainIdle');
+    expect(cliBody).toContain('drainWaitMs');
+    const drainHelperIdx = cliBody.indexOf('awaitMeshcoreWaitingMessagesDrainIdle');
     const onceIdx = cliBody.indexOf("runMeshcoreRepeaterRpcOnce('cli'");
-    expect(drainWaitIdx).toBeGreaterThan(-1);
-    expect(onceIdx).toBeGreaterThan(drainWaitIdx);
+    expect(drainHelperIdx).toBeGreaterThan(-1);
+    expect(onceIdx).toBeGreaterThan(drainHelperIdx);
     expect(cliBody).toContain('padRepeaterCliTimeoutForWaitingDrain');
-    expect(cliBody).toContain('extendPendingTimeout');
+    expect(cliBody).toContain('restartPendingTimeoutFromNow');
   });
 
   it('waits for CLI DM response after runMeshcoreRepeaterRpcOnce so waiting-message drain can run', () => {

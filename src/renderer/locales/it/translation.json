@@ -4171,7 +4171,8 @@
     "filterRepeaters": "Ripetitori",
     "filterRooms": "Camere",
     "openRoom": "Stanza Aperta",
-    "savedPasswordOrphanRoomLabel": "Sala {{nodeId}}"
+    "savedPasswordOrphanRoomLabel": "Sala {{nodeId}}",
+    "roomCliNeedsAdminPassword": "La CLI della stanza remota richiede la password di amministratore della stanza (SendLogin ACL). Salvarlo in → Password ripetitori per questa stanza, quindi riprovare. L'accesso Guest BBS non è sufficiente."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",

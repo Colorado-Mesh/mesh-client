@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  beginMeshcoreCliReplyHold,
+  endMeshcoreCliReplyHold,
+  meshcoreCliReplyHoldActive,
   meshcoreCompanionRepeaterRfBusy,
   resetMeshcoreRepeaterRpcInFlightForTests,
   runMeshcoreRepeaterRpcOnce,
@@ -183,7 +186,26 @@ describe('meshcoreCompanionRepeaterRfBusy', () => {
 
   it('is true while trace responses are in flight', () => {
     resetMeshcoreRepeaterRpcInFlightForTests();
-    vi.spyOn(traceMultiplex, 'meshcoreTraceResponsesInFlightCount').mockReturnValue(1);
+    const spy = vi.spyOn(traceMultiplex, 'meshcoreTraceResponsesInFlightCount').mockReturnValue(1);
     expect(meshcoreCompanionRepeaterRfBusy()).toBe(true);
+    spy.mockRestore();
+  });
+
+  it('is true while a CLI reply hold is active and blocks new traces until cleared', async () => {
+    resetMeshcoreRepeaterRpcInFlightForTests();
+    beginMeshcoreCliReplyHold();
+    expect(meshcoreCompanionRepeaterRfBusy()).toBe(true);
+    expect(meshcoreCliReplyHoldActive()).toBe(true);
+
+    const fn = vi.fn(() => Promise.resolve('trace-ok'));
+    const pending = runMeshcoreRepeaterRpcOnce('trace', 9, fn);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(fn).not.toHaveBeenCalled();
+
+    endMeshcoreCliReplyHold();
+    await expect(pending).resolves.toBe('trace-ok');
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(meshcoreCompanionRepeaterRfBusy()).toBe(false);
   });
 });

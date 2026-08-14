@@ -4171,7 +4171,8 @@
     "filterRepeaters": "리피터",
     "filterRooms": "방",
     "openRoom": "개방형 객실",
-    "savedPasswordOrphanRoomLabel": "객실 {{nodeId}}"
+    "savedPasswordOrphanRoomLabel": "객실 {{nodeId}}",
+    "roomCliNeedsAdminPassword": "원격 룸 CLI에는 룸 관리자 암호 (SendLogin ACL) 가 필요합니다. 이 회의실의 반복자 → 암호 아래에 저장한 다음 다시 시도하십시오. 게스트 게시판 로그인이 충분하지 않습니다."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",

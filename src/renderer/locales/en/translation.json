@@ -4481,6 +4481,7 @@
     "telemetryGpsAlt": " alt {{altitude}}m",
     "cliSend": "Send",
     "cliQuick": "Quick:",
+    "roomCliNeedsAdminPassword": "Remote room CLI needs the room admin password (SendLogin ACL). Save it under Repeaters → password for this room, then try again. Guest BBS login is not enough.",
     "cliClearHistory": "Clear history",
     "cliNoCommandsYet": "No commands yet",
     "uptimeDaysHours": "{{days}}d {{hours}}h",

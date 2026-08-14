@@ -4175,7 +4175,8 @@
     "filterRepeaters": "Repeatery",
     "filterRooms": "Pomieszczenia",
     "openRoom": "Otwarty pokój",
-    "savedPasswordOrphanRoomLabel": "Pokój {{nodeId}}"
+    "savedPasswordOrphanRoomLabel": "Pokój {{nodeId}}",
+    "roomCliNeedsAdminPassword": "Interfejs CLI zdalnego pokoju wymaga hasła administratora pokoju (SendLogin ACL). Zapisz go pod → hasłem Powtarzacze dla tego pokoju, a następnie spróbuj ponownie. Logowanie BBS gościa nie wystarczy."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",

@@ -4171,7 +4171,8 @@
     "filterRepeaters": "Repetidoras",
     "filterRooms": "Habitaciones",
     "openRoom": "Habitación abierta",
-    "savedPasswordOrphanRoomLabel": "Habitación {{nodeId}}"
+    "savedPasswordOrphanRoomLabel": "Habitación {{nodeId}}",
+    "roomCliNeedsAdminPassword": "La CLI de sala remota necesita la contraseña de administrador de sala (SendLogin ACL). Guárdelo en → Contraseña de repetidores para esta sala e inténtelo de nuevo. El inicio de sesión de BBS invitado no es suficiente."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anuncio (segundos)",

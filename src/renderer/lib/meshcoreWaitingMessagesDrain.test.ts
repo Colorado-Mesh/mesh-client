@@ -192,6 +192,19 @@ describe('isMeshcoreCompanionDrainDeferred', () => {
     expect(isMeshcoreCompanionDrainDeferred()).toBe(true);
     busySpy.mockRestore();
   });
+
+  it('ignores in-flight TraceData while a CLI reply hold is active', () => {
+    const holdSpy = vi
+      .spyOn(meshcoreRepeaterRpcInFlight, 'meshcoreCliReplyHoldActive')
+      .mockReturnValue(true);
+    const inFlightSpy = vi
+      .spyOn(meshcoreTracePathMultiplex, 'meshcoreTraceResponsesInFlightCount')
+      .mockReturnValue(1);
+    // Automatic drains defer during CLI hold; force kicks bypass via options.force.
+    expect(isMeshcoreCompanionDrainDeferred()).toBe(true);
+    holdSpy.mockRestore();
+    inFlightSpy.mockRestore();
+  });
 });
 
 describe('logMeshcoreWaitingMessagesDrainError', () => {

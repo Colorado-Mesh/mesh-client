@@ -6,11 +6,13 @@ import {
   getMeshcoreProcessWaitingMessagesInFlight,
   getMeshcoreWaitingMessagesSilentFollowUpChainCount,
   requestMeshcoreWaitingMessagesFollowUp,
+  requestMeshcoreWaitingMessagesForceFollowUp,
   requestMeshcoreWaitingMessagesManualFollowUp,
   resetMeshcoreProcessWaitingMessagesSync,
   resetMeshcoreWaitingMessagesSilentFollowUpChain,
   setMeshcoreProcessWaitingMessagesInFlight,
   takeMeshcoreWaitingMessagesFollowUp,
+  takeMeshcoreWaitingMessagesForceFollowUp,
   takeMeshcoreWaitingMessagesManualFollowUp,
 } from './meshcoreWaitingMessagesSyncState';
 
@@ -19,6 +21,21 @@ describe('meshcoreWaitingMessagesSyncState follow-up chaining', () => {
     setMeshcoreProcessWaitingMessagesInFlight(null);
     clearMeshcoreWaitingMessagesFollowUp();
     resetMeshcoreWaitingMessagesSilentFollowUpChain();
+  });
+
+  it('force follow-up survives in-flight coalesce and is taken once', () => {
+    expect(takeMeshcoreWaitingMessagesForceFollowUp()).toBeNull();
+    setMeshcoreProcessWaitingMessagesInFlight(Promise.resolve());
+    requestMeshcoreWaitingMessagesForceFollowUp(true);
+    expect(takeMeshcoreWaitingMessagesForceFollowUp()).toEqual({ incrementalOnly: true });
+    expect(takeMeshcoreWaitingMessagesForceFollowUp()).toBeNull();
+  });
+
+  it('force follow-up is cleared by clearMeshcoreWaitingMessagesFollowUp', () => {
+    setMeshcoreProcessWaitingMessagesInFlight(Promise.resolve());
+    requestMeshcoreWaitingMessagesForceFollowUp(true);
+    clearMeshcoreWaitingMessagesFollowUp();
+    expect(takeMeshcoreWaitingMessagesForceFollowUp()).toBeNull();
   });
 
   it('requests follow-up only while a drain is in flight', () => {

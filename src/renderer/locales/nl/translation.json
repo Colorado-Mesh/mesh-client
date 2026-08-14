@@ -4171,7 +4171,8 @@
     "filterRepeaters": "Repeaters",
     "filterRooms": "Kamers",
     "openRoom": "Open Kamer",
-    "savedPasswordOrphanRoomLabel": "Kamer {{nodeId}}"
+    "savedPasswordOrphanRoomLabel": "Kamer {{nodeId}}",
+    "roomCliNeedsAdminPassword": "Externe kamer CLI heeft het wachtwoord van de kamerbeheerder nodig (SendLogin ACL). Sla het op onder → Repeaters-wachtwoord voor deze kamer en probeer het opnieuw. BBS-login voor gasten is niet voldoende."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",

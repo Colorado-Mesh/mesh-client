@@ -724,6 +724,7 @@ export default function RepeatersPanel({
       }
     } catch (e) {
       console.warn('[RepeatersPanel] CLI command error ' + errLikeToLogString(e));
+      addToast(meshcoreRepeaterAdminErrorMessage(t, e), 'error');
     }
   };
 

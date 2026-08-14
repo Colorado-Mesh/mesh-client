@@ -177,6 +177,23 @@ export class RepeaterCommandService {
     }, remaining);
   }
 
+  /**
+   * Restart the CLI reply timer from now (after SENT). Use when companion send was delayed
+   * behind getWaitingMessages / other radio work so the pre-send timer would otherwise expire.
+   */
+  restartPendingTimeoutFromNow(token: string, timeoutMs: number): void {
+    const pending = this.pendingCommands.get(token);
+    if (!pending) return;
+    clearTimeout(pending.timerId);
+    pending.sentAt = Date.now();
+    pending.timeoutMs = timeoutMs;
+    pending.timerId = setTimeout(() => {
+      if (this.pendingCommands.delete(token)) {
+        pending.reject(new Error(`CLI command timed out after ${timeoutMs}ms`));
+      }
+    }, timeoutMs);
+  }
+
   handleResponse(rawResponse: string, senderId?: number): boolean {
     const { token, body } = this.parseResponseToken(rawResponse);
     if (!token) return false;

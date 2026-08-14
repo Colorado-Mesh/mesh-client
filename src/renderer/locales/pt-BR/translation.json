@@ -4171,7 +4171,8 @@
     "filterRepeaters": "Repetidores",
     "filterRooms": "Quartos",
     "openRoom": "Sala Aberta",
-    "savedPasswordOrphanRoomLabel": "Quarto {{nodeId}}"
+    "savedPasswordOrphanRoomLabel": "Quarto {{nodeId}}",
+    "roomCliNeedsAdminPassword": "A CLI da sala remota precisa da senha de administrador da sala (SendLogin ACL). Salve-o sob a → senha Repeaters para esta sala e tente novamente. O login do BBS convidado não é suficiente."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anúncio (segundos)",

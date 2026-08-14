@@ -4173,7 +4173,8 @@
     "filterRepeaters": "Ретрансляторов",
     "filterRooms": "Номера",
     "openRoom": "Открытое помещение",
-    "savedPasswordOrphanRoomLabel": "Помещение {{nodeId}}"
+    "savedPasswordOrphanRoomLabel": "Помещение {{nodeId}}",
+    "roomCliNeedsAdminPassword": "Для интерфейса командной строки удаленного помещения требуется пароль администратора помещения (SendLogin ACL). Сохраните его под → паролем Repeaters для этой комнаты и повторите попытку. Гостевой логин BBS недостаточен."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Интервал объявления (секунды)",

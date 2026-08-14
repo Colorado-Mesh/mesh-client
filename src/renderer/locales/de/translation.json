@@ -4171,7 +4171,8 @@
     "filterRepeaters": "Wiederholbare Felder",
     "filterRooms": "Zimmer",
     "openRoom": "Offener Raum",
-    "savedPasswordOrphanRoomLabel": "Zimmer {{nodeId}}"
+    "savedPasswordOrphanRoomLabel": "Zimmer {{nodeId}}",
+    "roomCliNeedsAdminPassword": "Remote-Raum-CLI benötigt das Raum-Admin-Passwort (SendLogin ACL). Speichern Sie es unter Repeater-Passwort für → diesen Raum und versuchen Sie es dann erneut. Gast-BBS-Anmeldung reicht nicht aus."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Ankündigungsintervall (Sekunden)",

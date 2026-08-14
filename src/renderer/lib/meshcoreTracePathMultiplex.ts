@@ -44,6 +44,17 @@ export function meshcoreTracePendingRouteCount(): number {
   return tracePendingRouteCount;
 }
 
+/** Cancel all pending TraceData waits for a companion connection (e.g. 0-hop CLI preempt). */
+export function cancelAllPendingMeshcoreTracePaths(conn: object, reason = 'cancelled'): number {
+  const state = muxByConn.get(conn);
+  if (!state) return 0;
+  const pending = [...new Set(state.pendingByTag.values())];
+  for (const p of pending) {
+    p.reject(new Error(reason));
+  }
+  return pending.length;
+}
+
 /** @internal Test hook */
 export function resetMeshcoreTraceResponsesInFlightForTests(): void {
   traceResponsesInFlight = 0;
@@ -273,6 +284,15 @@ export function startMeshcoreTracePathMultiplexed(
 
     void runSerialized(async () => {
       try {
+        // Firmware allows one active traceroute cycle. Wait for prior TraceData before
+        // SendTracePath so room-login resolve and user Ping cannot overlap on air.
+        const idleWaitStart = Date.now();
+        while (traceResponsesInFlight > 0) {
+          if (Date.now() - idleWaitStart > extraTimeoutMillis + 60_000) {
+            throw new Error('timeout waiting for prior trace');
+          }
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
         const { estTimeoutMs } = await waitForMeshcoreRadioSentAck(
           conn,
           () => conn.sendCommandSendTracePath(tag, 0, path),

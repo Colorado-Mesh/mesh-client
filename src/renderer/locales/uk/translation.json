@@ -4173,7 +4173,8 @@
     "filterRepeaters": "Ретранслятори",
     "filterRooms": "Кімнати",
     "openRoom": "Відкрита кімната",
-    "savedPasswordOrphanRoomLabel": "Кімната {{nodeId}}"
+    "savedPasswordOrphanRoomLabel": "Кімната {{nodeId}}",
+    "roomCliNeedsAdminPassword": "Інтерфейсу командного рядка віддаленої кімнати потрібен пароль адміністратора кімнати (SendLogin ACL). Збережіть його під → паролем повторювачів для цієї кімнати, а потім повторіть спробу. Гостьовий логін BBS недостатній."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Інтервал оголошення (секунди)",

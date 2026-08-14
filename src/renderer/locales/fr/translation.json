@@ -4171,7 +4171,8 @@
     "filterRepeaters": "Le répéteur",
     "filterRooms": "Chambres",
     "openRoom": "Chambre ouverte",
-    "savedPasswordOrphanRoomLabel": "Pièce {{nodeId}}"
+    "savedPasswordOrphanRoomLabel": "Pièce {{nodeId}}",
+    "roomCliNeedsAdminPassword": "La CLI de la salle distante a besoin du mot de passe de l'administrateur de la salle (SendLogin ACL). Enregistrez-le sous le → mot de passe Répéteurs pour cette pièce, puis réessayez. La connexion au BBS invité ne suffit pas."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalle d'annonce (secondes)",

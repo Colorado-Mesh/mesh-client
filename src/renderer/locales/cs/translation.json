@@ -4173,7 +4173,8 @@
     "filterRepeaters": "Opakovače",
     "filterRooms": "Pokoje",
     "openRoom": "Otevřená Místnost",
-    "savedPasswordOrphanRoomLabel": "Pokoj {{nodeId}}"
+    "savedPasswordOrphanRoomLabel": "Pokoj {{nodeId}}",
+    "roomCliNeedsAdminPassword": "Vzdálená místnost CLI potřebuje heslo správce místnosti (SendLogin ACL). Uložte jej pod → heslem Opakovačů pro tuto místnost a zkuste to znovu. Přihlašovací údaje do BBS pro hosty nestačí."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",

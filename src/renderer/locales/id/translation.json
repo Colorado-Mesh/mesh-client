@@ -4171,7 +4171,8 @@
     "filterRepeaters": "Pengulang",
     "filterRooms": "Ruangan",
     "openRoom": "Ruang terbuka",
-    "savedPasswordOrphanRoomLabel": "Kamar {{nodeId}}"
+    "savedPasswordOrphanRoomLabel": "Kamar {{nodeId}}",
+    "roomCliNeedsAdminPassword": "Remote room CLI membutuhkan password admin room (SendLogin ACL). Simpan di bawah → kata sandi Repeater untuk ruangan ini, lalu coba lagi. Login BBS tamu tidak cukup."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",

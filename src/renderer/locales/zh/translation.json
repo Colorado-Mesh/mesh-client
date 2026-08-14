@@ -4171,7 +4171,8 @@
     "filterRepeaters": "中继器",
     "filterRooms": "房间数",
     "openRoom": "开放房间",
-    "savedPasswordOrphanRoomLabel": "房间{{nodeId}}"
+    "savedPasswordOrphanRoomLabel": "房间{{nodeId}}",
+    "roomCliNeedsAdminPassword": "远程房间CLI需要房间管理员密码（ SendLogin ACL ）。将其保存到此房间的Repeaters→密码下，然后重试。房客BBS登录是不够的。"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",

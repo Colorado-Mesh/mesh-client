@@ -4171,7 +4171,8 @@
     "filterRepeaters": "リピータ",
     "filterRooms": "客室数",
     "openRoom": "オープンルーム",
-    "savedPasswordOrphanRoomLabel": "Room {{nodeId}}"
+    "savedPasswordOrphanRoomLabel": "Room {{nodeId}}",
+    "roomCliNeedsAdminPassword": "リモートルームCLIには、ルーム管理者パスワード(SendLogin ACL)が必要です。この部屋のリピーターの→パスワードの下に保存してから、もう一度お試しください。ゲストのBBSログインが不十分です。"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",

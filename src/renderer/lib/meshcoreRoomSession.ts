@@ -127,6 +127,13 @@ export function meshcoreRoomCanAdmin(nodeId: number): boolean {
   return sessions.get(nodeId)?.role === 'admin';
 }
 
+/** Room ops CLI tokens that require an admin BBS session (guest/readwrite gets no reply). */
+export function meshcoreRoomCliRequiresAdmin(command: string): boolean {
+  const c = command.trim().toLowerCase();
+  if (!c) return false;
+  return c.startsWith('allow.read.only') || c.startsWith('setperm');
+}
+
 export function meshcoreClearAllRoomSessions(): void {
   for (const controller of roomLoginAbortControllers.values()) {
     controller.abort();
@@ -370,12 +377,16 @@ export async function meshcoreRoomTryRelogin(
 ): Promise<boolean> {
   const session = sessions.get(nodeId);
   if (!session) return false;
-  const password =
-    mode === 'admin' && session.adminPassword.length > 0
-      ? session.adminPassword
-      : session.guestPassword;
-  return meshcoreRoomLogin(conn, nodeId, pubKey, password, {
-    adminPassword: session.adminPassword,
+  // Admin mode must use the ops/session admin password — never fall back to guest.
+  // A guest-only "success" would skip meshcoreRoomTryAdminLogin and block CLI.
+  const adminPassword =
+    mode === 'admin'
+      ? resolveRoomAdminPassword(nodeId, session.adminPassword)
+      : session.adminPassword;
+  const password = mode === 'admin' ? adminPassword : session.guestPassword;
+  if (!password.trim()) return false;
+  const ok = await meshcoreRoomLogin(conn, nodeId, pubKey, password, {
+    adminPassword: adminPassword || session.adminPassword,
     guestPassword: session.guestPassword,
     hopsAway: opts?.hopsAway,
     companionTransport: opts?.companionTransport,
@@ -384,6 +395,9 @@ export async function meshcoreRoomTryRelogin(
     () => true,
     () => false,
   );
+  if (!ok) return false;
+  const roleOk = mode === 'admin' ? meshcoreRoomCanAdmin(nodeId) : meshcoreRoomCanPost(nodeId);
+  return roleOk;
 }
 
 export function meshcoreRoomEnsureLoggedIn(nodeId: number, mode: 'post' | 'admin'): boolean {
@@ -397,6 +411,10 @@ export async function meshcoreRoomTryAdminLogin(
   conn: MeshcoreRoomLoginConn,
   nodeId: number,
   pubKey: Uint8Array,
+  opts?: {
+    hopsAway?: number;
+    companionTransport?: MeshcoreCompanionTransport;
+  },
 ): Promise<void> {
   const session = sessions.get(nodeId);
   const adminPassword = resolveRoomAdminPassword(nodeId, session?.adminPassword);
@@ -407,6 +425,8 @@ export async function meshcoreRoomTryAdminLogin(
     adminPassword: adminPassword || session?.adminPassword || '',
     guestPassword: guestPassword || session?.guestPassword || '',
     forceRelogin: session != null && session.role !== 'admin',
+    hopsAway: opts?.hopsAway,
+    companionTransport: opts?.companionTransport,
   });
 }
 
@@ -421,6 +441,9 @@ export async function meshcoreTryRemoteServerLogin(
   runSerialized?: MeshcoreRepeaterRunSerialized,
 ): Promise<void> {
   if (hwModel === 'Room') {
+    // Keep an existing BBS session (including guest/readwrite). forceRelogin with a
+    // distinct ops admin password often times out on firmwares that omit LoginFail.
+    if (meshcoreIsRoomLoggedIn(nodeId)) return;
     await meshcoreRoomTryAdminLogin(conn, nodeId, pubKey);
     return;
   }
