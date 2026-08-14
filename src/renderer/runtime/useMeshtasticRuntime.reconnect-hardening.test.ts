@@ -397,22 +397,27 @@ describe('useMeshtasticRuntime Linux BLE reconnect peripheral id backfill', () =
     );
   });
 
-  it('carries the last known channel list across the disconnect→rebind identity gap', () => {
+  it('resolves channels via the pure resolveMeshtasticChannels selector, caching post-commit only', () => {
     // meshtasticIdentityId is nulled on every disconnect (cleanupSubscriptions) and only
-    // restored once wire subscriptions rebind, briefly making resolvedChannels fall through
-    // to the single-channel `channels` placeholder default — which used to clobber
-    // ChatPanel's channel selection on every reconnect. lastKnownChannelsRef preserves the
-    // real, device-record-backed list through that gap instead.
+    // restored once wire subscriptions rebind, briefly making the resolved channel list
+    // fall through to the single-channel `channels` placeholder default — which used to
+    // clobber ChatPanel's channel selection on every reconnect. resolveMeshtasticChannels
+    // (behavior covered directly in resolveMeshtasticChannels.test.ts, no mocking needed)
+    // bridges that gap via a cache; the cache write must stay out of the useMemo that
+    // calls it (React may replay/discard a render, leaking uncommitted channels) and live
+    // in an effect instead.
+    expect(SOURCE).toContain('resolveMeshtasticChannels(');
     expect(SOURCE).toContain('lastKnownChannelsRef');
     const resolvedChannelsIdx = SOURCE.indexOf('const resolvedChannels = useMemo(');
     expect(resolvedChannelsIdx).toBeGreaterThan(-1);
-    const resolvedChannelsBody = SOURCE.slice(resolvedChannelsIdx, resolvedChannelsIdx + 500);
-    expect(resolvedChannelsBody).toMatch(
-      /meshtasticDeviceRecord\?\.channels\.length[\s\S]*?lastKnownChannelsRef\.current = meshtasticDeviceRecord\.channels/,
+    const resolvedChannelsBody = SOURCE.slice(resolvedChannelsIdx, resolvedChannelsIdx + 400);
+    expect(resolvedChannelsBody).not.toContain('lastKnownChannelsRef.current =');
+    expect(resolvedChannelsBody).toContain('lastKnownChannels: lastKnownChannelsRef.current');
+
+    const cacheEffectIdx = SOURCE.indexOf(
+      'useEffect(() => {\n    if (meshtasticDeviceRecord?.channels.length) {\n      lastKnownChannelsRef.current = meshtasticDeviceRecord.channels;',
     );
-    expect(resolvedChannelsBody).toMatch(
-      /!meshtasticIdentityId && lastKnownChannelsRef\.current\.length > 0[\s\S]*?return lastKnownChannelsRef\.current/,
-    );
+    expect(cacheEffectIdx).toBeGreaterThan(resolvedChannelsIdx);
   });
 
   it('clears the carried-forward channel list on explicit (user-initiated) disconnect only', () => {

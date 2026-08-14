@@ -661,24 +661,47 @@ function ChatPanel({
    * connecting, so `myNodeNum` can still be 0 (no restore attempted) at the lazy
    * initializer above. Re-attempt the restore once a real node number is known —
    * covers both "connected after mount" and "switched to a different node while
-   * this panel stayed mounted" (a different node simply has no/mismatched saved
-   * entry and falls through to the clamp effect above).
+   * this panel stayed mounted". Scoped by protocol + node (not node alone): a
+   * protocol switch remounts ChatPanel (App.tsx keys it on protocol) so this is
+   * belt-and-suspenders, but costs nothing.
    */
-  const channelRestoreAttemptedForNodeRef = useRef<number | null>(myNodeNum > 0 ? myNodeNum : null);
-  /** True for the one save-effect run right after a restore-triggered setChannel, so
-   * that run doesn't persist the pre-restore value it hasn't caught up to yet. */
+  const channelRestoreScopeKey = myNodeNum > 0 ? `${protocol}:${myNodeNum}` : null;
+  const channelRestoreAttemptedForScopeRef = useRef<string | null>(channelRestoreScopeKey);
+  /** True for the one save-effect run right after a restore/reset-triggered setChannel,
+   * so that run doesn't persist the pre-transition value it hasn't caught up to yet. */
   const skipNextChannelSaveRef = useRef(false);
   useEffect(() => {
-    if (myNodeNum <= 0 || channelRestoreAttemptedForNodeRef.current === myNodeNum) return;
-    channelRestoreAttemptedForNodeRef.current = myNodeNum;
+    if (channelRestoreScopeKey == null) return;
+    const previousScope = channelRestoreAttemptedForScopeRef.current;
+    if (previousScope === channelRestoreScopeKey) return;
+    channelRestoreAttemptedForScopeRef.current = channelRestoreScopeKey;
     const persisted = loadActiveChannelInitial(protocol, myNodeNum);
-    if (persisted != null && persisted !== channel && channels.some((c) => c.index === persisted)) {
-      skipNextChannelSaveRef.current = true;
-      setChannel(persisted);
+    if (persisted != null && channels.some((c) => c.index === persisted)) {
+      if (persisted !== channel) {
+        skipNextChannelSaveRef.current = true;
+        setChannel(persisted);
+      }
+      return;
     }
-  }, [protocol, myNodeNum, channels, channel]);
+    // No saved selection for this node/protocol. If we already had one for a
+    // *different* scope (e.g. just switched to a different physical node while
+    // this panel stayed mounted), `channel` may still hold that other scope's
+    // index and `channels` may still be showing its stale, carried-forward list
+    // (see useMeshtasticRuntime's lastKnownChannelsRef) — don't let that leak
+    // into this scope's saved preference. Force back to the default explicitly;
+    // the existing clamp effect can't catch this because the stale index is
+    // still "valid" against the stale list.
+    if (previousScope != null) {
+      const fallback = channels.length > 0 ? channels[0].index : 0;
+      if (fallback !== channel) {
+        skipNextChannelSaveRef.current = true;
+        setChannel(fallback);
+      }
+    }
+  }, [protocol, myNodeNum, channelRestoreScopeKey, channels, channel]);
   useEffect(() => {
-    if (myNodeNum <= 0 || channelRestoreAttemptedForNodeRef.current !== myNodeNum) return;
+    if (channelRestoreScopeKey == null) return;
+    if (channelRestoreAttemptedForScopeRef.current !== channelRestoreScopeKey) return;
     if (skipNextChannelSaveRef.current) {
       skipNextChannelSaveRef.current = false;
       return;
@@ -688,7 +711,7 @@ function ChatPanel({
     // effect above will correct `channel` next render; this run simply skips).
     if (!channels.some((c) => c.index === channel)) return;
     saveActiveChannel(protocol, myNodeNum, channel);
-  }, [protocol, myNodeNum, channel, channels]);
+  }, [protocol, myNodeNum, channelRestoreScopeKey, channel, channels]);
   const [chatActionError, setChatActionError] = useState<{
     message: string;
     viewKey: string;

@@ -134,6 +134,14 @@ export function activeChannelStorageKey(protocol: MeshProtocol, nodeNum: number)
   return `mesh-client:activeChannel:${protocol}:${nodeNum}`;
 }
 
+/**
+ * ChatPanel uses channel index -1 as the "primary" sentinel (MeshCore); every
+ * other valid index is >= 0. Reject anything else, including other negatives.
+ */
+function isValidChannelIndex(value: number): boolean {
+  return Number.isFinite(value) && Number.isInteger(value) && value >= -1;
+}
+
 /** Last-selected channel index for this protocol + node (null if missing/invalid). */
 export function loadActiveChannelInitial(protocol: MeshProtocol, nodeNum: number): number | null {
   if (!(nodeNum > 0)) return null;
@@ -141,7 +149,7 @@ export function loadActiveChannelInitial(protocol: MeshProtocol, nodeNum: number
     const raw = localStorage.getItem(activeChannelStorageKey(protocol, nodeNum));
     if (raw == null || raw === '') return null;
     const parsed = Number(raw);
-    if (!Number.isFinite(parsed) || parsed < 0) return null;
+    if (!isValidChannelIndex(parsed)) return null;
     return parsed;
   } catch (e) {
     console.debug(
@@ -158,7 +166,7 @@ export function saveActiveChannel(
   channelIndex: number,
 ): void {
   if (!(nodeNum > 0)) return;
-  if (!Number.isFinite(channelIndex) || channelIndex < 0) return;
+  if (!isValidChannelIndex(channelIndex)) return;
   try {
     localStorage.setItem(activeChannelStorageKey(protocol, nodeNum), String(channelIndex));
   } catch (e) {

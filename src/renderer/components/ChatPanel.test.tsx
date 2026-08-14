@@ -3797,6 +3797,43 @@ describe('ChatPanel — channel selection restored across reconnect', () => {
 
     localStorage.setItem(draftsStorageKey('meshtastic'), '{}');
   });
+
+  it("does not leak the previous node's channel into a different node's saved key on a live switch", async () => {
+    // Regression (CodeRabbit, PR #858): switching from node A (has a saved
+    // selection) to node B (no saved value yet) while ChatPanel stays mounted
+    // must not persist A's channel under B's key — even though `channels` can
+    // transiently still show A's stale, carried-forward list right after the
+    // switch (see useMeshtasticRuntime's lastKnownChannelsRef).
+    localStorage.clear();
+    saveActiveChannel('meshtastic', 1, 1); // node 1 (A) previously selected Admin (index 1)
+
+    const channels = [
+      { index: 0, name: 'General' },
+      { index: 1, name: 'Admin' },
+    ];
+
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} protocol="meshtastic" myNodeNum={1} channels={channels} />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+
+    // Switch to node 2 (B) while the panel stays mounted; channels prop still
+    // shows A's list, as it would transiently during a live node switch.
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} protocol="meshtastic" myNodeNum={2} channels={channels} />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+
+    await waitFor(() => {
+      expect(loadActiveChannelInitial('meshtastic', 2)).not.toBeNull();
+    });
+    expect(loadActiveChannelInitial('meshtastic', 2)).not.toBe(1); // A's index must not leak
+    expect(loadActiveChannelInitial('meshtastic', 1)).toBe(1); // A's own saved value untouched
+  });
 });
 
 describe('ChatPanel — notification sound on new messages', () => {

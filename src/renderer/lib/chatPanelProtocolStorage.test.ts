@@ -92,6 +92,19 @@ describe('chatPanelProtocolStorage', () => {
 
     localStorage.setItem(activeChannelStorageKey('meshtastic', 5), 'not-a-number');
     expect(loadActiveChannelInitial('meshtastic', 5)).toBeNull();
+
+    saveActiveChannel('meshtastic', 5, NaN);
+    expect(loadActiveChannelInitial('meshtastic', 5)).toBeNull();
+    saveActiveChannel('meshtastic', 5, 1.5);
+    expect(loadActiveChannelInitial('meshtastic', 5)).toBeNull();
+    saveActiveChannel('meshtastic', 5, -2); // below the -1 sentinel floor
+    expect(loadActiveChannelInitial('meshtastic', 5)).toBeNull();
+  });
+
+  it('persists and loads the MeshCore primary-channel sentinel (-1)', () => {
+    saveActiveChannel('meshcore', 7, -1);
+    expect(localStorage.getItem(activeChannelStorageKey('meshcore', 7))).toBe('-1');
+    expect(loadActiveChannelInitial('meshcore', 7)).toBe(-1);
   });
 
   it('migrates legacy lastRead only into meshtastic key', () => {

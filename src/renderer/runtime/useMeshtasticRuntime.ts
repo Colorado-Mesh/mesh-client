@@ -143,6 +143,7 @@ import {
   meshtasticXmodemDownload,
   meshtasticXmodemUpload,
 } from '../lib/meshtastic/meshtasticXmodemTransfer';
+import { resolveMeshtasticChannels } from '../lib/meshtastic/resolveMeshtasticChannels';
 import { setRemoteAdminReadsActive } from '../lib/meshtasticBacklogUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
@@ -4345,16 +4346,24 @@ export function useMeshtasticRuntime() {
     return queueStatus;
   }, [meshtasticIdentityId, queueStatus, meshtasticConnectionFromStore]);
 
-  const resolvedChannels = useMemo(() => {
+  const resolvedChannels = useMemo(
+    () =>
+      resolveMeshtasticChannels({
+        meshtasticIdentityId,
+        deviceRecordChannels: meshtasticDeviceRecord?.channels,
+        hookChannels: channels,
+        lastKnownChannels: lastKnownChannelsRef.current,
+      }),
+    [meshtasticIdentityId, channels, meshtasticDeviceRecord],
+  );
+  // Cache the last known real channel list post-commit — never mutate the ref
+  // inside the useMemo above; React may replay or discard a render, which
+  // would leak an uncommitted device's channels into the cache.
+  useEffect(() => {
     if (meshtasticDeviceRecord?.channels.length) {
       lastKnownChannelsRef.current = meshtasticDeviceRecord.channels;
-      return meshtasticDeviceRecord.channels;
     }
-    if (!meshtasticIdentityId && lastKnownChannelsRef.current.length > 0) {
-      return lastKnownChannelsRef.current;
-    }
-    return channels;
-  }, [meshtasticIdentityId, channels, meshtasticDeviceRecord]);
+  }, [meshtasticDeviceRecord]);
 
   const resolvedChannelConfigs = useMemo(() => {
     if (!meshtasticIdentityId) return channelConfigs;
