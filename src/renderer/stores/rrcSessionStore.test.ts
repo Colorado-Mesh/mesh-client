@@ -12,6 +12,7 @@ describe('rrcSessionStore', () => {
   beforeEach(() => {
     useRrcSessionStore.setState({ unreadByHub: new Map(), unreadByRoom: new Map() });
     useRrcSessionStore.getState().clearSession();
+    useRrcSessionStore.getState().setRrcPanelFocused(false);
     useRrcSessionStore.getState().setNickname('tester');
     useRrcSessionStore.getState().setLocalIdentityHash('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
     vi.mocked(window.electronAPI.db.insertRrcMessage).mockClear();
@@ -139,6 +140,48 @@ describe('rrcSessionStore', () => {
     expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBe(1);
     expect(useRrcSessionStore.getState().totalUnread()).toBe(1);
     expect(useRrcSessionStore.getState().unreadForHub('28c7c1a68c735693aa8e6b8193ed44b2')).toBe(1);
+  });
+
+  it('bumps unread for active room when RRC panel is not focused', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    store.setRrcPanelFocused(false);
+    store.addMessage(
+      {
+        id: '1',
+        room: '#lobby',
+        kind: 'msg',
+        body: 'hi',
+        sender_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        timestamp: 1,
+      },
+      { bumpUnread: true },
+    );
+    expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBe(1);
+    expect(useRrcSessionStore.getState().totalUnread()).toBe(1);
+  });
+
+  it('does not bump unread for active room when RRC panel is focused', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    store.setRrcPanelFocused(true);
+    store.addMessage(
+      {
+        id: '1',
+        room: '#lobby',
+        kind: 'msg',
+        body: 'hi',
+        sender_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        timestamp: 1,
+      },
+      { bumpUnread: true },
+    );
+    expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBeUndefined();
+    expect(useRrcSessionStore.getState().totalUnread()).toBe(0);
   });
 
   it('stashes hub unread across disconnect wipe', () => {

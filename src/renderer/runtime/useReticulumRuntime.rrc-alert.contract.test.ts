@@ -130,6 +130,20 @@ describe('useReticulumRuntime RRC unread ingest (handleSidecarEvent)', () => {
     unmount();
   });
 
+  it('bumps unread for active-room traffic when RRC panel is not focused', async () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ rrcUnreadAllRoomMessages: true }),
+    );
+    useRrcSessionStore.getState().roomJoined('#lobby');
+    useRrcSessionStore.getState().setActiveRoom('#lobby');
+    expect(useRrcSessionStore.getState().rrcPanelFocused).toBe(false);
+    const { onEvent, unmount } = await connectAndGetOnEvent();
+    sendRrcMessage(onEvent, { id: 'active-1', room: '#lobby', kind: 'msg', body: 'hello active' });
+    expect(lobbyUnread()).toBe(1);
+    unmount();
+  });
+
   it('skips plain room traffic in mentions mode and bumps @nick', async () => {
     localStorage.setItem(
       APP_SETTINGS_STORAGE_KEY,
