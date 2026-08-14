@@ -458,6 +458,14 @@ export function useMeshtasticRuntime() {
   // Nodes heard via RF this session — prevents MQTT-only flag from being set
   const rfHeardNodeIds = useRef<Set<number>>(new Set());
   const lastRfSelfNodeIdRef = useRef<number>(loadPersistedLastRfSelfNodeId());
+  /**
+   * Last real (device-record-backed) channel list, carried across the brief gap
+   * between disconnect and wire-effect rebind (`meshtasticIdentityId` transiently
+   * null) so `resolvedChannels` doesn't collapse to the single-channel `channels`
+   * placeholder default mid-reconnect — that transient collapse was clobbering
+   * ChatPanel's channel selection on every reconnect.
+   */
+  const lastKnownChannelsRef = useRef<{ index: number; name: string }[]>([]);
   const virtualNodeIdRef = useRef<number>(getOrCreateVirtualNodeId());
   // MQTT-only fallback; RF sessions use the ingest session's shared RF/MQTT registry.
   const mqttOnlySeenPacketIdsRef = useRef<Map<string, number>>(new Map());
@@ -867,6 +875,12 @@ export function useMeshtasticRuntime() {
     meshtasticIdentityIdRef.current = null;
     meshtasticDriverConnectedRef.current = false;
     setMeshtasticIdentityId(null);
+    if (meshtasticExplicitDisconnectRef.current) {
+      // User-initiated disconnect (no auto-reconnect planned) — stop bridging the
+      // now-disconnected device's channel list; a genuine reconnect gap (flag still
+      // false here) keeps it so ChatPanel's selection survives the gap instead.
+      lastKnownChannelsRef.current = [];
+    }
     for (const unsub of unsubscribesRef.current) {
       try {
         unsub();
@@ -4332,8 +4346,13 @@ export function useMeshtasticRuntime() {
   }, [meshtasticIdentityId, queueStatus, meshtasticConnectionFromStore]);
 
   const resolvedChannels = useMemo(() => {
-    if (!meshtasticIdentityId) return channels;
-    if (meshtasticDeviceRecord?.channels.length) return meshtasticDeviceRecord.channels;
+    if (meshtasticDeviceRecord?.channels.length) {
+      lastKnownChannelsRef.current = meshtasticDeviceRecord.channels;
+      return meshtasticDeviceRecord.channels;
+    }
+    if (!meshtasticIdentityId && lastKnownChannelsRef.current.length > 0) {
+      return lastKnownChannelsRef.current;
+    }
     return channels;
   }, [meshtasticIdentityId, channels, meshtasticDeviceRecord]);
 

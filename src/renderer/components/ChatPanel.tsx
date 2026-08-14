@@ -86,6 +86,7 @@ import { playMessageNotification } from '../lib/chatNotifications';
 import {
   dismissedDmTabsStorageKey,
   lastReadStorageKey,
+  loadActiveChannelInitial,
   loadActiveDmInitial,
   loadMutedViews,
   loadOpenDmTabsInitial,
@@ -93,6 +94,7 @@ import {
   loadStarred,
   notifyPersistedLastReadChanged,
   openDmTabsStorageKey,
+  saveActiveChannel,
   saveActiveDm,
   saveMutedViews,
   saveStarred,
@@ -644,12 +646,49 @@ function ChatPanel({
   }, []);
 
   useImperativeHandle(scrollToTopRef, () => scrollToTop, [scrollToTop]);
-  const [channel, setChannel] = useState(() => (channels.length > 0 ? channels[0].index : 0));
+  const [channel, setChannel] = useState(() => {
+    const persisted = myNodeNum > 0 ? loadActiveChannelInitial(protocol, myNodeNum) : null;
+    if (persisted != null && channels.some((c) => c.index === persisted)) return persisted;
+    return channels.length > 0 ? channels[0].index : 0;
+  });
   useEffect(() => {
     if (channels.length > 0 && !channels.some((c) => c.index === channel)) {
       setChannel(channels[0].index);
     }
   }, [channels, channel]);
+  /**
+   * ChatPanel mounts once per protocol tab and often before the radio finishes
+   * connecting, so `myNodeNum` can still be 0 (no restore attempted) at the lazy
+   * initializer above. Re-attempt the restore once a real node number is known —
+   * covers both "connected after mount" and "switched to a different node while
+   * this panel stayed mounted" (a different node simply has no/mismatched saved
+   * entry and falls through to the clamp effect above).
+   */
+  const channelRestoreAttemptedForNodeRef = useRef<number | null>(myNodeNum > 0 ? myNodeNum : null);
+  /** True for the one save-effect run right after a restore-triggered setChannel, so
+   * that run doesn't persist the pre-restore value it hasn't caught up to yet. */
+  const skipNextChannelSaveRef = useRef(false);
+  useEffect(() => {
+    if (myNodeNum <= 0 || channelRestoreAttemptedForNodeRef.current === myNodeNum) return;
+    channelRestoreAttemptedForNodeRef.current = myNodeNum;
+    const persisted = loadActiveChannelInitial(protocol, myNodeNum);
+    if (persisted != null && persisted !== channel && channels.some((c) => c.index === persisted)) {
+      skipNextChannelSaveRef.current = true;
+      setChannel(persisted);
+    }
+  }, [protocol, myNodeNum, channels, channel]);
+  useEffect(() => {
+    if (myNodeNum <= 0 || channelRestoreAttemptedForNodeRef.current !== myNodeNum) return;
+    if (skipNextChannelSaveRef.current) {
+      skipNextChannelSaveRef.current = false;
+      return;
+    }
+    // Only persist a selection the current channel list actually has — never a
+    // momentarily-invalid index from a channel list that just shrank (the clamp
+    // effect above will correct `channel` next render; this run simply skips).
+    if (!channels.some((c) => c.index === channel)) return;
+    saveActiveChannel(protocol, myNodeNum, channel);
+  }, [protocol, myNodeNum, channel, channels]);
   const [chatActionError, setChatActionError] = useState<{
     message: string;
     viewKey: string;

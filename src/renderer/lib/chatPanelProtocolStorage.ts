@@ -121,6 +121,51 @@ export function saveActiveDm(protocol: MeshProtocol, nodeId: number | null): voi
   }
 }
 
+/**
+ * Scoped by the connected device's own node number (not just protocol) so that
+ * switching to a genuinely different physical node — which can reuse the same
+ * internal identity slot as the node just disconnected from — doesn't restore a
+ * channel selection that belonged to the previous device. A same-node
+ * disconnect/reconnect keeps the same node number, so the prior selection is
+ * still found and restored; a different node simply misses and falls back to
+ * the default channel.
+ */
+export function activeChannelStorageKey(protocol: MeshProtocol, nodeNum: number): string {
+  return `mesh-client:activeChannel:${protocol}:${nodeNum}`;
+}
+
+/** Last-selected channel index for this protocol + node (null if missing/invalid). */
+export function loadActiveChannelInitial(protocol: MeshProtocol, nodeNum: number): number | null {
+  if (!(nodeNum > 0)) return null;
+  try {
+    const raw = localStorage.getItem(activeChannelStorageKey(protocol, nodeNum));
+    if (raw == null || raw === '') return null;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed < 0) return null;
+    return parsed;
+  } catch (e) {
+    console.debug(
+      '[chatPanelProtocolStorage] loadActiveChannelInitial failed ' + errLikeToLogString(e),
+    );
+    return null;
+  }
+}
+
+/** Persist last-selected channel index for this protocol + node. No-op without a node number. */
+export function saveActiveChannel(
+  protocol: MeshProtocol,
+  nodeNum: number,
+  channelIndex: number,
+): void {
+  if (!(nodeNum > 0)) return;
+  if (!Number.isFinite(channelIndex) || channelIndex < 0) return;
+  try {
+    localStorage.setItem(activeChannelStorageKey(protocol, nodeNum), String(channelIndex));
+  } catch (e) {
+    console.debug('[chatPanelProtocolStorage] saveActiveChannel failed ' + errLikeToLogString(e));
+  }
+}
+
 export function draftsStorageKey(protocol: MeshProtocol): string {
   return `mesh-client:drafts:${protocol}`;
 }

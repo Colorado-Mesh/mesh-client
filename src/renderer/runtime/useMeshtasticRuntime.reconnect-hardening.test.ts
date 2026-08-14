@@ -396,4 +396,36 @@ describe('useMeshtasticRuntime Linux BLE reconnect peripheral id backfill', () =
       /pushMqttChannelKeys\(\);\s*\}, \[channelConfigs, mqttStatus, pushMqttChannelKeys\]/,
     );
   });
+
+  it('carries the last known channel list across the disconnect→rebind identity gap', () => {
+    // meshtasticIdentityId is nulled on every disconnect (cleanupSubscriptions) and only
+    // restored once wire subscriptions rebind, briefly making resolvedChannels fall through
+    // to the single-channel `channels` placeholder default — which used to clobber
+    // ChatPanel's channel selection on every reconnect. lastKnownChannelsRef preserves the
+    // real, device-record-backed list through that gap instead.
+    expect(SOURCE).toContain('lastKnownChannelsRef');
+    const resolvedChannelsIdx = SOURCE.indexOf('const resolvedChannels = useMemo(');
+    expect(resolvedChannelsIdx).toBeGreaterThan(-1);
+    const resolvedChannelsBody = SOURCE.slice(resolvedChannelsIdx, resolvedChannelsIdx + 500);
+    expect(resolvedChannelsBody).toMatch(
+      /meshtasticDeviceRecord\?\.channels\.length[\s\S]*?lastKnownChannelsRef\.current = meshtasticDeviceRecord\.channels/,
+    );
+    expect(resolvedChannelsBody).toMatch(
+      /!meshtasticIdentityId && lastKnownChannelsRef\.current\.length > 0[\s\S]*?return lastKnownChannelsRef\.current/,
+    );
+  });
+
+  it('clears the carried-forward channel list on explicit (user-initiated) disconnect only', () => {
+    // Bridging the reconnect gap is only correct while an auto-reconnect is actually
+    // in flight for the *same* device. A user-initiated disconnect (no reconnect
+    // planned) must not leave the disconnected device's channel list lingering
+    // indefinitely — cleanupSubscriptions() also runs mid-reconnect, where the flag
+    // is still false and the ref must be left alone.
+    const cleanupIdx = SOURCE.indexOf('const cleanupSubscriptions = useCallback(');
+    expect(cleanupIdx).toBeGreaterThan(-1);
+    const cleanupBody = SOURCE.slice(cleanupIdx, cleanupIdx + 1200);
+    expect(cleanupBody).toMatch(
+      /meshtasticExplicitDisconnectRef\.current[\s\S]*?lastKnownChannelsRef\.current = \[\]/,
+    );
+  });
 });

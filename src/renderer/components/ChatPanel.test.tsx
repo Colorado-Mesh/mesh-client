@@ -5,7 +5,13 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import * as chatNotifications from '../lib/chatNotifications';
-import { draftsStorageKey, lastReadStorageKey, saveDraft } from '../lib/chatPanelProtocolStorage';
+import {
+  draftsStorageKey,
+  lastReadStorageKey,
+  loadActiveChannelInitial,
+  saveActiveChannel,
+  saveDraft,
+} from '../lib/chatPanelProtocolStorage';
 import { getDistFromChatBottom, VIRTUALIZER_SCROLL_END_THRESHOLD } from '../lib/chatScrollUtils';
 import i18n from '../lib/i18n';
 import { ensureLocaleLoaded } from '../lib/localeResources';
@@ -3700,6 +3706,94 @@ describe('ChatPanel — draft restored on initial mount', () => {
 
     const textarea = await waitForComposer();
     expect(textarea).toHaveValue('persisted draft');
+
+    localStorage.setItem(draftsStorageKey('meshtastic'), '{}');
+  });
+});
+
+describe('ChatPanel — channel selection restored across reconnect', () => {
+  it('restores the previously selected channel for this node on mount', async () => {
+    localStorage.clear();
+    saveActiveChannel('meshtastic', 1, 1); // baseProps.myNodeNum is 1; select channel index 1
+    saveDraft('meshtastic', 'ch:1', 'admin draft'); // distinguishes which channel is active
+
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshtastic"
+          channels={[
+            { index: 0, name: 'General' },
+            { index: 1, name: 'Admin' },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    const textarea = await waitForComposer();
+    expect(textarea).toHaveValue('admin draft');
+
+    localStorage.setItem(draftsStorageKey('meshtastic'), '{}');
+  });
+
+  it('falls back to the default channel when the persisted selection belongs to a different node', async () => {
+    localStorage.clear();
+    saveActiveChannel('meshtastic', 999, 1); // a different node's saved selection
+    saveDraft('meshtastic', 'ch:0', 'general draft');
+
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshtastic"
+          channels={[
+            { index: 0, name: 'General' },
+            { index: 1, name: 'Admin' },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    const textarea = await waitForComposer();
+    expect(textarea).toHaveValue('general draft');
+
+    localStorage.setItem(draftsStorageKey('meshtastic'), '{}');
+  });
+
+  it('restores a saved channel once myNodeNum becomes known after mount, without clobbering it', async () => {
+    // ChatPanel mounts once per protocol tab and can do so before the radio finishes
+    // connecting (myNodeNum still 0) — the restore must re-run once myNodeNum arrives,
+    // and must not immediately overwrite the just-restored value with the pre-restore
+    // default (regression: both the restore and the save effect fire on the same
+    // myNodeNum-changing commit).
+    localStorage.clear();
+    saveActiveChannel('meshtastic', 1, 1); // saved from a prior session for node 1
+    saveDraft('meshtastic', 'ch:1', 'admin draft');
+
+    const channels = [
+      { index: 0, name: 'General' },
+      { index: 1, name: 'Admin' },
+    ];
+
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} protocol="meshtastic" myNodeNum={0} channels={channels} />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} protocol="meshtastic" myNodeNum={1} channels={channels} />
+      </ToastProvider>,
+    );
+
+    const textarea = await waitForComposer();
+    await waitFor(() => {
+      expect(textarea).toHaveValue('admin draft');
+    });
+    // The saved value must survive the restore — not get clobbered back to the default.
+    expect(loadActiveChannelInitial('meshtastic', 1)).toBe(1);
 
     localStorage.setItem(draftsStorageKey('meshtastic'), '{}');
   });
