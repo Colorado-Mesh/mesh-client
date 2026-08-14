@@ -101,6 +101,20 @@ describe('chatPanelProtocolStorage', () => {
     expect(loadActiveChannelInitial('meshtastic', 5)).toBeNull();
   });
 
+  it('rejects malformed node numbers and whitespace-only stored values', () => {
+    // Fractional/infinite node numbers must not read or write a key at all.
+    saveActiveChannel('meshtastic', 1.5, 3);
+    expect(loadActiveChannelInitial('meshtastic', 1.5)).toBeNull();
+    saveActiveChannel('meshtastic', Infinity, 3);
+    expect(loadActiveChannelInitial('meshtastic', Infinity)).toBeNull();
+    expect(loadActiveChannelInitial('meshtastic', NaN)).toBeNull();
+
+    // A whitespace-only stored value must not silently parse as channel 0
+    // (Number(' ') === 0 in JS).
+    localStorage.setItem(activeChannelStorageKey('meshtastic', 9), '   ');
+    expect(loadActiveChannelInitial('meshtastic', 9)).toBeNull();
+  });
+
   it('persists and loads the MeshCore primary-channel sentinel (-1)', () => {
     saveActiveChannel('meshcore', 7, -1);
     expect(localStorage.getItem(activeChannelStorageKey('meshcore', 7))).toBe('-1');

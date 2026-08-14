@@ -142,12 +142,17 @@ function isValidChannelIndex(value: number): boolean {
   return Number.isFinite(value) && Number.isInteger(value) && value >= -1;
 }
 
+/** Node numbers are always positive integers; reject fractional/infinite input. */
+function isValidNodeNum(value: number): boolean {
+  return Number.isSafeInteger(value) && value > 0;
+}
+
 /** Last-selected channel index for this protocol + node (null if missing/invalid). */
 export function loadActiveChannelInitial(protocol: MeshProtocol, nodeNum: number): number | null {
-  if (!(nodeNum > 0)) return null;
+  if (!isValidNodeNum(nodeNum)) return null;
   try {
     const raw = localStorage.getItem(activeChannelStorageKey(protocol, nodeNum));
-    if (raw == null || raw === '') return null;
+    if (raw == null || raw.trim() === '') return null;
     const parsed = Number(raw);
     if (!isValidChannelIndex(parsed)) return null;
     return parsed;
@@ -165,7 +170,7 @@ export function saveActiveChannel(
   nodeNum: number,
   channelIndex: number,
 ): void {
-  if (!(nodeNum > 0)) return;
+  if (!isValidNodeNum(nodeNum)) return;
   if (!isValidChannelIndex(channelIndex)) return;
   try {
     localStorage.setItem(activeChannelStorageKey(protocol, nodeNum), String(channelIndex));
