@@ -2,7 +2,7 @@
 
 Deep subsystem reference for AI assistants. Open this when a task touches MeshCore repeater admin RPCs, trace/ping, neighbors paging, CLI, or waiting-message drain. Hard rules live in [`AGENTS.md`](../../AGENTS.md).
 
-**Repeaters & Rooms ops tab:** [`RepeatersPanel.tsx`](../../src/renderer/components/RepeatersPanel.tsx) lists **both** `hw_model === 'Repeater'` and `hw_model === 'Room'` (All / Repeaters / Rooms filter). Rooms BBS stays on the Rooms tab; Manage there jumps here via `pendingFocusNodeId`. Admin passwords use [`meshcoreInfraAdminSecrets.ts`](../../src/renderer/lib/meshcoreInfraAdminSecrets.ts) (two `app_settings` prefixes; room forget clears **admin only**). Room CLI goes through `sendRoomAdminCliCommand` (forwards `confirmedDanger`). Room-only CLI pills: `get acl`, `allow.read.only on|off` + ACL `setperm` form.
+**Repeaters & Rooms ops tab:** [`RepeatersPanel.tsx`](../../src/renderer/components/RepeatersPanel.tsx) lists **both** `hw_model === 'Repeater'` and `hw_model === 'Room'` (All / Repeaters / Rooms filter). Sidebar label is `tabs.repeaters` (**Repeaters**); in-panel title is `repeatersPanel.title` (**Repeaters & Rooms**). Rooms BBS stays on the Rooms tab; Manage there jumps here via `pendingFocusNodeId`. Admin passwords use [`meshcoreInfraAdminSecrets.ts`](../../src/renderer/lib/meshcoreInfraAdminSecrets.ts) (two `app_settings` prefixes; room forget clears **admin only**). Room CLI goes through `sendRoomAdminCliCommand` (forwards `confirmedDanger`). Room-only CLI pills: `get acl`, `allow.read.only on|off` + ACL `setperm` form.
 
 MeshCore firmware **serializes traceroutes** — one active trace cycle per RF link. mesh-client enforces:
 
