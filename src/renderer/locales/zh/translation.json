@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
     "footerWebsiteTitle": "Colorado Mesh website",
-    "loadingApp": "正在加载网格客户端"
+    "loadingApp": "正在加载网格客户端",
+    "reticulumQueueTooltip": "本地RNode “{{name}}”的主机TX队列：等待无线电的数据包（多个RNode时最糟糕的填充）。绿色在25%以下，琥珀色在60%以下，红色在60%或以上。",
+    "reticulumQueueTooltipGeneric": "最繁忙的本地RNode的主机TX队列：等待无线电的数据包。绿色在25%以下，琥珀色在60%以下，红色在60%或以上。",
+    "reticulumTxBuffering": "将出站数据包缓冲到本地RNode （主机TX队列排空）。",
+    "reticulumTxBufferingNamed": "正在缓冲“{{name}}”上的出站数据包（主机TX队列排出）。"
   },
   "appPanel": {
     "failedSaveRetention": "无法保存邮件保留设置。",

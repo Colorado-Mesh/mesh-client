@@ -496,6 +496,29 @@ Log when `LinkManager` opportunistic inbound-raw `try_send` fails because the bo
 
 When upstream logs (or otherwise surfaces) inbound-raw saturation the same way, remove this patch and the apply step.
 
+## rsReticulum-interface-tx-queue-stats.patch
+
+Expose host outbound TX mpsc fill on `GetInterfaceStats` as `tx_queue_used` / `tx_queue_max` (for mesh-client header Q badge + buffering indicator).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | floated `origin/main` (regenerate; record short SHA in PR) |
+| **Upstream PR** | none yet (mesh-client-local) |
+
+**Touches:** `crates/rns-transport/src/messages.rs`, `crates/rns-transport/src/actor/rpc.rs`
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-interface-tx-queue-stats.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`.
+
+### Sunset
+
+When ratspeak/rsReticulum exposes equivalent live TX queue depth on interface stats, remove this patch and the apply step.
+
 ## rsLXMF-propagation-client-abort-transfer.patch
 
 Adds `PropagationClient::abort_transfer` so Cancel / mid-transfer abort leaves the client **Idle**. Without it, a cancelled Sync can leave `/get` stuck busy and the next Sync returns `PROPAGATION_RETRIEVE_BUSY` forever (or Auto falsely concludes there are no PNs).

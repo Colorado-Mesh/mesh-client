@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh di GitHub",
     "footerWebsiteTitle": "Laman web Colorado Mesh",
-    "loadingApp": "Memuat Klien Mesh"
+    "loadingApp": "Memuat Klien Mesh",
+    "reticulumQueueTooltip": "Antrean TX tuan rumah untuk RNode lokal \"{{name}} \": paket menunggu radio (isi terburuk ketika beberapa RNode). Hijau di bawah 25%, kuning di bawah 60%, merah pada 60% atau lebih.",
+    "reticulumQueueTooltipGeneric": "Antrean TX tuan rumah untuk RNode lokal tersibuk: paket menunggu radio. Hijau di bawah 25%, kuning di bawah 60%, merah pada 60% atau lebih.",
+    "reticulumTxBuffering": "Menyangga paket keluar ke RNode lokal (host TX queue draining).",
+    "reticulumTxBufferingNamed": "Menyangga paket keluar pada \"{{name}}\" (pengeringan antrian TX tuan rumah)."
   },
   "appPanel": {
     "failedSaveRetention": "Gagal menyimpan setelan retensi pesan.",

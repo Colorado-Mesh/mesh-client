@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh sur GitHub",
     "footerWebsiteTitle": "Site Web du Colorado Mesh",
-    "loadingApp": "Chargement du client de maillage"
+    "loadingApp": "Chargement du client de maillage",
+    "reticulumQueueTooltip": "File d'attente TX hôte pour le RNode local \"{{name}}\" : paquets en attente de la radio (pire remplissage lorsque plusieurs RNodes). Vert moins de 25 %, ambre moins de 60 %, rouge à 60 % ou plus.",
+    "reticulumQueueTooltipGeneric": "File d'attente TX de l'hôte pour le RNode local le plus occupé : paquets en attente de la radio. Vert moins de 25 %, ambre moins de 60 %, rouge à 60 % ou plus.",
+    "reticulumTxBuffering": "Mise en mémoire tampon des paquets sortants vers un RNode local (vidange de la file d'attente TX de l'hôte).",
+    "reticulumTxBufferingNamed": "Mise en mémoire tampon des paquets sortants sur « {{name}} » (vidange de la file d'attente TX de l'hôte)."
   },
   "appPanel": {
     "failedSaveRetention": "Impossible d'enregistrer le paramètre de rétention des messages.",

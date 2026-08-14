@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh su GitHub",
     "footerWebsiteTitle": "Sito web Colorado Mesh",
-    "loadingApp": "Caricamento del client mesh"
+    "loadingApp": "Caricamento del client mesh",
+    "reticulumQueueTooltip": "Coda TX host per RNode locale \"{{name}}\": pacchetti in attesa della radio (riempimento peggiore quando più RNode). Verde sotto il 25%, ambrato sotto il 60%, rosso al 60% o più.",
+    "reticulumQueueTooltipGeneric": "Coda TX host per l'RNode locale più trafficato: pacchetti in attesa della radio. Verde sotto il 25%, ambrato sotto il 60%, rosso al 60% o più.",
+    "reticulumTxBuffering": "Bufferizzazione dei pacchetti in uscita su un RNode locale (svuotamento della coda TX dell'host).",
+    "reticulumTxBufferingNamed": "Buffer dei pacchetti in uscita su \"{{name}}\" (svuotamento della coda TX dell'host)."
   },
   "appPanel": {
     "failedSaveRetention": "Impossibile salvare l'impostazione di conservazione dei messaggi.",

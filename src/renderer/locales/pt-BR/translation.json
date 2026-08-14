@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
     "footerWebsiteTitle": "Colorado Mesh website",
-    "loadingApp": "Carregando o cliente de malha"
+    "loadingApp": "Carregando o cliente de malha",
+    "reticulumQueueTooltip": "Fila TX do host para RNode local \"{{name}}\": pacotes aguardando o rádio (pior preenchimento quando vários RNodes). Verde abaixo de 25%, âmbar abaixo de 60%, vermelho a 60% ou mais.",
+    "reticulumQueueTooltipGeneric": "Fila TX do host para o RNode local mais movimentado: pacotes aguardando o rádio. Verde abaixo de 25%, âmbar abaixo de 60%, vermelho a 60% ou mais.",
+    "reticulumTxBuffering": "Buffer de pacotes de saída para um RNode local (drenagem da fila TX do host).",
+    "reticulumTxBufferingNamed": "Armazenando pacotes de saída em \"{{name}}\" (drenagem da fila TX do host)."
   },
   "appPanel": {
     "failedSaveRetention": "Falha ao salvar a configuração de retenção de mensagens.",

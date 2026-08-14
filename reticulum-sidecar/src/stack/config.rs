@@ -470,6 +470,8 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         } else {
             None
         },
+        tx_queue_used: None,
+        tx_queue_max: None,
         extra_config: {
             let mut extras = HashMap::new();
             for key in &block.order {
@@ -838,6 +840,8 @@ pub fn add_interface_to_config(
         flow_control: req
             .flow_control
             .or_else(|| default_flow_control_for_iface_type(&req.iface_type)),
+        tx_queue_used: None,
+        tx_queue_max: None,
         extra_config: req.extra_config.clone(),
     };
 
@@ -2597,6 +2601,8 @@ target_port = 4242
             network_name: None,
             passphrase: None,
             flow_control: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
             extra_config: {
                 let mut m = HashMap::new();
                 m.insert("ok".into(), "1".into());

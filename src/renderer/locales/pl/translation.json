@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
     "footerWebsiteTitle": "Witryna internetowa Colorado Mesh",
-    "loadingApp": "Wczytywanie klienta siatki"
+    "loadingApp": "Wczytywanie klienta siatki",
+    "reticulumQueueTooltip": "Kolejka hosta TX dla lokalnego RNode \"{{name}}\": pakiety oczekujące na radio (najgorsze wypełnienie w przypadku wielu RNodów). Zielony poniżej 25%, bursztynowy poniżej 60%, czerwony 60% lub więcej.",
+    "reticulumQueueTooltipGeneric": "Host TX queue for the most busy local RNode: packets waiting for the radio. Zielony poniżej 25%, bursztynowy poniżej 60%, czerwony 60% lub więcej.",
+    "reticulumTxBuffering": "Buforowanie pakietów wychodzących do lokalnego RNode (opróżnianie kolejki hosta TX).",
+    "reticulumTxBufferingNamed": "Buforowanie pakietów wychodzących na \"{{name}}\" (opróżnianie kolejki hosta w TX)."
   },
   "appPanel": {
     "failedSaveRetention": "Nie udało się zapisać ustawienia przechowywania wiadomości.",

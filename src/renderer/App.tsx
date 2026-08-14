@@ -91,6 +91,7 @@ import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
 import { ReticulumVoiceOverlay } from './components/reticulum/ReticulumVoiceOverlay';
 import { ReticulumPeerDetailErrorBoundary } from './components/ReticulumPeerDetailErrorBoundary';
 import { ReticulumStackAutostartCoordinator } from './components/ReticulumStackAutostartCoordinator';
+import { ReticulumTxBufferingHeaderIndicator } from './components/ReticulumTxBufferingHeaderIndicator';
 import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
 import { ToastProvider, useToast } from './components/Toast';
@@ -227,6 +228,7 @@ import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
 import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities';
 import { parseStoredJson } from './lib/parseStoredJson';
 import { protocolHeaderBorderClass } from './lib/protocolTheme';
+import { queueBadgeColorClass } from './lib/queueBadgeColors';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
@@ -2669,12 +2671,26 @@ function AppContent() {
       ? 0
       : rawQueueUsed;
   const queueShowBadge = activeQueue != null;
-  const queueColorClass =
-    queueUsed <= 10
-      ? 'bg-green-900/60 text-green-300 border border-green-700'
-      : queueUsed <= 14
-        ? 'bg-amber-900/60 text-amber-300 border border-amber-700'
-        : 'bg-red-900/60 text-red-300 border border-red-700';
+  const queueColorClass = queueBadgeColorClass(
+    queueUsed,
+    activeQueue?.maxlen ?? 0,
+    protocol === 'reticulum' ? 'ratio' : 'absolute',
+  );
+  const reticulumQueueIfaceName =
+    legacyQueue != null &&
+    'interfaceName' in legacyQueue &&
+    typeof legacyQueue.interfaceName === 'string'
+      ? legacyQueue.interfaceName.trim()
+      : '';
+  const queueTooltipText =
+    protocol === 'reticulum'
+      ? reticulumQueueIfaceName
+        ? t('app.reticulumQueueTooltip', { name: reticulumQueueIfaceName })
+        : t('app.reticulumQueueTooltipGeneric')
+      : capabilities.modulesTabUsesRepeatersLabel
+        ? t('app.meshcoreQueueTooltip')
+        : t('app.meshtasticQueueTooltip');
+  const reticulumTxBuffering = protocol === 'reticulum' && queueShowBadge && queueUsed > 0;
   const takStatusLabel =
     takClientLoss && takStatus.running
       ? t('app.takClientLost')
@@ -2886,15 +2902,15 @@ function AppContent() {
                   onSync={() => void handleMeshcoreSyncWaitingMessages()}
                 />
               )}
-              {/* Queue status badge: 0–10 used = green, 11–14 = yellow, 15–16 = red */}
+              {reticulumTxBuffering && (
+                <ReticulumTxBufferingHeaderIndicator
+                  buffering
+                  interfaceName={reticulumQueueIfaceName || null}
+                />
+              )}
+              {/* Queue status badge: absolute thresholds for LoRa; ratio for Reticulum */}
               {queueShowBadge && activeQueue && (
-                <HelpTooltip
-                  text={
-                    capabilities.modulesTabUsesRepeatersLabel
-                      ? t('app.meshcoreQueueTooltip')
-                      : t('app.meshtasticQueueTooltip')
-                  }
-                >
+                <HelpTooltip text={queueTooltipText}>
                   <div
                     aria-label={t('app.queueBadge', {
                       used: queueUsed,

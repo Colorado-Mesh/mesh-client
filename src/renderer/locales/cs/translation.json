@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
     "footerWebsiteTitle": "Webové stránky Colorado Mesh",
-    "loadingApp": "Načítání klienta Mesh"
+    "loadingApp": "Načítání klienta Mesh",
+    "reticulumQueueTooltip": "Hostitelská fronta TX pro místní RNode \"{{name}}\": pakety čekající na rádio (nejhorší výplň při více RNode). Zelená pod 25%, oranžová pod 60%, červená 60% a více.",
+    "reticulumQueueTooltipGeneric": "Hostitelská fronta TX pro nejrušnější místní RNode: pakety čekající na rádio. Zelená pod 25%, oranžová pod 60%, červená 60% a více.",
+    "reticulumTxBuffering": "Vyrovnávání odchozích paketů do místního RNode (vypouštění fronty hostitelského TX).",
+    "reticulumTxBufferingNamed": "Vyrovnávání odchozích paketů na \"{{name}}\" (vypouštění fronty hostitele TX)."
   },
   "appPanel": {
     "failedSaveRetention": "Nastavení uchovávání zpráv se nepodařilo uložit.",

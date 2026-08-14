@@ -12,6 +12,7 @@ use base64::Engine as _;
 use lxst_core::{CallRole, Profile, RawAudioFrame, SignallingStatus};
 use lxst_telephony::{
     IdentityHash, TelephonyControl, TelephonyService, TelephonyServiceEvent, TelephonyServiceParts,
+    request_answer,
 };
 use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
@@ -209,7 +210,32 @@ impl VoiceSessionManager {
     }
 
     pub async fn answer(&self) -> serde_json::Value {
-        self.send_control(TelephonyControl::Answer).await
+        let Some(control_tx) = self.shared.control_tx.as_ref() else {
+            return json!({ "ok": false, "error": "voice not available" });
+        };
+        let link_hex = {
+            let st = self.shared.state.read().await;
+            st.active_call
+                .as_ref()
+                .and_then(|c| c.get("link_id"))
+                .and_then(|v| v.as_str())
+                .map(str::to_owned)
+        };
+        let Some(link_hex) = link_hex.filter(|s| !s.is_empty()) else {
+            return json!({ "ok": false, "error": "no incoming call to answer" });
+        };
+        let expected_link_id = match parse_hash16(&link_hex) {
+            Ok(id) => id,
+            Err(e) => return json!({ "ok": false, "error": format!("invalid link_id: {e}") }),
+        };
+        match request_answer(control_tx, expected_link_id).await {
+            Ok(snap) => json!({
+                "ok": true,
+                "link_id": hex::encode(snap.link_id),
+                "status": signalling_status_str(snap.status),
+            }),
+            Err(e) => json!({ "ok": false, "error": e.to_string() }),
+        }
     }
 
     pub async fn reject(&self) -> serde_json::Value {

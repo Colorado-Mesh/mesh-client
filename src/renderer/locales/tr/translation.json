@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "GitHub'da Colorado Mesh",
     "footerWebsiteTitle": "Colorado Mesh web sitesi",
-    "loadingApp": "Mesh İstemcisi Yükleniyor"
+    "loadingApp": "Mesh İstemcisi Yükleniyor",
+    "reticulumQueueTooltip": "Yerel RNode \"{{name}}\" için ana bilgisayar TX kuyruğu: telsizi bekleyen paketler (birden fazla RNode olduğunda en kötü doldurma). % 25 'in altında yeşil, % 60' ın altında sarı, % 60 veya daha fazla kırmızı.",
+    "reticulumQueueTooltipGeneric": "En yoğun yerel RNode için ana bilgisayar TX kuyruğu: telsizi bekleyen paketler. % 25 'in altında yeşil, % 60' ın altında sarı, % 60 veya daha fazla kırmızı.",
+    "reticulumTxBuffering": "Giden paketlerin yerel bir RNode'a arabelleğe alınması (ana bilgisayar TX kuyruğu boşaltma).",
+    "reticulumTxBufferingNamed": "\"{{name}}\" üzerinde giden paketler arabelleğe alınıyor (ana bilgisayar TX kuyruğu boşaltılıyor)."
   },
   "appPanel": {
     "failedSaveRetention": "Mesaj saklama ayarı kaydedilemedi.",

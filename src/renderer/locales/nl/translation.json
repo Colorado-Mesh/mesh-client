@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh op GitHub",
     "footerWebsiteTitle": "Colorado Mesh-website",
-    "loadingApp": "Mesh-client laden"
+    "loadingApp": "Mesh-client laden",
+    "reticulumQueueTooltip": "TX-wachtrij voor hosts voor lokale RNode \"{{name}}\": pakketten die wachten op de radio (slechtst gevuld als er meerdere RNodes zijn). Groen onder 25%, amber onder 60%, rood bij 60% of meer.",
+    "reticulumQueueTooltipGeneric": "Host TX-wachtrij voor de drukste lokale RNode: pakketten die wachten op de radio. Groen onder 25%, amber onder 60%, rood bij 60% of meer.",
+    "reticulumTxBuffering": "Bufferen van uitgaande pakketten naar een lokale RNode (host TX-wachtrij leeglopen).",
+    "reticulumTxBufferingNamed": "Bufferen van uitgaande pakketten op \"{{name}}\" (TX-wachtrij van host loopt leeg)."
   },
   "appPanel": {
     "failedSaveRetention": "Kan de instelling voor het bewaren van berichten niet opslaan.",

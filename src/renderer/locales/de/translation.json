@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh auf GitHub",
     "footerWebsiteTitle": "Colorado Mesh-Website",
-    "loadingApp": "Mesh-Client wird geladen"
+    "loadingApp": "Mesh-Client wird geladen",
+    "reticulumQueueTooltip": "Host-TX-Warteschlange für lokalen RNode \"{{name}}\": Pakete, die auf das Funkgerät warten (am schlechtesten gefüllt, wenn mehrere RNodes vorhanden sind). Grün unter 25 %, Bernstein unter 60 %, Rot bei 60 % oder mehr.",
+    "reticulumQueueTooltipGeneric": "Host-TX-Warteschlange für den verkehrsreichsten lokalen RNode: Pakete warten auf das Funkgerät. Grün unter 25 %, Bernstein unter 60 %, Rot bei 60 % oder mehr.",
+    "reticulumTxBuffering": "Puffern ausgehender Pakete an einen lokalen RNode (Host TX Queue Draining).",
+    "reticulumTxBufferingNamed": "Puffern von ausgehenden Paketen auf \"{{name}}\" (Host-TX-Warteschlange entleert)."
   },
   "appPanel": {
     "failedSaveRetention": "Die Einstellung für die Nachrichtenaufbewahrung konnte nicht gespeichert werden.",

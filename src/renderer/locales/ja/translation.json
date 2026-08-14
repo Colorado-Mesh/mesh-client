@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
     "footerWebsiteTitle": "Colorado Mesh website",
-    "loadingApp": "メッシュクライアントを読み込んでいます"
+    "loadingApp": "メッシュクライアントを読み込んでいます",
+    "reticulumQueueTooltip": "ローカルRNode \"{{name}}\"のホストTXキュー：無線を待っているパケット（複数のRNodeの場合は最悪の満杯）。緑25 ％未満、琥珀60 ％未満、赤60 ％以上。",
+    "reticulumQueueTooltipGeneric": "最もビジーなローカルRNodeのホストTXキュー：無線を待っているパケット。緑25 ％未満、琥珀60 ％未満、赤60 ％以上。",
+    "reticulumTxBuffering": "ローカルRNodeへのアウトバウンドパケットのバッファリング（ホストTXキュー排出）。",
+    "reticulumTxBufferingNamed": "\"{{name}}\"上の発信パケットのバッファリング（ホストTXキュー排出）。"
   },
   "appPanel": {
     "failedSaveRetention": "メッセージ保持設定の保存に失敗しました。",

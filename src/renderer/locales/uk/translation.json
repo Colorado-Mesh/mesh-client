@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh на GitHub",
     "footerWebsiteTitle": "Веб-сайт Colorado Mesh",
-    "loadingApp": "Завантаження клієнта сіті"
+    "loadingApp": "Завантаження клієнта сіті",
+    "reticulumQueueTooltip": "Host TX queue for local RNode \"{{name}}\": пакети, що очікують радіо (найгірше заповнення, коли кілька RNode). Зелений до 25%, бурштиновий до 60%, червоний до 60% і більше.",
+    "reticulumQueueTooltipGeneric": "Транзитна черга хоста для найзавантаженішого локального RNode: пакети, що очікують радіо. Зелений до 25%, бурштиновий до 60%, червоний до 60% і більше.",
+    "reticulumTxBuffering": "Буферизація вихідних пакетів до локального RNode (витікання черги TX хоста).",
+    "reticulumTxBufferingNamed": "Буферизація вихідних пакетів на \"{{name}}\" (витікання черги TX хоста)."
   },
   "appPanel": {
     "failedSaveRetention": "Не вдалося зберегти налаштування збереження повідомлень.",

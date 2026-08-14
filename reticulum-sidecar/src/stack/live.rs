@@ -2494,6 +2494,8 @@ impl LiveBridge {
                                 network_name: None,
                                 passphrase: None,
                                 flow_control: None,
+                                tx_queue_used: Some(s.tx_queue_used),
+                                tx_queue_max: Some(s.tx_queue_max),
                                 extra_config: std::collections::HashMap::new(),
                             })
                             .collect();
@@ -4136,6 +4138,8 @@ impl LiveBridge {
                 network_name: None,
                 passphrase: None,
                 flow_control: None,
+                tx_queue_used: Some(s.tx_queue_used),
+                tx_queue_max: Some(s.tx_queue_max),
                 extra_config: std::collections::HashMap::new(),
             })
             .collect();
@@ -6698,6 +6702,8 @@ mod nomad_private_first_failover_tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
             extra_config: std::collections::HashMap::default(),
         }
     }

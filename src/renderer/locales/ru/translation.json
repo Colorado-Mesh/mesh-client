@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh на GitHub",
     "footerWebsiteTitle": "Веб-сайт Colorado Mesh",
-    "loadingApp": "Загрузка клиента сетки"
+    "loadingApp": "Загрузка клиента сетки",
+    "reticulumQueueTooltip": "Host TX queue for local RNode \"{{name}}\": пакеты, ожидающие радио (наихудшее заполнение при наличии нескольких RNode). Зеленый до 25%, янтарный до 60%, красный до 60% и более.",
+    "reticulumQueueTooltipGeneric": "Очередь TX хоста для самого загруженного локального RNode: пакеты, ожидающие радио. Зеленый до 25%, янтарный до 60%, красный до 60% и более.",
+    "reticulumTxBuffering": "Буферизация исходящих пакетов на локальном RNode (истощение очереди TX хоста).",
+    "reticulumTxBufferingNamed": "Буферизация исходящих пакетов на \"{{name}}\" (слив очереди TX хоста)."
   },
   "appPanel": {
     "failedSaveRetention": "Не удалось сохранить настройки хранения сообщений.",

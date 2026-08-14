@@ -63,6 +63,10 @@ export interface ReticulumInterfaceRow {
   passphrase?: string | null;
   /** RNode/KISS TX ready-gate. Only present for RF interface types. */
   flow_control?: boolean | null;
+  /** Host outbound TX mpsc fill from live sidecar stats. */
+  tx_queue_used?: number | null;
+  /** Host outbound TX mpsc capacity from live sidecar stats. */
+  tx_queue_max?: number | null;
   /** Unknown INI keys preserved by the sidecar across CRUD. */
   extra_config?: Record<string, string> | null;
 }

@@ -59,6 +59,12 @@ pub struct InterfaceRow {
     /// bursts do not overflow the bounded TX queue. Only meaningful for RF types.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub flow_control: Option<bool>,
+    /// Host outbound TX mpsc fill from live `GetInterfaceStats` (None when offline / unknown).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tx_queue_used: Option<u64>,
+    /// Host outbound TX mpsc capacity from live stats.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tx_queue_max: Option<u64>,
     /// Unknown INI keys preserved across CRUD so typed writes do not drop them.
     #[serde(default)]
     pub extra_config: HashMap<String, String>,

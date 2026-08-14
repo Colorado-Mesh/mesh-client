@@ -117,6 +117,7 @@ import {
   type ReticulumSidecarInterfaceRow,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
+import { aggregateReticulumLocalRfTxQueue } from '@/renderer/lib/reticulum/reticulumTxQueueAggregate';
 import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
 import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
@@ -274,6 +275,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   useReticulumPropagationAutoSync(state.status === 'configured');
   const [selfLxmfHash, setSelfLxmfHash] = useState<string | null>(null);
   const [rawPackets, setRawPackets] = useState<ReticulumRawPacketEntry[]>([]);
+  const [queueStatus, setQueueStatus] = useState<ProtocolRuntime['queueStatus']>(null);
   const rawPacketAppenderRef = useRef<BatchedRingBufferAppender<ReticulumRawPacketEntry> | null>(
     null,
   );
@@ -485,6 +487,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     ]);
     localInterfacesRef.current = interfaces;
     logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
+    setQueueStatus(aggregateReticulumLocalRfTxQueue(interfaces));
     return { interfaces, osSerialPorts };
   }, []);
 
@@ -1531,6 +1534,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     unsubVoiceAudioRef.current?.();
     unsubVoiceAudioRef.current = null;
     localInterfacesRef.current = [];
+    setQueueStatus(null);
     setSelfLxmfHash(null);
     rawPacketAppenderRef.current?.clearPending();
     setRawPackets([]);
@@ -1831,6 +1835,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       console.warn('[useReticulumRuntime] disconnect stop failed ' + errLikeToLogString(e));
     }
     localInterfacesRef.current = [];
+    setQueueStatus(null);
     setSelfLxmfHash(null);
     rawPacketAppenderRef.current?.clearPending();
     setRawPackets([]);
@@ -2055,6 +2060,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         ]);
         localInterfacesRef.current = interfaces;
         logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
+        setQueueStatus(aggregateReticulumLocalRfTxQueue(interfaces));
         const health = { interfaces, osSerialPorts };
         if (cancelled) return;
         const peerCount = useReticulumPeerStore.getState().peers.size;
@@ -2337,6 +2343,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
     });
   }, [connect]);
 
+  const resolvedQueueStatus =
+    state.status === 'configured' || state.status === 'connected' || state.status === 'stale'
+      ? queueStatus
+      : null;
+
   const runtime = useMemo(
     () => ({
       state,
@@ -2351,7 +2362,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       rawPackets,
       clearRawPackets,
       hydrateRawPackets,
-      queueStatus: null,
+      queueStatus: resolvedQueueStatus,
       ourPosition: null,
       gpsLoading: false,
       telemetry: null,
@@ -2404,6 +2415,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       clearRawPackets,
       hydrateRawPackets,
       rawPackets,
+      resolvedQueueStatus,
       sendMessage,
       sendReaction,
       resolveOutboundVia,

@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
     "footerWebsiteTitle": "Sitio web de Colorado Mesh",
-    "loadingApp": "Cargando cliente de malla"
+    "loadingApp": "Cargando cliente de malla",
+    "reticulumQueueTooltip": "Cola de espera de TX de host para el RNode local \"{{name}}\": paquetes en espera de la radio (peor llenado cuando hay varios RNodes). Verde por debajo del 25%, ámbar por debajo del 60%, rojo al 60% o más.",
+    "reticulumQueueTooltipGeneric": "Cola de TX de host para el RNode local más ocupado: paquetes que esperan la radio. Verde por debajo del 25%, ámbar por debajo del 60%, rojo al 60% o más.",
+    "reticulumTxBuffering": "Almacenar en búfer los paquetes salientes en un RNode local (agotamiento de la cola de TX del host).",
+    "reticulumTxBufferingNamed": "Almacenar en búfer los paquetes salientes en \"{{name}}\" (agotamiento de la cola de TX del host)."
   },
   "appPanel": {
     "failedSaveRetention": "Error al guardar la configuración de retención de mensajes.",

@@ -14,6 +14,8 @@ export interface ProtocolRuntimeQueueStatus {
   free: number;
   maxlen: number;
   res: number;
+  /** Optional interface label (Reticulum worst local-RF TX queue). */
+  interfaceName?: string;
 }
 
 export interface ProtocolRuntimeDeviceOwner {
