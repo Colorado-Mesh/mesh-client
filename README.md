@@ -37,6 +37,8 @@ With a dedicated local SQLite database, Mesh-Client keeps message history and me
 
 From real-time diagnostics to permanent message archives, Mesh-Client delivers the desktop visibility serious mesh users require.
 
+**Protocol scope:** Mesh-Client focuses on **RF mesh** networking—LoRa and related radio meshes. Additional protocols are in scope when they support that kind of RF mesh path. Internet-only messaging stacks are out of scope. Amateur-radio (ham) protocols are welcome when they meet the same RF-mesh bar; Mesh-Client is for everyone, everywhere, and is not gated or targeted specifically at people with a ham radio license. Protocols that already ship may still use internet transports _alongside_ RF.
+
 **Known Bugs:**
 
 - **Linux BLE**: uses Web Bluetooth (Chromium's built-in BLE API), with a user-visible picker and user gesture requirement to select a device. **MeshCore** may prompt for the radio's PIN and run OS-level pairing (`bluetoothctl`) before the connection completes when BlueZ reports the device as not paired (see [docs/development-environment.md](docs/development-environment.md#linux-bluetooth-ble)).
@@ -328,7 +330,7 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 
 **Network & identity (Network tab)**
 
-- Generate or import LXMF identity (mnemonic); **identity vault** (passcode) and encrypted identity export; import/export rnsd-style config from standard system paths
+- Generate or import LXMF identity (mnemonic); Ratspeak `.rsi` PIN backup and official raw identity file export/import; optional **identity vault**; import/export rnsd-style config from standard system paths
 - Stack settings (`enable_transport`, `share_instance`, log level), announce interval, **Clear announces**, **RMAP v4 discovery** publish controls
 - **Propagation nodes** (Network tab): **Propagation mode** Off (default) / Auto / Manual, Preferred node for offline DMs, per-node sync, optional **local propagation inbox** / Advanced PN hosting policy
 
@@ -394,6 +396,7 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 - **Map tiles; OpenStreetMap Referer requirement**: Packaged desktop builds load the UI from the local filesystem. The main process now loads the renderer with an explicit HTTP referrer so OpenStreetMap tile requests include a valid `Referer` header and comply with the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/). If you point the app at a different tile server, ensure its usage policy permits this client.
 - **Reticulum — no LoRa companion parity**: Reticulum does not use Meshtastic/MeshCore `ConnectionDriver`, MQTT hybrid, channel pills, Rooms BBS, or Hop Goblins diagnostics. The **Chat** tab is **DM-only**; hub room chat lives on the **RRC** tab. Interface add/edit/delete updates config on disk — **restart the stack** after changes under `rns-stack`.
 - **Reticulum — sidecar license**: The spawned `mesh-client-reticulum` binary is **AGPL-3.0** (separate process from the MIT Electron shell). See [docs/reticulum.md](docs/reticulum.md) and [docs/credits.md](docs/credits.md#bundled-binaries).
+- **Graph / Topology visible-node cap**: Meshtastic and MeshCore **Graph** and Reticulum **Topology** render at most **400** nodes after hop filters (force-layout budget). Numeric **Max hops** is applied even when Show distant is off. Unknown hops are omitted unless Max hops is **All hops** and Show distant is on (they are not 1-hop neighbors). The nearby hop ceiling (Mesh hops > 1, Reticulum hops > 2) applies only when Max hops is **All hops**. Reticulum Topology can also filter **RF only** (RNode / KISS / BLE; hides TCP/I2P/Auto). Reticulum path-table ingest is a separate layer (renderer feed **800**, sidecar **2,000**).
 - **Reticulum — propagation required for offline peers**: LXMF send fails with `no_propagation_node` when the destination is not in the path table and no cascade candidates exist (enabled remotes or local-prop). Local inbox Completes (`stored_locally`) ≠ peer delivery at a remote PN. When a path exists, Direct is tried first; on Direct fail the sidecar cascades preferred remote → other enabled remotes (hop-sorted) → local-prop last.
 
 ---

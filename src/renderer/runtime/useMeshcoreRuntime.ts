@@ -280,6 +280,14 @@ import {
   getMeshcoreRoomAutoLoginFailure,
 } from '../lib/meshcoreRoomAutoLoginFailure';
 import {
+  isMeshcoreRoomAutoLoginGenerationCurrent,
+  meshcoreRoomAutoLoginGeneration,
+  meshcoreRoomAutoLoginReadyKey,
+  resetMeshcoreRoomAutoLoginSingleFlight,
+  runMeshcoreRoomAutoLoginSingleFlight,
+  selectMeshcoreRoomAutoLoginTargets,
+} from '../lib/meshcoreRoomAutoLoginOnConnect';
+import {
   getMeshcoreRoomCredential,
   listMeshcoreRoomCredentialNodeIds,
   MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX,
@@ -295,6 +303,7 @@ import {
   sendMeshcoreRoomPostWithSentWait,
 } from '../lib/meshcoreRoomSentWait';
 import {
+  MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
   MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE,
   MESHCORE_ROOM_LOGIN_PATH_SYNC_FAILED_MESSAGE,
   meshcoreCancelRoomLogin,
@@ -426,6 +435,7 @@ import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/s
 import {
   computeRoomPostTotalTimeoutMs,
   MESHCORE_MAX_RECONNECT_DELAY_MS,
+  MESHCORE_ROOM_AUTO_LOGIN_DEBOUNCE_MS,
   MESHCORE_ROOM_LOGIN_HOP_BASE_MS,
   MESHCORE_ROOM_LOGIN_HOP_INCREMENT_MS,
   MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
@@ -3017,6 +3027,7 @@ export function useMeshcoreRuntime() {
       // (BLE auto-connect vs manual TCP race — openMeshCoreTransport can leave a live
       // meshcore:tcp socket before attachRfSession sets driverConnected).
       meshcoreSetupGenerationRef.current += 1;
+      resetMeshcoreRoomAutoLoginSingleFlight();
       if (type === 'ble' && bleConnectInProgressRef.current) {
         console.debug('[useMeshcoreRuntime] prepareRfConnect BLE superseding in-flight connect');
         bleConnectInProgressRef.current = false;
@@ -3261,6 +3272,7 @@ export function useMeshcoreRuntime() {
         clearTimeout(roomAutoLoginRetryTimerRef.current);
         roomAutoLoginRetryTimerRef.current = null;
       }
+      resetMeshcoreRoomAutoLoginSingleFlight();
       teardownMeshcoreConnEventListeners({ driverDisconnect: disconnectDriver });
       if (!usedDriverConnect) {
         try {
@@ -3581,6 +3593,7 @@ export function useMeshcoreRuntime() {
     // Abort in-flight initConn immediately (before async driver teardown). Neal TCP: peer FIN
     // after getContacts raced past a gen bump that used to live only inside the async IIFE.
     meshcoreSetupGenerationRef.current += 1;
+    resetMeshcoreRoomAutoLoginSingleFlight();
     if (
       !meshcoreEverConfiguredRef.current &&
       meshcoreReconnectAttemptRef.current === 0 &&
@@ -3666,6 +3679,7 @@ export function useMeshcoreRuntime() {
     return () => {
       serialRediscoveryStopRef.current?.();
       serialRediscoveryStopRef.current = null;
+      resetMeshcoreRoomAutoLoginSingleFlight();
       teardownMeshcoreConnEventListeners({ driverDisconnect: true });
       const conn = connRef.current;
       connRef.current = null;
@@ -5932,6 +5946,7 @@ export function useMeshcoreRuntime() {
         guestPassword?: string;
         rememberPassword?: boolean;
         forceRelogin?: boolean;
+        abortIfStale?: () => boolean;
       },
     ): Promise<void> => {
       let pubKey = pubKeyMapRef.current.get(nodeId);
@@ -6019,7 +6034,13 @@ export function useMeshcoreRuntime() {
             console.debug(
               `[useMeshcoreRuntime] loginRoom pathSync node=0x${nodeId.toString(16)} ${JSON.stringify(pathSync)} storedPathLen=${storedPath?.length ?? 0}`,
             );
+            if (opts?.abortIfStale?.()) {
+              throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
+            }
             await repeaterRemoteRpcRef.current(async () => {
+              if (opts?.abortIfStale?.()) {
+                throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
+              }
               const rpcConn = connRef.current;
               if (!rpcConn) {
                 throw new Error(MESHCORE_ERR_NOT_CONNECTED);
@@ -6114,7 +6135,7 @@ export function useMeshcoreRuntime() {
   }, []);
 
   const loginRoomWithSaved = useCallback(
-    async (nodeId: number): Promise<void> => {
+    async (nodeId: number, loginOpts?: { abortIfStale?: () => boolean }): Promise<void> => {
       const cred = getMeshcoreRoomCredential(nodeId);
       if (!cred) {
         throw new Error('No saved room credential');
@@ -6123,6 +6144,7 @@ export function useMeshcoreRuntime() {
       await loginRoom(nodeId, password, {
         guestPassword: password,
         adminPassword: cred.adminPassword ?? '',
+        abortIfStale: loginOpts?.abortIfStale,
       });
     },
     [loginRoom],
@@ -6285,47 +6307,48 @@ export function useMeshcoreRuntime() {
   }, [state.status, runRoomSyncSchedulerTickBody]);
 
   const runRoomAutoLoginOnConnect = useCallback(async (): Promise<void> => {
-    if (!connRef.current) return;
-    if (meshcoreCompanionRepeaterRfBusy()) {
-      console.debug('[useMeshcoreRuntime] room auto-login deferred (repeater RF busy)');
-      roomAutoLoginRetryTimerRef.current ??= setTimeout(() => {
-        roomAutoLoginRetryTimerRef.current = null;
-        triggerRoomAutoLoginRef.current();
-      }, MESHCORE_ROOM_SYNC_TICK_MS);
-      return;
-    }
-    const configuredIds = listMeshcoreRoomAutoLoginOnConnectNodeIds();
-    const nodeIds = configuredIds.filter(
-      (id) => getIdentityNode(meshcoreIdentityIdRef.current, id)?.hw_model === 'Room',
-    );
-    const targets = nodeIds.filter((nodeId) => {
-      if (meshcoreIsRoomLoggedIn(nodeId)) return false;
-      if (!getMeshcoreRoomCredential(nodeId)) return false;
-      if (getMeshcoreRoomAutoLoginFailure(nodeId)) return false;
-      if (!pubKeyMapRef.current.get(nodeId)) {
-        return false;
+    await runMeshcoreRoomAutoLoginSingleFlight(async () => {
+      const gen = meshcoreRoomAutoLoginGeneration();
+      if (!connRef.current) return;
+      if (meshcoreCompanionRepeaterRfBusy()) {
+        console.debug('[useMeshcoreRuntime] room auto-login deferred (repeater RF busy)');
+        roomAutoLoginRetryTimerRef.current ??= setTimeout(() => {
+          roomAutoLoginRetryTimerRef.current = null;
+          triggerRoomAutoLoginRef.current();
+        }, MESHCORE_ROOM_SYNC_TICK_MS);
+        return;
       }
-      return true;
-    });
-    await Promise.allSettled(
-      targets.map(async (nodeId) => {
-        try {
-          await loginRoomWithSaved(nodeId);
-          lastMeshcoreRoomSyncTxAtRef.current = Date.now();
-        } catch (e: unknown) {
-          if (!meshcoreIsRoomLoginAbortError(e)) {
+      const configuredIds = listMeshcoreRoomAutoLoginOnConnectNodeIds();
+      const targets = selectMeshcoreRoomAutoLoginTargets(configuredIds, (nodeId) => ({
+        isRoom: getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hw_model === 'Room',
+        hasCredential: Boolean(getMeshcoreRoomCredential(nodeId)),
+        hasPubKey: Boolean(pubKeyMapRef.current.get(nodeId)),
+        loggedIn: meshcoreIsRoomLoggedIn(nodeId),
+        queued: meshcoreIsRoomLoginQueued(nodeId),
+        autoLoginFailed: Boolean(getMeshcoreRoomAutoLoginFailure(nodeId)),
+      }));
+      await Promise.allSettled(
+        targets.map(async (nodeId) => {
+          if (!isMeshcoreRoomAutoLoginGenerationCurrent(gen)) return;
+          try {
+            await loginRoomWithSaved(nodeId, {
+              abortIfStale: () => !isMeshcoreRoomAutoLoginGenerationCurrent(gen),
+            });
+            lastMeshcoreRoomSyncTxAtRef.current = Date.now();
+          } catch (e: unknown) {
+            if (meshcoreIsRoomLoginAbortError(e)) return;
             await applyMeshcoreRoomLoginFailure(
               nodeId,
               e,
               'useMeshcoreRuntime room auto-login on connect',
             );
+            console.warn(
+              '[useMeshcoreRuntime] room auto-login on connect failed ' + errLikeToLogString(e),
+            );
           }
-          console.warn(
-            '[useMeshcoreRuntime] room auto-login on connect failed ' + errLikeToLogString(e),
-          );
-        }
-      }),
-    );
+        }),
+      );
+    });
   }, [loginRoomWithSaved]);
 
   const runRoomReconnectSync = useCallback(async (): Promise<void> => {
@@ -6395,13 +6418,28 @@ export function useMeshcoreRuntime() {
   };
 
   triggerRoomAutoLoginRef.current = () => {
-    void runRoomAutoLoginOnConnect();
+    void runRoomAutoLoginOnConnect().catch((e: unknown) => {
+      console.warn('[useMeshcoreRuntime] room auto-login on connect ' + errLikeToLogString(e));
+    });
   };
+
+  const roomAutoLoginReadyKey = useMemo(
+    () =>
+      meshcoreRoomAutoLoginReadyKey(
+        listMeshcoreRoomAutoLoginOnConnectNodeIds(),
+        (id) => nodes.get(id)?.hw_model === 'Room',
+        (id) => Boolean(pubKeyMapRef.current.get(id) ?? nodes.get(id)?.public_key_hex),
+      ),
+    [nodes],
+  );
 
   useEffect(() => {
     if (state.status !== 'configured') return;
-    triggerRoomAutoLoginRef.current();
-  }, [state.status, nodes.size]);
+    const timer = setTimeout(() => {
+      triggerRoomAutoLoginRef.current();
+    }, MESHCORE_ROOM_AUTO_LOGIN_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [state.status, roomAutoLoginReadyKey]);
 
   useEffect(() => {
     const operational = state.status === 'configured' || state.status === 'connected';

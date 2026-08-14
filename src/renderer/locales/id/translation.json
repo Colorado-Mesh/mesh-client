@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh di GitHub",
     "footerWebsiteTitle": "Laman web Colorado Mesh",
-    "loadingApp": "Memuat Klien Mesh"
+    "loadingApp": "Memuat Klien Mesh",
+    "reticulumQueueTooltip": "Antrean TX tuan rumah untuk RNode lokal \"{{name}} \": paket menunggu radio (isi terburuk ketika beberapa RNode). Hijau di bawah 25%, kuning di bawah 60%, merah pada 60% atau lebih.",
+    "reticulumQueueTooltipGeneric": "Antrean TX tuan rumah untuk RNode lokal tersibuk: paket menunggu radio. Hijau di bawah 25%, kuning di bawah 60%, merah pada 60% atau lebih.",
+    "reticulumTxBuffering": "Menyangga paket keluar ke RNode lokal (host TX queue draining).",
+    "reticulumTxBufferingNamed": "Menyangga paket keluar pada \"{{name}}\" (pengeringan antrian TX tuan rumah)."
   },
   "appPanel": {
     "failedSaveRetention": "Gagal menyimpan setelan retensi pesan.",
@@ -384,7 +388,9 @@
     "themeSaveFailed": "Gagal menyimpan pos pemeriksaan warna.",
     "themeRestoreFailed": "Gagal memulihkan pos pemeriksaan warna.",
     "themeResetFailed": "Gagal mengatur ulang warna.",
-    "messageActionsBarBgVisible": "Tampilkan latar belakang"
+    "messageActionsBarBgVisible": "Tampilkan latar belakang",
+    "rrcUnreadAllRoomMessages": "RRC belum dibaca untuk semua pesan kamar",
+    "rrcUnreadAllRoomMessagesHint": "Saat aktif, setiap pesan ruang RRC baru menandai belum dibaca dan dapat memutar suara saluran. Nonaktifkan untuk peringatan bergaya IRC: hanya pesan langsung dan @mention."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -945,7 +951,6 @@
     "reticulumStackRunning": "Stack berjalan",
     "reticulumIdentity": {
       "title": "Identitas Reticulum",
-      "hint": "Mulai tumpukan di atas, lalu buat atau impor identitas mnemonik.",
       "startStackFirst": "Mulai tumpukan Reticulum untuk mengonfigurasi identitas.",
       "displayName": "Nama tampil",
       "generate": "Buat identitas",
@@ -955,16 +960,9 @@
       "confirmSaved": "Saya telah menyimpan frasa pemulihan saya",
       "hashLabel": "Hash LXMF:",
       "failed": "Penyiapan identitas gagal",
-      "export": "Ekspor cadangan",
-      "exportPassphrase": "Frasa sandi cadangan",
-      "exportPassphraseRequired": "Masukkan frasa sandi cadangan sebelum mengekspor.",
-      "importBackupLabel": "Impor JSON cadangan",
-      "importBackup": "Impor cadangan",
-      "importBackupHint": "Mengembalikan nama tampilan dan metadata hash saja. Identitas jaringan memerlukan file kunci pribadi atau frase pemulihan Anda.",
       "importPrivateKeyLabel": "Impor kunci pribadi",
       "importPrivateKey": "Impor kunci pribadi",
       "importPrivateKeyFromFile": "Dari berkas",
-      "importPrivateKeyHint": "Kunci pribadi RNS 64-byte: Rahasia X25519 (32 B) + seed Ed25519 (32 B) sebagai hex atau base64 128 karakter.",
       "replaceIdentitySection": "Ganti identitas",
       "replaceIdentityHint": "Mengimpor identitas baru akan menggantikan kunci Anda saat ini dan memulai ulang tumpukan.",
       "replaceIdentityConfirmTitle": "Ganti identitas Reticulum?",
@@ -999,7 +997,28 @@
       "slotCreated": "Identitas baru tercipta.",
       "slotDeleted": "Identitas dihapus.",
       "slotActionFailed": "Tindakan identitas gagal: {{error}}",
-      "slotUnnamed": "Tanpa nama"
+      "slotUnnamed": "Tanpa nama",
+      "importBackupFromFile": "Dari file .rsi",
+      "importBackupPin": "PIN CADANGAN",
+      "importBackupPinRequired": "Masukkan PIN yang digunakan saat cadangan .rsi ini diekspor.",
+      "exportRaw": "Ekspor berkas identitas Reticulum",
+      "exportSaved": "Ekspor identitas disimpan.",
+      "exportSaveFailed": "Tidak dapat menyimpan ekspor identitas.",
+      "exportPassphraseConfirm": "Konfirmasi PIN CADANGAN",
+      "exportPassphraseMismatch": "Pin Cadangan tidak cocok.",
+      "importBackupTooLarge": "File cadangan identitas terlalu besar.",
+      "hint": "Mulai tumpukan di atas, lalu buat atau impor frasa pemulihan BIP-39, file identitas Reticulum mentah, atau cadangan Ratspeak .rsi terenkripsi PIN.",
+      "importBackupLabel": "Impor cadangan Ratspeak .rsi",
+      "importBackup": "Impor cadangan .rsi",
+      "importBackupHint": "Pencadangan identitas Ratspeak terenkripsi PIN (.rsi). Mengembalikan kunci pribadi Anda dan mengaktifkan identitas.",
+      "importPrivateKeyHint": "Kunci pribadi Reticulum 64-byte resmi (rahasia X25519 + biji Ed25519) sebagai hex, base64, base32, atau file identitas mentah.",
+      "export": "Ekspor cadangan .rsi",
+      "exportPassphrase": "PIN CADANGAN",
+      "exportPassphraseRequired": "Masukkan PIN cadangan minimal 6 karakter.",
+      "importBackupAria": "Impor cadangan Ratspeak .rsi dari JSON yang ditempelkan",
+      "importBackupFromFileAria": "Pilih file cadangan Ratspeak .rsi untuk diimpor",
+      "exportAria": "Ekspor cadangan identitas Ratspeak .rsi terenkripsi PIN",
+      "exportRawAria": "Ekspor file identitas Reticulum mentah yang tidak terenkripsi"
     },
     "reticulumInterfaces": {
       "title": "Interface",
@@ -1315,7 +1334,8 @@
       "bleBondRemovedOpenAdmin": "Buka Bluetooth Admin",
       "txQueueDropsHintBle": "BLE RNode ini tidak dapat menguras antrean TX-nya (tautan macet atau flapping). Lebih suka USB serial atau Wi-Fi (tcp://), atau Stop stack dan re-pair setelah Forget di Pengaturan Sistem → Bluetooth.",
       "txQueueDropsHintBleBondStale": "Antrian TX penuh karena ikatan BLE sudah usang. Lupakan RNode ini di Pengaturan Sistem → Bluetooth, lalu gunakan Admin → Bluetooth (Hapus terpasang / Mulai pairing) atau beralih ke USB.",
-      "txQueueDropsHintNeutral": "Saluran TX antarmuka ini penuh. Periksa kesehatan tautan antarmuka itu (atau nonaktifkan) untuk menghentikan tetesan."
+      "txQueueDropsHintNeutral": "Saluran TX antarmuka ini penuh. Periksa kesehatan tautan antarmuka itu (atau nonaktifkan) untuk menghentikan tetesan.",
+      "txQueueDropsHintBleFlowControl": "Tekanan balik antrean TX host saat radio sedang sibuk (kontrol aliran aktif). Diharapkan di bawah kemacetan RF — bukan tautan yang macet. Kurangi muatan keluar atau tunggu waktu tayang."
     },
     "reticulumSidecarBundledMissing": "Instalasi ini tidak memiliki sespan Reticulum yang dibundel. Tingkatkan versi ke rilis yang lebih baru atau laporkan masalahnya — pembuatan dari sumber tidak tersedia dalam paket instalasi.",
     "radioMqttRootDivergesWarning": "Topik utama Radio MQTT adalah {{radioRoot}} tetapi panel ini berlangganan {{appPrefix}}. Cocokkan radio untuk membatasi lalu lintas simpul nasional — perbarui Prefiks Topik dan sambungkan kembali MQTT.",
@@ -1711,7 +1731,8 @@
         "decommissionedHubEnabled": "Hub yang dinonaktifkan «{{name}}» masih aktif — mesh-client mematikannya setiap kali stack dimulai. Gunakan «Tambahkan backbone default» atau direktori backbone untuk endpoint aktif.",
         "txQueueDropsBle": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX penuh) — tautan BLE RNode macet; lebih suka USB atau pasang ulang",
         "txQueueDropsBleBondStale": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX penuh) — ikatan BLE basi; Lupakan di OS Bluetooth dan pasangkan kembali",
-        "txQueueDropsNeutral": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX penuh) — periksa tautan antarmuka tersebut"
+        "txQueueDropsNeutral": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX penuh) — periksa tautan antarmuka tersebut",
+        "txQueueDropsBleFlowControl": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX tuan rumah penuh) — kontrol aliran aktif; diharapkan di bawah kemacetan RF, bukan tautan yang macet"
       }
     },
     "routingPort": {
@@ -1893,7 +1914,6 @@
   },
   "identityVault": {
     "title": "Kubah identitas",
-    "hint": "Enkripsi salinan lokal cadangan identitas Anda dengan kode sandi brankas. Buka kunci untuk mengakses operasi identitas yang dilindungi.",
     "passcode": "Kode sandi brankas",
     "confirmPasscode": "Konfirmasi kode sandi",
     "setPasscode": "Aktifkan brankas",
@@ -1902,13 +1922,14 @@
     "statusNotConfigured": "Tidak terkonfigurasi",
     "statusLocked": "Terkunci",
     "statusUnlocked": "Tidak terkunci",
-    "passcodeTooShort": "Kode sandi harus setidaknya 4 karakter.",
     "passcodeMismatch": "Kode sandi tidak cocok.",
     "setSuccess": "Kode sandi brankas disimpan.",
     "setFailed": "Tidak dapat menyimpan kode sandi brankas.",
     "unlockSuccess": "Lemari besi tidak terkunci.",
     "unlockFailed": "Kesalahan kode sandi atau brankas yang salah.",
-    "lockSuccess": "Kubah terkunci."
+    "lockSuccess": "Kubah terkunci.",
+    "hint": "Secara opsional mengenkripsi rahasia brankas lokal dengan kode sandi (minimal 8 karakter). Ini tidak menggantikan mengekspor .rsi portabel atau file identitas mentah.",
+    "passcodeTooShort": "Kata sandi minimal terdiri dari 8 karakter"
   },
   "logAnalyzeModal": {
     "title": "Analisis Log",
@@ -3242,7 +3263,6 @@
     "me": "Node ini",
     "directLink": "Langsung (0 hop)",
     "relayLink": "Melalui relai (1 hop)",
-    "hiddenCount": "Menampilkan {{shown}} dari {{total}} node (node yang tidak terhubung disembunyikan)",
     "noConnectedNodes": "Tidak ada rekan yang terhubung untuk ditampilkan — sesuaikan filter atau tunggu lalu lintas jaringan.",
     "meShort": "Kau",
     "relayHub": "Relai langsung",
@@ -3253,7 +3273,9 @@
     "maxHopsAll": "Semua hop",
     "maxHopsOption": "{{count}} hop",
     "resetView": "Atur ulang tampilan",
-    "compactLeafCount": "{{count}} rekan langsung ringkas"
+    "compactLeafCount": "{{count}} rekan langsung ringkas",
+    "hiddenCountLimit": "Menampilkan {{shown}} dari {{total}} node (batas {{limit}})",
+    "visibleNodeLimitNote": "Graf menunjukkan paling banyak {{distantLimit}} node."
   },
   "peerListPanel": {
     "heading": "Peer",
@@ -4342,7 +4364,6 @@
     "noNodes": "Belum ada data topologi — sambungkan tumpukan Reticulum dan segarkan.",
     "nodeCount": "{{count}} node",
     "edgeCount": "Tautan {{count}}",
-    "hiddenCount": "Menampilkan {{shown}} dari {{total}} node (rekan jauh disembunyikan)",
     "legendSelf": "simpul ini",
     "centerRns": "RNS",
     "showDistantPeers": "Tampilkan rekan yang jauh",
@@ -4363,7 +4384,10 @@
     "glyphWifi": "Antarmuka Wi-Fi",
     "glyphLora": "Antarmuka LoRa",
     "glyphTcp": "Antarmuka TCP",
-    "glyphSerial": "Antarmuka Serial"
+    "glyphSerial": "Antarmuka Serial",
+    "hiddenCountLimit": "Menampilkan {{shown}} dari {{total}} node (batas {{limit}})",
+    "visibleNodeLimitNote": "Graf menunjukkan paling banyak {{distantLimit}} node.",
+    "rfOnly": "RF saja"
   },
   "rfHistograms": {
     "title": "Distribusi Sinyal RF",

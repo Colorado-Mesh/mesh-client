@@ -15,6 +15,7 @@ import type { DomainEvent } from '@/renderer/lib/protocols/Protocol';
 import {
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
   MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
+  MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP,
   MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
 } from '@/renderer/lib/timeConstants';
 import type { ChatMessage, DeviceState, TelemetryPoint } from '@/renderer/lib/types';
@@ -420,6 +421,42 @@ describe('attachMeshcoreConnSideEffects', () => {
       expect(h.ctx.addMessagesBatch).toHaveBeenCalled();
     },
   );
+
+  it('skips silent bulk after consecutive timeouts and drains incrementally', async () => {
+    vi.useFakeTimers();
+    const h = makeHarness();
+    vi.mocked(h.conn.getWaitingMessages).mockImplementation(
+      () => new Promise(() => undefined), // hang until withTimeout
+    );
+    h.syncNextMessage.mockResolvedValue(null);
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    for (let i = 0; i < MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP; i += 1) {
+      const drainPromise = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
+      await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS);
+      await vi.runAllTimersAsync();
+      await drainPromise;
+    }
+    expect(h.conn.getWaitingMessages).toHaveBeenCalledTimes(
+      MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP,
+    );
+
+    vi.mocked(h.conn.getWaitingMessages).mockClear();
+    const skipped = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
+    await vi.runAllTimersAsync();
+    await skipped;
+
+    expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
+    expect(h.syncNextMessage).toHaveBeenCalled();
+    expect(h.handleConnectionLost).not.toHaveBeenCalled();
+
+    vi.mocked(h.conn.getWaitingMessages).mockClear();
+    vi.mocked(h.conn.getWaitingMessages).mockResolvedValue([]);
+    const retried = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
+    await vi.runAllTimersAsync();
+    await retried;
+    expect(h.conn.getWaitingMessages).toHaveBeenCalledTimes(1);
+  });
 
   it('ignores late bulk resolve after timeout fallback has started', async () => {
     vi.useFakeTimers();

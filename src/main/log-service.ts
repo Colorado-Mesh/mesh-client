@@ -394,15 +394,41 @@ const SDK_FAILURE_CONTEXT_REGEX =
 
 /**
  * True for high-volume `@meshtastic/core` console noise with no triage value:
- * routine `TRACE [iMeshDevice]` chatter and periodic `DEBUG [iMeshDevice] Ping`
- * heartbeats. INFO/WARN/ERROR and decode-failure TRACE lines are kept.
+ * routine `TRACE [iMeshDevice]` chatter, periodic `DEBUG [iMeshDevice] Ping`
+ * heartbeats, and DEBUG encrypted-packet ignores (other channel / PKI we cannot
+ * decrypt; no RSSI/SNR/hex for Foreign LoRa). INFO/WARN/ERROR and decode-failure
+ * TRACE lines are kept.
  */
 export function isDroppableMeshtasticSdkLogLine(message: string): boolean {
   if (/\bDEBUG \[iMeshDevice\] Ping\b/.test(message)) return true;
+  if (
+    /\bDEBUG \[iMeshDevice\]/.test(message) &&
+    /encrypted data packet/i.test(message) &&
+    /ignor/i.test(message)
+  ) {
+    return true;
+  }
   if (/\bTRACE \[iMeshDevice\]/.test(message) && !SDK_FAILURE_CONTEXT_REGEX.test(message)) {
     return true;
   }
   return false;
+}
+
+/**
+ * Chromium ResizeObserver loop warnings — harmless, logged as error by the renderer.
+ * Keep real application errors.
+ */
+export function isDroppableRendererConsoleNoise(message: string): boolean {
+  let text = message.trim();
+  const violationPrefix = '[violation] ';
+  if (text.toLowerCase().startsWith(violationPrefix)) {
+    text = text.slice(violationPrefix.length).trim();
+  }
+  const body = (text.endsWith('.') ? text.slice(0, -1) : text).toLowerCase();
+  return (
+    body === 'resizeobserver loop completed with undelivered notifications' ||
+    body === 'resizeobserver loop limit exceeded'
+  );
 }
 
 /**
@@ -428,5 +454,6 @@ export function forwardRendererConsoleMessage(details: {
     : 'renderer';
   const msg = sanitizeLogMessage(stripConsoleStyles(details.message));
   if (isDroppableMeshtasticSdkLogLine(msg)) return;
+  if (isDroppableRendererConsoleNoise(msg)) return;
   appendLine(mapped, src, msg);
 }

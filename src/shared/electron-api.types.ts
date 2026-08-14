@@ -82,6 +82,17 @@ export interface ReticulumIdentityImportDialogResult {
   byteLength: number | null;
   error: 'invalid_private_key_length' | 'read_failed' | null;
 }
+
+export interface ReticulumIdentityBackupImportDialogResult {
+  path: string | null;
+  contentText: string | null;
+  error: 'read_failed' | 'too_large' | null;
+}
+
+export interface ReticulumIdentityExportSaveResult {
+  path: string | null;
+  error: 'write_failed' | 'invalid_opts' | 'content_too_large' | null;
+}
 //
 // Rules for maintaining this file:
 // - Every method here must have a matching ipcMain.handle/on in src/main/index.ts
@@ -1024,6 +1035,13 @@ export interface ElectronAPI {
   meshtastic: {
     tcp: {
       connect: (host: string, port: number) => Promise<void>;
+      /**
+       * Write one length-prefixed toRadio frame. Rejects with
+       * `meshtastic:tcp-write: no active socket` when main has no socket
+       * (reconnect race). Main resolves a sentinel so Electron does not log
+       * handler [error]; preload maps that to this rejection. Do not replay
+       * the payload on a later socket.
+       */
       write: (bytes: number[]) => Promise<void>;
       disconnect: () => Promise<void>;
       onData: (cb: (bytes: Uint8Array) => void) => () => void;
@@ -1106,6 +1124,11 @@ export interface ElectronAPI {
     readDefaultConfigFile: () => Promise<{ path: string | null; content: string | null }>;
     showConfigImportDialog: () => Promise<{ path: string | null; content: string | null }>;
     showIdentityImportDialog: () => Promise<ReticulumIdentityImportDialogResult>;
+    showIdentityBackupImportDialog: () => Promise<ReticulumIdentityBackupImportDialogResult>;
+    saveIdentityExportDialog: (opts: {
+      defaultPath: string;
+      contentBase64: string;
+    }) => Promise<ReticulumIdentityExportSaveResult>;
     /** Pick a Nomad site root or pages directory for watched hosting. */
     showNomadContentSourceDialog: () => Promise<{ canceled: boolean; path: string | null }>;
     /**

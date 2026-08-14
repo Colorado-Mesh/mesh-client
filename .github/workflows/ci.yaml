@@ -11,6 +11,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Merge queue temporary refs (required when main uses a merge queue ruleset).
+  merge_group:
   workflow_dispatch:
 
 jobs:
@@ -41,7 +43,7 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
-      - name: License check
+      - name: Audit Open Source Licenses
         run: pnpm run check:licenses
 
       - name: Install actionlint

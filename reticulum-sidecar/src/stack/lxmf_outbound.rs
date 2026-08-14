@@ -14,7 +14,7 @@ use lxmf_core::message::LxMessage;
 use lxmf_core::propagation_node::PropagationNode;
 use lxmf_core::router::{
     DirectDeliveryPlan, DirectDeliveryPlanInput, DirectReusableLinkState, DirectRouteSnapshot,
-    LxmRouter, OutboundAction, plan_direct_delivery,
+    LxmRouter, OutboundAction, SendError, plan_direct_delivery,
 };
 use lxmf_core::stamper;
 use rns_identity::identity::Identity;
@@ -141,6 +141,17 @@ enum InProcessDepositOutcome {
     Busy,
     /// Unpack/stamp/accept failed — advance cascade; never self-Link.
     Failed,
+}
+
+fn enqueue_router(router: &mut LxmRouter, message: LxMessage) -> Result<(), SendError> {
+    router.try_send(message)
+}
+
+fn take_send_error_message(error: SendError) -> Box<LxMessage> {
+    match error {
+        SendError::MissingOutboundPropagationNode(message)
+        | SendError::TicketPreparation { message, .. } => message,
+    }
 }
 
 pub struct LxmfOutboundDriver {
@@ -379,6 +390,27 @@ impl LxmfOutboundDriver {
             .contains(&destination_hex.to_lowercase())
     }
 
+    fn enqueue_or_fail(
+        &mut self,
+        router: &mut LxmRouter,
+        event_tx: &broadcast::Sender<String>,
+        message: LxMessage,
+    ) -> bool {
+        match enqueue_router(router, message) {
+            Ok(()) => true,
+            Err(error) => {
+                tracing::warn!(
+                    target: "lxmf-outbound",
+                    error = %error,
+                    "router.try_send failed"
+                );
+                let failed = *take_send_error_message(error);
+                self.emit_outbound_failed(router, event_tx, failed);
+                false
+            }
+        }
+    }
+
     pub fn identity_known_for(&self, destination_hex: &str) -> bool {
         let key = destination_hex.to_lowercase();
         self.pinned_identities.contains_key(&key) || self.known_identities.contains_key(&key)
@@ -554,7 +586,7 @@ impl LxmfOutboundDriver {
                     Some(prop_hex.clone()),
                 );
             }
-            router.send(message);
+            self.enqueue_or_fail(router, event_tx, message);
             return;
         }
         if let Some(hash) = message.hash.or(message.message_id) {
@@ -628,7 +660,7 @@ impl LxmfOutboundDriver {
                     if let Some(hash) = message.hash.or(message.message_id) {
                         self.pending_pn_targets.insert(hash, prop_hash);
                     }
-                    router.send(message);
+                    self.enqueue_or_fail(router, event_tx, message);
                     return;
                 }
                 Err(InProcessDepositOutcome::Failed | InProcessDepositOutcome::Completed) => {
@@ -699,7 +731,7 @@ impl LxmfOutboundDriver {
                         self.pending_pn_deposits.remove(&hash);
                         self.pending_pn_targets.insert(hash, prop_hash);
                     }
-                    router.send(message);
+                    self.enqueue_or_fail(router, event_tx, message);
                     return;
                 }
                 InProcessDepositOutcome::Failed => {
@@ -947,7 +979,7 @@ impl LxmfOutboundDriver {
         match plan {
             DirectDeliveryPlan::WaitForReusableLink => {
                 if !router_owned {
-                    router.send(message);
+                    self.enqueue_or_fail(router, event_tx, message);
                 }
             }
             DirectDeliveryPlan::RequestPath { drop_existing } => {
@@ -974,7 +1006,7 @@ impl LxmfOutboundDriver {
                         message.method = DeliveryMethod::Direct;
                         message.last_delivery_attempt = now;
                         message.next_delivery_attempt = now + f64::from(PATH_REQUEST_WAIT as u32);
-                        router.send(message);
+                        self.enqueue_or_fail(router, event_tx, message);
                     }
                     // router_owned: message remains in pending_outbound; cleared path
                     // forces RequestPath on the next tick after Auto suppress.
@@ -993,7 +1025,7 @@ impl LxmfOutboundDriver {
                         error = %err.error,
                         "direct link delivery start failed"
                     );
-                    router.send(*err.message);
+                    self.enqueue_or_fail(router, event_tx, *err.message);
                 }
             }
         }
@@ -1049,7 +1081,7 @@ impl LxmfOutboundDriver {
                 if try_queue_path_request(&self.transport_tx, request_hash, drop_existing, reason) {
                     self.path_request_gate.record_send(request_hash, now);
                     if !router_owned {
-                        router.send(message);
+                        self.enqueue_or_fail(router, event_tx, message);
                     }
                 } else {
                     self.path_request_gate
@@ -1062,13 +1094,13 @@ impl LxmfOutboundDriver {
                         );
                     }
                     if !router_owned {
-                        router.send(message);
+                        self.enqueue_or_fail(router, event_tx, message);
                     }
                 }
             }
             PathRequestDecision::Backoff => {
                 if !router_owned {
-                    router.send(message);
+                    self.enqueue_or_fail(router, event_tx, message);
                 }
             }
             PathRequestDecision::MaxAttempts => {
@@ -1269,15 +1301,16 @@ impl LxmfOutboundDriver {
             is_local = pick.is_local(),
             "LXMF advancing PN cascade"
         );
-        router.send(message);
-        emit_outbound_status_with_via(
-            event_tx,
-            Some(serde_json::Value::String(hex::encode(msg_hash))),
-            None,
-            "sending",
-            Some(method_label),
-            Some(hex::encode(pn_hash)),
-        );
+        if self.enqueue_or_fail(router, event_tx, message) {
+            emit_outbound_status_with_via(
+                event_tx,
+                Some(serde_json::Value::String(hex::encode(msg_hash))),
+                None,
+                "sending",
+                Some(method_label),
+                Some(hex::encode(pn_hash)),
+            );
+        }
         Ok(())
     }
 
@@ -1532,17 +1565,18 @@ impl LxmfOutboundDriver {
             "Direct path failover: suppress/drop via + RequestPath; re-queuing Direct"
         );
         let sent_via = iface.as_deref().map(classify_interface).map(str::to_string);
-        emit_outbound_status_detailed(
-            event_tx,
-            Some(serde_json::Value::String(hex::encode(msg_hash))),
-            Some(serde_json::Value::String(hex::encode(dest_hash))),
-            "sending",
-            Some("direct"),
-            sent_via,
-            Some(tried),
-            Some(rounds),
-        );
-        router.send(message);
+        if self.enqueue_or_fail(router, event_tx, message) {
+            emit_outbound_status_detailed(
+                event_tx,
+                Some(serde_json::Value::String(hex::encode(msg_hash))),
+                Some(serde_json::Value::String(hex::encode(dest_hash))),
+                "sending",
+                Some("direct"),
+                sent_via,
+                Some(tried),
+                Some(rounds),
+            );
+        }
         Ok(())
     }
 
@@ -1571,17 +1605,20 @@ impl LxmfOutboundDriver {
         );
         if let Some(hash) = msg_hash {
             self.pending_pn_targets.insert(hash, prop_hash);
-            // Keep chat UI in sending/propagated while PN rediscovery proceeds.
-            emit_outbound_status_with_via(
-                event_tx,
-                Some(serde_json::Value::String(hex::encode(hash))),
-                None,
-                "sending",
-                Some(self.cascade_wire_delivery_method(hash)),
-                Some(hex::encode(prop_hash)),
-            );
         }
-        router.send(message);
+        if self.enqueue_or_fail(router, event_tx, message) {
+            if let Some(hash) = msg_hash {
+                // Keep chat UI in sending/propagated while PN rediscovery proceeds.
+                emit_outbound_status_with_via(
+                    event_tx,
+                    Some(serde_json::Value::String(hex::encode(hash))),
+                    None,
+                    "sending",
+                    Some(self.cascade_wire_delivery_method(hash)),
+                    Some(hex::encode(prop_hash)),
+                );
+            }
+        }
     }
 }
 
@@ -1993,6 +2030,112 @@ mod tests {
     }
 
     #[test]
+    fn enqueue_router_missing_propagation_node_keeps_message_and_fails_outbound() {
+        use lxmf_core::constants::{DeliveryMethod, MessageState};
+        use lxmf_core::message::LxMessage;
+        use lxmf_core::router::{LxmRouter, RouterConfig, SendError};
+        use tokio::sync::broadcast;
+
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let dest_hash = dest(0xab);
+        let msg_hash = [0x42u8; 32];
+        let pn_hash = dest(0x11);
+        driver
+            .pn_cascade_tried
+            .insert(msg_hash, HashSet::from([pn_hash]));
+        driver.pending_pn_targets.insert(msg_hash, pn_hash);
+        driver.pn_cascade_local.insert(msg_hash);
+
+        let mut router = LxmRouter::new(RouterConfig::default());
+        let (event_tx, mut event_rx) = broadcast::channel(8);
+
+        let mut msg = LxMessage::new(dest_hash, [1u8; 16], "", "hi", DeliveryMethod::Propagated);
+        msg.hash = Some(msg_hash);
+
+        let typed = enqueue_router(&mut router, msg.clone());
+        let Err(SendError::MissingOutboundPropagationNode(failed)) = typed else {
+            panic!("expected MissingOutboundPropagationNode, got {typed:?}");
+        };
+        assert_eq!(failed.hash, Some(msg_hash));
+        assert_eq!(failed.state, MessageState::Failed);
+        assert!(router.pending_outbound.is_empty());
+
+        assert!(!driver.enqueue_or_fail(&mut router, &event_tx, msg));
+        assert!(!driver.pn_cascade_tried.contains_key(&msg_hash));
+        assert!(!driver.pending_pn_targets.contains_key(&msg_hash));
+        assert!(!driver.pn_cascade_local.contains(&msg_hash));
+
+        let mut saw_failed = false;
+        while let Ok(frame) = event_rx.try_recv() {
+            if frame.contains("\"status\":\"failed\"") && frame.contains(&hex::encode(msg_hash)) {
+                saw_failed = true;
+            }
+        }
+        assert!(saw_failed, "missing PN must emit outbound failed status");
+    }
+
+    #[test]
+    fn enqueue_router_ticket_preparation_keeps_message_and_fails_outbound() {
+        use lxmf_core::constants::{DeliveryMethod, MessageState};
+        use lxmf_core::message::LxMessage;
+        use lxmf_core::router::{LxmRouter, RouterConfig, SendError, TicketPreparationError};
+        use tokio::sync::broadcast;
+
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let dest_hash = dest(0xcd);
+        let mut msg = LxMessage::new(
+            dest_hash,
+            [1u8; 16],
+            "ticket",
+            "late",
+            DeliveryMethod::Direct,
+        );
+        msg.include_ticket = true;
+        msg.sign(&identity.get_signing_key().expect("sk"))
+            .expect("sign");
+        let msg_hash = msg.hash.expect("hash after sign");
+        driver
+            .pn_cascade_tried
+            .insert(msg_hash, HashSet::from([dest(0x22)]));
+        driver.pending_pn_targets.insert(msg_hash, dest(0x22));
+
+        let mut router = LxmRouter::new(RouterConfig::default());
+        let (event_tx, mut event_rx) = broadcast::channel(8);
+
+        let typed = enqueue_router(&mut router, msg.clone());
+        match typed {
+            Err(SendError::TicketPreparation {
+                message,
+                source: TicketPreparationError::AlreadySigned,
+            }) => {
+                assert_eq!(message.hash, Some(msg_hash));
+                assert_eq!(message.state, MessageState::Failed);
+            }
+            other => panic!("expected TicketPreparation::AlreadySigned, got {other:?}"),
+        }
+        assert!(router.pending_outbound.is_empty());
+
+        assert!(!driver.enqueue_or_fail(&mut router, &event_tx, msg));
+        assert!(!driver.pn_cascade_tried.contains_key(&msg_hash));
+        assert!(!driver.pending_pn_targets.contains_key(&msg_hash));
+
+        let mut saw_failed = false;
+        while let Ok(frame) = event_rx.try_recv() {
+            if frame.contains("\"status\":\"failed\"") && frame.contains(&hex::encode(msg_hash)) {
+                saw_failed = true;
+            }
+        }
+        assert!(
+            saw_failed,
+            "ticket preparation failure must emit outbound failed status"
+        );
+    }
+
+    #[test]
     fn clear_path_to_removes_stale_route_so_refresh_can_reinstall() {
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);
@@ -2163,6 +2306,8 @@ mod tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
             extra_config: std::collections::HashMap::default(),
         }
     }

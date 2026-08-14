@@ -382,6 +382,33 @@ describe('meshcoreDualNobleBleInit', () => {
     localStorage.removeItem('mesh-client:protocol');
   });
 
+  it('initNobleBleDualRadioStartup marks primaryAutoConnectInFlight in the mutex snapshot', () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'mt-peripheral');
+    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'mc-peripheral');
+    localStorage.setItem('mesh-client:protocol', 'meshtastic');
+    initNobleBleDualRadioStartup();
+    expect(getNobleBleConnectMutexSnapshot().primaryAutoConnectInFlight).toBe(true);
+    expect(getNobleBleConnectMutexSnapshot().primaryProtocol).toBe('meshtastic');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+    localStorage.removeItem('mesh-client:protocol');
+  });
+
+  it('notifyNobleBlePrimaryAutoConnectSettled clears primaryAutoConnectInFlight in the mutex snapshot', () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'mt-peripheral');
+    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'mc-peripheral');
+    localStorage.setItem('mesh-client:protocol', 'meshtastic');
+    initNobleBleDualRadioStartup();
+    expect(getNobleBleConnectMutexSnapshot().primaryAutoConnectInFlight).toBe(true);
+    notifyNobleBlePrimaryAutoConnectSettled();
+    expect(getNobleBleConnectMutexSnapshot().primaryAutoConnectInFlight).toBe(false);
+    localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+    localStorage.removeItem('mesh-client:protocol');
+  });
+
   it('awaitNobleBlePrimaryAutoConnectSettled unblocks after primary notifies', async () => {
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
     localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'mt-peripheral');

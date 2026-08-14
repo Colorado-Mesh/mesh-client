@@ -1,0 +1,124 @@
+name: Third-party licenses
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - pnpm-lock.yaml
+      - scripts/generate-third-party-licenses.mjs
+      - .github/workflows/third-party-licenses.yaml
+  workflow_dispatch:
+
+# Coalesce overlapping regenerations (path-filtered pushes can stack) so we do not
+# leave multiple stale license PRs from canceled/superseded runs.
+concurrency:
+  group: third-party-licenses
+  cancel-in-progress: true
+
+jobs:
+  update:
+    name: Update third-party licenses
+    runs-on: ubuntu-latest
+    steps:
+      # persist-credentials: false avoids Duplicate Authorization when CPR
+      # configures its own http.*.extraheader (actions/checkout@v6 default helper).
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit Open Source Licenses
+        run: pnpm run check:licenses
+
+      - name: Generate third-party licenses
+        run: pnpm run docs:licenses
+
+      - name: Detect license doc changes
+        id: licenses_diff
+        run: |
+          if git diff --quiet -- docs/third-party-licenses.md; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      # RELEASE_PUSH_TOKEN must be able to git-push a branch; existence alone is not
+      # enough (fine-grained missing Contents/PR write presents as push 403).
+      - name: Verify RELEASE_PUSH_TOKEN can push
+        if: steps.licenses_diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN}" ]; then
+            echo '::error::Set repository secret RELEASE_PUSH_TOKEN (admin PAT: contents+workflows+pull_requests).'
+            echo 'Default GITHUB_TOKEN PRs do not auto-run required checks under the merge-queue ruleset.'
+            exit 1
+          fi
+
+          LOGIN=$(gh api user --jq .login)
+          echo "RELEASE_PUSH_TOKEN authenticates as: ${LOGIN}"
+
+          PUSH=$(gh api "repos/${REPO}" --jq '.permissions.push // false')
+          if [ "${PUSH}" != 'true' ]; then
+            echo "::error::RELEASE_PUSH_TOKEN (${LOGIN}) lacks push on ${REPO}."
+            echo 'Grant Contents+Pull requests+Workflows write on this repo,'
+            echo 'then: gh secret set RELEASE_PUSH_TOKEN --repo Colorado-Mesh/mesh-client'
+            exit 1
+          fi
+
+          MAIN_SHA=$(gh api "repos/${REPO}/git/ref/heads/main" --jq .object.sha)
+          PROBE_REF="refs/heads/chore/cpr-token-probe-${RUN_ID}"
+          if ! gh api -X POST "repos/${REPO}/git/refs" -f ref="${PROBE_REF}" -f sha="${MAIN_SHA}" >/dev/null; then
+            echo "::error::RELEASE_PUSH_TOKEN (${LOGIN}) cannot create refs on ${REPO} (Contents write)."
+            echo 'Grant Contents+Pull requests+Workflows write on this repo,'
+            echo 'then: gh secret set RELEASE_PUSH_TOKEN --repo Colorado-Mesh/mesh-client'
+            exit 1
+          fi
+          gh api -X DELETE "repos/${REPO}/git/refs/${PROBE_REF#refs/}" >/dev/null
+          echo "RELEASE_PUSH_TOKEN can create/delete refs on ${REPO}"
+
+      # Open a PR instead of pushing to main — the merge-queue ruleset blocks
+      # direct pushes, and GitHub Actions cannot be added as a bypass actor
+      # on this org (“must be part of the ruleset source or owner organization”).
+      # RELEASE_PUSH_TOKEN (not GITHUB_TOKEN) so pull_request workflows run.
+      # Unique branch per run avoids thrashing one tip under concurrent main pushes.
+      - name: Create pull request
+        if: steps.licenses_diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
+        with:
+          token: ${{ secrets.RELEASE_PUSH_TOKEN }}
+          commit-message: 'docs: update third-party licenses'
+          title: 'docs: update third-party licenses'
+          body: |
+            Regenerated `docs/third-party-licenses.md` after dependency changes.
+
+            Opened automatically by `third-party-licenses.yaml` (direct pushes to
+            `main` are blocked by the merge-queue ruleset).
+          base: main
+          branch: chore/third-party-licenses-${{ github.run_id }}
+          delete-branch: true
+          add-paths: |
+            docs/third-party-licenses.md

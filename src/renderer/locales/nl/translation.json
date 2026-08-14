@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh op GitHub",
     "footerWebsiteTitle": "Colorado Mesh-website",
-    "loadingApp": "Mesh-client laden"
+    "loadingApp": "Mesh-client laden",
+    "reticulumQueueTooltip": "TX-wachtrij voor hosts voor lokale RNode \"{{name}}\": pakketten die wachten op de radio (slechtst gevuld als er meerdere RNodes zijn). Groen onder 25%, amber onder 60%, rood bij 60% of meer.",
+    "reticulumQueueTooltipGeneric": "Host TX-wachtrij voor de drukste lokale RNode: pakketten die wachten op de radio. Groen onder 25%, amber onder 60%, rood bij 60% of meer.",
+    "reticulumTxBuffering": "Bufferen van uitgaande pakketten naar een lokale RNode (host TX-wachtrij leeglopen).",
+    "reticulumTxBufferingNamed": "Bufferen van uitgaande pakketten op \"{{name}}\" (TX-wachtrij van host loopt leeg)."
   },
   "appPanel": {
     "failedSaveRetention": "Kan de instelling voor het bewaren van berichten niet opslaan.",
@@ -384,7 +388,9 @@
     "themeSaveFailed": "Kan kleurcontrolepunt niet opslaan.",
     "themeRestoreFailed": "Kan kleurcontrolepunt niet herstellen.",
     "themeResetFailed": "Kan kleuren niet resetten.",
-    "messageActionsBarBgVisible": "Achtergrond tonen"
+    "messageActionsBarBgVisible": "Achtergrond tonen",
+    "rrcUnreadAllRoomMessages": "RRC ongelezen voor alle kamerberichten",
+    "rrcUnreadAllRoomMessagesHint": "Wanneer ingeschakeld, markeert elk nieuw RRC-kamerbericht ongelezen en kan een kanaalgeluid worden afgespeeld. Schakel uit voor waarschuwingen in IRC-stijl: alleen directe berichten en @vermeldingen."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -944,7 +950,6 @@
     "reticulumStackRunning": "Stack actief",
     "reticulumIdentity": {
       "title": "Reticulum-identiteit",
-      "hint": "Start de stapel hierboven en maak of importeer vervolgens een mnemonische identiteit.",
       "startStackFirst": "Start de Reticulum-stack om de identiteit te configureren.",
       "displayName": "Weergavenaam",
       "generate": "Identiteit genereren",
@@ -954,16 +959,9 @@
       "confirmSaved": "IK HEB MIJN HERSTELZIN OPGESLAGEN",
       "hashLabel": "LXMF-hash:",
       "failed": "Identiteitsinstelling mislukt",
-      "export": "Back-up exporteren",
-      "exportPassphrase": "Back-up wachtwoordzin",
-      "exportPassphraseRequired": "Voer een back-upwachtzin in voordat u exporteert.",
-      "importBackupLabel": "Back-up-JSON importeren",
-      "importBackup": "Back-up importeren",
-      "importBackupHint": "Herstelt alleen de weergavenaam en hash-metagegevens. Voor de netwerkidentiteit is uw persoonlijke sleutelbestand of herstelzin vereist.",
       "importPrivateKeyLabel": "Privésleutel importeren",
       "importPrivateKey": "Privésleutel importeren",
       "importPrivateKeyFromFile": "Uit bestand",
-      "importPrivateKeyHint": "64-byte RNS-privésleutel: X25519 geheim (32 B) + Ed25519 zaad (32 B) als hexadecimale code van 128 tekens of base64.",
       "replaceIdentitySection": "Vervang identiteit",
       "replaceIdentityHint": "Als u een nieuwe identiteit importeert, worden uw huidige sleutels vervangen en wordt de stapel opnieuw gestart.",
       "replaceIdentityConfirmTitle": "Reticulum-identiteit vervangen?",
@@ -998,7 +996,28 @@
       "slotCreated": "Nieuwe identiteit gecreëerd.",
       "slotDeleted": "Identiteit verwijderd.",
       "slotActionFailed": "Identiteitsactie mislukt: {{error}}",
-      "slotUnnamed": "Naamloos"
+      "slotUnnamed": "Naamloos",
+      "importBackupFromFile": "Van .rsi-bestand",
+      "importBackupPin": "Backup-PIN",
+      "importBackupPinRequired": "Voer de PIN in die werd gebruikt toen deze .rsi-back-up werd geëxporteerd.",
+      "exportRaw": "Reticulum-identiteitsbestand exporteren",
+      "exportSaved": "Identiteitsexport opgeslagen.",
+      "exportSaveFailed": "Kon de identiteitsexport niet opslaan.",
+      "exportPassphraseConfirm": "Bevestig backup-PIN",
+      "exportPassphraseMismatch": "Back-up pincodes komen niet overeen.",
+      "exportPassphrase": "Backup-PIN",
+      "importBackupTooLarge": "Identiteitsback-upbestand is te groot.",
+      "hint": "Start de stapel hierboven en maak of importeer vervolgens een BIP-39-herstelzin, een RAW Reticulum-identiteitsbestand of een met pincode gecodeerde Ratspeak .rsi-back-up.",
+      "importBackupLabel": "Importeer Ratspeak .rsi back-up",
+      "importBackup": "Importeer .rsi back-up",
+      "importBackupHint": "PIN-gecodeerde Ratspeak-identiteitsback-up (.rsi). Herstelt uw privésleutel en activeert de identiteit.",
+      "importPrivateKeyHint": "Officiële Reticulum 64-byte privésleutel (X25519 Secret + Ed25519 Seed) als hex, base64, base32 of een RAW .identity-bestand.",
+      "export": "Exporteer .rsi back-up",
+      "exportPassphraseRequired": "Voer een back-up-PIN van ten minste 6 tekens in.",
+      "importBackupAria": "Importeer Ratspeak .rsi back-up van geplakte JSON",
+      "importBackupFromFileAria": "Kies een Ratspeak .rsi back-upbestand om te importeren",
+      "exportAria": "Export PIN-gecodeerde Ratspeak .rsi identiteitsback-up",
+      "exportRawAria": "Exporteer niet-versleuteld RAW Reticulum-identiteitsbestand"
     },
     "reticulumInterfaces": {
       "title": "Raakvlakken",
@@ -1314,7 +1333,8 @@
       "bleBondRemovedOpenAdmin": "Open Beheerder Bluetooth",
       "txQueueDropsHintBle": "Deze BLE RNode kan zijn TX-wachtrij niet legen (link vast of flapperend). Geef de voorkeur aan USB-serie of Wi‑Fi (tcp://), of stop de stack en koppel opnieuw na Vergeten in Systeeminstellingen → Bluetooth.",
       "txQueueDropsHintBleBondStale": "TX-wachtrij is vol omdat de BLE-koppeling verouderd is. Vergeet deze RNode in Systeeminstellingen → Bluetooth en gebruik Admin → Bluetooth (Gekoppelde wissen / Koppeling starten) of schakel over naar USB.",
-      "txQueueDropsHintNeutral": "Dit interface TX-kanaal is vol. Controleer de linkstatus van die interface (of schakel deze uit) om vallen te stoppen."
+      "txQueueDropsHintNeutral": "Dit interface TX-kanaal is vol. Controleer de linkstatus van die interface (of schakel deze uit) om vallen te stoppen.",
+      "txQueueDropsHintBleFlowControl": "Host TX wachtrij tegendruk terwijl de radio bezig is (stroomregeling aan). Verwacht bij RF-congestie — geen vastzittende link. Verminder de uitgaande belasting of wacht op zendtijd."
     },
     "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum sidecar. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties.",
     "radioMqttRootDivergesWarning": "Radio MQTT-hoofdonderwerp is {{radioRoot}}, maar dit paneel is geabonneerd op {{appPrefix}}. Koppel de radio om landelijk knooppuntverkeer te beperken — werk het onderwerpvoorvoegsel bij en sluit MQTT opnieuw aan.",
@@ -1711,7 +1731,8 @@
         "decommissionedHubEnabled": "Buiten gebruik gestelde hub „{{name}}” staat nog aan — mesh-client zet hem bij elke stackstart uit. Gebruik «Standaard backbones toevoegen» of de backbone-directory voor actieve eindpunten.",
         "txQueueDropsBle": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol) — BLE RNode-link vastgelopen; geef de voorkeur aan USB of opnieuw koppelen",
         "txQueueDropsBleBondStale": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol) — BLE-binding verouderd; Vergeet in OS Bluetooth en koppel opnieuw",
-        "txQueueDropsNeutral": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol) — controleer de link van die interface"
+        "txQueueDropsNeutral": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol) — controleer de link van die interface",
+        "txQueueDropsBleFlowControl": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (host TX-wachtrij vol) — stroomregeling aan; verwacht bij RF-congestie, geen vastzittende link"
       }
     },
     "routingPort": {
@@ -1893,7 +1914,6 @@
   },
   "identityVault": {
     "title": "Identiteitskluis",
-    "hint": "Versleutel een lokale kopie van je identiteitsback-up met een kluiswachtwoordcode. Ontgrendel om toegang te krijgen tot beschermde identiteitsbewerkingen.",
     "passcode": "Toegangscode kluis",
     "confirmPasscode": "Toegangscode bevestigen",
     "setPasscode": "Schakel kluis in",
@@ -1902,13 +1922,14 @@
     "statusNotConfigured": "Niet geconfigureerd",
     "statusLocked": "Vastgezet",
     "statusUnlocked": "Ontgrendeld",
-    "passcodeTooShort": "De toegangscode moet uit minimaal 4 tekens bestaan.",
     "passcodeMismatch": "Ingevoerde toegangscodes komen niet overeen.",
     "setSuccess": "Toegangscode kluis opgeslagen.",
     "setFailed": "Kan kluistoegangscode niet opslaan.",
     "unlockSuccess": "Kluis ontgrendeld",
     "unlockFailed": "Onjuiste toegangscode of kluisfout.",
-    "lockSuccess": "Kluis vergrendeld."
+    "lockSuccess": "Kluis vergrendeld.",
+    "hint": "Versleutel desgewenst een lokaal kluisgeheim met een toegangscode (minimaal 8 tekens). Dit is geen vervanging voor het exporteren van een draagbaar .rsi- of RAW-identiteitsbestand.",
+    "passcodeTooShort": "De toegangscode moet uit ten minste 8 tekens bestaan."
   },
   "logAnalyzeModal": {
     "title": "Loganalyse",
@@ -3242,7 +3263,6 @@
     "me": "Dit onderdeel",
     "directLink": "Direct (0 hops)",
     "relayLink": "Via relais (1 hop)",
-    "hiddenCount": "Toont {{shown}} van {{total}} knooppunten (niet-verbonden knooppunten verborgen)",
     "noConnectedNodes": "Geen verbonden peers om weer te geven — pas filters aan of wacht op netwerkverkeer.",
     "meShort": "Jij",
     "relayHub": "Direct relais",
@@ -3253,7 +3273,9 @@
     "maxHopsAll": "Alle hops",
     "maxHopsOption": "{{count}} hops",
     "resetView": "Weergave opnieuw instellen (reset)",
-    "compactLeafCount": "{{count}} compacte directe collega's"
+    "compactLeafCount": "{{count}} compacte directe collega's",
+    "hiddenCountLimit": "Toont {{shown}} van {{total}} knooppunten (limiet {{limit}})",
+    "visibleNodeLimitNote": "De graaf toont maximaal {{distantLimit}} knooppunten."
   },
   "peerListPanel": {
     "heading": "Collega's",
@@ -4342,7 +4364,6 @@
     "noNodes": "Nog geen topologiegegevens: sluit de Reticulum-stack aan en vernieuw.",
     "nodeCount": "{{count}} knooppunten",
     "edgeCount": "{{count}}-koppelingen",
-    "hiddenCount": "Toont {{shown}} van {{total}} knooppunten (verre peers verborgen)",
     "legendSelf": "Dit knooppunt",
     "centerRns": "RNS",
     "showDistantPeers": "Toon collega's op afstand",
@@ -4363,7 +4384,10 @@
     "glyphWifi": "Wi-Fi-interface",
     "glyphLora": "LoRa-interface",
     "glyphTcp": "TCP-interface",
-    "glyphSerial": "Seriële interface"
+    "glyphSerial": "Seriële interface",
+    "hiddenCountLimit": "Toont {{shown}} van {{total}} knooppunten (limiet {{limit}})",
+    "visibleNodeLimitNote": "De graaf toont maximaal {{distantLimit}} knooppunten.",
+    "rfOnly": "Alleen RF"
   },
   "rfHistograms": {
     "title": "RF-signaalverdeling",

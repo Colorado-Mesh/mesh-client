@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -26,15 +26,18 @@ import {
   normalizeReticulumInterfaceGlyphType,
   type ReticulumTopologyInterfaceGlyph,
 } from '@/renderer/lib/reticulum/reticulumTopologyInterfaceGlyph';
+import { selectReticulumTopologyPeersForRender } from '@/renderer/lib/reticulum/reticulumTopologyPeerRenderSelect';
 import { LARGE_MESH_NODE_THRESHOLD } from '@/renderer/lib/sessionMemoryCaps';
+import {
+  TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
+  topologyGraphVisibleNodeCap,
+} from '@/renderer/lib/topologyGraphLimits';
 import type { ReticulumPeerWireRow } from '@/shared/reticulum-types';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import { resolveReticulumPeerLabel, useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { TopologyHopFilterControls } from './TopologyHopFilterControls';
-
-/** Cap path-table rows rendered in the topology force graph (sidecar also caps at 2000). */
-const TOPOLOGY_PEER_RENDER_CAP = 800;
+import { TopologyVisibleLimitNote } from './TopologyVisibleLimitNote';
 
 function enrichTopologyPeers(peers: ReticulumPeerWireRow[]): ReticulumPeerWireRow[] {
   const storePeers = useReticulumPeerStore.getState().peers;
@@ -226,11 +229,25 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
   const [loading, setLoading] = useState(true);
   const [includeDistantPeers, setIncludeDistantPeers] = useState(true);
   const [maxHops, setMaxHops] = useState<number | null>(null);
+  const [rfOnly, setRfOnly] = useState(false);
+  const includeDistantPeersRef = useRef(includeDistantPeers);
+  const maxHopsRef = useRef(maxHops);
+  const rfOnlyRef = useRef(rfOnly);
+  useLayoutEffect(() => {
+    includeDistantPeersRef.current = includeDistantPeers;
+    maxHopsRef.current = maxHops;
+    rfOnlyRef.current = rfOnly;
+  }, [includeDistantPeers, maxHops, rfOnly]);
 
   const snapshotRafRef = useRef<number | null>(null);
   const refreshGenerationRef = useRef(0);
   const refreshInFlightRef = useRef(false);
   const refreshPendingRef = useRef(false);
+  const lastFetchRef = useRef<{
+    interfaces: ReticulumSidecarInterfaceRow[];
+    peers: ReticulumPeerWireRow[];
+    selfLabel: string;
+  } | null>(null);
   const publishSnapshotFromSim = useCallback((opts?: { immediate?: boolean }) => {
     const publish = () => {
       const renderNodes = simRef.current
@@ -302,6 +319,40 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
     [publishSnapshotFromSim],
   );
 
+  const rebuildFromCache = useCallback(() => {
+    const cached = lastFetchRef.current;
+    if (!cached) return;
+    const uniquePeers = selectReticulumTopologyPeersForRender(cached.peers, cached.interfaces, {
+      rfOnly,
+      includeDistantPeers,
+      maxHops,
+    });
+    const width = svgRef.current?.clientWidth ?? 800;
+    const height = svgRef.current?.clientHeight ?? 600;
+    const graph = buildReticulumMeshTopologyGraph(
+      cached.interfaces.map((iface) => ({
+        id: iface.id,
+        name: iface.name,
+        type: iface.type,
+        enabled: iface.enabled,
+        status: iface.status,
+        serial_port: iface.serial_port,
+      })),
+      uniquePeers,
+      {
+        selfLabel: cached.selfLabel,
+        unassignedInterfaceLabel: t('reticulumTopology.unassignedInterface'),
+        cx: width / 2,
+        cy: height / 2,
+        filter: { includeDistantPeers, maxHops, rfOnly },
+        serverPeerHashes: new Set(
+          [...useNomadNetworkStore.getState().nodes.keys()].map((h) => h.toLowerCase()),
+        ),
+      },
+    );
+    applyGraph(graph);
+  }, [applyGraph, includeDistantPeers, maxHops, rfOnly, t]);
+
   const refresh = useCallback(async () => {
     if (refreshInFlightRef.current) {
       refreshPendingRef.current = true;
@@ -331,18 +382,18 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
 
           const peerNodes = enrichTopologyPeers(topologyBody.nodes ?? []);
           const seenHashes = new Set<string>();
-          let uniquePeers = peerNodes.filter((peer) => {
+          const uniqueByHash = peerNodes.filter((peer) => {
             if (!peer.destination_hash || seenHashes.has(peer.destination_hash)) return false;
             seenHashes.add(peer.destination_hash);
             return true;
           });
-          if (uniquePeers.length > TOPOLOGY_PEER_RENDER_CAP) {
-            uniquePeers = [...uniquePeers]
-              .sort((a, b) => (b.last_seen ?? 0) - (a.last_seen ?? 0))
-              .slice(0, TOPOLOGY_PEER_RENDER_CAP);
-          }
-
           const selfLabel = identityBody.display_name?.trim() || t('reticulumTopology.self');
+          lastFetchRef.current = { interfaces, peers: uniqueByHash, selfLabel };
+          const uniquePeers = selectReticulumTopologyPeersForRender(uniqueByHash, interfaces, {
+            rfOnly: rfOnlyRef.current,
+            includeDistantPeers: includeDistantPeersRef.current,
+            maxHops: maxHopsRef.current,
+          });
 
           const serverPeerHashes = new Set(
             [...useNomadNetworkStore.getState().nodes.keys()].map((h) => h.toLowerCase()),
@@ -357,6 +408,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
               type: iface.type,
               enabled: iface.enabled,
               status: iface.status,
+              serial_port: iface.serial_port,
             })),
             uniquePeers,
             {
@@ -364,7 +416,11 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
               unassignedInterfaceLabel: t('reticulumTopology.unassignedInterface'),
               cx: width / 2,
               cy: height / 2,
-              filter: { includeDistantPeers, maxHops },
+              filter: {
+                includeDistantPeers: includeDistantPeersRef.current,
+                maxHops: maxHopsRef.current,
+                rfOnly: rfOnlyRef.current,
+              },
               serverPeerHashes,
             },
           );
@@ -380,7 +436,11 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
     } finally {
       refreshInFlightRef.current = false;
     }
-  }, [applyGraph, includeDistantPeers, maxHops, t]);
+  }, [applyGraph, t]);
+
+  useEffect(() => {
+    rebuildFromCache();
+  }, [rebuildFromCache]);
 
   useEffect(() => {
     void refresh();
@@ -412,7 +472,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
       if (debounceTimer != null) clearTimeout(debounceTimer);
       unsub();
     };
-  }, [includeDistantPeers, maxHops, refresh]);
+  }, [refresh]);
 
   useEffect(() => {
     let stop: (() => void) | null = null;
@@ -479,6 +539,23 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
           maxHopsAllLabel={t('reticulumTopology.maxHopsAll')}
           maxHopsOptionLabel={(hops) => t('reticulumTopology.maxHopsOption', { count: hops })}
         />
+        <label className="flex items-center gap-1.5 text-slate-400">
+          <input
+            type="checkbox"
+            checked={rfOnly}
+            onChange={(e) => {
+              setRfOnly(e.target.checked);
+            }}
+            aria-label={t('reticulumTopology.rfOnly')}
+            className="accent-brand-green h-3.5 w-3.5 rounded"
+          />
+          {t('reticulumTopology.rfOnly')}
+        </label>
+        <TopologyVisibleLimitNote
+          label={t('reticulumTopology.visibleNodeLimitNote', {
+            distantLimit: TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
+          })}
+        />
         {hasGraph && (
           <span className="text-slate-500">
             {t('reticulumTopology.interfaceStatus', {
@@ -490,9 +567,10 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
         <span className="ml-auto flex items-center gap-2">
           {hiddenCount > 0 && (
             <span className="text-slate-500">
-              {t('reticulumTopology.hiddenCount', {
+              {t('reticulumTopology.hiddenCountLimit', {
                 shown: nodes.length,
                 total: totalNodeCount,
+                limit: topologyGraphVisibleNodeCap(),
               })}
             </span>
           )}

@@ -6,6 +6,7 @@ import {
   type RrcDmPeer,
   rrcDmRoomKey,
 } from '@/renderer/lib/rrcDmRoom';
+import { shouldShowRrcWhoTranscript } from '@/renderer/lib/rrcMessageDisplay';
 import { persistRrcMessage } from '@/renderer/lib/rrcMessagePersist';
 import { removeRrcOpenDm, upsertRrcOpenDm } from '@/renderer/lib/rrcOpenDms';
 import { clearHydratedRrcRoomKeysForHub } from '@/renderer/lib/rrcRoomHistoryHydration';
@@ -14,7 +15,7 @@ import {
   dedupeRrcMembers,
   rrcIdentityHashesMatch,
 } from '@/renderer/lib/rrcRoomMembers';
-import { rrcRoomMatchKey, rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
+import { RRC_HUB_STREAM_ROOM, rrcRoomMatchKey, rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import {
   MAX_RRC_MEMBERS_PER_ROOM,
   MAX_RRC_ROOMS_PER_HUB,
@@ -33,11 +34,10 @@ const MAX_MESSAGES_PER_ROOM = RRC_ROOM_HISTORY_LOAD_COUNT;
 const MAX_ROOMS_PER_HUB = MAX_RRC_ROOMS_PER_HUB;
 const MAX_MEMBERS_PER_ROOM = MAX_RRC_MEMBERS_PER_ROOM;
 
+export { RRC_HUB_STREAM_ROOM };
+
 /** Soft cap on simultaneous connected hub sessions — mirrors sidecar `MAX_HUB_SESSIONS`. */
 export const MAX_RRC_HUB_SESSIONS = 8;
-
-/** Synthetic room key for hub-scoped NOTICE/ERROR with no K_ROOM. */
-export const RRC_HUB_STREAM_ROOM = '[hub]';
 
 /**
  * @deprecated Legacy single-inbox key — use `@<hash>` via `rrcDmRoomKey`.
@@ -135,6 +135,12 @@ export interface RrcHubSessionState {
   partIntentRooms: Set<string>;
   /** True when user requested disconnect (not hub drop). */
   disconnectIntent: boolean;
+  /** Soft room keys we already auto-requested `/who` for (survives panel remount). */
+  whoRequestedRooms: Set<string>;
+  /** Soft room keys that already showed one `/who` NOTICE in the transcript. */
+  whoTranscriptShownRooms: Set<string>;
+  /** Soft room keys whose next `/who` NOTICE should appear (Refresh / composer). */
+  whoTranscriptForceRooms: Set<string>;
 }
 
 export function emptyHubSession(): RrcHubSessionState {
@@ -150,7 +156,18 @@ export function emptyHubSession(): RrcHubSessionState {
     unreadByRoom: new Map(),
     partIntentRooms: new Set(),
     disconnectIntent: false,
+    whoRequestedRooms: new Set(),
+    whoTranscriptShownRooms: new Set(),
+    whoTranscriptForceRooms: new Set(),
   };
+}
+
+function dropMatchingWhoKeys(set: Set<string>, room: string): Set<string> {
+  const next = new Set(set);
+  for (const k of next) {
+    if (rrcRoomsMatch(k, room)) next.delete(k);
+  }
+  return next;
 }
 
 /** Mirror the focused hub's per-hub fields onto the store's top-level compat fields. */
@@ -262,6 +279,12 @@ interface RrcSessionStoreState {
   /** Per-hub unread totals stashed when a hub session is removed (survives disconnect). */
   unreadByHub: Map<string, number>;
   showTimestamps: boolean;
+  /**
+   * True while the RRC panel tab is focused (not merely mounted / last-visited).
+   * Unread bumps are suppressed only when this is true and the message matches
+   * the focused hub's activeRoom — sticky activeRoom alone must not suppress.
+   */
+  rrcPanelFocused: boolean;
 
   // ── Mirror fields: always reflect `sessionsByHub.get(focusedHubHash)`. ──
   status: RrcSessionStatus;
@@ -279,6 +302,8 @@ interface RrcSessionStoreState {
 
   /** Focus a hub in the main pane. Never disconnects or wipes other hubs. */
   setFocusedHub: (hash: string | null) => void;
+  /** Whether the RRC panel is the focused tab (drives unread suppress). */
+  setRrcPanelFocused: (focused: boolean) => void;
   setNickname: (nick: string) => void;
   setLocalIdentityHash: (hash: string | null) => void;
   setActiveRoom: (room: string | null, hubHash?: string) => void;
@@ -337,6 +362,22 @@ interface RrcSessionStoreState {
   clearSession: () => void;
   /** Tear down one hub after a local disconnect. */
   clearHubSession: (hubHash: string) => void;
+  /**
+   * Mark a room as auto-`/who`'d. Returns true when this call newly reserved the
+   * slot (caller should send). Survives remount; cleared on part / hub teardown.
+   */
+  markWhoRequested: (room: string, hubHash?: string) => boolean;
+  /** Release the auto-`/who` slot after a failed send so a later attempt can retry. */
+  releaseWhoRequested: (room: string, hubHash?: string) => void;
+  /**
+   * First `/who` NOTICE per join may go to chat. Returns true when this notice
+   * should be appended; later snapshots update the nicklist only.
+   */
+  consumeWhoTranscriptSlot: (room: string, hubHash?: string) => boolean;
+  /** Next `/who` NOTICE for this room should appear in chat (Refresh / composer). */
+  reserveWhoTranscriptForce: (room: string, hubHash?: string) => void;
+  /** Drop a forced transcript reservation after a failed `/who` send. */
+  releaseWhoTranscriptForce: (room: string, hubHash?: string) => void;
   /** Sum of live unread across every session, plus stashed unread for removed hubs. */
   totalUnread: () => number;
   unreadForHub: (hubHash: string) => number;
@@ -364,6 +405,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   messages: new Map(),
   unreadByHub: new Map(),
   showTimestamps: false,
+  rrcPanelFocused: false,
 
   status: 'disconnected',
   hubDestHash: null,
@@ -384,6 +426,10 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const session = hub ? (s.sessionsByHub.get(hub) ?? emptyHubSession()) : emptyHubSession();
       return { focusedHubHash: hub, ...mirrorFromSession(hub, session) };
     });
+  },
+
+  setRrcPanelFocused: (focused) => {
+    set({ rrcPanelFocused: focused });
   },
 
   setNickname: (nick) => {
@@ -720,12 +766,21 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       for (const k of [...partIntentRooms]) {
         if (rrcRoomsMatch(k, room)) partIntentRooms.delete(k);
       }
+      const whoRequestedRooms = dropMatchingWhoKeys(existing.whoRequestedRooms, room);
+      const whoTranscriptShownRooms = dropMatchingWhoKeys(existing.whoTranscriptShownRooms, room);
+      const whoTranscriptForceRooms = dropMatchingWhoKeys(
+        existing.whoTranscriptForceRooms ?? new Set<string>(),
+        room,
+      );
       const activeGone = existing.activeRoom != null && rrcRoomsMatch(existing.activeRoom, room);
       const nextSession: RrcHubSessionState = {
         ...existing,
         rooms,
         unreadByRoom,
         partIntentRooms,
+        whoRequestedRooms,
+        whoTranscriptShownRooms,
+        whoTranscriptForceRooms,
         activeRoom: activeGone ? null : existing.activeRoom,
       };
       const sessionsByHub = new Map(s.sessionsByHub);
@@ -767,9 +822,11 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const isSelf =
         Boolean(selfHash && msg.sender_hash?.toLowerCase() === selfHash) ||
         Boolean(msg.nickname && msg.nickname === s.nickname && !msg.sender_hash);
-      // Only the focused hub+room counts as "viewing" — a background hub's
-      // activeRoom must not suppress unread for that hub.
+      // Only the focused RRC panel + hub+room counts as "viewing" — sticky
+      // activeRoom after leaving the panel (or switching protocols) must not
+      // suppress unread. A background hub's activeRoom also must not suppress.
       const viewing =
+        s.rrcPanelFocused &&
         hub === s.focusedHubHash &&
         session.activeRoom != null &&
         rrcRoomsMatch(session.activeRoom, roomKey);
@@ -899,5 +956,97 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
     if (!hub) return null;
     return msgKey(hub, room);
+  },
+
+  markWhoRequested: (room, hubHash) => {
+    let added = false;
+    set((s) => {
+      const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
+      if (!hub) return {};
+      const existing = s.sessionsByHub.get(hub);
+      if (!existing) return {};
+      const key = rrcRoomMatchKey(room);
+      if (!key) return {};
+      if (existing.whoRequestedRooms.has(key)) return {};
+      added = true;
+      const whoRequestedRooms = new Set(existing.whoRequestedRooms);
+      whoRequestedRooms.add(key);
+      const nextSession: RrcHubSessionState = { ...existing, whoRequestedRooms };
+      const sessionsByHub = new Map(s.sessionsByHub);
+      sessionsByHub.set(hub, nextSession);
+      const mirror = hub === s.focusedHubHash ? mirrorFromSession(hub, nextSession) : {};
+      return { sessionsByHub, ...mirror };
+    });
+    return added;
+  },
+
+  releaseWhoRequested: (room, hubHash) => {
+    set((s) =>
+      mutateHubSession(s, hubHash, (session) => ({
+        ...session,
+        whoRequestedRooms: dropMatchingWhoKeys(session.whoRequestedRooms, room),
+      })),
+    );
+  },
+
+  consumeWhoTranscriptSlot: (room, hubHash) => {
+    let show = false;
+    set((s) => {
+      const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
+      if (!hub) return {};
+      const existing = s.sessionsByHub.get(hub);
+      if (!existing) return {};
+      const key = rrcRoomMatchKey(room);
+      if (!key) return {};
+      const forceRooms = existing.whoTranscriptForceRooms ?? new Set<string>();
+      const force = [...forceRooms].some((k) => rrcRoomsMatch(k, room));
+      if (!force && !shouldShowRrcWhoTranscript(existing.whoTranscriptShownRooms, room)) {
+        return {};
+      }
+      show = true;
+      const whoTranscriptShownRooms = new Set(existing.whoTranscriptShownRooms);
+      whoTranscriptShownRooms.add(key);
+      const whoTranscriptForceRooms = dropMatchingWhoKeys(forceRooms, room);
+      const nextSession: RrcHubSessionState = {
+        ...existing,
+        whoTranscriptShownRooms,
+        whoTranscriptForceRooms,
+      };
+      const sessionsByHub = new Map(s.sessionsByHub);
+      sessionsByHub.set(hub, nextSession);
+      const mirror = hub === s.focusedHubHash ? mirrorFromSession(hub, nextSession) : {};
+      return { sessionsByHub, ...mirror };
+    });
+    return show;
+  },
+
+  reserveWhoTranscriptForce: (room, hubHash) => {
+    set((s) => {
+      const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
+      if (!hub) return {};
+      const existing = s.sessionsByHub.get(hub);
+      if (!existing) return {};
+      const key = rrcRoomMatchKey(room);
+      if (!key) return {};
+      const whoTranscriptForceRooms = new Set(existing.whoTranscriptForceRooms ?? []);
+      whoTranscriptForceRooms.add(key);
+      const nextSession: RrcHubSessionState = { ...existing, whoTranscriptForceRooms };
+      const sessionsByHub = new Map(s.sessionsByHub);
+      sessionsByHub.set(hub, nextSession);
+      const mirror = hub === s.focusedHubHash ? mirrorFromSession(hub, nextSession) : {};
+      return { sessionsByHub, ...mirror };
+    });
+  },
+
+  releaseWhoTranscriptForce: (room, hubHash) => {
+    set((s) =>
+      mutateHubSession(s, hubHash, (session) => ({
+        ...session,
+        whoTranscriptForceRooms: dropMatchingWhoKeys(
+          session.whoTranscriptForceRooms ?? new Set<string>(),
+          room,
+        ),
+      })),
+    );
   },
 }));

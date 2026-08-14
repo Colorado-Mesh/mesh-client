@@ -6,7 +6,7 @@ This document describes how maintainers create releases for Mesh-Client.
 
 ## Overview
 
-Releases are driven by **annotated version tags** (`v*`) on `main`. Pushing a tag triggers:
+Cut releases from **Actions → Cut release** ([`cut-release.yaml`](../.github/workflows/cut-release.yaml)), which bumps/tags `main`. Pushing an annotated version tag (`v*`) then triggers:
 
 | Workflow                                            | Purpose                                                                                              |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -40,14 +40,30 @@ Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) ru
 
 ---
 
-## Recommended: `pnpm run release`
+## Recommended: Cut release from GitHub Actions
 
-The release script (`scripts/release.sh`) is the supported maintainer path. It:
+**Preferred path:** Actions → **Cut release** ([`cut-release.yaml`](../.github/workflows/cut-release.yaml)).
+
+1. (Optional) Run once with **dry_run** checked to confirm the computed version in the job summary (`feat(scope):` → minor, etc.).
+2. Re-run with dry_run unchecked. Default bump is **auto**; override with `patch` / `minor` / `major` / exact `X.Y.Z` when needed.
+3. **skip_dep_update** defaults to **true** — bump dependencies in a normal PR via `pnpm run update` before cutting.
+4. The workflow sets `MESH_CLIENT_RELEASE_YES=1` (non-interactive). Locally use `pnpm run release -- --yes` or the same env var.
+5. Wait for `release.yaml` + `flatpak.yaml` to attach draft artifacts, then **Publish** on GitHub.
+
+**Secret:** `RELEASE_PUSH_TOKEN` — fine-grained PAT (or GitHub App installation token) owned by a repo **admin** (so the merge-queue ruleset bypass applies), with **contents: write**, **workflows: write**, and **pull requests: write** (also used by `third-party-licenses.yaml` so bot PRs run required checks). Plain `GITHUB_TOKEN` cannot trigger tag workflows, cannot push past the ruleset, and cannot open check-running license PRs.
+
+Version detection lives in [`scripts/detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs) (handles scoped Conventional Commits such as `feat(rrc): …`). Do not set `MESH_CLIENT_RELEASE_PARSE_ONLY` in Actions (test-only hook; Cut release clears it).
+
+---
+
+## Local fallback: `pnpm run release`
+
+Local `scripts/release.sh` remains for emergencies when Actions is unavailable. It:
 
 1. Verifies you are on `main` and pulls latest
 2. Runs **`pnpm update`** and **`pnpm dedupe`** (updates lockfile before the bump)
 3. Syncs **`org.coloradomesh.MeshClient.yml`** Electron vendored archives to match `package.json` (`node scripts/sync-flatpak-electron.mjs`)
-4. Auto-detects **patch / minor / major** from [Conventional Commits](https://www.conventionalcommits.org/) since the last tag (or accept an explicit bump — see below)
+4. Auto-detects **patch / minor / major** via [`detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs) (scoped Conventional Commits such as `feat(rrc):` count as **minor**) since the last tag (or accept an explicit bump — see below)
 5. Runs **pre-flight validation** (`check:environment`, release CLI health, format, lint, typecheck, **all** `check:*` scanners including path-gated pre-commit ones, **`check:flatpak`**, **`check:flatpak-offline-pnpm`**, **`check:i18n`**, lockfile re-dedupe stability (not `pnpm dedupe --check` — that breaks hoisted `node_modules/.bin`), audit, **required** actionlint + yamllint, **full** Vitest via `pnpm run test:run`, Reticulum sidecar `cargo test`)
 6. Prints **copy-paste release notes** grouped by feat/fix/other/breaking
 7. Bumps `package.json` via `pnpm version`
@@ -57,18 +73,22 @@ The release script (`scripts/release.sh`) is the supported maintainer path. It:
 ```bash
 git checkout main
 git pull origin main
-pnpm run release          # auto-detect bump from commits since last tag
-pnpm run release minor    # force minor
-pnpm run release 5.21.0   # force exact version
-pnpm run release --auto   # explicit auto-detect
-pnpm run release --finish # complete a mid-release after package.json was already bumped
+pnpm run release                                  # auto-detect bump from commits since last tag
+pnpm run release minor                            # force minor
+pnpm run release 5.21.0                           # force exact version
+pnpm run release --auto                           # explicit auto-detect
+pnpm run release --finish                         # complete a mid-release after package.json was already bumped
+pnpm run release -- --yes                         # non-interactive (skip both confirmation prompts)
+pnpm run release -- --yes --skip-dep-update patch # CI-style: no pnpm update
+MESH_CLIENT_RELEASE_YES=1 pnpm run release        # same as --yes (avoids pnpm's own -y)
+# Invalid: --auto cannot be combined with patch|minor|major|x.x.x
 ```
 
-The script prompts twice (start pre-flight, then confirm after checks pass). **Expect several minutes** for the full validation chain.
+The script prompts twice by default (start pre-flight, then confirm after checks pass). Pass **`-- --yes`** after `pnpm run release` (or set `MESH_CLIENT_RELEASE_YES=1`) to skip those prompts — useful for automation. Use `--` so pnpm does not swallow `-y`/`--yes`. **`--auto` plus an explicit bump is rejected.** **Expect several minutes** for the full validation chain.
 
 **Full suite only:** Release must never use `test:staged`, `test:changed`, or `vitest related`. Pre-commit may run a staged subset for speed; release matches PR CI by running the unrestricted `pnpm run test:run` (`vitest run`) and does not soft-skip actionlint/yamllint when those tools are missing.
 
-If pre-flight fails, fix the issue on `main` and run `pnpm run release` again — do not tag manually until checks pass.
+If pre-flight fails, fix the issue on `main` and cut again — do not tag manually until checks pass.
 
 ### Mid-release MetaInfo failure
 
@@ -92,6 +112,7 @@ Configure these in **Settings → Secrets and variables → Actions** (maintaine
 
 | Secret                            | Purpose                                                                 |
 | --------------------------------- | ----------------------------------------------------------------------- |
+| **`RELEASE_PUSH_TOKEN`**          | Admin PAT for **Cut release** (contents + workflows); see above         |
 | **`CSC_LINK`**                    | Base64-encoded `.p12` **Developer ID Application** certificate          |
 | **`CSC_KEY_PASSWORD`**            | Password protecting the `.p12` file                                     |
 | **`APPLE_ID`**                    | Apple ID email used with App Store Connect / notarytool                 |
@@ -215,13 +236,13 @@ When artifacts and notes look correct:
 
 ## Version naming
 
-Follow [Semantic Versioning](https://semver.org/):
+Follow [Semantic Versioning](https://semver.org/). Auto-detect is implemented in [`scripts/detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs) (called from `release.sh` / Cut release):
 
-- **Major (X.0.0):** Breaking changes (`BREAKING CHANGE:` footer or `feat!:` / `fix!:`)
-- **Minor (0.X.0):** New features (`feat:`), backward compatible
+- **Major (X.0.0):** `type!:` / `type(scope)!:`, or a line-anchored `BREAKING CHANGE:` / `BREAKING-CHANGE:` footer in a commit body
+- **Minor (0.X.0):** New features (`feat:` or `feat(scope):`), backward compatible
 - **Patch (0.0.X):** Fixes and other conventional commits without `feat:`
 
-`release.sh` applies these rules when auto-detecting the bump.
+Release notes “Breaking Changes” use the same subject bang + footer rules (not subject-only).
 
 ---
 

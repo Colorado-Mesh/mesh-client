@@ -166,6 +166,9 @@ export const MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS = 2;
 /** Delay between failed room login attempts. */
 export const MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS = 2_000;
 
+/** Coalesce connect auto-login when Room contacts appear after configure. */
+export const MESHCORE_ROOM_AUTO_LOGIN_DEBOUNCE_MS = 500;
+
 /** Background room sync scheduler tick interval. */
 export const MESHCORE_ROOM_SYNC_TICK_MS = 60_000;
 
@@ -178,6 +181,8 @@ export const MESHCORE_WAITING_MESSAGES_POLL_MS = 5 * MS_PER_MINUTE;
 export const MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS = 60_000;
 /** Fail-fast timeout for silent auto-drains (event 131, connect, poll). */
 export const MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS = 45 * MS_PER_SECOND;
+/** Consecutive silent-bulk getWaitingMessages timeouts before skipping bulk until reconnect. */
+export const MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP = 2;
 /** Shorter silent timeout on USB serial (single companion RPC lane). */
 export const MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS = 15 * MS_PER_SECOND;
 /** Per-item timeout for silent syncNextMessage incremental drain. */

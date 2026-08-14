@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh auf GitHub",
     "footerWebsiteTitle": "Colorado Mesh-Website",
-    "loadingApp": "Mesh-Client wird geladen"
+    "loadingApp": "Mesh-Client wird geladen",
+    "reticulumQueueTooltip": "Host-TX-Warteschlange für lokalen RNode \"{{name}}\": Pakete, die auf das Funkgerät warten (am schlechtesten gefüllt, wenn mehrere RNodes vorhanden sind). Grün unter 25 %, Bernstein unter 60 %, Rot bei 60 % oder mehr.",
+    "reticulumQueueTooltipGeneric": "Host-TX-Warteschlange für den verkehrsreichsten lokalen RNode: Pakete warten auf das Funkgerät. Grün unter 25 %, Bernstein unter 60 %, Rot bei 60 % oder mehr.",
+    "reticulumTxBuffering": "Puffern ausgehender Pakete an einen lokalen RNode (Host TX Queue Draining).",
+    "reticulumTxBufferingNamed": "Puffern von ausgehenden Paketen auf \"{{name}}\" (Host-TX-Warteschlange entleert)."
   },
   "appPanel": {
     "failedSaveRetention": "Die Einstellung für die Nachrichtenaufbewahrung konnte nicht gespeichert werden.",
@@ -384,7 +388,9 @@
     "themeSaveFailed": "Farbprüfpunkt konnte nicht gespeichert werden.",
     "themeRestoreFailed": "Farbprüfpunkt konnte nicht wiederhergestellt werden.",
     "themeResetFailed": "Farben konnten nicht zurückgesetzt werden.",
-    "messageActionsBarBgVisible": "Zeige Hintergrund"
+    "messageActionsBarBgVisible": "Zeige Hintergrund",
+    "rrcUnreadAllRoomMessages": "RRC ungelesen für alle Raumnachrichten",
+    "rrcUnreadAllRoomMessagesHint": "Wenn eingeschaltet, markiert jede neue RRC-Raumnachricht ungelesen und kann einen Kanalton wiedergeben. Deaktivieren Sie für Warnungen im IRC-Stil: nur Direktnachrichten und @Erwähnungen."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -943,7 +949,6 @@
     "reticulumStackRunning": "Stack läuft",
     "reticulumIdentity": {
       "title": "Reticulum-Identität",
-      "hint": "Starten Sie den obigen Stack und erstellen oder importieren Sie dann eine mnemonische Identität.",
       "startStackFirst": "Starten Sie den Reticulum-Stack, um die Identität zu konfigurieren.",
       "displayName": "Anzeigename",
       "generate": "Identität generieren",
@@ -953,16 +958,9 @@
       "confirmSaved": "Ich habe meine Genesungsphrase gespeichert",
       "hashLabel": "LXMF-Hash:",
       "failed": "Identitätseinstellung fehlgeschlagen",
-      "export": "Sicherungskopie",
-      "exportPassphrase": "Backup-Passphrase",
-      "exportPassphraseRequired": "Geben Sie vor dem Exportieren eine Backup-Passphrase ein.",
-      "importBackupLabel": "Backup-JSON importieren",
-      "importBackup": "Backup importieren",
-      "importBackupHint": "Stellt nur den Anzeigenamen und die Hash-Metadaten wieder her. Für die Netzwerkidentität ist Ihre private Schlüsseldatei oder Wiederherstellungsphrase erforderlich.",
       "importPrivateKeyLabel": "Privaten Schlüssel importieren",
       "importPrivateKey": "Privaten Schlüssel importieren",
       "importPrivateKeyFromFile": "Aus Datei",
-      "importPrivateKeyHint": "64-Byte-RNS-Privatschlüssel: X25519-Geheimnis (32 B) + Ed25519-Seed (32 B) als 128-Zeichen-Hex oder Base64.",
       "replaceIdentitySection": "Identität ersetzen",
       "replaceIdentityHint": "Durch das Importieren einer neuen Identität werden Ihre aktuellen Schlüssel ersetzt und der Stapel neu gestartet.",
       "replaceIdentityConfirmTitle": "Reticulum-Identität ersetzen?",
@@ -997,7 +995,28 @@
       "slotCreated": "Neue Identität erstellt.",
       "slotDeleted": "Identität gelöscht.",
       "slotActionFailed": "Identitätsaktion fehlgeschlagen: {{error}}",
-      "slotUnnamed": "Unbenannt"
+      "slotUnnamed": "Unbenannt",
+      "importBackupFromFile": "Aus .rsi-Datei",
+      "importBackupPin": "BACKUP-PIN",
+      "importBackupPinRequired": "Geben Sie die PIN EIN, die verwendet wurde, als dieses RSI-Backup exportiert wurde.",
+      "exportRaw": "Reticulum-Identitätsdatei exportieren",
+      "exportSaved": "Identitäts-Export gespeichert.",
+      "exportSaveFailed": "Der Identitätsexport konnte nicht gespeichert werden.",
+      "exportPassphraseConfirm": "Backup-PIN bestätigen",
+      "exportPassphraseMismatch": "Backup-PINs stimmen nicht überein.",
+      "importBackupTooLarge": "Die Identitäts-Backup-Datei ist zu groß.",
+      "hint": "Starten Sie den obigen Stack und erstellen oder importieren Sie dann eine BIP-39-Wiederherstellungsphrase, eine RAW-Reticulum-Identitätsdatei oder ein PIN-verschlüsseltes Ratspeak-RSI-Backup.",
+      "importBackupLabel": "Ratspeak .rsi Backup importieren",
+      "importBackup": ".rsi-Backup importieren",
+      "importBackupHint": "PIN-verschlüsselte Ratspeak-Identitätssicherung (.rsi). Stellt Ihren privaten Schlüssel wieder her und aktiviert die Identität.",
+      "importPrivateKeyHint": "Offizieller privater 64-Byte-Schlüssel von Reticulum (X25519 Secret + Ed25519 Seed) als Hex, base64, base32 oder eine RAW-Identitätsdatei.",
+      "export": ".rsi-Backup exportieren",
+      "exportPassphrase": "BACKUP-PIN",
+      "exportPassphraseRequired": "Geben Sie eine SICHERUNGS-PIN von mindestens 6 Zeichen ein.",
+      "importBackupAria": "Ratspeak .rsi-Backup aus eingefügtem json importieren",
+      "importBackupFromFileAria": "Wählen Sie eine Ratspeak .rsi Backup-Datei zum Importieren",
+      "exportAria": "PIN-verschlüsselte Ratspeak .rsi-Identitätssicherung exportieren",
+      "exportRawAria": "Unverschlüsselte RAW-Reticulum-Identitätsdatei exportieren"
     },
     "reticulumInterfaces": {
       "title": "Schnittstellen",
@@ -1313,7 +1332,8 @@
       "bleBondRemovedOpenAdmin": "Admin-Bluetooth öffnen",
       "txQueueDropsHintBle": "Dieser BLE-RNode kann seine TX-Warteschlange nicht leeren (Link hängt oder flattert). Bevorzugen Sie USB-Serial oder Wi‑Fi (tcp://), oder stoppen Sie den Stack und koppeln Sie erneut nach Vergessen in Systemeinstellungen → Bluetooth.",
       "txQueueDropsHintBleBondStale": "Die TX-Warteschlange ist voll, weil die BLE-Bindung veraltet ist. Vergessen Sie diesen RNode in Systemeinstellungen → Bluetooth und nutzen Sie Admin → Bluetooth (Gekoppelte löschen / Kopplung starten) oder wechseln Sie zu USB.",
-      "txQueueDropsHintNeutral": "Dieser Schnittstellen-TX-Kanal ist voll. Überprüfen Sie die Verknüpfungsgesundheit der Schnittstelle (oder deaktivieren Sie sie), um das Herunterfallen zu stoppen."
+      "txQueueDropsHintNeutral": "Dieser Schnittstellen-TX-Kanal ist voll. Überprüfen Sie die Verknüpfungsgesundheit der Schnittstelle (oder deaktivieren Sie sie), um das Herunterfallen zu stoppen.",
+      "txQueueDropsHintBleFlowControl": "Host-TX-Warteschlangengegendruck, während das Funkgerät besetzt ist (Flusssteuerung eingeschaltet). Wird unter HF-Stau erwartet — keine steckengebliebene Verbindung. Reduzieren Sie die ausgehende Last oder warten Sie auf Sendezeit."
     },
     "reticulumSidecarBundledMissing": "Bei dieser Installation fehlt der mitgelieferte Reticulum-Sidecar. Führen Sie ein Upgrade auf eine neuere Version durch oder melden Sie das Problem – das Erstellen aus dem Quellcode ist bei Paketinstallationen nicht verfügbar.",
     "radioMqttRootDivergesWarning": "Das Hauptthema von Radio MQTT ist {{radioRoot}}, aber dieses Panel abonniert {{appPrefix}}. Passen Sie das Funkgerät an, um den landesweiten Knotenverkehr zu begrenzen — aktualisieren Sie das Themenpräfix und verbinden Sie MQTT erneut.",
@@ -1711,7 +1731,8 @@
         "decommissionedHubEnabled": "Außer Betrieb genommener Hub „{{name}}“ ist noch aktiviert — mesh-client schaltet ihn bei jedem Stack-Start aus. Nutzen Sie „Standard-Backbones hinzufügen“ oder das Backbone-Verzeichnis für aktuelle Endpunkte.",
         "txQueueDropsBle": "Schnittstelle \"{{name}}\" abgelegt {{count}} ausgehende Pakete (TX-Warteschlange voll) — BLE RNode-Link klemmt; lieber USB oder Re-Pair",
         "txQueueDropsBleBondStale": "Schnittstelle „{{name}}“ abgelegt {{count}} ausgehende Pakete (TX-Warteschlange voll) — BLE-Bond veraltet; Bluetooth im Betriebssystem vergessen und neu koppeln",
-        "txQueueDropsNeutral": "Schnittstelle \"{{name}}\" hat {{count}} ausgehende Pakete abgelegt (TX-Warteschlange voll) — überprüfen Sie den Link dieser Schnittstelle"
+        "txQueueDropsNeutral": "Schnittstelle \"{{name}}\" hat {{count}} ausgehende Pakete abgelegt (TX-Warteschlange voll) — überprüfen Sie den Link dieser Schnittstelle",
+        "txQueueDropsBleFlowControl": "Schnittstelle „{{name}}“ abgelegt {{count}} ausgehende Pakete (Host-TX-Warteschlange voll) — Flusskontrolle ein; wird bei RF-Stau erwartet, keine festgefahrene Verbindung"
       }
     },
     "routingPort": {
@@ -1893,7 +1914,6 @@
   },
   "identityVault": {
     "title": "Identitätstresor",
-    "hint": "Verschlüsseln Sie eine lokale Kopie Ihrer Identitätssicherung mit einem Tresor-Passcode. Freischalten, um auf geschützte Identitätsvorgänge zuzugreifen.",
     "passcode": "Tresor-Passcode",
     "confirmPasscode": "Passcode bestätigen",
     "setPasscode": "Vault aktivieren",
@@ -1902,13 +1922,14 @@
     "statusNotConfigured": "Nicht konfiguriert",
     "statusLocked": "Gesperrt",
     "statusUnlocked": "freigeschaltet",
-    "passcodeTooShort": "Muss mindestens aus 4 Zeichen bestehen",
     "passcodeMismatch": "Passwörter stimmen nicht überein",
     "setSuccess": "Tresor-Passcode gespeichert.",
     "setFailed": "Tresor-Passcode konnte nicht gespeichert werden.",
     "unlockSuccess": "Tresor freigeschaltet.",
     "unlockFailed": "Falscher Passcode oder Tresorfehler.",
-    "lockSuccess": "Tresor gesperrt."
+    "lockSuccess": "Tresor gesperrt.",
+    "hint": "Optional kann ein lokales Tresorgeheimnis mit einem Passcode (mindestens 8 Zeichen) verschlüsselt werden. Dies ersetzt nicht den Export einer tragbaren .rsi- oder RAW-Identitätsdatei.",
+    "passcodeTooShort": "Es muss mindestens 8 Zeichen lang sein."
   },
   "logAnalyzeModal": {
     "title": "Protokollanalyse",
@@ -3242,7 +3263,6 @@
     "me": "Dieser Knoten",
     "directLink": "Direkt (0 Sprünge)",
     "relayLink": "Über Relais (1 Hop)",
-    "hiddenCount": "Anzeigen von {{shown}} von {{total}} Knoten (nicht verbundene Knoten ausgeblendet)",
     "noConnectedNodes": "Keine verbundenen Peers zum Anzeigen — Filter anpassen oder auf Netzwerkverkehr warten.",
     "meShort": "You",
     "relayHub": "Direktrelais",
@@ -3253,7 +3273,9 @@
     "maxHopsAll": "Alle Hops",
     "maxHopsOption": "{{count}} Hops",
     "resetView": "Ansicht zurücksetzen",
-    "compactLeafCount": "{{count}} kompakte Direkt-Peers"
+    "compactLeafCount": "{{count}} kompakte Direkt-Peers",
+    "hiddenCountLimit": "Anzeige von {{shown}} von {{total}} Knoten (Limit {{limit}})",
+    "visibleNodeLimitNote": "Der Graph zeigt höchstens {{distantLimit}} Knoten."
   },
   "peerListPanel": {
     "heading": "Peers",
@@ -4342,7 +4364,6 @@
     "noNodes": "Noch keine Topologiedaten – verbinden Sie den Reticulum-Stack und aktualisieren Sie ihn.",
     "nodeCount": "{{count}}-Knoten",
     "edgeCount": "{{count}}-Links",
-    "hiddenCount": "Zeigt {{shown}} von {{total}} Knoten (entfernte Peers ausgeblendet)",
     "legendSelf": "Dieser Knoten",
     "showDistantPeers": "Entfernte Peers anzeigen",
     "maxHopsFilter": "Max. Hops",
@@ -4363,7 +4384,10 @@
     "interfaceStatusOffline": "offline",
     "glyphWifi": "WLAN-Schnittstelle",
     "glyphLora": "LoRa-Schnittstelle",
-    "glyphTcp": "TCP-Schnittstelle"
+    "glyphTcp": "TCP-Schnittstelle",
+    "hiddenCountLimit": "Anzeige von {{shown}} von {{total}} Knoten (Limit {{limit}})",
+    "visibleNodeLimitNote": "Der Graph zeigt höchstens {{distantLimit}} Knoten.",
+    "rfOnly": "Nur RF"
   },
   "rfHistograms": {
     "title": "Signalverteilung",

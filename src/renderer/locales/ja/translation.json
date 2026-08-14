@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
     "footerWebsiteTitle": "Colorado Mesh website",
-    "loadingApp": "メッシュクライアントを読み込んでいます"
+    "loadingApp": "メッシュクライアントを読み込んでいます",
+    "reticulumQueueTooltip": "ローカルRNode \"{{name}}\"のホストTXキュー：無線を待っているパケット（複数のRNodeの場合は最悪の満杯）。緑25 ％未満、琥珀60 ％未満、赤60 ％以上。",
+    "reticulumQueueTooltipGeneric": "最もビジーなローカルRNodeのホストTXキュー：無線を待っているパケット。緑25 ％未満、琥珀60 ％未満、赤60 ％以上。",
+    "reticulumTxBuffering": "ローカルRNodeへのアウトバウンドパケットのバッファリング（ホストTXキュー排出）。",
+    "reticulumTxBufferingNamed": "\"{{name}}\"上の発信パケットのバッファリング（ホストTXキュー排出）。"
   },
   "appPanel": {
     "failedSaveRetention": "メッセージ保持設定の保存に失敗しました。",
@@ -384,7 +388,9 @@
     "themeSaveFailed": "カラーチェックポイントの保存に失敗しました。",
     "themeRestoreFailed": "カラーチェックポイントの復元に失敗しました。",
     "themeResetFailed": "色をリセットできませんでした。",
-    "messageActionsBarBgVisible": "背景を表示"
+    "messageActionsBarBgVisible": "背景を表示",
+    "rrcUnreadAllRoomMessages": "すべてのルームメッセージのRRC未読",
+    "rrcUnreadAllRoomMessagesHint": "オンにすると、新しいRRCルームメッセージは未読になり、チャンネルサウンドを再生できます。IRCスタイルのアラートをオフにする：ダイレクトメッセージと@メンションのみ。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -945,7 +951,6 @@
     "reticulumStackRunning": "スタック実行中",
     "reticulumIdentity": {
       "title": "Reticulum ID",
-      "hint": "上記のスタックを開始し、ニーモニックIDを作成またはインポートします。",
       "startStackFirst": "Reticulumスタックを起動して、アイデンティティを設定します。",
       "displayName": "表示名",
       "generate": "アイデンティティを生成する",
@@ -955,16 +960,9 @@
       "confirmSaved": "回復フレーズを保存しました",
       "hashLabel": "LXMFハッシュ：",
       "failed": "IDの設定に失敗しました",
-      "export": "バックアップをエクスポート",
-      "exportPassphrase": "バックアップパスフレーズ",
-      "exportPassphraseRequired": "エクスポートする前にバックアップパスフレーズを入力してください。",
-      "importBackupLabel": "バックアップ JSON をインポートする",
-      "importBackup": "バックアップのインポート",
-      "importBackupHint": "表示名とハッシュ メタデータのみを復元します。ネットワーク ID には秘密キー ファイルまたは回復フレーズが必要です。",
       "importPrivateKeyLabel": "秘密キーをインポートする",
       "importPrivateKey": "秘密キーをインポートする",
       "importPrivateKeyFromFile": "ファイルから",
-      "importPrivateKeyHint": "64 バイトの RNS 秘密キー: X25519 シークレット (32 B) + Ed25519 シード (32 B) (128 文字の 16 進数または Base64 として)。",
       "replaceIdentitySection": "ID を置き換える",
       "replaceIdentityHint": "新しい ID をインポートすると、現在のキーが置き換えられ、スタックが再起動されます。",
       "replaceIdentityConfirmTitle": "Reticulum のアイデンティティを置き換えますか?",
@@ -999,7 +997,28 @@
       "slotCreated": "新しいIDが作成されました。",
       "slotDeleted": "IDが削除されました。",
       "slotActionFailed": "IDアクションに失敗しました: {{error}}",
-      "slotUnnamed": "無記名"
+      "slotUnnamed": "無記名",
+      "importBackupFromFile": ".rsiファイルから",
+      "importBackupPin": "バックアップPIN",
+      "importBackupPinRequired": "この.rsiバックアップがエクスポートされたときに使用されたPINを入力します。",
+      "exportRaw": "Reticulum IDファイルをエクスポート",
+      "exportSaved": "IDのエクスポートが保存されました。",
+      "exportSaveFailed": "IDエクスポートを保存できませんでした。",
+      "exportPassphraseConfirm": "バックアップPINを確認する",
+      "exportPassphraseMismatch": "バックアップPINが一致しません。",
+      "importBackupTooLarge": "IDバックアップファイルが大きすぎます。",
+      "hint": "上記のスタックを開始し、BIP -39リカバリフレーズ、生のReticulum IDファイル、またはPIN暗号化されたRatspeak .rsiバックアップを作成またはインポートします。",
+      "importBackupLabel": "Ratspeak .rsiバックアップをインポート",
+      "importBackup": ".rsiバックアップをインポート",
+      "importBackupHint": "暗号化されたRatspeak IDバックアップ（.rsi ）。秘密鍵を復元し、IDをアクティブにします。",
+      "importPrivateKeyHint": "16進数、base 64、base 32、またはraw .identityファイルとしての公式Reticulum 64バイト秘密鍵（ X 25519シークレット+ Ed 25519シード）。",
+      "export": ".rsiバックアップをエクスポート",
+      "exportPassphrase": "バックアップPIN",
+      "exportPassphraseRequired": "6文字以上のバックアップPINを入力してください。",
+      "importBackupAria": "貼り付けられたJSONからRatspeak .rsiバックアップをインポートする",
+      "importBackupFromFileAria": "インポートするRatspeak .rsiバックアップファイルを選択してください",
+      "exportAria": "PIN暗号化されたRatspeak .rsi IDバックアップをエクスポート",
+      "exportRawAria": "暗号化されていないRAW Reticulum IDファイルをエクスポート"
     },
     "reticulumInterfaces": {
       "title": "インターフェース",
@@ -1315,7 +1334,8 @@
       "bleBondRemovedOpenAdmin": "管理者Bluetoothを開く",
       "txQueueDropsHintBle": "このBLE RNodeはTXキューを排出できません（リンクがスタックまたはフラッピング）。USBシリアルまたはWi-Fi (tcp://)を優先するか、システム設定→BluetoothでForgetした後にスタックを停止して再ペアリングしてください。",
       "txQueueDropsHintBleBondStale": "BLEボンドが古くなっているため、TXキューがいっぱいです。システム設定→BluetoothでこのRNodeを忘れ、管理→Bluetooth （ペアリングを解除/ペアリングを開始）を使用するか、USBに切り替えます。",
-      "txQueueDropsHintNeutral": "このインターフェースTXチャネルは満杯です。ドロップを停止するには、そのインターフェイスのリンクの状態を確認するか、無効にします。"
+      "txQueueDropsHintNeutral": "このインターフェースTXチャネルは満杯です。ドロップを停止するには、そのインターフェイスのリンクの状態を確認するか、無効にします。",
+      "txQueueDropsHintBleFlowControl": "無線がビジー状態の間、ホストTXキューバックプレッシャー（フロー制御オン）。RF輻輳下で予想されます—リンクがスタックしていません。アウトバウンドロードを減らすか、通話時間を待ちます。"
     },
     "reticulumSidecarBundledMissing": "このインストールには、バンドルされている Reticulum サイドカーがありません。新しいリリースにアップグレードするか、問題を報告してください。パッケージ化されたインストールではソースからのビルドは利用できません。",
     "radioMqttRootDivergesWarning": "ラジオMQTTルートトピックは{{radioRoot}}ですが、このパネルは{{appPrefix}}に加入しています。全国のノードトラフィックを制限するために無線を一致させます—トピックプレフィックスを更新し、MQTTを再接続します。",
@@ -1711,7 +1731,8 @@
         "decommissionedHubEnabled": "廃止されたハブ「{{name}}」がまだ有効です — mesh-client はスタック起動のたびにオフにします。稼働中のエンドポイントには「デフォルトのバックボーンを追加」またはバックボーン一覧を使ってください。",
         "txQueueDropsBle": "インターフェース「{{name}}」が{{count}}送信パケットをドロップしました（ TXキューがいっぱいです） — BLE RNodeリンクが固着しています。USBを使用するか、再ペアリングしてください",
         "txQueueDropsBleBondStale": "インターフェース「{{name}}」が{{count}}個のアウトバウンドパケットをドロップしました（ TXキューがいっぱいです） — BLEボンドが古くなっています。OS Bluetoothで忘れてから再ペアリングしてください",
-        "txQueueDropsNeutral": "インターフェース「{{name}}」が{{count}}送信パケットをドロップしました（ TXキューがいっぱいです） —そのインターフェースのリンクを確認してください"
+        "txQueueDropsNeutral": "インターフェース「{{name}}」が{{count}}送信パケットをドロップしました（ TXキューがいっぱいです） —そのインターフェースのリンクを確認してください",
+        "txQueueDropsBleFlowControl": "インターフェース「{{name}}」が{{count}}発信パケット（ホストTXキューがいっぱい）をドロップしました—フロー制御がオンになっています。リンクがスタックしているのではなく、RF輻輳の下で予想されます"
       }
     },
     "routingPort": {
@@ -1893,7 +1914,6 @@
   },
   "identityVault": {
     "title": "アイデンティティ保管庫",
-    "hint": "Vaultパスコードを使用して、IDバックアップのローカルコピーを暗号化します。ロックを解除して、保護されたID操作にアクセスします。",
     "passcode": "Vaultのパスコード",
     "confirmPasscode": "パスコードを確認",
     "setPasscode": "ボールトを有効にする",
@@ -1902,13 +1922,14 @@
     "statusNotConfigured": "Not configured",
     "statusLocked": "ロック",
     "statusUnlocked": "ロック解除",
-    "passcodeTooShort": "少なくとも 4 文字必要です。",
     "passcodeMismatch": "パスコードが一致しません。",
     "setSuccess": "Vaultのパスコードが保存されました。",
     "setFailed": "Vaultパスコードを保存できませんでした。",
     "unlockSuccess": "ボールトがアンロックされました。",
     "unlockFailed": "パスコードが正しくないか、Vaultエラーが発生しました。",
-    "lockSuccess": "ボールトがロックされています。"
+    "lockSuccess": "ボールトがロックされています。",
+    "hint": "オプションで、パスコード（最小8文字）を使用してローカルVaultシークレットを暗号化します。これは、ポータブル.rsiまたはraw IDファイルのエクスポートに代わるものではありません。",
+    "passcodeTooShort": "最低でも8文字以上でなければなりません。"
   },
   "logAnalyzeModal": {
     "title": "ログ分析",
@@ -3242,7 +3263,6 @@
     "me": "このノード",
     "directLink": "ダイレクト（ 0ホップ）",
     "relayLink": "リレー経由（ 1ホップ）",
-    "hiddenCount": "{{shown}}/{{total}}ノードを表示しています（接続されていないノードは非表示）",
     "noConnectedNodes": "表示する接続されたピアがありません—フィルタを調整するか、ネットワークトラフィックを待ちます。",
     "meShort": "あなたは",
     "relayHub": "ダイレクトリレー",
@@ -3253,7 +3273,9 @@
     "maxHopsAll": "すべてのホップ",
     "maxHopsOption": "{{count}}ホップ",
     "resetView": "ビューをリセット",
-    "compactLeafCount": "{{count}}コンパクトダイレクトピア"
+    "compactLeafCount": "{{count}}コンパクトダイレクトピア",
+    "hiddenCountLimit": "{{shown}}/{{total}}ノードを表示しています（制限{{limit}}）",
+    "visibleNodeLimitNote": "グラフは最大{{distantLimit}}ノードを示しています。"
   },
   "peerListPanel": {
     "heading": "ピア",
@@ -4342,7 +4364,6 @@
     "noNodes": "トポロジ データがまだありません。Reticulum スタックに接続して更新します。",
     "nodeCount": "{{count}} ノード",
     "edgeCount": "{{count}} リンク",
-    "hiddenCount": "{{total}} ノードの {{shown}} を表示しています (遠くのピアは非表示)",
     "legendSelf": "このノード",
     "centerRns": "RNS",
     "showDistantPeers": "遠隔地の同僚を表示",
@@ -4363,7 +4384,10 @@
     "glyphWifi": "Wi-Fiインターフェース",
     "glyphLora": "LoRaインターフェース",
     "glyphTcp": "TCPインターフェース",
-    "glyphSerial": "シリアル通信"
+    "glyphSerial": "シリアル通信",
+    "hiddenCountLimit": "{{shown}}/{{total}}ノードを表示しています（制限{{limit}}）",
+    "visibleNodeLimitNote": "グラフは最大{{distantLimit}}ノードを示しています。",
+    "rfOnly": "RFのみ"
   },
   "rfHistograms": {
     "title": "RF信号分布",

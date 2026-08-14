@@ -1233,6 +1233,17 @@ TCP/network Nomad Links use path-scaled initiator hops (`link_hops = clamp(path_
 
 **Fix**: Generate or import identity with the stack running; restart the stack after identity changes. Compare `GET /api/v1/identity/status` with your Ratspeak identity file.
 
+### Reticulum `.rsi` / raw identity backup restore fails
+
+**Symptoms**: Importing a Ratspeak `.rsi` fails with an incorrect PIN message, or raw identity file import rejects the file.
+
+**Cause / fix**:
+
+1. **`.rsi` PIN** — use the same PIN (≥6 characters) chosen at export; wrong PIN or a tampered vault fails closed. Raw identity export also requires this PIN gate on the sidecar API.
+2. **mesh-client.identity.v1** — metadata-only backups are no longer supported; re-export from a current build (`.rsi` or raw 64-byte identity).
+3. **Private key text vs file picker** — the Network panel textarea accepts **hex / base64 / URL-safe base64 / base32** text. `reticulum:showIdentityImportDialog` accepts only a **raw binary 64-byte** identity file (not a text file of hex/base64).
+4. **Oversized `.rsi`** — import is size-capped; use a normal Ratspeak/mesh-client backup, not an unrelated huge JSON dump.
+
 ### Reticulum Map empty or no markers
 
 **Symptoms**: Map tab shows empty state, sidebar list only, or no markers despite peers on the Peers tab.
@@ -1759,6 +1770,14 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 **Symptoms**: MeshCore-heard or Reticulum traffic tables missing on MeshCore or Reticulum tabs.
 
 **Fix**: Foreign-LoRa overhear tables render on the **Meshtastic** and **MeshCore** Diagnostics tabs (keyed by that protocol’s self node id). Reticulum RNode promiscuous foreign LoRa is not implemented (sidecar tap exposes parsed RNS frames only).
+
+### Graph or Topology does not show all nodes
+
+**Symptoms**: MeshCore/Meshtastic **Graph** or Reticulum **Topology** says it is showing 400 of N nodes even with **Show distant peers** ticked and **Max hops** set to **All hops**.
+
+**Cause**: The force-directed layout has a hard visible-node budget of **400** after hop filters. Numeric **Max hops** is not gated by Show distant. Unknown hops are omitted unless Max hops is **All hops** and Show distant is on. The nearby hop ceiling applies only when Max hops is **All hops**. Leftover nodes beyond the layout budget are omitted on purpose. Reticulum Topology also ingests at most 800 path-table rows after hop filters (sidecar 2,000).
+
+**Fix**: This is expected. The toolbar note states the 400-node limit. Turn on **Show distant peers** and set **Max hops** to **All hops** to include multi-hop peers up to 400. On Topology, use **RF only** to drop TCP/I2P hubs if you only want RNode/KISS/BLE. Narrow **Max hops** if the graph is too dense.
 
 ### No signal bars on some nodes
 

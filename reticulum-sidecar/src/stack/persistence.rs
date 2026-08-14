@@ -256,58 +256,6 @@ impl PersistedState {
             .as_secs()
     }
 
-    pub fn export_identity_backup(&self, passphrase: &str) -> Result<serde_json::Value, String> {
-        if !self.identity.configured {
-            return Err("no identity configured".into());
-        }
-        let _ = passphrase;
-        Ok(serde_json::json!({
-            "format": "mesh-client.identity.v1",
-            "identity_hash": self.identity.identity_hash,
-            "lxmf_hash": self.identity.lxmf_hash,
-            "display_name": self.identity.display_name,
-            "exported_at": Self::now_secs()
-        }))
-    }
-
-    #[allow(clippy::needless_pass_by_value)] // backup JSON is consumed by format-specific import paths
-    pub fn import_identity_backup(
-        &mut self,
-        backup: serde_json::Value,
-        passphrase: &str,
-    ) -> Result<StackIdentity, String> {
-        let _ = passphrase;
-        let format = backup.get("format").and_then(|v| v.as_str()).unwrap_or("");
-        if format != "mesh-client.identity.v1" && format != "ratspeak.identity.v2" {
-            return Err("unsupported backup format".into());
-        }
-        let identity_hash = backup
-            .get("identity_hash")
-            .and_then(|v| v.as_str())
-            .ok_or("missing identity_hash")?
-            .to_string();
-        let lxmf_hash = backup
-            .get("lxmf_hash")
-            .and_then(|v| v.as_str())
-            .ok_or("missing lxmf_hash")?
-            .to_string();
-        let display_name = backup
-            .get("display_name")
-            .and_then(|v| v.as_str())
-            .map(str::to_string);
-        self.identity = StackIdentity {
-            configured: true,
-            identity_hash,
-            lxmf_hash,
-            display_name,
-            mnemonic: None,
-        };
-        self.rns_ready = true;
-        self.lxmf_ready = true;
-        self.sync_local_propagation_hash();
-        Ok(self.identity.clone())
-    }
-
     /// Stub-stack interface CRUD (live stack uses config file writes).
     #[allow(dead_code)]
     pub fn add_interface(&mut self, req: AddInterfaceRequest) -> Result<InterfaceRow, String> {
@@ -350,6 +298,8 @@ impl PersistedState {
             flow_control: req
                 .flow_control
                 .or_else(|| super::config::default_flow_control_for_iface_type(&req.iface_type)),
+            tx_queue_used: None,
+            tx_queue_max: None,
             extra_config: req.extra_config,
         };
         self.interfaces.push(row.clone());

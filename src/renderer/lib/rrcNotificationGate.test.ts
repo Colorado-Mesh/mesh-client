@@ -22,7 +22,7 @@ describe('shouldPlayRrcNotification', () => {
     ).toBe(false);
   });
 
-  it('plays channel when off panel, inactive window, or other room', () => {
+  it('plays channel when off panel, inactive window, or other room (toggle-on path)', () => {
     expect(
       shouldPlayRrcNotification({
         onRrcPanel: false,

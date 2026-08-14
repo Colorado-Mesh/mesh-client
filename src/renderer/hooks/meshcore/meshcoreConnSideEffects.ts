@@ -38,9 +38,12 @@ import {
   isMeshcoreWaitingMessagesTransportDeadError,
   logMeshcoreWaitingMessagesDrainError,
   markMeshcoreMsgWaitingEvent,
+  noteMeshcoreSilentBulkSuccess,
+  noteMeshcoreSilentBulkTimeout,
   resetMeshcoreWaitingMessagesDrainSchedule,
   scheduleMeshcoreWaitingMessagesDrain,
   shouldActivateWaitingMessagesBanner,
+  shouldSkipMeshcoreSilentBulkGetWaitingMessages,
   waitingMessagesDrainTimeoutMs,
 } from '../../lib/meshcoreWaitingMessagesDrain';
 import type { DomainEvent } from '../../lib/protocols/Protocol';
@@ -263,7 +266,7 @@ async function drainWaitingMessagesIncremental(
   conn: MeshCoreConnection,
   state: MeshcoreWaitingMessagesDrainState,
   deps: MeshcoreWaitingMessagesDrainDeps,
-): Promise<void> {
+): Promise<boolean> {
   let silentDrainExhaustedCap = false;
   for (let i = 0; i < MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN; i += 1) {
     if (!deps.meshcoreHookMountedRef.current) break;
@@ -285,16 +288,17 @@ async function drainWaitingMessagesIncremental(
     if (!item) break;
     await ingestMeshcoreWaitingMessageItem(item, state, deps);
     // Re-check after await — unmount during ingest must not flush / chain follow-ups.
-    if (!deps.meshcoreHookMountedRef.current) return;
+    if (!deps.meshcoreHookMountedRef.current) return false;
     if (i === MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN - 1) {
       silentDrainExhaustedCap = true;
     }
   }
-  if (!deps.meshcoreHookMountedRef.current) return;
+  if (!deps.meshcoreHookMountedRef.current) return false;
   if (silentDrainExhaustedCap) {
     requestMeshcoreWaitingMessagesFollowUp();
   }
   flushMeshcoreWaitingState(state, deps);
+  return true;
 }
 
 /**
@@ -306,6 +310,12 @@ async function drainWaitingMessagesSilent(
   state: MeshcoreWaitingMessagesDrainState,
   deps: MeshcoreWaitingMessagesDrainDeps,
 ): Promise<void> {
+  if (shouldSkipMeshcoreSilentBulkGetWaitingMessages()) {
+    const retrieved = await drainWaitingMessagesIncremental(conn, state, deps);
+    if (retrieved) noteMeshcoreSilentBulkSuccess();
+    return;
+  }
+
   const attemptId = beginMeshcoreSilentBulkAttempt();
 
   try {
@@ -319,6 +329,7 @@ async function drainWaitingMessagesSilent(
       return;
     }
     if (!deps.meshcoreHookMountedRef.current) return;
+    noteMeshcoreSilentBulkSuccess();
     const arr = normalizeMeshcoreWaitingMessageBatch(msgs);
     if (arr.length === 0) {
       return;
@@ -359,6 +370,14 @@ async function drainWaitingMessagesSilent(
       // Abandon bulk ownership so a late getWaitingMessages resolve cannot ingest.
       abandonMeshcoreSilentBulkAttempt(attemptId);
       if (!stillOwner || !deps.meshcoreHookMountedRef.current) return;
+      if (isMeshcoreGetWaitingMessagesTimeoutError(e)) {
+        const tripped = noteMeshcoreSilentBulkTimeout();
+        if (tripped) {
+          console.debug(
+            '[useMeshcoreRuntime] silent bulk getWaitingMessages circuit-open; skipping bulk until reconnect',
+          );
+        }
+      }
       logMeshcoreWaitingMessagesDrainError('silent bulk fallback to syncNextMessage', e, false);
       state.syncTotal = 0;
       state.progressActive = true;

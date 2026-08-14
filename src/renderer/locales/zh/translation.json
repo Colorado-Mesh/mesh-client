@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
     "footerWebsiteTitle": "Colorado Mesh website",
-    "loadingApp": "正在加载网格客户端"
+    "loadingApp": "正在加载网格客户端",
+    "reticulumQueueTooltip": "本地RNode “{{name}}”的主机TX队列：等待无线电的数据包（多个RNode时最糟糕的填充）。绿色在25%以下，琥珀色在60%以下，红色在60%或以上。",
+    "reticulumQueueTooltipGeneric": "最繁忙的本地RNode的主机TX队列：等待无线电的数据包。绿色在25%以下，琥珀色在60%以下，红色在60%或以上。",
+    "reticulumTxBuffering": "将出站数据包缓冲到本地RNode （主机TX队列排空）。",
+    "reticulumTxBufferingNamed": "正在缓冲“{{name}}”上的出站数据包（主机TX队列排出）。"
   },
   "appPanel": {
     "failedSaveRetention": "无法保存邮件保留设置。",
@@ -384,7 +388,9 @@
     "themeSaveFailed": "无法保存颜色检查点。",
     "themeRestoreFailed": "无法还原颜色检查点。",
     "themeResetFailed": "无法重置颜色。",
-    "messageActionsBarBgVisible": "显示背景"
+    "messageActionsBarBgVisible": "显示背景",
+    "rrcUnreadAllRoomMessages": "所有房间消息的RRC未读",
+    "rrcUnreadAllRoomMessagesHint": "开启时，任何新的RRC房间消息都会标记为未读，并且可以播放频道声音。关闭IRC样式警报：仅限直接消息和@提及。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -945,7 +951,6 @@
     "reticulumStackRunning": "堆栈运行",
     "reticulumIdentity": {
       "title": "Reticulum 身份",
-      "hint": "启动上面的堆栈，然后创建或导入助记符标识。",
       "startStackFirst": "启动Reticulum堆栈以配置标识。",
       "displayName": "显示名称",
       "generate": "生成标识",
@@ -955,16 +960,9 @@
       "confirmSaved": "我已经保存了我的恢复短语",
       "hashLabel": "LXMF哈希：",
       "failed": "身份设置失败",
-      "export": "导出备份",
-      "exportPassphrase": "备份密码",
-      "exportPassphraseRequired": "在导出前输入备用密码。",
-      "importBackupLabel": "导入备份 JSON",
-      "importBackup": "导入备份",
-      "importBackupHint": "仅恢复显示名称和哈希元数据。网络身份需要您的私钥文件或恢复短语。",
       "importPrivateKeyLabel": "导入私钥",
       "importPrivateKey": "导入私钥",
       "importPrivateKeyFromFile": "来自文件",
-      "importPrivateKeyHint": "64 字节 RNS 私钥：X25519 秘密 (32 B) + Ed25519 种子 (32 B) 作为 128 字符十六进制或 base64。",
       "replaceIdentitySection": "更换身份",
       "replaceIdentityHint": "导入新身份将替换您当前的密钥并重新启动堆栈。",
       "replaceIdentityConfirmTitle": "替换 Reticulum 身份？",
@@ -999,7 +997,28 @@
       "slotCreated": "新身份已创建。",
       "slotDeleted": "身份已删除。",
       "slotActionFailed": "身份操作失败： {{error}}",
-      "slotUnnamed": "未命名"
+      "slotUnnamed": "未命名",
+      "importBackupFromFile": "来自.rsi文件",
+      "importBackupPin": "备份 PIN",
+      "importBackupPinRequired": "输入导出此.rsi备份时使用的PIN。",
+      "exportRaw": "导出 Reticulum 身份文件",
+      "exportSaved": "身份导出已保存。",
+      "exportSaveFailed": "无法保存身份导出。",
+      "exportPassphraseConfirm": "确认备份 PIN",
+      "exportPassphraseMismatch": "备份PIN码不匹配。",
+      "exportPassphrase": "备份 PIN",
+      "importBackupTooLarge": "标识备份文件太大。",
+      "hint": "启动上面的堆栈，然后创建或导入 BIP-39 恢复短语、原始 Reticulum 身份文件或 PIN 加密的 Ratspeak .rsi 备份。",
+      "importBackupLabel": "导入Ratspeak .rsi备份",
+      "importBackup": "导入.rsi备份",
+      "importBackupHint": "PIN加密的Ratspeak身份备份(.rsi)。恢复您的私钥并激活身份。",
+      "importPrivateKeyHint": "官方 Reticulum 64 字节私钥（X25519 secret + Ed25519 seed），格式为 hex、base64、base32 或原始 .identity 文件。",
+      "export": "导出.rsi备份",
+      "exportPassphraseRequired": "请输入至少6个字符的备用PIN码。",
+      "importBackupAria": "从粘贴的JSON导入Ratspeak .rsi备份",
+      "importBackupFromFileAria": "选择要导入的Ratspeak .rsi备份文件",
+      "exportAria": "导出PIN加密的Ratspeak .rsi身份备份",
+      "exportRawAria": "导出未加密的原始 Reticulum 身份文件"
     },
     "reticulumInterfaces": {
       "title": "接口",
@@ -1315,7 +1334,8 @@
       "bleBondRemovedOpenAdmin": "打开管理员蓝牙",
       "txQueueDropsHintBle": "此BLE RNode无法排出其TX队列（链接卡住或抖动）。首选USB串行或Wi-Fi (tcp://) ，或在忘记系统设置→蓝牙后停止堆栈并重新配对。",
       "txQueueDropsHintBleBondStale": "TX队列已满，因为BLE绑定已过时。在系统设置→蓝牙中忘记此RNode ，然后使用管理→蓝牙（清除配对/开始配对）或切换到USB。",
-      "txQueueDropsHintNeutral": "此接口TX通道已满。检查该接口的链接健康状况（或禁用它）以停止丢弃。"
+      "txQueueDropsHintNeutral": "此接口TX通道已满。检查该接口的链接健康状况（或禁用它）以停止丢弃。",
+      "txQueueDropsHintBleFlowControl": "无线电忙时主机TX队列背压（流量控制开启）。在射频拥塞下预期—不是卡住的链路。减少出站负载或等待通话时间。"
     },
     "reticulumSidecarBundledMissing": "此安装缺少捆绑的 Reticulum sidecar。升级到较新的版本或报告问题 - 在打包安装中无法从源代码构建。",
     "radioMqttRootDivergesWarning": "无线电MQTT根主题为{{radioRoot}} ，但此面板订阅了{{appPrefix}}。匹配无线电以限制全国节点流量—更新主题前缀并重新连接MQTT。",
@@ -1711,7 +1731,8 @@
         "decommissionedHubEnabled": "已停用的枢纽“{{name}}”仍处于启用状态 — mesh-client 会在每次启动协议栈时关闭它。请使用“添加默认骨干网”或骨干网目录获取可用端点。",
         "txQueueDropsBle": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满） — BLE RNode链接卡住；首选USB或重新配对",
         "txQueueDropsBleBondStale": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满） — BLE绑定已过期；忘记操作系统蓝牙并重新配对",
-        "txQueueDropsNeutral": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满） —检查该接口的链路"
+        "txQueueDropsNeutral": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满） —检查该接口的链路",
+        "txQueueDropsBleFlowControl": "接口“{{name}}”丢弃了{{count}}个出站数据包（主机TX队列已满） —流量控制已打开；预计在射频拥塞下，而不是卡住链路"
       }
     },
     "routingPort": {
@@ -1893,7 +1914,6 @@
   },
   "identityVault": {
     "title": "身份保管库",
-    "hint": "使用保管库密码加密身份备份的本地副本。解锁以访问受保护的身份操作。",
     "passcode": "保管库密码",
     "confirmPasscode": "确认密码",
     "setPasscode": "启用保管库",
@@ -1902,13 +1922,14 @@
     "statusNotConfigured": "未配置",
     "statusLocked": "已锁定",
     "statusUnlocked": "已经解锁",
-    "passcodeTooShort": "必须至少为4个字符",
     "passcodeMismatch": "密码不匹配。",
     "setSuccess": "Vault密码已保存。",
     "setFailed": "无法保存保管库密码。",
     "unlockSuccess": "避难所已解锁。",
     "unlockFailed": "密码或保管库错误。",
-    "lockSuccess": "密室已锁定。"
+    "lockSuccess": "密室已锁定。",
+    "hint": "（可选）使用密码（最少8个字符）加密本地保管库密钥。这不会取代导出便携式.rsi或原始身份文件。",
+    "passcodeTooShort": "必须至少为8个字符"
   },
   "logAnalyzeModal": {
     "title": "日志分析",
@@ -3242,7 +3263,6 @@
     "me": "此节点",
     "directLink": "直接（ 0跳）",
     "relayLink": "通过继电器（ 1跳）",
-    "hiddenCount": "显示{{shown}}/{{total}}节点（未连接节点隐藏）",
     "noConnectedNodes": "没有可显示的连接对等项—调整过滤器或等待网络流量。",
     "meShort": "你",
     "relayHub": "直接继电器",
@@ -3253,7 +3273,9 @@
     "maxHopsAll": "所有跃点",
     "maxHopsOption": "{{count}}跳",
     "resetView": "重设视角",
-    "compactLeafCount": "{{count}}紧凑型直接同行"
+    "compactLeafCount": "{{count}}紧凑型直接同行",
+    "hiddenCountLimit": "显示{{shown}}/{{total}}节点（限制{{limit}}）",
+    "visibleNodeLimitNote": "拓扑图最多显示{{distantLimit}}个节点。"
   },
   "peerListPanel": {
     "heading": "Pee对端",
@@ -4342,7 +4364,6 @@
     "noNodes": "尚无拓扑数据 — 连接 Reticulum 堆栈并刷新。",
     "nodeCount": "{{count}} 节点",
     "edgeCount": "{{count}} 链接",
-    "hiddenCount": "显示 {{total}} 节点的 {{shown}}（远距离对等点隐藏）",
     "legendSelf": "该节点",
     "showDistantPeers": "显示远程同行",
     "maxHopsFilter": "最大 hops",
@@ -4363,7 +4384,10 @@
     "glyphWifi": "Wi-Fi接口",
     "glyphLora": "LoRa接口",
     "glyphTcp": "TCP接口",
-    "glyphSerial": "串口"
+    "glyphSerial": "串口",
+    "hiddenCountLimit": "显示{{shown}}/{{total}}节点（限制{{limit}}）",
+    "visibleNodeLimitNote": "拓扑图最多显示{{distantLimit}}个节点。",
+    "rfOnly": "仅RF"
   },
   "rfHistograms": {
     "title": "射频信号分布",

@@ -6,22 +6,24 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## Workflows
 
-| Workflow                 | Trigger                                      | Purpose                                                                         |
-| ------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| `ci.yaml`                | Push/PR to `main`                            | Lint, typecheck, build, Flatpak manifest validation                             |
-| `tests.yaml`             | Push/PR to `main`                            | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
-| `e2e.yaml`               | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS; not a PR gate)                 |
-| `build.yaml`             | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build (+ schema compare vs last official)           |
-| `reticulum-sidecar.yaml` | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                       |
-| `release.yaml`           | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                     |
-| `flatpak.yaml`           | Version tags (`v*`), manual                  | Build Flatpak (+ schema compare vs last official); publish to release on tags   |
-| `docs.yml`               | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                   |
+| Workflow                    | Trigger                                      | Purpose                                                                         |
+| --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
+| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`    | Lint, typecheck, build, Flatpak manifest validation                             |
+| `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`    | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
+| `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS; not a PR gate)                 |
+| `build.yaml`                | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build (+ schema compare vs last official)           |
+| `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                       |
+| `release.yaml`              | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                     |
+| `flatpak.yaml`              | Version tags (`v*`), manual                  | Build Flatpak (+ schema compare vs last official); publish to release on tags   |
+| `cut-release.yaml`          | Manual `workflow_dispatch`                   | **Primary** release cut in Actions (needs admin `RELEASE_PUSH_TOKEN`)           |
+| `docs.yml`                  | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                   |
+| `third-party-licenses.yaml` | Path-filtered push to `main` + dispatch      | Regenerate licenses doc and open a PR (needs `RELEASE_PUSH_TOKEN`)              |
 
 ---
 
 ## CI Build (`ci.yaml`)
 
-Runs on every push and pull request to `main` (and `workflow_dispatch`):
+Runs on every push, pull request, and merge-queue `merge_group` for `main` (and `workflow_dispatch`):
 
 1. Checkout code
 2. Setup pnpm
@@ -30,7 +32,7 @@ Runs on every push and pull request to `main` (and `workflow_dispatch`):
 5. Format check (`pnpm run format:check`)
 6. Markdown lint (`pnpm run lint:md`)
 7. Run lint (`pnpm run lint`)
-8. License check (`pnpm run check:licenses`)
+8. Audit Open Source Licenses (`pnpm run check:licenses` — SPDX allowlist via `pnpm licenses list`)
 9. actionlint (via `pnpm run setup:actionlint`)
 10. `pnpm audit --audit-level=high` (non-blocking warning)
 11. Run `yamllint` on workflow/config YAML
@@ -44,7 +46,7 @@ All blocking steps must pass before a PR can be merged.
 
 ## Tests (`tests.yaml`)
 
-Runs on every push and pull request to `main`:
+Runs on every push, pull request, and merge-queue `merge_group` for `main`:
 
 1. Checkout code, setup pnpm + Node 22, install dependencies
 2. **Parallel matrix** — coverage per Vitest project (`renderer-ui`, `renderer-logic`, `main`) with blob reporter (`VITEST_COVERAGE_SHARD=1` skips per-shard threshold checks)
@@ -134,6 +136,21 @@ On **version tag pushes**, a `publish` job waits for the Electron `prepare-githu
 
 ---
 
+## Third-party licenses (`third-party-licenses.yaml`)
+
+After merges to `main` that change `package.json`, `pnpm-lock.yaml`, the generator script, or this workflow (and on `workflow_dispatch`):
+
+1. Checkout with `persist-credentials: false` (avoids Duplicate Authorization with create-pull-request)
+2. Setup pnpm + Node 22
+3. Install dependencies (`pnpm install --frozen-lockfile`)
+4. Audit licenses (`pnpm run check:licenses`)
+5. Regenerate `docs/third-party-licenses.md` (`pnpm run docs:licenses`)
+6. Open a PR via `peter-evans/create-pull-request` when the file changed (branch `chore/third-party-licenses-<run_id>`)
+
+**Secret:** reuse **`RELEASE_PUSH_TOKEN`** (admin PAT with **contents**, **workflows**, and **pull requests** write). Default `GITHUB_TOKEN` PRs do not auto-run required checks, so they cannot enter the merge queue cleanly. Direct pushes to `main` remain blocked by the merge-queue ruleset. The workflow probes Contents write (create/delete a short-lived ref) before `create-pull-request` so a token missing write access fails with a clear error instead of a git 403.
+
+---
+
 ## Docs (`docs.yml`)
 
 Deploys documentation to GitHub Pages on every push to `main`:
@@ -157,7 +174,8 @@ Automated dependency updates are configured in `.github/dependabot.yml`:
 - **Open PRs:** `open-pull-requests-limit: 0` — Dependabot scans but does **not** open PRs.
   Dependency bumps are applied manually via `pnpm run update` (`scripts/update.sh`), which
   also runs dedupe, Ratspeak overlay PR checks, and an upstream release / new-org-repo watch
-  (rsLXST, lrgp-rs, Ratspeak with Games-parity nudge, LXMFace). Sibling **rsReticulum** /
+  (rsLXST, lrgp-rs, Ratspeak Games-parity when a newer published release exists, LXMFace
+  `js/lxmface.js` commit). Sibling **rsReticulum** /
   **rsLXMF** / **rsNomad** / **rsLXST** / **lrgp-rs** float to `origin/main` via
   `clone-ratspeak-stack.sh` (overlays must apply). See AGENTS.md §6.
 
@@ -258,16 +276,86 @@ Note: The test results artifact upload step is automatically skipped when runnin
 
 ---
 
+## Pipeline status (issue #378)
+
+| Area                                             | Status                                                              |
+| ------------------------------------------------ | ------------------------------------------------------------------- |
+| PR lint / typecheck / build / tests              | Done (`ci.yaml`, `tests.yaml`)                                      |
+| CodeQL / CodeRabbit                              | Done (CodeQL **default setup** — PR/push/schedule; not merge-queue) |
+| Tag → draft multi-OS + Flatpak + packaging smoke | Done (`release.yaml`, `flatpak.yaml`, `build.yaml`)                 |
+| `pnpm run release` preflight + bump/tag          | Done (`scripts/release.sh`; `--yes` for non-interactive)            |
+| Manual draft **Publish** on GitHub               | Intentional (human review of artifacts)                             |
+| Dep bumps                                        | Manual (`pnpm run update`; Dependabot PRs disabled)                 |
+| Merge queue + required status checks             | Done (ruleset **20821455** on `main`; see below)                    |
+| E2E                                              | Daily / `workflow_dispatch` only — **not** a merge gate             |
+
+---
+
+## Merge queue and rulesets
+
+`main` is protected by a **repository ruleset** (not classic branch protection) that:
+
+1. Requires a pull request before merging
+2. Requires **at least one approving review** before the merge queue
+3. Requires a **merge queue**
+4. Requires **strict** status checks (must pass on the merge group / up-to-date tip)
+5. Blocks force-pushes and branch deletion on `main`
+
+### Required check names (always-on)
+
+Only checks that report on every PR and every `merge_group` run are required:
+
+| Check name                  | Workflow     |
+| --------------------------- | ------------ |
+| `Build & Test`              | `ci.yaml`    |
+| `Coverage (renderer-ui)`    | `tests.yaml` |
+| `Coverage (renderer-logic)` | `tests.yaml` |
+| `Coverage (main)`           | `tests.yaml` |
+| `Merge coverage`            | `tests.yaml` |
+
+Each required check is pinned with `integration_id` **15368** (GitHub Actions) in [`.github/rulesets/main-merge-queue.json`](../.github/rulesets/main-merge-queue.json).
+
+**Do not** add these as required (they skip or are not PR/`merge_group` gates and would stall the queue):
+
+- `Reticulum sidecar coverage` (path-filtered)
+- `fmt + clippy` / sidecar build matrix (`reticulum-sidecar.yaml`, path-filtered)
+- CodeQL `Analyze (*)` — **default setup does not run on `merge_group`**; CodeQL still runs on PRs/pushes. Requiring it would hang the merge queue until advanced setup + `merge_group` exists.
+- E2E, packaging smoke, Flatpak, release jobs
+
+`ci.yaml` and `tests.yaml` both listen for `merge_group` so the queue’s temporary ref re-runs the same gates.
+
+### Bypass actors
+
+- **Repository admins** (`RepositoryRole` id 5) — emergency hotfixes and local `pnpm run release` (direct push of bump commit + tag to `main`)
+
+GitHub Actions **cannot** be added as a bypass actor on this organization (“must be part of the ruleset source or owner organization”). [`third-party-licenses.yaml`](../.github/workflows/third-party-licenses.yaml) therefore opens a PR (via `RELEASE_PUSH_TOKEN`) instead of pushing to `main`.
+
+**Pull request gate:** one approving review, **dismiss stale reviews on push**, and **require last push approval** so an approved PR cannot enter the merge queue after unreviewed follow-up commits.
+
+### Applying / updating the ruleset
+
+Canonical JSON lives at [`.github/rulesets/main-merge-queue.json`](../.github/rulesets/main-merge-queue.json) (live ruleset id **20821455**). Vitest contract: `scripts/main-merge-queue-ruleset.test.mjs` (pinned checks + review gates). After changing the JSON, **PUT the live ruleset** or drift will remain until someone syncs:
+
+```bash
+# Update live ruleset from canonical JSON
+gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
+  --method PUT \
+  --input .github/rulesets/main-merge-queue.json
+```
+
+`gh api --input` can hit HTTP/2 content-length issues on create; if that fails, POST the JSON body with Python `urllib` (same payload).
+
+The ruleset is already **active** with `merge_group` triggers on `ci.yaml` / `tests.yaml`. Keep those triggers if you ever recreate the ruleset — enabling the queue without them leaves required checks pending forever.
+
+---
+
 ## Required Status Checks
 
-All PRs to `main` must pass:
+All PRs (and merge-queue groups) for `main` must pass the **required check names** listed above. Those jobs cover:
 
-- Lint (`pnpm run lint`)
-- Typecheck (`pnpm run typecheck`)
-- Build (`pnpm run build`)
-- Tests with coverage (`pnpm run test:coverage` — same as CI; `locale-quality.test.ts` runs `check:i18n` as part of the Vitest suite)
-
-Branch protection is configured to require these checks before merging.
+- Lint, format, markdown, licenses, actionlint, yamllint (`pnpm run lint` and related steps in `ci.yaml`)
+- Typecheck and build (`pnpm run typecheck`, `pnpm run build`)
+- Tests with coverage (`pnpm run test:coverage:merge` — `locale-quality.test.ts` runs `check:i18n` as part of the Vitest suite)
 
 ---
 
@@ -349,7 +437,7 @@ CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage 
 3. Uploads `READ-ME-FIRST-test-build.md` (build) / `READ-ME-FIRST-flatpak.md` (flatpak) / `READ-ME-FIRST-schema.md` (release). **Build Binaries** stages the note into `release/` before platform uploads so `upload-artifact`’s least-common-ancestor stays under `release/` (mixing `release-warnings/` nests installers as `release/release/*.exe` and breaks `packaging-smoke`). Flatpak keeps a separate per-arch `flatpak-schema-warning-*` artifact beside the bundle
 4. Exposes `schema_bumped` / `curr_schema` / `prev_schema` / `prev_tag` for packaging
 
-When schema is bumped, packaging runs `scripts/write-schema-upgrade-notice.mjs` so Windows NSIS can show a MessageBox and macOS/Linux/Flatpak bundles can include `SCHEMA-UPGRADE.txt` in app resources (`electron-builder-before-pack.mjs` / Flatpak `resources/` copy).
+Packaging always runs `scripts/write-schema-upgrade-notice.mjs`. On a schema bump it writes the Windows NSIS MessageBox include and `SCHEMA-UPGRADE.txt` for macOS/Linux/Flatpak (`electron-builder-before-pack.mjs` / Flatpak `resources/` copy). With no bump it still writes a no-op `resources/schema-upgrade-notice.nsh` stub — NSIS `!include` of a missing file is warning 7000, and electron-builder treats warnings as errors.
 
 On first launch after a schema bump against an existing database, the app shows a blocking **Quit / Upgrade** dialog before mutating SQLite (see [Release Process — Database schema upgrades](release-process.md#database-schema-upgrades)).
 

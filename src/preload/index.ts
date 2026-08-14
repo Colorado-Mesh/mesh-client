@@ -17,6 +17,8 @@ import type {
   OutboxStatus,
   ReadReticulumAttachmentAsDataUrlOpts,
   ReadReticulumAttachmentAsDataUrlResult,
+  ReticulumIdentityBackupImportDialogResult,
+  ReticulumIdentityExportSaveResult,
   ReticulumIdentityImportDialogResult,
   SerialPort,
   SpellcheckReplacePayload,
@@ -1025,7 +1027,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     tcp: {
       connect: (host: string, port: number): Promise<void> =>
         ipcRenderer.invoke('meshtastic:tcp-connect', host, port),
-      write: (bytes: number[]): Promise<void> => ipcRenderer.invoke('meshtastic:tcp-write', bytes),
+      write: async (bytes: number[]): Promise<void> => {
+        const result: unknown = await ipcRenderer.invoke('meshtastic:tcp-write', bytes);
+        // Main resolves 'no-socket' so Electron does not log handler [error].
+        // Reject here so TransportTcpIpc / the SDK see a failed write (do not replay bytes).
+        if (result === 'no-socket') {
+          throw new Error('meshtastic:tcp-write: no active socket');
+        }
+        if (result !== undefined) {
+          throw new Error('meshtastic:tcp-write: unexpected result');
+        }
+      },
       disconnect: (): Promise<void> => ipcRenderer.invoke('meshtastic:tcp-disconnect'),
       onData: (cb: (bytes: Uint8Array) => void): (() => void) => {
         const handler = (_: unknown, bytes: Uint8Array) => {
@@ -1101,6 +1113,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('reticulum:showConfigImportDialog'),
     showIdentityImportDialog: (): Promise<ReticulumIdentityImportDialogResult> =>
       ipcRenderer.invoke('reticulum:showIdentityImportDialog'),
+    showIdentityBackupImportDialog: (): Promise<ReticulumIdentityBackupImportDialogResult> =>
+      ipcRenderer.invoke('reticulum:showIdentityBackupImportDialog'),
+    saveIdentityExportDialog: (opts: {
+      defaultPath: string;
+      contentBase64: string;
+    }): Promise<ReticulumIdentityExportSaveResult> =>
+      ipcRenderer.invoke('reticulum:saveIdentityExportDialog', opts),
     showNomadContentSourceDialog: (): Promise<{ canceled: boolean; path: string | null }> =>
       ipcRenderer.invoke('reticulum:showNomadContentSourceDialog'),
     setNomadContentSource: (path: string): Promise<unknown> =>

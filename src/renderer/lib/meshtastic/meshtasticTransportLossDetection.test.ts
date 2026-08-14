@@ -64,9 +64,9 @@ describe('meshtasticTransportLossDetection', () => {
   });
 
   it('notifies immediately on main-process TCP socket disconnect', () => {
-    // Regression: writes that fail after the socket is gone report "no active socket",
-    // which does not match TRANSPORT_LOST_MESSAGE, so this IPC event is TCP's only fast
-    // path — without it, TCP relied solely on the passive watchdog (up to 3 minutes).
+    // Regression: preload rejects writes with "no active socket", which does not match
+    // TRANSPORT_LOST_MESSAGE, so this IPC event is TCP's only fast path — without it,
+    // TCP relied solely on the passive watchdog (up to 3 minutes).
     let capturedCb: (() => void) | undefined;
     const spy = vi
       .spyOn(window.electronAPI.meshtastic.tcp, 'onDisconnected')

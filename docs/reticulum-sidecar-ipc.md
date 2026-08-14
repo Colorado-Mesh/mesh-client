@@ -19,16 +19,17 @@ Electron main validates proxy paths: must start with `/api/v1/` (no `..` segment
 
 ### Identity
 
-| Method | Path                              | Body / notes                                       | Response                                                               |
-| ------ | --------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------- |
-| GET    | `/api/v1/identity/status`         |                                                    | `{ configured, identity_hash, lxmf_hash, display_name?, public_key? }` |
-| POST   | `/api/v1/identity/register-known` | `{ destination_hash, public_key }`                 | `{ ok }` (registers 64-byte pubkey for Direct LXMF / Columba QR)       |
-| POST   | `/api/v1/identity/generate`       | `{ display_name?, replace? }`                      | `{ ok, mnemonic?, identity_hash, lxmf_hash }`                          |
-| POST   | `/api/v1/identity/import`         | `{ mnemonic, display_name?, replace? }`            | `{ ok, identity_hash, lxmf_hash }`                                     |
-| POST   | `/api/v1/identity/import-backup`  | `{ backup, passphrase?, display_name?, replace? }` | `{ ok, identity_hash, lxmf_hash, metadata_only? }`                     |
-| POST   | `/api/v1/identity/import-private` | `{ private_key, display_name?, replace? }`         | `{ ok, identity_hash, lxmf_hash }`                                     |
-| POST   | `/api/v1/identity/export`         | `{ passphrase }`                                   | `{ ok, backup? }`                                                      |
-| POST   | `/api/v1/identity/display-name`   | `{ display_name }`                                 | `{ ok }`                                                               |
+| Method | Path                              | Body / notes                                                                                                                  | Response                                                                                                                                  |
+| ------ | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/identity/status`         |                                                                                                                               | `{ configured, identity_hash, lxmf_hash, display_name?, public_key? }`                                                                    |
+| POST   | `/api/v1/identity/register-known` | `{ destination_hash, public_key }`                                                                                            | `{ ok }` (registers 64-byte pubkey for Direct LXMF / Columba QR)                                                                          |
+| POST   | `/api/v1/identity/generate`       | `{ display_name?, replace? }`                                                                                                 | `{ ok, mnemonic?, identity_hash, lxmf_hash }`                                                                                             |
+| POST   | `/api/v1/identity/import`         | `{ mnemonic, display_name?, replace? }`                                                                                       | `{ ok, identity_hash, lxmf_hash }`                                                                                                        |
+| POST   | `/api/v1/identity/import-backup`  | `{ backup, passphrase?, display_name?, replace? }` — Ratspeak `.rsi` (`ratspeak.identity.v2` + PIN) or `ratspeak.identity.v1` | `{ ok, identity_hash, lxmf_hash, display_name? }` (restores private key)                                                                  |
+| POST   | `/api/v1/identity/import-private` | `{ private_key, display_name?, replace? }` — hex / base64 / URL-safe base64 / base32 / raw key text                           | `{ ok, identity_hash, lxmf_hash }`                                                                                                        |
+| POST   | `/api/v1/identity/export`         | `{ passphrase }` — PIN ≥ 6; Ratspeak-compatible `.rsi`                                                                        | `{ ok, backup, file_name? }`                                                                                                              |
+| POST   | `/api/v1/identity/export-raw`     | `{ passphrase }` — PIN ≥ 6 (same gate as `.rsi`); official 64-byte Reticulum identity                                         | `{ ok, raw: { data_base64, data_hex, data_base32, file_name, identity_hash, lxmf_hash, format } }` (UI save path uses `data_base64` only) |
+| POST   | `/api/v1/identity/display-name`   | `{ display_name }`                                                                                                            | `{ ok }`                                                                                                                                  |
 
 ### Interfaces
 

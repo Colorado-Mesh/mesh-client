@@ -141,6 +141,44 @@ describe('ReticulumDiagnosticEngine', () => {
     expect(dropRow?.reticulumRepairKind).toBe('edit');
   });
 
+  it('uses flow-control TX-drop cause as warning without repair for FC BLE RNodes', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+      {
+        interfaces: [
+          {
+            id: 'rnode-41f4',
+            name: 'RNode 41F4',
+            type: 'rnode',
+            enabled: true,
+            status: 'up',
+            serial_port: 'ble://eccf2847-e1fd-3f5f-0811-064db1639a3d',
+            flow_control: true,
+          },
+        ],
+        interfaceIssueAlert: {
+          tcpConnectFailed: [],
+          txQueueDrops: [{ name: 'RNode 41F4', dropCount: 128 }],
+          linkDeliveryTimeouts: [],
+          bleBondRemoved: [],
+          blePairingTimedOut: [],
+          transportSaturatedCount: 0,
+          slowTransportQueryCount: 0,
+          suppressedCount: 0,
+          lastAtMs: Date.now(),
+        },
+      },
+    );
+    const dropRow = rows.find(
+      (r): r is RfDiagnosticRow => r.kind === 'rf' && r.condition === 'reticulum/tx-queue-drops',
+    );
+    expect(dropRow?.causeI18n?.key).toBe(
+      'diagnosticsPanel.reticulum.runtime.txQueueDropsBleFlowControl',
+    );
+    expect(dropRow?.severity).toBe('warning');
+    expect(dropRow?.reticulumRepairKind).toBeUndefined();
+  });
+
   it('uses bond-stale TX-drop cause when bleBondRemoved co-occurs', () => {
     const rows = buildReticulumDiagnosticRows(
       { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },

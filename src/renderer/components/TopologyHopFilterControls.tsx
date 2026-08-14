@@ -3,6 +3,8 @@
  * and ReticulumTopologyPanel. Labels are passed in rather than assumed from a translation namespace
  * since the two panels use different i18n key prefixes (`peerGraph.*` vs `reticulumTopology.*`) and
  * intentionally different defaults (see each panel's own `useState` initializer).
+ * Numeric Max hops is applied even when Show distant is off; the nearby hop ceiling
+ * (Mesh hops > 1, Reticulum hops > 2) applies only when Max hops is All.
  */
 export const TOPOLOGY_HOP_FILTER_OPTIONS = [1, 2, 3, 5, 8] as const;
 

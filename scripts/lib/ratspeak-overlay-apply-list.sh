@@ -13,6 +13,7 @@ RS_RETICULUM_APPLY_SCRIPTS=(
   apply-rsReticulum-discovery-announce-egress.sh
   apply-rsReticulum-path-medium-slots.sh
   apply-rsReticulum-inbound-raw-saturation-log.sh
+  apply-rsReticulum-interface-tx-queue-stats.sh
 )
 
 RS_LXMF_APPLY_SCRIPTS=(

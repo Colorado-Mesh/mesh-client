@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   APP_SETTINGS_STORAGE_KEY,
   getAppSettingsRaw,
+  isRrcUnreadAllRoomMessagesEnabled,
   mergeAppSetting,
   mergeAppSettingsPartial,
   setAppSettingsRaw,
@@ -55,6 +56,28 @@ describe('appSettingsStorage', () => {
     expect(parsed.mapBasemapId).toBe('dark');
     expect(parsed.chatCompactMode).toBe(true);
     expect(parsed.other).toBe(1);
+  });
+
+  it('isRrcUnreadAllRoomMessagesEnabled defaults true and honors explicit false', () => {
+    expect(isRrcUnreadAllRoomMessagesEnabled()).toBe(true);
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ rrcUnreadAllRoomMessages: true }),
+    );
+    expect(isRrcUnreadAllRoomMessagesEnabled()).toBe(true);
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ rrcUnreadAllRoomMessages: false }),
+    );
+    expect(isRrcUnreadAllRoomMessagesEnabled()).toBe(false);
+  });
+
+  it('ignores malformed rrcUnreadAllRoomMessages string values', () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ rrcUnreadAllRoomMessages: 'false' }),
+    );
+    expect(isRrcUnreadAllRoomMessagesEnabled()).toBe(true);
   });
 
   it('setAppSettingsRaw replaces after migrating legacy', () => {

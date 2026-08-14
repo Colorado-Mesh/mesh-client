@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
     "footerWebsiteTitle": "Colorado Mesh website",
-    "loadingApp": "메시 클라이언트 로드 중"
+    "loadingApp": "메시 클라이언트 로드 중",
+    "reticulumQueueTooltip": "로컬 RNode \"{{name}}\" 에 대한 호스트 TX 대기열: 라디오를 기다리는 패킷 (여러 RNode가 있을 때 최악의 채움). 녹색은 25% 미만, 황색은 60% 미만, 빨간색은 60% 이상.",
+    "reticulumQueueTooltipGeneric": "가장 바쁜 로컬 RNode의 호스트 TX 대기열: 라디오를 기다리는 패킷. 녹색은 25% 미만, 황색은 60% 미만, 빨간색은 60% 이상.",
+    "reticulumTxBuffering": "아웃바운드 패킷을 로컬 RNode에 버퍼링합니다 (호스트 TX 대기열 드레이닝).",
+    "reticulumTxBufferingNamed": "\"{{name}}\" 에서 아웃바운드 패킷 버퍼링 (호스트 TX 대기열 배수)."
   },
   "appPanel": {
     "failedSaveRetention": "메시지 보관 설정을 저장하지 못했습니다.",
@@ -384,7 +388,9 @@
     "themeSaveFailed": "색상 체크포인트를 저장하지 못했습니다.",
     "themeRestoreFailed": "색상 체크포인트를 복원하지 못했습니다.",
     "themeResetFailed": "색상을 재설정하지 못했습니다.",
-    "messageActionsBarBgVisible": "배경 표시"
+    "messageActionsBarBgVisible": "배경 표시",
+    "rrcUnreadAllRoomMessages": "모든 객실 메시지에 대해 읽지 않은 RRC",
+    "rrcUnreadAllRoomMessagesHint": "켜져 있으면 새로운 RRC 룸 메시지가 읽지 않음으로 표시되어 채널 사운드를 재생할 수 있습니다. IRC 스타일 알림의 경우: 다이렉트 메시지 및 @ 멘션만 꺼주세요."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -945,7 +951,6 @@
     "reticulumStackRunning": "스택 실행 중",
     "reticulumIdentity": {
       "title": "Reticulum 정체성",
-      "hint": "위의 스택을 시작한 다음 니모닉 아이덴티티를 생성하거나 가져옵니다.",
       "startStackFirst": "아이덴티티를 구성하려면 Reticulum 스택을 시작합니다.",
       "displayName": "닉네임",
       "generate": "ID 생성",
@@ -955,16 +960,9 @@
       "confirmSaved": "복구 문구를 저장했습니다",
       "hashLabel": "LXMF 해시:",
       "failed": "신원 설정 실패",
-      "export": "내보내기 백업",
-      "exportPassphrase": "암호 백업",
-      "exportPassphraseRequired": "내보내기 전에 백업 암호를 입력하십시오.",
-      "importBackupLabel": "백업 JSON 가져오기",
-      "importBackup": "백업 가져오기",
-      "importBackupHint": "표시 이름과 해시 메타데이터만 복원합니다. 네트워크 ID에는 개인 키 파일 또는 복구 문구가 필요합니다.",
       "importPrivateKeyLabel": "개인 키 가져오기",
       "importPrivateKey": "개인 키 가져오기",
       "importPrivateKeyFromFile": "파일에서",
-      "importPrivateKeyHint": "64바이트 RNS 개인 키: X25519 비밀(32 B) + Ed25519 시드(32 B), 128자 16진수 또는 base64.",
       "replaceIdentitySection": "신원 교체",
       "replaceIdentityHint": "새 ID를 가져오면 현재 키가 교체되고 스택이 다시 시작됩니다.",
       "replaceIdentityConfirmTitle": "Reticulum ID를 교체하시겠습니까?",
@@ -999,7 +997,28 @@
       "slotCreated": "새로운 ID가 생성되었습니다.",
       "slotDeleted": "신원이 삭제되었습니다.",
       "slotActionFailed": "신원 작업 실패: {{error}}",
-      "slotUnnamed": "이름 없음"
+      "slotUnnamed": "이름 없음",
+      "importBackupFromFile": ".rsi 파일에서",
+      "importBackupPin": "백업 PIN",
+      "importBackupPinRequired": "이 .rsi 백업을 내보낼 때 사용된 PIN을 입력하십시오.",
+      "exportRaw": "Reticulum ID 파일 내보내기",
+      "exportSaved": "ID 내보내기가 저장되었습니다.",
+      "exportSaveFailed": "ID 내보내기를 저장할 수 없습니다.",
+      "exportPassphraseConfirm": "예비 PIN 확인",
+      "exportPassphraseMismatch": "백업 PIN이 일치하지 않습니다.",
+      "importBackupTooLarge": "ID 백업 파일이 너무 큽니다.",
+      "hint": "위의 스택을 시작한 다음 BIP-39 복구 문구, 원시 Reticulum ID 파일 또는 PIN 암호화 Ratspeak .rsi 백업을 만들거나 가져옵니다.",
+      "importBackupLabel": "Ratspeak .rsi 백업 가져오기",
+      "importBackup": ".rsi 백업 가져오기",
+      "importBackupHint": "PIN 암호화 Ratspeak ID 백업 (.rsi). 개인 키를 복원하고 ID를 활성화합니다.",
+      "importPrivateKeyHint": "공식 Reticulum 64바이트 개인 키 (X25519 비밀 + Ed25519 시드) 는 16진수, base64, base32 또는 raw .identity 파일입니다.",
+      "export": ".rsi 백업 내보내기",
+      "exportPassphrase": "백업 PIN",
+      "exportPassphraseRequired": "6자 이상의 예비 PIN을 입력하세요.",
+      "importBackupAria": "붙여넣은 JSON에서 Ratspeak .rsi 백업 가져오기",
+      "importBackupFromFileAria": "가져올 Ratspeak .rsi 백업 파일 선택",
+      "exportAria": "PIN 암호화 Ratspeak .rsi ID 백업 내보내기",
+      "exportRawAria": "암호화되지 않은 원시 Reticulum ID 파일 내보내기"
     },
     "reticulumInterfaces": {
       "title": "연계 문서",
@@ -1315,7 +1334,8 @@
       "bleBondRemovedOpenAdmin": "관리자 블루투스 열기",
       "txQueueDropsHintBle": "이 BLE RNode는 TX 대기열을 배출할 수 없습니다 (링크 정지 또는 플랩핑). USB 직렬 또는 Wi-Fi (tcp://) 를 선호하거나 시스템 설정 → 블루투스에서 잊어버린 후 스택을 중지하고 다시 페어링하십시오.",
       "txQueueDropsHintBleBondStale": "BLE 결합이 오래되어 TX 대기열이 가득 찼습니다. 시스템 설정 → 블루투스에서 이 RNode를 지운 다음 관리자 → 블루투스를 사용하거나 (페어링 지우기/페어링 시작) USB로 전환하십시오.",
-      "txQueueDropsHintNeutral": "이 인터페이스 TX 채널이 가득 찼습니다. 해당 인터페이스의 링크 상태를 확인하거나 비활성화하여 드롭을 중지하십시오."
+      "txQueueDropsHintNeutral": "이 인터페이스 TX 채널이 가득 찼습니다. 해당 인터페이스의 링크 상태를 확인하거나 비활성화하여 드롭을 중지하십시오.",
+      "txQueueDropsHintBleFlowControl": "라디오가 사용 중인 동안 호스트 TX 대기열 배압 (유량 제어 켜짐). RF 정체 시 예상 — 링크가 고정되지 않음. 아웃바운드 화물을 줄이거나 대기 시간을 기다리세요."
     },
     "reticulumSidecarBundledMissing": "이 설치에는 번들로 제공되는 Reticulum 사이드카가 없습니다. 최신 릴리스로 업그레이드하거나 문제를 보고하세요. 패키지 설치에서는 소스에서 빌드할 수 없습니다.",
     "radioMqttRootDivergesWarning": "라디오 MQTT 루트 주제는 {{radioRoot}} 이지만 이 패널은 {{appPrefix}} 을 (를) 구독합니다. 라디오를 일치시켜 전국 노드 트래픽을 제한하십시오 — 주제 접두사를 업데이트하고 MQTT를 다시 연결하십시오.",
@@ -1711,7 +1731,8 @@
         "decommissionedHubEnabled": "폐기된 허브 «{{name}}»가 아직 사용 중입니다 — mesh-client는 스택을 시작할 때마다 끕니다. 활성 엔드포인트는 «기본 백본 추가» 또는 백본 목록을 사용하세요.",
         "txQueueDropsBle": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — BLE RNode 링크가 중단됨, USB 또는 재페어링 선호",
         "txQueueDropsBleBondStale": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — BLE 본드 오래됨; OS 블루투스는 잊어버리고 다시 페어링",
-        "txQueueDropsNeutral": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — 해당 인터페이스의 링크 확인"
+        "txQueueDropsNeutral": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — 해당 인터페이스의 링크 확인",
+        "txQueueDropsBleFlowControl": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (호스트 TX 대기열 꽉 참) — 흐름 제어 켜짐, RF 혼잡 시 예상, 링크 정지 아님"
       }
     },
     "routingPort": {
@@ -1893,7 +1914,6 @@
   },
   "identityVault": {
     "title": "신원 정보 보관소",
-    "hint": "Vault 암호를 사용하여 ID 백업의 로컬 복사본을 암호화합니다. 잠금 해제하여 보호된 ID 작업에 액세스하세요.",
     "passcode": "Vault 암호",
     "confirmPasscode": "새 암호를 확인",
     "setPasscode": "볼트 활성화",
@@ -1902,13 +1922,14 @@
     "statusNotConfigured": "구성되지 않음",
     "statusLocked": "잠김",
     "statusUnlocked": "잠금 해제",
-    "passcodeTooShort": "최소한 4자 이상이어야 합니다",
     "passcodeMismatch": "비밀번호가 일치하지 않습니다.",
     "setSuccess": "Vault 암호가 저장되었습니다.",
     "setFailed": "볼트 암호를 저장할 수 없습니다.",
     "unlockSuccess": "금고가 잠금 해제되었습니다.",
     "unlockFailed": "잘못된 암호 또는 볼트 오류입니다.",
-    "lockSuccess": "금고가 잠겼습니다."
+    "lockSuccess": "금고가 잠겼습니다.",
+    "hint": "필요에 따라 로컬 볼트 암호를 암호 (최소 8자) 로 암호화합니다. 이것은 휴대용 .rsi 또는 원시 ID 파일 내보내기를 대체하지 않습니다.",
+    "passcodeTooShort": "비밀번호는 8자 이상이어야 합니다."
   },
   "logAnalyzeModal": {
     "title": "로그 분석",
@@ -3242,7 +3263,6 @@
     "me": "이 노드",
     "directLink": "직접 (0홉)",
     "relayLink": "비아 릴레이 (1 홉)",
-    "hiddenCount": "{{shown}} / {{total}} 개 노드 표시 (연결되지 않은 노드 숨김)",
     "noConnectedNodes": "표시할 연결된 피어가 없습니다 — 필터를 조정하거나 네트워크 트래픽을 기다리십시오.",
     "meShort": "나",
     "relayHub": "직접 릴레이",
@@ -3253,7 +3273,9 @@
     "maxHopsAll": "모든 홉",
     "maxHopsOption": "{{count}} 홉",
     "resetView": "초기화",
-    "compactLeafCount": "{{count}} 컴팩트 직접 피어"
+    "compactLeafCount": "{{count}} 컴팩트 직접 피어",
+    "hiddenCountLimit": "{{total}}개의 노드 중 {{shown}}개 표시 (제한 {{limit}})",
+    "visibleNodeLimitNote": "그래프에는 최대 {{distantLimit}}개의 노드가 표시됩니다."
   },
   "peerListPanel": {
     "heading": "통신자",
@@ -4342,7 +4364,6 @@
     "noNodes": "아직 토폴로지 데이터가 없습니다. Reticulum 스택을 연결하고 새로 고치세요.",
     "nodeCount": "{{count}} 노드",
     "edgeCount": "{{count}} 링크",
-    "hiddenCount": "{{total}} 노드 중 {{shown}} 표시 중(먼 피어는 숨겨짐)",
     "legendSelf": "이 노드",
     "centerRns": "RNS",
     "showDistantPeers": "멀리 있는 동료 표시",
@@ -4363,7 +4384,10 @@
     "glyphWifi": "Wi-Fi 인터페이스",
     "glyphLora": "LoRa 인터페이스",
     "glyphTcp": "TCP 인터페이스",
-    "glyphSerial": "직렬 통신"
+    "glyphSerial": "직렬 통신",
+    "hiddenCountLimit": "{{total}}개의 노드 중 {{shown}}개 표시 (제한 {{limit}})",
+    "visibleNodeLimitNote": "그래프에는 최대 {{distantLimit}}개의 노드가 표시됩니다.",
+    "rfOnly": "RF 전용"
   },
   "rfHistograms": {
     "title": "RF 신호 분포",

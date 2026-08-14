@@ -10,6 +10,7 @@ import {
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
   MESHCORE_WAITING_MESSAGES_POLL_MS,
   MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
+  MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP,
   MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS,
 } from './timeConstants';
@@ -19,6 +20,10 @@ let lastCompanionTxAt = 0;
 let lastMsgWaitingEventAt = 0;
 /** Bumped when silent bulk is abandoned so a late getWaitingMessages resolve is ignored. */
 let silentBulkAttemptId = 0;
+/** Consecutive silent-bulk getWaitingMessages timeouts on this connection. */
+let silentBulkTimeoutStreak = 0;
+/** Once tripped, skip bulk and go straight to syncNextMessage until reconnect/success. */
+let silentBulkSkipped = false;
 
 /** Record outbound companion RF TX so auto-drains can defer until the radio settles. */
 export function markMeshcoreCompanionTx(): void {
@@ -38,6 +43,7 @@ export function resetMeshcoreWaitingMessagesDrainState(now = 0): void {
   lastCompanionTxAt = now;
   lastMsgWaitingEventAt = now;
   silentBulkAttemptId += 1;
+  resetMeshcoreSilentBulkBreaker();
 }
 
 /** Start a silent bulk getWaitingMessages attempt; return id used by {@link isMeshcoreSilentBulkAttemptCurrent}. */
@@ -114,6 +120,39 @@ export function resetMeshcoreWaitingMessagesDrainSchedule(): void {
     clearTimeout(debounceTimer);
     debounceTimer = null;
   }
+  silentBulkAttemptId += 1;
+  resetMeshcoreSilentBulkBreaker();
+}
+
+/** Skip silent bulk getWaitingMessages after consecutive timeouts on this connection. */
+export function shouldSkipMeshcoreSilentBulkGetWaitingMessages(): boolean {
+  return silentBulkSkipped;
+}
+
+/** Record a successful silent bulk drain (including empty queue). */
+export function noteMeshcoreSilentBulkSuccess(): void {
+  silentBulkTimeoutStreak = 0;
+  silentBulkSkipped = false;
+}
+
+/**
+ * Record a silent-bulk getWaitingMessages timeout.
+ * @returns true when this call opens the circuit (log once).
+ */
+export function noteMeshcoreSilentBulkTimeout(): boolean {
+  silentBulkTimeoutStreak += 1;
+  if (silentBulkTimeoutStreak < MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP) {
+    return false;
+  }
+  if (silentBulkSkipped) return false;
+  silentBulkSkipped = true;
+  return true;
+}
+
+/** Clear the silent-bulk timeout circuit (reconnect / tests). */
+export function resetMeshcoreSilentBulkBreaker(): void {
+  silentBulkTimeoutStreak = 0;
+  silentBulkSkipped = false;
 }
 
 export type MeshcoreCompanionTransport = 'ble' | 'serial' | 'tcp' | null | undefined;

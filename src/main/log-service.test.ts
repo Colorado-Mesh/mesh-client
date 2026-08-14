@@ -376,6 +376,20 @@ describe('isDroppableMeshtasticSdkLogLine', () => {
     ).toBe(true);
   });
 
+  it('drops DEBUG [iMeshDevice] encrypted data packet ignores', async () => {
+    const { isDroppableMeshtasticSdkLogLine } = await import('./log-service');
+    expect(
+      isDroppableMeshtasticSdkLogLine(
+        '20:20:09:810 DEBUG [iMeshDevice] HandleMeshPacket 🔐 Device received encrypted data packet, ignoring.',
+      ),
+    ).toBe(true);
+    expect(
+      isDroppableMeshtasticSdkLogLine(
+        'DEBUG [iMeshDevice] HandleMeshPacket Device received encrypted data packet, ignoring',
+      ),
+    ).toBe(true);
+  });
+
   it('keeps INFO / WARN / ERROR SDK lines', async () => {
     const { isDroppableMeshtasticSdkLogLine } = await import('./log-service');
     expect(
@@ -411,6 +425,34 @@ describe('isDroppableMeshtasticSdkLogLine', () => {
   it('keeps unrelated renderer/main lines', async () => {
     const { isDroppableMeshtasticSdkLogLine } = await import('./log-service');
     expect(isDroppableMeshtasticSdkLogLine('[main] [MeshCore MQTT] PINGREQ sent')).toBe(false);
+  });
+});
+
+describe('isDroppableRendererConsoleNoise', () => {
+  it('drops ResizeObserver loop completed warnings', async () => {
+    const { isDroppableRendererConsoleNoise } = await import('./log-service');
+    expect(
+      isDroppableRendererConsoleNoise(
+        'ResizeObserver loop completed with undelivered notifications.',
+      ),
+    ).toBe(true);
+    expect(isDroppableRendererConsoleNoise('ResizeObserver loop limit exceeded')).toBe(true);
+    expect(
+      isDroppableRendererConsoleNoise(
+        '  [Violation] ResizeObserver loop completed with undelivered notifications.  ',
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps other renderer errors', async () => {
+    const { isDroppableRendererConsoleNoise } = await import('./log-service');
+    expect(isDroppableRendererConsoleNoise('Error sending packet 123')).toBe(false);
+    expect(isDroppableRendererConsoleNoise('ResizeObserver is not defined')).toBe(false);
+    expect(
+      isDroppableRendererConsoleNoise(
+        'Send failed: ResizeObserver loop limit exceeded while laying out',
+      ),
+    ).toBe(false);
   });
 });
 

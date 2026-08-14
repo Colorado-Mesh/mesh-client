@@ -216,6 +216,25 @@ describe('ReticulumSidecarIssueAlertsBlock', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('uses flow-control TX-drop hint for BLE RNodes with flow_control', async () => {
+    const { container } = render(
+      <ReticulumSidecarIssueAlertsBlock
+        alert={baseAlert({
+          txQueueDrops: [{ name: 'RNode 41F4', dropCount: 128 }],
+        })}
+        interfaces={[{ ...bleIface, flow_control: true }]}
+      />,
+    );
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.txQueueDropsHintBleFlowControl'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('connectionPanel.reticulumSidecarIssues.txQueueDropsHintBle'),
+    ).not.toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it('uses per-drop hints for mixed TCP + BLE (log regression)', async () => {
     const { container } = render(
       <ReticulumSidecarIssueAlertsBlock

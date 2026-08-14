@@ -200,6 +200,80 @@ describe('AppPanel: sound notification toggle', () => {
   });
 });
 
+describe('AppPanel: RRC unread all room messages toggle', () => {
+  const defaultProps = {
+    nodeCount: 0,
+    messageCount: 0,
+    channels: [] as { index: number; name: string }[],
+    myNodeNum: null as number | null,
+    onLocationFilterChange: vi.fn(),
+  };
+
+  beforeEach(() => {
+    localStorage.removeItem('mesh-client:appSettings');
+  });
+
+  it('shows the toggle only on the Reticulum protocol tab, checked by default', async () => {
+    const { unmount } = render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} protocol="meshtastic" />
+      </ToastProvider>,
+    );
+    expect(
+      screen.queryByRole('checkbox', { name: /RRC unread for all room messages/i }),
+    ).toBeNull();
+    unmount();
+
+    const { unmount: unmountMeshcore } = render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} protocol="meshcore" />
+      </ToastProvider>,
+    );
+    expect(
+      screen.queryByRole('checkbox', { name: /RRC unread for all room messages/i }),
+    ).toBeNull();
+    unmountMeshcore();
+
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} protocol="reticulum" />
+      </ToastProvider>,
+    );
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /RRC unread for all room messages/i,
+    });
+    expect(checkbox).toBeChecked();
+  });
+
+  it('persists rrcUnreadAllRoomMessages false and remounts unchecked', async () => {
+    const { unmount } = render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} protocol="reticulum" />
+      </ToastProvider>,
+    );
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /RRC unread for all room messages/i,
+    });
+    act(() => {
+      fireEvent.click(checkbox);
+    });
+    await waitFor(() => {
+      const raw = localStorage.getItem('mesh-client:appSettings');
+      expect(raw).toContain('"rrcUnreadAllRoomMessages":false');
+    });
+    unmount();
+
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} protocol="reticulum" />
+      </ToastProvider>,
+    );
+    expect(
+      await screen.findByRole('checkbox', { name: /RRC unread for all room messages/i }),
+    ).not.toBeChecked();
+  });
+});
+
 describe('AppPanel: MeshCore path hash mode persist', () => {
   const defaultProps = {
     nodeCount: 0,

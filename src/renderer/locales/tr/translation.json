@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "GitHub'da Colorado Mesh",
     "footerWebsiteTitle": "Colorado Mesh web sitesi",
-    "loadingApp": "Mesh İstemcisi Yükleniyor"
+    "loadingApp": "Mesh İstemcisi Yükleniyor",
+    "reticulumQueueTooltip": "Yerel RNode \"{{name}}\" için ana bilgisayar TX kuyruğu: telsizi bekleyen paketler (birden fazla RNode olduğunda en kötü doldurma). % 25 'in altında yeşil, % 60' ın altında sarı, % 60 veya daha fazla kırmızı.",
+    "reticulumQueueTooltipGeneric": "En yoğun yerel RNode için ana bilgisayar TX kuyruğu: telsizi bekleyen paketler. % 25 'in altında yeşil, % 60' ın altında sarı, % 60 veya daha fazla kırmızı.",
+    "reticulumTxBuffering": "Giden paketlerin yerel bir RNode'a arabelleğe alınması (ana bilgisayar TX kuyruğu boşaltma).",
+    "reticulumTxBufferingNamed": "\"{{name}}\" üzerinde giden paketler arabelleğe alınıyor (ana bilgisayar TX kuyruğu boşaltılıyor)."
   },
   "appPanel": {
     "failedSaveRetention": "Mesaj saklama ayarı kaydedilemedi.",
@@ -384,7 +388,9 @@
     "themeSaveFailed": "Renk kontrol noktası kaydedilemedi.",
     "themeRestoreFailed": "Renk kontrol noktası geri yüklenemedi.",
     "themeResetFailed": "Renkler sıfırlanamadı.",
-    "messageActionsBarBgVisible": "Arka planı göster"
+    "messageActionsBarBgVisible": "Arka planı göster",
+    "rrcUnreadAllRoomMessages": "Tüm oda mesajları için RRC okunmadı",
+    "rrcUnreadAllRoomMessagesHint": "Açık olduğunda, herhangi bir yeni RRC odası mesajı okunmadı olarak işaretlenir ve bir kanal sesi çalabilir. IRC tarzı uyarılar için kapatın: yalnızca doğrudan mesajlar ve @bahsetmeler."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -945,7 +951,6 @@
     "reticulumStackRunning": "Yığın çalışıyor",
     "reticulumIdentity": {
       "title": "Reticulum kimliği",
-      "hint": "Yukarıdaki yığını başlatın, ardından anımsatıcı bir kimlik oluşturun veya içe aktarın.",
       "startStackFirst": "Kimliği yapılandırmak için Reticulum yığınını başlatın.",
       "displayName": "Herkes tarafından görülecek ad",
       "generate": "Kimlik oluştur",
@@ -955,16 +960,9 @@
       "confirmSaved": "Kurtarma cümlemi kaydettim",
       "hashLabel": "LXMF karması:",
       "failed": "Kimlik kurulumu başarısız oldu",
-      "export": "Yedeklemeyi dışa aktar",
-      "exportPassphrase": "Yedekleme parolası",
-      "exportPassphraseRequired": "Dışa aktarmadan önce bir yedek parola girin.",
-      "importBackupLabel": "Yedek JSON'u içe aktar",
-      "importBackup": "Yedeği içe aktar",
-      "importBackupHint": "Yalnızca görünen adı ve karma meta verilerini geri yükler. Ağ kimliği, özel anahtar dosyanızı veya kurtarma ifadenizi gerektirir.",
       "importPrivateKeyLabel": "Özel anahtarı içe aktar",
       "importPrivateKey": "Özel anahtarı içe aktar",
       "importPrivateKeyFromFile": "Dosyadan",
-      "importPrivateKeyHint": "64 baytlık RNS özel anahtarı: X25519 gizli (32 B) + Ed25519 tohum (32 B), 128 karakterlik hex veya base64 olarak.",
       "replaceIdentitySection": "Kimliği değiştir",
       "replaceIdentityHint": "Yeni bir kimliğin içe aktarılması mevcut anahtarlarınızın yerini alır ve yığını yeniden başlatır.",
       "replaceIdentityConfirmTitle": "Reticulum kimliği değiştirilsin mi?",
@@ -999,7 +997,28 @@
       "slotCreated": "Yeni kimlik oluşturuldu.",
       "slotDeleted": "Kimlik silindi.",
       "slotActionFailed": "Kimlik işlemi başarısız oldu: {{error}}",
-      "slotUnnamed": "İsimsiz"
+      "slotUnnamed": "İsimsiz",
+      "importBackupFromFile": ".rsi dosyasından",
+      "importBackupPin": "Yedek PIN",
+      "importBackupPinRequired": "Bu .rsi yedeği dışa aktarılırken kullanılan PIN KODUNU girin.",
+      "exportRaw": "Reticulum kimlik dosyasını dışa aktar",
+      "exportSaved": "Kimlik dışa aktarımı kaydedildi.",
+      "exportSaveFailed": "Kimlik dışa aktarımı kaydedilemedi.",
+      "exportPassphraseConfirm": "Yedek PIN'İ ONAYLAYIN",
+      "exportPassphraseMismatch": "Yedek PIN'ler eşleşmiyor.",
+      "importBackupTooLarge": "Kimlik yedekleme dosyası çok büyük.",
+      "hint": "Yukarıdaki yığını başlatın, ardından bir BIP -39 kurtarma ifadesi, ham Reticulum kimlik dosyası veya PIN şifreli Ratspeak .rsi yedeği oluşturun veya içe aktarın.",
+      "importBackupLabel": "Ratspeak .rsi yedeklemesini içe aktar",
+      "importBackup": ".rsi yedeklemesini içe aktar",
+      "importBackupHint": "PIN şifreli Ratspeak kimlik yedeklemesi (.rsi). Özel anahtarınızı geri yükler ve kimliği etkinleştirir.",
+      "importPrivateKeyHint": "Hex, base64, base32 veya raw .identity dosyası olarak resmi Reticulum 64 baytlık özel anahtar (X25519 secret + Ed25519 seed).",
+      "export": ".rsi yedeğini dışa aktar",
+      "exportPassphrase": "Yedek PIN",
+      "exportPassphraseRequired": "En az 6 karakterlik bir yedek PIN girin.",
+      "importBackupAria": "Yapıştırılan JSON'dan Ratspeak .rsi yedeklemesini içe aktar",
+      "importBackupFromFileAria": "İçe aktarmak için bir Ratspeak .rsi yedek dosyası seçin",
+      "exportAria": "PIN şifreli Ratspeak .rsi kimlik yedeklemesini dışa aktarın",
+      "exportRawAria": "Şifrelenmemiş ham Reticulum kimlik dosyasını dışa aktar"
     },
     "reticulumInterfaces": {
       "title": "Ara birimler",
@@ -1315,7 +1334,8 @@
       "bleBondRemovedOpenAdmin": "Yönetici Bluetooth'unu aç",
       "txQueueDropsHintBle": "Bu BLE RNode TX kuyruğunu boşaltamaz (bağlantı sıkışmış veya flapping). USB seri veya Wi-Fi (tcp://) tercih edin, veya Sistem Ayarları → Bluetooth'ta Forget sonrası yığını durdurup yeniden eşleştirin.",
       "txQueueDropsHintBleBondStale": "BLE bağı bayat olduğu için TX kuyruğu dolu. Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, ardından Yönetici → Bluetooth'unu (Eşleştirmeyi temizle/Eşleştirmeyi başlat) kullanın veya USB'ye geçin.",
-      "txQueueDropsHintNeutral": "Bu arayüz TX kanalı dolu. Düşmeleri durdurmak için bu arayüzün bağlantı sağlığını kontrol edin (veya devre dışı bırakın)."
+      "txQueueDropsHintNeutral": "Bu arayüz TX kanalı dolu. Düşmeleri durdurmak için bu arayüzün bağlantı sağlığını kontrol edin (veya devre dışı bırakın).",
+      "txQueueDropsHintBleFlowControl": "Radyo meşgulken ana bilgisayar TX kuyruğu geri basıncı (akış kontrolü açık). RF tıkanıklığı altında beklenir — sıkışmış bir bağlantı değil. Giden yükü azaltın veya yayın süresini bekleyin."
     },
     "reticulumSidecarBundledMissing": "Bu kurulumda birlikte verilen Reticulum sidecar eksik. Daha yeni bir sürüme yükseltin veya sorunu bildirin; kaynaktan derleme, paketli kurulumlarda mevcut değildir.",
     "radioMqttRootDivergesWarning": "Radyo MQTT kök konusu {{radioRoot}} 'dır, ancak bu panel {{appPrefix}}' e abone olur. Ülke çapındaki düğüm trafiğini sınırlamak için radyoyu eşleştirin — Konu Önekini güncelleyin ve MQTT'yi yeniden bağlayın.",
@@ -1711,7 +1731,8 @@
         "decommissionedHubEnabled": "Kullanım dışı hub «{{name}}» hâlâ açık — mesh-client her yığın başlangıcında kapatır. Canlı uç noktalar için «Varsayılan omurga bağlantıları ekle» veya omurga dizinini kullanın.",
         "txQueueDropsBle": "Arabirim \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu) — BLE RNode bağlantısı takıldı; USB'yi tercih edin veya yeniden eşleştirin",
         "txQueueDropsBleBondStale": "Arayüz \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu) — BLE bond bayat; İşletim sistemi Bluetooth'unu unutun ve yeniden eşleştirin",
-        "txQueueDropsNeutral": "Arabirim \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu) — arabirimin bağlantısını kontrol edin"
+        "txQueueDropsNeutral": "Arabirim \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu) — arabirimin bağlantısını kontrol edin",
+        "txQueueDropsBleFlowControl": "Arayüz \"{{name}}\" düştü {{count}} giden paketler (ana bilgisayar TX kuyruğu dolu) — akış kontrolü açık; RF tıkanıklığı altında bekleniyor, sıkışmış bir bağlantı değil"
       }
     },
     "routingPort": {
@@ -1893,7 +1914,6 @@
   },
   "identityVault": {
     "title": "Kimlik kasası",
-    "hint": "Kimlik yedeklemenizin yerel bir kopyasını kasa şifresi ile şifreleyin. Korunan kimlik işlemlerine erişmek için kilidini açın.",
     "passcode": "Kasa şifresi",
     "confirmPasscode": "Şifreni onayla",
     "setPasscode": "Kasayı etkinleştir",
@@ -1902,13 +1922,14 @@
     "statusNotConfigured": "Yapılandırılmamış",
     "statusLocked": "Kilitli",
     "statusUnlocked": "Kilidi açıldı",
-    "passcodeTooShort": "Şifre en az 4 karakterden oluşmalıdır.",
     "passcodeMismatch": "Şifreler eşleşmiyor.",
     "setSuccess": "Kasa şifresi kaydedildi.",
     "setFailed": "Kasa şifresi kaydedilemedi.",
     "unlockSuccess": "Kasa açıldı",
     "unlockFailed": "Yanlış şifre veya kasa hatası.",
-    "lockSuccess": "Kasa kilitlendi."
+    "lockSuccess": "Kasa kilitlendi.",
+    "hint": "İsteğe bağlı olarak yerel bir kasa parolasını bir şifreyle (en az 8 karakter) şifreleyin. Bu, taşınabilir bir .rsi veya RAW kimlik dosyasını dışa aktarmanın yerini almaz.",
+    "passcodeTooShort": "Şifre en az 8 karakterden oluşmalıdır."
   },
   "logAnalyzeModal": {
     "title": "Günlük Analizi",
@@ -3242,7 +3263,6 @@
     "me": "Bu düğüm",
     "directLink": "Direkt (0 atlama)",
     "relayLink": "Röle üzerinden (1 atlama)",
-    "hiddenCount": "{{shown}}/{{total}} düğüm gösteriliyor (bağlantısız düğümler gizli)",
     "noConnectedNodes": "Görüntülenecek bağlı eş yok — filtreleri ayarlayın veya ağ trafiğini bekleyin.",
     "meShort": "Sen",
     "relayHub": "Doğrudan röle",
@@ -3253,7 +3273,9 @@
     "maxHopsAll": "Tüm hops",
     "maxHopsOption": "{{count}} hops",
     "resetView": "Görünümü sıfırla",
-    "compactLeafCount": "{{count}} kompakt doğrudan eşler"
+    "compactLeafCount": "{{count}} kompakt doğrudan eşler",
+    "hiddenCountLimit": "{{shown}}/{{total}} düğüm gösteriliyor (sınır {{limit}})",
+    "visibleNodeLimitNote": "Çizgede en fazla {{distantLimit}} düğüm gösterilmektedir."
   },
   "peerListPanel": {
     "heading": "Meslektaşlar",
@@ -4342,7 +4364,6 @@
     "noNodes": "Henüz topoloji verisi yok; Reticulum yığınını bağlayın ve yenileyin.",
     "nodeCount": "{{count}} düğümleri",
     "edgeCount": "{{count}} bağlantılar",
-    "hiddenCount": "{{shown}} / {{total}} düğümleri gösteriliyor (uzak eşler gizlendi)",
     "legendSelf": "Bu düğüm",
     "centerRns": "RN'ler",
     "showDistantPeers": "Uzak akranları göster",
@@ -4363,7 +4384,10 @@
     "glyphWifi": "Wi-Fi arayüzü",
     "glyphLora": "LoRa arayüzü",
     "glyphTcp": "TCP arayüzü",
-    "glyphSerial": "Seri arayüz"
+    "glyphSerial": "Seri arayüz",
+    "hiddenCountLimit": "{{shown}}/{{total}} düğüm gösteriliyor (sınır {{limit}})",
+    "visibleNodeLimitNote": "Çizgede en fazla {{distantLimit}} düğüm gösterilmektedir.",
+    "rfOnly": "Sadece RF"
   },
   "rfHistograms": {
     "title": "RF Sinyal Dağılımı",

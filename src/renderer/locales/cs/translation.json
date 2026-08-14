@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
     "footerWebsiteTitle": "Webové stránky Colorado Mesh",
-    "loadingApp": "Načítání klienta Mesh"
+    "loadingApp": "Načítání klienta Mesh",
+    "reticulumQueueTooltip": "Hostitelská fronta TX pro místní RNode \"{{name}}\": pakety čekající na rádio (nejhorší výplň při více RNode). Zelená pod 25%, oranžová pod 60%, červená 60% a více.",
+    "reticulumQueueTooltipGeneric": "Hostitelská fronta TX pro nejrušnější místní RNode: pakety čekající na rádio. Zelená pod 25%, oranžová pod 60%, červená 60% a více.",
+    "reticulumTxBuffering": "Vyrovnávání odchozích paketů do místního RNode (vypouštění fronty hostitelského TX).",
+    "reticulumTxBufferingNamed": "Vyrovnávání odchozích paketů na \"{{name}}\" (vypouštění fronty hostitele TX)."
   },
   "appPanel": {
     "failedSaveRetention": "Nastavení uchovávání zpráv se nepodařilo uložit.",
@@ -384,7 +388,9 @@
     "themeSaveFailed": "Uložení kontrolního bodu barev se nezdařilo.",
     "themeRestoreFailed": "Obnovení kontrolního bodu barev se nezdařilo.",
     "themeResetFailed": "Obnovení barev se nezdařilo.",
-    "messageActionsBarBgVisible": "Zobrazit pozadí"
+    "messageActionsBarBgVisible": "Zobrazit pozadí",
+    "rrcUnreadAllRoomMessages": "RRC nepřečteno pro všechny zprávy z místnosti",
+    "rrcUnreadAllRoomMessagesHint": "Když je zapnuto, jakákoli nová zpráva RRC místnosti označí nepřečtené a může přehrát zvuk kanálu. Vypnout pro upozornění ve stylu IRC: pouze přímé zprávy a @zmínky."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -946,7 +952,6 @@
     "reticulumStackRunning": "Zásobník spuštěn",
     "reticulumIdentity": {
       "title": "Reticulum identita",
-      "hint": "Spusťte výše uvedený zásobník a poté vytvořte nebo importujte mnemotechnickou identitu.",
       "startStackFirst": "Spusťte zásobník Reticulum pro konfiguraci identity.",
       "displayName": "Zobrazované jméno",
       "generate": "Vygenerovat identitu",
@@ -956,16 +961,9 @@
       "confirmSaved": "Uložil (a) jsem svou obnovovací frázi",
       "hashLabel": "LXMF hash:",
       "failed": "Nastavení identity selhalo",
-      "export": "Exportovat zálohu",
-      "exportPassphrase": "Záložní přístupová fráze",
-      "exportPassphraseRequired": "Před exportem zadejte záložní přístupovou frázi.",
-      "importBackupLabel": "Importujte záložní JSON",
-      "importBackup": "Importujte zálohu",
-      "importBackupHint": "Obnoví pouze zobrazovaný název a metadata hash. Identita sítě vyžaduje váš soubor soukromého klíče nebo frázi pro obnovení.",
       "importPrivateKeyLabel": "Importovat soukromý klíč",
       "importPrivateKey": "Importovat soukromý klíč",
       "importPrivateKeyFromFile": "Ze souboru",
-      "importPrivateKeyHint": "64bajtový soukromý klíč RNS: X25519 tajný (32 B) + Ed25519 seed (32 B) jako 128znakový hex nebo base64.",
       "replaceIdentitySection": "Nahradit identitu",
       "replaceIdentityHint": "Import nové identity nahradí vaše aktuální klíče a restartuje zásobník.",
       "replaceIdentityConfirmTitle": "Nahradit identitu Reticulum?",
@@ -1000,7 +998,28 @@
       "slotCreated": "Byla vytvořena nová identita.",
       "slotDeleted": "Identita smazána.",
       "slotActionFailed": "Akce identity se nezdařila: {{error}}",
-      "slotUnnamed": "Nepojmenovaná"
+      "slotUnnamed": "Nepojmenovaná",
+      "importBackupFromFile": "Ze souboru .rsi",
+      "importBackupPin": "Záložní PIN",
+      "importBackupPinRequired": "Zadejte PIN použitý při exportu této zálohy .rsi.",
+      "exportRaw": "Exportovat soubor identity Reticulum",
+      "exportSaved": "Export identity uložen.",
+      "exportSaveFailed": "Export identity se nepodařilo uložit.",
+      "exportPassphraseConfirm": "Potvrď záložní PIN",
+      "exportPassphraseMismatch": "Záložní PINy se neshodují.",
+      "importBackupTooLarge": "Soubor zálohy identity je příliš velký.",
+      "hint": "Spusťte výše uvedený zásobník a poté vytvořte nebo importujte frázi pro obnovení BIP-39, surový soubor identity Reticulum nebo zálohu Ratspeak .rsi šifrovanou kódem PIN.",
+      "importBackupLabel": "Importovat zálohu Ratspeak .rsi",
+      "importBackup": "Importovat zálohu .rsi",
+      "importBackupHint": "PIN-encrypted Ratspeak identity backup (.rsi). Obnoví váš soukromý klíč a aktivuje identitu.",
+      "importPrivateKeyHint": "Oficiální 64bajtový soukromý klíč Reticulum (X25519 SECRET + Ed25519 Seed) jako soubor HEX, base64, base32 nebo RAW .identity.",
+      "export": "Exportovat zálohu .rsi",
+      "exportPassphrase": "Záložní PIN",
+      "exportPassphraseRequired": "Zadejte záložní PIN nejméně 6 znaků.",
+      "importBackupAria": "Importovat zálohu Ratspeak .rsi z vloženého JSON",
+      "importBackupFromFileAria": "Vyberte záložní soubor Ratspeak .rsi, který chcete importovat",
+      "exportAria": "Exportovat zálohu identity Ratspeak .rsi šifrovanou pomocí kódu PIN",
+      "exportRawAria": "Exportovat nešifrovaný soubor identity RAW Reticulum"
     },
     "reticulumInterfaces": {
       "title": "Rozhraní",
@@ -1316,7 +1335,8 @@
       "bleBondRemovedOpenAdmin": "Otevřít Bluetooth správce",
       "txQueueDropsHintBle": "Tento ble RNode nemůže vypustit frontu TX (uvíznutý odkaz nebo mávání). Preferujte USB sériové nebo Wi-Fi (tcp://), nebo Zastavte zásobník a znovu spárujte po Zapomenout v Nastavení systému → Bluetooth.",
       "txQueueDropsHintBleBondStale": "Fronta TX je plná, protože vazba ble je zastaralá. Zapomeňte na tento RNode v Systémovém nastavení → Bluetooth a poté použijte Správce → Bluetooth (Vymazat spárování / Spustit párování) nebo přepněte na USB.",
-      "txQueueDropsHintNeutral": "Tento kanál TX rozhraní je plný. Chcete-li zastavit kapky, zkontrolujte stav odkazu rozhraní (nebo jej zakažte)."
+      "txQueueDropsHintNeutral": "Tento kanál TX rozhraní je plný. Chcete-li zastavit kapky, zkontrolujte stav odkazu rozhraní (nebo jej zakažte).",
+      "txQueueDropsHintBleFlowControl": "Protitlak ve frontě TX hostitele, když je rádio zaneprázdněno (řízení průtoku zapnuto). Očekává se při přetížení RF — ne zaseknutý odkaz. Snižte odchozí zatížení nebo počkejte na vysílání."
     },
     "reticulumSidecarBundledMissing": "V této instalaci chybí přibalený Reticulum sidecar. Upgradujte na novější verzi nebo nahlaste problém – sestavení ze zdroje není v balených instalacích k dispozici.",
     "radioMqttRootDivergesWarning": "Kořenové téma rádia MQTT je {{radioRoot}}, ale tento panel odebírá {{appPrefix}}. Přizpůsobením rádia omezíte celostátní provoz uzlů — aktualizujte předponu tématu a znovu připojte MQTT.",
@@ -1713,7 +1733,8 @@
         "decommissionedHubEnabled": "Vyřazený hub „{{name}}“ je stále zapnutý — mesh-client ho při každém startu zásobníku vypne. Použijte «Přidat výchozí páteř» nebo adresář páteří pro živé koncové body.",
         "txQueueDropsBle": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta TX je plná) — ble RNode link uvízl; raději USB nebo znovu spárovat",
         "txQueueDropsBleBondStale": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta TX je plná) — zastaralá vazba ble; Zapomeňte v OS Bluetooth a znovu spárujte",
-        "txQueueDropsNeutral": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta TX je plná) — zkontrolujte odkaz rozhraní"
+        "txQueueDropsNeutral": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta TX je plná) — zkontrolujte odkaz rozhraní",
+        "txQueueDropsBleFlowControl": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta hostitele TX je plná) — řízení toku zapnuto; očekáváno v RF přetížení, nikoli uvízlé spojení"
       }
     },
     "routingPort": {
@@ -1895,7 +1916,6 @@
   },
   "identityVault": {
     "title": "Trezor identity",
-    "hint": "Zašifrujte místní kopii zálohy své identity pomocí hesla do trezoru. Odemkněte pro přístup k chráněným operacím identity.",
     "passcode": "Heslo trezoru",
     "confirmPasscode": "Potvrdit přístupový kód",
     "setPasscode": "Povolit trezor",
@@ -1904,13 +1924,14 @@
     "statusNotConfigured": "Nenastaveno",
     "statusLocked": "Uzamčeno",
     "statusUnlocked": "Odemčeno",
-    "passcodeTooShort": "Heslo musí mít alespoň 4 znaky.",
     "passcodeMismatch": "Hesla se neshodují.",
     "setSuccess": "Heslo trezoru uloženo.",
     "setFailed": "Heslo trezoru se nepodařilo uložit.",
     "unlockSuccess": "Trezor odemčen.",
     "unlockFailed": "Nesprávný přístupový kód nebo chyba trezoru.",
-    "lockSuccess": "Trezor je uzamčen."
+    "lockSuccess": "Trezor je uzamčen.",
+    "hint": "Volitelně zašifrujte tajemství místního trezoru pomocí přístupového kódu (minimálně 8 znaků). Toto nenahrazuje export přenosného souboru identity .rsi nebo RAW.",
+    "passcodeTooShort": "Heslo musí mít alespoň 8 znaků."
   },
   "logAnalyzeModal": {
     "title": "Analýza protokolu",
@@ -3244,7 +3265,6 @@
     "me": "Tento uzel",
     "directLink": "Přímý (0 skoků)",
     "relayLink": "Přes relé (1 hop)",
-    "hiddenCount": "Zobrazeno {{shown}} z {{total}} uzlů (skryté nespojené uzly)",
     "noConnectedNodes": "Žádné připojené peery k zobrazení — upravte filtry nebo počkejte na síťový provoz.",
     "meShort": "Vy",
     "relayHub": "Přímé relé",
@@ -3255,7 +3275,9 @@
     "maxHopsAll": "Všechny hops",
     "maxHopsOption": "{{count}} hops",
     "resetView": "Přenastavit pohled",
-    "compactLeafCount": "{{count}} kompaktní přímé protějšky"
+    "compactLeafCount": "{{count}} kompaktní přímé protějšky",
+    "hiddenCountLimit": "Zobrazeno {{shown}} z {{total}} uzlů (limit {{limit}})",
+    "visibleNodeLimitNote": "Graf zobrazuje nejvýše {{distantLimit}} uzlů."
   },
   "peerListPanel": {
     "heading": "Vazby",
@@ -4344,7 +4366,6 @@
     "noNodes": "Zatím žádná data topologie – připojte zásobník Reticulum a obnovte jej.",
     "nodeCount": "{{count}} uzly",
     "edgeCount": "{{count}} odkazy",
-    "hiddenCount": "Zobrazeno {{shown}} z {{total}} uzlů (vzdálení kolegové skryti)",
     "legendSelf": "Tento uzel",
     "centerRns": "RNS",
     "showDistantPeers": "Zobrazit vzdálené kolegy",
@@ -4365,7 +4386,10 @@
     "glyphWifi": "Rozhraní Wi-Fi:",
     "glyphLora": "Rozhraní LoRa",
     "glyphTcp": "Rozhraní TCP",
-    "glyphSerial": "Sériové rozhraní"
+    "glyphSerial": "Sériové rozhraní",
+    "hiddenCountLimit": "Zobrazeno {{shown}} z {{total}} uzlů (limit {{limit}})",
+    "visibleNodeLimitNote": "Graf zobrazuje nejvýše {{distantLimit}} uzlů.",
+    "rfOnly": "Pouze RF"
   },
   "rfHistograms": {
     "title": "Distribuce vysokofrekvenčního signálu",

@@ -29,6 +29,16 @@ describe('Noble BLE disconnect handling (source contract)', () => {
     );
   });
 
+  it('resolves meshtastic:tcp-write with no-socket instead of rejecting when the socket is gone', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /meshtastic:tcp-write[\s\S]{0,800}console\.debug\('\[IPC\] meshtastic:tcp-write: no active socket'\)[\s\S]{0,80}return 'no-socket'/,
+    );
+    expect(INDEX_SOURCE).toContain('meshtasticTcpWriteErrorIsNoSocket');
+    expect(INDEX_SOURCE).toMatch(/sock\.destroyed \|\| sock\.writableEnded/);
+    expect(PRELOAD_SOURCE).toMatch(/result === 'no-socket'/);
+    expect(PRELOAD_SOURCE).toMatch(/throw new Error\('meshtastic:tcp-write: no active socket'\)/);
+  });
+
   it('returns scan_busy result instead of throwing when Reticulum holds the scan mutex', () => {
     expect(INDEX_SOURCE).toContain('BleScanBusyError');
     expect(INDEX_SOURCE).toMatch(
@@ -335,6 +345,10 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(RETICULUM_HANDLERS_SOURCE).toContain(
       "ipcMain.handle('reticulum:showIdentityImportDialog'",
     );
+    expect(RETICULUM_HANDLERS_SOURCE).toContain(
+      "ipcMain.handle('reticulum:showIdentityBackupImportDialog'",
+    );
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("'reticulum:saveIdentityExportDialog'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain(
       "ipcMain.handle('reticulum:showNomadContentSourceDialog'",
     );

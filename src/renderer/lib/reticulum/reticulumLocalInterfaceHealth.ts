@@ -22,6 +22,8 @@ export interface ReticulumLocalInterfaceInput {
   port?: number | null;
   /** rnsd interface mode (`full`, `boundary`, `access_point`, …). */
   mode?: string | null;
+  /** RF RNode/KISS host→device ready-gate (`CMD_READY`); does not enlarge the host TX channel. */
+  flow_control?: boolean | null;
 }
 
 export interface ReticulumLocalInterfaceAlert {
@@ -114,16 +116,21 @@ export function reticulumLocalOfflineDisplayKind(
 }
 
 /** Transport/bond-aware remediation kind for sidecar TX-queue-full alerts. */
-export type ReticulumTxDropHintKind = 'bleBondStale' | 'ble' | 'tcp' | 'neutral';
+export type ReticulumTxDropHintKind = 'bleBondStale' | 'bleFlowControl' | 'ble' | 'tcp' | 'neutral';
 
 /**
  * Classify a TX-drop interface name for Connection/Diagnostics hints.
  * `bleBondRemoved` wins even when the row is missing or mis-typed.
+ * BLE + `flow_control === true` is congestion backpressure, not a stuck link.
  */
 export function resolveReticulumTxDropHintKind(
   name: string,
   interfaces:
-    readonly Pick<ReticulumLocalInterfaceInput, 'name' | 'type' | 'serial_port'>[] | undefined,
+    | readonly Pick<
+        ReticulumLocalInterfaceInput,
+        'name' | 'type' | 'serial_port' | 'flow_control'
+      >[]
+    | undefined,
   bleBondRemovedNames?: readonly string[],
 ): ReticulumTxDropHintKind {
   if (bleBondRemovedNames?.includes(name)) {
@@ -134,7 +141,7 @@ export function resolveReticulumTxDropHintKind(
     return 'neutral';
   }
   if (isReticulumBleRnodeSerialPort(row.serial_port)) {
-    return 'ble';
+    return row.flow_control === true ? 'bleFlowControl' : 'ble';
   }
   if (isReticulumRemoteInterfaceType(row.type)) {
     return 'tcp';
@@ -149,10 +156,13 @@ export function reticulumTxDropConnectionHintKey(
   | 'txQueueDropsHint'
   | 'txQueueDropsHintBle'
   | 'txQueueDropsHintBleBondStale'
+  | 'txQueueDropsHintBleFlowControl'
   | 'txQueueDropsHintNeutral' {
   switch (kind) {
     case 'bleBondStale':
       return 'txQueueDropsHintBleBondStale';
+    case 'bleFlowControl':
+      return 'txQueueDropsHintBleFlowControl';
     case 'ble':
       return 'txQueueDropsHintBle';
     case 'tcp':
@@ -165,10 +175,17 @@ export function reticulumTxDropConnectionHintKey(
 /** Diagnostics `diagnosticsPanel.reticulum.runtime.*` cause key suffix for a TX-drop kind. */
 export function reticulumTxDropDiagnosticsCauseKey(
   kind: ReticulumTxDropHintKind,
-): 'txQueueDrops' | 'txQueueDropsBle' | 'txQueueDropsBleBondStale' | 'txQueueDropsNeutral' {
+):
+  | 'txQueueDrops'
+  | 'txQueueDropsBle'
+  | 'txQueueDropsBleBondStale'
+  | 'txQueueDropsBleFlowControl'
+  | 'txQueueDropsNeutral' {
   switch (kind) {
     case 'bleBondStale':
       return 'txQueueDropsBleBondStale';
+    case 'bleFlowControl':
+      return 'txQueueDropsBleFlowControl';
     case 'ble':
       return 'txQueueDropsBle';
     case 'tcp':

@@ -13,6 +13,10 @@ import type { SerialPort } from '@/shared/electron-api.types';
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
 import { MESHCORE_IDENTITY_STORAGE_KEY } from '../lib/letsMeshJwt';
+import {
+  initNobleBleDualRadioStartup,
+  resetNobleBleConnectMutexForTests,
+} from '../lib/meshcoreDualNobleBleInit';
 import type { DeviceState } from '../lib/types';
 import { mockConsoleWarn, withMockedConsoleWarn } from '../lib/vitestConsoleMock';
 import ConnectionPanel from './ConnectionPanel';
@@ -1283,6 +1287,26 @@ describe('ConnectionPanel exit actions', () => {
     expect(screen.getByRole('button', { name: /Disconnect & Quit/i })).toBeInTheDocument();
   });
 
+  it('shows auto-reconnect banner while status is reconnecting', () => {
+    render(
+      <ConnectionPanel
+        state={{
+          ...disconnectedState,
+          status: 'reconnecting',
+          connectionType: 'ble',
+          connectionLoss: true,
+          reconnectAttempt: 2,
+        }}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+    expect(screen.getByText(/Auto-reconnect in progress/i)).toBeInTheDocument();
+  });
+
   it('shows Disconnect & Quit while RF connect is in progress', async () => {
     const user = userEvent.setup();
     let resolveConnect!: () => void;
@@ -1458,6 +1482,70 @@ describe('ConnectionPanel exit actions', () => {
       });
     } finally {
       localStorage.removeItem(lastConnKey);
+    }
+  });
+});
+
+describe('ConnectionPanel auto-reconnect banner leftover', () => {
+  afterEach(() => {
+    localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+    localStorage.removeItem('mesh-client:protocol');
+    resetNobleBleConnectMutexForTests();
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+  });
+
+  function seedDualRadioPrimaryMeshtastic(): ReturnType<typeof mockMacNoblePlatform> {
+    const platform = mockMacNoblePlatform();
+    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'mt-peripheral');
+    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'mc-peripheral');
+    localStorage.setItem('mesh-client:protocol', 'meshtastic');
+    initNobleBleDualRadioStartup();
+    return platform;
+  }
+
+  it.each(['meshcore', 'meshtastic'] as const)(
+    'does not show leftover auto-reconnect banner on configured %s radio',
+    (protocol) => {
+      const { restore } = seedDualRadioPrimaryMeshtastic();
+      try {
+        render(
+          <ConnectionPanel
+            state={{
+              ...configuredState,
+              connectionType: 'ble',
+            }}
+            onConnect={vi.fn().mockResolvedValue(undefined)}
+            onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+            onDisconnect={vi.fn().mockResolvedValue(undefined)}
+            mqttStatus="connected"
+            protocol={protocol}
+          />,
+        );
+        expect(screen.queryByText(/Auto-reconnect in progress/i)).not.toBeInTheDocument();
+        expect(screen.getByText('Radio Connection')).toBeInTheDocument();
+      } finally {
+        restore();
+      }
+    },
+  );
+
+  it('shows auto-reconnect banner on disconnected secondary while primary auto-connect is in flight', () => {
+    const { restore } = seedDualRadioPrimaryMeshtastic();
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+        />,
+      );
+      expect(screen.getAllByText(/Auto-reconnect in progress/i).length).toBeGreaterThan(0);
+    } finally {
+      restore();
     }
   });
 });

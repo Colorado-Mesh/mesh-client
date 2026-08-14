@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
     "footerWebsiteTitle": "Sitio web de Colorado Mesh",
-    "loadingApp": "Cargando cliente de malla"
+    "loadingApp": "Cargando cliente de malla",
+    "reticulumQueueTooltip": "Cola de espera de TX de host para el RNode local \"{{name}}\": paquetes en espera de la radio (peor llenado cuando hay varios RNodes). Verde por debajo del 25%, ámbar por debajo del 60%, rojo al 60% o más.",
+    "reticulumQueueTooltipGeneric": "Cola de TX de host para el RNode local más ocupado: paquetes que esperan la radio. Verde por debajo del 25%, ámbar por debajo del 60%, rojo al 60% o más.",
+    "reticulumTxBuffering": "Almacenar en búfer los paquetes salientes en un RNode local (agotamiento de la cola de TX del host).",
+    "reticulumTxBufferingNamed": "Almacenar en búfer los paquetes salientes en \"{{name}}\" (agotamiento de la cola de TX del host)."
   },
   "appPanel": {
     "failedSaveRetention": "Error al guardar la configuración de retención de mensajes.",
@@ -384,7 +388,9 @@
     "themeSaveFailed": "Error al guardar el punto de verificación de color.",
     "themeRestoreFailed": "Error al restaurar el punto de verificación de color.",
     "themeResetFailed": "Error al restablecer los colores.",
-    "messageActionsBarBgVisible": "Mostrar fondo"
+    "messageActionsBarBgVisible": "Mostrar fondo",
+    "rrcUnreadAllRoomMessages": "RRC no leído para todos los mensajes de la habitación",
+    "rrcUnreadAllRoomMessagesHint": "Cuando está activado, cualquier mensaje nuevo de la sala RRC marca como no leído y puede reproducir un sonido de canal. Desactivar para alertas estilo IRC: solo mensajes directos y @menciones."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -945,7 +951,6 @@
     "reticulumStackRunning": "Pila en ejecución",
     "reticulumIdentity": {
       "title": "Identidad Reticulum",
-      "hint": "Inicie la pila anterior, luego cree o importe una identidad mnemotécnica.",
       "startStackFirst": "Inicie la pila Reticulum para configurar la identidad.",
       "displayName": "Nombre de la pantalla",
       "generate": "Generar identidad",
@@ -955,16 +960,9 @@
       "confirmSaved": "He guardado mi frase de recuperación",
       "hashLabel": "LXMF hash:",
       "failed": "Error en la configuración de la identidad",
-      "export": "Exportar copia de seguridad",
-      "exportPassphrase": "Frase de contraseña de copia de seguridad",
-      "exportPassphraseRequired": "Introduzca una contraseña de copia de seguridad antes de exportar.",
-      "importBackupLabel": "Importar copia de seguridad JSON",
-      "importBackup": "Importar copia de seguridad",
-      "importBackupHint": "Restaura solo el nombre para mostrar y los metadatos hash. La identidad de la red requiere su archivo de clave privada o frase de recuperación.",
       "importPrivateKeyLabel": "Importar clave privada",
       "importPrivateKey": "Importar clave privada",
       "importPrivateKeyFromFile": "Desde archivo",
-      "importPrivateKeyHint": "Clave privada RNS de 64 bytes: secreto X25519 (32 B) + semilla Ed25519 (32 B) como hexadecimal de 128 caracteres o base64.",
       "replaceIdentitySection": "Reemplazar identidad",
       "replaceIdentityHint": "Importar una nueva identidad reemplaza sus claves actuales y reinicia la pila.",
       "replaceIdentityConfirmTitle": "¿Reemplazar la identidad de Reticulum?",
@@ -999,7 +997,28 @@
       "slotCreated": "Nueva identidad creada.",
       "slotDeleted": "Identidad eliminada.",
       "slotActionFailed": "Error en la acción de identidad: {{error}}",
-      "slotUnnamed": "Sin nombre"
+      "slotUnnamed": "Sin nombre",
+      "importBackupFromFile": "De archivo .rsi",
+      "importBackupPin": "PIN de copia de SEGURIDAD",
+      "importBackupPinRequired": "Introduzca el PIN utilizado cuando se exportó esta copia de seguridad .rsi.",
+      "exportRaw": "Exportar archivo de identidad de Reticulum",
+      "exportSaved": "Exportación de identidad guardada.",
+      "exportSaveFailed": "No se ha podido guardar la exportación de identidad.",
+      "exportPassphraseConfirm": "Confirmar PIN de copia DE",
+      "exportPassphraseMismatch": "Los PIN de copia de seguridad no coinciden.",
+      "importBackupTooLarge": "El archivo de copia de seguridad de identidad es demasiado grande.",
+      "hint": "Inicie la pila anterior, luego cree o importe una frase de recuperación BIP-39, un archivo de identidad Reticulum sin formato o una copia de seguridad Ratspeak .rsi cifrada con PIN.",
+      "importBackupLabel": "Importar copia de seguridad de Ratspeak .rsi",
+      "importBackup": "Importar copia de seguridad .rsi",
+      "importBackupHint": "Copia de seguridad de identidad de Ratspeak cifrada con PIN (.rsi). Restaura tu clave privada y activa la identidad.",
+      "importPrivateKeyHint": "Reticulum oficial clave privada de 64 bytes (X25519 secreto + semilla Ed25519) como hexadecimal, base64, base32 o un archivo .identity sin procesar.",
+      "export": "Exportar copia de seguridad .rsi",
+      "exportPassphrase": "PIN de copia de SEGURIDAD",
+      "exportPassphraseRequired": "Introduzca un PIN de copia de seguridad de al menos 6 caracteres.",
+      "importBackupAria": "Importar copia de seguridad de Ratspeak .rsi desde JSON pegado",
+      "importBackupFromFileAria": "Elija un archivo de copia de seguridad .rsi de Ratspeak para importar",
+      "exportAria": "Exportar copia de seguridad de identidad Ratspeak .rsi cifrada con PIN",
+      "exportRawAria": "Exportar archivo de identidad de Reticulum sin cifrar"
     },
     "reticulumInterfaces": {
       "title": "Interfaces",
@@ -1315,7 +1334,8 @@
       "bleBondRemovedOpenAdmin": "Abrir Admin Bluetooth",
       "txQueueDropsHintBle": "Este RNode ble no puede drenar su cola TX (enlace atascado o aleteando). Prefiera USB serie o Wi-Fi (tcp://), o Detenga la pila y vuelva a emparejar después de Olvidar en la configuración del sistema → Bluetooth.",
       "txQueueDropsHintBleBondStale": "La cola TX está llena porque el vínculo BLE está obsoleto. Olvide este RNode en Configuración del sistema → Bluetooth y use Admin → Bluetooth (Borrar emparejados / Iniciar emparejamiento) o cambie a USB.",
-      "txQueueDropsHintNeutral": "Este canal TX de interfaz está lleno. Compruebe el estado del enlace de esa interfaz (o desactívelo) para detener las caídas."
+      "txQueueDropsHintNeutral": "Este canal TX de interfaz está lleno. Compruebe el estado del enlace de esa interfaz (o desactívelo) para detener las caídas.",
+      "txQueueDropsHintBleFlowControl": "Contrapresión de la cola de TX del host mientras la radio está ocupada (control de flujo activado). Se espera bajo congestión de RF, no un enlace atascado. Reduzca la carga saliente o espere el tiempo de aire."
     },
     "reticulumSidecarBundledMissing": "A esta instalación le falta el sidecar Reticulum incluido. Actualice a una versión más reciente o informe el problema: la compilación desde el código fuente no está disponible en instalaciones empaquetadas.",
     "radioMqttRootDivergesWarning": "El tema raíz de MQTT de radio es {{radioRoot}}, pero este panel se suscribe a {{appPrefix}}. Haga coincidir la radio para limitar el tráfico de nodos a nivel nacional: actualice el prefijo del tema y vuelva a conectar MQTT.",
@@ -1711,7 +1731,8 @@
         "decommissionedHubEnabled": "El hub fuera de servicio «{{name}}» sigue habilitado: mesh-client lo desactiva en cada arranque del stack. Use «Añadir backbones predeterminados» o el directorio de backbones para endpoints activos.",
         "txQueueDropsBle": "Interfaz \"{{name}}\" eliminada {{count}} paquetes salientes (cola TX llena) — Enlace ble RNode bloqueado; prefiera USB o volver a emparejar",
         "txQueueDropsBleBondStale": "Interfaz \"{{name}}\" eliminada {{count}} paquetes salientes (cola TX llena) — enlace ble obsoleto; Olvídese de Bluetooth del sistema operativo y vuelva a emparejar",
-        "txQueueDropsNeutral": "La interfaz \"{{name}}\" ha eliminado {{count}} paquetes salientes (cola TX llena): comprueba el enlace de esa interfaz"
+        "txQueueDropsNeutral": "La interfaz \"{{name}}\" ha eliminado {{count}} paquetes salientes (cola TX llena): comprueba el enlace de esa interfaz",
+        "txQueueDropsBleFlowControl": "La interfaz \"{{name}}\" eliminó {{count}} paquetes salientes (la cola de TX del host está llena) — control de flujo activado; se espera bajo congestión de RF, no un enlace atascado"
       }
     },
     "routingPort": {
@@ -1893,7 +1914,6 @@
   },
   "identityVault": {
     "title": "Repositorio de Identidades",
-    "hint": "Cifre una copia local de su copia de seguridad de identidad con un código de acceso de bóveda. Desbloquear para acceder a operaciones de identidad protegidas.",
     "passcode": "Código de acceso a la bóveda",
     "confirmPasscode": "Confirma tu código de acceso",
     "setPasscode": "Habilitar entorno de seguridad",
@@ -1902,13 +1922,14 @@
     "statusNotConfigured": "Sin configurar",
     "statusLocked": "Bloqueado",
     "statusUnlocked": "Desbloqueado",
-    "passcodeTooShort": "debe tener al menos 4 caracteres",
     "passcodeMismatch": "Los códigos de acceso no coinciden.",
     "setSuccess": "Código de acceso de bóveda guardado.",
     "setFailed": "No se ha podido guardar el código de acceso de la bóveda.",
     "unlockSuccess": "Bóveda desbloqueada.",
     "unlockFailed": "Código de acceso incorrecto o error de bóveda.",
-    "lockSuccess": "Bóveda bloqueada."
+    "lockSuccess": "Bóveda bloqueada.",
+    "hint": "Opcionalmente, encripte un secreto de bóveda local con un código de acceso (mínimo 8 caracteres). Esto no reemplaza la exportación de un archivo de identidad .rsi o RAW portátil.",
+    "passcodeTooShort": "Debe contener al menos 8 caracteres"
   },
   "logAnalyzeModal": {
     "title": "Análisis de registros",
@@ -3242,7 +3263,6 @@
     "me": "Este nodo",
     "directLink": "Directo (0 saltos)",
     "relayLink": "A través del relé (1 salto)",
-    "hiddenCount": "Mostrando {{shown}} de {{total}} nodos (nodos no conectados ocultos)",
     "noConnectedNodes": "No hay pares conectados para mostrar: ajuste los filtros o espere el tráfico de red.",
     "meShort": "Tú",
     "relayHub": "Relé directo",
@@ -3253,7 +3273,9 @@
     "maxHopsAll": "Todos los saltos",
     "maxHopsOption": "{{count}} saltos",
     "resetView": "Reset view",
-    "compactLeafCount": "{{count}} compañeros directos compactos"
+    "compactLeafCount": "{{count}} compañeros directos compactos",
+    "hiddenCountLimit": "Mostrando {{shown}} de {{total}} nodos (límite {{limit}})",
+    "visibleNodeLimitNote": "El grafo muestra como máximo {{distantLimit}} nodos."
   },
   "peerListPanel": {
     "heading": "Pares",
@@ -4342,7 +4364,6 @@
     "noNodes": "Aún no hay datos de topología: conecte la pila de Reticulum y actualice.",
     "nodeCount": "{{count}} nodos",
     "edgeCount": "Enlaces {{count}}",
-    "hiddenCount": "Mostrando {{shown}} de {{total}} nodos (pares distantes ocultos)",
     "legendSelf": "este nodo",
     "showDistantPeers": "Mostrar compañeros distantes",
     "maxHopsFilter": "Máx. saltos",
@@ -4363,7 +4384,10 @@
     "glyphWifi": "Interfaz Wi-Fi",
     "glyphLora": "Interfaz LoRa",
     "glyphTcp": "Interfaz TCP",
-    "glyphSerial": "Interfaz en serie"
+    "glyphSerial": "Interfaz en serie",
+    "hiddenCountLimit": "Mostrando {{shown}} de {{total}} nodos (límite {{limit}})",
+    "visibleNodeLimitNote": "El grafo muestra como máximo {{distantLimit}} nodos.",
+    "rfOnly": "Solo RF"
   },
   "rfHistograms": {
     "title": "Distribución de señal de RF",

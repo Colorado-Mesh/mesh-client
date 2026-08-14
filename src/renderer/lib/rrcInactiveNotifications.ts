@@ -1,5 +1,5 @@
 import type { ChatNotificationType } from '@/renderer/lib/chatNotifications';
-import { classifyRrcNotificationType, isRrcRoomMuted } from '@/renderer/lib/rrcMention';
+import { isRrcRoomMuted, resolveRrcAlertType, type RrcNotifyMode } from '@/renderer/lib/rrcMention';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
 export interface ResolveInactiveRrcNotificationTypeArgs {
@@ -9,6 +9,8 @@ export interface ResolveInactiveRrcNotificationTypeArgs {
   mutedViews: ReadonlySet<string>;
   notifGloballyMuted: boolean;
   localIdentityHash: string | null;
+  /** App toggle (or effective per-room mode): all chat lines vs IRC-style mention/DM. */
+  notifyMode: RrcNotifyMode;
 }
 
 function isSelfRrcMessage(
@@ -24,7 +26,7 @@ function isSelfRrcMessage(
 
 /**
  * Pick notification sound type for RRC traffic while the RRC panel is inactive or hidden.
- * Priority: dm (whisper / @nick) over channel.
+ * Priority: dm (whisper / @nick) over channel. `notifyMode: 'mentions'` drops channel.
  */
 export function resolveInactiveRrcNotificationType(
   args: ResolveInactiveRrcNotificationTypeArgs,
@@ -34,11 +36,16 @@ export function resolveInactiveRrcNotificationType(
   let best: ChatNotificationType | null = null;
   for (const msg of args.newMessages) {
     if (isSelfRrcMessage(msg, args.localIdentityHash, args.nickname)) continue;
-    if (args.hubDestHash) {
-      const room = msg.room.trim() || '[hub]';
-      if (isRrcRoomMuted(args.hubDestHash, room, args.mutedViews)) continue;
-    }
-    const type = classifyRrcNotificationType(msg, args.nickname);
+    const room = msg.room.trim() || '[hub]';
+    const muted = args.hubDestHash
+      ? isRrcRoomMuted(args.hubDestHash, room, args.mutedViews)
+      : false;
+    const type = resolveRrcAlertType({
+      msg,
+      nickname: args.nickname,
+      notifyMode: args.notifyMode,
+      muted,
+    });
     if (!type) continue;
     if (type === 'dm') return 'dm';
     best = best ?? type;

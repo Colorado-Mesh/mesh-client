@@ -86,6 +86,35 @@ sync_metainfo_release() {
   node scripts/prepend-metainfo-release.mjs "$version" "$today"
 }
 
+# Non-interactive confirmations: --yes / -y or MESH_CLIENT_RELEASE_YES=1|true.
+confirm_or_yes() {
+  local prompt="$1"
+  if [ "${RELEASE_YES}" = true ]; then
+    print_warning "Non-interactive (--yes): ${prompt} → yes"
+    return 0
+  fi
+  echo ""
+  echo -e "${BOLD}${prompt}${NC} [y/N]"
+  local reply
+  read -r reply
+  if [ "$reply" != "y" ] && [ "$reply" != "Y" ]; then
+    return 1
+  fi
+  return 0
+}
+
+print_release_usage() {
+  echo "Usage: pnpm run release [patch|minor|major|x.x.x|--auto|--finish] [--yes] [--skip-dep-update]"
+  echo "       pnpm run release               # Auto-detect from commits"
+  echo "       pnpm run release --auto         # Explicit auto-detect"
+  echo "       pnpm run release minor          # Force minor release"
+  echo "       pnpm run release 2.0.0          # Force specific version"
+  echo "       pnpm run release --finish       # Complete mid-release (no re-bump)"
+  echo "       pnpm run release -- --yes       # Skip confirmation prompts ( -- so pnpm keeps -y )"
+  echo "       pnpm run release -- --skip-dep-update  # Skip pnpm update/dedupe"
+  echo "       MESH_CLIENT_RELEASE_YES=1 pnpm run release   # Same as --yes"
+}
+
 commit_tag_and_push_release() {
   local new_version="$1"
   git add package.json pnpm-lock.yaml org.coloradomesh.MeshClient.yml
@@ -145,10 +174,7 @@ finish_pending_release() {
 
   generate_release_notes "$last_tag" "$new_version"
 
-  echo ""
-  echo -e "${BOLD}package.json is already at $clean_version. Commit, tag $new_version, and push?${NC} [y/N]"
-  read -r FINAL_CONFIRM
-  if [ "$FINAL_CONFIRM" != "y" ] && [ "$FINAL_CONFIRM" != "Y" ]; then
+  if ! confirm_or_yes "package.json is already at $clean_version. Commit, tag $new_version, and push?"; then
     print_warning "Release finish cancelled."
     exit 0
   fi
@@ -205,8 +231,27 @@ EOF
 
   echo ""
   echo "### Breaking Changes"
-  if printf '%s\n' "$commit_logs" | grep -qE "(BREAKING CHANGE|!)"; then
-    printf '%s\n' "$commit_logs" | grep -E "(BREAKING CHANGE|!)" | sed 's/^/* /'
+  # Supported type!: / type(scope)!: subjects (via detectReleaseBump.mjs) plus
+  # line-anchored BREAKING CHANGE / BREAKING-CHANGE footers.
+  local commit_bodies breaking_lines
+  commit_bodies=$(git log "$last_tag"..HEAD --pretty=format:"%B" 2> /dev/null || true)
+  breaking_lines=$(
+    {
+      printf '%s\n' "$commit_logs" | node --input-type=module -e "
+        import { isSupportedBreakingSubject } from './scripts/detectReleaseBump.mjs';
+        let s = '';
+        process.stdin.on('data', (d) => { s += d; });
+        process.stdin.on('end', () => {
+          for (const line of s.split('\\n')) {
+            if (line && isSupportedBreakingSubject(line)) process.stdout.write(line + '\\n');
+          }
+        });
+      " || true
+      printf '%s\n' "$commit_bodies" | grep -E '^[ \t]*BREAKING[- ]CHANGE[ \t]*:' || true
+    } | sed '/^$/d'
+  )
+  if [ -n "$breaking_lines" ]; then
+    printf '%s\n' "$breaking_lines" | sed 's/^/* /' | sed 's/^\* \* /* /'
   else
     echo "*(None)*"
   fi
@@ -220,69 +265,97 @@ EOF
   echo "-> Copy the text above and paste it into your GitHub Release"
 }
 
-# Function to detect version bump from conventional commits
+# Function to detect version bump from conventional commits (scoped + unscoped).
+# Implementation lives in scripts/detectReleaseBump.mjs (unit-tested) so squash
+# titles like feat(rrc): … count as minor — the old bash regex missed scopes.
 detect_version_bump() {
   local last_tag="$1"
-  local commits
-  commits=$(git log "$last_tag"..HEAD --pretty=format:"%s%n%b" 2> /dev/null || echo "")
-
-  if [ -z "$commits" ]; then
-    echo "none"
-    return
-  fi
-
-  local has_breaking=false
-  local has_feat=false
-  local has_other=false
-
-  if echo "$commits" | grep -q "BREAKING CHANGE:"; then
-    has_breaking=true
-  fi
-
-  if echo "$commits" | grep -qE "^(feat|fix|chore|docs|refactor|test|style|perf|build|ci)!:"; then
-    has_breaking=true
-  fi
-
-  if echo "$commits" | grep -qE "^feat[[:space:]]*:"; then
-    has_feat=true
-  fi
-
-  if echo "$commits" | grep -qE "^(feat|fix|chore|docs|refactor|test|style|perf|build|ci)[[:space:]]*:"; then
-    has_other=true
-  fi
-
-  if [ "$has_breaking" = true ]; then
-    echo "major"
-  elif [ "$has_feat" = true ]; then
-    echo "minor"
-  elif [ "$has_other" = true ]; then
-    echo "patch"
-  else
-    echo "patch"
-  fi
+  local current json
+  current=$(read_package_version)
+  # Avoid a pipe so detector non-zero exits are not masked (no pipefail required here).
+  json=$(node scripts/detectReleaseBump.mjs --since "$last_tag" --current "$current") || return 1
+  node -e "process.stdout.write(JSON.parse(process.argv[1]).bump)" "$json"
 }
 
-# 1. Check if a version argument was provided or auto-detect / finish
+# 1. Parse version / finish / non-interactive flags (order-independent).
 VERSION_TYPE=""
 AUTO_DETECT=false
 FINISH_ONLY=false
+SKIP_DEP_UPDATE=false
+RELEASE_YES=false
+if [ "${MESH_CLIENT_RELEASE_YES:-}" = "1" ] || [ "${MESH_CLIENT_RELEASE_YES:-}" = "true" ]; then
+  RELEASE_YES=true
+fi
 
-if [ "${1:-}" = "--finish" ]; then
-  FINISH_ONLY=true
-elif [ -z "$1" ] || [ "$1" = "--auto" ]; then
-  AUTO_DETECT=true
-elif [ "$1" = "patch" ] || [ "$1" = "minor" ] || [ "$1" = "major" ]; then
-  VERSION_TYPE="$1"
-elif [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  VERSION_TYPE="$1"
-else
-  echo "Usage: pnpm run release [patch|minor|major|x.x.x|--auto|--finish]"
-  echo "       pnpm run release               # Auto-detect from commits"
-  echo "       pnpm run release --auto         # Explicit auto-detect"
-  echo "       pnpm run release minor          # Force minor release"
-  echo "       pnpm run release 2.0.0          # Force specific version"
-  echo "       pnpm run release --finish       # Complete mid-release (no re-bump)"
+POSITIONAL_COUNT=0
+for arg in "$@"; do
+  case "$arg" in
+    --yes | -y)
+      RELEASE_YES=true
+      ;;
+    --skip-dep-update)
+      SKIP_DEP_UPDATE=true
+      ;;
+    --finish)
+      FINISH_ONLY=true
+      ;;
+    --auto)
+      AUTO_DETECT=true
+      ;;
+    patch | minor | major)
+      VERSION_TYPE="$arg"
+      POSITIONAL_COUNT=$((POSITIONAL_COUNT + 1))
+      ;;
+    *)
+      if [[ "$arg" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        VERSION_TYPE="$arg"
+        POSITIONAL_COUNT=$((POSITIONAL_COUNT + 1))
+      else
+        print_release_usage
+        exit 1
+      fi
+      ;;
+  esac
+done
+
+if [ "$FINISH_ONLY" = true ] && { [ -n "$VERSION_TYPE" ] || [ "$AUTO_DETECT" = true ]; }; then
+  print_error "--finish cannot be combined with a version bump argument."
+  print_release_usage
   exit 1
+fi
+
+if [ "$AUTO_DETECT" = true ] && [ -n "$VERSION_TYPE" ]; then
+  print_error "--auto cannot be combined with patch|minor|major|x.x.x."
+  print_release_usage
+  exit 1
+fi
+
+if [ "$POSITIONAL_COUNT" -gt 1 ]; then
+  print_error "Specify at most one of patch|minor|major|x.x.x."
+  print_release_usage
+  exit 1
+fi
+
+if [ "$FINISH_ONLY" = false ] && [ -z "$VERSION_TYPE" ] && [ "$AUTO_DETECT" = false ]; then
+  # No bump arg and no --auto → same as historical bare `pnpm run release`.
+  AUTO_DETECT=true
+fi
+
+# Test hook: dump parsed flags and exit before git/network side effects.
+# Block under GitHub Actions unless MESH_CLIENT_ALLOW_PARSE_ONLY_IN_CI=1 (unit tests).
+# A repo/org Actions variable left at PARSE_ONLY=1 would otherwise green-succeed Cut release.
+if [ "${MESH_CLIENT_RELEASE_PARSE_ONLY:-}" = "1" ]; then
+  if [ "${GITHUB_ACTIONS:-}" = "true" ] && [ "${MESH_CLIENT_ALLOW_PARSE_ONLY_IN_CI:-}" != "1" ]; then
+    print_error "MESH_CLIENT_RELEASE_PARSE_ONLY is a local/test hook and cannot run under GitHub Actions."
+    print_error "Unset the variable (Cut release clears it) or set MESH_CLIENT_ALLOW_PARSE_ONLY_IN_CI=1 for tests."
+    exit 1
+  fi
+  printf 'RELEASE_YES=%s\n' "$RELEASE_YES"
+  printf 'SKIP_DEP_UPDATE=%s\n' "$SKIP_DEP_UPDATE"
+  printf 'FINISH_ONLY=%s\n' "$FINISH_ONLY"
+  printf 'AUTO_DETECT=%s\n' "$AUTO_DETECT"
+  printf 'VERSION_TYPE=%s\n' "$VERSION_TYPE"
+  exit 0
 fi
 
 # 2. Ensure we are on the main branch
@@ -301,13 +374,17 @@ fi
 
 git pull origin main
 
-# 3. Update dependencies
-print_header "Updating dependencies..."
-pnpm update
+# 3. Update dependencies (optional skip for CI cut-release / already-updated trees)
+if [ "$SKIP_DEP_UPDATE" = true ]; then
+  print_warning "Skipping pnpm update/dedupe (--skip-dep-update)."
+else
+  print_header "Updating dependencies..."
+  pnpm update
 
-# Ensure lockfile is deduped after update
-print_header "Deduplicating dependencies..."
-pnpm dedupe
+  # Ensure lockfile is deduped after update
+  print_header "Deduplicating dependencies..."
+  pnpm dedupe
+fi
 
 print_header "Syncing Flatpak Electron vendored archives..."
 node scripts/sync-flatpak-electron.mjs
@@ -394,11 +471,7 @@ else
   echo -e "${GREEN}  -> This is a patch release${NC}"
 fi
 
-echo ""
-echo -e "${BOLD}Continue with pre-flight validation?${NC} [y/N]"
-read -r CONFIRM
-
-if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
+if ! confirm_or_yes "Continue with pre-flight validation?"; then
   print_warning "Release cancelled."
   exit 0
 fi
@@ -621,11 +694,7 @@ fi
 
 print_success "All pre-flight checks passed!"
 
-echo ""
-echo -e "${BOLD}All validations passed. Proceed with actual release?${NC} [y/N]"
-read -r FINAL_CONFIRM
-
-if [ "$FINAL_CONFIRM" != "y" ] && [ "$FINAL_CONFIRM" != "Y" ]; then
+if ! confirm_or_yes "All validations passed. Proceed with actual release?"; then
   print_warning "Release cancelled after successful validation."
   exit 0
 fi

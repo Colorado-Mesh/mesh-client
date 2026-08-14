@@ -1726,11 +1726,12 @@ export default function ConnectionPanel({
   const showNobleBleWaitNotice =
     nobleBleMutexWait.waitingOnNobleBlePeer && rfSessionPending && isRendererNobleBlePlatform();
 
+  const radioUp =
+    state.status === 'configured' || state.status === 'connected' || state.status === 'stale';
   const showAutoReconnectBanner =
-    isAutoConnecting ||
     state.status === 'reconnecting' ||
-    connecting ||
-    nobleBleMutexWait.waitingForPrimaryAutoConnect;
+    (!radioUp &&
+      (isAutoConnecting || connecting || nobleBleMutexWait.waitingForPrimaryAutoConnect));
 
   const renderAutoReconnectBanner = (): ReactNode =>
     showAutoReconnectBanner ? (

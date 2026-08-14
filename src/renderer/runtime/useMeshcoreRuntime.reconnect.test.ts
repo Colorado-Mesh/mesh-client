@@ -745,6 +745,21 @@ describe('useMeshcoreRuntime prepareRfConnect driver teardown (regression)', () 
     );
   });
 
+  it('invalidates room auto-login generation on teardown and rechecks abortIfStale before SendLogin', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /await repeaterRemoteRpcRef\.current\(async \(\) => \{[\s\S]*?abortIfStale[\s\S]*?meshcoreRoomLogin/,
+    );
+    const lostBody = extractUseCallbackBody(RUNTIME_SOURCE, 'handleMeshcoreConnectionLost');
+    expect(lostBody).toContain('resetMeshcoreRoomAutoLoginSingleFlight');
+    const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
+    expect(prepareBody).toContain('resetMeshcoreRoomAutoLoginSingleFlight');
+    const disconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'finalizeDriverDisconnect');
+    expect(disconnectBody).toContain('resetMeshcoreRoomAutoLoginSingleFlight');
+    expect(RUNTIME_SOURCE).toMatch(
+      /unmount close[\s\S]{0,200}|resetMeshcoreRoomAutoLoginSingleFlight\(\);[\s\S]{0,120}teardownMeshcoreConnEventListeners\(\{ driverDisconnect: true \}\)/,
+    );
+  });
+
   it('latches pending driver identity after open before attach (mid-open supersede)', () => {
     const connectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'connect');
     expect(connectBody).toMatch(
