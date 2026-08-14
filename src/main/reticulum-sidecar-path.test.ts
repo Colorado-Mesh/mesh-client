@@ -168,7 +168,7 @@ describe('reticulum-sidecar-path', () => {
     expect(msg).toContain('pnpm run reticulum:sidecar:build');
   });
 
-  it('resolveDevSidecarEnsureAction backgrounds mtime-stale full builds', async () => {
+  it('resolveDevSidecarEnsureAction awaits mtime-stale full builds in dev', async () => {
     const { resolveDevSidecarEnsureAction } = await import('./reticulum-sidecar-path');
     expect(
       resolveDevSidecarEnsureAction({
@@ -177,7 +177,7 @@ describe('reticulum-sidecar-path', () => {
         lacksRnsStack: false,
         lacksRnsBle: false,
       }),
-    ).toBe('background-build');
+    ).toBe('await-build');
     expect(
       resolveDevSidecarEnsureAction({
         missing: true,

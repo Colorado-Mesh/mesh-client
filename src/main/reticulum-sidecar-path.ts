@@ -234,11 +234,12 @@ export function sidecarBinaryIsStale(binaryPath: string, projectDir: string): bo
   return newestReticulumSidecarSourceMtimeMs(projectDir) > binaryMtime;
 }
 
-export type DevSidecarEnsureAction = 'await-build' | 'background-build' | 'noop';
+export type DevSidecarEnsureAction = 'await-build' | 'noop';
 
 /**
- * Decide whether connect must wait on cargo, can refresh in the background, or skip.
- * Missing / featureless binaries block; mtime-stale full-feature binaries do not.
+ * Decide whether connect must wait on cargo or can skip.
+ * Dev connect always runs the current tree: missing, featureless, or mtime-stale
+ * binaries block until `cargo build` finishes (no stale-binary background start).
  */
 export function resolveDevSidecarEnsureAction(opts: {
   missing: boolean;
@@ -246,8 +247,7 @@ export function resolveDevSidecarEnsureAction(opts: {
   lacksRnsStack: boolean;
   lacksRnsBle: boolean;
 }): DevSidecarEnsureAction {
-  if (opts.missing || opts.lacksRnsStack || opts.lacksRnsBle) return 'await-build';
-  if (opts.stale) return 'background-build';
+  if (opts.missing || opts.stale || opts.lacksRnsStack || opts.lacksRnsBle) return 'await-build';
   return 'noop';
 }
 
@@ -288,34 +288,15 @@ export async function ensureDevSidecarBinary(binaryPath: string): Promise<void> 
   if (action === 'noop') {
     return;
   }
-  if (action === 'background-build') {
-    // Prefer availability: start TCP/LXMF/RRC on the existing binary while cargo
-    // refreshes in the background for the next start.
-    void runDevSidecarCargoBuild(
-      projectDir,
-      'sidecar sources newer than binary (background refresh)',
-    ).catch((e: unknown) => {
-      console.warn(
-        '[ReticulumSidecar] background cargo rebuild failed:',
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-      );
-    });
-    return;
-  }
 
-  if (missing) {
-    await runDevSidecarCargoBuild(projectDir, 'debug binary missing');
-  } else if (lacksRnsStack) {
-    await runDevSidecarCargoBuild(
-      projectDir,
-      'debug binary is stub-only; rebuilding with rns-stack for live peers',
-    );
-  } else if (lacksRnsBle) {
-    await runDevSidecarCargoBuild(
-      projectDir,
-      'debug binary lacks rns-ble; rebuilding with BLE interface support',
-    );
-  }
+  const reason = missing
+    ? 'debug binary missing'
+    : lacksRnsStack
+      ? 'debug binary is stub-only; rebuilding with rns-stack for live peers'
+      : lacksRnsBle
+        ? 'debug binary lacks rns-ble; rebuilding with BLE interface support'
+        : 'sidecar sources newer than binary';
+  await runDevSidecarCargoBuild(projectDir, reason);
 
   if (!fs.existsSync(binaryPath)) {
     throw new Error(
