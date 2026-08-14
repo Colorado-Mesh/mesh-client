@@ -455,6 +455,23 @@ describe('RepeatersPanel', () => {
     expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name', undefined);
   });
 
+  it('shows translated CLI error in the expanded CLI panel', async () => {
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        onSendCliCommand={vi.fn().mockResolvedValue('ok')}
+        meshcoreCliErrors={
+          new Map([[repeater.node_id, meshcoreStoredUserMessage('meshcore.errors.nodeNotFound')]])
+        }
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /CLI: Node not found \(no encryption key\)/i }),
+    );
+    expect(screen.getByText('Node not found (no encryption key)')).toBeInTheDocument();
+  });
+
   it('calls onSendCliCommand when a quick command button is clicked', async () => {
     const onSendCliCommand = vi.fn().mockResolvedValue('ok');
     render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
@@ -493,6 +510,21 @@ describe('RepeatersPanel', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'clock sync' }));
     expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'clock sync', undefined);
+  });
+
+  it('toasts when clock sync is refused because the repeater clock cannot go backwards', async () => {
+    const onSendCliCommand = vi.fn().mockResolvedValue('02|ERR: clock cannot go backwards');
+    render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await userEvent.click(screen.getByRole('button', { name: 'clock sync' }));
+
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith(
+        expect.stringMatching(/clock is ahead of this computer/i),
+        'info',
+      );
+    });
   });
 
   it('requires confirmation before sending destructive CLI commands', async () => {

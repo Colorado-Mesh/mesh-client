@@ -21,6 +21,7 @@ import {
   buildMeshcoreChannelAddUri,
   classifyMeshClientDeepLink,
 } from '@/shared/meshClientDeepLink';
+import { isMeshcorePathHashMode, type MeshcorePathHashMode } from '@/shared/meshcorePathHash';
 import {
   formatMeshtasticBluetoothPin,
   parseMeshtasticBluetoothPin,
@@ -42,6 +43,8 @@ import {
   useMeshcoreContactCapacity,
 } from '../hooks/useMeshcoreContactCapacity';
 import { useSyncFormFromConfig } from '../hooks/useSyncFormFromConfig';
+import { getAppSettingsRaw, mergeAppSetting } from '../lib/appSettingsStorage';
+import { DEFAULT_APP_SETTINGS_SHARED } from '../lib/defaultAppSettings';
 import type { OurPosition } from '../lib/gpsSource';
 import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../lib/meshcore/meshcoreHookTypes';
 import type { MeshcoreAutoaddWireState } from '../lib/meshcoreContactAutoAdd';
@@ -61,6 +64,7 @@ import {
   meshcoreSelfInfoBwToDisplayKhz,
   meshcoreSelfInfoFreqToDisplayHz,
 } from '../lib/meshcoreUtils';
+import { parseStoredJson } from '../lib/parseStoredJson';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { ConfigTargetContext, RemoteConfigChannelsTailStatus } from '../lib/types';
 import { ConfigApplyNotice } from './ConfigApplyNotice';
@@ -94,6 +98,25 @@ function isStringKeyedRecord(value: unknown): value is Record<string, unknown> {
 function numericArray(value: unknown): number[] | null {
   if (!Array.isArray(value) || !value.every((entry) => typeof entry === 'number')) return null;
   return value;
+}
+
+function loadMeshcoreRadioExperimentalSettings(): {
+  meshcoreOpenWireCompatEnabled: boolean;
+  meshcorePathHashMode: MeshcorePathHashMode;
+} {
+  const parsed = parseStoredJson<{
+    meshcoreOpenWireCompatEnabled?: boolean;
+    meshcorePathHashMode?: unknown;
+  }>(getAppSettingsRaw(), 'RadioPanel meshcore experimental');
+  const mode = parsed?.meshcorePathHashMode;
+  return {
+    meshcoreOpenWireCompatEnabled:
+      parsed?.meshcoreOpenWireCompatEnabled ??
+      DEFAULT_APP_SETTINGS_SHARED.meshcoreOpenWireCompatEnabled,
+    meshcorePathHashMode: isMeshcorePathHashMode(mode)
+      ? mode
+      : DEFAULT_APP_SETTINGS_SHARED.meshcorePathHashMode,
+  };
 }
 
 interface Props {
@@ -175,6 +198,8 @@ interface Props {
   onXmodemUpload?: () => Promise<void>;
   onXmodemDownload?: (filename: string) => Promise<void>;
   onSyncClock?: () => Promise<void>;
+  deviceReportedPathHashMode?: MeshcorePathHashMode | null;
+  onApplyMeshcorePathHashMode?: (mode: MeshcorePathHashMode) => Promise<void>;
   onRefreshContacts?: () => Promise<void>;
   onOffloadContactsFromRadio?: () => Promise<number>;
   /** Remote admin: channel indices that failed to load from the target node. */
@@ -689,6 +714,8 @@ export default function RadioPanel({
   onXmodemUpload,
   onXmodemDownload,
   onSyncClock,
+  deviceReportedPathHashMode = null,
+  onApplyMeshcorePathHashMode,
   onRefreshContacts,
   onOffloadContactsFromRadio,
   remoteChannelFailedIndices,
@@ -1036,6 +1063,21 @@ export default function RadioPanel({
   const [advertLoading, setAdvertLoading] = useState(false);
   const [zeroHopAdvertLoading, setZeroHopAdvertLoading] = useState(false);
   const [syncClockLoading, setSyncClockLoading] = useState(false);
+  const pathHashModeUserChangedRef = useRef(false);
+  const [meshcoreOpenWireCompatEnabled, setMeshcoreOpenWireCompatEnabled] = useState(
+    () => loadMeshcoreRadioExperimentalSettings().meshcoreOpenWireCompatEnabled,
+  );
+  const [meshcorePathHashMode, setMeshcorePathHashMode] = useState<MeshcorePathHashMode>(
+    () => loadMeshcoreRadioExperimentalSettings().meshcorePathHashMode,
+  );
+
+  useEffect(() => {
+    if (!isMeshcorePathHashMode(deviceReportedPathHashMode)) return;
+    if (pathHashModeUserChangedRef.current) return;
+    setMeshcorePathHashMode((prev) =>
+      prev === deviceReportedPathHashMode ? prev : deviceReportedPathHashMode,
+    );
+  }, [deviceReportedPathHashMode]);
 
   const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
   const loraDisabled =
@@ -2686,6 +2728,97 @@ export default function RadioPanel({
             )}
           </div>
         </div>
+      )}
+
+      {capabilities?.hasCompanionContactManagementConfig && (
+        <>
+          <div className="space-y-2">
+            <h3 className="text-muted text-sm font-medium">
+              {t('appPanel.meshcoreOpenWireExperimentalTitle')}
+            </h3>
+            <div className="space-y-3 rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-3">
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="meshcoreOpenWireCompat"
+                  checked={meshcoreOpenWireCompatEnabled}
+                  onChange={(e) => {
+                    const next = e.target.checked;
+                    setMeshcoreOpenWireCompatEnabled(next);
+                    mergeAppSetting(
+                      'meshcoreOpenWireCompatEnabled',
+                      next,
+                      'RadioPanel meshcoreOpenWire',
+                    );
+                  }}
+                  aria-label={t('appPanel.meshcoreOpenWireCompatLabel')}
+                  className="accent-brand-green mt-0.5"
+                />
+                <label
+                  htmlFor="meshcoreOpenWireCompat"
+                  className="flex-1 cursor-pointer text-sm text-yellow-100"
+                >
+                  {t('appPanel.meshcoreOpenWireCompatLabel')}
+                </label>
+              </div>
+              <p className="text-xs leading-relaxed text-yellow-300/90">
+                {t('appPanel.meshcoreOpenWireCompatHint')}
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-muted text-sm font-medium">
+              {t('appPanel.meshcorePathHashExperimentalTitle')}
+            </h3>
+            <div className="space-y-3 rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-3">
+              <label htmlFor="meshcore-path-hash-mode" className="text-sm text-yellow-100">
+                {t('appPanel.meshcorePathHashModeLabel')}
+              </label>
+              <select
+                id="meshcore-path-hash-mode"
+                value={meshcorePathHashMode}
+                onChange={(e) => {
+                  const raw = Number.parseInt(e.target.value, 10);
+                  if (!isMeshcorePathHashMode(raw)) return;
+                  pathHashModeUserChangedRef.current = true;
+                  setMeshcorePathHashMode(raw);
+                  mergeAppSetting('meshcorePathHashMode', raw, 'RadioPanel meshcorePathHash');
+                  if (isConnected && onApplyMeshcorePathHashMode) {
+                    void onApplyMeshcorePathHashMode(raw).catch((err: unknown) => {
+                      addToast(
+                        t('appPanel.meshcorePathHashApplyFailed', {
+                          message: err instanceof Error ? err.message : t('common.unknown'),
+                        }),
+                        'error',
+                      );
+                    });
+                  }
+                }}
+                aria-label={t('appPanel.meshcorePathHashModeLabel')}
+                className="bg-deep-black focus:border-brand-green w-full max-w-md rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
+              >
+                <option value={0}>{t('appPanel.meshcorePathHashMode1Byte')}</option>
+                <option value={1}>{t('appPanel.meshcorePathHashMode2Byte')}</option>
+                <option value={2}>{t('appPanel.meshcorePathHashMode3Byte')}</option>
+              </select>
+              {deviceReportedPathHashMode != null && isConnected ? (
+                <p className="text-xs text-yellow-200/90">
+                  {t('appPanel.meshcorePathHashDeviceReported', {
+                    mode:
+                      deviceReportedPathHashMode === 0
+                        ? t('appPanel.meshcorePathHashModeShort0')
+                        : deviceReportedPathHashMode === 1
+                          ? t('appPanel.meshcorePathHashModeShort1')
+                          : t('appPanel.meshcorePathHashModeShort2'),
+                  })}
+                </p>
+              ) : null}
+              <p className="text-xs leading-relaxed text-yellow-300/90">
+                {t('appPanel.meshcorePathHashModeHint')}
+              </p>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

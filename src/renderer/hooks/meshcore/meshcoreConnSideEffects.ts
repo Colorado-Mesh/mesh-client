@@ -695,8 +695,9 @@ export function attachMeshcoreConnSideEffects(
   ) => {
     const senderId = payload.senderNodeId;
     const service = repeaterCommandServiceRef.current;
+    const handled = service ? service.handleResponse(payload.text, senderId) : false;
     if (service) {
-      if (service.handleResponse(payload.text, senderId)) return;
+      if (handled) return;
     } else {
       console.warn(
         '[meshcoreConnSideEffects] CLI response received but no command service active (sender:',

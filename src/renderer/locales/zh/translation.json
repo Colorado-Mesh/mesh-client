@@ -4164,7 +4164,8 @@
     "currentRouteLabel": "当前路线：",
     "neighborsLoadMore": "加载更多（{{loaded}}/{{total}}）",
     "neighborsLoadMoreAria": "加载更多邻居（已加载{{loaded}}/{{total}}）",
-    "neighborsLoadingMore": "加载中…"
+    "neighborsLoadingMore": "加载中…",
+    "cliClockCannotGoBackwards": "此中继器的时钟在此计算机前面（ {{utc}} ）。MeshCore固件不会向后设置时钟。确认后，运行clkreboot ，然后进行时钟同步。"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",

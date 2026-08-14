@@ -4164,7 +4164,8 @@
     "currentRouteLabel": "Huidig ​​traject:",
     "neighborsLoadMore": "Laad meer ({{loaded}} van {{total}})",
     "neighborsLoadMoreAria": "Laad meer buren ({{loaded}} van {{total}} geladen)",
-    "neighborsLoadingMore": "Aan het laden…"
+    "neighborsLoadingMore": "Aan het laden…",
+    "cliClockCannotGoBackwards": "De klok van deze repeater loopt voor op deze computer ({{utc}}). MeshCore-firmware zet de klok niet achteruit. Nadat u hebt bevestigd, voert u clkreboot uit en vervolgens kloksynchronisatie."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",

@@ -4168,7 +4168,8 @@
     "currentRouteLabel": "Aktualna trasa:",
     "neighborsLoadMore": "Załaduj więcej ({{loaded}} z {{total}} załadowanych)",
     "neighborsLoadMoreAria": "Załaduj więcej sąsiadów ({{loaded}} z {{total}} załadowanych)",
-    "neighborsLoadingMore": "Wczytywanie…"
+    "neighborsLoadingMore": "Wczytywanie…",
+    "cliClockCannotGoBackwards": "Zegar tego przemiennika wyprzedza ten komputer ({{utc}}). Oprogramowanie sprzętowe MeshCore nie ustawi zegara wstecz. Po potwierdzeniu uruchom clkreboot, a następnie synchronizację zegara."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",

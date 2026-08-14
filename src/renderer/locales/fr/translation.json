@@ -4164,7 +4164,8 @@
     "currentRouteLabel": "Itinéraire actuel :",
     "neighborsLoadMore": "Charger plus ({{loaded}} sur {{total}})",
     "neighborsLoadMoreAria": "Charger plus de voisins ({{loaded}} sur {{total}} chargés)",
-    "neighborsLoadingMore": "Chargement…"
+    "neighborsLoadingMore": "Chargement…",
+    "cliClockCannotGoBackwards": "L'horloge de ce répéteur est en avance sur cet ordinateur ({{utc}}). Le micrologiciel MeshCore ne remettra pas l'horloge en marche arrière. Une fois que vous avez confirmé, exécutez clkreboot, puis synchronisez l'horloge."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalle d'annonce (secondes)",

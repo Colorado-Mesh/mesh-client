@@ -100,6 +100,22 @@ describe('RepeaterCommandService', () => {
     });
   });
 
+  describe('padRepeaterCliTimeoutForWaitingDrain', () => {
+    it('leaves timeout unchanged when drain is idle', async () => {
+      const { padRepeaterCliTimeoutForWaitingDrain } = await import('./repeaterCommandService');
+      expect(padRepeaterCliTimeoutForWaitingDrain(30_000, false, 45_000)).toBe(30_000);
+    });
+
+    it('pads timeout and caps at max when drain is busy', async () => {
+      const { padRepeaterCliTimeoutForWaitingDrain, REPEATER_CLI_MAX_TIMEOUT_MS } =
+        await import('./repeaterCommandService');
+      expect(padRepeaterCliTimeoutForWaitingDrain(30_000, true, 45_000)).toBe(75_000);
+      expect(padRepeaterCliTimeoutForWaitingDrain(100_000, true, 45_000)).toBe(
+        REPEATER_CLI_MAX_TIMEOUT_MS,
+      );
+    });
+  });
+
   describe('computeRepeaterCliHopCount', () => {
     it('prefers trace hop count over hopsAway', async () => {
       const { computeRepeaterCliHopCount } = await import('./repeaterCommandService');
@@ -269,6 +285,16 @@ describe('RepeaterCommandService', () => {
 
       vi.advanceTimersByTime(1001);
       await expect(promise).rejects.toThrow('CLI command timed out after 1000ms');
+    });
+
+    it('extendPendingTimeout lengthens an in-flight wait', async () => {
+      const { token, promise } = service.registerPendingCommand('cmd', [], { timeoutMs: 1000 });
+      promise.catch(() => {});
+      service.extendPendingTimeout(token, 3000);
+      vi.advanceTimersByTime(1500);
+      expect(service.hasPendingCommand(token)).toBe(true);
+      vi.advanceTimersByTime(1600);
+      await expect(promise).rejects.toThrow('CLI command timed out after 3000ms');
     });
 
     it('should not fire timeout after handleResponse resolves the command', async () => {

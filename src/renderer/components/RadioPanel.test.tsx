@@ -529,3 +529,111 @@ describe('RadioPanel collapsible section consistency', () => {
     });
   });
 });
+
+describe('RadioPanel MeshCore Open wire and path hash', () => {
+  beforeEach(() => {
+    localStorage.removeItem('mesh-client:appSettings');
+  });
+
+  it('shows Open-wire and path-hash controls for MeshCore capabilities', () => {
+    render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} capabilities={MESHCORE_CAPABILITIES} />
+      </ToastProvider>,
+    );
+    expect(
+      screen.getByRole('checkbox', { name: /Enable MeshCore Open compatibility/i }),
+    ).not.toBeChecked();
+    expect(screen.getByLabelText(/Default path hash size/i)).toHaveValue('0');
+  });
+
+  it('does not show Open-wire or path-hash without MeshCore capabilities', () => {
+    render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    expect(
+      screen.queryByRole('checkbox', { name: /Enable MeshCore Open compatibility/i }),
+    ).toBeNull();
+    expect(screen.queryByLabelText(/Default path hash size/i)).toBeNull();
+  });
+
+  it('persists meshcoreOpenWireCompatEnabled to app settings', async () => {
+    render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} capabilities={MESHCORE_CAPABILITIES} />
+      </ToastProvider>,
+    );
+    const checkbox = screen.getByRole('checkbox', {
+      name: /Enable MeshCore Open compatibility/i,
+    });
+    fireEvent.click(checkbox);
+    await waitFor(() => {
+      const raw = localStorage.getItem('mesh-client:appSettings');
+      expect(raw).toContain('"meshcoreOpenWireCompatEnabled":true');
+    });
+  });
+
+  it('persists meshcorePathHashMode when the user changes the dropdown', async () => {
+    render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} capabilities={MESHCORE_CAPABILITIES} />
+      </ToastProvider>,
+    );
+    const select = screen.getByLabelText(/Default path hash size/i);
+    fireEvent.change(select, { target: { value: '1' } });
+    await waitFor(() => {
+      const raw = localStorage.getItem('mesh-client:appSettings');
+      expect(raw).toContain('"meshcorePathHashMode":1');
+    });
+  });
+
+  it('syncs dropdown from device-reported mode when user has not changed it', async () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          deviceReportedPathHashMode={null}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByLabelText(/Default path hash size/i)).toHaveValue('0');
+
+    rerender(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          deviceReportedPathHashMode={1}
+        />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Default path hash size/i)).toHaveValue('1');
+    });
+  });
+
+  it('applies path hash mode to the radio when connected', async () => {
+    const onApplyMeshcorePathHashMode = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          onApplyMeshcorePathHashMode={onApplyMeshcorePathHashMode}
+        />
+      </ToastProvider>,
+    );
+    fireEvent.change(screen.getByLabelText(/Default path hash size/i), {
+      target: { value: '2' },
+    });
+    await waitFor(() => {
+      expect(onApplyMeshcorePathHashMode).toHaveBeenCalledWith(2);
+    });
+  });
+});

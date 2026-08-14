@@ -4164,7 +4164,8 @@
     "currentRouteLabel": "Itinerario attuale:",
     "neighborsLoadMore": "Carica altro ({{loaded}} di {{total}} caricati)",
     "neighborsLoadMoreAria": "Carica altri vicini ({{loaded}} di {{total}} caricati)",
-    "neighborsLoadingMore": "Caricamento in corso…"
+    "neighborsLoadingMore": "Caricamento in corso…",
+    "cliClockCannotGoBackwards": "L'orologio di questo ripetitore è davanti a questo computer ({{utc}}). Il firmware MeshCore non imposterà l'orologio all'indietro. Dopo aver confermato, eseguire clkreboot, quindi sincronizzare l'orologio."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",

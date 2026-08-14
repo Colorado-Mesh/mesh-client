@@ -3763,6 +3763,16 @@ function AppContent() {
                                       ? meshcorePanelActions.syncClock
                                       : undefined
                                   }
+                                  deviceReportedPathHashMode={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? (meshcoreRuntime.state.pathHashMode ?? null)
+                                      : null
+                                  }
+                                  onApplyMeshcorePathHashMode={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.applyMeshcorePathHashMode
+                                      : undefined
+                                  }
                                   onRefreshContacts={
                                     capabilities.hasContactImportExport
                                       ? meshcorePanelActions.refreshContacts
@@ -4144,21 +4154,6 @@ function AppContent() {
                                 onChatCompactModeChange={handleChatCompactModeChange}
                                 onAlwaysShowMessageActionsChange={
                                   handleAlwaysShowMessageActionsChange
-                                }
-                                deviceReportedPathHashMode={
-                                  capabilities.modulesTabUsesRepeatersLabel
-                                    ? (meshcoreRuntime.state.pathHashMode ?? null)
-                                    : null
-                                }
-                                isMeshcoreRadioConnected={
-                                  capabilities.modulesTabUsesRepeatersLabel &&
-                                  (meshcoreRuntime.state.status === 'connected' ||
-                                    meshcoreRuntime.state.status === 'configured')
-                                }
-                                onApplyMeshcorePathHashMode={
-                                  capabilities.modulesTabUsesRepeatersLabel
-                                    ? meshcorePanelActions.applyMeshcorePathHashMode
-                                    : undefined
                                 }
                                 reticulumIdentityId={reticulumIdentityId}
                                 reticulumSidecarReady={

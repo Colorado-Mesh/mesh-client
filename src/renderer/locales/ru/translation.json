@@ -4166,7 +4166,8 @@
     "currentRouteLabel": "Текущий маршрут:",
     "neighborsLoadMore": "Загрузить больше ({{loaded}} из {{total}})",
     "neighborsLoadMoreAria": "Загрузить больше соседей ({{loaded}} из {{total}} загружено)",
-    "neighborsLoadingMore": "Загрузка…"
+    "neighborsLoadingMore": "Загрузка…",
+    "cliClockCannotGoBackwards": "Часы этого ретранслятора опережают этот компьютер ({{utc}}). Прошивка MeshCore не переводит часы назад. После подтверждения запустите clkreboot, а затем синхронизируйте часы."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Интервал объявления (секунды)",

@@ -4386,6 +4386,7 @@
     "cliDangerConfirmMessage": "This command may reboot, erase, or factory-reset the repeater: \"{{command}}\". Continue only if you intend this change.",
     "cliDangerConfirmAction": "Run command",
     "cliCommandTooLong": "CLI command is too long (max {{max}} characters).",
+    "cliClockCannotGoBackwards": "This repeater's clock is ahead of this computer ({{utc}}). MeshCore firmware will not set the clock backwards. After you confirm, run clkreboot, then clock sync.",
     "searchRepeatersPlaceholder": "Search repeaters…",
     "openCliInterface": "Open CLI interface",
     "pathHashCliGet": "Get path hash mode",

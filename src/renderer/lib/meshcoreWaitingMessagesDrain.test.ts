@@ -4,6 +4,7 @@ import * as meshcoreRepeaterRpcInFlight from './meshcoreRepeaterRpcInFlight';
 import * as meshcoreTracePathMultiplex from './meshcoreTracePathMultiplex';
 import {
   abandonMeshcoreSilentBulkAttempt,
+  awaitMeshcoreWaitingMessagesDrainIdle,
   beginMeshcoreSilentBulkAttempt,
   isMeshcoreCompanionDrainDeferred,
   isMeshcoreSilentBulkAttemptCurrent,
@@ -377,5 +378,34 @@ describe('silent bulk timeout circuit breaker', () => {
     }
     resetMeshcoreWaitingMessagesDrainState(0);
     expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(false);
+  });
+});
+
+describe('awaitMeshcoreWaitingMessagesDrainIdle', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('returns true immediately when drain is idle', async () => {
+    await expect(awaitMeshcoreWaitingMessagesDrainIdle(() => false, 5_000)).resolves.toBe(true);
+  });
+
+  it('returns true after drain becomes idle', async () => {
+    let busy = true;
+    const pending = awaitMeshcoreWaitingMessagesDrainIdle(() => busy, 5_000);
+    await vi.advanceTimersByTimeAsync(250);
+    busy = false;
+    await vi.advanceTimersByTimeAsync(250);
+    await expect(pending).resolves.toBe(true);
+  });
+
+  it('returns false when drain stays busy until timeout', async () => {
+    const pending = awaitMeshcoreWaitingMessagesDrainIdle(() => true, 1_000);
+    await vi.advanceTimersByTimeAsync(1_250);
+    await expect(pending).resolves.toBe(false);
   });
 });

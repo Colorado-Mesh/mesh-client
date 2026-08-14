@@ -20,6 +20,7 @@ import type {
 import {
   meshcoreRepeaterAdminErrorMessage,
   translateMeshcoreUserMessage,
+  translateRepeaterCliHistoryText,
 } from '../lib/meshcore/meshcoreMessageI18n';
 import {
   buildMeshcorePathChainSegments,
@@ -96,6 +97,14 @@ const REPEATER_VIRTUALIZE_THRESHOLD = 100;
 function isMeshcoreNeighborsHopBlocked(node: MeshNode): boolean {
   const hops = node.hops_away;
   return hops != null && hops >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS;
+}
+
+function formatComputerUtcStamp(d = new Date()): string {
+  return `${d.toISOString().slice(0, 16).replace('T', ' ')} UTC`;
+}
+
+function isRepeaterCliClockCannotGoBackwards(command: string, response: string): boolean {
+  return command.trim().toLowerCase() === 'clock sync' && /cannot go backwards/i.test(response);
 }
 
 function effectiveRepeaterLastAdvert(
@@ -616,7 +625,9 @@ export default function RepeatersPanel({
     command: string,
     opts?: { confirmedDanger?: boolean },
   ) => {
-    if (!onSendCliCommand || !command.trim()) return;
+    if (!onSendCliCommand || !command.trim()) {
+      return;
+    }
     const node = nodes.get(nodeId);
     const auth = await ensureRepeaterAuth(
       nodeId,
@@ -625,9 +636,16 @@ export default function RepeatersPanel({
     );
     if (!auth.ok) return;
     if (auth.saved) refreshStoredRepeaters();
-    if (!(await ensureCliRoutePrimed(nodeId))) return;
+    const primed = await ensureCliRoutePrimed(nodeId);
+    if (!primed) return;
     try {
-      await onSendCliCommand(nodeId, command.trim(), opts);
+      const response = await onSendCliCommand(nodeId, command.trim(), opts);
+      if (isRepeaterCliClockCannotGoBackwards(command, response)) {
+        addToast(
+          t('repeatersPanel.cliClockCannotGoBackwards', { utc: formatComputerUtcStamp() }),
+          'info',
+        );
+      }
     } catch (e) {
       console.warn('[RepeatersPanel] CLI command error ' + errLikeToLogString(e));
     }
@@ -1617,6 +1635,9 @@ export default function RepeatersPanel({
                                   {t('repeatersPanel.cliMultiHopHint')}
                                 </p>
                               ) : null}
+                              {cliErrorText ? (
+                                <p className="text-xs text-red-400">{cliErrorText}</p>
+                              ) : null}
                               <div className="flex items-center gap-3">
                                 <button
                                   type="button"
@@ -1641,7 +1662,8 @@ export default function RepeatersPanel({
                                         entry.type === 'sent' ? 'text-cyan-300' : 'text-gray-300'
                                       }`}
                                     >
-                                      {entry.type === 'sent' ? '>' : '<'} {entry.text}
+                                      {entry.type === 'sent' ? '>' : '<'}{' '}
+                                      {translateRepeaterCliHistoryText(t, entry.type, entry.text)}
                                     </div>
                                   ))
                                 )}

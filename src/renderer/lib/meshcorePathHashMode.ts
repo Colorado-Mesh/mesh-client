@@ -63,17 +63,15 @@ export interface MeshcoreDeviceQueryPathHashFields {
 }
 
 /**
- * AppPanel auto-saves the full settings object (defaults merged in). Omit path hash mode
- * unless the user explicitly changed the dropdown this session — otherwise a visit to App
- * stamps mode 0 into localStorage and later connect logic used to fight the radio.
+ * AppPanel auto-saves the full settings object (defaults merged in). Path hash mode and
+ * Open-wire live on Radio — omit them so an App visit cannot overwrite RadioPanel writes.
  */
 export function appPanelSettingsPersistPayload(
   settings: Record<string, unknown>,
-  userChangedPathHashMode: boolean,
 ): Record<string, unknown> {
-  if (userChangedPathHashMode) return { ...settings };
   const rest = { ...settings };
   delete rest.meshcorePathHashMode;
+  delete rest.meshcoreOpenWireCompatEnabled;
   return rest;
 }
 

@@ -4164,7 +4164,8 @@
     "currentRouteLabel": "현재 경로:",
     "neighborsLoadMore": "더 보기 ({{loaded}}/{{total}} 로드됨)",
     "neighborsLoadMoreAria": "더 많은 이웃 로드 ({{loaded}}/{{total}} 로드됨)",
-    "neighborsLoadingMore": "로드 중…"
+    "neighborsLoadingMore": "로드 중…",
+    "cliClockCannotGoBackwards": "이 리피터의 시계가 이 컴퓨터보다 앞서 있습니다 ({{utc}}). MeshCore 펌웨어는 시계를 거꾸로 설정하지 않습니다. 확인 후 clkreboot를 실행한 다음 시계 동기화를 실행합니다."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",

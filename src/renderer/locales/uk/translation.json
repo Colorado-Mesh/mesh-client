@@ -4166,7 +4166,8 @@
     "currentRouteLabel": "Поточний маршрут:",
     "neighborsLoadMore": "Завантажити більше ({{loaded}} з {{total}})",
     "neighborsLoadMoreAria": "Завантажити більше сусідів (завантажено {{loaded}} з {{total}})",
-    "neighborsLoadingMore": "Завантаження…"
+    "neighborsLoadingMore": "Завантаження…",
+    "cliClockCannotGoBackwards": "Годинник цього ретранслятора випереджає цей комп'ютер ({{utc}}). Прошивка MeshCore не встановлює годинник назад. Після підтвердження запустіть clkreboot, а потім синхронізуйте годинник."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Інтервал оголошення (секунди)",

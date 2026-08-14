@@ -4166,7 +4166,8 @@
     "currentRouteLabel": "Aktuální trasa:",
     "neighborsLoadMore": "Načíst další ({{loaded}} z {{total}} načteno)",
     "neighborsLoadMoreAria": "Načíst další sousedy ({{loaded}} z {{total}} načteno)",
-    "neighborsLoadingMore": "Načítání…"
+    "neighborsLoadingMore": "Načítání…",
+    "cliClockCannotGoBackwards": "Hodiny tohoto opakovače jsou před tímto počítačem ({{utc}}). Firmware MeshCore nenastaví hodiny dozadu. Po potvrzení spusťte clkreboot a poté synchronizaci hodin."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",

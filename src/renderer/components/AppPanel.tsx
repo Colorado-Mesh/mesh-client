@@ -8,7 +8,6 @@ import { exportSupportBundleToDisk } from '@/renderer/lib/exportSupportBundle';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { parseDatabaseSchemaTooNewFromMessage } from '@/shared/databaseSchemaTooNew';
-import { isMeshcorePathHashMode } from '@/shared/meshcorePathHash';
 import type { SupportBundleMode } from '@/shared/support-bundle.types';
 
 import type { LocationFilter } from '../App';
@@ -216,9 +215,6 @@ interface Props {
   onAutoFloodAdvertTypeChange?: (type: 'flood' | 'zeroHop') => void;
   onChatCompactModeChange?: (compact: boolean) => void;
   onAlwaysShowMessageActionsChange?: (alwaysShow: boolean) => void;
-  deviceReportedPathHashMode?: 0 | 1 | 2 | null;
-  isMeshcoreRadioConnected?: boolean;
-  onApplyMeshcorePathHashMode?: (mode: 0 | 1 | 2) => Promise<void>;
   /** Reticulum LXMF identity for DM-only message clear in Danger Zone. */
   reticulumIdentityId?: string | null;
   reticulumSidecarReady?: boolean;
@@ -255,9 +251,6 @@ export default function AppPanel({
   onAutoFloodAdvertTypeChange,
   onChatCompactModeChange,
   onAlwaysShowMessageActionsChange,
-  deviceReportedPathHashMode,
-  isMeshcoreRadioConnected = false,
-  onApplyMeshcorePathHashMode,
   reticulumIdentityId = null,
   reticulumSidecarReady = false,
 }: Props) {
@@ -309,7 +302,6 @@ export default function AppPanel({
 
   // ─── Node retention settings ────────────────────────────────
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
-  const pathHashModeUserChangedRef = useRef(false);
   const [themeColors, setThemeColors] = useState<Record<ThemeColorKey, string>>(loadThemeColors);
   const [hasSavedThemeSnapshot, setHasSavedThemeSnapshot] = useState<boolean>(hasThemeSnapshot);
   const [messageActionsBarBgVisible, setMessageActionsBarBgVisibleState] = useState<boolean>(
@@ -397,10 +389,7 @@ export default function AppPanel({
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       mergeAppSettingsPartial(
-        appPanelSettingsPersistPayload(
-          settings as unknown as Record<string, unknown>,
-          pathHashModeUserChangedRef.current,
-        ),
+        appPanelSettingsPersistPayload(settings as unknown as Record<string, unknown>),
         'AppPanel saveSettings',
       );
     }, 300);
@@ -408,17 +397,6 @@ export default function AppPanel({
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [settings]);
-
-  // Keep dropdown aligned with companion when connect adopts radio mode into settings.
-  useEffect(() => {
-    if (!isMeshcorePathHashMode(deviceReportedPathHashMode)) return;
-    if (pathHashModeUserChangedRef.current) return;
-    setSettings((prev) =>
-      prev.meshcorePathHashMode === deviceReportedPathHashMode
-        ? prev
-        : { ...prev, meshcorePathHashMode: deviceReportedPathHashMode },
-    );
-  }, [deviceReportedPathHashMode]);
 
   useEffect(() => {
     onLocationFilterChange({
@@ -1424,92 +1402,6 @@ export default function AppPanel({
                   count: settings.reticulumDestinationCapCount,
                 })}
               </span>
-            </div>
-          </div>
-        )}
-
-        {/* MeshCore Open wire compatibility (experimental) */}
-        {protocol === 'meshcore' && (
-          <div className="space-y-2">
-            <h3 className="text-muted text-sm font-medium">
-              {t('appPanel.meshcoreOpenWireExperimentalTitle')}
-            </h3>
-            <div className="space-y-3 rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-3">
-              <div className="flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  id="meshcoreOpenWireCompat"
-                  checked={settings.meshcoreOpenWireCompatEnabled}
-                  onChange={(e) => {
-                    updateSetting('meshcoreOpenWireCompatEnabled', e.target.checked);
-                  }}
-                  aria-label={t('appPanel.meshcoreOpenWireCompatLabel')}
-                  className="accent-brand-green mt-0.5"
-                />
-                <label
-                  htmlFor="meshcoreOpenWireCompat"
-                  className="flex-1 cursor-pointer text-sm text-yellow-100"
-                >
-                  {t('appPanel.meshcoreOpenWireCompatLabel')}
-                </label>
-              </div>
-              <p className="text-xs leading-relaxed text-yellow-300/90">
-                {t('appPanel.meshcoreOpenWireCompatHint')}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {protocol === 'meshcore' && (
-          <div className="space-y-2">
-            <h3 className="text-muted text-sm font-medium">
-              {t('appPanel.meshcorePathHashExperimentalTitle')}
-            </h3>
-            <div className="space-y-3 rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-3">
-              <label htmlFor="meshcore-path-hash-mode" className="text-sm text-yellow-100">
-                {t('appPanel.meshcorePathHashModeLabel')}
-              </label>
-              <select
-                id="meshcore-path-hash-mode"
-                value={settings.meshcorePathHashMode}
-                onChange={(e) => {
-                  const raw = Number.parseInt(e.target.value, 10);
-                  if (raw !== 0 && raw !== 1 && raw !== 2) return;
-                  pathHashModeUserChangedRef.current = true;
-                  updateSetting('meshcorePathHashMode', raw);
-                  if (isMeshcoreRadioConnected && onApplyMeshcorePathHashMode) {
-                    void onApplyMeshcorePathHashMode(raw).catch((err: unknown) => {
-                      addToast(
-                        t('appPanel.meshcorePathHashApplyFailed', {
-                          message: err instanceof Error ? err.message : t('common.unknown'),
-                        }),
-                        'error',
-                      );
-                    });
-                  }
-                }}
-                aria-label={t('appPanel.meshcorePathHashModeLabel')}
-                className="bg-deep-black focus:border-brand-green w-full max-w-md rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
-              >
-                <option value={0}>{t('appPanel.meshcorePathHashMode1Byte')}</option>
-                <option value={1}>{t('appPanel.meshcorePathHashMode2Byte')}</option>
-                <option value={2}>{t('appPanel.meshcorePathHashMode3Byte')}</option>
-              </select>
-              {deviceReportedPathHashMode != null && isMeshcoreRadioConnected ? (
-                <p className="text-xs text-yellow-200/90">
-                  {t('appPanel.meshcorePathHashDeviceReported', {
-                    mode:
-                      deviceReportedPathHashMode === 0
-                        ? t('appPanel.meshcorePathHashModeShort0')
-                        : deviceReportedPathHashMode === 1
-                          ? t('appPanel.meshcorePathHashModeShort1')
-                          : t('appPanel.meshcorePathHashModeShort2'),
-                  })}
-                </p>
-              ) : null}
-              <p className="text-xs leading-relaxed text-yellow-300/90">
-                {t('appPanel.meshcorePathHashModeHint')}
-              </p>
             </div>
           </div>
         )}

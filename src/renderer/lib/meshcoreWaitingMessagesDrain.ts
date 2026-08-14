@@ -186,6 +186,24 @@ export function isMeshcoreCompanionDrainDeferred(): boolean {
   );
 }
 
+const DRAIN_IDLE_POLL_MS = 250;
+
+/** Wait until silent/manual waiting-message drain is idle, or until timeout. */
+export async function awaitMeshcoreWaitingMessagesDrainIdle(
+  isBusy: () => boolean,
+  timeoutMs: number = MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
+): Promise<boolean> {
+  if (!isBusy()) return true;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, DRAIN_IDLE_POLL_MS);
+    });
+    if (!isBusy()) return true;
+  }
+  return !isBusy();
+}
+
 /** Silent auto-drain timeouts during BLE congestion are expected — log at debug, not warn. */
 export function logMeshcoreWaitingMessagesDrainError(
   context: string,

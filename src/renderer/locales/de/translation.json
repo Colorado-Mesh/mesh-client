@@ -4164,7 +4164,8 @@
     "currentRouteLabel": "Aktuelle Route:",
     "neighborsLoadMore": "Mehr laden ({{loaded}} von {{total}} geladen)",
     "neighborsLoadMoreAria": "Weitere Nachbarn laden ({{loaded}} von {{total}} geladen)",
-    "neighborsLoadingMore": "Wird geladen…"
+    "neighborsLoadingMore": "Wird geladen…",
+    "cliClockCannotGoBackwards": "Die Uhr dieses Repeaters liegt vor diesem Computer ({{utc}}). Die MeshCore-Firmware stellt die Uhr nicht rückwärts. Führen Sie nach der Bestätigung clkreboot und dann clock sync aus."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Ankündigungsintervall (Sekunden)",

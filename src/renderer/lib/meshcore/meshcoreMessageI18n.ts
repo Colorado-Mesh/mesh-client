@@ -173,3 +173,15 @@ export function meshcoreRepeaterRpcErrorMessage(
   }
   return { key: MESHCORE_ERR_REQUEST_FAILED, params: { detail: errMsg } };
 }
+
+/** Translate `[Error: <serialized i18n>]` CLI history lines; pass firmware text through. */
+export function translateRepeaterCliHistoryText(
+  t: TFunction,
+  type: 'sent' | 'received',
+  text: string,
+): string {
+  if (type !== 'received') return text;
+  const match = /^\[Error: (.*)\]$/s.exec(text);
+  if (!match) return text;
+  return `[Error: ${translateMeshcoreUserMessage(t, match[1])}]`;
+}

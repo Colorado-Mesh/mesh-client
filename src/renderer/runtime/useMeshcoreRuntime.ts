@@ -386,6 +386,7 @@ import {
   resolveMeshcoreRoomLoginHopsAway,
 } from '../lib/meshcoreUtils';
 import {
+  awaitMeshcoreWaitingMessagesDrainIdle,
   logMeshcoreWaitingMessagesDrainError,
   markMeshcoreCompanionTx,
   scheduleMeshcoreWaitingMessagesDrain,
@@ -411,6 +412,7 @@ import {
   type CliHistoryEntry,
   computeRepeaterCliHopCount,
   createRepeaterCommandService,
+  padRepeaterCliTimeoutForWaitingDrain,
   REPEATER_CLI_MAX_COMMAND_LENGTH,
   type RepeaterCommandService,
 } from '../lib/repeaterCommandService';
@@ -448,6 +450,7 @@ import {
   MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS,
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
   MESHCORE_WAITING_MESSAGES_POLL_MS,
+  MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
   POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS,
   RF_SERIAL_OPEN_RETRY_DELAY_MS,
 } from '../lib/timeConstants';
@@ -5762,39 +5765,36 @@ export function useMeshcoreRuntime() {
         if (isMeshcoreRepeaterCliDangerCommand(trimmed) && !opts?.confirmedDanger) {
           throw new Error(serializeMeshcoreUserMessage('meshcore.errors.cliDangerNotConfirmed'));
         }
-        const pubKey = pubKeyMapRef.current.get(nodeId);
-        if (!pubKey) {
-          setMeshcoreCliErrors((prev) => {
-            const next = new Map(prev);
-            next.set(nodeId, MESHCORE_ERR_NODE_NOT_FOUND);
-            return next;
-          });
-          throw new Error(MESHCORE_ERR_NODE_NOT_FOUND);
-        }
-        if (!resolveMeshcoreConn()) {
-          setMeshcoreCliErrors((prev) => {
-            const next = new Map(prev);
-            next.set(nodeId, MESHCORE_ERR_NOT_CONNECTED);
-            return next;
-          });
-          throw new Error(MESHCORE_ERR_NOT_CONNECTED);
-        }
-
-        setMeshcoreCliErrors((prev) => {
-          const next = new Map(prev);
-          next.delete(nodeId);
-          return next;
-        });
 
         const service = repeaterCommandServiceRef.current ?? createRepeaterCommandService();
         repeaterCommandServiceRef.current ??= service;
 
+        const drainBusyAtStart = waitingMessagesDrainBusyRef.current;
+        const drainIdle = await awaitMeshcoreWaitingMessagesDrainIdle(
+          () => waitingMessagesDrainBusyRef.current,
+          MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
+        );
+
+        let cliTimeoutMs = calculateRepeaterCliTimeout(0, trimmed.length);
         try {
-          return await runMeshcoreRepeaterRpcOnce('cli', nodeId, async () => {
+          let cliResponsePromise: Promise<string> | undefined;
+          let cliPendingToken: string | undefined;
+          let cliBaseTimeoutMs = cliTimeoutMs;
+          await runMeshcoreRepeaterRpcOnce('cli', nodeId, async () => {
+            const pubKey = await ensureNodePubKey(nodeId);
+            if (!pubKey) {
+              throw new Error(MESHCORE_ERR_NODE_NOT_FOUND);
+            }
             const conn = resolveMeshcoreConn();
             if (!conn) {
               throw new Error(MESHCORE_ERR_NOT_CONNECTED);
             }
+
+            setMeshcoreCliErrors((prev) => {
+              const next = new Map(prev);
+              next.delete(nodeId);
+              return next;
+            });
 
             await awaitMeshcoreRepeaterPingSettleForNode(nodeId);
             await meshcoreTryRemoteServerLogin(
@@ -5811,11 +5811,20 @@ export function useMeshcoreRuntime() {
               node?.hops_away,
               trace != null ? meshcoreTracePathLenToHops(trace.pathLen) : null,
             );
-            const timeoutMs = calculateRepeaterCliTimeout(hopCount, trimmed.length);
+            cliBaseTimeoutMs = calculateRepeaterCliTimeout(hopCount, trimmed.length);
+            const drainBusyNow = waitingMessagesDrainBusyRef.current;
+            const timeoutMs = padRepeaterCliTimeoutForWaitingDrain(
+              cliBaseTimeoutMs,
+              drainBusyAtStart || drainBusyNow || !drainIdle,
+              MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
+            );
+            cliTimeoutMs = timeoutMs;
             const { token, promise } = service.registerPendingCommand(trimmed, [], {
               timeoutMs,
               senderNodeId: nodeId,
             });
+            cliPendingToken = token;
+            cliResponsePromise = promise;
             const commandWithToken = service.formatCommandWithToken(trimmed, token);
 
             addCliHistoryEntry(nodeId, {
@@ -5823,6 +5832,17 @@ export function useMeshcoreRuntime() {
               text: trimmed,
               timestamp: Date.now(),
             });
+
+            if (trimmed.toLowerCase() === 'clock sync') {
+              try {
+                await conn.syncDeviceTime();
+              } catch (e: unknown) {
+                console.debug(
+                  '[useMeshcoreRuntime] companion syncDeviceTime before repeater clock sync ' +
+                    errLikeToLogString(e),
+                );
+              }
+            }
 
             await repeaterRemoteRpcRef.current(async () => {
               await awaitMeshcoreRepeaterAdminRfIdle();
@@ -5836,20 +5856,33 @@ export function useMeshcoreRuntime() {
               markMeshcoreCompanionTx();
             });
 
-            const response = await promise;
-            addCliHistoryEntry(nodeId, {
-              type: 'received',
-              text: response,
-              timestamp: Date.now(),
-            });
-            bumpMeshcoreNodeLastHeardFromRpc(nodeId);
-            return response;
+            const drainBusyAtSent = waitingMessagesDrainBusyRef.current;
+            const paddedAtSent = padRepeaterCliTimeoutForWaitingDrain(
+              cliBaseTimeoutMs,
+              drainBusyAtSent,
+              MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
+            );
+            if (cliPendingToken) {
+              service.extendPendingTimeout(cliPendingToken, paddedAtSent);
+            }
+            cliTimeoutMs = Math.max(cliTimeoutMs, paddedAtSent);
           });
+          if (!cliResponsePromise) {
+            throw new Error(MESHCORE_ERR_REQUEST_FAILED);
+          }
+          const response = await cliResponsePromise;
+          addCliHistoryEntry(nodeId, {
+            type: 'received',
+            text: response,
+            timestamp: Date.now(),
+          });
+          bumpMeshcoreNodeLastHeardFromRpc(nodeId);
+          return response;
         } catch (e: unknown) {
           const rawErr = e instanceof Error ? e.message : String(e);
           const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : MESHCORE_ERR_REQUEST_FAILED;
           const friendlyErr = meshcoreStoredUserMessage(
-            meshcoreRepeaterRpcErrorMessage(errMsg, MESHCORE_TRACE_TIMEOUT_MS),
+            meshcoreRepeaterRpcErrorMessage(errMsg, cliTimeoutMs),
           );
           setMeshcoreCliErrors((prev) => {
             const next = new Map(prev);
@@ -5875,6 +5908,7 @@ export function useMeshcoreRuntime() {
     [
       addCliHistoryEntry,
       bumpMeshcoreNodeLastHeardFromRpc,
+      ensureNodePubKey,
       meshcoreTraceResults,
       resolveMeshcoreConn,
     ],

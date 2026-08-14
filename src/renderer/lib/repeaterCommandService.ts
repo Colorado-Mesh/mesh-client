@@ -62,6 +62,17 @@ export function calculateRepeaterCliTimeout(
   return Math.min(Math.max(dynamicTimeout, baseTimeoutMs), maxTimeoutMs);
 }
 
+/** Extra CLI wait when companion waiting-message drain is (or was) busy. */
+export function padRepeaterCliTimeoutForWaitingDrain(
+  timeoutMs: number,
+  drainBusy: boolean,
+  drainPadMs: number,
+  maxTimeoutMs = REPEATER_CLI_MAX_TIMEOUT_MS,
+): number {
+  if (!drainBusy) return timeoutMs;
+  return Math.min(maxTimeoutMs, timeoutMs + drainPadMs);
+}
+
 export class RepeaterCommandService {
   private nextToken = 0;
   private pendingCommands = new Map<string, PendingCommand>();
@@ -150,6 +161,20 @@ export class RepeaterCommandService {
 
     this.pendingCommands.set(token, pending);
     return { token, promise, timeoutMs };
+  }
+
+  /** Lengthen an in-flight CLI wait when drain is busy at SENT. */
+  extendPendingTimeout(token: string, newTimeoutMs: number): void {
+    const pending = this.pendingCommands.get(token);
+    if (!pending || newTimeoutMs <= pending.timeoutMs) return;
+    clearTimeout(pending.timerId);
+    pending.timeoutMs = newTimeoutMs;
+    const remaining = Math.max(0, newTimeoutMs - (Date.now() - pending.sentAt));
+    pending.timerId = setTimeout(() => {
+      if (this.pendingCommands.delete(token)) {
+        pending.reject(new Error(`CLI command timed out after ${newTimeoutMs}ms`));
+      }
+    }, remaining);
   }
 
   handleResponse(rawResponse: string, senderId?: number): boolean {

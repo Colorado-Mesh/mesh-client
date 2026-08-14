@@ -4164,7 +4164,8 @@
     "currentRouteLabel": "Ruta actual:",
     "neighborsLoadMore": "Cargar más ({{loaded}} de {{total}})",
     "neighborsLoadMoreAria": "Cargar más vecinos ({{loaded}} de {{total}} cargados)",
-    "neighborsLoadingMore": "Cargando…"
+    "neighborsLoadingMore": "Cargando…",
+    "cliClockCannotGoBackwards": "El reloj de este repetidor está por delante de este equipo ({{utc}}). El firmware de MeshCore no pondrá el reloj al revés. Después de confirmar, ejecuta clkreboot y, a continuación, sincroniza el reloj."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anuncio (segundos)",

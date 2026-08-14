@@ -4164,7 +4164,8 @@
     "currentRouteLabel": "Rute saat ini:",
     "neighborsLoadMore": "Muat lebih banyak ({{loaded}} dari {{total}})",
     "neighborsLoadMoreAria": "Muat lebih banyak tetangga ({{loaded}} dari {{total}} dimuat)",
-    "neighborsLoadingMore": "Memuat…"
+    "neighborsLoadingMore": "Memuat…",
+    "cliClockCannotGoBackwards": "Jam repeater ini berada di depan komputer ini ({{utc}}). Firmware MeshCore tidak akan mengatur jam mundur. Setelah Anda mengonfirmasi, jalankan clkreboot, lalu sinkronisasi jam."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",

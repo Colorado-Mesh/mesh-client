@@ -4164,7 +4164,8 @@
     "currentRouteLabel": "現在のルート:",
     "neighborsLoadMore": "さらに読み込む（{{loaded}}/{{total}} 読み込み済み）",
     "neighborsLoadMoreAria": "隣接ノードをさらに読み込む（{{loaded}}/{{total}} 読み込み済み）",
-    "neighborsLoadingMore": "読み込み中…"
+    "neighborsLoadingMore": "読み込み中…",
+    "cliClockCannotGoBackwards": "このリピーターのクロックはこのコンピューターの前にあります（ {{utc}} ）。MeshCoreファームウェアは時計を逆に設定しません。確認したら、clkrebootを実行してから、クロック同期を実行します。"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",
