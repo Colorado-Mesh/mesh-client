@@ -62,16 +62,43 @@ jobs:
             echo 'changed=true' >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Require RELEASE_PUSH_TOKEN for PR checks
+      # RELEASE_PUSH_TOKEN must be able to git-push a branch; existence alone is not
+      # enough (fine-grained missing Contents/PR write presents as push 403).
+      - name: Verify RELEASE_PUSH_TOKEN can push
         if: steps.licenses_diff.outputs.changed == 'true'
         env:
-          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
         run: |
-          if [ -z "${RELEASE_PUSH_TOKEN}" ]; then
+          set -euo pipefail
+          if [ -z "${GH_TOKEN}" ]; then
             echo '::error::Set repository secret RELEASE_PUSH_TOKEN (admin PAT: contents+workflows+pull_requests).'
             echo 'Default GITHUB_TOKEN PRs do not auto-run required checks under the merge-queue ruleset.'
             exit 1
           fi
+
+          LOGIN=$(gh api user --jq .login)
+          echo "RELEASE_PUSH_TOKEN authenticates as: ${LOGIN}"
+
+          PUSH=$(gh api "repos/${REPO}" --jq '.permissions.push // false')
+          if [ "${PUSH}" != 'true' ]; then
+            echo "::error::RELEASE_PUSH_TOKEN (${LOGIN}) lacks push on ${REPO}."
+            echo 'Grant Contents+Pull requests+Workflows write on this repo,'
+            echo 'then: gh secret set RELEASE_PUSH_TOKEN --repo Colorado-Mesh/mesh-client'
+            exit 1
+          fi
+
+          MAIN_SHA=$(gh api "repos/${REPO}/git/ref/heads/main" --jq .object.sha)
+          PROBE_REF="refs/heads/chore/cpr-token-probe-${RUN_ID}"
+          if ! gh api -X POST "repos/${REPO}/git/refs" -f ref="${PROBE_REF}" -f sha="${MAIN_SHA}" >/dev/null; then
+            echo "::error::RELEASE_PUSH_TOKEN (${LOGIN}) cannot create refs on ${REPO} (Contents write)."
+            echo 'Grant Contents+Pull requests+Workflows write on this repo,'
+            echo 'then: gh secret set RELEASE_PUSH_TOKEN --repo Colorado-Mesh/mesh-client'
+            exit 1
+          fi
+          gh api -X DELETE "repos/${REPO}/git/refs/${PROBE_REF#refs/}" >/dev/null
+          echo "RELEASE_PUSH_TOKEN can create/delete refs on ${REPO}"
 
       # Open a PR instead of pushing to main — the merge-queue ruleset blocks
       # direct pushes, and GitHub Actions cannot be added as a bypass actor

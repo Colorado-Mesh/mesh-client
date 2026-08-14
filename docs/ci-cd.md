@@ -147,7 +147,7 @@ After merges to `main` that change `package.json`, `pnpm-lock.yaml`, the generat
 5. Regenerate `docs/third-party-licenses.md` (`pnpm run docs:licenses`)
 6. Open a PR via `peter-evans/create-pull-request` when the file changed (branch `chore/third-party-licenses-<run_id>`)
 
-**Secret:** reuse **`RELEASE_PUSH_TOKEN`** (admin PAT with **contents**, **workflows**, and **pull requests** write). Default `GITHUB_TOKEN` PRs do not auto-run required checks, so they cannot enter the merge queue cleanly. Direct pushes to `main` remain blocked by the merge-queue ruleset.
+**Secret:** reuse **`RELEASE_PUSH_TOKEN`** (admin PAT with **contents**, **workflows**, and **pull requests** write). Default `GITHUB_TOKEN` PRs do not auto-run required checks, so they cannot enter the merge queue cleanly. Direct pushes to `main` remain blocked by the merge-queue ruleset. The workflow probes Contents write (create/delete a short-lived ref) before `create-pull-request` so a token missing write access fails with a clear error instead of a git 403.
 
 ---
 
