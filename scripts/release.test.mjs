@@ -107,8 +107,11 @@ describe('release.sh full-suite gate', () => {
   it('delegates conventional bump detection to detectReleaseBump.mjs (scoped feats)', () => {
     expect(script).toMatch(/detectReleaseBump\.mjs/);
     expect(script).toMatch(/detect_version_bump/);
+    expect(script).toMatch(/isSupportedBreakingSubject/);
     // Historical bug: unscoped-only feat: regex missed feat(scope):
     expect(script).not.toMatch(/\^feat\[\[:space:\]\]\*:/);
+    // Notes must not use the naive type!: grep (false positives for revert!: etc.)
+    expect(script).not.toMatch(/\^\\\* \[\^:\]\+!:/);
   });
 
   it('requires actionlint and yamllint (no soft-skip)', () => {

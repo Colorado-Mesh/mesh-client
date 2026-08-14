@@ -32,6 +32,19 @@ export function bodyHasBreakingChange(bodiesJoined) {
 }
 
 /**
+ * True when the subject is a supported conventional type with a breaking bang
+ * (`feat!:`, `fix(scope)!:`, …). Unsupported types (`revert!:`, `wip!:`) are false.
+ * Accepts optional leading `* ` from release-note bullet formatting.
+ * @param {string} subject
+ * @returns {boolean}
+ */
+export function isSupportedBreakingSubject(subject) {
+  const trimmed = subject.trim().replace(/^\*\s+/, '');
+  const parsed = parseConventionalSubject(trimmed);
+  return parsed?.breakingBang === true;
+}
+
+/**
  * Parse Conventional Commit type / breaking bang from a subject line.
  * @param {string} subject
  * @returns {{ type: string, breakingBang: boolean } | null}

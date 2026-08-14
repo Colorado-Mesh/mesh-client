@@ -17,6 +17,12 @@ on:
       - .github/workflows/third-party-licenses.yaml
   workflow_dispatch:
 
+# Coalesce overlapping regenerations (path-filtered pushes can stack) so we do not
+# leave multiple stale license PRs from canceled/superseded runs.
+concurrency:
+  group: third-party-licenses
+  cancel-in-progress: true
+
 jobs:
   update:
     name: Update third-party licenses
@@ -26,6 +32,7 @@ jobs:
       # configures its own http.*.extraheader (actions/checkout@v6 default helper).
       - uses: actions/checkout@v6
         with:
+          ref: main
           persist-credentials: false
 
       - name: Setup pnpm
@@ -83,6 +90,7 @@ jobs:
 
             Opened automatically by `third-party-licenses.yaml` (direct pushes to
             `main` are blocked by the merge-queue ruleset).
+          base: main
           branch: chore/third-party-licenses-${{ github.run_id }}
           delete-branch: true
           add-paths: |

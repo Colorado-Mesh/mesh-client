@@ -231,13 +231,22 @@ EOF
 
   echo ""
   echo "### Breaking Changes"
-  # Subjects with type!: / type(scope)!: plus line-anchored BREAKING CHANGE / BREAKING-CHANGE footers
-  # (must stay aligned with scripts/detectReleaseBump.mjs bodyHasBreakingChange).
+  # Supported type!: / type(scope)!: subjects (via detectReleaseBump.mjs) plus
+  # line-anchored BREAKING CHANGE / BREAKING-CHANGE footers.
   local commit_bodies breaking_lines
   commit_bodies=$(git log "$last_tag"..HEAD --pretty=format:"%B" 2> /dev/null || true)
   breaking_lines=$(
     {
-      printf '%s\n' "$commit_logs" | grep -E '^\* [^:]+!:' || true
+      printf '%s\n' "$commit_logs" | node --input-type=module -e "
+        import { isSupportedBreakingSubject } from './scripts/detectReleaseBump.mjs';
+        let s = '';
+        process.stdin.on('data', (d) => { s += d; });
+        process.stdin.on('end', () => {
+          for (const line of s.split('\\n')) {
+            if (line && isSupportedBreakingSubject(line)) process.stdout.write(line + '\\n');
+          }
+        });
+      " || true
       printf '%s\n' "$commit_bodies" | grep -E '^[ \t]*BREAKING[- ]CHANGE[ \t]*:' || true
     } | sed '/^$/d'
   )

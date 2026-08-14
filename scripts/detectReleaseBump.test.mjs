@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   bodyHasBreakingChange,
   detectReleaseBump,
+  isSupportedBreakingSubject,
   parseConventionalSubject,
   previewNextVersion,
 } from './detectReleaseBump.mjs';
@@ -42,7 +43,24 @@ describe('bodyHasBreakingChange', () => {
   });
 });
 
+describe('isSupportedBreakingSubject', () => {
+  it('accepts supported type!: / type(scope)!: including note bullets', () => {
+    expect(isSupportedBreakingSubject('feat!: remove legacy')).toBe(true);
+    expect(isSupportedBreakingSubject('* fix(api)!: drop field')).toBe(true);
+  });
+
+  it('rejects unsupported type!: subjects (not reported as breaking)', () => {
+    expect(isSupportedBreakingSubject('revert!: undo deploy')).toBe(false);
+    expect(isSupportedBreakingSubject('* wip!: unfinished')).toBe(false);
+    expect(isSupportedBreakingSubject('feat: not breaking')).toBe(false);
+  });
+});
+
 describe('detectReleaseBump', () => {
+  it('does not treat unsupported type!: as major', () => {
+    expect(detectReleaseBump(['revert!: undo', 'wip!: scratch'])).toBe('patch');
+  });
+
   it('treats scoped feat(scope): as minor (squash-merge titles)', () => {
     expect(
       detectReleaseBump([
