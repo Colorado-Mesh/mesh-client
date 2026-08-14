@@ -4169,7 +4169,13 @@
     "neighborsLoadMore": "Załaduj więcej ({{loaded}} z {{total}} załadowanych)",
     "neighborsLoadMoreAria": "Załaduj więcej sąsiadów ({{loaded}} z {{total}} załadowanych)",
     "neighborsLoadingMore": "Wczytywanie…",
-    "cliClockCannotGoBackwards": "Zegar tego przemiennika wyprzedza ten komputer ({{utc}}). Oprogramowanie sprzętowe MeshCore nie ustawi zegara wstecz. Po potwierdzeniu uruchom clkreboot, a następnie synchronizację zegara."
+    "cliClockCannotGoBackwards": "Zegar tego przemiennika wyprzedza ten komputer ({{utc}}). Oprogramowanie sprzętowe MeshCore nie ustawi zegara wstecz. Po potwierdzeniu uruchom clkreboot, a następnie synchronizację zegara.",
+    "typeFilterAria": "Filtruj wg rodzaju",
+    "filterAll": "Wszystko",
+    "filterRepeaters": "Repeatery",
+    "filterRooms": "Pomieszczenia",
+    "openRoom": "Otwarty pokój",
+    "savedPasswordOrphanRoomLabel": "Pokój {{nodeId}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",
@@ -4450,11 +4456,6 @@
     "postButton": "Opublikuj",
     "posting": "Publikowanie…",
     "manageRoom": "Zarządzaj",
-    "manageHeading": "Administracja pokoi",
-    "cliPlaceholder": "Polecenie CLI administratora…",
-    "cliSend": "Wyślij",
-    "clearCli": "Wyczyść CLI",
-    "cliEmpty": "Nie ma jeszcze wyjścia CLI.",
     "aclPubkeyLabel": "Klucz publiczny (64 hex)",
     "aclLevelLabel": "Poziom uprawnień",
     "aclLevelRemove": "Usuń dostęp",
@@ -4462,7 +4463,6 @@
     "aclLevelReadWrite": "Odczyt/zapis (można publikować)",
     "aclLevelAdmin": "Administrator",
     "aclApply": "Zastosuj listę ACL",
-    "adminPasswordRequired": "Do zarządzania tym pokojem wymagane jest hasło administratora.",
     "postFailed": "Nie udało się opublikować w pokoju",
     "leaveRoom": "Opuść kanał",
     "rememberPassword": "Zapamiętaj hasło",
@@ -4478,7 +4478,6 @@
     "cancelLoginHint": "Kolejne logowanie do pokoju może najpierw zakończyć się w radiu. Anulowanie zatrzymuje dalsze próby dla tego pokoju.",
     "emptyGuestLoginHint": "Puste pole gościa: użyj opcji Kontynuuj tylko do odczytu dla serwerów z pustym hasłem. Logowanie wymaga podania hasła i wysyła \"hello\", gdy pole jest puste.",
     "unreadPosts": "{{count}} nowe",
-    "closeManage": "Zamknij",
     "upgradeAccess": "Uaktualnij, aby uzyskać dostęp",
     "leavingRoom": "Opuszczanie…",
     "leaveRoomInProgress": "Opuszczanie pokoju…",
@@ -4540,11 +4539,8 @@
     "membersHeadingWithCount": "Członkowie ({{count}})",
     "collapseRoomList": "Zwiń listę pokoi",
     "expandRoomList": "Rozwiń listę pokoi",
-    "pathHashCliGet": "Uzyskaj tryb skrótu ścieżki",
-    "pathHashCliSet0": "Ustaw tryb skrótu ścieżki 1 bajt",
-    "pathHashCliSet1": "Ustaw tryb skrótu ścieżki 2-bajtowy",
-    "pathHashCliSet2": "Ustaw tryb skrótu ścieżki 3-bajtowy",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} nieprzeczytane"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} nieprzeczytane",
+    "manageJumpHint": "Elementy sterujące infrastrukturą (ping, status, CLI, setperm ACL) znajdują się na karcie Repeaters & Rooms."
   },
   "searchModal": {
     "closeSearch": "Zamknij wyszukiwanie",

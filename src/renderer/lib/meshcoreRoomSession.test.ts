@@ -14,7 +14,9 @@ import {
   meshcoreRoomLoginErrorIsAuthFailure,
   meshcoreRoomLoginErrorIsNoRoute,
   meshcoreRoomLogout,
+  meshcoreRoomTryAdminLogin,
   meshcoreRoomTryRelogin,
+  meshcoreTryRemoteServerLogin,
 } from './meshcoreRoomSession';
 
 vi.mock('./meshcoreRoomLoginRpc', () => ({
@@ -309,5 +311,41 @@ describe('meshcoreRoomSession', () => {
       true,
     );
     expect(meshcoreRoomLoginErrorIsNoRoute(new Error('login timed out'))).toBe(false);
+  });
+
+  it('meshcoreRoomTryAdminLogin uses persisted admin when there is no session', async () => {
+    meshcoreClearAllRoomSessions();
+    const { setMeshcoreRoomCredential } = await import('./meshcoreRoomCredentialStorage');
+    const { clearAllRoomEphemeralAdminPasswords } = await import('./meshcoreInfraAdminSecrets');
+    clearAllRoomEphemeralAdminPasswords();
+    localStorage.clear();
+    await setMeshcoreRoomCredential(55, { guestPassword: '', adminPassword: 'saved-admin' });
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 3 });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    await meshcoreRoomTryAdminLogin(conn, 55, pubKey);
+    expect(mockRunMeshcoreRoomLogin).toHaveBeenCalled();
+    expect(meshcoreGetRoomSession(55)?.role).toBe('admin');
+  });
+
+  it('meshcoreTryRemoteServerLogin for Room does not call repeater login', async () => {
+    meshcoreClearAllRoomSessions();
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 3 });
+    const { setMeshcoreRoomCredential } = await import('./meshcoreRoomCredentialStorage');
+    await setMeshcoreRoomCredential(66, { adminPassword: 'admin' });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    await meshcoreTryRemoteServerLogin(conn, 66, pubKey, 'Room');
+    expect(mockRunMeshcoreRoomLogin).toHaveBeenCalled();
   });
 });

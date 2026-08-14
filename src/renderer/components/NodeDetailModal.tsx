@@ -530,7 +530,7 @@ export default function NodeDetailModal({
         }
       }
       const repeaterName = node?.long_name ?? `Repeater-${nodeId.toString(16)}`;
-      const auth = await ensureRepeaterAuth(nodeId, repeaterName);
+      const auth = await ensureRepeaterAuth(nodeId, repeaterName, hwModel);
       if (!auth.ok) {
         setActionStatus(t('nodeDetailModal.remoteAuthCancelled'));
         return false;
@@ -2000,57 +2000,59 @@ export default function NodeDetailModal({
                       : t('nodeDetailModal.sensorTelemetryButton')}
                   </button>
                 )}
-                {protocol === 'meshcore' && onRequestNeighbors && node.hw_model === 'Repeater' && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (
+                {protocol === 'meshcore' &&
+                  onRequestNeighbors &&
+                  (node.hw_model === 'Repeater' || node.hw_model === 'Room') && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (
+                          node.hops_away != null &&
+                          node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS
+                        ) {
+                          return;
+                        }
+                        if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')))
+                          return;
+                        setNeighborsPending(true);
+                        setActionStatus(t('nodeDetailModal.requestingNeighbors'));
+                        try {
+                          await onRequestNeighbors(node.node_id);
+                          setActionStatus(null);
+                        } catch (e) {
+                          console.warn(
+                            '[NodeDetailModal] requestNeighbors failed ' + errLikeToLogString(e),
+                          );
+                          setActionStatus(
+                            e instanceof Error
+                              ? e.message
+                              : t('nodeDetailModal.neighborsFailed', { message: String(e) }),
+                          );
+                        } finally {
+                          setNeighborsPending(false);
+                        }
+                      }}
+                      disabled={
+                        !isConnected ||
+                        neighborsPending ||
+                        (node.hops_away != null &&
+                          node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS)
+                      }
+                      title={
                         node.hops_away != null &&
                         node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS
-                      ) {
-                        return;
+                          ? t('nodeDetailModal.neighborsHopTooFar', {
+                              hops: MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS,
+                            })
+                          : undefined
                       }
-                      if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')))
-                        return;
-                      setNeighborsPending(true);
-                      setActionStatus(t('nodeDetailModal.requestingNeighbors'));
-                      try {
-                        await onRequestNeighbors(node.node_id);
-                        setActionStatus(null);
-                      } catch (e) {
-                        console.warn(
-                          '[NodeDetailModal] requestNeighbors failed ' + errLikeToLogString(e),
-                        );
-                        setActionStatus(
-                          e instanceof Error
-                            ? e.message
-                            : t('nodeDetailModal.neighborsFailed', { message: String(e) }),
-                        );
-                      } finally {
-                        setNeighborsPending(false);
-                      }
-                    }}
-                    disabled={
-                      !isConnected ||
-                      neighborsPending ||
-                      (node.hops_away != null &&
-                        node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS)
-                    }
-                    title={
-                      node.hops_away != null &&
-                      node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS
-                        ? t('nodeDetailModal.neighborsHopTooFar', {
-                            hops: MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS,
-                          })
-                        : undefined
-                    }
-                    className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {neighborsPending
-                      ? t('nodeDetailModal.requestingEllipsis')
-                      : t('nodeDetailModal.getNeighbors')}
-                  </button>
-                )}
+                      className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {neighborsPending
+                        ? t('nodeDetailModal.requestingEllipsis')
+                        : t('nodeDetailModal.getNeighbors')}
+                    </button>
+                  )}
                 {onOpenRoom && protocol === 'meshcore' && node.hw_model === 'Room' && (
                   <button
                     type="button"

@@ -1,8 +1,10 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
+import { resolveRoomAdminPassword } from './meshcoreInfraAdminSecrets';
 import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
 import { meshcoreLoginErrorIsAuthFailure } from './meshcoreRepeaterRpcCommon';
+import type { MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
 import type { MeshcoreRepeaterLoginConn } from './meshcoreRepeaterSession';
 import { assertMeshcoreRepeaterLoginOk, meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
 import {
@@ -390,23 +392,23 @@ export function meshcoreRoomEnsureLoggedIn(nodeId: number, mode: 'post' | 'admin
   return meshcoreRoomCanPost(nodeId);
 }
 
-/** Best-effort admin login before room server status/telemetry/CLI (uses session admin password). */
+/** Best-effort admin login before room server status/telemetry/CLI. */
 export async function meshcoreRoomTryAdminLogin(
   conn: MeshcoreRoomLoginConn,
   nodeId: number,
   pubKey: Uint8Array,
 ): Promise<void> {
   const session = sessions.get(nodeId);
-  if (!session) return;
-  const password = session.adminPassword.trim() || session.guestPassword.trim();
+  const adminPassword = resolveRoomAdminPassword(nodeId, session?.adminPassword);
+  const guestPassword = session?.guestPassword.trim() ?? '';
+  const password = adminPassword || guestPassword;
   if (!password) return;
   await meshcoreRoomLogin(conn, nodeId, pubKey, password, {
-    adminPassword: session.adminPassword,
-    guestPassword: session.guestPassword,
+    adminPassword: adminPassword || session?.adminPassword || '',
+    guestPassword: guestPassword || session?.guestPassword || '',
+    forceRelogin: session != null && session.role !== 'admin',
   });
 }
-
-import type { MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
 
 /** Repeater admin login or room server admin login depending on contact type. */
 export type MeshcoreRemoteServerLoginConn = MeshcoreRepeaterLoginConn;

@@ -319,6 +319,7 @@ import {
   meshcoreRoomLoginErrorIsNoRoute,
   meshcoreRoomLogout,
   meshcoreRoomLogoutFailureMessage,
+  meshcoreRoomTryAdminLogin,
   meshcoreRoomTryRelogin,
   meshcoreTryRemoteServerLogin,
 } from '../lib/meshcoreRoomSession';
@@ -6174,7 +6175,7 @@ export function useMeshcoreRuntime() {
       if (!cred) {
         throw new Error('No saved room credential');
       }
-      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword);
+      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
       await loginRoom(nodeId, password, {
         guestPassword: password,
         adminPassword: cred.adminPassword ?? '',
@@ -6202,7 +6203,7 @@ export function useMeshcoreRuntime() {
       for (const nodeId of nodeIds) {
         const cred = getMeshcoreRoomCredential(nodeId);
         if (!cred) continue;
-        const guestPassword = meshcoreRoomEffectiveGuestPassword(cred.guestPassword);
+        const guestPassword = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
         try {
           await loginRoom(nodeId, guestPassword, {
             guestPassword,
@@ -6263,7 +6264,7 @@ export function useMeshcoreRuntime() {
     }
 
     try {
-      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword);
+      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
       const activeConn = connRef.current;
       if (!activeConn) return;
       const syncHops = resolveRoomLoginHopsForNode(target.nodeId);
@@ -6410,7 +6411,7 @@ export function useMeshcoreRuntime() {
     const pubKey = pubKeyMapRef.current.get(target.nodeId);
     if (!pubKey) return;
     try {
-      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword);
+      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
       const activeConn = connRef.current;
       if (!activeConn) return;
       const syncHops = resolveRoomLoginHopsForNode(target.nodeId);
@@ -6657,10 +6658,14 @@ export function useMeshcoreRuntime() {
   );
 
   const sendRoomAdminCliCommand = useCallback(
-    async (nodeId: number, command: string): Promise<string> => {
+    async (
+      nodeId: number,
+      command: string,
+      opts?: { confirmedDanger?: boolean },
+    ): Promise<string> => {
       const node = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
       if (node?.hw_model !== 'Room') {
-        return sendRepeaterCliCommand(nodeId, command);
+        return sendRepeaterCliCommand(nodeId, command, opts);
       }
       const pubKey = pubKeyMapRef.current.get(nodeId);
       if (!pubKey) {
@@ -6675,11 +6680,14 @@ export function useMeshcoreRuntime() {
           hopsAway: resolveRoomLoginHopsForNode(nodeId),
           companionTransport: meshcoreConnectTypeRef.current,
         });
-        if (!relogged || !meshcoreRoomCanAdmin(nodeId)) {
+        if (!relogged) {
+          await meshcoreRoomTryAdminLogin(conn, nodeId, pubKey);
+        }
+        if (!meshcoreRoomCanAdmin(nodeId)) {
           throw new Error('Room admin login required');
         }
       }
-      return sendRepeaterCliCommand(nodeId, command);
+      return sendRepeaterCliCommand(nodeId, command, opts);
     },
     [resolveRoomLoginHopsForNode, sendRepeaterCliCommand],
   );

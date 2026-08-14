@@ -4165,7 +4165,13 @@
     "neighborsLoadMore": "Laad meer ({{loaded}} van {{total}})",
     "neighborsLoadMoreAria": "Laad meer buren ({{loaded}} van {{total}} geladen)",
     "neighborsLoadingMore": "Aan het laden…",
-    "cliClockCannotGoBackwards": "De klok van deze repeater loopt voor op deze computer ({{utc}}). MeshCore-firmware zet de klok niet achteruit. Nadat u hebt bevestigd, voert u clkreboot uit en vervolgens kloksynchronisatie."
+    "cliClockCannotGoBackwards": "De klok van deze repeater loopt voor op deze computer ({{utc}}). MeshCore-firmware zet de klok niet achteruit. Nadat u hebt bevestigd, voert u clkreboot uit en vervolgens kloksynchronisatie.",
+    "typeFilterAria": "Filter op Type",
+    "filterAll": "All",
+    "filterRepeaters": "Repeaters",
+    "filterRooms": "Kamers",
+    "openRoom": "Open Kamer",
+    "savedPasswordOrphanRoomLabel": "Kamer {{nodeId}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",
@@ -4446,11 +4452,6 @@
     "postButton": "Plaatsen",
     "posting": "Plaatsen…",
     "manageRoom": "Beheren",
-    "manageHeading": "Zaaladministratie",
-    "cliPlaceholder": "CLI-opdracht voor beheerder...",
-    "cliSend": "Versturen",
-    "clearCli": "CLI wissen",
-    "cliEmpty": "Nog geen uitvoer ...",
     "aclPubkeyLabel": "Openbare sleutel (64 hex)",
     "aclLevelLabel": "machtigingsniveau",
     "aclLevelRemove": "Toegang verwijderen",
@@ -4458,7 +4459,6 @@
     "aclLevelReadWrite": "Lezen/schrijven (kan posten)",
     "aclLevelAdmin": "Beheerder",
     "aclApply": "ACL toepassen",
-    "adminPasswordRequired": "Beheerderswachtwoord is vereist om deze ruimte te beheren.",
     "postFailed": "Posten naar ruimte mislukt",
     "leaveRoom": "Ruimte verlaten",
     "rememberPassword": "Wachtwoord onthouden",
@@ -4474,7 +4474,6 @@
     "cancelLoginHint": "Een andere ruimtelogin kan eerst op de radio eindigen. Annuleer stopt verdere pogingen voor deze ruimte.",
     "emptyGuestLoginHint": "Leeg gastveld: gebruik Doorgaan met alleen-lezen voor servers zonder wachtwoord. Inloggen vereist een wachtwoord en stuurt \"hello\" als het veld leeg is.",
     "unreadPosts": "{{count}} nieuw",
-    "closeManage": "Sluiten",
     "upgradeAccess": "Toegang upgraden",
     "leavingRoom": "Verlaten…",
     "leaveRoomInProgress": "Ruimte verlaten…",
@@ -4536,11 +4535,8 @@
     "membersHeadingWithCount": "Leden ({{count}})",
     "collapseRoomList": "Ruimtelijst samenvouwen",
     "expandRoomList": "Ruimtelijst uitbreiden",
-    "pathHashCliGet": "Hash-modus voor pad ophalen",
-    "pathHashCliSet0": "Stel pad hash-modus 1-byte in",
-    "pathHashCliSet1": "Stel pad hash-modus 2-byte in",
-    "pathHashCliSet2": "Stel pad hash-modus in op 3 bytes",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} ongelezen"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} ongelezen",
+    "manageJumpHint": "Infrastructuurbesturingen (ping, status, CLI, ACL setperm) staan op het tabblad Repeaters & Rooms."
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",

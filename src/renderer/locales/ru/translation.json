@@ -4167,7 +4167,13 @@
     "neighborsLoadMore": "Загрузить больше ({{loaded}} из {{total}})",
     "neighborsLoadMoreAria": "Загрузить больше соседей ({{loaded}} из {{total}} загружено)",
     "neighborsLoadingMore": "Загрузка…",
-    "cliClockCannotGoBackwards": "Часы этого ретранслятора опережают этот компьютер ({{utc}}). Прошивка MeshCore не переводит часы назад. После подтверждения запустите clkreboot, а затем синхронизируйте часы."
+    "cliClockCannotGoBackwards": "Часы этого ретранслятора опережают этот компьютер ({{utc}}). Прошивка MeshCore не переводит часы назад. После подтверждения запустите clkreboot, а затем синхронизируйте часы.",
+    "typeFilterAria": "Фильтр по типу",
+    "filterAll": "Все",
+    "filterRepeaters": "Ретрансляторов",
+    "filterRooms": "Номера",
+    "openRoom": "Открытое помещение",
+    "savedPasswordOrphanRoomLabel": "Помещение {{nodeId}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Интервал объявления (секунды)",
@@ -4448,11 +4454,6 @@
     "postButton": "Опубликовать",
     "posting": "Публикация…",
     "manageRoom": "Управление",
-    "manageHeading": "Администрирование комнаты",
-    "cliPlaceholder": "Команда интерфейса командной строки администратора...",
-    "cliSend": "Отправить",
-    "clearCli": "Очистить CLI",
-    "cliEmpty": "Выходные данные интерфейса командной строки пока отсутствуют.",
     "aclPubkeyLabel": "Открытый ключ (64 HEX)",
     "aclLevelLabel": "уровень разрешений",
     "aclLevelRemove": "Удалить доступ",
@@ -4460,7 +4461,6 @@
     "aclLevelReadWrite": "Чтение/запись (можно опубликовать)",
     "aclLevelAdmin": "Админ.",
     "aclApply": "Применить ACL",
-    "adminPasswordRequired": "Пароль администратора необходим для управления этой комнатой.",
     "postFailed": "Не удалось опубликовать в комнате",
     "leaveRoom": "Покинуть комнату",
     "rememberPassword": "Запомнить пароль",
@@ -4476,7 +4476,6 @@
     "cancelLoginHint": "Вход в другую комнату может завершиться сначала по радио. Отмена останавливает дальнейшие попытки для этой комнаты.",
     "emptyGuestLoginHint": "Пустое поле гостя: используйте «Продолжить только для чтения» для серверов без пароля. Вход требует пароль и отправляет «hello», если поле пустое.",
     "unreadPosts": "{{count}} новых",
-    "closeManage": "Закрыть",
     "upgradeAccess": "Обновить доступ",
     "leavingRoom": "Выход…",
     "leaveRoomInProgress": "Выход из комнаты…",
@@ -4538,11 +4537,8 @@
     "membersHeadingWithCount": "Участники ({{count}})",
     "collapseRoomList": "Свернуть список комнат",
     "expandRoomList": "Развернуть список комнат",
-    "pathHashCliGet": "Получить режим хеширования пути",
-    "pathHashCliSet0": "Установить режим хеширования пути 1 байт",
-    "pathHashCliSet1": "Установить хеш-режим пути 2 байта",
-    "pathHashCliSet2": "Установить режим хеширования пути 3 байта",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} НЕ прочитано"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} НЕ прочитано",
+    "manageJumpHint": "Элементы управления инфраструктурой (ping, status, CLI, ACL setperm) находятся на вкладке Repeaters & Rooms."
   },
   "searchModal": {
     "closeSearch": "Закрыть поиск",

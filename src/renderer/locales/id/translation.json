@@ -4165,7 +4165,13 @@
     "neighborsLoadMore": "Muat lebih banyak ({{loaded}} dari {{total}})",
     "neighborsLoadMoreAria": "Muat lebih banyak tetangga ({{loaded}} dari {{total}} dimuat)",
     "neighborsLoadingMore": "Memuat…",
-    "cliClockCannotGoBackwards": "Jam repeater ini berada di depan komputer ini ({{utc}}). Firmware MeshCore tidak akan mengatur jam mundur. Setelah Anda mengonfirmasi, jalankan clkreboot, lalu sinkronisasi jam."
+    "cliClockCannotGoBackwards": "Jam repeater ini berada di depan komputer ini ({{utc}}). Firmware MeshCore tidak akan mengatur jam mundur. Setelah Anda mengonfirmasi, jalankan clkreboot, lalu sinkronisasi jam.",
+    "typeFilterAria": "Filter berdasarkan jenis simpul",
+    "filterAll": "Semua",
+    "filterRepeaters": "Pengulang",
+    "filterRooms": "Ruangan",
+    "openRoom": "Ruang terbuka",
+    "savedPasswordOrphanRoomLabel": "Kamar {{nodeId}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",
@@ -4446,11 +4452,6 @@
     "postButton": "Posting",
     "posting": "Memposting…",
     "manageRoom": "Kelola",
-    "manageHeading": "Administrasi ruangan",
-    "cliPlaceholder": "Perintah CLI admin…",
-    "cliSend": "Kirim",
-    "clearCli": "Hapus CLI",
-    "cliEmpty": "Belum ada output CLI.",
     "aclPubkeyLabel": "Kunci publik (64 hex)",
     "aclLevelLabel": "Tingkat izin",
     "aclLevelRemove": "Hapus akses",
@@ -4458,7 +4459,6 @@
     "aclLevelReadWrite": "Baca/Tulis (bisa posting)",
     "aclLevelAdmin": "Administrator",
     "aclApply": "Terapkan ACL",
-    "adminPasswordRequired": "Kata sandi admin diperlukan untuk mengelola ruangan ini.",
     "postFailed": "Gagal mengeposkan ke ruangan",
     "leaveRoom": "Tinggalkan ruangan",
     "rememberPassword": "Ingat sandi",
@@ -4474,7 +4474,6 @@
     "cancelLoginHint": "Login ruangan lain mungkin selesai di radio terlebih dahulu. Batalkan upaya perhentian lebih lanjut untuk ruangan ini.",
     "emptyGuestLoginHint": "Kolom tamu kosong: gunakan Lanjutkan hanya baca untuk server tanpa kata sandi. Login memerlukan kata sandi dan mengirim \"hello\" saat kolom kosong.",
     "unreadPosts": "{{count}} baru",
-    "closeManage": "Tutup",
     "upgradeAccess": "Tingkatkan akses",
     "leavingRoom": "Meninggalkan…",
     "leaveRoomInProgress": "Meninggalkan ruangan…",
@@ -4536,11 +4535,8 @@
     "membersHeadingWithCount": "Anggota ({{count}})",
     "collapseRoomList": "Ciutkan daftar ruangan",
     "expandRoomList": "Perluas daftar ruangan",
-    "pathHashCliGet": "Dapatkan mode hash jalur",
-    "pathHashCliSet0": "Atur mode hash jalur 1 - byte",
-    "pathHashCliSet1": "Atur mode hash jalur 2 - byte",
-    "pathHashCliSet2": "Atur mode hash jalur 3 - byte",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} belum dibaca"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} belum dibaca",
+    "manageJumpHint": "Kontrol infrastruktur (ping, status, CLI, ACL setperm) ada di tab Repeater & Ruangan."
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",

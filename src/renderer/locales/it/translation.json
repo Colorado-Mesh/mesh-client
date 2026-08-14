@@ -4165,7 +4165,13 @@
     "neighborsLoadMore": "Carica altro ({{loaded}} di {{total}} caricati)",
     "neighborsLoadMoreAria": "Carica altri vicini ({{loaded}} di {{total}} caricati)",
     "neighborsLoadingMore": "Caricamento in corso…",
-    "cliClockCannotGoBackwards": "L'orologio di questo ripetitore è davanti a questo computer ({{utc}}). Il firmware MeshCore non imposterà l'orologio all'indietro. Dopo aver confermato, eseguire clkreboot, quindi sincronizzare l'orologio."
+    "cliClockCannotGoBackwards": "L'orologio di questo ripetitore è davanti a questo computer ({{utc}}). Il firmware MeshCore non imposterà l'orologio all'indietro. Dopo aver confermato, eseguire clkreboot, quindi sincronizzare l'orologio.",
+    "typeFilterAria": "Filtra per tipo di nodo",
+    "filterAll": "Tutte",
+    "filterRepeaters": "Ripetitori",
+    "filterRooms": "Camere",
+    "openRoom": "Stanza Aperta",
+    "savedPasswordOrphanRoomLabel": "Sala {{nodeId}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",
@@ -4446,11 +4452,6 @@
     "postButton": "Pubblica",
     "posting": "Invio",
     "manageRoom": "Gestione",
-    "manageHeading": "Amministrazione della sala",
-    "cliPlaceholder": "Comando CLI amministratore...",
-    "cliSend": "Invia",
-    "clearCli": "Cancella CLI",
-    "cliEmpty": "Ancora nessun output CLI.",
     "aclPubkeyLabel": "Chiave pubblica (esadecimale 64)",
     "aclLevelLabel": "Livello di autorizzazione",
     "aclLevelRemove": "Rimuovere l'accesso",
@@ -4458,7 +4459,6 @@
     "aclLevelReadWrite": "Lettura/scrittura (può pubblicare)",
     "aclLevelAdmin": "Amministratore",
     "aclApply": "Applica ACL",
-    "adminPasswordRequired": "La password di amministratore è necessaria per gestire questa stanza.",
     "postFailed": "Impossibile pubblicare nella stanza",
     "leaveRoom": "Lasciare la stanza",
     "rememberPassword": "Ricorda la password",
@@ -4474,7 +4474,6 @@
     "cancelLoginHint": "Il login di un'altra stanza potrebbe terminare prima alla radio. Annulla interrompe ulteriori tentativi per questa stanza.",
     "emptyGuestLoginHint": "Campo ospite vuoto: usa «Continua in sola lettura» per i server senza password. L'accesso richiede una password e invia «hello» se il campo è vuoto.",
     "unreadPosts": "{{count}} nuovi",
-    "closeManage": "Chiudi",
     "upgradeAccess": "Migliora accesso",
     "leavingRoom": "Uscita…",
     "leaveRoomInProgress": "Lasciare spazio...",
@@ -4536,11 +4535,8 @@
     "membersHeadingWithCount": "Membri ({{count}})",
     "collapseRoomList": "Comprimi l'elenco delle sale",
     "expandRoomList": "Espandi l'elenco delle sale",
-    "pathHashCliGet": "Ottieni la modalità hash del percorso",
-    "pathHashCliSet0": "Imposta la modalità hash del percorso a 1 byte",
-    "pathHashCliSet1": "Imposta la modalità hash del percorso a 2 byte",
-    "pathHashCliSet2": "Imposta la modalità hash del percorso a 3 byte",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} non letti"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} non letti",
+    "manageJumpHint": "I controlli dell'infrastruttura (ping, stato, CLI, setperm ACL) sono nella scheda Ripetitori e stanze."
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",

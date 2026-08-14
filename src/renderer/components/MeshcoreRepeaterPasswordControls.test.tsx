@@ -61,7 +61,7 @@ describe('MeshcoreRepeaterPasswordControls', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: /forget saved repeater password/i }));
+    await user.click(screen.getByRole('button', { name: /forget saved admin password/i }));
     expect(forgetMeshcoreRepeaterSavedSecret).toHaveBeenCalledWith(0x200);
     expect(onSecretsChanged).toHaveBeenCalled();
     expect(onStatusMessage).toHaveBeenCalledWith(expect.stringMatching(/removed/i));

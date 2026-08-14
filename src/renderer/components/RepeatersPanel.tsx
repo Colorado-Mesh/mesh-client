@@ -23,6 +23,11 @@ import {
   translateRepeaterCliHistoryText,
 } from '../lib/meshcore/meshcoreMessageI18n';
 import {
+  forgetAdminPassword,
+  listSavedAdminPasswords,
+  type MeshcoreInfraAdminPasswordEntry,
+} from '../lib/meshcoreInfraAdminSecrets';
+import {
   buildMeshcorePathChainSegments,
   buildMeshcorePathResolutionFromNodes,
   meshcoreDisplayRouteFromPathSelection,
@@ -33,8 +38,6 @@ import {
 import type { MeshcoreRepeaterRpcPendingMap } from '../lib/meshcoreRepeaterAdminPending';
 import { isRepeaterAdminRpcPending } from '../lib/meshcoreRepeaterAdminPending';
 import { isMeshcoreRepeaterCliDangerCommand } from '../lib/meshcoreRepeaterCliDanger';
-import { listMeshcoreRepeaterCredentialNodeIds } from '../lib/meshcoreRepeaterCredentialStorage';
-import { forgetMeshcoreRepeaterSavedSecret } from '../lib/meshcoreRepeaterSavedSecrets';
 import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
 import {
   effectiveLastHeardMs,
@@ -52,10 +55,40 @@ import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import { MeshcoreRepeaterSavedPasswordIndicator } from './MeshcoreRepeaterPasswordControls';
+import { MeshcoreRoomAclControls } from './MeshcoreRoomAclControls';
 import { MeshcoreRouteChain } from './MeshcoreRouteChain';
 import { formatSecondsAgo } from './NodeInfoBody';
 import SnrIndicator from './SnrIndicator';
 import { useToast } from './Toast';
+
+type TypeFilter = 'all' | 'repeater' | 'room';
+
+const SHARED_CLI_QUICK_COMMANDS = [
+  'name',
+  'radio',
+  'neighbors',
+  'version',
+  'status',
+  'config',
+  'help',
+  'clock',
+  'clock sync',
+  'clear stats',
+  'advert',
+  'advert.zerohop',
+  'board',
+  'get role',
+  'stats-core',
+  'stats-radio',
+  'stats-packets',
+  'discover.neighbors',
+  'get path.hash.mode',
+  'set path.hash.mode 0',
+  'set path.hash.mode 1',
+  'set path.hash.mode 2',
+] as const;
+
+const ROOM_CLI_QUICK_COMMANDS = ['get acl', 'allow.read.only on', 'allow.read.only off'] as const;
 
 interface Props {
   nodes: Map<number, MeshNode>;
@@ -87,6 +120,11 @@ interface Props {
   /** MeshCore: when set (non-null), prefetches SQLite path history for visible repeaters. */
   meshcoreCanPingTrace?: (nodeId: number) => boolean;
   onToggleFavorite?: (nodeId: number, favorited: boolean) => void;
+  /** Jump to Rooms tab for this room server. */
+  onOpenRoom?: (nodeId: number) => void;
+  /** Select/expand CLI for this node (from Rooms Manage jump). */
+  pendingFocusNodeId?: number | null;
+  onPendingFocusConsumed?: () => void;
 }
 
 const SIGNAL_MAX_AGE_MS = MS_PER_DAY;
@@ -154,18 +192,23 @@ async function runRepeaterAdminAction(
   orphanLabel: (nodeId: number) => string,
   ensureRepeaterAuth: (
     nodeId: number,
-    repeaterName: string,
+    displayName: string,
+    hwModel?: string,
   ) => Promise<{ ok: boolean; saved?: boolean }>,
-  refreshStoredRepeaters: () => void,
+  refreshStoredSecrets: () => void,
   action: () => Promise<void>,
   toastKey: string,
   logTag: string,
   addToast: (message: string, type: 'error') => void,
 ): Promise<void> {
   const node = nodes.get(nodeId);
-  const auth = await ensureRepeaterAuth(nodeId, node?.long_name ?? orphanLabel(nodeId));
+  const auth = await ensureRepeaterAuth(
+    nodeId,
+    node?.long_name ?? orphanLabel(nodeId),
+    node?.hw_model,
+  );
   if (!auth.ok) return;
-  if (auth.saved) refreshStoredRepeaters();
+  if (auth.saved) refreshStoredSecrets();
   try {
     await action();
   } catch (e) {
@@ -272,29 +315,35 @@ export default function RepeatersPanel({
   meshcoreCliErrors,
   onClearCliHistory,
   onToggleFavorite,
+  onOpenRoom,
+  pendingFocusNodeId,
+  onPendingFocusConsumed,
 }: Props) {
   const { addToast } = useToast();
   const { t } = useTranslation();
   const { ensureRepeaterAuth, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
-  const [storedRepeaterIds, setStoredRepeaterIds] = useState(
-    () => new Set(listMeshcoreRepeaterCredentialNodeIds()),
+  const [savedAdminEntries, setSavedAdminEntries] = useState<MeshcoreInfraAdminPasswordEntry[]>(
+    () => listSavedAdminPasswords(),
   );
   const [savedPasswordsOpen, setSavedPasswordsOpen] = useState(false);
   const [forgetConfirmNodeId, setForgetConfirmNodeId] = useState<number | null>(null);
-  const refreshStoredRepeaters = useCallback(() => {
-    setStoredRepeaterIds(new Set(listMeshcoreRepeaterCredentialNodeIds()));
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const refreshStoredSecrets = useCallback(() => {
+    setSavedAdminEntries(listSavedAdminPasswords());
   }, []);
-  const savedCredentialNodeIds = useMemo(
-    () => [...storedRepeaterIds].sort((a, b) => a - b),
-    [storedRepeaterIds],
-  );
-  const resolveRepeaterDisplayName = useCallback(
-    (nodeId: number): string => {
+  const savedCredentialEntries = useMemo(() => savedAdminEntries, [savedAdminEntries]);
+  const resolveNodeDisplayName = useCallback(
+    (nodeId: number, kind: MeshcoreInfraAdminPasswordEntry['kind']): string => {
       const n = nodes.get(nodeId);
       if (n?.long_name) return n.long_name;
-      return t('repeatersPanel.savedPasswordOrphanLabel', {
-        nodeId: nodeId.toString(16).padStart(8, '0'),
-      });
+      return t(
+        kind === 'Room'
+          ? 'repeatersPanel.savedPasswordOrphanRoomLabel'
+          : 'repeatersPanel.savedPasswordOrphanLabel',
+        {
+          nodeId: nodeId.toString(16).padStart(8, '0'),
+        },
+      );
     },
     [nodes, t],
   );
@@ -359,10 +408,10 @@ export default function RepeatersPanel({
 
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider('meshcore');
 
-  const repeaters = useMemo(
+  const infraNodes = useMemo(
     () =>
       Array.from(nodes.values())
-        .filter((n) => n.hw_model === 'Repeater')
+        .filter((n) => n.hw_model === 'Repeater' || n.hw_model === 'Room')
         .sort((a, b) => {
           const aFav = a.favorited ? 1 : 0;
           const bFav = b.favorited ? 1 : 0;
@@ -374,18 +423,36 @@ export default function RepeatersPanel({
 
   useEffect(() => {
     if (nodes.size === 0) return;
-    console.debug('[RepeatersPanel] nodes=', nodes.size, 'repeatersCount=', repeaters.length);
-  }, [nodes.size, repeaters.length]);
+    console.debug('[RepeatersPanel] nodes=', nodes.size, 'infraCount=', infraNodes.length);
+  }, [nodes.size, infraNodes.length]);
 
   const repeatersFiltered = useMemo(() => {
+    let list = infraNodes;
+    if (typeFilter === 'repeater') {
+      list = list.filter((n) => n.hw_model === 'Repeater');
+    } else if (typeFilter === 'room') {
+      list = list.filter((n) => n.hw_model === 'Room');
+    }
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return repeaters;
-    return repeaters.filter(
+    if (!q) return list;
+    return list.filter(
       (n) =>
         n.long_name.toLowerCase().includes(q) || n.node_id.toString(16).toLowerCase().includes(q),
     );
-  }, [repeaters, searchQuery]);
+  }, [infraNodes, searchQuery, typeFilter]);
 
+  useEffect(() => {
+    if (pendingFocusNodeId == null) return;
+    const target = nodes.get(pendingFocusNodeId);
+    if (!target || (target.hw_model !== 'Repeater' && target.hw_model !== 'Room')) {
+      onPendingFocusConsumed?.();
+      return;
+    }
+    if (target.hw_model === 'Room') setTypeFilter('room');
+    else setTypeFilter('repeater');
+    setExpandedCli((prev) => new Set([...prev, pendingFocusNodeId]));
+    onPendingFocusConsumed?.();
+  }, [nodes, onPendingFocusConsumed, pendingFocusNodeId]);
   const repeaterTableScrollRef = useRef<HTMLDivElement>(null);
   const shouldVirtualizeRepeaterRows = repeatersFiltered.length > REPEATER_VIRTUALIZE_THRESHOLD;
   const repeaterRowVirtualizer = useVirtualizer({
@@ -429,15 +496,18 @@ export default function RepeatersPanel({
     repeaterRowVirtualizer,
   ]);
 
-  const handleForgetSavedPassword = async (nodeId: number) => {
+  const handleForgetSavedPassword = async (
+    nodeId: number,
+    kind: MeshcoreInfraAdminPasswordEntry['kind'],
+  ) => {
     if (forgetConfirmNodeId !== nodeId) {
       setForgetConfirmNodeId(nodeId);
       return;
     }
     setForgetConfirmNodeId(null);
     try {
-      await forgetMeshcoreRepeaterSavedSecret(nodeId);
-      refreshStoredRepeaters();
+      await forgetAdminPassword(nodeId, kind);
+      refreshStoredSecrets();
       addToast(t('repeatersPanel.passwordForgotten'), 'success');
     } catch (e) {
       console.warn('[RepeatersPanel] forget saved password failed ' + errLikeToLogString(e));
@@ -451,7 +521,7 @@ export default function RepeatersPanel({
       nodes,
       (id) => t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: id.toString(16) }),
       ensureRepeaterAuth,
-      refreshStoredRepeaters,
+      refreshStoredSecrets,
       () => onRequestRepeaterStatus(nodeId),
       'repeatersPanel.statusFailedToast',
       'requestRepeaterStatus error',
@@ -526,7 +596,7 @@ export default function RepeatersPanel({
         nodes,
         (id) => t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: id.toString(16) }),
         ensureRepeaterAuth,
-        refreshStoredRepeaters,
+        refreshStoredSecrets,
         async () => {
           // Re-read length after auth so concurrent refresh / double-submit do not reuse a stale offset.
           if (isLoadMore) {
@@ -570,7 +640,7 @@ export default function RepeatersPanel({
       nodes,
       (id) => t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: id.toString(16) }),
       ensureRepeaterAuth,
-      refreshStoredRepeaters,
+      refreshStoredSecrets,
       async () => {
         await onRequestTelemetry?.(nodeId);
         setExpandedTelemetry((prev) => new Set([...prev, nodeId]));
@@ -632,10 +702,16 @@ export default function RepeatersPanel({
     const auth = await ensureRepeaterAuth(
       nodeId,
       node?.long_name ??
-        t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: nodeId.toString(16) }),
+        t(
+          node?.hw_model === 'Room'
+            ? 'repeatersPanel.savedPasswordOrphanRoomLabel'
+            : 'repeatersPanel.savedPasswordOrphanLabel',
+          { nodeId: nodeId.toString(16) },
+        ),
+      node?.hw_model,
     );
     if (!auth.ok) return;
-    if (auth.saved) refreshStoredRepeaters();
+    if (auth.saved) refreshStoredSecrets();
     const primed = await ensureCliRoutePrimed(nodeId);
     if (!primed) return;
     try {
@@ -693,20 +769,51 @@ export default function RepeatersPanel({
       <div className="flex flex-col gap-4">
         <div className="flex flex-col flex-wrap items-stretch justify-between gap-3 min-[480px]:flex-row min-[480px]:items-center">
           <h2 className="text-bright-green text-lg font-semibold">{t('repeatersPanel.title')}</h2>
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-            }}
-            placeholder={t('repeatersPanel.searchRepeatersPlaceholder')}
-            aria-label={t('repeatersPanel.searchRepeaters')}
-            className="bg-secondary-dark/80 focus:border-brand-green/50 max-w-[20rem] min-w-[8rem] flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <div
+              className="flex rounded-lg border border-gray-600/50 p-0.5"
+              role="group"
+              aria-label={t('repeatersPanel.typeFilterAria')}
+            >
+              {(
+                [
+                  ['all', 'repeatersPanel.filterAll'],
+                  ['repeater', 'repeatersPanel.filterRepeaters'],
+                  ['room', 'repeatersPanel.filterRooms'],
+                ] as const
+              ).map(([id, labelKey]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => {
+                    setTypeFilter(id);
+                  }}
+                  aria-pressed={typeFilter === id}
+                  className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                    typeFilter === id
+                      ? 'bg-brand-green/20 text-brand-green'
+                      : 'text-gray-400 hover:text-gray-200'
+                  }`}
+                >
+                  {t(labelKey)}
+                </button>
+              ))}
+            </div>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+              }}
+              placeholder={t('repeatersPanel.searchRepeatersPlaceholder')}
+              aria-label={t('repeatersPanel.searchRepeaters')}
+              className="bg-secondary-dark/80 focus:border-brand-green/50 max-w-[20rem] min-w-[8rem] flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
+            />
+          </div>
         </div>
         <p className="max-w-2xl text-xs text-gray-500">{t('repeatersPanel.columnsDataHint')}</p>
 
-        {savedCredentialNodeIds.length > 0 && (
+        {savedCredentialEntries.length > 0 && (
           <div className="rounded-lg border border-gray-700/80 bg-gray-900/40">
             <button
               type="button"
@@ -719,22 +826,33 @@ export default function RepeatersPanel({
               <span className="text-gray-500" aria-hidden>
                 {savedPasswordsOpen ? '▾' : '▸'}
               </span>
-              {t('repeatersPanel.savedPasswordsCount', { count: savedCredentialNodeIds.length })}
+              {t('repeatersPanel.savedPasswordsCount', { count: savedCredentialEntries.length })}
             </button>
             {savedPasswordsOpen && (
               <ul className="max-h-40 overflow-y-auto border-t border-gray-800/80 pb-1">
-                {savedCredentialNodeIds.map((nodeId) => (
+                {savedCredentialEntries.map(({ nodeId, kind }) => (
                   <li
-                    key={nodeId}
+                    key={`${kind}:${nodeId}`}
                     className="flex items-center justify-between gap-2 border-b border-gray-800/60 px-3 py-1.5 last:border-b-0"
                   >
-                    <span className="truncate text-xs text-gray-200">
-                      {resolveRepeaterDisplayName(nodeId)}
+                    <span className="flex min-w-0 items-center gap-2 truncate text-xs text-gray-200">
+                      <span
+                        className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-medium ${
+                          kind === 'Room'
+                            ? 'bg-purple-900/50 text-purple-300'
+                            : 'bg-cyan-900/50 text-cyan-300'
+                        }`}
+                      >
+                        {kind === 'Room'
+                          ? t('nodeListPanel.meshcoreTypeRoom')
+                          : t('nodeListPanel.meshcoreTypeRepeater')}
+                      </span>
+                      <span className="truncate">{resolveNodeDisplayName(nodeId, kind)}</span>
                     </span>
                     <button
                       type="button"
                       onClick={() => {
-                        void handleForgetSavedPassword(nodeId);
+                        void handleForgetSavedPassword(nodeId, kind);
                       }}
                       onBlur={() => {
                         if (forgetConfirmNodeId === nodeId) setForgetConfirmNodeId(null);
@@ -753,7 +871,7 @@ export default function RepeatersPanel({
           </div>
         )}
 
-        {repeaters.length === 0 ? (
+        {infraNodes.length === 0 ? (
           <div className="mt-8 text-center text-sm text-gray-400">
             <p>{t('repeatersPanel.noRepeatersYet')}</p>
             <p className="mt-1 text-gray-500">
@@ -967,7 +1085,7 @@ export default function RepeatersPanel({
                           </span>
                         </td>
                         <td className="py-2 pr-4 font-medium text-white">
-                          <span className="flex items-center gap-1">
+                          <span className="flex flex-wrap items-center gap-1">
                             {onToggleFavorite ? (
                               <button
                                 type="button"
@@ -984,6 +1102,17 @@ export default function RepeatersPanel({
                                 {node.favorited ? '★' : '☆'}
                               </button>
                             ) : null}
+                            <span
+                              className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-medium ${
+                                node.hw_model === 'Room'
+                                  ? 'bg-purple-900/50 text-purple-300'
+                                  : 'bg-cyan-900/50 text-cyan-300'
+                              }`}
+                            >
+                              {node.hw_model === 'Room'
+                                ? t('nodeListPanel.meshcoreTypeRoom')
+                                : t('nodeListPanel.meshcoreTypeRepeater')}
+                            </span>
                             <button
                               type="button"
                               onClick={() => onSelectRepeater?.(node)}
@@ -992,7 +1121,7 @@ export default function RepeatersPanel({
                             >
                               {node.long_name}
                             </button>
-                            {storedRepeaterIds.has(node.node_id) ? (
+                            {savedCredentialEntries.some((e) => e.nodeId === node.node_id) ? (
                               <MeshcoreRepeaterSavedPasswordIndicator />
                             ) : null}
                           </span>
@@ -1288,6 +1417,19 @@ export default function RepeatersPanel({
                                   {t('repeatersPanel.buttonCli')}
                                 </button>
                               ))}
+                            {onOpenRoom && node.hw_model === 'Room' ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  onOpenRoom(node.node_id);
+                                }}
+                                disabled={!isConnected}
+                                className="rounded border border-purple-700 bg-purple-900/50 px-2 py-0.5 text-xs font-medium text-purple-300 transition-colors hover:bg-purple-800/60 disabled:opacity-40"
+                                aria-label={t('repeatersPanel.openRoom')}
+                              >
+                                {t('repeatersPanel.openRoom')}
+                              </button>
+                            ) : null}
                             <button
                               type="button"
                               onClick={() => void handleDelete(node.node_id)}
@@ -1583,22 +1725,8 @@ export default function RepeatersPanel({
                                   {t('repeatersPanel.cliQuick')}
                                 </span>
                                 {[
-                                  'name',
-                                  'radio',
-                                  'neighbors',
-                                  'version',
-                                  'status',
-                                  'config',
-                                  'help',
-                                  'clock',
-                                  'clock sync',
-                                  'clear stats',
-                                  'advert',
-                                  'board',
-                                  'get path.hash.mode',
-                                  'set path.hash.mode 0',
-                                  'set path.hash.mode 1',
-                                  'set path.hash.mode 2',
+                                  ...SHARED_CLI_QUICK_COMMANDS,
+                                  ...(node.hw_model === 'Room' ? ROOM_CLI_QUICK_COMMANDS : []),
                                 ].map((cmd) => {
                                   const pathHashLabelKey =
                                     cmd === 'get path.hash.mode'
@@ -1611,6 +1739,16 @@ export default function RepeatersPanel({
                                             ? 'repeatersPanel.pathHashCliSet2'
                                             : null;
                                   const ariaLabel = pathHashLabelKey ? t(pathHashLabelKey) : cmd;
+                                  const shortLabel =
+                                    cmd === 'get path.hash.mode'
+                                      ? 'path.hash'
+                                      : cmd.startsWith('set path.hash.mode')
+                                        ? cmd.replace('set path.hash.mode ', 'hash ')
+                                        : cmd === 'allow.read.only on'
+                                          ? 'ro on'
+                                          : cmd === 'allow.read.only off'
+                                            ? 'ro off'
+                                            : cmd;
                                   return (
                                     <button
                                       key={cmd}
@@ -1621,15 +1759,22 @@ export default function RepeatersPanel({
                                       aria-label={ariaLabel}
                                       className="rounded bg-gray-700 px-1.5 py-0.5 text-xs text-gray-300 hover:bg-gray-600 disabled:opacity-40"
                                     >
-                                      {cmd === 'get path.hash.mode'
-                                        ? 'path.hash'
-                                        : cmd.startsWith('set path.hash.mode')
-                                          ? cmd.replace('set path.hash.mode ', 'hash ')
-                                          : cmd}
+                                      {shortLabel}
                                     </button>
                                   );
                                 })}
                               </div>
+                              {node.hw_model === 'Room' ? (
+                                <MeshcoreRoomAclControls
+                                  disabled={!isConnected || isCliLoading}
+                                  onApply={async (pubkeyHex, level) => {
+                                    await handleCliCommand(
+                                      node.node_id,
+                                      `setperm ${pubkeyHex} ${level}`,
+                                    );
+                                  }}
+                                />
+                              ) : null}
                               {showCliMultiHopHint ? (
                                 <p className="text-xs text-amber-400/90">
                                   {t('repeatersPanel.cliMultiHopHint')}

@@ -4165,7 +4165,13 @@
     "neighborsLoadMore": "Carregar mais ({{loaded}} de {{total}} carregados)",
     "neighborsLoadMoreAria": "Carregar mais vizinhos ({{loaded}} de {{total}} carregados)",
     "neighborsLoadingMore": "Carregando…",
-    "cliClockCannotGoBackwards": "O relógio deste repetidor está à frente deste computador ({{utc}}). O firmware MeshCore não ajustará o relógio para trás. Depois de confirmar, execute o clkreboot e, em seguida, sincronize o relógio."
+    "cliClockCannotGoBackwards": "O relógio deste repetidor está à frente deste computador ({{utc}}). O firmware MeshCore não ajustará o relógio para trás. Depois de confirmar, execute o clkreboot e, em seguida, sincronize o relógio.",
+    "typeFilterAria": "Filtrar por tipo",
+    "filterAll": "Todos",
+    "filterRepeaters": "Repetidores",
+    "filterRooms": "Quartos",
+    "openRoom": "Sala Aberta",
+    "savedPasswordOrphanRoomLabel": "Quarto {{nodeId}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anúncio (segundos)",
@@ -4446,11 +4452,6 @@
     "postButton": "Postagem",
     "posting": "Publicando",
     "manageRoom": "Gerenciar",
-    "manageHeading": "Administração da sala",
-    "cliPlaceholder": "Comando da CLI de administrador...",
-    "cliSend": "Enviar",
-    "clearCli": "Limpar CLI",
-    "cliEmpty": "Nenhuma saída de CLI ainda.",
     "aclPubkeyLabel": "Chave pública (64 hex)",
     "aclLevelLabel": "Nivel de Permissao",
     "aclLevelRemove": "Remover acesso",
@@ -4458,7 +4459,6 @@
     "aclLevelReadWrite": "Ler/Escrever (pode postar)",
     "aclLevelAdmin": "Administrador",
     "aclApply": "Aplicar ACL",
-    "adminPasswordRequired": "A senha de administrador é necessária para gerenciar esta sala.",
     "postFailed": "Falha ao publicar na sala",
     "leaveRoom": "Sair da sala",
     "rememberPassword": "Lembrar senha",
@@ -4474,7 +4474,6 @@
     "cancelLoginHint": "O login de outra sala pode terminar no rádio primeiro. Cancelar interrompe novas tentativas para esta sala.",
     "emptyGuestLoginHint": "Campo de convidado vazio: use «Continuar somente leitura» para servidores sem senha. O login requer uma senha e envia «hello» quando o campo está vazio.",
     "unreadPosts": "{{count}} novos",
-    "closeManage": "Fechar",
     "upgradeAccess": "Melhorar acesso",
     "leavingRoom": "Saindo…",
     "leaveRoomInProgress": "Saindo da sala…",
@@ -4536,11 +4535,8 @@
     "membersHeadingWithCount": "Membros ({{count}})",
     "collapseRoomList": "Recolher lista de salas",
     "expandRoomList": "Expandir lista de salas",
-    "pathHashCliGet": "Obter modo hash do caminho",
-    "pathHashCliSet0": "Definir o modo de hash do caminho de 1 byte",
-    "pathHashCliSet1": "Definir o modo de hash do caminho de 2 bytes",
-    "pathHashCliSet2": "Definir o modo de hash do caminho de 3 bytes",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} não lida"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} não lida",
+    "manageJumpHint": "Os controles de infraestrutura (ping, status, CLI, ACL setperm) estão na guia Repetidores e Salas."
   },
   "searchModal": {
     "closeSearch": "Fechar pesquisa",

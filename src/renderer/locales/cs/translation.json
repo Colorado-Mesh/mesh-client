@@ -4167,7 +4167,13 @@
     "neighborsLoadMore": "Načíst další ({{loaded}} z {{total}} načteno)",
     "neighborsLoadMoreAria": "Načíst další sousedy ({{loaded}} z {{total}} načteno)",
     "neighborsLoadingMore": "Načítání…",
-    "cliClockCannotGoBackwards": "Hodiny tohoto opakovače jsou před tímto počítačem ({{utc}}). Firmware MeshCore nenastaví hodiny dozadu. Po potvrzení spusťte clkreboot a poté synchronizaci hodin."
+    "cliClockCannotGoBackwards": "Hodiny tohoto opakovače jsou před tímto počítačem ({{utc}}). Firmware MeshCore nenastaví hodiny dozadu. Po potvrzení spusťte clkreboot a poté synchronizaci hodin.",
+    "typeFilterAria": "Filtrovat podle typu",
+    "filterAll": "Vše",
+    "filterRepeaters": "Opakovače",
+    "filterRooms": "Pokoje",
+    "openRoom": "Otevřená Místnost",
+    "savedPasswordOrphanRoomLabel": "Pokoj {{nodeId}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",
@@ -4448,11 +4454,6 @@
     "postButton": "Příspěvek",
     "posting": "Odesílání…",
     "manageRoom": "Spravovat",
-    "manageHeading": "Správa místnosti",
-    "cliPlaceholder": "Příkaz CLI správce…",
-    "cliSend": "Odeslat",
-    "clearCli": "Vymazat CLI",
-    "cliEmpty": "Zatím žádný výstup CLI.",
     "aclPubkeyLabel": "Veřejný klíč (64 hex)",
     "aclLevelLabel": "Úroveň oprávnění",
     "aclLevelRemove": "Odebrání přístupu",
@@ -4460,7 +4461,6 @@
     "aclLevelReadWrite": "Čtení/zápis (může publikovat)",
     "aclLevelAdmin": "Správce",
     "aclApply": "Použít ACL",
-    "adminPasswordRequired": "Pro správu této místnosti je vyžadováno heslo správce.",
     "postFailed": "Zveřejnění příspěvku na pokoj se nezdařilo",
     "leaveRoom": "Opustit místnost",
     "rememberPassword": "Zapamatujte si své heslo",
@@ -4476,7 +4476,6 @@
     "cancelLoginHint": "Přihlašování do jiné místnosti může skončit nejdříve v rádiu. Zrušit zastaví další pokusy v této místnosti.",
     "emptyGuestLoginHint": "Prázdné pole hosta: použijte Pokračovat pouze pro čtení pro servery s prázdným heslem. Přihlášení vyžaduje heslo a pokud je pole prázdné, odešle \"hello\".",
     "unreadPosts": "{{count}} nových",
-    "closeManage": "Zavřít",
     "upgradeAccess": "Rozšířit přístup",
     "leavingRoom": "Odcházím…",
     "leaveRoomInProgress": "Opouštím místnost...",
@@ -4538,11 +4537,8 @@
     "membersHeadingWithCount": "Členové ({{count}})",
     "collapseRoomList": "Sbalit seznam místností",
     "expandRoomList": "Rozbalit seznam místností",
-    "pathHashCliGet": "Získat režim hash cesty",
-    "pathHashCliSet0": "Nastavit režim hash cesty 1 bajt",
-    "pathHashCliSet1": "Nastavit režim hash cesty 2bajtový",
-    "pathHashCliSet2": "Nastavte režim cesty hash 3-bajt",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} nepřečteno"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} nepřečteno",
+    "manageJumpHint": "Ovládací prvky infrastruktury (ping, status, CLI, ACL setperm) jsou na kartě Repeaters & Rooms (Opakovače a místnosti)."
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",

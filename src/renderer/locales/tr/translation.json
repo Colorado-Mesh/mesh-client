@@ -4165,7 +4165,13 @@
     "neighborsLoadMore": "Daha fazla yükle ({{loaded}}/{{total}})",
     "neighborsLoadMoreAria": "Daha fazla komşu yükleyin ({{loaded}}/{{total}} yüklü)",
     "neighborsLoadingMore": "Yükleniyor…",
-    "cliClockCannotGoBackwards": "Bu tekrarlayıcının saati bu bilgisayarın önünde ({{utc}}). MeshCore ürün yazılımı saati geriye doğru ayarlamaz. Onayladıktan sonra clkreboot'u çalıştırın, ardından saat senkronizasyonunu yapın."
+    "cliClockCannotGoBackwards": "Bu tekrarlayıcının saati bu bilgisayarın önünde ({{utc}}). MeshCore ürün yazılımı saati geriye doğru ayarlamaz. Onayladıktan sonra clkreboot'u çalıştırın, ardından saat senkronizasyonunu yapın.",
+    "typeFilterAria": "Türe Göre Filtrele",
+    "filterAll": "Tümü",
+    "filterRepeaters": "Tekrarlayıcılar",
+    "filterRooms": "Oda",
+    "openRoom": "Açık oda",
+    "savedPasswordOrphanRoomLabel": "Oda {{nodeId}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",
@@ -4446,11 +4452,6 @@
     "postButton": "Yazı",
     "posting": "Gönderiliyor",
     "manageRoom": "Yönet",
-    "manageHeading": "Oda yönetimi",
-    "cliPlaceholder": "Yönetici CLI komutu…",
-    "cliSend": "Gönder",
-    "clearCli": "CLI'yi temizle",
-    "cliEmpty": "Henüz CLI çıkışı yok.",
     "aclPubkeyLabel": "Genel anahtar (64 hex)",
     "aclLevelLabel": "İzin düzeyi",
     "aclLevelRemove": "Erişimi kaldır",
@@ -4458,7 +4459,6 @@
     "aclLevelReadWrite": "Okuma/Yazma (yayınlayabilir)",
     "aclLevelAdmin": "Yönetici",
     "aclApply": "ACL Uygula",
-    "adminPasswordRequired": "Bu odayı yönetmek için yönetici şifresi gereklidir.",
     "postFailed": "Odaya gönderilemedi",
     "leaveRoom": "Odadan çık",
     "rememberPassword": "Parolayı hatırla",
@@ -4474,7 +4474,6 @@
     "cancelLoginHint": "Başka bir odada oturum açma işlemi önce radyoda bitebilir. İptal, bu oda için daha fazla deneme yapmayı durdurur.",
     "emptyGuestLoginHint": "Boş konuk alanı: boş parola sunucuları için \"Salt okunur olarak devam et\" kullanın. Giriş bir şifre gerektirir ve alan boşken \"hello\" gönderir.",
     "unreadPosts": "{{count}} yeni",
-    "closeManage": "Kapat",
     "upgradeAccess": "Erişimi yükselt",
     "leavingRoom": "Çıkış",
     "leaveRoomInProgress": "Odadan çıkılıyor…",
@@ -4536,11 +4535,8 @@
     "membersHeadingWithCount": "Üyeler ({{count}})",
     "collapseRoomList": "Oda listesini daralt",
     "expandRoomList": "Oda listesini genişlet",
-    "pathHashCliGet": "Yol karma modunu al",
-    "pathHashCliSet0": "Yol karma modunu 1 bayt olarak ayarla",
-    "pathHashCliSet1": "Yol karma modunu 2 bayt olarak ayarla",
-    "pathHashCliSet2": "Yol karma modunu ayarla 3 bayt",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} okunmamış"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} okunmamış",
+    "manageJumpHint": "Altyapı kontrolleri (ping, status, CLI, ACL setperm) Tekrarlayıcılar ve Odalar sekmesindedir."
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",

@@ -647,6 +647,7 @@ function AppContent() {
   });
   const [pendingDmTarget, setPendingDmTarget] = useState<number | null>(null);
   const [pendingRoomTarget, setPendingRoomTarget] = useState<number | null>(null);
+  const [pendingRepeaterFocusNodeId, setPendingRepeaterFocusNodeId] = useState<number | null>(null);
   const [lastReadRevision, setLastReadRevision] = useState({
     meshtastic: 0,
     meshcore: 0,
@@ -2636,8 +2637,26 @@ function AppContent() {
     [tabsByProtocol.meshcore],
   );
 
+  const handleOpenRepeaterOps = useCallback(
+    (nodeNum: number) => {
+      setPendingRepeaterFocusNodeId(nodeNum);
+      const filteredIndex = findFilteredTabIndexForPanel(
+        tabsByProtocol.meshcore,
+        MODULES_PANEL_INDEX,
+      );
+      if (filteredIndex >= 0) {
+        setActiveTab(filteredIndex);
+      }
+    },
+    [tabsByProtocol.meshcore],
+  );
+
   const handleRoomTargetConsumed = useCallback(() => {
     setPendingRoomTarget(null);
+  }, []);
+
+  const handleRepeaterFocusConsumed = useCallback(() => {
+    setPendingRepeaterFocusNodeId(null);
   }, []);
 
   const handleLocationFilterChange = useCallback((f: LocationFilter) => {
@@ -3821,7 +3840,21 @@ function AppContent() {
                               onSelectRepeater={(node) => {
                                 setSelectedNodeId(node.node_id);
                               }}
-                              onSendCliCommand={meshcorePanelActions.sendRepeaterCliCommand}
+                              onSendCliCommand={async (nodeId, command, opts) => {
+                                const node = meshcoreUiNodes.get(nodeId);
+                                if (node?.hw_model === 'Room') {
+                                  return meshcorePanelActions.sendRoomAdminCliCommand(
+                                    nodeId,
+                                    command,
+                                    opts,
+                                  );
+                                }
+                                return meshcorePanelActions.sendRepeaterCliCommand(
+                                  nodeId,
+                                  command,
+                                  opts,
+                                );
+                              }}
                               meshcoreCliHistories={meshcoreRuntime.meshcoreCliHistories}
                               meshcoreCliErrors={meshcoreRuntime.meshcoreCliErrors}
                               onClearCliHistory={meshcorePanelActions.clearCliHistory}
@@ -3829,6 +3862,9 @@ function AppContent() {
                               meshcoreRepeaterRpcPending={
                                 meshcoreRuntime.meshcoreRepeaterRpcPending
                               }
+                              onOpenRoom={handleOpenRoom}
+                              pendingFocusNodeId={pendingRepeaterFocusNodeId}
+                              onPendingFocusConsumed={handleRepeaterFocusConsumed}
                             />
                           </Suspense>
                         </ErrorBoundary>
@@ -3978,9 +4014,7 @@ function AppContent() {
                                 onLeaveRoom={meshcorePanelActions.leaveRoom}
                                 onSendRoomPost={meshcorePanelActions.sendRoomPost}
                                 onSendRoomAdminCli={meshcorePanelActions.sendRoomAdminCliCommand}
-                                meshcoreCliHistories={meshcoreRuntime.meshcoreCliHistories}
-                                meshcoreCliErrors={meshcoreRuntime.meshcoreCliErrors}
-                                onClearCliHistory={meshcorePanelActions.clearCliHistory}
+                                onOpenRepeaterOps={handleOpenRepeaterOps}
                                 onMessageNode={handleMessageNode}
                                 onToggleFavorite={meshcorePanelActions.setNodeFavorited}
                                 scrollToTopRef={scrollToTopRoomsRef}

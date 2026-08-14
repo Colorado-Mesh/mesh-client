@@ -4165,7 +4165,13 @@
     "neighborsLoadMore": "さらに読み込む（{{loaded}}/{{total}} 読み込み済み）",
     "neighborsLoadMoreAria": "隣接ノードをさらに読み込む（{{loaded}}/{{total}} 読み込み済み）",
     "neighborsLoadingMore": "読み込み中…",
-    "cliClockCannotGoBackwards": "このリピーターのクロックはこのコンピューターの前にあります（ {{utc}} ）。MeshCoreファームウェアは時計を逆に設定しません。確認したら、clkrebootを実行してから、クロック同期を実行します。"
+    "cliClockCannotGoBackwards": "このリピーターのクロックはこのコンピューターの前にあります（ {{utc}} ）。MeshCoreファームウェアは時計を逆に設定しません。確認したら、clkrebootを実行してから、クロック同期を実行します。",
+    "typeFilterAria": "タイプで絞り込む",
+    "filterAll": "すべて",
+    "filterRepeaters": "リピータ",
+    "filterRooms": "客室数",
+    "openRoom": "オープンルーム",
+    "savedPasswordOrphanRoomLabel": "Room {{nodeId}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",
@@ -4446,11 +4452,6 @@
     "postButton": "投稿",
     "posting": "投稿中…",
     "manageRoom": "管理",
-    "manageHeading": "ルームの管理",
-    "cliPlaceholder": "管理CLIコマンド…",
-    "cliSend": "送信",
-    "clearCli": "CLIをクリア",
-    "cliEmpty": "CLI出力はまだありません。",
     "aclPubkeyLabel": "公開鍵（64 hex）",
     "aclLevelLabel": "許可レベル",
     "aclLevelRemove": "アクセス取り消し",
@@ -4458,7 +4459,6 @@
     "aclLevelReadWrite": "読み取り/書き込み（投稿可能）",
     "aclLevelAdmin": "管理者",
     "aclApply": "ACLを適用",
-    "adminPasswordRequired": "このルームを管理するには管理者パスワードが必要です。",
     "postFailed": "ルームへの投稿に失敗しました",
     "leaveRoom": "チャットルームを退出",
     "rememberPassword": "パスワードを記憶させる",
@@ -4474,7 +4474,6 @@
     "cancelLoginHint": "最初にラジオで別のルームのログインが終了する場合があります。キャンセルすると、このルームへのこれ以上の試みが停止します。",
     "emptyGuestLoginHint": "空のゲストフィールド：空のパスワードサーバーの場合は、読み取り専用で続行を使用します。ログインにはパスワードが必要で、フィールドが空の場合に「hello」を送信します。",
     "unreadPosts": "新着 {{count}} 件",
-    "closeManage": "閉じる",
     "upgradeAccess": "アクセスをアップグレード",
     "leavingRoom": "退出中…",
     "leaveRoomInProgress": "ルームを退出中…",
@@ -4536,11 +4535,8 @@
     "membersHeadingWithCount": "メンバー（ {{count}} ）",
     "collapseRoomList": "ルームリストを折りたたむ",
     "expandRoomList": "ルームリストを展開",
-    "pathHashCliGet": "パスハッシュモードの取得",
-    "pathHashCliSet0": "パスハッシュモード1バイトを設定",
-    "pathHashCliSet1": "パスハッシュモード2バイトを設定",
-    "pathHashCliSet2": "パスハッシュモード3バイトを設定",
-    "collapsedRoomWithUnread": "{{label}}、{{count}}未読"
+    "collapsedRoomWithUnread": "{{label}}、{{count}}未読",
+    "manageJumpHint": "インフラストラクチャーコントロール（ ping、ステータス、CLI、ACL setperm ）は、[リピーターとルーム]タブにあります。"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",

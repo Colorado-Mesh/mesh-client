@@ -4165,7 +4165,13 @@
     "neighborsLoadMore": "더 보기 ({{loaded}}/{{total}} 로드됨)",
     "neighborsLoadMoreAria": "더 많은 이웃 로드 ({{loaded}}/{{total}} 로드됨)",
     "neighborsLoadingMore": "로드 중…",
-    "cliClockCannotGoBackwards": "이 리피터의 시계가 이 컴퓨터보다 앞서 있습니다 ({{utc}}). MeshCore 펌웨어는 시계를 거꾸로 설정하지 않습니다. 확인 후 clkreboot를 실행한 다음 시계 동기화를 실행합니다."
+    "cliClockCannotGoBackwards": "이 리피터의 시계가 이 컴퓨터보다 앞서 있습니다 ({{utc}}). MeshCore 펌웨어는 시계를 거꾸로 설정하지 않습니다. 확인 후 clkreboot를 실행한 다음 시계 동기화를 실행합니다.",
+    "typeFilterAria": "유형으로 필터하기",
+    "filterAll": "All",
+    "filterRepeaters": "리피터",
+    "filterRooms": "방",
+    "openRoom": "개방형 객실",
+    "savedPasswordOrphanRoomLabel": "객실 {{nodeId}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",
@@ -4446,11 +4452,6 @@
     "postButton": "게시",
     "posting": "게시 중…",
     "manageRoom": "관리",
-    "manageHeading": "룸 관리",
-    "cliPlaceholder": "관리자 CLI 명령...",
-    "cliSend": "보내기",
-    "clearCli": "CLI 지우기",
-    "cliEmpty": "아직 CLI 출력이 없습니다.",
     "aclPubkeyLabel": "공개 키 (64 16진수)",
     "aclLevelLabel": "사용권한 수준",
     "aclLevelRemove": "접근 제거",
@@ -4458,7 +4459,6 @@
     "aclLevelReadWrite": "읽기/쓰기 (게시 가능)",
     "aclLevelAdmin": "관리",
     "aclApply": "ACL 적용",
-    "adminPasswordRequired": "이 룸을 관리하려면 관리자 비밀번호가 필요합니다.",
     "postFailed": "룸에 게시하지 못했습니다.",
     "leaveRoom": "방 나가기",
     "rememberPassword": "비밀번호 기억하기",
@@ -4474,7 +4474,6 @@
     "cancelLoginHint": "다른 룸 로그인이 먼저 라디오에서 완료될 수 있습니다. 취소는 이 룸에 대한 추가 시도를 중지합니다.",
     "emptyGuestLoginHint": "비어 있는 게스트 필드: 빈 비밀번호 서버에는 \"읽기 전용으로 계속\"을 사용하세요. 로그인에는 비밀번호가 필요하며 필드가 비어 있으면 \"hello\"를 보냅니다.",
     "unreadPosts": "새 글 {{count}}개",
-    "closeManage": "닫기",
     "upgradeAccess": "업그레이드 액세스",
     "leavingRoom": "떠나기",
     "leaveRoomInProgress": "방을 나가는 중…",
@@ -4536,11 +4535,8 @@
     "membersHeadingWithCount": "회원 ({{count}})",
     "collapseRoomList": "방 목록 접기",
     "expandRoomList": "방 목록 펼치기",
-    "pathHashCliGet": "경로 해시 모드 가져오기",
-    "pathHashCliSet0": "경로 해시 모드 1바이트 설정",
-    "pathHashCliSet1": "경로 해시 모드 2바이트 설정",
-    "pathHashCliSet2": "경로 해시 모드 3바이트 설정",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} 읽지 않음"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} 읽지 않음",
+    "manageJumpHint": "인프라 컨트롤 (ping, status, CLI, ACL setperm) 은 Repeaters & Rooms 탭에 있습니다."
   },
   "searchModal": {
     "closeSearch": "검색 닫기",

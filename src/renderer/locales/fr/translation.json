@@ -4165,7 +4165,13 @@
     "neighborsLoadMore": "Charger plus ({{loaded}} sur {{total}})",
     "neighborsLoadMoreAria": "Charger plus de voisins ({{loaded}} sur {{total}} chargés)",
     "neighborsLoadingMore": "Chargement…",
-    "cliClockCannotGoBackwards": "L'horloge de ce répéteur est en avance sur cet ordinateur ({{utc}}). Le micrologiciel MeshCore ne remettra pas l'horloge en marche arrière. Une fois que vous avez confirmé, exécutez clkreboot, puis synchronisez l'horloge."
+    "cliClockCannotGoBackwards": "L'horloge de ce répéteur est en avance sur cet ordinateur ({{utc}}). Le micrologiciel MeshCore ne remettra pas l'horloge en marche arrière. Une fois que vous avez confirmé, exécutez clkreboot, puis synchronisez l'horloge.",
+    "typeFilterAria": "Filtrer par type",
+    "filterAll": "Tous",
+    "filterRepeaters": "Le répéteur",
+    "filterRooms": "Chambres",
+    "openRoom": "Chambre ouverte",
+    "savedPasswordOrphanRoomLabel": "Pièce {{nodeId}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalle d'annonce (secondes)",
@@ -4446,11 +4452,6 @@
     "postButton": "Publier",
     "posting": "Publication…",
     "manageRoom": "Gérer",
-    "manageHeading": "Administration de la salle",
-    "cliPlaceholder": "Commande Admin CLI…",
-    "cliSend": "Envoyer",
-    "clearCli": "Effacer CLI",
-    "cliEmpty": "Pas encore de sortie CLI.",
     "aclPubkeyLabel": "Clé publique (64 hex)",
     "aclLevelLabel": "Niveau de permission",
     "aclLevelRemove": "Retirer l'accès",
@@ -4458,7 +4459,6 @@
     "aclLevelReadWrite": "Lecture/écriture (peut poster)",
     "aclLevelAdmin": "Administrateur",
     "aclApply": "Appliquer ACL",
-    "adminPasswordRequired": "Un mot de passe administrateur est nécessaire pour gérer cette salle.",
     "postFailed": "Échec de la publication dans la salle",
     "leaveRoom": "Quitter le salon",
     "rememberPassword": "Retenir le mot de passe",
@@ -4474,7 +4474,6 @@
     "cancelLoginHint": "Une autre connexion à la salle peut se terminer en premier sur la radio. Annuler arrête d'autres tentatives pour cette pièce.",
     "emptyGuestLoginHint": "Champ invité vide : utilisez « Continuer en lecture seule » pour les serveurs sans mot de passe. La connexion nécessite un mot de passe et envoie « hello » si le champ est vide.",
     "unreadPosts": "{{count}} nouveaux",
-    "closeManage": "Fermer",
     "upgradeAccess": "Améliorer l'accès",
     "leavingRoom": "Sortie en cours…",
     "leaveRoomInProgress": "Quitter la salle…",
@@ -4536,11 +4535,8 @@
     "membersHeadingWithCount": "Membres ({{count}})",
     "collapseRoomList": "Réduire la liste des salles",
     "expandRoomList": "Développer la liste des salles",
-    "pathHashCliGet": "Obtenir le mode de hachage du chemin",
-    "pathHashCliSet0": "Définir le mode de hachage du chemin 1 octet",
-    "pathHashCliSet1": "Définir le mode de hachage du chemin sur 2 octets",
-    "pathHashCliSet2": "Définir le mode de hachage du chemin sur 3 octets",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} non lus"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} non lus",
+    "manageJumpHint": "Les contrôles de l'infrastructure (ping, statut, CLI, ACL setperm) se trouvent dans l'onglet Répéteurs et salles."
   },
   "searchModal": {
     "closeSearch": "Fermer recherche",

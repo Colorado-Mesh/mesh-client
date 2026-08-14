@@ -4165,7 +4165,13 @@
     "neighborsLoadMore": "Mehr laden ({{loaded}} von {{total}} geladen)",
     "neighborsLoadMoreAria": "Weitere Nachbarn laden ({{loaded}} von {{total}} geladen)",
     "neighborsLoadingMore": "Wird geladen…",
-    "cliClockCannotGoBackwards": "Die Uhr dieses Repeaters liegt vor diesem Computer ({{utc}}). Die MeshCore-Firmware stellt die Uhr nicht rückwärts. Führen Sie nach der Bestätigung clkreboot und dann clock sync aus."
+    "cliClockCannotGoBackwards": "Die Uhr dieses Repeaters liegt vor diesem Computer ({{utc}}). Die MeshCore-Firmware stellt die Uhr nicht rückwärts. Führen Sie nach der Bestätigung clkreboot und dann clock sync aus.",
+    "typeFilterAria": "Filtern nach Typ",
+    "filterAll": "Alle",
+    "filterRepeaters": "Wiederholbare Felder",
+    "filterRooms": "Zimmer",
+    "openRoom": "Offener Raum",
+    "savedPasswordOrphanRoomLabel": "Zimmer {{nodeId}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Ankündigungsintervall (Sekunden)",
@@ -4446,11 +4452,6 @@
     "postButton": "Posten",
     "posting": "Wird gepostet…",
     "manageRoom": "Verwalten",
-    "manageHeading": "Raumverwaltung",
-    "cliPlaceholder": "Admin CLI-Befehl…",
-    "cliSend": "Senden",
-    "clearCli": "CLI löschen",
-    "cliEmpty": "Noch keine CLI-Ausgabe.",
     "aclPubkeyLabel": "Öffentlicher Schlüssel (64 Hexadezimal)",
     "aclLevelLabel": "Berechtigungsstufe",
     "aclLevelRemove": "Zugang entfernen",
@@ -4458,7 +4459,6 @@
     "aclLevelReadWrite": "Lesen/Schreiben (kann posten)",
     "aclLevelAdmin": "Administrator",
     "aclApply": "ACL anwenden",
-    "adminPasswordRequired": "Für die Verwaltung dieses Raums ist ein Admin-Passwort erforderlich.",
     "postFailed": "Fehler beim Posten im Raum",
     "leaveRoom": "Raum verlassen",
     "rememberPassword": "Passwort merken",
@@ -4474,7 +4474,6 @@
     "cancelLoginHint": "Eine weitere Raumanmeldung kann zuerst über das Radio abgeschlossen werden. Abbrechen stoppt weitere Versuche für diesen Raum.",
     "emptyGuestLoginHint": "Leeres Gästefeld: „Schreibgeschützt fortfahren“ für Server ohne Passwort. Login erfordert ein Passwort und sendet „hello“, wenn das Feld leer ist.",
     "unreadPosts": "{{count}} neu",
-    "closeManage": "Schließen",
     "upgradeAccess": "Zugriff erweitern",
     "leavingRoom": "Verlassen…",
     "leaveRoomInProgress": "Raum verlassen...",
@@ -4536,11 +4535,8 @@
     "membersHeadingWithCount": "Mitglieder ({{count}})",
     "collapseRoomList": "Raumliste ausblenden",
     "expandRoomList": "Raumliste einblenden",
-    "pathHashCliGet": "Pfad-Hash-Modus abrufen",
-    "pathHashCliSet0": "Setze Pfad-Hash-Modus 1-Byte",
-    "pathHashCliSet1": "Setze Pfad-Hash-Modus 2-Byte",
-    "pathHashCliSet2": "Setze Pfad-Hash-Modus 3-Byte",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} ungelesen"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} ungelesen",
+    "manageJumpHint": "Infrastruktursteuerelemente (Ping, Status, CLI, ACL Setperm) befinden sich auf der Registerkarte Repeater & Räume."
   },
   "searchModal": {
     "closeSearch": "Suche schließen",

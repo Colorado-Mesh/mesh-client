@@ -4165,7 +4165,13 @@
     "neighborsLoadMore": "加载更多（{{loaded}}/{{total}}）",
     "neighborsLoadMoreAria": "加载更多邻居（已加载{{loaded}}/{{total}}）",
     "neighborsLoadingMore": "加载中…",
-    "cliClockCannotGoBackwards": "此中继器的时钟在此计算机前面（ {{utc}} ）。MeshCore固件不会向后设置时钟。确认后，运行clkreboot ，然后进行时钟同步。"
+    "cliClockCannotGoBackwards": "此中继器的时钟在此计算机前面（ {{utc}} ）。MeshCore固件不会向后设置时钟。确认后，运行clkreboot ，然后进行时钟同步。",
+    "typeFilterAria": "按类型过滤",
+    "filterAll": "所有食谱",
+    "filterRepeaters": "中继器",
+    "filterRooms": "房间数",
+    "openRoom": "开放房间",
+    "savedPasswordOrphanRoomLabel": "房间{{nodeId}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",
@@ -4446,11 +4452,6 @@
     "postButton": "发布",
     "posting": "发布中…",
     "manageRoom": "管理",
-    "manageHeading": "房间管理",
-    "cliPlaceholder": "管理员CLI命令…",
-    "cliSend": "发送",
-    "clearCli": "清除CLI",
-    "cliEmpty": "尚无 CLI 输出。",
     "aclPubkeyLabel": "公钥（64 hex）",
     "aclLevelLabel": "权限等级",
     "aclLevelRemove": "删除访问",
@@ -4458,7 +4459,6 @@
     "aclLevelReadWrite": "读/写（可发布）",
     "aclLevelAdmin": "管理员",
     "aclApply": "应用ACL",
-    "adminPasswordRequired": "管理此房间需要管理员密码。",
     "postFailed": "发布到聊天室失败",
     "leaveRoom": "離開聊天室",
     "rememberPassword": "記憶密碼",
@@ -4474,7 +4474,6 @@
     "cancelLoginHint": "另一个房间登录可能首先在收音机上完成。取消可停止对此房间的进一步尝试。",
     "emptyGuestLoginHint": "访客密码为空：对无密码服务器使用「继续只读」。登录需要密码，字段为空时会发送「hello」。",
     "unreadPosts": "新消息 {{count}} 条",
-    "closeManage": "关闭",
     "upgradeAccess": "提升访问权限",
     "leavingRoom": "正在离开…",
     "leaveRoomInProgress": "正在离开房间……",
@@ -4536,11 +4535,8 @@
     "membersHeadingWithCount": "成员({{count}})",
     "collapseRoomList": "折叠房间列表",
     "expandRoomList": "展开房间列表",
-    "pathHashCliGet": "获取路径哈希模式",
-    "pathHashCliSet0": "设置路径哈希模式1字节",
-    "pathHashCliSet1": "设置路径哈希模式2字节",
-    "pathHashCliSet2": "设置路径哈希模式3字节",
-    "collapsedRoomWithUnread": "{{label}}, {{count}}未读"
+    "collapsedRoomWithUnread": "{{label}}, {{count}}未读",
+    "manageJumpHint": "基础设施控制（ PING、STATUS、CLI、ACL SETPERM ）位于Repeaters & Rooms （中继器和房间）选项卡上。"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",
