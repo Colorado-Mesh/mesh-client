@@ -39,8 +39,8 @@ importers:
   .:
     dependencies:
       '@bufbuild/protobuf':
-        specifier: ^2.13.0
-        version: 2.13.0
+        specifier: ^2.14.0
+        version: 2.14.0
       '@meshtastic/protobufs':
         specifier: npm:@jsr/meshtastic__protobufs@^2.7.26
         version: '@jsr/meshtastic__protobufs@2.7.26'
@@ -54,8 +54,8 @@ importers:
         specifier: ^6.0.0
         version: 6.0.0
       '@zip.js/zip.js':
-        specifier: ^2.8.43
-        version: 2.8.43
+        specifier: ^2.8.47
+        version: 2.8.47
       builder-util-runtime:
         specifier: 9.7.0
         version: 9.7.0(supports-color@8.1.1)
@@ -295,8 +295,8 @@ importers:
         specifier: 1.0.0-pre.5
         version: 1.0.0-pre.5(vitest@4.1.10)
       zustand:
-        specifier: ^5.0.14
-        version: 5.0.14(@types/react@19.2.18)(immer@11.1.16)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
+        specifier: ^5.0.15
+        version: 5.0.15(@types/react@19.2.18)(immer@11.1.16)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
 
 packages:
 
@@ -404,8 +404,8 @@ packages:
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
 
-  '@bufbuild/protobuf@2.13.0':
-    resolution: {integrity: sha512-acq7c49vxfm1ggJ95P70TX7ABDM0vxr1SYD3BB0o0jnBLB4OAqeHyKuN+cD3w80gXEDQ2zxHpR6CUeA+O/aU9g==}
+  '@bufbuild/protobuf@2.14.0':
+    resolution: {integrity: sha512-C3UGsiCwSprE2NKIIFA3hCDlpXTMCAXRZuEVp88L1GY36Y41+rYL5fryE+nOFhp4p4JPQvdV8PQ4DWgHgeTE+w==}
 
   '@csstools/color-helpers@6.1.0':
     resolution: {integrity: sha512-064IFJdjTfUqnjpCVpMOdbr8FLQBhinbZj6yRv2An2E41O/pLEXqfFRWqGq/SxlE5PEUYTlvWsG2r8MswAVvkg==}
@@ -1476,8 +1476,8 @@ packages:
   '@yarnpkg/lockfile@1.1.0':
     resolution: {integrity: sha512-GpSwvyXOcOOlV70vbnzjj4fW5xW/FdUF6nQEt1ENy7m4ZCczi1+/buVUPAqmGfqznsORNFzUMjctTIp8a9tuCQ==}
 
-  '@zip.js/zip.js@2.8.43':
-    resolution: {integrity: sha512-LesnlKQyNaCm3NWd7TwMLYYRVShxaeItzReGGRiwxRhsad5PhIF2Vxl+tOWoajjK7xiukZtqmJf5ckkE/OVpYw==}
+  '@zip.js/zip.js@2.8.47':
+    resolution: {integrity: sha512-zQzidM6FD1teXUXL3Xy7g+b7k3jybQArLRVi2mIPt74JtxBVVPheDCW5q6nhEr4Pq+myXHoC9GsHIgxGQ6T8ow==}
     engines: {bun: '>=0.7.0', deno: '>=1.0.0', node: '>=18.0.0'}
 
   abbrev@4.0.0:
@@ -3391,8 +3391,8 @@ packages:
     resolution: {integrity: sha512-8VOpLHFrOQlAH+qA0ZzuGRlALRA6/LVh8QJldbrC4DY0hXoMP0l4Acq8TzFC018HztWiRqyCEj2aTWY2UvnJUg==}
     engines: {node: ^18 || ^20 || >= 21}
 
-  node-addon-api@8.9.1:
-    resolution: {integrity: sha512-4eUQWVPCUUUiBjLnHS3cXWeC6ryoPUc0U3rP7IuzapoGbzMqd/r6KKO0clr0b+snQhsrueFEhCZDdK+LK7hxKg==}
+  node-addon-api@8.9.2:
+    resolution: {integrity: sha512-VijLXbi3UACN69I0JVXJsX4tjACjNoQDgv2gTF6sx2wWEi8tkSg2eX8p5gSIFi8z2+DL3oHmY6OyKce38SDolg==}
     engines: {node: ^18 || ^20 || >= 21}
 
   node-api-version@0.2.1:
@@ -4629,8 +4629,8 @@ packages:
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
-  zustand@5.0.14:
-    resolution: {integrity: sha512-/8tAspM5LMPr28b3fwLYrtdj77ECpfZviaP75CMTnwO8ISyaE4GDIG/9rDDYq/cH9D2Xw2A2RXglLInmVBQB/g==}
+  zustand@5.0.15:
+    resolution: {integrity: sha512-MpSEjRiBkA9crSYeOUH32rJC7SVqAbm0Fqcqge/bUi2PPoLcBWKOsG+C8mevmpr8TwXHBVkChbbJiyvkE+i/3A==}
     engines: {node: '>=12.20.0'}
     peerDependencies:
       '@types/react': '>=18.0.0'
@@ -4786,7 +4786,7 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
-  '@bufbuild/protobuf@2.13.0': {}
+  '@bufbuild/protobuf@2.14.0': {}
 
   '@csstools/color-helpers@6.1.0': {}
 
@@ -5062,7 +5062,7 @@ snapshots:
 
   '@jsr/meshtastic__core@2.6.6(patch_hash=93604a080fa754cbde3dc78ef46ee50c2996c34d6d85720acacecfd6ebd7c652)(buffer@6.0.3)':
     dependencies:
-      '@bufbuild/protobuf': 2.13.0
+      '@bufbuild/protobuf': 2.14.0
       '@jsr/meshtastic__protobufs': 2.7.26
       crc: 4.3.2(buffer@6.0.3)
       ste-simple-events: 3.0.11
@@ -5072,7 +5072,7 @@ snapshots:
 
   '@jsr/meshtastic__protobufs@2.7.26':
     dependencies:
-      '@bufbuild/protobuf': 2.13.0
+      '@bufbuild/protobuf': 2.14.0
 
   '@jsr/meshtastic__transport-http@0.2.1(buffer@6.0.3)':
     dependencies:
@@ -5367,7 +5367,7 @@ snapshots:
     dependencies:
       async: 3.2.6
       debug: 4.4.3(patch_hash=cf37fa96f5df733456b16c82c9e1c9054a92f6216692aa33d5e2e1e208888e37)(supports-color@8.1.1)
-      node-addon-api: 8.9.1
+      node-addon-api: 8.9.2
       node-gyp-build: 4.8.4
       patch-package: 8.0.1
       serialport: 12.0.0(supports-color@8.1.1)
@@ -5380,7 +5380,7 @@ snapshots:
   '@stoprocent/noble@2.7.1(supports-color@8.1.1)':
     dependencies:
       debug: 4.4.3(patch_hash=cf37fa96f5df733456b16c82c9e1c9054a92f6216692aa33d5e2e1e208888e37)(supports-color@8.1.1)
-      node-addon-api: 8.9.1
+      node-addon-api: 8.9.2
       node-gyp-build: 4.8.4
       patch-package: 8.0.1
     optionalDependencies:
@@ -5787,7 +5787,7 @@ snapshots:
 
   '@yarnpkg/lockfile@1.1.0': {}
 
-  '@zip.js/zip.js@2.8.43': {}
+  '@zip.js/zip.js@2.8.47': {}
 
   abbrev@4.0.0: {}
 
@@ -8012,7 +8012,7 @@ snapshots:
 
   node-addon-api@8.3.0: {}
 
-  node-addon-api@8.9.1: {}
+  node-addon-api@8.9.2: {}
 
   node-api-version@0.2.1:
     dependencies:
@@ -9044,7 +9044,7 @@ snapshots:
   usb@2.18.0(patch_hash=6b746e2d49b9b006a88aec5bed7a13c629d7f5ba7b40e9f1e039136754c32533):
     dependencies:
       '@types/w3c-web-usb': 1.0.14
-      node-addon-api: 8.9.1
+      node-addon-api: 8.9.2
       node-gyp-build: 4.8.4
     optional: true
 
@@ -9320,7 +9320,7 @@ snapshots:
 
   zod@4.4.3: {}
 
-  zustand@5.0.14(@types/react@19.2.18)(immer@11.1.16)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8)):
+  zustand@5.0.15(@types/react@19.2.18)(immer@11.1.16)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8)):
     optionalDependencies:
       '@types/react': 19.2.18
       immer: 11.1.16

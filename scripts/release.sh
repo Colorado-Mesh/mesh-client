@@ -231,8 +231,27 @@ EOF
 
   echo ""
   echo "### Breaking Changes"
-  if printf '%s\n' "$commit_logs" | grep -qE "(BREAKING CHANGE:|^\* [^:]+!:)"; then
-    printf '%s\n' "$commit_logs" | grep -E "(BREAKING CHANGE:|^\* [^:]+!:)" | sed 's/^/* /'
+  # Supported type!: / type(scope)!: subjects (via detectReleaseBump.mjs) plus
+  # line-anchored BREAKING CHANGE / BREAKING-CHANGE footers.
+  local commit_bodies breaking_lines
+  commit_bodies=$(git log "$last_tag"..HEAD --pretty=format:"%B" 2> /dev/null || true)
+  breaking_lines=$(
+    {
+      printf '%s\n' "$commit_logs" | node --input-type=module -e "
+        import { isSupportedBreakingSubject } from './scripts/detectReleaseBump.mjs';
+        let s = '';
+        process.stdin.on('data', (d) => { s += d; });
+        process.stdin.on('end', () => {
+          for (const line of s.split('\\n')) {
+            if (line && isSupportedBreakingSubject(line)) process.stdout.write(line + '\\n');
+          }
+        });
+      " || true
+      printf '%s\n' "$commit_bodies" | grep -E '^[ \t]*BREAKING[- ]CHANGE[ \t]*:' || true
+    } | sed '/^$/d'
+  )
+  if [ -n "$breaking_lines" ]; then
+    printf '%s\n' "$breaking_lines" | sed 's/^/* /' | sed 's/^\* \* /* /'
   else
     echo "*(None)*"
   fi
@@ -251,10 +270,11 @@ EOF
 # titles like feat(rrc): … count as minor — the old bash regex missed scopes.
 detect_version_bump() {
   local last_tag="$1"
-  local current
+  local current json
   current=$(read_package_version)
-  node scripts/detectReleaseBump.mjs --since "$last_tag" --current "$current" \
-    | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const j=JSON.parse(s);process.stdout.write(j.bump);});"
+  # Avoid a pipe so detector non-zero exits are not masked (no pipefail required here).
+  json=$(node scripts/detectReleaseBump.mjs --since "$last_tag" --current "$current") || return 1
+  node -e "process.stdout.write(JSON.parse(process.argv[1]).bump)" "$json"
 }
 
 # 1. Parse version / finish / non-interactive flags (order-independent).
@@ -322,7 +342,14 @@ if [ "$FINISH_ONLY" = false ] && [ -z "$VERSION_TYPE" ] && [ "$AUTO_DETECT" = fa
 fi
 
 # Test hook: dump parsed flags and exit before git/network side effects.
+# Block under GitHub Actions unless MESH_CLIENT_ALLOW_PARSE_ONLY_IN_CI=1 (unit tests).
+# A repo/org Actions variable left at PARSE_ONLY=1 would otherwise green-succeed Cut release.
 if [ "${MESH_CLIENT_RELEASE_PARSE_ONLY:-}" = "1" ]; then
+  if [ "${GITHUB_ACTIONS:-}" = "true" ] && [ "${MESH_CLIENT_ALLOW_PARSE_ONLY_IN_CI:-}" != "1" ]; then
+    print_error "MESH_CLIENT_RELEASE_PARSE_ONLY is a local/test hook and cannot run under GitHub Actions."
+    print_error "Unset the variable (Cut release clears it) or set MESH_CLIENT_ALLOW_PARSE_ONLY_IN_CI=1 for tests."
+    exit 1
+  fi
   printf 'RELEASE_YES=%s\n' "$RELEASE_YES"
   printf 'SKIP_DEP_UPDATE=%s\n' "$SKIP_DEP_UPDATE"
   printf 'FINISH_ONLY=%s\n' "$FINISH_ONLY"
