@@ -1328,7 +1328,8 @@
       "bleBondRemovedOpenAdmin": "Apri Admin Bluetooth",
       "txQueueDropsHintBle": "Questo BLE RNode non può scaricare la sua coda TX (collegamento bloccato o sbattimento). Preferire USB seriale o Wi-Fi (tcp://), o interrompere lo stack e ricollegare dopo aver dimenticato in Impostazioni di sistema → Bluetooth.",
       "txQueueDropsHintBleBondStale": "La coda TX è piena perché il legame BLE è scaduto. Dimenticare questo RNode in Impostazioni di sistema → Bluetooth, quindi utilizzare Admin → Bluetooth (Cancella accoppiamento / Avvia accoppiamento) o passare a USB.",
-      "txQueueDropsHintNeutral": "Questo canale TX di interfaccia è pieno. Controllare lo stato del collegamento dell'interfaccia (o disabilitarlo) per arrestare le cadute."
+      "txQueueDropsHintNeutral": "Questo canale TX di interfaccia è pieno. Controllare lo stato del collegamento dell'interfaccia (o disabilitarlo) per arrestare le cadute.",
+      "txQueueDropsHintBleFlowControl": "Contropressione della coda TX dell'host mentre la radio è occupata (controllo del flusso attivo). Previsto sotto congestione RF — non un collegamento bloccato. Ridurre il carico in uscita o attendere il tempo di trasmissione."
     },
     "reticulumSidecarBundledMissing": "In questa installazione manca il sidecar Reticulum in bundle. Esegui l'upgrade a una versione più recente o segnala il problema: la creazione dal codice sorgente non è disponibile nelle installazioni in pacchetto.",
     "radioMqttRootDivergesWarning": "L'argomento principale di Radio MQTT è {{radioRoot}}, ma questo panel si iscrive a {{appPrefix}}. Abbina la radio per limitare il traffico dei nodi a livello nazionale: aggiorna il prefisso dell'argomento e ricollega MQTT.",
@@ -1726,7 +1727,8 @@
         "decommissionedHubEnabled": "L’hub fuori servizio «{{name}}» è ancora abilitato — mesh-client lo spegne a ogni avvio dello stack. Usa «Aggiungi dorsali predefinite» o la directory delle dorsali per endpoint attivi.",
         "txQueueDropsBle": "Interfaccia \"{{name}}\" drop {{count}} pacchetti in uscita (coda TX piena) — collegamento BLE RNode bloccato; preferire USB o ri-accoppiare",
         "txQueueDropsBleBondStale": "Interfaccia \"{{name}}\" drop {{count}} pacchetti in uscita (coda TX piena) — legame BLE stantio; dimenticare nel sistema operativo Bluetooth e ri-accoppiare",
-        "txQueueDropsNeutral": "Interfaccia \"{{name}}\" ha lasciato cadere {{count}} pacchetti in uscita (coda TX piena) — controllare il collegamento di tale interfaccia"
+        "txQueueDropsNeutral": "Interfaccia \"{{name}}\" ha lasciato cadere {{count}} pacchetti in uscita (coda TX piena) — controllare il collegamento di tale interfaccia",
+        "txQueueDropsBleFlowControl": "Interfaccia \"{{name}}\" drop {{count}} pacchetti in uscita (coda TX host piena) — controllo del flusso attivo; previsto in congestione RF, non un collegamento bloccato"
       }
     },
     "routingPort": {

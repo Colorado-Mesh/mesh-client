@@ -112,6 +112,7 @@ export const RETICULUM_RUNTIME_CAUSE_I18N_KEYS = [
   'diagnosticsPanel.reticulum.runtime.txQueueDrops',
   'diagnosticsPanel.reticulum.runtime.txQueueDropsBle',
   'diagnosticsPanel.reticulum.runtime.txQueueDropsBleBondStale',
+  'diagnosticsPanel.reticulum.runtime.txQueueDropsBleFlowControl',
   'diagnosticsPanel.reticulum.runtime.txQueueDropsNeutral',
   'diagnosticsPanel.reticulum.runtime.bleBondRemoved',
   'diagnosticsPanel.reticulum.runtime.blePairingTimedOut',
@@ -338,6 +339,7 @@ export function buildReticulumDiagnosticRows(
         interfaceIssueAlert.bleBondRemoved,
       );
       const causeKey = reticulumTxDropDiagnosticsCauseKey(hintKind);
+      const isFlowControlCongestion = hintKind === 'bleFlowControl';
       rows.push({
         kind: 'rf',
         id: rfRowId(homeNodeId, `reticulum/tx-queue-drops/${drop.name}`),
@@ -348,10 +350,15 @@ export function buildReticulumDiagnosticRows(
           name: drop.name,
           count: String(drop.dropCount),
         }),
-        severity: 'error',
+        // Flow-controlled BLE drops are host TX backpressure under RF load, not a fault.
+        severity: isFlowControlCongestion ? 'warning' : 'error',
         detectedAt: now,
         reticulumInterfaceId: iface?.id,
-        reticulumRepairKind: hintKind === 'ble' || hintKind === 'bleBondStale' ? 'edit' : 'disable',
+        reticulumRepairKind: isFlowControlCongestion
+          ? undefined
+          : hintKind === 'ble' || hintKind === 'bleBondStale'
+            ? 'edit'
+            : 'disable',
       });
     }
     for (const name of interfaceIssueAlert.bleBondRemoved) {

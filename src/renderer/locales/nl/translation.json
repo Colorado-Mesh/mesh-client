@@ -1329,7 +1329,8 @@
       "bleBondRemovedOpenAdmin": "Open Beheerder Bluetooth",
       "txQueueDropsHintBle": "Deze BLE RNode kan zijn TX-wachtrij niet legen (link vast of flapperend). Geef de voorkeur aan USB-serie of Wi‑Fi (tcp://), of stop de stack en koppel opnieuw na Vergeten in Systeeminstellingen → Bluetooth.",
       "txQueueDropsHintBleBondStale": "TX-wachtrij is vol omdat de BLE-koppeling verouderd is. Vergeet deze RNode in Systeeminstellingen → Bluetooth en gebruik Admin → Bluetooth (Gekoppelde wissen / Koppeling starten) of schakel over naar USB.",
-      "txQueueDropsHintNeutral": "Dit interface TX-kanaal is vol. Controleer de linkstatus van die interface (of schakel deze uit) om vallen te stoppen."
+      "txQueueDropsHintNeutral": "Dit interface TX-kanaal is vol. Controleer de linkstatus van die interface (of schakel deze uit) om vallen te stoppen.",
+      "txQueueDropsHintBleFlowControl": "Host TX wachtrij tegendruk terwijl de radio bezig is (stroomregeling aan). Verwacht bij RF-congestie — geen vastzittende link. Verminder de uitgaande belasting of wacht op zendtijd."
     },
     "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum sidecar. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties.",
     "radioMqttRootDivergesWarning": "Radio MQTT-hoofdonderwerp is {{radioRoot}}, maar dit paneel is geabonneerd op {{appPrefix}}. Koppel de radio om landelijk knooppuntverkeer te beperken — werk het onderwerpvoorvoegsel bij en sluit MQTT opnieuw aan.",
@@ -1726,7 +1727,8 @@
         "decommissionedHubEnabled": "Buiten gebruik gestelde hub „{{name}}” staat nog aan — mesh-client zet hem bij elke stackstart uit. Gebruik «Standaard backbones toevoegen» of de backbone-directory voor actieve eindpunten.",
         "txQueueDropsBle": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol) — BLE RNode-link vastgelopen; geef de voorkeur aan USB of opnieuw koppelen",
         "txQueueDropsBleBondStale": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol) — BLE-binding verouderd; Vergeet in OS Bluetooth en koppel opnieuw",
-        "txQueueDropsNeutral": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol) — controleer de link van die interface"
+        "txQueueDropsNeutral": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol) — controleer de link van die interface",
+        "txQueueDropsBleFlowControl": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (host TX-wachtrij vol) — stroomregeling aan; verwacht bij RF-congestie, geen vastzittende link"
       }
     },
     "routingPort": {

@@ -1330,7 +1330,8 @@
       "bleBondRemovedOpenAdmin": "Abrir Admin Bluetooth",
       "txQueueDropsHintBle": "Este RNode ble no puede drenar su cola TX (enlace atascado o aleteando). Prefiera USB serie o Wi-Fi (tcp://), o Detenga la pila y vuelva a emparejar después de Olvidar en la configuración del sistema → Bluetooth.",
       "txQueueDropsHintBleBondStale": "La cola TX está llena porque el vínculo BLE está obsoleto. Olvide este RNode en Configuración del sistema → Bluetooth y use Admin → Bluetooth (Borrar emparejados / Iniciar emparejamiento) o cambie a USB.",
-      "txQueueDropsHintNeutral": "Este canal TX de interfaz está lleno. Compruebe el estado del enlace de esa interfaz (o desactívelo) para detener las caídas."
+      "txQueueDropsHintNeutral": "Este canal TX de interfaz está lleno. Compruebe el estado del enlace de esa interfaz (o desactívelo) para detener las caídas.",
+      "txQueueDropsHintBleFlowControl": "Contrapresión de la cola de TX del host mientras la radio está ocupada (control de flujo activado). Se espera bajo congestión de RF, no un enlace atascado. Reduzca la carga saliente o espere el tiempo de aire."
     },
     "reticulumSidecarBundledMissing": "A esta instalación le falta el sidecar Reticulum incluido. Actualice a una versión más reciente o informe el problema: la compilación desde el código fuente no está disponible en instalaciones empaquetadas.",
     "radioMqttRootDivergesWarning": "El tema raíz de MQTT de radio es {{radioRoot}}, pero este panel se suscribe a {{appPrefix}}. Haga coincidir la radio para limitar el tráfico de nodos a nivel nacional: actualice el prefijo del tema y vuelva a conectar MQTT.",
@@ -1726,7 +1727,8 @@
         "decommissionedHubEnabled": "El hub fuera de servicio «{{name}}» sigue habilitado: mesh-client lo desactiva en cada arranque del stack. Use «Añadir backbones predeterminados» o el directorio de backbones para endpoints activos.",
         "txQueueDropsBle": "Interfaz \"{{name}}\" eliminada {{count}} paquetes salientes (cola TX llena) — Enlace ble RNode bloqueado; prefiera USB o volver a emparejar",
         "txQueueDropsBleBondStale": "Interfaz \"{{name}}\" eliminada {{count}} paquetes salientes (cola TX llena) — enlace ble obsoleto; Olvídese de Bluetooth del sistema operativo y vuelva a emparejar",
-        "txQueueDropsNeutral": "La interfaz \"{{name}}\" ha eliminado {{count}} paquetes salientes (cola TX llena): comprueba el enlace de esa interfaz"
+        "txQueueDropsNeutral": "La interfaz \"{{name}}\" ha eliminado {{count}} paquetes salientes (cola TX llena): comprueba el enlace de esa interfaz",
+        "txQueueDropsBleFlowControl": "La interfaz \"{{name}}\" eliminó {{count}} paquetes salientes (la cola de TX del host está llena) — control de flujo activado; se espera bajo congestión de RF, no un enlace atascado"
       }
     },
     "routingPort": {

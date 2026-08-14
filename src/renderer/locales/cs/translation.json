@@ -1331,7 +1331,8 @@
       "bleBondRemovedOpenAdmin": "Otevřít Bluetooth správce",
       "txQueueDropsHintBle": "Tento ble RNode nemůže vypustit frontu TX (uvíznutý odkaz nebo mávání). Preferujte USB sériové nebo Wi-Fi (tcp://), nebo Zastavte zásobník a znovu spárujte po Zapomenout v Nastavení systému → Bluetooth.",
       "txQueueDropsHintBleBondStale": "Fronta TX je plná, protože vazba ble je zastaralá. Zapomeňte na tento RNode v Systémovém nastavení → Bluetooth a poté použijte Správce → Bluetooth (Vymazat spárování / Spustit párování) nebo přepněte na USB.",
-      "txQueueDropsHintNeutral": "Tento kanál TX rozhraní je plný. Chcete-li zastavit kapky, zkontrolujte stav odkazu rozhraní (nebo jej zakažte)."
+      "txQueueDropsHintNeutral": "Tento kanál TX rozhraní je plný. Chcete-li zastavit kapky, zkontrolujte stav odkazu rozhraní (nebo jej zakažte).",
+      "txQueueDropsHintBleFlowControl": "Protitlak ve frontě TX hostitele, když je rádio zaneprázdněno (řízení průtoku zapnuto). Očekává se při přetížení RF — ne zaseknutý odkaz. Snižte odchozí zatížení nebo počkejte na vysílání."
     },
     "reticulumSidecarBundledMissing": "V této instalaci chybí přibalený Reticulum sidecar. Upgradujte na novější verzi nebo nahlaste problém – sestavení ze zdroje není v balených instalacích k dispozici.",
     "radioMqttRootDivergesWarning": "Kořenové téma rádia MQTT je {{radioRoot}}, ale tento panel odebírá {{appPrefix}}. Přizpůsobením rádia omezíte celostátní provoz uzlů — aktualizujte předponu tématu a znovu připojte MQTT.",
@@ -1728,7 +1729,8 @@
         "decommissionedHubEnabled": "Vyřazený hub „{{name}}“ je stále zapnutý — mesh-client ho při každém startu zásobníku vypne. Použijte «Přidat výchozí páteř» nebo adresář páteří pro živé koncové body.",
         "txQueueDropsBle": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta TX je plná) — ble RNode link uvízl; raději USB nebo znovu spárovat",
         "txQueueDropsBleBondStale": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta TX je plná) — zastaralá vazba ble; Zapomeňte v OS Bluetooth a znovu spárujte",
-        "txQueueDropsNeutral": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta TX je plná) — zkontrolujte odkaz rozhraní"
+        "txQueueDropsNeutral": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta TX je plná) — zkontrolujte odkaz rozhraní",
+        "txQueueDropsBleFlowControl": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta hostitele TX je plná) — řízení toku zapnuto; očekáváno v RF přetížení, nikoli uvízlé spojení"
       }
     },
     "routingPort": {

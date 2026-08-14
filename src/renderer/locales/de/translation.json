@@ -1328,7 +1328,8 @@
       "bleBondRemovedOpenAdmin": "Admin-Bluetooth öffnen",
       "txQueueDropsHintBle": "Dieser BLE-RNode kann seine TX-Warteschlange nicht leeren (Link hängt oder flattert). Bevorzugen Sie USB-Serial oder Wi‑Fi (tcp://), oder stoppen Sie den Stack und koppeln Sie erneut nach Vergessen in Systemeinstellungen → Bluetooth.",
       "txQueueDropsHintBleBondStale": "Die TX-Warteschlange ist voll, weil die BLE-Bindung veraltet ist. Vergessen Sie diesen RNode in Systemeinstellungen → Bluetooth und nutzen Sie Admin → Bluetooth (Gekoppelte löschen / Kopplung starten) oder wechseln Sie zu USB.",
-      "txQueueDropsHintNeutral": "Dieser Schnittstellen-TX-Kanal ist voll. Überprüfen Sie die Verknüpfungsgesundheit der Schnittstelle (oder deaktivieren Sie sie), um das Herunterfallen zu stoppen."
+      "txQueueDropsHintNeutral": "Dieser Schnittstellen-TX-Kanal ist voll. Überprüfen Sie die Verknüpfungsgesundheit der Schnittstelle (oder deaktivieren Sie sie), um das Herunterfallen zu stoppen.",
+      "txQueueDropsHintBleFlowControl": "Host-TX-Warteschlangengegendruck, während das Funkgerät besetzt ist (Flusssteuerung eingeschaltet). Wird unter HF-Stau erwartet — keine steckengebliebene Verbindung. Reduzieren Sie die ausgehende Last oder warten Sie auf Sendezeit."
     },
     "reticulumSidecarBundledMissing": "Bei dieser Installation fehlt der mitgelieferte Reticulum-Sidecar. Führen Sie ein Upgrade auf eine neuere Version durch oder melden Sie das Problem – das Erstellen aus dem Quellcode ist bei Paketinstallationen nicht verfügbar.",
     "radioMqttRootDivergesWarning": "Das Hauptthema von Radio MQTT ist {{radioRoot}}, aber dieses Panel abonniert {{appPrefix}}. Passen Sie das Funkgerät an, um den landesweiten Knotenverkehr zu begrenzen — aktualisieren Sie das Themenpräfix und verbinden Sie MQTT erneut.",
@@ -1726,7 +1727,8 @@
         "decommissionedHubEnabled": "Außer Betrieb genommener Hub „{{name}}“ ist noch aktiviert — mesh-client schaltet ihn bei jedem Stack-Start aus. Nutzen Sie „Standard-Backbones hinzufügen“ oder das Backbone-Verzeichnis für aktuelle Endpunkte.",
         "txQueueDropsBle": "Schnittstelle \"{{name}}\" abgelegt {{count}} ausgehende Pakete (TX-Warteschlange voll) — BLE RNode-Link klemmt; lieber USB oder Re-Pair",
         "txQueueDropsBleBondStale": "Schnittstelle „{{name}}“ abgelegt {{count}} ausgehende Pakete (TX-Warteschlange voll) — BLE-Bond veraltet; Bluetooth im Betriebssystem vergessen und neu koppeln",
-        "txQueueDropsNeutral": "Schnittstelle \"{{name}}\" hat {{count}} ausgehende Pakete abgelegt (TX-Warteschlange voll) — überprüfen Sie den Link dieser Schnittstelle"
+        "txQueueDropsNeutral": "Schnittstelle \"{{name}}\" hat {{count}} ausgehende Pakete abgelegt (TX-Warteschlange voll) — überprüfen Sie den Link dieser Schnittstelle",
+        "txQueueDropsBleFlowControl": "Schnittstelle „{{name}}“ abgelegt {{count}} ausgehende Pakete (Host-TX-Warteschlange voll) — Flusskontrolle ein; wird bei RF-Stau erwartet, keine festgefahrene Verbindung"
       }
     },
     "routingPort": {

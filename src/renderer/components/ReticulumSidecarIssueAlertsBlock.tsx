@@ -12,7 +12,10 @@ export interface ReticulumSidecarIssueAlertsBlockProps {
   /** When true, hint that other Reticulum apps may conflict via shared instance. */
   shareInstanceEnabled?: boolean;
   /** Local interface rows for transport-aware TX-drop hints. */
-  interfaces?: readonly Pick<ReticulumLocalInterfaceInput, 'name' | 'type' | 'serial_port'>[];
+  interfaces?: readonly Pick<
+    ReticulumLocalInterfaceInput,
+    'name' | 'type' | 'serial_port' | 'flow_control'
+  >[];
   onStopStack?: () => void | Promise<void>;
   onOpenAdminBluetooth?: () => void;
 }
@@ -74,6 +77,9 @@ export function ReticulumSidecarIssueAlertsBlock({
           switch (hintKey) {
             case 'txQueueDropsHintBleBondStale':
               hintText = t('connectionPanel.reticulumSidecarIssues.txQueueDropsHintBleBondStale');
+              break;
+            case 'txQueueDropsHintBleFlowControl':
+              hintText = t('connectionPanel.reticulumSidecarIssues.txQueueDropsHintBleFlowControl');
               break;
             case 'txQueueDropsHintBle':
               hintText = t('connectionPanel.reticulumSidecarIssues.txQueueDropsHintBle');
