@@ -1,0 +1,128 @@
+From: mesh-client
+Subject: Expose host TX mpsc fill on GetInterfaceStats
+
+Add tx_queue_used / tx_queue_max to InterfaceStatRpcEntry so mesh-client
+can show live RNode outbound queue depth (and early buffering) without
+scraping PACKET DROPPED logs.
+
+diff --git a/crates/rns-runtime/src/remote_management.rs b/crates/rns-runtime/src/remote_management.rs
+--- a/crates/rns-runtime/src/remote_management.rs
++++ b/crates/rns-runtime/src/remote_management.rs
+@@ -551,6 +551,8 @@
+                                 announce_cap: 0.02,
+                                 ifac_size: 0,
+                                 tx_drops: 0,
++                                tx_queue_used: 0,
++                                tx_queue_max: 0,
+                             }];
+                             TransportQueryResponse::InterfaceStats(stats)
+                         }
+diff --git a/crates/rns-runtime/src/reticulum.rs b/crates/rns-runtime/src/reticulum.rs
+--- a/crates/rns-runtime/src/reticulum.rs
++++ b/crates/rns-runtime/src/reticulum.rs
+@@ -2089,6 +2089,8 @@
+                     announce_cap: entry.announce_cap,
+                     ifac_size: entry.ifac_size,
+                     tx_drops: entry.tx_drops,
++                    tx_queue_used: entry.tx_queue_used,
++                    tx_queue_max: entry.tx_queue_max,
+                 })
+                 .collect();
+             TransportQueryResponse::InterfaceStats(entries)
+@@ -10268,6 +10270,8 @@
+             announce_cap: 0.02,
+             ifac_size: 0,
+             tx_drops: 0,
++            tx_queue_used: 0,
++            tx_queue_max: 0,
+         };
+         let mut second = first.clone();
+         second.id = 2;
+@@ -10413,6 +10417,8 @@
+             announce_cap: 0.02,
+             ifac_size: 0,
+             tx_drops: 0,
++            tx_queue_used: 0,
++            tx_queue_max: 0,
+         };
+         let mut missing_mtu_interface = master_interface.clone();
+         missing_mtu_interface.id = 82;
+diff --git a/crates/rns-runtime/src/rpc.rs b/crates/rns-runtime/src/rpc.rs
+--- a/crates/rns-runtime/src/rpc.rs
++++ b/crates/rns-runtime/src/rpc.rs
+@@ -179,6 +179,10 @@
+     pub announce_cap: f64,
+     pub ifac_size: usize,
+     pub tx_drops: u64,
++    #[serde(default)]
++    pub tx_queue_used: u64,
++    #[serde(default)]
++    pub tx_queue_max: u64,
+ }
+ 
+ #[derive(Debug, Clone, Serialize, Deserialize)]
+@@ -566,6 +570,8 @@
+                                 .unwrap_or(PyValue::None),
+                         ),
+                         ("tx_drops", PyValue::Int(i128::from(e.tx_drops))),
++                        ("tx_queue_used", PyValue::Int(i128::from(e.tx_queue_used))),
++                        ("tx_queue_max", PyValue::Int(i128::from(e.tx_queue_max))),
+                     ];
+                     if let Some(blocked_ips) = e.blocked_ips {
+                         fields.push(("blocked_ips", PyValue::Int(i128::from(blocked_ips))));
+@@ -859,6 +865,8 @@
+                     .map(|v| v as usize)
+                     .unwrap_or(0),
+                 tx_drops: dict_get(m, "tx_drops").and_then(py_u64).unwrap_or(0),
++                tx_queue_used: dict_get(m, "tx_queue_used").and_then(py_u64).unwrap_or(0),
++                tx_queue_max: dict_get(m, "tx_queue_max").and_then(py_u64).unwrap_or(0),
+             })
+         })
+         .collect()
+@@ -1786,6 +1794,8 @@
+             announce_cap: 0.02,
+             ifac_size: 0,
+             tx_drops: 1,
++            tx_queue_used: 0,
++            tx_queue_max: 0,
+         }
+     }
+ 
+diff --git a/crates/rns-runtime/src/rpc_server.rs b/crates/rns-runtime/src/rpc_server.rs
+--- a/crates/rns-runtime/src/rpc_server.rs
++++ b/crates/rns-runtime/src/rpc_server.rs
+@@ -404,6 +404,8 @@
+                             announce_cap: e.announce_cap,
+                             ifac_size: e.ifac_size,
+                             tx_drops: e.tx_drops,
++                            tx_queue_used: e.tx_queue_used,
++                            tx_queue_max: e.tx_queue_max,
+                         })
+                         .collect();
+                     RpcResponse::InterfaceStats(rpc_entries)
+diff --git a/crates/rns-transport/src/actor/rpc.rs b/crates/rns-transport/src/actor/rpc.rs
+--- a/crates/rns-transport/src/actor/rpc.rs
++++ b/crates/rns-transport/src/actor/rpc.rs
+@@ -120,6 +120,8 @@
+                             announce_cap: entry.announce_cap,
+                             ifac_size: entry.ifac_size,
+                             tx_drops: entry.tx_drops.load(std::sync::atomic::Ordering::Relaxed),
++                            tx_queue_used: (entry.tx.max_capacity() - entry.tx.capacity()) as u64,
++                            tx_queue_max: entry.tx.max_capacity() as u64,
+                         }
+                     })
+                     .collect();
+diff --git a/crates/rns-transport/src/messages.rs b/crates/rns-transport/src/messages.rs
+--- a/crates/rns-transport/src/messages.rs
++++ b/crates/rns-transport/src/messages.rs
+@@ -884,6 +884,10 @@
+     pub announce_cap: f64,
+     pub ifac_size: usize,
+     pub tx_drops: u64,
++    /// Host outbound TX mpsc fill (`max_capacity - capacity`).
++    pub tx_queue_used: u64,
++    /// Host outbound TX mpsc `max_capacity`.
++    pub tx_queue_max: u64,
+ }
+ 
+ #[derive(Debug, Clone)]

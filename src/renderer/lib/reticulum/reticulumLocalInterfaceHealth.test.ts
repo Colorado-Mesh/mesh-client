@@ -255,10 +255,35 @@ describe('resolveReticulumTxDropHintKind', () => {
     expect(reticulumTxDropConnectionHintKey('ble')).toBe('txQueueDropsHintBle');
   });
 
+  it('classifies flow-controlled BLE RNodes as bleFlowControl', () => {
+    const flowControlled = { ...bleRnode, flow_control: true as const };
+    expect(resolveReticulumTxDropHintKind('RNode 41F4', [flowControlled])).toBe('bleFlowControl');
+    expect(reticulumTxDropConnectionHintKey('bleFlowControl')).toBe(
+      'txQueueDropsHintBleFlowControl',
+    );
+    expect(reticulumTxDropDiagnosticsCauseKey('bleFlowControl')).toBe('txQueueDropsBleFlowControl');
+  });
+
+  it('keeps ble when flow_control is false or unset', () => {
+    expect(
+      resolveReticulumTxDropHintKind('RNode 41F4', [{ ...bleRnode, flow_control: false }]),
+    ).toBe('ble');
+    expect(
+      resolveReticulumTxDropHintKind('RNode 41F4', [{ ...bleRnode, flow_control: null }]),
+    ).toBe('ble');
+  });
+
   it('prefers bleBondStale when name is in bleBondRemoved', () => {
     expect(resolveReticulumTxDropHintKind('RNode 41F4', [bleRnode], ['RNode 41F4'])).toBe(
       'bleBondStale',
     );
+    expect(
+      resolveReticulumTxDropHintKind(
+        'RNode 41F4',
+        [{ ...bleRnode, flow_control: true }],
+        ['RNode 41F4'],
+      ),
+    ).toBe('bleBondStale');
     expect(resolveReticulumTxDropHintKind('RNode 41F4', undefined, ['RNode 41F4'])).toBe(
       'bleBondStale',
     );

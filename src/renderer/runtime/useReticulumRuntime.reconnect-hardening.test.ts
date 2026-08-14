@@ -335,4 +335,21 @@ describe('useReticulumRuntime outbound delivery persistence', () => {
       /markStaleReticulumOutboundMessages\(identityId, 5 \* MS_PER_MINUTE\)/,
     );
   });
+
+  it('guards queueStatus updates with queueRefreshGeneration across disconnect', () => {
+    expect(SOURCE).toContain('queueRefreshGenerationRef');
+    expect(SOURCE).toMatch(
+      /const refreshLocalInterfacesFromSidecar = useCallback\(async \(\) => \{[\s\S]*?const generation = queueRefreshGenerationRef\.current;[\s\S]*?if \(generation !== queueRefreshGenerationRef\.current\)/,
+    );
+    expect(SOURCE).toMatch(
+      /const generation = queueRefreshGenerationRef\.current;[\s\S]*?if \(cancelled \|\| generation !== queueRefreshGenerationRef\.current\)/,
+    );
+    // Disconnect + tearDown bump generation before clearing queue state.
+    const bumps = SOURCE.match(/queueRefreshGenerationRef\.current \+= 1/g) ?? [];
+    expect(bumps.length).toBeGreaterThanOrEqual(2);
+    const disconnectBody = extractUseCallbackBody(SOURCE, 'disconnect');
+    expect(disconnectBody).toMatch(
+      /queueRefreshGenerationRef\.current \+= 1;[\s\S]*?setQueueStatus\(null\)/,
+    );
+  });
 });

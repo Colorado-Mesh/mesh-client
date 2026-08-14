@@ -101,6 +101,8 @@ export interface ReticulumSidecarInterfaceRow {
   network_name?: string | null;
   passphrase?: string | null;
   flow_control?: boolean | null;
+  tx_queue_used?: number | null;
+  tx_queue_max?: number | null;
   extra_config?: Record<string, string> | null;
 }
 

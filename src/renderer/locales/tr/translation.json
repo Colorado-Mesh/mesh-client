@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "GitHub'da Colorado Mesh",
     "footerWebsiteTitle": "Colorado Mesh web sitesi",
-    "loadingApp": "Mesh İstemcisi Yükleniyor"
+    "loadingApp": "Mesh İstemcisi Yükleniyor",
+    "reticulumQueueTooltip": "Yerel RNode \"{{name}}\" için ana bilgisayar TX kuyruğu: telsizi bekleyen paketler (birden fazla RNode olduğunda en kötü doldurma). % 25 'in altında yeşil, % 60' ın altında sarı, % 60 veya daha fazla kırmızı.",
+    "reticulumQueueTooltipGeneric": "En yoğun yerel RNode için ana bilgisayar TX kuyruğu: telsizi bekleyen paketler. % 25 'in altında yeşil, % 60' ın altında sarı, % 60 veya daha fazla kırmızı.",
+    "reticulumTxBuffering": "Giden paketlerin yerel bir RNode'a arabelleğe alınması (ana bilgisayar TX kuyruğu boşaltma).",
+    "reticulumTxBufferingNamed": "\"{{name}}\" üzerinde giden paketler arabelleğe alınıyor (ana bilgisayar TX kuyruğu boşaltılıyor)."
   },
   "appPanel": {
     "failedSaveRetention": "Mesaj saklama ayarı kaydedilemedi.",
@@ -1330,7 +1334,8 @@
       "bleBondRemovedOpenAdmin": "Yönetici Bluetooth'unu aç",
       "txQueueDropsHintBle": "Bu BLE RNode TX kuyruğunu boşaltamaz (bağlantı sıkışmış veya flapping). USB seri veya Wi-Fi (tcp://) tercih edin, veya Sistem Ayarları → Bluetooth'ta Forget sonrası yığını durdurup yeniden eşleştirin.",
       "txQueueDropsHintBleBondStale": "BLE bağı bayat olduğu için TX kuyruğu dolu. Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, ardından Yönetici → Bluetooth'unu (Eşleştirmeyi temizle/Eşleştirmeyi başlat) kullanın veya USB'ye geçin.",
-      "txQueueDropsHintNeutral": "Bu arayüz TX kanalı dolu. Düşmeleri durdurmak için bu arayüzün bağlantı sağlığını kontrol edin (veya devre dışı bırakın)."
+      "txQueueDropsHintNeutral": "Bu arayüz TX kanalı dolu. Düşmeleri durdurmak için bu arayüzün bağlantı sağlığını kontrol edin (veya devre dışı bırakın).",
+      "txQueueDropsHintBleFlowControl": "Radyo meşgulken ana bilgisayar TX kuyruğu geri basıncı (akış kontrolü açık). RF tıkanıklığı altında beklenir — sıkışmış bir bağlantı değil. Giden yükü azaltın veya yayın süresini bekleyin."
     },
     "reticulumSidecarBundledMissing": "Bu kurulumda birlikte verilen Reticulum sidecar eksik. Daha yeni bir sürüme yükseltin veya sorunu bildirin; kaynaktan derleme, paketli kurulumlarda mevcut değildir.",
     "radioMqttRootDivergesWarning": "Radyo MQTT kök konusu {{radioRoot}} 'dır, ancak bu panel {{appPrefix}}' e abone olur. Ülke çapındaki düğüm trafiğini sınırlamak için radyoyu eşleştirin — Konu Önekini güncelleyin ve MQTT'yi yeniden bağlayın.",
@@ -1726,7 +1731,8 @@
         "decommissionedHubEnabled": "Kullanım dışı hub «{{name}}» hâlâ açık — mesh-client her yığın başlangıcında kapatır. Canlı uç noktalar için «Varsayılan omurga bağlantıları ekle» veya omurga dizinini kullanın.",
         "txQueueDropsBle": "Arabirim \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu) — BLE RNode bağlantısı takıldı; USB'yi tercih edin veya yeniden eşleştirin",
         "txQueueDropsBleBondStale": "Arayüz \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu) — BLE bond bayat; İşletim sistemi Bluetooth'unu unutun ve yeniden eşleştirin",
-        "txQueueDropsNeutral": "Arabirim \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu) — arabirimin bağlantısını kontrol edin"
+        "txQueueDropsNeutral": "Arabirim \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu) — arabirimin bağlantısını kontrol edin",
+        "txQueueDropsBleFlowControl": "Arayüz \"{{name}}\" düştü {{count}} giden paketler (ana bilgisayar TX kuyruğu dolu) — akış kontrolü açık; RF tıkanıklığı altında bekleniyor, sıkışmış bir bağlantı değil"
       }
     },
     "routingPort": {

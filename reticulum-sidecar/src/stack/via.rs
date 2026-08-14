@@ -296,6 +296,8 @@ mod tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
             extra_config: std::collections::HashMap::new(),
         }
     }
@@ -422,6 +424,8 @@ mod tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
             extra_config: std::collections::HashMap::new(),
         }];
         assert_eq!(resolve_stub_sent_via(&ifaces), "rf");
@@ -460,6 +464,8 @@ mod tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let live = vec![InterfaceRow {
@@ -492,6 +498,8 @@ mod tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
@@ -537,6 +545,8 @@ mod tests {
                 network_name: None,
                 passphrase: None,
                 flow_control: None,
+                tx_queue_used: None,
+                tx_queue_max: None,
                 extra_config: std::collections::HashMap::new(),
             },
             InterfaceRow {
@@ -569,6 +579,8 @@ mod tests {
                 network_name: None,
                 passphrase: None,
                 flow_control: None,
+                tx_queue_used: None,
+                tx_queue_max: None,
                 extra_config: std::collections::HashMap::new(),
             },
         ];
@@ -612,6 +624,8 @@ mod tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
@@ -655,6 +669,8 @@ mod tests {
             network_name: Some("ttp_internal".into()),
             passphrase: Some("resistance202606".into()),
             flow_control: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
             extra_config: extra.clone(),
         }];
         let live = vec![InterfaceRow {
@@ -687,6 +703,8 @@ mod tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
@@ -704,5 +722,31 @@ mod tests {
             Some("300")
         );
         assert_eq!(row.seed_addresses, vec!["AA:BB:CC:DD:EE:FF".to_string()]);
+    }
+
+    #[test]
+    fn merge_preserves_live_tx_queue_stats() {
+        let config = vec![sample_iface("cfg-1", "RNode USB", "rnode", true, "down")];
+        let mut live = sample_iface("rns-0", "RNode USB", "AccessPoint", true, "up");
+        live.tx_queue_used = Some(64);
+        live.tx_queue_max = Some(256);
+        let merged = merge_live_interfaces_with_config(&config, vec![live]);
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged[0].id, "cfg-1");
+        assert_eq!(merged[0].status, "up");
+        assert_eq!(merged[0].tx_queue_used, Some(64));
+        assert_eq!(merged[0].tx_queue_max, Some(256));
+    }
+
+    #[test]
+    fn merge_keeps_offline_live_tx_queue_unset() {
+        let config = vec![sample_iface("cfg-1", "RNode USB", "rnode", true, "up")];
+        let mut live = sample_iface("rns-0", "RNode USB", "AccessPoint", true, "down");
+        live.tx_queue_used = None;
+        live.tx_queue_max = None;
+        let merged = merge_live_interfaces_with_config(&config, vec![live]);
+        assert_eq!(merged[0].status, "down");
+        assert_eq!(merged[0].tx_queue_used, None);
+        assert_eq!(merged[0].tx_queue_max, None);
     }
 }

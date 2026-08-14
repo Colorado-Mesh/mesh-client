@@ -304,6 +304,8 @@ mod tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
             extra_config: std::collections::HashMap::default(),
         }
     }

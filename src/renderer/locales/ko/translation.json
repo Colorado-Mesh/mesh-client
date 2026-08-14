@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
     "footerWebsiteTitle": "Colorado Mesh website",
-    "loadingApp": "메시 클라이언트 로드 중"
+    "loadingApp": "메시 클라이언트 로드 중",
+    "reticulumQueueTooltip": "로컬 RNode \"{{name}}\" 에 대한 호스트 TX 대기열: 라디오를 기다리는 패킷 (여러 RNode가 있을 때 최악의 채움). 녹색은 25% 미만, 황색은 60% 미만, 빨간색은 60% 이상.",
+    "reticulumQueueTooltipGeneric": "가장 바쁜 로컬 RNode의 호스트 TX 대기열: 라디오를 기다리는 패킷. 녹색은 25% 미만, 황색은 60% 미만, 빨간색은 60% 이상.",
+    "reticulumTxBuffering": "아웃바운드 패킷을 로컬 RNode에 버퍼링합니다 (호스트 TX 대기열 드레이닝).",
+    "reticulumTxBufferingNamed": "\"{{name}}\" 에서 아웃바운드 패킷 버퍼링 (호스트 TX 대기열 배수)."
   },
   "appPanel": {
     "failedSaveRetention": "메시지 보관 설정을 저장하지 못했습니다.",
@@ -1330,7 +1334,8 @@
       "bleBondRemovedOpenAdmin": "관리자 블루투스 열기",
       "txQueueDropsHintBle": "이 BLE RNode는 TX 대기열을 배출할 수 없습니다 (링크 정지 또는 플랩핑). USB 직렬 또는 Wi-Fi (tcp://) 를 선호하거나 시스템 설정 → 블루투스에서 잊어버린 후 스택을 중지하고 다시 페어링하십시오.",
       "txQueueDropsHintBleBondStale": "BLE 결합이 오래되어 TX 대기열이 가득 찼습니다. 시스템 설정 → 블루투스에서 이 RNode를 지운 다음 관리자 → 블루투스를 사용하거나 (페어링 지우기/페어링 시작) USB로 전환하십시오.",
-      "txQueueDropsHintNeutral": "이 인터페이스 TX 채널이 가득 찼습니다. 해당 인터페이스의 링크 상태를 확인하거나 비활성화하여 드롭을 중지하십시오."
+      "txQueueDropsHintNeutral": "이 인터페이스 TX 채널이 가득 찼습니다. 해당 인터페이스의 링크 상태를 확인하거나 비활성화하여 드롭을 중지하십시오.",
+      "txQueueDropsHintBleFlowControl": "라디오가 사용 중인 동안 호스트 TX 대기열 배압 (유량 제어 켜짐). RF 정체 시 예상 — 링크가 고정되지 않음. 아웃바운드 화물을 줄이거나 대기 시간을 기다리세요."
     },
     "reticulumSidecarBundledMissing": "이 설치에는 번들로 제공되는 Reticulum 사이드카가 없습니다. 최신 릴리스로 업그레이드하거나 문제를 보고하세요. 패키지 설치에서는 소스에서 빌드할 수 없습니다.",
     "radioMqttRootDivergesWarning": "라디오 MQTT 루트 주제는 {{radioRoot}} 이지만 이 패널은 {{appPrefix}} 을 (를) 구독합니다. 라디오를 일치시켜 전국 노드 트래픽을 제한하십시오 — 주제 접두사를 업데이트하고 MQTT를 다시 연결하십시오.",
@@ -1726,7 +1731,8 @@
         "decommissionedHubEnabled": "폐기된 허브 «{{name}}»가 아직 사용 중입니다 — mesh-client는 스택을 시작할 때마다 끕니다. 활성 엔드포인트는 «기본 백본 추가» 또는 백본 목록을 사용하세요.",
         "txQueueDropsBle": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — BLE RNode 링크가 중단됨, USB 또는 재페어링 선호",
         "txQueueDropsBleBondStale": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — BLE 본드 오래됨; OS 블루투스는 잊어버리고 다시 페어링",
-        "txQueueDropsNeutral": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — 해당 인터페이스의 링크 확인"
+        "txQueueDropsNeutral": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — 해당 인터페이스의 링크 확인",
+        "txQueueDropsBleFlowControl": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (호스트 TX 대기열 꽉 참) — 흐름 제어 켜짐, RF 혼잡 시 예상, 링크 정지 아님"
       }
     },
     "routingPort": {

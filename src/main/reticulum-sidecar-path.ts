@@ -3,7 +3,11 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import { MS_PER_MINUTE } from '../shared/timeConstants';
 import { sanitizeLogMessage } from './log-service';
+
+/** Cap hung `cargo build` so unpackaged connect cannot stall forever. */
+export const RETICULUM_SIDECAR_CARGO_BUILD_TIMEOUT_MS = 15 * MS_PER_MINUTE;
 
 export function sidecarBinaryName(): string {
   return process.platform === 'win32' ? 'mesh-client-reticulum.exe' : 'mesh-client-reticulum';
@@ -173,7 +177,32 @@ function runCargoBuild(projectDir: string): Promise<void> {
       env: process.env,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
+    let settled = false;
     let stderr = '';
+    const settle = (finish: () => void): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      finish();
+    };
+    const timeout = setTimeout(() => {
+      try {
+        if (process.platform === 'win32') {
+          proc.kill();
+        } else {
+          proc.kill('SIGTERM');
+        }
+      } catch {
+        // catch-no-log-ok best-effort kill after cargo timeout
+      }
+      settle(() => {
+        reject(
+          new Error(
+            `RETICULUM_CARGO_BUILD_TIMEOUT: cargo build exceeded ${RETICULUM_SIDECAR_CARGO_BUILD_TIMEOUT_MS}ms`,
+          ),
+        );
+      });
+    }, RETICULUM_SIDECAR_CARGO_BUILD_TIMEOUT_MS);
     proc.stdout?.on('data', (chunk: Buffer) => {
       console.debug('[ReticulumSidecar] cargo:', sanitizeLogMessage(chunk.toString('utf8').trim()));
     });
@@ -183,25 +212,32 @@ function runCargoBuild(projectDir: string): Promise<void> {
       console.debug('[ReticulumSidecar] cargo:', sanitizeLogMessage(line.trim()));
     });
     proc.on('error', (err: NodeJS.ErrnoException) => {
-      if (err.code === 'ENOENT') {
-        reject(
-          new Error(
-            'RETICULUM_CARGO_MISSING: Rust toolchain (cargo) not found. Install from https://rustup.rs then run `pnpm run reticulum:sidecar:build`.',
-          ),
-        );
-        return;
-      }
-      reject(err);
+      settle(() => {
+        if (err.code === 'ENOENT') {
+          reject(
+            new Error(
+              'RETICULUM_CARGO_MISSING: Rust toolchain (cargo) not found. Install from https://rustup.rs then run `pnpm run reticulum:sidecar:build`.',
+            ),
+          );
+          return;
+        }
+        reject(err);
+      });
     });
     proc.on('exit', (code) => {
-      if (code === 0) {
-        resolve();
-        return;
-      }
-      reject(new Error(formatReticulumCargoBuildError(code, stderr)));
+      settle(() => {
+        if (code === 0) {
+          resolve();
+          return;
+        }
+        reject(new Error(formatReticulumCargoBuildError(code, stderr)));
+      });
     });
   });
 }
+
+/** @internal Exported for unit tests (timeout / hang termination). */
+export const runCargoBuildForTests = runCargoBuild;
 
 /** Newest mtime among Cargo.toml and reticulum-sidecar/src Rust sources. */
 export function newestReticulumSidecarSourceMtimeMs(projectDir: string): number {
@@ -234,11 +270,12 @@ export function sidecarBinaryIsStale(binaryPath: string, projectDir: string): bo
   return newestReticulumSidecarSourceMtimeMs(projectDir) > binaryMtime;
 }
 
-export type DevSidecarEnsureAction = 'await-build' | 'background-build' | 'noop';
+export type DevSidecarEnsureAction = 'await-build' | 'noop';
 
 /**
- * Decide whether connect must wait on cargo, can refresh in the background, or skip.
- * Missing / featureless binaries block; mtime-stale full-feature binaries do not.
+ * Decide whether connect must wait on cargo or can skip.
+ * Dev connect always runs the current tree: missing, featureless, or mtime-stale
+ * binaries block until `cargo build` finishes (no stale-binary background start).
  */
 export function resolveDevSidecarEnsureAction(opts: {
   missing: boolean;
@@ -246,8 +283,7 @@ export function resolveDevSidecarEnsureAction(opts: {
   lacksRnsStack: boolean;
   lacksRnsBle: boolean;
 }): DevSidecarEnsureAction {
-  if (opts.missing || opts.lacksRnsStack || opts.lacksRnsBle) return 'await-build';
-  if (opts.stale) return 'background-build';
+  if (opts.missing || opts.stale || opts.lacksRnsStack || opts.lacksRnsBle) return 'await-build';
   return 'noop';
 }
 
@@ -266,11 +302,21 @@ async function runDevSidecarCargoBuild(projectDir: string, reason: string): Prom
   await devBuildInFlight;
 }
 
+export interface EnsureDevSidecarBinaryOpts {
+  /** Override project discovery (tests). */
+  projectDir?: string;
+  /** Replace cargo build runner (tests). */
+  runBuild?: (projectDir: string, reason: string) => Promise<void>;
+}
+
 /** Dev-only: compile the sidecar when the debug binary is missing or unusable. */
-export async function ensureDevSidecarBinary(binaryPath: string): Promise<void> {
+export async function ensureDevSidecarBinary(
+  binaryPath: string,
+  opts?: EnsureDevSidecarBinaryOpts,
+): Promise<void> {
   if (app.isPackaged) return;
 
-  const projectDir = findReticulumSidecarProjectDir();
+  const projectDir = opts?.projectDir ?? findReticulumSidecarProjectDir();
   if (!projectDir) {
     throw new Error(
       'RETICULUM_SIDECAR_PROJECT_MISSING: reticulum-sidecar/ not found. Run `pnpm run reticulum:sidecar:build` from the mesh-client repo root.',
@@ -288,34 +334,16 @@ export async function ensureDevSidecarBinary(binaryPath: string): Promise<void> 
   if (action === 'noop') {
     return;
   }
-  if (action === 'background-build') {
-    // Prefer availability: start TCP/LXMF/RRC on the existing binary while cargo
-    // refreshes in the background for the next start.
-    void runDevSidecarCargoBuild(
-      projectDir,
-      'sidecar sources newer than binary (background refresh)',
-    ).catch((e: unknown) => {
-      console.warn(
-        '[ReticulumSidecar] background cargo rebuild failed:',
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-      );
-    });
-    return;
-  }
 
-  if (missing) {
-    await runDevSidecarCargoBuild(projectDir, 'debug binary missing');
-  } else if (lacksRnsStack) {
-    await runDevSidecarCargoBuild(
-      projectDir,
-      'debug binary is stub-only; rebuilding with rns-stack for live peers',
-    );
-  } else if (lacksRnsBle) {
-    await runDevSidecarCargoBuild(
-      projectDir,
-      'debug binary lacks rns-ble; rebuilding with BLE interface support',
-    );
-  }
+  const reason = missing
+    ? 'debug binary missing'
+    : lacksRnsStack
+      ? 'debug binary is stub-only; rebuilding with rns-stack for live peers'
+      : lacksRnsBle
+        ? 'debug binary lacks rns-ble; rebuilding with BLE interface support'
+        : 'sidecar sources newer than binary';
+  const runBuild = opts?.runBuild ?? runDevSidecarCargoBuild;
+  await runBuild(projectDir, reason);
 
   if (!fs.existsSync(binaryPath)) {
     throw new Error(

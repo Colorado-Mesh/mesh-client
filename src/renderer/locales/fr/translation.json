@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh sur GitHub",
     "footerWebsiteTitle": "Site Web du Colorado Mesh",
-    "loadingApp": "Chargement du client de maillage"
+    "loadingApp": "Chargement du client de maillage",
+    "reticulumQueueTooltip": "File d'attente TX hôte pour le RNode local \"{{name}}\" : paquets en attente de la radio (pire remplissage lorsque plusieurs RNodes). Vert moins de 25 %, ambre moins de 60 %, rouge à 60 % ou plus.",
+    "reticulumQueueTooltipGeneric": "File d'attente TX de l'hôte pour le RNode local le plus occupé : paquets en attente de la radio. Vert moins de 25 %, ambre moins de 60 %, rouge à 60 % ou plus.",
+    "reticulumTxBuffering": "Mise en mémoire tampon des paquets sortants vers un RNode local (vidange de la file d'attente TX de l'hôte).",
+    "reticulumTxBufferingNamed": "Mise en mémoire tampon des paquets sortants sur « {{name}} » (vidange de la file d'attente TX de l'hôte)."
   },
   "appPanel": {
     "failedSaveRetention": "Impossible d'enregistrer le paramètre de rétention des messages.",
@@ -1329,7 +1333,8 @@
       "bleBondRemovedOpenAdmin": "Ouvrir Admin Bluetooth",
       "txQueueDropsHintBle": "Ce RNode ble ne peut pas vider sa file d'attente TX (lien bloqué ou battement). Préférez USB série ou Wi-Fi (tcp ://), ou Arrêter la pile et réappairer après Oublier dans les paramètres système → Bluetooth.",
       "txQueueDropsHintBleBondStale": "La file TX est pleine car la liaison BLE est obsolète. Oubliez ce RNode dans Réglages Système → Bluetooth, puis utilisez Admin → Bluetooth (Effacer appairés / Démarrer l’appairage) ou passez en USB.",
-      "txQueueDropsHintNeutral": "Ce canal TX d'interface est plein. Vérifiez la santé du lien de cette interface (ou désactivez-la) pour arrêter les gouttes."
+      "txQueueDropsHintNeutral": "Ce canal TX d'interface est plein. Vérifiez la santé du lien de cette interface (ou désactivez-la) pour arrêter les gouttes.",
+      "txQueueDropsHintBleFlowControl": "Contrepression de la file d'attente TX de l'hôte pendant que la radio est occupée (contrôle de flux activé). Attendu en cas de congestion RF — pas un lien bloqué. Réduisez la charge sortante ou attendez le temps d'antenne."
     },
     "reticulumSidecarBundledMissing": "Cette installation ne dispose pas du side-car Reticulum fourni. Effectuez une mise à niveau vers une version plus récente ou signalez le problème : la création à partir des sources n'est pas disponible dans les installations packagées.",
     "radioMqttRootDivergesWarning": "Le sujet racine du MQTT radio est {{radioRoot}}, mais ce panneau est abonné à {{appPrefix}}. Faites correspondre la radio pour limiter le trafic des nœuds à l'échelle nationale — mettez à jour le préfixe du sujet et reconnectez le MQTT.",
@@ -1726,7 +1731,8 @@
         "decommissionedHubEnabled": "Le hub hors service « {{name}} » est encore activé — mesh-client le désactive à chaque démarrage de la pile. Utilisez « Ajouter des backbones par défaut » ou le répertoire des backbones pour des points de terminaison actifs.",
         "txQueueDropsBle": "Interface \"{{name}}\" abandonnée {{count}} paquets sortants (file d'attente TX pleine) — liaison ble RNode bloquée ; préférez USB ou réappairer",
         "txQueueDropsBleBondStale": "Interface \"{{name}}\" abandonnée {{count}} paquets sortants (file d'attente TX pleine) — ble bond stale ; Oubliez dans le système d'exploitation Bluetooth et réappareillez",
-        "txQueueDropsNeutral": "L'interface \"{{name}}\" a abandonné {{count}} paquets sortants (file d'attente TX pleine) — vérifiez le lien de cette interface"
+        "txQueueDropsNeutral": "L'interface \"{{name}}\" a abandonné {{count}} paquets sortants (file d'attente TX pleine) — vérifiez le lien de cette interface",
+        "txQueueDropsBleFlowControl": "Interface \"{{name}}\" abandonnée {{count}} paquets sortants (file d'attente hôte TX pleine) — contrôle de flux activé ; prévu sous congestion RF, pas un lien bloqué"
       }
     },
     "routingPort": {

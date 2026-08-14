@@ -44,7 +44,11 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
     "footerWebsiteTitle": "Colorado Mesh website",
-    "loadingApp": "Carregando o cliente de malha"
+    "loadingApp": "Carregando o cliente de malha",
+    "reticulumQueueTooltip": "Fila TX do host para RNode local \"{{name}}\": pacotes aguardando o rádio (pior preenchimento quando vários RNodes). Verde abaixo de 25%, âmbar abaixo de 60%, vermelho a 60% ou mais.",
+    "reticulumQueueTooltipGeneric": "Fila TX do host para o RNode local mais movimentado: pacotes aguardando o rádio. Verde abaixo de 25%, âmbar abaixo de 60%, vermelho a 60% ou mais.",
+    "reticulumTxBuffering": "Buffer de pacotes de saída para um RNode local (drenagem da fila TX do host).",
+    "reticulumTxBufferingNamed": "Armazenando pacotes de saída em \"{{name}}\" (drenagem da fila TX do host)."
   },
   "appPanel": {
     "failedSaveRetention": "Falha ao salvar a configuração de retenção de mensagens.",
@@ -1330,7 +1334,8 @@
       "bleBondRemovedOpenAdmin": "Abrir Admin Bluetooth",
       "txQueueDropsHintBle": "Este BLE RNode não pode drenar sua fila TX (link preso ou flapping). Prefira USB serial ou Wi-Fi (tcp://), ou Pare de empilhar e emparelhe novamente depois de Esquecer nas Configurações do Sistema → Bluetooth.",
       "txQueueDropsHintBleBondStale": "A fila TX está cheia porque a ligação BLE está obsoleta. Esqueça este RNode nas Configurações do Sistema → Bluetooth e use Admin → Bluetooth (Limpar emparelhado / Iniciar emparelhamento) ou mude para USB.",
-      "txQueueDropsHintNeutral": "Este canal TX de interface está cheio. Verifique a integridade do link dessa interface (ou desative-a) para interromper as quedas."
+      "txQueueDropsHintNeutral": "Este canal TX de interface está cheio. Verifique a integridade do link dessa interface (ou desative-a) para interromper as quedas.",
+      "txQueueDropsHintBleFlowControl": "Contrapressão da fila TX do host enquanto o rádio está ocupado (controle de fluxo ligado). Esperado sob congestionamento de RF — não um link preso. Reduza a carga de saída ou aguarde o tempo de antena."
     },
     "reticulumSidecarBundledMissing": "Esta instalação não contém o sidecar Reticulum incluído. Atualize para uma versão mais recente ou relate o problema – a compilação a partir do código-fonte não está disponível em instalações empacotadas.",
     "radioMqttRootDivergesWarning": "O tópico raiz do MQTT de rádio é {{radioRoot}}, mas este painel assina {{appPrefix}}. Combine o rádio para limitar o tráfego de nós em todo o país — atualize o Prefixo do Tópico e reconecte o MQTT.",
@@ -1726,7 +1731,8 @@
         "decommissionedHubEnabled": "O hub desativado «{{name}}» ainda está habilitado — o mesh-client o desliga a cada início do stack. Use «Adicionar backbones padrão» ou o diretório de backbones para endpoints ativos.",
         "txQueueDropsBle": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX cheia) — link BLE RNode travado; prefira USB ou emparelhe novamente",
         "txQueueDropsBleBondStale": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX cheia) — BLE Bond obsoleto; Esqueça no OS Bluetooth e emparelhe novamente",
-        "txQueueDropsNeutral": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX cheia) — verifique o link dessa interface"
+        "txQueueDropsNeutral": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX cheia) — verifique o link dessa interface",
+        "txQueueDropsBleFlowControl": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX do host cheia) — controle de fluxo ativado; esperado sob congestionamento de RF, não um link travado"
       }
     },
     "routingPort": {
