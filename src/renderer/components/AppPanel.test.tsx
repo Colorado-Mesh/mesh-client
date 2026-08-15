@@ -274,7 +274,7 @@ describe('AppPanel: RRC unread all room messages toggle', () => {
   });
 });
 
-describe('AppPanel: MeshCore path hash mode persist', () => {
+describe('AppPanel: MeshCore Radio-owned settings are not on App', () => {
   const defaultProps = {
     nodeCount: 0,
     messageCount: 0,
@@ -287,13 +287,13 @@ describe('AppPanel: MeshCore path hash mode persist', () => {
     localStorage.removeItem('mesh-client:appSettings');
   });
 
-  it('does not stamp default meshcorePathHashMode into app settings on mount', async () => {
+  it('does not stamp meshcorePathHashMode or Open-wire into app settings on mount', async () => {
     render(
       <ToastProvider>
         <AppPanel {...defaultProps} protocol="meshcore" />
       </ToastProvider>,
     );
-    await screen.findByLabelText(/Default path hash size/i);
+    await screen.findByText('App Settings');
     await waitFor(
       () => {
         const raw = localStorage.getItem('mesh-client:appSettings');
@@ -303,103 +303,22 @@ describe('AppPanel: MeshCore path hash mode persist', () => {
     );
     const raw = localStorage.getItem('mesh-client:appSettings');
     expect(raw).not.toContain('meshcorePathHashMode');
+    expect(raw).not.toContain('meshcoreOpenWireCompatEnabled');
   });
 
-  it('persists meshcorePathHashMode when the user changes the dropdown', async () => {
-    render(
+  it('does not show Open-wire or path-hash controls on App', async () => {
+    const { container } = render(
       <ToastProvider>
         <AppPanel {...defaultProps} protocol="meshcore" />
       </ToastProvider>,
     );
-    const select = await screen.findByLabelText(/Default path hash size/i);
-    fireEvent.change(select, { target: { value: '1' } });
-    await waitFor(() => {
-      const raw = localStorage.getItem('mesh-client:appSettings');
-      expect(raw).toContain('"meshcorePathHashMode":1');
-    });
-  });
-
-  it('syncs dropdown from device-reported mode when user has not changed it', async () => {
-    const { rerender } = render(
-      <ToastProvider>
-        <AppPanel
-          {...defaultProps}
-          protocol="meshcore"
-          isMeshcoreRadioConnected
-          deviceReportedPathHashMode={null}
-        />
-      </ToastProvider>,
-    );
-    const select = await screen.findByLabelText(/Default path hash size/i);
-    expect(select).toHaveValue('0');
-
-    rerender(
-      <ToastProvider>
-        <AppPanel
-          {...defaultProps}
-          protocol="meshcore"
-          isMeshcoreRadioConnected
-          deviceReportedPathHashMode={1}
-        />
-      </ToastProvider>,
-    );
-    await waitFor(() => {
-      expect(screen.getByLabelText(/Default path hash size/i)).toHaveValue('1');
-    });
-  });
-});
-
-describe('AppPanel: MeshCore Open wire toggle', () => {
-  const defaultProps = {
-    nodeCount: 0,
-    messageCount: 0,
-    channels: [] as { index: number; name: string }[],
-    myNodeNum: null as number | null,
-    onLocationFilterChange: vi.fn(),
-  };
-
-  beforeEach(() => {
-    localStorage.removeItem('mesh-client:appSettings');
-  });
-
-  it('shows Open wire toggle only on MeshCore protocol tab', async () => {
-    const { unmount } = render(
-      <ToastProvider>
-        <AppPanel {...defaultProps} protocol="meshtastic" />
-      </ToastProvider>,
-    );
+    await screen.findByText('App Settings');
     expect(
       screen.queryByRole('checkbox', { name: /Enable MeshCore Open compatibility/i }),
     ).toBeNull();
-    unmount();
-
-    render(
-      <ToastProvider>
-        <AppPanel {...defaultProps} protocol="meshcore" />
-      </ToastProvider>,
-    );
-    const checkbox = await screen.findByRole('checkbox', {
-      name: /Enable MeshCore Open compatibility/i,
-    });
-    expect(checkbox).not.toBeChecked();
-  });
-
-  it('persists meshcoreOpenWireCompatEnabled to app settings', async () => {
-    render(
-      <ToastProvider>
-        <AppPanel {...defaultProps} protocol="meshcore" />
-      </ToastProvider>,
-    );
-    const checkbox = await screen.findByRole('checkbox', {
-      name: /Enable MeshCore Open compatibility/i,
-    });
-    act(() => {
-      fireEvent.click(checkbox);
-    });
-    await waitFor(() => {
-      const raw = localStorage.getItem('mesh-client:appSettings');
-      expect(raw).toContain('"meshcoreOpenWireCompatEnabled":true');
-    });
+    expect(screen.queryByLabelText(/Default path hash size/i)).toBeNull();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });
 

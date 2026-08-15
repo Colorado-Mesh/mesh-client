@@ -178,7 +178,7 @@ describe('RoomsPanel', () => {
     });
   });
 
-  it('forces admin relogin when managing from a read-only session', async () => {
+  it('opens Repeater ops for a read-only session without showing Rooms CLI/ACL', () => {
     const room = makeRoom(0x100c, 'Admin Elevate Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
     meshcoreApplyRoomSession(room.node_id, {
@@ -186,21 +186,14 @@ describe('RoomsPanel', () => {
       adminPassword: '',
       role: 'readonly',
     });
-    const onLoginRoom = vi.fn().mockResolvedValue(undefined);
-    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onLoginRoom });
+    const onOpenRepeaterOps = vi.fn();
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onOpenRepeaterOps });
 
     fireEvent.click(screen.getByText('roomsPanel.manageRoom'));
 
-    await waitFor(() => {
-      expect(onLoginRoom).toHaveBeenCalledWith(
-        room.node_id,
-        'password',
-        expect.objectContaining({
-          adminPassword: 'password',
-          forceRelogin: true,
-        }),
-      );
-    });
+    expect(onOpenRepeaterOps).toHaveBeenCalledWith(room.node_id);
+    expect(screen.queryByPlaceholderText('roomsPanel.cliPlaceholder')).not.toBeInTheDocument();
+    expect(screen.queryByText('roomsPanel.aclPubkeyLabel')).not.toBeInTheDocument();
   });
 
   it('shows login form for room B while room A login is in progress', () => {
@@ -422,7 +415,25 @@ describe('RoomsPanel', () => {
     expect(textarea).toHaveValue('retry me');
   });
 
-  it('closes manage section when Close is clicked', async () => {
+  it('Refresh ACL in Members calls get acl', async () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x1010, 'ACL Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: '',
+      adminPassword: 'password',
+      role: 'admin',
+    });
+    const onSendRoomAdminCli = vi.fn().mockResolvedValue('aabbccdd 3\n');
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onSendRoomAdminCli });
+    fireEvent.click(screen.getByText(/roomsPanel.membersHeading/));
+    fireEvent.click(screen.getByLabelText('roomsPanel.membersRefreshAcl'));
+    await waitFor(() => {
+      expect(onSendRoomAdminCli).toHaveBeenCalledWith(room.node_id, 'get acl');
+    });
+  });
+
+  it('jumps to Repeaters & Rooms ops from Manage without opening CLI drawer', () => {
     meshcoreClearAllRoomSessions();
     const room = makeRoom(0x1009, 'Admin Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
@@ -431,6 +442,7 @@ describe('RoomsPanel', () => {
       adminPassword: 'password',
       role: 'admin',
     });
+    const onOpenRepeaterOps = vi.fn();
     render(
       <RoomsPanel
         nodes={nodes}
@@ -443,14 +455,13 @@ describe('RoomsPanel', () => {
         onLeaveRoom={vi.fn().mockResolvedValue(undefined)}
         onSendRoomPost={vi.fn()}
         onSendRoomAdminCli={vi.fn()}
+        onOpenRepeaterOps={onOpenRepeaterOps}
       />,
     );
     fireEvent.click(screen.getByText('roomsPanel.manageRoom'));
-    await waitFor(() => {
-      expect(screen.getByText('roomsPanel.manageHeading')).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByLabelText('roomsPanel.closeManage'));
-    expect(screen.queryByText('roomsPanel.cliPlaceholder')).not.toBeInTheDocument();
+    expect(onOpenRepeaterOps).toHaveBeenCalledWith(room.node_id);
+    expect(screen.queryByText('roomsPanel.manageHeading')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('roomsPanel.cliPlaceholder')).not.toBeInTheDocument();
   });
 
   it('shows delivery status badge on own room posts', () => {

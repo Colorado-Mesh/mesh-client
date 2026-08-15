@@ -1,8 +1,10 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
+import { resolveRoomAdminPassword } from './meshcoreInfraAdminSecrets';
 import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
 import { meshcoreLoginErrorIsAuthFailure } from './meshcoreRepeaterRpcCommon';
+import type { MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
 import type { MeshcoreRepeaterLoginConn } from './meshcoreRepeaterSession';
 import { assertMeshcoreRepeaterLoginOk, meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
 import {
@@ -123,6 +125,13 @@ export function meshcoreRoomCanPost(nodeId: number): boolean {
 
 export function meshcoreRoomCanAdmin(nodeId: number): boolean {
   return sessions.get(nodeId)?.role === 'admin';
+}
+
+/** Room ops CLI tokens that require an admin BBS session (guest/readwrite gets no reply). */
+export function meshcoreRoomCliRequiresAdmin(command: string): boolean {
+  const c = command.trim().toLowerCase();
+  if (!c) return false;
+  return c.startsWith('allow.read.only') || c.startsWith('setperm');
 }
 
 export function meshcoreClearAllRoomSessions(): void {
@@ -368,12 +377,16 @@ export async function meshcoreRoomTryRelogin(
 ): Promise<boolean> {
   const session = sessions.get(nodeId);
   if (!session) return false;
-  const password =
-    mode === 'admin' && session.adminPassword.length > 0
-      ? session.adminPassword
-      : session.guestPassword;
-  return meshcoreRoomLogin(conn, nodeId, pubKey, password, {
-    adminPassword: session.adminPassword,
+  // Admin mode must use the ops/session admin password — never fall back to guest.
+  // A guest-only "success" would skip meshcoreRoomTryAdminLogin and block CLI.
+  const adminPassword =
+    mode === 'admin'
+      ? resolveRoomAdminPassword(nodeId, session.adminPassword)
+      : session.adminPassword;
+  const password = mode === 'admin' ? adminPassword : session.guestPassword;
+  if (!password.trim()) return false;
+  const ok = await meshcoreRoomLogin(conn, nodeId, pubKey, password, {
+    adminPassword: adminPassword || session.adminPassword,
     guestPassword: session.guestPassword,
     hopsAway: opts?.hopsAway,
     companionTransport: opts?.companionTransport,
@@ -382,6 +395,9 @@ export async function meshcoreRoomTryRelogin(
     () => true,
     () => false,
   );
+  if (!ok) return false;
+  const roleOk = mode === 'admin' ? meshcoreRoomCanAdmin(nodeId) : meshcoreRoomCanPost(nodeId);
+  return roleOk;
 }
 
 export function meshcoreRoomEnsureLoggedIn(nodeId: number, mode: 'post' | 'admin'): boolean {
@@ -390,23 +406,29 @@ export function meshcoreRoomEnsureLoggedIn(nodeId: number, mode: 'post' | 'admin
   return meshcoreRoomCanPost(nodeId);
 }
 
-/** Best-effort admin login before room server status/telemetry/CLI (uses session admin password). */
+/** Best-effort admin login before room server status/telemetry/CLI. */
 export async function meshcoreRoomTryAdminLogin(
   conn: MeshcoreRoomLoginConn,
   nodeId: number,
   pubKey: Uint8Array,
+  opts?: {
+    hopsAway?: number;
+    companionTransport?: MeshcoreCompanionTransport;
+  },
 ): Promise<void> {
   const session = sessions.get(nodeId);
-  if (!session) return;
-  const password = session.adminPassword.trim() || session.guestPassword.trim();
+  const adminPassword = resolveRoomAdminPassword(nodeId, session?.adminPassword);
+  const guestPassword = session?.guestPassword.trim() ?? '';
+  const password = adminPassword || guestPassword;
   if (!password) return;
   await meshcoreRoomLogin(conn, nodeId, pubKey, password, {
-    adminPassword: session.adminPassword,
-    guestPassword: session.guestPassword,
+    adminPassword: adminPassword || session?.adminPassword || '',
+    guestPassword: guestPassword || session?.guestPassword || '',
+    forceRelogin: session != null && session.role !== 'admin',
+    hopsAway: opts?.hopsAway,
+    companionTransport: opts?.companionTransport,
   });
 }
-
-import type { MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
 
 /** Repeater admin login or room server admin login depending on contact type. */
 export type MeshcoreRemoteServerLoginConn = MeshcoreRepeaterLoginConn;
@@ -419,6 +441,10 @@ export async function meshcoreTryRemoteServerLogin(
   runSerialized?: MeshcoreRepeaterRunSerialized,
 ): Promise<void> {
   if (hwModel === 'Room') {
+    // Status/Neighbors do not require login. Telemetry may try a best-effort admin login when
+    // there is no BBS session yet. Do not forceRelogin over an existing guest/readwrite session —
+    // that often times out on firmwares that omit LoginFail (CLI uses ACL SendLogin separately).
+    if (meshcoreIsRoomLoggedIn(nodeId)) return;
     await meshcoreRoomTryAdminLogin(conn, nodeId, pubKey);
     return;
   }

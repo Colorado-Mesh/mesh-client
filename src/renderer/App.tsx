@@ -647,6 +647,7 @@ function AppContent() {
   });
   const [pendingDmTarget, setPendingDmTarget] = useState<number | null>(null);
   const [pendingRoomTarget, setPendingRoomTarget] = useState<number | null>(null);
+  const [pendingRepeaterFocusNodeId, setPendingRepeaterFocusNodeId] = useState<number | null>(null);
   const [lastReadRevision, setLastReadRevision] = useState({
     meshtastic: 0,
     meshcore: 0,
@@ -2636,8 +2637,26 @@ function AppContent() {
     [tabsByProtocol.meshcore],
   );
 
+  const handleOpenRepeaterOps = useCallback(
+    (nodeNum: number) => {
+      setPendingRepeaterFocusNodeId(nodeNum);
+      const filteredIndex = findFilteredTabIndexForPanel(
+        tabsByProtocol.meshcore,
+        MODULES_PANEL_INDEX,
+      );
+      if (filteredIndex >= 0) {
+        setActiveTab(filteredIndex);
+      }
+    },
+    [tabsByProtocol.meshcore],
+  );
+
   const handleRoomTargetConsumed = useCallback(() => {
     setPendingRoomTarget(null);
+  }, []);
+
+  const handleRepeaterFocusConsumed = useCallback(() => {
+    setPendingRepeaterFocusNodeId(null);
   }, []);
 
   const handleLocationFilterChange = useCallback((f: LocationFilter) => {
@@ -3763,6 +3782,16 @@ function AppContent() {
                                       ? meshcorePanelActions.syncClock
                                       : undefined
                                   }
+                                  deviceReportedPathHashMode={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? (meshcoreRuntime.state.pathHashMode ?? null)
+                                      : null
+                                  }
+                                  onApplyMeshcorePathHashMode={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.applyMeshcorePathHashMode
+                                      : undefined
+                                  }
                                   onRefreshContacts={
                                     capabilities.hasContactImportExport
                                       ? meshcorePanelActions.refreshContacts
@@ -3819,6 +3848,9 @@ function AppContent() {
                               meshcoreRepeaterRpcPending={
                                 meshcoreRuntime.meshcoreRepeaterRpcPending
                               }
+                              onOpenRoom={handleOpenRoom}
+                              pendingFocusNodeId={pendingRepeaterFocusNodeId}
+                              onPendingFocusConsumed={handleRepeaterFocusConsumed}
                             />
                           </Suspense>
                         </ErrorBoundary>
@@ -3968,9 +4000,7 @@ function AppContent() {
                                 onLeaveRoom={meshcorePanelActions.leaveRoom}
                                 onSendRoomPost={meshcorePanelActions.sendRoomPost}
                                 onSendRoomAdminCli={meshcorePanelActions.sendRoomAdminCliCommand}
-                                meshcoreCliHistories={meshcoreRuntime.meshcoreCliHistories}
-                                meshcoreCliErrors={meshcoreRuntime.meshcoreCliErrors}
-                                onClearCliHistory={meshcorePanelActions.clearCliHistory}
+                                onOpenRepeaterOps={handleOpenRepeaterOps}
                                 onMessageNode={handleMessageNode}
                                 onToggleFavorite={meshcorePanelActions.setNodeFavorited}
                                 scrollToTopRef={scrollToTopRoomsRef}
@@ -4144,21 +4174,6 @@ function AppContent() {
                                 onChatCompactModeChange={handleChatCompactModeChange}
                                 onAlwaysShowMessageActionsChange={
                                   handleAlwaysShowMessageActionsChange
-                                }
-                                deviceReportedPathHashMode={
-                                  capabilities.modulesTabUsesRepeatersLabel
-                                    ? (meshcoreRuntime.state.pathHashMode ?? null)
-                                    : null
-                                }
-                                isMeshcoreRadioConnected={
-                                  capabilities.modulesTabUsesRepeatersLabel &&
-                                  (meshcoreRuntime.state.status === 'connected' ||
-                                    meshcoreRuntime.state.status === 'configured')
-                                }
-                                onApplyMeshcorePathHashMode={
-                                  capabilities.modulesTabUsesRepeatersLabel
-                                    ? meshcorePanelActions.applyMeshcorePathHashMode
-                                    : undefined
                                 }
                                 reticulumIdentityId={reticulumIdentityId}
                                 reticulumSidecarReady={
@@ -4536,9 +4551,6 @@ function AppContent() {
               selectedNode.node_id !== detailMyNodeNum
                 ? handleOpenRoom
                 : undefined
-            }
-            onLoginRoom={
-              detailModalProtocol === 'meshcore' ? meshcorePanelActions.loginRoom : undefined
             }
             onToggleFavorite={detailModalPanelActions.setNodeFavorited}
             remoteAdminKey={

@@ -27,6 +27,42 @@ describe('meshcoreRoomCredentialStorage', () => {
     expect(window.electronAPI.appSettings.set).toHaveBeenCalled();
   });
 
+  it('persists admin-only credentials without guest password', async () => {
+    await setMeshcoreRoomCredential(0x1003, { guestPassword: '', adminPassword: 'admin-only' });
+    expect(getMeshcoreRoomCredential(0x1003)).toEqual({
+      guestPassword: '',
+      adminPassword: 'admin-only',
+    });
+  });
+
+  it('preserves guest when updating admin password', async () => {
+    await setMeshcoreRoomCredential(0x1004, {
+      guestPassword: 'hello',
+      adminPassword: 'a',
+    });
+    await setMeshcoreRoomCredential(0x1004, {
+      guestPassword: 'hello',
+      adminPassword: 'b',
+    });
+    expect(getMeshcoreRoomCredential(0x1004)).toEqual({
+      guestPassword: 'hello',
+      adminPassword: 'b',
+    });
+  });
+
+  it('rejects empty guest and admin objects', () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        [meshcoreRoomCredentialSettingForNode(0x2003)]: JSON.stringify({
+          guestPassword: '',
+          adminPassword: '',
+        }),
+      }),
+    );
+    expect(getMeshcoreRoomCredential(0x2003)).toBeUndefined();
+  });
+
   it('clears credential when set to null', async () => {
     await setMeshcoreRoomCredential(0x1002, { guestPassword: 'hello' });
     await setMeshcoreRoomCredential(0x1002, null);

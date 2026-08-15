@@ -9,7 +9,8 @@ import {
 export { MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX };
 
 export interface MeshcoreRoomStoredCredential {
-  guestPassword: string;
+  /** Optional — admin-only records are allowed for Repeaters & Rooms ops. */
+  guestPassword?: string;
   adminPassword?: string;
 }
 
@@ -20,8 +21,10 @@ function parseCredentialValue(raw: unknown): MeshcoreRoomStoredCredential | unde
       const storedGuestPassword = typeof o.guestPassword === 'string' ? o.guestPassword : '';
       const legacyGuestPassword = typeof o.password === 'string' ? o.password : '';
       const guestPassword = storedGuestPassword || legacyGuestPassword;
-      if (!guestPassword) return undefined;
-      const adminPassword = typeof o.adminPassword === 'string' ? o.adminPassword : undefined;
+      const adminRaw = typeof o.adminPassword === 'string' ? o.adminPassword.trim() : '';
+      const adminPassword = adminRaw.length > 0 ? adminRaw : undefined;
+      // Persist when either guest or admin is non-empty (ops can save admin-only).
+      if (!guestPassword && !adminPassword) return undefined;
       return { guestPassword, adminPassword };
     },
   });
@@ -34,13 +37,12 @@ const roomCredentialStorage: MeshcorePerNodeCredentialStorage<MeshcoreRoomStored
     parseValue: parseCredentialValue,
     serialize: (cred) =>
       JSON.stringify({
-        guestPassword: cred.guestPassword,
+        ...((cred.guestPassword ?? '').length > 0 ? { guestPassword: cred.guestPassword } : {}),
         ...(cred.adminPassword != null && cred.adminPassword.length > 0
           ? { adminPassword: cred.adminPassword }
           : {}),
       }),
   });
-
 export function meshcoreRoomCredentialSettingForNode(nodeId: number): string {
   return roomCredentialStorage.settingKeyForNode(nodeId);
 }

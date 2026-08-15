@@ -437,12 +437,12 @@ describe('installMeshtasticSdkRoutingErrorConsoleHook', () => {
   it('does not intercept unrelated console.warn messages', () => {
     const onRoutingErrorLog = vi.fn();
     const restore = installMeshtasticSdkRoutingErrorConsoleHook(onRoutingErrorLog);
-    console.warn('[meshcoreRepeaterSession] repeater login failed (continuing) timeout');
+    console.warn('[meshcoreRepeaterSession] repeater login failed timeout');
     restore();
     expect(onRoutingErrorLog).not.toHaveBeenCalled();
     expect(debugSpy).not.toHaveBeenCalled();
     expect(priorWarnSpy).toHaveBeenCalledWith(
-      '[meshcoreRepeaterSession] repeater login failed (continuing) timeout',
+      '[meshcoreRepeaterSession] repeater login failed timeout',
     );
   });
 

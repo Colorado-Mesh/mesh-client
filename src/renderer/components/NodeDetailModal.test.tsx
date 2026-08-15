@@ -293,8 +293,8 @@ describe('NodeDetailModal MeshCore actions', () => {
 
     await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
 
-    expect(screen.getByText('Repeater admin password')).toBeInTheDocument();
-    const authOverlay = screen.getByText('Repeater admin password').closest('.fixed');
+    expect(screen.getByText('Admin password')).toBeInTheDocument();
+    const authOverlay = screen.getByText('Admin password').closest('.fixed');
     expect(authOverlay).toHaveStyle({ zIndex: String(Z_NESTED_AUTH_OVERLAY) });
 
     const nodeModalOverlay = container.querySelector('.fixed');
@@ -456,7 +456,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     renderMeshcoreModal({ onRequestRepeaterStatus });
 
     await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
-    await user.type(screen.getByLabelText('Repeater admin password (optional)'), 'repeater-secret');
+    await user.type(screen.getByLabelText('Admin password (optional)'), 'repeater-secret');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     expect(onRequestRepeaterStatus).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
@@ -469,7 +469,7 @@ describe('NodeDetailModal MeshCore actions', () => {
 
     await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
     await user.click(screen.getByRole('checkbox'));
-    await user.type(screen.getByLabelText('Repeater admin password (optional)'), 'session-only');
+    await user.type(screen.getByLabelText('Admin password (optional)'), 'session-only');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     expect(onRequestRepeaterStatus).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
@@ -482,7 +482,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     renderMeshcoreModal({ onRequestRepeaterStatus });
 
     await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
-    await user.type(screen.getByLabelText('Repeater admin password (optional)'), 'repeater-secret');
+    await user.type(screen.getByLabelText('Admin password (optional)'), 'repeater-secret');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     expect(onRequestRepeaterStatus).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);

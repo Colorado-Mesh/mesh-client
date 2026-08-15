@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { meshcorePathHashSizeFromTraceFlags } from '../../shared/meshcorePathHash';
 import { meshcoreTraceHopDisplayRows } from './meshcorePathChainDisplay';
 import {
+  cancelAllPendingMeshcoreTracePaths,
   meshcoreTracePendingRouteCount,
   meshcoreTraceResponsesInFlightCount,
   resetMeshcoreTraceResponsesInFlightForTests,
@@ -168,6 +169,58 @@ describe('startMeshcoreTracePathMultiplexed success', () => {
     conn.emit(MC_RESP_ERR);
     await expect(handle.promise).rejects.toThrow(/rejected trace/i);
   });
+  it('does not SendTracePath while a prior TraceData is still in flight', async () => {
+    const conn = createTraceConn();
+    const runSerialized = createRepeaterRemoteRpcQueue();
+    let firstTag = 0;
+    let secondSendCount = 0;
+    vi.mocked(conn.sendCommandSendTracePath).mockImplementation((...args: unknown[]) => {
+      if (firstTag === 0) firstTag = args[0] as number;
+      else secondSendCount += 1;
+      return Promise.resolve();
+    });
+
+    const first = startMeshcoreTracePathMultiplexed(
+      conn,
+      new Uint8Array([0x11]),
+      1000,
+      runSerialized,
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    conn.emit(MC_RESP_SENT, { estTimeout: 500 });
+    await Promise.resolve();
+    expect(meshcoreTraceResponsesInFlightCount()).toBe(1);
+
+    const second = startMeshcoreTracePathMultiplexed(
+      conn,
+      new Uint8Array([0x22]),
+      1000,
+      runSerialized,
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    // Still awaiting first TraceData — second must not have sent yet.
+    expect(secondSendCount).toBe(0);
+
+    conn.emit(MC_PUSH_TRACE_DATA, {
+      tag: firstTag,
+      pathLen: 1,
+      flags: 0,
+      pathHashes: [0x11],
+      pathSnrs: [40],
+      lastSnr: 5,
+    });
+    await first.promise;
+    await vi.advanceTimersByTimeAsync(60);
+    await Promise.resolve();
+    await Promise.resolve();
+    conn.emit(MC_RESP_SENT, { estTimeout: 200 });
+    await Promise.resolve();
+    expect(secondSendCount).toBe(1);
+    second.cancel('test cleanup');
+    await expect(second.promise).rejects.toThrow(/test cleanup/);
+  });
 });
 
 describe('startMeshcoreTracePathMultiplexed cancel', () => {
@@ -199,6 +252,53 @@ describe('startMeshcoreTracePathMultiplexed cancel', () => {
 
     handle.cancel('outer timeout');
     await expect(handle.promise).rejects.toThrow(/outer timeout/i);
+    expect(meshcoreTracePendingRouteCount()).toBe(0);
+    expect(meshcoreTraceResponsesInFlightCount()).toBe(0);
+  });
+
+  it('cancelAllPending during idle wait does not SendTracePath or leak in-flight', async () => {
+    const conn = createTraceConn();
+    const runSerialized = createRepeaterRemoteRpcQueue();
+    let firstTag = 0;
+    let secondSendCount = 0;
+    vi.mocked(conn.sendCommandSendTracePath).mockImplementation((...args: unknown[]) => {
+      if (firstTag === 0) firstTag = args[0] as number;
+      else secondSendCount += 1;
+      return Promise.resolve();
+    });
+
+    const first = startMeshcoreTracePathMultiplexed(
+      conn,
+      new Uint8Array([0x11]),
+      1000,
+      runSerialized,
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    conn.emit(MC_RESP_SENT, { estTimeout: 500 });
+    await Promise.resolve();
+    expect(meshcoreTraceResponsesInFlightCount()).toBe(1);
+
+    const second = startMeshcoreTracePathMultiplexed(
+      conn,
+      new Uint8Array([0x22]),
+      1000,
+      runSerialized,
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(secondSendCount).toBe(0);
+
+    const cancelled = cancelAllPendingMeshcoreTracePaths(conn, '0-hop CLI preempted stuck ping');
+    expect(cancelled).toBe(2);
+    await expect(first.promise).rejects.toThrow(/0-hop CLI preempted/i);
+    await expect(second.promise).rejects.toThrow(/0-hop CLI preempted/i);
+
+    await vi.advanceTimersByTimeAsync(200);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(secondSendCount).toBe(0);
     expect(meshcoreTracePendingRouteCount()).toBe(0);
     expect(meshcoreTraceResponsesInFlightCount()).toBe(0);
   });

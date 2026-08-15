@@ -4,7 +4,9 @@ import * as meshcoreRepeaterRpcInFlight from './meshcoreRepeaterRpcInFlight';
 import * as meshcoreTracePathMultiplex from './meshcoreTracePathMultiplex';
 import {
   abandonMeshcoreSilentBulkAttempt,
+  awaitMeshcoreWaitingMessagesDrainIdle,
   beginMeshcoreSilentBulkAttempt,
+  endMeshcoreSilentBulkCliPreempt,
   isMeshcoreCompanionDrainDeferred,
   isMeshcoreSilentBulkAttemptCurrent,
   isMeshcoreSyncNextMessageTimeoutError,
@@ -15,6 +17,7 @@ import {
   markMeshcoreMsgWaitingEvent,
   noteMeshcoreSilentBulkSuccess,
   noteMeshcoreSilentBulkTimeout,
+  preemptMeshcoreSilentBulkForCli,
   resetMeshcoreSilentBulkBreaker,
   resetMeshcoreWaitingMessagesDrainSchedule,
   resetMeshcoreWaitingMessagesDrainState,
@@ -42,6 +45,12 @@ describe('waitingMessagesDrainTimeoutMs', () => {
 
   it('uses a shorter silent timeout for USB serial auto-drains', () => {
     expect(waitingMessagesDrainTimeoutMs(false, 'serial')).toBe(
+      MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
+    );
+  });
+
+  it('uses the shorter silent timeout for BLE auto-drains', () => {
+    expect(waitingMessagesDrainTimeoutMs(false, 'ble')).toBe(
       MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
     );
   });
@@ -190,6 +199,19 @@ describe('isMeshcoreCompanionDrainDeferred', () => {
       .mockReturnValue(true);
     expect(isMeshcoreCompanionDrainDeferred()).toBe(true);
     busySpy.mockRestore();
+  });
+
+  it('ignores in-flight TraceData while a CLI reply hold is active', () => {
+    const holdSpy = vi
+      .spyOn(meshcoreRepeaterRpcInFlight, 'meshcoreCliReplyHoldActive')
+      .mockReturnValue(true);
+    const inFlightSpy = vi
+      .spyOn(meshcoreTracePathMultiplex, 'meshcoreTraceResponsesInFlightCount')
+      .mockReturnValue(1);
+    // Automatic drains defer during CLI hold; force kicks bypass via options.force.
+    expect(isMeshcoreCompanionDrainDeferred()).toBe(true);
+    holdSpy.mockRestore();
+    inFlightSpy.mockRestore();
   });
 });
 
@@ -377,5 +399,56 @@ describe('silent bulk timeout circuit breaker', () => {
     }
     resetMeshcoreWaitingMessagesDrainState(0);
     expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(false);
+  });
+
+  it('preemptMeshcoreSilentBulkForCli invalidates in-flight bulk and skips further bulk', () => {
+    const id = beginMeshcoreSilentBulkAttempt();
+    expect(isMeshcoreSilentBulkAttemptCurrent(id)).toBe(true);
+    preemptMeshcoreSilentBulkForCli();
+    expect(isMeshcoreSilentBulkAttemptCurrent(id)).toBe(false);
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(true);
+    endMeshcoreSilentBulkCliPreempt();
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(false);
+  });
+
+  it('CLI preempt does not leave the timeout circuit open after end', () => {
+    preemptMeshcoreSilentBulkForCli();
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(true);
+    endMeshcoreSilentBulkCliPreempt();
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(false);
+    // Timeout circuit still independent
+    for (let i = 0; i < MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP; i += 1) {
+      noteMeshcoreSilentBulkTimeout();
+    }
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(true);
+  });
+});
+
+describe('awaitMeshcoreWaitingMessagesDrainIdle', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('returns true immediately when drain is idle', async () => {
+    await expect(awaitMeshcoreWaitingMessagesDrainIdle(() => false, 5_000)).resolves.toBe(true);
+  });
+
+  it('returns true after drain becomes idle', async () => {
+    let busy = true;
+    const pending = awaitMeshcoreWaitingMessagesDrainIdle(() => busy, 5_000);
+    await vi.advanceTimersByTimeAsync(250);
+    busy = false;
+    await vi.advanceTimersByTimeAsync(250);
+    await expect(pending).resolves.toBe(true);
+  });
+
+  it('returns false when drain stays busy until timeout', async () => {
+    const pending = awaitMeshcoreWaitingMessagesDrainIdle(() => true, 1_000);
+    await vi.advanceTimersByTimeAsync(1_250);
+    await expect(pending).resolves.toBe(false);
   });
 });

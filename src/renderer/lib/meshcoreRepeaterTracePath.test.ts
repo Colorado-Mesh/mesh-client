@@ -3,12 +3,15 @@ import { describe, expect, it } from 'vitest';
 import {
   computeMeshcoreTracePrimeStrategy,
   evaluateMeshcorePingRouteAbort,
+  MESHCORE_CLI_PREEMPT_TRACE_REASON,
   meshcoreDirectRepeaterRelayPubKeys,
   meshcoreIsUsableTraceStoredPath,
+  meshcoreRadioContactPathLenSaysMultiHop,
   meshcoreShouldAbortMultiHopPingNoRoute,
   meshcoreStoredPathLooksLikeFullPubKey,
   meshcoreSynthesizeMultiHopTracePath,
   meshcoreSynthesizeOneHopTracePath,
+  meshcoreTraceCancelledForCliPreempt,
   meshcoreTraceDirectRetryEligible,
   planMeshcoreRepeaterTraceRoute,
   resolveMeshcoreTraceOutPathSeed,
@@ -77,6 +80,39 @@ describe('planMeshcoreRepeaterTraceRoute', () => {
     expect(plan.outPathSeed).toEqual(new Uint8Array([0xab]));
   });
 
+  it('0-hop: companion pathHashMode 2-byte used when radioContactPathLen is null', () => {
+    const plan = planMeshcoreRepeaterTraceRoute({
+      storedPath: undefined,
+      hopsAway: 0,
+      pubKey,
+      radioContactPathLen: null,
+      companionPathHashMode: 1,
+    });
+    expect(plan.outPathSeed).toEqual(pubKey.subarray(0, 2));
+  });
+
+  it('0-hop: packed contact outPathLen wins over companion pathHashMode', () => {
+    const plan = planMeshcoreRepeaterTraceRoute({
+      storedPath: undefined,
+      hopsAway: 0,
+      pubKey,
+      radioContactPathLen: 64,
+      companionPathHashMode: 0,
+    });
+    expect(plan.outPathSeed).toEqual(pubKey.subarray(0, 2));
+  });
+
+  it('packed outPathLen with hopCount>=1 is radio multi-hop', () => {
+    // 0x41 = hopCount 1, 2-byte hashes
+    const plan = planMeshcoreRepeaterTraceRoute({
+      storedPath: undefined,
+      hopsAway: 0,
+      pubKey,
+      radioContactPathLen: 0x41,
+    });
+    expect(plan.radioSaysMultiHop).toBe(true);
+  });
+
   it('1-hop: rejects full pubkey in outPath map and requests route prime', () => {
     const plan = planMeshcoreRepeaterTraceRoute({
       storedPath: new Uint8Array(pubKey),
@@ -133,10 +169,35 @@ describe('planMeshcoreRepeaterTraceRoute', () => {
 });
 
 describe('meshcoreTraceDirectRetryEligible', () => {
-  it('allows direct retry only for 0-hop with 1-byte seed path', () => {
+  it('allows direct retry for 0-hop short hash prefixes (1–3 bytes), not full pubkey', () => {
     expect(meshcoreTraceDirectRetryEligible(0, 1)).toBe(true);
+    expect(meshcoreTraceDirectRetryEligible(0, 2)).toBe(true);
+    expect(meshcoreTraceDirectRetryEligible(0, 3)).toBe(true);
     expect(meshcoreTraceDirectRetryEligible(0, 32)).toBe(false);
     expect(meshcoreTraceDirectRetryEligible(1, 1)).toBe(false);
+  });
+});
+
+describe('meshcoreTraceCancelledForCliPreempt', () => {
+  it('detects 0-hop CLI preempt cancel reasons', () => {
+    expect(meshcoreTraceCancelledForCliPreempt(new Error(MESHCORE_CLI_PREEMPT_TRACE_REASON))).toBe(
+      true,
+    );
+    expect(meshcoreTraceCancelledForCliPreempt(new Error('timeout'))).toBe(false);
+    expect(meshcoreTraceCancelledForCliPreempt('0-hop CLI preempted stuck ping')).toBe(true);
+  });
+});
+
+describe('meshcoreRadioContactPathLenSaysMultiHop', () => {
+  it('treats plain last-byte-index 0 as direct and 1+ as multi-hop', () => {
+    expect(meshcoreRadioContactPathLenSaysMultiHop(0)).toBe(false);
+    expect(meshcoreRadioContactPathLenSaysMultiHop(1)).toBe(true);
+    expect(meshcoreRadioContactPathLenSaysMultiHop(61)).toBe(true);
+  });
+
+  it('unpacks packed path_length bytes (64 = 0 hops / 2-byte hashes)', () => {
+    expect(meshcoreRadioContactPathLenSaysMultiHop(64)).toBe(false);
+    expect(meshcoreRadioContactPathLenSaysMultiHop(0x41)).toBe(true);
   });
 });
 

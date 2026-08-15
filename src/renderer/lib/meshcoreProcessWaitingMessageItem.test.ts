@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { packetRouter } from './drivers/PacketRouter';
-import { MESHCORE_TXT_TYPE_SIGNED_PLAIN } from './meshcoreChannelText';
+import { MESHCORE_TXT_TYPE_CLI_DATA, MESHCORE_TXT_TYPE_SIGNED_PLAIN } from './meshcoreChannelText';
 import { processMeshcoreWaitingMessageItem } from './meshcoreProcessWaitingMessageItem';
 import * as meshcoreRoomSyncStorage from './meshcoreRoomSyncStorage';
 import { pubkeyToNodeId } from './meshcoreUtils';
@@ -112,6 +112,55 @@ describe('processMeshcoreWaitingMessageItem', () => {
     expect(result.nodesDirty).toBe(true);
     expect(result.updatedNodeIds).toEqual([senderId]);
     expect(deps.workingNodes.get(senderId)?.last_heard).toBe(1_700_000_100);
+  });
+
+  it('dispatches repeater CLI_DATA through PacketRouter instead of chat history', () => {
+    const dispatchSpy = vi.spyOn(packetRouter, 'dispatch').mockImplementation(() => {});
+    const pubKey = makePubKey(12);
+    const prefixBytes = pubKey.slice(0, 6);
+    const senderId = pubkeyToNodeId(pubKey);
+    const deps = baseDeps({
+      pubKeyPrefixMap: new Map([[prefixHexFromBytes(prefixBytes), senderId]]),
+    });
+    deps.workingNodes.set(senderId, {
+      node_id: senderId,
+      long_name: 'RPT',
+      short_name: '',
+      hw_model: 'Repeater',
+      snr: 0,
+      rssi: 0,
+      last_heard: 0,
+      battery: 0,
+      latitude: null,
+      longitude: null,
+    });
+
+    const result = processMeshcoreWaitingMessageItem(
+      {
+        contactMessage: {
+          pubKeyPrefix: prefixBytes,
+          text: 'A1|uptime 42',
+          senderTimestamp: 1_700_000_200,
+          txtType: MESHCORE_TXT_TYPE_CLI_DATA,
+        },
+      },
+      deps,
+    );
+
+    expect(result.pendingMessages).toHaveLength(0);
+    expect(result.roomDispatched).toBe(false);
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'meshcore_cli_response',
+        payload: expect.objectContaining({
+          text: 'A1|uptime 42',
+          senderNodeId: senderId,
+        }),
+      }),
+      'meshcore-test-id',
+    );
+    expect(deps.workingNodes.get(senderId)?.last_heard).toBe(1_700_000_200);
+    dispatchSpy.mockRestore();
   });
 
   it('warns and skips ingest for unknown pubKeyPrefix (senderId 0)', () => {
