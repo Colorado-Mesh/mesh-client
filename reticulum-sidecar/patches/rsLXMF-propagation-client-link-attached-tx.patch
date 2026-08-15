@@ -1,0 +1,233 @@
+--- a/crates/lxmf-core/src/propagation_client.rs
++++ b/crates/lxmf-core/src/propagation_client.rs
+@@ -24,7 +24,7 @@
+ };
+ use rns_protocol::resource_adv::ResourceAdvertisement;
+ use rns_transport::link_messages::DestinationEvent;
+-use rns_transport::messages::{OutboundRequest, TransportMessage};
++use rns_transport::messages::{InterfaceId, OutboundRequest, TransportMessage};
+ use tokio::sync::mpsc;
+ 
+ use crate::constants::*;
+@@ -81,6 +81,11 @@
+     outbound_propagation_node: Option<[u8; 16]>,
+     link: Option<Link>,
+     link_id: Option<[u8; 16]>,
++    /// Interface that delivered the link proof / subsequent link traffic.
++    /// Link-scoped TX must use [`TransportMessage::OutboundAttached`] on this
++    /// id — unattached `Outbound` has no path for the link hash and broadcasts
++    /// onto every interface (including slow flow-controlled RNodes).
++    attached_interface: Option<InterfaceId>,
+     status: PropagationTransferStatus,
+     /// Request phase whose response is currently arriving as a Resource.
+     receiving_for: Option<PropagationClientState>,
+@@ -123,6 +128,7 @@
+             outbound_propagation_node: None,
+             link: None,
+             link_id: None,
++            attached_interface: None,
+             status: PropagationTransferStatus::default(),
+             receiving_for: None,
+             identity_pub,
+@@ -295,6 +301,7 @@
+         self.receiving_for = None;
+         self.link = Some(link);
+         self.link_id = Some(link_id);
++        self.attached_interface = None;
+         self.started_at = Some(Instant::now());
+         self.max_messages = max_messages.filter(|limit| *limit > 0);
+         self.identified = false;
+@@ -333,6 +340,29 @@
+         true
+     }
+ 
++    /// Queue link-scoped TX. Prefer the interface that delivered the proof so
++    /// transport does not pathless-broadcast onto every outbound iface.
++    fn queue_link_outbound(&mut self, raw: Bytes, link_id: [u8; 16]) -> bool {
++        let request = OutboundRequest {
++            raw,
++            destination_hash: link_id,
++        };
++        let message = match self.attached_interface {
++            Some(interface_id) => TransportMessage::OutboundAttached {
++                request,
++                interface_id,
++            },
++            None => {
++                tracing::warn!(
++                    link_id = %hex::encode(link_id),
++                    "propagation client link TX without attached interface — broadcasting"
++                );
++                TransportMessage::Outbound(request)
++            }
++        };
++        self.queue_transport(message)
++    }
++
+     fn flush_pending_transport(&mut self) {
+         while let Some(message) = self.pending_transport.pop_front() {
+             match self.transport_tx.try_send(message) {
+@@ -361,7 +391,15 @@
+                 DestinationEvent::LinkClosed { link_id } => {
+                     self.handle_link_closed(link_id, None);
+                 }
+-                DestinationEvent::InboundPacket { raw, .. } => {
++                DestinationEvent::InboundPacket {
++                    raw,
++                    interface_id,
++                    ..
++                } => {
++                    // Pin egress to the interface that delivered link traffic.
++                    if self.attached_interface.is_none() {
++                        self.attached_interface = Some(interface_id);
++                    }
+                     let (header, data_offset) = match rns_wire::header::PacketHeader::unpack(&raw) {
+                         Ok(h) => h,
+                         Err(_) => continue,
+@@ -491,10 +529,7 @@
+                     let mut rtt_raw = rtt_header.pack();
+                     rtt_raw.extend_from_slice(&rtt_data);
+ 
+-                    if !self.queue_transport(TransportMessage::Outbound(OutboundRequest {
+-                        raw: Bytes::from(rtt_raw),
+-                        destination_hash: link_id,
+-                    })) {
++                    if !self.queue_link_outbound(Bytes::from(rtt_raw), link_id) {
+                         self.status.state = PropagationClientState::Failed;
+                         return;
+                     }
+@@ -885,10 +920,7 @@
+         };
+         let mut raw = header.pack();
+         raw.extend_from_slice(payload);
+-        if !self.queue_transport(TransportMessage::Outbound(OutboundRequest {
+-            raw: Bytes::from(raw),
+-            destination_hash: link_id,
+-        })) {
++        if !self.queue_link_outbound(Bytes::from(raw), link_id) {
+             self.status.state = PropagationClientState::Failed;
+         } else if let Some(link) = self.link.as_mut() {
+             link.record_tx(payload.len());
+@@ -1072,10 +1104,7 @@
+                     };
+                     let mut id_raw = id_header.pack();
+                     id_raw.extend_from_slice(&identify_data);
+-                    Some(TransportMessage::Outbound(OutboundRequest {
+-                        raw: Bytes::from(id_raw),
+-                        destination_hash: link_id,
+-                    }))
++                    Some(id_raw)
+                 } else {
+                     None
+                 }
+@@ -1085,8 +1114,8 @@
+         } else {
+             None
+         };
+-        if let Some(outbound) = outbound {
+-            if !self.queue_transport(outbound) {
++        if let (Some(id_raw), Some(link_id)) = (outbound, self.link_id) {
++            if !self.queue_link_outbound(Bytes::from(id_raw), link_id) {
+                 self.status.state = PropagationClientState::Failed;
+             }
+         }
+@@ -1222,10 +1251,7 @@
+                             rns_wire::flags::HeaderType::Header1,
+                         );
+                         link.update_pending_request_id(&_request_id, packet_request_id);
+-                        Some(TransportMessage::Outbound(OutboundRequest {
+-                            raw: Bytes::from(req_raw),
+-                            destination_hash: link_id,
+-                        }))
++                        Some(Bytes::from(req_raw))
+                     } else {
+                         None
+                     }
+@@ -1235,7 +1261,10 @@
+         } else {
+             None
+         };
+-        outbound.is_some_and(|message| self.queue_transport(message))
++        match (outbound, self.link_id) {
++            (Some(req_raw), Some(link_id)) => self.queue_link_outbound(req_raw, link_id),
++            _ => false,
++        }
+     }
+ 
+     fn cleanup(&mut self) {
+@@ -1249,6 +1278,7 @@
+             }
+         }
+         self.link = None;
++        self.attached_interface = None;
+         self.inbound_resources.clear();
+         self.inbound_split_resources.clear();
+         self.segment_routing.clear();
+@@ -1794,5 +1824,67 @@
+         client.drain_events(&std::collections::HashMap::new());
+         assert_eq!(client.status.state, PropagationClientState::ListRequested);
+         assert!(client.link.is_some());
++    }
++
++    #[test]
++    fn link_scoped_tx_uses_outbound_attached_when_iface_known() {
++        let (tx, mut rx) = mpsc::channel(64);
++        let mut client = PropagationClient::new(tx, None, None);
++        let (initiator, _) = active_link_pair([0xE5; 16]);
++        let link_id = initiator.link_id;
++        client.link_id = Some(link_id);
++        client.link = Some(initiator);
++        client.attached_interface = Some(42);
++
++        client.send_link_packet(
++            rns_wire::context::PacketContext::Keepalive,
++            rns_wire::flags::PacketType::Data,
++            &[],
++        );
++
++        match rx.try_recv().unwrap() {
++            TransportMessage::OutboundAttached {
++                interface_id,
++                request,
++            } => {
++                assert_eq!(interface_id, 42);
++                assert_eq!(request.destination_hash, link_id);
++            }
++            other => panic!("expected OutboundAttached, got {other:?}"),
++        }
++    }
++
++    #[test]
++    fn inbound_packet_pins_attached_interface_for_later_tx() {
++        let (tx, mut rx) = mpsc::channel(64);
++        let mut client = PropagationClient::new(tx, None, None);
++        let (initiator, _) = active_link_pair([0xE6; 16]);
++        let link_id = initiator.link_id;
++        client.link_id = Some(link_id);
++        client.link = Some(initiator);
++        client.status.state = PropagationClientState::LinkEstablished;
++
++        client
++            .event_tx
++            .try_send(DestinationEvent::InboundPacket {
++                raw: link_data_packet(link_id, rns_wire::context::PacketContext::Keepalive, &[]),
++                interface_id: 99,
++                metrics: Default::default(),
++            })
++            .unwrap();
++        client.drain_events(&std::collections::HashMap::new());
++        assert_eq!(client.attached_interface, Some(99));
++
++        client.send_link_packet(
++            rns_wire::context::PacketContext::Keepalive,
++            rns_wire::flags::PacketType::Data,
++            &[],
++        );
++        match rx.try_recv().unwrap() {
++            TransportMessage::OutboundAttached { interface_id, .. } => {
++                assert_eq!(interface_id, 99);
++            }
++            other => panic!("expected OutboundAttached, got {other:?}"),
++        }
+     }
+ }

@@ -541,3 +541,27 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 ### Sunset
 
 When upstream rsLXMF exposes equivalent abort / cancel mid-transfer cleanup, remove this patch and the apply step.
+
+## rsLXMF-propagation-client-link-attached-tx.patch
+
+Pin PropagationClient link-scoped TX (`Lrrtt`, `LinkIdentify`, `Request`, `ResourceReq`, …) to **`OutboundAttached`** on the interface that delivered the link proof. Unattached `Outbound` has no path-table entry for the link hash, so rsReticulum pathless-broadcasts onto every outbound interface — including slow flow-controlled RNodes — and fills the host TX queue during PN Sync.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | tip after `rsLXMF-propagation-client-abort-transfer.patch` |
+| **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsLXMF) |
+
+**Touches:** rsLXMF `PropagationClient` (`attached_interface`, `queue_link_outbound`)
+
+### Apply locally
+
+```bash
+./scripts/apply-rsLXMF-propagation-client-abort-transfer.sh
+./scripts/apply-rsLXMF-propagation-client-link-attached-tx.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`.
+
+### Sunset
+
+When upstream rsLXMF pins PropagationClient (and ideally LinkDeliveryManager) link TX to the proof interface, remove this patch and the apply step.
