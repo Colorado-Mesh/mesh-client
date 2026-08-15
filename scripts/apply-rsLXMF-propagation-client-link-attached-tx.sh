@@ -10,7 +10,6 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 source "${SCRIPT_DIR}/lib/apply-ratspeak-overlay.sh"
 PATCH_FILE="${REPO_ROOT}/reticulum-sidecar/patches/rsLXMF-propagation-client-link-attached-tx.patch"
 LXMF_DIR="${RS_LXMF_DIR:-${REPO_ROOT}/.rsstack/rsLXMF}"
-CLIENT_RS="${LXMF_DIR}/crates/lxmf-core/src/propagation_client.rs"
 
 if [[ ! -d "${LXMF_DIR}/.git" ]]; then
   echo "error: rsLXMF not found at ${LXMF_DIR}" >&2
@@ -23,9 +22,9 @@ if [[ ! -f "${PATCH_FILE}" ]]; then
   exit 1
 fi
 
+# Exact overlay already applied (complete reverse apply succeeds).
 overlay_already_present() {
-  [[ -f "${CLIENT_RS}" ]] || return 1
-  grep -qE 'fn queue_link_outbound\(' "${CLIENT_RS}"
+  git -C "${LXMF_DIR}" apply --reverse --check "${PATCH_FILE}" > /dev/null 2>&1
 }
 
 if overlay_already_present; then
