@@ -225,6 +225,7 @@ check_ratspeak_patches() {
     'rsLXMF-propagation-node-deferred-messagestore-load.patch|ratspeak/rsLXMF||rsLXMF PropagationNode deferred messagestore load|'
     'rsLXMF-link-delivery-has-pending-to.patch|ratspeak/rsLXMF||rsLXMF LinkDeliveryManager has_pending_to|'
     'rsLXMF-propagation-client-abort-transfer.patch|ratspeak/rsLXMF||rsLXMF PropagationClient abort_transfer for cancelled Sync|'
+    'rsLXMF-propagation-client-link-attached-tx.patch|ratspeak/rsLXMF||rsLXMF PropagationClient pin link TX to proof interface|'
   )
   local patches_dir='reticulum-sidecar/patches'
   local has_ratspeak_warning=0
