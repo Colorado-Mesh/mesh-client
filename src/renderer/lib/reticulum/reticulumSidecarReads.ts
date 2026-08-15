@@ -89,6 +89,7 @@ export interface ReticulumSidecarInterfaceRow {
   callsign?: string | null;
   preset?: string | null;
   mode?: string | null;
+  runtime_mode?: string | null;
   seed_addresses?: string[];
   discoverable?: boolean | null;
   latitude?: number | null;
@@ -101,6 +102,7 @@ export interface ReticulumSidecarInterfaceRow {
   network_name?: string | null;
   passphrase?: string | null;
   flow_control?: boolean | null;
+  ignore_config_warnings?: boolean | null;
   tx_queue_used?: number | null;
   tx_queue_max?: number | null;
   extra_config?: Record<string, string> | null;

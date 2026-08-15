@@ -1218,7 +1218,11 @@
       "backboneEnableGuidanceBody": "—2 es el punto óptimo para la redundancia sin una saturación innecesaria del ancho de banda. Apunte a 1 centro global y 1 puerta de enlace regional, y habilite interfaces especializadas (como I2P o Yggdrasil) estrictamente según sea necesario. Los RNodes conectados localmente y las interfaces LAN locales no cuentan para este límite de red troncal.",
       "defaultHubsPickerHint": "Empiece con Primario y global más su región. Active como máximo 1 a 3 puertas de enlace de backbone (2 es el punto óptimo). Los RNodes locales y las interfaces LAN no cuentan. Las entradas nuevas se añaden desactivadas para que pueda revisarlas. Sync también desactiva hubs de testnet oficiales fuera de servicio restantes (Ámsterdam).",
       "rnodeTransportBleHint": "Los enlaces ble pueden desincronizarse con macOS (olvidar + volver a emparejar). Prefiera USB serie o Wi-Fi (tcp://) cuando la radio esté cerca.",
-      "flowControl": "Control de flujo (puerta lista para TX)"
+      "flowControl": "Control de flujo (puerta lista para TX)",
+      "rmapFullModeHint": "El modo completo con RMAP Publish se mantiene completo a través de ignore_config_Warnings. Los anuncios de entrega LXMF emitirán esta radio en el intervalo de anuncio de pila (por defecto 1 hora).",
+      "effectiveModeBadge": "Vigencia: {{mode}}",
+      "effectiveModeAria": "Modo de tiempo de ejecución efectivo {{mode}}. El modo configurado difiere de lo que está ejecutando Reticulum.",
+      "effectiveModeTooltip": "Reticulum reescribió esta interfaz detectable en Access Point (u otro modo permitido) porque Discoverable requiere Gateway, Internal o Access Point a menos que se establezca ignore_config_warnings. Reinicie la pila después de los sellos de cliente de malla que optan por no participar para que Full (o su modo configurado) surta efecto (mesh-client)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1695,7 +1699,8 @@
         "rmap_no_tcp_hub": "El RNode local detectable no tiene un concentrador de clientes TCP habilitado para la accesibilidad a Internet.",
         "rmap_transport_disabled": "Las interfaces detectables están configuradas, pero el modo de transporte está desactivado.",
         "rmap_i2p_not_connectable": "La interfaz I2P \"{{name}}\" es detectable pero no es conectable.",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "La interfaz \"{{name}}\" se puede descubrir con un modo no AP/Gateway: Reticulum la ejecutará como punto de acceso a menos que se establezca ignore_config_warnings. Edite la interfaz o reinicie la pila para que el cliente de malla pueda sellar la exclusión voluntaria (mesh-client)."
       },
       "runtime": {
         "rnsNotReady": "La pila RNS no está lista",

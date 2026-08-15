@@ -1216,7 +1216,11 @@
       "backboneEnableGuidanceBody": "—2 ist optimal für Redundanz ohne unnötigen Bandbreitenverbrauch. Streben Sie 1 globalen Hub und 1 regionales Gateway an, und aktivieren Sie Spezialschnittstellen (wie I2P oder Yggdrasil) nur bei Bedarf. Lokal verbundene RNodes und lokale LAN-Schnittstellen zählen nicht zu diesem Backbone-Limit.",
       "defaultHubsPickerHint": "Beginnen Sie mit Primär & Global plus Ihrer Region. Aktivieren Sie höchstens 1 bis 3 Backbone-Gateways (2 ist optimal). Lokale RNodes und LAN-Schnittstellen zählen nicht. Neue Einträge werden deaktiviert hinzugefügt, damit Sie sie prüfen können. Sync deaktiviert außerdem verbleibende außer Betrieb genommene offizielle Testnet-Hubs (Amsterdam).",
       "rnodeTransportBleHint": "BLE-Bindungen können mit macOS desynchronisiert werden (Forget + Re-Pair). Bevorzugen Sie USB seriell oder Wi-Fi (tcp://), wenn das Radio in der Nähe ist.",
-      "flowControl": "Flusskontrolle (TX Ready-Gate)"
+      "flowControl": "Flusskontrolle (TX Ready-Gate)",
+      "rmapFullModeHint": "Der Vollmodus mit RMAP-Veröffentlichung hält Full über ignore_config_warnings. LXMF-Lieferansagen verlassen dieses Radio im Stack-Ankündigungsintervall (Standard 1 Stunde).",
+      "effectiveModeBadge": "Gültig ab: {{mode}}",
+      "effectiveModeAria": "Effektiver Laufzeitmodus {{mode}}. Der konfigurierte Modus unterscheidet sich von dem, was Reticulum ausführt.",
+      "effectiveModeTooltip": "Reticulum hat diese auffindbare Schnittstelle zum Access Point (oder einem anderen zulässigen Modus) neu geschrieben, da auffindbar Gateway, Intern oder Access Point erfordert, es sei denn, ignore_config_warnings ist eingestellt. Starten Sie den Stack neu, nachdem der mesh-client abgestempelt hat, dass die Abmeldung wirksam wird, damit Full (oder Ihr konfigurierter Modus) wirksam wird."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1695,7 +1699,8 @@
         "rmap_no_tcp_hub": "Der auffindbare lokale RNode hat keinen aktivierten TCP-Client-Hub für die Internet-Erreichbarkeit.",
         "rmap_transport_disabled": "Erkennbare Schnittstellen sind konfiguriert, aber der Transportmodus ist ausgeschaltet.",
         "rmap_i2p_not_connectable": "Die I2P-Schnittstelle \"{{name}}\" ist auffindbar, aber anschließbar ist nicht ja.",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "Die Schnittstelle „{{name}}“ ist mit einem Nicht-AP-/Gateway-Modus auffindbar — Reticulum führt sie als Access Point aus, es sei denn, ignore_config_warnings ist festgelegt. Bearbeiten Sie die Schnittstelle oder starten Sie den Stack neu, damit der mesh-client das Opt-Out stempeln kann."
       },
       "runtime": {
         "rnsNotReady": "Der RNS-Stack ist nicht bereit",

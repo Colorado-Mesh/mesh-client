@@ -1218,7 +1218,11 @@
       "backboneEnableGuidanceBody": "—2是冗余的最佳选择，不会造成不必要的带宽膨胀。瞄准1个全球集线器和1个区域网关，并严格根据需要启用专业接口（如I2P或Yggdrasil ）。本地连接的RNode和本地LAN接口不计入此骨干限制。",
       "defaultHubsPickerHint": "从“主要和全球骨干网”加上您的区域开始。最多启用 1 到 3 个骨干网关（2 个较理想）。本地 RNode 和局域网接口不计入。新条目默认禁用，便于您审阅后再启用。同步还会禁用剩余已停用的官方测试网枢纽（阿姆斯特丹）。",
       "rnodeTransportBleHint": "BLE绑定可以与macOS取消同步（忘记+重新配对）。当收音机在附近时，首选USB串行或Wi-Fi （ tcp://）。",
-      "flowControl": "流量控制（TX 就绪门）"
+      "flowControl": "流量控制（TX 就绪门）",
+      "rmapFullModeHint": "RMAP发布的完整模式通过IGNORE_CONFIG_WARNINGS保持完整。LXMF传递公告将在堆栈公告间隔（默认为1小时）上退出此无线电。",
+      "effectiveModeBadge": "有效期： {{mode}}",
+      "effectiveModeAria": "有效运行时模式{{mode}}。配置的模式与Reticulum正在运行的模式不同。",
+      "effectiveModeTooltip": "Reticulum将此可发现接口重写到接入点（或其他允许的模式） ，因为除非设置了ignore_config_warnings ，否则DISCOVERABLE需要网关、内部或接入点。在选择退出的mesh-client戳后重新启动堆栈，以便完整（或您配置的模式）生效。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1695,7 +1699,8 @@
         "rmap_no_tcp_hub": "可发现的本地RNode没有启用TCP客户端集线器以实现互联网可访问性。",
         "rmap_transport_disabled": "已配置可发现的接口，但传输模式已关闭。",
         "rmap_i2p_not_connectable": "I2P接口“{{name}}”是可发现的，但不是可连接的。",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "接口“{{name}}”可通过非AP/网关模式发现—除非设置ignore_config_warnings ，否则Reticulum将作为接入点运行。编辑界面或重新启动堆栈，以便mesh-client可以标记选择退出。"
       },
       "runtime": {
         "rnsNotReady": "RNS 堆栈尚未准备好",

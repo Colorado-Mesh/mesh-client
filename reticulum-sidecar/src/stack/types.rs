@@ -31,6 +31,11 @@ pub struct InterfaceRow {
     pub callsign: Option<String>,
     pub id_interval: Option<u32>,
     pub mode: Option<String>,
+    /// Effective RNS interface mode from live `GetInterfaceStats` (Debug name
+    /// mapped to canonical rnsd values). None when offline / unknown. Config
+    /// `mode` remains the user-configured value; the UI compares the two.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub runtime_mode: Option<String>,
     #[serde(default)]
     pub seed_addresses: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -59,6 +64,11 @@ pub struct InterfaceRow {
     /// bursts do not overflow the bounded TX queue. Only meaningful for RF types.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub flow_control: Option<bool>,
+    /// Upstream RNS opt-out: keep configured mode when `discoverable` would
+    /// otherwise auto-correct to Access Point / Gateway. Derived by mesh-client
+    /// when publish is on and mode is not AP/Gateway.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ignore_config_warnings: Option<bool>,
     /// Host outbound TX mpsc fill from live `GetInterfaceStats` (None when offline / unknown).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tx_queue_used: Option<u64>,
@@ -268,6 +278,8 @@ pub struct AddInterfaceRequest {
     #[serde(default)]
     pub flow_control: Option<bool>,
     #[serde(default)]
+    pub ignore_config_warnings: Option<bool>,
+    #[serde(default)]
     pub extra_config: HashMap<String, String>,
 }
 
@@ -324,6 +336,7 @@ mod tx_queue_serde_tests {
             callsign: None,
             id_interval: None,
             mode: None,
+            runtime_mode: None,
             seed_addresses: Vec::new(),
             discoverable: None,
             latitude: None,
@@ -336,6 +349,7 @@ mod tx_queue_serde_tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: HashMap::default(),
@@ -349,6 +363,8 @@ mod tx_queue_serde_tests {
         let obj = value.as_object().expect("object");
         assert!(!obj.contains_key("tx_queue_used"));
         assert!(!obj.contains_key("tx_queue_max"));
+        assert!(!obj.contains_key("runtime_mode"));
+        assert!(!obj.contains_key("ignore_config_warnings"));
     }
 
     #[test]
@@ -361,6 +377,8 @@ mod tx_queue_serde_tests {
         let roundtrip: InterfaceRow = serde_json::from_value(value).expect("deserialize");
         assert_eq!(roundtrip.tx_queue_used, None);
         assert_eq!(roundtrip.tx_queue_max, None);
+        assert_eq!(roundtrip.runtime_mode, None);
+        assert_eq!(roundtrip.ignore_config_warnings, None);
     }
 
     #[test]
@@ -374,6 +392,25 @@ mod tx_queue_serde_tests {
         let roundtrip: InterfaceRow = serde_json::from_value(value).expect("deserialize");
         assert_eq!(roundtrip.tx_queue_used, Some(64));
         assert_eq!(roundtrip.tx_queue_max, Some(256));
+    }
+
+    #[test]
+    fn runtime_mode_and_ignore_warnings_round_trip() {
+        let mut row = minimal_row();
+        row.runtime_mode = Some("access_point".into());
+        row.ignore_config_warnings = Some(true);
+        let value = serde_json::to_value(&row).expect("serialize");
+        assert_eq!(
+            value.get("runtime_mode"),
+            Some(&Value::from("access_point"))
+        );
+        assert_eq!(
+            value.get("ignore_config_warnings"),
+            Some(&Value::Bool(true))
+        );
+        let roundtrip: InterfaceRow = serde_json::from_value(value).expect("deserialize");
+        assert_eq!(roundtrip.runtime_mode.as_deref(), Some("access_point"));
+        assert_eq!(roundtrip.ignore_config_warnings, Some(true));
     }
 
     #[test]

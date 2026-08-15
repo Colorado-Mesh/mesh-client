@@ -1217,7 +1217,11 @@
       "backboneEnableGuidanceBody": "—2 is ideaal voor redundantie zonder onnodige bandbreedte. Streef naar 1 globale hub en 1 regionale gateway, en schakel speciale interfaces (zoals I2P of Yggdrasil) alleen in als nodig. Lokaal verbonden RNodes en lokale LAN-interfaces tellen niet mee voor deze backbone-limiet.",
       "defaultHubsPickerHint": "Begin met Primair & globaal plus uw regio. Schakel hoogstens 1 tot 3 backbone-gateways in (2 is ideaal). Lokale RNodes en LAN-interfaces tellen niet mee. Nieuwe items worden uitgeschakeld toegevoegd zodat u ze kunt beoordelen. Sync schakelt ook resterende buiten gebruik gestelde officiële testnet-hubs uit (Amsterdam).",
       "rnodeTransportBleHint": "BLE-bindingen kunnen desynchroniseren met macOS (vergeten + opnieuw koppelen). Geef de voorkeur aan USB-serieel of Wi-Fi (tcp://) wanneer de radio in de buurt is.",
-      "flowControl": "Stromingsregeling (TX ready-gate)"
+      "flowControl": "Stromingsregeling (TX ready-gate)",
+      "rmapFullModeHint": "De volledige modus met RMAP-publicatie blijft vol via ignore_config_warnings. LXMF-leveringsaankondigingen verlaten deze radio op het aankondigingsinterval van de stapel (standaard 1 uur).",
+      "effectiveModeBadge": "Met ingang van: {{mode}}",
+      "effectiveModeAria": "Effectieve runtime-modus {{mode}}. Geconfigureerde modus verschilt van wat Reticulum draait.",
+      "effectiveModeTooltip": "Reticulum herschreef deze detecteerbare interface naar Access Point (of een andere toegestane modus) omdat detecteerbaar Gateway, Intern of Access Point vereist, tenzij ignore_config_warnings is ingesteld. Herstart de stack na mesh-client stempels die zich afmelden zodat Full (of uw geconfigureerde modus) van kracht wordt."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1695,7 +1699,8 @@
         "rmap_no_tcp_hub": "Ontdekbare lokale RNode heeft geen ingeschakelde TCP-clienthub voor internetbereikbaarheid.",
         "rmap_transport_disabled": "Ontdekbare interfaces zijn geconfigureerd, maar de transportmodus is uitgeschakeld.",
         "rmap_i2p_not_connectable": "I2P-interface \"{{name}}\" is detecteerbaar, maar aansluitbaar is niet ja.",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "Interface \"{{name}}\" is detecteerbaar met een niet-AP/Gateway-modus — Reticulum zal het als toegangspunt uitvoeren, tenzij ignore_config_warnings is ingesteld. Bewerk de interface of start de stack opnieuw, zodat de mesh-client de opt-out kan afstempelen."
       },
       "runtime": {
         "rnsNotReady": "RNS-stack is niet gereed",

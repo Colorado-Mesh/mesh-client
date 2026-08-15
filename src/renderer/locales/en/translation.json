@@ -1241,6 +1241,10 @@
       "auditRepairNoChanges": "No config changes were needed for this repair.",
       "rmapDiscoverableShort": "RMAP",
       "rmapDiscoverableAria": "Publish {{name}} on RMAP v4",
+      "rmapFullModeHint": "Full mode with RMAP publish keeps Full via ignore_config_warnings. LXMF delivery announces will egress this radio on the stack announce interval (default 1 hour).",
+      "effectiveModeBadge": "Effective: {{mode}}",
+      "effectiveModeAria": "Effective runtime mode {{mode}}. Configured mode differs from what Reticulum is running.",
+      "effectiveModeTooltip": "Reticulum rewrote this discoverable interface to Access Point (or another allowed mode) because discoverable requires Gateway, Internal, or Access Point unless ignore_config_warnings is set. Restart the stack after mesh-client stamps that opt-out so Full (or your configured mode) takes effect.",
       "rmapEnableSuccess": "RMAP discovery enabled on {{name}}.",
       "rmapDisableSuccess": "RMAP discovery disabled on {{name}}.",
       "rmapToggleFailed": "RMAP change failed for {{name}}: {{error}}",
@@ -1798,7 +1802,8 @@
         "rmap_missing_coordinates": "Interface \"{{name}}\" is discoverable but missing valid map coordinates.",
         "rmap_no_tcp_hub": "Discoverable local RNode has no enabled TCP client hub for internet reachability.",
         "rmap_transport_disabled": "Discoverable interfaces are configured but transport mode is off.",
-        "rmap_i2p_not_connectable": "I2P interface \"{{name}}\" is discoverable but connectable is not yes."
+        "rmap_i2p_not_connectable": "I2P interface \"{{name}}\" is discoverable but connectable is not yes.",
+        "rmap_mode_autocorrect": "Interface \"{{name}}\" is discoverable with a non-AP/Gateway mode — Reticulum will run it as Access Point unless ignore_config_warnings is set. Edit the interface or restart the stack so mesh-client can stamp the opt-out."
       }
     }
   },

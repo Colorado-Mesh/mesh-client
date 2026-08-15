@@ -161,6 +161,9 @@ describe('reticulumRmapDiscovery', () => {
     expect(rnodePatch.latitude).toBe(40);
     expect(rnodePatch.announce_interval_min).toBe(90);
     expect(rnodePatch.connectable).toBeUndefined();
+    // Sidecar owns ignore_config_warnings / mode — patch must not rewrite them.
+    expect(rnodePatch).not.toHaveProperty('mode');
+    expect(rnodePatch).not.toHaveProperty('ignore_config_warnings');
 
     const i2pPatch = buildRmapDiscoveryPatch(row({ id: 'i', type: 'i2p' }), {
       coords: { lat: 48.8, lon: 2.3 },

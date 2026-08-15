@@ -266,16 +266,30 @@ Config lives under `userData/reticulum/config/` (rnsd INI). The Connection tab s
 
 rnsd **mode** applies to every interface type (TCP, I2P, RNode, …), not only radios. It controls path expiry, path seeking, and announce propagation between segments.
 
-| Mode             | Path Expiry | Path Seeking | When to use on an RNode                                                                                     |
-| ---------------- | ----------- | ------------ | ----------------------------------------------------------------------------------------------------------- |
-| `full`           | 7 days      | No           | Primary nodes, repeaters, fixed infrastructure — full mesh participation, auto-announces, routes traffic    |
-| `access_point`   | 24 hours    | Yes          | High-elevation or wide-area radios serving intermittent users — stays quiet until queried, fast path expiry |
-| `roaming`        | 6 hours     | Yes          | Mobile/handheld or vehicular RNodes moving between coverage areas — short path timeouts, active discovery   |
-| `boundary`       | 7 days      | No           | Linking a LoRa segment to an Internet/TCP backbone — isolates local traffic, selective announce bridging    |
-| `gateway`        | 7 days      | Yes          | Client-facing interface that resolves unknown paths on behalf of connected nodes                            |
-| `point_to_point` | 7 days      | No           | Dedicated direct link between exactly two nodes — no routing, no announce propagation                       |
+| Mode             | Path Expiry | Path Seeking | When to use on an RNode                                                                                                                                                                                                                                                                                          |
+| ---------------- | ----------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `full`           | 7 days      | No           | Primary nodes, repeaters, fixed infrastructure — full mesh participation, auto-announces, routes traffic. **Note:** with RMAP `discoverable = Yes`, RNS silently rewrites to Access Point unless `ignore_config_warnings = Yes` (mesh-client stamps this when publish is on and you keep Full/Roaming/Boundary). |
+| `access_point`   | 24 hours    | Yes          | High-elevation or wide-area radios serving intermittent users — stays quiet until queried, fast path expiry                                                                                                                                                                                                      |
+| `roaming`        | 6 hours     | Yes          | Mobile/handheld or vehicular RNodes moving between coverage areas — short path timeouts, active discovery                                                                                                                                                                                                        |
+| `boundary`       | 7 days      | No           | Linking a LoRa segment to an Internet/TCP backbone — isolates local traffic, selective announce bridging                                                                                                                                                                                                         |
+| `gateway`        | 7 days      | Yes          | Client-facing interface that resolves unknown paths on behalf of connected nodes                                                                                                                                                                                                                                 |
+| `point_to_point` | 7 days      | No           | Dedicated direct link between exactly two nodes — no routing, no announce propagation                                                                                                                                                                                                                            |
 
 > When adding an RNode, the type default is **Access point** — a good starting point for most radio deployments. Switch to **Roaming** if the radio moves, or **Full** for a fixed high-participation LoRa node. For Internet/LoRa bridging, keep the RNode on Access point (or Roaming) and set the TCP/I2P hub interface to **Boundary** (mesh-client’s hub default).
+
+### RMAP publish and interface mode
+
+Reticulum requires discoverable interfaces to run as **Gateway**, **Internal**, or **Access Point**. Enabling RMAP publish (`discoverable = Yes`) on an RNode configured as Full, Roaming, Boundary, or Point-to-point causes rsReticulum to **auto-correct the runtime mode to Access Point** unless the interface INI sets `ignore_config_warnings = Yes`.
+
+mesh-client **honors an explicit Full (or other non-AP/Gateway) mode with publish** by writing that opt-out when you enable RMAP on such an interface (and on stack start for existing configs). Connection shows an **Effective: Access Point** badge when live stats still differ from the configured mode (e.g. before restart).
+
+| Config                      | Runtime after restart | Idle RF announce behavior                                                                                                                             |
+| --------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Full + RMAP publish         | Full (with opt-out)   | LXMF delivery announces egress the RNode on `announce_interval_sec` (default **1 hour**), plus RMAP discovery announces on the per-interface interval |
+| Access point + RMAP publish | Access point          | Quiet until queried; RMAP discovery announces only; 24 h path expiry                                                                                  |
+| Full, publish off           | Full                  | LXMF delivery announces on the radio; no RMAP publish                                                                                                 |
+
+Turning publish off clears `ignore_config_warnings` when it is no longer needed. Do not hand-edit the flag unless you know you need the upstream opt-out.
 
 `point_to_point` is omitted from the official Reticulum manual’s interface-modes section but is defined in RNS (`MODE_POINT_TO_POINT`) and included in mesh-client’s mode catalog.
 

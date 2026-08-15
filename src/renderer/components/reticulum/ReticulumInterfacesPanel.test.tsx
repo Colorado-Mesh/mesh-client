@@ -2141,4 +2141,58 @@ describe('ReticulumInterfacesPanel', () => {
       ).not.toBeInTheDocument();
     });
   });
+
+  describe('effective runtime mode badge', () => {
+    const divergedRnode: ReticulumInterfaceRow = {
+      ...rmapCapableRnode,
+      mode: 'full',
+      runtime_mode: 'access_point',
+      discoverable: true,
+    };
+
+    it('shows effective-mode badge when configured and runtime modes diverge', async () => {
+      const { container } = render(
+        <ReticulumInterfacesPanel {...defaultProps} interfaces={[divergedRnode, rmapWorldHub]} />,
+      );
+      expect(screen.getByTestId('reticulum-runtime-mode-rnode-41f4')).toBeInTheDocument();
+      expect(
+        screen.getAllByLabelText('connectionPanel.reticulumInterfaces.effectiveModeAria').length,
+      ).toBeGreaterThanOrEqual(2);
+      expect(
+        screen.getByRole('checkbox', {
+          name: 'connectionPanel.reticulumInterfaces.rmapDiscoverableAria',
+        }),
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('reticulum-runtime-mode-rnode-41f4-rmap')).toBeInTheDocument();
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
+    });
+
+    it('hides badge when modes match or runtime_mode is omitted', () => {
+      const { rerender } = render(
+        <ReticulumInterfacesPanel
+          {...defaultProps}
+          interfaces={[{ ...rmapCapableRnode, mode: 'full', runtime_mode: 'full' }, rmapWorldHub]}
+        />,
+      );
+      expect(screen.queryByTestId('reticulum-runtime-mode-rnode-41f4')).not.toBeInTheDocument();
+
+      rerender(
+        <ReticulumInterfacesPanel
+          {...defaultProps}
+          interfaces={[{ ...rmapCapableRnode, mode: 'full' }, rmapWorldHub]}
+        />,
+      );
+      expect(screen.queryByTestId('reticulum-runtime-mode-rnode-41f4')).not.toBeInTheDocument();
+    });
+
+    it('shows effective-mode badge next to mode select while editing', async () => {
+      const user = userEvent.setup();
+      render(<ReticulumInterfacesPanel {...defaultProps} interfaces={[divergedRnode]} />);
+      await user.click(
+        screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.edit' }),
+      );
+      expect(screen.getByTestId('reticulum-runtime-mode-rnode-41f4-edit')).toBeInTheDocument();
+    });
+  });
 });

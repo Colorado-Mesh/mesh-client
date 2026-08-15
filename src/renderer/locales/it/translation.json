@@ -1216,7 +1216,11 @@
       "backboneEnableGuidanceBody": "—2 è l’optimum per la ridondanza senza spreco di banda. Punta a 1 hub globale e 1 gateway regionale, e abilita interfacce speciali (come I2P o Yggdrasil) solo se necessario. Gli RNode collegati in locale e le interfacce LAN locali non contano verso questo limite di dorsale.",
       "defaultHubsPickerHint": "Inizia con Primaria e globale più la tua regione. Abilita al massimo da 1 a 3 gateway di dorsale (2 è l’optimum). Gli RNode locali e le interfacce LAN non contano. Le nuove voci vengono aggiunte disabilitate per la revisione. Sync disabilita anche gli hub testnet ufficiali fuori servizio rimanenti (Amsterdam).",
       "rnodeTransportBleHint": "I legami BLE possono essere desincronizzati con macOS (Forget + re-pair). Preferire USB seriale o Wi-Fi (tcp://) quando la radio è nelle vicinanze.",
-      "flowControl": "Controllo del flusso (TX ready-gate)"
+      "flowControl": "Controllo del flusso (TX ready-gate)",
+      "rmapFullModeHint": "La modalità Full con RMAP Publish mantiene Full tramite ignore_config_warnings. La consegna LXMF annuncia che uscirà da questa radio sull'intervallo di annuncio dello stack (predefinito 1 ora).",
+      "effectiveModeBadge": "In vigore: {{mode}}",
+      "effectiveModeAria": "Modalità runtime effettiva {{mode}}. La modalità configurata differisce da quella in esecuzione su Reticulum.",
+      "effectiveModeTooltip": "Reticulum ha riscritto questa interfaccia rilevabile su Access Point (o un'altra modalità consentita) perché Discoverable richiede Gateway, Internal o Access Point a meno che non sia impostato ignore_config_warnings. Riavviare lo stack dopo i timbri mesh-client che l'opt-out in modo Full (o la modalità configurata) ha effetto."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1695,7 +1699,8 @@
         "rmap_no_tcp_hub": "RNode locale individuabile non ha un hub client TCP abilitato per la raggiungibilità di Internet.",
         "rmap_transport_disabled": "Le interfacce individuabili sono configurate ma la modalità di trasporto è disattivata.",
         "rmap_i2p_not_connectable": "L'interfaccia I2P \"{{name}}\" è rilevabile ma collegabile non è sì.",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "L'interfaccia \"{{name}}\" è rilevabile con una modalità non AP/Gateway: Reticulum la eseguirà come punto di accesso a meno che non sia impostato ignore_config_warnings. Modificare l'interfaccia o riavviare lo stack in modo che il client mesh possa timbrare l'opt-out (mesh-client)."
       },
       "runtime": {
         "rnsNotReady": "Lo stack RNS non è pronto",

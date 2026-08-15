@@ -100,6 +100,7 @@ describe('reticulumConfigAudit', () => {
     'rmap_no_tcp_hub',
     'rmap_transport_disabled',
     'rmap_i2p_not_connectable',
+    'rmap_mode_autocorrect',
   ] as const)('auditIssuesToDiagnosticRows maps %s i18n key', (kind) => {
     const rows = auditIssuesToDiagnosticRows(
       [

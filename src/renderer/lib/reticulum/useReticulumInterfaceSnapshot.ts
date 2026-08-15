@@ -48,6 +48,11 @@ export interface ReticulumInterfaceRow {
   preset?: string | null;
   /** rnsd interface mode (`full`, `boundary`, `access_point`, …). */
   mode?: string | null;
+  /**
+   * Effective RNS mode from live sidecar stats (canonical rnsd value).
+   * When it differs from `mode`, the stack rewrote a discoverable interface.
+   */
+  runtime_mode?: string | null;
   seed_addresses?: string[];
   discoverable?: boolean | null;
   latitude?: number | null;
@@ -63,6 +68,11 @@ export interface ReticulumInterfaceRow {
   passphrase?: string | null;
   /** RNode/KISS TX ready-gate. Only present for RF interface types. */
   flow_control?: boolean | null;
+  /**
+   * Upstream RNS opt-out so discoverable + Full/Roaming/Boundary keeps the
+   * configured mode. Sidecar-derived; not edited in the UI form.
+   */
+  ignore_config_warnings?: boolean | null;
   /** Host outbound TX mpsc fill from live sidecar stats. */
   tx_queue_used?: number | null;
   /** Host outbound TX mpsc capacity from live sidecar stats. */
