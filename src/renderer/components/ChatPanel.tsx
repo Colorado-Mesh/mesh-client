@@ -702,35 +702,48 @@ function ChatPanel({
    * packets), a saved value can't be found on that first render either, and
    * marking it resolved unconditionally would permanently skip ever retrying
    * once the real list arrives with the match.
+   *
+   * Computed via an "initialized" guard rather than directly as `useRef`'s
+   * argument — that argument is evaluated on every render even though only
+   * the first one is ever used, and ChatPanel re-renders often (every
+   * message, every scroll update), which would repeat the localStorage read
+   * below on every one of those renders for no reason.
    */
-  const channelRestoreRef = useRef<ChannelRestoreState>(
-    channelRestoreScopeKey == null
-      ? { scope: null, resolved: true, indexSignature: null, arrivedFromDifferentScope: false }
-      : (() => {
-          const persisted = loadActiveChannelInitial(protocol, myNodeNum);
-          if (persisted == null || channels.some((c) => c.index === persisted)) {
-            return {
+  const channelRestoreInitializedRef = useRef(false);
+  const channelRestoreRef = useRef<ChannelRestoreState>({
+    scope: null,
+    resolved: true,
+    indexSignature: null,
+    arrivedFromDifferentScope: false,
+  });
+  if (!channelRestoreInitializedRef.current) {
+    channelRestoreInitializedRef.current = true;
+    if (channelRestoreScopeKey != null) {
+      const persisted = loadActiveChannelInitial(protocol, myNodeNum);
+      channelRestoreRef.current =
+        persisted == null || channels.some((c) => c.index === persisted)
+          ? {
               scope: channelRestoreScopeKey,
               resolved: true,
               indexSignature: null,
               arrivedFromDifferentScope: false,
+            }
+          : // `indexSignature: null` (not the real, computed signature) —
+            // otherwise the very first restore-effect run right after mount
+            // would compare against this same unchanged snapshot, see a
+            // "match" on indexSignature alone, and give up immediately
+            // before `channels` ever gets a chance to actually update.
+            // Stability can only be concluded by comparing two *effect*
+            // observations, never the initializer's own snapshot against
+            // itself.
+            {
+              scope: channelRestoreScopeKey,
+              resolved: false,
+              indexSignature: null,
+              arrivedFromDifferentScope: false,
             };
-          }
-          // `indexSignature: null` (not the real, computed signature) —
-          // otherwise the very first restore-effect run right after mount
-          // would compare against this same unchanged snapshot, see a
-          // "match" on indexSignature alone, and give up immediately before
-          // `channels` ever gets a chance to actually update. Stability can
-          // only be concluded by comparing two *effect* observations, never
-          // the initializer's own snapshot against itself.
-          return {
-            scope: channelRestoreScopeKey,
-            resolved: false,
-            indexSignature: null,
-            arrivedFromDifferentScope: false,
-          };
-        })(),
-  );
+    }
+  }
   /** True for the one save-effect run right after a restore/reset-triggered setChannel,
    * so that run doesn't persist the pre-transition value it hasn't caught up to yet. */
   const skipNextChannelSaveRef = useRef(false);
