@@ -31,7 +31,7 @@ export const REPEATER_CLI_BASE_TIMEOUT_MS = 30_000;
 export const REPEATER_CLI_PER_HOP_TIMEOUT_MS = 2_000;
 /** Align multi-hop CLI ceiling with flat admin RPC timeouts. */
 export const REPEATER_CLI_MAX_TIMEOUT_MS = 120_000;
-/** Max repeater CLI command length before send (align with credential IPC limit). */
+/** Max repeater CLI command length before send (BLE to-radio payload cap). */
 export const REPEATER_CLI_MAX_COMMAND_LENGTH = 512;
 
 const DEFAULT_TIMEOUT_MS = REPEATER_CLI_BASE_TIMEOUT_MS;
@@ -229,6 +229,16 @@ export class RepeaterCommandService {
     }
 
     return false;
+  }
+
+  /** Reject and remove a pending command without retry (send failed before reply window). */
+  rejectPending(token: string, error: Error): boolean {
+    const pending = this.pendingCommands.get(token);
+    if (!pending) return false;
+    clearTimeout(pending.timerId);
+    this.pendingCommands.delete(token);
+    pending.reject(error);
+    return true;
   }
 
   getPendingCommand(token: string): PendingCommand | undefined {

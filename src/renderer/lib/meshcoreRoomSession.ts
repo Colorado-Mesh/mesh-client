@@ -441,8 +441,9 @@ export async function meshcoreTryRemoteServerLogin(
   runSerialized?: MeshcoreRepeaterRunSerialized,
 ): Promise<void> {
   if (hwModel === 'Room') {
-    // Keep an existing BBS session (including guest/readwrite). forceRelogin with a
-    // distinct ops admin password often times out on firmwares that omit LoginFail.
+    // Status/Neighbors do not require login. Telemetry may try a best-effort admin login when
+    // there is no BBS session yet. Do not forceRelogin over an existing guest/readwrite session —
+    // that often times out on firmwares that omit LoginFail (CLI uses ACL SendLogin separately).
     if (meshcoreIsRoomLoggedIn(nodeId)) return;
     await meshcoreRoomTryAdminLogin(conn, nodeId, pubKey);
     return;

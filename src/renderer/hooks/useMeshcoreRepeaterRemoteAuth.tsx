@@ -11,6 +11,9 @@ import { Z_NESTED_AUTH_OVERLAY } from '@/renderer/lib/modalZIndex';
 
 import { useToast } from '../components/Toast';
 
+/** Firmware/admin passwords are short; cap input to avoid accidental paste floods. */
+const MESHCORE_INFRA_ADMIN_PASSWORD_MAX_LENGTH = 128;
+
 export interface RepeaterAuthResult {
   ok: boolean;
   saved?: boolean;
@@ -50,7 +53,7 @@ function InfraRemoteAuthFields({
           autoComplete="off"
           value={password}
           onChange={(e) => {
-            onPasswordChange(e.target.value);
+            onPasswordChange(e.target.value.slice(0, MESHCORE_INFRA_ADMIN_PASSWORD_MAX_LENGTH));
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -59,6 +62,7 @@ function InfraRemoteAuthFields({
             }
           }}
           disabled={disabled}
+          maxLength={MESHCORE_INFRA_ADMIN_PASSWORD_MAX_LENGTH}
           placeholder={t('repeatersPanel.remoteAuthPlaceholder')}
           className="bg-secondary-dark focus:border-brand-green/50 w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
         />

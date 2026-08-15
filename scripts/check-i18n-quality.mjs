@@ -64,6 +64,11 @@ export const MESHCORE_ROOM_UI_KEYS = new Set([
   'meshcoreContactSettings.typeRoomServers',
   'nodesPanel.meshcoreTypeRoom',
   'appPanel.roomMessages',
+  'repeatersPanel.title',
+  'repeatersPanel.openRoom',
+  'repeatersPanel.filterRooms',
+  'repeatersPanel.savedPasswordOrphanRoomLabel',
+  'repeatersPanel.roomCliNeedsAdminPassword',
 ]);
 
 /** modulePanel MQTT proxy toggle + error (must not use legal/delegation false friends). */

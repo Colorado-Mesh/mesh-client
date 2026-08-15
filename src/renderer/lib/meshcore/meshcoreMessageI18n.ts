@@ -183,5 +183,7 @@ export function translateRepeaterCliHistoryText(
   if (type !== 'received') return text;
   const match = /^\[Error: (.*)\]$/s.exec(text);
   if (!match) return text;
-  return `[Error: ${translateMeshcoreUserMessage(t, match[1])}]`;
+  return t('repeatersPanel.cliHistoryError', {
+    detail: translateMeshcoreUserMessage(t, match[1]),
+  });
 }

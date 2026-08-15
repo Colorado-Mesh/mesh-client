@@ -49,20 +49,25 @@ async function traceRouteForRoomLogin(
       MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
       MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
     );
-    const result = await runMeshcoreRepeaterRpcOnce('trace', nodeId, async () => {
-      const handle = startMeshcoreTracePathMultiplexed(
-        conn as unknown as MeshcoreTracePathConnection,
-        seed,
-        Math.min(traceTimeoutMs, traceCapMs),
-        runSerialized,
-      );
-      try {
-        return await withTimeout(handle.promise, traceCapMs, 'meshcoreRoomLoginTrace');
-      } catch (e: unknown) {
-        handle.cancel(e instanceof Error ? e.message : 'meshcoreRoomLoginTrace cancelled');
-        throw e;
-      }
-    });
+    const result = await runMeshcoreRepeaterRpcOnce(
+      'trace',
+      nodeId,
+      async () => {
+        const handle = startMeshcoreTracePathMultiplexed(
+          conn as unknown as MeshcoreTracePathConnection,
+          seed,
+          Math.min(traceTimeoutMs, traceCapMs),
+          runSerialized,
+        );
+        try {
+          return await withTimeout(handle.promise, traceCapMs, 'meshcoreRoomLoginTrace');
+        } catch (e: unknown) {
+          handle.cancel(e instanceof Error ? e.message : 'meshcoreRoomLoginTrace cancelled');
+          throw e;
+        }
+      },
+      { coalesceKey: 'room-login' },
+    );
     const bytes = meshcoreTraceResultToOutPathBytes(
       result.pathLenByte,
       result.pathHashes,

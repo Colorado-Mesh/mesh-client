@@ -994,6 +994,60 @@ describe('RepeatersPanel', () => {
     expect(screen.getByRole('button', { name: 'stats-core' })).toBeInTheDocument();
   });
 
+  it('room get acl pill sends get acl', async () => {
+    const user = userEvent.setup();
+    const room = mockRoomNode(0xdef);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[room.node_id, room]])}
+        onSendCliCommand={onSendCliCommand}
+        isConnected
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await user.click(screen.getByRole('button', { name: 'get acl' }));
+    expect(onSendCliCommand).toHaveBeenCalledWith(room.node_id, 'get acl', undefined);
+  });
+
+  it('ACL form submits setperm with normalized 64-hex and level', async () => {
+    const user = userEvent.setup();
+    const room = mockRoomNode(0xdef);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    const hex = 'a'.repeat(64);
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[room.node_id, room]])}
+        onSendCliCommand={onSendCliCommand}
+        isConnected
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await user.type(screen.getByLabelText('Public key (64 hex)'), hex.toUpperCase());
+    await user.click(screen.getByRole('button', { name: 'Apply ACL' }));
+    expect(onSendCliCommand).toHaveBeenCalledWith(room.node_id, `setperm ${hex} 1`, undefined);
+  });
+
+  it('ACL form ignores invalid pubkey', async () => {
+    const user = userEvent.setup();
+    const room = mockRoomNode(0xdef);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[room.node_id, room]])}
+        onSendCliCommand={onSendCliCommand}
+        isConnected
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await user.type(screen.getByLabelText('Public key (64 hex)'), 'not-a-key');
+    expect(screen.getByRole('button', { name: 'Apply ACL' })).toBeDisabled();
+    expect(onSendCliCommand).not.toHaveBeenCalled();
+  });
+
   it('does not show room-only ACL pills on Repeater rows', async () => {
     const user = userEvent.setup();
     render(

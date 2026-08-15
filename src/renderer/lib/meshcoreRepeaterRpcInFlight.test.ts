@@ -1,11 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  awaitMeshcoreCliReplyHoldClear,
   beginMeshcoreCliReplyHold,
   endMeshcoreCliReplyHold,
   meshcoreCliReplyHoldActive,
   meshcoreCompanionRepeaterRfBusy,
   resetMeshcoreRepeaterRpcInFlightForTests,
+  resetMeshcoreRepeaterRpcInFlightOnDisconnect,
   runMeshcoreRepeaterRpcOnce,
 } from './meshcoreRepeaterRpcInFlight';
 import * as traceMultiplex from './meshcoreTracePathMultiplex';
@@ -191,7 +193,7 @@ describe('meshcoreCompanionRepeaterRfBusy', () => {
     spy.mockRestore();
   });
 
-  it('is true while a CLI reply hold is active and blocks new traces until cleared', async () => {
+  it('is true while a CLI reply hold is active and fails queued traces fast', async () => {
     resetMeshcoreRepeaterRpcInFlightForTests();
     beginMeshcoreCliReplyHold();
     expect(meshcoreCompanionRepeaterRfBusy()).toBe(true);
@@ -199,13 +201,60 @@ describe('meshcoreCompanionRepeaterRfBusy', () => {
 
     const fn = vi.fn(() => Promise.resolve('trace-ok'));
     const pending = runMeshcoreRepeaterRpcOnce('trace', 9, fn);
-    await Promise.resolve();
-    await Promise.resolve();
+    await expect(pending).rejects.toThrow(/0-hop CLI preempted/i);
     expect(fn).not.toHaveBeenCalled();
 
     endMeshcoreCliReplyHold();
-    await expect(pending).resolves.toBe('trace-ok');
-    expect(fn).toHaveBeenCalledTimes(1);
     expect(meshcoreCompanionRepeaterRfBusy()).toBe(false);
+
+    const after = runMeshcoreRepeaterRpcOnce('trace', 9, fn);
+    await expect(after).resolves.toBe('trace-ok');
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('disconnect reset clears CLI reply hold so queued traces start', async () => {
+    resetMeshcoreRepeaterRpcInFlightForTests();
+    beginMeshcoreCliReplyHold();
+    resetMeshcoreRepeaterRpcInFlightOnDisconnect();
+    expect(meshcoreCliReplyHoldActive()).toBe(false);
+
+    const fn = vi.fn(() => Promise.resolve('trace-ok'));
+    await expect(runMeshcoreRepeaterRpcOnce('trace', 3, fn)).resolves.toBe('trace-ok');
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('awaitMeshcoreCliReplyHoldClear throws after max wait', async () => {
+    resetMeshcoreRepeaterRpcInFlightForTests();
+    beginMeshcoreCliReplyHold();
+    await expect(awaitMeshcoreCliReplyHoldClear(20)).rejects.toThrow(
+      /timeout waiting for CLI reply hold/i,
+    );
+    endMeshcoreCliReplyHold();
+  });
+
+  it('does not coalesce ping and room-login traces on the same node', async () => {
+    resetMeshcoreRepeaterRpcInFlightForTests();
+    let releasePing!: () => void;
+    const pingGate = new Promise<void>((r) => {
+      releasePing = r;
+    });
+    const pingFn = vi.fn(async () => {
+      await pingGate;
+      return true;
+    });
+    const loginFn = vi.fn(() => Promise.resolve({ pathLenByte: 2 }));
+
+    const ping = runMeshcoreRepeaterRpcOnce('trace', 42, pingFn);
+    const login = runMeshcoreRepeaterRpcOnce('trace', 42, loginFn, {
+      coalesceKey: 'room-login',
+    });
+    expect(login).not.toBe(ping);
+    await Promise.resolve();
+    expect(pingFn).toHaveBeenCalledTimes(1);
+    expect(loginFn).not.toHaveBeenCalled();
+    releasePing();
+    await expect(ping).resolves.toBe(true);
+    await expect(login).resolves.toEqual({ pathLenByte: 2 });
+    expect(loginFn).toHaveBeenCalledTimes(1);
   });
 });

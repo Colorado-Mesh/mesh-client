@@ -145,9 +145,7 @@ export async function meshcoreRepeaterTryLoginWithPassword(
         return { attempted: true, ok: false, fromPersisted, error: retryErr };
       }
     }
-    console.warn(
-      '[meshcoreRepeaterSession] repeater login failed (continuing) ' + errLikeToLogString(e),
-    );
+    console.warn('[meshcoreRepeaterSession] repeater login failed ' + errLikeToLogString(e));
     return { attempted: true, ok: false, fromPersisted, error: e };
   }
 }

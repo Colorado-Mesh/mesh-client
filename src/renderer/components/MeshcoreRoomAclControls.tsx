@@ -10,7 +10,8 @@ interface Props {
 export function MeshcoreRoomAclControls({ disabled, onApply }: Props) {
   const { t } = useTranslation();
   const [aclPubkey, setAclPubkey] = useState('');
-  const [aclLevel, setAclLevel] = useState(2);
+  // Default guest (read-only) — matches historical Rooms ACL form; avoid silent RW bump.
+  const [aclLevel, setAclLevel] = useState(1);
   const [pending, setPending] = useState(false);
 
   const handleSubmit = useCallback(
@@ -39,7 +40,7 @@ export function MeshcoreRoomAclControls({ disabled, onApply }: Props) {
           onChange={(e) => {
             setAclPubkey(e.target.value);
           }}
-          placeholder="0123456789abcdef…"
+          placeholder={t('roomsPanel.aclPubkeyPlaceholder')}
           disabled={disabled || pending}
           className="w-full rounded border border-gray-600 bg-gray-800 px-2 py-1 font-mono text-xs text-gray-200 disabled:opacity-40"
           aria-label={t('roomsPanel.aclPubkeyLabel')}

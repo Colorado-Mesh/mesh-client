@@ -47,6 +47,7 @@ import {
 } from '../lib/nodeStatus';
 import type { PathRecord } from '../lib/pathHistoryTypes';
 import { useRadioProvider } from '../lib/radio/providerFactory';
+import { REPEATER_CLI_MAX_COMMAND_LENGTH } from '../lib/repeaterCommandService';
 import { MS_PER_DAY } from '../lib/timeConstants';
 import type { MeshNode } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
@@ -1690,6 +1691,7 @@ export default function RepeatersPanel({
                                     handleCliKeyDown(e, node.node_id);
                                   }}
                                   placeholder={t('repeatersPanel.enterCommand')}
+                                  maxLength={REPEATER_CLI_MAX_COMMAND_LENGTH}
                                   disabled={!isConnected || isCliLoading}
                                   className="min-w-[200px] flex-1 rounded border border-gray-600 bg-gray-800 px-2 py-1 text-sm text-gray-200 focus:border-cyan-500 focus:outline-none disabled:opacity-40"
                                   aria-label={t('repeatersPanel.cliInput')}

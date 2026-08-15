@@ -268,6 +268,15 @@ describe('RepeaterCommandService', () => {
       const rejected = service.handleError('FF', new Error('nack'));
       expect(rejected).toBe(false);
     });
+
+    it('rejectPending removes the token without retry', async () => {
+      const { token, promise } = service.registerPendingCommand('cmd', [], { maxRetries: 3 });
+      promise.catch(() => {});
+      expect(service.rejectPending(token, new Error('send failed'))).toBe(true);
+      expect(service.hasPendingCommand(token)).toBe(false);
+      await expect(promise).rejects.toThrow('send failed');
+      expect(service.rejectPending(token, new Error('again'))).toBe(false);
+    });
   });
 
   describe('internal timeout', () => {

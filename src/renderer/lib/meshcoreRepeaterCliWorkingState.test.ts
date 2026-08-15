@@ -16,7 +16,7 @@ describe('meshcore repeater CLI working state', () => {
   it('serializes CLI per repeater node via runMeshcoreRepeaterRpcOnce', () => {
     expect(IN_FLIGHT_SOURCE).toContain("'cli'");
     const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
-    expect(cliBody).toContain("runMeshcoreRepeaterRpcOnce('cli'");
+    expect(cliBody).toMatch(/runMeshcoreRepeaterRpcOnce\(\s*'cli'/);
   });
 
   it('resolves repeater pubkey via ensureNodePubKey like other admin RPCs', () => {
@@ -33,11 +33,14 @@ describe('meshcore repeater CLI working state', () => {
     expect(cliBody).toContain('beginMeshcoreCliReplyHold');
     expect(cliBody).toContain('endMeshcoreCliReplyHold');
     expect(cliBody).toContain('preemptMeshcoreSilentBulkForCli');
+    expect(cliBody).toContain('endMeshcoreSilentBulkCliPreempt');
     expect(cliBody).toContain('restartPendingTimeoutFromNow');
     expect(cliBody).toContain('force: true');
     expect(cliBody).toContain('incrementalOnly: true');
+    expect(cliBody).toContain('responsePromise');
     expect(cliBody).toContain('meshcoreTryRemoteServerLogin');
     expect(cliBody).toContain('meshcoreRepeaterTryLoginWithPassword');
+    expect(cliBody).toContain('meshcoreCancelRoomLogin');
     expect(cliBody).toContain('resolveRoomAdminPassword');
     expect(cliBody).toContain('repeaterRemoteRpcRef.current');
   });
@@ -48,7 +51,7 @@ describe('meshcore repeater CLI working state', () => {
     expect(cliBody).toContain('awaitMeshcoreRepeaterAdminRfIdle');
     const sendSlotStart = cliBody.indexOf('await repeaterRemoteRpcRef.current(async () => {');
     const sendSlotEnd = cliBody.indexOf('});', sendSlotStart);
-    const responseWaitIdx = cliBody.indexOf('const response = await cliResponsePromise');
+    const responseWaitIdx = cliBody.indexOf('const response = await onceResult.responsePromise');
     expect(sendSlotStart).toBeGreaterThan(-1);
     expect(responseWaitIdx).toBeGreaterThan(sendSlotEnd);
   });
@@ -59,7 +62,7 @@ describe('meshcore repeater CLI working state', () => {
     expect(cliBody).toContain('awaitMeshcoreWaitingMessagesDrainIdle');
     expect(cliBody).toContain('drainWaitMs');
     const drainHelperIdx = cliBody.indexOf('awaitMeshcoreWaitingMessagesDrainIdle');
-    const onceIdx = cliBody.indexOf("runMeshcoreRepeaterRpcOnce('cli'");
+    const onceIdx = cliBody.search(/runMeshcoreRepeaterRpcOnce\(\s*'cli'/);
     expect(drainHelperIdx).toBeGreaterThan(-1);
     expect(onceIdx).toBeGreaterThan(drainHelperIdx);
     expect(cliBody).toContain('padRepeaterCliTimeoutForWaitingDrain');
@@ -68,9 +71,9 @@ describe('meshcore repeater CLI working state', () => {
 
   it('waits for CLI DM response after runMeshcoreRepeaterRpcOnce so waiting-message drain can run', () => {
     const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
-    expect(cliBody).toContain('cliResponsePromise = promise');
-    const onceIdx = cliBody.indexOf("runMeshcoreRepeaterRpcOnce('cli'");
-    const responseWaitIdx = cliBody.indexOf('const response = await cliResponsePromise');
+    expect(cliBody).toContain('responsePromise');
+    const onceIdx = cliBody.search(/runMeshcoreRepeaterRpcOnce\(\s*'cli'/);
+    const responseWaitIdx = cliBody.indexOf('const response = await onceResult.responsePromise');
     expect(onceIdx).toBeGreaterThan(-1);
     expect(responseWaitIdx).toBeGreaterThan(onceIdx);
   });

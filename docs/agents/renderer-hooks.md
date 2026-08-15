@@ -31,4 +31,4 @@ WAL SQLite; `user_version` in `database.ts`; migrations as `migration_N()`; `db-
 
 ## UI
 
-Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanels.ts` + capabilities. Tab visibility: `src/renderer/lib/tabSlotIds.ts` (`TAB_SLOT_IDS`) → `src/renderer/lib/appTabMappings.ts` (`TAB_CAPABILITY_REQUIREMENTS`, `computeTabMappings()` in `App.tsx`). Stores: module defaults; persist vs SQLite IPC as elsewhere.
+Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanels.ts` + capabilities. Tab visibility: `src/renderer/lib/tabSlotIds.ts` (`TAB_SLOT_IDS`) → `src/renderer/lib/appTabMappings.ts` (`TAB_CAPABILITY_REQUIREMENTS`, `computeTabMappings()` in `App.tsx`). Stores: module defaults; persist vs SQLite IPC as elsewhere. **MeshCore Open wire / path-hash UI** mounts from `RadioPanel` (`meshcoreOpenWireCompatEnabled`), not App settings.

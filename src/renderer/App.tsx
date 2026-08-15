@@ -3840,21 +3840,7 @@ function AppContent() {
                               onSelectRepeater={(node) => {
                                 setSelectedNodeId(node.node_id);
                               }}
-                              onSendCliCommand={async (nodeId, command, opts) => {
-                                const node = meshcoreUiNodes.get(nodeId);
-                                if (node?.hw_model === 'Room') {
-                                  return meshcorePanelActions.sendRoomAdminCliCommand(
-                                    nodeId,
-                                    command,
-                                    opts,
-                                  );
-                                }
-                                return meshcorePanelActions.sendRepeaterCliCommand(
-                                  nodeId,
-                                  command,
-                                  opts,
-                                );
-                              }}
+                              onSendCliCommand={meshcorePanelActions.sendRepeaterCliCommand}
                               meshcoreCliHistories={meshcoreRuntime.meshcoreCliHistories}
                               meshcoreCliErrors={meshcoreRuntime.meshcoreCliErrors}
                               onClearCliHistory={meshcorePanelActions.clearCliHistory}
@@ -4565,9 +4551,6 @@ function AppContent() {
               selectedNode.node_id !== detailMyNodeNum
                 ? handleOpenRoom
                 : undefined
-            }
-            onLoginRoom={
-              detailModalProtocol === 'meshcore' ? meshcorePanelActions.loginRoom : undefined
             }
             onToggleFavorite={detailModalPanelActions.setNodeFavorited}
             remoteAdminKey={

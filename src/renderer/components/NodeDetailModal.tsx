@@ -20,7 +20,6 @@ import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
 import { MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
-import { useMeshcoreRoomAuth } from '../hooks/useMeshcoreRoomAuth';
 import { formatCoordPair } from '../lib/coordUtils';
 import { downloadBlob } from '../lib/downloadBlob';
 import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
@@ -40,7 +39,6 @@ import {
   meshcorePathBytesEqual,
   meshcoreTraceHopDisplayRows,
 } from '../lib/meshcorePathChainDisplay';
-import { meshcoreGetRoomSession, meshcoreIsRoomLoggedIn } from '../lib/meshcoreRoomSession';
 import {
   isMeshcoreDmExcludedHwModel,
   MESHCORE_CHAT_STUB_ID_MAX,
@@ -94,12 +92,6 @@ interface NodeDetailModalProps {
   onMessageNode?: (nodeNum: number) => void;
   /** MeshCore room server: open Rooms tab for BBS posts (not DM). */
   onOpenRoom?: (nodeNum: number) => void;
-  /** MeshCore room server login before status/admin actions. */
-  onLoginRoom?: (
-    nodeId: number,
-    password: string,
-    opts?: { adminPassword?: string; guestPassword?: string; forceRelogin?: boolean },
-  ) => Promise<void>;
   onToggleFavorite: (nodeId: number, favorited: boolean) => void;
   isConnected: boolean;
   mqttConnected?: boolean;
@@ -225,7 +217,6 @@ export default function NodeDetailModal({
   onDeleteNode,
   onMessageNode,
   onOpenRoom,
-  onLoginRoom,
   onToggleFavorite,
   isConnected,
   mqttConnected = false,
@@ -265,7 +256,6 @@ export default function NodeDetailModal({
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const { ensureRepeaterAuth, promptRepeaterPassword, RemoteAuthModal } =
     useMeshcoreRepeaterRemoteAuth();
-  const { ensureRoomAuth, RemoteAuthModal: RoomAuthModal } = useMeshcoreRoomAuth();
   const [repeaterSecretsEpoch, setRepeaterSecretsEpoch] = useState(0);
   const refreshRepeaterSecrets = useCallback(() => {
     setRepeaterSecretsEpoch((n) => n + 1);
@@ -504,41 +494,29 @@ export default function NodeDetailModal({
       hwModel: string | undefined,
       mode: 'guest' | 'admin',
     ): Promise<boolean> => {
-      if (hwModel === 'Room') {
-        const roomName = node?.long_name ?? `Room-${nodeId.toString(16)}`;
-        const auth = await ensureRoomAuth(nodeId, mode === 'admin' ? 'admin' : 'guest', roomName);
-        if (!auth.ok || !onLoginRoom) {
+      // Infra ops (status/telemetry/neighbors) use ops admin secrets like RepeatersPanel —
+      // not the Rooms BBS guest/admin overlay.
+      if (hwModel === 'Room' || hwModel === 'Repeater') {
+        const fallbackLabel =
+          hwModel === 'Room'
+            ? t('repeatersPanel.savedPasswordOrphanRoomLabel', {
+                nodeId: nodeId.toString(16),
+              })
+            : t('repeatersPanel.savedPasswordOrphanLabel', {
+                nodeId: nodeId.toString(16),
+              });
+        const auth = await ensureRepeaterAuth(nodeId, node?.long_name ?? fallbackLabel, hwModel);
+        if (!auth.ok) {
           setActionStatus(t('nodeDetailModal.remoteAuthCancelled'));
           return false;
         }
-        const password = mode === 'admin' ? auth.adminPassword : auth.guestPassword;
-        const session = meshcoreGetRoomSession(nodeId);
-        const forceRelogin =
-          meshcoreIsRoomLoggedIn(nodeId) &&
-          (session?.role === 'readonly' || (mode === 'admin' && session?.role !== 'admin'));
-        try {
-          await onLoginRoom(nodeId, password, {
-            adminPassword: auth.adminPassword,
-            guestPassword: auth.guestPassword,
-            forceRelogin,
-          });
-          return true;
-        } catch (e) {
-          console.warn('[NodeDetailModal] room login failed ' + errLikeToLogString(e));
-          setActionStatus(t('nodeDetailModal.remoteAuthCancelled'));
-          return false;
-        }
+        if (auth.saved) refreshRepeaterSecrets();
+        return true;
       }
-      const repeaterName = node?.long_name ?? `Repeater-${nodeId.toString(16)}`;
-      const auth = await ensureRepeaterAuth(nodeId, repeaterName, hwModel);
-      if (!auth.ok) {
-        setActionStatus(t('nodeDetailModal.remoteAuthCancelled'));
-        return false;
-      }
-      if (auth.saved) refreshRepeaterSecrets();
+      void mode;
       return true;
     },
-    [ensureRepeaterAuth, ensureRoomAuth, node?.long_name, onLoginRoom, refreshRepeaterSecrets, t],
+    [ensureRepeaterAuth, node?.long_name, refreshRepeaterSecrets, t],
   );
 
   useEffect(() => {
@@ -2393,7 +2371,6 @@ export default function NodeDetailModal({
         </div>
       </div>
       {RemoteAuthModal}
-      {RoomAuthModal}
     </>
   );
 }

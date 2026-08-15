@@ -78,9 +78,12 @@ describe('meshcoreMessageI18n', () => {
   });
 
   it('translateRepeaterCliHistoryText translates serialized error lines', () => {
-    const t = ((key: string, params?: { seconds?: number }) => {
+    const t = ((key: string, params?: { seconds?: number; detail?: string }) => {
       if (key === 'meshcore.errors.requestTimedOutApprox') {
         return `Request timed out (~${params?.seconds ?? '?'}s)`;
+      }
+      if (key === 'repeatersPanel.cliHistoryError') {
+        return `[Error: ${params?.detail ?? ''}]`;
       }
       return key;
     }) as TFunction;

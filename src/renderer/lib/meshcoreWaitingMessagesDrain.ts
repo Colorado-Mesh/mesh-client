@@ -27,6 +27,11 @@ let silentBulkAttemptId = 0;
 let silentBulkTimeoutStreak = 0;
 /** Once tripped, skip bulk and go straight to syncNextMessage until reconnect/success. */
 let silentBulkSkipped = false;
+/**
+ * CLI reply path: skip bulk while awaiting CLI_DATA (cleared when CLI hold ends).
+ * Distinct from {@link silentBulkSkipped} so a healthy bulk path resumes after CLI.
+ */
+let silentBulkCliPreempt = false;
 
 /** Record outbound companion RF TX so auto-drains can defer until the radio settles. */
 export function markMeshcoreCompanionTx(): void {
@@ -127,9 +132,9 @@ export function resetMeshcoreWaitingMessagesDrainSchedule(): void {
   resetMeshcoreSilentBulkBreaker();
 }
 
-/** Skip silent bulk getWaitingMessages after consecutive timeouts on this connection. */
+/** Skip silent bulk getWaitingMessages after consecutive timeouts or CLI preempt. */
 export function shouldSkipMeshcoreSilentBulkGetWaitingMessages(): boolean {
-  return silentBulkSkipped;
+  return silentBulkSkipped || silentBulkCliPreempt;
 }
 
 /** Record a successful silent bulk drain (including empty queue). */
@@ -156,6 +161,7 @@ export function noteMeshcoreSilentBulkTimeout(): boolean {
 export function resetMeshcoreSilentBulkBreaker(): void {
   silentBulkTimeoutStreak = 0;
   silentBulkSkipped = false;
+  silentBulkCliPreempt = false;
 }
 
 export type MeshcoreCompanionTransport = 'ble' | 'serial' | 'tcp' | null | undefined;
@@ -196,12 +202,18 @@ export function isMeshcoreCompanionDrainDeferred(): boolean {
 }
 
 /**
- * CLI path: abandon in-flight silent bulk ownership and skip further bulk getWaitingMessages
- * on this connection so companion RF is free for CLI send + syncNextMessage reply polls.
+ * CLI path: abandon in-flight silent bulk ownership and temporarily skip bulk
+ * getWaitingMessages so companion RF is free for CLI send + syncNextMessage reply polls.
+ * Call {@link endMeshcoreSilentBulkCliPreempt} when the CLI reply hold ends.
  */
 export function preemptMeshcoreSilentBulkForCli(): void {
   silentBulkAttemptId += 1;
-  silentBulkSkipped = true;
+  silentBulkCliPreempt = true;
+}
+
+/** Clear the temporary CLI bulk-preempt flag (does not reopen a tripped timeout circuit). */
+export function endMeshcoreSilentBulkCliPreempt(): void {
+  silentBulkCliPreempt = false;
 }
 
 const DRAIN_IDLE_POLL_MS = 250;

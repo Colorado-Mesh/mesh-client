@@ -22,7 +22,9 @@ import type { DeviceLogEntry, MeshCoreConnection } from '../../lib/meshcore/mesh
 import { createMeshcoreMqttPacketLogBucket } from '../../lib/meshcore/meshcoreMqttPacketLogThrottle';
 import { handleMeshcoreRfRx, type MeshcoreRfRxDeps } from '../../lib/meshcore/meshcoreRfRxRuntime';
 import { processMeshcoreWaitingMessageItem } from '../../lib/meshcoreProcessWaitingMessageItem';
+import { resetMeshcoreRepeaterRpcInFlightOnDisconnect } from '../../lib/meshcoreRepeaterRpcInFlight';
 import { meshcoreSortedStorePrior } from '../../lib/meshcoreStoreDedup';
+import { resetMeshcoreTracePathMultiplexOnDisconnect } from '../../lib/meshcoreTracePathMultiplex';
 import {
   normalizeMeshcoreWaitingMessageBatch,
   normalizeMeshcoreWaitingMessageItem,
@@ -814,6 +816,11 @@ export function attachMeshcoreConnSideEffects(
         setWaitingMessagesDrainDeferred,
       );
       resetMeshcoreWaitingMessagesDrainSchedule();
+      resetMeshcoreRepeaterRpcInFlightOnDisconnect();
+      if (staleConn) {
+        resetMeshcoreTracePathMultiplexOnDisconnect(staleConn);
+      }
+      repeaterCommandServiceRef.current?.clear();
       if (staleConn && !usedDriverConnect) {
         void staleConn.close().catch((e: unknown) => {
           console.debug('[meshcoreConnSideEffects] stale conn close ' + errLikeToLogString(e));
