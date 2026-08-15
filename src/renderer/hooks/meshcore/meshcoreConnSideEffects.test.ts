@@ -661,6 +661,7 @@ describe('attachMeshcoreConnSideEffects', () => {
     holdSpy.mockReturnValue(false);
     await vi.runAllTimersAsync();
     await pending;
+    expect(h.conn.getWaitingMessages).toHaveBeenCalledTimes(1);
     holdSpy.mockRestore();
   });
 
@@ -709,6 +710,7 @@ describe('attachMeshcoreConnSideEffects', () => {
     await vi.runAllTimersAsync();
     // Follow-up force drain uses incrementalOnly — syncNext, not a second bulk.
     expect(h.syncNextMessage).toHaveBeenCalled();
+    expect(h.conn.getWaitingMessages).toHaveBeenCalledTimes(1);
   });
 
   it('flushes waiting-message node changes to nodeStore without updating the runtime node mirror', async () => {

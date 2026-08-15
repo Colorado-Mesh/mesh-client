@@ -1011,6 +1011,23 @@ describe('RepeatersPanel', () => {
     expect(onSendCliCommand).toHaveBeenCalledWith(room.node_id, 'get acl', undefined);
   });
 
+  it('expanded room ACL form has no axe violations', async () => {
+    const user = userEvent.setup();
+    const room = mockRoomNode(0xdef);
+    const { container } = render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[room.node_id, room]])}
+        onSendCliCommand={vi.fn().mockResolvedValue('ok')}
+        isConnected
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    expect(screen.getByLabelText('Public key (64 hex)')).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it('ACL form submits setperm with normalized 64-hex and level', async () => {
     const user = userEvent.setup();
     const room = mockRoomNode(0xdef);

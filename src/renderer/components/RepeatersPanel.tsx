@@ -327,8 +327,9 @@ export default function RepeatersPanel({
     () => listSavedAdminPasswords(),
   );
   const [savedPasswordsOpen, setSavedPasswordsOpen] = useState(false);
-  const [forgetConfirmNodeId, setForgetConfirmNodeId] = useState<number | null>(null);
+  const [forgetConfirmKey, setForgetConfirmKey] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const lastConsumedPendingFocusRef = useRef<number | null>(null);
   const refreshStoredSecrets = useCallback(() => {
     setSavedAdminEntries(listSavedAdminPasswords());
   }, []);
@@ -444,14 +445,17 @@ export default function RepeatersPanel({
 
   useEffect(() => {
     if (pendingFocusNodeId == null) return;
+    if (lastConsumedPendingFocusRef.current === pendingFocusNodeId) return;
     const target = nodes.get(pendingFocusNodeId);
     if (!target || (target.hw_model !== 'Repeater' && target.hw_model !== 'Room')) {
+      lastConsumedPendingFocusRef.current = pendingFocusNodeId;
       onPendingFocusConsumed?.();
       return;
     }
     if (target.hw_model === 'Room') setTypeFilter('room');
     else setTypeFilter('repeater');
     setExpandedCli((prev) => new Set([...prev, pendingFocusNodeId]));
+    lastConsumedPendingFocusRef.current = pendingFocusNodeId;
     onPendingFocusConsumed?.();
   }, [nodes, onPendingFocusConsumed, pendingFocusNodeId]);
   const repeaterTableScrollRef = useRef<HTMLDivElement>(null);
@@ -501,11 +505,12 @@ export default function RepeatersPanel({
     nodeId: number,
     kind: MeshcoreInfraAdminPasswordEntry['kind'],
   ) => {
-    if (forgetConfirmNodeId !== nodeId) {
-      setForgetConfirmNodeId(nodeId);
+    const confirmKey = `${kind}:${nodeId}`;
+    if (forgetConfirmKey !== confirmKey) {
+      setForgetConfirmKey(confirmKey);
       return;
     }
-    setForgetConfirmNodeId(null);
+    setForgetConfirmKey(null);
     try {
       await forgetAdminPassword(nodeId, kind);
       refreshStoredSecrets();
@@ -857,12 +862,12 @@ export default function RepeatersPanel({
                         void handleForgetSavedPassword(nodeId, kind);
                       }}
                       onBlur={() => {
-                        if (forgetConfirmNodeId === nodeId) setForgetConfirmNodeId(null);
+                        if (forgetConfirmKey === `${kind}:${nodeId}`) setForgetConfirmKey(null);
                       }}
                       className="shrink-0 rounded border border-red-900/50 bg-red-950/40 px-1.5 py-0.5 text-[10px] text-red-300 hover:bg-red-900/30"
                       aria-label={t('repeatersPanel.forgetPasswordAria')}
                     >
-                      {forgetConfirmNodeId === nodeId
+                      {forgetConfirmKey === `${kind}:${nodeId}`
                         ? t('repeatersPanel.buttonConfirmRemove')
                         : t('repeatersPanel.forgetPassword')}
                     </button>

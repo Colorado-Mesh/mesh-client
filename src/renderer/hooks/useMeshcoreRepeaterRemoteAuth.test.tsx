@@ -2,7 +2,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { APP_SETTINGS_STORAGE_KEY, mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
 import { clearAllRoomEphemeralAdminPasswords } from '@/renderer/lib/meshcoreInfraAdminSecrets';
 import { meshcoreRepeaterCredentialSettingForNode } from '@/renderer/lib/meshcoreRepeaterCredentialStorage';
@@ -144,9 +146,13 @@ describe('useMeshcoreRepeaterRemoteAuth', () => {
 
   it('Remember for Room writes room credential adminPassword not repeater key', async () => {
     const user = userEvent.setup();
-    render(<RepeaterAuthProbe nodeId={0x222} repeaterName="Room B" hwModel="Room" />);
+    const { container } = render(
+      <RepeaterAuthProbe nodeId={0x222} repeaterName="Room B" hwModel="Room" />,
+    );
     await user.click(screen.getByText('request-auth'));
     await user.type(screen.getByLabelText('repeatersPanel.remoteAuthLabel'), 'room-secret');
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
     await user.click(screen.getByText('repeatersPanel.remoteAuthContinue'));
 
     await waitFor(() => {

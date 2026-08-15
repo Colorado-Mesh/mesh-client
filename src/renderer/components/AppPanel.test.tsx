@@ -307,7 +307,7 @@ describe('AppPanel: MeshCore Radio-owned settings are not on App', () => {
   });
 
   it('does not show Open-wire or path-hash controls on App', async () => {
-    render(
+    const { container } = render(
       <ToastProvider>
         <AppPanel {...defaultProps} protocol="meshcore" />
       </ToastProvider>,
@@ -317,6 +317,8 @@ describe('AppPanel: MeshCore Radio-owned settings are not on App', () => {
       screen.queryByRole('checkbox', { name: /Enable MeshCore Open compatibility/i }),
     ).toBeNull();
     expect(screen.queryByLabelText(/Default path hash size/i)).toBeNull();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });
 

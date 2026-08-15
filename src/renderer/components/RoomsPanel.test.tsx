@@ -178,7 +178,7 @@ describe('RoomsPanel', () => {
     });
   });
 
-  it('forces admin relogin when managing from a read-only session', () => {
+  it('opens Repeater ops for a read-only session without showing Rooms CLI/ACL', () => {
     const room = makeRoom(0x100c, 'Admin Elevate Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
     meshcoreApplyRoomSession(room.node_id, {
@@ -192,7 +192,7 @@ describe('RoomsPanel', () => {
     fireEvent.click(screen.getByText('roomsPanel.manageRoom'));
 
     expect(onOpenRepeaterOps).toHaveBeenCalledWith(room.node_id);
-    expect(screen.queryByText('roomsPanel.cliPlaceholder')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('roomsPanel.cliPlaceholder')).not.toBeInTheDocument();
     expect(screen.queryByText('roomsPanel.aclPubkeyLabel')).not.toBeInTheDocument();
   });
 

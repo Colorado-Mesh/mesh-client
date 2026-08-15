@@ -636,4 +636,17 @@ describe('RadioPanel MeshCore Open wire and path hash', () => {
       expect(onApplyMeshcorePathHashMode).toHaveBeenCalledWith(2);
     });
   });
+
+  it('MeshCore Open-wire / path-hash controls have no axe violations', async () => {
+    const { container } = render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} capabilities={MESHCORE_CAPABILITIES} />
+      </ToastProvider>,
+    );
+    expect(
+      screen.getByRole('checkbox', { name: /Enable MeshCore Open compatibility/i }),
+    ).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
 });

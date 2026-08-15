@@ -111,8 +111,9 @@ function loadMeshcoreRadioExperimentalSettings(): {
   const mode = parsed?.meshcorePathHashMode;
   return {
     meshcoreOpenWireCompatEnabled:
-      parsed?.meshcoreOpenWireCompatEnabled ??
-      DEFAULT_APP_SETTINGS_SHARED.meshcoreOpenWireCompatEnabled,
+      typeof parsed?.meshcoreOpenWireCompatEnabled === 'boolean'
+        ? parsed.meshcoreOpenWireCompatEnabled
+        : DEFAULT_APP_SETTINGS_SHARED.meshcoreOpenWireCompatEnabled,
     meshcorePathHashMode: isMeshcorePathHashMode(mode)
       ? mode
       : DEFAULT_APP_SETTINGS_SHARED.meshcorePathHashMode,

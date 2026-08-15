@@ -1,4 +1,4 @@
-import { meshcorePubkeyPathPrefix } from '@/shared/meshcorePathHash';
+import { type MeshcorePathHashMode, meshcorePubkeyPathPrefix } from '@/shared/meshcorePathHash';
 import { withTimeout } from '@/shared/withTimeout';
 
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
@@ -34,11 +34,12 @@ async function traceRouteForRoomLogin(
   pubKey: Uint8Array,
   seedPath: Uint8Array | undefined,
   radioContactPathLen: number | null,
+  companionPathHashMode: MeshcorePathHashMode | null | undefined,
   traceTimeoutMs: number,
   runSerialized: <T>(fn: () => Promise<T>) => Promise<T>,
 ): Promise<Uint8Array | undefined> {
   if (!conn.sendCommandSendTracePath) return undefined;
-  const hashSize = meshcoreHashSizeForTraceSeed(radioContactPathLen, null);
+  const hashSize = meshcoreHashSizeForTraceSeed(radioContactPathLen, companionPathHashMode);
   let seed =
     seedPath && seedPath.length > 0 ? seedPath : meshcorePubkeyPathPrefix(pubKey, hashSize);
   if (seed.length === hashSize && seed.every((b) => b === 0) && pubKey[0] !== 0) {
@@ -100,6 +101,7 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
     /** When true, skip flood prime and active trace (background scheduler fast-fail). */
     skipTrace?: boolean;
     traceTimeoutMs?: number;
+    companionPathHashMode?: MeshcorePathHashMode | null;
     runSerialized?: <T>(fn: () => Promise<T>) => Promise<T>;
   },
 ): Promise<Uint8Array | undefined> {
@@ -158,6 +160,7 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
       opts.pubKey,
       path,
       radioContactPathLen,
+      opts.companionPathHashMode,
       opts.traceTimeoutMs,
       opts.runSerialized,
     );

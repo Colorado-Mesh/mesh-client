@@ -105,6 +105,7 @@ describe('meshcoreWaitingMessagesSyncState follow-up chaining', () => {
 
     setMeshcoreProcessWaitingMessagesInFlight(Promise.resolve());
     requestMeshcoreWaitingMessagesFollowUp();
+    requestMeshcoreWaitingMessagesForceFollowUp(true);
 
     resetMeshcoreProcessWaitingMessagesSync(
       setWaitingMessagesCount,
@@ -116,8 +117,14 @@ describe('meshcoreWaitingMessagesSyncState follow-up chaining', () => {
 
     expect(getMeshcoreProcessWaitingMessagesInFlight()).toBeNull();
     expect(takeMeshcoreWaitingMessagesFollowUp()).toBe(false);
+    expect(takeMeshcoreWaitingMessagesForceFollowUp()).toBeNull();
     expect(getMeshcoreWaitingMessagesSilentFollowUpChainCount()).toBe(0);
     expect(setWaitingMessagesSilentDrainActive).toHaveBeenCalledWith(false);
     expect(setWaitingMessagesDrainDeferred).toHaveBeenCalledWith(false);
+
+    // After reset, a new force follow-up must not inherit incrementalOnly from before reset.
+    setMeshcoreProcessWaitingMessagesInFlight(Promise.resolve());
+    requestMeshcoreWaitingMessagesForceFollowUp(false);
+    expect(takeMeshcoreWaitingMessagesForceFollowUp()).toEqual({ incrementalOnly: false });
   });
 });

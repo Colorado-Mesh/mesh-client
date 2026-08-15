@@ -261,6 +261,7 @@ import { isMeshcoreRepeaterCliDangerCommand } from '../lib/meshcoreRepeaterCliDa
 import {
   beginMeshcoreCliReplyHold,
   endMeshcoreCliReplyHold,
+  meshcoreCliReplyHoldActive,
   meshcoreCompanionRepeaterRfBusy,
   resetMeshcoreRepeaterRpcInFlightOnDisconnect,
   runMeshcoreRepeaterRpcOnce,
@@ -737,7 +738,6 @@ export function useMeshcoreRuntime() {
   /** Last-seen companion outPathLen per node (packed hash size survives intermittent getContacts misses). */
   const radioContactPathLenByNodeRef = useRef<Map<number, number>>(new Map());
   const pathHashModeRef = useRef(state.pathHashMode);
-  pathHashModeRef.current = state.pathHashMode;
   // nodeId → nickname (from JSON import or DB)
   const nicknameMapRef = useRef<Map<number, string>>(new Map());
   /** Skip mount DB hydration commit when live ingest/import ran before async reload finishes. */
@@ -1062,6 +1062,10 @@ export function useMeshcoreRuntime() {
   useEffect(() => {
     myNodeNumRef.current = state.myNodeNum;
   }, [state.myNodeNum]);
+
+  useEffect(() => {
+    pathHashModeRef.current = state.pathHashMode;
+  }, [state.pathHashMode]);
 
   // Start stats polling when configured (after contacts dump — not during initConn).
   useEffect(() => {
@@ -5233,9 +5237,13 @@ export function useMeshcoreRuntime() {
               } catch {
                 // catch-no-log-ok first trace rejected after cancel; direct retry may proceed
               }
-              // CLI preempt clears TraceData so waiting-message drain can deliver CLI replies.
-              // Do not escalate to a full-pubkey retry — that immediately re-blocks the radio.
-              if (meshcoreTraceCancelledForCliPreempt(firstTraceError)) {
+              // CLI preempt / active CLI reply hold clears TraceData so waiting-message drain
+              // can deliver CLI replies. Do not escalate to a full-pubkey retry — that
+              // immediately re-blocks the radio.
+              if (
+                meshcoreTraceCancelledForCliPreempt(firstTraceError) ||
+                meshcoreCliReplyHoldActive()
+              ) {
                 throw firstTraceError;
               }
               const directRetryEligible = meshcoreTraceDirectRetryEligible(
@@ -6106,6 +6114,9 @@ export function useMeshcoreRuntime() {
           allowPrime: schedulerFastPath ? false : fromMap == null || fromMap.length <= 1,
           skipTrace: schedulerFastPath,
           traceTimeoutMs: schedulerFastPath ? 0 : MESHCORE_TRACE_TIMEOUT_MS,
+          companionPathHashMode: isMeshcorePathHashMode(pathHashModeRef.current)
+            ? pathHashModeRef.current
+            : null,
           runSerialized: (fn) => repeaterRemoteRpcRef.current(fn),
         }),
         schedulerFastPath
