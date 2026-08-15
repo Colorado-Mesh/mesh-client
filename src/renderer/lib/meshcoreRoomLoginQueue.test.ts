@@ -78,4 +78,26 @@ describe('meshcoreRoomLoginQueue', () => {
       name: 'AbortError',
     });
   });
+
+  it('new enqueue after cancel of active login is not sticky-skipped', async () => {
+    let releaseFirst: (() => void) | undefined;
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    const first = enqueueMeshcoreRoomLogin(42, async () => {
+      await firstGate;
+    });
+    await Promise.resolve();
+    expect(getMeshcoreRoomLoginQueueSnapshot().activeNodeId).toBe(42);
+
+    // Cancel while active: abort path marks skipped even though the job already started.
+    dequeueMeshcoreRoomLogin(42);
+    releaseFirst?.();
+    await expect(first).resolves.toBeUndefined();
+
+    const ran = vi.fn(() => Promise.resolve());
+    const third = enqueueMeshcoreRoomLogin(42, ran);
+    await expect(third).resolves.toBeUndefined();
+    expect(ran).toHaveBeenCalledTimes(1);
+  });
 });

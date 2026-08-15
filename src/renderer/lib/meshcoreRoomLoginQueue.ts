@@ -53,12 +53,16 @@ export function meshcoreRoomLoginQueueSize(): number {
  * Failure point: prior jobs block the queue — callers should not assume immediate start.
  */
 export function enqueueMeshcoreRoomLogin(nodeId: number, run: () => Promise<void>): Promise<void> {
+  // A new enqueue means the user wants another attempt. Clear a leftover skip from
+  // canceling an *active* login (dequeue marks skipped even when the job already started).
+  skippedNodeIds.delete(nodeId);
   pendingNodeIds.add(nodeId);
   notifyQueueChanged();
 
   const job = chain.then(async () => {
     pendingNodeIds.delete(nodeId);
-    if (skippedNodeIds.has(nodeId)) {
+    const wasSkipped = skippedNodeIds.has(nodeId);
+    if (wasSkipped) {
       skippedNodeIds.delete(nodeId);
       throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
     }

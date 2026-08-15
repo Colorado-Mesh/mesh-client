@@ -303,7 +303,10 @@ import {
   MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX,
   setMeshcoreRoomCredential,
 } from '../lib/meshcoreRoomCredentialStorage';
-import { syncMeshcoreRoomContactPathBeforeLogin } from '../lib/meshcoreRoomLoginPathSync';
+import {
+  resetMeshcoreRoomCompanionSyncSinceForCatchUp,
+  syncMeshcoreRoomContactPathBeforeLogin,
+} from '../lib/meshcoreRoomLoginPathSync';
 import { meshcoreIsRoomLoginQueued } from '../lib/meshcoreRoomLoginQueue';
 import { resolveMeshcoreRoomLoginRouteBytes } from '../lib/meshcoreRoomLoginRouteResolve';
 import { applyMeshcoreRoomLoginFailure } from '../lib/meshcoreRoomSavedSecrets';
@@ -337,6 +340,7 @@ import {
 } from '../lib/meshcoreRoomSession';
 import { pickMostOverdueRoom, type RoomSyncSchedulerNode } from '../lib/meshcoreRoomSyncScheduler';
 import {
+  getMeshcoreRoomLastPostAt,
   getMeshcoreRoomSyncConfig,
   listMeshcoreRoomAutoLoginOnConnectNodeIds,
   listMeshcoreRoomSyncEnabledNodeIds,
@@ -6254,6 +6258,13 @@ export function useMeshcoreRuntime() {
             console.debug(
               `[useMeshcoreRuntime] loginRoom pathSync node=0x${nodeId.toString(16)} ${JSON.stringify(pathSync)} storedPathLen=${storedPath?.length ?? 0}`,
             );
+            // No local posts yet → zero companion sync_since so login requests ring-buffer catch-up.
+            if (getMeshcoreRoomLastPostAt(nodeId) == null) {
+              await meshcoreAbortablePromise(
+                resetMeshcoreRoomCompanionSyncSinceForCatchUp(activeConn, nodeId, pubKey),
+                loginAbortSignal,
+              );
+            }
             if (opts?.abortIfStale?.()) {
               throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
             }
@@ -6288,6 +6299,27 @@ export function useMeshcoreRuntime() {
               });
             }
             clearMeshcoreRoomAutoLoginFailure(nodeId);
+            // Room servers begin pushing ring-buffer posts ~2s after LoginSuccess; drain may have
+            // been busy/timed out during SendLogin — kick silent drains to ingest history.
+            for (const delayMs of [2_500, 8_000, 20_000]) {
+              window.setTimeout(() => {
+                scheduleMeshcoreWaitingMessagesDrain(
+                  async () => {
+                    try {
+                      await processWaitingMessagesRef.current?.({ showSyncBanner: false });
+                    } catch (e: unknown) {
+                      // catch-no-log-ok logMeshcoreWaitingMessagesDrainError handles logging
+                      logMeshcoreWaitingMessagesDrainError(
+                        'post-login room history drain failed',
+                        e,
+                        false,
+                      );
+                    }
+                  },
+                  { isMounted: () => meshcoreHookMountedRef.current },
+                );
+              }, delayMs);
+            }
           })(),
           MESHCORE_ROOM_LOGIN_TOTAL_TIMEOUT_MS,
           'loginRoom',
@@ -6725,7 +6757,7 @@ export function useMeshcoreRuntime() {
       const storeId = meshcoreIdentityIdRef.current;
       const canonicalId = addMessage(tempMsg);
       try {
-        const hopsAway = getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away ?? 0;
+        const hopsAway = resolveRoomLoginHopsForNode(nodeId);
         console.debug(
           `[useMeshcoreRuntime] sendRoomPost mode=post txtType=${MESHCORE_TXT_TYPE_PLAIN} bodyLen=${new TextEncoder().encode(text).length} room=0x${nodeId.toString(16)} hops=${hopsAway} transport=${meshcoreConnectTypeRef.current ?? 'unknown'}`,
         );

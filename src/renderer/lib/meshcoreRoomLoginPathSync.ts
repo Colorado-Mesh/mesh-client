@@ -26,6 +26,62 @@ export interface MeshcoreRoomLoginPathSyncConn {
     advLat: number,
     advLon: number,
   ): Promise<void>;
+  removeContact?(pubKey: Uint8Array): Promise<void>;
+}
+
+/**
+ * Force companion `ContactInfo.sync_since = 0` so room login requests the ring-buffer catch-up.
+ * Firmware only zeroes sync_since on *new* contacts; updates preserve the watermark.
+ * Failure point: remove/re-add fails — caller continues login (may still get live posts).
+ */
+export async function resetMeshcoreRoomCompanionSyncSinceForCatchUp(
+  conn: MeshcoreRoomLoginPathSyncConn,
+  nodeId: number,
+  pubKey: Uint8Array,
+): Promise<'reset' | 'skipped' | 'failed'> {
+  if (!conn.removeContact || !conn.addOrUpdateContact) return 'skipped';
+  let contact: MeshCoreContactRaw | undefined;
+  try {
+    const contacts = await withTimeout(
+      conn.getContacts(),
+      MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS,
+      'meshcoreRoomSyncSinceResetGetContacts',
+    );
+    contact = findRadioContact(contacts, nodeId);
+  } catch {
+    // catch-no-log-ok getContacts timeout/failure — caller treats 'failed' and continues login
+    return 'failed';
+  }
+  if (!contact) return 'skipped';
+  try {
+    await withTimeout(
+      conn.removeContact(pubKey),
+      MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS,
+      'meshcoreRoomSyncSinceResetRemove',
+    );
+    await withTimeout(
+      conn.addOrUpdateContact(
+        pubKey,
+        contact.type,
+        contact.flags,
+        contact.outPathLen ?? 0,
+        contact.outPath instanceof Uint8Array ? contact.outPath : new Uint8Array(64),
+        contact.advName,
+        contact.lastAdvert,
+        contact.advLat,
+        contact.advLon,
+      ),
+      MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS,
+      'meshcoreRoomSyncSinceResetAdd',
+    );
+    return 'reset';
+  } catch (e: unknown) {
+    console.warn(
+      '[meshcoreRoomLoginPathSync] sync_since catch-up reset failed ' +
+        (e instanceof Error ? e.message : String(e)),
+    );
+    return 'failed';
+  }
 }
 
 function packContactOutPath(path: Uint8Array): Uint8Array {

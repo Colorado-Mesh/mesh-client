@@ -4539,7 +4539,7 @@
     "legendNotSavedTooltip": "Prázdný kruh — pro tuto místnost není uloženo žádné heslo",
     "legendSavedTooltip": "Modrý polokruh — heslo uloženo; přihlaste se pro otevření relace",
     "legendLoggedInTooltip": "Zelená tečka — aktivní relace klienta (opuste místnost, pokud je server offline)",
-    "historyLocalHint": "Příspěvky se zobrazují pouze, když jste na tomto zařízení přihlášeni do této místnosti. Povolte automatickou synchronizaci, abyste zůstali přihlášeni k odběru; historie není zaplněna z pokojového serveru.",
+    "historyLocalHint": "Při přihlášení mesh-client vyžádá nedávné příspěvky stále v kruhové vyrovnávací paměti serveru místnosti (pokud toto zařízení ještě nemá místní vodoznak). Povolte automatickou synchronizaci, abyste zůstali přihlášeni k odběru při připojení.",
     "loginAllSavedDisabledNoSavedPasswords": "Pro použití všech přihlašovacích údajů si nejprve uložte heslo místnosti",
     "membersHeadingWithCount": "Členové ({{count}})",
     "collapseRoomList": "Sbalit seznam místností",

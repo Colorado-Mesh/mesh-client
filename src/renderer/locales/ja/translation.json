@@ -4537,7 +4537,7 @@
     "legendNotSavedTooltip": "空の円—このルームにはパスワードが保存されていません",
     "legendSavedTooltip": "空色の半円 — パスワード保存済み。ログインしてセッションを開く",
     "legendLoggedInTooltip": "緑の点 — アクティブなクライアントセッション（サーバーがオフラインの場合はルームを退出）",
-    "historyLocalHint": "投稿は、このデバイスでこのルームにログインしている間にのみ表示されます。自動同期を有効にして購読したままにします。履歴はルームサーバーから埋め戻されません。",
+    "historyLocalHint": "ログイン時、mesh-client はこのデバイスにまだローカルのウォーターマークがない場合、ルームサーバーのリングバッファに残っている最近の投稿を要求します。接続中に購読を維持するには自動同期を有効にしてください。",
     "loginAllSavedDisabledNoSavedPasswords": "すべてログインするには、まずルームパスワードを保存してください",
     "membersHeadingWithCount": "メンバー（ {{count}} ）",
     "collapseRoomList": "ルームリストを折りたたむ",

@@ -212,7 +212,18 @@ function roleFromPermissionsByte(permissions: number): MeshcoreRoomRole {
   if (roleBits === MESHCORE_ROOM_PERM_ADMIN) return 'admin';
   if (roleBits === MESHCORE_ROOM_PERM_READ_WRITE) return 'readwrite';
   if (roleBits === MESHCORE_ROOM_PERM_GUEST) return 'readonly';
+  // PERM_ACL_READ_ONLY (1) and unknown → read-only UI.
   return 'readonly';
+}
+
+/**
+ * Companion `LoginSuccess.reserved` is the legacy data[6] flag from room/repeater login OK —
+ * NOT PERM_ACL_*. Firmware: admin→1, guest(perm==0)→2, otherwise→0 (includes read-write).
+ */
+function roleFromLegacyLoginFlag(legacyFlag: number): MeshcoreRoomRole {
+  if (legacyFlag === 1) return 'admin';
+  if (legacyFlag === 2) return 'readonly';
+  return 'readwrite';
 }
 
 function roleFromPasswordHint(
@@ -227,17 +238,36 @@ function roleFromPasswordHint(
   return 'readwrite';
 }
 
-/** Prefer `permissions`; meshcore.js LoginSuccess puts the ACL byte in `reserved`. */
-function parseLoginResponsePermissions(response: unknown): number | null {
+/**
+ * Prefer v7+ `permissions` (PERM_ACL_*). Do not treat `reserved` as ACL — that byte is the
+ * legacy admin/guest hint (0=RW, 1=admin, 2=guest) and inverts read-write vs guest.
+ */
+export function parseLoginResponsePermissions(response: unknown): number | null {
   if (!response || typeof response !== 'object') return null;
   const r = response as Record<string, unknown>;
   if (typeof r.permissions === 'number' && Number.isFinite(r.permissions)) {
     return r.permissions & 0xff;
   }
-  if (typeof r.reserved === 'number' && Number.isFinite(r.reserved)) {
-    return r.reserved & 0xff;
-  }
   return null;
+}
+
+export function resolveMeshcoreRoomLoginRole(
+  response: unknown,
+  password: string,
+  adminPassword: string,
+  guestPassword: string,
+): MeshcoreRoomRole {
+  const permByte = parseLoginResponsePermissions(response);
+  if (permByte != null) {
+    return roleFromPermissionsByte(permByte);
+  }
+  if (response && typeof response === 'object') {
+    const reserved = (response as Record<string, unknown>).reserved;
+    if (typeof reserved === 'number' && Number.isFinite(reserved)) {
+      return roleFromLegacyLoginFlag(reserved & 0xff);
+    }
+  }
+  return roleFromPasswordHint(password, adminPassword, guestPassword);
 }
 
 export function meshcoreApplyRoomSession(
@@ -359,11 +389,12 @@ export async function meshcoreRoomLogin(
             signal,
           });
           throwIfRoomLoginAborted(signal);
-          const permByte = parseLoginResponsePermissions(response);
-          const role =
-            permByte != null
-              ? roleFromPermissionsByte(permByte)
-              : roleFromPasswordHint(password, adminPassword, guestPassword);
+          const role = resolveMeshcoreRoomLoginRole(
+            response,
+            password,
+            adminPassword,
+            guestPassword,
+          );
           const lastPostMs = getMeshcoreRoomLastPostAt(nodeId);
           meshcoreApplyRoomSession(nodeId, {
             guestPassword,

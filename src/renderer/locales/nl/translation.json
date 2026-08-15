@@ -4537,7 +4537,7 @@
     "legendNotSavedTooltip": "Lege cirkel — geen wachtwoord opgeslagen voor deze ruimte",
     "legendSavedTooltip": "Lichtblauwe halve cirkel — wachtwoord opgeslagen; log in om een sessie te openen",
     "legendLoggedInTooltip": "Groene stip — actieve clientsessie (verlaat de ruimte als de server offline is)",
-    "historyLocalHint": "Berichten worden alleen weergegeven terwijl u bent ingelogd in deze ruimte op dit apparaat. Schakel automatisch synchroniseren in om geabonneerd te blijven; de geschiedenis wordt niet opnieuw ingevuld vanaf de roomserver.",
+    "historyLocalHint": "Bij het inloggen vraagt mesh-client recente berichten op die nog in de ringbuffer van de roomserver staan (wanneer dit apparaat nog geen lokaal watermerk heeft). Schakel automatisch synchroniseren in om geabonneerd te blijven terwijl u verbonden bent.",
     "loginAllSavedDisabledNoSavedPasswords": "Sla eerst een ruimtewachtwoord op om alles in te loggen",
     "membersHeadingWithCount": "Leden ({{count}})",
     "collapseRoomList": "Ruimtelijst samenvouwen",

@@ -1,5 +1,5 @@
 diff --git a/src/buffer_reader.js b/src/buffer_reader.js
-index 9142fbc..2f8cf2d 100644
+index 9142fbc9fda24c07082d63ced24117a35b29dc93..2f8cf2d68d1c32c1d7cc489f33527c9ad89545d4 100644
 --- a/src/buffer_reader.js
 +++ b/src/buffer_reader.js
 @@ -24,7 +24,10 @@ class BufferReader {
@@ -15,7 +15,7 @@ index 9142fbc..2f8cf2d 100644
  
      readCString(maxLength) {
 diff --git a/src/connection/connection.js b/src/connection/connection.js
-index 541ce73..50a3bef 100644
+index 541ce732e52444d094043e49fef295752da3d7bc..209edb4f2cccff89efee83c708796a5c226dff8d 100644
 --- a/src/connection/connection.js
 +++ b/src/connection/connection.js
 @@ -338,6 +338,14 @@ class Connection extends EventEmitter {
@@ -49,7 +49,34 @@ index 541ce73..50a3bef 100644
          }
  
      }
-@@ -498,15 +512,25 @@ class Connection extends EventEmitter {
+@@ -457,10 +471,22 @@ class Connection extends EventEmitter {
+     }
+ 
+     onLoginSuccessPush(bufferReader) {
+-        this.emit(Constants.PushCodes.LoginSuccess, {
+-            reserved: bufferReader.readByte(), // reserved
+-            pubKeyPrefix: bufferReader.readBytes(6), // 6 bytes of public key this login success is from
+-        });
++        // Companion v7+ LoginSuccess: legacyFlag(1) + pubKeyPrefix(6) + serverTimestamp(4) + aclPermissions(1) + firmwareVerLevel(1).
++        // Room servers put PERM_ACL_* in aclPermissions; legacyFlag is NOT the ACL (0=RW/RO, 1=admin, 2=guest).
++        const reserved = bufferReader.readByte(); // legacy is_admin / guest hint (data[6])
++        const pubKeyPrefix = bufferReader.readBytes(6);
++        const payload = {
++            reserved: reserved,
++            pubKeyPrefix: pubKeyPrefix,
++        };
++        if (bufferReader.getRemainingBytesCount() >= 5) {
++            payload.serverTimestamp = bufferReader.readUInt32LE();
++            payload.permissions = bufferReader.readByte(); // ACL permissions (data[7])
++            if (bufferReader.getRemainingBytesCount() >= 1) {
++                payload.firmwareVerLevel = bufferReader.readByte();
++            }
++        }
++        this.emit(Constants.PushCodes.LoginSuccess, payload);
+     }
+ 
+     onStatusResponsePush(bufferReader) {
+@@ -498,15 +524,25 @@ class Connection extends EventEmitter {
      onTraceDataPush(bufferReader) {
          const reserved = bufferReader.readByte();
          const pathLen = bufferReader.readUInt8();
@@ -81,7 +108,7 @@ index 541ce73..50a3bef 100644
          });
      }
  
-@@ -586,11 +610,30 @@ class Connection extends EventEmitter {
+@@ -586,11 +622,30 @@ class Connection extends EventEmitter {
      }
  
      onDeviceInfoResponse(bufferReader) {
@@ -116,7 +143,7 @@ index 541ce73..50a3bef 100644
          });
      }
  
-@@ -2401,6 +2444,33 @@ class Connection extends EventEmitter {
+@@ -2401,6 +2456,33 @@ class Connection extends EventEmitter {
          });
      }
  

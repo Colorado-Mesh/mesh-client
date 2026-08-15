@@ -103,3 +103,46 @@ describe('syncMeshcoreRoomContactPathBeforeLogin', () => {
     expect(addOrUpdateContact).toHaveBeenCalled();
   });
 });
+
+describe('resetMeshcoreRoomCompanionSyncSinceForCatchUp', () => {
+  it('skips when remove/add APIs are missing', async () => {
+    const pubKey = makePubKey(2);
+    const conn = { getContacts: vi.fn(), setContactPath: vi.fn() };
+    const { resetMeshcoreRoomCompanionSyncSinceForCatchUp } =
+      await import('./meshcoreRoomLoginPathSync');
+    await expect(
+      resetMeshcoreRoomCompanionSyncSinceForCatchUp(conn, pubkeyToNodeId(pubKey), pubKey),
+    ).resolves.toBe('skipped');
+  });
+
+  it('remove+readds room contact to zero companion sync_since', async () => {
+    const pubKey = makePubKey(0x40);
+    const nodeId = pubkeyToNodeId(pubKey);
+    const contact: MeshCoreContactRaw = {
+      publicKey: pubKey,
+      type: 3,
+      flags: 0,
+      outPathLen: 0,
+      outPath: new Uint8Array(64),
+      advName: 'CatchUp Room',
+      lastAdvert: 1,
+      advLat: 0,
+      advLon: 0,
+    };
+    const removeContact = vi.fn().mockResolvedValue(undefined);
+    const addOrUpdateContact = vi.fn().mockResolvedValue(undefined);
+    const conn = {
+      getContacts: vi.fn().mockResolvedValue([contact]),
+      setContactPath: vi.fn(),
+      removeContact,
+      addOrUpdateContact,
+    };
+    const { resetMeshcoreRoomCompanionSyncSinceForCatchUp } =
+      await import('./meshcoreRoomLoginPathSync');
+    await expect(resetMeshcoreRoomCompanionSyncSinceForCatchUp(conn, nodeId, pubKey)).resolves.toBe(
+      'reset',
+    );
+    expect(removeContact).toHaveBeenCalledWith(pubKey);
+    expect(addOrUpdateContact).toHaveBeenCalled();
+  });
+});

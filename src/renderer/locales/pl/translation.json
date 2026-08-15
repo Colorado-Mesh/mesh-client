@@ -4541,7 +4541,7 @@
     "legendNotSavedTooltip": "Pusty okrąg — nie zapisano hasła do tego pokoju",
     "legendSavedTooltip": "Niebieski półokrąg — hasło zapisane; zaloguj się, aby otworzyć sesję",
     "legendLoggedInTooltip": "Zielona kropka — aktywna sesja klienta (opuść pokój, jeśli serwer jest offline)",
-    "historyLocalHint": "Wpisy pojawiają się tylko wtedy, gdy jesteś zalogowany do tego pokoju na tym urządzeniu. Włącz automatyczną synchronizację, aby pozostać subskrybentem; historia nie jest uzupełniana z serwera pokojowego.",
+    "historyLocalHint": "Po zalogowaniu mesh-client żąda ostatnich wpisów nadal znajdujących się w buforze pierścieniowym serwera pokoju (gdy to urządzenie nie ma jeszcze lokalnego znaku wodnego). Włącz automatyczną synchronizację, aby pozostać subskrybentem podczas połączenia.",
     "loginAllSavedDisabledNoSavedPasswords": "Najpierw zapisz hasło do pokoju, aby użyć log in all",
     "membersHeadingWithCount": "Członkowie ({{count}})",
     "collapseRoomList": "Zwiń listę pokoi",

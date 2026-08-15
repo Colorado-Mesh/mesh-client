@@ -562,15 +562,18 @@ export function meshcoreInferHopsFromOutPath(contact: {
 }
 
 /**
- * Hop count for room login timeout scaling when UI `hops_away` is 0/unknown but a route exists.
- * Failure point: firmware reports direct (0 hops) while `outPath` still holds multi-hop bytes.
+ * Hop count for room login path/timeout decisions.
+ * Prefer route bytes when UI reports 0 but `outPath` still holds multi-hop path.
+ * Do not trust sticky UI `hops_away > 0` alone with an empty path — that blocks 0-hop
+ * SendLogin (noRoute) for rooms that are actually direct (contact merge keeps old hops).
  */
 export function resolveMeshcoreRoomLoginHopsAway(
   node: Pick<MeshNode, 'hops_away'> | undefined,
   outPathBytes?: Uint8Array,
 ): number {
   const hops = node?.hops_away;
-  if (typeof hops === 'number' && Number.isFinite(hops) && hops > 0) {
+  const hasMultiHopPath = Boolean(outPathBytes && outPathBytes.length > 1);
+  if (typeof hops === 'number' && Number.isFinite(hops) && hops > 0 && hasMultiHopPath) {
     return Math.trunc(hops);
   }
   if (outPathBytes && outPathBytes.length > 0) {
@@ -581,6 +584,10 @@ export function resolveMeshcoreRoomLoginHopsAway(
     if (outPathBytes.length > 1) {
       return Math.max(1, outPathBytes.length - 1);
     }
+  }
+  // Sticky multi-hop with no route bytes → treat as direct for login.
+  if (typeof hops === 'number' && Number.isFinite(hops) && hops >= 0 && !hasMultiHopPath) {
+    return 0;
   }
   if (typeof hops === 'number' && Number.isFinite(hops) && hops >= 0) {
     return Math.trunc(hops);

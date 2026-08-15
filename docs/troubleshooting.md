@@ -920,7 +920,8 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **No room history after login**:
 
-- Firmware only **pushes new posts** after a successful login; it does not backfill old BBS messages. Enable **Auto-sync** on the Rooms tab to periodic re-login while connected.
+- Room servers keep a **short ring buffer** of recent posts and push anything newer than your companion’s `sync_since` watermark after LoginSuccess. mesh-client resets that watermark (remove+re-add contact) when this device has **no local last-post watermark** yet, then drains waiting messages after login.
+- Posts older than the ring (or already past `sync_since`) will not appear. Enable **Auto-sync** on the Rooms tab to periodic re-login while connected so you stay current.
 - mesh-client stores posts received while you are logged in on **this device**. Quitting the app or staying logged out for days means posts from that period will not appear later unless they were persisted locally. See the **Rooms** tab history note under Auto-sync.
 
 **pyMC / server console shows posts but Rooms tab does not (cross-client)**:

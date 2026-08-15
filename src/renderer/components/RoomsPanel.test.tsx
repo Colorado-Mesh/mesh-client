@@ -64,7 +64,15 @@ vi.mock('@tanstack/react-virtual', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string, opts?: Record<string, unknown>) => {
+      if (key === 'meshcore.errors.roomLogin.noRoute') {
+        return 'No route to this room server. Trace the node from the map or wait for path adverts, then try again.';
+      }
+      if (key === 'roomsPanel.autoLoginFailed' && typeof opts?.error === 'string') {
+        return `Auto-login failed: ${opts.error}`;
+      }
+      return key;
+    },
   }),
 }));
 
@@ -276,6 +284,23 @@ describe('RoomsPanel', () => {
     await waitFor(() => {
       expect(screen.getByText('roomsPanel.loginTitle')).toBeInTheDocument();
     });
+  });
+
+  it('translates meshcore roomLogin.noRoute instead of showing the raw key', async () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x1005, 'No Route Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    const onLoginRoom = vi.fn().mockRejectedValue(new Error('meshcore.errors.roomLogin.noRoute'));
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onLoginRoom });
+    fireEvent.click(screen.getByText('roomsPanel.loginButton'));
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'No route to this room server. Trace the node from the map or wait for path adverts, then try again.',
+        ),
+      ).toBeInTheDocument();
+    });
+    expect(screen.queryByText('meshcore.errors.roomLogin.noRoute')).not.toBeInTheDocument();
   });
 
   it('allows Login with empty guest password and sends blank', async () => {

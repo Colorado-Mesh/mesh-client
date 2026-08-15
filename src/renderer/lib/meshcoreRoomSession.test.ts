@@ -108,9 +108,27 @@ describe('meshcoreRoomSession', () => {
     expect(meshcoreRoomCanPost(42)).toBe(true);
   });
 
-  it('login uses meshcore.js reserved ACL byte over empty-password hint', async () => {
+  it('login maps legacy reserved=0 (non-guest) to read-write when ACL byte absent', async () => {
     meshcoreClearAllRoomSessions();
-    // Empty password hint would be readonly; reserved=2 (read-write) must win.
+    // Companion data[6]: 0 = not guest (read-write or read-only ACL); without permissions, treat as RW.
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ reserved: 0 });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    await meshcoreRoomLogin(conn, 42, pubKey, 'hello', {
+      guestPassword: 'hello',
+      adminPassword: '',
+    });
+    expect(meshcoreGetRoomSession(42)?.role).toBe('readwrite');
+    expect(meshcoreRoomCanPost(42)).toBe(true);
+  });
+
+  it('login maps legacy reserved=2 (guest hint) to read-only when ACL byte absent', async () => {
+    meshcoreClearAllRoomSessions();
     mockRunMeshcoreRoomLogin.mockResolvedValue({ reserved: 2 });
     const conn = {
       on: vi.fn(),
@@ -123,13 +141,14 @@ describe('meshcoreRoomSession', () => {
       guestPassword: '',
       adminPassword: '',
     });
-    expect(meshcoreGetRoomSession(42)?.role).toBe('readwrite');
-    expect(meshcoreRoomCanPost(42)).toBe(true);
+    expect(meshcoreGetRoomSession(42)?.role).toBe('readonly');
+    expect(meshcoreRoomCanPost(42)).toBe(false);
   });
 
-  it('login treats reserved guest ACL as read-only', async () => {
+  it('login prefers permissions ACL over legacy reserved flag', async () => {
     meshcoreClearAllRoomSessions();
-    mockRunMeshcoreRoomLogin.mockResolvedValue({ reserved: 0 });
+    // reserved=0 looks like RW legacy; permissions=0 is true guest ACL.
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 0, reserved: 0 });
     const conn = {
       on: vi.fn(),
       off: vi.fn(),
@@ -160,6 +179,24 @@ describe('meshcoreRoomSession', () => {
       adminPassword: 'admin',
     });
     expect(meshcoreGetRoomSession(42)?.role).toBe('admin');
+  });
+
+  it('login with permissions=2 grants read-write (hello guest password)', async () => {
+    meshcoreClearAllRoomSessions();
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 2, reserved: 0 });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    await meshcoreRoomLogin(conn, 42, pubKey, 'hello', {
+      guestPassword: 'hello',
+      adminPassword: '',
+    });
+    expect(meshcoreGetRoomSession(42)?.role).toBe('readwrite');
+    expect(meshcoreRoomCanPost(42)).toBe(true);
   });
 
   it('skips relogin when already logged in without forceRelogin', async () => {

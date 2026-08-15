@@ -44,6 +44,7 @@ import { ROOM_LOGIN_PROGRESS_DOT } from '@/renderer/lib/connectionHeaderStatus';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { translateMeshcoreUserMessage } from '@/renderer/lib/meshcore/meshcoreMessageI18n';
 import { repairMeshcoreHydrationStaleRoomSends } from '@/renderer/lib/meshcoreDbCacheHydration';
 import {
   type MeshcoreRoomAclEntry,
@@ -1286,10 +1287,16 @@ export default function RoomsPanel({
     : 'w-full cursor-not-allowed rounded border border-gray-600 bg-gray-700 px-3 py-2 text-sm font-medium text-gray-500';
   const selectedRoomLeaveLoading =
     selectedRoomId != null && leaveLoadingRoomIds.has(selectedRoomId);
-  const loginError =
+  const loginErrorRaw =
     selectedRoomId != null ? (loginErrorsByRoom.get(selectedRoomId) ?? null) : null;
-  const leaveError =
+  const loginError = loginErrorRaw != null ? translateMeshcoreUserMessage(t, loginErrorRaw) : null;
+  const leaveErrorRaw =
     selectedRoomId != null ? (leaveErrorsByRoom.get(selectedRoomId) ?? null) : null;
+  const leaveError = leaveErrorRaw != null ? translateMeshcoreUserMessage(t, leaveErrorRaw) : null;
+  const autoLoginFailureRaw =
+    selectedRoomId != null ? getMeshcoreRoomAutoLoginFailure(selectedRoomId) : null;
+  const autoLoginFailureDisplay =
+    autoLoginFailureRaw != null ? translateMeshcoreUserMessage(t, autoLoginFailureRaw) : null;
   const canPost = selectedRoomId != null && meshcoreRoomCanPost(selectedRoomId);
   const sessionRole = selectedRoomId != null ? meshcoreGetRoomSession(selectedRoomId)?.role : null;
   const selectedRoomSecretsSummary =
@@ -1756,10 +1763,10 @@ export default function RoomsPanel({
                   {t('roomsPanel.continueReadOnly')}
                 </button>
                 {loginError && <p className="text-sm text-red-400">{loginError}</p>}
-                {getMeshcoreRoomAutoLoginFailure(selectedRoomId) && !loginError && (
+                {autoLoginFailureDisplay && !loginError && (
                   <p className="text-sm text-red-400" role="alert">
                     {t('roomsPanel.autoLoginFailed', {
-                      error: getMeshcoreRoomAutoLoginFailure(selectedRoomId),
+                      error: autoLoginFailureDisplay,
                     })}
                   </p>
                 )}
