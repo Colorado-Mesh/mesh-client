@@ -170,11 +170,15 @@ function roleFromPasswordHint(
   return 'readwrite';
 }
 
+/** Prefer `permissions`; meshcore.js LoginSuccess puts the ACL byte in `reserved`. */
 function parseLoginResponsePermissions(response: unknown): number | null {
   if (!response || typeof response !== 'object') return null;
   const r = response as Record<string, unknown>;
   if (typeof r.permissions === 'number' && Number.isFinite(r.permissions)) {
     return r.permissions & 0xff;
+  }
+  if (typeof r.reserved === 'number' && Number.isFinite(r.reserved)) {
+    return r.reserved & 0xff;
   }
   return null;
 }

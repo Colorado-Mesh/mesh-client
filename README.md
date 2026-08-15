@@ -258,7 +258,7 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 
 **Room servers (BBS)** — **Rooms** tab (RF only; not MQTT)
 
-- Login to room-server contacts (guest read-only or admin post); try an **empty guest password** first (zero-byte SendLogin, matching official clients); **"hello"** is the older default if empty fails; **Continue read-only** also sends no password
+- Login to room-server contacts; **blank** guest password for read-only when allowed; **`"hello"`** as the default read/write guest password; **Continue read-only** also sends blank
 - Post plain UTF-8 after login; inbound **SignedPlain** pushes show author prefix stripped in the UI
 - **Remember password**, **Auto-sync** (periodic re-login while connected, minimum 60 minutes per room), per-room unread badges (sidebar **Rooms** tab; separate from **Chat** badges)
 - Room admin CLI / ACL setperm on the **Repeaters** tab (room rows); Rooms Members still call `get acl` via the same CLI path. Session/login queue and path sync in `meshcoreRoom*.ts` — see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#meshcore-room-servers) and [Troubleshooting](docs/troubleshooting.md#meshcore-room-server-login-posts-and-windows-10)

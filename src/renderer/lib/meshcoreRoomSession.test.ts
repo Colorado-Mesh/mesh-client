@@ -105,6 +105,60 @@ describe('meshcoreRoomSession', () => {
     expect(meshcoreRoomCanPost(42)).toBe(true);
   });
 
+  it('login uses meshcore.js reserved ACL byte over empty-password hint', async () => {
+    meshcoreClearAllRoomSessions();
+    // Empty password hint would be readonly; reserved=2 (read-write) must win.
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ reserved: 2 });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    await meshcoreRoomLogin(conn, 42, pubKey, '', {
+      guestPassword: '',
+      adminPassword: '',
+    });
+    expect(meshcoreGetRoomSession(42)?.role).toBe('readwrite');
+    expect(meshcoreRoomCanPost(42)).toBe(true);
+  });
+
+  it('login treats reserved guest ACL as read-only', async () => {
+    meshcoreClearAllRoomSessions();
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ reserved: 0 });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    await meshcoreRoomLogin(conn, 42, pubKey, 'hello', {
+      guestPassword: 'hello',
+      adminPassword: '',
+    });
+    expect(meshcoreGetRoomSession(42)?.role).toBe('readonly');
+    expect(meshcoreRoomCanPost(42)).toBe(false);
+  });
+
+  it('login prefers permissions over reserved when both present', async () => {
+    meshcoreClearAllRoomSessions();
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 3, reserved: 0 });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    await meshcoreRoomLogin(conn, 42, pubKey, 'hello', {
+      guestPassword: 'hello',
+      adminPassword: 'admin',
+    });
+    expect(meshcoreGetRoomSession(42)?.role).toBe('admin');
+  });
+
   it('skips relogin when already logged in without forceRelogin', async () => {
     meshcoreClearAllRoomSessions();
     mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 2 });

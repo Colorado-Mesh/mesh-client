@@ -126,7 +126,7 @@ export function runMeshcoreRoomLogin(
         return;
       }
       console.debug(
-        `[meshcoreRoomLoginRpc] LoginSuccess prefix=${prefixToHex(prefix)} permissions=${String(r.permissions ?? 'n/a')}`,
+        `[meshcoreRoomLoginRpc] LoginSuccess prefix=${prefixToHex(prefix)} permissions=${String(r.permissions ?? r.reserved ?? 'n/a')}`,
       );
       succeed(r);
     };
