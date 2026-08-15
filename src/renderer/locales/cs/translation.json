@@ -1219,7 +1219,11 @@
       "backboneEnableGuidanceBody": "—2 je ideální místo pro redundanci bez zbytečného nafukování šířky pásma. Zaměřte se na 1 globální rozbočovač a 1 regionální bránu a povolte speciální rozhraní (jako je I2P nebo Yggdrasil) přesně podle potřeby. Lokálně připojené RNodes a místní LAN rozhraní se do tohoto limitu páteřní sítě nezapočítávají.",
       "defaultHubsPickerHint": "Začněte primární a globální páteří plus svým regionem. Zapněte nejvýše 1 až 3 páteřní brány (2 je optimum). Místní RNode a LAN rozhraní se nepočítají. Nové položky se přidávají vypnuté ke kontrole. Sync také vypne zbývající vyřazené oficiální testnet huby (Amsterdam).",
       "rnodeTransportBleHint": "Ble vazby se mohou desynchronizovat s macOS (Forget + re-pair). Preferujte USB sériové nebo Wi-Fi (tcp://), pokud je rádio v blízkosti.",
-      "flowControl": "Řízení toku (TX ready-gate)"
+      "flowControl": "Řízení toku (TX ready-gate)",
+      "rmapFullModeHint": "Plný režim s publikováním RMAP udržuje Plný prostřednictvím ignore_config_warnings. Oznámení o doručení LXMF opustí toto rádio v intervalu oznámení zásobníku (výchozí 1 hodina).",
+      "effectiveModeBadge": "Účinnost: {{mode}}",
+      "effectiveModeAria": "Efektivní režim běhu {{mode}}. Konfigurovaný režim se liší od toho, co běží Reticulum.",
+      "effectiveModeTooltip": "Reticulum přepsalo toto zjistitelné rozhraní na přístupový bod (nebo jiný povolený režim), protože zjistitelný vyžaduje bránu, interní nebo přístupový bod, pokud není nastaveno ignore_config_warnings. Restartujte zásobník po razítkách mesh-klienta, které se odhlásí, takže se projeví Full (nebo váš nakonfigurovaný režim) (mesh-client)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1697,7 +1701,8 @@
         "rmap_no_tcp_hub": "Detekovatelný místní RNode nemá aktivované TCP klientské centrum pro dostupnost internetu.",
         "rmap_transport_disabled": "Detekovatelná rozhraní jsou nakonfigurována, ale režim přenosu je vypnutý.",
         "rmap_i2p_not_connectable": "Rozhraní I2P „{{name}}“ je zjistitelné, ale připojitelné není ano.",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "Rozhraní „{{name}}“ je zjistitelné s režimem non-AP/Gateway — Reticulum jej spustí jako přístupový bod, pokud není nastaveno ignore_config_warnings. Upravte rozhraní nebo restartujte zásobník, aby mesh-client mohl orazítkovat odhlášení."
       },
       "runtime": {
         "rnsNotReady": "Zásobník RNS není připraven",
@@ -4534,7 +4539,7 @@
     "legendNotSavedTooltip": "Prázdný kruh — pro tuto místnost není uloženo žádné heslo",
     "legendSavedTooltip": "Modrý polokruh — heslo uloženo; přihlaste se pro otevření relace",
     "legendLoggedInTooltip": "Zelená tečka — aktivní relace klienta (opuste místnost, pokud je server offline)",
-    "historyLocalHint": "Příspěvky se zobrazují pouze, když jste na tomto zařízení přihlášeni do této místnosti. Povolte automatickou synchronizaci, abyste zůstali přihlášeni k odběru; historie není zaplněna z pokojového serveru.",
+    "historyLocalHint": "Při přihlášení mesh-client vyžádá nedávné příspěvky stále v kruhové vyrovnávací paměti serveru místnosti (pokud toto zařízení ještě nemá místní vodoznak). Povolte automatickou synchronizaci, abyste zůstali přihlášeni k odběru při připojení.",
     "loginAllSavedDisabledNoSavedPasswords": "Pro použití všech přihlašovacích údajů si nejprve uložte heslo místnosti",
     "membersHeadingWithCount": "Členové ({{count}})",
     "collapseRoomList": "Sbalit seznam místností",

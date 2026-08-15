@@ -61,6 +61,7 @@ const KNOWN_IFACE_CONFIG_KEYS: &[&str] = &[
     "network_name",
     "passphrase",
     "flow_control",
+    "ignore_config_warnings",
 ];
 
 fn is_known_iface_config_key(key: &str) -> bool {
@@ -452,6 +453,7 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
                 }
             }
         }),
+        runtime_mode: None,
         seed_addresses,
         discoverable: block.get_bool("discoverable"),
         latitude: block.get("latitude").and_then(|v| v.parse().ok()),
@@ -470,6 +472,7 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         } else {
             None
         },
+        ignore_config_warnings: block.get_bool("ignore_config_warnings"),
         tx_queue_used: None,
         tx_queue_max: None,
         extra_config: {
@@ -559,6 +562,9 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
         if let Some(v) = row.flow_control {
             block.set("flow_control", &bool_to_ini(v));
         }
+    }
+    if let Some(v) = row.ignore_config_warnings {
+        block.set("ignore_config_warnings", &bool_to_ini(v));
     }
 
     // Preserve unknown keys; typed fields take priority on key collision.
@@ -744,7 +750,65 @@ fn apply_discovery_patch(
             validate_lat_lon(lat, lon)?;
         }
     }
+    reconcile_ignore_config_warnings(row);
     Ok(())
+}
+
+/// Map live `GetInterfaceStats.mode` Debug names (`AccessPoint`, `Full`, …)
+/// to canonical rnsd mode strings. Naive `to_lowercase()` is wrong
+/// (`AccessPoint` → `accesspoint`). Unknown / empty → `None`.
+pub(crate) fn live_interface_runtime_mode(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let canonical = match trimmed {
+        "Full" | "full" => "full",
+        "AccessPoint" | "access_point" | "ap" | "AP" => "access_point",
+        "PointToPoint" | "point_to_point" => "point_to_point",
+        "Roaming" | "roaming" => "roaming",
+        "Boundary" | "boundary" => "boundary",
+        "Gateway" | "gateway" | "gw" | "GW" => "gateway",
+        "Internal" | "internal" => "internal",
+        other => {
+            // Accept already-canonical values; reject Debug leftovers.
+            let lower = other.to_ascii_lowercase();
+            match lower.as_str() {
+                "full" | "access_point" | "point_to_point" | "roaming" | "boundary" | "gateway"
+                | "internal" => return Some(lower),
+                _ => return None,
+            }
+        }
+    };
+    Some(canonical.to_string())
+}
+
+/// Modes RNS allows for discoverable interfaces without `ignore_config_warnings`.
+fn mode_allows_discovery_without_opt_out(mode: &str) -> bool {
+    matches!(mode, "access_point" | "gateway")
+}
+
+/// Stamp or clear `ignore_config_warnings` so discoverable + Full/Roaming/Boundary
+/// keeps the configured mode (upstream RNS opt-out). Omitted mode does not write
+/// the flag (RNode type default is AP). Clear when discoverable is off or mode is
+/// already AP/Gateway. Unrecognized non-empty mode is left untouched.
+pub(crate) fn reconcile_ignore_config_warnings(row: &mut InterfaceRow) {
+    let discoverable = row.discoverable == Some(true);
+    let raw_mode = row.mode.as_deref().map(str::trim).filter(|m| !m.is_empty());
+    let Some(raw_mode) = raw_mode else {
+        row.ignore_config_warnings = None;
+        return;
+    };
+    let Ok(Some(canonical)) = normalize_interface_mode(raw_mode) else {
+        return;
+    };
+
+    let should_opt_out = discoverable && !mode_allows_discovery_without_opt_out(&canonical);
+    if should_opt_out {
+        row.ignore_config_warnings = Some(true);
+    } else {
+        row.ignore_config_warnings = None;
+    }
 }
 
 const I2P_B32_SUFFIX: &str = ".b32.i2p";
@@ -825,6 +889,7 @@ pub fn add_interface_to_config(
         callsign: req.callsign.clone(),
         id_interval: req.id_interval,
         mode,
+        runtime_mode: None,
         seed_addresses: req.seed_addresses.clone(),
         discoverable: req.discoverable,
         latitude: req.latitude,
@@ -840,12 +905,14 @@ pub fn add_interface_to_config(
         flow_control: req
             .flow_control
             .or_else(|| default_flow_control_for_iface_type(&req.iface_type)),
+        ignore_config_warnings: req.ignore_config_warnings,
         tx_queue_used: None,
         tx_queue_max: None,
         extra_config: req.extra_config.clone(),
     };
 
     apply_preset_defaults(&mut row);
+    reconcile_ignore_config_warnings(&mut row);
 
     let content = read_config(config_dir)?;
     let mut parsed = parse_config(&content)?;
@@ -959,6 +1026,10 @@ pub fn update_interface_in_config(
     } else {
         apply_preset_defaults(&mut row);
     }
+
+    // Mode / discoverable may have changed outside apply_discovery_patch (mode
+    // patch, or discovery fields omitted). Always reconcile before write.
+    reconcile_ignore_config_warnings(&mut row);
 
     if row.iface_type == "i2p" {
         validate_i2p_peers(row.host.as_deref().unwrap_or(""))?;
@@ -1080,6 +1151,32 @@ pub fn repair_rnode_radio_fields_in_config(config_dir: &Path) -> Result<bool, St
         apply_preset_defaults(&mut row);
         *block = interface_row_to_block(&row);
         changed = true;
+    }
+    if changed {
+        write_config(config_dir, &serialize_config(&parsed))?;
+    }
+    Ok(changed)
+}
+
+/// Stamp `ignore_config_warnings` on discoverable interfaces whose configured
+/// mode would be silently rewritten to Access Point / Gateway by RNS. Also
+/// clears a stale opt-out when mode is already AP/Gateway or publish is off.
+/// Runs at stack start so existing Full+publish configs get the key before RNS
+/// reads the INI. Explicit `No` on Full+discoverable is overwritten (B1 honor).
+pub fn repair_ignore_config_warnings_in_config(config_dir: &Path) -> Result<bool, String> {
+    let content = read_config(config_dir)?;
+    let mut parsed = parse_config(&content)?;
+    let mut changed = false;
+    for block in &mut parsed.interfaces {
+        let Some(mut row) = interface_block_to_row(block) else {
+            continue;
+        };
+        let before = row.ignore_config_warnings;
+        reconcile_ignore_config_warnings(&mut row);
+        if row.ignore_config_warnings != before {
+            *block = interface_row_to_block(&row);
+            changed = true;
+        }
     }
     if changed {
         write_config(config_dir, &serialize_config(&parsed))?;
@@ -2589,6 +2686,7 @@ target_port = 4242
             callsign: None,
             id_interval: None,
             mode: None,
+            runtime_mode: None,
             seed_addresses: Vec::new(),
             discoverable: None,
             latitude: None,
@@ -2601,6 +2699,7 @@ target_port = 4242
             network_name: None,
             passphrase: None,
             flow_control: None,
+            ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: {
@@ -3203,5 +3302,474 @@ target_port = 4242
         let disk = read_config(&dir).unwrap();
         assert!(!disk.contains("flow_control"), "{disk}");
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ignore_config_warnings_key_is_known() {
+        assert!(is_known_iface_config_key("ignore_config_warnings"));
+        assert!(is_known_iface_config_key("Ignore_Config_Warnings"));
+    }
+
+    #[test]
+    fn live_interface_runtime_mode_maps_debug_names() {
+        let cases = [
+            ("Full", Some("full")),
+            ("AccessPoint", Some("access_point")),
+            ("PointToPoint", Some("point_to_point")),
+            ("Roaming", Some("roaming")),
+            ("Boundary", Some("boundary")),
+            ("Gateway", Some("gateway")),
+            ("Internal", Some("internal")),
+            ("full", Some("full")),
+            ("access_point", Some("access_point")),
+            ("ap", Some("access_point")),
+            ("", None),
+            ("   ", None),
+            ("NotAMode", None),
+            // Naive to_lowercase would produce "accesspoint" — must not match.
+            ("accesspoint", None),
+        ];
+        for (raw, expected) in cases {
+            assert_eq!(
+                live_interface_runtime_mode(raw).as_deref(),
+                expected,
+                "raw={raw:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn ignore_config_warnings_parsed_as_typed_not_extra_config() {
+        let content = r#"
+[interfaces]
+[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+mode = full
+discoverable = Yes
+ignore_config_warnings = Yes
+"#;
+        let rows = interfaces_from_parsed(&parse_config(content).unwrap());
+        let rnode = rows.iter().find(|r| r.iface_type == "rnode").unwrap();
+        assert_eq!(rnode.ignore_config_warnings, Some(true));
+        assert!(!rnode.extra_config.contains_key("ignore_config_warnings"));
+    }
+
+    #[test]
+    fn ignore_config_warnings_round_trips() {
+        for (value, expected_ini) in [
+            (true, "ignore_config_warnings = Yes"),
+            (false, "ignore_config_warnings = No"),
+        ] {
+            let dir = fresh_config_dir();
+            let added = add_interface_to_config(
+                &dir,
+                &AddInterfaceRequest {
+                    iface_type: "rnode".into(),
+                    name: Some("RNode".into()),
+                    serial_port: Some("/dev/ttyUSB0".into()),
+                    callsign: Some("N0CALL".into()),
+                    mode: Some("full".into()),
+                    discoverable: Some(true),
+                    latitude: Some(40.0),
+                    longitude: Some(-105.0),
+                    ignore_config_warnings: Some(value),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+            // add_interface reconciles to Some(true) for Full+discoverable regardless
+            // of the request's false — B1 always stamps Yes when needed.
+            let disk = read_config(&dir).unwrap();
+            if value {
+                assert!(disk.contains(expected_ini), "{disk}");
+            } else {
+                // reconcile overwrites explicit No on Full+discoverable.
+                assert!(disk.contains("ignore_config_warnings = Yes"), "{disk}");
+            }
+            let rows = interfaces_from_config_dir(&dir).unwrap();
+            let row = rows.iter().find(|r| r.id == added.id).unwrap();
+            assert_eq!(row.ignore_config_warnings, Some(true));
+            assert!(!row.extra_config.contains_key("ignore_config_warnings"));
+            let _ = fs::remove_dir_all(&dir);
+        }
+    }
+
+    #[test]
+    fn reconcile_stamps_for_full_discoverable_clears_for_ap() {
+        let mut row = InterfaceRow {
+            id: "x".into(),
+            name: "RNode".into(),
+            iface_type: "rnode".into(),
+            enabled: true,
+            status: "up".into(),
+            host: None,
+            port: None,
+            preset: None,
+            serial_port: Some("/dev/ttyUSB0".into()),
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: Some("full".into()),
+            runtime_mode: None,
+            seed_addresses: Vec::new(),
+            discoverable: Some(true),
+            latitude: Some(40.0),
+            longitude: Some(-105.0),
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            flow_control: Some(true),
+            ignore_config_warnings: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
+            extra_config: HashMap::new(),
+        };
+        reconcile_ignore_config_warnings(&mut row);
+        assert_eq!(row.ignore_config_warnings, Some(true));
+
+        for mode in ["roaming", "boundary", "point_to_point"] {
+            row.mode = Some(mode.into());
+            row.ignore_config_warnings = None;
+            reconcile_ignore_config_warnings(&mut row);
+            assert_eq!(
+                row.ignore_config_warnings,
+                Some(true),
+                "mode={mode} should stamp opt-out"
+            );
+        }
+
+        row.mode = Some("access_point".into());
+        reconcile_ignore_config_warnings(&mut row);
+        assert_eq!(row.ignore_config_warnings, None);
+
+        row.mode = Some("gateway".into());
+        row.ignore_config_warnings = Some(true);
+        reconcile_ignore_config_warnings(&mut row);
+        assert_eq!(row.ignore_config_warnings, None);
+
+        row.mode = Some("full".into());
+        row.discoverable = Some(false);
+        row.ignore_config_warnings = Some(true);
+        reconcile_ignore_config_warnings(&mut row);
+        assert_eq!(row.ignore_config_warnings, None);
+
+        // Omitted mode (RNode default AP) must not stamp.
+        row.mode = None;
+        row.discoverable = Some(true);
+        row.ignore_config_warnings = Some(true);
+        reconcile_ignore_config_warnings(&mut row);
+        assert_eq!(row.ignore_config_warnings, None);
+    }
+
+    #[test]
+    fn update_discovery_stamps_and_clears_ignore_config_warnings() {
+        let dir = fresh_config_dir();
+        let added = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "rnode".into(),
+                name: Some("RNode".into()),
+                serial_port: Some("/dev/ttyUSB0".into()),
+                callsign: Some("N0CALL".into()),
+                mode: Some("full".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(added.ignore_config_warnings, None);
+
+        let updated = update_interface_in_config(
+            &dir,
+            &added.id,
+            &UpdateInterfacePatch {
+                discoverable: Some(true),
+                latitude: Some(40.0),
+                longitude: Some(-105.0),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(updated.ignore_config_warnings, Some(true));
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("ignore_config_warnings = Yes"), "{disk}");
+
+        let cleared = update_interface_in_config(
+            &dir,
+            &added.id,
+            &UpdateInterfacePatch {
+                discoverable: Some(false),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(cleared.ignore_config_warnings, None);
+        let disk = read_config(&dir).unwrap();
+        assert!(!disk.contains("ignore_config_warnings"), "{disk}");
+
+        // Gateway + discoverable does not need the opt-out.
+        let gw = update_interface_in_config(
+            &dir,
+            &added.id,
+            &UpdateInterfacePatch {
+                mode: Some("gateway".into()),
+                discoverable: Some(true),
+                latitude: Some(40.0),
+                longitude: Some(-105.0),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(gw.ignore_config_warnings, None);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn update_preserves_extra_config_when_stamping_ignore_warnings() {
+        let dir = fresh_config_dir();
+        write_config(
+            &dir,
+            r#"[interfaces]
+[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+mode = full
+forward_interval = 300
+"#,
+        )
+        .unwrap();
+        let id = interface_id_from_name("LoRa");
+        update_interface_in_config(
+            &dir,
+            &id,
+            &UpdateInterfacePatch {
+                discoverable: Some(true),
+                latitude: Some(40.0),
+                longitude: Some(-105.0),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("ignore_config_warnings = Yes"), "{disk}");
+        assert!(disk.contains("forward_interval = 300"), "{disk}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_ignore_config_warnings_stamps_full_discoverable() {
+        let dir = fresh_config_dir();
+        write_config(
+            &dir,
+            r#"[interfaces]
+[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+mode = full
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+"#,
+        )
+        .unwrap();
+        assert!(repair_ignore_config_warnings_in_config(&dir).unwrap());
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("ignore_config_warnings = Yes"), "{disk}");
+        assert!(!repair_ignore_config_warnings_in_config(&dir).unwrap());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_ignore_config_warnings_skips_ap_discoverable() {
+        let dir = fresh_config_dir();
+        write_config(
+            &dir,
+            r#"[interfaces]
+[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+mode = access_point
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+"#,
+        )
+        .unwrap();
+        assert!(!repair_ignore_config_warnings_in_config(&dir).unwrap());
+        let disk = read_config(&dir).unwrap();
+        assert!(!disk.contains("ignore_config_warnings"), "{disk}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_ignore_config_warnings_clears_stale_yes_on_ap() {
+        let dir = fresh_config_dir();
+        write_config(
+            &dir,
+            r#"[interfaces]
+[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+mode = access_point
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+ignore_config_warnings = Yes
+"#,
+        )
+        .unwrap();
+        assert!(repair_ignore_config_warnings_in_config(&dir).unwrap());
+        let disk = read_config(&dir).unwrap();
+        assert!(!disk.contains("ignore_config_warnings"), "{disk}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_ignore_config_warnings_overwrites_explicit_no_on_full_discoverable() {
+        let dir = fresh_config_dir();
+        write_config(
+            &dir,
+            r#"[interfaces]
+[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+mode = full
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+ignore_config_warnings = No
+"#,
+        )
+        .unwrap();
+        assert!(repair_ignore_config_warnings_in_config(&dir).unwrap());
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("ignore_config_warnings = Yes"), "{disk}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_ignore_config_warnings_leaves_tcp_untouched() {
+        let dir = fresh_config_dir();
+        write_config(
+            &dir,
+            r#"[interfaces]
+[[Hub]]
+type = TCPClientInterface
+interface_enabled = Yes
+name = Hub
+target_host = example.org
+target_port = 4242
+mode = boundary
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+"#,
+        )
+        .unwrap();
+        // Boundary + discoverable would stamp on any type; TCP is allowed to stamp too
+        // per reconcile (not RF-gated). Assert it does stamp so behavior is documented.
+        assert!(repair_ignore_config_warnings_in_config(&dir).unwrap());
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("ignore_config_warnings = Yes"), "{disk}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn tcp_discoverable_boundary_stamps_opt_out() {
+        // Non-RF types still get the opt-out when mode would be autocorrected.
+        let mut row = InterfaceRow {
+            id: "tcp".into(),
+            name: "Hub".into(),
+            iface_type: "tcp".into(),
+            enabled: true,
+            status: "up".into(),
+            host: Some("example.org".into()),
+            port: Some(4242),
+            preset: None,
+            serial_port: None,
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: Some("boundary".into()),
+            runtime_mode: None,
+            seed_addresses: Vec::new(),
+            discoverable: Some(true),
+            latitude: Some(1.0),
+            longitude: Some(2.0),
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            flow_control: None,
+            ignore_config_warnings: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
+            extra_config: HashMap::new(),
+        };
+        reconcile_ignore_config_warnings(&mut row);
+        assert_eq!(row.ignore_config_warnings, Some(true));
+    }
+
+    #[test]
+    fn reconcile_unrecognized_mode_preserves_existing_opt_out() {
+        let mut row = InterfaceRow {
+            id: "rnode".into(),
+            name: "LoRa".into(),
+            iface_type: "rnode".into(),
+            enabled: true,
+            status: "up".into(),
+            host: None,
+            port: None,
+            preset: None,
+            serial_port: Some("/dev/ttyUSB0".into()),
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: Some("not_a_real_mode".into()),
+            runtime_mode: None,
+            seed_addresses: Vec::new(),
+            discoverable: Some(true),
+            latitude: Some(40.0),
+            longitude: Some(-105.0),
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            flow_control: None,
+            ignore_config_warnings: Some(true),
+            tx_queue_used: None,
+            tx_queue_max: None,
+            extra_config: HashMap::new(),
+        };
+        reconcile_ignore_config_warnings(&mut row);
+        assert_eq!(row.ignore_config_warnings, Some(true));
     }
 }

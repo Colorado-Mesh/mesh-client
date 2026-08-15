@@ -284,6 +284,7 @@ impl PersistedState {
             callsign: req.callsign,
             id_interval: req.id_interval,
             mode: req.mode,
+            runtime_mode: None,
             seed_addresses: req.seed_addresses,
             discoverable: req.discoverable,
             latitude: req.latitude,
@@ -298,6 +299,7 @@ impl PersistedState {
             flow_control: req
                 .flow_control
                 .or_else(|| super::config::default_flow_control_for_iface_type(&req.iface_type)),
+            ignore_config_warnings: req.ignore_config_warnings,
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: req.extra_config,

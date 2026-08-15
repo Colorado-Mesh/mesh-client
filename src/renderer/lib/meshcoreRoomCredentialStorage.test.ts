@@ -50,17 +50,31 @@ describe('meshcoreRoomCredentialStorage', () => {
     });
   });
 
-  it('rejects empty guest and admin objects', () => {
+  it('persists remembered blank guest password', async () => {
+    await setMeshcoreRoomCredential(0x1005, { guestPassword: '', adminPassword: '' });
+    expect(getMeshcoreRoomCredential(0x1005)).toEqual({ guestPassword: '' });
+  });
+
+  it('reads explicit empty guestPassword from storage', () => {
     localStorage.setItem(
       APP_SETTINGS_STORAGE_KEY,
       JSON.stringify({
         [meshcoreRoomCredentialSettingForNode(0x2003)]: JSON.stringify({
           guestPassword: '',
-          adminPassword: '',
         }),
       }),
     );
-    expect(getMeshcoreRoomCredential(0x2003)).toBeUndefined();
+    expect(getMeshcoreRoomCredential(0x2003)).toEqual({ guestPassword: '' });
+  });
+
+  it('rejects empty objects without guestPassword or adminPassword', () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        [meshcoreRoomCredentialSettingForNode(0x2004)]: JSON.stringify({}),
+      }),
+    );
+    expect(getMeshcoreRoomCredential(0x2004)).toBeUndefined();
   });
 
   it('clears credential when set to null', async () => {

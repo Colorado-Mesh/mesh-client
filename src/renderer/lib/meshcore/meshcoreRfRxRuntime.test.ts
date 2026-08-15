@@ -2,6 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
+import {
+  markMeshcoreLocallyDeletedContact,
+  resetMeshcoreLocallyDeletedContactsForTests,
+} from '../meshcoreLocallyDeletedContacts';
+import { pubkeyToNodeId } from '../meshcoreUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../meshtasticConnectedNodeRef';
 import { meshNodeToNodeRecord } from '../storeRecordAdapters';
 import type { MeshNode, TelemetryPoint } from '../types';
@@ -77,6 +82,7 @@ describe('handleMeshcoreRfRx', () => {
   afterEach(() => {
     useNodeStore.setState({ nodes: {} });
     setMeshtasticConnectedMyNodeNum(0);
+    resetMeshcoreLocallyDeletedContactsForTests();
     vi.restoreAllMocks();
   });
 
@@ -231,5 +237,99 @@ describe('handleMeshcoreRfRx', () => {
     handleMeshcoreRfRx({ lastSnr: 5.5, lastRssi: -55, raw }, deps);
 
     expect(setStateSpy).not.toHaveBeenCalled();
+  });
+});
+
+function buildFloodAdvertPacket(opts: {
+  publicKey: Uint8Array;
+  name: string;
+  deviceRole: number;
+}): Uint8Array {
+  const nameBytes = new TextEncoder().encode(opts.name);
+  const raw = new Uint8Array(2 + 32 + 4 + 64 + 1 + nameBytes.length);
+  raw[0] = (4 << 2) | 1; // ADVERT + FLOOD
+  raw[1] = 0; // 0 hops
+  raw.set(opts.publicKey, 2);
+  new DataView(raw.buffer).setUint32(34, 1_700_000_000, true);
+  raw[102] = 0x80 | (opts.deviceRole & 0x0f);
+  raw.set(nameBytes, 103);
+  return raw;
+}
+
+describe('handleMeshcoreRfRx advert identity', () => {
+  afterEach(() => {
+    useNodeStore.setState({ nodes: {} });
+    resetMeshcoreLocallyDeletedContactsForTests();
+    vi.restoreAllMocks();
+  });
+
+  it('upserts advert name and Room hw_model from an on-air ADVERT packet', () => {
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => (i + 3) & 0xff);
+    const nodeId = pubkeyToNodeId(publicKey);
+    const name = '🛜 NV0N PW=hello';
+    const { deps } = makeDeps({ myNodeNumRef: ref(1) });
+    vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockResolvedValue(undefined);
+
+    handleMeshcoreRfRx(
+      {
+        lastSnr: 12,
+        lastRssi: -22,
+        raw: buildFloodAdvertPacket({ publicKey, name, deviceRole: 3 }),
+      },
+      deps,
+    );
+
+    expect(useNodeStore.getState().nodes[ID][nodeId]).toMatchObject({
+      longName: name,
+      hwModel: 'Room',
+    });
+    expect(window.electronAPI.db.saveMeshcoreContact).toHaveBeenCalledWith(
+      expect.objectContaining({ adv_name: name, contact_type: 3 }),
+    );
+  });
+
+  it('persists a fresh non-tombstoned RF advert via saveMeshcoreContact', () => {
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => (i + 7) & 0xff);
+    const nodeId = pubkeyToNodeId(publicKey);
+    const { deps } = makeDeps({ myNodeNumRef: ref(1) });
+    vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.db.updateMeshcoreContactAdvert).mockResolvedValue(undefined);
+
+    handleMeshcoreRfRx(
+      {
+        lastSnr: 8,
+        lastRssi: -30,
+        raw: buildFloodAdvertPacket({ publicKey, name: 'Alice', deviceRole: 1 }),
+      },
+      deps,
+    );
+
+    expect(useNodeStore.getState().nodes[ID][nodeId].longName).toBe('Alice');
+    expect(window.electronAPI.db.saveMeshcoreContact).toHaveBeenCalledWith(
+      expect.objectContaining({ adv_name: 'Alice', contact_type: 1, on_radio: 1 }),
+    );
+    expect(window.electronAPI.db.updateMeshcoreContactAdvert).not.toHaveBeenCalled();
+  });
+
+  it('revives a locally deleted contact when a live RF advert is heard', () => {
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => (i + 5) & 0xff);
+    const nodeId = pubkeyToNodeId(publicKey);
+    markMeshcoreLocallyDeletedContact(nodeId);
+    const { deps } = makeDeps({ myNodeNumRef: ref(1) });
+    vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockResolvedValue(undefined);
+
+    handleMeshcoreRfRx(
+      {
+        lastSnr: 12,
+        lastRssi: -22,
+        raw: buildFloodAdvertPacket({ publicKey, name: 'NV0N Room', deviceRole: 3 }),
+      },
+      deps,
+    );
+
+    expect(useNodeStore.getState().nodes[ID][nodeId].longName).toBe('NV0N Room');
+    expect(window.electronAPI.db.saveMeshcoreContact).toHaveBeenCalledWith(
+      expect.objectContaining({ adv_name: 'NV0N Room', contact_type: 3 }),
+    );
   });
 });

@@ -246,6 +246,18 @@ impl StackHandle {
             }
         }
 
+        match config::repair_ignore_config_warnings_in_config(&config_dir) {
+            Ok(true) => {
+                tracing::info!(
+                    "reconciled ignore_config_warnings for discoverable interfaces with non-AP/Gateway mode"
+                );
+            }
+            Ok(false) => {}
+            Err(e) => {
+                tracing::warn!("failed to reconcile ignore_config_warnings in config: {e}");
+            }
+        }
+
         let mut persisted = PersistedState::load(&config_dir, &storage_dir);
         persisted.ensure_defaults();
         if let Ok(ifaces) = config::interfaces_from_config_dir(&config_dir) {

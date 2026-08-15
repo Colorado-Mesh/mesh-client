@@ -88,6 +88,15 @@ describe('meshcoreInfraAdminSecrets', () => {
     });
   });
 
+  it('room forgetAdmin keeps remembered blank guest password', async () => {
+    await setMeshcoreRoomCredential(0x32, {
+      guestPassword: '',
+      adminPassword: 'admin',
+    });
+    await forgetAdminPassword(0x32, 'Room');
+    expect(getMeshcoreRoomCredential(0x32)).toEqual({ guestPassword: '' });
+  });
+
   it('hasResolvableAdminPassword is true for persisted room admin without BBS session', async () => {
     expect(hasResolvableAdminPassword(0x40, 'Room')).toBe(false);
     await setAdminPassword(0x40, 'Room', 'admin', { persist: true });

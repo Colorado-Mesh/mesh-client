@@ -157,6 +157,7 @@ import {
 import {
   resolvePanelPositionSendHandler,
   resolvePanelRebootHandler,
+  resolvePanelSetOwnerHandler,
 } from './lib/appPanelHandlerSelection';
 import { protocolRecord, selectByProtocol } from './lib/appProtocolSelect';
 import { getAppSettingsRaw, isRrcUnreadAllRoomMessagesEnabled } from './lib/appSettingsStorage';
@@ -1762,7 +1763,7 @@ function AppContent() {
     : meshtasticRuntime.securityConfig;
   const effectiveDeviceOwner = isRemoteConfigureTarget
     ? (meshtasticRuntime.remoteConfigSnapshot?.deviceOwner ?? null)
-    : meshtasticRuntime.deviceOwner;
+    : activeRuntime.deviceOwner;
   const effectiveDeviceFixedPosition = isRemoteConfigureTarget
     ? (meshtasticRuntime.remoteConfigSnapshot?.deviceFixedPosition ?? null)
     : meshtasticRuntime.deviceFixedPosition;
@@ -3639,11 +3640,11 @@ function AppContent() {
                                     meshcorePanelActions.sendPositionToDevice,
                                   )}
                                   deviceOwner={effectiveDeviceOwner}
-                                  onSetOwner={
-                                    capabilities.hasChannelConfig
-                                      ? meshtasticPanelActions.setOwner
-                                      : undefined
-                                  }
+                                  onSetOwner={resolvePanelSetOwnerHandler(
+                                    capabilities,
+                                    meshtasticPanelActions.setOwner,
+                                    meshcorePanelActions.setOwner,
+                                  )}
                                   capabilities={capabilities}
                                   meshcoreChannels={
                                     capabilities.hasCompanionContactManagementConfig

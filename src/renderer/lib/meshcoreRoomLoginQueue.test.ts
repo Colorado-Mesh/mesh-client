@@ -78,4 +78,51 @@ describe('meshcoreRoomLoginQueue', () => {
       name: 'AbortError',
     });
   });
+
+  it('new enqueue after cancel of active login is not sticky-skipped', async () => {
+    let releaseFirst: (() => void) | undefined;
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    const first = enqueueMeshcoreRoomLogin(42, async () => {
+      await firstGate;
+    });
+    await Promise.resolve();
+    expect(getMeshcoreRoomLoginQueueSnapshot().activeNodeId).toBe(42);
+
+    // Cancel while active: abort path marks skipped even though the job already started.
+    dequeueMeshcoreRoomLogin(42);
+    releaseFirst?.();
+    await expect(first).resolves.toBeUndefined();
+
+    const ran = vi.fn(() => Promise.resolve());
+    const third = enqueueMeshcoreRoomLogin(42, ran);
+    await expect(third).resolves.toBeUndefined();
+    expect(ran).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancel of a pending job does not revive it when the same node is re-enqueued', async () => {
+    let releaseFirst: (() => void) | undefined;
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    const first = enqueueMeshcoreRoomLogin(1, async () => {
+      await firstGate;
+    });
+    const ranCancelled = vi.fn(() => Promise.resolve());
+    const cancelled = enqueueMeshcoreRoomLogin(2, ranCancelled);
+    dequeueMeshcoreRoomLogin(2);
+    const ranReplacement = vi.fn(() => Promise.resolve());
+    const replacement = enqueueMeshcoreRoomLogin(2, ranReplacement);
+
+    releaseFirst?.();
+    await expect(first).resolves.toBeUndefined();
+    await expect(cancelled).rejects.toMatchObject({
+      message: MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
+      name: 'AbortError',
+    });
+    await expect(replacement).resolves.toBeUndefined();
+    expect(ranCancelled).not.toHaveBeenCalled();
+    expect(ranReplacement).toHaveBeenCalledTimes(1);
+  });
 });

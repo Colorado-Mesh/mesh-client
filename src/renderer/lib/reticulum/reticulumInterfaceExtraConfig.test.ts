@@ -12,6 +12,7 @@ describe('reticulumInterfaceExtraConfig', () => {
     expect(isKnownIfaceUiKey('Passphrase')).toBe(true);
     expect(isKnownIfaceUiKey('flow_control')).toBe(true);
     expect(isKnownIfaceUiKey('Flow_Control')).toBe(true);
+    expect(isKnownIfaceUiKey('ignore_config_warnings')).toBe(true);
     expect(isKnownIfaceUiKey('forward_interval')).toBe(false);
   });
 
@@ -22,6 +23,15 @@ forward_interval = 300
 `);
     expect(parsed.extraConfig).toEqual({ forward_interval: '300' });
     expect(parsed.reservedKeys).toContain('flow_control');
+  });
+
+  it('drops ignore_config_warnings from Advanced parse as a reserved typed key', () => {
+    const parsed = parseInterfaceExtraConfig(`
+ignore_config_warnings = Yes
+forward_interval = 300
+`);
+    expect(parsed.extraConfig).toEqual({ forward_interval: '300' });
+    expect(parsed.reservedKeys).toContain('ignore_config_warnings');
   });
 
   it('formats and parses extra_config round-trip', () => {

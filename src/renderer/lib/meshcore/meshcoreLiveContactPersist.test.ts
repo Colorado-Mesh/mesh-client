@@ -2,6 +2,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { upsertNode, useNodeStore } from '../../stores/nodeStore';
+import {
+  markMeshcoreLocallyDeletedContact,
+  resetMeshcoreLocallyDeletedContactsForTests,
+} from '../meshcoreLocallyDeletedContacts';
 import type { NodeInfoEvent } from '../protocols/Protocol';
 import {
   persistMeshcoreNodeInfoAfterAdvert,
@@ -25,6 +29,7 @@ function advertEvent(overrides?: Partial<NodeInfoEvent>): NodeInfoEvent {
 describe('meshcoreLiveContactPersist', () => {
   beforeEach(() => {
     useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
+    resetMeshcoreLocallyDeletedContactsForTests();
     vi.clearAllMocks();
     vi.mocked(window.electronAPI.db.updateMeshcoreContactAdvert).mockResolvedValue(undefined);
     vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockResolvedValue(undefined);
@@ -68,6 +73,17 @@ describe('meshcoreLiveContactPersist', () => {
         node_id: NODE_ID,
         last_advert: 1_700_000_100,
         adv_name: null,
+      }),
+    );
+  });
+
+  it('clears a local delete tombstone and inserts when a live advert arrives', () => {
+    markMeshcoreLocallyDeletedContact(NODE_ID);
+    persistMeshcoreNodeInfoAfterAdvert(ID, advertEvent());
+    expect(window.electronAPI.db.saveMeshcoreContact).toHaveBeenCalledWith(
+      expect.objectContaining({
+        node_id: NODE_ID,
+        adv_name: 'Alice',
       }),
     );
   });

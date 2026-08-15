@@ -44,6 +44,7 @@ import { ROOM_LOGIN_PROGRESS_DOT } from '@/renderer/lib/connectionHeaderStatus';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { translateMeshcoreUserMessage } from '@/renderer/lib/meshcore/meshcoreMessageI18n';
 import { repairMeshcoreHydrationStaleRoomSends } from '@/renderer/lib/meshcoreDbCacheHydration';
 import {
   type MeshcoreRoomAclEntry,
@@ -71,7 +72,6 @@ import {
   getMeshcoreRoomSavedSecretsSummary,
 } from '@/renderer/lib/meshcoreRoomSavedSecrets';
 import {
-  MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD,
   meshcoreCancelAllRoomLogins,
   meshcoreGetRoomSession,
   meshcoreIsRoomLoggedIn,
@@ -264,7 +264,7 @@ export default function RoomsPanel({
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(
     () => initialRoomTarget ?? null,
   );
-  const [loginPassword, setLoginPassword] = useState(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
+  const [loginPassword, setLoginPassword] = useState('');
   /** Tracks in-flight login promises before the shared queue snapshot updates (tests / fast paths). */
   const [localLoginRoomIds, setLocalLoginRoomIds] = useState<Set<number>>(() => new Set());
   const [leaveLoadingRoomIds, setLeaveLoadingRoomIds] = useState<Set<number>>(() => new Set());
@@ -812,7 +812,7 @@ export default function RoomsPanel({
         next.delete(nodeId);
         return next;
       });
-      setLoginPassword(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
+      setLoginPassword('');
       setRememberPassword(false);
       loadSyncConfig(nodeId);
     },
@@ -946,7 +946,7 @@ export default function RoomsPanel({
         forceRelogin,
       });
       if (rememberPassword) refreshStoredRooms();
-      setLoginPassword(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
+      setLoginPassword('');
     });
   }, [
     loginPassword,
@@ -1276,16 +1276,27 @@ export default function RoomsPanel({
       : savedRoomsNotLoggedInCount === 0
         ? t('roomsPanel.loginAllSavedDisabledAllLoggedIn')
         : '';
-  const loginButtonEnabled = isConnected && !guestFieldEmpty && !selectedRoomLoginLoading;
-  const loginButtonClass = loginButtonEnabled
+  /** Overlay Login may send a zero-byte password; upgrade needs a non-empty guest password. */
+  const overlayLoginEnabled = isConnected && !selectedRoomLoginLoading;
+  const upgradeLoginEnabled = overlayLoginEnabled && !guestFieldEmpty;
+  const overlayLoginButtonClass = overlayLoginEnabled
+    ? 'border-readable-green bg-readable-green w-full cursor-pointer rounded border px-3 py-2 text-sm font-semibold text-white hover:bg-readable-green/90'
+    : 'w-full cursor-not-allowed rounded border border-gray-600 bg-gray-700 px-3 py-2 text-sm font-medium text-gray-500';
+  const upgradeLoginButtonClass = upgradeLoginEnabled
     ? 'border-readable-green bg-readable-green w-full cursor-pointer rounded border px-3 py-2 text-sm font-semibold text-white hover:bg-readable-green/90'
     : 'w-full cursor-not-allowed rounded border border-gray-600 bg-gray-700 px-3 py-2 text-sm font-medium text-gray-500';
   const selectedRoomLeaveLoading =
     selectedRoomId != null && leaveLoadingRoomIds.has(selectedRoomId);
-  const loginError =
+  const loginErrorRaw =
     selectedRoomId != null ? (loginErrorsByRoom.get(selectedRoomId) ?? null) : null;
-  const leaveError =
+  const loginError = loginErrorRaw != null ? translateMeshcoreUserMessage(t, loginErrorRaw) : null;
+  const leaveErrorRaw =
     selectedRoomId != null ? (leaveErrorsByRoom.get(selectedRoomId) ?? null) : null;
+  const leaveError = leaveErrorRaw != null ? translateMeshcoreUserMessage(t, leaveErrorRaw) : null;
+  const autoLoginFailureRaw =
+    selectedRoomId != null ? getMeshcoreRoomAutoLoginFailure(selectedRoomId) : null;
+  const autoLoginFailureDisplay =
+    autoLoginFailureRaw != null ? translateMeshcoreUserMessage(t, autoLoginFailureRaw) : null;
   const canPost = selectedRoomId != null && meshcoreRoomCanPost(selectedRoomId);
   const sessionRole = selectedRoomId != null ? meshcoreGetRoomSession(selectedRoomId)?.role : null;
   const selectedRoomSecretsSummary =
@@ -1473,6 +1484,8 @@ export default function RoomsPanel({
                 const isLoggingIn = isRoomLoginInProgress(room.node_id) && !isLogged;
                 const isLeaving = leaveLoadingRoomIds.has(room.node_id);
                 const autoLoginFailed = getMeshcoreRoomAutoLoginFailure(room.node_id);
+                const autoLoginFailedDisplay =
+                  autoLoginFailed != null ? translateMeshcoreUserMessage(t, autoLoginFailed) : '';
                 const showAutoLoginFailed =
                   Boolean(autoLoginFailed) && !isLogged && !isLoggingIn && !isLeaving;
                 const marker = resolveMeshcoreRoomSidebarMarker({
@@ -1485,7 +1498,7 @@ export default function RoomsPanel({
                   : isLeaving
                     ? t('roomsPanel.leaveRoomInProgress')
                     : showAutoLoginFailed
-                      ? t('roomsPanel.autoLoginFailed', { error: autoLoginFailed ?? '' })
+                      ? t('roomsPanel.autoLoginFailed', { error: autoLoginFailedDisplay })
                       : hasSaved
                         ? t('roomsPanel.legendSavedTooltip')
                         : t('roomsPanel.legendNotSavedTooltip');
@@ -1592,7 +1605,9 @@ export default function RoomsPanel({
                               aria-hidden={!showAutoLoginFailed}
                               aria-label={
                                 showAutoLoginFailed
-                                  ? t('roomsPanel.autoLoginFailedAria', { error: autoLoginFailed })
+                                  ? t('roomsPanel.autoLoginFailedAria', {
+                                      error: autoLoginFailedDisplay,
+                                    })
                                   : undefined
                               }
                               title={markerTitle}
@@ -1738,8 +1753,8 @@ export default function RoomsPanel({
                 <button
                   type="button"
                   onClick={handleLogin}
-                  disabled={!loginButtonEnabled}
-                  className={loginButtonClass}
+                  disabled={!overlayLoginEnabled}
+                  className={overlayLoginButtonClass}
                 >
                   {t('roomsPanel.loginButton')}
                 </button>
@@ -1752,10 +1767,10 @@ export default function RoomsPanel({
                   {t('roomsPanel.continueReadOnly')}
                 </button>
                 {loginError && <p className="text-sm text-red-400">{loginError}</p>}
-                {getMeshcoreRoomAutoLoginFailure(selectedRoomId) && !loginError && (
+                {autoLoginFailureDisplay && !loginError && (
                   <p className="text-sm text-red-400" role="alert">
                     {t('roomsPanel.autoLoginFailed', {
-                      error: getMeshcoreRoomAutoLoginFailure(selectedRoomId),
+                      error: autoLoginFailureDisplay,
                     })}
                   </p>
                 )}
@@ -2657,8 +2672,8 @@ export default function RoomsPanel({
                     <button
                       type="button"
                       onClick={handleLogin}
-                      disabled={!loginButtonEnabled}
-                      className={loginButtonClass}
+                      disabled={!upgradeLoginEnabled}
+                      className={upgradeLoginButtonClass}
                       aria-label={t('roomsPanel.upgradeAccess')}
                     >
                       {selectedRoomLoginLoading

@@ -1,11 +1,15 @@
 import { MESHCORE_ROOM_LOGIN_ABORT_MESSAGE } from './meshcoreRoomLoginRpc';
-import { MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS } from './timeConstants';
+import {
+  MESHCORE_ROOM_LOGIN_QUEUE_SKIP_POLL_MS,
+  MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS,
+} from './timeConstants';
 
 /** One radio login at a time; many rooms can be queued. */
 let chain: Promise<void> = Promise.resolve();
 let activeNodeId: number | null = null;
 const pendingNodeIds = new Set<number>();
-const skippedNodeIds = new Set<number>();
+/** Bumped on enqueue and dequeue so a cancelled pending job cannot be revived. */
+const jobGenerationByNode = new Map<number, number>();
 let lastMeshLoginTxAt = 0;
 
 type QueueListener = () => void;
@@ -17,10 +21,33 @@ function notifyQueueChanged(): void {
   }
 }
 
+function bumpJobGeneration(nodeId: number): number {
+  const next = (jobGenerationByNode.get(nodeId) ?? 0) + 1;
+  jobGenerationByNode.set(nodeId, next);
+  return next;
+}
+
 function sleepMs(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+/** Wait up to `ms`, returning early when this job's generation is stale (cancelled). */
+async function sleepMsUnlessStale(ms: number, nodeId: number, gen: number): Promise<void> {
+  const deadline = Date.now() + ms;
+  while (Date.now() < deadline) {
+    if (jobGenerationByNode.get(nodeId) !== gen) return;
+    const slice = Math.min(MESHCORE_ROOM_LOGIN_QUEUE_SKIP_POLL_MS, deadline - Date.now());
+    if (slice <= 0) return;
+    await sleepMs(slice);
+  }
+}
+
+function throwIfJobStale(nodeId: number, gen: number): void {
+  if (jobGenerationByNode.get(nodeId) !== gen) {
+    throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
+  }
 }
 
 export function getMeshcoreRoomLoginQueueSnapshot(): {
@@ -53,15 +80,13 @@ export function meshcoreRoomLoginQueueSize(): number {
  * Failure point: prior jobs block the queue — callers should not assume immediate start.
  */
 export function enqueueMeshcoreRoomLogin(nodeId: number, run: () => Promise<void>): Promise<void> {
+  const gen = bumpJobGeneration(nodeId);
   pendingNodeIds.add(nodeId);
   notifyQueueChanged();
 
   const job = chain.then(async () => {
     pendingNodeIds.delete(nodeId);
-    if (skippedNodeIds.has(nodeId)) {
-      skippedNodeIds.delete(nodeId);
-      throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
-    }
+    throwIfJobStale(nodeId, gen);
     activeNodeId = nodeId;
     notifyQueueChanged();
     const waitMs =
@@ -69,12 +94,9 @@ export function enqueueMeshcoreRoomLogin(nodeId: number, run: () => Promise<void
         ? Math.max(0, MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS - (Date.now() - lastMeshLoginTxAt))
         : 0;
     if (waitMs > 0) {
-      await sleepMs(waitMs);
+      await sleepMsUnlessStale(waitMs, nodeId, gen);
     }
-    if (skippedNodeIds.has(nodeId)) {
-      skippedNodeIds.delete(nodeId);
-      throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
-    }
+    throwIfJobStale(nodeId, gen);
     try {
       await run();
       lastMeshLoginTxAt = Date.now();
@@ -93,9 +115,9 @@ export function enqueueMeshcoreRoomLogin(nodeId: number, run: () => Promise<void
   return job;
 }
 
-/** Remove a room from the pending queue (does not abort an active login). */
+/** Remove a room from the pending queue (does not abort an already-started run()). */
 export function dequeueMeshcoreRoomLogin(nodeId: number): void {
-  skippedNodeIds.add(nodeId);
+  bumpJobGeneration(nodeId);
   pendingNodeIds.delete(nodeId);
   notifyQueueChanged();
 }
@@ -103,7 +125,7 @@ export function dequeueMeshcoreRoomLogin(nodeId: number): void {
 /** Skip all pending logins; active login must be aborted separately. */
 export function clearMeshcoreRoomLoginQueue(): void {
   for (const nodeId of pendingNodeIds) {
-    skippedNodeIds.add(nodeId);
+    bumpJobGeneration(nodeId);
   }
   pendingNodeIds.clear();
   notifyQueueChanged();
@@ -114,7 +136,7 @@ export function resetMeshcoreRoomLoginQueue(): void {
   chain = Promise.resolve();
   activeNodeId = null;
   pendingNodeIds.clear();
-  skippedNodeIds.clear();
+  jobGenerationByNode.clear();
   lastMeshLoginTxAt = 0;
   notifyQueueChanged();
 }

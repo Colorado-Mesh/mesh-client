@@ -54,6 +54,7 @@ import {
   defaultModeForIfaceType,
   normalizeReticulumInterfaceMode,
   RETICULUM_INTERFACE_MODES,
+  reticulumInterfaceModesDiverge,
 } from '@/renderer/lib/reticulum/reticulumInterfaceMode';
 import {
   deriveReticulumInterfaceName,
@@ -1339,6 +1340,38 @@ function ReticulumInterfaceModeDescription({
   );
 }
 
+/** Amber badge when live RNS mode differs from configured mode (silent AP rewrite). */
+function ReticulumEffectiveModeBadge({
+  iface,
+  idSuffix,
+}: {
+  iface: Pick<ReticulumInterfaceRow, 'id' | 'mode' | 'runtime_mode'>;
+  idSuffix?: string;
+}) {
+  const { t } = useTranslation();
+  if (!reticulumInterfaceModesDiverge(iface.mode, iface.runtime_mode)) {
+    return null;
+  }
+  const runtime = normalizeReticulumInterfaceMode(iface.runtime_mode);
+  if (!runtime) return null;
+  const modeLabel = t(`connectionPanel.reticulumInterfaces.modeOption.${runtime}`);
+  const tip = t('connectionPanel.reticulumInterfaces.effectiveModeTooltip');
+  const testId = `reticulum-runtime-mode-${iface.id}${idSuffix ? `-${idSuffix}` : ''}`;
+  return (
+    <span
+      id={testId}
+      className="rounded bg-amber-900/50 px-1.5 py-0.5 text-xs font-medium text-amber-200"
+      title={tip}
+      aria-label={t('connectionPanel.reticulumInterfaces.effectiveModeAria', {
+        mode: modeLabel,
+      })}
+      data-testid={testId}
+    >
+      {t('connectionPanel.reticulumInterfaces.effectiveModeBadge', { mode: modeLabel })}
+    </span>
+  );
+}
+
 function ReticulumInterfaceModeSelect({
   value,
   onChange,
@@ -1554,6 +1587,7 @@ function InterfaceEditPanel({
           emptyOptionKey="connectionPanel.reticulumInterfaces.modeDefaultEdit"
           showDescription={false}
         />
+        <ReticulumEffectiveModeBadge iface={iface} idSuffix="edit" />
         {uiType === 'tcp' || uiType === 'udp' ? (
           <>
             <label className="text-xs text-gray-400">
@@ -2552,6 +2586,7 @@ function InterfacesSection({
                                     {t('connectionPanel.reticulumInterfaces.decommissionedBadge')}
                                   </span>
                                 ) : null}
+                                <ReticulumEffectiveModeBadge iface={iface} />
                                 {showBleRnodeSignal ? (
                                   <span
                                     className="text-muted flex shrink-0 items-center gap-1 text-xs"
@@ -2694,7 +2729,14 @@ function InterfacesSection({
                               </button>
                             ) : null}
                             {isReticulumRmapDiscoveryCapable(iface) && !help.isSystemManaged ? (
-                              <label className="flex cursor-pointer items-center gap-1 text-xs text-gray-300">
+                              <label
+                                className="flex cursor-pointer items-center gap-1 text-xs text-gray-300"
+                                title={
+                                  reticulumInterfaceModesDiverge(iface.mode, iface.runtime_mode)
+                                    ? t('connectionPanel.reticulumInterfaces.rmapFullModeHint')
+                                    : undefined
+                                }
+                              >
                                 <input
                                   type="checkbox"
                                   checked={iface.discoverable === true}
@@ -2703,11 +2745,17 @@ function InterfacesSection({
                                     'connectionPanel.reticulumInterfaces.rmapDiscoverableAria',
                                     { name: iface.name },
                                   )}
+                                  aria-describedby={
+                                    reticulumInterfaceModesDiverge(iface.mode, iface.runtime_mode)
+                                      ? `reticulum-runtime-mode-${iface.id}-rmap`
+                                      : undefined
+                                  }
                                   onChange={() => {
                                     onToggleRmapDiscoverable(iface);
                                   }}
                                 />
                                 {t('connectionPanel.reticulumInterfaces.rmapDiscoverableShort')}
+                                <ReticulumEffectiveModeBadge iface={iface} idSuffix="rmap" />
                               </label>
                             ) : null}
                             {!help.isSystemManaged ? (

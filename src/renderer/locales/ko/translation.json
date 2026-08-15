@@ -1218,7 +1218,11 @@
       "backboneEnableGuidanceBody": "-2는 불필요한 대역폭 부풀림이 없는 이중화를 위한 스윗 스팟입니다. 글로벌 허브 1개와 지역 게이트웨이 1개를 목표로 하고 필요에 따라 특수 인터페이스 (예: I2P 또는 Yggdrasil) 를 엄격하게 활성화합니다. 로컬로 연결된 RNode 및 로컬 LAN 인터페이스는 이 백본 제한에 포함되지 않습니다.",
       "defaultHubsPickerHint": "기본 및 글로벌 백본에 지역을 더해 시작하세요. 백본 게이트웨이는 최대 1~3개(이상적은 2개)만 사용하세요. 로컬 RNode와 LAN 인터페이스는 포함되지 않습니다. 새 항목은 검토할 수 있도록 비활성으로 추가됩니다. Sync는 남은 폐기된 공식 테스트넷 허브(암스테르담)도 비활성화합니다.",
       "rnodeTransportBleHint": "BLE 본드는 macOS와 비동기화할 수 있습니다 (Forget + re-pair). 라디오가 근처에 있을 때는 USB 직렬 또는 Wi-Fi (tcp://) 를 선호합니다.",
-      "flowControl": "흐름 제어(TX Ready-Gate)"
+      "flowControl": "흐름 제어(TX Ready-Gate)",
+      "rmapFullModeHint": "RMAP 게시의 전체 모드는 IGNORE_CONFIG_WARNINGS를 통해 전체 모드를 유지합니다. LXMF 배달 알림은 스택 알림 간격 (기본 1시간) 에서 이 라디오를 내보냅니다.",
+      "effectiveModeBadge": "유효: {{mode}}",
+      "effectiveModeAria": "유효 런타임 모드 {{mode}}. 설정된 모드는 Reticulum이 실행 중인 모드와 다릅니다.",
+      "effectiveModeTooltip": "Reticulum은 ignore_config_warnings가 설정되지 않는 한 검색 가능한 인터페이스를 게이트웨이, 내부 또는 액세스 포인트가 필요하기 때문에 이 검색 가능한 인터페이스를 액세스 포인트 (또는 다른 허용 모드) 에 다시 작성했습니다. mesh-client 스탬프 후 스택을 다시 시작하여 Full (또는 구성된 모드) 이 적용되도록 옵트아웃합니다."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1695,7 +1699,8 @@
         "rmap_no_tcp_hub": "검색 가능한 로컬 RNode에는 인터넷에 연결할 수 있는 TCP 클라이언트 허브가 없습니다.",
         "rmap_transport_disabled": "검색 가능한 인터페이스가 구성되었지만 전송 모드가 꺼져 있습니다.",
         "rmap_i2p_not_connectable": "I2P 인터페이스 \"{{name}}\" 는 검색 가능하지만 연결 가능은 예가 아닙니다.",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "비 AP/게이트웨이 모드에서 인터페이스 \"{{name}}\" 을 (를) 검색할 수 있습니다. Reticulum은 ignore_config_warnings를 설정하지 않는 한 액세스 포인트로 실행합니다. mesh-client가 옵트아웃 스탬프를 찍을 수 있도록 인터페이스를 편집하거나 스택을 다시 시작하십시오."
       },
       "runtime": {
         "rnsNotReady": "RNS 스택이 준비되지 않았습니다.",
@@ -4532,7 +4537,7 @@
     "legendNotSavedTooltip": "빈 원 — 이 룸에 대한 비밀번호가 저장되지 않음",
     "legendSavedTooltip": "하늘 반원 — 비밀번호가 저장되었습니다. 로그인하여 세션을 여세요",
     "legendLoggedInTooltip": "녹색 점 — 활성 클라이언트 세션 (서버가 오프라인이면 룸을 나가세요)",
-    "historyLocalHint": "게시물은 이 기기에서 이 룸에 로그인한 경우에만 표시됩니다. 자동 동기화를 활성화하여 구독 상태를 유지하세요. 기록은 룸 서버에서 채워지지 않습니다.",
+    "historyLocalHint": "로그인 시 mesh-client는 이 기기에 아직 로컬 워터마크가 없을 때 룸 서버 링 버퍼에 남아 있는 최근 게시물을 요청합니다. 연결된 동안 구독을 유지하려면 자동 동기화를 활성화하세요.",
     "loginAllSavedDisabledNoSavedPasswords": "전체 로그인을 사용하려면 먼저 룸 비밀번호를 저장하세요.",
     "membersHeadingWithCount": "회원 ({{count}})",
     "collapseRoomList": "방 목록 접기",

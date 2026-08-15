@@ -1218,7 +1218,11 @@
       "backboneEnableGuidanceBody": "—2 gereksiz bant genişliği şişmesi olmadan fazlalık için en uygun noktadır. 1 küresel merkez ve 1 bölgesel ağ geçidini hedefleyin ve kesinlikle gerektiğinde özel arayüzleri (I2P veya Yggdrasil gibi) etkinleştirin. Yerel olarak bağlı RNode'lar ve yerel lan arayüzleri bu omurga sınırına dahil edilmez.",
       "defaultHubsPickerHint": "Birincil ve küresel omurga ile bölgenizden başlayın. En fazla 1–3 omurga ağ geçidi etkinleştirin (2 idealdir). Yerel RNode ve LAN arayüzleri sayılmaz. Yeni girdiler inceleme için kapalı eklenir. Sync ayrıca kalan kullanım dışı resmi testnet hub’larını da kapatır (Amsterdam).",
       "rnodeTransportBleHint": "BLE bağları macOS ile senkronize olmayabilir (Forget + re-pair). Radyo yakındayken USB seri veya Wi-Fi (tcp://) tercih edin.",
-      "flowControl": "Akış kontrolü (TX hazır kapısı)"
+      "flowControl": "Akış kontrolü (TX hazır kapısı)",
+      "rmapFullModeHint": "RMAP yayınlı tam mod, ignore_config_warnings aracılığıyla Tam tutar. LXMF teslimat duyuruları, bu radyoyu yığın duyuru aralığından çıkaracaktır (varsayılan 1 saat).",
+      "effectiveModeBadge": "Yürürlük Tarihi: {{mode}}",
+      "effectiveModeAria": "Etkin çalışma zamanı modu {{mode}}. Yapılandırılmış mod, Reticulum'un çalıştığından farklıdır.",
+      "effectiveModeTooltip": "Reticulum, bu keşfedilebilir arayüzü Erişim Noktasına (veya izin verilen başka bir moda) yeniden yazdı, çünkü keşfedilebilir, ignore_config_warnings ayarlanmadığı sürece Ağ Geçidi, Dahili veya Erişim Noktası gerektirir. Tam (veya yapılandırılmış modunuzun) etkili olması için devre dışı bırakılan mesh-client damgalarından sonra yığını yeniden başlatın."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1695,7 +1699,8 @@
         "rmap_no_tcp_hub": "Bulunabilir yerel RNode'un internet erişilebilirliği için etkinleştirilmiş bir TCP istemci merkezi yoktur.",
         "rmap_transport_disabled": "Bulunabilir arayüzler yapılandırılmış ancak taşıma modu kapalı.",
         "rmap_i2p_not_connectable": "\"{{name}}\" I2P arayüzü keşfedilebilir ancak bağlanılabilir evet değildir.",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "\"{{name}}\" arayüzü, AP/Ağ Geçidi olmayan bir modda bulunabilir — Reticulum, ignore_config_warnings ayarlanmadığı sürece bunu Erişim Noktası olarak çalıştıracaktır. Arayüzü düzenleyin veya yığını yeniden başlatın, böylece mesh istemcisi devre dışı bırakma işlemini damgalayabilir (mesh-client)."
       },
       "runtime": {
         "rnsNotReady": "RNS yığını hazır değil",
@@ -4532,7 +4537,7 @@
     "legendNotSavedTooltip": "Boş daire — bu oda için saklanan parola yok",
     "legendSavedTooltip": "Gökyüzü yarım daire — parola saklanır; bir oturumu açmak için oturum açın",
     "legendLoggedInTooltip": "Yeşil nokta — aktif istemci oturumu (sunucu çevrimdışıysa odayı terk edin)",
-    "historyLocalHint": "Gönderiler yalnızca bu cihazda bu odaya giriş yaptığınızda görünür. Abone kalmak için Otomatik senkronizasyonu etkinleştirin; geçmiş oda sunucusundan doldurulmaz.",
+    "historyLocalHint": "Girişte mesh-client, bu cihazda henüz yerel filigran yokken oda sunucusu halka belleğinde kalan son gönderileri ister. Bağlıyken abone kalmak için Otomatik senkronizasyonu etkinleştirin.",
     "loginAllSavedDisabledNoSavedPasswords": "Tüm oturum açma bilgilerini kullanmak için önce bir oda parolasını kaydedin",
     "membersHeadingWithCount": "Üyeler ({{count}})",
     "collapseRoomList": "Oda listesini daralt",

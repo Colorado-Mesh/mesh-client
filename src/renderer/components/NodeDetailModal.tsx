@@ -15,6 +15,7 @@ import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolI
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { buildMeshcoreContactAddUri, type MeshcoreContactType } from '@/shared/meshClientDeepLink';
+import { meshcoreContactDisplayName } from '@/shared/meshcoreContactSanitize';
 import { isDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
@@ -46,7 +47,6 @@ import {
   MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
   MESHCORE_MAX_CONTACTS,
   meshcoreContactTypeFromHwModel,
-  meshcorePubkeyShortId,
   meshcoreTracePathLenToHops,
 } from '../lib/meshcoreUtils';
 import {
@@ -582,13 +582,13 @@ export default function NodeDetailModal({
 
   if (!node) return null;
 
-  const hexId =
-    protocol === 'meshcore'
-      ? (meshcorePubkeyShortId(contactPubkey) ?? formatMeshtasticNodeId(node.node_id))
-      : formatMeshtasticNodeId(node.node_id);
+  const hexId = formatMeshtasticNodeId(node.node_id);
   const awaitingNodeInfo =
     protocol === 'meshtastic' && meshtasticNodeAwaitingNodeInfo(node, { isConnected });
-  const displayName = node.short_name || node.long_name || hexId;
+  const displayName =
+    protocol === 'meshcore'
+      ? meshcoreContactDisplayName(node.node_id, node.long_name)
+      : node.short_name || node.long_name || hexId;
   const isOurNode = node.node_id === homeNode?.node_id;
   const nodeStatus = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
   const nodeStatusUi =
@@ -687,7 +687,9 @@ export default function NodeDetailModal({
                 )}
               </div>
               <div className="mt-0.5 flex items-center gap-2">
-                <span className="text-muted font-mono text-xs">{hexId}</span>
+                {protocol !== 'meshcore' && (
+                  <span className="text-muted font-mono text-xs">{hexId}</span>
+                )}
                 {headerHopsDisplay != null && (
                   <span
                     className={`text-xs ${headerHopsDisplay === 0 ? 'text-bright-green' : 'text-gray-400'}`}

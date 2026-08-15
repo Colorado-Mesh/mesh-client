@@ -320,6 +320,8 @@ describe('NodeDetailModal MeshCore actions', () => {
 
     const pubkeyEl = await screen.findByText(pubkeyHex);
     expect(pubkeyEl).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Test Node' })).toBeInTheDocument();
+    expect(screen.queryByText('!abababab')).not.toBeInTheDocument();
 
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();

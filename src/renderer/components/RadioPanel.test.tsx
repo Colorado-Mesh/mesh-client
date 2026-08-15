@@ -101,6 +101,89 @@ describe('RadioPanel HelpTooltip coverage — LoRa params', () => {
   });
 });
 
+describe('RadioPanel MeshCore Device User / Identity', () => {
+  async function openDeviceUserSection(user: ReturnType<typeof userEvent.setup>) {
+    const userDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Device User / Identity';
+    });
+    expect(userDetails).toBeDefined();
+    await user.click(userDetails!.querySelector('summary')!);
+    return userDetails!;
+  }
+
+  it('enables Apply and calls onSetOwner when MeshCore capabilities provide the handler', async () => {
+    const user = userEvent.setup();
+    const onSetOwner = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          onSetOwner={onSetOwner}
+        />
+      </ToastProvider>,
+    );
+
+    await openDeviceUserSection(user);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+
+    const nameInput = screen.getByLabelText('Name');
+    await user.clear(nameInput);
+    await user.type(nameInput, 'WisMesh Tag');
+
+    const applyButton = screen.getByRole('button', { name: 'Apply Device User / Identity' });
+    expect(applyButton).toBeEnabled();
+    await user.click(applyButton);
+
+    await waitFor(() => {
+      expect(onSetOwner).toHaveBeenCalledWith({
+        longName: 'WisMesh Tag',
+        shortName: '',
+        isLicensed: false,
+      });
+    });
+  });
+
+  it('keeps Apply disabled when MeshCore capabilities are set but onSetOwner is missing', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} isConnected capabilities={MESHCORE_CAPABILITIES} />
+      </ToastProvider>,
+    );
+
+    await openDeviceUserSection(user);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+
+    expect(screen.getByRole('button', { name: 'Apply Device User / Identity' })).toBeDisabled();
+  });
+
+  it('prefills the MeshCore name field from deviceOwner', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          deviceOwner={{ longName: 'TagName', shortName: '', isLicensed: false }}
+          onSetOwner={vi.fn().mockResolvedValue(undefined)}
+        />
+      </ToastProvider>,
+    );
+
+    await openDeviceUserSection(user);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+
+    expect(screen.getByLabelText('Name')).toHaveValue('TagName');
+  });
+});
+
 describe('RadioPanel remote target safeguards', () => {
   it('disables Device apply until device config slice is hydrated', async () => {
     const user = userEvent.setup();

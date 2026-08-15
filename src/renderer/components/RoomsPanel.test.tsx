@@ -11,6 +11,7 @@ import {
   type StarredMessage,
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { VIRTUALIZER_SCROLL_END_THRESHOLD } from '@/renderer/lib/chatScrollUtils';
+import { serializeMeshcoreUserMessage } from '@/renderer/lib/meshcore/meshcoreMessageI18n';
 import { buildMeshcoreRoomIncomingMessage } from '@/renderer/lib/meshcoreChannelText';
 import {
   clearAllMeshcoreRoomAutoLoginFailures,
@@ -64,7 +65,22 @@ vi.mock('@tanstack/react-virtual', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string, opts?: Record<string, unknown>) => {
+      if (key === 'meshcore.errors.roomLogin.noRoute') {
+        return 'No route to this room server. Trace the node from the map or wait for path adverts, then try again.';
+      }
+      if (key === 'meshcore.errors.roomLogin.pathSyncFailedDetail') {
+        const detail = typeof opts?.detail === 'string' ? opts.detail : '';
+        return `Could not program the route on your radio before login. Reconnect the device and try again.${detail}`;
+      }
+      if (key === 'meshcore.errors.roomLogin.timedOut') {
+        return 'Room login timed out. The room may be out of range or not responding.';
+      }
+      if (key === 'roomsPanel.autoLoginFailed' && typeof opts?.error === 'string') {
+        return `Auto-login failed: ${opts.error}`;
+      }
+      return key;
+    },
   }),
 }));
 
@@ -167,6 +183,9 @@ describe('RoomsPanel', () => {
     const onLoginRoom = vi.fn().mockResolvedValue(undefined);
     renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onLoginRoom });
 
+    fireEvent.change(screen.getByLabelText('roomsPanel.guestPasswordLabel'), {
+      target: { value: 'hello' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.upgradeAccess' }));
 
     await waitFor(() => {
@@ -275,14 +294,76 @@ describe('RoomsPanel', () => {
     });
   });
 
-  it('disables Login when guest password field is empty', () => {
+  it('translates meshcore roomLogin.noRoute instead of showing the raw key', async () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x1005, 'No Route Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    const onLoginRoom = vi.fn().mockRejectedValue(new Error('meshcore.errors.roomLogin.noRoute'));
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onLoginRoom });
+    fireEvent.click(screen.getByText('roomsPanel.loginButton'));
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'No route to this room server. Trace the node from the map or wait for path adverts, then try again.',
+        ),
+      ).toBeInTheDocument();
+    });
+    expect(screen.queryByText('meshcore.errors.roomLogin.noRoute')).not.toBeInTheDocument();
+  });
+
+  it('translates serialized pathSyncFailedDetail including radio error detail', async () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x1006, 'Path Sync Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    const onLoginRoom = vi.fn().mockRejectedValue(
+      new Error(
+        serializeMeshcoreUserMessage({
+          key: 'meshcore.errors.roomLogin.pathSyncFailedDetail',
+          params: { detail: ' (timeout)' },
+        }),
+      ),
+    );
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onLoginRoom });
+    fireEvent.click(screen.getByText('roomsPanel.loginButton'));
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Could not program the route on your radio before login. Reconnect the device and try again. (timeout)',
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('allows Login with empty guest password and sends blank', async () => {
+    meshcoreClearAllRoomSessions();
     const room = makeRoom(0x1004, 'Empty Guest Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
-    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
-    fireEvent.change(screen.getByLabelText('roomsPanel.guestPasswordLabel'), {
-      target: { value: '' },
+    const onLoginRoom = vi.fn().mockResolvedValue(undefined);
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onLoginRoom });
+    expect(screen.getByLabelText('roomsPanel.guestPasswordLabel')).toHaveValue('');
+    expect(screen.getByText('roomsPanel.emptyGuestLoginHint')).toBeInTheDocument();
+    expect(screen.getByText('roomsPanel.loginButton')).not.toBeDisabled();
+    fireEvent.click(screen.getByText('roomsPanel.loginButton'));
+    await waitFor(() => {
+      expect(onLoginRoom).toHaveBeenCalledWith(
+        room.node_id,
+        '',
+        expect.objectContaining({ guestPassword: '' }),
+      );
     });
-    expect(screen.getByText('roomsPanel.loginButton')).toBeDisabled();
+  });
+
+  it('disables Upgrade access when guest password field is empty', () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x100d, 'Upgrade Empty Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: '',
+      adminPassword: '',
+      role: 'readonly',
+    });
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+    expect(screen.getByRole('button', { name: 'roomsPanel.upgradeAccess' })).toBeDisabled();
     expect(screen.getByText('roomsPanel.emptyGuestLoginHint')).toBeInTheDocument();
   });
 
@@ -808,6 +889,25 @@ describe('RoomsPanel', () => {
 
     const marker = screen.getByLabelText('roomsPanel.autoLoginFailedAria');
     expect(marker.className).toContain('ring-red-500');
+  });
+
+  it('translates serialized auto-login failure in the sidebar marker', () => {
+    const room = makeRoom(0x1010, 'Serialized Auto Fail Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    const serialized = serializeMeshcoreUserMessage({
+      key: 'meshcore.errors.roomLogin.timedOut',
+    });
+    setMeshcoreRoomAutoLoginFailure(room.node_id, serialized);
+
+    renderRoomsPanel(nodes);
+
+    expect(screen.getByLabelText('roomsPanel.autoLoginFailedAria')).toBeInTheDocument();
+    expect(
+      screen.getByTitle(
+        'Auto-login failed: Room login timed out. The room may be out of range or not responding.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(serialized)).not.toBeInTheDocument();
   });
 
   it('clears auto-login failure when re-enabling auto-login on connect', async () => {
