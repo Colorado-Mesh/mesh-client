@@ -61,7 +61,7 @@ export async function resetMeshcoreRoomCompanionSyncSinceForCatchUp(
   const existing = contact;
   try {
     await withTimeout(
-      removeContact(pubKey),
+      removeContact.call(conn, pubKey),
       MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS,
       'meshcoreRoomSyncSinceResetRemove',
     );
@@ -74,7 +74,8 @@ export async function resetMeshcoreRoomCompanionSyncSinceForCatchUp(
   }
   const addContact = (): Promise<void> =>
     withTimeout(
-      addOrUpdate(
+      addOrUpdate.call(
+        conn,
         pubKey,
         existing.type,
         existing.flags,

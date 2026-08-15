@@ -117,6 +117,15 @@ pub(crate) fn live_interface_tx_queue_fields(
     }
 }
 
+/// Live `GetInterfaceStats.mode` is only meaningful while the interface is online.
+pub(crate) fn live_interface_runtime_mode_if_online(online: bool, mode: &str) -> Option<String> {
+    if online {
+        config::live_interface_runtime_mode(mode)
+    } else {
+        None
+    }
+}
+
 pub struct LiveBridge {
     config_dir: PathBuf,
     storage_dir: PathBuf,
@@ -2502,7 +2511,9 @@ impl LiveBridge {
                                     callsign: None,
                                     id_interval: None,
                                     mode: None,
-                                    runtime_mode: config::live_interface_runtime_mode(&s.mode),
+                                    runtime_mode: live_interface_runtime_mode_if_online(
+                                        s.online, &s.mode,
+                                    ),
                                     seed_addresses: Vec::new(),
                                     discoverable: None,
                                     latitude: None,
@@ -4152,7 +4163,7 @@ impl LiveBridge {
                     callsign: None,
                     id_interval: None,
                     mode: None,
-                    runtime_mode: config::live_interface_runtime_mode(&s.mode),
+                    runtime_mode: live_interface_runtime_mode_if_online(s.online, &s.mode),
                     seed_addresses: Vec::new(),
                     discoverable: None,
                     latitude: None,
@@ -7088,7 +7099,7 @@ mod reply_field_tests {
 
 #[cfg(test)]
 mod live_tx_queue_fields_tests {
-    use super::live_interface_tx_queue_fields;
+    use super::{live_interface_runtime_mode_if_online, live_interface_tx_queue_fields};
 
     #[test]
     fn online_stats_populate_used_and_max() {
@@ -7109,5 +7120,17 @@ mod live_tx_queue_fields_tests {
         // Zero-capacity must stay unavailable rather than Some(0).
         assert_eq!(live_interface_tx_queue_fields(true, 0, 0), (None, None));
         assert_eq!(live_interface_tx_queue_fields(true, 10, 0), (None, None));
+    }
+
+    #[test]
+    fn offline_exposes_no_runtime_mode() {
+        assert_eq!(
+            live_interface_runtime_mode_if_online(false, "AccessPoint"),
+            None
+        );
+        assert_eq!(
+            live_interface_runtime_mode_if_online(true, "AccessPoint").as_deref(),
+            Some("access_point")
+        );
     }
 }

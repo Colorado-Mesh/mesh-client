@@ -1484,6 +1484,8 @@ export default function RoomsPanel({
                 const isLoggingIn = isRoomLoginInProgress(room.node_id) && !isLogged;
                 const isLeaving = leaveLoadingRoomIds.has(room.node_id);
                 const autoLoginFailed = getMeshcoreRoomAutoLoginFailure(room.node_id);
+                const autoLoginFailedDisplay =
+                  autoLoginFailed != null ? translateMeshcoreUserMessage(t, autoLoginFailed) : '';
                 const showAutoLoginFailed =
                   Boolean(autoLoginFailed) && !isLogged && !isLoggingIn && !isLeaving;
                 const marker = resolveMeshcoreRoomSidebarMarker({
@@ -1496,7 +1498,7 @@ export default function RoomsPanel({
                   : isLeaving
                     ? t('roomsPanel.leaveRoomInProgress')
                     : showAutoLoginFailed
-                      ? t('roomsPanel.autoLoginFailed', { error: autoLoginFailed ?? '' })
+                      ? t('roomsPanel.autoLoginFailed', { error: autoLoginFailedDisplay })
                       : hasSaved
                         ? t('roomsPanel.legendSavedTooltip')
                         : t('roomsPanel.legendNotSavedTooltip');
@@ -1603,7 +1605,9 @@ export default function RoomsPanel({
                               aria-hidden={!showAutoLoginFailed}
                               aria-label={
                                 showAutoLoginFailed
-                                  ? t('roomsPanel.autoLoginFailedAria', { error: autoLoginFailed })
+                                  ? t('roomsPanel.autoLoginFailedAria', {
+                                      error: autoLoginFailedDisplay,
+                                    })
                                   : undefined
                               }
                               title={markerTitle}

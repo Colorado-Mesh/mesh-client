@@ -489,7 +489,9 @@ export async function meshcoreRoomTryRelogin(
       ? resolveRoomAdminPassword(nodeId, session.adminPassword)
       : session.adminPassword;
   const password = mode === 'admin' ? adminPassword : session.guestPassword;
-  if (!password.trim()) return false;
+  // Admin must have a non-empty password. Blank guest is a valid read-only / RW
+  // recovery SendLogin after reconnect (explicit remembered empty guest).
+  if (mode === 'admin' && !password.trim()) return false;
   try {
     await meshcoreRoomLogin(conn, nodeId, pubKey, password, {
       adminPassword: adminPassword || session.adminPassword,

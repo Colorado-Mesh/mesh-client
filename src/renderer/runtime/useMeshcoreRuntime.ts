@@ -6321,7 +6321,7 @@ export function useMeshcoreRuntime() {
           'loginRoom',
         );
       } catch (e: unknown) {
-        if (errLikeToLogString(e).includes('loginRoom timed out')) {
+        if (!meshcoreIsRoomLoginAbortError(e)) {
           meshcoreCancelRoomLogin(nodeId);
         }
         throw e;
@@ -6467,6 +6467,10 @@ export function useMeshcoreRuntime() {
       return;
     }
 
+    if (meshcoreIsRoomLoginQueued(target.nodeId)) {
+      return;
+    }
+
     try {
       const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
       if (!connRef.current) return;
@@ -6585,6 +6589,9 @@ export function useMeshcoreRuntime() {
     if (!cred) return;
     const pubKey = pubKeyMapRef.current.get(target.nodeId);
     if (!pubKey) return;
+    if (meshcoreIsRoomLoginQueued(target.nodeId)) {
+      return;
+    }
     try {
       const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
       if (!connRef.current) return;

@@ -921,12 +921,12 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 **No room history after login**:
 
 - Room servers keep a **short ring buffer** of recent posts and push anything newer than your companion’s `sync_since` watermark after LoginSuccess. mesh-client resets that watermark (remove+re-add contact) when this device has **no local last-post watermark** yet, then drains waiting messages after login.
-- Posts older than the ring (or already past `sync_since`) will not appear. Enable **Auto-sync** on the Rooms tab to periodic re-login while connected so you stay current.
+- Posts older than the ring (or already past `sync_since`) will not appear. Enable **Auto-sync** on the Rooms tab to periodically re-login while connected so you stay current.
 - mesh-client stores posts received while you are logged in on **this device**. Quitting the app or staying logged out for days means posts from that period will not appear later unless they were persisted locally. See the **Rooms** tab history note under Auto-sync.
 
 **pyMC / server console shows posts but Rooms tab does not (cross-client)**:
 
-- The room **server log** (e.g. pyMC) lists everything the BBS stored. mesh-client and the official app only show posts **pushed to your radio while you are logged in** to that room (see above). Posts made before your login, or while you were logged out, will not appear until someone posts again after you re-login (or use **Auto-sync** to periodic re-login).
+- The room **server log** (e.g. pyMC) lists everything the BBS stored. mesh-client and the official app only show posts **pushed to your radio while you are logged in** to that room (see above). Posts made before your login, or while you were logged out, will not appear until someone posts again after you re-login (or use **Auto-sync** to periodically re-login).
 - For a fair test: keep **both** clients logged into the **same room** while connected, then post from one side and confirm the other receives it within ~30 seconds on RF.
 - mesh-client sends outbound room posts as **`TXT_TYPE_PLAIN`**; inbound BBS pushes use **`TXT_TYPE_SIGNED_PLAIN`** (author prefix stripped in the Rooms UI).
 

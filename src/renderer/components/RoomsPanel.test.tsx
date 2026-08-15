@@ -73,6 +73,9 @@ vi.mock('react-i18next', () => ({
         const detail = typeof opts?.detail === 'string' ? opts.detail : '';
         return `Could not program the route on your radio before login. Reconnect the device and try again.${detail}`;
       }
+      if (key === 'meshcore.errors.roomLogin.timedOut') {
+        return 'Room login timed out. The room may be out of range or not responding.';
+      }
       if (key === 'roomsPanel.autoLoginFailed' && typeof opts?.error === 'string') {
         return `Auto-login failed: ${opts.error}`;
       }
@@ -886,6 +889,25 @@ describe('RoomsPanel', () => {
 
     const marker = screen.getByLabelText('roomsPanel.autoLoginFailedAria');
     expect(marker.className).toContain('ring-red-500');
+  });
+
+  it('translates serialized auto-login failure in the sidebar marker', () => {
+    const room = makeRoom(0x1010, 'Serialized Auto Fail Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    const serialized = serializeMeshcoreUserMessage({
+      key: 'meshcore.errors.roomLogin.timedOut',
+    });
+    setMeshcoreRoomAutoLoginFailure(room.node_id, serialized);
+
+    renderRoomsPanel(nodes);
+
+    expect(screen.getByLabelText('roomsPanel.autoLoginFailedAria')).toBeInTheDocument();
+    expect(
+      screen.getByTitle(
+        'Auto-login failed: Room login timed out. The room may be out of range or not responding.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(serialized)).not.toBeInTheDocument();
   });
 
   it('clears auto-login failure when re-enabling auto-login on connect', async () => {

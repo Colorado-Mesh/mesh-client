@@ -29,7 +29,6 @@ function parseCredentialValue(raw: unknown): MeshcoreRoomStoredCredential | unde
       const adminPassword = adminRaw.length > 0 ? adminRaw : undefined;
       // Persist when guestPassword key was saved (including empty) or admin is non-empty.
       if (!hasExplicitGuestPassword && !guestPassword && !adminPassword) return undefined;
-      if (!(hasExplicitGuestPassword || guestPassword || adminPassword)) return undefined;
       const out: MeshcoreRoomStoredCredential = {};
       if (hasExplicitGuestPassword || guestPassword.length > 0) {
         out.guestPassword = guestPassword;

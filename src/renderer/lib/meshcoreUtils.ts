@@ -572,20 +572,18 @@ export function resolveMeshcoreRoomLoginHopsAway(
   outPathBytes?: Uint8Array,
 ): number {
   const hops = node?.hops_away;
-  const hasMultiHopPath = Boolean(outPathBytes && outPathBytes.length > 1);
+  const inferred =
+    outPathBytes && outPathBytes.length > 0
+      ? meshcoreInferHopsFromOutPath({ outPath: outPathBytes, outPathLen: -1 })
+      : undefined;
+  const hasMultiHopPath = inferred != null && inferred > 0;
   if (typeof hops === 'number' && Number.isFinite(hops) && hops > 0 && hasMultiHopPath) {
     return Math.trunc(hops);
   }
-  if (outPathBytes && outPathBytes.length > 0) {
-    const inferred = meshcoreInferHopsFromOutPath({ outPath: outPathBytes, outPathLen: -1 });
-    if (inferred != null && inferred > 0) {
-      return inferred;
-    }
-    if (outPathBytes.length > 1) {
-      return Math.max(1, outPathBytes.length - 1);
-    }
+  if (inferred != null && inferred > 0) {
+    return inferred;
   }
-  // Sticky multi-hop with no route bytes → treat as direct for login.
+  // Sticky multi-hop with no (trimmed) route bytes → treat as direct for login.
   if (typeof hops === 'number' && Number.isFinite(hops) && hops >= 0 && !hasMultiHopPath) {
     return 0;
   }

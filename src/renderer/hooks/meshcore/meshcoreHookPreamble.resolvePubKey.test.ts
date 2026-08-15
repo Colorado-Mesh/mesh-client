@@ -58,6 +58,20 @@ describe('resolveMeshcoreNodePubKey', () => {
     expect(window.electronAPI.db.getMeshcoreContactById).toHaveBeenCalledWith(PEER_NODE_ID);
   });
 
+  it('ignores a SQLite pubkey that does not hash to nodeId', async () => {
+    const mismatched = new Uint8Array(32);
+    mismatched.fill(0xab);
+    const mismatchedHex = Array.from(mismatched)
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    expect(pubkeyToNodeId(mismatched)).not.toBe(PEER_NODE_ID);
+    vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue({
+      public_key: mismatchedHex,
+    } as { node_id: number; public_key: string; on_radio: number });
+
+    await expect(resolveMeshcoreNodePubKey(PEER_NODE_ID, new Map())).resolves.toBeNull();
+  });
+
   it('ignores a map key that does not hash to nodeId and loads from SQLite', async () => {
     const mismatched = new Uint8Array(32);
     mismatched.fill(0xab);

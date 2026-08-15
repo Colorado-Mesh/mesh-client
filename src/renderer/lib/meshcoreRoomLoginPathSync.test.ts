@@ -180,6 +180,74 @@ describe('resetMeshcoreRoomCompanionSyncSinceForCatchUp', () => {
     expect(addOrUpdateContact).toHaveBeenCalledTimes(2);
   });
 
+  it('returns failed when both add attempts reject after remove', async () => {
+    const pubKey = makePubKey(0x44);
+    const nodeId = pubkeyToNodeId(pubKey);
+    const contact: MeshCoreContactRaw = {
+      publicKey: pubKey,
+      type: 3,
+      flags: 0,
+      outPathLen: 0,
+      outPath: new Uint8Array(64),
+      advName: 'Missing Room',
+      lastAdvert: 1,
+      advLat: 0,
+      advLon: 0,
+    };
+    const removeContact = vi.fn().mockResolvedValue(undefined);
+    const addOrUpdateContact = vi.fn().mockRejectedValue(new Error('timeout'));
+    const conn = {
+      getContacts: vi.fn().mockResolvedValue([contact]),
+      setContactPath: vi.fn(),
+      removeContact,
+      addOrUpdateContact,
+    };
+    const { resetMeshcoreRoomCompanionSyncSinceForCatchUp } =
+      await import('./meshcoreRoomLoginPathSync');
+    await expect(resetMeshcoreRoomCompanionSyncSinceForCatchUp(conn, nodeId, pubKey)).resolves.toBe(
+      'failed',
+    );
+    expect(removeContact).toHaveBeenCalledTimes(1);
+    expect(addOrUpdateContact).toHaveBeenCalledTimes(2);
+  });
+
+  it('invokes catch-up remove/add with conn as this', async () => {
+    const pubKey = makePubKey(0x43);
+    const nodeId = pubkeyToNodeId(pubKey);
+    const contact: MeshCoreContactRaw = {
+      publicKey: pubKey,
+      type: 3,
+      flags: 0,
+      outPathLen: 0,
+      outPath: new Uint8Array(64),
+      advName: 'This Room',
+      lastAdvert: 1,
+      advLat: 0,
+      advLon: 0,
+    };
+    const conn = {
+      commands: [] as string[],
+      getContacts() {
+        return Promise.resolve([contact]);
+      },
+      setContactPath: vi.fn(),
+      removeContact(this: { commands: string[] }) {
+        this.commands.push('remove');
+        return Promise.resolve();
+      },
+      addOrUpdateContact(this: { commands: string[] }) {
+        this.commands.push('add');
+        return Promise.resolve();
+      },
+    };
+    const { resetMeshcoreRoomCompanionSyncSinceForCatchUp } =
+      await import('./meshcoreRoomLoginPathSync');
+    await expect(resetMeshcoreRoomCompanionSyncSinceForCatchUp(conn, nodeId, pubKey)).resolves.toBe(
+      'reset',
+    );
+    expect(conn.commands).toEqual(['remove', 'add']);
+  });
+
   it('skips catch-up reset when the login abort signal is already aborted', async () => {
     const pubKey = makePubKey(0x42);
     const conn = {

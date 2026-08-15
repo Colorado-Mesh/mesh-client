@@ -515,6 +515,12 @@ describe('resolveMeshcoreRoomLoginHopsAway', () => {
     expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 1 }, undefined)).toBe(0);
     expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 3 }, new Uint8Array())).toBe(0);
   });
+
+  it('treats a padded direct route as 0-hop during room login', () => {
+    expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 3 }, new Uint8Array([0x42, 0, 0]))).toBe(
+      0,
+    );
+  });
 });
 
 describe('meshcoreMergeContactHopsAwayFromPrevious', () => {

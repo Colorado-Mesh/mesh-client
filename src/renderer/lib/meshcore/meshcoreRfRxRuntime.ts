@@ -355,6 +355,18 @@ function applyMeshcoreRfAdvertToStore(
   const hwModel = mergeHwModelOnContactUpdate(existing?.hwModel, incomingHw);
   const lastHeardAt = advert.timestampSec > 0 ? advert.timestampSec : Math.floor(now / 1000);
 
+  persistMeshcoreNodeInfoAfterAdvert(
+    identityId,
+    {
+      nodeId,
+      longName: name || undefined,
+      lastHeardAt,
+      publicKey,
+      hwModel,
+    },
+    { contactType: advert.deviceRole },
+  );
+
   upsertNode(identityId, {
     nodeId,
     ...(name ? { longName: name } : {}),
@@ -374,18 +386,6 @@ function applyMeshcoreRfAdvertToStore(
     heardViaMqttOnly: false,
     viaMqtt: false,
   });
-
-  persistMeshcoreNodeInfoAfterAdvert(
-    identityId,
-    {
-      nodeId,
-      longName: name || undefined,
-      lastHeardAt,
-      publicKey,
-      hwModel,
-    },
-    { contactType: advert.deviceRole },
-  );
 }
 
 function buildMeshcoreRfRawPacketEntry(

@@ -283,6 +283,32 @@ describe('handleMeshcoreRfRx advert identity', () => {
       longName: name,
       hwModel: 'Room',
     });
+    expect(window.electronAPI.db.saveMeshcoreContact).toHaveBeenCalledWith(
+      expect.objectContaining({ adv_name: name, contact_type: 3 }),
+    );
+  });
+
+  it('persists a fresh non-tombstoned RF advert via saveMeshcoreContact', () => {
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => (i + 7) & 0xff);
+    const nodeId = pubkeyToNodeId(publicKey);
+    const { deps } = makeDeps({ myNodeNumRef: ref(1) });
+    vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.db.updateMeshcoreContactAdvert).mockResolvedValue(undefined);
+
+    handleMeshcoreRfRx(
+      {
+        lastSnr: 8,
+        lastRssi: -30,
+        raw: buildFloodAdvertPacket({ publicKey, name: 'Alice', deviceRole: 1 }),
+      },
+      deps,
+    );
+
+    expect(useNodeStore.getState().nodes[ID][nodeId].longName).toBe('Alice');
+    expect(window.electronAPI.db.saveMeshcoreContact).toHaveBeenCalledWith(
+      expect.objectContaining({ adv_name: 'Alice', contact_type: 1, on_radio: 1 }),
+    );
+    expect(window.electronAPI.db.updateMeshcoreContactAdvert).not.toHaveBeenCalled();
   });
 
   it('revives a locally deleted contact when a live RF advert is heard', () => {

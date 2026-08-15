@@ -389,6 +389,29 @@ describe('meshcoreRoomSession', () => {
     });
   });
 
+  it('tryRelogin post sends blank guest password for a blank readwrite session', async () => {
+    meshcoreClearAllRoomSessions();
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 2 });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    meshcoreApplyRoomSession(42, {
+      guestPassword: '',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const ok = await meshcoreRoomTryRelogin(conn, 42, pubKey, 'post');
+    expect(ok).toBe(true);
+    expect(mockRunMeshcoreRoomLogin).toHaveBeenCalledWith(conn, pubKey, '', {
+      hopsAway: undefined,
+      signal: expect.any(AbortSignal),
+    });
+  });
+
   it('tryRelogin rethrows abort instead of treating it as a failed relogin', async () => {
     meshcoreClearAllRoomSessions();
     mockRunMeshcoreRoomLogin.mockReturnValue(new Promise(() => undefined));

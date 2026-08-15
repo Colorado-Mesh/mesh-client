@@ -886,7 +886,8 @@ export async function resolveMeshcoreNodePubKey(
     const contact = (await window.electronAPI.db.getMeshcoreContactById(nodeId)) as
       Pick<MeshcoreContactDbRow, 'public_key'> | null | undefined;
     if (contact?.public_key) {
-      return meshcoreFullPubKeyBytesFromContactDbHex(contact.public_key);
+      const fromDb = meshcoreFullPubKeyBytesFromContactDbHex(contact.public_key);
+      if (fromDb && meshcorePubKeyMatchesNodeId(fromDb, nodeId)) return fromDb;
     }
   } catch (e: unknown) {
     console.warn(

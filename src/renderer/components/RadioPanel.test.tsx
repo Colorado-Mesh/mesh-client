@@ -115,7 +115,7 @@ describe('RadioPanel MeshCore Device User / Identity', () => {
   it('enables Apply and calls onSetOwner when MeshCore capabilities provide the handler', async () => {
     const user = userEvent.setup();
     const onSetOwner = vi.fn().mockResolvedValue(undefined);
-    render(
+    const { container } = render(
       <ToastProvider>
         <RadioPanel
           {...defaultProps}
@@ -127,6 +127,8 @@ describe('RadioPanel MeshCore Device User / Identity', () => {
     );
 
     await openDeviceUserSection(user);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
 
     const nameInput = screen.getByLabelText('Name');
     await user.clear(nameInput);
@@ -147,20 +149,22 @@ describe('RadioPanel MeshCore Device User / Identity', () => {
 
   it('keeps Apply disabled when MeshCore capabilities are set but onSetOwner is missing', async () => {
     const user = userEvent.setup();
-    render(
+    const { container } = render(
       <ToastProvider>
         <RadioPanel {...defaultProps} isConnected capabilities={MESHCORE_CAPABILITIES} />
       </ToastProvider>,
     );
 
     await openDeviceUserSection(user);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
 
     expect(screen.getByRole('button', { name: 'Apply Device User / Identity' })).toBeDisabled();
   });
 
   it('prefills the MeshCore name field from deviceOwner', async () => {
     const user = userEvent.setup();
-    render(
+    const { container } = render(
       <ToastProvider>
         <RadioPanel
           {...defaultProps}
@@ -173,6 +177,8 @@ describe('RadioPanel MeshCore Device User / Identity', () => {
     );
 
     await openDeviceUserSection(user);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
 
     expect(screen.getByLabelText('Name')).toHaveValue('TagName');
   });

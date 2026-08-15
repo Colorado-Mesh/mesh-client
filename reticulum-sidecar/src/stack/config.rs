@@ -791,21 +791,19 @@ fn mode_allows_discovery_without_opt_out(mode: &str) -> bool {
 /// Stamp or clear `ignore_config_warnings` so discoverable + Full/Roaming/Boundary
 /// keeps the configured mode (upstream RNS opt-out). Omitted mode does not write
 /// the flag (RNode type default is AP). Clear when discoverable is off or mode is
-/// already AP/Gateway.
+/// already AP/Gateway. Unrecognized non-empty mode is left untouched.
 pub(crate) fn reconcile_ignore_config_warnings(row: &mut InterfaceRow) {
     let discoverable = row.discoverable == Some(true);
-    let explicit_mode = row
-        .mode
-        .as_deref()
-        .map(str::trim)
-        .filter(|m| !m.is_empty())
-        .and_then(|m| normalize_interface_mode(m).ok().flatten());
+    let raw_mode = row.mode.as_deref().map(str::trim).filter(|m| !m.is_empty());
+    let Some(raw_mode) = raw_mode else {
+        row.ignore_config_warnings = None;
+        return;
+    };
+    let Ok(Some(canonical)) = normalize_interface_mode(raw_mode) else {
+        return;
+    };
 
-    let should_opt_out = discoverable
-        && explicit_mode
-            .as_deref()
-            .is_some_and(|m| !mode_allows_discovery_without_opt_out(m));
-
+    let should_opt_out = discoverable && !mode_allows_discovery_without_opt_out(&canonical);
     if should_opt_out {
         row.ignore_config_warnings = Some(true);
     } else {
@@ -3725,6 +3723,48 @@ longitude = -105.0
             passphrase: None,
             flow_control: None,
             ignore_config_warnings: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
+            extra_config: HashMap::new(),
+        };
+        reconcile_ignore_config_warnings(&mut row);
+        assert_eq!(row.ignore_config_warnings, Some(true));
+    }
+
+    #[test]
+    fn reconcile_unrecognized_mode_preserves_existing_opt_out() {
+        let mut row = InterfaceRow {
+            id: "rnode".into(),
+            name: "LoRa".into(),
+            iface_type: "rnode".into(),
+            enabled: true,
+            status: "up".into(),
+            host: None,
+            port: None,
+            preset: None,
+            serial_port: Some("/dev/ttyUSB0".into()),
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: Some("not_a_real_mode".into()),
+            runtime_mode: None,
+            seed_addresses: Vec::new(),
+            discoverable: Some(true),
+            latitude: Some(40.0),
+            longitude: Some(-105.0),
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            flow_control: None,
+            ignore_config_warnings: Some(true),
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: HashMap::new(),
