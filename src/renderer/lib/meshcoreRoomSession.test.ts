@@ -4,9 +4,12 @@ import {
   MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD,
   MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
   MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE,
+  meshcoreAbortablePromise,
   meshcoreApplyRoomSession,
+  meshcoreBeginRoomLoginOperation,
   meshcoreCancelRoomLogin,
   meshcoreClearAllRoomSessions,
+  meshcoreEndRoomLoginOperation,
   meshcoreGetRoomSession,
   meshcoreIsRoomLoggedIn,
   meshcoreIsRoomLoginAbortError,
@@ -378,6 +381,27 @@ describe('meshcoreRoomSession', () => {
     }
     expect(mockRunMeshcoreRoomLogin).toHaveBeenCalledTimes(1);
     expect(meshcoreIsRoomLoggedIn(42)).toBe(false);
+  });
+
+  it('outer login cancel aborts path-resolve wait before SendLogin', async () => {
+    const signal = meshcoreBeginRoomLoginOperation(99);
+    let resolveSlow!: (v: string) => void;
+    const slow = new Promise<string>((resolve) => {
+      resolveSlow = resolve;
+    });
+    const raced = meshcoreAbortablePromise(slow, signal);
+    const settled = raced.then(
+      () => ({ ok: true as const }),
+      (err: unknown) => ({ ok: false as const, err }),
+    );
+    meshcoreCancelRoomLogin(99);
+    const result = await settled;
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(meshcoreIsRoomLoginAbortError(result.err)).toBe(true);
+    }
+    resolveSlow('late');
+    meshcoreEndRoomLoginOperation(99, signal);
   });
 
   it('does not apply session when login resolves after cancel', async () => {

@@ -316,8 +316,11 @@ import {
   MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
   MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE,
   MESHCORE_ROOM_LOGIN_PATH_SYNC_FAILED_MESSAGE,
+  meshcoreAbortablePromise,
+  meshcoreBeginRoomLoginOperation,
   meshcoreCancelRoomLogin,
   meshcoreClearAllRoomSessions,
+  meshcoreEndRoomLoginOperation,
   meshcoreGetRoomSession,
   meshcoreIsRoomLoggedIn,
   meshcoreIsRoomLoginAbortError,
@@ -329,6 +332,7 @@ import {
   meshcoreRoomLogout,
   meshcoreRoomLogoutFailureMessage,
   meshcoreRoomTryRelogin,
+  meshcoreThrowIfRoomLoginAborted,
   meshcoreTryRemoteServerLogin,
 } from '../lib/meshcoreRoomSession';
 import { pickMostOverdueRoom, type RoomSyncSchedulerNode } from '../lib/meshcoreRoomSyncScheduler';
@@ -6197,28 +6201,44 @@ export function useMeshcoreRuntime() {
       console.debug(
         `[useMeshcoreRuntime] loginRoom node=0x${nodeId.toString(16)} hopsAway=${hopsAway} uiHops=${String(uiHops ?? 'n/a')} outPathLen=${outPathLen}`,
       );
-      const loginAbort = new AbortController();
+      // Outer abort covers path resolve + SendLogin so Cancel works before the login queue starts.
+      const loginAbortSignal = meshcoreBeginRoomLoginOperation(nodeId);
       try {
         await withTimeout(
           (async (): Promise<void> => {
+            meshcoreThrowIfRoomLoginAborted(loginAbortSignal);
+            if (opts?.abortIfStale?.()) {
+              throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
+            }
             const activeConn = connRef.current;
             if (!activeConn) {
               throw new Error(MESHCORE_ERR_NOT_CONNECTED);
             }
             // Route prime can take 10s+ — do not hold repeaterRemoteRpc (SendLogin) mutex during flood/path wait.
-            const storedPath = await resolveRoomLoginStoredPath(nodeId, hopsAway, pubKey);
+            const storedPath = await meshcoreAbortablePromise(
+              resolveRoomLoginStoredPath(nodeId, hopsAway, pubKey),
+              loginAbortSignal,
+            );
+            meshcoreThrowIfRoomLoginAborted(loginAbortSignal);
+            if (opts?.abortIfStale?.()) {
+              throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
+            }
             if (hopsAway > 0 && (!storedPath || storedPath.length <= 1)) {
               throw new Error(MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE);
             }
-            const pathSync = await syncMeshcoreRoomContactPathBeforeLogin(
-              activeConn,
-              nodeId,
-              pubKey,
-              getIdentityNode(meshcoreIdentityIdRef.current, nodeId),
-              storedPath,
-              hopsAway,
-              (fn) => repeaterRemoteRpcRef.current(fn),
+            const pathSync = await meshcoreAbortablePromise(
+              syncMeshcoreRoomContactPathBeforeLogin(
+                activeConn,
+                nodeId,
+                pubKey,
+                getIdentityNode(meshcoreIdentityIdRef.current, nodeId),
+                storedPath,
+                hopsAway,
+                (fn) => repeaterRemoteRpcRef.current(fn),
+              ),
+              loginAbortSignal,
             );
+            meshcoreThrowIfRoomLoginAborted(loginAbortSignal);
             if (hopsAway > 0 && !pathSync.synced) {
               throw new Error(
                 serializeMeshcoreUserMessage(
@@ -6237,23 +6257,27 @@ export function useMeshcoreRuntime() {
             if (opts?.abortIfStale?.()) {
               throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
             }
-            await repeaterRemoteRpcRef.current(async () => {
-              if (opts?.abortIfStale?.()) {
-                throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
-              }
-              const rpcConn = connRef.current;
-              if (!rpcConn) {
-                throw new Error(MESHCORE_ERR_NOT_CONNECTED);
-              }
-              await meshcoreRoomLogin(rpcConn, nodeId, pubKey, password, {
-                adminPassword,
-                guestPassword,
-                hopsAway,
-                companionTransport: meshcoreConnectTypeRef.current,
-                forceRelogin: opts?.forceRelogin,
-                signal: loginAbort.signal,
-              });
-            });
+            await meshcoreAbortablePromise(
+              repeaterRemoteRpcRef.current(async () => {
+                meshcoreThrowIfRoomLoginAborted(loginAbortSignal);
+                if (opts?.abortIfStale?.()) {
+                  throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
+                }
+                const rpcConn = connRef.current;
+                if (!rpcConn) {
+                  throw new Error(MESHCORE_ERR_NOT_CONNECTED);
+                }
+                await meshcoreRoomLogin(rpcConn, nodeId, pubKey, password, {
+                  adminPassword,
+                  guestPassword,
+                  hopsAway,
+                  companionTransport: meshcoreConnectTypeRef.current,
+                  forceRelogin: opts?.forceRelogin,
+                  signal: loginAbortSignal,
+                });
+              }),
+              loginAbortSignal,
+            );
             if (opts?.rememberPassword) {
               await setMeshcoreRoomCredential(nodeId, { guestPassword, adminPassword });
               const syncCfg = getMeshcoreRoomSyncConfig(nodeId);
@@ -6270,10 +6294,11 @@ export function useMeshcoreRuntime() {
         );
       } catch (e: unknown) {
         if (errLikeToLogString(e).includes('loginRoom timed out')) {
-          loginAbort.abort();
           meshcoreCancelRoomLogin(nodeId);
         }
         throw e;
+      } finally {
+        meshcoreEndRoomLoginOperation(nodeId, loginAbortSignal);
       }
     },
     [resolveRoomLoginHopsForNode, resolveRoomLoginStoredPath],

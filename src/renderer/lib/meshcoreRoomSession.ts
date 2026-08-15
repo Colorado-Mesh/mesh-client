@@ -67,17 +67,72 @@ export function subscribeMeshcoreRoomSessionChanges(cb: RoomSessionChangeListene
 /** Per-room login abort controllers (replaced on each new login for the same node). */
 const roomLoginAbortControllers = new Map<number, AbortController>();
 
+/**
+ * Outer abort for the full loginRoom op (path resolve + SendLogin). Registered before
+ * queue/RPC so Cancel works during route prime — not only after SendLogin starts.
+ */
+const roomLoginOuterAbortControllers = new Map<number, AbortController>();
+
 export function meshcoreIsRoomLoginAbortError(err: unknown): boolean {
   return err instanceof DOMException && err.message === MESHCORE_ROOM_LOGIN_ABORT_MESSAGE;
 }
 
+export function meshcoreThrowIfRoomLoginAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted) {
+    throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
+  }
+}
+
+/** Reject as soon as `signal` aborts, even if `promise` is still pending. */
+export function meshcoreAbortablePromise<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  meshcoreThrowIfRoomLoginAborted(signal);
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = (): void => {
+      reject(new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError'));
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+    promise.then(
+      (value) => {
+        signal.removeEventListener('abort', onAbort);
+        resolve(value);
+      },
+      (err: unknown) => {
+        signal.removeEventListener('abort', onAbort);
+        reject(err instanceof Error ? err : new Error(String(err)));
+      },
+    );
+  });
+}
+
+/**
+ * Start (or replace) the outer abort controller for a room login operation.
+ * Call from loginRoom before path resolve; pair with {@link meshcoreEndRoomLoginOperation}.
+ */
+export function meshcoreBeginRoomLoginOperation(nodeId: number): AbortSignal {
+  roomLoginOuterAbortControllers.get(nodeId)?.abort();
+  const controller = new AbortController();
+  roomLoginOuterAbortControllers.set(nodeId, controller);
+  return controller.signal;
+}
+
+export function meshcoreEndRoomLoginOperation(nodeId: number, signal: AbortSignal): void {
+  if (roomLoginOuterAbortControllers.get(nodeId)?.signal === signal) {
+    roomLoginOuterAbortControllers.delete(nodeId);
+  }
+}
+
 export function meshcoreCancelRoomLogin(nodeId: number): void {
+  roomLoginOuterAbortControllers.get(nodeId)?.abort();
   roomLoginAbortControllers.get(nodeId)?.abort();
   dequeueMeshcoreRoomLogin(nodeId);
 }
 
 /** Abort the active login and drop all queued room logins. */
 export function meshcoreCancelAllRoomLogins(): void {
+  for (const controller of roomLoginOuterAbortControllers.values()) {
+    controller.abort();
+  }
+  roomLoginOuterAbortControllers.clear();
   for (const controller of roomLoginAbortControllers.values()) {
     controller.abort();
   }
@@ -85,9 +140,7 @@ export function meshcoreCancelAllRoomLogins(): void {
 }
 
 function throwIfRoomLoginAborted(signal: AbortSignal | undefined): void {
-  if (signal?.aborted) {
-    throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
-  }
+  meshcoreThrowIfRoomLoginAborted(signal);
 }
 
 function beginRoomLoginAbortSignal(nodeId: number, externalSignal?: AbortSignal): AbortSignal {
@@ -135,6 +188,10 @@ export function meshcoreRoomCliRequiresAdmin(command: string): boolean {
 }
 
 export function meshcoreClearAllRoomSessions(): void {
+  for (const controller of roomLoginOuterAbortControllers.values()) {
+    controller.abort();
+  }
+  roomLoginOuterAbortControllers.clear();
   for (const controller of roomLoginAbortControllers.values()) {
     controller.abort();
   }
