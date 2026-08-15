@@ -198,7 +198,10 @@ export function meshcoreApplyRoomSession(
   notifyRoomSessionChanged();
 }
 
-/** Default room guest password when firmware uses factory defaults (see MeshCore ROOM_PASSWORD). */
+/**
+ * Older factory default guest password (MeshCore ROOM_PASSWORD). Prefer empty first;
+ * users may still type this on servers that never cleared the legacy default.
+ */
 export const MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD = 'hello';
 
 /** Thrown when multi-hop login has no route bytes after resolve/trace. */
@@ -208,11 +211,12 @@ export const MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE = 'meshcore.errors.roomLogin.n
 export const MESHCORE_ROOM_LOGIN_PATH_SYNC_FAILED_MESSAGE =
   'meshcore.errors.roomLogin.pathSyncFailed';
 
+/** Trim guest password for SendLogin; empty stays empty (zero-byte password field). */
 export function meshcoreRoomEffectiveGuestPassword(password: string): string {
-  return password.trim() || MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD;
+  return password.trim();
 }
 
-/** True when Login sent the factory default guest password (empty field → hello). */
+/** True when Login sent the older factory default guest password `"hello"`. */
 export function meshcoreRoomUsedDefaultGuestPassword(password: string): boolean {
   return password === MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD;
 }

@@ -104,12 +104,13 @@ export async function forgetAdminPassword(
     clearRoomEphemeralAdminPassword(nodeId);
     const prev = getMeshcoreRoomCredential(nodeId);
     if (!prev) return;
-    const guest = prev.guestPassword?.trim() ?? '';
-    if (!guest) {
-      await setMeshcoreRoomCredential(nodeId, null);
+    // Keep an explicit guestPassword (including remembered blank); only drop the whole
+    // record when there is no guest field left after clearing admin.
+    if (Object.prototype.hasOwnProperty.call(prev, 'guestPassword')) {
+      await setMeshcoreRoomCredential(nodeId, { guestPassword: prev.guestPassword ?? '' });
       return;
     }
-    await setMeshcoreRoomCredential(nodeId, { guestPassword: guest });
+    await setMeshcoreRoomCredential(nodeId, null);
     return;
   }
   await forgetMeshcoreRepeaterSavedSecret(nodeId);

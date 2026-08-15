@@ -167,6 +167,9 @@ describe('RoomsPanel', () => {
     const onLoginRoom = vi.fn().mockResolvedValue(undefined);
     renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onLoginRoom });
 
+    fireEvent.change(screen.getByLabelText('roomsPanel.guestPasswordLabel'), {
+      target: { value: 'hello' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.upgradeAccess' }));
 
     await waitFor(() => {
@@ -275,14 +278,36 @@ describe('RoomsPanel', () => {
     });
   });
 
-  it('disables Login when guest password field is empty', () => {
+  it('allows Login with empty guest password and sends blank', async () => {
+    meshcoreClearAllRoomSessions();
     const room = makeRoom(0x1004, 'Empty Guest Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
-    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
-    fireEvent.change(screen.getByLabelText('roomsPanel.guestPasswordLabel'), {
-      target: { value: '' },
+    const onLoginRoom = vi.fn().mockResolvedValue(undefined);
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onLoginRoom });
+    expect(screen.getByLabelText('roomsPanel.guestPasswordLabel')).toHaveValue('');
+    expect(screen.getByText('roomsPanel.emptyGuestLoginHint')).toBeInTheDocument();
+    expect(screen.getByText('roomsPanel.loginButton')).not.toBeDisabled();
+    fireEvent.click(screen.getByText('roomsPanel.loginButton'));
+    await waitFor(() => {
+      expect(onLoginRoom).toHaveBeenCalledWith(
+        room.node_id,
+        '',
+        expect.objectContaining({ guestPassword: '' }),
+      );
     });
-    expect(screen.getByText('roomsPanel.loginButton')).toBeDisabled();
+  });
+
+  it('disables Upgrade access when guest password field is empty', () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x100d, 'Upgrade Empty Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: '',
+      adminPassword: '',
+      role: 'readonly',
+    });
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+    expect(screen.getByRole('button', { name: 'roomsPanel.upgradeAccess' })).toBeDisabled();
     expect(screen.getByText('roomsPanel.emptyGuestLoginHint')).toBeInTheDocument();
   });
 

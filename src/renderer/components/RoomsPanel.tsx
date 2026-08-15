@@ -71,7 +71,6 @@ import {
   getMeshcoreRoomSavedSecretsSummary,
 } from '@/renderer/lib/meshcoreRoomSavedSecrets';
 import {
-  MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD,
   meshcoreCancelAllRoomLogins,
   meshcoreGetRoomSession,
   meshcoreIsRoomLoggedIn,
@@ -264,7 +263,7 @@ export default function RoomsPanel({
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(
     () => initialRoomTarget ?? null,
   );
-  const [loginPassword, setLoginPassword] = useState(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
+  const [loginPassword, setLoginPassword] = useState('');
   /** Tracks in-flight login promises before the shared queue snapshot updates (tests / fast paths). */
   const [localLoginRoomIds, setLocalLoginRoomIds] = useState<Set<number>>(() => new Set());
   const [leaveLoadingRoomIds, setLeaveLoadingRoomIds] = useState<Set<number>>(() => new Set());
@@ -812,7 +811,7 @@ export default function RoomsPanel({
         next.delete(nodeId);
         return next;
       });
-      setLoginPassword(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
+      setLoginPassword('');
       setRememberPassword(false);
       loadSyncConfig(nodeId);
     },
@@ -946,7 +945,7 @@ export default function RoomsPanel({
         forceRelogin,
       });
       if (rememberPassword) refreshStoredRooms();
-      setLoginPassword(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
+      setLoginPassword('');
     });
   }, [
     loginPassword,
@@ -1276,8 +1275,13 @@ export default function RoomsPanel({
       : savedRoomsNotLoggedInCount === 0
         ? t('roomsPanel.loginAllSavedDisabledAllLoggedIn')
         : '';
-  const loginButtonEnabled = isConnected && !guestFieldEmpty && !selectedRoomLoginLoading;
-  const loginButtonClass = loginButtonEnabled
+  /** Overlay Login may send a zero-byte password; upgrade needs a non-empty guest password. */
+  const overlayLoginEnabled = isConnected && !selectedRoomLoginLoading;
+  const upgradeLoginEnabled = overlayLoginEnabled && !guestFieldEmpty;
+  const overlayLoginButtonClass = overlayLoginEnabled
+    ? 'border-readable-green bg-readable-green w-full cursor-pointer rounded border px-3 py-2 text-sm font-semibold text-white hover:bg-readable-green/90'
+    : 'w-full cursor-not-allowed rounded border border-gray-600 bg-gray-700 px-3 py-2 text-sm font-medium text-gray-500';
+  const upgradeLoginButtonClass = upgradeLoginEnabled
     ? 'border-readable-green bg-readable-green w-full cursor-pointer rounded border px-3 py-2 text-sm font-semibold text-white hover:bg-readable-green/90'
     : 'w-full cursor-not-allowed rounded border border-gray-600 bg-gray-700 px-3 py-2 text-sm font-medium text-gray-500';
   const selectedRoomLeaveLoading =
@@ -1738,8 +1742,8 @@ export default function RoomsPanel({
                 <button
                   type="button"
                   onClick={handleLogin}
-                  disabled={!loginButtonEnabled}
-                  className={loginButtonClass}
+                  disabled={!overlayLoginEnabled}
+                  className={overlayLoginButtonClass}
                 >
                   {t('roomsPanel.loginButton')}
                 </button>
@@ -2657,8 +2661,8 @@ export default function RoomsPanel({
                     <button
                       type="button"
                       onClick={handleLogin}
-                      disabled={!loginButtonEnabled}
-                      className={loginButtonClass}
+                      disabled={!upgradeLoginEnabled}
+                      className={upgradeLoginButtonClass}
                       aria-label={t('roomsPanel.upgradeAccess')}
                     >
                       {selectedRoomLoginLoading

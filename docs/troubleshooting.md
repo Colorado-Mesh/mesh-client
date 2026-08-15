@@ -892,9 +892,9 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Guest / read-only login fails with timeout or "rejected"**:
 
-- When the room server **guest password is empty**, use **Continue read-only** on the Rooms login overlay. That sends **zero password bytes** (same as the official Android app). **Login** with an empty guest field is disabled; it would send the default **`hello`** password instead.
-- When the server **does** configure a guest password, enter that value in the guest field and click **Login** (some communities use **`hello`**).
-- **Room admin CLI** (**Repeaters** tab → room row CLI; needs the room **admin** password via SendLogin ACL, not guest BBS login): many stock room servers use **`hello`** as the default admin password when none was configured. Save the admin password under Repeaters → password for that room. Do not confuse that with **Continue read-only** on the Rooms login overlay, which sends zero bytes for blank guest servers.
+- Try **Login** with an **empty** guest field first. That sends **zero password bytes** (same as the official Android app and **Continue read-only**). Most rooms leave the guest password blank for guests.
+- If empty login fails, try the older default guest password **`hello`**.
+- **Room admin CLI** (**Repeaters** tab → room row CLI; needs the room **admin** password via SendLogin ACL, not guest BBS login): many stock room servers use **`hello`** as the default admin password when none was configured. Save the admin password under Repeaters → password for that room. Do not confuse that with blank guest Login / **Continue read-only**, which send zero bytes.
 - Logs showing push **`0x86`** (frame 134) mean **LoginFail** (wrong password or ACL denied). **Room login** rejects immediately on a prefix-matched LoginFail. **Repeater admin login** keeps waiting for a possible LoginSuccess (meshcore.js behavior on congested links); timeout after LoginFail alone is reported as timeout, not wrong password.
 - **Admin password** working while guest/read-only fails usually means the guest password on the server does not match what the client sent, or ACL denies read-only login.
 - If the room **changed its password** and mesh-client keeps trying to log in, open the **Rooms** tab: expand **Saved passwords** in the sidebar (or use the login overlay for the selected room). Use **Stop auto-login** to stop connect-time retries while keeping the old password stored, or **Forget saved password** to clear the stored guest/admin password and turn off auto-login and auto-sync. After a wrong-password failure, auto-login is turned off automatically until you log in again with **Remember password** or re-enable it.
@@ -935,7 +935,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Read-only → write upgrade does nothing**:
 
-- After **Continue read-only**, use **Upgrade access** (or **Login** with the guest password) so the client sends a fresh **SendLogin** with `forceRelogin`. Enter the real guest password (often **`hello`**); empty field Login is disabled on the main overlay to avoid sending `hello` when the server expects blank read-only login.
+- After **Continue read-only**, use **Upgrade access** (or **Login** with the guest password) so the client sends a fresh **SendLogin** with `forceRelogin`. If the room still uses a guest password, enter it (often **`hello`** on older servers); an empty field cannot upgrade write access.
 
 **Long room posts show as `[1/2]`, `[2/2]`…**:
 
@@ -954,7 +954,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 **Retest checklist (after upgrading from a known-good build)**:
 
 1. Connect MeshCore over TCP or BLE; confirm nodes load.
-2. Open **Rooms** → with **empty guest password** on the server, click **Continue read-only** (not **Login** with an empty field). With a configured guest password, enter it and click **Login**.
+2. Open **Rooms** → try **Login** with an **empty** guest field first (or **Continue read-only**). If that fails, try **`hello`**. With a configured guest password, enter it and click **Login**.
 3. Post as admin; confirm the post appears in the **official Android app** on the same room (SignedPlain BBS path).
 4. Confirm room posts appear in **Rooms** with unread badges (not Chat channel pills).
 5. On **Connection** tab, receive a **channel** message on a channel you are not viewing → sidebar **Chat** badge and red pill on that channel when you open Chat.

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD,
   MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
   MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE,
   meshcoreApplyRoomSession,
@@ -11,9 +12,11 @@ import {
   meshcoreIsRoomLoginAbortError,
   meshcoreRoomCanPost,
   meshcoreRoomCliRequiresAdmin,
+  meshcoreRoomEffectiveGuestPassword,
   meshcoreRoomLogin,
   meshcoreRoomLoginErrorIsAuthFailure,
   meshcoreRoomLoginErrorIsNoRoute,
+  meshcoreRoomLoginFailureMessage,
   meshcoreRoomLogout,
   meshcoreRoomTryAdminLogin,
   meshcoreRoomTryRelogin,
@@ -52,6 +55,26 @@ describe('meshcoreRoomSession', () => {
     });
     expect(meshcoreIsRoomLoggedIn(0xabc)).toBe(true);
     expect(meshcoreRoomCanPost(0xabc)).toBe(false);
+  });
+
+  it('meshcoreRoomEffectiveGuestPassword trims without substituting hello', () => {
+    expect(meshcoreRoomEffectiveGuestPassword('')).toBe('');
+    expect(meshcoreRoomEffectiveGuestPassword('  ')).toBe('');
+    expect(meshcoreRoomEffectiveGuestPassword('  secret  ')).toBe('secret');
+    expect(meshcoreRoomEffectiveGuestPassword(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD)).toBe('hello');
+  });
+
+  it('meshcoreRoomLoginFailureMessage distinguishes blank vs hello guest', () => {
+    const rejected = new Error('room login rejected (wrong password or ACL denied)');
+    expect(meshcoreRoomLoginFailureMessage(rejected, '')).toEqual({
+      key: 'meshcore.errors.roomLogin.rejectedBlankGuest',
+    });
+    expect(meshcoreRoomLoginFailureMessage(rejected, 'hello')).toEqual({
+      key: 'meshcore.errors.roomLogin.rejectedDefaultGuest',
+    });
+    expect(meshcoreRoomLoginFailureMessage(rejected, 'other')).toEqual({
+      key: 'meshcore.errors.roomLogin.rejectedCheckPassword',
+    });
   });
 
   it('allows posting for readwrite session', () => {
