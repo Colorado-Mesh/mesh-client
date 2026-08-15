@@ -42,6 +42,7 @@ export type MeshcoreRoomLoginConn = MeshcoreRadioConnection;
 
 /** Firmware PERM_ACL_ROLE_MASK values (CommonCLI / room server ACL). */
 export const MESHCORE_ROOM_PERM_GUEST = 0;
+export const MESHCORE_ROOM_PERM_READ_ONLY = 1;
 export const MESHCORE_ROOM_PERM_READ_WRITE = 2;
 export const MESHCORE_ROOM_PERM_ADMIN = 3;
 
@@ -209,11 +210,16 @@ export function meshcoreClearRoomSession(nodeId: number): void {
 
 function roleFromPermissionsByte(permissions: number): MeshcoreRoomRole {
   const roleBits = permissions & 0x03;
-  if (roleBits === MESHCORE_ROOM_PERM_ADMIN) return 'admin';
-  if (roleBits === MESHCORE_ROOM_PERM_READ_WRITE) return 'readwrite';
-  if (roleBits === MESHCORE_ROOM_PERM_GUEST) return 'readonly';
-  // PERM_ACL_READ_ONLY (1) and unknown → read-only UI.
-  return 'readonly';
+  switch (roleBits) {
+    case MESHCORE_ROOM_PERM_ADMIN:
+      return 'admin';
+    case MESHCORE_ROOM_PERM_READ_WRITE:
+      return 'readwrite';
+    case MESHCORE_ROOM_PERM_GUEST:
+    case MESHCORE_ROOM_PERM_READ_ONLY:
+    default:
+      return 'readonly';
+  }
 }
 
 /**
@@ -383,11 +389,14 @@ export async function meshcoreRoomLogin(
       for (let attempt = 1; attempt <= MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS; attempt++) {
         throwIfRoomLoginAborted(signal);
         try {
-          const response = await runMeshcoreRoomLogin(conn, pubKey, password, {
-            hopsAway: opts?.hopsAway,
-            companionTransport: opts?.companionTransport,
+          const response = await meshcoreAbortablePromise(
+            runMeshcoreRoomLogin(conn, pubKey, password, {
+              hopsAway: opts?.hopsAway,
+              companionTransport: opts?.companionTransport,
+              signal,
+            }),
             signal,
-          });
+          );
           throwIfRoomLoginAborted(signal);
           const role = resolveMeshcoreRoomLoginRole(
             response,
@@ -413,7 +422,7 @@ export async function meshcoreRoomLogin(
               `[meshcoreRoomSession] room login attempt ${attempt}/${MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS} failed ${errMsg}`,
             );
             throwIfRoomLoginAborted(signal);
-            await sleepMs(MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS);
+            await meshcoreAbortablePromise(sleepMs(MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS), signal);
           } else {
             console.warn('[meshcoreRoomSession] room login failed ' + errMsg);
           }
@@ -481,17 +490,18 @@ export async function meshcoreRoomTryRelogin(
       : session.adminPassword;
   const password = mode === 'admin' ? adminPassword : session.guestPassword;
   if (!password.trim()) return false;
-  const ok = await meshcoreRoomLogin(conn, nodeId, pubKey, password, {
-    adminPassword: adminPassword || session.adminPassword,
-    guestPassword: session.guestPassword,
-    hopsAway: opts?.hopsAway,
-    companionTransport: opts?.companionTransport,
-    forceRelogin: true,
-  }).then(
-    () => true,
-    () => false,
-  );
-  if (!ok) return false;
+  try {
+    await meshcoreRoomLogin(conn, nodeId, pubKey, password, {
+      adminPassword: adminPassword || session.adminPassword,
+      guestPassword: session.guestPassword,
+      hopsAway: opts?.hopsAway,
+      companionTransport: opts?.companionTransport,
+      forceRelogin: true,
+    });
+  } catch (e: unknown) {
+    if (meshcoreIsRoomLoginAbortError(e)) throw e;
+    return false;
+  }
   const roleOk = mode === 'admin' ? meshcoreRoomCanAdmin(nodeId) : meshcoreRoomCanPost(nodeId);
   return roleOk;
 }

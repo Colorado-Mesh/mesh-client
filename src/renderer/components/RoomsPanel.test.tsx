@@ -11,6 +11,7 @@ import {
   type StarredMessage,
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { VIRTUALIZER_SCROLL_END_THRESHOLD } from '@/renderer/lib/chatScrollUtils';
+import { serializeMeshcoreUserMessage } from '@/renderer/lib/meshcore/meshcoreMessageI18n';
 import { buildMeshcoreRoomIncomingMessage } from '@/renderer/lib/meshcoreChannelText';
 import {
   clearAllMeshcoreRoomAutoLoginFailures,
@@ -67,6 +68,10 @@ vi.mock('react-i18next', () => ({
     t: (key: string, opts?: Record<string, unknown>) => {
       if (key === 'meshcore.errors.roomLogin.noRoute') {
         return 'No route to this room server. Trace the node from the map or wait for path adverts, then try again.';
+      }
+      if (key === 'meshcore.errors.roomLogin.pathSyncFailedDetail') {
+        const detail = typeof opts?.detail === 'string' ? opts.detail : '';
+        return `Could not program the route on your radio before login. Reconnect the device and try again.${detail}`;
       }
       if (key === 'roomsPanel.autoLoginFailed' && typeof opts?.error === 'string') {
         return `Auto-login failed: ${opts.error}`;
@@ -301,6 +306,29 @@ describe('RoomsPanel', () => {
       ).toBeInTheDocument();
     });
     expect(screen.queryByText('meshcore.errors.roomLogin.noRoute')).not.toBeInTheDocument();
+  });
+
+  it('translates serialized pathSyncFailedDetail including radio error detail', async () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x1006, 'Path Sync Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    const onLoginRoom = vi.fn().mockRejectedValue(
+      new Error(
+        serializeMeshcoreUserMessage({
+          key: 'meshcore.errors.roomLogin.pathSyncFailedDetail',
+          params: { detail: ' (timeout)' },
+        }),
+      ),
+    );
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onLoginRoom });
+    fireEvent.click(screen.getByText('roomsPanel.loginButton'));
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Could not program the route on your radio before login. Reconnect the device and try again. (timeout)',
+        ),
+      ).toBeInTheDocument();
+    });
   });
 
   it('allows Login with empty guest password and sends blank', async () => {

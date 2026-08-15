@@ -145,4 +145,56 @@ describe('resetMeshcoreRoomCompanionSyncSinceForCatchUp', () => {
     expect(removeContact).toHaveBeenCalledWith(pubKey);
     expect(addOrUpdateContact).toHaveBeenCalled();
   });
+
+  it('retries add after remove if the first add fails', async () => {
+    const pubKey = makePubKey(0x41);
+    const nodeId = pubkeyToNodeId(pubKey);
+    const contact: MeshCoreContactRaw = {
+      publicKey: pubKey,
+      type: 3,
+      flags: 0,
+      outPathLen: 0,
+      outPath: new Uint8Array(64),
+      advName: 'Retry Room',
+      lastAdvert: 1,
+      advLat: 0,
+      advLon: 0,
+    };
+    const removeContact = vi.fn().mockResolvedValue(undefined);
+    const addOrUpdateContact = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('timeout'))
+      .mockResolvedValueOnce(undefined);
+    const conn = {
+      getContacts: vi.fn().mockResolvedValue([contact]),
+      setContactPath: vi.fn(),
+      removeContact,
+      addOrUpdateContact,
+    };
+    const { resetMeshcoreRoomCompanionSyncSinceForCatchUp } =
+      await import('./meshcoreRoomLoginPathSync');
+    await expect(resetMeshcoreRoomCompanionSyncSinceForCatchUp(conn, nodeId, pubKey)).resolves.toBe(
+      'reset',
+    );
+    expect(removeContact).toHaveBeenCalledTimes(1);
+    expect(addOrUpdateContact).toHaveBeenCalledTimes(2);
+  });
+
+  it('skips catch-up reset when the login abort signal is already aborted', async () => {
+    const pubKey = makePubKey(0x42);
+    const conn = {
+      getContacts: vi.fn(),
+      setContactPath: vi.fn(),
+      removeContact: vi.fn(),
+      addOrUpdateContact: vi.fn(),
+    };
+    const { resetMeshcoreRoomCompanionSyncSinceForCatchUp } =
+      await import('./meshcoreRoomLoginPathSync');
+    const signal = AbortSignal.abort();
+    await expect(
+      resetMeshcoreRoomCompanionSyncSinceForCatchUp(conn, pubkeyToNodeId(pubKey), pubKey, signal),
+    ).resolves.toBe('skipped');
+    expect(conn.getContacts).not.toHaveBeenCalled();
+    expect(conn.removeContact).not.toHaveBeenCalled();
+  });
 });

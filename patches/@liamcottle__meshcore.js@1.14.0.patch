@@ -67,7 +67,7 @@ index 541ce732e52444d094043e49fef295752da3d7bc..209edb4f2cccff89efee83c708796a5c
 +        };
 +        if (bufferReader.getRemainingBytesCount() >= 5) {
 +            payload.serverTimestamp = bufferReader.readUInt32LE();
-+            payload.permissions = bufferReader.readByte(); // ACL permissions (data[7])
++            payload.permissions = bufferReader.readByte(); // PERM_ACL_* after timestamp
 +            if (bufferReader.getRemainingBytesCount() >= 1) {
 +                payload.firmwareVerLevel = bufferReader.readByte();
 +            }

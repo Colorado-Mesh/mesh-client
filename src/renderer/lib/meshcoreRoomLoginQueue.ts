@@ -1,5 +1,8 @@
 import { MESHCORE_ROOM_LOGIN_ABORT_MESSAGE } from './meshcoreRoomLoginRpc';
-import { MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS } from './timeConstants';
+import {
+  MESHCORE_ROOM_LOGIN_QUEUE_SKIP_POLL_MS,
+  MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS,
+} from './timeConstants';
 
 /** One radio login at a time; many rooms can be queued. */
 let chain: Promise<void> = Promise.resolve();
@@ -21,6 +24,17 @@ function sleepMs(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+/** Wait up to `ms`, returning early when this room is cancelled (skipped). */
+async function sleepMsUnlessSkipped(ms: number, nodeId: number): Promise<void> {
+  const deadline = Date.now() + ms;
+  while (Date.now() < deadline) {
+    if (skippedNodeIds.has(nodeId)) return;
+    const slice = Math.min(MESHCORE_ROOM_LOGIN_QUEUE_SKIP_POLL_MS, deadline - Date.now());
+    if (slice <= 0) return;
+    await sleepMs(slice);
+  }
 }
 
 export function getMeshcoreRoomLoginQueueSnapshot(): {
@@ -73,7 +87,7 @@ export function enqueueMeshcoreRoomLogin(nodeId: number, run: () => Promise<void
         ? Math.max(0, MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS - (Date.now() - lastMeshLoginTxAt))
         : 0;
     if (waitMs > 0) {
-      await sleepMs(waitMs);
+      await sleepMsUnlessSkipped(waitMs, nodeId);
     }
     if (skippedNodeIds.has(nodeId)) {
       skippedNodeIds.delete(nodeId);

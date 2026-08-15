@@ -38,8 +38,12 @@ export async function resetMeshcoreRoomCompanionSyncSinceForCatchUp(
   conn: MeshcoreRoomLoginPathSyncConn,
   nodeId: number,
   pubKey: Uint8Array,
+  signal?: AbortSignal,
 ): Promise<'reset' | 'skipped' | 'failed'> {
-  if (!conn.removeContact || !conn.addOrUpdateContact) return 'skipped';
+  const removeContact = conn.removeContact;
+  const addOrUpdate = conn.addOrUpdateContact;
+  if (!removeContact || !addOrUpdate) return 'skipped';
+  if (signal?.aborted) return 'skipped';
   let contact: MeshCoreContactRaw | undefined;
   try {
     const contacts = await withTimeout(
@@ -53,34 +57,57 @@ export async function resetMeshcoreRoomCompanionSyncSinceForCatchUp(
     return 'failed';
   }
   if (!contact) return 'skipped';
+  if (signal?.aborted) return 'skipped';
+  const existing = contact;
   try {
     await withTimeout(
-      conn.removeContact(pubKey),
+      removeContact(pubKey),
       MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS,
       'meshcoreRoomSyncSinceResetRemove',
     );
-    await withTimeout(
-      conn.addOrUpdateContact(
+  } catch (e: unknown) {
+    console.warn(
+      '[meshcoreRoomLoginPathSync] sync_since catch-up remove failed ' +
+        (e instanceof Error ? e.message : String(e)),
+    );
+    return 'failed';
+  }
+  const addContact = (): Promise<void> =>
+    withTimeout(
+      addOrUpdate(
         pubKey,
-        contact.type,
-        contact.flags,
-        contact.outPathLen ?? 0,
-        contact.outPath instanceof Uint8Array ? contact.outPath : new Uint8Array(64),
-        contact.advName,
-        contact.lastAdvert,
-        contact.advLat,
-        contact.advLon,
+        existing.type,
+        existing.flags,
+        existing.outPathLen ?? 0,
+        existing.outPath instanceof Uint8Array ? existing.outPath : new Uint8Array(64),
+        existing.advName,
+        existing.lastAdvert,
+        existing.advLat,
+        existing.advLon,
       ),
       MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS,
       'meshcoreRoomSyncSinceResetAdd',
     );
+  // Once remove succeeds, always try to restore the contact (retry once). Do not abort
+  // between remove and add — that would drop the room from the companion table.
+  try {
+    await addContact();
     return 'reset';
   } catch (e: unknown) {
     console.warn(
-      '[meshcoreRoomLoginPathSync] sync_since catch-up reset failed ' +
+      '[meshcoreRoomLoginPathSync] sync_since catch-up add failed, retrying restore ' +
         (e instanceof Error ? e.message : String(e)),
     );
-    return 'failed';
+    try {
+      await addContact();
+      return 'reset';
+    } catch (e2: unknown) {
+      console.warn(
+        '[meshcoreRoomLoginPathSync] sync_since catch-up restore failed; contact may be missing ' +
+          (e2 instanceof Error ? e2.message : String(e2)),
+      );
+      return 'failed';
+    }
   }
 }
 

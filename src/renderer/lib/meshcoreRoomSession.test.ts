@@ -4,6 +4,7 @@ import {
   MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD,
   MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
   MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE,
+  MESHCORE_ROOM_PERM_READ_ONLY,
   meshcoreAbortablePromise,
   meshcoreApplyRoomSession,
   meshcoreBeginRoomLoginOperation,
@@ -199,6 +200,24 @@ describe('meshcoreRoomSession', () => {
     expect(meshcoreRoomCanPost(42)).toBe(true);
   });
 
+  it('login maps permissions=1 (PERM_ACL_READ_ONLY) to read-only', async () => {
+    meshcoreClearAllRoomSessions();
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: MESHCORE_ROOM_PERM_READ_ONLY });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    await meshcoreRoomLogin(conn, 42, pubKey, 'hello', {
+      guestPassword: 'hello',
+      adminPassword: '',
+    });
+    expect(meshcoreGetRoomSession(42)?.role).toBe('readonly');
+    expect(meshcoreRoomCanPost(42)).toBe(false);
+  });
+
   it('skips relogin when already logged in without forceRelogin', async () => {
     meshcoreClearAllRoomSessions();
     mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 2 });
@@ -319,6 +338,34 @@ describe('meshcoreRoomSession', () => {
     expect(meshcoreIsRoomLoggedIn(42)).toBe(true);
   });
 
+  it('aborts during retry backoff without waiting for the delay', async () => {
+    vi.useFakeTimers();
+    meshcoreClearAllRoomSessions();
+    mockRunMeshcoreRoomLogin.mockRejectedValue(new Error('timeout'));
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    const loginPromise = meshcoreRoomLogin(conn, 42, pubKey, 'hello', {});
+    const settled = loginPromise.then(
+      () => ({ ok: true as const }),
+      (err: unknown) => ({ ok: false as const, err }),
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    meshcoreCancelRoomLogin(42);
+    await vi.advanceTimersByTimeAsync(0);
+    const result = await settled;
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(meshcoreIsRoomLoginAbortError(result.err)).toBe(true);
+    }
+    expect(mockRunMeshcoreRoomLogin).toHaveBeenCalledTimes(1);
+  });
+
   it('tryRelogin reuses stored guest password before posting', async () => {
     meshcoreClearAllRoomSessions();
     mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 2 });
@@ -340,6 +387,29 @@ describe('meshcoreRoomSession', () => {
       hopsAway: undefined,
       signal: expect.any(AbortSignal),
     });
+  });
+
+  it('tryRelogin rethrows abort instead of treating it as a failed relogin', async () => {
+    meshcoreClearAllRoomSessions();
+    mockRunMeshcoreRoomLogin.mockReturnValue(new Promise(() => undefined));
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    meshcoreApplyRoomSession(42, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const relogin = meshcoreRoomTryRelogin(conn, 42, pubKey, 'post');
+    await vi.waitFor(() => {
+      expect(mockRunMeshcoreRoomLogin).toHaveBeenCalled();
+    });
+    meshcoreCancelRoomLogin(42);
+    await expect(relogin).rejects.toSatisfy((err: unknown) => meshcoreIsRoomLoginAbortError(err));
   });
 
   it('tryRelogin admin uses facade admin when session only has guest', async () => {

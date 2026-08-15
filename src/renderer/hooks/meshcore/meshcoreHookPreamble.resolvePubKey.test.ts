@@ -5,7 +5,10 @@ import {
   registerMeshcorePubKey,
 } from '../../lib/meshcore/meshcorePubKeyRegistry';
 import { pubkeyToNodeId } from '../../lib/meshcoreUtils';
-import { resolveMeshcoreNodePubKey } from './meshcoreHookPreamble';
+import {
+  reloadMeshcorePubKeyIfNodeIdMismatch,
+  resolveMeshcoreNodePubKey,
+} from './meshcoreHookPreamble';
 
 const PEER_PUBKEY_HEX = '0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20';
 
@@ -53,5 +56,59 @@ describe('resolveMeshcoreNodePubKey', () => {
 
     await expect(resolveMeshcoreNodePubKey(PEER_NODE_ID, new Map())).resolves.toEqual(PEER_PUBKEY);
     expect(window.electronAPI.db.getMeshcoreContactById).toHaveBeenCalledWith(PEER_NODE_ID);
+  });
+
+  it('ignores a map key that does not hash to nodeId and loads from SQLite', async () => {
+    const mismatched = new Uint8Array(32);
+    mismatched.fill(0xab);
+    expect(pubkeyToNodeId(mismatched)).not.toBe(PEER_NODE_ID);
+    vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue({
+      public_key: PEER_PUBKEY_HEX,
+    } as { node_id: number; public_key: string; on_radio: number });
+
+    const map = new Map([[PEER_NODE_ID, mismatched]]);
+    await expect(resolveMeshcoreNodePubKey(PEER_NODE_ID, map)).resolves.toEqual(PEER_PUBKEY);
+    expect(window.electronAPI.db.getMeshcoreContactById).toHaveBeenCalledWith(PEER_NODE_ID);
+  });
+});
+
+describe('reloadMeshcorePubKeyIfNodeIdMismatch', () => {
+  beforeEach(() => {
+    vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue(null);
+    clearMeshcorePubKeyRegistry();
+  });
+
+  it('returns the same key when it already matches nodeId', async () => {
+    const map = new Map([[PEER_NODE_ID, PEER_PUBKEY]]);
+    await expect(
+      reloadMeshcorePubKeyIfNodeIdMismatch(PEER_NODE_ID, PEER_PUBKEY, map, 'test'),
+    ).resolves.toEqual(PEER_PUBKEY);
+  });
+
+  it('replaces a mismatched map key from SQLite', async () => {
+    const mismatched = new Uint8Array(32);
+    mismatched.fill(0xcd);
+    const map = new Map([[PEER_NODE_ID, mismatched]]);
+    vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue({
+      public_key: PEER_PUBKEY_HEX,
+    } as { node_id: number; public_key: string; on_radio: number });
+
+    const resolved = await reloadMeshcorePubKeyIfNodeIdMismatch(
+      PEER_NODE_ID,
+      mismatched,
+      map,
+      'test',
+    );
+    expect(resolved).toEqual(PEER_PUBKEY);
+    expect(map.get(PEER_NODE_ID)).toEqual(PEER_PUBKEY);
+  });
+
+  it('throws when no matching key can be loaded', async () => {
+    const mismatched = new Uint8Array(32);
+    mismatched.fill(0xee);
+    const map = new Map([[PEER_NODE_ID, mismatched]]);
+    await expect(
+      reloadMeshcorePubKeyIfNodeIdMismatch(PEER_NODE_ID, mismatched, map, 'test'),
+    ).rejects.toThrow(/Room key out of sync/);
   });
 });

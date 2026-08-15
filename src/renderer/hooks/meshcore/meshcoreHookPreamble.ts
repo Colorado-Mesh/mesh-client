@@ -865,18 +865,22 @@ export function meshcoreFullPubKeyBytesFromContactDbHex(raw: string): Uint8Array
  * Resolve a 32-byte MeshCore contact pubkey for export/share/DM paths.
  * Order: runtime map → global registry → live store slice → SQLite contact row.
  */
+function meshcorePubKeyMatchesNodeId(pubKey: Uint8Array, nodeId: number): boolean {
+  return pubKey.length === 32 && pubkeyToNodeId(pubKey) === nodeId;
+}
+
 export async function resolveMeshcoreNodePubKey(
   nodeId: number,
   pubKeyByNodeId: ReadonlyMap<number, Uint8Array>,
   storePublicKey?: Uint8Array,
 ): Promise<Uint8Array | null> {
   const fromMap = pubKeyByNodeId.get(nodeId);
-  if (fromMap?.length === 32) return fromMap;
+  if (fromMap && meshcorePubKeyMatchesNodeId(fromMap, nodeId)) return fromMap;
 
   const fromRegistry = getMeshcorePubKey(nodeId);
-  if (fromRegistry?.length === 32) return fromRegistry;
+  if (fromRegistry && meshcorePubKeyMatchesNodeId(fromRegistry, nodeId)) return fromRegistry;
 
-  if (storePublicKey?.length === 32) return storePublicKey;
+  if (storePublicKey && meshcorePubKeyMatchesNodeId(storePublicKey, nodeId)) return storePublicKey;
 
   try {
     const contact = (await window.electronAPI.db.getMeshcoreContactById(nodeId)) as
@@ -891,6 +895,29 @@ export async function resolveMeshcoreNodePubKey(
     );
   }
   return null;
+}
+
+/**
+ * When the runtime map's 32-byte key does not hash to `nodeId`, reload from registry/DB
+ * and update the map. Throws if the key is still mismatched.
+ */
+export async function reloadMeshcorePubKeyIfNodeIdMismatch(
+  nodeId: number,
+  pubKey: Uint8Array,
+  pubKeyMap: Map<number, Uint8Array>,
+  logTag: string,
+): Promise<Uint8Array> {
+  if (meshcorePubKeyMatchesNodeId(pubKey, nodeId)) return pubKey;
+  try {
+    const resolved = await resolveMeshcoreNodePubKey(nodeId, pubKeyMap);
+    if (resolved && meshcorePubKeyMatchesNodeId(resolved, nodeId)) {
+      pubKeyMap.set(nodeId, resolved);
+      return resolved;
+    }
+  } catch (e: unknown) {
+    console.warn(`[${logTag}] pubkey reload failed ` + errLikeToLogString(e));
+  }
+  throw new Error('Room key out of sync — reconnect or refresh contacts.');
 }
 
 /** Pre-seed global pubkey registry from SQLite before PacketRouter subscribe (DM prefix decode). */
