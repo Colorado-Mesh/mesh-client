@@ -10,11 +10,15 @@ import { bytesToHex } from '@/shared/hexBytes';
 import { useNodeStore } from '../../stores/nodeStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
 import { errLikeToLogString } from '../errLikeToLogString';
-import { shouldApplyMeshcoreContact } from '../meshcoreLocallyDeletedContacts';
+import {
+  clearMeshcoreLocallyDeletedContact,
+  shouldApplyMeshcoreContact,
+} from '../meshcoreLocallyDeletedContacts';
 import {
   CONTACT_TYPE_LABELS,
   mergeHwModelOnContactUpdate,
   meshcoreContactTypeFromHwModel,
+  meshcoreIsPlaceholderNodeLongName,
   meshcoreMinimalNodeFromAdvertEvent,
   pubkeyToNodeId,
 } from '../meshcoreUtils';
@@ -50,7 +54,11 @@ export function persistMeshcoreNodeInfoAfterAdvert(
 
   const nodeId = event.nodeId > 0 ? event.nodeId : pubkeyToNodeId(publicKey);
   if (nodeId === 0) return;
-  if (!shouldApplyMeshcoreContact(nodeId)) return;
+  const tombstoned = !shouldApplyMeshcoreContact(nodeId);
+  if (tombstoned) {
+    // Live radio advert (128/138 / RF) means the companion re-added the contact.
+    clearMeshcoreLocallyDeletedContact(nodeId);
+  }
 
   registerMeshcorePubKey(nodeId, publicKey);
 
@@ -95,16 +103,22 @@ export function persistMeshcoreNodeInfoAfterAdvert(
   });
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
-  if (!existingRecord) {
+  if (!existingRecord || tombstoned) {
     if (built) {
+      let advName: string | null =
+        typeof event.longName === 'string' && event.longName.trim() ? event.longName.trim() : null;
+      if (!advName) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.
+        const stored = existingRecord?.longName?.trim();
+        if (stored && !meshcoreIsPlaceholderNodeLongName(existingRecord.longName, nodeId)) {
+          advName = stored;
+        }
+      }
       void window.electronAPI.db
         .saveMeshcoreContact({
           node_id: nodeId,
           public_key: bytesToHex(publicKey),
-          adv_name:
-            typeof event.longName === 'string' && event.longName.trim()
-              ? event.longName.trim()
-              : null,
+          adv_name: advName,
           contact_type: built.contactType,
           last_advert: lastAdvert,
           adv_lat: built.persistAdvLatDeg,
@@ -125,7 +139,11 @@ export function persistMeshcoreNodeInfoAfterAdvert(
     typeof event.longName === 'string' && event.longName.trim() ? event.longName.trim() : undefined;
   const existingHw = existingRecord.hwModel;
   let persistAdvName: string | undefined;
-  if (advNameTrim && !existingRecord.longName?.trim()) {
+  if (
+    advNameTrim &&
+    (!existingRecord.longName?.trim() ||
+      meshcoreIsPlaceholderNodeLongName(existingRecord.longName, nodeId))
+  ) {
     persistAdvName = advNameTrim;
   }
   if (opts?.contactType != null && Number.isFinite(opts.contactType)) {

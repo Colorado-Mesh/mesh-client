@@ -12,7 +12,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { parseMeshCoreRfPacket } from '../../../shared/meshcoreRfPacketParse';
 import { MAX_DEVICE_LOGS, MAX_TELEMETRY_POINTS } from '../../hooks/meshcore/meshcoreHookPreamble';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
-import { upsertNodeRecord } from '../../stores/nodeStore';
+import { upsertNode, upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import {
   classifyPayload,
   classifyProximity,
@@ -29,7 +29,12 @@ import {
   meshcoreRfResolvePathSender,
 } from '../meshcoreRawPacketSender';
 import { shouldCoalesceSelfFloodAdvert } from '../meshcoreRawSelfFloodAdvertCoalesce';
-import { meshcoreMergeContactHopsAwayFromPrevious, pubkeyToNodeId } from '../meshcoreUtils';
+import {
+  CONTACT_TYPE_LABELS,
+  mergeHwModelOnContactUpdate,
+  meshcoreMergeContactHopsAwayFromPrevious,
+  pubkeyToNodeId,
+} from '../meshcoreUtils';
 import { getMeshtasticConnectedMyNodeNum } from '../meshtasticConnectedNodeRef';
 import type { DomainEvent } from '../protocols/Protocol';
 import { MAX_RAW_PACKET_LOG_ENTRIES } from '../rawPacketLogConstants';
@@ -38,6 +43,7 @@ import { meshNodeToNodeRecord } from '../storeRecordAdapters';
 import { MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS } from '../timeConstants';
 import type { MeshNode, MQTTStatus, TelemetryPoint } from '../types';
 import type { DeviceLogEntry, MeshCoreSelfInfo, RxPacketEntry } from './meshcoreHookTypes';
+import { persistMeshcoreNodeInfoAfterAdvert } from './meshcoreLiveContactPersist';
 import {
   type MeshcoreMqttPacketLogBucket,
   tryTakeMeshcoreMqttPacketLogToken,
@@ -319,6 +325,67 @@ export function applyMeshcoreRfHopsAwayUpdate(
   upsertNodeRecord(storeId, meshNodeToNodeRecord(updated));
   persistMeshcoreContactLastRf(fromNodeId, snr, rssi, mergedHopsAway ?? hopCount, nowSec);
   persistMeshcoreRfHopHistory(fromNodeId, now, mergedHopsAway ?? hopCount, snr, rssi);
+}
+
+/**
+ * Companion push 128 is pubkey-only. Apply the on-air ADVERT name + device role so the contact
+ * list / Rooms tab show the advertised identity instead of `Node-XXXXXXXX`.
+ */
+function applyMeshcoreRfAdvertToStore(
+  ctx: MeshcoreRfParseContext,
+  now: number,
+  snr: number,
+  rssi: number,
+  deps: MeshcoreRfRxDeps,
+): void {
+  if (!ctx.parsed.ok || ctx.parsed.advert == null) return;
+  const advert = ctx.parsed.advert;
+  const identityId = deps.meshcoreIdentityIdRef.current;
+  if (!identityId) return;
+  const publicKey = advert.publicKey;
+  if (publicKey.length !== 32) return;
+  const nodeId = pubkeyToNodeId(publicKey);
+  if (nodeId === 0 || nodeId === deps.myNodeNumRef.current) return;
+
+  const name = advert.name.trim();
+  const incomingHw = CONTACT_TYPE_LABELS[advert.deviceRole] ?? 'Unknown';
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+  const existing = useNodeStore.getState().nodes[identityId]?.[nodeId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.
+  const hwModel = mergeHwModelOnContactUpdate(existing?.hwModel, incomingHw);
+  const lastHeardAt = advert.timestampSec > 0 ? advert.timestampSec : Math.floor(now / 1000);
+
+  upsertNode(identityId, {
+    nodeId,
+    ...(name ? { longName: name } : {}),
+    hwModel,
+    lastHeardAt,
+    publicKey,
+  });
+
+  const after = useNodeStore.getState().nodes[identityId][nodeId];
+  const mergedHops = meshcoreMergeContactHopsAwayFromPrevious(ctx.hopCount, after.hopsAway, 0);
+  upsertNodeRecord(identityId, {
+    ...after,
+    hopsAway: mergedHops ?? ctx.hopCount,
+    snr,
+    rssi,
+    source: 'rf',
+    heardViaMqttOnly: false,
+    viaMqtt: false,
+  });
+
+  persistMeshcoreNodeInfoAfterAdvert(
+    identityId,
+    {
+      nodeId,
+      longName: name || undefined,
+      lastHeardAt,
+      publicKey,
+      hwModel,
+    },
+    { contactType: advert.deviceRole },
+  );
 }
 
 function buildMeshcoreRfRawPacketEntry(
@@ -637,6 +704,7 @@ export function handleMeshcoreRfRx(payload: MeshcoreRfRxPayload, deps: MeshcoreR
   if (rawU8) {
     const ctx = buildMeshcoreRfParseContext(rawU8, deps.pubKeyPrefixMapRef.current);
     applyMeshcoreRfHopsAwayUpdate(ctx.fromNodeId, ctx.hopCount, now, snr, rssi, cachedDeps);
+    applyMeshcoreRfAdvertToStore(ctx, now, snr, rssi, deps);
 
     const effectiveFromNodeId =
       ctx.fromNodeId ?? meshtasticSenderIdForRawLogFallback(ctx.parseOk, rawU8);
