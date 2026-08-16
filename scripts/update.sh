@@ -220,6 +220,7 @@ check_ratspeak_patches() {
     'rsReticulum-discovery-announce-egress.patch|ratspeak/rsReticulum|19|rsReticulum discovery announce egress|https://github.com/ratspeak/rsReticulum/pull/19'
     'rsReticulum-inbound-raw-saturation-log.patch|ratspeak/rsReticulum||rsReticulum inbound-raw saturation log|'
     'rsReticulum-interface-tx-queue-stats.patch|ratspeak/rsReticulum||rsReticulum interface TX queue stats|'
+    'rsReticulum-pathless-link-exclude-rf.patch|ratspeak/rsReticulum||rsReticulum pathless Link exclude RF sinks|'
     'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF|4|rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF/pull/4'
     'rsLXMF-propagation-node-policy-setters.patch|ratspeak/rsLXMF|6|rsLXMF PropagationNode policy setters|https://github.com/ratspeak/rsLXMF/pull/6'
     'rsLXMF-propagation-node-deferred-messagestore-load.patch|ratspeak/rsLXMF||rsLXMF PropagationNode deferred messagestore load|'
