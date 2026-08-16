@@ -43,6 +43,7 @@ import {
   toggleRrcRoomFavourite,
 } from '@/renderer/lib/rrcRoomPrefs';
 import {
+  expandRrcHubSlashBody,
   parseRrcSlashInput,
   resolveRrcMsgTarget,
   RRC_HELP_I18N_KEYS,
@@ -247,13 +248,18 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
   const sendHubCommand = useCallback(
     async (body: string) => {
       if (status !== 'active' || !hubDestHash) return;
-      const isWho = /^\s*\/who(?:\s|$)/i.test(body);
+      const expanded = expandRrcHubSlashBody(body, activeRoom);
+      const isWho = /^\s*\/(?:who|names)(?:\s|$)/i.test(expanded);
       const hubRoom =
         !isWho && activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)
           ? activeRoom
           : undefined;
       const whoForceRoom = isWho
-        ? resolveRrcWhoTranscriptForceRoom(body, activeRoom, rooms.keys())
+        ? resolveRrcWhoTranscriptForceRoom(
+            expanded.replace(/^\s*\/names\b/i, '/who'),
+            activeRoom,
+            rooms.keys(),
+          )
         : null;
       if (whoForceRoom) {
         useRrcSessionStore.getState().reserveWhoTranscriptForce(whoForceRoom, hubDestHash);
@@ -262,7 +268,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
         const res = await rrcSendBounded({
           hub_dest_hash: hubDestHash,
           room: hubRoom,
-          body,
+          body: expanded,
           type: 'msg',
         });
         if (!res.ok && whoForceRoom) {
@@ -830,9 +836,14 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
             return;
           }
-          const isWho = /^\s*\/who(?:\s|$)/i.test(parsed.body);
+          const expanded = expandRrcHubSlashBody(parsed.body, activeRoom);
+          const isWho = /^\s*\/(?:who|names)(?:\s|$)/i.test(expanded);
           const whoForceRoom = isWho
-            ? resolveRrcWhoTranscriptForceRoom(parsed.body, activeRoom, rooms.keys())
+            ? resolveRrcWhoTranscriptForceRoom(
+                expanded.replace(/^\s*\/names\b/i, '/who'),
+                activeRoom,
+                rooms.keys(),
+              )
             : null;
           if (whoForceRoom) {
             useRrcSessionStore.getState().reserveWhoTranscriptForce(whoForceRoom, hubDestHash);
@@ -845,7 +856,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
                 !isWho && activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)
                   ? activeRoom
                   : undefined,
-              body: parsed.body,
+              body: expanded,
               type: 'msg',
             });
           } catch (e) {
@@ -861,7 +872,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
             return;
           }
-          appendSystemLines([t('rrc.slash.commandSent', { cmd: parsed.body })]);
+          appendSystemLines([t('rrc.slash.commandSent', { cmd: expanded })]);
           setDraft('');
           return;
         }

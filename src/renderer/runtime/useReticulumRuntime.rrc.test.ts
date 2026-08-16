@@ -47,6 +47,16 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
     expect(SOURCE).toMatch(/whoResult\.action === 'transcript'[\s\S]*?room = whoResult\.room/);
   });
 
+  it('surfaces empty-K_ROOM NOTICE/ERROR into the focused room via resolveRrcHubScopedNoticeRoom', () => {
+    expect(SOURCE).toContain('resolveRrcHubScopedNoticeRoom');
+    expect(SOURCE).toMatch(
+      /whoResult\.action === 'transcript'[\s\S]*?else if \(!isDirect\)[\s\S]*?resolveRrcHubScopedNoticeRoom/,
+    );
+    expect(SOURCE).toMatch(
+      /\(kind === 'error' \|\| kind === 'system'\) && !isDirect[\s\S]*?resolveRrcHubScopedNoticeRoom/,
+    );
+  });
+
   it('routes direct NOTICE into per-peer @hash DMs via applyRrcDirectMessageRoom', () => {
     expect(SOURCE).toContain('applyRrcDirectMessageRoom');
     expect(SOURCE).toMatch(/applyRrcDirectMessageRoom\(\{[\s\S]*?openDm:/);
