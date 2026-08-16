@@ -11,7 +11,7 @@ PATCH_FILE="${REPO_ROOT}/reticulum-sidecar/patches/rsReticulum-pathless-link-exc
 RNS_DIR="${RS_RETICULUM_DIR:-${REPO_ROOT}/.rsstack/rsReticulum}"
 MOD_RS="${RNS_DIR}/crates/rns-transport/src/actor/mod.rs"
 
-if [[ ! -d "${RNS_DIR}/.git" ]]; then
+if ! git -C "${RNS_DIR}" rev-parse --is-inside-work-tree > /dev/null 2>&1; then
   echo "error: rsReticulum not found at ${RNS_DIR}" >&2
   echo "Clone: git clone https://github.com/ratspeak/rsReticulum.git ${RNS_DIR}" >&2
   exit 1
