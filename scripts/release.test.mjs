@@ -167,6 +167,42 @@ describe('release.sh argv subprocess', () => {
     expect(r.stdout).toMatch(/^VERSION_TYPE=patch$/m);
   });
 
+  it('PARSE_ONLY: ignores bare -- (pnpm 11 run-script separator)', () => {
+    // Cut release / docs historically used `pnpm run release -- minor …`.
+    // pnpm 11 forwards that `--` into argv; rejecting it broke the workflow.
+    const r = spawnSync('bash', [RELEASE_SH, '--', 'minor', '--skip-dep-update'], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        MESH_CLIENT_RELEASE_PARSE_ONLY: '1',
+        MESH_CLIENT_ALLOW_PARSE_ONLY_IN_CI: '1',
+        MESH_CLIENT_RELEASE_YES: '1',
+      },
+    });
+    expect(r.error).toBeUndefined();
+    expect(r.status).toBe(0);
+    expect(r.stdout).toMatch(/^VERSION_TYPE=minor$/m);
+    expect(r.stdout).toMatch(/^SKIP_DEP_UPDATE=true$/m);
+    expect(r.stdout).toMatch(/^RELEASE_YES=true$/m);
+  });
+
+  it('PARSE_ONLY: pnpm run release -- minor --skip-dep-update (Cut release argv)', () => {
+    const r = spawnSync('pnpm', ['run', 'release', '--', 'minor', '--skip-dep-update'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        MESH_CLIENT_RELEASE_PARSE_ONLY: '1',
+        MESH_CLIENT_ALLOW_PARSE_ONLY_IN_CI: '1',
+        MESH_CLIENT_RELEASE_YES: '1',
+      },
+    });
+    expect(r.error).toBeUndefined();
+    expect(r.status).toBe(0);
+    expect(r.stdout).toMatch(/^VERSION_TYPE=minor$/m);
+    expect(r.stdout).toMatch(/^SKIP_DEP_UPDATE=true$/m);
+  });
+
   it('PARSE_ONLY: rejects under GitHub Actions without allow flag', () => {
     const r = spawnSync('bash', [RELEASE_SH, '--yes', '--auto'], {
       encoding: 'utf8',

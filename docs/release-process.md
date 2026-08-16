@@ -47,7 +47,7 @@ Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) ru
 1. (Optional) Run once with **dry_run** checked to confirm the computed version in the job summary (`feat(scope):` → minor, etc.).
 2. Re-run with dry_run unchecked. Default bump is **auto**; override with `patch` / `minor` / `major` / exact `X.Y.Z` when needed.
 3. **skip_dep_update** defaults to **true** — bump dependencies in a normal PR via `pnpm run update` before cutting.
-4. The workflow sets `MESH_CLIENT_RELEASE_YES=1` (non-interactive). Locally use `pnpm run release -- --yes` or the same env var.
+4. The workflow sets `MESH_CLIENT_RELEASE_YES=1` (non-interactive). Locally use `pnpm run release --yes` or the same env var.
 5. Wait for `release.yaml` + `flatpak.yaml` to attach draft artifacts, then **Publish** on GitHub.
 
 **Secret:** `RELEASE_PUSH_TOKEN` — fine-grained PAT (or GitHub App installation token) owned by a repo **admin** (so the merge-queue ruleset bypass applies), with **contents: write**, **workflows: write**, and **pull requests: write** (also used by `third-party-licenses.yaml` so bot PRs run required checks). Plain `GITHUB_TOKEN` cannot trigger tag workflows, cannot push past the ruleset, and cannot open check-running license PRs.
@@ -73,18 +73,19 @@ Local `scripts/release.sh` remains for emergencies when Actions is unavailable. 
 ```bash
 git checkout main
 git pull origin main
-pnpm run release                                  # auto-detect bump from commits since last tag
-pnpm run release minor                            # force minor
-pnpm run release 5.21.0                           # force exact version
-pnpm run release --auto                           # explicit auto-detect
-pnpm run release --finish                         # complete a mid-release after package.json was already bumped
-pnpm run release -- --yes                         # non-interactive (skip both confirmation prompts)
-pnpm run release -- --yes --skip-dep-update patch # CI-style: no pnpm update
-MESH_CLIENT_RELEASE_YES=1 pnpm run release        # same as --yes (avoids pnpm's own -y)
+pnpm run release                               # auto-detect bump from commits since last tag
+pnpm run release minor                         # force minor
+pnpm run release 5.21.0                        # force exact version
+pnpm run release --auto                        # explicit auto-detect
+pnpm run release --finish                      # complete a mid-release after package.json was already bumped
+pnpm run release --yes                         # non-interactive (skip both confirmation prompts)
+pnpm run release --yes --skip-dep-update patch # CI-style: no pnpm update
+MESH_CLIENT_RELEASE_YES=1 pnpm run release     # same as --yes (avoids pnpm's own -y)
 # Invalid: --auto cannot be combined with patch|minor|major|x.x.x
+# Note: `pnpm run release -- minor` is fine — pnpm 11 forwards bare `--`; release.sh ignores it.
 ```
 
-The script prompts twice by default (start pre-flight, then confirm after checks pass). Pass **`-- --yes`** after `pnpm run release` (or set `MESH_CLIENT_RELEASE_YES=1`) to skip those prompts — useful for automation. Use `--` so pnpm does not swallow `-y`/`--yes`. **`--auto` plus an explicit bump is rejected.** **Expect several minutes** for the full validation chain.
+The script prompts twice by default (start pre-flight, then confirm after checks pass). Pass **`--yes`** after `pnpm run release` (or set `MESH_CLIENT_RELEASE_YES=1`) to skip those prompts — useful for automation. **`--auto` plus an explicit bump is rejected.** **Expect several minutes** for the full validation chain.
 
 **Full suite only:** Release must never use `test:staged`, `test:changed`, or `vitest related`. Pre-commit may run a staged subset for speed; release matches PR CI by running the unrestricted `pnpm run test:run` (`vitest run`) and does not soft-skip actionlint/yamllint when those tools are missing.
 

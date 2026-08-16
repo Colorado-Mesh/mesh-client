@@ -110,9 +110,10 @@ print_release_usage() {
   echo "       pnpm run release minor          # Force minor release"
   echo "       pnpm run release 2.0.0          # Force specific version"
   echo "       pnpm run release --finish       # Complete mid-release (no re-bump)"
-  echo "       pnpm run release -- --yes       # Skip confirmation prompts ( -- so pnpm keeps -y )"
-  echo "       pnpm run release -- --skip-dep-update  # Skip pnpm update/dedupe"
+  echo "       pnpm run release --yes          # Skip confirmation prompts"
+  echo "       pnpm run release --skip-dep-update  # Skip pnpm update/dedupe"
   echo "       MESH_CLIENT_RELEASE_YES=1 pnpm run release   # Same as --yes"
+  echo "       (Bare -- from \`pnpm run release -- …\` is ignored; pnpm 11 forwards it.)"
 }
 
 commit_tag_and_push_release() {
@@ -290,6 +291,9 @@ fi
 POSITIONAL_COUNT=0
 for arg in "$@"; do
   case "$arg" in
+    # pnpm 11+ forwards the run-script separator: `pnpm run release -- minor`
+    # becomes argv `-- minor`. Treat bare `--` as a no-op so CI/docs stay valid.
+    --) ;;
     --yes | -y)
       RELEASE_YES=true
       ;;
