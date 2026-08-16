@@ -15,6 +15,7 @@ RS_RETICULUM_APPLY_SCRIPTS=(
   apply-rsReticulum-inbound-raw-saturation-log.sh
   apply-rsReticulum-interface-tx-queue-stats.sh
   apply-rsReticulum-pathless-link-exclude-rf.sh
+  apply-rsReticulum-announce-rebroadcast-exclude-rf.sh
 )
 
 RS_LXMF_APPLY_SCRIPTS=(
