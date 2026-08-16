@@ -135,6 +135,16 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     ...(record.reticulumDeliveryMethod
       ? { reticulumDeliveryMethod: record.reticulumDeliveryMethod }
       : {}),
+    ...(record.reticulumAttachmentPath
+      ? { reticulumAttachmentPath: record.reticulumAttachmentPath }
+      : {}),
+    ...(record.reticulumAttachmentKind
+      ? { reticulumAttachmentKind: record.reticulumAttachmentKind }
+      : {}),
+    ...(record.reticulumAudioMode != null ? { reticulumAudioMode: record.reticulumAudioMode } : {}),
+    ...(record.reticulumAudioDurationSec != null
+      ? { reticulumAudioDurationSec: record.reticulumAudioDurationSec }
+      : {}),
   };
 }
 
@@ -424,6 +434,8 @@ export function reticulumDbRowToMessageRecord(row: {
   delivery_status?: string | null;
   delivery_method?: string | null;
   attachment_path?: string | null;
+  audio_mode?: number | null;
+  audio_duration_sec?: number | null;
 }): MessageRecord {
   const from = reticulumHashToNodeId(row.sender_id);
   registerReticulumDestinationHash(from, row.sender_id);
@@ -462,5 +474,12 @@ export function reticulumDbRowToMessageRecord(row: {
     ...(receivedVia ? { receivedVia } : {}),
     ...(deliveryMethod ? { reticulumDeliveryMethod: deliveryMethod } : {}),
     ...(row.attachment_path ? { reticulumAttachmentPath: row.attachment_path } : {}),
+    ...(row.attachment_path && row.audio_mode != null
+      ? { reticulumAttachmentKind: 'audio' as const }
+      : {}),
+    ...(row.audio_mode != null ? { reticulumAudioMode: row.audio_mode } : {}),
+    ...(row.audio_duration_sec != null
+      ? { reticulumAudioDurationSec: row.audio_duration_sec }
+      : {}),
   };
 }

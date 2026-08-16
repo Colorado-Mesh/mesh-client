@@ -159,6 +159,8 @@ export interface ProtocolCapabilities {
   hasRncpTransfer: boolean;
   /** Reticulum: LXST voice calls (Peers / Chat DM) */
   hasLxstVoice: boolean;
+  /** Reticulum: LXMF voice memo recording + playback in DM composer / chat */
+  hasReticulumVoiceMemo: boolean;
   /** Reticulum: LRGP games (Games tab, Peers / Chat DM Challenge) */
   hasLrgpGames: boolean;
   /** Whether Cancel/disconnect should stop Noble BLE scanning (Meshtastic/MeshCore on macOS/Windows). */
@@ -243,6 +245,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumRemotePanel: false,
   hasRncpTransfer: false,
   hasLxstVoice: false,
+  hasReticulumVoiceMemo: false,
   hasLrgpGames: false,
   hasNobleBleScanning: true,
   hasLxmfPaper: false,
@@ -323,6 +326,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumRemotePanel: false,
   hasRncpTransfer: false,
   hasLxstVoice: false,
+  hasReticulumVoiceMemo: false,
   hasLrgpGames: false,
   hasNobleBleScanning: true,
   hasLxmfPaper: false,
@@ -402,6 +406,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumRemotePanel: true,
   hasRncpTransfer: true,
   hasLxstVoice: true,
+  hasReticulumVoiceMemo: true,
   hasLrgpGames: true,
   hasNobleBleScanning: false,
   hasLxmfPaper: true,

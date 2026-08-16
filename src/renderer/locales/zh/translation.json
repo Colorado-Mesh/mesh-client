@@ -693,7 +693,20 @@
     "meshcoreFastSend": {
       "warning": "您发送的速度超过了网格可以中继的速度。在繁忙的网格上，中继器可能会丢弃一起发送的消息—在消息之间留几秒钟。"
     },
-    "outboxLegacyMultipartBlocked": "该排队消息使用了多部分MeshCore分裂，不再发送。取消它并发送一条较短的消息（或多个单独的较短消息）。"
+    "outboxLegacyMultipartBlocked": "该排队消息使用了多部分MeshCore分裂，不再发送。取消它并发送一条较短的消息（或多个单独的较短消息）。",
+    "voiceMemo": {
+      "recordAria": "录制语音",
+      "playAria": "播放语音备忘录",
+      "pauseAria": "暂停语音备忘录",
+      "seekAria": "查找语音备忘录播放位置",
+      "containerAria": "语音备忘录",
+      "sendAria": "发送语音备忘录",
+      "callBusy": "录制备忘录之前，请挂断语音通话。",
+      "micDenied": "录制语音备忘录需要麦克风访问权限。",
+      "tooLargeForWire": "语音备忘录太大，无法发送。录制一个较短的剪辑。",
+      "tooLargeForPropagation": "语音消息大于传播节点限制。只有当收件人在线时，它才会派送。缩短存储时间，以便线下派送。",
+      "directOnlyBadge": "仅限直接存储—对于离线存储来说太大"
+    }
   },
   "chatPayload": {
     "mention": "提及{{label}}",

@@ -693,7 +693,20 @@
     "meshcoreFastSend": {
       "warning": "Je verzendt sneller dan de mesh kan doorgeven. Op een drukke mesh kunnen herhalers berichten die dicht bij elkaar zijn verzonden laten vallen — laat een paar seconden tussen berichten."
     },
-    "outboxLegacyMultipartBlocked": "Dit bericht in de wachtrij maakte gebruik van meerdelige MeshCore-splitsing, die niet langer wordt verzonden. Annuleer het en stuur een korter bericht (of meerdere afzonderlijke kortere berichten)."
+    "outboxLegacyMultipartBlocked": "Dit bericht in de wachtrij maakte gebruik van meerdelige MeshCore-splitsing, die niet langer wordt verzonden. Annuleer het en stuur een korter bericht (of meerdere afzonderlijke kortere berichten).",
+    "voiceMemo": {
+      "recordAria": "Stem opnemen",
+      "playAria": "Spraakopname",
+      "pauseAria": "Spraakmemo pauzeren",
+      "seekAria": "Afspeelpositie spraakmemo zoeken",
+      "containerAria": "Spraakopname",
+      "sendAria": "Spraakopname",
+      "callBusy": "Hang de spraakoproep op voordat u een memo opneemt.",
+      "micDenied": "Microfoontoegang is vereist om een spraakmemo op te nemen.",
+      "tooLargeForWire": "Spraakmemo is te groot om te verzenden. Neem een kortere clip op.",
+      "tooLargeForPropagation": "Spraakbericht is groter dan de limiet van de voortplantingsnode. Het wordt alleen bezorgd wanneer de ontvanger online is. Verkort het om het op te slaan voor offline bezorging.",
+      "directOnlyBadge": "Alleen direct — te groot voor offline opslag"
+    }
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

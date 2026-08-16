@@ -41,6 +41,12 @@ import type {
   ReticulumSidecarStatus,
 } from './reticulum-types';
 import type {
+  VoiceMemoAudioRequest,
+  VoiceMemoOkResponse,
+  VoiceMemoSessionRequest,
+  VoiceMemoStartResponse,
+} from './reticulum-voice-memo-types';
+import type {
   RrcConnectRequest,
   RrcDisconnectRequest,
   RrcHubInfo,
@@ -223,6 +229,15 @@ export interface ReadReticulumAttachmentAsDataUrlOpts {
 /** IPC response for `chat:readReticulumAttachmentAsDataUrl`. */
 export interface ReadReticulumAttachmentAsDataUrlResult {
   dataUrl: string | null;
+}
+
+/**
+ * IPC response for `chat:readReticulumAttachmentBytes`.
+ * Used to read a jailed OggS audio file (≤256 KiB).
+ */
+export interface ReadReticulumAttachmentBytesResult {
+  /** Base64-encoded file contents, or null on failure / out-of-jail / rate-limit. */
+  dataBase64: string | null;
 }
 
 export type OutboxStatus = 'queued' | 'sending' | 'blocked' | 'failed';
@@ -1072,6 +1087,8 @@ export interface ElectronAPI {
     readReticulumAttachmentAsDataUrl: (
       opts: ReadReticulumAttachmentAsDataUrlOpts,
     ) => Promise<ReadReticulumAttachmentAsDataUrlResult>;
+    /** Read a jailed OggS audio attachment (≤256 KiB) as base64. */
+    readReticulumAttachmentBytes: (filePath: string) => Promise<ReadReticulumAttachmentBytesResult>;
     linkPreview: {
       fetch: (url: string) => Promise<{
         title: string;
@@ -1180,6 +1197,16 @@ export interface ElectronAPI {
       hangup: () => Promise<VoiceOkResponse>;
       mute: (opts: VoiceMuteRequest) => Promise<VoiceOkResponse>;
       sendAudio: (opts: VoiceAudioRequest) => Promise<VoiceOkResponse>;
+    };
+    /**
+     * LXMF voice memos (FIELD_AUDIO Ogg Opus). Dedicated IPC — generic proxyPost
+     * rejects `/api/v1/voice/memo/*` paths so memo PCM does not share the proxy bucket.
+     */
+    voiceMemo: {
+      start: () => Promise<VoiceMemoStartResponse>;
+      sendAudio: (opts: VoiceMemoAudioRequest) => Promise<VoiceMemoOkResponse>;
+      stop: (opts: VoiceMemoSessionRequest) => Promise<VoiceMemoOkResponse>;
+      cancel: (opts: VoiceMemoSessionRequest) => Promise<VoiceMemoOkResponse>;
     };
     /**
      * LRGP games (lrgp-rs). Dedicated IPC channels — generic `proxyGet`/`proxyPost`

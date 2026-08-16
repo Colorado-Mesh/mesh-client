@@ -288,6 +288,8 @@ export interface ApplyReticulumOutboundDeliveryStatusOpts {
   sentVia?: string | null;
   deliveryMethod?: string | null;
   deliveryAttempts?: number | null;
+  /** Sidecar terminal error code (e.g. message_too_large_for_propagation). */
+  error?: string | null;
 }
 
 /** Apply sidecar Completes/Fails (and optional egress `sent_via`): store + SQLite. */
@@ -317,11 +319,15 @@ export function applyReticulumOutboundDeliveryStatus(
     opts?.deliveryAttempts != null && Number.isFinite(opts.deliveryAttempts)
       ? clampDeliveryAttempts(opts.deliveryAttempts)
       : undefined;
+  const errorMessage =
+    status === 'failed' && opts?.error === 'message_too_large_for_propagation'
+      ? 'message_too_large_for_propagation'
+      : undefined;
   const applied = persistReticulumOutboundMessageStatus(
     identityId,
     normalizedHash,
     status,
-    undefined,
+    errorMessage,
     sentVia,
     deliveryMethod,
     deliveryAttempts,

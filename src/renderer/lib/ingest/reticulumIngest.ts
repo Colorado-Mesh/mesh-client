@@ -59,6 +59,8 @@ export interface ReticulumLxmfPayload {
   delivery_status?: string;
   delivery_method?: string;
   attachment?: { file_name?: string; mime_type?: string; data_base64?: string };
+  /** LXMF FIELD_AUDIO voice memo (mode AM_OPUS_OGG = 16). */
+  audio?: { mode: number; data_base64: string; size_bytes?: number };
   icon_appearance?: ReticulumIconAppearanceWire | null;
 }
 
@@ -402,6 +404,7 @@ export function persistReticulumOutboundRecord(
       Number.isFinite(record.reticulumDeliveryAttempts)
         ? { delivery_attempts: Math.trunc(record.reticulumDeliveryAttempts) }
         : {}),
+      attachment_path: record.reticulumAttachmentPath ?? null,
     })
     .catch((e: unknown) => {
       console.warn('[reticulumIngest] save outbound ' + errLikeToLogString(e));

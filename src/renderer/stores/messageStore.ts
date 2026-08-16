@@ -57,6 +57,12 @@ export interface MessageRecord {
   reticulumDeliveryAttempts?: number;
   /** Saved attachment path on disk (local saves). */
   reticulumAttachmentPath?: string;
+  /** Kind of inbound attachment saved at reticulumAttachmentPath. */
+  reticulumAttachmentKind?: 'image' | 'audio';
+  /** LXMF FIELD_AUDIO mode (16 = AM_OPUS_OGG). */
+  reticulumAudioMode?: number;
+  /** Estimated audio duration in seconds (decoded client-side; optional). */
+  reticulumAudioDurationSec?: number;
   /** Message was replayed from a Store & Forward server (Meshtastic only). */
   viaStoreForward?: boolean;
 }
@@ -99,6 +105,9 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'reticulumDeliveryMethod',
   'reticulumDeliveryAttempts',
   'reticulumAttachmentPath',
+  'reticulumAttachmentKind',
+  'reticulumAudioMode',
+  'reticulumAudioDurationSec',
   'viaStoreForward',
 ];
 

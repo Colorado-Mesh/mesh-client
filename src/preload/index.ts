@@ -17,6 +17,7 @@ import type {
   OutboxStatus,
   ReadReticulumAttachmentAsDataUrlOpts,
   ReadReticulumAttachmentAsDataUrlResult,
+  ReadReticulumAttachmentBytesResult,
   ReticulumIdentityBackupImportDialogResult,
   ReticulumIdentityExportSaveResult,
   ReticulumIdentityImportDialogResult,
@@ -1225,6 +1226,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       sendAudio: (opts: { profile?: number; channels: number; samples_b64: string }) =>
         unwrapReticulumProxy(ipcRenderer.invoke('reticulum:voiceSendAudio', opts)),
     },
+    voiceMemo: {
+      start: () => unwrapReticulumProxy(ipcRenderer.invoke('reticulum:voiceMemoStart', {})),
+      sendAudio: (opts: { session_id: string; channels: 1; samples_b64: string }) =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:voiceMemoSendAudio', opts)),
+      stop: (opts: { session_id: string }) =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:voiceMemoStop', opts)),
+      cancel: (opts: { session_id: string }) =>
+        unwrapReticulumProxy(ipcRenderer.invoke('reticulum:voiceMemoCancel', opts)),
+    },
     /** LRGP games — dedicated IPC (blocked on generic proxy). */
     games: {
       getStatus: () => unwrapReticulumProxy(ipcRenderer.invoke('reticulum:gamesStatus')),
@@ -1337,6 +1347,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
         'chat:readReticulumAttachmentAsDataUrl',
         opts,
       ) as Promise<ReadReticulumAttachmentAsDataUrlResult>,
+    readReticulumAttachmentBytes: (filePath: string) =>
+      ipcRenderer.invoke(
+        'chat:readReticulumAttachmentBytes',
+        filePath,
+      ) as Promise<ReadReticulumAttachmentBytesResult>,
     linkPreview: {
       fetch: (url: string) =>
         ipcRenderer.invoke('chat:fetchLinkPreview', url) as Promise<{

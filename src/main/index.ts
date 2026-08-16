@@ -159,6 +159,10 @@ import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
 import { readFileUpTo } from './readFileUpTo';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
 import {
+  readReticulumAttachmentBytes,
+  takeReticulumAttachmentAudioRateToken,
+} from './reticulum-attachment-audio';
+import {
   readReticulumAttachmentAsDataUrl,
   takeReticulumAttachmentImageRateToken,
 } from './reticulum-attachment-image';
@@ -4902,6 +4906,27 @@ ipcMain.handle('chat:readReticulumAttachmentAsDataUrl', async (event, opts: unkn
   } catch (err) {
     console.error(
       '[IPC] chat:readReticulumAttachmentAsDataUrl failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('chat:readReticulumAttachmentBytes', async (event, filePath: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  if (typeof filePath !== 'string' || !filePath.trim() || filePath.length > 512) {
+    throw new Error('filePath must be a non-empty string');
+  }
+  if (!takeReticulumAttachmentAudioRateToken()) {
+    console.debug('[IPC] chat:readReticulumAttachmentBytes rate limited');
+    return { dataBase64: null };
+  }
+  try {
+    const dataBase64 = await readReticulumAttachmentBytes(filePath);
+    return { dataBase64 };
+  } catch (err) {
+    console.error(
+      '[IPC] chat:readReticulumAttachmentBytes failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

@@ -693,7 +693,20 @@
     "readOnlyDisconnected": "Not connected — messages are read-only",
     "starredDm": "DM: {{name}}",
     "starredChannel": "ch{{channel}}",
-    "mentionSuggestionsAria": "Mention suggestions"
+    "mentionSuggestionsAria": "Mention suggestions",
+    "voiceMemo": {
+      "recordAria": "Record voice memo",
+      "playAria": "Play voice memo",
+      "pauseAria": "Pause voice memo",
+      "seekAria": "Seek voice memo playback position",
+      "containerAria": "Voice memo",
+      "sendAria": "Send voice memo",
+      "callBusy": "Hang up the voice call before recording a memo.",
+      "micDenied": "Microphone access is required to record a voice memo.",
+      "tooLargeForWire": "Voice memo is too large to send. Record a shorter clip.",
+      "tooLargeForPropagation": "Voice message is larger than the propagation-node limit. It will deliver only when the recipient is online. Shorten it to store it for offline delivery.",
+      "directOnlyBadge": "Direct only — too large for offline storage"
+    }
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

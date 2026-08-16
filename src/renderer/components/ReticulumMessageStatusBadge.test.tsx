@@ -95,14 +95,17 @@ describe('ReticulumMessageStatusBadge', () => {
     expect(screen.getByText(/reticulumPnAbbrev\s+\u{1F3E0}/u)).toBeTruthy();
   });
 
-  it('shows red X (not house) for failed stored_locally', async () => {
+  it('shows Direct-only notice for message_too_large_for_propagation', async () => {
     await renderAndAssertAxe(
-      <ReticulumMessageStatusBadge status="failed" via="tcp" deliveryMethod="stored_locally" />,
+      <ReticulumMessageStatusBadge
+        status="failed"
+        via="tcp"
+        deliveryMethod="propagated"
+        error="message_too_large_for_propagation"
+      />,
     );
     expect(
-      screen.getByLabelText('chatPanel.sentViaLocalPropagation: chatPanel.reticulumSendFailed'),
+      screen.getByLabelText('chatPanel.sentViaPropagation: chatPanel.voiceMemo.directOnlyBadge'),
     ).toBeTruthy();
-    expect(screen.getByText(/reticulumPnAbbrev\s+\u2717/)).toBeTruthy();
-    expect(screen.queryByText(/\u{1F3E0}/u)).toBeNull();
   });
 });

@@ -693,7 +693,20 @@
     "meshcoreFastSend": {
       "warning": "Stai inviando più velocemente di quanto la rete possa trasmettere. Su una mesh occupata, i ripetitori possono rilasciare i messaggi inviati vicini — lasciare alcuni secondi tra i messaggi."
     },
-    "outboxLegacyMultipartBlocked": "Questo messaggio in coda utilizzava la suddivisione MeshCore in più parti, che non viene più inviata. Annullalo e invia un messaggio più breve (o più messaggi brevi separati)."
+    "outboxLegacyMultipartBlocked": "Questo messaggio in coda utilizzava la suddivisione MeshCore in più parti, che non viene più inviata. Annullalo e invia un messaggio più breve (o più messaggi brevi separati).",
+    "voiceMemo": {
+      "recordAria": "Registra voce",
+      "playAria": "Voice memo",
+      "pauseAria": "Metti in pausa il promemoria vocale",
+      "seekAria": "Cerca la posizione di riproduzione del promemoria vocale",
+      "containerAria": "Voice memo",
+      "sendAria": "Voice memo",
+      "callBusy": "Riagganciare la chiamata vocale prima di registrare un promemoria.",
+      "micDenied": "L'accesso al microfono è necessario per registrare un promemoria vocale.",
+      "tooLargeForWire": "Memo vocale troppo grande per essere inviato. Registra una clip più corta.",
+      "tooLargeForPropagation": "Il messaggio vocale è più grande del limite del nodo di propagazione. Consegnerà solo quando il destinatario è online. Abbrevialo per conservarlo per la consegna offline.",
+      "directOnlyBadge": "Solo diretto — troppo grande per l'archiviazione offline"
+    }
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

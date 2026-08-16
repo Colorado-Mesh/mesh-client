@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/refs */
 import 'emoji-picker-element';
 
-import { ChevronDown, ChevronUp, CornerUpLeft, MapPin } from 'lucide-react-motion';
+import { ChevronDown, ChevronUp, CornerUpLeft, MapPin, Mic } from 'lucide-react-motion';
 import {
   type ReactNode,
   type RefObject,
@@ -19,6 +19,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import type { ChatMessage, MeshNode, MeshProtocol } from '@/renderer/lib/types';
+import { useReticulumVoiceMemoStore } from '@/renderer/stores/reticulumVoiceMemoStore';
 import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
 
 import {
@@ -191,6 +192,8 @@ export interface ChatComposerProps {
    */
   onSendLocationWaypoint?: (lat: number, lon: number) => Promise<void>;
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
+  /** When set, renders a mic button that triggers voice memo recording. */
+  onVoiceMemo?: () => void;
   className?: string;
 }
 
@@ -224,6 +227,7 @@ export function ChatComposer({
   resolveShareLocation,
   onSendLocationWaypoint,
   textareaRef,
+  onVoiceMemo,
   className,
 }: ChatComposerProps) {
   const { t } = useTranslation();
@@ -1519,20 +1523,25 @@ export function ChatComposer({
               : null}
           </div>
         ) : (
-          <button
-            type="button"
-            onMouseDown={(e) => {
-              e.preventDefault();
-            }}
-            onClick={() => {
-              void handleSend();
-            }}
-            disabled={!input.trim() || sending || inputChunks === null || disabled}
-            aria-label={sendLabel}
-            className={sendButtonClass}
-          >
-            {sendLabel}
-          </button>
+          <div className="flex items-center gap-1">
+            {onVoiceMemo != null && !input.trim() && !sending && (
+              <VoiceMemoComposerButton onVoiceMemo={onVoiceMemo} disabled={disabled} />
+            )}
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+              }}
+              onClick={() => {
+                void handleSend();
+              }}
+              disabled={!input.trim() || sending || inputChunks === null || disabled}
+              aria-label={sendLabel}
+              className={sendButtonClass}
+            >
+              {sendLabel}
+            </button>
+          </div>
         )}
       </div>
 
@@ -1587,5 +1596,43 @@ export function ChatComposer({
         </ComposerAmberCallout>
       )}
     </div>
+  );
+}
+
+function VoiceMemoComposerButton({
+  onVoiceMemo,
+  disabled,
+}: {
+  onVoiceMemo: () => void;
+  disabled?: boolean;
+}) {
+  const { t } = useTranslation();
+  const phase = useReticulumVoiceMemoStore((s) => s.phase);
+  const elapsedSec = useReticulumVoiceMemoStore((s) => s.elapsedSec);
+  const recording = phase === 'recording' || phase === 'starting';
+  const busy = phase === 'stopping' || phase === 'sending';
+  return (
+    <button
+      type="button"
+      aria-label={
+        recording ? t('chatPanel.voiceMemo.sendAria') : t('chatPanel.voiceMemo.recordAria')
+      }
+      onClick={onVoiceMemo}
+      disabled={disabled || busy}
+      className={
+        recording
+          ? 'rounded-xl bg-red-600/80 p-2.5 text-white hover:bg-red-500 disabled:opacity-40'
+          : 'rounded-xl p-2.5 text-gray-400 hover:bg-slate-600 hover:text-white disabled:opacity-40'
+      }
+    >
+      <span className="flex items-center gap-1">
+        <Mic aria-hidden className="h-4 w-4" size={16} />
+        {recording && elapsedSec > 0 ? (
+          <span className="text-xs tabular-nums" aria-hidden>
+            {elapsedSec}s
+          </span>
+        ) : null}
+      </span>
+    </button>
   );
 }

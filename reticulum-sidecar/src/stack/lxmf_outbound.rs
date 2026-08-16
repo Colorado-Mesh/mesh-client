@@ -193,6 +193,8 @@ pub struct LxmfOutboundDriver {
     pending_pn_targets: HashMap<[u8; 32], [u8; 16]>,
     /// When local-prop is serving, cascade deposits go in-process (no self-Link).
     local_prop_node: Option<Arc<Mutex<PropagationNode>>>,
+    /// Effective PN deposit size limit (from `propagation_limit_kb`).
+    propagation_max_message_size: usize,
     /// Local LXMF identity (retained for driver construction / future failed-detail payloads).
     #[allow(dead_code)]
     self_lxmf_hash: String,
@@ -234,6 +236,8 @@ impl LxmfOutboundDriver {
             pending_pn_deposits: HashMap::new(),
             pending_pn_targets: HashMap::new(),
             local_prop_node: None,
+            propagation_max_message_size:
+                crate::stack::pn_hosting_policy::DEFAULT_PROPAGATION_LIMIT_KB.saturating_mul(1024),
             self_lxmf_hash: self_lxmf_hash.clone(),
             self_display_name,
         };
@@ -304,6 +308,11 @@ impl LxmfOutboundDriver {
     /// instead of opening a self-Link (official PN parity: host store, not loopback Link).
     pub fn set_local_prop_node(&mut self, node: Option<Arc<Mutex<PropagationNode>>>) {
         self.local_prop_node = node;
+    }
+
+    /// Update the PN deposit size ceiling used for oversize preflight.
+    pub fn set_propagation_max_message_size(&mut self, max_bytes: usize) {
+        self.propagation_max_message_size = max_bytes.max(1);
     }
 
     pub fn known_identities_for_propagation(&self) -> HashMap<String, [u8; 64]> {
@@ -701,6 +710,27 @@ impl LxmfOutboundDriver {
                 }
             }
         };
+        // Preflight vs PN max_message_size — rsLXMF rejects oversized deposits silently;
+        // surface a distinct terminal error so the UI never treats this as a PN outage.
+        let limit = self.propagation_max_message_size;
+        if packed.len() > limit {
+            tracing::warn!(
+                target: "lxmf-outbound",
+                prop = %prop_hex,
+                dest = %hex::encode(message.destination_hash),
+                size_bytes = packed.len(),
+                limit_bytes = limit,
+                "DeliverPropagated: message too large for propagation — terminal (no cascade)"
+            );
+            self.emit_outbound_failed_too_large_for_propagation(
+                router,
+                event_tx,
+                message,
+                limit,
+                packed.len(),
+            );
+            return;
+        }
         let hops = route_hops_for(&self.route_hops, prop_hash);
         let message_hash_hex = message.hash.as_ref().map(hex::encode);
         let transient_id_hex = message.transient_id.as_ref().map(hex::encode);
@@ -1161,6 +1191,58 @@ impl LxmfOutboundDriver {
                 None,
                 None,
                 Some(attempts),
+                None,
+                None,
+                None,
+            );
+        }
+    }
+
+    /// Terminal failure when packed size exceeds the PN deposit limit.
+    /// Does **not** advance the cascade — Direct was already tried; offline store is impossible.
+    fn emit_outbound_failed_too_large_for_propagation(
+        &mut self,
+        router: &mut LxmRouter,
+        event_tx: &broadcast::Sender<String>,
+        mut message: LxMessage,
+        limit_bytes: usize,
+        size_bytes: usize,
+    ) {
+        message.mark_failed();
+        let method = message
+            .hash
+            .or(message.message_id)
+            .map(|h| self.cascade_wire_delivery_method(h))
+            .unwrap_or("propagated");
+        tracing::warn!(
+            target: "lxmf-outbound",
+            dest = %hex::encode(message.destination_hash),
+            method,
+            limit_bytes,
+            size_bytes,
+            "LXMF outbound failed: message_too_large_for_propagation"
+        );
+        if let Some(hash) = message.hash.or(message.message_id) {
+            let attempts = message.delivery_attempts;
+            self.clear_pn_cascade_state(hash);
+            self.direct_path_failovers.remove(&hash);
+            self.pending_pn_deposits.remove(&hash);
+            let _ = router.mark_outbound_failed(&hash);
+            emit_outbound_status_detailed_with_attempts(
+                event_tx,
+                Some(serde_json::Value::String(hex::encode(hash))),
+                Some(serde_json::Value::String(hex::encode(
+                    message.destination_hash,
+                ))),
+                "failed",
+                Some(method),
+                None,
+                None,
+                None,
+                Some(attempts),
+                Some("message_too_large_for_propagation"),
+                Some(limit_bytes),
+                Some(size_bytes),
             );
         }
     }
@@ -1762,6 +1844,9 @@ fn emit_outbound_status_detailed(
         tried_interfaces,
         failover_rounds,
         None,
+        None,
+        None,
+        None,
     );
 }
 
@@ -1776,6 +1861,9 @@ fn emit_outbound_status_detailed_with_attempts(
     tried_interfaces: Option<Vec<String>>,
     failover_rounds: Option<u8>,
     delivery_attempts: Option<u32>,
+    error: Option<&str>,
+    limit_bytes: Option<usize>,
+    size_bytes: Option<usize>,
 ) {
     let mut payload = serde_json::Map::new();
     if let Some(h) = message_hash {
@@ -1802,6 +1890,15 @@ fn emit_outbound_status_detailed_with_attempts(
     }
     if let Some(attempts) = delivery_attempts {
         payload.insert("delivery_attempts".into(), serde_json::json!(attempts));
+    }
+    if let Some(err) = error {
+        payload.insert("error".into(), serde_json::Value::String(err.into()));
+    }
+    if let Some(limit) = limit_bytes {
+        payload.insert("limit_bytes".into(), serde_json::json!(limit));
+    }
+    if let Some(size) = size_bytes {
+        payload.insert("size_bytes".into(), serde_json::json!(size));
     }
     let frame = serde_json::json!({
         "type": "lxmf_outbound_status",

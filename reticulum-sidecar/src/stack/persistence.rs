@@ -1060,6 +1060,7 @@ mod tests {
                 reply_to_hash: None,
                 reply_to_id: None,
                 reply_preview_text: None,
+                audio: None,
             })
             .expect("send");
         assert_eq!(payload["to_hash"], dest);

@@ -58,8 +58,12 @@ function statusIcon(
 function statusColorClass(
   status: OutboundStatus,
   deliveryMethod: MessageRecord['reticulumDeliveryMethod'] | undefined,
+  error?: string,
 ): string {
   if (deliveryMethod === 'stored_locally' && status !== 'failed') {
+    return 'text-amber-400';
+  }
+  if (status === 'failed' && error === 'message_too_large_for_propagation') {
     return 'text-amber-400';
   }
   switch (status) {
@@ -99,6 +103,9 @@ function statusLabelText(
       }
       return t('chatPanel.reticulumSendDelivered');
     default:
+      if (error === 'message_too_large_for_propagation') {
+        return t('chatPanel.voiceMemo.directOnlyBadge');
+      }
       return error ?? t('chatPanel.reticulumSendFailed');
   }
 }
@@ -147,7 +154,7 @@ export function ReticulumMessageStatusBadge({
     <DeliveryStatusBadgeFrame
       label={label}
       icon={statusIcon(status, deliveryMethod)}
-      colorClass={statusColorClass(status, deliveryMethod)}
+      colorClass={statusColorClass(status, deliveryMethod, error)}
       tooltip={tooltip}
     />
   );

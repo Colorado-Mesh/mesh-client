@@ -169,6 +169,7 @@ import {
 import { ReticulumMessageStatusBadge } from './ReticulumMessageStatusBadge';
 import { ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { ReticulumPropagationNotice } from './ReticulumPropagationNotice';
+import { ReticulumVoiceMemoLine } from './ReticulumVoiceMemoLine';
 import { useToast } from './Toast';
 
 function chatPanelIsLinux(): boolean {
@@ -529,6 +530,10 @@ export interface ChatPanelProps {
   hasRncpTransfer?: boolean;
   /** Reticulum: LXST voice Call control in the DM header. */
   hasLxstVoice?: boolean;
+  /** Reticulum: LXMF voice memo mic button in composer + playback line in chat. */
+  hasReticulumVoiceMemo?: boolean;
+  /** Called when the user presses the mic button (destination = active DM node). */
+  onVoiceMemo?: (destination: number) => void;
   /** Reticulum: LRGP games Challenge control in the DM header. */
   hasLrgpGames?: boolean;
   /** Reticulum: LXMF paper Share as paper / Scan paper controls. */
@@ -588,6 +593,8 @@ function ChatPanel({
   reticulumStackLive = false,
   hasRncpTransfer = false,
   hasLxstVoice = false,
+  hasReticulumVoiceMemo = false,
+  onVoiceMemo,
   hasLrgpGames = false,
   hasLxmfPaper = false,
   resolveShareLocation,
@@ -2859,8 +2866,16 @@ function ChatPanel({
 
                             {/* Message text with optional search highlight (div: ChatPayloadText may render block link previews) */}
                             <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
-                              {showLxmfAttachmentLine &&
-                              parseReticulumAttachmentPayload(msg.payload) ? (
+                              {hasReticulumVoiceMemo &&
+                              msg.reticulumAttachmentKind === 'audio' &&
+                              msg.reticulumAttachmentPath ? (
+                                <ReticulumVoiceMemoLine
+                                  attachmentPath={msg.reticulumAttachmentPath}
+                                  durationSec={msg.reticulumAudioDurationSec}
+                                  audioMode={msg.reticulumAudioMode}
+                                />
+                              ) : showLxmfAttachmentLine &&
+                                parseReticulumAttachmentPayload(msg.payload) ? (
                                 <ReticulumAttachmentLine
                                   payload={msg.payload}
                                   attachmentPath={msg.reticulumAttachmentPath}
@@ -3256,6 +3271,14 @@ function ChatPanel({
           setUnreadDividerTimestamp(0);
         }}
         textareaRef={composerInputRef}
+        onVoiceMemo={
+          protocol === 'reticulum' && hasReticulumVoiceMemo && isDmMode && onVoiceMemo != null
+            ? () => {
+                if (activeDmNode == null) return;
+                onVoiceMemo(activeDmNode);
+              }
+            : undefined
+        }
       />
 
       {chatActionError?.viewKey === viewKey && (
