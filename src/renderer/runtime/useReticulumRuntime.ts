@@ -134,6 +134,7 @@ import { consumeRncpReceiveDestSharePending } from '@/renderer/lib/rncpReceiveDe
 import { applyRrcDirectMessageRoom } from '@/renderer/lib/rrcDirectMessageRoute';
 import { isRrcRoomMuted, resolveRrcAlertType } from '@/renderer/lib/rrcMention';
 import {
+  resolveRrcHubScopedNoticeRoom,
   resolveRrcInboundChatRoom,
   shouldDropEmptyRrcInbound,
 } from '@/renderer/lib/rrcMessageDisplay';
@@ -1212,7 +1213,18 @@ export function useReticulumRuntime(): ProtocolRuntime {
             }
             if (whoResult.action === 'transcript') {
               room = whoResult.room;
+            } else if (!isDirect) {
+              // Hub-global slash replies (/list, usage, not authorized) use empty K_ROOM.
+              room = resolveRrcHubScopedNoticeRoom(
+                typeof p.room === 'string' ? p.room : undefined,
+                view.activeRoom,
+              );
             }
+          } else if ((kind === 'error' || kind === 'system') && !isDirect) {
+            room = resolveRrcHubScopedNoticeRoom(
+              typeof p.room === 'string' ? p.room : undefined,
+              view.activeRoom,
+            );
           }
 
           // Opportunistic nicklist: room chat reveals senders even before `/who`.
@@ -1283,7 +1295,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
             session.addMessage(
               {
                 id: `err-${Date.now()}`,
-                room: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
+                room: resolveRrcHubScopedNoticeRoom(undefined, view.activeRoom),
                 kind: 'error',
                 body: p.message,
                 timestamp: Date.now(),

@@ -542,6 +542,31 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 
 When ratspeak/rsReticulum matches Python pathless-LINK attached-only (or equivalent) on floated `origin/main`, remove this patch and the apply step.
 
+## rsReticulum-announce-rebroadcast-exclude-rf.patch
+
+With `enable_transport`, rsReticulum enqueues rebroadcasted mesh announces onto every eligible OUT iface, including flow-controlled BLE RNodes. Host TX mpsc fills while FC drains slowly (overnight / busy TCP mesh). Skip RF sinks (`iface_is_pathless_link_rf_sink` from pathless-link overlay) in `broadcast_announce_on_interfaces` only. Local discovery announces still use `broadcast_local_announce_on_interfaces` (RNode included).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | floated `origin/main` after pathless-link-exclude-rf (regenerate; record short SHA in PR) |
+| **Upstream PR** | none yet (mesh-client-local) |
+| **Depends on** | `rsReticulum-pathless-link-exclude-rf.patch` |
+
+**Touches:** `crates/rns-transport/src/actor/mod.rs`
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-pathless-link-exclude-rf.sh
+./scripts/apply-rsReticulum-announce-rebroadcast-exclude-rf.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`.
+
+### Sunset
+
+When ratspeak/rsReticulum rate-limits or excludes RF for announce rebroadcast equivalently on floated `origin/main`, remove this patch and the apply step.
+
 ## rsLXMF-propagation-client-abort-transfer.patch
 
 Adds `PropagationClient::abort_transfer` so Cancel / mid-transfer abort leaves the client **Idle**. Without it, a cancelled Sync can leave `/get` stuck busy and the next Sync returns `PROPAGATION_RETRIEVE_BUSY` forever (or Auto falsely concludes there are no PNs).

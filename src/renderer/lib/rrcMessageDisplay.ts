@@ -1,3 +1,4 @@
+import { isRrcDmRoom } from '@/renderer/lib/rrcDmRoom';
 import { RRC_HUB_STREAM_ROOM, rrcRoomMatchKey } from '@/renderer/lib/rrcRoomName';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
@@ -27,6 +28,22 @@ export function shouldDropEmptyRrcInbound(kind: string, body: string): boolean {
 export function resolveRrcInboundChatRoom(wireRoom: string | null | undefined): string {
   const room = wireRoom?.trim() ?? '';
   return room || RRC_HUB_STREAM_ROOM;
+}
+
+/**
+ * Hub-global NOTICE/ERROR often arrive with empty K_ROOM. While the user is focused
+ * on a real joined room, surface those replies there so slash-command output is visible
+ * without switching to `[hub]`. Synthetic / DM focus keeps `[hub]`.
+ */
+export function resolveRrcHubScopedNoticeRoom(
+  wireRoom: string | null | undefined,
+  activeRoom: string | null | undefined,
+): string {
+  const resolved = resolveRrcInboundChatRoom(wireRoom);
+  if (resolved !== RRC_HUB_STREAM_ROOM) return resolved;
+  const focused = activeRoom?.trim() ?? '';
+  if (!focused || focused.startsWith('[') || isRrcDmRoom(focused)) return resolved;
+  return focused;
 }
 
 /**
