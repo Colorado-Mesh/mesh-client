@@ -519,6 +519,29 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 
 When ratspeak/rsReticulum exposes equivalent live TX queue depth on interface stats, remove this patch and the apply step.
 
+## rsReticulum-pathless-link-exclude-rf.patch
+
+Python `Transport.py` only transmits pathless `Destination.LINK` packets on `destination.attached_interface`. rsReticulum was pathless-broadcasting Link hashes (Keepalive / Lrrtt / Resource\*) onto every OUT iface, including flow-controlled RNodes, which filled the host TX queue during PN Sync. Prefer `link_table` when present; otherwise broadcast only to non-RF sinks (RNode name or bitrate under 100 kbps).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | floated `origin/main` (regenerate; record short SHA in PR) |
+| **Upstream PR** | none yet (mesh-client-local) |
+
+**Touches:** `crates/rns-transport/src/actor/mod.rs`, `crates/rns-transport/src/actor/outbound.rs`
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-pathless-link-exclude-rf.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`.
+
+### Sunset
+
+When ratspeak/rsReticulum matches Python pathless-LINK attached-only (or equivalent) on floated `origin/main`, remove this patch and the apply step.
+
 ## rsLXMF-propagation-client-abort-transfer.patch
 
 Adds `PropagationClient::abort_transfer` so Cancel / mid-transfer abort leaves the client **Idle**. Without it, a cancelled Sync can leave `/get` stuck busy and the next Sync returns `PROPAGATION_RETRIEVE_BUSY` forever (or Auto falsely concludes there are no PNs).
