@@ -49,7 +49,8 @@ export function isRrcSlashExpandableRoom(room: string | null | undefined): boole
 }
 
 function looksLikeRrcModeFlag(token: string): boolean {
-  return /^[+-][mitnkprovr]$/i.test(token.trim()) || /^[+-][kv]$/i.test(token.trim());
+  // Single or combined IRC-style flags (+m, +im, -ov, …).
+  return /^[+-][mitnkprovr]+$/i.test(token.trim());
 }
 
 function looksLikeRrcBanInviteOp(token: string): boolean {

@@ -1,12 +1,42 @@
 // @vitest-environment jsdom
 /**
- * Source contract tests for RRC multi-hub WebSocket event routing.
+ * Source contract + executable ingest tests for RRC multi-hub WebSocket event routing.
  */
-import { describe, expect, it } from 'vitest';
+import { act, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { loadRuntimeSource } from '../lib/sourceContractTestHelpers';
+import { resetReticulumManualStackStopSuppressForTests } from '@/renderer/lib/reticulum/reticulumManualStackStopSuppress';
+import { rrcDmRoomKey } from '@/renderer/lib/rrcDmRoom';
+import { RRC_HUB_STREAM_ROOM } from '@/renderer/lib/rrcRoomName';
+import { loadRuntimeSource } from '@/renderer/lib/sourceContractTestHelpers';
+import { useReticulumRuntime } from '@/renderer/runtime/useReticulumRuntime';
+import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
+import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
+
+vi.mock('@/renderer/lib/reticulum/fetchRecentInboundLxmf', () => ({
+  fetchRecentInboundLxmf: vi.fn().mockResolvedValue([]),
+  fetchRecentInboundLxmfDetailed: vi.fn().mockResolvedValue({ messages: [], ringLen: 0 }),
+}));
+
+vi.mock('@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher', () => ({
+  useReticulumNobleBleYieldWatcher: () => {},
+}));
+
+vi.mock('@/renderer/lib/reticulum/useReticulumPropagationAutoSync', () => ({
+  useReticulumPropagationAutoSync: () => {},
+}));
+
+vi.mock('@/renderer/components/Toast', () => ({
+  pushAppToast: vi.fn(),
+  useToast: () => ({ addToast: vi.fn() }),
+}));
 
 const SOURCE = loadRuntimeSource('useReticulumRuntime.ts');
+
+const HUB = '28c7c1a68c735693aa8e6b8193ed44b2';
+const PEER = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+const SELF = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const DM_ROOM = rrcDmRoomKey(PEER);
 
 describe('useReticulumRuntime RRC event routing (regression)', () => {
   it('honors will_reconnect=false by clearing the hub session', () => {
@@ -45,16 +75,6 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
       /whoResult\.action === 'unjoined' \|\| whoResult\.action === 'nicklist-only'[\s\S]*?return;/,
     );
     expect(SOURCE).toMatch(/whoResult\.action === 'transcript'[\s\S]*?room = whoResult\.room/);
-  });
-
-  it('surfaces empty-K_ROOM NOTICE/ERROR into the focused room via resolveRrcHubScopedNoticeRoom', () => {
-    expect(SOURCE).toContain('resolveRrcHubScopedNoticeRoom');
-    expect(SOURCE).toMatch(
-      /whoResult\.action === 'transcript'[\s\S]*?else if \(!isDirect\)[\s\S]*?resolveRrcHubScopedNoticeRoom/,
-    );
-    expect(SOURCE).toMatch(
-      /\(kind === 'error' \|\| kind === 'system'\) && !isDirect[\s\S]*?resolveRrcHubScopedNoticeRoom/,
-    );
   });
 
   it('routes direct NOTICE into per-peer @hash DMs via applyRrcDirectMessageRoom', () => {
@@ -100,5 +120,153 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
     expect(SOURCE).toMatch(/console\.debug\(\s*'\[useReticulumRuntime\] rrc\.room\.parted hub='/);
     expect(SOURCE).toMatch(/voluntary='/);
     expect(SOURCE).toMatch(/will_reconnect='/);
+  });
+});
+
+describe('useReticulumRuntime RRC empty-K_ROOM hub-scoped routing', () => {
+  let eventHandler: ((evt: ReticulumSidecarEvent) => void) | null = null;
+
+  beforeEach(() => {
+    resetReticulumManualStackStopSuppressForTests();
+    useRrcSessionStore.getState().clearSession();
+    useRrcSessionStore.getState().setNickname('nv0n');
+    useRrcSessionStore.getState().setLocalIdentityHash(SELF);
+    useRrcSessionStore.getState().applyStatus('active', HUB, 'Community');
+    useRrcSessionStore.getState().roomJoined('general');
+    useRrcSessionStore.getState().setActiveRoom('general');
+    eventHandler = null;
+    vi.mocked(window.electronAPI.db.insertRrcMessage).mockReset();
+    vi.mocked(window.electronAPI.db.insertRrcMessage).mockResolvedValue({ changes: 1 });
+    vi.mocked(window.electronAPI.reticulum.onEvent).mockImplementation((cb) => {
+      eventHandler = cb;
+      return () => {
+        if (eventHandler === cb) eventHandler = null;
+      };
+    });
+    vi.mocked(window.electronAPI.reticulum.start).mockResolvedValue({
+      running: true,
+      port: 19437,
+      pid: 1,
+    });
+    vi.mocked(window.electronAPI.reticulum.stop).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
+      running: true,
+      port: 19437,
+      pid: 1,
+      healthy: true,
+    });
+  });
+
+  afterEach(() => {
+    vi.mocked(window.electronAPI.reticulum.onEvent).mockReset();
+    vi.mocked(window.electronAPI.reticulum.onEvent).mockReturnValue(() => {});
+    useRrcSessionStore.getState().clearSession();
+  });
+
+  async function connectAndGetOnEvent() {
+    const { result, unmount } = renderHook(() => useReticulumRuntime());
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(eventHandler).toBeTruthy();
+    return { onEvent: eventHandler!, unmount };
+  }
+
+  function roomBodies(room: string): string[] {
+    const key = useRrcSessionStore.getState().roomMessageKey(room, HUB);
+    return (useRrcSessionStore.getState().messages.get(key ?? '') ?? []).map((m) => m.body);
+  }
+
+  function sendEmptyRoomMessage(
+    onEvent: (evt: ReticulumSidecarEvent) => void,
+    kind: 'notice' | 'error' | 'system',
+    body: string,
+    id: string,
+  ): void {
+    act(() => {
+      onEvent({
+        type: 'rrc.message',
+        payload: {
+          id,
+          hub_dest_hash: HUB,
+          room: '',
+          kind,
+          body,
+          sender_hash: PEER,
+          timestamp: Date.now(),
+        },
+      });
+    });
+  }
+
+  it.each(['notice', 'error', 'system'] as const)(
+    'stores empty-room %s in the focused real room',
+    async (kind) => {
+      const { onEvent, unmount } = await connectAndGetOnEvent();
+      const body = `hub-${kind}-reply`;
+      sendEmptyRoomMessage(onEvent, kind, body, `${kind}-real`);
+      expect(roomBodies('general')).toContain(body);
+      expect(roomBodies(RRC_HUB_STREAM_ROOM)).not.toContain(body);
+      unmount();
+    },
+  );
+
+  it.each(['notice', 'error', 'system'] as const)(
+    'stores empty-room %s in [hub] when a DM is focused',
+    async (kind) => {
+      useRrcSessionStore.getState().openDm({ identity_hash: PEER, nickname: 'Bob' }, HUB, {
+        focus: true,
+      });
+      expect(useRrcSessionStore.getState().activeRoom).toBe(DM_ROOM);
+      const { onEvent, unmount } = await connectAndGetOnEvent();
+      const body = `dm-focus-${kind}`;
+      sendEmptyRoomMessage(onEvent, kind, body, `${kind}-dm`);
+      expect(roomBodies(RRC_HUB_STREAM_ROOM)).toContain(body);
+      expect(roomBodies(DM_ROOM)).not.toContain(body);
+      expect(roomBodies('general')).not.toContain(body);
+      unmount();
+    },
+  );
+
+  it.each(['notice', 'error', 'system'] as const)(
+    'stores empty-room %s in [hub] when synthetic focus is active',
+    async (kind) => {
+      useRrcSessionStore.getState().setActiveRoom(RRC_HUB_STREAM_ROOM);
+      const { onEvent, unmount } = await connectAndGetOnEvent();
+      const body = `synth-focus-${kind}`;
+      sendEmptyRoomMessage(onEvent, kind, body, `${kind}-synth`);
+      expect(roomBodies(RRC_HUB_STREAM_ROOM)).toContain(body);
+      expect(roomBodies('general')).not.toContain(body);
+      unmount();
+    },
+  );
+
+  it('routes rrc.error into the focused real room via resolveRrcHubScopedNoticeRoom', async () => {
+    const { onEvent, unmount } = await connectAndGetOnEvent();
+    act(() => {
+      onEvent({
+        type: 'rrc.error',
+        payload: { message: 'link proof timeout', hub_dest_hash: HUB },
+      });
+    });
+    expect(roomBodies('general')).toContain('link proof timeout');
+    expect(roomBodies(RRC_HUB_STREAM_ROOM)).not.toContain('link proof timeout');
+    unmount();
+  });
+
+  it('routes rrc.error into [hub] when a DM is focused', async () => {
+    useRrcSessionStore.getState().openDm({ identity_hash: PEER, nickname: 'Bob' }, HUB, {
+      focus: true,
+    });
+    const { onEvent, unmount } = await connectAndGetOnEvent();
+    act(() => {
+      onEvent({
+        type: 'rrc.error',
+        payload: { message: 'path timeout', hub_dest_hash: HUB },
+      });
+    });
+    expect(roomBodies(RRC_HUB_STREAM_ROOM)).toContain('path timeout');
+    expect(roomBodies(DM_ROOM)).not.toContain('path timeout');
+    unmount();
   });
 });

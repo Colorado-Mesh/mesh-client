@@ -1295,7 +1295,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
             session.addMessage(
               {
                 id: `err-${Date.now()}`,
-                room: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
+                room: resolveRrcHubScopedNoticeRoom(undefined, view.activeRoom),
                 kind: 'error',
                 body: p.message,
                 timestamp: Date.now(),

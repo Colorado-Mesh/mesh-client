@@ -73,6 +73,8 @@ describe('expandRrcHubSlashBody', () => {
     expect(expandRrcHubSlashBody('/op alice', 'general')).toBe('/op general alice');
     expect(expandRrcHubSlashBody('/topic hi there', 'general')).toBe('/topic general hi there');
     expect(expandRrcHubSlashBody('/mode +m', 'general')).toBe('/mode general +m');
+    expect(expandRrcHubSlashBody('/mode +im', 'general')).toBe('/mode general +im');
+    expect(expandRrcHubSlashBody('/mode -ov', 'general')).toBe('/mode general -ov');
     expect(expandRrcHubSlashBody('/kick bob', 'general')).toBe('/kick general bob');
     expect(expandRrcHubSlashBody('/ban add aabb', 'general')).toBe('/ban general add aabb');
     expect(expandRrcHubSlashBody('/invite list', 'lobby')).toBe('/invite lobby list');
