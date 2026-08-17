@@ -1357,7 +1357,11 @@
       "txQueueDropsHintBle": "Este RNode ble no puede drenar su cola TX (enlace atascado o aleteando). Prefiera USB serie o Wi-Fi (tcp://), o Detenga la pila y vuelva a emparejar después de Olvidar en la configuración del sistema → Bluetooth.",
       "txQueueDropsHintBleBondStale": "La cola TX está llena porque el vínculo BLE está obsoleto. Olvide este RNode en Configuración del sistema → Bluetooth y use Admin → Bluetooth (Borrar emparejados / Iniciar emparejamiento) o cambie a USB.",
       "txQueueDropsHintNeutral": "Este canal TX de interfaz está lleno. Compruebe el estado del enlace de esa interfaz (o desactívelo) para detener las caídas.",
-      "txQueueDropsHintBleFlowControl": "Contrapresión de la cola de TX del host mientras la radio está ocupada (control de flujo activado). Se espera bajo congestión de RF, no un enlace atascado. Reduzca la carga saliente o espere el tiempo de aire."
+      "txQueueDropsHintBleFlowControl": "Contrapresión de la cola de TX del host mientras la radio está ocupada (control de flujo activado). Se espera bajo congestión de RF, no un enlace atascado. Reduzca la carga saliente o espere el tiempo de aire.",
+      "tcpResetByPeer": "{{name}}: hub reset the TCP session (Restablecimiento de conexión por peer)",
+      "tcpResetByPeerHint": "El concentrador aceptó TCP y luego cerró el enlace RNS. Es posible que otro dispositivo esté conectado con la misma identidad o que el concentrador haya rechazado esta sesión. Salga de otras aplicaciones de Reticulum y vuelva a intentarlo; un reinicio de pila solo generalmente no solucionará un bucle de restablecimiento de concentrador activo.",
+      "tcpReadEof": "{{name}}: hub cerrado TCP limpiamente (INFO: TCP leer: EOF)",
+      "tcpReadEofHint": "Desconexión silenciosa dentro del cliente TCP de rsReticulum: el hub remoto cerró la sesión sin un RST. A menudo precede a la reconexión en ... en los registros del sidecar."
     },
     "reticulumSidecarBundledMissing": "A esta instalación le falta el sidecar Reticulum incluido. Actualice a una versión más reciente o informe el problema: la compilación desde el código fuente no está disponible en instalaciones empaquetadas.",
     "radioMqttRootDivergesWarning": "El tema raíz de MQTT de radio es {{radioRoot}}, pero este panel se suscribe a {{appPrefix}}. Haga coincidir la radio para limitar el tráfico de nodos a nivel nacional: actualice el prefijo del tema y vuelva a conectar MQTT.",

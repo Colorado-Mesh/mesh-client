@@ -1357,7 +1357,11 @@
       "txQueueDropsHintBle": "BLE RNode ini tidak dapat menguras antrean TX-nya (tautan macet atau flapping). Lebih suka USB serial atau Wi-Fi (tcp://), atau Stop stack dan re-pair setelah Forget di Pengaturan Sistem → Bluetooth.",
       "txQueueDropsHintBleBondStale": "Antrian TX penuh karena ikatan BLE sudah usang. Lupakan RNode ini di Pengaturan Sistem → Bluetooth, lalu gunakan Admin → Bluetooth (Hapus terpasang / Mulai pairing) atau beralih ke USB.",
       "txQueueDropsHintNeutral": "Saluran TX antarmuka ini penuh. Periksa kesehatan tautan antarmuka itu (atau nonaktifkan) untuk menghentikan tetesan.",
-      "txQueueDropsHintBleFlowControl": "Tekanan balik antrean TX host saat radio sedang sibuk (kontrol aliran aktif). Diharapkan di bawah kemacetan RF — bukan tautan yang macet. Kurangi muatan keluar atau tunggu waktu tayang."
+      "txQueueDropsHintBleFlowControl": "Tekanan balik antrean TX host saat radio sedang sibuk (kontrol aliran aktif). Diharapkan di bawah kemacetan RF — bukan tautan yang macet. Kurangi muatan keluar atau tunggu waktu tayang.",
+      "tcpResetByPeer": "{{name}}: hub mengatur ulang sesi TCP (Pengaturan ulang koneksi oleh rekan)",
+      "tcpResetByPeerHint": "Hub menerima TCP kemudian menutup tautan RNS. Perangkat lain mungkin terhubung dengan identitas yang sama, atau hub menolak sesi ini. Keluar dari aplikasi Reticulum lainnya dan coba lagi; restart tumpukan saja biasanya tidak akan memperbaiki loop reset hub aktif.",
+      "tcpReadEof": "{{name}}: hub menutup TCP dengan bersih (INFO: TCP baca: EOF)",
+      "tcpReadEofHint": "Putuskan sambungan diam di dalam klien TCP rsReticulum — hub jarak jauh menutup sesi tanpa RST. Sering mendahului penyambungan kembali dalam ... dalam log sespan."
     },
     "reticulumSidecarBundledMissing": "Instalasi ini tidak memiliki sespan Reticulum yang dibundel. Tingkatkan versi ke rilis yang lebih baru atau laporkan masalahnya — pembuatan dari sumber tidak tersedia dalam paket instalasi.",
     "radioMqttRootDivergesWarning": "Topik utama Radio MQTT adalah {{radioRoot}} tetapi panel ini berlangganan {{appPrefix}}. Cocokkan radio untuk membatasi lalu lintas simpul nasional — perbarui Prefiks Topik dan sambungkan kembali MQTT.",

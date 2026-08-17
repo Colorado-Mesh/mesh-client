@@ -1357,7 +1357,11 @@
       "txQueueDropsHintBle": "此BLE RNode无法排出其TX队列（链接卡住或抖动）。首选USB串行或Wi-Fi (tcp://) ，或在忘记系统设置→蓝牙后停止堆栈并重新配对。",
       "txQueueDropsHintBleBondStale": "TX队列已满，因为BLE绑定已过时。在系统设置→蓝牙中忘记此RNode ，然后使用管理→蓝牙（清除配对/开始配对）或切换到USB。",
       "txQueueDropsHintNeutral": "此接口TX通道已满。检查该接口的链接健康状况（或禁用它）以停止丢弃。",
-      "txQueueDropsHintBleFlowControl": "无线电忙时主机TX队列背压（流量控制开启）。在射频拥塞下预期—不是卡住的链路。减少出站负载或等待通话时间。"
+      "txQueueDropsHintBleFlowControl": "无线电忙时主机TX队列背压（流量控制开启）。在射频拥塞下预期—不是卡住的链路。减少出站负载或等待通话时间。",
+      "tcpResetByPeer": "{{name}} ：集线器重置TCP会话（对等体重置连接）",
+      "tcpResetByPeerHint": "集线器接受TCP ，然后关闭RNS链路。另一台设备可能使用相同的身份连接，或者集线器在此会话中被拒绝。退出其他Reticulum应用程序并重试；仅堆栈重启通常不会修复活动集线器重置循环。",
+      "tcpReadEof": "{{name}} ：集线器已干净关闭TCP （信息： TCP读取： EOF ）",
+      "tcpReadEofHint": "RsReticulum的TCP客户端内部无提示断开连接—远程集线器在没有RST的情况下关闭了会话。通常在重新连接之前......在sidecar日志中。"
     },
     "reticulumSidecarBundledMissing": "此安装缺少捆绑的 Reticulum sidecar。升级到较新的版本或报告问题 - 在打包安装中无法从源代码构建。",
     "radioMqttRootDivergesWarning": "无线电MQTT根主题为{{radioRoot}} ，但此面板订阅了{{appPrefix}}。匹配无线电以限制全国节点流量—更新主题前缀并重新连接MQTT。",

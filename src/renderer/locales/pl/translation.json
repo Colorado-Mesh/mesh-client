@@ -1359,7 +1359,11 @@
       "txQueueDropsHintBle": "Ten ble RNode nie może opróżnić swojej kolejki TX (link zablokowany lub trzepoczący). Preferuj port szeregowy USB lub Wi-Fi (tcp://) lub zatrzymaj stos i ponownie sparuj po zapomnieniu w ustawieniach systemu → Bluetooth.",
       "txQueueDropsHintBleBondStale": "Kolejka TX jest pełna, bo powiązanie BLE jest nieaktualne. Zapomnij ten RNode w Ustawieniach systemowych → Bluetooth, potem użyj Admin → Bluetooth (Wyczyść sparowane / Rozpocznij parowanie) lub przełącz na USB.",
       "txQueueDropsHintNeutral": "Ten kanał interfejsu TX jest pełny. Sprawdź stan łącza w tym interfejsie (lub wyłącz je), aby zatrzymać spadki.",
-      "txQueueDropsHintBleFlowControl": "Wsteczne ciśnienie kolejki hosta TX, gdy radio jest zajęte (kontrola przepływu włączona). Przewidywane w przypadku przeciążenia falami radiowymi — nie zablokowane łącze. Zmniejsz obciążenie wychodzące lub poczekaj na czas antenowy."
+      "txQueueDropsHintBleFlowControl": "Wsteczne ciśnienie kolejki hosta TX, gdy radio jest zajęte (kontrola przepływu włączona). Przewidywane w przypadku przeciążenia falami radiowymi — nie zablokowane łącze. Zmniejsz obciążenie wychodzące lub poczekaj na czas antenowy.",
+      "tcpResetByPeer": "{{name}}: Hub resetuje sesję TCP (reset połączenia przez partnera)",
+      "tcpResetByPeerHint": "Koncentrator zaakceptował TCP, a następnie zamknął łącze RNS. Inne urządzenie może być połączone z tą samą tożsamością lub koncentrator odrzucił tę sesję. Zamknij inne aplikacje Reticulum i spróbuj ponownie; sam restart stosu zwykle nie naprawi aktywnej pętli resetowania koncentratora.",
+      "tcpReadEof": "{{name}}: koncentrator zamknięty w czysty sposób TCP (INFO: TCP odczytano: EOF)",
+      "tcpReadEofHint": "Cichy rozłącznik wewnątrz klienta TCP rsReticulum — zdalny hub zamknął sesję bez RST. Często poprzedza ponowne połączenie… w dziennikach bocznych."
     },
     "reticulumSidecarBundledMissing": "W tej instalacji brakuje dołączonego sidecar Reticulum. Uaktualnij do nowszej wersji lub zgłoś problem — budowanie ze źródła nie jest możliwe w przypadku instalacji pakietowych.",
     "radioMqttRootDivergesWarning": "Główny temat radia MQTT to {{radioRoot}}, ale ten panel subskrybuje {{appPrefix}}. Dopasuj radio, aby ograniczyć ogólnokrajowy ruch w węzłach — zaktualizuj prefiks tematu i ponownie połącz MQTT.",

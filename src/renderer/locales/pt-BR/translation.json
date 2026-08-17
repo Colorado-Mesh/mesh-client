@@ -1357,7 +1357,11 @@
       "txQueueDropsHintBle": "Este BLE RNode não pode drenar sua fila TX (link preso ou flapping). Prefira USB serial ou Wi-Fi (tcp://), ou Pare de empilhar e emparelhe novamente depois de Esquecer nas Configurações do Sistema → Bluetooth.",
       "txQueueDropsHintBleBondStale": "A fila TX está cheia porque a ligação BLE está obsoleta. Esqueça este RNode nas Configurações do Sistema → Bluetooth e use Admin → Bluetooth (Limpar emparelhado / Iniciar emparelhamento) ou mude para USB.",
       "txQueueDropsHintNeutral": "Este canal TX de interface está cheio. Verifique a integridade do link dessa interface (ou desative-a) para interromper as quedas.",
-      "txQueueDropsHintBleFlowControl": "Contrapressão da fila TX do host enquanto o rádio está ocupado (controle de fluxo ligado). Esperado sob congestionamento de RF — não um link preso. Reduza a carga de saída ou aguarde o tempo de antena."
+      "txQueueDropsHintBleFlowControl": "Contrapressão da fila TX do host enquanto o rádio está ocupado (controle de fluxo ligado). Esperado sob congestionamento de RF — não um link preso. Reduza a carga de saída ou aguarde o tempo de antena.",
+      "tcpResetByPeer": "{{name}}: Hub redefine a sessão TCP (Redefinição de conexão por peer)",
+      "tcpResetByPeerHint": "O hub aceitou o TCP e fechou o link RNS. Outro dispositivo pode estar conectado com a mesma identidade ou o hub rejeitou esta sessão. Saia de outros aplicativos Reticulum e tente novamente; uma reinicialização da pilha sozinha geralmente não corrigirá um loop de reinicialização do hub ativo.",
+      "tcpReadEof": "{{name}}: Hub fechou o TCP de forma limpa (INFO: TCP leu: EOF)",
+      "tcpReadEofHint": "Desconexão silenciosa dentro do cliente TCP do rsReticulum — o hub remoto fechou a sessão sem um RST. Muitas vezes precede a reconexão em ... nos registros do sidecar."
     },
     "reticulumSidecarBundledMissing": "Esta instalação não contém o sidecar Reticulum incluído. Atualize para uma versão mais recente ou relate o problema – a compilação a partir do código-fonte não está disponível em instalações empacotadas.",
     "radioMqttRootDivergesWarning": "O tópico raiz do MQTT de rádio é {{radioRoot}}, mas este painel assina {{appPrefix}}. Combine o rádio para limitar o tráfego de nós em todo o país — atualize o Prefixo do Tópico e reconecte o MQTT.",

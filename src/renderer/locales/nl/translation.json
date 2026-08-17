@@ -1356,7 +1356,11 @@
       "txQueueDropsHintBle": "Deze BLE RNode kan zijn TX-wachtrij niet legen (link vast of flapperend). Geef de voorkeur aan USB-serie of Wi‑Fi (tcp://), of stop de stack en koppel opnieuw na Vergeten in Systeeminstellingen → Bluetooth.",
       "txQueueDropsHintBleBondStale": "TX-wachtrij is vol omdat de BLE-koppeling verouderd is. Vergeet deze RNode in Systeeminstellingen → Bluetooth en gebruik Admin → Bluetooth (Gekoppelde wissen / Koppeling starten) of schakel over naar USB.",
       "txQueueDropsHintNeutral": "Dit interface TX-kanaal is vol. Controleer de linkstatus van die interface (of schakel deze uit) om vallen te stoppen.",
-      "txQueueDropsHintBleFlowControl": "Host TX wachtrij tegendruk terwijl de radio bezig is (stroomregeling aan). Verwacht bij RF-congestie — geen vastzittende link. Verminder de uitgaande belasting of wacht op zendtijd."
+      "txQueueDropsHintBleFlowControl": "Host TX wachtrij tegendruk terwijl de radio bezig is (stroomregeling aan). Verwacht bij RF-congestie — geen vastzittende link. Verminder de uitgaande belasting of wacht op zendtijd.",
+      "tcpResetByPeer": "{{name}}: hub heeft de TCP-sessie gereset (verbinding gereset door peer)",
+      "tcpResetByPeerHint": "De hub accepteerde TCP en sloot vervolgens de RNS-link. Een ander apparaat is mogelijk verbonden met dezelfde identiteit, of de hub heeft deze sessie geweigerd. Sluit andere Reticulum-apps af en probeer het opnieuw; een herstart van de stapel alleen zal meestal geen actieve hub-resetlus oplossen.",
+      "tcpReadEof": "{{name}}: hub sloot TCP netjes af (INFO: TCP lezen: EOF)",
+      "tcpReadEofHint": "Stil verbreken van de verbinding in de TCP-client van rsReticulum — de externe hub sloot de sessie af zonder een RST. Gaat vaak vooraf aan het opnieuw verbinden in ... in zijspanlogboeken."
     },
     "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum sidecar. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties.",
     "radioMqttRootDivergesWarning": "Radio MQTT-hoofdonderwerp is {{radioRoot}}, maar dit paneel is geabonneerd op {{appPrefix}}. Koppel de radio om landelijk knooppuntverkeer te beperken — werk het onderwerpvoorvoegsel bij en sluit MQTT opnieuw aan.",

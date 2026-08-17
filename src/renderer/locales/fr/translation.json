@@ -1356,7 +1356,11 @@
       "txQueueDropsHintBle": "Ce RNode ble ne peut pas vider sa file d'attente TX (lien bloqué ou battement). Préférez USB série ou Wi-Fi (tcp ://), ou Arrêter la pile et réappairer après Oublier dans les paramètres système → Bluetooth.",
       "txQueueDropsHintBleBondStale": "La file TX est pleine car la liaison BLE est obsolète. Oubliez ce RNode dans Réglages Système → Bluetooth, puis utilisez Admin → Bluetooth (Effacer appairés / Démarrer l’appairage) ou passez en USB.",
       "txQueueDropsHintNeutral": "Ce canal TX d'interface est plein. Vérifiez la santé du lien de cette interface (ou désactivez-la) pour arrêter les gouttes.",
-      "txQueueDropsHintBleFlowControl": "Contrepression de la file d'attente TX de l'hôte pendant que la radio est occupée (contrôle de flux activé). Attendu en cas de congestion RF — pas un lien bloqué. Réduisez la charge sortante ou attendez le temps d'antenne."
+      "txQueueDropsHintBleFlowControl": "Contrepression de la file d'attente TX de l'hôte pendant que la radio est occupée (contrôle de flux activé). Attendu en cas de congestion RF — pas un lien bloqué. Réduisez la charge sortante ou attendez le temps d'antenne.",
+      "tcpResetByPeer": "{{name}} : le concentrateur réinitialise la session TCP (réinitialisation de la connexion par l'homologue)",
+      "tcpResetByPeerHint": "Le concentrateur a accepté le TCP puis a fermé le lien RNS. Un autre appareil peut être connecté avec la même identité, ou le concentrateur a rejeté cette session. Quittez d'autres applications Reticulum et réessayez ; un redémarrage de pile seul ne résoudra généralement pas une boucle de réinitialisation de concentrateur active.",
+      "tcpReadEof": "{{name}} : hub fermé TCP proprement (INFO : TCP read : EOF)",
+      "tcpReadEofHint": "Déconnexion silencieuse à l'intérieur du client TCP de rsReticulum — le concentrateur distant a fermé la session sans RST. Précède souvent la reconnexion dans … dans les journaux du side-car."
     },
     "reticulumSidecarBundledMissing": "Cette installation ne dispose pas du side-car Reticulum fourni. Effectuez une mise à niveau vers une version plus récente ou signalez le problème : la création à partir des sources n'est pas disponible dans les installations packagées.",
     "radioMqttRootDivergesWarning": "Le sujet racine du MQTT radio est {{radioRoot}}, mais ce panneau est abonné à {{appPrefix}}. Faites correspondre la radio pour limiter le trafic des nœuds à l'échelle nationale — mettez à jour le préfixe du sujet et reconnectez le MQTT.",

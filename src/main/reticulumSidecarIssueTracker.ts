@@ -2,8 +2,12 @@
 
 import type { ReticulumInterfaceIssueAlert } from '../shared/reticulum-types';
 import { RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS } from '../shared/reticulum-types';
+import { MS_PER_SECOND } from '../shared/timeConstants';
 
 const TCP_CONNECT_FAILED_MARKER = 'TCP connect failed';
+const TCP_READ_EOF_MARKER = 'TCP read: EOF';
+const TCP_READ_ERROR_MARKER = 'TCP read error';
+const TCP_RECONNECTING_MARKER = 'reconnecting in';
 const TX_QUEUE_DROP_MARKER = 'PACKET DROPPED: interface TX channel full';
 const LINK_DELIVERY_TIMEOUT_MARKER = 'link delivery timed out';
 const LXMF_PATH_REQUEST_SATURATED_MARKER = 'failed to queue path request for LXMF delivery';
@@ -21,6 +25,22 @@ const LINK_TIMEOUT_DEST_RE =
   /link delivery timed out.*?dest\s*=\s*([0-9a-fA-F]{32}|[0-9a-fA-F]{16})/;
 const SLOW_TRANSPORT_QUERY_RE = /transport query slow or failed.*?query\s*=\s*(\S+)/;
 const BLE_RNODE_CONNECT_FAILED_PREFIX = 'BLE RNode connect failed';
+
+/** Max gap between EOF/RST and `reconnecting in` to latch the interface name. */
+const TCP_DISCONNECT_NAME_ASSOCIATE_MS = 2 * MS_PER_SECOND;
+
+interface PendingTcpDisconnect {
+  kind: 'eof' | 'reset' | 'read_error';
+  interfaceId: number | null;
+  atMs: number;
+}
+
+function parseSidecarInterfaceId(plain: string): number | null {
+  const match = /interface_id\s*=\s*(\d+)/i.exec(plain);
+  if (!match?.[1]) return null;
+  const parsed = Number.parseInt(match[1], 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
 function stripAnsi(text: string): string {
   return text.replace(/\x1b\[[0-9;]*m/g, '').replace(/\[[0-9;]*m/g, ''); // eslint-disable-line no-control-regex
@@ -52,6 +72,10 @@ function parseSidecarIfaceNameField(plain: string, requirePrefix?: string): stri
 /** Deterministic parse — avoids super-linear regex backtracking on long sidecar lines. */
 function parseBleRNodeConnectFailedIfaceName(plain: string): string | null {
   return parseSidecarIfaceNameField(plain, BLE_RNODE_CONNECT_FAILED_PREFIX);
+}
+
+function parseSidecarNameField(plain: string): string | null {
+  return parseSidecarIfaceNameField(plain);
 }
 
 function parseTcpConnectFailedIface(line: string): string | null {
@@ -140,6 +164,12 @@ export class ReticulumSidecarInterfaceIssueTracker {
   private bleBondRemoved = new Map<string, number>();
   /** BLE RNode display name → last-seen ms (OS passkey / TX-read timed out). */
   private blePairingTimedOut = new Map<string, number>();
+  /** Hub RST after connect — interface name → last-seen ms. */
+  private tcpResetByPeer = new Map<string, number>();
+  /** INFO EOF — interface name → last-seen ms. */
+  private tcpReadEof = new Map<string, number>();
+  private pendingTcpDisconnect: PendingTcpDisconnect | null = null;
+  private interfaceIdToName = new Map<number, string>();
   private transportSaturatedCount = 0;
   private transportSaturatedAtMs: number | null = null;
   private slowTransportQueryCount = 0;
@@ -156,12 +186,59 @@ export class ReticulumSidecarInterfaceIssueTracker {
     return this.enabledInterfaceScope == null || this.enabledInterfaceScope.has(name);
   }
 
+  private latchNamedTcpDisconnect(name: string, kind: 'eof' | 'reset', nowMs: number): void {
+    if (!this.allowsInterface(name)) return;
+    if (kind === 'reset') {
+      this.tcpResetByPeer.set(name, nowMs);
+    } else {
+      this.tcpReadEof.set(name, nowMs);
+    }
+  }
+
+  private flushPendingDisconnectForName(name: string, nowMs: number): void {
+    const pending = this.pendingTcpDisconnect;
+    if (!pending || nowMs - pending.atMs > TCP_DISCONNECT_NAME_ASSOCIATE_MS) {
+      return;
+    }
+    if (pending.interfaceId != null) {
+      this.interfaceIdToName.set(pending.interfaceId, name);
+    }
+    if (pending.kind === 'eof') {
+      this.latchNamedTcpDisconnect(name, 'eof', nowMs);
+    } else if (pending.kind === 'reset' || pending.kind === 'read_error') {
+      this.latchNamedTcpDisconnect(name, 'reset', nowMs);
+    }
+    this.pendingTcpDisconnect = null;
+  }
+
   recordLine(line: string, nowMs = Date.now()): void {
     const plain = normalizeSidecarLogLine(line);
     if (plain.includes(TCP_CONNECT_FAILED_MARKER)) {
       const iface = parseTcpConnectFailedIface(line);
       if (iface && this.allowsInterface(iface)) {
         this.tcpConnectFailed.set(iface, nowMs);
+      }
+      return;
+    }
+    if (plain.includes(TCP_READ_EOF_MARKER)) {
+      const interfaceId = parseSidecarInterfaceId(plain);
+      this.pendingTcpDisconnect = { kind: 'eof', interfaceId, atMs: nowMs };
+      return;
+    }
+    if (plain.includes(TCP_READ_ERROR_MARKER)) {
+      const interfaceId = parseSidecarInterfaceId(plain);
+      const isReset = plain.includes('Connection reset by peer');
+      this.pendingTcpDisconnect = {
+        kind: isReset ? 'reset' : 'read_error',
+        interfaceId,
+        atMs: nowMs,
+      };
+      return;
+    }
+    if (plain.includes(TCP_RECONNECTING_MARKER)) {
+      const name = parseSidecarNameField(plain);
+      if (name) {
+        this.flushPendingDisconnectForName(name, nowMs);
       }
       return;
     }
@@ -225,6 +302,8 @@ export class ReticulumSidecarInterfaceIssueTracker {
     retainMapKeys(this.txQueueDrops, enabledNames);
     retainMapKeys(this.bleBondRemoved, enabledNames);
     retainMapKeys(this.blePairingTimedOut, enabledNames);
+    retainMapKeys(this.tcpResetByPeer, enabledNames);
+    retainMapKeys(this.tcpReadEof, enabledNames);
   }
 
   clear(): void {
@@ -233,6 +312,10 @@ export class ReticulumSidecarInterfaceIssueTracker {
     this.linkDeliveryTimeouts.clear();
     this.bleBondRemoved.clear();
     this.blePairingTimedOut.clear();
+    this.tcpResetByPeer.clear();
+    this.tcpReadEof.clear();
+    this.pendingTcpDisconnect = null;
+    this.interfaceIdToName.clear();
     this.transportSaturatedCount = 0;
     this.transportSaturatedAtMs = null;
     this.slowTransportQueryCount = 0;
@@ -253,6 +336,8 @@ export class ReticulumSidecarInterfaceIssueTracker {
     // bleBondRemoved is sticky until stack stop / retainInterfaces / clear — sidecar has
     // halted BLE reconnect for that interface; a 5‑min log TTL must not clear UI/Noble yield.
     pruneStaleMap(this.blePairingTimedOut, nowMs, (atMs) => atMs);
+    pruneStaleMap(this.tcpResetByPeer, nowMs, (atMs) => atMs);
+    pruneStaleMap(this.tcpReadEof, nowMs, (atMs) => atMs);
 
     if (
       this.transportSaturatedAtMs != null &&
@@ -278,6 +363,8 @@ export class ReticulumSidecarInterfaceIssueTracker {
       ...[...this.linkDeliveryTimeouts.values()].map((e) => e.atMs),
       ...this.bleBondRemoved.values(),
       ...this.blePairingTimedOut.values(),
+      ...this.tcpResetByPeer.values(),
+      ...this.tcpReadEof.values(),
     ];
     if (this.transportSaturatedAtMs != null) timestamps.push(this.transportSaturatedAtMs);
     if (this.slowTransportQueryAtMs != null) timestamps.push(this.slowTransportQueryAtMs);
@@ -299,6 +386,8 @@ export class ReticulumSidecarInterfaceIssueTracker {
     const blePairingTimedOut = [...this.blePairingTimedOut.keys()].sort((a, b) =>
       a.localeCompare(b),
     );
+    const tcpResetByPeer = [...this.tcpResetByPeer.keys()].sort((a, b) => a.localeCompare(b));
+    const tcpReadEof = [...this.tcpReadEof.keys()].sort((a, b) => a.localeCompare(b));
 
     if (
       tcpConnectFailed.length === 0 &&
@@ -306,6 +395,8 @@ export class ReticulumSidecarInterfaceIssueTracker {
       linkDeliveryTimeouts.length === 0 &&
       bleBondRemoved.length === 0 &&
       blePairingTimedOut.length === 0 &&
+      tcpResetByPeer.length === 0 &&
+      tcpReadEof.length === 0 &&
       this.transportSaturatedCount === 0 &&
       this.slowTransportQueryCount === 0
     ) {
@@ -315,6 +406,8 @@ export class ReticulumSidecarInterfaceIssueTracker {
 
     return {
       tcpConnectFailed,
+      tcpResetByPeer,
+      tcpReadEof,
       txQueueDrops,
       linkDeliveryTimeouts,
       bleBondRemoved,

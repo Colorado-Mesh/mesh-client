@@ -1355,7 +1355,11 @@
       "txQueueDropsHintBle": "Dieser BLE-RNode kann seine TX-Warteschlange nicht leeren (Link hängt oder flattert). Bevorzugen Sie USB-Serial oder Wi‑Fi (tcp://), oder stoppen Sie den Stack und koppeln Sie erneut nach Vergessen in Systemeinstellungen → Bluetooth.",
       "txQueueDropsHintBleBondStale": "Die TX-Warteschlange ist voll, weil die BLE-Bindung veraltet ist. Vergessen Sie diesen RNode in Systemeinstellungen → Bluetooth und nutzen Sie Admin → Bluetooth (Gekoppelte löschen / Kopplung starten) oder wechseln Sie zu USB.",
       "txQueueDropsHintNeutral": "Dieser Schnittstellen-TX-Kanal ist voll. Überprüfen Sie die Verknüpfungsgesundheit der Schnittstelle (oder deaktivieren Sie sie), um das Herunterfallen zu stoppen.",
-      "txQueueDropsHintBleFlowControl": "Host-TX-Warteschlangengegendruck, während das Funkgerät besetzt ist (Flusssteuerung eingeschaltet). Wird unter HF-Stau erwartet — keine steckengebliebene Verbindung. Reduzieren Sie die ausgehende Last oder warten Sie auf Sendezeit."
+      "txQueueDropsHintBleFlowControl": "Host-TX-Warteschlangengegendruck, während das Funkgerät besetzt ist (Flusssteuerung eingeschaltet). Wird unter HF-Stau erwartet — keine steckengebliebene Verbindung. Reduzieren Sie die ausgehende Last oder warten Sie auf Sendezeit.",
+      "tcpResetByPeer": "{{name}}: Hub setzt die TCP-Sitzung zurück (Verbindung von Peer zurückgesetzt)",
+      "tcpResetByPeerHint": "Der Hub akzeptierte TCP und schloss dann die RNS-Verbindung. Ein anderes Gerät kann mit derselben Identität verbunden sein oder der Hub hat diese Sitzung abgelehnt. Beenden Sie andere Reticulum-Apps und versuchen Sie es erneut. Ein Stapelneustart allein behebt normalerweise keine aktive Hub-Reset-Schleife.",
+      "tcpReadEof": "{{name}}: Hub hat TCP sauber geschlossen (INFO: TCP gelesen: EOF)",
+      "tcpReadEofHint": "Stille Trennung im TCP-Client von rsReticulum — der Remote-Hub schloss die Sitzung ohne RST. Oft geht das Wiederverbinden in ... in Sidecar-Protokollen voraus."
     },
     "reticulumSidecarBundledMissing": "Bei dieser Installation fehlt der mitgelieferte Reticulum-Sidecar. Führen Sie ein Upgrade auf eine neuere Version durch oder melden Sie das Problem – das Erstellen aus dem Quellcode ist bei Paketinstallationen nicht verfügbar.",
     "radioMqttRootDivergesWarning": "Das Hauptthema von Radio MQTT ist {{radioRoot}}, aber dieses Panel abonniert {{appPrefix}}. Passen Sie das Funkgerät an, um den landesweiten Knotenverkehr zu begrenzen — aktualisieren Sie das Themenpräfix und verbinden Sie MQTT erneut.",

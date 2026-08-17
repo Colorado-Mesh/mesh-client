@@ -135,6 +135,8 @@ export interface FetchReticulumSidecarReadOpts {
    * Default false: return cached rows (or []) so unguarded callers keep working.
    */
   propagateRateLimit?: boolean;
+  /** Skip the 5s interfaces cache (TCP recovery uses this for live sidecar status). */
+  bypassCache?: boolean;
 }
 
 /** Fetch OS serial port options from the sidecar (shared cache with path-only helper). */
@@ -195,6 +197,7 @@ export async function fetchReticulumInterfaces(
   }
   const now = Date.now();
   if (
+    !opts?.bypassCache &&
     cachedReticulumInterfaces.length > 0 &&
     now - cachedReticulumInterfacesAt < RETICULUM_INTERFACES_CACHE_MS
   ) {

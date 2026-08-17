@@ -44,6 +44,10 @@ export interface ReticulumLinkDeliveryTimeout {
 /** Parsed from sidecar stdout when TCP peers are unreachable or TX queues overflow. */
 export interface ReticulumInterfaceIssueAlert {
   tcpConnectFailed: string[];
+  /** Hub sent TCP RST after RNS session started (named via reconnect line). */
+  tcpResetByPeer?: string[];
+  /** Hub closed TCP cleanly — INFO-level `TCP read: EOF` (named when possible). */
+  tcpReadEof?: string[];
   txQueueDrops: ReticulumInterfaceTxQueueDrop[];
   linkDeliveryTimeouts: ReticulumLinkDeliveryTimeout[];
   /**

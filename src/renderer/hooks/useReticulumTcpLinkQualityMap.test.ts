@@ -76,11 +76,11 @@ describe('useReticulumTcpLinkQualityMap', () => {
     vi.clearAllMocks();
   });
 
-  it('probes enabled TCP rows and stores RTT by id', async () => {
+  it('probes enabled TCP rows before the sidecar is ready', async () => {
     const { result } = renderHook(() =>
       useReticulumTcpLinkQualityMap(
         [{ id: 'hub', enabled: true, type: 'tcp', host: 'rmap.world', port: 4242 }],
-        true,
+        false,
       ),
     );
     await waitFor(() => {
@@ -94,7 +94,7 @@ describe('useReticulumTcpLinkQualityMap', () => {
     const { result } = renderHook(() =>
       useReticulumTcpLinkQualityMap(
         [{ id: 'hub', enabled: true, type: 'tcp', host: 'rmap.world', port: 4242 }],
-        true,
+        false,
       ),
     );
     await waitFor(() => {
@@ -103,11 +103,11 @@ describe('useReticulumTcpLinkQualityMap', () => {
     });
   });
 
-  it('clears map when sidecar is not ready', () => {
+  it('skips probes while the sidecar owns RNS TCP sessions', () => {
     const { result } = renderHook(() =>
       useReticulumTcpLinkQualityMap(
         [{ id: 'hub', enabled: true, type: 'tcp', host: 'rmap.world', port: 4242 }],
-        false,
+        true,
       ),
     );
     expect(result.current.size).toBe(0);
@@ -118,7 +118,7 @@ describe('useReticulumTcpLinkQualityMap', () => {
     const { result } = renderHook(() =>
       useReticulumTcpLinkQualityMap(
         [{ id: 'hub', enabled: true, type: 'tcp', host: 'rmap.world', port: 4242 }],
-        true,
+        false,
       ),
     );
     await waitFor(() => {

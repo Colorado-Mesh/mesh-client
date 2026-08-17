@@ -1355,7 +1355,11 @@
       "txQueueDropsHintBle": "Questo BLE RNode non può scaricare la sua coda TX (collegamento bloccato o sbattimento). Preferire USB seriale o Wi-Fi (tcp://), o interrompere lo stack e ricollegare dopo aver dimenticato in Impostazioni di sistema → Bluetooth.",
       "txQueueDropsHintBleBondStale": "La coda TX è piena perché il legame BLE è scaduto. Dimenticare questo RNode in Impostazioni di sistema → Bluetooth, quindi utilizzare Admin → Bluetooth (Cancella accoppiamento / Avvia accoppiamento) o passare a USB.",
       "txQueueDropsHintNeutral": "Questo canale TX di interfaccia è pieno. Controllare lo stato del collegamento dell'interfaccia (o disabilitarlo) per arrestare le cadute.",
-      "txQueueDropsHintBleFlowControl": "Contropressione della coda TX dell'host mentre la radio è occupata (controllo del flusso attivo). Previsto sotto congestione RF — non un collegamento bloccato. Ridurre il carico in uscita o attendere il tempo di trasmissione."
+      "txQueueDropsHintBleFlowControl": "Contropressione della coda TX dell'host mentre la radio è occupata (controllo del flusso attivo). Previsto sotto congestione RF — non un collegamento bloccato. Ridurre il carico in uscita o attendere il tempo di trasmissione.",
+      "tcpResetByPeer": "{{name}}: hub reimposta la sessione TCP (connessione reimpostata dal peer)",
+      "tcpResetByPeerHint": "L'hub ha accettato TCP, quindi ha chiuso il collegamento RNS. Un altro dispositivo può essere collegato con la stessa identità o l'hub ha rifiutato questa sessione. Uscire da altre app Reticulum e riprovare; un riavvio dello stack da solo di solito non risolve un ciclo di ripristino dell'hub attivo.",
+      "tcpReadEof": "{{name}}: hub chiuso in modo pulito TCP (INFO: TCP leggi: EOF)",
+      "tcpReadEofHint": "Disconnessione silenziosa all'interno del client TCP di rsReticulum: l'hub remoto ha chiuso la sessione senza un RST. Spesso precede la riconnessione in ... nei registri del sidecar."
     },
     "reticulumSidecarBundledMissing": "In questa installazione manca il sidecar Reticulum in bundle. Esegui l'upgrade a una versione più recente o segnala il problema: la creazione dal codice sorgente non è disponibile nelle installazioni in pacchetto.",
     "radioMqttRootDivergesWarning": "L'argomento principale di Radio MQTT è {{radioRoot}}, ma questo panel si iscrive a {{appPrefix}}. Abbina la radio per limitare il traffico dei nodi a livello nazionale: aggiorna il prefisso dell'argomento e ricollega MQTT.",

@@ -1357,7 +1357,11 @@
       "txQueueDropsHintBle": "이 BLE RNode는 TX 대기열을 배출할 수 없습니다 (링크 정지 또는 플랩핑). USB 직렬 또는 Wi-Fi (tcp://) 를 선호하거나 시스템 설정 → 블루투스에서 잊어버린 후 스택을 중지하고 다시 페어링하십시오.",
       "txQueueDropsHintBleBondStale": "BLE 결합이 오래되어 TX 대기열이 가득 찼습니다. 시스템 설정 → 블루투스에서 이 RNode를 지운 다음 관리자 → 블루투스를 사용하거나 (페어링 지우기/페어링 시작) USB로 전환하십시오.",
       "txQueueDropsHintNeutral": "이 인터페이스 TX 채널이 가득 찼습니다. 해당 인터페이스의 링크 상태를 확인하거나 비활성화하여 드롭을 중지하십시오.",
-      "txQueueDropsHintBleFlowControl": "라디오가 사용 중인 동안 호스트 TX 대기열 배압 (유량 제어 켜짐). RF 정체 시 예상 — 링크가 고정되지 않음. 아웃바운드 화물을 줄이거나 대기 시간을 기다리세요."
+      "txQueueDropsHintBleFlowControl": "라디오가 사용 중인 동안 호스트 TX 대기열 배압 (유량 제어 켜짐). RF 정체 시 예상 — 링크가 고정되지 않음. 아웃바운드 화물을 줄이거나 대기 시간을 기다리세요.",
+      "tcpResetByPeer": "{{name}}: 허브 TCP 세션 재설정 (피어별 연결 재설정)",
+      "tcpResetByPeerHint": "허브가 TCP를 수락한 다음 RNS 링크를 닫았습니다. 다른 장치가 동일한 ID로 연결되었거나 허브가 이 세션을 거부했을 수 있습니다. 다른 Reticulum 앱을 종료하고 다시 시도하십시오. 스택 재시작만으로는 일반적으로 활성 허브 재설정 루프가 수정되지 않습니다.",
+      "tcpReadEof": "{{name}}: 허브가 TCP를 깨끗하게 닫음 (정보: TCP 읽기: EOF)",
+      "tcpReadEofHint": "RsReticulum의 TCP 클라이언트 내부에서 자동 연결 해제 — 원격 허브가 RST 없이 세션을 닫았습니다. 종종 사이드카 로그에서... 에 다시 연결하기 전에."
     },
     "reticulumSidecarBundledMissing": "이 설치에는 번들로 제공되는 Reticulum 사이드카가 없습니다. 최신 릴리스로 업그레이드하거나 문제를 보고하세요. 패키지 설치에서는 소스에서 빌드할 수 없습니다.",
     "radioMqttRootDivergesWarning": "라디오 MQTT 루트 주제는 {{radioRoot}} 이지만 이 패널은 {{appPrefix}} 을 (를) 구독합니다. 라디오를 일치시켜 전국 노드 트래픽을 제한하십시오 — 주제 접두사를 업데이트하고 MQTT를 다시 연결하십시오.",

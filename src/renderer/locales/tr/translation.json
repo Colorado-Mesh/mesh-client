@@ -1357,7 +1357,11 @@
       "txQueueDropsHintBle": "Bu BLE RNode TX kuyruğunu boşaltamaz (bağlantı sıkışmış veya flapping). USB seri veya Wi-Fi (tcp://) tercih edin, veya Sistem Ayarları → Bluetooth'ta Forget sonrası yığını durdurup yeniden eşleştirin.",
       "txQueueDropsHintBleBondStale": "BLE bağı bayat olduğu için TX kuyruğu dolu. Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, ardından Yönetici → Bluetooth'unu (Eşleştirmeyi temizle/Eşleştirmeyi başlat) kullanın veya USB'ye geçin.",
       "txQueueDropsHintNeutral": "Bu arayüz TX kanalı dolu. Düşmeleri durdurmak için bu arayüzün bağlantı sağlığını kontrol edin (veya devre dışı bırakın).",
-      "txQueueDropsHintBleFlowControl": "Radyo meşgulken ana bilgisayar TX kuyruğu geri basıncı (akış kontrolü açık). RF tıkanıklığı altında beklenir — sıkışmış bir bağlantı değil. Giden yükü azaltın veya yayın süresini bekleyin."
+      "txQueueDropsHintBleFlowControl": "Radyo meşgulken ana bilgisayar TX kuyruğu geri basıncı (akış kontrolü açık). RF tıkanıklığı altında beklenir — sıkışmış bir bağlantı değil. Giden yükü azaltın veya yayın süresini bekleyin.",
+      "tcpResetByPeer": "{{name}}: Hub TCP oturumunu sıfırladı (Bağlantı eş tarafından sıfırlandı)",
+      "tcpResetByPeerHint": "Merkez TCP'yi kabul etti ve ardından RNS bağlantısını kapattı. Başka bir cihaz aynı kimlikle bağlanabilir veya merkez bu oturumu reddedebilir. Diğer Reticulum uygulamalarından çıkın ve yeniden deneyin; yığın yeniden başlatması genellikle aktif bir hub sıfırlama döngüsünü düzeltmez.",
+      "tcpReadEof": "{{name}}: Hub TCP'yi temiz bir şekilde kapattı (BİLGİ: TCP okundu: EOF)",
+      "tcpReadEofHint": "RsReticulum'un TCP istemcisi içindeki sessiz bağlantı kesme — uzak hub oturumu RST olmadan kapattı. Genellikle sepet günlüklerinde ... yeniden bağlanmadan önce gelir."
     },
     "reticulumSidecarBundledMissing": "Bu kurulumda birlikte verilen Reticulum sidecar eksik. Daha yeni bir sürüme yükseltin veya sorunu bildirin; kaynaktan derleme, paketli kurulumlarda mevcut değildir.",
     "radioMqttRootDivergesWarning": "Radyo MQTT kök konusu {{radioRoot}} 'dır, ancak bu panel {{appPrefix}}' e abone olur. Ülke çapındaki düğüm trafiğini sınırlamak için radyoyu eşleştirin — Konu Önekini güncelleyin ve MQTT'yi yeniden bağlayın.",
