@@ -5,6 +5,10 @@ import { normalizeReticulumNodeId, reticulumHashToNodeId } from './destHash';
 export interface ReticulumIngestMergeContext {
   selfLxmfHash?: string | null;
   attachmentPath?: string | null;
+  /** When the attachment is an audio file, stamp kind/mode on the record. */
+  attachmentKind?: 'image' | 'audio';
+  /** LXMF FIELD_AUDIO mode from the wire (16 = AM_OPUS_OGG). */
+  audioMode?: number | null;
   /** Exact SQLite message_hash to replace when persisting this ingest (pending or prior hash). */
   replacesMessageHash?: string | null;
 }
@@ -34,7 +38,14 @@ export function mergeReticulumIngestRecord(
     record.from = selfNodeId;
   }
 
-  if (!existing) return record;
+  if (!existing) {
+    if (ctx.attachmentPath) {
+      record.reticulumAttachmentPath = ctx.attachmentPath;
+      if (ctx.attachmentKind) record.reticulumAttachmentKind = ctx.attachmentKind;
+      if (ctx.audioMode != null) record.reticulumAudioMode = ctx.audioMode;
+    }
+    return record;
+  }
 
   const existingFromSelf = isSelfReticulumNode(existing.from, selfNodeId);
   const incomingFromSelf = isSelfReticulumNode(record.from, selfNodeId);
@@ -76,8 +87,13 @@ export function mergeReticulumIngestRecord(
 
   if (ctx.attachmentPath) {
     merged.reticulumAttachmentPath = ctx.attachmentPath;
+    if (ctx.attachmentKind) merged.reticulumAttachmentKind = ctx.attachmentKind;
+    if (ctx.audioMode != null) merged.reticulumAudioMode = ctx.audioMode;
   } else if (existing.reticulumAttachmentPath) {
     merged.reticulumAttachmentPath = existing.reticulumAttachmentPath;
+    merged.reticulumAttachmentKind = existing.reticulumAttachmentKind;
+    merged.reticulumAudioMode = existing.reticulumAudioMode;
+    merged.reticulumAudioDurationSec = existing.reticulumAudioDurationSec;
   }
 
   // Keep quote metadata when a later wire tick omits preview fields.

@@ -61,6 +61,7 @@ import {
   openReticulumDmFromHash,
   parseReticulumDestinationInput,
 } from '@/renderer/lib/reticulum/reticulumDestinationInput';
+import { cancelReticulumVoiceMemo } from '@/renderer/lib/reticulum/reticulumVoiceMemo';
 import {
   RETICULUM_DM_HEADER_ACTION_CLASS,
   RETICULUM_DM_HEADER_STATUS_CLASS,
@@ -166,9 +167,13 @@ import {
   ReticulumDmPathActions,
   ReticulumDmPathReachabilityBadge,
 } from './ReticulumDmPathReachabilityBadge';
-import { ReticulumMessageStatusBadge } from './ReticulumMessageStatusBadge';
+import {
+  isReticulumTooLargeForPropagationError,
+  ReticulumMessageStatusBadge,
+} from './ReticulumMessageStatusBadge';
 import { ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { ReticulumPropagationNotice } from './ReticulumPropagationNotice';
+import { ReticulumVoiceMemoLine } from './ReticulumVoiceMemoLine';
 import { useToast } from './Toast';
 
 function chatPanelIsLinux(): boolean {
@@ -529,6 +534,10 @@ export interface ChatPanelProps {
   hasRncpTransfer?: boolean;
   /** Reticulum: LXST voice Call control in the DM header. */
   hasLxstVoice?: boolean;
+  /** Reticulum: LXMF voice memo mic button in composer + playback line in chat. */
+  hasReticulumVoiceMemo?: boolean;
+  /** Called when the user presses the mic button (destination = active DM node). */
+  onVoiceMemo?: (destination: number) => void;
   /** Reticulum: LRGP games Challenge control in the DM header. */
   hasLrgpGames?: boolean;
   /** Reticulum: LXMF paper Share as paper / Scan paper controls. */
@@ -588,6 +597,8 @@ function ChatPanel({
   reticulumStackLive = false,
   hasRncpTransfer = false,
   hasLxstVoice = false,
+  hasReticulumVoiceMemo = false,
+  onVoiceMemo,
   hasLrgpGames = false,
   hasLxmfPaper = false,
   resolveShareLocation,
@@ -776,6 +787,13 @@ function ChatPanel({
   useEffect(() => {
     saveActiveDm(protocol, activeDmNode);
   }, [activeDmNode, protocol]);
+
+  // Drop in-progress memo capture when switching DMs so the mic does not stay open.
+  useEffect(() => {
+    return () => {
+      void cancelReticulumVoiceMemo();
+    };
+  }, [activeDmNode]);
 
   useEffect(() => {
     try {
@@ -2859,8 +2877,23 @@ function ChatPanel({
 
                             {/* Message text with optional search highlight (div: ChatPayloadText may render block link previews) */}
                             <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
-                              {showLxmfAttachmentLine &&
-                              parseReticulumAttachmentPayload(msg.payload) ? (
+                              {/^\[voice:/i.test(msg.payload) &&
+                              !(hasReticulumVoiceMemo && msg.reticulumAttachmentPath) ? (
+                                <span className="text-gray-400 italic">
+                                  {t('chatPanel.voiceMemo.unavailable')}
+                                </span>
+                              ) : hasReticulumVoiceMemo &&
+                                msg.reticulumAttachmentPath &&
+                                (msg.reticulumAttachmentKind === 'audio' ||
+                                  msg.reticulumAttachmentPath.toLowerCase().endsWith('.ogg') ||
+                                  /^\[voice:/i.test(msg.payload)) ? (
+                                <ReticulumVoiceMemoLine
+                                  attachmentPath={msg.reticulumAttachmentPath}
+                                  durationSec={msg.reticulumAudioDurationSec}
+                                  audioMode={msg.reticulumAudioMode}
+                                />
+                              ) : showLxmfAttachmentLine &&
+                                parseReticulumAttachmentPayload(msg.payload) ? (
                                 <ReticulumAttachmentLine
                                   payload={msg.payload}
                                   attachmentPath={msg.reticulumAttachmentPath}
@@ -2900,25 +2933,27 @@ function ChatPanel({
                             {/* Delivery status for own messages */}
                             {isOwn && (msg.status || msg.mqttStatus) && (
                               <div className="mt-0.5 flex items-center justify-end gap-1">
-                                {isOwn && msg.status === 'failed' && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onResend(msg);
-                                    }}
-                                    {...{ [PARENT_HOVER_ATTR]: '' }}
-                                    className="text-gray-500 transition-colors hover:text-gray-300"
-                                    title={t('chatPanel.resendMessage')}
-                                  >
-                                    <RotateCcw
-                                      aria-hidden
-                                      className="h-3.5 w-3.5"
-                                      trigger={parentIconTrigger}
-                                      size={14}
-                                    />
-                                  </button>
-                                )}
+                                {isOwn &&
+                                  msg.status === 'failed' &&
+                                  !isReticulumTooLargeForPropagationError(msg.error) && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onResend(msg);
+                                      }}
+                                      {...{ [PARENT_HOVER_ATTR]: '' }}
+                                      className="text-gray-500 transition-colors hover:text-gray-300"
+                                      title={t('chatPanel.resendMessage')}
+                                    >
+                                      <RotateCcw
+                                        aria-hidden
+                                        className="h-3.5 w-3.5"
+                                        trigger={parentIconTrigger}
+                                        size={14}
+                                      />
+                                    </button>
+                                  )}
                                 {showLxmfDeliveryStatus && msg.status ? (
                                   <ReticulumMessageStatusBadge
                                     status={
@@ -3256,6 +3291,14 @@ function ChatPanel({
           setUnreadDividerTimestamp(0);
         }}
         textareaRef={composerInputRef}
+        onVoiceMemo={
+          protocol === 'reticulum' && hasReticulumVoiceMemo && isDmMode && onVoiceMemo != null
+            ? () => {
+                if (activeDmNode == null) return;
+                onVoiceMemo(activeDmNode);
+              }
+            : undefined
+        }
       />
 
       {chatActionError?.viewKey === viewKey && (

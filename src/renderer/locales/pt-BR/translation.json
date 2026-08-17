@@ -693,7 +693,25 @@
     "meshcoreFastSend": {
       "warning": "Você está enviando mais rápido do que a malha pode retransmitir. Em uma malha ocupada, os repetidores podem soltar mensagens enviadas juntas — deixe alguns segundos entre as mensagens."
     },
-    "outboxLegacyMultipartBlocked": "Esta mensagem na fila usava divisão MeshCore em várias partes, que não é mais enviada. Cancele e envie uma mensagem mais curta (ou várias mensagens mais curtas separadas)."
+    "outboxLegacyMultipartBlocked": "Esta mensagem na fila usava divisão MeshCore em várias partes, que não é mais enviada. Cancele e envie uma mensagem mais curta (ou várias mensagens mais curtas separadas).",
+    "voiceMemo": {
+      "recordAria": "Gravar voz",
+      "playAria": "Reproduzir memorando de voz",
+      "pauseAria": "Pausar memorando de voz",
+      "seekAria": "Buscar posição de reprodução de memorando de voz",
+      "containerAria": "Memorando de voz",
+      "sendAria": "Enviar memorando de voz",
+      "callBusy": "Desligue a chamada de voz antes de gravar um memorando.",
+      "micDenied": "O acesso ao microfone é necessário para gravar um memorando de voz.",
+      "tooLargeForWire": "O memorando de voz é muito grande para enviar. Grave um clipe mais curto.",
+      "tooLargeForPropagation": "A mensagem de voz é maior do que o limite do nó de propagação. Ele só será entregue quando o destinatário estiver online. Encurte-o para armazená-lo para entrega offline.",
+      "directOnlyBadge": "Apenas direto — muito grande para armazenamento offline",
+      "recordTooltip": "Memorando de voz LXMF — grava um pequeno clipe Opus para esta mensagem direta. Suportado por mesh-client, Ratspeak e Sideband (FIELD_AUDIO). Não é o mesmo que Chamada LXST.",
+      "sendTooltip": "Envie o memorando de voz LXMF gravado",
+      "startFailed": "Não foi possível iniciar a gravação do memorando de voz. Tente novamente.",
+      "sendAriaWithElapsed": "Enviar memorando de voz ({{seconds}} segundos gravados)",
+      "unavailable": "Memorando de voz indisponível — anexo não armazenado em cache neste dispositivo."
+    }
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

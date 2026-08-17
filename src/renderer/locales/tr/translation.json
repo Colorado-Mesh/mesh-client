@@ -693,7 +693,25 @@
     "meshcoreFastSend": {
       "warning": "Ağın aktarabileceğinden daha hızlı gönderiyorsun. Yoğun bir ağda tekrarlayıcılar birbirine yakın gönderilen mesajları bırakabilir; mesajlar arasında birkaç saniye bırakın."
     },
-    "outboxLegacyMultipartBlocked": "Bu sıraya alınmış mesaj, artık gönderilmeyen çok parçalı MeshCore bölmeyi kullandı. İptal edin ve daha kısa bir mesaj (veya birkaç ayrı kısa mesaj) gönderin."
+    "outboxLegacyMultipartBlocked": "Bu sıraya alınmış mesaj, artık gönderilmeyen çok parçalı MeshCore bölmeyi kullandı. İptal edin ve daha kısa bir mesaj (veya birkaç ayrı kısa mesaj) gönderin.",
+    "voiceMemo": {
+      "recordAria": "Sesli not kaydet",
+      "playAria": "Sesli notu çal",
+      "pauseAria": "Sesli notu duraklat",
+      "seekAria": "Sesli not oynatma konumu ara",
+      "containerAria": "Sesli not",
+      "sendAria": "Sesli not gönder",
+      "callBusy": "Bir not kaydetmeden önce sesli aramayı kapatın.",
+      "micDenied": "Sesli not kaydetmek için mikrofon erişimi gereklidir.",
+      "tooLargeForWire": "Sesli not gönderilemeyecek kadar büyük. Daha kısa bir klip kaydedin.",
+      "tooLargeForPropagation": "Sesli mesaj, yayılma düğümü sınırından daha büyük. Yalnızca alıcı çevrimiçi olduğunda teslim edilecektir. Çevrimdışı teslimat için saklamak üzere kısaltın.",
+      "directOnlyBadge": "Yalnızca doğrudan — çevrimdışı depolama için çok büyük",
+      "recordTooltip": "LXMF sesli notu — bu doğrudan mesaj için kısa bir Opus klibi kaydeder. mesh-client, Ratspeak ve Sideband (FIELD_AUDIO) tarafından desteklenir. LXST Call ile aynı değildir.",
+      "sendTooltip": "Kaydedilen LXMF sesli notunu gönderin",
+      "startFailed": "Sesli not kaydı başlatılamadı. Tekrar deneyin.",
+      "sendAriaWithElapsed": "Sesli not gönder ({{seconds}} saniye kaydedildi)",
+      "unavailable": "Sesli not kullanılamıyor — eklenti bu cihazda önbelleğe alınmadı."
+    }
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

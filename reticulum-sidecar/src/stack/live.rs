@@ -13,7 +13,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use lxmf_core::constants::{
-    DeliveryMethod, FIELD_FILE_ATTACHMENTS, FIELD_ICON_APPEARANCE, FIELD_REACTION,
+    AM_OPUS_OGG, DeliveryMethod, FIELD_FILE_ATTACHMENTS, FIELD_ICON_APPEARANCE, FIELD_REACTION,
     REACTION_CONTENT, REACTION_TO,
 };
 use lxmf_core::message::LxMessage;
@@ -24,6 +24,8 @@ const FIELD_REPLY_TO: u8 = 0x30;
 const FIELD_REPLY_QUOTE: u8 = 0x31;
 /// Cap wire quote length (matches renderer `REPLY_PREVIEW_MAX_LEN` without ellipsis).
 const REPLY_QUOTE_MAX_CHARS: usize = 50;
+/// lxmf-core per-field unpack limit — audio above this cannot be received by peers.
+const MAX_LXMF_AUDIO_FIELD_BYTES: usize = 256 * 1024;
 use lxmf_core::peer::OutboundOfferPolicy;
 use lxmf_core::router::LxmRouter;
 use rns_identity::destination::Destination;
@@ -478,6 +480,9 @@ impl LiveBridge {
             lxmf_dest_hash,
             router.clone(),
         ));
+        outbound_driver.set_propagation_max_message_size(
+            pn_hosting_policy.propagation_limit_kb.saturating_mul(1024),
+        );
         let outbound = Arc::new(Mutex::new(outbound_driver));
 
         let bridge = Self {
@@ -3228,6 +3233,30 @@ impl LiveBridge {
         reply_to: Option<[u8; 32]>,
         reply_quote: Option<&str>,
     ) -> Result<(LxMessage, String), String> {
+        self.prepare_signed_outbound_lxmf_with_audio(
+            dest,
+            title,
+            content,
+            method,
+            reply_to,
+            reply_quote,
+            None,
+        )
+    }
+
+    /// Like [`prepare_signed_outbound_lxmf`], optionally stamping native
+    /// `FIELD_AUDIO` (voice memo) before `sign()` so it is covered by the hash.
+    #[allow(clippy::too_many_arguments)] // mirrors prepare_signed_outbound_lxmf + optional audio bytes
+    fn prepare_signed_outbound_lxmf_with_audio(
+        &self,
+        dest: [u8; 16],
+        title: &str,
+        content: &str,
+        method: DeliveryMethod,
+        reply_to: Option<[u8; 32]>,
+        reply_quote: Option<&str>,
+        audio: Option<&[u8]>,
+    ) -> Result<(LxMessage, String), String> {
         let mut msg = LxMessage::new(
             dest,
             parse_hash16(&self.lxmf_hash_hex)?,
@@ -3236,6 +3265,17 @@ impl LiveBridge {
             method,
         );
         apply_reply_fields(&mut msg, reply_to, reply_quote);
+        if let Some(bytes) = audio {
+            if bytes.len() > MAX_LXMF_AUDIO_FIELD_BYTES {
+                return Err(format!(
+                    "audio_too_large: {} > {}",
+                    bytes.len(),
+                    MAX_LXMF_AUDIO_FIELD_BYTES
+                ));
+            }
+            msg.set_audio_field(AM_OPUS_OGG, bytes)
+                .map_err(|e| format!("lxmf set_audio_field: {e:?}"))?;
+        }
         let signing_key = self
             .identity
             .get_signing_key()
@@ -3611,6 +3651,10 @@ impl LiveBridge {
         }
         if let Ok(mut node) = self.propagation.local_node().lock() {
             apply_pn_hosting_policy_to_node(&mut node, policy);
+        }
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver
+                .set_propagation_max_message_size(policy.propagation_limit_kb.saturating_mul(1024));
         }
         // Restart announce loop with updated interval / name when serving.
         if self.propagation.is_local_serving() {
@@ -4457,13 +4501,20 @@ impl LiveBridge {
             .as_deref()
             .map(str::trim)
             .filter(|q| !q.is_empty());
-        let (msg, message_hash_hex) = self.prepare_signed_outbound_lxmf(
+        let audio_bytes = decode_lxmf_audio_request(req.audio.as_ref())?;
+        let content = if req.text.trim().is_empty() && audio_bytes.is_some() {
+            "[voice:0]".to_string()
+        } else {
+            req.text.clone()
+        };
+        let (msg, message_hash_hex) = self.prepare_signed_outbound_lxmf_with_audio(
             dest,
             "",
-            &req.text,
+            &content,
             delivery_method,
             reply_to,
             reply_quote,
+            audio_bytes.as_deref(),
         )?;
         let mut router = self.router.lock().await;
         router
@@ -4481,7 +4532,7 @@ impl LiveBridge {
         let mut payload = serde_json::json!({
             "sender_hash": self.lxmf_hash_hex,
             "sender_name": self.display_name,
-            "text": req.text,
+            "text": content,
             "timestamp": ts_ms,
             "to_hash": req.destination_hash,
             "reply_to_hash": reply_to_hash_echo,
@@ -4501,6 +4552,11 @@ impl LiveBridge {
                 );
             }
         }
+        if let Some(ref bytes) = audio_bytes {
+            if let Some(obj) = payload.as_object_mut() {
+                obj.insert("audio".into(), audio_json_from_bytes(AM_OPUS_OGG, bytes));
+            }
+        }
 
         if let Ok(mut driver) = self.outbound.lock() {
             driver.process_tick(&mut router, &self.event_tx);
@@ -4518,7 +4574,7 @@ impl LiveBridge {
         Ok(serde_json::json!({
             "ok": true,
             "destination_hash": req.destination_hash,
-            "text": req.text,
+            "text": content,
             "delivery_method": delivery_method_str,
             "sent_via": egress_via,
             "delivery_status": "queued",
@@ -4923,6 +4979,18 @@ pub(super) fn lxmf_payload_from_message(
             obj.insert("attachment".into(), attachment);
         }
     }
+    if let Some(audio) = audio_json_from_message(msg) {
+        if let Some(obj) = payload.as_object_mut() {
+            let text_empty = obj
+                .get("text")
+                .and_then(|t| t.as_str())
+                .is_none_or(|t| t.trim().is_empty());
+            if text_empty {
+                obj.insert("text".into(), serde_json::Value::String("[voice:0]".into()));
+            }
+            obj.insert("audio".into(), audio);
+        }
+    }
     if let Some(icon) = icon_appearance_json_from_message(msg) {
         if let Some(obj) = payload.as_object_mut() {
             obj.insert("icon_appearance".into(), icon);
@@ -5175,6 +5243,51 @@ fn attachment_json_from_message(msg: &LxMessage) -> Option<serde_json::Value> {
         "size_bytes": bytes.len(),
         "data_base64": base64::engine::general_purpose::STANDARD.encode(bytes),
     }))
+}
+
+fn audio_json_from_bytes(mode: u8, bytes: &[u8]) -> serde_json::Value {
+    use base64::Engine as _;
+    serde_json::json!({
+        "mode": mode,
+        "size_bytes": bytes.len(),
+        "data_base64": base64::engine::general_purpose::STANDARD.encode(bytes),
+    })
+}
+
+/// Decode native `FIELD_AUDIO` for WS/HTTP payloads. Malformed audio fails open
+/// (returns `None`) without poisoning the rest of the message.
+fn audio_json_from_message(msg: &LxMessage) -> Option<serde_json::Value> {
+    let audio = msg.audio_field().ok()??;
+    Some(audio_json_from_bytes(audio.mode, audio.bytes))
+}
+
+fn decode_lxmf_audio_request(
+    audio: Option<&super::types::LxmfAudioRequest>,
+) -> Result<Option<Vec<u8>>, String> {
+    use base64::Engine as _;
+    let Some(audio) = audio else {
+        return Ok(None);
+    };
+    if audio.mode != AM_OPUS_OGG {
+        return Err(format!(
+            "unsupported_audio_mode: {} (expected {AM_OPUS_OGG})",
+            audio.mode
+        ));
+    }
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(audio.data_base64.as_bytes())
+        .map_err(|e| format!("audio_base64_decode: {e}"))?;
+    if bytes.len() > MAX_LXMF_AUDIO_FIELD_BYTES {
+        return Err(format!(
+            "audio_too_large: {} > {}",
+            bytes.len(),
+            MAX_LXMF_AUDIO_FIELD_BYTES
+        ));
+    }
+    if bytes.is_empty() {
+        return Err("audio_empty".into());
+    }
+    Ok(Some(bytes))
 }
 
 #[allow(clippy::needless_pass_by_value)] // payload is moved into the broadcast frame
@@ -6813,6 +6926,101 @@ mod icon_appearance_tests {
         assert_eq!(json["icon_name"], "hiking");
         assert_eq!(json["foreground_rgb"], serde_json::json!([255, 255, 0]));
         assert_eq!(json["background_rgb"], serde_json::json!([0, 0, 255]));
+    }
+}
+
+#[cfg(test)]
+mod audio_field_tests {
+    use super::*;
+    use base64::Engine as _;
+    use lxmf_core::constants::AM_OPUS_OGG;
+    use lxmf_core::message::LxMessage;
+
+    #[test]
+    fn audio_json_from_message_round_trips_opus_ogg() {
+        let ogg = b"OggS\0fake-opus-bytes";
+        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
+        msg.set_audio_field(AM_OPUS_OGG, ogg).expect("set audio");
+        let json = audio_json_from_message(&msg).expect("audio json");
+        assert_eq!(json["mode"], AM_OPUS_OGG);
+        assert_eq!(json["size_bytes"], ogg.len());
+        let decoded = base64::engine::general_purpose::STANDARD
+            .decode(json["data_base64"].as_str().expect("b64"))
+            .expect("decode");
+        assert_eq!(decoded, ogg);
+    }
+
+    #[test]
+    fn audio_json_from_message_malformed_fail_open() {
+        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "hi", DeliveryMethod::Direct);
+        // Intentionally malformed: array of 3 elements instead of [mode, bytes].
+        msg.set_msgpack_field(
+            lxmf_core::constants::FIELD_AUDIO,
+            vec![0x93, AM_OPUS_OGG, 0xc4, 0x00, 0xc0],
+        )
+        .expect("set malformed");
+        assert!(audio_json_from_message(&msg).is_none());
+        let payload = lxmf_payload_from_message(
+            &msg,
+            "aa".repeat(16).as_str(),
+            "Self",
+            None,
+            None,
+            "inbound",
+            None,
+        );
+        assert_eq!(payload["text"], "hi");
+        assert!(payload.get("audio").is_none());
+    }
+
+    #[test]
+    fn lxmf_payload_sets_voice_marker_when_text_empty() {
+        let ogg = b"OggS\0memo";
+        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
+        msg.set_audio_field(AM_OPUS_OGG, ogg).expect("set audio");
+        let payload = lxmf_payload_from_message(
+            &msg,
+            "aa".repeat(16).as_str(),
+            "Self",
+            None,
+            None,
+            "inbound",
+            None,
+        );
+        assert_eq!(payload["text"], "[voice:0]");
+        assert!(payload.get("audio").is_some());
+        assert!(payload.get("attachment").is_none());
+    }
+
+    #[test]
+    fn decode_lxmf_audio_request_rejects_oversize() {
+        let oversized = vec![0u8; MAX_LXMF_AUDIO_FIELD_BYTES + 1];
+        let req = super::super::types::LxmfAudioRequest {
+            mode: AM_OPUS_OGG,
+            data_base64: base64::engine::general_purpose::STANDARD.encode(&oversized),
+        };
+        let err = decode_lxmf_audio_request(Some(&req)).expect_err("oversize");
+        assert!(err.starts_with("audio_too_large"), "{err}");
+    }
+
+    #[test]
+    fn set_audio_field_changes_message_hash_after_sign() {
+        use rns_identity::identity::Identity;
+        let identity = Identity::new();
+        let signing = identity.get_signing_key().expect("signing key");
+        let source = identity.hash;
+
+        let mut without =
+            LxMessage::new([0u8; 16], source, "", "[voice:0]", DeliveryMethod::Direct);
+        without.sign(&signing).expect("sign");
+        let hash_without = without.hash.expect("hash");
+
+        let mut with = LxMessage::new([0u8; 16], source, "", "[voice:0]", DeliveryMethod::Direct);
+        with.set_audio_field(AM_OPUS_OGG, b"OggS\0x")
+            .expect("set audio");
+        with.sign(&signing).expect("sign");
+        let hash_with = with.hash.expect("hash");
+        assert_ne!(hash_without, hash_with);
     }
 }
 

@@ -71,6 +71,8 @@ mod rrc_link;
 #[cfg(feature = "rns-stack")]
 mod rrc_session;
 #[cfg(feature = "rns-stack")]
+mod voice_memo;
+#[cfg(feature = "rns-stack")]
 mod voice_session;
 
 use std::fs;
@@ -190,6 +192,9 @@ pub struct StackHandle {
     /// Serializes attach_live so concurrent callers cannot spawn duplicate live bridges.
     #[cfg(feature = "rns-stack")]
     attach_live_lock: Mutex<()>,
+    /// Opus/Ogg voice-memo encoder sessions (independent of live LXST calls).
+    #[cfg(feature = "rns-stack")]
+    voice_memo: Arc<voice_memo::VoiceMemoManager>,
     /// Test-only: next preference/pin apply returns this error after persist (exercises rollback).
     #[cfg(test)]
     test_path_medium_apply_error: Mutex<Option<String>>,
@@ -314,6 +319,7 @@ impl StackHandle {
             path_medium_op_lock: Mutex::new(()),
             live: std::sync::OnceLock::new(),
             attach_live_lock: Mutex::new(()),
+            voice_memo: Arc::new(voice_memo::VoiceMemoManager::new()),
             #[cfg(test)]
             test_path_medium_apply_error: Mutex::new(None),
         };
@@ -3023,6 +3029,71 @@ impl StackHandle {
         }
         let _ = (profile, channels, samples_b64);
         serde_json::json!({ "ok": false, "error": "voice requires live rns-stack sidecar" })
+    }
+
+    pub fn voice_memo_start(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        {
+            match self.voice_memo.start() {
+                Ok(v) => v,
+                Err(e) => serde_json::json!({ "ok": false, "error": e }),
+            }
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        serde_json::json!({ "ok": false, "error": "voice_memo requires rns-stack sidecar" })
+    }
+
+    pub fn voice_memo_audio(
+        &self,
+        session_id: &str,
+        channels: u8,
+        samples_b64: &str,
+    ) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        {
+            match self
+                .voice_memo
+                .push_audio(session_id, channels, samples_b64)
+            {
+                Ok(v) => v,
+                Err(e) => serde_json::json!({ "ok": false, "error": e }),
+            }
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = (session_id, channels, samples_b64);
+            serde_json::json!({ "ok": false, "error": "voice_memo requires rns-stack sidecar" })
+        }
+    }
+
+    pub fn voice_memo_stop(&self, session_id: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        {
+            match self.voice_memo.stop(session_id) {
+                Ok(v) => v,
+                Err(e) => serde_json::json!({ "ok": false, "error": e }),
+            }
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = session_id;
+            serde_json::json!({ "ok": false, "error": "voice_memo requires rns-stack sidecar" })
+        }
+    }
+
+    pub fn voice_memo_cancel(&self, session_id: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        {
+            match self.voice_memo.cancel(session_id) {
+                Ok(v) => v,
+                Err(e) => serde_json::json!({ "ok": false, "error": e }),
+            }
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = session_id;
+            serde_json::json!({ "ok": false, "error": "voice_memo requires rns-stack sidecar" })
+        }
     }
 
     pub async fn games_status(&self) -> serde_json::Value {

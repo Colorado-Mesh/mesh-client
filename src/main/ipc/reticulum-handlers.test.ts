@@ -10,10 +10,32 @@ const { showItemInFolderMock } = vi.hoisted(() => ({
   showItemInFolderMock: vi.fn(),
 }));
 
+const { memoAudioRateLimitMock } = vi.hoisted(() => ({
+  memoAudioRateLimitMock: {
+    checkOrThrow: vi.fn(),
+    resetForTests: vi.fn(),
+  },
+}));
+
 vi.mock('electron', () => ({
   ipcMain: { handle: ipcMainHandleMock },
   shell: { showItemInFolder: showItemInFolderMock },
 }));
+
+vi.mock('../ipcRateLimit', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
+  const actual = await importOriginal<typeof import('../ipcRateLimit')>();
+  return {
+    ...actual,
+    createIpcRateLimiter: (...args: Parameters<typeof actual.createIpcRateLimiter>) => {
+      const [opts] = args;
+      if (opts.label === 'reticulum:voiceMemoSendAudio') {
+        return memoAudioRateLimitMock;
+      }
+      return actual.createIpcRateLimiter(...args);
+    },
+  };
+});
 
 vi.mock('../validate-ipc-sender', () => ({
   assertIpcSender: vi.fn(),
@@ -60,6 +82,13 @@ vi.mock('../reticulum-remote-paths', () => ({
   ),
 }));
 
+import {
+  VOICE_MEMO_AUDIO_API_PATH,
+  VOICE_MEMO_CANCEL_API_PATH,
+  VOICE_MEMO_DATA_BASE64_MAX,
+  VOICE_MEMO_START_API_PATH,
+  VOICE_MEMO_STOP_API_PATH,
+} from '../../shared/reticulum-voice-memo-types';
 import {
   isAllowedNomadContentSourcePath,
   readFirstExistingConfig,
@@ -121,6 +150,7 @@ describe('registerReticulumIpcHandlers', () => {
       handlers.set(channel, fn);
     });
     assertIpcSenderMock.mockReset();
+    memoAudioRateLimitMock.checkOrThrow.mockReset().mockImplementation(() => {});
     isAllowedNomadContentSourcePathMock
       .mockReset()
       .mockImplementation((path: string | null) => Boolean(path?.trim()));
@@ -151,6 +181,10 @@ describe('registerReticulumIpcHandlers', () => {
         'reticulum:proxyGet',
         'reticulum:proxyPost',
         'reticulum:voiceSendAudio',
+        'reticulum:voiceMemoStart',
+        'reticulum:voiceMemoSendAudio',
+        'reticulum:voiceMemoStop',
+        'reticulum:voiceMemoCancel',
         'reticulum:proxyPut',
         'reticulum:proxyDelete',
         'reticulum:readDefaultConfigFile',
@@ -634,6 +668,142 @@ describe('registerReticulumIpcHandlers', () => {
         samples_b64: '',
       });
       expect(bad).toEqual({ ok: false, error: 'empty_samples_b64' });
+    });
+  });
+
+  describe('voice memo IPC', () => {
+    it('proxyPost rejects memo paths including query strings', async () => {
+      await expect(
+        handlers.get('reticulum:proxyPost')?.(event, `${VOICE_MEMO_START_API_PATH}?foo=1`, {}),
+      ).rejects.toThrow(/voiceMemo\* IPC channels/);
+      expect(manager.proxyPost).not.toHaveBeenCalled();
+    });
+
+    it('voiceMemoStart forwards body to sidecar', async () => {
+      const body = { destination_hash: 'aa'.repeat(16) };
+      const ok = await handlers.get('reticulum:voiceMemoStart')?.(event, body);
+      expect(ok).toEqual({ ok: true });
+      expect(manager.proxyPost).toHaveBeenCalledWith(VOICE_MEMO_START_API_PATH, body);
+    });
+
+    it('voiceMemoStart defaults invalid opts to {}', async () => {
+      await handlers.get('reticulum:voiceMemoStart')?.(event, null);
+      expect(manager.proxyPost).toHaveBeenCalledWith(VOICE_MEMO_START_API_PATH, {});
+    });
+
+    it('voiceMemoSendAudio forwards validated frames', async () => {
+      const ok = await handlers.get('reticulum:voiceMemoSendAudio')?.(event, {
+        session_id: 'sess-1',
+        channels: 1,
+        samples_b64: 'AAAA',
+      });
+      expect(ok).toEqual({ ok: true });
+      expect(manager.proxyPost).toHaveBeenCalledWith(VOICE_MEMO_AUDIO_API_PATH, {
+        session_id: 'sess-1',
+        channels: 1,
+        samples_b64: 'AAAA',
+      });
+      expect(memoAudioRateLimitMock.checkOrThrow).toHaveBeenCalled();
+    });
+
+    it('voiceMemoSendAudio rejects invalid payload', async () => {
+      const bad = await handlers.get('reticulum:voiceMemoSendAudio')?.(event, {
+        session_id: 'sess-1',
+        channels: 1,
+        samples_b64: '',
+      });
+      expect(bad).toEqual({ ok: false, error: 'empty_samples_b64' });
+      expect(manager.proxyPost).not.toHaveBeenCalled();
+    });
+
+    it('voiceMemoSendAudio throws when dedicated rate limit is exceeded', async () => {
+      memoAudioRateLimitMock.checkOrThrow.mockImplementationOnce(() => {
+        throw new Error('reticulum:voiceMemoSendAudio: rate limit exceeded');
+      });
+      await expect(
+        handlers.get('reticulum:voiceMemoSendAudio')?.(event, {
+          session_id: 'sess-1',
+          channels: 1,
+          samples_b64: 'AAAA',
+        }),
+      ).rejects.toThrow(/rate limit exceeded/);
+      expect(manager.proxyPost).not.toHaveBeenCalled();
+    });
+
+    it('voiceMemoStop forwards session and caps oversized ogg_base64', async () => {
+      manager.proxyPost.mockResolvedValueOnce({
+        ok: true,
+        ogg_base64: 'x'.repeat(VOICE_MEMO_DATA_BASE64_MAX + 1),
+      });
+      const tooLarge = await handlers.get('reticulum:voiceMemoStop')?.(event, {
+        session_id: 'sess-1',
+      });
+      expect(tooLarge).toEqual({ ok: false, error: 'ogg_base64_too_large' });
+
+      manager.proxyPost.mockResolvedValueOnce({
+        ok: true,
+        ogg_base64: 'YQ==',
+        duration_ms: 1000,
+      });
+      const ok = await handlers.get('reticulum:voiceMemoStop')?.(event, {
+        session_id: 'sess-1',
+      });
+      expect(ok).toEqual({ ok: true, ogg_base64: 'YQ==', duration_ms: 1000 });
+      expect(manager.proxyPost).toHaveBeenCalledWith(VOICE_MEMO_STOP_API_PATH, {
+        session_id: 'sess-1',
+      });
+    });
+
+    it('voiceMemoStop rejects invalid session request', async () => {
+      const bad = await handlers.get('reticulum:voiceMemoStop')?.(event, {});
+      expect(bad).toEqual({ ok: false, error: 'invalid_session_id' });
+      expect(manager.proxyPost).not.toHaveBeenCalled();
+    });
+
+    it('voiceMemoCancel forwards validated session request', async () => {
+      const ok = await handlers.get('reticulum:voiceMemoCancel')?.(event, {
+        session_id: 'sess-1',
+      });
+      expect(ok).toEqual({ ok: true });
+      expect(manager.proxyPost).toHaveBeenCalledWith(VOICE_MEMO_CANCEL_API_PATH, {
+        session_id: 'sess-1',
+      });
+    });
+
+    it('voiceMemoCancel rejects invalid session request', async () => {
+      const bad = await handlers.get('reticulum:voiceMemoCancel')?.(event, { session_id: '' });
+      expect(bad).toEqual({ ok: false, error: 'invalid_session_id' });
+      expect(manager.proxyPost).not.toHaveBeenCalled();
+    });
+
+    it('rejects unauthorized senders before ensureManager runs', async () => {
+      assertIpcSenderMock.mockImplementation(() => {
+        throw new Error('reticulum:voiceMemoStart: unauthorized sender');
+      });
+      const ensureManager = vi.fn(() => manager as never);
+      registerReticulumIpcHandlers({
+        idleStatus: IDLE_STATUS,
+        ensureManager,
+        getManager: () => manager as never,
+        getMainWindow: () => null,
+      });
+      await expect(
+        handlers.get('reticulum:voiceMemoStart')?.(event, { destination_hash: 'aa'.repeat(16) }),
+      ).rejects.toThrow('unauthorized sender');
+      await expect(
+        handlers.get('reticulum:voiceMemoSendAudio')?.(event, {
+          session_id: 'sess-1',
+          channels: 1,
+          samples_b64: 'AAAA',
+        }),
+      ).rejects.toThrow('unauthorized sender');
+      await expect(
+        handlers.get('reticulum:voiceMemoStop')?.(event, { session_id: 'sess-1' }),
+      ).rejects.toThrow('unauthorized sender');
+      await expect(
+        handlers.get('reticulum:voiceMemoCancel')?.(event, { session_id: 'sess-1' }),
+      ).rejects.toThrow('unauthorized sender');
+      expect(ensureManager).not.toHaveBeenCalled();
     });
   });
 });

@@ -693,7 +693,25 @@
     "meshcoreFastSend": {
       "warning": "메시가 릴레이할 수 있는 속도보다 빠르게 전송하고 있습니다. 바쁜 메시에서는 반복자가 서로 가깝게 보낸 메시지를 드롭할 수 있습니다. 메시지 사이에 몇 초를 남겨두세요."
     },
-    "outboxLegacyMultipartBlocked": "대기 중인 이 메시지는 더 이상 전송되지 않는 다중 부분 MeshCore 분할을 사용했습니다. 취소하고 더 ​​짧은 메시지(또는 여러 개의 개별 짧은 메시지)를 보내십시오."
+    "outboxLegacyMultipartBlocked": "대기 중인 이 메시지는 더 이상 전송되지 않는 다중 부분 MeshCore 분할을 사용했습니다. 취소하고 더 ​​짧은 메시지(또는 여러 개의 개별 짧은 메시지)를 보내십시오.",
+    "voiceMemo": {
+      "recordAria": "음성 메모 녹음",
+      "playAria": "음성 메모 재생",
+      "pauseAria": "음성 메모 일시 중지",
+      "seekAria": "음성 메모 재생 위치 찾기",
+      "containerAria": "음성 메모",
+      "sendAria": "음성 메모 보내기",
+      "callBusy": "메모를 녹음하기 전에 음성 통화를 끊으세요.",
+      "micDenied": "음성 메모를 녹음하려면 마이크 접근 권한이 필요합니다.",
+      "tooLargeForWire": "음성 메모가 너무 커서 보낼 수 없습니다. 더 짧은 클립을 녹화합니다.",
+      "tooLargeForPropagation": "음성 메시지가 전파 노드 제한보다 큽니다. 수령인이 온라인 상태일 때만 배달됩니다. 오프라인 배달을 위해 보관하려면 길이를 줄이세요.",
+      "directOnlyBadge": "다이렉트 전용 — 오프라인 스토리지에 너무 큼",
+      "recordTooltip": "LXMF 음성 메모 — 이 다이렉트 메시지에 대한 짧은 Opus 클립을 기록합니다. mesh-client, Ratspeak, Sideband (FIELD_AUDIO)가 지원합니다. LXST Call과 동일하지 않습니다.",
+      "sendTooltip": "녹음된 LXMF 음성 메모 보내기",
+      "startFailed": "음성 메모 녹음을 시작할 수 없습니다. 다시 시도하십시오.",
+      "sendAriaWithElapsed": "음성 메모 전송 ({{seconds}} 초 녹음)",
+      "unavailable": "음성 메모를 사용할 수 없음 — 이 장치에 첨부 파일이 캐시되지 않음."
+    }
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

@@ -6,6 +6,16 @@ import type {
   ReticulumSidecarStartOptions,
   ReticulumSidecarStatus,
 } from '../../shared/reticulum-types';
+import {
+  isVoiceMemoApiPath,
+  parseVoiceMemoAudioRequest,
+  parseVoiceMemoSessionRequest,
+  VOICE_MEMO_AUDIO_API_PATH,
+  VOICE_MEMO_CANCEL_API_PATH,
+  VOICE_MEMO_DATA_BASE64_MAX,
+  VOICE_MEMO_START_API_PATH,
+  VOICE_MEMO_STOP_API_PATH,
+} from '../../shared/reticulum-voice-memo-types';
 import { canonicalizeReticulumDestinationHash } from '../../shared/reticulumDestinationHash';
 import {
   isExpectedReticulumProxyError,
@@ -259,6 +269,9 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     if (isVoiceAudioApiPath(pathArg)) {
       throw new Error('voice PCM ingest requires reticulum:voiceSendAudio');
     }
+    if (isVoiceMemoApiPath(pathArg)) {
+      throw new Error('voice memo requires reticulum:voiceMemo* IPC channels');
+    }
     if (isGamesApiPath(pathArg)) {
       throw new Error('LRGP games require reticulum:games* IPC channels');
     }
@@ -270,6 +283,17 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('proxyPost', err, pathArg);
     }
+  });
+
+  /**
+   * LXMF voice memo PCM ingest. Separate bucket from live LXST voice so memo
+   * recording does not starve live-call TX or the shared proxy ceiling.
+   * 2000/min matches the live-voice bucket (QualityHigh ~16.7 frames/s).
+   */
+  const reticulumVoiceMemoAudioIpcRateLimit = createIpcRateLimiter({
+    max: 2000,
+    windowMs: MS_PER_MINUTE,
+    label: 'reticulum:voiceMemoSendAudio',
   });
 
   /**
@@ -289,6 +313,75 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('voiceSendAudio', err, VOICE_AUDIO_API_PATH);
+    }
+  });
+
+  ipcMain.handle('reticulum:voiceMemoStart', async (event, opts: unknown) => {
+    assertIpcSender(event, 'reticulum:voiceMemoStart');
+    const body = opts != null && typeof opts === 'object' && !Array.isArray(opts) ? opts : {};
+    try {
+      const m = ensureManager();
+      return await m.proxyPost(VOICE_MEMO_START_API_PATH, body);
+    } catch (err) {
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('voiceMemoStart', err, VOICE_MEMO_START_API_PATH);
+    }
+  });
+
+  ipcMain.handle('reticulum:voiceMemoSendAudio', async (event, opts: unknown) => {
+    assertIpcSender(event, 'reticulum:voiceMemoSendAudio');
+    reticulumVoiceMemoAudioIpcRateLimit.checkOrThrow();
+    const parsed = parseVoiceMemoAudioRequest(opts);
+    if ('error' in parsed) {
+      return { ok: false, error: parsed.error };
+    }
+    try {
+      const m = ensureManager();
+      return await m.proxyPost(VOICE_MEMO_AUDIO_API_PATH, parsed);
+    } catch (err) {
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('voiceMemoSendAudio', err, VOICE_MEMO_AUDIO_API_PATH);
+    }
+  });
+
+  ipcMain.handle('reticulum:voiceMemoStop', async (event, opts: unknown) => {
+    assertIpcSender(event, 'reticulum:voiceMemoStop');
+    const parsed = parseVoiceMemoSessionRequest(opts);
+    if ('error' in parsed) {
+      return { ok: false, error: parsed.error };
+    }
+    try {
+      const m = ensureManager();
+      const result = await m.proxyPost(VOICE_MEMO_STOP_API_PATH, parsed);
+      if (
+        result &&
+        typeof result === 'object' &&
+        !Array.isArray(result) &&
+        typeof (result as Record<string, unknown>).ogg_base64 === 'string' &&
+        ((result as Record<string, unknown>).ogg_base64 as string).length >
+          VOICE_MEMO_DATA_BASE64_MAX
+      ) {
+        return { ok: false, error: 'ogg_base64_too_large' };
+      }
+      return result;
+    } catch (err) {
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('voiceMemoStop', err, VOICE_MEMO_STOP_API_PATH);
+    }
+  });
+
+  ipcMain.handle('reticulum:voiceMemoCancel', async (event, opts: unknown) => {
+    assertIpcSender(event, 'reticulum:voiceMemoCancel');
+    const parsed = parseVoiceMemoSessionRequest(opts);
+    if ('error' in parsed) {
+      return { ok: false, error: parsed.error };
+    }
+    try {
+      const m = ensureManager();
+      return await m.proxyPost(VOICE_MEMO_CANCEL_API_PATH, parsed);
+    } catch (err) {
+      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      return settleReticulumProxyFailure('voiceMemoCancel', err, VOICE_MEMO_CANCEL_API_PATH);
     }
   });
 

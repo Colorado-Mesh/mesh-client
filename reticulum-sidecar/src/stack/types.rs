@@ -283,6 +283,14 @@ pub struct AddInterfaceRequest {
     pub extra_config: HashMap<String, String>,
 }
 
+/// Native LXMF `FIELD_AUDIO` payload for chat voice memos (Ratspeak parity).
+#[derive(Debug, Clone, Deserialize)]
+pub struct LxmfAudioRequest {
+    /// LXMF audio mode (`AM_OPUS_OGG` = 0x10).
+    pub mode: u8,
+    pub data_base64: String,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct LxmfSendRequest {
     pub destination_hash: String,
@@ -294,6 +302,9 @@ pub struct LxmfSendRequest {
     /// Optional UTF-8 quote snippet for LXMF `FIELD_REPLY_QUOTE` (0x31).
     #[serde(default)]
     pub reply_preview_text: Option<String>,
+    /// Optional native LXMF audio field (Ogg/Opus voice memo).
+    #[serde(default)]
+    pub audio: Option<LxmfAudioRequest>,
 }
 
 /// Create an encrypted `lxm://` paper URI (no network send).

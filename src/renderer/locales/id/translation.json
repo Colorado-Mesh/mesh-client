@@ -693,7 +693,25 @@
     "meshcoreFastSend": {
       "warning": "Anda mengirim lebih cepat daripada yang dapat disampaikan oleh mesh. Pada mesh yang sibuk, repeater dapat menjatuhkan pesan yang dikirim secara berdekatan — menyisakan beberapa detik di antara pesan."
     },
-    "outboxLegacyMultipartBlocked": "Pesan antrean ini menggunakan pemisahan MeshCore multi-bagian, yang tidak lagi terkirim. Batalkan dan kirim pesan singkat (atau beberapa pesan singkat terpisah)."
+    "outboxLegacyMultipartBlocked": "Pesan antrean ini menggunakan pemisahan MeshCore multi-bagian, yang tidak lagi terkirim. Batalkan dan kirim pesan singkat (atau beberapa pesan singkat terpisah).",
+    "voiceMemo": {
+      "recordAria": "Rekam memo suara",
+      "playAria": "Putar memo suara",
+      "pauseAria": "Jeda memo suara",
+      "seekAria": "Mencari posisi pemutaran memo suara",
+      "containerAria": "Memo suara",
+      "sendAria": "Kirim memo suara",
+      "callBusy": "Tutup panggilan suara sebelum merekam memo.",
+      "micDenied": "Akses mikrofon diperlukan untuk merekam memo suara.",
+      "tooLargeForWire": "Memo suara terlalu besar untuk dikirim. Rekam klip yang lebih pendek.",
+      "tooLargeForPropagation": "Pesan suara lebih besar dari batas simpul propagasi. Pengiriman hanya akan dilakukan saat penerima sedang online. Persingkat untuk menyimpannya untuk pengiriman offline.",
+      "directOnlyBadge": "Hanya langsung — terlalu besar untuk penyimpanan offline",
+      "recordTooltip": "Memo suara LXMF — merekam klip Opus singkat untuk pesan langsung ini. Didukung oleh mesh-client, Ratspeak, dan Sideband (FIELD_AUDIO). Tidak sama dengan LXST Call.",
+      "sendTooltip": "Kirim memo suara LXMF yang direkam",
+      "startFailed": "Tidak dapat memulai perekaman memo suara. Coba lagi.",
+      "sendAriaWithElapsed": "Kirim memo suara ({{seconds}} detik direkam)",
+      "unavailable": "Memo suara tidak tersedia — lampiran tidak di - cache pada perangkat ini."
+    }
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

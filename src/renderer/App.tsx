@@ -243,6 +243,8 @@ import { openReticulumGameSession } from './lib/reticulum/reticulumGamesSession'
 import { setReticulumManualStackStopSuppress } from './lib/reticulum/reticulumManualStackStopSuppress';
 import { resolveReticulumSelfHeaderLabel } from './lib/reticulum/reticulumSelfNodeLabel';
 import { skipReticulumStartupAutostartGate } from './lib/reticulum/reticulumStartupAutostartGate';
+import { startReticulumVoiceMemo } from './lib/reticulum/reticulumVoiceMemo';
+import { sendReticulumVoiceMemo } from './lib/reticulum/sendReticulumVoiceMemo';
 import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
 import { scheduleReticulumVacuumIfNeeded } from './lib/startupDbPrune';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
@@ -280,6 +282,7 @@ import { usePositionHistoryStore } from './stores/positionHistoryStore';
 import { useReticulumGamesStore } from './stores/reticulumGamesStore';
 import { useReticulumIdentityStore } from './stores/reticulumIdentityStore';
 import { useReticulumPeerStore } from './stores/reticulumPeerStore';
+import { useReticulumVoiceMemoStore } from './stores/reticulumVoiceMemoStore';
 import { useRncpTransferStore } from './stores/rncpTransferStore';
 import { useRrcSessionStore } from './stores/rrcSessionStore';
 import { useTimeFormatStore } from './stores/timeFormatStore';
@@ -3200,6 +3203,73 @@ function AppContent() {
                             dmOnlyChat={capabilities.hasReticulumInterfaceConfig}
                             hasRncpTransfer={capabilities.hasRncpTransfer}
                             hasLxstVoice={capabilities.hasLxstVoice}
+                            hasReticulumVoiceMemo={capabilities.hasReticulumVoiceMemo}
+                            onVoiceMemo={
+                              capabilities.hasReticulumVoiceMemo && reticulumIdentityId
+                                ? (destination: number) => {
+                                    const phase = useReticulumVoiceMemoStore.getState().phase;
+                                    if (
+                                      phase === 'sending' ||
+                                      phase === 'starting' ||
+                                      phase === 'stopping'
+                                    ) {
+                                      return;
+                                    }
+                                    if (phase === 'recording' || phase === 'ready') {
+                                      sendReticulumVoiceMemo({
+                                        identityId: reticulumIdentityId,
+                                        destination,
+                                        onOversize: () => {
+                                          addToast(
+                                            t('chatPanel.voiceMemo.tooLargeForWire'),
+                                            'warning',
+                                          );
+                                        },
+                                        onNoPropagationNode: () => {
+                                          addToast(
+                                            t('chatPanel.reticulumNoPropagationNode'),
+                                            'error',
+                                          );
+                                        },
+                                        onTooLargeForPropagation: () => {
+                                          addToast(
+                                            t('chatPanel.voiceMemo.tooLargeForPropagation'),
+                                            'info',
+                                          );
+                                        },
+                                      });
+                                      return;
+                                    }
+                                    void startReticulumVoiceMemo()
+                                      .then((ok) => {
+                                        if (!ok) {
+                                          const err =
+                                            useReticulumVoiceMemoStore.getState().lastError;
+                                          if (err === 'call_busy') {
+                                            addToast(t('chatPanel.voiceMemo.callBusy'), 'warning');
+                                          } else if (err === 'mic_denied') {
+                                            addToast(t('chatPanel.voiceMemo.micDenied'), 'error');
+                                          } else if (
+                                            err === 'sidecar_unavailable' ||
+                                            err === 'start_failed' ||
+                                            err
+                                          ) {
+                                            useReticulumVoiceMemoStore.getState().reset();
+                                            addToast(t('chatPanel.voiceMemo.startFailed'), 'error');
+                                          }
+                                        }
+                                      })
+                                      .catch((e: unknown) => {
+                                        console.warn(
+                                          '[App] startReticulumVoiceMemo rejected:',
+                                          errLikeToLogString(e),
+                                        );
+                                        useReticulumVoiceMemoStore.getState().reset();
+                                        addToast(t('chatPanel.voiceMemo.startFailed'), 'error');
+                                      });
+                                  }
+                                : undefined
+                            }
                             hasLrgpGames={capabilities.hasLrgpGames}
                             hasLxmfPaper={capabilities.hasLxmfPaper}
                             showLxmfDeliveryStatus={capabilities.hasLxmfDeliveryStatus}

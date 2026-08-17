@@ -59,6 +59,7 @@ rmpv = { version = "1", optional = true }
 base64 = "0.22"
 bytes = "1"
 ciborium = "0.2"
+ogg = "0.9"
 rand = "0.8"
 thiserror = "2"
 notify = { version = "6.1", optional = true, default-features = true }

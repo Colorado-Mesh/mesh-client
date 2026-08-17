@@ -693,7 +693,25 @@
     "meshcoreFastSend": {
       "warning": "Vous envoyez plus vite que le maillage ne peut relayer. Sur un maillage occupé, les répéteurs peuvent déposer des messages envoyés à proximité les uns des autres — laissez quelques secondes entre les messages."
     },
-    "outboxLegacyMultipartBlocked": "Ce message en file d'attente utilisait le fractionnement MeshCore en plusieurs parties, qui n'est plus envoyé. Annulez-le et envoyez un message plus court (ou plusieurs messages plus courts distincts)."
+    "outboxLegacyMultipartBlocked": "Ce message en file d'attente utilisait le fractionnement MeshCore en plusieurs parties, qui n'est plus envoyé. Annulez-le et envoyez un message plus court (ou plusieurs messages plus courts distincts).",
+    "voiceMemo": {
+      "recordAria": "Enregistrer le mémo vocal",
+      "playAria": "Lire le mémo vocal",
+      "pauseAria": "Mettre en pause le mémo vocal",
+      "seekAria": "Rechercher une position de lecture de mémo vocal",
+      "containerAria": "Mémo vocal",
+      "sendAria": "Envoyer un mémo vocal",
+      "callBusy": "Raccrochez l'appel vocal avant d'enregistrer un mémo.",
+      "micDenied": "L'accès au microphone est nécessaire pour enregistrer un mémo vocal.",
+      "tooLargeForWire": "Le mémo vocal est trop volumineux pour être envoyé. Enregistrez un clip plus court.",
+      "tooLargeForPropagation": "Le message vocal est plus grand que la limite du nœud de propagation. Il ne livrera que lorsque le destinataire est en ligne. Raccourcissez-le pour le stocker pour une livraison hors ligne.",
+      "directOnlyBadge": "Direct seulement — trop grand pour le stockage hors ligne",
+      "recordTooltip": "Mémo vocal LXMF — enregistre un court clip Opus pour ce message direct. Pris en charge par mesh-client, Ratspeak et Sideband (FIELD_AUDIO). Ce n'est pas la même chose que l'appel LXST.",
+      "sendTooltip": "Envoyer le mémo vocal LXMF enregistré",
+      "startFailed": "Impossible de démarrer l'enregistrement des notes vocales. Réessayez.",
+      "sendAriaWithElapsed": "Envoyer un mémo vocal ({{seconds}} secondes enregistrées)",
+      "unavailable": "Mémo vocal indisponible — pièce jointe non mise en cache sur cet appareil."
+    }
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

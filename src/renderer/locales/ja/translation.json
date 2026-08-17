@@ -693,7 +693,25 @@
     "meshcoreFastSend": {
       "warning": "メッシュが中継できるよりも速く送信しています。ビジーメッシュでは、リピーターが近くに送信されたメッセージをドロップすることがあります。メッセージの間に数秒残します。"
     },
-    "outboxLegacyMultipartBlocked": "このキューに入れられたメッセージでは、マルチパート MeshCore 分割が使用されていましたが、現在は送信されません。それをキャンセルして、より短いメッセージ (または複数の別個の短いメッセージ) を送信します。"
+    "outboxLegacyMultipartBlocked": "このキューに入れられたメッセージでは、マルチパート MeshCore 分割が使用されていましたが、現在は送信されません。それをキャンセルして、より短いメッセージ (または複数の別個の短いメッセージ) を送信します。",
+    "voiceMemo": {
+      "recordAria": "ボイスメモを録音する",
+      "playAria": "ボイスメモを再生",
+      "pauseAria": "ボイスメモを一時停止する",
+      "seekAria": "ボイスメモの再生位置を探す",
+      "containerAria": "ボイスメモ",
+      "sendAria": "ボイスメモを送信",
+      "callBusy": "メモを録音する前に音声通話を切ってください。",
+      "micDenied": "ボイスメモを録音するには、マイクへのアクセスが必要です。",
+      "tooLargeForWire": "ボイスメモが大きすぎて送信できません。短いクリップを録画します。",
+      "tooLargeForPropagation": "ボイスメッセージが伝播ノードの制限を超えています。受取人がオンラインの場合にのみ配達されます。オフライン配送用に保存するには短くしてください。",
+      "directOnlyBadge": "ダイレクトのみ—オフラインストレージには大きすぎます",
+      "recordTooltip": "LXMFボイスメモ—このダイレクトメッセージの短いOpusクリップを記録します。mesh-client、Ratspeak、Sideband (FIELD_AUDIO) でサポートされています。LXST Callとは異なります。",
+      "sendTooltip": "録音したLXMFボイスメモを送信する",
+      "startFailed": "ボイスメモの録音を開始できませんでした。もう一度やり直してください。",
+      "sendAriaWithElapsed": "ボイスメモを送信（ {{seconds}}秒録音）",
+      "unavailable": "音声メモは利用できません—添付ファイルはこのデバイスにキャッシュされていません。"
+    }
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

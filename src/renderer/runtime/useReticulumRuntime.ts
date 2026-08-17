@@ -53,6 +53,7 @@ import {
   recordReticulumPeerInterfaceSamplesFromPeersUpdated,
 } from '@/renderer/lib/reticulum/reticulumAnnounceIfaceAttribution';
 import { cacheReticulumInboundAttachment } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
+import { cacheReticulumInboundAudio } from '@/renderer/lib/reticulum/reticulumAudioAttachmentCache';
 import { isReticulumBleRnodeInterfaceRow } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
 import { releaseReticulumBleRnodeConnect } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
 import { setReticulumBleBondDesyncActive } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
@@ -659,8 +660,24 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (!identityId) return;
       void (async () => {
         let attachmentPath: string | null = null;
+        let attachmentKind: 'image' | 'audio' | undefined;
+        let audioMode: number | null = null;
         if (p.attachment?.data_base64 && p.direction !== 'outbound') {
           attachmentPath = await cacheReticulumInboundAttachment(p.attachment);
+          if (attachmentPath) attachmentKind = 'image';
+        } else if (p.audio?.data_base64) {
+          // Cache inbound always. For outbound echoes, fill a path when the optimistic
+          // row lost the race with an early Completes (rename used to drop pending path).
+          const known = p.message_hash
+            ? useMessageStore.getState().messages[identityId]?.[p.message_hash]
+            : undefined;
+          if (!known?.reticulumAttachmentPath) {
+            attachmentPath = await cacheReticulumInboundAudio(p.audio);
+            if (attachmentPath) {
+              attachmentKind = 'audio';
+              audioMode = p.audio.mode;
+            }
+          }
         }
         // Already-known rows (DB hydrate / prior session) must not re-fire RNCP
         // control side effects after a cold start clears the in-memory dedup map.
@@ -673,6 +690,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
         ingestReticulumLxmfPayloadWithSideEffects(identityId, p, {
           selfLxmfHash: selfLxmfHash ?? undefined,
           attachmentPath,
+          ...(attachmentKind ? { attachmentKind } : {}),
+          ...(audioMode != null ? { audioMode } : {}),
         });
         // Keep periodic catch-up cursor ahead of live traffic so older ring rows do not loop.
         if (
@@ -882,12 +901,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
           sent_via?: string;
           delivery_method?: string;
           delivery_attempts?: number;
+          error?: string;
         };
         if (identityId && p.message_hash && p.status) {
           applyReticulumOutboundDeliveryStatus(identityId, p.message_hash, p.status, {
             sentVia: p.sent_via,
             deliveryMethod: p.delivery_method,
             deliveryAttempts: p.delivery_attempts,
+            error: p.error,
           });
         }
       }

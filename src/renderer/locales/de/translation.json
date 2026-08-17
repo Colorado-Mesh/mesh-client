@@ -693,7 +693,25 @@
     "meshcoreFastSend": {
       "warning": "Sie senden schneller, als das Netz weiterleiten kann. In einem ausgelasteten Netz können Repeater Nachrichten, die nahe beieinander gesendet werden, ablegen — lassen Sie ein paar Sekunden zwischen den Nachrichten."
     },
-    "outboxLegacyMultipartBlocked": "Diese in der Warteschlange befindliche Nachricht verwendete eine mehrteilige MeshCore-Aufteilung, die nicht mehr gesendet wird. Brechen Sie es ab und senden Sie eine kürzere Nachricht (oder mehrere separate kürzere Nachrichten)."
+    "outboxLegacyMultipartBlocked": "Diese in der Warteschlange befindliche Nachricht verwendete eine mehrteilige MeshCore-Aufteilung, die nicht mehr gesendet wird. Brechen Sie es ab und senden Sie eine kürzere Nachricht (oder mehrere separate kürzere Nachrichten).",
+    "voiceMemo": {
+      "recordAria": "Stimme aufzeichnen",
+      "playAria": "Sprachnotiz abspielen",
+      "pauseAria": "Sprachnotiz pausieren",
+      "seekAria": "Sprachnotiz-Wiedergabeposition suchen",
+      "containerAria": "sprachnotiz",
+      "sendAria": "Sprachnotiz senden",
+      "callBusy": "Hängen Sie den Sprachanruf auf, bevor Sie eine Notiz aufnehmen.",
+      "micDenied": "Für die Aufzeichnung einer Sprachnotiz ist ein Mikrofonzugriff erforderlich.",
+      "tooLargeForWire": "Sprachnotiz ist zu groß zum Senden. Nehmen Sie einen kürzeren Clip auf.",
+      "tooLargeForPropagation": "Sprachnachricht ist größer als die Ausbreitungsknotengrenze. Es wird nur geliefert, wenn der Empfänger online ist. Kürzen Sie es, um es für die Offline-Lieferung aufzubewahren.",
+      "directOnlyBadge": "Nur direkt — zu groß für Offline-Speicher",
+      "recordTooltip": "LXMF-Sprachnotiz — zeichnet einen kurzen Opus-Clip für diese Direktnachricht auf. Unterstützt von mesh-client, Ratspeak und Sideband (FIELD_AUDIO). Nicht das gleiche wie LXST Call.",
+      "sendTooltip": "Die aufgezeichnete LXMF-Sprachnotiz senden",
+      "startFailed": "Sprachnotizaufnahme konnte nicht gestartet werden. Versuchen Sie es erneut.",
+      "sendAriaWithElapsed": "Sprachnotiz senden ({{seconds}} Sekunden aufgezeichnet)",
+      "unavailable": "Sprachnotiz nicht verfügbar — Anhang nicht auf diesem Gerät zwischengespeichert."
+    }
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

@@ -14,6 +14,7 @@ import {
 import { resetMeshcoreSendRateForTests } from '@/renderer/lib/meshcoreSendRateNotice';
 import { resetMeshtasticTextSendPacingForTests } from '@/renderer/lib/meshtasticTextSendPacing';
 import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '@/renderer/lib/timeConstants';
+import { useReticulumVoiceMemoStore } from '@/renderer/stores/reticulumVoiceMemoStore';
 
 import { ChatComposer } from './ChatComposer';
 
@@ -55,7 +56,14 @@ vi.mock('react-i18next', () => ({
         'chatPanel.floodScopeOverrideCustomApply': 'Use scope',
         'chatPanel.floodScopeOverrideCustomInvalid': 'Enter a valid region hashtag',
         'common.cancel': 'Cancel',
+        'chatPanel.voiceMemo.recordAria': 'Record voice memo',
+        'chatPanel.voiceMemo.sendAria': 'Send voice memo',
+        'chatPanel.voiceMemo.recordTooltip': 'Record voice memo tooltip',
+        'chatPanel.voiceMemo.sendTooltip': 'Send voice memo tooltip',
       };
+      if (key === 'chatPanel.voiceMemo.sendAriaWithElapsed') {
+        return `Send voice memo (${opts?.seconds}s recorded)`;
+      }
       if (key === 'chatPanel.composeLimit.approaching') {
         return `${opts?.count} / ${opts?.limit}`;
       }
@@ -1112,5 +1120,72 @@ describe('ChatComposer', () => {
       expect(screen.getByRole('alert')).toHaveTextContent('timeout');
     });
     expect(onRememberFloodScopePreset).not.toHaveBeenCalled();
+  });
+
+  describe('VoiceMemoComposerButton', () => {
+    beforeEach(() => {
+      useReticulumVoiceMemoStore.getState().reset();
+    });
+
+    it('shows record button when compose is empty and onVoiceMemo is set', () => {
+      render(
+        <ChatComposer
+          protocol="reticulum"
+          viewKey="dm:1"
+          isConnected
+          allowOutbox={false}
+          onSendChunk={vi.fn().mockResolvedValue(undefined)}
+          onVoiceMemo={vi.fn()}
+        />,
+      );
+      expect(screen.getByRole('button', { name: 'Record voice memo' })).toBeEnabled();
+    });
+
+    it('disables the button while starting', () => {
+      useReticulumVoiceMemoStore.getState().setStarting();
+      render(
+        <ChatComposer
+          protocol="reticulum"
+          viewKey="dm:1"
+          isConnected
+          allowOutbox={false}
+          onSendChunk={vi.fn().mockResolvedValue(undefined)}
+          onVoiceMemo={vi.fn()}
+        />,
+      );
+      expect(screen.getByRole('button', { name: 'Send voice memo' })).toBeDisabled();
+    });
+
+    it('includes elapsed seconds in aria-label while recording', () => {
+      useReticulumVoiceMemoStore.getState().setStarting();
+      useReticulumVoiceMemoStore.getState().startRecording('sess-1');
+      useReticulumVoiceMemoStore.getState().tickElapsed(12);
+      render(
+        <ChatComposer
+          protocol="reticulum"
+          viewKey="dm:1"
+          isConnected
+          allowOutbox={false}
+          onSendChunk={vi.fn().mockResolvedValue(undefined)}
+          onVoiceMemo={vi.fn()}
+        />,
+      );
+      expect(screen.getByRole('button', { name: 'Send voice memo (12s recorded)' })).toBeEnabled();
+    });
+
+    it('passes axe with voice memo button visible', async () => {
+      const { container } = render(
+        <ChatComposer
+          protocol="reticulum"
+          viewKey="dm:1"
+          isConnected
+          allowOutbox={false}
+          onSendChunk={vi.fn().mockResolvedValue(undefined)}
+          onVoiceMemo={vi.fn()}
+        />,
+      );
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
+    });
   });
 });

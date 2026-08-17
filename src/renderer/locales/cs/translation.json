@@ -695,7 +695,25 @@
     "meshcoreFastSend": {
       "warning": "Odesíláte rychleji, než může síť přenést. Na zaneprázdněné síti mohou opakovače zahodit zprávy odeslané blízko sebe — mezi zprávami nechte několik sekund."
     },
-    "outboxLegacyMultipartBlocked": "Tato zpráva ve frontě používala vícedílné rozdělení MeshCore, které se již neodesílá. Zrušte jej a odešlete kratší zprávu (nebo několik samostatných kratších zpráv)."
+    "outboxLegacyMultipartBlocked": "Tato zpráva ve frontě používala vícedílné rozdělení MeshCore, které se již neodesílá. Zrušte jej a odešlete kratší zprávu (nebo několik samostatných kratších zpráv).",
+    "voiceMemo": {
+      "recordAria": "Nahrát hlasovou poznámku",
+      "playAria": "Přehrát hlasovou poznámku",
+      "pauseAria": "Pozastavit hlasovou poznámku",
+      "seekAria": "Vyhledejte pozici přehrávání hlasové poznámky",
+      "containerAria": "Hlasová poznámka",
+      "sendAria": "Odeslat hlasovou poznámku",
+      "callBusy": "Před nahráváním poznámky zavěste hlasový hovor.",
+      "micDenied": "Pro nahrání hlasové poznámky je vyžadován přístup k mikrofonu.",
+      "tooLargeForWire": "Hlasová poznámka je příliš velká na odeslání. Nahrajte kratší klip.",
+      "tooLargeForPropagation": "Hlasová zpráva je větší než limit propagačního uzlu. Doručuje se pouze tehdy, když je příjemce online. Zkraťte jej a uložte pro offline doručení.",
+      "directOnlyBadge": "Pouze přímé — příliš velké pro offline úložiště",
+      "recordTooltip": "Hlasová poznámka LXMF — nahrává krátký klip Opus pro tuto přímou zprávu. Podporováno mesh-client, Ratspeak a Sideband (FIELD_AUDIO). Není to stejné jako LXST Call.",
+      "sendTooltip": "Odeslat nahranou hlasovou poznámku LXMF",
+      "startFailed": "Nelze spustit nahrávání hlasové poznámky. Zkuste to znovu.",
+      "sendAriaWithElapsed": "Odeslat hlasovou poznámku ({{seconds}} zaznamenaných sekund)",
+      "unavailable": "Hlasová poznámka není k dispozici — příloha není v tomto zařízení uložena do mezipaměti."
+    }
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

@@ -697,7 +697,25 @@
     "meshcoreFastSend": {
       "warning": "Wysyłasz szybciej, niż siatka może przekazywać. Na zatłoczonej siatce wzmacniaki mogą odrzucać wiadomości wysyłane blisko siebie — pozostaw kilka sekund między wiadomościami."
     },
-    "outboxLegacyMultipartBlocked": "Ta wiadomość umieszczona w kolejce korzystała z wieloczęściowego podziału MeshCore, który nie jest już wysyłany. Anuluj i wyślij krótszą wiadomość (lub kilka oddzielnych krótszych wiadomości)."
+    "outboxLegacyMultipartBlocked": "Ta wiadomość umieszczona w kolejce korzystała z wieloczęściowego podziału MeshCore, który nie jest już wysyłany. Anuluj i wyślij krótszą wiadomość (lub kilka oddzielnych krótszych wiadomości).",
+    "voiceMemo": {
+      "recordAria": "Nagraj głos",
+      "playAria": "Odtwórz notatkę głosową",
+      "pauseAria": "Wstrzymaj notatkę głosową",
+      "seekAria": "Szukaj pozycji odtwarzania notatki głosowej",
+      "containerAria": "Notatka głosowa",
+      "sendAria": "Wyślij notatkę głosową",
+      "callBusy": "Rozłącz połączenie głosowe przed nagraniem notatki.",
+      "micDenied": "Dostęp do mikrofonu jest wymagany do nagrywania notatki głosowej.",
+      "tooLargeForWire": "Notatka głosowa jest zbyt duża, aby ją wysłać. Nagraj krótszy klip.",
+      "tooLargeForPropagation": "Wiadomość głosowa jest większa niż limit węzła propagacji. Dostawa będzie możliwa tylko wtedy, gdy odbiorca jest online. Skróć go, aby przechowywać go w celu dostawy offline.",
+      "directOnlyBadge": "Tylko bezpośrednie — zbyt duże dla przechowywania offline",
+      "recordTooltip": "Notatka głosowa LXMF — nagrywa krótki klip Opus dla tej bezpośredniej wiadomości. Obsługiwane przez mesh-client, Ratspeak i Sideband (FIELD_AUDIO). To nie to samo, co połączenie LXST.",
+      "sendTooltip": "Wyślij nagraną notatkę głosową LXMF",
+      "startFailed": "Nie można rozpocząć nagrywania notatki głosowej. Spróbuj ponownie.",
+      "sendAriaWithElapsed": "Wyślij notatkę głosową ({{seconds}} sekund nagranych)",
+      "unavailable": "Notatka głosowa niedostępna — załącznik nie jest zapisany w pamięci podręcznej na tym urządzeniu."
+    }
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
