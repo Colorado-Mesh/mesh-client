@@ -143,6 +143,7 @@ import {
   meshtasticXmodemDownload,
   meshtasticXmodemUpload,
 } from '../lib/meshtastic/meshtasticXmodemTransfer';
+import { resolveMeshtasticChannels } from '../lib/meshtastic/resolveMeshtasticChannels';
 import { setRemoteAdminReadsActive } from '../lib/meshtasticBacklogUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
@@ -458,6 +459,14 @@ export function useMeshtasticRuntime() {
   // Nodes heard via RF this session — prevents MQTT-only flag from being set
   const rfHeardNodeIds = useRef<Set<number>>(new Set());
   const lastRfSelfNodeIdRef = useRef<number>(loadPersistedLastRfSelfNodeId());
+  /**
+   * Last real (device-record-backed) channel list, carried across the brief gap
+   * between disconnect and wire-effect rebind (`meshtasticIdentityId` transiently
+   * null) so `resolvedChannels` doesn't collapse to the single-channel `channels`
+   * placeholder default mid-reconnect — that transient collapse was clobbering
+   * ChatPanel's channel selection on every reconnect.
+   */
+  const lastKnownChannelsRef = useRef<{ index: number; name: string }[]>([]);
   const virtualNodeIdRef = useRef<number>(getOrCreateVirtualNodeId());
   // MQTT-only fallback; RF sessions use the ingest session's shared RF/MQTT registry.
   const mqttOnlySeenPacketIdsRef = useRef<Map<string, number>>(new Map());
@@ -867,6 +876,12 @@ export function useMeshtasticRuntime() {
     meshtasticIdentityIdRef.current = null;
     meshtasticDriverConnectedRef.current = false;
     setMeshtasticIdentityId(null);
+    if (meshtasticExplicitDisconnectRef.current) {
+      // User-initiated disconnect (no auto-reconnect planned) — stop bridging the
+      // now-disconnected device's channel list; a genuine reconnect gap (flag still
+      // false here) keeps it so ChatPanel's selection survives the gap instead.
+      lastKnownChannelsRef.current = [];
+    }
     for (const unsub of unsubscribesRef.current) {
       try {
         unsub();
@@ -4331,11 +4346,24 @@ export function useMeshtasticRuntime() {
     return queueStatus;
   }, [meshtasticIdentityId, queueStatus, meshtasticConnectionFromStore]);
 
-  const resolvedChannels = useMemo(() => {
-    if (!meshtasticIdentityId) return channels;
-    if (meshtasticDeviceRecord?.channels.length) return meshtasticDeviceRecord.channels;
-    return channels;
-  }, [meshtasticIdentityId, channels, meshtasticDeviceRecord]);
+  const resolvedChannels = useMemo(
+    () =>
+      resolveMeshtasticChannels({
+        meshtasticIdentityId,
+        deviceRecordChannels: meshtasticDeviceRecord?.channels,
+        hookChannels: channels,
+        lastKnownChannels: lastKnownChannelsRef.current,
+      }),
+    [meshtasticIdentityId, channels, meshtasticDeviceRecord],
+  );
+  // Cache the last known real channel list post-commit — never mutate the ref
+  // inside the useMemo above; React may replay or discard a render, which
+  // would leak an uncommitted device's channels into the cache.
+  useEffect(() => {
+    if (meshtasticDeviceRecord?.channels.length) {
+      lastKnownChannelsRef.current = meshtasticDeviceRecord.channels;
+    }
+  }, [meshtasticDeviceRecord]);
 
   const resolvedChannelConfigs = useMemo(() => {
     if (!meshtasticIdentityId) return channelConfigs;
