@@ -36,6 +36,123 @@ export const FLATPAK_NODE_GENERATOR_PIP_INSTALL_CMD = `pip3 ${FLATPAK_NODE_GENER
 export const FLATPAK_NODE_GENERATOR_LOCAL_VENV_DIR = '.cache/flatpak-node-venv';
 
 /**
+ * Marker written into the pinned generator's special.py so Playwright browser
+ * zips are not vendored. GitHub `github.com/…/raw/…` 404s; Flatpak uses
+ * PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 (Electron E2E).
+ */
+export const PLAYWRIGHT_SPECIAL_SKIP_MARKER = 'mesh-client-skip-playwright-browsers';
+
+/** Exact upstream dispatch in special.py (ac5a296a). */
+export const PLAYWRIGHT_SPECIAL_SOURCE_CALL = `        elif package.name == 'playwright':
+            await self._handle_playwright(package)`;
+
+export const PLAYWRIGHT_SPECIAL_SOURCE_SKIP = `        elif package.name == 'playwright':
+            # mesh-client-skip-playwright-browsers: GitHub github.com/.../raw/... 404s;
+            # Flatpak uses PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 (Electron E2E).
+            pass`;
+
+/**
+ * Rewrite generator special.py so Playwright does not fetch browsers.json.
+ *
+ * @param {string} source
+ * @returns {{ source: string, changed: boolean, already: boolean, missing: boolean }}
+ */
+export function rewriteGeneratorSkipPlaywrightSpecialSources(source) {
+  if (source.includes(PLAYWRIGHT_SPECIAL_SKIP_MARKER)) {
+    return { source, changed: false, already: true, missing: false };
+  }
+  if (!source.includes(PLAYWRIGHT_SPECIAL_SOURCE_CALL)) {
+    return { source, changed: false, already: false, missing: true };
+  }
+  return {
+    source: source.replace(PLAYWRIGHT_SPECIAL_SOURCE_CALL, PLAYWRIGHT_SPECIAL_SOURCE_SKIP),
+    changed: true,
+    already: false,
+    missing: false,
+  };
+}
+
+/**
+ * Locate special.py next to a generator console-script (venv or pip --user).
+ *
+ * @param {string} generatorBin
+ * @param {{
+ *   existsSync?: (p: string) => boolean;
+ *   globSync?: (pattern: string, opts: { cwd: string }) => string[];
+ * }} [opts]
+ * @returns {string | null}
+ */
+export function resolveGeneratorSpecialPyPath(generatorBin, opts = {}) {
+  if (!generatorBin) return null;
+  const exists = opts.existsSync ?? ((p) => fs.existsSync(p));
+  const glob = opts.globSync ?? ((pattern, o) => fs.globSync(pattern, { cwd: o.cwd }));
+  const binDir = path.dirname(generatorBin);
+  const roots = [path.dirname(binDir)];
+  const patterns = [
+    'lib/python*/site-packages/flatpak_node_generator/providers/special.py',
+    'lib/python*/dist-packages/flatpak_node_generator/providers/special.py',
+  ];
+  for (const root of roots) {
+    for (const pattern of patterns) {
+      let hits;
+      try {
+        hits = glob(pattern, { cwd: root });
+      } catch {
+        // catch-no-log-ok glob miss is a normal miss
+        hits = [];
+      }
+      for (const rel of hits) {
+        const abs = path.join(root, rel);
+        if (exists(abs)) return abs;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Patch an installed generator so Playwright special sources are skipped.
+ *
+ * @param {string} specialPyPath
+ * @param {{
+ *   readFileSync?: (p: string, enc: BufferEncoding) => string;
+ *   writeFileSync?: (p: string, data: string, enc: BufferEncoding) => void;
+ * }} [opts]
+ * @returns {{ ok: true, already: boolean } | { ok: false, message: string }}
+ */
+export function applyGeneratorSkipPlaywrightSpecialSources(specialPyPath, opts = {}) {
+  const read = opts.readFileSync ?? ((p, enc) => fs.readFileSync(p, enc));
+  const write = opts.writeFileSync ?? ((p, data, enc) => fs.writeFileSync(p, data, enc));
+  let source;
+  try {
+    source = read(specialPyPath, 'utf8');
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    return { ok: false, message: `could not read ${specialPyPath}: ${detail}` };
+  }
+  const rewritten = rewriteGeneratorSkipPlaywrightSpecialSources(source);
+  if (rewritten.already) {
+    return { ok: true, already: true };
+  }
+  if (rewritten.missing) {
+    return {
+      ok: false,
+      message:
+        `${specialPyPath} has no playwright special-source dispatch ` +
+        `(expected elif package.name == 'playwright'). Bump the generator pin or update ` +
+        `PLAYWRIGHT_SPECIAL_SOURCE_CALL.`,
+    };
+  }
+  try {
+    write(specialPyPath, rewritten.source, 'utf8');
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    return { ok: false, message: `could not write ${specialPyPath}: ${detail}` };
+  }
+  return { ok: true, already: false };
+}
+
+/**
  * Resolve flatpak-node-generator: FLATPAK_NODE_GENERATOR → PATH → local CI-pin venv.
  *
  * @param {{
@@ -239,6 +356,15 @@ export function flatpakWorkflowStoreVersionViolations(
       message: 'flatpak.yaml must invoke flatpak-node-generator pnpm …',
     });
     return violations;
+  }
+
+  if (!/patch-flatpak-node-generator-playwright/.test(workflowYaml)) {
+    violations.push({
+      file: fileRel,
+      message:
+        'flatpak.yaml must run scripts/patch-flatpak-node-generator-playwright.mjs before the ' +
+        'generator (GitHub github.com/.../raw/... 404s for Playwright browsers.json)',
+    });
   }
 
   violations.push(...flatpakWorkflowGeneratorInstallViolations(workflowYaml, fileRel));

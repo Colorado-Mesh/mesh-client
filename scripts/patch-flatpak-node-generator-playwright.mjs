@@ -1,0 +1,60 @@
+#!/usr/bin/env node
+/**
+ * Skip Playwright browser vendoring in the pinned flatpak-node-generator.
+ *
+ * Failure point: generator fetches
+ * https://github.com/microsoft/playwright/raw/vX/packages/playwright-core/browsers.json
+ * which GitHub now 404s. Flatpak does not run Electron E2E; .npmrc sets
+ * PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1. Playwright npm tarballs still go into the
+ * offline store.
+ */
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import {
+  applyGeneratorSkipPlaywrightSpecialSources,
+  resolveFlatpakNodeGeneratorBin,
+  resolveGeneratorSpecialPyPath,
+} from './flatpakPnpmStoreVersion.mjs';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+function resolveGeneratorBin() {
+  return resolveFlatpakNodeGeneratorBin({
+    root: ROOT,
+    env: process.env,
+    which: () => {
+      const result = spawnSync('which', ['flatpak-node-generator'], { encoding: 'utf8' });
+      if (result.status !== 0) return null;
+      const bin = result.stdout.trim().split('\n')[0];
+      return bin || null;
+    },
+  });
+}
+
+function main() {
+  const bin = resolveGeneratorBin();
+  if (!bin) {
+    console.error(
+      'patch-flatpak-node-generator-playwright: flatpak-node-generator not found on PATH',
+    );
+    process.exit(1);
+  }
+  const specialPy = resolveGeneratorSpecialPyPath(bin);
+  if (!specialPy) {
+    console.error(`patch-flatpak-node-generator-playwright: special.py not found next to ${bin}`);
+    process.exit(1);
+  }
+  const result = applyGeneratorSkipPlaywrightSpecialSources(specialPy);
+  if (!result.ok) {
+    console.error(`patch-flatpak-node-generator-playwright: ${result.message}`);
+    process.exit(1);
+  }
+  console.log(
+    result.already
+      ? `patch-flatpak-node-generator-playwright: already applied (${specialPy})`
+      : `patch-flatpak-node-generator-playwright: skipped Playwright browser vendoring (${specialPy})`,
+  );
+}
+
+main();

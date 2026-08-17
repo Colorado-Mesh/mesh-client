@@ -23,7 +23,9 @@ import {
   missingOfflineTarballs,
   parseGeneratedPnpmManifest,
   listLockfilePackageIds,
+  applyGeneratorSkipPlaywrightSpecialSources,
   resolveFlatpakNodeGeneratorBin,
+  resolveGeneratorSpecialPyPath,
   storeVersionFromPackageManager,
 } from './flatpakPnpmStoreVersion.mjs';
 
@@ -73,6 +75,19 @@ function generateOfflineSources(expectedStoreVersion) {
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-flatpak-offline-'));
   const outPath = path.join(tmpDir, 'generated-sources.json');
+  const specialPy = resolveGeneratorSpecialPyPath(bin);
+  if (!specialPy) {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    return {
+      ok: false,
+      message: `could not find special.py next to ${bin} (needed to skip Playwright browser vendoring)`,
+    };
+  }
+  const patched = applyGeneratorSkipPlaywrightSpecialSources(specialPy);
+  if (!patched.ok) {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    return { ok: false, message: patched.message };
+  }
   const result = spawnSync(
     bin,
     ['pnpm', LOCKFILE, '--pnpm-store-version', expectedStoreVersion, '-o', outPath],
