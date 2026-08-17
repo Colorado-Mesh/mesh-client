@@ -104,8 +104,9 @@ describe('ReticulumMessageStatusBadge', () => {
         error="message_too_large_for_propagation"
       />,
     );
-    expect(
-      screen.getByLabelText('chatPanel.sentViaPropagation: chatPanel.voiceMemo.directOnlyBadge'),
-    ).toBeTruthy();
+    // Notice tooltip (not "Propagation: failed") and info icon (not ✗).
+    expect(screen.getByLabelText('chatPanel.voiceMemo.tooLargeForPropagation')).toBeTruthy();
+    expect(screen.getByText(/reticulumPnAbbrev\s+\u2139/u)).toBeTruthy();
+    expect(screen.queryByText(/\u2717/u)).toBeNull();
   });
 });

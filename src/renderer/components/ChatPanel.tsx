@@ -167,7 +167,10 @@ import {
   ReticulumDmPathActions,
   ReticulumDmPathReachabilityBadge,
 } from './ReticulumDmPathReachabilityBadge';
-import { ReticulumMessageStatusBadge } from './ReticulumMessageStatusBadge';
+import {
+  isReticulumTooLargeForPropagationError,
+  ReticulumMessageStatusBadge,
+} from './ReticulumMessageStatusBadge';
 import { ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { ReticulumPropagationNotice } from './ReticulumPropagationNotice';
 import { ReticulumVoiceMemoLine } from './ReticulumVoiceMemoLine';
@@ -2925,25 +2928,27 @@ function ChatPanel({
                             {/* Delivery status for own messages */}
                             {isOwn && (msg.status || msg.mqttStatus) && (
                               <div className="mt-0.5 flex items-center justify-end gap-1">
-                                {isOwn && msg.status === 'failed' && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onResend(msg);
-                                    }}
-                                    {...{ [PARENT_HOVER_ATTR]: '' }}
-                                    className="text-gray-500 transition-colors hover:text-gray-300"
-                                    title={t('chatPanel.resendMessage')}
-                                  >
-                                    <RotateCcw
-                                      aria-hidden
-                                      className="h-3.5 w-3.5"
-                                      trigger={parentIconTrigger}
-                                      size={14}
-                                    />
-                                  </button>
-                                )}
+                                {isOwn &&
+                                  msg.status === 'failed' &&
+                                  !isReticulumTooLargeForPropagationError(msg.error) && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onResend(msg);
+                                      }}
+                                      {...{ [PARENT_HOVER_ATTR]: '' }}
+                                      className="text-gray-500 transition-colors hover:text-gray-300"
+                                      title={t('chatPanel.resendMessage')}
+                                    >
+                                      <RotateCcw
+                                        aria-hidden
+                                        className="h-3.5 w-3.5"
+                                        trigger={parentIconTrigger}
+                                        size={14}
+                                      />
+                                    </button>
+                                  )}
                                 {showLxmfDeliveryStatus && msg.status ? (
                                   <ReticulumMessageStatusBadge
                                     status={
