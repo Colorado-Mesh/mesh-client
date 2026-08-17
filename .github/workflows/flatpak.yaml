@@ -143,6 +143,8 @@ jobs:
           # version makes plain pip install a no-op (leaves storeDir= generator).
           pip3 install --force-reinstall --no-cache-dir \
             "${FBTOOLS}@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node"
+          # GitHub github.com/.../raw/... 404s; skip Playwright browser zips (Electron E2E).
+          node scripts/patch-flatpak-node-generator-playwright.mjs
           # pnpm 11+ uses store v11; flatpak-node-generator defaults to v10 for lockfile 9.
           PNPM_MAJOR="$(node -p "require('./package.json').packageManager.match(/^pnpm@(\\d+)/)[1]")"
           STORE_VERSION="v${PNPM_MAJOR}"

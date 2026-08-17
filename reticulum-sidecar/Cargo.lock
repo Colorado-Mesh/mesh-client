@@ -1826,7 +1826,9 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "opus-rs"
-version = "0.1.19"
+version = "0.1.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eadaf84d53a021172447a8771d74f805ac3719a61041dafa95720ef86b8e271d"
 
 [[package]]
 name = "parking_lot"
