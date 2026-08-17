@@ -55,6 +55,20 @@ const INCOMPATIBLE = `impl LinkClient {
 }
 `;
 
+/** Floated origin/main: handler-free destination_resolver supersedes the overlay. */
+const UPSTREAM_RESOLVER = `impl LinkClient {
+    pub async fn query() {
+        let pubkey = resolve_destination_on_transport(
+            &self.transport_tx,
+            dest_hash,
+            DestinationResolveOptions::new(time_remaining(deadline)?),
+        )
+        .await?
+        .public_key;
+    }
+}
+`;
+
 const temps = [];
 
 function git(cwd, args) {
@@ -177,6 +191,7 @@ describe('apply-rsReticulum-link-client-nomad.sh', () => {
 
   it('uses LinkClient recall/GC semantics, not the retired RecallDestinationPublicKey RPC', () => {
     const applyScript = readFileSync(APPLY_SCRIPT, 'utf8');
+    expect(applyScript).toContain('resolve_destination_on_transport');
     expect(applyScript).toContain('discover_remote_public_key');
     expect(applyScript).toContain('gc_closed_announce_handlers');
     expect(applyScript).toContain('PATH_LOOKUP_TIMEOUT');
@@ -234,6 +249,15 @@ describe('apply-rsReticulum-link-client-nomad.sh', () => {
 
   it('is a no-op when recall/GC markers are present but reverse-check misses', () => {
     const rns = makeFakeRsReticulum(MARKER_FALLBACK);
+    const reverse = git(rns, ['apply', '--reverse', '--check', PATCH_FILE]);
+    expect(reverse.status).not.toBe(0);
+    const result = runApply(rns);
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toMatch(/already present/);
+  });
+
+  it('is a no-op when upstream destination_resolver is present', () => {
+    const rns = makeFakeRsReticulum(UPSTREAM_RESOLVER);
     const reverse = git(rns, ['apply', '--reverse', '--check', PATCH_FILE]);
     expect(reverse.status).not.toBe(0);
     const result = runApply(rns);

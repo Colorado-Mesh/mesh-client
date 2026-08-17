@@ -10,6 +10,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 source "${SCRIPT_DIR}/lib/apply-ratspeak-overlay.sh"
 PATCH_FILE="${REPO_ROOT}/reticulum-sidecar/patches/rsLXMF-propagation-client-link-attached-tx.patch"
 LXMF_DIR="${RS_LXMF_DIR:-${REPO_ROOT}/.rsstack/rsLXMF}"
+CLIENT_RS="${LXMF_DIR}/crates/lxmf-core/src/propagation_client.rs"
 
 if [[ ! -d "${LXMF_DIR}/.git" ]]; then
   echo "error: rsLXMF not found at ${LXMF_DIR}" >&2
@@ -23,8 +24,14 @@ if [[ ! -f "${PATCH_FILE}" ]]; then
 fi
 
 # Exact overlay already applied (complete reverse apply succeeds).
+# Floated origin/main now uses SendLinkEndpoint + attached_interface (supersedes
+# OutboundAttached queue_link_outbound). Keep the patch for older RS_LXMF_REF pins.
 overlay_already_present() {
-  git -C "${LXMF_DIR}" apply --reverse --check "${PATCH_FILE}" > /dev/null 2>&1
+  git -C "${LXMF_DIR}" apply --reverse --check "${PATCH_FILE}" > /dev/null 2>&1 && return 0
+  [[ -f "${CLIENT_RS}" ]] || return 1
+  grep -qE 'fn queue_link_endpoint\(' "${CLIENT_RS}" \
+    && grep -qE 'attached_interface' "${CLIENT_RS}" \
+    && grep -qE 'SendLinkEndpoint' "${CLIENT_RS}"
 }
 
 if overlay_already_present; then

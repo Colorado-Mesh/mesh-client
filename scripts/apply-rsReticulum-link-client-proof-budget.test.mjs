@@ -40,6 +40,24 @@ const UPSTREAM_EQUIVALENT = `impl LinkClient {
 }
 `;
 
+/** Floated origin/main: remaining deadline via wait_for_valid_proof. */
+const UPSTREAM_VALID_PROOF = `impl LinkClient {
+    async fn query(&self) -> Result<(), LinkClientError> {
+        timeout(
+            time_remaining(deadline)?,
+            crate::link_endpoint::wait_for_valid_proof(
+                &mut dest_rx,
+                &mut link,
+                &identity_verify_key,
+                &identity_ed25519_pub,
+            ),
+        )
+        .await?;
+        Ok(())
+    }
+}
+`;
+
 /** Older #756 establishment-only cap — apply script must migrate to remaining. */
 const LEGACY_ESTABLISHMENT_ONLY = `impl LinkClient {
     async fn query(&self) -> Result<(), LinkClientError> {
@@ -164,6 +182,13 @@ describe('apply-rsReticulum-link-client-proof-budget.sh', () => {
 
   it('accepts an upstream-equivalent remaining proof budget when the patch does not apply', () => {
     const rns = makeFakeRsReticulum(UPSTREAM_EQUIVALENT);
+    const result = runApply(rns);
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toMatch(/already upstream|already present/);
+  });
+
+  it('is a no-op when upstream wait_for_valid_proof uses remaining deadline', () => {
+    const rns = makeFakeRsReticulum(UPSTREAM_VALID_PROOF);
     const result = runApply(rns);
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toMatch(/already upstream|already present/);

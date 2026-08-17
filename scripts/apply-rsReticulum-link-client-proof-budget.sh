@@ -25,8 +25,14 @@ short_head() {
 }
 
 has_remaining_proof_budget() {
-  [[ -f "${LINK_CLIENT_RS}" ]] \
-    && grep -qE 'let proof_budget[[:space:]]*=[[:space:]]*time_remaining\(deadline\)[[:space:]]*\?;' "${LINK_CLIENT_RS}" \
+  [[ -f "${LINK_CLIENT_RS}" ]] || return 1
+  # Floated origin/main: remaining deadline via timeout(time_remaining, wait_for_valid_proof).
+  if grep -qE 'wait_for_valid_proof' "${LINK_CLIENT_RS}" \
+    && grep -qE 'time_remaining\(deadline\)' "${LINK_CLIENT_RS}" \
+    && ! grep -qE 'establishment_timeout' "${LINK_CLIENT_RS}"; then
+    return 0
+  fi
+  grep -qE 'let proof_budget[[:space:]]*=[[:space:]]*time_remaining\(deadline\)[[:space:]]*\?;' "${LINK_CLIENT_RS}" \
     && grep -qE 'wait_for_proof\([^;]*proof_budget' "${LINK_CLIENT_RS}" \
     && ! grep -qE 'proof_budget = time_remaining\(deadline\)\?\.min\(link\.establishment_timeout\)' "${LINK_CLIENT_RS}" \
     && ! grep -qE 'establishment_timeout[[:space:]]*\.max\(Duration::from_secs\(30\)\)' "${LINK_CLIENT_RS}"

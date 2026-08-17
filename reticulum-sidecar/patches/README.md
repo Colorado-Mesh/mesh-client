@@ -36,7 +36,7 @@ Wire packet tap API for the Reticulum Stats/Sniffer panel (`wire_packet` WebSock
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `9928abed269a83ec5a7ef165ff1142d938cad706` |
+| **Base commit** | `47dbbf1febc0a9d3259f179a0512d9b56bb2320d` (`ratspeak/rsReticulum` `origin/main`) |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/10 |
 
 **Adds (4 files):**
@@ -131,9 +131,11 @@ Recall cached destination public keys in `LinkClient` before waiting on path-res
 
 Upstream `a945ba0` landed HasPath-gated `RecallDestination`, but still waits on a fresh announce when the path table is cold and still Deregisters handlers by `aspect_filter`. This overlay uses `RecallDestination` without the HasPath gate, then `await_path`, and GCs closed handlers only.
 
+On current floated `origin/main`, `LinkClient::query` already uses handler-free `resolve_destination_on_transport` (no temporary announce handlers). The apply script is a **no-op** in that case; keep the patch for older `RS_RETICULUM_REF` pins.
+
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `70b7399` (`ratspeak/rsReticulum` `origin/main`) |
+| **Base commit** | `47dbbf1febc0a9d3259f179a0512d9b56bb2320d` (`ratspeak/rsReticulum` `origin/main`; apply no-op) |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/14 |
 
 **Modifies (1 file):**
@@ -179,6 +181,8 @@ When [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14) 
 ## rsReticulum-link-client-proof-budget.patch
 
 Keep `LinkClient::query` proof wait on the **remaining overall deadline** (v5.25.0 / release parity). Earlier overlays capped at `establishment_timeout` (hops×6) or `max(establishment, 30s)` and false-failed multi-hop TCP hub Nomad pages (e.g. Northern Ireland) that need the rest of the MeshChat 45s window. Apply **after** the LinkClient Nomad overlay; the apply script migrates those older caps to remaining-deadline.
+
+On current floated `origin/main`, proof wait is `timeout(time_remaining(deadline)?, wait_for_valid_proof(...))`. The apply script is a **no-op** in that case; keep the patch for older pins.
 
 | Field | Value |
 | ----- | ----- |
@@ -594,9 +598,11 @@ When upstream rsLXMF exposes equivalent abort / cancel mid-transfer cleanup, rem
 
 Pin PropagationClient link-scoped TX (`Lrrtt`, `LinkIdentify`, `Request`, `ResourceReq`, …) to **`OutboundAttached`** on the interface that delivered the link proof. Unattached `Outbound` has no path-table entry for the link hash, so rsReticulum pathless-broadcasts onto every outbound interface — including slow flow-controlled RNodes — and fills the host TX queue during PN Sync.
 
+On current floated `origin/main`, PropagationClient already uses `SendLinkEndpoint` plus `attached_interface` (interface-pinned link TX). The apply script is a **no-op** in that case; keep the patch for older `RS_LXMF_REF` pins.
+
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | tip after `rsLXMF-propagation-client-abort-transfer.patch` |
+| **Base commit** | `b8d7afce73f7` (`ratspeak/rsLXMF` `origin/main`; apply no-op) |
 | **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsLXMF) |
 
 **Touches:** rsLXMF `PropagationClient` (`attached_interface`, `queue_link_outbound`)

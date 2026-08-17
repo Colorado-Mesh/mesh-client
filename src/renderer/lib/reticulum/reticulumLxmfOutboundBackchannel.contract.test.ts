@@ -41,19 +41,32 @@ describe('reticulum LXMF outbound Direct backchannel contracts', () => {
   it.skipIf(!existsSync(LXMF_LINK))(
     'sibling LinkDeliveryManager Acks even when inbound_packet_tx is unset',
     () => {
-      // Documents Ack-without-payload: proof is sent after decrypt regardless of the sender.
-      // mesh-client must wire set_inbound_packet_sender or first Direct replies are dropped.
+      // Documents Ack-without-payload: LinkProof is staged after decrypt without
+      // requiring the sender. Payload is published only after the proof TX succeeds
+      // (`PublishInboundPacket`). mesh-client must still wire set_inbound_packet_sender
+      // or first Direct replies are dropped.
       const source = readFileSync(LXMF_LINK, 'utf8');
       expect(source).toMatch(/pub fn set_inbound_packet_sender\s*\(/);
       expect(source).toContain('if let Some(ref tx) = self.inbound_packet_tx');
       expect(source).toContain('PacketContext::LinkProof');
+
       const handlerIdx = source.indexOf('fn handle_inbound_link_packet');
       expect(handlerIdx).toBeGreaterThanOrEqual(0);
-      const handler = source.slice(handlerIdx, handlerIdx + 2500);
-      const txSendIdx = handler.indexOf('inbound_packet_tx');
-      const proofIdx = handler.indexOf('LinkProof');
-      expect(txSendIdx).toBeGreaterThanOrEqual(0);
-      expect(proofIdx).toBeGreaterThan(txSendIdx);
+      const handlerEnd = source.indexOf('\n    fn ', handlerIdx + 1);
+      const handler = source.slice(
+        handlerIdx,
+        handlerEnd > handlerIdx ? handlerEnd : handlerIdx + 4000,
+      );
+      expect(handler).toContain('PacketContext::LinkProof');
+      expect(handler).toContain('EndpointSendSuccess::PublishInboundPacket');
+      expect(handler).not.toContain('inbound_packet_tx');
+
+      const pollIdx = source.indexOf('fn poll_endpoint_send_results');
+      expect(pollIdx).toBeGreaterThanOrEqual(0);
+      const pollEnd = source.indexOf('\n    fn ', pollIdx + 1);
+      const poll = source.slice(pollIdx, pollEnd > pollIdx ? pollEnd : pollIdx + 4000);
+      expect(poll).toContain('PublishInboundPacket');
+      expect(poll).toContain('inbound_packet_tx');
     },
   );
 });
