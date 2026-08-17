@@ -1528,7 +1528,11 @@ export function ChatComposer({
         ) : (
           <div className="flex items-center gap-1">
             {onVoiceMemo != null && !sending && (memoRecordingActive || !input.trim()) && (
-              <VoiceMemoComposerButton onVoiceMemo={onVoiceMemo} disabled={disabled} />
+              <VoiceMemoComposerButton
+                onVoiceMemo={onVoiceMemo}
+                disabled={disabled}
+                idleClassName={emojiButtonClass}
+              />
             )}
             <button
               type="button"
@@ -1605,9 +1609,12 @@ export function ChatComposer({
 function VoiceMemoComposerButton({
   onVoiceMemo,
   disabled,
+  idleClassName,
 }: {
   onVoiceMemo: () => void;
   disabled?: boolean;
+  /** Same chrome as emoji / location / GIF composer controls. */
+  idleClassName: string;
 }) {
   const { t } = useTranslation();
   const phase = useReticulumVoiceMemoStore((s) => s.phase);
@@ -1631,8 +1638,8 @@ function VoiceMemoComposerButton({
         disabled={disabled || busy}
         className={
           recording
-            ? 'rounded-xl bg-red-600/80 p-2.5 text-white hover:bg-red-500 disabled:opacity-40'
-            : 'rounded-xl p-2.5 text-gray-400 hover:bg-slate-600 hover:text-white disabled:opacity-40'
+            ? 'rounded-xl border border-red-500/60 bg-red-600/80 px-2.5 py-2.5 text-white transition-colors hover:bg-red-500 disabled:opacity-50'
+            : idleClassName
         }
       >
         <span className="flex items-center gap-1">
