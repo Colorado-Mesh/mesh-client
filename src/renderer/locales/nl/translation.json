@@ -707,7 +707,10 @@
       "tooLargeForPropagation": "Spraakbericht is groter dan de limiet van de voortplantingsnode. Het wordt alleen bezorgd wanneer de ontvanger online is. Verkort het om het op te slaan voor offline bezorging.",
       "directOnlyBadge": "Alleen direct — te groot voor offline opslag",
       "recordTooltip": "LXMF-spraakmemo — neemt een korte Opus-clip op voor dit directe bericht. Ondersteund door mesh-client, Ratspeak en Sideband (FIELD_AUDIO). Niet hetzelfde als LXST Call.",
-      "sendTooltip": "Verstuur de opgenomen LXMF-spraakmemo"
+      "sendTooltip": "Verstuur de opgenomen LXMF-spraakmemo",
+      "startFailed": "Kon opnemen van spraakmemo niet starten. Probeer het opnieuw.",
+      "sendAriaWithElapsed": "Spraakmemo verzenden ({{seconds}} seconden opgenomen)",
+      "unavailable": "Spraakmemo niet beschikbaar — bijlage niet in cache op dit apparaat."
     }
   },
   "chatPayload": {

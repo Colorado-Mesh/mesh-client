@@ -438,6 +438,8 @@ export interface ElectronAPI {
       delivery_attempts?: number | null;
       next_delivery_attempt_at?: number | null;
       attachment_path?: string | null;
+      audio_mode?: number | null;
+      audio_duration_sec?: number | null;
     }) => Promise<void>;
     markStaleReticulumOutbound: (
       identityId: string,

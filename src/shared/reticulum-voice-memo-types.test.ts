@@ -4,11 +4,16 @@ import {
   isVoiceMemoApiPath,
   parseVoiceMemoAudioRequest,
   parseVoiceMemoSessionRequest,
+  RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION,
   VOICE_MEMO_AUDIO_API_PATH,
   VOICE_MEMO_START_API_PATH,
 } from './reticulum-voice-memo-types';
 
 describe('reticulum-voice-memo-types', () => {
+  it('exports the too-large-for-propagation error code', () => {
+    expect(RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION).toBe('message_too_large_for_propagation');
+  });
+
   it('parses valid audio and session requests', () => {
     const audio = parseVoiceMemoAudioRequest({
       session_id: 'abc',
@@ -29,6 +34,7 @@ describe('reticulum-voice-memo-types', () => {
   it('detects memo API paths', () => {
     expect(isVoiceMemoApiPath(VOICE_MEMO_START_API_PATH)).toBe(true);
     expect(isVoiceMemoApiPath(VOICE_MEMO_AUDIO_API_PATH)).toBe(true);
+    expect(isVoiceMemoApiPath(`${VOICE_MEMO_START_API_PATH}?foo=1`)).toBe(true);
     expect(isVoiceMemoApiPath('/api/v1/voice/audio')).toBe(false);
   });
 });

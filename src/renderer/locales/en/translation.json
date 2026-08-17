@@ -705,6 +705,9 @@
       "sendTooltip": "Send the recorded LXMF voice memo",
       "callBusy": "Hang up the voice call before recording a memo.",
       "micDenied": "Microphone access is required to record a voice memo.",
+      "startFailed": "Could not start voice memo recording. Try again.",
+      "sendAriaWithElapsed": "Send voice memo ({{seconds}} seconds recorded)",
+      "unavailable": "Voice memo unavailable — attachment not cached on this device.",
       "tooLargeForWire": "Voice memo is too large to send. Record a shorter clip.",
       "tooLargeForPropagation": "Voice message is larger than the propagation-node limit. It will deliver only when the recipient is online. Shorten it to store it for offline delivery.",
       "directOnlyBadge": "Direct only — too large for offline storage"

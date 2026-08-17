@@ -707,7 +707,10 @@
       "tooLargeForPropagation": "Il messaggio vocale è più grande del limite del nodo di propagazione. Consegnerà solo quando il destinatario è online. Abbrevialo per conservarlo per la consegna offline.",
       "directOnlyBadge": "Solo diretto — troppo grande per l'archiviazione offline",
       "recordTooltip": "Memo vocale LXMF — registra una breve clip Opus per questo messaggio diretto. Supportato da mesh-client, Ratspeak e Sideband (FIELD_AUDIO). Non è lo stesso di LXST Call.",
-      "sendTooltip": "Inviare il memo vocale LXMF registrato"
+      "sendTooltip": "Inviare il memo vocale LXMF registrato",
+      "startFailed": "Impossibile avviare la registrazione del promemoria vocale. Riprova.",
+      "sendAriaWithElapsed": "Invia promemoria vocale ({{seconds}} secondi registrati)",
+      "unavailable": "Memo vocale non disponibile — allegato non memorizzato nella cache su questo dispositivo."
     }
   },
   "chatPayload": {

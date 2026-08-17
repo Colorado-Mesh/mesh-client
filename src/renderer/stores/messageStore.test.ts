@@ -161,6 +161,38 @@ describe('messageStore rename / status guards for Reticulum Completes', () => {
     });
   });
 
+  it('renameMessageId carries audio mode and duration when target already has attachment path', () => {
+    const successHash = 'aa'.repeat(32);
+    const pending = 'reticulum-pending-voice-2';
+    addMessage(ID_A, {
+      ...sampleRecord(successHash),
+      payload: '[voice:1200]',
+      status: 'acked',
+      timestamp: 2_000,
+      reticulumAttachmentPath: '/cache/from-completes.ogg',
+      reticulumAttachmentKind: 'audio',
+    });
+    addMessage(ID_A, {
+      ...sampleRecord(pending),
+      payload: '[voice:1200]',
+      status: 'sending',
+      timestamp: 1_000,
+      reticulumAttachmentPath: '/cache/memo.ogg',
+      reticulumAttachmentKind: 'audio',
+      reticulumAudioMode: 16,
+      reticulumAudioDurationSec: 1.2,
+    });
+
+    renameMessageId(ID_A, pending, successHash);
+
+    const bucket = useMessageStore.getState().messages[ID_A] ?? {};
+    expect(bucket[successHash]).toMatchObject({
+      reticulumAttachmentPath: '/cache/from-completes.ogg',
+      reticulumAudioMode: 16,
+      reticulumAudioDurationSec: 1.2,
+    });
+  });
+
   it('renameMessageId still rekeys onto a vacant or non-acked target', () => {
     const pending = 'reticulum-pending-1';
     const hash = 'cc'.repeat(32);

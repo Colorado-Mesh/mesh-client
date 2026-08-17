@@ -9,6 +9,7 @@ vi.mock('@/renderer/lib/i18n', () => ({
   default: { t: (key: string) => key },
 }));
 
+import { pushAppToast } from '@/renderer/components/Toast';
 import {
   applyReticulumOutboundDeliveryStatus,
   clearPendingReticulumOutboundDeliveryStatusesForTests,
@@ -535,5 +536,7 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
     const row = useMessageStore.getState().messages[identityId][messageHash];
     expect(row.status).toBe('failed');
     expect(row.error).toBe('message_too_large_for_propagation');
+    expect(pushAppToast).toHaveBeenCalledTimes(1);
+    expect(pushAppToast).toHaveBeenCalledWith('chatPanel.voiceMemo.tooLargeForPropagation', 'info');
   });
 });

@@ -3215,7 +3215,7 @@ function AppContent() {
                                     ) {
                                       return;
                                     }
-                                    if (phase === 'recording') {
+                                    if (phase === 'recording' || phase === 'ready') {
                                       sendReticulumVoiceMemo({
                                         identityId: reticulumIdentityId,
                                         destination,
@@ -3240,16 +3240,33 @@ function AppContent() {
                                       });
                                       return;
                                     }
-                                    void startReticulumVoiceMemo().then((ok) => {
-                                      if (!ok) {
-                                        const err = useReticulumVoiceMemoStore.getState().lastError;
-                                        if (err === 'call_busy') {
-                                          addToast(t('chatPanel.voiceMemo.callBusy'), 'warning');
-                                        } else if (err === 'mic_denied') {
-                                          addToast(t('chatPanel.voiceMemo.micDenied'), 'error');
+                                    void startReticulumVoiceMemo()
+                                      .then((ok) => {
+                                        if (!ok) {
+                                          const err =
+                                            useReticulumVoiceMemoStore.getState().lastError;
+                                          if (err === 'call_busy') {
+                                            addToast(t('chatPanel.voiceMemo.callBusy'), 'warning');
+                                          } else if (err === 'mic_denied') {
+                                            addToast(t('chatPanel.voiceMemo.micDenied'), 'error');
+                                          } else if (
+                                            err === 'sidecar_unavailable' ||
+                                            err === 'start_failed' ||
+                                            err
+                                          ) {
+                                            useReticulumVoiceMemoStore.getState().reset();
+                                            addToast(t('chatPanel.voiceMemo.startFailed'), 'error');
+                                          }
                                         }
-                                      }
-                                    });
+                                      })
+                                      .catch((e: unknown) => {
+                                        console.warn(
+                                          '[App] startReticulumVoiceMemo rejected:',
+                                          errLikeToLogString(e),
+                                        );
+                                        useReticulumVoiceMemoStore.getState().reset();
+                                        addToast(t('chatPanel.voiceMemo.startFailed'), 'error');
+                                      });
                                   }
                                 : undefined
                             }

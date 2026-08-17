@@ -12,6 +12,7 @@ import {
   parseVoiceMemoSessionRequest,
   VOICE_MEMO_AUDIO_API_PATH,
   VOICE_MEMO_CANCEL_API_PATH,
+  VOICE_MEMO_DATA_BASE64_MAX,
   VOICE_MEMO_START_API_PATH,
   VOICE_MEMO_STOP_API_PATH,
 } from '../../shared/reticulum-voice-memo-types';
@@ -351,7 +352,18 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     try {
       const m = ensureManager();
-      return await m.proxyPost(VOICE_MEMO_STOP_API_PATH, parsed);
+      const result = await m.proxyPost(VOICE_MEMO_STOP_API_PATH, parsed);
+      if (
+        result &&
+        typeof result === 'object' &&
+        !Array.isArray(result) &&
+        typeof (result as Record<string, unknown>).ogg_base64 === 'string' &&
+        ((result as Record<string, unknown>).ogg_base64 as string).length >
+          VOICE_MEMO_DATA_BASE64_MAX
+      ) {
+        return { ok: false, error: 'ogg_base64_too_large' };
+      }
+      return result;
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('voiceMemoStop', err, VOICE_MEMO_STOP_API_PATH);

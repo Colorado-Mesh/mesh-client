@@ -420,6 +420,23 @@ describe('store record adapters (merge precedence)', () => {
     expect(chat.reticulumAudioDurationSec).toBe(0.9);
   });
 
+  it('reticulumDbRowToMessageRecord maps audio_mode and audio_duration_sec', () => {
+    const record = reticulumDbRowToMessageRecord({
+      sender_id: 'aa'.repeat(16),
+      sender_name: 'Me',
+      payload: '[voice:600]',
+      timestamp: 1,
+      message_hash: 'bb'.repeat(32),
+      attachment_path: '/tmp/voice-memo-out.ogg',
+      audio_mode: 16,
+      audio_duration_sec: 0.6,
+    });
+    expect(record.reticulumAttachmentPath).toBe('/tmp/voice-memo-out.ogg');
+    expect(record.reticulumAttachmentKind).toBe('audio');
+    expect(record.reticulumAudioMode).toBe(16);
+    expect(record.reticulumAudioDurationSec).toBe(0.6);
+  });
+
   it('reticulumDbRowToMessageRecord infers audio kind from .ogg attachment path', () => {
     const record = reticulumDbRowToMessageRecord({
       sender_id: 'aa'.repeat(16),

@@ -22,6 +22,8 @@ interface MemoRecordingSession {
   // ScriptProcessor is deprecated in favor of AudioWorklet; kept for short memo capture.
   // eslint-disable-next-line @typescript-eslint/no-deprecated -- see comment above
   processor: ScriptProcessorNode;
+  /** Zero-gain sink so ScriptProcessor runs without audible monitor bleed. */
+  silentGain: GainNode;
   stream: MediaStream;
   sessionId: string;
   startedAt: number;
@@ -31,6 +33,8 @@ interface MemoRecordingSession {
   /** Serialized IPC queue so Opus packets stay in order. */
   sendQueue: Promise<void>;
   sendFailed: boolean;
+  /** Set when teardown clears activeSession so queued sends can drain without side effects. */
+  abandoned: boolean;
   elapsedTimer: ReturnType<typeof setInterval>;
   maxTimer: ReturnType<typeof setTimeout>;
 }
@@ -41,7 +45,7 @@ function abortRecording(session: MemoRecordingSession, error: string): void {
   if (session.sendFailed) return;
   session.sendFailed = true;
   console.warn('[reticulumVoiceMemo] aborting recording:', error);
-  teardownSession(false);
+  teardownSession(session, false);
   void window.electronAPI.reticulum.voiceMemo
     .cancel({ session_id: session.sessionId })
     .catch((e: unknown) => {
@@ -55,7 +59,7 @@ function enqueueSendAudio(session: MemoRecordingSession, samplesB64: string): vo
   const sessionId = session.sessionId;
   session.sendQueue = session.sendQueue
     .then(async () => {
-      if (session.sendFailed || activeSession?.sessionId !== sessionId) return;
+      if (session.sendFailed || session.abandoned) return;
       const res = await window.electronAPI.reticulum.voiceMemo.sendAudio({
         session_id: sessionId,
         channels: 1,
@@ -94,9 +98,10 @@ function flushPendingFrames(session: MemoRecordingSession, forcePartial: boolean
   }
 
   if (forcePartial && session.pendingCount > 0) {
-    const chunk = session.pendingSamples.subarray(0, session.pendingCount);
+    const padded = new Float32Array(capturePerFrame);
+    padded.set(session.pendingSamples.subarray(0, session.pendingCount));
     session.pendingCount = 0;
-    const frame = packVoiceMemoFrame(chunk, rate, 1);
+    const frame = packVoiceMemoFrame(padded, rate, 1);
     if (frame) {
       enqueueSendAudio(session, encodeF32LeBase64(frame));
     }
@@ -108,9 +113,11 @@ async function drainSendQueue(session: MemoRecordingSession): Promise<void> {
 }
 
 /** Teardown recorder resources without changing store state. */
-function teardownSession(flush: boolean): MemoRecordingSession | null {
-  const session = activeSession;
-  if (!session) return null;
+function teardownSession(
+  session: MemoRecordingSession,
+  flush: boolean,
+): MemoRecordingSession | null {
+  if (activeSession !== session) return null;
   clearInterval(session.elapsedTimer);
   clearTimeout(session.maxTimer);
   if (flush && !session.sendFailed) {
@@ -120,6 +127,11 @@ function teardownSession(flush: boolean): MemoRecordingSession | null {
     session.processor.disconnect();
   } catch {
     // catch-no-log-ok: AudioWorkletNode may already be disconnected
+  }
+  try {
+    session.silentGain.disconnect();
+  } catch {
+    // catch-no-log-ok: GainNode may already be disconnected
   }
   try {
     session.source.disconnect();
@@ -135,6 +147,7 @@ function teardownSession(flush: boolean): MemoRecordingSession | null {
     track.stop();
   }
   activeSession = null;
+  session.abandoned = true;
   return session;
 }
 
@@ -207,20 +220,49 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
     return false;
   }
 
-  const audioCtx = new AudioContext({ sampleRate: VOICE_MEMO_SAMPLE_RATE_HZ });
-  const source = audioCtx.createMediaStreamSource(stream);
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- AudioWorklet deferred; see processor note
-  const processor = audioCtx.createScriptProcessor(PROCESSOR_BUFFER_SIZE, 1, 1);
   const ringCap = Math.max(
     PROCESSOR_BUFFER_SIZE * PENDING_RING_FRAMES,
     VOICE_MEMO_FRAME_SAMPLES * 8,
   );
   const pendingSamples = new Float32Array(ringCap);
 
+  let audioCtx: AudioContext;
+  let source: MediaStreamAudioSourceNode;
+  // eslint-disable-next-line @typescript-eslint/no-deprecated -- AudioWorklet deferred; see processor note
+  let processor: ScriptProcessorNode;
+  let silentGain: GainNode;
+  try {
+    audioCtx = new AudioContext({ sampleRate: VOICE_MEMO_SAMPLE_RATE_HZ });
+    source = audioCtx.createMediaStreamSource(stream);
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- AudioWorklet deferred; see processor note
+    processor = audioCtx.createScriptProcessor(PROCESSOR_BUFFER_SIZE, 1, 1);
+    silentGain = audioCtx.createGain();
+    silentGain.gain.value = 0;
+    source.connect(processor);
+    processor.connect(silentGain);
+    silentGain.connect(audioCtx.destination);
+  } catch (e) {
+    console.warn('[reticulumVoiceMemo] audio graph setup failed:', errLikeToLogString(e));
+    for (const track of stream.getTracks()) {
+      track.stop();
+    }
+    void window.electronAPI.reticulum.voiceMemo
+      .cancel({ session_id: sessionId })
+      .catch((cancelErr: unknown) => {
+        console.warn(
+          '[reticulumVoiceMemo] cancel after audio setup failed:',
+          errLikeToLogString(cancelErr),
+        );
+      });
+    useReticulumVoiceMemoStore.getState().setError('start_failed');
+    return false;
+  }
+
   const session: MemoRecordingSession = {
     audioCtx,
     source,
     processor,
+    silentGain,
     stream,
     sessionId,
     startedAt: Date.now(),
@@ -228,6 +270,7 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
     pendingCount: 0,
     sendQueue: Promise.resolve(),
     sendFailed: false,
+    abandoned: false,
     elapsedTimer: setInterval(() => {
       const elapsed = Math.floor((Date.now() - session.startedAt) / 1000);
       useReticulumVoiceMemoStore.getState().tickElapsed(elapsed);
@@ -256,8 +299,6 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
     flushPendingFrames(session, false);
   };
 
-  source.connect(processor);
-  processor.connect(audioCtx.destination);
   activeSession = session;
   useReticulumVoiceMemoStore.getState().startRecording(sessionId);
   return true;
@@ -265,12 +306,14 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
 
 /** Stop capture, drain in-flight PCM IPC, and return the sidecar session id. */
 export async function stopReticulumVoiceMemoRecorder(): Promise<string | null> {
-  const session = teardownSession(true);
+  const session = activeSession;
   if (!session) return null;
+  const torn = teardownSession(session, true);
+  if (!torn) return null;
   useReticulumVoiceMemoStore.getState().setStopping();
-  await drainSendQueue(session);
-  if (session.sendFailed) return null;
-  return session.sessionId;
+  await drainSendQueue(torn);
+  if (torn.sendFailed) return null;
+  return torn.sessionId;
 }
 
 /** Stop recording and store Ogg result on the memo store. */
@@ -296,8 +339,9 @@ export async function stopReticulumVoiceMemo(): Promise<void> {
 
 /** Cancel the active recording and reset store to idle. */
 export function cancelReticulumVoiceMemo(): Promise<void> {
-  const session = teardownSession(false);
+  const session = activeSession;
   if (session) {
+    teardownSession(session, false);
     void window.electronAPI.reticulum.voiceMemo
       .cancel({ session_id: session.sessionId })
       .catch((e: unknown) => {

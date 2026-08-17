@@ -707,7 +707,10 @@
       "tooLargeForPropagation": "ボイスメッセージが伝播ノードの制限を超えています。受取人がオンラインの場合にのみ配達されます。オフライン配送用に保存するには短くしてください。",
       "directOnlyBadge": "ダイレクトのみ—オフラインストレージには大きすぎます",
       "recordTooltip": "LXMFボイスメモ—このダイレクトメッセージの短いOpusクリップを記録します。mesh-client、Ratspeak、Sideband (FIELD_AUDIO) でサポートされています。LXST Callとは異なります。",
-      "sendTooltip": "録音したLXMFボイスメモを送信する"
+      "sendTooltip": "録音したLXMFボイスメモを送信する",
+      "startFailed": "ボイスメモの録音を開始できませんでした。もう一度やり直してください。",
+      "sendAriaWithElapsed": "ボイスメモを送信（ {{seconds}}秒録音）",
+      "unavailable": "音声メモは利用できません—添付ファイルはこのデバイスにキャッシュされていません。"
     }
   },
   "chatPayload": {

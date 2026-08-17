@@ -707,7 +707,10 @@
       "tooLargeForPropagation": "Sesli mesaj, yayılma düğümü sınırından daha büyük. Yalnızca alıcı çevrimiçi olduğunda teslim edilecektir. Çevrimdışı teslimat için saklamak üzere kısaltın.",
       "directOnlyBadge": "Yalnızca doğrudan — çevrimdışı depolama için çok büyük",
       "recordTooltip": "LXMF sesli notu — bu doğrudan mesaj için kısa bir Opus klibi kaydeder. mesh-client, Ratspeak ve Sideband (FIELD_AUDIO) tarafından desteklenir. LXST Call ile aynı değildir.",
-      "sendTooltip": "Kaydedilen LXMF sesli notunu gönderin"
+      "sendTooltip": "Kaydedilen LXMF sesli notunu gönderin",
+      "startFailed": "Sesli not kaydı başlatılamadı. Tekrar deneyin.",
+      "sendAriaWithElapsed": "Sesli not gönder ({{seconds}} saniye kaydedildi)",
+      "unavailable": "Sesli not kullanılamıyor — eklenti bu cihazda önbelleğe alınmadı."
     }
   },
   "chatPayload": {

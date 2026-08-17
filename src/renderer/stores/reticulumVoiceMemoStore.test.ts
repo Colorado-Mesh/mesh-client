@@ -35,9 +35,10 @@ describe('reticulumVoiceMemoStore', () => {
     expect(store().phase).toBe('stopping');
   });
 
-  it('applyStopResult stores ogg and duration', () => {
+  it('applyStopResult stores ogg and duration and transitions to ready', () => {
     store().startRecording('sess-abc');
     store().applyStopResult({ oggBase64: 'abc123', durationMs: 5000, sizeBytes: 1024 });
+    expect(store().phase).toBe('ready');
     expect(store().oggBase64).toBe('abc123');
     expect(store().durationMs).toBe(5000);
     expect(store().sizeBytes).toBe(1024);

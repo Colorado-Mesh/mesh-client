@@ -2877,11 +2877,16 @@ function ChatPanel({
 
                             {/* Message text with optional search highlight (div: ChatPayloadText may render block link previews) */}
                             <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
-                              {hasReticulumVoiceMemo &&
-                              msg.reticulumAttachmentPath &&
-                              (msg.reticulumAttachmentKind === 'audio' ||
-                                msg.reticulumAttachmentPath.toLowerCase().endsWith('.ogg') ||
-                                /^\[voice:/i.test(msg.payload)) ? (
+                              {/^\[voice:/i.test(msg.payload) &&
+                              !(hasReticulumVoiceMemo && msg.reticulumAttachmentPath) ? (
+                                <span className="text-gray-400 italic">
+                                  {t('chatPanel.voiceMemo.unavailable')}
+                                </span>
+                              ) : hasReticulumVoiceMemo &&
+                                msg.reticulumAttachmentPath &&
+                                (msg.reticulumAttachmentKind === 'audio' ||
+                                  msg.reticulumAttachmentPath.toLowerCase().endsWith('.ogg') ||
+                                  /^\[voice:/i.test(msg.payload)) ? (
                                 <ReticulumVoiceMemoLine
                                   attachmentPath={msg.reticulumAttachmentPath}
                                   durationSec={msg.reticulumAudioDurationSec}

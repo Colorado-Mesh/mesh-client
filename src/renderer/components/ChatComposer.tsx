@@ -242,7 +242,10 @@ export function ChatComposer({
   const floodScopeCustomInputId = useId();
   const memoPhase = useReticulumVoiceMemoStore((s) => s.phase);
   const memoRecordingActive =
-    memoPhase === 'recording' || memoPhase === 'starting' || memoPhase === 'stopping';
+    memoPhase === 'recording' ||
+    memoPhase === 'starting' ||
+    memoPhase === 'stopping' ||
+    memoPhase === 'ready';
 
   const [input, setInput] = useState('');
   const [floodScopeOverride, setFloodScopeOverride] = useState('');
@@ -1620,11 +1623,12 @@ function VoiceMemoComposerButton({
   const phase = useReticulumVoiceMemoStore((s) => s.phase);
   const elapsedSec = useReticulumVoiceMemoStore((s) => s.elapsedSec);
   const recording = phase === 'recording' || phase === 'starting';
-  const busy = phase === 'stopping' || phase === 'sending';
+  const sendMode = recording || phase === 'ready';
+  const busy = phase === 'starting' || phase === 'stopping' || phase === 'sending';
   return (
     <HelpTooltip
       text={
-        recording ? t('chatPanel.voiceMemo.sendTooltip') : t('chatPanel.voiceMemo.recordTooltip')
+        sendMode ? t('chatPanel.voiceMemo.sendTooltip') : t('chatPanel.voiceMemo.recordTooltip')
       }
       className="shrink-0"
       nonFocusableWrapper
@@ -1632,7 +1636,11 @@ function VoiceMemoComposerButton({
       <button
         type="button"
         aria-label={
-          recording ? t('chatPanel.voiceMemo.sendAria') : t('chatPanel.voiceMemo.recordAria')
+          recording && elapsedSec > 0
+            ? t('chatPanel.voiceMemo.sendAriaWithElapsed', { seconds: elapsedSec })
+            : sendMode
+              ? t('chatPanel.voiceMemo.sendAria')
+              : t('chatPanel.voiceMemo.recordAria')
         }
         onClick={onVoiceMemo}
         disabled={disabled || busy}

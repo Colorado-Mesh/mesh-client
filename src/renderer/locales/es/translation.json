@@ -707,7 +707,10 @@
       "tooLargeForPropagation": "El mensaje de voz es mayor que el límite del nodo de propagación. Solo se entregará cuando el destinatario esté conectado. Acórtalo para guardarlo para la entrega sin conexión.",
       "directOnlyBadge": "Solo directo: demasiado grande para almacenamiento sin conexión",
       "recordTooltip": "Nota de voz LXMF: graba un breve clip de Opus para este mensaje directo. Compatible con mesh-client, Ratspeak y Sideband (FIELD_AUDIO). No es lo mismo que LXST Call.",
-      "sendTooltip": "Enviar la nota de voz LXMF grabada"
+      "sendTooltip": "Enviar la nota de voz LXMF grabada",
+      "startFailed": "No se ha podido iniciar la grabación de notas de voz. Inténtelo de nuevo.",
+      "sendAriaWithElapsed": "Enviar nota de voz ({{seconds}} segundos grabados)",
+      "unavailable": "Nota de voz no disponible — archivo adjunto no almacenado en caché en este dispositivo."
     }
   },
   "chatPayload": {

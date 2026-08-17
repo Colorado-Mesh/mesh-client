@@ -30,6 +30,7 @@ import { reticulumHashForNodeId } from '@/renderer/stores/reticulumPeerStore';
 import { useReticulumVoiceMemoStore } from '@/renderer/stores/reticulumVoiceMemoStore';
 import {
   LXMF_AUDIO_MODE_OPUS_OGG,
+  RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION,
   VOICE_MEMO_MAX_OGG_BYTES,
 } from '@/shared/reticulum-voice-memo-types';
 
@@ -186,7 +187,7 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
             'failed',
             i18n.t('chatPanel.reticulumNoPropagationNode'),
           );
-        } else if (err === 'message_too_large_for_propagation') {
+        } else if (err === RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION) {
           onTooLargeForPropagation?.();
           updateMessageStatus(identityId, pendingId, 'failed', err);
         } else {
@@ -219,28 +220,34 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
       });
       // Re-persist final hash with attachment path: an early WS Completes insert can
       // land first without a path; SQLite UPDATE now coalesces, but only if we pass it.
-      if (senderHash) {
-        const finalRow = useMessageStore.getState().messages[identityId][hash];
-        persistReticulumOutboundRecord(
-          identityId,
-          {
-            ...finalRow,
-            reticulumAttachmentPath: attachmentPath,
-            reticulumAttachmentKind: 'audio',
-            reticulumAudioMode: LXMF_AUDIO_MODE_OPUS_OGG,
-            reticulumAudioDurationSec: durationMs / 1000,
-          },
-          senderHash,
-          senderName,
-          destHash,
-          finalRow.status === 'acked' ? 'acked' : 'sending',
-          replacesMessageHash,
-        );
+      const bucket = useMessageStore.getState().messages[identityId];
+      if (Object.hasOwn(bucket, hash)) {
+        const finalRow = bucket[hash];
+        if (senderHash) {
+          persistReticulumOutboundRecord(
+            identityId,
+            {
+              ...finalRow,
+              reticulumAttachmentPath: attachmentPath,
+              reticulumAttachmentKind: 'audio',
+              reticulumAudioMode: LXMF_AUDIO_MODE_OPUS_OGG,
+              reticulumAudioDurationSec: durationMs / 1000,
+            },
+            senderHash,
+            senderName,
+            destHash,
+            finalRow.status === 'acked' ? 'acked' : 'sending',
+            replacesMessageHash,
+          );
+        }
+        flushPendingReticulumOutboundDeliveryStatus(identityId, hash);
       }
-      flushPendingReticulumOutboundDeliveryStatus(identityId, hash);
-      const afterFlush = useMessageStore.getState().messages[identityId][hash].status;
-      if (afterFlush !== 'acked' && afterFlush !== 'failed') {
-        updateMessageStatus(identityId, hash, 'sending');
+      const bucketAfter = useMessageStore.getState().messages[identityId];
+      if (Object.hasOwn(bucketAfter, hash)) {
+        const afterFlush = bucketAfter[hash].status;
+        if (afterFlush !== 'acked' && afterFlush !== 'failed') {
+          updateMessageStatus(identityId, hash, 'sending');
+        }
       }
     } catch (e) {
       const errMsg = errLikeToLogString(e);
@@ -248,7 +255,7 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
       if (errMsg.includes('no_propagation_node')) {
         onNoPropagationNode();
       }
-      if (errMsg.includes('message_too_large_for_propagation')) {
+      if (errMsg.includes(RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION)) {
         onTooLargeForPropagation?.();
       }
       updateMessageStatus(identityId, statusId, 'failed', errMsg);

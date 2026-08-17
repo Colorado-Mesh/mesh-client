@@ -671,7 +671,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
           const known = p.message_hash
             ? useMessageStore.getState().messages[identityId]?.[p.message_hash]
             : undefined;
-          if (p.direction !== 'outbound' || !known?.reticulumAttachmentPath) {
+          if (!known?.reticulumAttachmentPath) {
             attachmentPath = await cacheReticulumInboundAudio(p.audio);
             if (attachmentPath) {
               attachmentKind = 'audio';

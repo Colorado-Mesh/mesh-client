@@ -2,7 +2,8 @@ import { Pause, Play } from 'lucide-react-motion';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { computeWaveform, computeWaveformFromOgg } from '@/renderer/lib/reticulum/computeWaveform';
+import { computeWaveform } from '@/renderer/lib/reticulum/computeWaveform';
+import { LXMF_AUDIO_MODE_OPUS_OGG } from '@/shared/reticulum-voice-memo-types';
 
 const BAR_COUNT = 40;
 const BAR_MIN_HEIGHT = 2;
@@ -60,16 +61,24 @@ export function ReticulumVoiceMemoLine({
           setReady(false);
           return;
         }
-        const waveform = await computeWaveformFromOgg(res.dataBase64, BAR_COUNT);
-        if (cancelled) return;
 
-        const binary = atob(res.dataBase64);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        let bytes: Uint8Array;
+        try {
+          const binary = atob(res.dataBase64);
+          bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        } catch {
+          // catch-no-log-ok: malformed base64 from cache — surface loadError UI only
+          setLoadError(true);
+          setReady(false);
+          return;
+        }
 
         const ctx = new AudioContext();
         audioCtxRef.current = ctx;
-        const buffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
+        const oggCopy = new ArrayBuffer(bytes.byteLength);
+        new Uint8Array(oggCopy).set(bytes);
+        const buffer = await ctx.decodeAudioData(oggCopy);
         if (cancelled) {
           void ctx.close();
           return;
@@ -81,11 +90,7 @@ export function ReticulumVoiceMemoLine({
         if (buffer.duration > 0) {
           setResolvedDuration(buffer.duration);
         }
-        if (waveform) {
-          setBars(waveform.bars);
-        } else {
-          setBars(computeWaveform(buffer.getChannelData(0), BAR_COUNT));
-        }
+        setBars(computeWaveform(buffer.getChannelData(0), BAR_COUNT));
         setReady(true);
       } catch {
         // catch-no-log-ok: attachment may be absent, jailed, or undecodable
@@ -202,8 +207,8 @@ export function ReticulumVoiceMemoLine({
   };
 
   const playedRatio = resolvedDuration > 0 ? Math.min(1, currentSec / resolvedDuration) : 0;
-  const displaySec = playing ? currentSec : resolvedDuration;
-  const modeLabel = audioMode === 16 ? 'Opus' : undefined;
+  const displaySec = playing ? currentSec : currentSec > 0 ? currentSec : resolvedDuration;
+  const modeLabel = audioMode === LXMF_AUDIO_MODE_OPUS_OGG ? 'Opus' : undefined;
 
   return (
     <div

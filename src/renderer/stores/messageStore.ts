@@ -305,10 +305,13 @@ export function renameMessageId(identityId: IdentityId, fromId: string, toId: st
               reticulumAttachmentPath: existing.reticulumAttachmentPath,
               reticulumAttachmentKind:
                 existing.reticulumAttachmentKind ?? target.reticulumAttachmentKind,
-              reticulumAudioMode: existing.reticulumAudioMode ?? target.reticulumAudioMode,
-              reticulumAudioDurationSec:
-                existing.reticulumAudioDurationSec ?? target.reticulumAudioDurationSec,
             }
+          : {}),
+        ...(existing.reticulumAudioMode != null && target.reticulumAudioMode == null
+          ? { reticulumAudioMode: existing.reticulumAudioMode }
+          : {}),
+        ...(existing.reticulumAudioDurationSec != null && target.reticulumAudioDurationSec == null
+          ? { reticulumAudioDurationSec: existing.reticulumAudioDurationSec }
           : {}),
       };
       if (messageRecordFieldsEqual(target, merged)) {

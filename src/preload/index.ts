@@ -180,6 +180,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       delivery_attempts?: number | null;
       next_delivery_attempt_at?: number | null;
       attachment_path?: string | null;
+      audio_mode?: number | null;
+      audio_duration_sec?: number | null;
     }) => ipcRenderer.invoke('db:saveReticulumMessage', message),
     markStaleReticulumOutbound: (identityId: string, staleAfterMs?: number) =>
       ipcRenderer.invoke('db:markStaleReticulumOutbound', identityId, staleAfterMs),

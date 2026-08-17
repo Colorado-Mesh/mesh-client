@@ -3,6 +3,9 @@
 /** AM_OPUS_OGG mode value (FIELD_AUDIO mode 0x10). */
 export const LXMF_AUDIO_MODE_OPUS_OGG = 16;
 
+/** Sidecar/LXMF error when packed size exceeds PN deposit (Direct-only delivery). */
+export const RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION = 'message_too_large_for_propagation';
+
 /** Soft Ogg size cap (~4 min QualityMedium) under 256 KiB field + PN limits. */
 export const VOICE_MEMO_MAX_OGG_BYTES = 240 * 1024;
 
@@ -109,10 +112,11 @@ export function parseVoiceMemoSessionRequest(
  * These paths must be routed via `reticulum:voiceMemo*` IPC, not generic proxyPost.
  */
 export function isVoiceMemoApiPath(apiPath: string): boolean {
+  const pathOnly = apiPath.split('?')[0] ?? apiPath;
   return (
-    apiPath === VOICE_MEMO_START_API_PATH ||
-    apiPath === VOICE_MEMO_AUDIO_API_PATH ||
-    apiPath === VOICE_MEMO_STOP_API_PATH ||
-    apiPath === VOICE_MEMO_CANCEL_API_PATH
+    pathOnly === VOICE_MEMO_START_API_PATH ||
+    pathOnly === VOICE_MEMO_AUDIO_API_PATH ||
+    pathOnly === VOICE_MEMO_STOP_API_PATH ||
+    pathOnly === VOICE_MEMO_CANCEL_API_PATH
   );
 }

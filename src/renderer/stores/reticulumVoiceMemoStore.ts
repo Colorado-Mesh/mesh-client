@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
-export type VoiceMemoPhase = 'idle' | 'starting' | 'recording' | 'stopping' | 'sending' | 'error';
+export type VoiceMemoPhase =
+  'idle' | 'starting' | 'recording' | 'stopping' | 'ready' | 'sending' | 'error';
 
 interface ReticulumVoiceMemoStoreState {
   phase: VoiceMemoPhase;
@@ -59,7 +60,7 @@ export const useReticulumVoiceMemoStore = create<ReticulumVoiceMemoStoreState>((
   },
 
   applyStopResult: ({ oggBase64, durationMs, sizeBytes }) => {
-    set({ oggBase64, durationMs, sizeBytes });
+    set({ phase: 'ready', oggBase64, durationMs, sizeBytes });
   },
 
   setError: (message) => {

@@ -117,6 +117,37 @@ describe('reticulumVoiceMemoPipeline — inbound ingest with audio', () => {
     expect(merged.reticulumAudioMode).toBe(LXMF_AUDIO_MODE_OPUS_OGG);
     expect(merged.reticulumAttachmentPath).toBe('/cache/memo2.ogg');
   });
+
+  it('mergeReticulumIngestRecord preserves existing attachment when incoming omits attachment fields', () => {
+    const existing: MessageRecord = {
+      id: 'msg-hash-003',
+      from: 1,
+      to: 2,
+      payload: '[voice:3000]',
+      channelIndex: 0,
+      timestamp: 1_700_000_000_000,
+      status: 'acked',
+      reticulumAttachmentPath: '/cache/memo.ogg',
+      reticulumAttachmentKind: 'audio',
+      reticulumAudioMode: LXMF_AUDIO_MODE_OPUS_OGG,
+      reticulumAudioDurationSec: 3,
+    };
+    const p = makeAudioPayload();
+    const incoming: MessageRecord = {
+      id: 'msg-hash-003',
+      from: 1,
+      to: 2,
+      payload: '[voice:3000]',
+      channelIndex: 0,
+      timestamp: 1_700_000_000_001,
+      status: 'acked',
+    };
+    const merged = mergeReticulumIngestRecord(existing, incoming, p, {});
+    expect(merged.reticulumAttachmentPath).toBe('/cache/memo.ogg');
+    expect(merged.reticulumAttachmentKind).toBe('audio');
+    expect(merged.reticulumAudioMode).toBe(LXMF_AUDIO_MODE_OPUS_OGG);
+    expect(merged.reticulumAudioDurationSec).toBe(3);
+  });
 });
 
 describe('reticulumVoiceMemoPipeline — optimistic send record', () => {

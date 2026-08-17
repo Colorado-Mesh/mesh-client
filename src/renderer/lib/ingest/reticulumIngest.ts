@@ -225,6 +225,7 @@ export async function persistReticulumMessageToDb(
       delivery_status: resolvePersistedDeliveryStatus(p),
       delivery_method: parseReticulumDeliveryMethod(p.delivery_method) ?? null,
       attachment_path: attachmentPath ?? null,
+      ...(p.audio?.mode != null ? { audio_mode: p.audio.mode } : {}),
     });
   } catch (e) {
     console.warn('[reticulumIngest] save message ' + errLikeToLogString(e));
@@ -405,6 +406,10 @@ export function persistReticulumOutboundRecord(
         ? { delivery_attempts: Math.trunc(record.reticulumDeliveryAttempts) }
         : {}),
       attachment_path: record.reticulumAttachmentPath ?? null,
+      ...(record.reticulumAudioMode != null ? { audio_mode: record.reticulumAudioMode } : {}),
+      ...(record.reticulumAudioDurationSec != null
+        ? { audio_duration_sec: record.reticulumAudioDurationSec }
+        : {}),
     })
     .catch((e: unknown) => {
       console.warn('[reticulumIngest] save outbound ' + errLikeToLogString(e));

@@ -711,7 +711,10 @@
       "tooLargeForPropagation": "Wiadomość głosowa jest większa niż limit węzła propagacji. Dostawa będzie możliwa tylko wtedy, gdy odbiorca jest online. Skróć go, aby przechowywać go w celu dostawy offline.",
       "directOnlyBadge": "Tylko bezpośrednie — zbyt duże dla przechowywania offline",
       "recordTooltip": "Notatka głosowa LXMF — nagrywa krótki klip Opus dla tej bezpośredniej wiadomości. Obsługiwane przez mesh-client, Ratspeak i Sideband (FIELD_AUDIO). To nie to samo, co połączenie LXST.",
-      "sendTooltip": "Wyślij nagraną notatkę głosową LXMF"
+      "sendTooltip": "Wyślij nagraną notatkę głosową LXMF",
+      "startFailed": "Nie można rozpocząć nagrywania notatki głosowej. Spróbuj ponownie.",
+      "sendAriaWithElapsed": "Wyślij notatkę głosową ({{seconds}} sekund nagranych)",
+      "unavailable": "Notatka głosowa niedostępna — załącznik nie jest zapisany w pamięci podręcznej na tym urządzeniu."
     }
   },
   "chatPayload": {

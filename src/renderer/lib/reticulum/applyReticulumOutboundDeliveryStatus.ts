@@ -23,6 +23,7 @@ import {
   useMessageStore,
 } from '@/renderer/stores/messageStore';
 import { reticulumHashForNodeId } from '@/renderer/stores/reticulumPeerStore';
+import { RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION } from '@/shared/reticulum-voice-memo-types';
 import {
   isPnCascadeDeliveryMethod,
   parseReticulumDeliveryMethod,
@@ -146,8 +147,8 @@ export function flushPendingReticulumOutboundDeliveryStatus(
     return false;
   }
   const errorMessage =
-    mapped === 'failed' && pending.error === 'message_too_large_for_propagation'
-      ? 'message_too_large_for_propagation'
+    mapped === 'failed' && pending.error === RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION
+      ? RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION
       : undefined;
   const applied = persistReticulumOutboundMessageStatus(
     identityId,
@@ -160,7 +161,7 @@ export function flushPendingReticulumOutboundDeliveryStatus(
   );
   if (applied) {
     pendingDeliveryByKey.delete(key);
-    if (errorMessage === 'message_too_large_for_propagation') {
+    if (errorMessage === RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION) {
       notifyTooLargeForPropagation();
     }
   }
@@ -338,8 +339,8 @@ export function applyReticulumOutboundDeliveryStatus(
       ? clampDeliveryAttempts(opts.deliveryAttempts)
       : undefined;
   const errorMessage =
-    status === 'failed' && opts?.error === 'message_too_large_for_propagation'
-      ? 'message_too_large_for_propagation'
+    status === 'failed' && opts?.error === RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION
+      ? RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION
       : undefined;
   const applied = persistReticulumOutboundMessageStatus(
     identityId,
@@ -352,7 +353,7 @@ export function applyReticulumOutboundDeliveryStatus(
   );
   if (applied) {
     pendingDeliveryByKey.delete(pendingDeliveryKey(identityId, normalizedHash));
-    if (errorMessage === 'message_too_large_for_propagation') {
+    if (errorMessage === RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION) {
       notifyTooLargeForPropagation();
     }
     return;

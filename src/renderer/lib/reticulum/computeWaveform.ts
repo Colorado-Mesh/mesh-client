@@ -31,15 +31,17 @@ export async function computeWaveformFromOgg(
   dataBase64: string,
   barCount = 40,
 ): Promise<{ bars: number[]; durationSec: number } | null> {
-  const binary = atob(dataBase64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
+  let ctx: AudioContext | null = null;
   try {
-    const ctx = new AudioContext();
-    const buffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
-    await ctx.close();
+    const binary = atob(dataBase64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    ctx = new AudioContext();
+    const oggCopy = new ArrayBuffer(bytes.byteLength);
+    new Uint8Array(oggCopy).set(bytes);
+    const buffer = await ctx.decodeAudioData(oggCopy);
     const channelData = buffer.getChannelData(0);
     return {
       bars: computeWaveform(channelData, barCount),
@@ -48,5 +50,7 @@ export async function computeWaveformFromOgg(
   } catch {
     // catch-no-log-ok: OggS decode may fail if the codec isn't supported — fall back to flat bars
     return null;
+  } finally {
+    if (ctx) void ctx.close();
   }
 }

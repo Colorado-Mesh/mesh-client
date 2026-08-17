@@ -8,6 +8,7 @@ import {
   type ReticulumVia,
 } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import type { MessageRecord, MessageTransport } from '@/renderer/stores/messageStore';
+import { RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION } from '@/shared/reticulum-voice-memo-types';
 import { isPnCascadeDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 export interface ReticulumMessageStatusBadgeProps {
@@ -26,7 +27,7 @@ const DIRECT_ONLY_NOTICE_ICON = '\u2139';
 
 /** Sidecar code when packed size exceeds PN deposit; UI must not look like a PN outage. */
 export function isReticulumTooLargeForPropagationError(error: string | undefined): boolean {
-  return error === 'message_too_large_for_propagation';
+  return error === RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION;
 }
 
 function tooltipKeyForVia(via: ReticulumVia | undefined): string {

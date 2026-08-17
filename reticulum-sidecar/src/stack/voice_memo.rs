@@ -25,6 +25,12 @@ const CHANNELS: u8 = 1;
 const SAMPLES_PER_FRAME: usize = (SAMPLE_RATE_HZ as usize * FRAME_MS as usize) / 1000;
 /// QualityMedium ~8 kbps → ~60 B/packet; allow headroom.
 const MAX_OPUS_PACKET_BYTES: usize = 60;
+/// Drop memo sessions with no push_audio activity for this long.
+const IDLE_TIMEOUT_MS: u64 = 5 * 60 * 1000;
+/// OpusHead + OpusTags + margin for Ogg page headers.
+const OGG_FIXED_OVERHEAD: usize = 128;
+/// Per audio page: Ogg page header (~27 B) + segment table (~1 B) + rounding.
+const OGG_PAGE_OVERHEAD: usize = 32;
 
 pub struct VoiceMemoManager {
     sessions: Mutex<HashMap<String, VoiceMemoSession>>,
@@ -34,6 +40,7 @@ struct VoiceMemoSession {
     encoder: OpusEncoderState,
     opus_packets: Vec<Vec<u8>>,
     started_ms: u64,
+    last_activity_ms: u64,
 }
 
 impl Default for VoiceMemoManager {
@@ -58,6 +65,7 @@ impl VoiceMemoManager {
             .sessions
             .lock()
             .map_err(|_| "voice_memo_lock".to_string())?;
+        prune_idle_sessions(&mut guard, started_ms);
         // Bound concurrent memo sessions (one per typical UI).
         if guard.len() >= 4 {
             return Err("voice_memo_busy".into());
@@ -68,6 +76,7 @@ impl VoiceMemoManager {
                 encoder,
                 opus_packets: Vec::new(),
                 started_ms,
+                last_activity_ms: started_ms,
             },
         );
         Ok(serde_json::json!({
@@ -96,6 +105,8 @@ impl VoiceMemoManager {
             .sessions
             .lock()
             .map_err(|_| "voice_memo_lock".to_string())?;
+        let now = now_ms();
+        prune_idle_sessions(&mut guard, now);
         let session = guard
             .get_mut(session_id)
             .ok_or_else(|| "voice_memo_session_unknown".to_string())?;
@@ -115,8 +126,8 @@ impl VoiceMemoManager {
             ));
         }
         session.opus_packets.push(encoded.payload);
-        // Rough size check: Ogg overhead ~28 B/page + headers.
-        let approx = session.opus_packets.iter().map(Vec::len).sum::<usize>() + 512;
+        session.last_activity_ms = now;
+        let approx = estimate_ogg_bytes(&session.opus_packets);
         if approx > VOICE_MEMO_MAX_OGG_BYTES {
             return Err("voice_memo_too_large".into());
         }
@@ -132,6 +143,7 @@ impl VoiceMemoManager {
             .sessions
             .lock()
             .map_err(|_| "voice_memo_lock".to_string())?;
+        prune_idle_sessions(&mut guard, now_ms());
         let session = guard
             .remove(session_id)
             .ok_or_else(|| "voice_memo_session_unknown".to_string())?;
@@ -162,12 +174,33 @@ impl VoiceMemoManager {
             .sessions
             .lock()
             .map_err(|_| "voice_memo_lock".to_string())?;
+        prune_idle_sessions(&mut guard, now_ms());
         let removed = guard.remove(session_id).is_some();
         Ok(serde_json::json!({
             "ok": true,
             "cancelled": removed,
         }))
     }
+}
+
+#[cfg(test)]
+impl VoiceMemoManager {
+    /// Set every session's last activity for idle-prune tests.
+    fn test_set_all_last_activity_ms(&self, last_activity_ms: u64) {
+        let mut guard = self.sessions.lock().expect("voice_memo_lock");
+        for session in guard.values_mut() {
+            session.last_activity_ms = last_activity_ms;
+        }
+    }
+}
+
+fn prune_idle_sessions(guard: &mut HashMap<String, VoiceMemoSession>, now: u64) {
+    guard.retain(|_, session| now.saturating_sub(session.last_activity_ms) <= IDLE_TIMEOUT_MS);
+}
+
+fn estimate_ogg_bytes(packets: &[Vec<u8>]) -> usize {
+    let packet_bytes: usize = packets.iter().map(Vec::len).sum();
+    packet_bytes + OGG_FIXED_OVERHEAD + packets.len() * OGG_PAGE_OVERHEAD
 }
 
 fn now_ms() -> u64 {
@@ -356,6 +389,26 @@ mod tests {
         mgr.cancel(&session_id).expect("cancel");
         let err = mgr.stop(&session_id).expect_err("stop after cancel");
         assert!(err.contains("unknown"), "{err}");
+    }
+
+    #[test]
+    fn idle_sessions_pruned_before_start() {
+        let mgr = VoiceMemoManager::new();
+        for _ in 0..4 {
+            mgr.start().expect("start");
+        }
+        mgr.start().expect_err("busy when four sessions active");
+
+        let expired = now_ms().saturating_sub(IDLE_TIMEOUT_MS + 1);
+        mgr.test_set_all_last_activity_ms(expired);
+        mgr.start().expect("start after idle prune");
+    }
+
+    #[test]
+    fn estimate_ogg_bytes_accounts_for_page_overhead() {
+        let packets = vec![vec![0u8; 40], vec![1u8; 50]];
+        let approx = estimate_ogg_bytes(&packets);
+        assert_eq!(approx, 90 + OGG_FIXED_OVERHEAD + 2 * OGG_PAGE_OVERHEAD);
     }
 
     #[test]

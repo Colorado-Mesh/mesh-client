@@ -707,7 +707,10 @@
       "tooLargeForPropagation": "Pesan suara lebih besar dari batas simpul propagasi. Pengiriman hanya akan dilakukan saat penerima sedang online. Persingkat untuk menyimpannya untuk pengiriman offline.",
       "directOnlyBadge": "Hanya langsung — terlalu besar untuk penyimpanan offline",
       "recordTooltip": "Memo suara LXMF — merekam klip Opus singkat untuk pesan langsung ini. Didukung oleh mesh-client, Ratspeak, dan Sideband (FIELD_AUDIO). Tidak sama dengan LXST Call.",
-      "sendTooltip": "Kirim memo suara LXMF yang direkam"
+      "sendTooltip": "Kirim memo suara LXMF yang direkam",
+      "startFailed": "Tidak dapat memulai perekaman memo suara. Coba lagi.",
+      "sendAriaWithElapsed": "Kirim memo suara ({{seconds}} detik direkam)",
+      "unavailable": "Memo suara tidak tersedia — lampiran tidak di - cache pada perangkat ini."
     }
   },
   "chatPayload": {
