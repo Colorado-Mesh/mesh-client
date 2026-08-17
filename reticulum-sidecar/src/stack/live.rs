@@ -480,6 +480,9 @@ impl LiveBridge {
             lxmf_dest_hash,
             router.clone(),
         ));
+        outbound_driver.set_propagation_max_message_size(
+            pn_hosting_policy.propagation_limit_kb.saturating_mul(1024),
+        );
         let outbound = Arc::new(Mutex::new(outbound_driver));
 
         let bridge = Self {

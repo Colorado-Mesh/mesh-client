@@ -1,17 +1,20 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { encodeF32LeBase64 } from '@/renderer/lib/reticulumVoiceAudio';
+import {
+  encodeF32LeBase64,
+  packVoiceMemoFrame,
+  VOICE_MEMO_FRAME_SAMPLES,
+  VOICE_MEMO_SAMPLE_RATE_HZ,
+} from '@/renderer/lib/reticulumVoiceAudio';
 import { useReticulumVoiceMemoStore } from '@/renderer/stores/reticulumVoiceMemoStore';
 import { useReticulumVoiceStore } from '@/renderer/stores/reticulumVoiceStore';
 import { isReticulumVoiceSessionBusy } from '@/shared/voice-types';
 
-/** Sample rate for voice memo capture (24 kHz mono, matches QualityMedium Opus). */
-const MEMO_SAMPLE_RATE = 24_000;
-/** Sidecar expects 60 ms frames → 1440 samples at 24 kHz. */
-const MEMO_FRAME_SAMPLES = 1_440;
 /** ScriptProcessor buffer size (power of two). */
 const PROCESSOR_BUFFER_SIZE = 2048;
 /** Maximum recording duration (~4 minutes). */
 const MAX_RECORD_MS = 4 * 60 * 1000;
+/** Pending PCM ring capacity (at capture rate) before we expand. */
+const PENDING_RING_FRAMES = 16;
 
 interface MemoRecordingSession {
   audioCtx: AudioContext;
@@ -22,40 +25,86 @@ interface MemoRecordingSession {
   stream: MediaStream;
   sessionId: string;
   startedAt: number;
+  /** Capture-rate mono ring (before 24 kHz framing). */
   pendingSamples: Float32Array;
   pendingCount: number;
+  /** Serialized IPC queue so Opus packets stay in order. */
+  sendQueue: Promise<void>;
+  sendFailed: boolean;
   elapsedTimer: ReturnType<typeof setInterval>;
   maxTimer: ReturnType<typeof setTimeout>;
 }
 
 let activeSession: MemoRecordingSession | null = null;
 
+function abortRecording(session: MemoRecordingSession, error: string): void {
+  if (session.sendFailed) return;
+  session.sendFailed = true;
+  console.warn('[reticulumVoiceMemo] aborting recording:', error);
+  teardownSession(false);
+  void window.electronAPI.reticulum.voiceMemo
+    .cancel({ session_id: session.sessionId })
+    .catch((e: unknown) => {
+      console.warn('[reticulumVoiceMemo] cancel after abort failed:', errLikeToLogString(e));
+    });
+  useReticulumVoiceMemoStore.getState().setError(error);
+}
+
+function enqueueSendAudio(session: MemoRecordingSession, samplesB64: string): void {
+  if (session.sendFailed) return;
+  const sessionId = session.sessionId;
+  session.sendQueue = session.sendQueue
+    .then(async () => {
+      if (session.sendFailed || activeSession?.sessionId !== sessionId) return;
+      const res = await window.electronAPI.reticulum.voiceMemo.sendAudio({
+        session_id: sessionId,
+        channels: 1,
+        samples_b64: samplesB64,
+      });
+      if (!res.ok) {
+        abortRecording(session, res.error ?? 'send_audio_failed');
+      }
+    })
+    .catch((e: unknown) => {
+      console.warn('[reticulumVoiceMemo] sendAudio failed:', errLikeToLogString(e));
+      abortRecording(session, 'send_audio_failed');
+    });
+}
+
+/**
+ * Resample capture-rate pending PCM into 24 kHz / 1440-sample frames and queue IPC.
+ * When `forcePartial`, pads the last incomplete frame with silence.
+ */
 function flushPendingFrames(session: MemoRecordingSession, forcePartial: boolean): void {
-  while (session.pendingCount >= MEMO_FRAME_SAMPLES) {
-    const frame = new Float32Array(MEMO_FRAME_SAMPLES);
-    frame.set(session.pendingSamples.subarray(0, MEMO_FRAME_SAMPLES));
-    session.pendingSamples.copyWithin(0, MEMO_FRAME_SAMPLES, session.pendingCount);
-    session.pendingCount -= MEMO_FRAME_SAMPLES;
-    const b64 = encodeF32LeBase64(frame);
-    const sessionId = session.sessionId;
-    void window.electronAPI.reticulum.voiceMemo
-      .sendAudio({ session_id: sessionId, channels: 1, samples_b64: b64 })
-      .catch((e: unknown) => {
-        console.warn('[reticulumVoiceMemo] sendAudio failed:', errLikeToLogString(e));
-      });
+  if (session.sendFailed) return;
+  const rate = session.audioCtx.sampleRate || VOICE_MEMO_SAMPLE_RATE_HZ;
+  // Enough capture samples for one 60 ms memo frame at the current rate.
+  const capturePerFrame = Math.max(
+    1,
+    Math.round((rate * VOICE_MEMO_FRAME_SAMPLES) / VOICE_MEMO_SAMPLE_RATE_HZ),
+  );
+
+  while (session.pendingCount >= capturePerFrame) {
+    const chunk = session.pendingSamples.subarray(0, capturePerFrame);
+    const frame = packVoiceMemoFrame(chunk, rate, 1);
+    session.pendingSamples.copyWithin(0, capturePerFrame, session.pendingCount);
+    session.pendingCount -= capturePerFrame;
+    if (!frame) continue;
+    enqueueSendAudio(session, encodeF32LeBase64(frame));
   }
+
   if (forcePartial && session.pendingCount > 0) {
-    const frame = new Float32Array(MEMO_FRAME_SAMPLES);
-    frame.set(session.pendingSamples.subarray(0, session.pendingCount));
+    const chunk = session.pendingSamples.subarray(0, session.pendingCount);
     session.pendingCount = 0;
-    const b64 = encodeF32LeBase64(frame);
-    const sessionId = session.sessionId;
-    void window.electronAPI.reticulum.voiceMemo
-      .sendAudio({ session_id: sessionId, channels: 1, samples_b64: b64 })
-      .catch((e: unknown) => {
-        console.warn('[reticulumVoiceMemo] sendAudio failed:', errLikeToLogString(e));
-      });
+    const frame = packVoiceMemoFrame(chunk, rate, 1);
+    if (frame) {
+      enqueueSendAudio(session, encodeF32LeBase64(frame));
+    }
   }
+}
+
+async function drainSendQueue(session: MemoRecordingSession): Promise<void> {
+  await session.sendQueue;
 }
 
 /** Teardown recorder resources without changing store state. */
@@ -64,7 +113,7 @@ function teardownSession(flush: boolean): MemoRecordingSession | null {
   if (!session) return null;
   clearInterval(session.elapsedTimer);
   clearTimeout(session.maxTimer);
-  if (flush) {
+  if (flush && !session.sendFailed) {
     flushPendingFrames(session, true);
   }
   try {
@@ -117,6 +166,8 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
     }
   } catch (e) {
     console.warn('[reticulumVoiceMemo] mic permission IPC failed:', errLikeToLogString(e));
+    useReticulumVoiceMemoStore.getState().setError('mic_denied');
+    return false;
   }
 
   let stream: MediaStream;
@@ -124,7 +175,7 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
     stream = await navigator.mediaDevices.getUserMedia({
       audio: {
         channelCount: 1,
-        sampleRate: MEMO_SAMPLE_RATE,
+        sampleRate: VOICE_MEMO_SAMPLE_RATE_HZ,
         echoCancellation: true,
         noiseSuppression: true,
       },
@@ -156,11 +207,15 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
     return false;
   }
 
-  const audioCtx = new AudioContext({ sampleRate: MEMO_SAMPLE_RATE });
+  const audioCtx = new AudioContext({ sampleRate: VOICE_MEMO_SAMPLE_RATE_HZ });
   const source = audioCtx.createMediaStreamSource(stream);
   // eslint-disable-next-line @typescript-eslint/no-deprecated -- AudioWorklet deferred; see processor note
   const processor = audioCtx.createScriptProcessor(PROCESSOR_BUFFER_SIZE, 1, 1);
-  const pendingSamples = new Float32Array(MEMO_FRAME_SAMPLES * 4);
+  const ringCap = Math.max(
+    PROCESSOR_BUFFER_SIZE * PENDING_RING_FRAMES,
+    VOICE_MEMO_FRAME_SAMPLES * 8,
+  );
+  const pendingSamples = new Float32Array(ringCap);
 
   const session: MemoRecordingSession = {
     audioCtx,
@@ -171,6 +226,8 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
     startedAt: Date.now(),
     pendingSamples,
     pendingCount: 0,
+    sendQueue: Promise.resolve(),
+    sendFailed: false,
     elapsedTimer: setInterval(() => {
       const elapsed = Math.floor((Date.now() - session.startedAt) / 1000);
       useReticulumVoiceMemoStore.getState().tickElapsed(elapsed);
@@ -182,18 +239,21 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
 
   // eslint-disable-next-line @typescript-eslint/no-deprecated -- paired with createScriptProcessor
   processor.onaudioprocess = (event) => {
-    if (activeSession?.sessionId !== sessionId) return;
+    if (activeSession?.sessionId !== sessionId || session.sendFailed) return;
     // eslint-disable-next-line @typescript-eslint/no-deprecated -- paired with createScriptProcessor
     const channelData = event.inputBuffer.getChannelData(0);
     const need = channelData.length;
     if (session.pendingCount + need > session.pendingSamples.length) {
-      session.pendingCount = 0;
+      // Expand ring instead of dropping audio under brief backpressure.
+      const next = new Float32Array(
+        Math.max(session.pendingSamples.length * 2, session.pendingCount + need),
+      );
+      next.set(session.pendingSamples.subarray(0, session.pendingCount));
+      session.pendingSamples = next;
     }
     session.pendingSamples.set(channelData, session.pendingCount);
     session.pendingCount += need;
-    while (session.pendingCount >= MEMO_FRAME_SAMPLES) {
-      flushPendingFrames(session, false);
-    }
+    flushPendingFrames(session, false);
   };
 
   source.connect(processor);
@@ -203,12 +263,14 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
   return true;
 }
 
-/** Stop capture and return the sidecar session id (caller invokes voiceMemo.stop). */
-export function stopReticulumVoiceMemoRecorder(): Promise<string | null> {
+/** Stop capture, drain in-flight PCM IPC, and return the sidecar session id. */
+export async function stopReticulumVoiceMemoRecorder(): Promise<string | null> {
   const session = teardownSession(true);
-  if (!session) return Promise.resolve(null);
+  if (!session) return null;
   useReticulumVoiceMemoStore.getState().setStopping();
-  return Promise.resolve(session.sessionId);
+  await drainSendQueue(session);
+  if (session.sendFailed) return null;
+  return session.sessionId;
 }
 
 /** Stop recording and store Ogg result on the memo store. */

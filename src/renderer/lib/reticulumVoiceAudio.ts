@@ -53,20 +53,23 @@ export function decodeF32LeBase64(samplesB64: string): Float32Array {
 }
 
 /**
- * Linear-resample mono (or mix-down) PCM to QualityHigh frame size.
+ * Linear-resample mono (or mix-down) PCM to a fixed frame size / sample rate.
  * Returns null when input is empty.
  */
-export function packQualityHighFrame(
+export function resampleMonoToFixedFrame(
   input: Float32Array,
   inputSampleRateHz: number,
+  outSamples: number,
+  outSampleRateHz: number,
   inputChannels = 1,
 ): Float32Array | null {
-  if (input.length === 0 || inputSampleRateHz <= 0) return null;
+  if (input.length === 0 || inputSampleRateHz <= 0 || outSamples <= 0 || outSampleRateHz <= 0) {
+    return null;
+  }
   const channels = Math.max(1, Math.floor(inputChannels));
   const inputFrames = Math.floor(input.length / channels);
   if (inputFrames <= 0) return null;
 
-  // Mix to mono
   const mono = new Float32Array(inputFrames);
   for (let i = 0; i < inputFrames; i += 1) {
     let sum = 0;
@@ -76,9 +79,9 @@ export function packQualityHighFrame(
     mono[i] = sum / channels;
   }
 
-  const out = new Float32Array(LXST_QUALITY_HIGH_FRAME_SAMPLES);
-  const ratio = inputSampleRateHz / LXST_QUALITY_HIGH_SAMPLE_RATE_HZ;
-  for (let i = 0; i < LXST_QUALITY_HIGH_FRAME_SAMPLES; i += 1) {
+  const out = new Float32Array(outSamples);
+  const ratio = inputSampleRateHz / outSampleRateHz;
+  for (let i = 0; i < outSamples; i += 1) {
     const srcPos = i * ratio;
     const i0 = Math.floor(srcPos);
     const i1 = Math.min(i0 + 1, mono.length - 1);
@@ -88,6 +91,42 @@ export function packQualityHighFrame(
     out[i] = s0 + (s1 - s0) * t;
   }
   return out;
+}
+
+/**
+ * Linear-resample mono (or mix-down) PCM to QualityHigh frame size.
+ * Returns null when input is empty.
+ */
+export function packQualityHighFrame(
+  input: Float32Array,
+  inputSampleRateHz: number,
+  inputChannels = 1,
+): Float32Array | null {
+  return resampleMonoToFixedFrame(
+    input,
+    inputSampleRateHz,
+    LXST_QUALITY_HIGH_FRAME_SAMPLES,
+    LXST_QUALITY_HIGH_SAMPLE_RATE_HZ,
+    inputChannels,
+  );
+}
+
+/** Voice-memo capture: 24 kHz / 60 ms → 1440 samples (QualityMedium Opus). */
+export const VOICE_MEMO_SAMPLE_RATE_HZ = 24_000;
+export const VOICE_MEMO_FRAME_SAMPLES = 1_440;
+
+export function packVoiceMemoFrame(
+  input: Float32Array,
+  inputSampleRateHz: number,
+  inputChannels = 1,
+): Float32Array | null {
+  return resampleMonoToFixedFrame(
+    input,
+    inputSampleRateHz,
+    VOICE_MEMO_FRAME_SAMPLES,
+    VOICE_MEMO_SAMPLE_RATE_HZ,
+    inputChannels,
+  );
 }
 
 export type VoiceDialResolution =

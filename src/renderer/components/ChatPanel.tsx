@@ -61,6 +61,7 @@ import {
   openReticulumDmFromHash,
   parseReticulumDestinationInput,
 } from '@/renderer/lib/reticulum/reticulumDestinationInput';
+import { cancelReticulumVoiceMemo } from '@/renderer/lib/reticulum/reticulumVoiceMemo';
 import {
   RETICULUM_DM_HEADER_ACTION_CLASS,
   RETICULUM_DM_HEADER_STATUS_CLASS,
@@ -783,6 +784,13 @@ function ChatPanel({
   useEffect(() => {
     saveActiveDm(protocol, activeDmNode);
   }, [activeDmNode, protocol]);
+
+  // Drop in-progress memo capture when switching DMs so the mic does not stay open.
+  useEffect(() => {
+    return () => {
+      void cancelReticulumVoiceMemo();
+    };
+  }, [activeDmNode]);
 
   useEffect(() => {
     try {

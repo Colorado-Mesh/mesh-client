@@ -1,10 +1,20 @@
 /**
  * Pipeline stitch test: inbound LXMF audio field → ingest → MessageRecord fields.
  */
+// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@/renderer/components/Toast', () => ({
+  pushAppToast: vi.fn(),
+}));
+
+vi.mock('@/renderer/lib/i18n', () => ({
+  default: { t: (key: string) => key },
+}));
 
 import type { ReticulumLxmfPayload } from '@/renderer/lib/ingest/reticulumIngest';
 import { ingestReticulumLxmfPayload } from '@/renderer/lib/ingest/reticulumIngest';
+import { applyReticulumOutboundDeliveryStatus } from '@/renderer/lib/reticulum/applyReticulumOutboundDeliveryStatus';
 import { mergeReticulumIngestRecord } from '@/renderer/lib/reticulum/reticulumIngestMerge';
 import { addMessage, type MessageRecord, useMessageStore } from '@/renderer/stores/messageStore';
 import { useReticulumVoiceMemoStore } from '@/renderer/stores/reticulumVoiceMemoStore';
@@ -126,9 +136,10 @@ describe('reticulumVoiceMemoPipeline — optimistic send record', () => {
 });
 
 describe('reticulumVoiceMemoPipeline — oversize / error mapping', () => {
-  it('message_too_large_for_propagation warn path leaves pending status as sending', () => {
-    const record: MessageRecord = {
-      id: 'pending-voice-002',
+  it('applyReticulumOutboundDeliveryStatus stamps message_too_large_for_propagation on failed rows', () => {
+    const hash = 'ab'.repeat(32);
+    addMessage(IDENTITY_ID, {
+      id: hash,
       from: 9999,
       to: 1234,
       payload: '[voice:5000]',
@@ -137,14 +148,13 @@ describe('reticulumVoiceMemoPipeline — oversize / error mapping', () => {
       status: 'sending',
       reticulumAttachmentKind: 'audio',
       reticulumAudioMode: LXMF_AUDIO_MODE_OPUS_OGG,
-    };
-    addMessage(IDENTITY_ID, record);
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    console.warn('[sendReticulumVoiceMemo] too large for propagation, not a hard failure');
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[sendReticulumVoiceMemo] too large for propagation, not a hard failure',
-    );
-    expect(getMessages(IDENTITY_ID)['pending-voice-002'].status).toBe('sending');
+    });
+    applyReticulumOutboundDeliveryStatus(IDENTITY_ID, hash, 'failed', {
+      error: 'message_too_large_for_propagation',
+    });
+    const row = getMessages(IDENTITY_ID)[hash];
+    expect(row.status).toBe('failed');
+    expect(row.error).toBe('message_too_large_for_propagation');
   });
 });
 

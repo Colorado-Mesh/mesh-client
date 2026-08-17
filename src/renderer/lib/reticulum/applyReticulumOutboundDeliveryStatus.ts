@@ -1,3 +1,5 @@
+import { pushAppToast } from '@/renderer/components/Toast';
+import i18n from '@/renderer/lib/i18n';
 import {
   persistReticulumOutboundRecord,
   resolveReticulumOutboundSenderHash,
@@ -28,6 +30,10 @@ import {
 
 /** Cap for sidecar `delivery_attempts` before store/SQLite patch. */
 export const MAX_RETICULUM_DELIVERY_ATTEMPTS = 64;
+
+function notifyTooLargeForPropagation(): void {
+  pushAppToast(i18n.t('chatPanel.voiceMemo.tooLargeForPropagation'), 'info');
+}
 
 /** Map sidecar `lxmf_outbound_status` wire status to UI store status. Unknown → null. */
 export function mapLxmfOutboundWireStatus(wireStatus: string): MessageStatus | null {
@@ -81,6 +87,7 @@ const pendingDeliveryByKey = new Map<
     sentVia?: string;
     deliveryMethod?: string;
     deliveryAttempts?: number;
+    error?: string;
     receivedAt: number;
   }
 >();
@@ -109,6 +116,7 @@ function bufferPendingDeliveryStatus(
   sentVia?: string,
   deliveryMethod?: string,
   deliveryAttempts?: number,
+  error?: string,
 ): void {
   prunePendingDeliveryStatuses();
   pendingDeliveryByKey.set(pendingDeliveryKey(identityId, messageHash), {
@@ -116,6 +124,7 @@ function bufferPendingDeliveryStatus(
     sentVia,
     deliveryMethod,
     deliveryAttempts,
+    error,
     receivedAt: Date.now(),
   });
 }
@@ -136,16 +145,25 @@ export function flushPendingReticulumOutboundDeliveryStatus(
     pendingDeliveryByKey.delete(key);
     return false;
   }
+  const errorMessage =
+    mapped === 'failed' && pending.error === 'message_too_large_for_propagation'
+      ? 'message_too_large_for_propagation'
+      : undefined;
   const applied = persistReticulumOutboundMessageStatus(
     identityId,
     messageHash,
     mapped,
-    undefined,
+    errorMessage,
     parseWireSentVia(pending.sentVia),
     parseReticulumDeliveryMethod(pending.deliveryMethod),
     pending.deliveryAttempts,
   );
-  if (applied) pendingDeliveryByKey.delete(key);
+  if (applied) {
+    pendingDeliveryByKey.delete(key);
+    if (errorMessage === 'message_too_large_for_propagation') {
+      notifyTooLargeForPropagation();
+    }
+  }
   return applied;
 }
 
@@ -334,6 +352,9 @@ export function applyReticulumOutboundDeliveryStatus(
   );
   if (applied) {
     pendingDeliveryByKey.delete(pendingDeliveryKey(identityId, normalizedHash));
+    if (errorMessage === 'message_too_large_for_propagation') {
+      notifyTooLargeForPropagation();
+    }
     return;
   }
   // Terminal status, or egress/method upgrade before rekey for later flush.
@@ -350,6 +371,7 @@ export function applyReticulumOutboundDeliveryStatus(
       opts?.sentVia ?? undefined,
       opts?.deliveryMethod ?? undefined,
       deliveryAttempts,
+      opts?.error ?? undefined,
     );
   }
 }

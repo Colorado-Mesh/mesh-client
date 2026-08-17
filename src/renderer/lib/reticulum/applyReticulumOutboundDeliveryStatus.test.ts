@@ -1,5 +1,13 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@/renderer/components/Toast', () => ({
+  pushAppToast: vi.fn(),
+}));
+
+vi.mock('@/renderer/lib/i18n', () => ({
+  default: { t: (key: string) => key },
+}));
 
 import {
   applyReticulumOutboundDeliveryStatus,
@@ -492,5 +500,40 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
     applyReticulumOutboundDeliveryStatus(identityId, 'not-a-hash!!!', 'delivered');
     applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'queued');
     expect(useMessageStore.getState().messages[identityId][messageHash].status).toBe('sending');
+  });
+
+  it('buffers message_too_large_for_propagation until flush after rename', () => {
+    const pendingId = 'reticulum-pending-voice-1';
+    const toNodeId = reticulumHashToNodeId(DEST);
+    const selfNodeId = reticulumHashToNodeId(SELF);
+    registerReticulumDestinationHash(toNodeId, DEST);
+    registerReticulumDestinationHash(selfNodeId, SELF);
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          [pendingId]: {
+            id: pendingId,
+            from: selfNodeId,
+            to: toNodeId,
+            payload: '[voice:900]',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'sending',
+            reticulumSenderHash: SELF,
+          },
+        },
+      },
+    });
+
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'failed', {
+      error: 'message_too_large_for_propagation',
+    });
+    expect(useMessageStore.getState().messages[identityId][pendingId].status).toBe('sending');
+
+    renameMessageId(identityId, pendingId, messageHash);
+    flushPendingReticulumOutboundDeliveryStatus(identityId, messageHash);
+    const row = useMessageStore.getState().messages[identityId][messageHash];
+    expect(row.status).toBe('failed');
+    expect(row.error).toBe('message_too_large_for_propagation');
   });
 });

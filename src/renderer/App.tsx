@@ -3208,7 +3208,14 @@ function AppContent() {
                               capabilities.hasReticulumVoiceMemo && reticulumIdentityId
                                 ? (destination: number) => {
                                     const phase = useReticulumVoiceMemoStore.getState().phase;
-                                    if (phase === 'recording' || phase === 'stopping') {
+                                    if (
+                                      phase === 'sending' ||
+                                      phase === 'starting' ||
+                                      phase === 'stopping'
+                                    ) {
+                                      return;
+                                    }
+                                    if (phase === 'recording') {
                                       sendReticulumVoiceMemo({
                                         identityId: reticulumIdentityId,
                                         destination,

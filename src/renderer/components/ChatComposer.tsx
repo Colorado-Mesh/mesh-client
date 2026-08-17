@@ -240,6 +240,9 @@ export function ChatComposer({
   const counterLiveId = useId();
   const floodScopeListboxId = useId();
   const floodScopeCustomInputId = useId();
+  const memoPhase = useReticulumVoiceMemoStore((s) => s.phase);
+  const memoRecordingActive =
+    memoPhase === 'recording' || memoPhase === 'starting' || memoPhase === 'stopping';
 
   const [input, setInput] = useState('');
   const [floodScopeOverride, setFloodScopeOverride] = useState('');
@@ -1524,7 +1527,7 @@ export function ChatComposer({
           </div>
         ) : (
           <div className="flex items-center gap-1">
-            {onVoiceMemo != null && !input.trim() && !sending && (
+            {onVoiceMemo != null && !sending && (memoRecordingActive || !input.trim()) && (
               <VoiceMemoComposerButton onVoiceMemo={onVoiceMemo} disabled={disabled} />
             )}
             <button

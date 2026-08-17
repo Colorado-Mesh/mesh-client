@@ -1,6 +1,34 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { LXMF_AUDIO_MODE_OPUS_OGG } from '@/shared/reticulum-voice-memo-types';
 
+export interface CacheReticulumVoiceMemoOggOpts {
+  /** Filename prefix before timestamp (e.g. `voice-memo` or `voice-memo-out`). */
+  fileNamePrefix?: string;
+}
+
+/** Persist Ogg/Opus voice-memo bytes under userData (no save dialog). */
+export async function cacheReticulumVoiceMemoOgg(
+  dataBase64: string,
+  opts: CacheReticulumVoiceMemoOggOpts = {},
+): Promise<string | null> {
+  if (!dataBase64) return null;
+  const prefix = opts.fileNamePrefix ?? 'voice-memo';
+  try {
+    const ts = Date.now();
+    const fileName = `${prefix}-${ts}.ogg`;
+    const res = await window.electronAPI.chat.saveReticulumAttachment({
+      fileName,
+      mimeType: 'audio/ogg',
+      dataBase64,
+      promptSave: false,
+    });
+    return res.success && res.path ? res.path : null;
+  } catch (e) {
+    console.warn('[reticulumAudioAttachmentCache] cache failed ' + errLikeToLogString(e));
+    return null;
+  }
+}
+
 /** Persist an inbound LXMF FIELD_AUDIO block under userData (no save dialog). */
 export async function cacheReticulumInboundAudio(audio: {
   mode: number;
@@ -13,19 +41,5 @@ export async function cacheReticulumInboundAudio(audio: {
     );
     return null;
   }
-  if (!audio.data_base64) return null;
-  try {
-    const ts = Date.now();
-    const fileName = `voice-memo-${ts}.ogg`;
-    const res = await window.electronAPI.chat.saveReticulumAttachment({
-      fileName,
-      mimeType: 'audio/ogg',
-      dataBase64: audio.data_base64,
-      promptSave: false,
-    });
-    return res.success && res.path ? res.path : null;
-  } catch (e) {
-    console.warn('[reticulumAudioAttachmentCache] cache failed ' + errLikeToLogString(e));
-    return null;
-  }
+  return cacheReticulumVoiceMemoOgg(audio.data_base64, { fileNamePrefix: 'voice-memo' });
 }

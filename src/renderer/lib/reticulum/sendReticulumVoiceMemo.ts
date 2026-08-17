@@ -11,6 +11,7 @@ import {
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
+import { cacheReticulumVoiceMemoOgg } from '@/renderer/lib/reticulum/reticulumAudioAttachmentCache';
 import { shouldDeletePriorReticulumOutboundHash } from '@/renderer/lib/reticulum/reticulumOutboundRetry';
 import { stopReticulumVoiceMemoRecorder } from '@/renderer/lib/reticulum/reticulumVoiceMemo';
 import {
@@ -35,21 +36,6 @@ import {
 function resolveDestHash(destination: number | undefined): string | null {
   if (destination == null) return null;
   return reticulumHashForNodeId(destination) ?? resolveReticulumDestinationHash(destination);
-}
-
-async function cacheOutboundVoiceMemo(oggBase64: string): Promise<string | null> {
-  try {
-    const res = await window.electronAPI.chat.saveReticulumAttachment({
-      fileName: `voice-memo-out-${Date.now()}.ogg`,
-      mimeType: 'audio/ogg',
-      dataBase64: oggBase64,
-      promptSave: false,
-    });
-    return res.success && res.path ? res.path : null;
-  } catch (e) {
-    console.warn('[sendReticulumVoiceMemo] cache failed ' + errLikeToLogString(e));
-    return null;
-  }
 }
 
 export interface SendReticulumVoiceMemoOpts {
@@ -98,6 +84,7 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
   void (async () => {
     let oggBase64: string;
     let durationMs: number;
+    let statusId = `reticulum-pending-voice-${Date.now()}`;
 
     if (existingOgg && existingDurationMs != null) {
       oggBase64 = existingOgg;
@@ -136,13 +123,21 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
       return;
     }
 
-    const attachmentPath = await cacheOutboundVoiceMemo(oggBase64);
+    const attachmentPath = await cacheReticulumVoiceMemoOgg(oggBase64, {
+      fileNamePrefix: 'voice-memo-out',
+    });
+    if (!attachmentPath) {
+      console.warn('[sendReticulumVoiceMemo] local Ogg cache failed — aborting send');
+      useReticulumVoiceMemoStore.getState().setError('cache_failed');
+      return;
+    }
+
     const text = `[voice:${durationMs}]`;
     const receivedVia = resolveReticulumOutboundVia(destHash);
     const senderName = session.getFullNodeLabel(selfNodeId);
     const senderHash = resolveReticulumOutboundSenderHash(selfNodeId);
     const toNodeId = (destination ?? reticulumHashToNodeId(destHash)) >>> 0;
-    const pendingId = `reticulum-pending-voice-${Date.now()}`;
+    const pendingId = statusId;
     const record: MessageRecord = {
       id: pendingId,
       from: selfNodeId >>> 0,
@@ -156,7 +151,7 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
       reticulumAudioMode: LXMF_AUDIO_MODE_OPUS_OGG,
       reticulumAttachmentKind: 'audio',
       reticulumAudioDurationSec: durationMs / 1000,
-      ...(attachmentPath ? { reticulumAttachmentPath: attachmentPath } : {}),
+      reticulumAttachmentPath: attachmentPath,
     };
 
     addMessage(identityId, record);
@@ -193,6 +188,9 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
             'failed',
             i18n.t('chatPanel.reticulumNoPropagationNode'),
           );
+        } else if (err === 'message_too_large_for_propagation') {
+          onTooLargeForPropagation?.();
+          updateMessageStatus(identityId, pendingId, 'failed', err);
         } else {
           updateMessageStatus(identityId, pendingId, 'failed', err);
         }
@@ -202,43 +200,48 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
 
       const lxmfPayload = res.message;
       const hash = lxmfPayload?.message_hash;
-      if (lxmfPayload && hash) {
-        renameMessageId(identityId, pendingId, hash);
-        const replacesMessageHash = shouldDeletePriorReticulumOutboundHash(pendingId, hash)
-          ? pendingId
-          : undefined;
-        ingestReticulumLxmfPayloadWithSideEffects(identityId, lxmfPayload, {
-          selfLxmfHash: senderHash ?? undefined,
+      if (!lxmfPayload || !hash) {
+        updateMessageStatus(identityId, pendingId, 'failed', 'missing_message_hash');
+        useReticulumVoiceMemoStore.getState().reset();
+        return;
+      }
+
+      renameMessageId(identityId, pendingId, hash);
+      statusId = hash;
+      const replacesMessageHash = shouldDeletePriorReticulumOutboundHash(pendingId, hash)
+        ? pendingId
+        : undefined;
+      ingestReticulumLxmfPayloadWithSideEffects(identityId, lxmfPayload, {
+        selfLxmfHash: senderHash ?? undefined,
+        replacesMessageHash,
+        attachmentPath,
+        attachmentKind: 'audio',
+        audioMode: LXMF_AUDIO_MODE_OPUS_OGG,
+      });
+      // Re-persist final hash with attachment path: an early WS Completes insert can
+      // land first without a path; SQLite UPDATE now coalesces, but only if we pass it.
+      if (senderHash) {
+        const finalRow = useMessageStore.getState().messages[identityId][hash];
+        persistReticulumOutboundRecord(
+          identityId,
+          {
+            ...finalRow,
+            reticulumAttachmentPath: attachmentPath,
+            reticulumAttachmentKind: 'audio',
+            reticulumAudioMode: LXMF_AUDIO_MODE_OPUS_OGG,
+            reticulumAudioDurationSec: durationMs / 1000,
+          },
+          senderHash,
+          senderName,
+          destHash,
+          finalRow.status === 'acked' ? 'acked' : 'sending',
           replacesMessageHash,
-          attachmentPath: attachmentPath ?? undefined,
-          attachmentKind: 'audio',
-          audioMode: LXMF_AUDIO_MODE_OPUS_OGG,
-        });
-        // Re-persist final hash with attachment path: an early WS Completes insert can
-        // land first without a path; SQLite UPDATE now coalesces, but only if we pass it.
-        if (attachmentPath && senderHash) {
-          const finalRow = useMessageStore.getState().messages[identityId][hash];
-          persistReticulumOutboundRecord(
-            identityId,
-            {
-              ...finalRow,
-              reticulumAttachmentPath: attachmentPath,
-              reticulumAttachmentKind: 'audio',
-              reticulumAudioMode: LXMF_AUDIO_MODE_OPUS_OGG,
-              reticulumAudioDurationSec: durationMs / 1000,
-            },
-            senderHash,
-            senderName,
-            destHash,
-            finalRow.status === 'acked' ? 'acked' : 'sending',
-            replacesMessageHash,
-          );
-        }
-        flushPendingReticulumOutboundDeliveryStatus(identityId, hash);
-        const afterFlush = useMessageStore.getState().messages[identityId][hash].status;
-        if (afterFlush !== 'acked' && afterFlush !== 'failed') {
-          updateMessageStatus(identityId, hash, 'sending');
-        }
+        );
+      }
+      flushPendingReticulumOutboundDeliveryStatus(identityId, hash);
+      const afterFlush = useMessageStore.getState().messages[identityId][hash].status;
+      if (afterFlush !== 'acked' && afterFlush !== 'failed') {
+        updateMessageStatus(identityId, hash, 'sending');
       }
     } catch (e) {
       const errMsg = errLikeToLogString(e);
@@ -249,7 +252,7 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
       if (errMsg.includes('message_too_large_for_propagation')) {
         onTooLargeForPropagation?.();
       }
-      updateMessageStatus(identityId, pendingId, 'failed', errMsg);
+      updateMessageStatus(identityId, statusId, 'failed', errMsg);
     }
 
     useReticulumVoiceMemoStore.getState().reset();
