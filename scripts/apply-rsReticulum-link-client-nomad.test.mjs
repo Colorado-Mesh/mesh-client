@@ -55,7 +55,7 @@ const INCOMPATIBLE = `impl LinkClient {
 }
 `;
 
-/** Floated origin/main: handler-free destination_resolver supersedes the overlay. */
+/** Floated origin/main: handler-free destination_resolver (no discover/await_path). */
 const UPSTREAM_RESOLVER = `impl LinkClient {
     pub async fn query() {
         let pubkey = resolve_destination_on_transport(
@@ -66,6 +66,22 @@ const UPSTREAM_RESOLVER = `impl LinkClient {
         .await?
         .public_key;
     }
+}
+`;
+
+/** Resolver plus leftover discover/await_path — not the handler-free contract. */
+const RESOLVER_PLUS_LEGACY_HANDLER = `impl LinkClient {
+    pub async fn query() {
+        let pubkey = resolve_destination_on_transport(
+            &self.transport_tx,
+            dest_hash,
+            DestinationResolveOptions::new(time_remaining(deadline)?),
+        )
+        .await?
+        .public_key;
+        await_path(&self.transport_tx, dest_hash, PATH_LOOKUP_TIMEOUT).await?;
+    }
+    async fn discover_remote_public_key() {}
 }
 `;
 
@@ -191,7 +207,14 @@ describe('apply-rsReticulum-link-client-nomad.sh', () => {
 
   it('uses LinkClient recall/GC semantics, not the retired RecallDestinationPublicKey RPC', () => {
     const applyScript = readFileSync(APPLY_SCRIPT, 'utf8');
-    expect(applyScript).toContain('resolve_destination_on_transport');
+    const alreadyStart = applyScript.indexOf('overlay_already_present()');
+    const alreadyFn = applyScript.slice(
+      alreadyStart,
+      applyScript.indexOf('if git -C', alreadyStart),
+    );
+    expect(alreadyFn).toContain('resolve_destination_on_transport');
+    expect(alreadyFn).toContain("! grep -qE 'fn discover_remote_public_key");
+    expect(alreadyFn).toContain("! grep -qE 'await_path\\(");
     expect(applyScript).toContain('discover_remote_public_key');
     expect(applyScript).toContain('gc_closed_announce_handlers');
     expect(applyScript).toContain('PATH_LOOKUP_TIMEOUT');
@@ -257,12 +280,25 @@ describe('apply-rsReticulum-link-client-nomad.sh', () => {
   });
 
   it('is a no-op when upstream destination_resolver is present', () => {
+    expect(UPSTREAM_RESOLVER).toContain('resolve_destination_on_transport');
+    expect(UPSTREAM_RESOLVER).not.toContain('discover_remote_public_key');
+    expect(UPSTREAM_RESOLVER).not.toContain('await_path');
     const rns = makeFakeRsReticulum(UPSTREAM_RESOLVER);
     const reverse = git(rns, ['apply', '--reverse', '--check', PATCH_FILE]);
     expect(reverse.status).not.toBe(0);
     const result = runApply(rns);
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toMatch(/already present/);
+  });
+
+  it('does not treat resolver plus legacy handler as already present', () => {
+    const rns = makeFakeRsReticulum(RESOLVER_PLUS_LEGACY_HANDLER);
+    const reverse = git(rns, ['apply', '--reverse', '--check', PATCH_FILE]);
+    expect(reverse.status).not.toBe(0);
+    const result = runApply(rns);
+    expect(result.status).not.toBe(0);
+    expect(result.stdout).not.toMatch(/already present/);
+    expect(result.stderr).toMatch(/did not apply|regenerate overlay/);
   });
 
   it('fails with git diagnostic on incompatible checkouts', () => {

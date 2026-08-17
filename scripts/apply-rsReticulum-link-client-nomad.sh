@@ -28,7 +28,10 @@ fi
 #   with aspect_filter: None.
 overlay_already_present() {
   [[ -f "${LINK_CLIENT_RS}" ]] || return 1
-  if grep -qE 'resolve_destination_on_transport\(' "${LINK_CLIENT_RS}"; then
+  # Handler-free resolver: destination_resolver without discover/await_path.
+  if grep -qE 'resolve_destination_on_transport\(' "${LINK_CLIENT_RS}" \
+    && ! grep -qE 'fn discover_remote_public_key\(' "${LINK_CLIENT_RS}" \
+    && ! grep -qE 'await_path\(' "${LINK_CLIENT_RS}"; then
     return 0
   fi
   grep -qE 'fn discover_remote_public_key\(' "${LINK_CLIENT_RS}" \

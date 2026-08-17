@@ -119,10 +119,24 @@ describe('apply-rsReticulum-announce-rebroadcast-exclude-rf.sh', () => {
     expect(applied).toContain('Flow-controlled RF sinks');
   });
 
-  it('is a no-op when iface_is_rf_sink is already present', () => {
+  it('does not skip when iface_is_rf_sink exists without announce RF-sink exclusion', () => {
     const rns = makeFakeRsReticulum(
       'fn iface_is_rf_sink(entry: &InterfaceEntry) -> bool { false }\n',
     );
+    const result = runApply(rns);
+    expect(result.status).not.toBe(0);
+    expect(result.stdout).not.toMatch(/already applied/);
+    expect(result.stderr).toMatch(/did not apply|regenerate overlay/);
+  });
+
+  it('is a no-op when helper and announce RF-sink exclusion are both present', () => {
+    const rns = makeFakeRsReticulum(`fn iface_is_rf_sink(entry: &InterfaceEntry) -> bool { false }
+fn broadcast_announce_on_interfaces() {
+    if except == Some(id) || iface_is_rf_sink(entry) {
+        continue;
+    }
+}
+`);
     const result = runApply(rns);
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toMatch(/already applied/);

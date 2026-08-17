@@ -181,6 +181,16 @@ describe('flatpakPnpmStoreVersion', () => {
         /patch-flatpak-node-generator-playwright/.test(v.message),
       ),
     ).toBe(true);
+
+    const afterGenerator = `
+      flatpak-node-generator pnpm pnpm-lock.yaml --pnpm-store-version v11 -o out.json
+      node scripts/patch-flatpak-node-generator-playwright.mjs
+    `;
+    expect(
+      flatpakWorkflowStoreVersionViolations(afterGenerator, 'v11').some((v) =>
+        /patch-flatpak-node-generator-playwright/.test(v.message),
+      ),
+    ).toBe(true);
   });
 
   it('accepts store version derived from packageManager via shell var', () => {

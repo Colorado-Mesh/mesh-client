@@ -8,6 +8,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { extractBalancedBlock } from '../sourceContractTestHelpers';
+
 const REPO_ROOT = join(__dirname, '../../../..');
 const OUTBOUND = join(REPO_ROOT, '.rsstack/rsReticulum/crates/rns-transport/src/actor/outbound.rs');
 
@@ -18,9 +20,9 @@ describe('reticulum unattached Link fail-closed contracts', () => {
       const source = readFileSync(OUTBOUND, 'utf8');
       const armStart = source.indexOf('rns_wire::flags::DestinationType::Link =>');
       expect(armStart).toBeGreaterThanOrEqual(0);
-      const after = source.slice(armStart);
-      const armEnd = after.indexOf('\n        }');
-      const arm = after.slice(0, armEnd > 0 ? armEnd : 1200);
+      const armBrace = source.indexOf('{', armStart);
+      expect(armBrace).toBeGreaterThan(armStart);
+      const arm = extractBalancedBlock(source, armBrace);
       expect(arm).toContain('dropping unattached locally-originated Link packet');
       expect(arm).not.toContain('broadcast_on_interfaces');
     },

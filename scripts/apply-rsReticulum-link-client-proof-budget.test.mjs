@@ -40,7 +40,7 @@ const UPSTREAM_EQUIVALENT = `impl LinkClient {
 }
 `;
 
-/** Floated origin/main: remaining deadline via wait_for_valid_proof. */
+/** Floated origin/main: wait_for_valid_proof wrapped in remaining-deadline timeout. */
 const UPSTREAM_VALID_PROOF = `impl LinkClient {
     async fn query(&self) -> Result<(), LinkClientError> {
         timeout(
@@ -53,6 +53,22 @@ const UPSTREAM_VALID_PROOF = `impl LinkClient {
             ),
         )
         .await?;
+        Ok(())
+    }
+}
+`;
+
+/** Both tokens present, but wait_for_valid_proof is not the timeout remaining-deadline. */
+const SEPARATE_PROOF_TOKENS = `impl LinkClient {
+    async fn query(&self) -> Result<(), LinkClientError> {
+        wait_for_valid_proof(
+            &mut dest_rx,
+            &mut link,
+            &identity_verify_key,
+            &identity_ed25519_pub,
+        )
+        .await?;
+        let leftover = time_remaining(deadline)?;
         Ok(())
     }
 }
@@ -188,10 +204,20 @@ describe('apply-rsReticulum-link-client-proof-budget.sh', () => {
   });
 
   it('is a no-op when upstream wait_for_valid_proof uses remaining deadline', () => {
+    expect(UPSTREAM_VALID_PROOF).toMatch(
+      /timeout\(\s*time_remaining\(deadline\)\?,\s*crate::link_endpoint::wait_for_valid_proof/,
+    );
     const rns = makeFakeRsReticulum(UPSTREAM_VALID_PROOF);
     const result = runApply(rns);
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toMatch(/already upstream|already present/);
+  });
+
+  it('does not treat separate wait_for_valid_proof and time_remaining tokens as upstream', () => {
+    const rns = makeFakeRsReticulum(SEPARATE_PROOF_TOKENS);
+    const result = runApply(rns);
+    expect(result.status).not.toBe(0);
+    expect(result.stdout).not.toMatch(/already upstream|already present/);
   });
 
   it('rejects a proof_budget that wait_for_proof does not use', () => {

@@ -26,9 +26,10 @@ short_head() {
 
 has_remaining_proof_budget() {
   [[ -f "${LINK_CLIENT_RS}" ]] || return 1
-  # Floated origin/main: remaining deadline via timeout(time_remaining, wait_for_valid_proof).
-  if grep -qE 'wait_for_valid_proof' "${LINK_CLIENT_RS}" \
-    && grep -qE 'time_remaining\(deadline\)' "${LINK_CLIENT_RS}" \
+  # Floated origin/main: wait_for_valid_proof must use remaining-deadline timeout.
+  local flattened
+  flattened="$(tr '\n' ' ' < "${LINK_CLIENT_RS}")"
+  if printf '%s\n' "${flattened}" | grep -qE 'timeout\([[:space:]]*time_remaining\(deadline\)\?[[:space:]]*,[[:space:]]*(crate::link_endpoint::)?wait_for_valid_proof' \
     && ! grep -qE 'establishment_timeout' "${LINK_CLIENT_RS}"; then
     return 0
   fi

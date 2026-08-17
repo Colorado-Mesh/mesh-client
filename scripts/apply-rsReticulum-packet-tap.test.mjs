@@ -27,12 +27,105 @@ function git(cwd, args) {
   });
 }
 
-function makeFakeRsReticulum(reticulumSource) {
+function parseUnifiedHunkHeader(line) {
+  if (!line.startsWith('@@ -')) {
+    return null;
+  }
+  const close = line.indexOf(' @@', 4);
+  if (close < 0) {
+    return null;
+  }
+  const [oldSpec, newSpec] = line.slice(4, close).split(' +');
+  if (!oldSpec || !newSpec) {
+    return null;
+  }
+  const oldStart = Number(oldSpec.split(',')[0]);
+  const newStart = Number(newSpec.split(',')[0]);
+  if (!Number.isInteger(oldStart) || !Number.isInteger(newStart)) {
+    return null;
+  }
+  return { oldStart, newStart };
+}
+
+function materializePatchFiles(patchText, side) {
+  /** @type {Map<string, string[]>} */
+  const files = new Map();
+  const patchLines = patchText.replace(/\n$/, '').split('\n');
+  let i = 0;
+  /** @type {string | null} */
+  let currentPath = null;
+
+  while (i < patchLines.length) {
+    const line = patchLines[i];
+    if (line.startsWith('diff --git ')) {
+      const match = line.match(/^diff --git a\/(.+) b\/(.+)$/);
+      currentPath = match ? match[2] : null;
+      if (currentPath && !files.has(currentPath)) {
+        files.set(currentPath, []);
+      }
+      i += 1;
+      continue;
+    }
+    const hunk = parseUnifiedHunkHeader(line);
+    if (hunk && currentPath) {
+      const lines = files.get(currentPath) ?? [];
+      const start = side === 'old' ? hunk.oldStart : hunk.newStart;
+      while (lines.length < start - 1) {
+        lines.push(`// overlay-fixture-pad ${lines.length + 1}`);
+      }
+      i += 1;
+      while (
+        i < patchLines.length &&
+        !patchLines[i].startsWith('@@ ') &&
+        !patchLines[i].startsWith('diff --git ')
+      ) {
+        const hunkLine = patchLines[i];
+        if (hunkLine.startsWith('\\')) {
+          i += 1;
+          continue;
+        }
+        const tag = hunkLine[0];
+        const body = hunkLine.slice(1);
+        if (tag === ' ') {
+          lines.push(body);
+        } else if (tag === '-' && side === 'old') {
+          lines.push(body);
+        } else if (tag === '+' && side === 'new') {
+          lines.push(body);
+        }
+        i += 1;
+      }
+      files.set(currentPath, lines);
+      continue;
+    }
+    i += 1;
+  }
+
+  /** @type {Map<string, string>} */
+  const out = new Map();
+  for (const [rel, lines] of files) {
+    out.set(rel, `${lines.join('\n')}\n`);
+  }
+  return out;
+}
+
+function makeFakeRsReticulum(reticulumSource, actorModSource = 'pub struct TransportActor {}\n') {
+  return makeFakeRsReticulumFromFiles(
+    new Map([
+      ['crates/rns-runtime/src/reticulum.rs', reticulumSource],
+      ['crates/rns-transport/src/actor/mod.rs', actorModSource],
+    ]),
+  );
+}
+
+function makeFakeRsReticulumFromFiles(files) {
   const root = mkdtempSync(path.join(os.tmpdir(), 'mesh-packet-tap-rns-'));
   temps.push(root);
-  const reticulumPath = path.join(root, 'crates/rns-runtime/src/reticulum.rs');
-  mkdirSync(path.dirname(reticulumPath), { recursive: true });
-  writeFileSync(reticulumPath, reticulumSource);
+  for (const [rel, content] of files) {
+    const abs = path.join(root, rel);
+    mkdirSync(path.dirname(abs), { recursive: true });
+    writeFileSync(abs, content);
+  }
   const gitInit = git(root, ['init']);
   expect(gitInit.status).toBe(0);
   git(root, ['config', 'user.email', 'test@example.com']);
@@ -41,6 +134,22 @@ function makeFakeRsReticulum(reticulumSource) {
   const commit = git(root, ['commit', '-m', 'init']);
   expect(commit.status).toBe(0);
   return root;
+}
+
+function readPacketTapTargets(rnsDir) {
+  return {
+    reticulum: readFileSync(path.join(rnsDir, 'crates/rns-runtime/src/reticulum.rs'), 'utf8'),
+    actorMod: readFileSync(path.join(rnsDir, 'crates/rns-transport/src/actor/mod.rs'), 'utf8'),
+  };
+}
+
+function expectPacketTapApplied(rnsDir) {
+  const { reticulum, actorMod } = readPacketTapTargets(rnsDir);
+  expect(reticulum).toContain('register_packet_tap');
+  expect(reticulum).toContain('SetPacketTap');
+  expect(actorMod).toContain('emit_packet_tap');
+  expect(actorMod).toContain('packet_tap');
+  expect(actorMod).toContain('InterfaceSendOutcome::Sent');
 }
 
 function runApply(rnsDir) {
@@ -69,6 +178,28 @@ describe('apply-rsReticulum-packet-tap.sh', () => {
     expect(patch).toContain('PacketTapEvent');
     expect(patch).toMatch(/crates\/rns-transport\/src\/actor\/mod\.rs/);
     expect(patch).toMatch(/crates\/rns-runtime\/src\/reticulum\.rs/);
+  });
+
+  it('applies on a clean checkout and writes both patch targets', () => {
+    const files = materializePatchFiles(readFileSync(PATCH_FILE, 'utf8'), 'old');
+    expect(files.has('crates/rns-runtime/src/reticulum.rs')).toBe(true);
+    expect(files.has('crates/rns-transport/src/actor/mod.rs')).toBe(true);
+    const rns = makeFakeRsReticulumFromFiles(files);
+    const result = runApply(rns);
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toMatch(/applied .*rsReticulum-packet-tap\.patch/);
+    expectPacketTapApplied(rns);
+  });
+
+  it('is idempotent after a clean apply', () => {
+    const files = materializePatchFiles(readFileSync(PATCH_FILE, 'utf8'), 'old');
+    const rns = makeFakeRsReticulumFromFiles(files);
+    const first = runApply(rns);
+    expect(first.status, first.stderr || first.stdout).toBe(0);
+    const second = runApply(rns);
+    expect(second.status, second.stderr || second.stdout).toBe(0);
+    expect(second.stdout).toMatch(/already applied/);
+    expectPacketTapApplied(rns);
   });
 
   it('is a no-op when register_packet_tap is already present', () => {

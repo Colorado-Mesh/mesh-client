@@ -358,7 +358,12 @@ export function flatpakWorkflowStoreVersionViolations(
     return violations;
   }
 
-  if (!/patch-flatpak-node-generator-playwright/.test(workflowYaml)) {
+  const commands = listWorkflowNonCommentShellCommands(workflowYaml);
+  const patchIdx = commands.findIndex((c) =>
+    /patch-flatpak-node-generator-playwright\.mjs/.test(c),
+  );
+  const generatorIdx = commands.findIndex((c) => /flatpak-node-generator\s+pnpm\b/.test(c));
+  if (patchIdx === -1 || (generatorIdx >= 0 && patchIdx > generatorIdx)) {
     violations.push({
       file: fileRel,
       message:

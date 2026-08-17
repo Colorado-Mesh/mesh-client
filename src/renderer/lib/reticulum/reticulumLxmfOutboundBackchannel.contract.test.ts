@@ -7,6 +7,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { extractBalancedBlock } from '../sourceContractTestHelpers';
+
 const REPO_ROOT = join(__dirname, '../../../..');
 const LIVE = join(REPO_ROOT, 'reticulum-sidecar/src/stack/live.rs');
 const OUTBOUND = join(REPO_ROOT, 'reticulum-sidecar/src/stack/lxmf_outbound.rs');
@@ -63,10 +65,17 @@ describe('reticulum LXMF outbound Direct backchannel contracts', () => {
 
       const pollIdx = source.indexOf('fn poll_endpoint_send_results');
       expect(pollIdx).toBeGreaterThanOrEqual(0);
-      const pollEnd = source.indexOf('\n    fn ', pollIdx + 1);
-      const poll = source.slice(pollIdx, pollEnd > pollIdx ? pollEnd : pollIdx + 4000);
-      expect(poll).toContain('PublishInboundPacket');
-      expect(poll).toContain('inbound_packet_tx');
+      const pollBrace = source.indexOf('{', pollIdx);
+      expect(pollBrace).toBeGreaterThan(pollIdx);
+      const poll = extractBalancedBlock(source, pollBrace);
+      const armIdx = poll.indexOf('EndpointSendSuccess::PublishInboundPacket');
+      expect(armIdx).toBeGreaterThanOrEqual(0);
+      const armArrow = poll.indexOf('=>', armIdx);
+      const armBrace = poll.indexOf('{', armArrow);
+      expect(armBrace).toBeGreaterThan(armArrow);
+      const arm = extractBalancedBlock(poll, armBrace);
+      expect(arm).toContain('inbound_packet_tx');
+      expect(arm).toMatch(/tx\.send\(\(plaintext,\s*pending\.link_id\)\)/);
     },
   );
 });

@@ -22,7 +22,10 @@ if [[ ! -f "${PATCH_FILE}" ]]; then
   exit 1
 fi
 
-if [[ -f "${MOD_RS}" ]] && grep -q 'fn iface_is_rf_sink' "${MOD_RS}"; then
+# Helper alone is incomplete — announce rebroadcast must also skip RF sinks.
+if [[ -f "${MOD_RS}" ]] \
+  && grep -q 'fn iface_is_rf_sink' "${MOD_RS}" \
+  && grep -q 'iface_is_rf_sink(entry)' "${MOD_RS}"; then
   echo "announce-rebroadcast-exclude-rf overlay already applied on rsReticulum @ $(git -C "${RNS_DIR}" rev-parse --short HEAD)"
   exit 0
 fi

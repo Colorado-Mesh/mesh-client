@@ -50,7 +50,7 @@ function main() {
     console.error(`patch-flatpak-node-generator-playwright: ${result.message}`);
     process.exit(1);
   }
-  console.log(
+  console.info(
     result.already
       ? `patch-flatpak-node-generator-playwright: already applied (${specialPy})`
       : `patch-flatpak-node-generator-playwright: skipped Playwright browser vendoring (${specialPy})`,
