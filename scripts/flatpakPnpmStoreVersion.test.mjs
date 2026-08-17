@@ -422,17 +422,21 @@ storeDir: /__w/mesh-client/also-bad
   });
 
   it('applies skip rewrite to a special.py fixture', () => {
-    const files = new Map([['/tmp/special.py', PLAYWRIGHT_SPECIAL_SOURCE_CALL]]);
-    const first = applyGeneratorSkipPlaywrightSpecialSources('/tmp/special.py', {
+    // In-memory map only — use a site-packages path, not os.tmpdir()/`/tmp/`
+    // (CodeQL js/insecure-temporary-file taints /tmp strings into writeFileSync).
+    const specialPy =
+      '/venv/lib/python3.12/site-packages/flatpak_node_generator/providers/special.py';
+    const files = new Map([[specialPy, PLAYWRIGHT_SPECIAL_SOURCE_CALL]]);
+    const first = applyGeneratorSkipPlaywrightSpecialSources(specialPy, {
       readFileSync: (p) => files.get(p) ?? '',
       writeFileSync: (p, data) => {
         files.set(p, data);
       },
     });
     expect(first).toEqual({ ok: true, already: false });
-    expect(files.get('/tmp/special.py')).toContain(PLAYWRIGHT_SPECIAL_SKIP_MARKER);
+    expect(files.get(specialPy)).toContain(PLAYWRIGHT_SPECIAL_SKIP_MARKER);
 
-    const second = applyGeneratorSkipPlaywrightSpecialSources('/tmp/special.py', {
+    const second = applyGeneratorSkipPlaywrightSpecialSources(specialPy, {
       readFileSync: (p) => files.get(p) ?? '',
       writeFileSync: () => {
         throw new Error('should not rewrite when already applied');
