@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Apply mesh-client rsReticulum announce-rebroadcast RF exclusion overlay.
 # Transport-mode announce rebroadcast must not enqueue onto flow-controlled RNodes.
-# Requires pathless-link-exclude-rf (iface_is_pathless_link_rf_sink) applied first.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,13 +22,7 @@ if [[ ! -f "${PATCH_FILE}" ]]; then
   exit 1
 fi
 
-if [[ ! -f "${MOD_RS}" ]] || ! grep -q 'iface_is_pathless_link_rf_sink' "${MOD_RS}"; then
-  echo "error: pathless-link-exclude-rf overlay required first" >&2
-  echo "Run: ./scripts/apply-rsReticulum-pathless-link-exclude-rf.sh" >&2
-  exit 1
-fi
-
-if grep -q 'Flow-controlled RF sinks (RNode / low-bitrate) are skipped for' "${MOD_RS}"; then
+if [[ -f "${MOD_RS}" ]] && grep -q 'fn iface_is_rf_sink' "${MOD_RS}"; then
   echo "announce-rebroadcast-exclude-rf overlay already applied on rsReticulum @ $(git -C "${RNS_DIR}" rev-parse --short HEAD)"
   exit 0
 fi
