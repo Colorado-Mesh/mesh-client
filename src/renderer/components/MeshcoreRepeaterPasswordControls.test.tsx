@@ -2,7 +2,9 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { MeshcoreRepeaterPasswordControls } from './MeshcoreRepeaterPasswordControls';
 
 vi.mock('@/renderer/lib/meshcoreRepeaterSavedSecrets', () => ({
@@ -50,7 +52,7 @@ describe('MeshcoreRepeaterPasswordControls', () => {
     const onSecretsChanged = vi.fn();
     const onStatusMessage = vi.fn();
 
-    render(
+    const { container } = render(
       <MeshcoreRepeaterPasswordControls
         nodeId={0x200}
         nodeName="Repeater B"
@@ -61,9 +63,11 @@ describe('MeshcoreRepeaterPasswordControls', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: /forget saved repeater password/i }));
+    await user.click(screen.getByRole('button', { name: /forget saved admin password/i }));
     expect(forgetMeshcoreRepeaterSavedSecret).toHaveBeenCalledWith(0x200);
     expect(onSecretsChanged).toHaveBeenCalled();
     expect(onStatusMessage).toHaveBeenCalledWith(expect.stringMatching(/removed/i));
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

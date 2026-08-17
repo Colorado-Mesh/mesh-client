@@ -64,7 +64,6 @@ import {
   MESHCORE_TRACE_TIMEOUT_MS,
   meshcoreContactRawFromDevice,
   meshcoreDmAckKeyU32,
-  meshcoreFullPubKeyBytesFromContactDbHex,
   meshcoreMessageDedupeKey,
   meshcorePendingDmAckMapKeys,
   meshcoreTraceRouteRejectReason,
@@ -73,6 +72,7 @@ import {
   type PendingDmAckEntry,
   persistMeshcoreMessageSenderRepairs,
   registerMeshcorePubKeysFromContactDbRows,
+  reloadMeshcorePubKeyIfNodeIdMismatch,
   resolveMeshcoreNodePubKey,
   retryRadioRemoveDeletedContacts,
   serializeErrorLike,
@@ -229,6 +229,7 @@ import {
   buildMeshcoreGetNeighboursRequest,
   parseMeshcoreGetNeighboursResponse,
 } from '../lib/meshcoreGetNeighboursBinary';
+import { resolveRoomAdminPassword } from '../lib/meshcoreInfraAdminSecrets';
 import { persistMeshcoreSelfNodeId } from '../lib/meshcoreLastSelfNodeId';
 import {
   clearMeshcoreLocallyDeletedContact,
@@ -258,18 +259,27 @@ import {
 import { runMeshcoreRepeaterBinaryRequest } from '../lib/meshcoreRepeaterBinaryRequestRpc';
 import { isMeshcoreRepeaterCliDangerCommand } from '../lib/meshcoreRepeaterCliDanger';
 import {
+  beginMeshcoreCliReplyHold,
+  endMeshcoreCliReplyHold,
+  meshcoreCliReplyHoldActive,
   meshcoreCompanionRepeaterRfBusy,
   resetMeshcoreRepeaterRpcInFlightOnDisconnect,
   runMeshcoreRepeaterRpcOnce,
 } from '../lib/meshcoreRepeaterRpcInFlight';
+import {
+  assertMeshcoreRepeaterLoginOk,
+  meshcoreRepeaterTryLoginWithPassword,
+} from '../lib/meshcoreRepeaterSession';
 import { runMeshcoreRepeaterStatusRequest } from '../lib/meshcoreRepeaterStatusRpc';
 import { runMeshcoreRepeaterTelemetryRequest } from '../lib/meshcoreRepeaterTelemetryRpc';
 import {
   computeMeshcoreTracePrimeStrategy,
   evaluateMeshcorePingRouteAbort,
+  MESHCORE_CLI_PREEMPT_TRACE_REASON,
   meshcoreCanSynthesizeTracePath,
   meshcoreDirectRepeaterRelayPubKeys,
   meshcoreIsUsableTraceStoredPath,
+  meshcoreTraceCancelledForCliPreempt,
   meshcoreTraceDirectRetryEligible,
   planMeshcoreRepeaterTraceRoute,
   resolveMeshcoreTraceOutPathSeed,
@@ -293,7 +303,10 @@ import {
   MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX,
   setMeshcoreRoomCredential,
 } from '../lib/meshcoreRoomCredentialStorage';
-import { syncMeshcoreRoomContactPathBeforeLogin } from '../lib/meshcoreRoomLoginPathSync';
+import {
+  resetMeshcoreRoomCompanionSyncSinceForCatchUp,
+  syncMeshcoreRoomContactPathBeforeLogin,
+} from '../lib/meshcoreRoomLoginPathSync';
 import { meshcoreIsRoomLoginQueued } from '../lib/meshcoreRoomLoginQueue';
 import { resolveMeshcoreRoomLoginRouteBytes } from '../lib/meshcoreRoomLoginRouteResolve';
 import { applyMeshcoreRoomLoginFailure } from '../lib/meshcoreRoomSavedSecrets';
@@ -306,12 +319,14 @@ import {
   MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
   MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE,
   MESHCORE_ROOM_LOGIN_PATH_SYNC_FAILED_MESSAGE,
+  meshcoreAbortablePromise,
+  meshcoreBeginRoomLoginOperation,
   meshcoreCancelRoomLogin,
   meshcoreClearAllRoomSessions,
+  meshcoreEndRoomLoginOperation,
   meshcoreGetRoomSession,
   meshcoreIsRoomLoggedIn,
   meshcoreIsRoomLoginAbortError,
-  meshcoreRoomCanAdmin,
   meshcoreRoomCanPost,
   meshcoreRoomEffectiveGuestPassword,
   meshcoreRoomLogin,
@@ -320,10 +335,12 @@ import {
   meshcoreRoomLogout,
   meshcoreRoomLogoutFailureMessage,
   meshcoreRoomTryRelogin,
+  meshcoreThrowIfRoomLoginAborted,
   meshcoreTryRemoteServerLogin,
 } from '../lib/meshcoreRoomSession';
 import { pickMostOverdueRoom, type RoomSyncSchedulerNode } from '../lib/meshcoreRoomSyncScheduler';
 import {
+  getMeshcoreRoomLastPostAt,
   getMeshcoreRoomSyncConfig,
   listMeshcoreRoomAutoLoginOnConnectNodeIds,
   listMeshcoreRoomSyncEnabledNodeIds,
@@ -343,6 +360,7 @@ import {
   packMeshcoreTelemetryModesByte,
 } from '../lib/meshcoreTelemetryPrivacy';
 import {
+  cancelAllPendingMeshcoreTracePaths,
   resetMeshcoreTracePathMultiplexOnDisconnect,
   startMeshcoreTracePathMultiplexed,
 } from '../lib/meshcoreTracePathMultiplex';
@@ -386,8 +404,11 @@ import {
   resolveMeshcoreRoomLoginHopsAway,
 } from '../lib/meshcoreUtils';
 import {
+  awaitMeshcoreWaitingMessagesDrainIdle,
+  endMeshcoreSilentBulkCliPreempt,
   logMeshcoreWaitingMessagesDrainError,
   markMeshcoreCompanionTx,
+  preemptMeshcoreSilentBulkForCli,
   scheduleMeshcoreWaitingMessagesDrain,
   shouldRunMeshcoreWaitingMessagesPeriodicPoll,
 } from '../lib/meshcoreWaitingMessagesDrain';
@@ -411,6 +432,7 @@ import {
   type CliHistoryEntry,
   computeRepeaterCliHopCount,
   createRepeaterCommandService,
+  padRepeaterCliTimeoutForWaitingDrain,
   REPEATER_CLI_MAX_COMMAND_LENGTH,
   type RepeaterCommandService,
 } from '../lib/repeaterCommandService';
@@ -435,6 +457,7 @@ import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/s
 import {
   computeRoomPostTotalTimeoutMs,
   MESHCORE_MAX_RECONNECT_DELAY_MS,
+  MESHCORE_REPEATER_PING_SETTLE_MAX_MS,
   MESHCORE_ROOM_AUTO_LOGIN_DEBOUNCE_MS,
   MESHCORE_ROOM_LOGIN_HOP_BASE_MS,
   MESHCORE_ROOM_LOGIN_HOP_INCREMENT_MS,
@@ -448,6 +471,7 @@ import {
   MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS,
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
   MESHCORE_WAITING_MESSAGES_POLL_MS,
+  MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
   POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS,
   RF_SERIAL_OPEN_RETRY_DELAY_MS,
 } from '../lib/timeConstants';
@@ -719,6 +743,9 @@ export function useMeshcoreRuntime() {
   const pubKeyMapRef = useRef<Map<number, Uint8Array>>(new Map());
   // nodeId → outPath bytes (sliced to outPathLen) for tracePath calls
   const outPathMapRef = useRef<Map<number, Uint8Array>>(new Map());
+  /** Last-seen companion outPathLen per node (packed hash size survives intermittent getContacts misses). */
+  const radioContactPathLenByNodeRef = useRef<Map<number, number>>(new Map());
+  const pathHashModeRef = useRef(state.pathHashMode);
   // nodeId → nickname (from JSON import or DB)
   const nicknameMapRef = useRef<Map<number, string>>(new Map());
   /** Skip mount DB hydration commit when live ingest/import ran before async reload finishes. */
@@ -1043,6 +1070,10 @@ export function useMeshcoreRuntime() {
   useEffect(() => {
     myNodeNumRef.current = state.myNodeNum;
   }, [state.myNodeNum]);
+
+  useEffect(() => {
+    pathHashModeRef.current = state.pathHashMode;
+  }, [state.pathHashMode]);
 
   // Start stats polling when configured (after contacts dump — not during initConn).
   useEffect(() => {
@@ -1515,6 +1546,7 @@ export function useMeshcoreRuntime() {
       pubKeyMapRef.current.clear();
       pubKeyPrefixMapRef.current.clear();
       outPathMapRef.current.clear();
+      radioContactPathLenByNodeRef.current.clear();
       // Persisted hop counts from `nodes` are the source of truth across app restarts and
       // contact-table cleanups. Pre-fetch so each contact merge can fall back when the radio
       // reports no outPath and prevSnap has no entry yet.
@@ -3289,6 +3321,7 @@ export function useMeshcoreRuntime() {
       pubKeyMapRef.current.clear();
       pubKeyPrefixMapRef.current.clear();
       outPathMapRef.current.clear();
+      radioContactPathLenByNodeRef.current.clear();
       nicknameMapRef.current.clear();
       setMessages([]);
       try {
@@ -4641,6 +4674,7 @@ export function useMeshcoreRuntime() {
     pubKeyMapRef.current.clear();
     pubKeyPrefixMapRef.current.clear();
     outPathMapRef.current.clear();
+    radioContactPathLenByNodeRef.current.clear();
     if (pk && myId !== 0) {
       pubKeyMapRef.current.set(myId, pk);
       const prefix = Array.from(pk.slice(0, 6))
@@ -5010,6 +5044,14 @@ export function useMeshcoreRuntime() {
             );
             storedPath = contactSnap.path ?? storedPath;
             let radioContactPathLen = contactSnap.radioContactPathLen;
+            if (radioContactPathLen != null && Number.isFinite(radioContactPathLen)) {
+              radioContactPathLenByNodeRef.current.set(nodeId, radioContactPathLen);
+            } else {
+              radioContactPathLen = radioContactPathLenByNodeRef.current.get(nodeId) ?? null;
+            }
+            const companionPathHashMode = isMeshcorePathHashMode(pathHashModeRef.current)
+              ? pathHashModeRef.current
+              : null;
             let pathFromHistory: Uint8Array | undefined;
             if (!storedPath || storedPath.length <= 1) {
               try {
@@ -5027,6 +5069,7 @@ export function useMeshcoreRuntime() {
               pubKey,
               radioContactPathLen,
               pathFromHistory,
+              companionPathHashMode,
             });
             let routeStoredPath = tracePlan.storedPath;
             if (routeStoredPath && routeStoredPath.length > 1) {
@@ -5111,6 +5154,7 @@ export function useMeshcoreRuntime() {
               pubKey,
               radioContactPathLen,
               pathFromHistory,
+              companionPathHashMode,
             });
             const uiSaysMultiHop = tracePlan.uiSaysMultiHop;
             const radioSaysMultiHop = tracePlan.radioSaysMultiHop;
@@ -5124,6 +5168,9 @@ export function useMeshcoreRuntime() {
               pathByNodeId: outPathMapRef.current,
             });
             const outPath = pathResolved.outPath;
+            console.debug(
+              `[useMeshcoreRuntime] traceRoute pathSeed node=0x${nodeId.toString(16)} hops=${String(hopsAway ?? 'n/a')} radioLen=${String(radioContactPathLen)} outPathLen=${outPath.length}`,
+            );
             const floodPrimeExhausted =
               routePrimeRan &&
               routePrimeMetrics?.strategy === 'flood' &&
@@ -5173,10 +5220,16 @@ export function useMeshcoreRuntime() {
               attemptPathBytes.length > 0 ? computePathHash(attemptPathBytes) : undefined;
             let tracePathInUse = outPath;
             let result;
+            // 0-hop hash-prefix attempts must fail fast so full-pubkey direct retry can run.
+            // Multi-hop / full-key attempts keep the flat admin RPC budget.
+            const firstTraceExtraTimeoutMs =
+              (hopsAway ?? 0) === 0 && outPath.length > 0 && outPath.length < 32
+                ? 8_000
+                : MESHCORE_TRACE_TIMEOUT_MS;
             const firstTrace = startMeshcoreTracePathMultiplexed(
               conn,
               tracePathInUse,
-              MESHCORE_TRACE_TIMEOUT_MS,
+              firstTraceExtraTimeoutMs,
               repeaterRemoteRpcRef.current,
             );
             try {
@@ -5191,6 +5244,15 @@ export function useMeshcoreRuntime() {
                 await firstTrace.promise;
               } catch {
                 // catch-no-log-ok first trace rejected after cancel; direct retry may proceed
+              }
+              // CLI preempt / active CLI reply hold clears TraceData so waiting-message drain
+              // can deliver CLI replies. Do not escalate to a full-pubkey retry — that
+              // immediately re-blocks the radio.
+              if (
+                meshcoreTraceCancelledForCliPreempt(firstTraceError) ||
+                meshcoreCliReplyHoldActive()
+              ) {
+                throw firstTraceError;
               }
               const directRetryEligible = meshcoreTraceDirectRetryEligible(
                 hopsAway,
@@ -5749,6 +5811,12 @@ export function useMeshcoreRuntime() {
       setMeshcoreRepeaterRpcPending((prev) =>
         setRepeaterAdminRpcPending(prev, nodeId, 'cli', true),
       );
+      beginMeshcoreCliReplyHold();
+      preemptMeshcoreSilentBulkForCli();
+      let cliReplyDrainKickTimer: ReturnType<typeof setInterval> | undefined;
+      let cliPendingToken: string | undefined;
+      const service = repeaterCommandServiceRef.current ?? createRepeaterCommandService();
+      repeaterCommandServiceRef.current ??= service;
       try {
         const trimmed = command.trim();
         if (trimmed.length > REPEATER_CLI_MAX_COMMAND_LENGTH) {
@@ -5762,94 +5830,225 @@ export function useMeshcoreRuntime() {
         if (isMeshcoreRepeaterCliDangerCommand(trimmed) && !opts?.confirmedDanger) {
           throw new Error(serializeMeshcoreUserMessage('meshcore.errors.cliDangerNotConfirmed'));
         }
-        const pubKey = pubKeyMapRef.current.get(nodeId);
-        if (!pubKey) {
-          setMeshcoreCliErrors((prev) => {
-            const next = new Map(prev);
-            next.set(nodeId, MESHCORE_ERR_NODE_NOT_FOUND);
-            return next;
-          });
-          throw new Error(MESHCORE_ERR_NODE_NOT_FOUND);
-        }
-        if (!resolveMeshcoreConn()) {
-          setMeshcoreCliErrors((prev) => {
-            const next = new Map(prev);
-            next.set(nodeId, MESHCORE_ERR_NOT_CONNECTED);
-            return next;
-          });
-          throw new Error(MESHCORE_ERR_NOT_CONNECTED);
+
+        // Cancel in-flight BBS login before room ACL SendLogin (firmware isAdmin()).
+        if (getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hw_model === 'Room') {
+          meshcoreCancelRoomLogin(nodeId);
         }
 
-        setMeshcoreCliErrors((prev) => {
-          const next = new Map(prev);
-          next.delete(nodeId);
-          return next;
-        });
-
-        const service = repeaterCommandServiceRef.current ?? createRepeaterCommandService();
-        repeaterCommandServiceRef.current ??= service;
-
-        try {
-          return await runMeshcoreRepeaterRpcOnce('cli', nodeId, async () => {
-            const conn = resolveMeshcoreConn();
-            if (!conn) {
-              throw new Error(MESHCORE_ERR_NOT_CONNECTED);
-            }
-
-            await awaitMeshcoreRepeaterPingSettleForNode(nodeId);
-            await meshcoreTryRemoteServerLogin(
-              conn,
-              nodeId,
-              pubKey,
-              getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hw_model,
-              repeaterRemoteRpcRef.current,
-            );
-
-            const node = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
-            const trace = meshcoreTraceResults.get(nodeId);
-            const hopCount = computeRepeaterCliHopCount(
-              node?.hops_away,
-              trace != null ? meshcoreTracePathLenToHops(trace.pathLen) : null,
-            );
-            const timeoutMs = calculateRepeaterCliTimeout(hopCount, trimmed.length);
-            const { token, promise } = service.registerPendingCommand(trimmed, [], {
-              timeoutMs,
-              senderNodeId: nodeId,
-            });
-            const commandWithToken = service.formatCommandWithToken(trimmed, token);
-
-            addCliHistoryEntry(nodeId, {
-              type: 'sent',
-              text: trimmed,
-              timestamp: Date.now(),
-            });
-
-            await repeaterRemoteRpcRef.current(async () => {
-              await awaitMeshcoreRepeaterAdminRfIdle();
-              await waitForMeshcoreRadioSentAck(
-                conn,
-                async () => {
-                  await conn.sendTextMessage(pubKey, commandWithToken, MESHCORE_TXT_TYPE_CLI_DATA);
-                },
-                { rejectErrMsg: 'radio rejected repeater CLI command' },
+        const drainBusyAtStart = waitingMessagesDrainBusyRef.current;
+        const hopsForDrain = getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away ?? 0;
+        // 0-hop: do not block CLI behind a stuck/long waiting-message drain (common right after
+        // connect when silent bulk times out). Multi-hop still waits so path/CLI replies can flush.
+        const drainWaitMs = hopsForDrain <= 0 ? 0 : MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS;
+        console.debug(
+          `[useMeshcoreRuntime] CLI beforeDrain node=0x${nodeId.toString(16)} hops=${hopsForDrain} drainBusy=${drainBusyAtStart} waitMs=${drainWaitMs}`,
+        );
+        const drainIdle =
+          drainWaitMs <= 0
+            ? !drainBusyAtStart
+            : await awaitMeshcoreWaitingMessagesDrainIdle(
+                () => waitingMessagesDrainBusyRef.current,
+                drainWaitMs,
               );
-              markMeshcoreCompanionTx();
-            });
+        console.debug(
+          `[useMeshcoreRuntime] CLI afterDrain node=0x${nodeId.toString(16)} drainIdle=${drainIdle} drainBusy=${waitingMessagesDrainBusyRef.current}`,
+        );
 
-            const response = await promise;
-            addCliHistoryEntry(nodeId, {
-              type: 'received',
-              text: response,
-              timestamp: Date.now(),
-            });
-            bumpMeshcoreNodeLastHeardFromRpc(nodeId);
-            return response;
+        let cliTimeoutMs = calculateRepeaterCliTimeout(0, trimmed.length);
+        try {
+          // Return the reply promise from the once slot so coalesced callers share it
+          // (and do not throw MESHCORE_ERR_REQUEST_FAILED / end the hold early).
+          const onceResult = await runMeshcoreRepeaterRpcOnce(
+            'cli',
+            nodeId,
+            async (): Promise<{ responsePromise: Promise<string>; timeoutMs: number }> => {
+              const pubKey = await ensureNodePubKey(nodeId);
+              if (!pubKey) {
+                throw new Error(MESHCORE_ERR_NODE_NOT_FOUND);
+              }
+              const conn = resolveMeshcoreConn();
+              if (!conn) {
+                throw new Error(MESHCORE_ERR_NOT_CONNECTED);
+              }
+
+              setMeshcoreCliErrors((prev) => {
+                const next = new Map(prev);
+                next.delete(nodeId);
+                return next;
+              });
+
+              {
+                const hopsAwayCli =
+                  getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away ?? 0;
+                if (hopsAwayCli > 0) {
+                  await awaitMeshcoreRepeaterPingSettleForNode(
+                    nodeId,
+                    MESHCORE_REPEATER_PING_SETTLE_MAX_MS,
+                  );
+                } else {
+                  // 0-hop CLI is a pubkey DM. Clear any in-flight TraceData so waiting-message
+                  // drain is not deferred (CLI replies arrive as waiting messages).
+                  cancelAllPendingMeshcoreTracePaths(conn, MESHCORE_CLI_PREEMPT_TRACE_REASON);
+                }
+              }
+              // Remote RF CLI requires server ACL admin (firmware: client->isAdmin()).
+              // Guest BBS SendLogin is NOT enough — Room path used to skip ACL login when a
+              // guest session existed, so CLI_DATA was ignored with no reply.
+              const hwModelForCli = getIdentityNode(
+                meshcoreIdentityIdRef.current,
+                nodeId,
+              )?.hw_model;
+              if (hwModelForCli === 'Room') {
+                const adminPw = resolveRoomAdminPassword(
+                  nodeId,
+                  meshcoreGetRoomSession(nodeId)?.adminPassword,
+                );
+                if (!adminPw) {
+                  throw new Error(
+                    serializeMeshcoreUserMessage('repeatersPanel.roomCliNeedsAdminPassword'),
+                  );
+                }
+                const aclLogin = await meshcoreRepeaterTryLoginWithPassword(conn, pubKey, adminPw, {
+                  runSerialized: repeaterRemoteRpcRef.current,
+                });
+                assertMeshcoreRepeaterLoginOk(aclLogin);
+              } else {
+                await meshcoreTryRemoteServerLogin(
+                  conn,
+                  nodeId,
+                  pubKey,
+                  hwModelForCli,
+                  repeaterRemoteRpcRef.current,
+                );
+              }
+
+              const node = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
+              const trace = meshcoreTraceResults.get(nodeId);
+              const hopCount = computeRepeaterCliHopCount(
+                node?.hops_away,
+                trace != null ? meshcoreTracePathLenToHops(trace.pathLen) : null,
+              );
+              const cliBaseTimeoutMs = calculateRepeaterCliTimeout(hopCount, trimmed.length);
+              const drainBusyNow = waitingMessagesDrainBusyRef.current;
+              const timeoutMs = padRepeaterCliTimeoutForWaitingDrain(
+                cliBaseTimeoutMs,
+                drainBusyAtStart || drainBusyNow || !drainIdle,
+                MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
+              );
+              const { token, promise } = service.registerPendingCommand(trimmed, [], {
+                timeoutMs,
+                senderNodeId: nodeId,
+              });
+              cliPendingToken = token;
+              const commandWithToken = service.formatCommandWithToken(trimmed, token);
+
+              addCliHistoryEntry(nodeId, {
+                type: 'sent',
+                text: trimmed,
+                timestamp: Date.now(),
+              });
+
+              if (trimmed.toLowerCase() === 'clock sync') {
+                try {
+                  await conn.syncDeviceTime();
+                } catch (e: unknown) {
+                  console.debug(
+                    '[useMeshcoreRuntime] companion syncDeviceTime before repeater clock sync ' +
+                      errLikeToLogString(e),
+                  );
+                }
+              }
+
+              console.debug(
+                `[useMeshcoreRuntime] CLI beforeSend node=0x${nodeId.toString(16)} token=${cliPendingToken ?? '?'}`,
+              );
+
+              const cliSendStartedAt = Date.now();
+              try {
+                await repeaterRemoteRpcRef.current(async () => {
+                  {
+                    const hopsAwayCli =
+                      getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away ?? 0;
+                    if (hopsAwayCli > 0) {
+                      await awaitMeshcoreRepeaterAdminRfIdle(MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS);
+                    }
+                  }
+                  await waitForMeshcoreRadioSentAck(
+                    conn,
+                    async () => {
+                      await conn.sendTextMessage(
+                        pubKey,
+                        commandWithToken,
+                        MESHCORE_TXT_TYPE_CLI_DATA,
+                      );
+                    },
+                    { rejectErrMsg: 'radio rejected repeater CLI command' },
+                  );
+                  markMeshcoreCompanionTx();
+                });
+              } catch (sendErr: unknown) {
+                if (cliPendingToken) {
+                  const err =
+                    sendErr instanceof Error
+                      ? sendErr
+                      : new Error(errLikeToLogString(sendErr) || 'CLI send failed');
+                  service.rejectPending(cliPendingToken, err);
+                  cliPendingToken = undefined;
+                }
+                throw sendErr;
+              }
+              const cliSendWaitMs = Date.now() - cliSendStartedAt;
+              console.debug(
+                `[useMeshcoreRuntime] CLI sent node=0x${nodeId.toString(16)} token=${cliPendingToken ?? '?'} sendWaitMs=${cliSendWaitMs}`,
+              );
+
+              // Reply window starts at SENT — not at pre-send register (send can wait behind drain).
+              const drainBusyAtSent = waitingMessagesDrainBusyRef.current;
+              const replyTimeoutMs = padRepeaterCliTimeoutForWaitingDrain(
+                cliBaseTimeoutMs,
+                drainBusyAtSent,
+                MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
+              );
+              if (cliPendingToken) {
+                service.restartPendingTimeoutFromNow(cliPendingToken, replyTimeoutMs);
+              }
+              return { responsePromise: promise, timeoutMs: replyTimeoutMs };
+            },
+          );
+          cliTimeoutMs = onceResult.timeoutMs;
+          const kickCliReplyDrain = () => {
+            void processWaitingMessagesRef
+              .current?.({
+                showSyncBanner: false,
+                force: true,
+                incrementalOnly: true,
+              })
+              ?.catch((e: unknown) => {
+                logMeshcoreWaitingMessagesDrainError('getWaitingMessages error', e, false);
+              });
+          };
+          kickCliReplyDrain();
+          cliReplyDrainKickTimer = setInterval(kickCliReplyDrain, 1_000);
+          const response = await onceResult.responsePromise;
+          addCliHistoryEntry(nodeId, {
+            type: 'received',
+            text: response,
+            timestamp: Date.now(),
           });
+          bumpMeshcoreNodeLastHeardFromRpc(nodeId);
+          return response;
         } catch (e: unknown) {
+          if (cliPendingToken && service.hasPendingCommand(cliPendingToken)) {
+            const err =
+              e instanceof Error ? e : new Error(errLikeToLogString(e) || 'CLI command failed');
+            service.rejectPending(cliPendingToken, err);
+            cliPendingToken = undefined;
+          }
           const rawErr = e instanceof Error ? e.message : String(e);
           const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : MESHCORE_ERR_REQUEST_FAILED;
           const friendlyErr = meshcoreStoredUserMessage(
-            meshcoreRepeaterRpcErrorMessage(errMsg, MESHCORE_TRACE_TIMEOUT_MS),
+            meshcoreRepeaterRpcErrorMessage(errMsg, cliTimeoutMs),
           );
           setMeshcoreCliErrors((prev) => {
             const next = new Map(prev);
@@ -5867,6 +6066,11 @@ export function useMeshcoreRuntime() {
           throw new Error(friendlyErr);
         }
       } finally {
+        if (cliReplyDrainKickTimer != null) {
+          clearInterval(cliReplyDrainKickTimer);
+        }
+        endMeshcoreSilentBulkCliPreempt();
+        endMeshcoreCliReplyHold();
         setMeshcoreRepeaterRpcPending((prev) =>
           setRepeaterAdminRpcPending(prev, nodeId, 'cli', false),
         );
@@ -5875,6 +6079,7 @@ export function useMeshcoreRuntime() {
     [
       addCliHistoryEntry,
       bumpMeshcoreNodeLastHeardFromRpc,
+      ensureNodePubKey,
       meshcoreTraceResults,
       resolveMeshcoreConn,
     ],
@@ -5917,6 +6122,9 @@ export function useMeshcoreRuntime() {
           allowPrime: schedulerFastPath ? false : fromMap == null || fromMap.length <= 1,
           skipTrace: schedulerFastPath,
           traceTimeoutMs: schedulerFastPath ? 0 : MESHCORE_TRACE_TIMEOUT_MS,
+          companionPathHashMode: isMeshcorePathHashMode(pathHashModeRef.current)
+            ? pathHashModeRef.current
+            : null,
           runSerialized: (fn) => repeaterRemoteRpcRef.current(fn),
         }),
         schedulerFastPath
@@ -5947,6 +6155,8 @@ export function useMeshcoreRuntime() {
         rememberPassword?: boolean;
         forceRelogin?: boolean;
         abortIfStale?: () => boolean;
+        /** Skip trace/prime during background auto-sync (short route-resolve budget). */
+        schedulerFastPath?: boolean;
       },
     ): Promise<void> => {
       let pubKey = pubKeyMapRef.current.get(nodeId);
@@ -5961,27 +6171,12 @@ export function useMeshcoreRuntime() {
           'Room has no RF encryption key — wait for contact sync or reconnect radio.',
         );
       }
-      if (pubkeyToNodeId(pubKey) !== nodeId) {
-        try {
-          const rows =
-            (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
-          const row = rows.find((r) => r.node_id === nodeId);
-          if (row) {
-            const bytes = meshcoreFullPubKeyBytesFromContactDbHex(row.public_key);
-            if (bytes && pubkeyToNodeId(bytes) === nodeId) {
-              pubKeyMapRef.current.set(nodeId, bytes);
-              pubKey = bytes;
-            }
-          }
-        } catch (e: unknown) {
-          console.warn(
-            '[useMeshcoreRuntime] loginRoom pubkey reload from DB failed ' + errLikeToLogString(e),
-          );
-        }
-        if (pubkeyToNodeId(pubKey) !== nodeId) {
-          throw new Error('Room key out of sync — reconnect or refresh contacts.');
-        }
-      }
+      pubKey = await reloadMeshcorePubKeyIfNodeIdMismatch(
+        nodeId,
+        pubKey,
+        pubKeyMapRef.current,
+        'useMeshcoreRuntime loginRoom',
+      );
       const conn = connRef.current;
       if (!conn) {
         throw new Error(MESHCORE_ERR_NOT_CONNECTED);
@@ -5997,63 +6192,99 @@ export function useMeshcoreRuntime() {
       console.debug(
         `[useMeshcoreRuntime] loginRoom node=0x${nodeId.toString(16)} hopsAway=${hopsAway} uiHops=${String(uiHops ?? 'n/a')} outPathLen=${outPathLen}`,
       );
-      const loginAbort = new AbortController();
+      // Outer abort covers path resolve + SendLogin so Cancel works before the login queue starts.
+      const loginAbortSignal = meshcoreBeginRoomLoginOperation(nodeId);
       try {
         await withTimeout(
           (async (): Promise<void> => {
+            meshcoreThrowIfRoomLoginAborted(loginAbortSignal);
+            if (opts?.abortIfStale?.()) {
+              throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
+            }
             const activeConn = connRef.current;
             if (!activeConn) {
               throw new Error(MESHCORE_ERR_NOT_CONNECTED);
             }
             // Route prime can take 10s+ — do not hold repeaterRemoteRpc (SendLogin) mutex during flood/path wait.
-            const storedPath = await resolveRoomLoginStoredPath(nodeId, hopsAway, pubKey);
+            const storedPath = await meshcoreAbortablePromise(
+              resolveRoomLoginStoredPath(nodeId, hopsAway, pubKey, {
+                schedulerFastPath: opts?.schedulerFastPath,
+              }),
+              loginAbortSignal,
+            );
+            meshcoreThrowIfRoomLoginAborted(loginAbortSignal);
+            if (opts?.abortIfStale?.()) {
+              throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
+            }
             if (hopsAway > 0 && (!storedPath || storedPath.length <= 1)) {
               throw new Error(MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE);
             }
-            const pathSync = await syncMeshcoreRoomContactPathBeforeLogin(
-              activeConn,
-              nodeId,
-              pubKey,
-              getIdentityNode(meshcoreIdentityIdRef.current, nodeId),
-              storedPath,
-              hopsAway,
-              (fn) => repeaterRemoteRpcRef.current(fn),
+            const pathSync = await meshcoreAbortablePromise(
+              syncMeshcoreRoomContactPathBeforeLogin(
+                activeConn,
+                nodeId,
+                pubKey,
+                getIdentityNode(meshcoreIdentityIdRef.current, nodeId),
+                storedPath,
+                hopsAway,
+                (fn) => repeaterRemoteRpcRef.current(fn),
+              ),
+              loginAbortSignal,
             );
+            meshcoreThrowIfRoomLoginAborted(loginAbortSignal);
             if (hopsAway > 0 && !pathSync.synced) {
               throw new Error(
                 serializeMeshcoreUserMessage(
                   pathSync.reason === 'no_path'
                     ? MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE
-                    : {
-                        key: 'meshcore.errors.roomLogin.pathSyncFailedDetail',
-                        params: { detail: pathSync.error ? ` (${pathSync.error})` : '' },
-                      },
+                    : pathSync.error
+                      ? {
+                          key: 'meshcore.errors.roomLogin.pathSyncFailedDetail',
+                          params: { detail: ` (${pathSync.error})` },
+                        }
+                      : MESHCORE_ROOM_LOGIN_PATH_SYNC_FAILED_MESSAGE,
                 ),
               );
             }
             console.debug(
               `[useMeshcoreRuntime] loginRoom pathSync node=0x${nodeId.toString(16)} ${JSON.stringify(pathSync)} storedPathLen=${storedPath?.length ?? 0}`,
             );
+            // No local posts yet → zero companion sync_since so login requests ring-buffer catch-up.
+            if (getMeshcoreRoomLastPostAt(nodeId) == null) {
+              await meshcoreAbortablePromise(
+                resetMeshcoreRoomCompanionSyncSinceForCatchUp(
+                  activeConn,
+                  nodeId,
+                  pubKey,
+                  loginAbortSignal,
+                ),
+                loginAbortSignal,
+              );
+            }
             if (opts?.abortIfStale?.()) {
               throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
             }
-            await repeaterRemoteRpcRef.current(async () => {
-              if (opts?.abortIfStale?.()) {
-                throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
-              }
-              const rpcConn = connRef.current;
-              if (!rpcConn) {
-                throw new Error(MESHCORE_ERR_NOT_CONNECTED);
-              }
-              await meshcoreRoomLogin(rpcConn, nodeId, pubKey, password, {
-                adminPassword,
-                guestPassword,
-                hopsAway,
-                companionTransport: meshcoreConnectTypeRef.current,
-                forceRelogin: opts?.forceRelogin,
-                signal: loginAbort.signal,
-              });
-            });
+            await meshcoreAbortablePromise(
+              repeaterRemoteRpcRef.current(async () => {
+                meshcoreThrowIfRoomLoginAborted(loginAbortSignal);
+                if (opts?.abortIfStale?.()) {
+                  throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
+                }
+                const rpcConn = connRef.current;
+                if (!rpcConn) {
+                  throw new Error(MESHCORE_ERR_NOT_CONNECTED);
+                }
+                await meshcoreRoomLogin(rpcConn, nodeId, pubKey, password, {
+                  adminPassword,
+                  guestPassword,
+                  hopsAway,
+                  companionTransport: meshcoreConnectTypeRef.current,
+                  forceRelogin: opts?.forceRelogin,
+                  signal: loginAbortSignal,
+                });
+              }),
+              loginAbortSignal,
+            );
             if (opts?.rememberPassword) {
               await setMeshcoreRoomCredential(nodeId, { guestPassword, adminPassword });
               const syncCfg = getMeshcoreRoomSyncConfig(nodeId);
@@ -6064,16 +6295,38 @@ export function useMeshcoreRuntime() {
               });
             }
             clearMeshcoreRoomAutoLoginFailure(nodeId);
+            // Room servers begin pushing ring-buffer posts ~2s after LoginSuccess; drain may have
+            // been busy/timed out during SendLogin — kick silent drains to ingest history.
+            for (const delayMs of [2_500, 8_000, 20_000]) {
+              window.setTimeout(() => {
+                scheduleMeshcoreWaitingMessagesDrain(
+                  async () => {
+                    try {
+                      await processWaitingMessagesRef.current?.({ showSyncBanner: false });
+                    } catch (e: unknown) {
+                      // catch-no-log-ok logMeshcoreWaitingMessagesDrainError handles logging
+                      logMeshcoreWaitingMessagesDrainError(
+                        'post-login room history drain failed',
+                        e,
+                        false,
+                      );
+                    }
+                  },
+                  { isMounted: () => meshcoreHookMountedRef.current },
+                );
+              }, delayMs);
+            }
           })(),
           MESHCORE_ROOM_LOGIN_TOTAL_TIMEOUT_MS,
           'loginRoom',
         );
       } catch (e: unknown) {
-        if (errLikeToLogString(e).includes('loginRoom timed out')) {
-          loginAbort.abort();
+        if (!meshcoreIsRoomLoginAbortError(e)) {
           meshcoreCancelRoomLogin(nodeId);
         }
         throw e;
+      } finally {
+        meshcoreEndRoomLoginOperation(nodeId, loginAbortSignal);
       }
     },
     [resolveRoomLoginHopsForNode, resolveRoomLoginStoredPath],
@@ -6094,26 +6347,12 @@ export function useMeshcoreRuntime() {
     if (meshcoreIsSyntheticPlaceholderPubKeyHex(pubKeyHex)) {
       throw new Error('Room has no RF encryption key — wait for contact sync or reconnect radio.');
     }
-    if (pubkeyToNodeId(pubKey) !== nodeId) {
-      try {
-        const rows = (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
-        const row = rows.find((r) => r.node_id === nodeId);
-        if (row) {
-          const bytes = meshcoreFullPubKeyBytesFromContactDbHex(row.public_key);
-          if (bytes && pubkeyToNodeId(bytes) === nodeId) {
-            pubKeyMapRef.current.set(nodeId, bytes);
-            pubKey = bytes;
-          }
-        }
-      } catch (e: unknown) {
-        console.warn(
-          '[useMeshcoreRuntime] leaveRoom pubkey reload from DB failed ' + errLikeToLogString(e),
-        );
-      }
-      if (pubkeyToNodeId(pubKey) !== nodeId) {
-        throw new Error('Room key out of sync — reconnect or refresh contacts.');
-      }
-    }
+    pubKey = await reloadMeshcorePubKeyIfNodeIdMismatch(
+      nodeId,
+      pubKey,
+      pubKeyMapRef.current,
+      'useMeshcoreRuntime leaveRoom',
+    );
     const conn = connRef.current;
     if (!conn) {
       throw new Error(MESHCORE_ERR_NOT_CONNECTED);
@@ -6140,7 +6379,7 @@ export function useMeshcoreRuntime() {
       if (!cred) {
         throw new Error('No saved room credential');
       }
-      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword);
+      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
       await loginRoom(nodeId, password, {
         guestPassword: password,
         adminPassword: cred.adminPassword ?? '',
@@ -6168,7 +6407,7 @@ export function useMeshcoreRuntime() {
       for (const nodeId of nodeIds) {
         const cred = getMeshcoreRoomCredential(nodeId);
         if (!cred) continue;
-        const guestPassword = meshcoreRoomEffectiveGuestPassword(cred.guestPassword);
+        const guestPassword = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
         try {
           await loginRoom(nodeId, guestPassword, {
             guestPassword,
@@ -6228,42 +6467,17 @@ export function useMeshcoreRuntime() {
       return;
     }
 
+    if (meshcoreIsRoomLoginQueued(target.nodeId)) {
+      return;
+    }
+
     try {
-      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword);
-      const activeConn = connRef.current;
-      if (!activeConn) return;
-      const syncHops = resolveRoomLoginHopsForNode(target.nodeId);
-      const storedPath = await resolveRoomLoginStoredPath(target.nodeId, syncHops, pubKey, {
+      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
+      if (!connRef.current) return;
+      await loginRoom(target.nodeId, password, {
+        guestPassword: password,
+        adminPassword: cred.adminPassword ?? '',
         schedulerFastPath: true,
-      });
-      if (syncHops > 0 && (!storedPath || storedPath.length <= 1)) {
-        await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
-        return;
-      }
-      const pathSync = await syncMeshcoreRoomContactPathBeforeLogin(
-        activeConn,
-        target.nodeId,
-        pubKey,
-        getIdentityNode(meshcoreIdentityIdRef.current, target.nodeId),
-        storedPath,
-        syncHops,
-        (fn) => repeaterRemoteRpcRef.current(fn),
-      );
-      if (syncHops > 0 && !pathSync.synced) {
-        if (pathSync.reason === 'no_path') {
-          await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
-          return;
-        }
-        throw new Error(MESHCORE_ROOM_LOGIN_PATH_SYNC_FAILED_MESSAGE);
-      }
-      await repeaterRemoteRpcRef.current(async () => {
-        const rpcConn = connRef.current;
-        if (!rpcConn) return;
-        await meshcoreRoomLogin(rpcConn, target.nodeId, pubKey, password, {
-          guestPassword: password,
-          adminPassword: cred.adminPassword ?? '',
-          hopsAway: syncHops,
-        });
       });
       lastMeshcoreRoomSyncTxAtRef.current = Date.now();
       await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
@@ -6289,7 +6503,7 @@ export function useMeshcoreRuntime() {
         console.warn(logLine);
       }
     }
-  }, [resolveRoomLoginHopsForNode, resolveRoomLoginStoredPath]);
+  }, [loginRoom]);
 
   const runRoomSyncSchedulerTick = useCallback(async (): Promise<void> => {
     if (!connRef.current || (state.status !== 'configured' && state.status !== 'connected')) {
@@ -6375,42 +6589,22 @@ export function useMeshcoreRuntime() {
     if (!cred) return;
     const pubKey = pubKeyMapRef.current.get(target.nodeId);
     if (!pubKey) return;
+    if (meshcoreIsRoomLoginQueued(target.nodeId)) {
+      return;
+    }
     try {
-      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword);
-      const activeConn = connRef.current;
-      if (!activeConn) return;
-      const syncHops = resolveRoomLoginHopsForNode(target.nodeId);
-      const storedPath = await resolveRoomLoginStoredPath(target.nodeId, syncHops, pubKey);
-      if (syncHops > 0 && (!storedPath || storedPath.length <= 1)) {
-        throw new Error(MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE);
-      }
-      const pathSync = await syncMeshcoreRoomContactPathBeforeLogin(
-        activeConn,
-        target.nodeId,
-        pubKey,
-        getIdentityNode(meshcoreIdentityIdRef.current, target.nodeId),
-        storedPath,
-        syncHops,
-        (fn) => repeaterRemoteRpcRef.current(fn),
-      );
-      if (syncHops > 0 && !pathSync.synced) {
-        throw new Error(MESHCORE_ROOM_LOGIN_PATH_SYNC_FAILED_MESSAGE);
-      }
-      await repeaterRemoteRpcRef.current(async () => {
-        const rpcConn = connRef.current;
-        if (!rpcConn) return;
-        await meshcoreRoomLogin(rpcConn, target.nodeId, pubKey, password, {
-          guestPassword: password,
-          adminPassword: cred.adminPassword ?? '',
-          hopsAway: syncHops,
-        });
+      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
+      if (!connRef.current) return;
+      await loginRoom(target.nodeId, password, {
+        guestPassword: password,
+        adminPassword: cred.adminPassword ?? '',
       });
       lastMeshcoreRoomSyncTxAtRef.current = Date.now();
       await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
     } catch (e: unknown) {
       console.debug('[useMeshcoreRuntime] room reconnect sync failed ' + errLikeToLogString(e));
     }
-  }, [resolveRoomLoginHopsForNode, resolveRoomLoginStoredPath]);
+  }, [loginRoom]);
 
   meshcoreRoomReconnectSyncRef.current = () => {
     triggerRoomAutoLoginRef.current();
@@ -6500,7 +6694,7 @@ export function useMeshcoreRuntime() {
       const storeId = meshcoreIdentityIdRef.current;
       const canonicalId = addMessage(tempMsg);
       try {
-        const hopsAway = getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away ?? 0;
+        const hopsAway = resolveRoomLoginHopsForNode(nodeId);
         console.debug(
           `[useMeshcoreRuntime] sendRoomPost mode=post txtType=${MESHCORE_TXT_TYPE_PLAIN} bodyLen=${new TextEncoder().encode(text).length} room=0x${nodeId.toString(16)} hops=${hopsAway} transport=${meshcoreConnectTypeRef.current ?? 'unknown'}`,
         );
@@ -6623,31 +6817,16 @@ export function useMeshcoreRuntime() {
   );
 
   const sendRoomAdminCliCommand = useCallback(
-    async (nodeId: number, command: string): Promise<string> => {
-      const node = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
-      if (node?.hw_model !== 'Room') {
-        return sendRepeaterCliCommand(nodeId, command);
-      }
-      const pubKey = pubKeyMapRef.current.get(nodeId);
-      if (!pubKey) {
-        throw new Error('Room not found (no encryption key)');
-      }
-      const conn = connRef.current;
-      if (!conn) {
-        throw new Error(MESHCORE_ERR_NOT_CONNECTED);
-      }
-      if (!meshcoreRoomCanAdmin(nodeId)) {
-        const relogged = await meshcoreRoomTryRelogin(conn, nodeId, pubKey, 'admin', {
-          hopsAway: resolveRoomLoginHopsForNode(nodeId),
-          companionTransport: meshcoreConnectTypeRef.current,
-        });
-        if (!relogged || !meshcoreRoomCanAdmin(nodeId)) {
-          throw new Error('Room admin login required');
-        }
-      }
-      return sendRepeaterCliCommand(nodeId, command);
+    async (
+      nodeId: number,
+      command: string,
+      opts?: { confirmedDanger?: boolean },
+    ): Promise<string> => {
+      // Rooms Members "get acl" and App wiring call this; Room ACL cancel + send live in
+      // sendRepeaterCliCommand so callers need not branch on hw_model.
+      return sendRepeaterCliCommand(nodeId, command, opts);
     },
-    [resolveRoomLoginHopsForNode, sendRepeaterCliCommand],
+    [sendRepeaterCliCommand],
   );
 
   const applyMeshcoreTelemetryPrivacyPolicy = useCallback(

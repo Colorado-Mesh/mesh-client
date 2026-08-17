@@ -6,6 +6,7 @@ import {
   RETICULUM_HUB_INTERFACE_MODE,
   RETICULUM_INTERFACE_MODES,
   reticulumInterfaceModeLabelKey,
+  reticulumInterfaceModesDiverge,
 } from '@/renderer/lib/reticulum/reticulumInterfaceMode';
 
 describe('reticulumInterfaceMode', () => {
@@ -16,6 +17,13 @@ describe('reticulumInterfaceMode', () => {
     expect(normalizeReticulumInterfaceMode('')).toBeNull();
     expect(normalizeReticulumInterfaceMode(null)).toBeNull();
     expect(normalizeReticulumInterfaceMode('nonsense')).toBeNull();
+  });
+
+  it('normalizes live stats Debug names', () => {
+    expect(normalizeReticulumInterfaceMode('AccessPoint')).toBe('access_point');
+    expect(normalizeReticulumInterfaceMode('Full')).toBe('full');
+    expect(normalizeReticulumInterfaceMode('PointToPoint')).toBe('point_to_point');
+    expect(normalizeReticulumInterfaceMode('accesspoint')).toBeNull();
   });
 
   it('defaults modes by interface type', () => {
@@ -37,5 +45,16 @@ describe('reticulumInterfaceMode', () => {
   it('exposes a non-empty mode catalog (cross-language sync via check:reticulum-interface-modes)', () => {
     expect(RETICULUM_INTERFACE_MODES.length).toBeGreaterThan(0);
     expect(RETICULUM_INTERFACE_MODES).toContain('boundary');
+  });
+
+  it('detects configured vs runtime mode divergence', () => {
+    expect(reticulumInterfaceModesDiverge('full', 'access_point')).toBe(true);
+    expect(reticulumInterfaceModesDiverge('full', 'AccessPoint')).toBe(true);
+    expect(reticulumInterfaceModesDiverge('full', 'full')).toBe(false);
+    expect(reticulumInterfaceModesDiverge('ap', 'access_point')).toBe(false);
+    expect(reticulumInterfaceModesDiverge('full', null)).toBe(false);
+    expect(reticulumInterfaceModesDiverge('full', undefined)).toBe(false);
+    expect(reticulumInterfaceModesDiverge(null, 'access_point')).toBe(false);
+    expect(reticulumInterfaceModesDiverge('', 'access_point')).toBe(false);
   });
 });

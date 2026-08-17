@@ -297,6 +297,7 @@ export function createElectronAPIMock(): ElectronAPI {
       saveReticulumAttachment: vi.fn().mockResolvedValue({ success: false }),
       showItemInFolder: vi.fn().mockResolvedValue({ ok: true }),
       readReticulumAttachmentAsDataUrl: vi.fn().mockResolvedValue({ dataUrl: null }),
+      readReticulumAttachmentBytes: vi.fn().mockResolvedValue({ dataBase64: null }),
       linkPreview: {
         fetch: vi.fn().mockResolvedValue(null),
       },
@@ -441,6 +442,18 @@ export function createElectronAPIMock(): ElectronAPI {
         hangup: vi.fn().mockResolvedValue({ ok: true }),
         mute: vi.fn().mockResolvedValue({ ok: true, microphone_muted: false }),
         sendAudio: vi.fn().mockResolvedValue({ ok: true }),
+      },
+      voiceMemo: {
+        start: vi.fn().mockResolvedValue({ ok: true, session_id: 'test-memo-session' }),
+        sendAudio: vi.fn().mockResolvedValue({ ok: true }),
+        stop: vi.fn().mockResolvedValue({
+          ok: true,
+          ogg_base64: '',
+          duration_ms: 0,
+          size_bytes: 0,
+          mode: 16,
+        }),
+        cancel: vi.fn().mockResolvedValue({ ok: true }),
       },
       rncp: {
         send: vi.fn().mockResolvedValue({ ok: true }),

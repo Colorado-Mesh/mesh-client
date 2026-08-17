@@ -693,7 +693,25 @@
     "meshcoreFastSend": {
       "warning": "메시가 릴레이할 수 있는 속도보다 빠르게 전송하고 있습니다. 바쁜 메시에서는 반복자가 서로 가깝게 보낸 메시지를 드롭할 수 있습니다. 메시지 사이에 몇 초를 남겨두세요."
     },
-    "outboxLegacyMultipartBlocked": "대기 중인 이 메시지는 더 이상 전송되지 않는 다중 부분 MeshCore 분할을 사용했습니다. 취소하고 더 ​​짧은 메시지(또는 여러 개의 개별 짧은 메시지)를 보내십시오."
+    "outboxLegacyMultipartBlocked": "대기 중인 이 메시지는 더 이상 전송되지 않는 다중 부분 MeshCore 분할을 사용했습니다. 취소하고 더 ​​짧은 메시지(또는 여러 개의 개별 짧은 메시지)를 보내십시오.",
+    "voiceMemo": {
+      "recordAria": "음성 메모 녹음",
+      "playAria": "음성 메모 재생",
+      "pauseAria": "음성 메모 일시 중지",
+      "seekAria": "음성 메모 재생 위치 찾기",
+      "containerAria": "음성 메모",
+      "sendAria": "음성 메모 보내기",
+      "callBusy": "메모를 녹음하기 전에 음성 통화를 끊으세요.",
+      "micDenied": "음성 메모를 녹음하려면 마이크 접근 권한이 필요합니다.",
+      "tooLargeForWire": "음성 메모가 너무 커서 보낼 수 없습니다. 더 짧은 클립을 녹화합니다.",
+      "tooLargeForPropagation": "음성 메시지가 전파 노드 제한보다 큽니다. 수령인이 온라인 상태일 때만 배달됩니다. 오프라인 배달을 위해 보관하려면 길이를 줄이세요.",
+      "directOnlyBadge": "다이렉트 전용 — 오프라인 스토리지에 너무 큼",
+      "recordTooltip": "LXMF 음성 메모 — 이 다이렉트 메시지에 대한 짧은 Opus 클립을 기록합니다. mesh-client, Ratspeak, Sideband (FIELD_AUDIO)가 지원합니다. LXST Call과 동일하지 않습니다.",
+      "sendTooltip": "녹음된 LXMF 음성 메모 보내기",
+      "startFailed": "음성 메모 녹음을 시작할 수 없습니다. 다시 시도하십시오.",
+      "sendAriaWithElapsed": "음성 메모 전송 ({{seconds}} 초 녹음)",
+      "unavailable": "음성 메모를 사용할 수 없음 — 이 장치에 첨부 파일이 캐시되지 않음."
+    }
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -1218,7 +1236,11 @@
       "backboneEnableGuidanceBody": "-2는 불필요한 대역폭 부풀림이 없는 이중화를 위한 스윗 스팟입니다. 글로벌 허브 1개와 지역 게이트웨이 1개를 목표로 하고 필요에 따라 특수 인터페이스 (예: I2P 또는 Yggdrasil) 를 엄격하게 활성화합니다. 로컬로 연결된 RNode 및 로컬 LAN 인터페이스는 이 백본 제한에 포함되지 않습니다.",
       "defaultHubsPickerHint": "기본 및 글로벌 백본에 지역을 더해 시작하세요. 백본 게이트웨이는 최대 1~3개(이상적은 2개)만 사용하세요. 로컬 RNode와 LAN 인터페이스는 포함되지 않습니다. 새 항목은 검토할 수 있도록 비활성으로 추가됩니다. Sync는 남은 폐기된 공식 테스트넷 허브(암스테르담)도 비활성화합니다.",
       "rnodeTransportBleHint": "BLE 본드는 macOS와 비동기화할 수 있습니다 (Forget + re-pair). 라디오가 근처에 있을 때는 USB 직렬 또는 Wi-Fi (tcp://) 를 선호합니다.",
-      "flowControl": "흐름 제어(TX Ready-Gate)"
+      "flowControl": "흐름 제어(TX Ready-Gate)",
+      "rmapFullModeHint": "RMAP 게시의 전체 모드는 IGNORE_CONFIG_WARNINGS를 통해 전체 모드를 유지합니다. LXMF 배달 알림은 스택 알림 간격 (기본 1시간) 에서 이 라디오를 내보냅니다.",
+      "effectiveModeBadge": "유효: {{mode}}",
+      "effectiveModeAria": "유효 런타임 모드 {{mode}}. 설정된 모드는 Reticulum이 실행 중인 모드와 다릅니다.",
+      "effectiveModeTooltip": "Reticulum은 ignore_config_warnings가 설정되지 않는 한 검색 가능한 인터페이스를 게이트웨이, 내부 또는 액세스 포인트가 필요하기 때문에 이 검색 가능한 인터페이스를 액세스 포인트 (또는 다른 허용 모드) 에 다시 작성했습니다. mesh-client 스탬프 후 스택을 다시 시작하여 Full (또는 구성된 모드) 이 적용되도록 옵트아웃합니다."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1695,7 +1717,8 @@
         "rmap_no_tcp_hub": "검색 가능한 로컬 RNode에는 인터넷에 연결할 수 있는 TCP 클라이언트 허브가 없습니다.",
         "rmap_transport_disabled": "검색 가능한 인터페이스가 구성되었지만 전송 모드가 꺼져 있습니다.",
         "rmap_i2p_not_connectable": "I2P 인터페이스 \"{{name}}\" 는 검색 가능하지만 연결 가능은 예가 아닙니다.",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "비 AP/게이트웨이 모드에서 인터페이스 \"{{name}}\" 을 (를) 검색할 수 있습니다. Reticulum은 ignore_config_warnings를 설정하지 않는 한 액세스 포인트로 실행합니다. mesh-client가 옵트아웃 스탬프를 찍을 수 있도록 인터페이스를 편집하거나 스택을 다시 시작하십시오."
       },
       "runtime": {
         "rnsNotReady": "RNS 스택이 준비되지 않았습니다.",
@@ -4039,7 +4062,7 @@
     }
   },
   "repeatersPanel": {
-    "searchRepeaters": "중계기 검색",
+    "searchRepeaters": "중계기 및 룸 검색",
     "favorite": "가장 좋아하는",
     "unfavorite": "즐겨찾기 안함",
     "pingError": "핑 오류: {{error}}",
@@ -4051,12 +4074,12 @@
     "cliInput": "CLI 명령 입력",
     "cliInterface": "CLI 인터페이스",
     "sensorTelemetryLpp": "센서 원격 측정 LPP",
-    "noRepeatersYet": "아직 중계기가 발견되지 않았습니다.",
-    "noRepeatersHintPre": "\"반복기\" 유형의 연락처가 광고되면 반복기가 나타납니다. 사용",
+    "noRepeatersYet": "아직 발견된 중계기나 룸이 없습니다.",
+    "noRepeatersHintPre": "중계기와 룸 서버는 해당 유형의 연락처가 광고할 때 나타납니다. ",
     "importContacts": "연락처 가져오기",
     "noRepeatersHintMid": "에",
     "noRepeatersHintSuffix": "닉네임을 미리 로드하려면 탭하세요.",
-    "noRepeatersMatch": "검색어와 일치하는 중계기가 없습니다.",
+    "noRepeatersMatch": "검색과 일치하는 중계기나 룸이 없습니다.",
     "snrDbTooltip": "dB — 가능한 경우 요청 상태에서, 그렇지 않으면 연락처 목록에서",
     "rssiDbmTooltip": "dBm — 가능한 경우 요청 상태에서, 그렇지 않으면 연락처 목록에서",
     "hopCountTooltip": "마지막 Ping 추적의 홉 수(사용자와 이 노드 간 반복)",
@@ -4064,7 +4087,7 @@
     "heardPrefix": "들었다:",
     "noLppData": "이 응답에는 LPP 센서 데이터가 없습니다.",
     "enterCommand": "명령을 입력하세요...",
-    "searchRepeatersPlaceholder": "중계기 검색…",
+    "searchRepeatersPlaceholder": "중계기 및 룸 검색…",
     "openCliInterface": "개방형 CLI 인터페이스",
     "sensorLppButton": "센서(LPP)",
     "noTelemetryResponse": "아직 원격 분석 응답이 없습니다. 센서(LPP)를 다시 시도해 보세요.",
@@ -4079,7 +4102,7 @@
     "columnReliability": "신뢰할 수 있음",
     "columnActions": "행위",
     "nodesTabName": "노드",
-    "title": "중계기",
+    "title": "중계기와 룸",
     "columnsDataHint": "SNR, RSSI, 가동 시간 및 방송 시간은 상태 작업(또는 이 패널이 열려 있는 동안 자동 가져오기)에서 가져옵니다. 홉 및 경로 기록에는 Ping이 필요합니다. MeshCore는 광고만으로는 해당 열을 채우지 않습니다.",
     "remoteAuthLabel": "리피터 관리자 비밀번호(선택사항)",
     "remoteAuthPlaceholder": "리피터에 관리자 비밀번호가 없으면 비워 두세요.",
@@ -4164,7 +4187,16 @@
     "currentRouteLabel": "현재 경로:",
     "neighborsLoadMore": "더 보기 ({{loaded}}/{{total}} 로드됨)",
     "neighborsLoadMoreAria": "더 많은 이웃 로드 ({{loaded}}/{{total}} 로드됨)",
-    "neighborsLoadingMore": "로드 중…"
+    "neighborsLoadingMore": "로드 중…",
+    "cliClockCannotGoBackwards": "이 노드의 시계가 이 컴퓨터보다 앞서 있습니다({{utc}}). MeshCore 펌웨어는 시계를 뒤로 설정하지 않습니다. 확인 후 clkreboot를 실행한 다음 clock sync를 실행하세요.",
+    "typeFilterAria": "유형으로 필터하기",
+    "filterAll": "모두",
+    "filterRepeaters": "리피터",
+    "filterRooms": "룸",
+    "openRoom": "룸 열기",
+    "savedPasswordOrphanRoomLabel": "룸 {{nodeId}}",
+    "roomCliNeedsAdminPassword": "원격 룸 CLI에는 룸 관리자 암호(SendLogin ACL)가 필요합니다. Repeaters → 이 룸의 암호에 저장한 다음 다시 시도하세요. 게스트 BBS 로그인으로는 부족합니다.",
+    "cliHistoryError": "[오류: {{detail}}]"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",
@@ -4444,12 +4476,7 @@
     "postPlaceholder": "룸에 게시…",
     "postButton": "게시",
     "posting": "게시 중…",
-    "manageRoom": "관리",
-    "manageHeading": "룸 관리",
-    "cliPlaceholder": "관리자 CLI 명령...",
-    "cliSend": "보내기",
-    "clearCli": "CLI 지우기",
-    "cliEmpty": "아직 CLI 출력이 없습니다.",
+    "manageRoom": "Repeaters에서 관리",
     "aclPubkeyLabel": "공개 키 (64 16진수)",
     "aclLevelLabel": "사용권한 수준",
     "aclLevelRemove": "접근 제거",
@@ -4457,7 +4484,6 @@
     "aclLevelReadWrite": "읽기/쓰기 (게시 가능)",
     "aclLevelAdmin": "관리",
     "aclApply": "ACL 적용",
-    "adminPasswordRequired": "이 룸을 관리하려면 관리자 비밀번호가 필요합니다.",
     "postFailed": "룸에 게시하지 못했습니다.",
     "leaveRoom": "방 나가기",
     "rememberPassword": "비밀번호 기억하기",
@@ -4473,7 +4499,6 @@
     "cancelLoginHint": "다른 룸 로그인이 먼저 라디오에서 완료될 수 있습니다. 취소는 이 룸에 대한 추가 시도를 중지합니다.",
     "emptyGuestLoginHint": "비어 있는 게스트 필드: 빈 비밀번호 서버에는 \"읽기 전용으로 계속\"을 사용하세요. 로그인에는 비밀번호가 필요하며 필드가 비어 있으면 \"hello\"를 보냅니다.",
     "unreadPosts": "새 글 {{count}}개",
-    "closeManage": "닫기",
     "upgradeAccess": "업그레이드 액세스",
     "leavingRoom": "떠나기",
     "leaveRoomInProgress": "방을 나가는 중…",
@@ -4530,16 +4555,14 @@
     "legendNotSavedTooltip": "빈 원 — 이 룸에 대한 비밀번호가 저장되지 않음",
     "legendSavedTooltip": "하늘 반원 — 비밀번호가 저장되었습니다. 로그인하여 세션을 여세요",
     "legendLoggedInTooltip": "녹색 점 — 활성 클라이언트 세션 (서버가 오프라인이면 룸을 나가세요)",
-    "historyLocalHint": "게시물은 이 기기에서 이 룸에 로그인한 경우에만 표시됩니다. 자동 동기화를 활성화하여 구독 상태를 유지하세요. 기록은 룸 서버에서 채워지지 않습니다.",
+    "historyLocalHint": "로그인 시 mesh-client는 이 기기에 아직 로컬 워터마크가 없을 때 룸 서버 링 버퍼에 남아 있는 최근 게시물을 요청합니다. 연결된 동안 구독을 유지하려면 자동 동기화를 활성화하세요.",
     "loginAllSavedDisabledNoSavedPasswords": "전체 로그인을 사용하려면 먼저 룸 비밀번호를 저장하세요.",
     "membersHeadingWithCount": "회원 ({{count}})",
     "collapseRoomList": "방 목록 접기",
     "expandRoomList": "방 목록 펼치기",
-    "pathHashCliGet": "경로 해시 모드 가져오기",
-    "pathHashCliSet0": "경로 해시 모드 1바이트 설정",
-    "pathHashCliSet1": "경로 해시 모드 2바이트 설정",
-    "pathHashCliSet2": "경로 해시 모드 3바이트 설정",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} 읽지 않음"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} 읽지 않음",
+    "manageJumpHint": "인프라 컨트롤(ping, status, CLI, ACL setperm)은 Repeaters 탭에 있습니다.",
+    "aclPubkeyPlaceholder": "0123456789abcdef…"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",

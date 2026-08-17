@@ -91,11 +91,39 @@ export async function meshcoreRepeaterTryLogin(
   if (!password) {
     return { attempted: false, ok: true, fromPersisted: false };
   }
+  return meshcoreRepeaterTryLoginWithPassword(conn, pubKey, password, {
+    fromPersisted,
+    runSerialized,
+    extraTimeoutMs,
+  });
+}
+
+/**
+ * SendLogin with an explicit admin password (ACL populate for remote CLI).
+ * Used for Room servers where the password lives in room credentials, not repeater storage.
+ */
+export async function meshcoreRepeaterTryLoginWithPassword(
+  conn: MeshcoreRepeaterLoginConn,
+  pubKey: Uint8Array,
+  password: string,
+  opts?: {
+    fromPersisted?: boolean;
+    runSerialized?: MeshcoreRepeaterRunSerialized;
+    extraTimeoutMs?: number;
+  },
+): Promise<MeshcoreRepeaterTryLoginResult> {
+  const trimmed = password.trim();
+  const fromPersisted = opts?.fromPersisted ?? false;
+  if (!trimmed) {
+    return { attempted: false, ok: true, fromPersisted: false };
+  }
+  const extraTimeoutMs = opts?.extraTimeoutMs ?? MESHCORE_TELEMETRY_TIMEOUT_MS;
+  const runSerialized = opts?.runSerialized;
   const attempt = async (): Promise<void> => {
     await runMeshcoreRepeaterLogin(
       conn,
       pubKey,
-      password,
+      trimmed,
       extraTimeoutMs,
       runSerialized,
       runSerialized ? awaitMeshcoreRepeaterAdminRfIdle : undefined,
@@ -117,9 +145,7 @@ export async function meshcoreRepeaterTryLogin(
         return { attempted: true, ok: false, fromPersisted, error: retryErr };
       }
     }
-    console.warn(
-      '[meshcoreRepeaterSession] repeater login failed (continuing) ' + errLikeToLogString(e),
-    );
+    console.warn('[meshcoreRepeaterSession] repeater login failed ' + errLikeToLogString(e));
     return { attempted: true, ok: false, fromPersisted, error: e };
   }
 }

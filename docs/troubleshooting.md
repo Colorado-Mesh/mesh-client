@@ -843,7 +843,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Reactions on other clients:** By default mesh-client sends tapbacks and text replies as keyless `@[Display Name] …` (official companion wire). Inbound keyed `@[Name#key]` and emoji-only replies render locally as tapback badges via [`meshcorePromoteEmojiOnlyReplyToTapback`](../src/renderer/lib/meshcoreChannelText.ts). Inbound MeshCore Open wire (`r:HASH:INDEX`, `g:GIFID`) is always parsed for display.
 
-**MeshCore Open compatibility (optional):** In **App → MeshCore Open wire (experimental)**, enable **MeshCore Open compatibility** to send keyed text replies (`@[Name#key] body`), compact `r:` reactions (fallback to keyless tapback when the emoji is not in the Open index), and `g:` Giphy GIFs (paste URL/ID or use the **GIF** button in Chat). Default off — use only when other nodes on your mesh run MeshCore Open-aware clients. Details: [meshcore-meshtastic-parity.md — MeshCore emoji reactions](meshcore-meshtastic-parity.md#meshcore-emoji-reactions-tapbacks) and [GIF wire](meshcore-meshtastic-parity.md#meshcore-open-gif-wire-ggifid).
+**MeshCore Open compatibility (optional):** In **Radio → MeshCore Open wire (experimental)**, enable **MeshCore Open compatibility** to send keyed text replies (`@[Name#key] body`), compact `r:` reactions (fallback to keyless tapback when the emoji is not in the Open index), and `g:` Giphy GIFs (paste URL/ID or use the **GIF** button in Chat). Default off — use only when other nodes on your mesh run MeshCore Open-aware clients. Details: [meshcore-meshtastic-parity.md — MeshCore emoji reactions](meshcore-meshtastic-parity.md#meshcore-emoji-reactions-tapbacks) and [GIF wire](meshcore-meshtastic-parity.md#meshcore-open-gif-wire-ggifid).
 
 ### MeshCore: "Get Telemetry" returns timeout
 
@@ -892,9 +892,9 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Guest / read-only login fails with timeout or "rejected"**:
 
-- When the room server **guest password is empty**, use **Continue read-only** on the Rooms login overlay. That sends **zero password bytes** (same as the official Android app). **Login** with an empty guest field is disabled; it would send the default **`hello`** password instead.
-- When the server **does** configure a guest password, enter that value in the guest field and click **Login** (some communities use **`hello`**).
-- **Room admin CLI** (Rooms → admin overlay): many stock room servers use **`hello`** as the default admin password when none was configured. The guest field placeholder shows `hello`; admin login uses the same MeshCore default when you type it explicitly — do not confuse that with **Continue read-only**, which sends zero bytes for blank guest servers.
+- Try **blank** Login (or **Continue read-only**) for **read-only** when the room has `allow.read.only` on. That sends **zero password bytes**.
+- For **read/write** (post), try the default guest password **`hello`**, or the room’s configured guest password. MeshCore has no passwordless write mode.
+- **Room admin CLI** (**Repeaters** tab → room row CLI; needs the room **admin** password via SendLogin ACL, not guest BBS login): many stock room servers use **`hello`** as the default admin password when none was configured. Save the admin password under Repeaters → password for that room.
 - Logs showing push **`0x86`** (frame 134) mean **LoginFail** (wrong password or ACL denied). **Room login** rejects immediately on a prefix-matched LoginFail. **Repeater admin login** keeps waiting for a possible LoginSuccess (meshcore.js behavior on congested links); timeout after LoginFail alone is reported as timeout, not wrong password.
 - **Admin password** working while guest/read-only fails usually means the guest password on the server does not match what the client sent, or ACL denies read-only login.
 - If the room **changed its password** and mesh-client keeps trying to log in, open the **Rooms** tab: expand **Saved passwords** in the sidebar (or use the login overlay for the selected room). Use **Stop auto-login** to stop connect-time retries while keeping the old password stored, or **Forget saved password** to clear the stored guest/admin password and turn off auto-login and auto-sync. After a wrong-password failure, auto-login is turned off automatically until you log in again with **Remember password** or re-enable it.
@@ -920,12 +920,13 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **No room history after login**:
 
-- Firmware only **pushes new posts** after a successful login; it does not backfill old BBS messages. Enable **Auto-sync** on the Rooms tab to periodic re-login while connected.
+- Room servers keep a **short ring buffer** of recent posts and push anything newer than your companion’s `sync_since` watermark after LoginSuccess. mesh-client resets that watermark (remove+re-add contact) when this device has **no local last-post watermark** yet, then drains waiting messages after login.
+- Posts older than the ring (or already past `sync_since`) will not appear. Enable **Auto-sync** on the Rooms tab to periodically re-login while connected so you stay current.
 - mesh-client stores posts received while you are logged in on **this device**. Quitting the app or staying logged out for days means posts from that period will not appear later unless they were persisted locally. See the **Rooms** tab history note under Auto-sync.
 
 **pyMC / server console shows posts but Rooms tab does not (cross-client)**:
 
-- The room **server log** (e.g. pyMC) lists everything the BBS stored. mesh-client and the official app only show posts **pushed to your radio while you are logged in** to that room (see above). Posts made before your login, or while you were logged out, will not appear until someone posts again after you re-login (or use **Auto-sync** to periodic re-login).
+- The room **server log** (e.g. pyMC) lists everything the BBS stored. mesh-client and the official app only show posts **pushed to your radio while you are logged in** to that room (see above). Posts made before your login, or while you were logged out, will not appear until someone posts again after you re-login (or use **Auto-sync** to periodically re-login).
 - For a fair test: keep **both** clients logged into the **same room** while connected, then post from one side and confirm the other receives it within ~30 seconds on RF.
 - mesh-client sends outbound room posts as **`TXT_TYPE_PLAIN`**; inbound BBS pushes use **`TXT_TYPE_SIGNED_PLAIN`** (author prefix stripped in the Rooms UI).
 
@@ -935,7 +936,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Read-only → write upgrade does nothing**:
 
-- After **Continue read-only**, use **Upgrade access** (or **Login** with the guest password) so the client sends a fresh **SendLogin** with `forceRelogin`. Enter the real guest password (often **`hello`**); empty field Login is disabled on the main overlay to avoid sending `hello` when the server expects blank read-only login.
+- After **Continue read-only**, use **Upgrade access** and enter the guest password (often **`hello`**) so the client sends a fresh **SendLogin** with `forceRelogin`. An empty field cannot upgrade write access.
 
 **Long room posts show as `[1/2]`, `[2/2]`…**:
 
@@ -954,7 +955,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 **Retest checklist (after upgrading from a known-good build)**:
 
 1. Connect MeshCore over TCP or BLE; confirm nodes load.
-2. Open **Rooms** → with **empty guest password** on the server, click **Continue read-only** (not **Login** with an empty field). With a configured guest password, enter it and click **Login**.
+2. Open **Rooms** → try **blank** Login for read-only (or **Continue read-only**). For posting, try **`hello`** (default read/write guest password) or the room’s guest password.
 3. Post as admin; confirm the post appears in the **official Android app** on the same room (SignedPlain BBS path).
 4. Confirm room posts appear in **Rooms** with unread badges (not Chat channel pills).
 5. On **Connection** tab, receive a **channel** message on a channel you are not viewing → sidebar **Chat** badge and red pill on that channel when you open Chat.

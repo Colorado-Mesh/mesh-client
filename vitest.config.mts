@@ -129,6 +129,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/meshcore/meshcoreRfRxRuntime.test.ts',
   'src/renderer/lib/meshcoreRoomCredentialStorage.test.ts',
   'src/renderer/lib/meshcoreRepeaterCredentialStorage.test.ts',
+  'src/renderer/lib/meshcoreInfraAdminSecrets.test.ts',
   'src/renderer/lib/meshcorePerNodeCredentialStorage.test.ts',
   'src/renderer/lib/meshcoreRepeaterSavedSecrets.test.ts',
   'src/renderer/lib/meshcoreRepeaterSession.test.ts',

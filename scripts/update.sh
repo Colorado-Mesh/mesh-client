@@ -220,11 +220,14 @@ check_ratspeak_patches() {
     'rsReticulum-discovery-announce-egress.patch|ratspeak/rsReticulum|19|rsReticulum discovery announce egress|https://github.com/ratspeak/rsReticulum/pull/19'
     'rsReticulum-inbound-raw-saturation-log.patch|ratspeak/rsReticulum||rsReticulum inbound-raw saturation log|'
     'rsReticulum-interface-tx-queue-stats.patch|ratspeak/rsReticulum||rsReticulum interface TX queue stats|'
+    'rsReticulum-pathless-link-exclude-rf.patch|ratspeak/rsReticulum||rsReticulum pathless Link exclude RF sinks|'
+    'rsReticulum-announce-rebroadcast-exclude-rf.patch|ratspeak/rsReticulum||rsReticulum announce rebroadcast exclude RF sinks|'
     'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF|4|rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF/pull/4'
     'rsLXMF-propagation-node-policy-setters.patch|ratspeak/rsLXMF|6|rsLXMF PropagationNode policy setters|https://github.com/ratspeak/rsLXMF/pull/6'
     'rsLXMF-propagation-node-deferred-messagestore-load.patch|ratspeak/rsLXMF||rsLXMF PropagationNode deferred messagestore load|'
     'rsLXMF-link-delivery-has-pending-to.patch|ratspeak/rsLXMF||rsLXMF LinkDeliveryManager has_pending_to|'
     'rsLXMF-propagation-client-abort-transfer.patch|ratspeak/rsLXMF||rsLXMF PropagationClient abort_transfer for cancelled Sync|'
+    'rsLXMF-propagation-client-link-attached-tx.patch|ratspeak/rsLXMF||rsLXMF PropagationClient pin link TX to proof interface|'
   )
   local patches_dir='reticulum-sidecar/patches'
   local has_ratspeak_warning=0

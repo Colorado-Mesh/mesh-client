@@ -693,7 +693,25 @@
     "meshcoreFastSend": {
       "warning": "Anda mengirim lebih cepat daripada yang dapat disampaikan oleh mesh. Pada mesh yang sibuk, repeater dapat menjatuhkan pesan yang dikirim secara berdekatan — menyisakan beberapa detik di antara pesan."
     },
-    "outboxLegacyMultipartBlocked": "Pesan antrean ini menggunakan pemisahan MeshCore multi-bagian, yang tidak lagi terkirim. Batalkan dan kirim pesan singkat (atau beberapa pesan singkat terpisah)."
+    "outboxLegacyMultipartBlocked": "Pesan antrean ini menggunakan pemisahan MeshCore multi-bagian, yang tidak lagi terkirim. Batalkan dan kirim pesan singkat (atau beberapa pesan singkat terpisah).",
+    "voiceMemo": {
+      "recordAria": "Rekam memo suara",
+      "playAria": "Putar memo suara",
+      "pauseAria": "Jeda memo suara",
+      "seekAria": "Mencari posisi pemutaran memo suara",
+      "containerAria": "Memo suara",
+      "sendAria": "Kirim memo suara",
+      "callBusy": "Tutup panggilan suara sebelum merekam memo.",
+      "micDenied": "Akses mikrofon diperlukan untuk merekam memo suara.",
+      "tooLargeForWire": "Memo suara terlalu besar untuk dikirim. Rekam klip yang lebih pendek.",
+      "tooLargeForPropagation": "Pesan suara lebih besar dari batas simpul propagasi. Pengiriman hanya akan dilakukan saat penerima sedang online. Persingkat untuk menyimpannya untuk pengiriman offline.",
+      "directOnlyBadge": "Hanya langsung — terlalu besar untuk penyimpanan offline",
+      "recordTooltip": "Memo suara LXMF — merekam klip Opus singkat untuk pesan langsung ini. Didukung oleh mesh-client, Ratspeak, dan Sideband (FIELD_AUDIO). Tidak sama dengan LXST Call.",
+      "sendTooltip": "Kirim memo suara LXMF yang direkam",
+      "startFailed": "Tidak dapat memulai perekaman memo suara. Coba lagi.",
+      "sendAriaWithElapsed": "Kirim memo suara ({{seconds}} detik direkam)",
+      "unavailable": "Memo suara tidak tersedia — lampiran tidak di - cache pada perangkat ini."
+    }
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -1218,7 +1236,11 @@
       "backboneEnableGuidanceBody": "—2 adalah titik ideal untuk redundansi tanpa pemborosan bandwidth. Bidik 1 hub global dan 1 gateway regional, dan aktifkan antarmuka khusus (seperti I2P atau Yggdrasil) hanya jika diperlukan. RNode yang terhubung lokal dan antarmuka LAN lokal tidak dihitung dalam batas backbone ini.",
       "defaultHubsPickerHint": "Mulai dengan Utama & Global plus wilayah Anda. Aktifkan paling banyak 1 hingga 3 gateway backbone (2 adalah titik ideal). RNode lokal dan antarmuka LAN tidak dihitung. Entri baru ditambahkan dalam keadaan nonaktif agar bisa ditinjau. Sync juga menonaktifkan sisa hub testnet resmi yang sudah dinonaktifkan (Amsterdam).",
       "rnodeTransportBleHint": "Ikatan BLE dapat desinkronisasi dengan macOS (Forget + re-pair). Lebih suka USB serial atau Wi-Fi (tcp://) saat radio ada di dekatnya.",
-      "flowControl": "Kontrol aliran (gerbang siap TX)"
+      "flowControl": "Kontrol aliran (gerbang siap TX)",
+      "rmapFullModeHint": "Mode penuh dengan RMAP publikasikan tetap Penuh melalui ignore_config_warnings. Pengiriman LXMF mengumumkan akan keluar dari radio ini pada interval pengumuman stack (default 1 jam).",
+      "effectiveModeBadge": "Berlaku: {{mode}}",
+      "effectiveModeAria": "Mode runtime efektif {{mode}}. Mode yang dikonfigurasi berbeda dari yang dijalankan Reticulum.",
+      "effectiveModeTooltip": "Reticulum menulis ulang antarmuka yang dapat ditemukan ini ke Access Point (atau mode lain yang diizinkan) karena dapat ditemukan memerlukan Gateway, Internal, atau Access Point kecuali jika ignore_config_warnings ditetapkan. Mulai ulang tumpukan setelah stempel mesh-client yang menyisih sehingga Full (atau mode terkonfigurasi Anda) berlaku."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1695,7 +1717,8 @@
         "rmap_no_tcp_hub": "RNode lokal yang dapat ditemukan tidak memiliki hub klien TCP yang diaktifkan untuk jangkauan internet.",
         "rmap_transport_disabled": "Antarmuka yang dapat ditemukan dikonfigurasi tetapi mode transportasi tidak aktif.",
         "rmap_i2p_not_connectable": "Antarmuka I2P \"{{name}}\" dapat ditemukan tetapi terhubung bukan ya.",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "Antarmuka \"{{name}}\" dapat ditemukan dengan mode non — AP/Gateway — Reticulum akan menjalankannya sebagai Access Point kecuali jika ignore_config_warnings ditetapkan. Edit antarmuka atau mulai ulang tumpukan sehingga mesh-client dapat mencap opt - out."
       },
       "runtime": {
         "rnsNotReady": "Tumpukan RNS belum siap",
@@ -4039,7 +4062,7 @@
     }
   },
   "repeatersPanel": {
-    "searchRepeaters": "Pencarian repeater",
+    "searchRepeaters": "Cari repeater dan ruangan",
     "favorite": "Favorit",
     "unfavorite": "Tidak favorit",
     "pingError": "Kesalahan ping: {{error}}",
@@ -4051,12 +4074,12 @@
     "cliInput": "Masukan perintah CLI",
     "cliInterface": "antarmuka CLI",
     "sensorTelemetryLpp": "Sensor telemetri LPP",
-    "noRepeatersYet": "Belum ada repeater yang ditemukan.",
-    "noRepeatersHintPre": "Repeater muncul ketika kontak dengan tipe \"Repeater\" beriklan. Menggunakan",
+    "noRepeatersYet": "Belum ada repeater atau ruangan yang ditemukan.",
+    "noRepeatersHintPre": "Repeater dan server ruangan muncul saat kontak dengan tipe tersebut meng-advert. Gunakan ",
     "importContacts": "Impor Kontak",
     "noRepeatersHintMid": "di",
     "noRepeatersHintSuffix": "tab untuk memuat nama panggilan sebelumnya.",
-    "noRepeatersMatch": "Tidak ada repeater yang cocok dengan pencarian Anda.",
+    "noRepeatersMatch": "Tidak ada repeater atau ruangan yang cocok dengan pencarian.",
     "snrDbTooltip": "dB — dari Status Permintaan bila tersedia, daftar kontak lainnya",
     "rssiDbmTooltip": "dBm — dari Status Permintaan bila tersedia, daftar kontak lainnya",
     "hopCountTooltip": "Jumlah lompatan dari jejak Ping terakhir (pengulang antara Anda dan node ini)",
@@ -4064,7 +4087,7 @@
     "heardPrefix": "Mendengar:",
     "noLppData": "Tidak ada data sensor LPP dalam respons ini.",
     "enterCommand": "Masukkan perintah...",
-    "searchRepeatersPlaceholder": "Repeater pencarian…",
+    "searchRepeatersPlaceholder": "Cari repeater dan ruangan…",
     "openCliInterface": "Buka antarmuka CLI",
     "sensorLppButton": "Sensor (LPP)",
     "noTelemetryResponse": "Belum ada tanggapan telemetri. Coba Sensor (LPP) lagi.",
@@ -4079,7 +4102,7 @@
     "columnReliability": "Keandalan",
     "columnActions": "Tindakan",
     "nodesTabName": "Node",
-    "title": "Repeater",
+    "title": "Repeater & Ruangan",
     "columnsDataHint": "SNR, RSSI, uptime, dan airtime berasal dari tindakan Status (atau pengambilan otomatis saat panel ini terbuka). Hop dan riwayat jalur memerlukan Ping. MeshCore tidak mengisi kolom tersebut hanya dari iklan.",
     "remoteAuthLabel": "Kata sandi admin pengulang (opsional)",
     "remoteAuthPlaceholder": "Biarkan kosong jika repeater tidak memiliki kata sandi admin",
@@ -4164,7 +4187,16 @@
     "currentRouteLabel": "Rute saat ini:",
     "neighborsLoadMore": "Muat lebih banyak ({{loaded}} dari {{total}})",
     "neighborsLoadMoreAria": "Muat lebih banyak tetangga ({{loaded}} dari {{total}} dimuat)",
-    "neighborsLoadingMore": "Memuat…"
+    "neighborsLoadingMore": "Memuat…",
+    "cliClockCannotGoBackwards": "Jam node ini lebih maju dari komputer ini ({{utc}}). Firmware MeshCore tidak akan mengatur jam mundur. Setelah dikonfirmasi, jalankan clkreboot, lalu clock sync.",
+    "typeFilterAria": "Filter berdasarkan jenis simpul",
+    "filterAll": "Semua",
+    "filterRepeaters": "Pengulang",
+    "filterRooms": "Ruangan",
+    "openRoom": "Buka ruangan",
+    "savedPasswordOrphanRoomLabel": "Ruangan {{nodeId}}",
+    "roomCliNeedsAdminPassword": "CLI ruangan jarak jauh membutuhkan kata sandi admin ruangan (SendLogin ACL). Simpan di Repeaters → kata sandi untuk ruangan ini, lalu coba lagi. Login BBS tamu tidak cukup.",
+    "cliHistoryError": "[Kesalahan: {{detail}}]"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",
@@ -4444,12 +4476,7 @@
     "postPlaceholder": "Posting ke ruangan…",
     "postButton": "Posting",
     "posting": "Memposting…",
-    "manageRoom": "Kelola",
-    "manageHeading": "Administrasi ruangan",
-    "cliPlaceholder": "Perintah CLI admin…",
-    "cliSend": "Kirim",
-    "clearCli": "Hapus CLI",
-    "cliEmpty": "Belum ada output CLI.",
+    "manageRoom": "Kelola di Repeaters",
     "aclPubkeyLabel": "Kunci publik (64 hex)",
     "aclLevelLabel": "Tingkat izin",
     "aclLevelRemove": "Hapus akses",
@@ -4457,7 +4484,6 @@
     "aclLevelReadWrite": "Baca/Tulis (bisa posting)",
     "aclLevelAdmin": "Administrator",
     "aclApply": "Terapkan ACL",
-    "adminPasswordRequired": "Kata sandi admin diperlukan untuk mengelola ruangan ini.",
     "postFailed": "Gagal mengeposkan ke ruangan",
     "leaveRoom": "Tinggalkan ruangan",
     "rememberPassword": "Ingat sandi",
@@ -4473,7 +4499,6 @@
     "cancelLoginHint": "Login ruangan lain mungkin selesai di radio terlebih dahulu. Batalkan upaya perhentian lebih lanjut untuk ruangan ini.",
     "emptyGuestLoginHint": "Kolom tamu kosong: gunakan Lanjutkan hanya baca untuk server tanpa kata sandi. Login memerlukan kata sandi dan mengirim \"hello\" saat kolom kosong.",
     "unreadPosts": "{{count}} baru",
-    "closeManage": "Tutup",
     "upgradeAccess": "Tingkatkan akses",
     "leavingRoom": "Meninggalkan…",
     "leaveRoomInProgress": "Meninggalkan ruangan…",
@@ -4530,16 +4555,14 @@
     "legendNotSavedTooltip": "Lingkaran kosong — tidak ada kata sandi yang disimpan untuk ruangan ini",
     "legendSavedTooltip": "Setengah lingkaran biru langit — kata sandi disimpan; masuk untuk membuka sesi",
     "legendLoggedInTooltip": "Titik hijau — sesi klien aktif (tinggalkan ruangan jika server offline)",
-    "historyLocalHint": "Pos hanya muncul saat Anda masuk ke ruangan ini di perangkat ini. Aktifkan Sinkronisasi otomatis untuk tetap berlangganan; riwayat tidak diisi ulang dari server ruangan.",
+    "historyLocalHint": "Saat login, mesh-client meminta pos terbaru yang masih ada di buffer cincin server ruangan (ketika perangkat ini belum punya watermark lokal). Aktifkan Sinkronisasi otomatis agar tetap berlangganan saat terhubung.",
     "loginAllSavedDisabledNoSavedPasswords": "Simpan kata sandi ruangan terlebih dahulu untuk menggunakan log masuk semua",
     "membersHeadingWithCount": "Anggota ({{count}})",
     "collapseRoomList": "Ciutkan daftar ruangan",
     "expandRoomList": "Perluas daftar ruangan",
-    "pathHashCliGet": "Dapatkan mode hash jalur",
-    "pathHashCliSet0": "Atur mode hash jalur 1 - byte",
-    "pathHashCliSet1": "Atur mode hash jalur 2 - byte",
-    "pathHashCliSet2": "Atur mode hash jalur 3 - byte",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} belum dibaca"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} belum dibaca",
+    "manageJumpHint": "Kontrol infrastruktur (ping, status, CLI, ACL setperm) ada di tab Repeaters.",
+    "aclPubkeyPlaceholder": "0123456789abcdef…"
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",

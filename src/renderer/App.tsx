@@ -157,6 +157,7 @@ import {
 import {
   resolvePanelPositionSendHandler,
   resolvePanelRebootHandler,
+  resolvePanelSetOwnerHandler,
 } from './lib/appPanelHandlerSelection';
 import { protocolRecord, selectByProtocol } from './lib/appProtocolSelect';
 import { getAppSettingsRaw, isRrcUnreadAllRoomMessagesEnabled } from './lib/appSettingsStorage';
@@ -242,6 +243,8 @@ import { openReticulumGameSession } from './lib/reticulum/reticulumGamesSession'
 import { setReticulumManualStackStopSuppress } from './lib/reticulum/reticulumManualStackStopSuppress';
 import { resolveReticulumSelfHeaderLabel } from './lib/reticulum/reticulumSelfNodeLabel';
 import { skipReticulumStartupAutostartGate } from './lib/reticulum/reticulumStartupAutostartGate';
+import { startReticulumVoiceMemo } from './lib/reticulum/reticulumVoiceMemo';
+import { sendReticulumVoiceMemo } from './lib/reticulum/sendReticulumVoiceMemo';
 import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
 import { scheduleReticulumVacuumIfNeeded } from './lib/startupDbPrune';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
@@ -279,6 +282,7 @@ import { usePositionHistoryStore } from './stores/positionHistoryStore';
 import { useReticulumGamesStore } from './stores/reticulumGamesStore';
 import { useReticulumIdentityStore } from './stores/reticulumIdentityStore';
 import { useReticulumPeerStore } from './stores/reticulumPeerStore';
+import { useReticulumVoiceMemoStore } from './stores/reticulumVoiceMemoStore';
 import { useRncpTransferStore } from './stores/rncpTransferStore';
 import { useRrcSessionStore } from './stores/rrcSessionStore';
 import { useTimeFormatStore } from './stores/timeFormatStore';
@@ -647,6 +651,7 @@ function AppContent() {
   });
   const [pendingDmTarget, setPendingDmTarget] = useState<number | null>(null);
   const [pendingRoomTarget, setPendingRoomTarget] = useState<number | null>(null);
+  const [pendingRepeaterFocusNodeId, setPendingRepeaterFocusNodeId] = useState<number | null>(null);
   const [lastReadRevision, setLastReadRevision] = useState({
     meshtastic: 0,
     meshcore: 0,
@@ -1761,7 +1766,7 @@ function AppContent() {
     : meshtasticRuntime.securityConfig;
   const effectiveDeviceOwner = isRemoteConfigureTarget
     ? (meshtasticRuntime.remoteConfigSnapshot?.deviceOwner ?? null)
-    : meshtasticRuntime.deviceOwner;
+    : activeRuntime.deviceOwner;
   const effectiveDeviceFixedPosition = isRemoteConfigureTarget
     ? (meshtasticRuntime.remoteConfigSnapshot?.deviceFixedPosition ?? null)
     : meshtasticRuntime.deviceFixedPosition;
@@ -2636,8 +2641,26 @@ function AppContent() {
     [tabsByProtocol.meshcore],
   );
 
+  const handleOpenRepeaterOps = useCallback(
+    (nodeNum: number) => {
+      setPendingRepeaterFocusNodeId(nodeNum);
+      const filteredIndex = findFilteredTabIndexForPanel(
+        tabsByProtocol.meshcore,
+        MODULES_PANEL_INDEX,
+      );
+      if (filteredIndex >= 0) {
+        setActiveTab(filteredIndex);
+      }
+    },
+    [tabsByProtocol.meshcore],
+  );
+
   const handleRoomTargetConsumed = useCallback(() => {
     setPendingRoomTarget(null);
+  }, []);
+
+  const handleRepeaterFocusConsumed = useCallback(() => {
+    setPendingRepeaterFocusNodeId(null);
   }, []);
 
   const handleLocationFilterChange = useCallback((f: LocationFilter) => {
@@ -3180,6 +3203,73 @@ function AppContent() {
                             dmOnlyChat={capabilities.hasReticulumInterfaceConfig}
                             hasRncpTransfer={capabilities.hasRncpTransfer}
                             hasLxstVoice={capabilities.hasLxstVoice}
+                            hasReticulumVoiceMemo={capabilities.hasReticulumVoiceMemo}
+                            onVoiceMemo={
+                              capabilities.hasReticulumVoiceMemo && reticulumIdentityId
+                                ? (destination: number) => {
+                                    const phase = useReticulumVoiceMemoStore.getState().phase;
+                                    if (
+                                      phase === 'sending' ||
+                                      phase === 'starting' ||
+                                      phase === 'stopping'
+                                    ) {
+                                      return;
+                                    }
+                                    if (phase === 'recording' || phase === 'ready') {
+                                      sendReticulumVoiceMemo({
+                                        identityId: reticulumIdentityId,
+                                        destination,
+                                        onOversize: () => {
+                                          addToast(
+                                            t('chatPanel.voiceMemo.tooLargeForWire'),
+                                            'warning',
+                                          );
+                                        },
+                                        onNoPropagationNode: () => {
+                                          addToast(
+                                            t('chatPanel.reticulumNoPropagationNode'),
+                                            'error',
+                                          );
+                                        },
+                                        onTooLargeForPropagation: () => {
+                                          addToast(
+                                            t('chatPanel.voiceMemo.tooLargeForPropagation'),
+                                            'info',
+                                          );
+                                        },
+                                      });
+                                      return;
+                                    }
+                                    void startReticulumVoiceMemo()
+                                      .then((ok) => {
+                                        if (!ok) {
+                                          const err =
+                                            useReticulumVoiceMemoStore.getState().lastError;
+                                          if (err === 'call_busy') {
+                                            addToast(t('chatPanel.voiceMemo.callBusy'), 'warning');
+                                          } else if (err === 'mic_denied') {
+                                            addToast(t('chatPanel.voiceMemo.micDenied'), 'error');
+                                          } else if (
+                                            err === 'sidecar_unavailable' ||
+                                            err === 'start_failed' ||
+                                            err
+                                          ) {
+                                            useReticulumVoiceMemoStore.getState().reset();
+                                            addToast(t('chatPanel.voiceMemo.startFailed'), 'error');
+                                          }
+                                        }
+                                      })
+                                      .catch((e: unknown) => {
+                                        console.warn(
+                                          '[App] startReticulumVoiceMemo rejected:',
+                                          errLikeToLogString(e),
+                                        );
+                                        useReticulumVoiceMemoStore.getState().reset();
+                                        addToast(t('chatPanel.voiceMemo.startFailed'), 'error');
+                                      });
+                                  }
+                                : undefined
+                            }
                             hasLrgpGames={capabilities.hasLrgpGames}
                             hasLxmfPaper={capabilities.hasLxmfPaper}
                             showLxmfDeliveryStatus={capabilities.hasLxmfDeliveryStatus}
@@ -3620,11 +3710,11 @@ function AppContent() {
                                     meshcorePanelActions.sendPositionToDevice,
                                   )}
                                   deviceOwner={effectiveDeviceOwner}
-                                  onSetOwner={
-                                    capabilities.hasChannelConfig
-                                      ? meshtasticPanelActions.setOwner
-                                      : undefined
-                                  }
+                                  onSetOwner={resolvePanelSetOwnerHandler(
+                                    capabilities,
+                                    meshtasticPanelActions.setOwner,
+                                    meshcorePanelActions.setOwner,
+                                  )}
                                   capabilities={capabilities}
                                   meshcoreChannels={
                                     capabilities.hasCompanionContactManagementConfig
@@ -3763,6 +3853,16 @@ function AppContent() {
                                       ? meshcorePanelActions.syncClock
                                       : undefined
                                   }
+                                  deviceReportedPathHashMode={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? (meshcoreRuntime.state.pathHashMode ?? null)
+                                      : null
+                                  }
+                                  onApplyMeshcorePathHashMode={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.applyMeshcorePathHashMode
+                                      : undefined
+                                  }
                                   onRefreshContacts={
                                     capabilities.hasContactImportExport
                                       ? meshcorePanelActions.refreshContacts
@@ -3819,6 +3919,9 @@ function AppContent() {
                               meshcoreRepeaterRpcPending={
                                 meshcoreRuntime.meshcoreRepeaterRpcPending
                               }
+                              onOpenRoom={handleOpenRoom}
+                              pendingFocusNodeId={pendingRepeaterFocusNodeId}
+                              onPendingFocusConsumed={handleRepeaterFocusConsumed}
                             />
                           </Suspense>
                         </ErrorBoundary>
@@ -3968,9 +4071,7 @@ function AppContent() {
                                 onLeaveRoom={meshcorePanelActions.leaveRoom}
                                 onSendRoomPost={meshcorePanelActions.sendRoomPost}
                                 onSendRoomAdminCli={meshcorePanelActions.sendRoomAdminCliCommand}
-                                meshcoreCliHistories={meshcoreRuntime.meshcoreCliHistories}
-                                meshcoreCliErrors={meshcoreRuntime.meshcoreCliErrors}
-                                onClearCliHistory={meshcorePanelActions.clearCliHistory}
+                                onOpenRepeaterOps={handleOpenRepeaterOps}
                                 onMessageNode={handleMessageNode}
                                 onToggleFavorite={meshcorePanelActions.setNodeFavorited}
                                 scrollToTopRef={scrollToTopRoomsRef}
@@ -4144,21 +4245,6 @@ function AppContent() {
                                 onChatCompactModeChange={handleChatCompactModeChange}
                                 onAlwaysShowMessageActionsChange={
                                   handleAlwaysShowMessageActionsChange
-                                }
-                                deviceReportedPathHashMode={
-                                  capabilities.modulesTabUsesRepeatersLabel
-                                    ? (meshcoreRuntime.state.pathHashMode ?? null)
-                                    : null
-                                }
-                                isMeshcoreRadioConnected={
-                                  capabilities.modulesTabUsesRepeatersLabel &&
-                                  (meshcoreRuntime.state.status === 'connected' ||
-                                    meshcoreRuntime.state.status === 'configured')
-                                }
-                                onApplyMeshcorePathHashMode={
-                                  capabilities.modulesTabUsesRepeatersLabel
-                                    ? meshcorePanelActions.applyMeshcorePathHashMode
-                                    : undefined
                                 }
                                 reticulumIdentityId={reticulumIdentityId}
                                 reticulumSidecarReady={
@@ -4536,9 +4622,6 @@ function AppContent() {
               selectedNode.node_id !== detailMyNodeNum
                 ? handleOpenRoom
                 : undefined
-            }
-            onLoginRoom={
-              detailModalProtocol === 'meshcore' ? meshcorePanelActions.loginRoom : undefined
             }
             onToggleFavorite={detailModalPanelActions.setNodeFavorited}
             remoteAdminKey={

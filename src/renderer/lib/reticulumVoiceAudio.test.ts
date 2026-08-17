@@ -5,7 +5,9 @@ import {
   encodeF32LeBase64,
   LXST_QUALITY_HIGH_FRAME_SAMPLES,
   packQualityHighFrame,
+  packVoiceMemoFrame,
   resolveVoiceDialIdentityHash,
+  VOICE_MEMO_FRAME_SAMPLES,
 } from './reticulumVoiceAudio';
 
 describe('reticulumVoiceAudio', () => {
@@ -36,6 +38,14 @@ describe('reticulumVoiceAudio', () => {
     expect(packed).not.toBeNull();
     expect(packed!.length).toBe(LXST_QUALITY_HIGH_FRAME_SAMPLES);
     expect(packed![0]).toBeCloseTo(0.2, 5);
+  });
+
+  it('packs voice-memo frames from 48 kHz capture into 24 kHz / 1440 samples', () => {
+    const input = new Float32Array(2_880).fill(0.15);
+    const packed = packVoiceMemoFrame(input, 48_000, 1);
+    expect(packed).not.toBeNull();
+    expect(packed!.length).toBe(VOICE_MEMO_FRAME_SAMPLES);
+    expect(packed![0]).toBeCloseTo(0.15, 5);
   });
 
   it('mixes multichannel input down to mono before packing', () => {

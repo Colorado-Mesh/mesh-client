@@ -75,14 +75,68 @@ export function pickActionlintAsset(assets, osKey, archKey) {
   return { name: asset.name, browser_download_url: asset.browser_download_url };
 }
 
-async function downloadToFile(url, destinationPath, headers) {
-  const res = await fetch(url, { headers });
-  if (!res.ok) {
-    throw new Error(`Failed to download: ${res.status} ${res.statusText}`);
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Download a URL to disk with retries for transient CDN / network failures
+ * (Node `fetch failed`, 5xx, etc.). Used by CI `setup:actionlint`.
+ *
+ * @param {string} url
+ * @param {string} destinationPath
+ * @param {Record<string, string>} headers
+ * @param {{
+ *   attempts?: number,
+ *   baseDelayMs?: number,
+ *   fetchImpl?: typeof fetch,
+ *   sleepImpl?: (ms: number) => Promise<void>,
+ *   warn?: (...args: unknown[]) => void,
+ * }} [opts]
+ */
+export async function downloadToFile(
+  url,
+  destinationPath,
+  headers,
+  {
+    attempts = 5,
+    baseDelayMs = 500,
+    fetchImpl = fetch,
+    sleepImpl = sleep,
+    warn = console.warn,
+  } = {},
+) {
+  let lastError = /** @type {unknown} */ (null);
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const res = await fetchImpl(url, { headers, redirect: 'follow' });
+      if (!res.ok) {
+        throw new Error(`Failed to download: ${res.status} ${res.statusText}`);
+      }
+      if (!res.body) {
+        throw new Error('Failed to download: empty response body');
+      }
+      const file = createWriteStream(destinationPath);
+      await pipeline(res.body, file);
+      return;
+    } catch (err) {
+      lastError = err;
+      try {
+        await fs.unlink(destinationPath);
+      } catch {
+        // catch-no-log-ok partial download may not exist
+      }
+      if (attempt >= attempts) break;
+      const delayMs = Math.min(8_000, baseDelayMs * 2 ** (attempt - 1));
+      warn(
+        `[install-actionlint] download attempt ${attempt}/${attempts} failed: ${
+          err instanceof Error ? err.message : String(err)
+        } — retrying in ${delayMs}ms`,
+      );
+      await sleepImpl(delayMs);
+    }
   }
-  const file = createWriteStream(destinationPath);
-  // Pipe the response body stream into the file.
-  await pipeline(res.body, file);
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
 async function pathExists(p) {

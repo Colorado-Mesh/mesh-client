@@ -31,7 +31,7 @@ export const REPEATER_CLI_BASE_TIMEOUT_MS = 30_000;
 export const REPEATER_CLI_PER_HOP_TIMEOUT_MS = 2_000;
 /** Align multi-hop CLI ceiling with flat admin RPC timeouts. */
 export const REPEATER_CLI_MAX_TIMEOUT_MS = 120_000;
-/** Max repeater CLI command length before send (align with credential IPC limit). */
+/** Max repeater CLI command length before send (BLE to-radio payload cap). */
 export const REPEATER_CLI_MAX_COMMAND_LENGTH = 512;
 
 const DEFAULT_TIMEOUT_MS = REPEATER_CLI_BASE_TIMEOUT_MS;
@@ -60,6 +60,17 @@ export function calculateRepeaterCliTimeout(
   const dynamicTimeout =
     baseTimeoutMs + hopCount * perHopTimeoutMs + Math.floor(messageSize / 100) * 100;
   return Math.min(Math.max(dynamicTimeout, baseTimeoutMs), maxTimeoutMs);
+}
+
+/** Extra CLI wait when companion waiting-message drain is (or was) busy. */
+export function padRepeaterCliTimeoutForWaitingDrain(
+  timeoutMs: number,
+  drainBusy: boolean,
+  drainPadMs: number,
+  maxTimeoutMs = REPEATER_CLI_MAX_TIMEOUT_MS,
+): number {
+  if (!drainBusy) return timeoutMs;
+  return Math.min(maxTimeoutMs, timeoutMs + drainPadMs);
 }
 
 export class RepeaterCommandService {
@@ -152,6 +163,37 @@ export class RepeaterCommandService {
     return { token, promise, timeoutMs };
   }
 
+  /** Lengthen an in-flight CLI wait when drain is busy at SENT. */
+  extendPendingTimeout(token: string, newTimeoutMs: number): void {
+    const pending = this.pendingCommands.get(token);
+    if (!pending || newTimeoutMs <= pending.timeoutMs) return;
+    clearTimeout(pending.timerId);
+    pending.timeoutMs = newTimeoutMs;
+    const remaining = Math.max(0, newTimeoutMs - (Date.now() - pending.sentAt));
+    pending.timerId = setTimeout(() => {
+      if (this.pendingCommands.delete(token)) {
+        pending.reject(new Error(`CLI command timed out after ${newTimeoutMs}ms`));
+      }
+    }, remaining);
+  }
+
+  /**
+   * Restart the CLI reply timer from now (after SENT). Use when companion send was delayed
+   * behind getWaitingMessages / other radio work so the pre-send timer would otherwise expire.
+   */
+  restartPendingTimeoutFromNow(token: string, timeoutMs: number): void {
+    const pending = this.pendingCommands.get(token);
+    if (!pending) return;
+    clearTimeout(pending.timerId);
+    pending.sentAt = Date.now();
+    pending.timeoutMs = timeoutMs;
+    pending.timerId = setTimeout(() => {
+      if (this.pendingCommands.delete(token)) {
+        pending.reject(new Error(`CLI command timed out after ${timeoutMs}ms`));
+      }
+    }, timeoutMs);
+  }
+
   handleResponse(rawResponse: string, senderId?: number): boolean {
     const { token, body } = this.parseResponseToken(rawResponse);
     if (!token) return false;
@@ -187,6 +229,16 @@ export class RepeaterCommandService {
     }
 
     return false;
+  }
+
+  /** Reject and remove a pending command without retry (send failed before reply window). */
+  rejectPending(token: string, error: Error): boolean {
+    const pending = this.pendingCommands.get(token);
+    if (!pending) return false;
+    clearTimeout(pending.timerId);
+    this.pendingCommands.delete(token);
+    pending.reject(error);
+    return true;
   }
 
   getPendingCommand(token: string): PendingCommand | undefined {

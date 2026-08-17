@@ -1,0 +1,47 @@
+From: mesh-client
+Subject: Exclude RF sinks from announce rebroadcast enqueue
+
+With enable_transport, rebroadcasted mesh announces were enqueued onto every
+eligible OUT iface including flow-controlled BLE RNodes. Host TX mpsc filled
+while FC drained slowly. Local announces still use
+broadcast_local_announce_on_interfaces (unchanged). Requires
+iface_is_pathless_link_rf_sink from pathless-link-exclude-rf overlay.
+
+--- a/crates/rns-transport/src/actor/mod.rs
++++ b/crates/rns-transport/src/actor/mod.rs
+@@ -1577,6 +1577,11 @@
+     /// optionally one). Eligibility mirrors Python's AP/roaming/boundary mode
+     /// gates. Enqueueing lets `process_announce_queues` apply ANNOUNCE_CAP
+     /// spacing and hop priority.
++    ///
++    /// Flow-controlled RF sinks (RNode / low-bitrate) are skipped for
++    /// *rebroadcast* — transport-enabled leaves otherwise enqueue every mesh
++    /// announce onto BLE RNodes and fill the host TX queue while FC drains
++    /// slowly. Local announces still use [`broadcast_local_announce_on_interfaces`].
+     fn broadcast_announce_on_interfaces(&mut self, raw: &[u8], except: Option<InterfaceId>) {
+         let destination_hash = rns_wire::header::PacketHeader::unpack(raw)
+             .ok()
+@@ -1588,10 +1593,20 @@
+         // shared Arc for free.
+         let shared = Bytes::copy_from_slice(raw);
+ 
+-        let ids: Vec<InterfaceId> = self
++        // Collect candidates before interface_allows_announce borrows self.
++        let candidate_ids: Vec<InterfaceId> = self
+             .interfaces
+-            .keys()
+-            .copied()
++            .iter()
++            .filter_map(|(&id, entry)| {
++                if except == Some(id) || iface_is_pathless_link_rf_sink(entry) {
++                    None
++                } else {
++                    Some(id)
++                }
++            })
++            .collect();
++        let ids: Vec<InterfaceId> = candidate_ids
++            .into_iter()
+             .filter(|id| self.interface_allows_announce(*id, &destination_hash, except))
+             .collect();
+ 

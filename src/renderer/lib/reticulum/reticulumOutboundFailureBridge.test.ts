@@ -1,5 +1,13 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@/renderer/components/Toast', () => ({
+  pushAppToast: vi.fn(),
+}));
+
+vi.mock('@/renderer/lib/i18n', () => ({
+  default: { t: (key: string) => key },
+}));
 
 import { applyReticulumOutboundDeliveryStatus } from '@/renderer/lib/reticulum/applyReticulumOutboundDeliveryStatus';
 import {

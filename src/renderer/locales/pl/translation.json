@@ -697,7 +697,25 @@
     "meshcoreFastSend": {
       "warning": "Wysyłasz szybciej, niż siatka może przekazywać. Na zatłoczonej siatce wzmacniaki mogą odrzucać wiadomości wysyłane blisko siebie — pozostaw kilka sekund między wiadomościami."
     },
-    "outboxLegacyMultipartBlocked": "Ta wiadomość umieszczona w kolejce korzystała z wieloczęściowego podziału MeshCore, który nie jest już wysyłany. Anuluj i wyślij krótszą wiadomość (lub kilka oddzielnych krótszych wiadomości)."
+    "outboxLegacyMultipartBlocked": "Ta wiadomość umieszczona w kolejce korzystała z wieloczęściowego podziału MeshCore, który nie jest już wysyłany. Anuluj i wyślij krótszą wiadomość (lub kilka oddzielnych krótszych wiadomości).",
+    "voiceMemo": {
+      "recordAria": "Nagraj głos",
+      "playAria": "Odtwórz notatkę głosową",
+      "pauseAria": "Wstrzymaj notatkę głosową",
+      "seekAria": "Szukaj pozycji odtwarzania notatki głosowej",
+      "containerAria": "Notatka głosowa",
+      "sendAria": "Wyślij notatkę głosową",
+      "callBusy": "Rozłącz połączenie głosowe przed nagraniem notatki.",
+      "micDenied": "Dostęp do mikrofonu jest wymagany do nagrywania notatki głosowej.",
+      "tooLargeForWire": "Notatka głosowa jest zbyt duża, aby ją wysłać. Nagraj krótszy klip.",
+      "tooLargeForPropagation": "Wiadomość głosowa jest większa niż limit węzła propagacji. Dostawa będzie możliwa tylko wtedy, gdy odbiorca jest online. Skróć go, aby przechowywać go w celu dostawy offline.",
+      "directOnlyBadge": "Tylko bezpośrednie — zbyt duże dla przechowywania offline",
+      "recordTooltip": "Notatka głosowa LXMF — nagrywa krótki klip Opus dla tej bezpośredniej wiadomości. Obsługiwane przez mesh-client, Ratspeak i Sideband (FIELD_AUDIO). To nie to samo, co połączenie LXST.",
+      "sendTooltip": "Wyślij nagraną notatkę głosową LXMF",
+      "startFailed": "Nie można rozpocząć nagrywania notatki głosowej. Spróbuj ponownie.",
+      "sendAriaWithElapsed": "Wyślij notatkę głosową ({{seconds}} sekund nagranych)",
+      "unavailable": "Notatka głosowa niedostępna — załącznik nie jest zapisany w pamięci podręcznej na tym urządzeniu."
+    }
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -1220,7 +1238,11 @@
       "backboneEnableGuidanceBody": "—2 to optimum dla nadmiarowości bez zbędnego zużycia pasma. Celuj w 1 globalny hub i 1 regionalną bramę, a specjalne interfejsy (jak I2P lub Yggdrasil) włączaj tylko gdy trzeba. Lokalnie podłączone RNode i lokalne interfejsy LAN nie wliczają się do tego limitu magistrali.",
       "defaultHubsPickerHint": "Zacznij od Podstawowej i globalnej magistrali oraz swojego regionu. Włącz co najwyżej 1–3 bramy magistrali (2 to optimum). Lokalne RNode i interfejsy LAN się nie liczą. Nowe wpisy są dodawane wyłączone, by je przejrzeć. Sync wyłącza też pozostałe wycofane oficjalne huby testnetu (Amsterdam).",
       "rnodeTransportBleHint": "Wiązania BLE mogą być desynchronizowane z macOS (Forget + repair). Preferuj port szeregowy USB lub Wi-Fi (tcp://), gdy radio znajduje się w pobliżu.",
-      "flowControl": "Kontrola przepływu (bramka gotowa TX)"
+      "flowControl": "Kontrola przepływu (bramka gotowa TX)",
+      "rmapFullModeHint": "Tryb pełny z publikacją RMAP utrzymuje pełny przez ignore_CONFIG_WARNINGS. Powiadomienia o dostawie LXMF opuszczą to radio w interwale powiadomień o stosie (domyślnie 1 godzina).",
+      "effectiveModeBadge": "Obowiązuje: {{mode}}",
+      "effectiveModeAria": "Efektywny tryb czasu pracy {{mode}}. Tryb skonfigurowany różni się od uruchomionego programu Reticulum.",
+      "effectiveModeTooltip": "Reticulum przepisała ten wykrywalny interfejs do punktu dostępu (lub innego dozwolonego trybu), ponieważ wykrywalny wymaga bramy, wewnętrznego lub punktu dostępu, chyba że ustawiono ignore_config_warnings. Zrestartuj stos po stemplach klienta siatkowego, które rezygnują, aby zadziałał tryb Full (lub skonfigurowany tryb) (mesh-client)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1699,7 +1721,8 @@
         "rmap_no_tcp_hub": "Wykrywalny lokalny RNode nie ma włączonego węzła klienta TCP dla dostępności internetowej.",
         "rmap_transport_disabled": "Wykrywalne interfejsy są skonfigurowane, ale tryb transportu jest wyłączony.",
         "rmap_i2p_not_connectable": "Interfejs I2P „{{name}}” można wykryć, ale nie można go podłączyć.",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "Interfejs „{{name}}” można wykryć w trybie innym niż AP/Gateway — Reticulum uruchomi go jako punkt dostępu, chyba że ustawiono ignore_config_warnings. Edytuj interfejs lub uruchom ponownie stos, aby klient-siatka mógł stemplować opt-out (mesh-client)."
       },
       "runtime": {
         "rnsNotReady": "Stos RNS nie jest gotowy",
@@ -4043,7 +4066,7 @@
     }
   },
   "repeatersPanel": {
-    "searchRepeaters": "Wyszukaj przemienniki",
+    "searchRepeaters": "Szukaj repeaterów i pokoi",
     "favorite": "Ulubiony",
     "unfavorite": "Nieulubiony",
     "pingError": "Błąd pingu: {{error}}",
@@ -4055,12 +4078,12 @@
     "cliInput": "Wejście polecenia CLI",
     "cliInterface": "Interfejs CLI",
     "sensorTelemetryLpp": "Telemetria czujnika LPP",
-    "noRepeatersYet": "Nie wykryto jeszcze żadnych wzmacniaków.",
-    "noRepeatersHintPre": "Repeatery pojawiają się, gdy ogłaszają się kontakty typu „Repeater”. Używać",
+    "noRepeatersYet": "Nie odkryto jeszcze żadnych repeaterów ani pokoi.",
+    "noRepeatersHintPre": "Repeatery i serwery pokoi pojawiają się, gdy kontakty tych typów nadają advert. Użyj ",
     "importContacts": "Importuj kontakty",
     "noRepeatersHintMid": "na",
     "noRepeatersHintSuffix": "zakładka, aby wstępnie załadować pseudonimy.",
-    "noRepeatersMatch": "Żaden przemiennik nie pasuje do Twojego wyszukiwania.",
+    "noRepeatersMatch": "Żadne repeatery ani pokoje nie pasują do wyszukiwania.",
     "snrDbTooltip": "dB — ze statusu żądania, jeśli jest dostępny, w przeciwnym razie z listy kontaktów",
     "rssiDbmTooltip": "dBm — ze statusu żądania, jeśli jest dostępny, w przeciwnym razie z listy kontaktów",
     "hopCountTooltip": "Liczba przeskoków z ostatniego śladu Ping (przekaźniki między tobą a tym węzłem)",
@@ -4068,7 +4091,7 @@
     "heardPrefix": "Usłyszał:",
     "noLppData": "W tej odpowiedzi nie ma danych czujnika LPP.",
     "enterCommand": "Wpisz polecenie...",
-    "searchRepeatersPlaceholder": "Wyszukaj wzmacniacze…",
+    "searchRepeatersPlaceholder": "Szukaj repeaterów i pokoi…",
     "openCliInterface": "Otwórz interfejs CLI",
     "sensorLppButton": "Czujnik (LPP)",
     "noTelemetryResponse": "Nie ma jeszcze odpowiedzi telemetrycznej. Spróbuj ponownie użyć czujnika (LPP).",
@@ -4083,7 +4106,7 @@
     "columnReliability": "Niezawodność",
     "columnActions": "Działania",
     "nodesTabName": "Węzły",
-    "title": "Repeatery",
+    "title": "Repeatery i pokoje",
     "columnsDataHint": "SNR, RSSI, czas pracy i czas antenowy pochodzą z akcji Status (lub automatycznego pobierania, gdy ten panel jest otwarty). Historia przeskoków i ścieżek wymaga polecenia Ping. MeshCore nie wypełnia tych kolumn samymi reklamami.",
     "remoteAuthLabel": "Hasło administratora wzmacniaka (opcjonalnie)",
     "remoteAuthPlaceholder": "Pozostaw puste, jeśli wzmacniaki nie mają hasła administratora",
@@ -4168,7 +4191,16 @@
     "currentRouteLabel": "Aktualna trasa:",
     "neighborsLoadMore": "Załaduj więcej ({{loaded}} z {{total}} załadowanych)",
     "neighborsLoadMoreAria": "Załaduj więcej sąsiadów ({{loaded}} z {{total}} załadowanych)",
-    "neighborsLoadingMore": "Wczytywanie…"
+    "neighborsLoadingMore": "Wczytywanie…",
+    "cliClockCannotGoBackwards": "Zegar tego węzła wyprzedza ten komputer ({{utc}}). Oprogramowanie MeshCore nie ustawi zegara wstecz. Po potwierdzeniu uruchom clkreboot, a następnie clock sync.",
+    "typeFilterAria": "Filtruj wg rodzaju",
+    "filterAll": "Wszystko",
+    "filterRepeaters": "Repeatery",
+    "filterRooms": "Pokoje",
+    "openRoom": "Otwórz pokój",
+    "savedPasswordOrphanRoomLabel": "Pokój {{nodeId}}",
+    "roomCliNeedsAdminPassword": "Zdalne CLI pokoju wymaga hasła administratora pokoju (SendLogin ACL). Zapisz je w Repeaters → hasło dla tego pokoju i spróbuj ponownie. Logowanie gościa BBS nie wystarczy.",
+    "cliHistoryError": "[Błąd: {{detail}}]"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",
@@ -4448,12 +4480,7 @@
     "postPlaceholder": "Opublikuj w pokoju…",
     "postButton": "Opublikuj",
     "posting": "Publikowanie…",
-    "manageRoom": "Zarządzaj",
-    "manageHeading": "Administracja pokoi",
-    "cliPlaceholder": "Polecenie CLI administratora…",
-    "cliSend": "Wyślij",
-    "clearCli": "Wyczyść CLI",
-    "cliEmpty": "Nie ma jeszcze wyjścia CLI.",
+    "manageRoom": "Zarządzaj na Repeaters",
     "aclPubkeyLabel": "Klucz publiczny (64 hex)",
     "aclLevelLabel": "Poziom uprawnień",
     "aclLevelRemove": "Usuń dostęp",
@@ -4461,7 +4488,6 @@
     "aclLevelReadWrite": "Odczyt/zapis (można publikować)",
     "aclLevelAdmin": "Administrator",
     "aclApply": "Zastosuj listę ACL",
-    "adminPasswordRequired": "Do zarządzania tym pokojem wymagane jest hasło administratora.",
     "postFailed": "Nie udało się opublikować w pokoju",
     "leaveRoom": "Opuść kanał",
     "rememberPassword": "Zapamiętaj hasło",
@@ -4477,7 +4503,6 @@
     "cancelLoginHint": "Kolejne logowanie do pokoju może najpierw zakończyć się w radiu. Anulowanie zatrzymuje dalsze próby dla tego pokoju.",
     "emptyGuestLoginHint": "Puste pole gościa: użyj opcji Kontynuuj tylko do odczytu dla serwerów z pustym hasłem. Logowanie wymaga podania hasła i wysyła \"hello\", gdy pole jest puste.",
     "unreadPosts": "{{count}} nowe",
-    "closeManage": "Zamknij",
     "upgradeAccess": "Uaktualnij, aby uzyskać dostęp",
     "leavingRoom": "Opuszczanie…",
     "leaveRoomInProgress": "Opuszczanie pokoju…",
@@ -4534,16 +4559,14 @@
     "legendNotSavedTooltip": "Pusty okrąg — nie zapisano hasła do tego pokoju",
     "legendSavedTooltip": "Niebieski półokrąg — hasło zapisane; zaloguj się, aby otworzyć sesję",
     "legendLoggedInTooltip": "Zielona kropka — aktywna sesja klienta (opuść pokój, jeśli serwer jest offline)",
-    "historyLocalHint": "Wpisy pojawiają się tylko wtedy, gdy jesteś zalogowany do tego pokoju na tym urządzeniu. Włącz automatyczną synchronizację, aby pozostać subskrybentem; historia nie jest uzupełniana z serwera pokojowego.",
+    "historyLocalHint": "Po zalogowaniu mesh-client żąda ostatnich wpisów nadal znajdujących się w buforze pierścieniowym serwera pokoju (gdy to urządzenie nie ma jeszcze lokalnego znaku wodnego). Włącz automatyczną synchronizację, aby pozostać subskrybentem podczas połączenia.",
     "loginAllSavedDisabledNoSavedPasswords": "Najpierw zapisz hasło do pokoju, aby użyć log in all",
     "membersHeadingWithCount": "Członkowie ({{count}})",
     "collapseRoomList": "Zwiń listę pokoi",
     "expandRoomList": "Rozwiń listę pokoi",
-    "pathHashCliGet": "Uzyskaj tryb skrótu ścieżki",
-    "pathHashCliSet0": "Ustaw tryb skrótu ścieżki 1 bajt",
-    "pathHashCliSet1": "Ustaw tryb skrótu ścieżki 2-bajtowy",
-    "pathHashCliSet2": "Ustaw tryb skrótu ścieżki 3-bajtowy",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} nieprzeczytane"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} nieprzeczytane",
+    "manageJumpHint": "Sterowanie infrastrukturą (ping, status, CLI, ACL setperm) jest na karcie Repeaters.",
+    "aclPubkeyPlaceholder": "0123456789abcdef…"
   },
   "searchModal": {
     "closeSearch": "Zamknij wyszukiwanie",

@@ -12,11 +12,15 @@ describe('meshcoreRepeaterCliDanger', () => {
     expect(MESHCORE_REPEATER_CLI_DANGER_PATTERN.test('erase')).toBe(true);
     expect(MESHCORE_REPEATER_CLI_DANGER_PATTERN.test('clkreboot')).toBe(true);
     expect(MESHCORE_REPEATER_CLI_DANGER_PATTERN.test('set factory mode')).toBe(true);
+    expect(isMeshcoreRepeaterCliDangerCommand('shutdown')).toBe(true);
+    expect(isMeshcoreRepeaterCliDangerCommand('poweroff')).toBe(true);
   });
 
   it('does not match benign repeater CLI commands', () => {
     expect(isMeshcoreRepeaterCliDangerCommand('name')).toBe(false);
     expect(isMeshcoreRepeaterCliDangerCommand('get path.hash.mode')).toBe(false);
     expect(isMeshcoreRepeaterCliDangerCommand('ver')).toBe(false);
+    expect(isMeshcoreRepeaterCliDangerCommand('clock')).toBe(false);
+    expect(isMeshcoreRepeaterCliDangerCommand('advert')).toBe(false);
   });
 });

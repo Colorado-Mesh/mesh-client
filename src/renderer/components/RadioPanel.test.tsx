@@ -101,6 +101,89 @@ describe('RadioPanel HelpTooltip coverage — LoRa params', () => {
   });
 });
 
+describe('RadioPanel MeshCore Device User / Identity', () => {
+  async function openDeviceUserSection(user: ReturnType<typeof userEvent.setup>) {
+    const userDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Device User / Identity';
+    });
+    expect(userDetails).toBeDefined();
+    await user.click(userDetails!.querySelector('summary')!);
+    return userDetails!;
+  }
+
+  it('enables Apply and calls onSetOwner when MeshCore capabilities provide the handler', async () => {
+    const user = userEvent.setup();
+    const onSetOwner = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          onSetOwner={onSetOwner}
+        />
+      </ToastProvider>,
+    );
+
+    await openDeviceUserSection(user);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+
+    const nameInput = screen.getByLabelText('Name');
+    await user.clear(nameInput);
+    await user.type(nameInput, 'WisMesh Tag');
+
+    const applyButton = screen.getByRole('button', { name: 'Apply Device User / Identity' });
+    expect(applyButton).toBeEnabled();
+    await user.click(applyButton);
+
+    await waitFor(() => {
+      expect(onSetOwner).toHaveBeenCalledWith({
+        longName: 'WisMesh Tag',
+        shortName: '',
+        isLicensed: false,
+      });
+    });
+  });
+
+  it('keeps Apply disabled when MeshCore capabilities are set but onSetOwner is missing', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} isConnected capabilities={MESHCORE_CAPABILITIES} />
+      </ToastProvider>,
+    );
+
+    await openDeviceUserSection(user);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+
+    expect(screen.getByRole('button', { name: 'Apply Device User / Identity' })).toBeDisabled();
+  });
+
+  it('prefills the MeshCore name field from deviceOwner', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          deviceOwner={{ longName: 'TagName', shortName: '', isLicensed: false }}
+          onSetOwner={vi.fn().mockResolvedValue(undefined)}
+        />
+      </ToastProvider>,
+    );
+
+    await openDeviceUserSection(user);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+
+    expect(screen.getByLabelText('Name')).toHaveValue('TagName');
+  });
+});
+
 describe('RadioPanel remote target safeguards', () => {
   it('disables Device apply until device config slice is hydrated', async () => {
     const user = userEvent.setup();
@@ -527,5 +610,126 @@ describe('RadioPanel collapsible section consistency', () => {
       expect(svg).not.toBeNull();
       expect(svg?.classList.contains('group-open:rotate-180')).toBe(true);
     });
+  });
+});
+
+describe('RadioPanel MeshCore Open wire and path hash', () => {
+  beforeEach(() => {
+    localStorage.removeItem('mesh-client:appSettings');
+  });
+
+  it('shows Open-wire and path-hash controls for MeshCore capabilities', () => {
+    render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} capabilities={MESHCORE_CAPABILITIES} />
+      </ToastProvider>,
+    );
+    expect(
+      screen.getByRole('checkbox', { name: /Enable MeshCore Open compatibility/i }),
+    ).not.toBeChecked();
+    expect(screen.getByLabelText(/Default path hash size/i)).toHaveValue('0');
+  });
+
+  it('does not show Open-wire or path-hash without MeshCore capabilities', () => {
+    render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    expect(
+      screen.queryByRole('checkbox', { name: /Enable MeshCore Open compatibility/i }),
+    ).toBeNull();
+    expect(screen.queryByLabelText(/Default path hash size/i)).toBeNull();
+  });
+
+  it('persists meshcoreOpenWireCompatEnabled to app settings', async () => {
+    render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} capabilities={MESHCORE_CAPABILITIES} />
+      </ToastProvider>,
+    );
+    const checkbox = screen.getByRole('checkbox', {
+      name: /Enable MeshCore Open compatibility/i,
+    });
+    fireEvent.click(checkbox);
+    await waitFor(() => {
+      const raw = localStorage.getItem('mesh-client:appSettings');
+      expect(raw).toContain('"meshcoreOpenWireCompatEnabled":true');
+    });
+  });
+
+  it('persists meshcorePathHashMode when the user changes the dropdown', async () => {
+    render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} capabilities={MESHCORE_CAPABILITIES} />
+      </ToastProvider>,
+    );
+    const select = screen.getByLabelText(/Default path hash size/i);
+    fireEvent.change(select, { target: { value: '1' } });
+    await waitFor(() => {
+      const raw = localStorage.getItem('mesh-client:appSettings');
+      expect(raw).toContain('"meshcorePathHashMode":1');
+    });
+  });
+
+  it('syncs dropdown from device-reported mode when user has not changed it', async () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          deviceReportedPathHashMode={null}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByLabelText(/Default path hash size/i)).toHaveValue('0');
+
+    rerender(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          deviceReportedPathHashMode={1}
+        />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Default path hash size/i)).toHaveValue('1');
+    });
+  });
+
+  it('applies path hash mode to the radio when connected', async () => {
+    const onApplyMeshcorePathHashMode = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          onApplyMeshcorePathHashMode={onApplyMeshcorePathHashMode}
+        />
+      </ToastProvider>,
+    );
+    fireEvent.change(screen.getByLabelText(/Default path hash size/i), {
+      target: { value: '2' },
+    });
+    await waitFor(() => {
+      expect(onApplyMeshcorePathHashMode).toHaveBeenCalledWith(2);
+    });
+  });
+
+  it('MeshCore Open-wire / path-hash controls have no axe violations', async () => {
+    const { container } = render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} capabilities={MESHCORE_CAPABILITIES} />
+      </ToastProvider>,
+    );
+    expect(
+      screen.getByRole('checkbox', { name: /Enable MeshCore Open compatibility/i }),
+    ).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

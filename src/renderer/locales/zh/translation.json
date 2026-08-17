@@ -693,7 +693,25 @@
     "meshcoreFastSend": {
       "warning": "您发送的速度超过了网格可以中继的速度。在繁忙的网格上，中继器可能会丢弃一起发送的消息—在消息之间留几秒钟。"
     },
-    "outboxLegacyMultipartBlocked": "该排队消息使用了多部分MeshCore分裂，不再发送。取消它并发送一条较短的消息（或多个单独的较短消息）。"
+    "outboxLegacyMultipartBlocked": "该排队消息使用了多部分MeshCore分裂，不再发送。取消它并发送一条较短的消息（或多个单独的较短消息）。",
+    "voiceMemo": {
+      "recordAria": "录制语音",
+      "playAria": "播放语音备忘录",
+      "pauseAria": "暂停语音备忘录",
+      "seekAria": "查找语音备忘录播放位置",
+      "containerAria": "语音备忘录",
+      "sendAria": "发送语音备忘录",
+      "callBusy": "录制备忘录之前，请挂断语音通话。",
+      "micDenied": "录制语音备忘录需要麦克风访问权限。",
+      "tooLargeForWire": "语音备忘录太大，无法发送。录制一个较短的剪辑。",
+      "tooLargeForPropagation": "语音消息大于传播节点限制。只有当收件人在线时，它才会派送。缩短存储时间，以便线下派送。",
+      "directOnlyBadge": "仅限直接存储—对于离线存储来说太大",
+      "recordTooltip": "LXMF语音备忘录—为此直接消息录制一个简短的Opus剪辑。支持mesh-client、Ratspeak和Sideband (FIELD_AUDIO)。与LXST呼叫不同。",
+      "sendTooltip": "发送录制的LXMF语音备忘录",
+      "startFailed": "无法开始语音备忘录录制。请重试。",
+      "sendAriaWithElapsed": "发送语音备忘录（记录{{seconds}}秒）",
+      "unavailable": "语音备忘录不可用—附件未缓存在此设备上。"
+    }
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -1218,7 +1236,11 @@
       "backboneEnableGuidanceBody": "—2是冗余的最佳选择，不会造成不必要的带宽膨胀。瞄准1个全球集线器和1个区域网关，并严格根据需要启用专业接口（如I2P或Yggdrasil ）。本地连接的RNode和本地LAN接口不计入此骨干限制。",
       "defaultHubsPickerHint": "从“主要和全球骨干网”加上您的区域开始。最多启用 1 到 3 个骨干网关（2 个较理想）。本地 RNode 和局域网接口不计入。新条目默认禁用，便于您审阅后再启用。同步还会禁用剩余已停用的官方测试网枢纽（阿姆斯特丹）。",
       "rnodeTransportBleHint": "BLE绑定可以与macOS取消同步（忘记+重新配对）。当收音机在附近时，首选USB串行或Wi-Fi （ tcp://）。",
-      "flowControl": "流量控制（TX 就绪门）"
+      "flowControl": "流量控制（TX 就绪门）",
+      "rmapFullModeHint": "RMAP发布的完整模式通过IGNORE_CONFIG_WARNINGS保持完整。LXMF传递公告将在堆栈公告间隔（默认为1小时）上退出此无线电。",
+      "effectiveModeBadge": "有效期： {{mode}}",
+      "effectiveModeAria": "有效运行时模式{{mode}}。配置的模式与Reticulum正在运行的模式不同。",
+      "effectiveModeTooltip": "Reticulum将此可发现接口重写到接入点（或其他允许的模式） ，因为除非设置了ignore_config_warnings ，否则DISCOVERABLE需要网关、内部或接入点。在选择退出的mesh-client戳后重新启动堆栈，以便完整（或您配置的模式）生效。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1695,7 +1717,8 @@
         "rmap_no_tcp_hub": "可发现的本地RNode没有启用TCP客户端集线器以实现互联网可访问性。",
         "rmap_transport_disabled": "已配置可发现的接口，但传输模式已关闭。",
         "rmap_i2p_not_connectable": "I2P接口“{{name}}”是可发现的，但不是可连接的。",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "接口“{{name}}”可通过非AP/网关模式发现—除非设置ignore_config_warnings ，否则Reticulum将作为接入点运行。编辑界面或重新启动堆栈，以便mesh-client可以标记选择退出。"
       },
       "runtime": {
         "rnsNotReady": "RNS 堆栈尚未准备好",
@@ -4039,7 +4062,7 @@
     }
   },
   "repeatersPanel": {
-    "searchRepeaters": "搜索中继器",
+    "searchRepeaters": "搜索中继器和房间",
     "favorite": "我的最愛",
     "unfavorite": "取消",
     "pingError": "Ping错误： {{error}}",
@@ -4051,12 +4074,12 @@
     "cliInput": "CLI命令输入",
     "cliInterface": "CLI接口",
     "sensorTelemetryLpp": "传感器遥测LPP",
-    "noRepeatersYet": "尚未发现中继器。",
-    "noRepeatersHintPre": "当类型为“中继器”的联系人发布广告时，中继器就会出现。使用",
+    "noRepeatersYet": "尚未发现中继器或房间。",
+    "noRepeatersHintPre": "当这些类型的联系人进行通告时，中继器和房间服务器会出现。使用 ",
     "importContacts": "导入联系人",
     "noRepeatersHintMid": "于",
     "noRepeatersHintSuffix": "选项卡预加载昵称。",
-    "noRepeatersMatch": "没有重复者与您的搜索相匹配。",
+    "noRepeatersMatch": "没有匹配搜索的中继器或房间。",
     "snrDbTooltip": "dB — 来自请求状态（如果可用），否则联系人列表",
     "rssiDbmTooltip": "dBm — 来自请求状态（如果可用），否则来自联系人列表",
     "hopCountTooltip": "上次 Ping 跟踪的跳数（您和此节点之间的中继器）",
@@ -4064,7 +4087,7 @@
     "heardPrefix": "听到：",
     "noLppData": "此响应中没有 LPP 传感器数据。",
     "enterCommand": "输入命令...",
-    "searchRepeatersPlaceholder": "搜索中继器...",
+    "searchRepeatersPlaceholder": "搜索中继器和房间…",
     "openCliInterface": "打开CLI界面",
     "sensorLppButton": "传感器（LPP）",
     "noTelemetryResponse": "尚未有遥测响应。再次尝试传感器 (LPP)。",
@@ -4079,7 +4102,7 @@
     "columnReliability": "可靠性",
     "columnActions": "动作",
     "nodesTabName": "节点",
-    "title": "中继器",
+    "title": "中继器与房间",
     "columnsDataHint": "SNR、RSSI、正常运行时间和通话时间来自状态操作（或在此面板打开时自动获取）。跃点和路径历史记录需要 Ping。 MeshCore 不会仅通过广告来填充这些列。",
     "remoteAuthLabel": "中继器管理员密码（可选）",
     "remoteAuthPlaceholder": "如果中继器没有管理员密码，则留空",
@@ -4164,7 +4187,16 @@
     "currentRouteLabel": "当前路线：",
     "neighborsLoadMore": "加载更多（{{loaded}}/{{total}}）",
     "neighborsLoadMoreAria": "加载更多邻居（已加载{{loaded}}/{{total}}）",
-    "neighborsLoadingMore": "加载中…"
+    "neighborsLoadingMore": "加载中…",
+    "cliClockCannotGoBackwards": "此节点的时钟快于此计算机（{{utc}}）。MeshCore 固件不会将时钟往回调。确认后，运行 clkreboot，然后 clock sync。",
+    "typeFilterAria": "按类型过滤",
+    "filterAll": "全部",
+    "filterRepeaters": "中继器",
+    "filterRooms": "房间",
+    "openRoom": "打开房间",
+    "savedPasswordOrphanRoomLabel": "房间 {{nodeId}}",
+    "roomCliNeedsAdminPassword": "远程房间 CLI 需要房间管理员密码（SendLogin ACL）。请在 Repeaters → 此房间的密码下保存，然后重试。访客 BBS 登录不够。",
+    "cliHistoryError": "[错误： {{detail}}]"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",
@@ -4444,12 +4476,7 @@
     "postPlaceholder": "发布到房间…",
     "postButton": "发布",
     "posting": "发布中…",
-    "manageRoom": "管理",
-    "manageHeading": "房间管理",
-    "cliPlaceholder": "管理员CLI命令…",
-    "cliSend": "发送",
-    "clearCli": "清除CLI",
-    "cliEmpty": "尚无 CLI 输出。",
+    "manageRoom": "在 Repeaters 中管理",
     "aclPubkeyLabel": "公钥（64 hex）",
     "aclLevelLabel": "权限等级",
     "aclLevelRemove": "删除访问",
@@ -4457,7 +4484,6 @@
     "aclLevelReadWrite": "读/写（可发布）",
     "aclLevelAdmin": "管理员",
     "aclApply": "应用ACL",
-    "adminPasswordRequired": "管理此房间需要管理员密码。",
     "postFailed": "发布到聊天室失败",
     "leaveRoom": "離開聊天室",
     "rememberPassword": "記憶密碼",
@@ -4473,7 +4499,6 @@
     "cancelLoginHint": "另一个房间登录可能首先在收音机上完成。取消可停止对此房间的进一步尝试。",
     "emptyGuestLoginHint": "访客密码为空：对无密码服务器使用「继续只读」。登录需要密码，字段为空时会发送「hello」。",
     "unreadPosts": "新消息 {{count}} 条",
-    "closeManage": "关闭",
     "upgradeAccess": "提升访问权限",
     "leavingRoom": "正在离开…",
     "leaveRoomInProgress": "正在离开房间……",
@@ -4530,16 +4555,14 @@
     "legendNotSavedTooltip": "空圆—此房间未存储密码",
     "legendSavedTooltip": "天空半圆—密码已存储；登录以打开会话",
     "legendLoggedInTooltip": "绿点—活动客户端会话（服务器离线时请离开房间）",
-    "historyLocalHint": "仅当您在此设备上登录此聊天室时，帖子才会显示。启用自动同步以保持订阅状态；历史记录不会从聊天室服务器回填。",
+    "historyLocalHint": "登录时，若此设备尚无本地水印，mesh-client 会请求聊天室服务器环形缓冲区中仍保留的最近帖子。启用自动同步以在连接期间保持订阅。",
     "loginAllSavedDisabledNoSavedPasswords": "首先保存房间密码以使用全部登录",
     "membersHeadingWithCount": "成员({{count}})",
     "collapseRoomList": "折叠房间列表",
     "expandRoomList": "展开房间列表",
-    "pathHashCliGet": "获取路径哈希模式",
-    "pathHashCliSet0": "设置路径哈希模式1字节",
-    "pathHashCliSet1": "设置路径哈希模式2字节",
-    "pathHashCliSet2": "设置路径哈希模式3字节",
-    "collapsedRoomWithUnread": "{{label}}, {{count}}未读"
+    "collapsedRoomWithUnread": "{{label}}, {{count}}未读",
+    "manageJumpHint": "基础设施控制（ping、status、CLI、ACL setperm）位于 Repeaters 选项卡。",
+    "aclPubkeyPlaceholder": "0123456789abcdef…"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",

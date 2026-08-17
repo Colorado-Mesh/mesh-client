@@ -7,6 +7,7 @@ import type {
   MeshCoreConnection,
   RxPacketEntry,
 } from '@/renderer/lib/meshcore/meshcoreHookTypes';
+import * as meshcoreRepeaterRpcInFlight from '@/renderer/lib/meshcoreRepeaterRpcInFlight';
 import {
   beginMeshcoreSilentBulkAttempt,
   resetMeshcoreWaitingMessagesDrainState,
@@ -94,13 +95,19 @@ function makeHarness(overrides?: { handleResponseResult?: boolean }): Harness {
     readNodes: () => getIdentityNodeMap(ID),
     pendingAcksRef: ref(pendingAcks),
     processWaitingMessagesRef: ref<
-      ((options?: { showSyncBanner?: boolean }) => Promise<void>) | null
+      | ((options?: {
+          showSyncBanner?: boolean;
+          force?: boolean;
+          incrementalOnly?: boolean;
+        }) => Promise<void>)
+      | null
     >(null),
     pubKeyMapRef: ref(new Map<number, Uint8Array>()),
     pubKeyPrefixMapRef: ref(new Map<string, number>()),
     rawPacketsRef: ref(rawPackets),
     repeaterCommandServiceRef: ref({
       handleResponse,
+      clear: vi.fn(),
       parseResponseToken: (text: string) => ({ token: null, body: text }),
     } as never),
     selfInfoRef: ref(null),
@@ -618,6 +625,92 @@ describe('attachMeshcoreConnSideEffects', () => {
     await vi.runAllTimersAsync();
     await Promise.all([first, second]);
     expect(h.handleConnectionLost).not.toHaveBeenCalled();
+  });
+
+  it('force drain runs while CLI reply hold would defer silent drain', async () => {
+    const holdSpy = vi
+      .spyOn(meshcoreRepeaterRpcInFlight, 'meshcoreCliReplyHoldActive')
+      .mockReturnValue(true);
+    const h = makeHarness();
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    await h.ctx.processWaitingMessagesRef.current?.({
+      showSyncBanner: false,
+      force: true,
+      incrementalOnly: true,
+    });
+
+    expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
+    expect(h.syncNextMessage).toHaveBeenCalled();
+    holdSpy.mockRestore();
+  });
+
+  it('non-force silent drain still defers during CLI reply hold', async () => {
+    vi.useFakeTimers();
+    const holdSpy = vi
+      .spyOn(meshcoreRepeaterRpcInFlight, 'meshcoreCliReplyHoldActive')
+      .mockReturnValue(true);
+    const h = makeHarness();
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    const pending = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
+    await Promise.resolve();
+    expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
+    expect(h.syncNextMessage).not.toHaveBeenCalled();
+
+    holdSpy.mockReturnValue(false);
+    await vi.runAllTimersAsync();
+    await pending;
+    expect(h.conn.getWaitingMessages).toHaveBeenCalledTimes(1);
+    holdSpy.mockRestore();
+  });
+
+  it('incrementalOnly skips bulk getWaitingMessages', async () => {
+    const h = makeHarness();
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    await h.ctx.processWaitingMessagesRef.current?.({
+      showSyncBanner: false,
+      force: true,
+      incrementalOnly: true,
+    });
+
+    expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
+    expect(h.syncNextMessage).toHaveBeenCalled();
+  });
+
+  it('force follow-up after in-flight drain starts another force incremental drain', async () => {
+    vi.useFakeTimers();
+    const h = makeHarness();
+    let releaseBulk: () => void = () => undefined;
+    vi.mocked(h.conn.getWaitingMessages).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releaseBulk = () => {
+            resolve([]);
+          };
+        }),
+    );
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    const first = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
+    await Promise.resolve();
+    expect(h.conn.getWaitingMessages).toHaveBeenCalledTimes(1);
+
+    void h.ctx.processWaitingMessagesRef.current?.({
+      showSyncBanner: false,
+      force: true,
+      incrementalOnly: true,
+    });
+    // Still coalesced onto the in-flight bulk (no second getWaitingMessages yet).
+    expect(h.conn.getWaitingMessages).toHaveBeenCalledTimes(1);
+
+    releaseBulk();
+    await first;
+    await vi.runAllTimersAsync();
+    // Follow-up force drain uses incrementalOnly — syncNext, not a second bulk.
+    expect(h.syncNextMessage).toHaveBeenCalled();
+    expect(h.conn.getWaitingMessages).toHaveBeenCalledTimes(1);
   });
 
   it('flushes waiting-message node changes to nodeStore without updating the runtime node mirror', async () => {

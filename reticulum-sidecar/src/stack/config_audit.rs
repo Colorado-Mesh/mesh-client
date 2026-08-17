@@ -329,6 +329,36 @@ fn audit_rmap_discovery(
                 Some("edit"),
             ));
         }
+
+        // Discoverable + Full/Roaming/Boundary (etc.) is silently rewritten to AP
+        // by RNS unless ignore_config_warnings is set. Omitted mode defaults to AP
+        // for RNode — no issue in that case.
+        if is_local_rnode_publish_target(row) {
+            let mode = row.mode.as_deref().map(str::trim).filter(|m| !m.is_empty());
+            if let Some(mode) = mode {
+                let normalized = mode.to_ascii_lowercase();
+                let canonical = match normalized.as_str() {
+                    "ap" => "access_point",
+                    "gw" => "gateway",
+                    other => other,
+                };
+                let discovery_safe = matches!(canonical, "access_point" | "gateway");
+                let opt_out = row.ignore_config_warnings == Some(true);
+                if !discovery_safe && !opt_out {
+                    issues.push(issue(
+                        "rmap_mode_autocorrect",
+                        "warning",
+                        Some(row.id.clone()),
+                        Some(row.name.clone()),
+                        format!(
+                            "Interface \"{}\" is discoverable with mode {} — RNS will auto-correct to Access Point unless ignore_config_warnings is set",
+                            row.name, canonical
+                        ),
+                        Some("edit"),
+                    ));
+                }
+            }
+        }
     }
 
     if any_discoverable && !stack_settings.enable_transport {
@@ -647,6 +677,7 @@ target_port = 4242
             callsign: None,
             id_interval: None,
             mode: None,
+            runtime_mode: None,
             seed_addresses: Vec::new(),
             discoverable: None,
             latitude: None,
@@ -659,6 +690,7 @@ target_port = 4242
             network_name: None,
             passphrase: None,
             flow_control: None,
+            ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: std::collections::HashMap::new(),
@@ -754,5 +786,119 @@ target_port = 4242
         let issues = audit_config(&dir, &rows, &settings, false).unwrap();
         assert!(!issues.iter().any(|i| i.kind.starts_with("rmap_")));
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn rmap_mode_autocorrect_when_full_discoverable_without_opt_out() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_sample_config(
+            &dir,
+            r#"[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+mode = full
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+
+[[RMAP World]]
+type = TCPClientInterface
+interface_enabled = Yes
+name = RMAP World
+target_host = rmap.world
+target_port = 4242
+"#,
+        );
+        let rows = config::interfaces_from_config_dir(&dir).unwrap();
+        let settings = StackSettings {
+            enable_transport: true,
+            ..Default::default()
+        };
+        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        assert!(issues.iter().any(|i| i.kind == "rmap_mode_autocorrect"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn rmap_mode_autocorrect_absent_when_opt_out_set() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_sample_config(
+            &dir,
+            r#"[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+mode = full
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+ignore_config_warnings = Yes
+
+[[RMAP World]]
+type = TCPClientInterface
+interface_enabled = Yes
+name = RMAP World
+target_host = rmap.world
+target_port = 4242
+"#,
+        );
+        let rows = config::interfaces_from_config_dir(&dir).unwrap();
+        let settings = StackSettings {
+            enable_transport: true,
+            ..Default::default()
+        };
+        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        assert!(!issues.iter().any(|i| i.kind == "rmap_mode_autocorrect"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn rmap_mode_autocorrect_absent_for_ap_or_gateway() {
+        for mode in ["access_point", "gateway", "roaming"] {
+            let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
+            fs::create_dir_all(&dir).unwrap();
+            write_sample_config(
+                &dir,
+                &format!(
+                    r#"[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+mode = {mode}
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+
+[[RMAP World]]
+type = TCPClientInterface
+interface_enabled = Yes
+name = RMAP World
+target_host = rmap.world
+target_port = 4242
+"#
+                ),
+            );
+            let rows = config::interfaces_from_config_dir(&dir).unwrap();
+            let settings = StackSettings {
+                enable_transport: true,
+                ..Default::default()
+            };
+            let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+            if mode == "roaming" {
+                assert!(
+                    issues.iter().any(|i| i.kind == "rmap_mode_autocorrect"),
+                    "roaming should warn"
+                );
+            } else {
+                assert!(
+                    !issues.iter().any(|i| i.kind == "rmap_mode_autocorrect"),
+                    "mode={mode} should not warn"
+                );
+            }
+            let _ = fs::remove_dir_all(&dir);
+        }
     }
 }

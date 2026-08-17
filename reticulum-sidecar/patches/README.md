@@ -519,6 +519,54 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 
 When ratspeak/rsReticulum exposes equivalent live TX queue depth on interface stats, remove this patch and the apply step.
 
+## rsReticulum-pathless-link-exclude-rf.patch
+
+Python `Transport.py` only transmits pathless `Destination.LINK` packets on `destination.attached_interface`. rsReticulum was pathless-broadcasting Link hashes (Keepalive / Lrrtt / Resource\*) onto every OUT iface, including flow-controlled RNodes, which filled the host TX queue during PN Sync. Prefer `link_table` when present; otherwise broadcast only to non-RF sinks (RNode name or bitrate under 100 kbps).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | floated `origin/main` (regenerate; record short SHA in PR) |
+| **Upstream PR** | none yet (mesh-client-local) |
+
+**Touches:** `crates/rns-transport/src/actor/mod.rs`, `crates/rns-transport/src/actor/outbound.rs`
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-pathless-link-exclude-rf.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`.
+
+### Sunset
+
+When ratspeak/rsReticulum matches Python pathless-LINK attached-only (or equivalent) on floated `origin/main`, remove this patch and the apply step.
+
+## rsReticulum-announce-rebroadcast-exclude-rf.patch
+
+With `enable_transport`, rsReticulum enqueues rebroadcasted mesh announces onto every eligible OUT iface, including flow-controlled BLE RNodes. Host TX mpsc fills while FC drains slowly (overnight / busy TCP mesh). Skip RF sinks (`iface_is_pathless_link_rf_sink` from pathless-link overlay) in `broadcast_announce_on_interfaces` only. Local discovery announces still use `broadcast_local_announce_on_interfaces` (RNode included).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | floated `origin/main` after pathless-link-exclude-rf (regenerate; record short SHA in PR) |
+| **Upstream PR** | none yet (mesh-client-local) |
+| **Depends on** | `rsReticulum-pathless-link-exclude-rf.patch` |
+
+**Touches:** `crates/rns-transport/src/actor/mod.rs`
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-pathless-link-exclude-rf.sh
+./scripts/apply-rsReticulum-announce-rebroadcast-exclude-rf.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`.
+
+### Sunset
+
+When ratspeak/rsReticulum rate-limits or excludes RF for announce rebroadcast equivalently on floated `origin/main`, remove this patch and the apply step.
+
 ## rsLXMF-propagation-client-abort-transfer.patch
 
 Adds `PropagationClient::abort_transfer` so Cancel / mid-transfer abort leaves the client **Idle**. Without it, a cancelled Sync can leave `/get` stuck busy and the next Sync returns `PROPAGATION_RETRIEVE_BUSY` forever (or Auto falsely concludes there are no PNs).
@@ -541,3 +589,27 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 ### Sunset
 
 When upstream rsLXMF exposes equivalent abort / cancel mid-transfer cleanup, remove this patch and the apply step.
+
+## rsLXMF-propagation-client-link-attached-tx.patch
+
+Pin PropagationClient link-scoped TX (`Lrrtt`, `LinkIdentify`, `Request`, `ResourceReq`, …) to **`OutboundAttached`** on the interface that delivered the link proof. Unattached `Outbound` has no path-table entry for the link hash, so rsReticulum pathless-broadcasts onto every outbound interface — including slow flow-controlled RNodes — and fills the host TX queue during PN Sync.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | tip after `rsLXMF-propagation-client-abort-transfer.patch` |
+| **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsLXMF) |
+
+**Touches:** rsLXMF `PropagationClient` (`attached_interface`, `queue_link_outbound`)
+
+### Apply locally
+
+```bash
+./scripts/apply-rsLXMF-propagation-client-abort-transfer.sh
+./scripts/apply-rsLXMF-propagation-client-link-attached-tx.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`.
+
+### Sunset
+
+When upstream rsLXMF pins PropagationClient (and ideally LinkDeliveryManager) link TX to the proof interface, remove this patch and the apply step.

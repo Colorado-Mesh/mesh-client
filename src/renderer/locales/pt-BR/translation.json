@@ -693,7 +693,25 @@
     "meshcoreFastSend": {
       "warning": "Você está enviando mais rápido do que a malha pode retransmitir. Em uma malha ocupada, os repetidores podem soltar mensagens enviadas juntas — deixe alguns segundos entre as mensagens."
     },
-    "outboxLegacyMultipartBlocked": "Esta mensagem na fila usava divisão MeshCore em várias partes, que não é mais enviada. Cancele e envie uma mensagem mais curta (ou várias mensagens mais curtas separadas)."
+    "outboxLegacyMultipartBlocked": "Esta mensagem na fila usava divisão MeshCore em várias partes, que não é mais enviada. Cancele e envie uma mensagem mais curta (ou várias mensagens mais curtas separadas).",
+    "voiceMemo": {
+      "recordAria": "Gravar voz",
+      "playAria": "Reproduzir memorando de voz",
+      "pauseAria": "Pausar memorando de voz",
+      "seekAria": "Buscar posição de reprodução de memorando de voz",
+      "containerAria": "Memorando de voz",
+      "sendAria": "Enviar memorando de voz",
+      "callBusy": "Desligue a chamada de voz antes de gravar um memorando.",
+      "micDenied": "O acesso ao microfone é necessário para gravar um memorando de voz.",
+      "tooLargeForWire": "O memorando de voz é muito grande para enviar. Grave um clipe mais curto.",
+      "tooLargeForPropagation": "A mensagem de voz é maior do que o limite do nó de propagação. Ele só será entregue quando o destinatário estiver online. Encurte-o para armazená-lo para entrega offline.",
+      "directOnlyBadge": "Apenas direto — muito grande para armazenamento offline",
+      "recordTooltip": "Memorando de voz LXMF — grava um pequeno clipe Opus para esta mensagem direta. Suportado por mesh-client, Ratspeak e Sideband (FIELD_AUDIO). Não é o mesmo que Chamada LXST.",
+      "sendTooltip": "Envie o memorando de voz LXMF gravado",
+      "startFailed": "Não foi possível iniciar a gravação do memorando de voz. Tente novamente.",
+      "sendAriaWithElapsed": "Enviar memorando de voz ({{seconds}} segundos gravados)",
+      "unavailable": "Memorando de voz indisponível — anexo não armazenado em cache neste dispositivo."
+    }
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -1218,7 +1236,11 @@
       "backboneEnableGuidanceBody": "—2 é o ponto ideal para redundância sem inchaço desnecessário da largura de banda. Aponte para 1 hub global e 1 gateway regional e habilite interfaces especializadas (como I2P ou Yggdrasil) estritamente conforme necessário. Os RNodes conectados localmente e as interfaces de LAN locais não contam para esse limite de backbone.",
       "defaultHubsPickerHint": "Comece com Primário e global mais sua região. Ative no máximo 1 a 3 gateways de backbone (2 é o ponto ideal). RNodes locais e interfaces LAN não contam. Novas entradas são adicionadas desativadas para revisão. Sync também desativa hubs de testnet oficiais desativados restantes (Amsterdã).",
       "rnodeTransportBleHint": "As ligações BLE podem dessincronizar com o macOS (Forget + re-pair). Prefira USB serial ou Wi-Fi (tcp://) quando o rádio estiver próximo.",
-      "flowControl": "Controle de fluxo (portão pronto para TX)"
+      "flowControl": "Controle de fluxo (portão pronto para TX)",
+      "rmapFullModeHint": "Modo completo com publicação RMAP mantém Completo via ignore_CONFIG_WARNINGS. A entrega LXMF anuncia que sairá deste rádio no intervalo de anúncio da pilha (padrão 1 hora).",
+      "effectiveModeBadge": "Em vigor: {{mode}}",
+      "effectiveModeAria": "Modo de tempo de execução efetivo {{mode}}. O modo configurado difere do que o Reticulum está executando.",
+      "effectiveModeTooltip": "Reticulum reescreveu essa interface detectável para o Ponto de Acesso (ou outro modo permitido) porque o detectável requer Gateway, Interno ou Ponto de Acesso, a menos que ignore_config_warnings esteja definido. Reinicie a pilha após os carimbos mesh-client que desativam o Full (ou seu modo configurado) entrarem em vigor."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1695,7 +1717,8 @@
         "rmap_no_tcp_hub": "RNode local detectável não tem hub de cliente TCP habilitado para acessibilidade à Internet.",
         "rmap_transport_disabled": "As interfaces detectáveis estão configuradas, mas o modo de transporte está desligado.",
         "rmap_i2p_not_connectable": "A interface I2P \"{{name}}\" é detectável, mas conectável não é sim.",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "A interface \"{{name}}\" pode ser detectada com um modo não AP/Gateway — Reticulum o executará como ponto de acesso, a menos que ignore_config_warnings esteja definido. Edite a interface ou reinicie a pilha para que o mesh-client possa carimbar a desativação."
       },
       "runtime": {
         "rnsNotReady": "A pilha RNS não está pronta",
@@ -4039,7 +4062,7 @@
     }
   },
   "repeatersPanel": {
-    "searchRepeaters": "Pesquisar repetidores",
+    "searchRepeaters": "Pesquisar repetidores e salas",
     "favorite": "Favorito",
     "unfavorite": "Remover Favorito",
     "pingError": "Erro de ping: {{error}}",
@@ -4051,12 +4074,12 @@
     "cliInput": "Entrada de comando CLI",
     "cliInterface": "Interface CLI",
     "sensorTelemetryLpp": "Sensor DE telemetria LPP",
-    "noRepeatersYet": "Nenhum repetidor descoberto ainda.",
-    "noRepeatersHintPre": "Os repetidores aparecem quando contatos do tipo “Repetidor” são anunciados. Usar",
+    "noRepeatersYet": "Nenhum repetidor ou sala descoberto ainda.",
+    "noRepeatersHintPre": "Repetidores e servidores de sala aparecem quando contatos desses tipos fazem advert. Use ",
     "importContacts": "Importar contatos",
     "noRepeatersHintMid": "no",
     "noRepeatersHintSuffix": "guia para pré-carregar apelidos.",
-    "noRepeatersMatch": "Nenhum repetidor corresponde à sua pesquisa.",
+    "noRepeatersMatch": "Nenhum repetidor ou sala corresponde à pesquisa.",
     "snrDbTooltip": "dB — do status da solicitação quando disponível, caso contrário, lista de contatos",
     "rssiDbmTooltip": "dBm — do status da solicitação quando disponível, caso contrário, lista de contatos",
     "hopCountTooltip": "Contagem de saltos do último rastreamento de Ping (repetidores entre você e este nó)",
@@ -4064,7 +4087,7 @@
     "heardPrefix": "Ouviu:",
     "noLppData": "Não há dados do sensor LPP nesta resposta.",
     "enterCommand": "Digite o comando...",
-    "searchRepeatersPlaceholder": "Pesquisar repetidores…",
+    "searchRepeatersPlaceholder": "Pesquisar repetidores e salas…",
     "openCliInterface": "Interface CLI aberta",
     "sensorLppButton": "Sensor (LPP)",
     "noTelemetryResponse": "Nenhuma resposta de telemetria ainda. Tente o Sensor (LPP) novamente.",
@@ -4079,7 +4102,7 @@
     "columnReliability": "Confiabilidade",
     "columnActions": "Ações",
     "nodesTabName": "Nós",
-    "title": "Repetidores",
+    "title": "Repetidores e salas",
     "columnsDataHint": "SNR, RSSI, tempo de atividade e tempo de antena vêm da ação Status (ou busca automática enquanto este painel está aberto). O histórico de saltos e caminhos precisa de Ping. MeshCore não preenche essas colunas apenas com anúncios.",
     "remoteAuthLabel": "Senha de administrador do repetidor (opcional)",
     "remoteAuthPlaceholder": "Deixe em branco se os repetidores não tiverem senha de administrador",
@@ -4164,7 +4187,16 @@
     "currentRouteLabel": "Rota atual:",
     "neighborsLoadMore": "Carregar mais ({{loaded}} de {{total}} carregados)",
     "neighborsLoadMoreAria": "Carregar mais vizinhos ({{loaded}} de {{total}} carregados)",
-    "neighborsLoadingMore": "Carregando…"
+    "neighborsLoadingMore": "Carregando…",
+    "cliClockCannotGoBackwards": "O relógio deste nó está à frente deste computador ({{utc}}). O firmware MeshCore não ajustará o relógio para trás. Após confirmar, execute clkreboot e depois clock sync.",
+    "typeFilterAria": "Filtrar por tipo",
+    "filterAll": "Todos",
+    "filterRepeaters": "Repetidores",
+    "filterRooms": "Salas",
+    "openRoom": "Abrir sala",
+    "savedPasswordOrphanRoomLabel": "Sala {{nodeId}}",
+    "roomCliNeedsAdminPassword": "A CLI remota da sala precisa da senha de administrador da sala (SendLogin ACL). Salve em Repeaters → senha desta sala e tente novamente. O login BBS de convidado não é suficiente.",
+    "cliHistoryError": "[Erro: {{detail}}]"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anúncio (segundos)",
@@ -4444,12 +4476,7 @@
     "postPlaceholder": "Publicar na sala…",
     "postButton": "Postagem",
     "posting": "Publicando",
-    "manageRoom": "Gerenciar",
-    "manageHeading": "Administração da sala",
-    "cliPlaceholder": "Comando da CLI de administrador...",
-    "cliSend": "Enviar",
-    "clearCli": "Limpar CLI",
-    "cliEmpty": "Nenhuma saída de CLI ainda.",
+    "manageRoom": "Gerenciar em Repeaters",
     "aclPubkeyLabel": "Chave pública (64 hex)",
     "aclLevelLabel": "Nivel de Permissao",
     "aclLevelRemove": "Remover acesso",
@@ -4457,7 +4484,6 @@
     "aclLevelReadWrite": "Ler/Escrever (pode postar)",
     "aclLevelAdmin": "Administrador",
     "aclApply": "Aplicar ACL",
-    "adminPasswordRequired": "A senha de administrador é necessária para gerenciar esta sala.",
     "postFailed": "Falha ao publicar na sala",
     "leaveRoom": "Sair da sala",
     "rememberPassword": "Lembrar senha",
@@ -4473,7 +4499,6 @@
     "cancelLoginHint": "O login de outra sala pode terminar no rádio primeiro. Cancelar interrompe novas tentativas para esta sala.",
     "emptyGuestLoginHint": "Campo de convidado vazio: use «Continuar somente leitura» para servidores sem senha. O login requer uma senha e envia «hello» quando o campo está vazio.",
     "unreadPosts": "{{count}} novos",
-    "closeManage": "Fechar",
     "upgradeAccess": "Melhorar acesso",
     "leavingRoom": "Saindo…",
     "leaveRoomInProgress": "Saindo da sala…",
@@ -4530,16 +4555,14 @@
     "legendNotSavedTooltip": "Círculo vazio — nenhuma senha armazenada para esta sala",
     "legendSavedTooltip": "Meio círculo azul-céu — senha armazenada; faça login para abrir uma sessão",
     "legendLoggedInTooltip": "Ponto verde — sessão ativa do cliente (saia da sala se o servidor estiver offline)",
-    "historyLocalHint": "As postagens aparecem apenas enquanto você está conectado a esta sala neste dispositivo. Ative a sincronização automática para permanecer subscrito; o histórico não é preenchido a partir do servidor da sala.",
+    "historyLocalHint": "Ao entrar, o mesh-client solicita publicações recentes ainda no buffer circular do servidor da sala (quando este dispositivo ainda não tem marca d’água local). Ative a sincronização automática para permanecer subscrito enquanto estiver conectado.",
     "loginAllSavedDisabledNoSavedPasswords": "Salve uma senha de sala primeiro para usar o login em todos",
     "membersHeadingWithCount": "Membros ({{count}})",
     "collapseRoomList": "Recolher lista de salas",
     "expandRoomList": "Expandir lista de salas",
-    "pathHashCliGet": "Obter modo hash do caminho",
-    "pathHashCliSet0": "Definir o modo de hash do caminho de 1 byte",
-    "pathHashCliSet1": "Definir o modo de hash do caminho de 2 bytes",
-    "pathHashCliSet2": "Definir o modo de hash do caminho de 3 bytes",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} não lida"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} não lida",
+    "manageJumpHint": "Os controles de infraestrutura (ping, status, CLI, ACL setperm) estão na guia Repeaters.",
+    "aclPubkeyPlaceholder": "0123456789abcdef…"
   },
   "searchModal": {
     "closeSearch": "Fechar pesquisa",

@@ -1,9 +1,27 @@
 // @vitest-environment node
 import type { IpcMain, IpcMainInvokeEvent } from 'electron';
-import { mkdtempSync, rmSync } from 'fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
-import { join } from 'path';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { join, resolve } from 'path';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { testUserDataDir } = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- vi.hoisted runs before ESM imports for electron mock
+  const fs = require('node:fs') as {
+    mkdtempSync: (prefix: string) => string;
+  };
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- see above
+  const os = require('node:os') as { tmpdir: () => string };
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- see above
+  const path = require('node:path') as { join: (...parts: string[]) => string };
+  return { testUserDataDir: fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-rns-db-')) };
+});
+
+vi.mock('electron', () => ({
+  app: {
+    getPath: () => testUserDataDir,
+  },
+}));
 
 vi.mock('../db-ipc-lifecycle', () => ({
   getDbForIpc: vi.fn(() => null),
@@ -19,11 +37,16 @@ vi.mock('../validate-ipc-sender', () => ({
 import { NodeSqliteDB } from '../db-compat';
 import { getDbForIpc } from '../db-ipc-lifecycle';
 import { runSchemaUpgrade } from '../db-schema-sync';
+import { getReticulumAttachmentsDir } from '../reticulum-attachment-path';
 import { registerReticulumDbIpcHandlers } from './reticulum-db-handlers';
 
 type IpcHandler = (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown;
 
 const getDbForIpcMock = vi.mocked(getDbForIpc);
+
+afterAll(() => {
+  rmSync(testUserDataDir, { recursive: true, force: true });
+});
 
 describe('reticulum-db-handlers validation', () => {
   const handlers = new Map<string, IpcHandler>();
@@ -276,28 +299,72 @@ describe('reticulum destination / activity prune IPC', () => {
     expect(row.delivery_status).toBe('sending');
   });
 
-  it('saveReticulumMessage persists paper received_via and delivery_method', () => {
-    const identityId = 'id-rt-paper';
-    const messageHash = 'ef'.repeat(32);
+  it('saveReticulumMessage coalesces attachment_path onto an existing Completes row', () => {
+    const identityId = 'id-rt-attach-coalesce';
+    const messageHash = 'a1'.repeat(32);
     const save = handlers.get('db:saveReticulumMessage');
     save?.(event, {
       identity_id: identityId,
       sender_id: 'cc'.repeat(16),
       sender_name: 'Me',
-      payload: 'paper hello',
+      payload: '[voice:600]',
       timestamp: 1_700_000_000_000,
       message_hash: messageHash,
       delivery_status: 'delivered',
-      delivery_method: 'paper',
-      received_via: 'paper',
+    });
+    const attachmentPath = join(getReticulumAttachmentsDir(), 'voice-memo-out.ogg');
+    mkdirSync(getReticulumAttachmentsDir(), { recursive: true });
+    writeFileSync(attachmentPath, Buffer.from('OggS'));
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: 'cc'.repeat(16),
+      sender_name: 'Me',
+      payload: '[voice:600]',
+      timestamp: 1_700_000_000_000,
+      message_hash: messageHash,
+      delivery_status: 'sending',
+      attachment_path: attachmentPath,
     });
     const row = db!
       .prepareOnce(
-        'SELECT received_via, delivery_method FROM reticulum_messages WHERE identity_id = ? AND message_hash = ?',
+        'SELECT delivery_status, attachment_path FROM reticulum_messages WHERE identity_id = ? AND message_hash = ?',
       )
-      .get(identityId, messageHash) as { received_via: string; delivery_method: string };
-    expect(row.received_via).toBe('paper');
-    expect(row.delivery_method).toBe('paper');
+      .get(identityId, messageHash) as { delivery_status: string; attachment_path: string | null };
+    expect(row.delivery_status).toBe('delivered');
+    expect(row.attachment_path).toBe(resolve(attachmentPath));
+  });
+
+  it('saveReticulumMessage persists audio_mode and audio_duration_sec', () => {
+    const identityId = 'id-rt-audio-meta';
+    const messageHash = 'b2'.repeat(32);
+    const save = handlers.get('db:saveReticulumMessage');
+    const attachmentPath = join(getReticulumAttachmentsDir(), 'voice-memo-meta.ogg');
+    mkdirSync(getReticulumAttachmentsDir(), { recursive: true });
+    writeFileSync(attachmentPath, Buffer.from('OggS'));
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: 'cc'.repeat(16),
+      sender_name: 'Me',
+      payload: '[voice:600]',
+      timestamp: 1_700_000_000_000,
+      message_hash: messageHash,
+      delivery_status: 'sending',
+      attachment_path: attachmentPath,
+      audio_mode: 16,
+      audio_duration_sec: 1.25,
+    });
+    const row = db!
+      .prepareOnce(
+        'SELECT attachment_path, audio_mode, audio_duration_sec FROM reticulum_messages WHERE identity_id = ? AND message_hash = ?',
+      )
+      .get(identityId, messageHash) as {
+      attachment_path: string | null;
+      audio_mode: number | null;
+      audio_duration_sec: number | null;
+    };
+    expect(row.attachment_path).toBe(resolve(attachmentPath));
+    expect(row.audio_mode).toBe(16);
+    expect(row.audio_duration_sec).toBe(1.25);
   });
 
   it('saveReticulumMessage replaces exact pending hash while still sending', () => {

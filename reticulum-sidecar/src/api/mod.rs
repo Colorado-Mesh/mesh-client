@@ -17,6 +17,7 @@ mod status;
 mod system;
 pub(crate) mod validate;
 mod voice;
+mod voice_memo;
 mod ws;
 
 use std::sync::Arc;
@@ -275,6 +276,19 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/voice/hangup", post(voice::voice_hangup))
         .route("/api/v1/voice/mute", post(voice::voice_mute))
         .route("/api/v1/voice/audio", post(voice::voice_audio))
+        .route(
+            "/api/v1/voice/memo/start",
+            post(voice_memo::voice_memo_start),
+        )
+        .route(
+            "/api/v1/voice/memo/audio",
+            post(voice_memo::voice_memo_audio),
+        )
+        .route("/api/v1/voice/memo/stop", post(voice_memo::voice_memo_stop))
+        .route(
+            "/api/v1/voice/memo/cancel",
+            post(voice_memo::voice_memo_cancel),
+        )
         .route("/api/v1/games/status", get(games::games_status))
         .route("/api/v1/games/apps", get(games::games_apps))
         .route("/api/v1/games/sessions", get(games::games_sessions))

@@ -252,16 +252,16 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 - Channel messaging and **direct messages (DMs)** with delivery ACK tracking (`expectedAckCrc`) and failure timeout; **DM threads can be closed** from the chat UI
 - **Transport badges** on received messages; **RF**, **MQTT**, or **both** (persisted as `received_via` in `meshcore_messages`); MQTT JSON chat can be used when RF is down
 - **Inbound dedup** (`meshcoreStoreDedup.ts`): merges duplicate RF/MQTT echoes, companion TX echoes, and tapback self-echoes so chat and Rooms stay readable
-- **MeshCore Open GIFs**: inbound `g:GIFID` (and Giphy URLs) render inline in chat; outbound send via App **MeshCore Open compatibility** toggle (paste URL/ID or **GIF** composer button) — see [parity doc](docs/meshcore-meshtastic-parity.md#meshcore-open-gif-wire-ggifid)
+- **MeshCore Open GIFs**: inbound `g:GIFID` (and Giphy URLs) render inline in chat; outbound send via Radio **MeshCore Open compatibility** toggle (paste URL/ID or **GIF** composer button) — see [parity doc](docs/meshcore-meshtastic-parity.md#meshcore-open-gif-wire-ggifid)
 - Incoming push events: periodic advert (0x80), path update (0x81), send confirmed (0x82), message waiting (0x83), new contact (0x8A), incoming DM (7), incoming channel message (8)
 - All messages and contacts persisted to SQLite (`meshcore_messages`, `meshcore_contacts` tables)
 
 **Room servers (BBS)** — **Rooms** tab (RF only; not MQTT)
 
-- Login to room-server contacts (guest read-only or admin post); **Continue read-only** when the server guest password is empty (zero-byte password, matching the official Android client)
+- Login to room-server contacts; **blank** guest password for read-only when allowed; **`"hello"`** as the default read/write guest password; **Continue read-only** also sends blank
 - Post plain UTF-8 after login; inbound **SignedPlain** pushes show author prefix stripped in the UI
 - **Remember password**, **Auto-sync** (periodic re-login while connected, minimum 60 minutes per room), per-room unread badges (sidebar **Rooms** tab; separate from **Chat** badges)
-- Room admin CLI in the Rooms panel; session/login queue and path sync in `meshcoreRoom*.ts` — see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#meshcore-room-servers) and [Troubleshooting](docs/troubleshooting.md#meshcore-room-server-login-posts-and-windows-10)
+- Room admin CLI / ACL setperm on the **Repeaters** tab (room rows); Rooms Members still call `get acl` via the same CLI path. Session/login queue and path sync in `meshcoreRoom*.ts` — see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#meshcore-room-servers) and [Troubleshooting](docs/troubleshooting.md#meshcore-room-server-login-posts-and-windows-10)
 
 **Diagnostics & Remote Queries**
 
@@ -272,8 +272,8 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 
 **Repeaters**
 
-- **Repeaters panel** (MeshCore-only tab): list repeaters with on-demand status (noise floor, RSSI/SNR, packet counts, air time, uptime, TX queue); **Path** column shows a per-hop SNR sparkline from the last trace (last trace/path hop data is also stored in local SQLite so sparklines can survive app restarts); per-row **Neighbors** expands an inline neighbor list (same query as node detail, including **Load more**)
-- **Per-repeater admin passwords**: optional **Remember** saves credentials per repeater in SQLite `app_settings` (`meshcoreRepeaterCredential:<nodeId>`); collapsible **Saved repeater passwords** sidebar section with per-repeater Forget
+- **Repeaters panel** (MeshCore-only tab): list **repeaters and room servers** (All / Repeaters / Rooms filter) with on-demand status (noise floor, RSSI/SNR, packet counts, air time, uptime, TX queue); **Path** column shows a per-hop SNR sparkline from the last trace (last trace/path hop data is also stored in local SQLite so sparklines can survive app restarts); per-row **Neighbors** expands an inline neighbor list (same query as node detail, including **Load more**); room rows add **Open room** (jump to Rooms) plus room CLI pills (`get acl`, `allow.read.only`, ACL setperm)
+- **Per-node admin passwords**: optional **Remember** saves credentials per repeater/room in SQLite `app_settings` (`meshcoreRepeaterCredential:<nodeId>` / room admin password); collapsible **Saved passwords** sidebar section with per-node Forget
 - **Waiting-message drain**: header status indicator (queued backlog and active sync on any protocol tab; **paused/deferred** state only on the MeshCore tab) during serial companion backlog drain; **Sync now** for manual catch-up
 - **Repeater CLI**: per-repeater expandable **CLI** interface; command input with Enter to send, scrollable command/response history, Up/Down arrow history navigation, quick-command bar (get name, get radio, neighbors, version, clock, clock sync, clear stats, advert, board, …), flood vs. auto (saved path) routing toggle; responses are correlated to commands via 2-character hex prefix tokens; configurable retries with dynamic timeout; **auto Ping** before the first multi-hop CLI command when no trace exists this session (info toast while establishing route); **destructive-command confirm** modal for reboot/erase/factory-reset patterns
 - **Remote session authentication (optional)**: Password may be required for **CLI** and some **telemetry** paths when firmware ACL demands it. **Status** and **Neighbors** use pubkey-framed companion commands and typically work without login on direct (0-hop) repeaters; the auth modal offers “Continue without password.” Saved passwords persist when **Remember** is checked. Admin RPCs share a serialized companion queue — expect up to ~2 minutes blocked while a ping or multi-hop request runs. Status/Telemetry/Neighbors toast when the radio is disconnected.

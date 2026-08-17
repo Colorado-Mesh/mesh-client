@@ -65,7 +65,7 @@ describe('reticulum proxy rate limit + 100k peer ceilings (source contract)', ()
     ] as const) {
       const handleIdx = HANDLERS_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
       expect(handleIdx, channel).toBeGreaterThanOrEqual(0);
-      const afterHandle = HANDLERS_SOURCE.slice(handleIdx, handleIdx + 900);
+      const afterHandle = HANDLERS_SOURCE.slice(handleIdx, handleIdx + 1200);
       const tryIdx = afterHandle.indexOf('try {');
       const checkIdx = afterHandle.indexOf('reticulumProxyIpcRateLimit.checkOrThrow()');
       expect(tryIdx, channel).toBeGreaterThanOrEqual(0);
@@ -84,6 +84,20 @@ describe('reticulum proxy rate limit + 100k peer ceilings (source contract)', ()
     const preload = readFileSync(join(__dirname, '../../preload/index.ts'), 'utf-8');
     expect(preload).toContain("ipcRenderer.invoke('reticulum:voiceSendAudio'");
     expect(preload).not.toMatch(/invoke\('reticulum:proxyPost',\s*'\/api\/v1\/voice\/audio'/);
+  });
+
+  it('routes voice memo PCM through dedicated IPC with its own rate limit and blocks proxy', () => {
+    expect(HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:voiceMemoStart'");
+    expect(HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:voiceMemoSendAudio'");
+    expect(HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:voiceMemoStop'");
+    expect(HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:voiceMemoCancel'");
+    expect(HANDLERS_SOURCE).toContain('voice memo requires reticulum:voiceMemo* IPC channels');
+    const preload = readFileSync(join(__dirname, '../../preload/index.ts'), 'utf-8');
+    expect(preload).toContain("ipcRenderer.invoke('reticulum:voiceMemoStart'");
+    expect(preload).toContain("ipcRenderer.invoke('reticulum:voiceMemoSendAudio'");
+    expect(preload).toContain("ipcRenderer.invoke('reticulum:voiceMemoStop'");
+    expect(preload).toContain("ipcRenderer.invoke('reticulum:voiceMemoCancel'");
+    expect(preload).not.toMatch(/invoke\('reticulum:proxyPost',\s*'\/api\/v1\/voice\/memo/);
   });
 
   it('routes LRGP games through dedicated IPC with its own rate limit', () => {

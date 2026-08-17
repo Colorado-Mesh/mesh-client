@@ -209,6 +209,9 @@ export const RF_SERIAL_OPEN_RETRY_DELAY_MS = 2_000;
 /** Minimum spacing between mesh TX operations used by room sync (login counts as TX). */
 export const MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS = 60_000;
 
+/** Poll while waiting for mesh TX spacing so Cancel can skip the remainder. */
+export const MESHCORE_ROOM_LOGIN_QUEUE_SKIP_POLL_MS = 50;
+
 /** Minimum auto-sync interval per room (minutes). */
 export const MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES = 60;
 

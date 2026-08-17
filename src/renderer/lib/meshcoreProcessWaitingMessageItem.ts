@@ -1,6 +1,7 @@
 import { packetRouter } from '@/renderer/lib/drivers/PacketRouter';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
+  MESHCORE_TXT_TYPE_CLI_DATA,
   parseMeshcoreChannelIncomingFromThread,
   parseMeshcoreDmIncomingFromThread,
   resolveMeshcoreChannelMessageSender,
@@ -49,7 +50,47 @@ export function processMeshcoreWaitingMessageItem(
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
     const senderId = deps.pubKeyPrefixMap.get(prefix) ?? 0;
-    if (senderId === 0) {
+    if (d.txtType === MESHCORE_TXT_TYPE_CLI_DATA) {
+      if (senderId !== 0) {
+        const sender = deps.workingNodes.get(senderId);
+        if (sender) {
+          deps.workingNodes.set(senderId, {
+            ...sender,
+            last_heard: Math.max(sender.last_heard, d.senderTimestamp),
+          });
+          nodesDirty = true;
+          updatedNodeIds.push(senderId);
+        }
+      }
+      const identityId = deps.meshcoreIdentityId;
+      if (identityId) {
+        const roomNodeIds = new Set<number>();
+        for (const [nodeId, node] of deps.workingNodes) {
+          if (node.hw_model === 'Room') roomNodeIds.add(nodeId);
+        }
+        dispatchMeshcoreWaitingContactMessage(
+          identityId,
+          {
+            pubKeyPrefix: d.pubKeyPrefix,
+            text: d.text,
+            senderTimestamp: d.senderTimestamp,
+            txtType: MESHCORE_TXT_TYPE_CLI_DATA,
+            ...(d.pathLen != null ? { pathLen: d.pathLen } : {}),
+          },
+          deps.pubKeyPrefixMap,
+          roomNodeIds,
+          (event, id) => {
+            packetRouter.dispatch(event, id);
+          },
+          deps.logTransportLineAsDevice,
+        );
+      } else {
+        console.warn(
+          '[meshcoreProcessWaitingMessageItem] CLI waiting message skipped (no identityId)',
+          senderId,
+        );
+      }
+    } else if (senderId === 0) {
       console.warn(
         '[meshcoreProcessWaitingMessageItem] unknown pubKeyPrefix in queued DM, skipping ingest',
         prefix,

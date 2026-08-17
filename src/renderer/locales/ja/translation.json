@@ -693,7 +693,25 @@
     "meshcoreFastSend": {
       "warning": "メッシュが中継できるよりも速く送信しています。ビジーメッシュでは、リピーターが近くに送信されたメッセージをドロップすることがあります。メッセージの間に数秒残します。"
     },
-    "outboxLegacyMultipartBlocked": "このキューに入れられたメッセージでは、マルチパート MeshCore 分割が使用されていましたが、現在は送信されません。それをキャンセルして、より短いメッセージ (または複数の別個の短いメッセージ) を送信します。"
+    "outboxLegacyMultipartBlocked": "このキューに入れられたメッセージでは、マルチパート MeshCore 分割が使用されていましたが、現在は送信されません。それをキャンセルして、より短いメッセージ (または複数の別個の短いメッセージ) を送信します。",
+    "voiceMemo": {
+      "recordAria": "ボイスメモを録音する",
+      "playAria": "ボイスメモを再生",
+      "pauseAria": "ボイスメモを一時停止する",
+      "seekAria": "ボイスメモの再生位置を探す",
+      "containerAria": "ボイスメモ",
+      "sendAria": "ボイスメモを送信",
+      "callBusy": "メモを録音する前に音声通話を切ってください。",
+      "micDenied": "ボイスメモを録音するには、マイクへのアクセスが必要です。",
+      "tooLargeForWire": "ボイスメモが大きすぎて送信できません。短いクリップを録画します。",
+      "tooLargeForPropagation": "ボイスメッセージが伝播ノードの制限を超えています。受取人がオンラインの場合にのみ配達されます。オフライン配送用に保存するには短くしてください。",
+      "directOnlyBadge": "ダイレクトのみ—オフラインストレージには大きすぎます",
+      "recordTooltip": "LXMFボイスメモ—このダイレクトメッセージの短いOpusクリップを記録します。mesh-client、Ratspeak、Sideband (FIELD_AUDIO) でサポートされています。LXST Callとは異なります。",
+      "sendTooltip": "録音したLXMFボイスメモを送信する",
+      "startFailed": "ボイスメモの録音を開始できませんでした。もう一度やり直してください。",
+      "sendAriaWithElapsed": "ボイスメモを送信（ {{seconds}}秒録音）",
+      "unavailable": "音声メモは利用できません—添付ファイルはこのデバイスにキャッシュされていません。"
+    }
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -1218,7 +1236,11 @@
       "backboneEnableGuidanceBody": "—冗長性を保ちつつ不要な帯域を増やさない最適は 2 です。グローバルハブ 1 つと地域ゲートウェイ 1 つを目安にし、I2P や Yggdrasil などの特殊インターフェースは必要なときだけ有効にしてください。ローカル接続の RNode とローカル LAN インターフェースはこのバックボーン上限に数えません。",
       "defaultHubsPickerHint": "プライマリおよびグローバルに加え、自分の地域から始めてください。バックボーンゲートウェイは最大 1〜3（最適は 2）まで有効にします。ローカル RNode と LAN インターフェースは数えません。新規エントリは確認しやすいよう無効で追加されます。Sync は残っている廃止済み公式テストネットハブ（アムステルダム）も無効化します。",
       "rnodeTransportBleHint": "BLEボンドはmacOSと同期ずれすることがあります（忘れる+再ペアリング）。ラジオが近くにある場合は、USBシリアルまたはWi-Fi（tcp://）を優先してください。",
-      "flowControl": "フロー制御（TXレディゲート）"
+      "flowControl": "フロー制御（TXレディゲート）",
+      "rmapFullModeHint": "RMAP発行のフルモードは、IGNORE_CONFIG_WARNINGSを介してフルを維持します。LXMF配信アナウンスは、スタックアナウンス間隔（デフォルトは1時間）でこの無線を出力します。",
+      "effectiveModeBadge": "有効期限： {{mode}}",
+      "effectiveModeAria": "有効なランタイムモード{{mode}}。設定モードは、Reticulumが実行しているモードとは異なります。",
+      "effectiveModeTooltip": "Reticulumは、ignore_config_warningsが設定されていない限り、DISCOVERABLEにはゲートウェイ、内部、またはアクセスポイントが必要なため、この検出可能なインターフェイスをアクセスポイント（または別の許可されたモード）に書き換えました。フル（または設定モード）が有効になるようにオプトアウトするmesh-clientスタンプの後、スタックを再起動します。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1695,7 +1717,8 @@
         "rmap_no_tcp_hub": "検出可能なローカルRNodeには、インターネット到達可能性のために有効なTCPクライアントハブがありません。",
         "rmap_transport_disabled": "検出可能なインターフェイスが設定されていますが、トランスポートモードはオフです。",
         "rmap_i2p_not_connectable": "I 2 Pインターフェース「{{name}}」は検出可能ですが、接続可能ではありません。",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "インターフェース「{{name}}」は、非AP/ゲートウェイモードで検出可能です。Reticulumは、ignore_config_warningsが設定されていない限り、アクセスポイントとして実行します。mesh-clientがオプトアウトをスタンプできるように、インターフェースを編集するか、スタックを再起動します。"
       },
       "runtime": {
         "rnsNotReady": "RNS スタックの準備ができていません",
@@ -4039,7 +4062,7 @@
     }
   },
   "repeatersPanel": {
-    "searchRepeaters": "リピータを検索する",
+    "searchRepeaters": "リピーターとルームを検索",
     "favorite": "お気に入り",
     "unfavorite": "気に入らない",
     "pingError": "Ping エラー: {{error}}",
@@ -4051,12 +4074,12 @@
     "cliInput": "CLIコマンド入力",
     "cliInterface": "CLIインターフェース",
     "sensorTelemetryLpp": "センサーテレメトリLPP",
-    "noRepeatersYet": "リピーターはまだ見つかっていません。",
-    "noRepeatersHintPre": "リピータは、「リピータ」タイプの連絡先がアドバタイズするときに表示されます。使用",
+    "noRepeatersYet": "リピーターまたはルームはまだ検出されていません。",
+    "noRepeatersHintPre": "リピーターとルームサーバーは、それらのタイプのコンタクトがアドバートすると表示されます。",
     "importContacts": "連絡先のインポート",
     "noRepeatersHintMid": "で",
     "noRepeatersHintSuffix": "タブをクリックしてニックネームを事前にロードします。",
-    "noRepeatersMatch": "検索に一致するリピーターはありません。",
+    "noRepeatersMatch": "検索に一致するリピーターまたはルームはありません。",
     "snrDbTooltip": "dB — 利用可能な場合はリクエスト ステータスから、そうでない場合は連絡先リストから",
     "rssiDbmTooltip": "dBm — 利用可能な場合はリクエスト ステータスから、それ以外の場合は連絡先リストから",
     "hopCountTooltip": "最後の Ping トレースからのホップ数 (あなたとこのノード間のリピーター)",
@@ -4064,7 +4087,7 @@
     "heardPrefix": "聞いた：",
     "noLppData": "この応答には LPP センサー データがありません。",
     "enterCommand": "コマンドを入力してください...",
-    "searchRepeatersPlaceholder": "リピーターを検索…",
+    "searchRepeatersPlaceholder": "リピーターとルームを検索…",
     "openCliInterface": "CLI インターフェイスを開く",
     "sensorLppButton": "センサー（LPP）",
     "noTelemetryResponse": "まだテレメトリ応答がありません。センサー (LPP) をもう一度試してください。",
@@ -4079,7 +4102,7 @@
     "columnReliability": "信頼性",
     "columnActions": "アクション",
     "nodesTabName": "ノード",
-    "title": "リピーター",
+    "title": "リピーターとルーム",
     "columnsDataHint": "SNR、RSSI、稼働時間、および通信時間は、ステータス アクション (または、このパネルが開いている間の自動取得) から取得されます。ホップとパス履歴には Ping が必要です。 MeshCore は広告だけからこれらの列を埋めません。",
     "remoteAuthLabel": "リピーター管理者パスワード (オプション)",
     "remoteAuthPlaceholder": "リピーターに管理者パスワードがない場合は空のままにしてください",
@@ -4164,7 +4187,16 @@
     "currentRouteLabel": "現在のルート:",
     "neighborsLoadMore": "さらに読み込む（{{loaded}}/{{total}} 読み込み済み）",
     "neighborsLoadMoreAria": "隣接ノードをさらに読み込む（{{loaded}}/{{total}} 読み込み済み）",
-    "neighborsLoadingMore": "読み込み中…"
+    "neighborsLoadingMore": "読み込み中…",
+    "cliClockCannotGoBackwards": "このノードの時計はこのコンピュータより進んでいます（{{utc}}）。MeshCoreファームウェアは時計を逆に設定しません。確認後、clkrebootを実行してから clock sync を実行してください。",
+    "typeFilterAria": "タイプで絞り込む",
+    "filterAll": "すべて",
+    "filterRepeaters": "リピータ",
+    "filterRooms": "ルーム",
+    "openRoom": "ルームを開く",
+    "savedPasswordOrphanRoomLabel": "ルーム {{nodeId}}",
+    "roomCliNeedsAdminPassword": "リモートルームCLIにはルーム管理者パスワード（SendLogin ACL）が必要です。Repeaters → このルームのパスワードに保存してから再試行してください。ゲストBBSログインでは不十分です。",
+    "cliHistoryError": "[エラー： {{detail}}]"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",
@@ -4444,12 +4476,7 @@
     "postPlaceholder": "ルームに投稿…",
     "postButton": "投稿",
     "posting": "投稿中…",
-    "manageRoom": "管理",
-    "manageHeading": "ルームの管理",
-    "cliPlaceholder": "管理CLIコマンド…",
-    "cliSend": "送信",
-    "clearCli": "CLIをクリア",
-    "cliEmpty": "CLI出力はまだありません。",
+    "manageRoom": "Repeatersで管理",
     "aclPubkeyLabel": "公開鍵（64 hex）",
     "aclLevelLabel": "許可レベル",
     "aclLevelRemove": "アクセス取り消し",
@@ -4457,7 +4484,6 @@
     "aclLevelReadWrite": "読み取り/書き込み（投稿可能）",
     "aclLevelAdmin": "管理者",
     "aclApply": "ACLを適用",
-    "adminPasswordRequired": "このルームを管理するには管理者パスワードが必要です。",
     "postFailed": "ルームへの投稿に失敗しました",
     "leaveRoom": "チャットルームを退出",
     "rememberPassword": "パスワードを記憶させる",
@@ -4473,7 +4499,6 @@
     "cancelLoginHint": "最初にラジオで別のルームのログインが終了する場合があります。キャンセルすると、このルームへのこれ以上の試みが停止します。",
     "emptyGuestLoginHint": "空のゲストフィールド：空のパスワードサーバーの場合は、読み取り専用で続行を使用します。ログインにはパスワードが必要で、フィールドが空の場合に「hello」を送信します。",
     "unreadPosts": "新着 {{count}} 件",
-    "closeManage": "閉じる",
     "upgradeAccess": "アクセスをアップグレード",
     "leavingRoom": "退出中…",
     "leaveRoomInProgress": "ルームを退出中…",
@@ -4530,16 +4555,14 @@
     "legendNotSavedTooltip": "空の円—このルームにはパスワードが保存されていません",
     "legendSavedTooltip": "空色の半円 — パスワード保存済み。ログインしてセッションを開く",
     "legendLoggedInTooltip": "緑の点 — アクティブなクライアントセッション（サーバーがオフラインの場合はルームを退出）",
-    "historyLocalHint": "投稿は、このデバイスでこのルームにログインしている間にのみ表示されます。自動同期を有効にして購読したままにします。履歴はルームサーバーから埋め戻されません。",
+    "historyLocalHint": "ログイン時、mesh-client はこのデバイスにまだローカルのウォーターマークがない場合、ルームサーバーのリングバッファに残っている最近の投稿を要求します。接続中に購読を維持するには自動同期を有効にしてください。",
     "loginAllSavedDisabledNoSavedPasswords": "すべてログインするには、まずルームパスワードを保存してください",
     "membersHeadingWithCount": "メンバー（ {{count}} ）",
     "collapseRoomList": "ルームリストを折りたたむ",
     "expandRoomList": "ルームリストを展開",
-    "pathHashCliGet": "パスハッシュモードの取得",
-    "pathHashCliSet0": "パスハッシュモード1バイトを設定",
-    "pathHashCliSet1": "パスハッシュモード2バイトを設定",
-    "pathHashCliSet2": "パスハッシュモード3バイトを設定",
-    "collapsedRoomWithUnread": "{{label}}、{{count}}未読"
+    "collapsedRoomWithUnread": "{{label}}、{{count}}未読",
+    "manageJumpHint": "インフラ制御（ping、status、CLI、ACL setperm）はRepeatersタブにあります。",
+    "aclPubkeyPlaceholder": "0123456789abcdef…"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",

@@ -207,4 +207,76 @@ describe('resolveMeshcoreRoomLoginRouteBytes', () => {
     expect(primeSpy).toHaveBeenCalledTimes(1);
     expect(result).toEqual(primedPath);
   });
+
+  it('active login trace uses room-login coalesce key and packed hash seed', async () => {
+    const rpc = await import('./meshcoreRepeaterRpcInFlight');
+    const rpcSpy = vi.spyOn(rpc, 'runMeshcoreRepeaterRpcOnce');
+    rpcSpy.mockImplementation(async (_kind, _nodeId, fn) => fn());
+
+    const mux = await import('./meshcoreTracePathMultiplex');
+    const startSpy = vi.spyOn(mux, 'startMeshcoreTracePathMultiplexed').mockReturnValue({
+      promise: Promise.resolve({
+        pathLen: 2,
+        pathLenByte: 2,
+        flags: 1,
+        pathHashes: [0xab, 0xcd],
+        pathSnrs: [40],
+        lastSnr: 1,
+        tag: 1,
+      }),
+      cancel: vi.fn(),
+    });
+
+    const conn = baseConn({
+      getContacts: vi.fn(() =>
+        Promise.resolve([radioContact({ outPathLen: 64, outPath: new Uint8Array(0) })]),
+      ),
+    });
+
+    const result = await resolveMeshcoreRoomLoginRouteBytes(conn, nodeId, {
+      pubKey,
+      loginHopsAway: 2,
+      allowPrime: false,
+      runSerialized: async (fn) => fn(),
+      traceTimeoutMs: 5_000,
+    });
+
+    expect(rpcSpy).toHaveBeenCalledWith('trace', nodeId, expect.any(Function), {
+      coalesceKey: 'room-login',
+    });
+    expect(startSpy).toHaveBeenCalled();
+    expect(startSpy.mock.calls[0]?.[1]).toEqual(pubKey.subarray(0, 2));
+    expect(result?.length).toBeGreaterThan(1);
+
+    rpcSpy.mockRestore();
+    startSpy.mockRestore();
+  });
+
+  it('route-resolve timeout cancels multiplex handle', async () => {
+    const cancel = vi.fn();
+    const mux = await import('./meshcoreTracePathMultiplex');
+    vi.spyOn(mux, 'startMeshcoreTracePathMultiplexed').mockReturnValue({
+      promise: Promise.reject(new Error('meshcoreRoomLoginTrace timed out after 50ms')),
+      cancel,
+    });
+    const rpc = await import('./meshcoreRepeaterRpcInFlight');
+    vi.spyOn(rpc, 'runMeshcoreRepeaterRpcOnce').mockImplementation(async (_k, _n, fn) => fn());
+
+    const conn = baseConn({
+      getContacts: vi.fn(() =>
+        Promise.resolve([radioContact({ outPathLen: -1, outPath: new Uint8Array(0) })]),
+      ),
+    });
+
+    const result = await resolveMeshcoreRoomLoginRouteBytes(conn, nodeId, {
+      pubKey,
+      loginHopsAway: 2,
+      allowPrime: false,
+      runSerialized: async (fn) => fn(),
+      traceTimeoutMs: 50,
+    });
+
+    expect(result).toBeUndefined();
+    expect(cancel).toHaveBeenCalled();
+  });
 });

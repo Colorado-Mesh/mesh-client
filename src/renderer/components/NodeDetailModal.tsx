@@ -15,12 +15,12 @@ import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolI
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { buildMeshcoreContactAddUri, type MeshcoreContactType } from '@/shared/meshClientDeepLink';
+import { meshcoreContactDisplayName } from '@/shared/meshcoreContactSanitize';
 import { isDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
 import { MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
-import { useMeshcoreRoomAuth } from '../hooks/useMeshcoreRoomAuth';
 import { formatCoordPair } from '../lib/coordUtils';
 import { downloadBlob } from '../lib/downloadBlob';
 import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
@@ -40,7 +40,6 @@ import {
   meshcorePathBytesEqual,
   meshcoreTraceHopDisplayRows,
 } from '../lib/meshcorePathChainDisplay';
-import { meshcoreGetRoomSession, meshcoreIsRoomLoggedIn } from '../lib/meshcoreRoomSession';
 import {
   isMeshcoreDmExcludedHwModel,
   MESHCORE_CHAT_STUB_ID_MAX,
@@ -48,7 +47,6 @@ import {
   MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
   MESHCORE_MAX_CONTACTS,
   meshcoreContactTypeFromHwModel,
-  meshcorePubkeyShortId,
   meshcoreTracePathLenToHops,
 } from '../lib/meshcoreUtils';
 import {
@@ -94,12 +92,6 @@ interface NodeDetailModalProps {
   onMessageNode?: (nodeNum: number) => void;
   /** MeshCore room server: open Rooms tab for BBS posts (not DM). */
   onOpenRoom?: (nodeNum: number) => void;
-  /** MeshCore room server login before status/admin actions. */
-  onLoginRoom?: (
-    nodeId: number,
-    password: string,
-    opts?: { adminPassword?: string; guestPassword?: string; forceRelogin?: boolean },
-  ) => Promise<void>;
   onToggleFavorite: (nodeId: number, favorited: boolean) => void;
   isConnected: boolean;
   mqttConnected?: boolean;
@@ -225,7 +217,6 @@ export default function NodeDetailModal({
   onDeleteNode,
   onMessageNode,
   onOpenRoom,
-  onLoginRoom,
   onToggleFavorite,
   isConnected,
   mqttConnected = false,
@@ -265,7 +256,6 @@ export default function NodeDetailModal({
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const { ensureRepeaterAuth, promptRepeaterPassword, RemoteAuthModal } =
     useMeshcoreRepeaterRemoteAuth();
-  const { ensureRoomAuth, RemoteAuthModal: RoomAuthModal } = useMeshcoreRoomAuth();
   const [repeaterSecretsEpoch, setRepeaterSecretsEpoch] = useState(0);
   const refreshRepeaterSecrets = useCallback(() => {
     setRepeaterSecretsEpoch((n) => n + 1);
@@ -504,41 +494,29 @@ export default function NodeDetailModal({
       hwModel: string | undefined,
       mode: 'guest' | 'admin',
     ): Promise<boolean> => {
-      if (hwModel === 'Room') {
-        const roomName = node?.long_name ?? `Room-${nodeId.toString(16)}`;
-        const auth = await ensureRoomAuth(nodeId, mode === 'admin' ? 'admin' : 'guest', roomName);
-        if (!auth.ok || !onLoginRoom) {
+      // Infra ops (status/telemetry/neighbors) use ops admin secrets like RepeatersPanel —
+      // not the Rooms BBS guest/admin overlay.
+      if (hwModel === 'Room' || hwModel === 'Repeater') {
+        const fallbackLabel =
+          hwModel === 'Room'
+            ? t('repeatersPanel.savedPasswordOrphanRoomLabel', {
+                nodeId: nodeId.toString(16),
+              })
+            : t('repeatersPanel.savedPasswordOrphanLabel', {
+                nodeId: nodeId.toString(16),
+              });
+        const auth = await ensureRepeaterAuth(nodeId, node?.long_name ?? fallbackLabel, hwModel);
+        if (!auth.ok) {
           setActionStatus(t('nodeDetailModal.remoteAuthCancelled'));
           return false;
         }
-        const password = mode === 'admin' ? auth.adminPassword : auth.guestPassword;
-        const session = meshcoreGetRoomSession(nodeId);
-        const forceRelogin =
-          meshcoreIsRoomLoggedIn(nodeId) &&
-          (session?.role === 'readonly' || (mode === 'admin' && session?.role !== 'admin'));
-        try {
-          await onLoginRoom(nodeId, password, {
-            adminPassword: auth.adminPassword,
-            guestPassword: auth.guestPassword,
-            forceRelogin,
-          });
-          return true;
-        } catch (e) {
-          console.warn('[NodeDetailModal] room login failed ' + errLikeToLogString(e));
-          setActionStatus(t('nodeDetailModal.remoteAuthCancelled'));
-          return false;
-        }
+        if (auth.saved) refreshRepeaterSecrets();
+        return true;
       }
-      const repeaterName = node?.long_name ?? `Repeater-${nodeId.toString(16)}`;
-      const auth = await ensureRepeaterAuth(nodeId, repeaterName);
-      if (!auth.ok) {
-        setActionStatus(t('nodeDetailModal.remoteAuthCancelled'));
-        return false;
-      }
-      if (auth.saved) refreshRepeaterSecrets();
+      void mode;
       return true;
     },
-    [ensureRepeaterAuth, ensureRoomAuth, node?.long_name, onLoginRoom, refreshRepeaterSecrets, t],
+    [ensureRepeaterAuth, node?.long_name, refreshRepeaterSecrets, t],
   );
 
   useEffect(() => {
@@ -604,13 +582,13 @@ export default function NodeDetailModal({
 
   if (!node) return null;
 
-  const hexId =
-    protocol === 'meshcore'
-      ? (meshcorePubkeyShortId(contactPubkey) ?? formatMeshtasticNodeId(node.node_id))
-      : formatMeshtasticNodeId(node.node_id);
+  const hexId = formatMeshtasticNodeId(node.node_id);
   const awaitingNodeInfo =
     protocol === 'meshtastic' && meshtasticNodeAwaitingNodeInfo(node, { isConnected });
-  const displayName = node.short_name || node.long_name || hexId;
+  const displayName =
+    protocol === 'meshcore'
+      ? meshcoreContactDisplayName(node.node_id, node.long_name)
+      : node.short_name || node.long_name || hexId;
   const isOurNode = node.node_id === homeNode?.node_id;
   const nodeStatus = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
   const nodeStatusUi =
@@ -709,7 +687,9 @@ export default function NodeDetailModal({
                 )}
               </div>
               <div className="mt-0.5 flex items-center gap-2">
-                <span className="text-muted font-mono text-xs">{hexId}</span>
+                {protocol !== 'meshcore' && (
+                  <span className="text-muted font-mono text-xs">{hexId}</span>
+                )}
                 {headerHopsDisplay != null && (
                   <span
                     className={`text-xs ${headerHopsDisplay === 0 ? 'text-bright-green' : 'text-gray-400'}`}
@@ -898,7 +878,7 @@ export default function NodeDetailModal({
 
               {protocol === 'meshcore' &&
                 !isOurNode &&
-                node.hw_model === 'Repeater' &&
+                (node.hw_model === 'Repeater' || node.hw_model === 'Room') &&
                 meshcoreNeighborError &&
                 !showMeshcoreNeighbors && (
                   <div className="mt-3 rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-300">
@@ -2000,57 +1980,59 @@ export default function NodeDetailModal({
                       : t('nodeDetailModal.sensorTelemetryButton')}
                   </button>
                 )}
-                {protocol === 'meshcore' && onRequestNeighbors && node.hw_model === 'Repeater' && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (
+                {protocol === 'meshcore' &&
+                  onRequestNeighbors &&
+                  (node.hw_model === 'Repeater' || node.hw_model === 'Room') && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (
+                          node.hops_away != null &&
+                          node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS
+                        ) {
+                          return;
+                        }
+                        if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')))
+                          return;
+                        setNeighborsPending(true);
+                        setActionStatus(t('nodeDetailModal.requestingNeighbors'));
+                        try {
+                          await onRequestNeighbors(node.node_id);
+                          setActionStatus(null);
+                        } catch (e) {
+                          console.warn(
+                            '[NodeDetailModal] requestNeighbors failed ' + errLikeToLogString(e),
+                          );
+                          setActionStatus(
+                            e instanceof Error
+                              ? e.message
+                              : t('nodeDetailModal.neighborsFailed', { message: String(e) }),
+                          );
+                        } finally {
+                          setNeighborsPending(false);
+                        }
+                      }}
+                      disabled={
+                        !isConnected ||
+                        neighborsPending ||
+                        (node.hops_away != null &&
+                          node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS)
+                      }
+                      title={
                         node.hops_away != null &&
                         node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS
-                      ) {
-                        return;
+                          ? t('nodeDetailModal.neighborsHopTooFar', {
+                              hops: MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS,
+                            })
+                          : undefined
                       }
-                      if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')))
-                        return;
-                      setNeighborsPending(true);
-                      setActionStatus(t('nodeDetailModal.requestingNeighbors'));
-                      try {
-                        await onRequestNeighbors(node.node_id);
-                        setActionStatus(null);
-                      } catch (e) {
-                        console.warn(
-                          '[NodeDetailModal] requestNeighbors failed ' + errLikeToLogString(e),
-                        );
-                        setActionStatus(
-                          e instanceof Error
-                            ? e.message
-                            : t('nodeDetailModal.neighborsFailed', { message: String(e) }),
-                        );
-                      } finally {
-                        setNeighborsPending(false);
-                      }
-                    }}
-                    disabled={
-                      !isConnected ||
-                      neighborsPending ||
-                      (node.hops_away != null &&
-                        node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS)
-                    }
-                    title={
-                      node.hops_away != null &&
-                      node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS
-                        ? t('nodeDetailModal.neighborsHopTooFar', {
-                            hops: MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS,
-                          })
-                        : undefined
-                    }
-                    className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {neighborsPending
-                      ? t('nodeDetailModal.requestingEllipsis')
-                      : t('nodeDetailModal.getNeighbors')}
-                  </button>
-                )}
+                      className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {neighborsPending
+                        ? t('nodeDetailModal.requestingEllipsis')
+                        : t('nodeDetailModal.getNeighbors')}
+                    </button>
+                  )}
                 {onOpenRoom && protocol === 'meshcore' && node.hw_model === 'Room' && (
                   <button
                     type="button"
@@ -2391,7 +2373,6 @@ export default function NodeDetailModal({
         </div>
       </div>
       {RemoteAuthModal}
-      {RoomAuthModal}
     </>
   );
 }

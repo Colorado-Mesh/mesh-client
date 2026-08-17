@@ -175,6 +175,14 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       const attachmentPath = sanitizeReticulumAttachmentPathForDb(
         typeof m.attachment_path === 'string' ? m.attachment_path : null,
       );
+      const audioMode =
+        m.audio_mode != null && Number.isFinite(Number(m.audio_mode))
+          ? Math.trunc(Number(m.audio_mode))
+          : null;
+      const audioDurationSec =
+        m.audio_duration_sec != null && Number.isFinite(Number(m.audio_duration_sec))
+          ? Number(m.audio_duration_sec)
+          : null;
       const deliveryAttempts =
         m.delivery_attempts != null && Number.isFinite(Number(m.delivery_attempts))
           ? Math.trunc(Number(m.delivery_attempts))
@@ -211,7 +219,10 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
                    END,
                    received_via = COALESCE(?, received_via),
                    sender_name = COALESCE(?, sender_name),
-                   delivery_method = COALESCE(?, delivery_method)
+                   delivery_method = COALESCE(?, delivery_method),
+                   attachment_path = COALESCE(?, attachment_path),
+                   audio_mode = COALESCE(?, audio_mode),
+                   audio_duration_sec = COALESCE(?, audio_duration_sec)
                WHERE id = ?`,
             ).run(
               deliveryStatus,
@@ -219,6 +230,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
               receivedVia,
               senderName,
               deliveryMethod,
+              attachmentPath,
+              audioMode,
+              audioDurationSec,
               existing.id,
             );
             return { changes: 1 };
@@ -226,8 +240,8 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         }
 
         db.prepareOnce(
-          `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path, delivery_method)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path, delivery_method, audio_mode, audio_duration_sec)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         ).run(
           identityId,
           senderId,
@@ -243,6 +257,8 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
           nextDeliveryAttemptAt,
           attachmentPath,
           deliveryMethod,
+          audioMode,
+          audioDurationSec,
         );
         return { changes: 1 };
       });

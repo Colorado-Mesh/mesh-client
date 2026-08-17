@@ -94,15 +94,31 @@ ensure_repo() {
   ENSURE_REPO_SELECTED_REF="${target_ref}"
 
   if [[ -n "$(git -C "${dir}" status --porcelain)" ]]; then
-    # Overlays leave siblings dirty after a successful float — allow that when already
-    # on the target tip. Refuse only when checkout would rewrite a dirty tree.
+    # Overlays leave checkouts dirty after a successful float — allow that when already
+    # on the target tip. When floating/pinning to a new SHA:
+    # - Default .rsstack workspace is disposable overlay cache → hard-reset, then checkout
+    #   (overlays are re-applied after ensure_repo returns for RNS/LXMF).
+    # - External WORKSPACE_ROOT (sibling clones with real WIP) still refuses unless
+    #   RS_STACK_DISCARD_DIRTY=1.
     if [[ "${current_head}" == "${target_sha}" ]]; then
       echo "warning: ${dir} has uncommitted changes; already at ${target_ref} (${target_sha:0:12}), skipping checkout" >&2
       return 0
     fi
-    echo "error: ${dir} has uncommitted changes; refuse to float/pin to ${target_ref} (${target_sha:0:12}) from ${current_head:0:12} (stash or reset, then re-run)" >&2
-    git -C "${dir}" status --short >&2 || true
-    exit 1
+    local discard_dirty=0
+    if [[ "${RS_STACK_DISCARD_DIRTY:-}" == '1' ]]; then
+      discard_dirty=1
+    elif [[ "$(basename "${WORKSPACE_ROOT}")" == '.rsstack' ]]; then
+      discard_dirty=1
+    fi
+    if [[ "${discard_dirty}" -eq 1 ]]; then
+      echo "warning: ${dir} has uncommitted changes; discarding to float/pin to ${target_ref} (${target_sha:0:12}) from ${current_head:0:12}" >&2
+      git -C "${dir}" reset --hard HEAD > /dev/null
+      git -C "${dir}" clean -fd > /dev/null
+    else
+      echo "error: ${dir} has uncommitted changes; refuse to float/pin to ${target_ref} (${target_sha:0:12}) from ${current_head:0:12} (stash or reset, or set RS_STACK_DISCARD_DIRTY=1)" >&2
+      git -C "${dir}" status --short >&2 || true
+      exit 1
+    fi
   fi
 
   if [[ "${current_head}" != "${target_sha}" ]]; then

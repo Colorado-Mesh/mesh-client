@@ -445,6 +445,8 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     delivery_attempts: 'INTEGER DEFAULT 0',
     next_delivery_attempt_at: 'INTEGER',
     attachment_path: 'TEXT',
+    audio_mode: 'INTEGER',
+    audio_duration_sec: 'REAL',
   },
   rrc_messages: {
     message_id: 'TEXT NOT NULL',

@@ -14,6 +14,8 @@ RS_RETICULUM_APPLY_SCRIPTS=(
   apply-rsReticulum-path-medium-slots.sh
   apply-rsReticulum-inbound-raw-saturation-log.sh
   apply-rsReticulum-interface-tx-queue-stats.sh
+  apply-rsReticulum-pathless-link-exclude-rf.sh
+  apply-rsReticulum-announce-rebroadcast-exclude-rf.sh
 )
 
 RS_LXMF_APPLY_SCRIPTS=(
@@ -22,6 +24,7 @@ RS_LXMF_APPLY_SCRIPTS=(
   apply-rsLXMF-propagation-node-deferred-messagestore-load.sh
   apply-rsLXMF-link-delivery-has-pending-to.sh
   apply-rsLXMF-propagation-client-abort-transfer.sh
+  apply-rsLXMF-propagation-client-link-attached-tx.sh
 )
 
 apply_ratspeak_rns_overlays() {

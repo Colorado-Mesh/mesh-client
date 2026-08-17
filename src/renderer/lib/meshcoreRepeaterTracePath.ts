@@ -1,4 +1,11 @@
-import { meshcorePubkeyPathPrefix } from '../../shared/meshcorePathHash';
+import {
+  isMeshcorePathHashMode,
+  type MeshcorePathHashMode,
+  meshcorePathHashSizeFromMode,
+  meshcorePubkeyPathPrefix,
+  meshcoreUnpackPathLenByte,
+} from '../../shared/meshcorePathHash';
+import { MESHCORE_OUT_PATH_LEN_MAX } from './meshcoreUtils';
 
 export type MeshcoreTracePrimeStrategy = 'none' | 'passive' | 'flood';
 export function meshcoreStoredPathLooksLikeFullPubKey(
@@ -11,6 +18,56 @@ export function meshcoreStoredPathLooksLikeFullPubKey(
     if (path[i] !== pubKey[i]) return false;
   }
   return true;
+}
+
+/**
+ * Whether companion `outPathLen` means a multi-hop route exists.
+ * Plain lengths 0..{@link MESHCORE_OUT_PATH_LEN_MAX} are last-byte-index (0 = direct).
+ * Larger values are packed path_length bytes (low 6 bits = hop count) — e.g. 64 (0x40) is
+ * 0 hops with 2-byte hashes, not "64 hops".
+ */
+export function meshcoreRadioContactPathLenSaysMultiHop(
+  radioContactPathLen: number | null | undefined,
+): boolean {
+  if (radioContactPathLen == null || !Number.isFinite(radioContactPathLen)) return false;
+  const len = Math.trunc(radioContactPathLen);
+  if (len < 0) return false;
+  if (len <= MESHCORE_OUT_PATH_LEN_MAX) return len >= 1;
+  return meshcoreUnpackPathLenByte(len).hopCount >= 1;
+}
+
+/**
+ * Hash size for path seeds from companion `outPathLen`.
+ * Packed path_length bytes encode size in the high 2 bits; plain 0..61 lengths do not.
+ */
+export function meshcoreHashSizeFromRadioContactPathLen(
+  radioContactPathLen: number | null | undefined,
+): 1 | 2 | 3 {
+  if (radioContactPathLen == null || !Number.isFinite(radioContactPathLen)) return 1;
+  const len = Math.trunc(radioContactPathLen);
+  if (len < 0) return 1;
+  if (len <= MESHCORE_OUT_PATH_LEN_MAX) return 1;
+  return meshcoreUnpackPathLenByte(len).hashSizeBytes;
+}
+
+/**
+ * Prefer per-contact packed `outPathLen` hash size; else companion `path.hash.mode`.
+ * Contact-specific packed lengths stay authoritative when present.
+ */
+export function meshcoreHashSizeForTraceSeed(
+  radioContactPathLen: number | null | undefined,
+  companionPathHashMode?: MeshcorePathHashMode | null,
+): 1 | 2 | 3 {
+  if (radioContactPathLen != null && Number.isFinite(radioContactPathLen)) {
+    const len = Math.trunc(radioContactPathLen);
+    if (len > MESHCORE_OUT_PATH_LEN_MAX) {
+      return meshcoreUnpackPathLenByte(len).hashSizeBytes;
+    }
+  }
+  if (isMeshcorePathHashMode(companionPathHashMode)) {
+    return meshcorePathHashSizeFromMode(companionPathHashMode);
+  }
+  return meshcoreHashSizeFromRadioContactPathLen(radioContactPathLen);
 }
 
 /**
@@ -50,6 +107,8 @@ export function planMeshcoreRepeaterTraceRoute(opts: {
   pubKey: Uint8Array;
   radioContactPathLen: number | null;
   pathFromHistory?: Uint8Array;
+  /** Companion path.hash.mode when contact outPathLen is missing/plain. */
+  companionPathHashMode?: MeshcorePathHashMode | null;
 }): MeshcoreRepeaterTraceRoutePlan {
   let storedPath = opts.storedPath;
   if (storedPath && !meshcoreIsUsableTraceStoredPath(storedPath, opts.hopsAway, opts.pubKey)) {
@@ -71,12 +130,22 @@ export function planMeshcoreRepeaterTraceRoute(opts: {
     (!storedPath || storedPath.length <= 1) && (hopsAway == null || hopsAway >= 1);
   const pathTooShort = !storedPath || storedPath.length <= 1;
   const uiSaysMultiHop = (hopsAway ?? 0) >= 1;
-  const radioSaysMultiHop = opts.radioContactPathLen != null && opts.radioContactPathLen >= 1;
+  const radioSaysMultiHop = meshcoreRadioContactPathLenSaysMultiHop(opts.radioContactPathLen);
+  const hashSizeBytes = meshcoreHashSizeForTraceSeed(
+    opts.radioContactPathLen,
+    opts.companionPathHashMode,
+  );
 
   let outPathSeed =
-    storedPath && storedPath.length > 0 ? storedPath : meshcorePubkeyPathPrefix(opts.pubKey, 1);
-  if (outPathSeed.length === 1 && outPathSeed[0] === 0 && opts.pubKey[0] !== 0) {
-    outPathSeed = meshcorePubkeyPathPrefix(opts.pubKey, 1);
+    storedPath && storedPath.length > 0
+      ? storedPath
+      : meshcorePubkeyPathPrefix(opts.pubKey, hashSizeBytes);
+  if (
+    outPathSeed.length === hashSizeBytes &&
+    outPathSeed.every((b) => b === 0) &&
+    opts.pubKey[0] !== 0
+  ) {
+    outPathSeed = meshcorePubkeyPathPrefix(opts.pubKey, hashSizeBytes);
   }
 
   return {
@@ -89,13 +158,25 @@ export function planMeshcoreRepeaterTraceRoute(opts: {
   };
 }
 
-/** 0-hop direct-retry: retry trace with full pubkey when the 1-byte prefix attempt fails. */
+/** 0-hop direct-retry: retry trace with full pubkey when a short hash-prefix attempt fails. */
 export function meshcoreTraceDirectRetryEligible(
   hopsAway: number | null | undefined,
   tracePathLen: number,
 ): boolean {
-  return (hopsAway ?? 0) === 0 && tracePathLen === 1;
+  const hops = hopsAway ?? 0;
+  if (hops !== 0) return false;
+  // Prefix seeds are 1–3 bytes (hash mode); full pubkey retry uses 32 bytes.
+  return tracePathLen >= 1 && tracePathLen < 32;
 }
+
+/** True when a multiplex cancel was caused by 0-hop CLI preempt (must not direct-retry). */
+export function meshcoreTraceCancelledForCliPreempt(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return /0-hop CLI preempted/i.test(msg);
+}
+
+/** Cancel reason passed into multiplex when 0-hop CLI must clear TraceData for drain/replies. */
+export const MESHCORE_CLI_PREEMPT_TRACE_REASON = '0-hop CLI preempted stuck ping';
 
 /**
  * Fast-fail ping when the radio confirms a multi-hop route but bytes are missing, or UI shows

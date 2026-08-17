@@ -498,7 +498,7 @@ describe('meshcoreInferHopsFromOutPath', () => {
 });
 
 describe('resolveMeshcoreRoomLoginHopsAway', () => {
-  it('prefers positive hops_away on the node', () => {
+  it('prefers positive hops_away when a multi-hop path exists', () => {
     expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 4 }, new Uint8Array([1, 2]))).toBe(4);
   });
 
@@ -509,6 +509,17 @@ describe('resolveMeshcoreRoomLoginHopsAway', () => {
 
   it('returns 0 for direct room with no path', () => {
     expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 0 }, undefined)).toBe(0);
+  });
+
+  it('ignores sticky UI hops when outPath is empty (0-hop SendLogin)', () => {
+    expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 1 }, undefined)).toBe(0);
+    expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 3 }, new Uint8Array())).toBe(0);
+  });
+
+  it('treats a padded direct route as 0-hop during room login', () => {
+    expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 3 }, new Uint8Array([0x42, 0, 0]))).toBe(
+      0,
+    );
   });
 });
 

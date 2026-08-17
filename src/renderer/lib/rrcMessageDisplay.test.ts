@@ -4,6 +4,7 @@ import { RRC_HUB_STREAM_ROOM } from '@/renderer/stores/rrcSessionStore';
 
 import {
   parseRrcWhisperEcho,
+  resolveRrcHubScopedNoticeRoom,
   resolveRrcInboundChatRoom,
   shouldDisplayRrcChatMessage,
   shouldDropEmptyRrcInbound,
@@ -37,6 +38,25 @@ describe('resolveRrcInboundChatRoom', () => {
     expect(resolveRrcInboundChatRoom('')).toBe(RRC_HUB_STREAM_ROOM);
     expect(resolveRrcInboundChatRoom(null)).toBe(RRC_HUB_STREAM_ROOM);
     expect(resolveRrcInboundChatRoom(undefined)).toBe(RRC_HUB_STREAM_ROOM);
+  });
+});
+
+describe('resolveRrcHubScopedNoticeRoom', () => {
+  it('keeps non-empty K_ROOM unchanged', () => {
+    expect(resolveRrcHubScopedNoticeRoom('lobby', 'general')).toBe('lobby');
+  });
+
+  it('surfaces empty K_ROOM into the focused real room', () => {
+    expect(resolveRrcHubScopedNoticeRoom('', 'general')).toBe('general');
+    expect(resolveRrcHubScopedNoticeRoom(undefined, '#Lobby')).toBe('#Lobby');
+  });
+
+  it('keeps [hub] when focus is synthetic or a DM', () => {
+    expect(resolveRrcHubScopedNoticeRoom('', '[hub]')).toBe(RRC_HUB_STREAM_ROOM);
+    expect(resolveRrcHubScopedNoticeRoom('', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe(
+      RRC_HUB_STREAM_ROOM,
+    );
+    expect(resolveRrcHubScopedNoticeRoom('', null)).toBe(RRC_HUB_STREAM_ROOM);
   });
 });
 
