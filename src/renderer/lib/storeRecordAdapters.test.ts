@@ -399,4 +399,37 @@ describe('store record adapters (merge precedence)', () => {
       expect.objectContaining({ emoji: 0x1f44d, payload: '👍' }),
     ]);
   });
+
+  it('messageRecordToChatMessage round-trips voice memo attachment fields', () => {
+    const chat = messageRecordToChatMessage({
+      id: 'hh'.repeat(32),
+      from: 1,
+      to: 2,
+      payload: '[voice:900]',
+      channelIndex: 0,
+      timestamp: 1,
+      status: 'acked',
+      reticulumAttachmentPath: '/cache/memo.ogg',
+      reticulumAttachmentKind: 'audio',
+      reticulumAudioMode: 16,
+      reticulumAudioDurationSec: 0.9,
+    });
+    expect(chat.reticulumAttachmentPath).toBe('/cache/memo.ogg');
+    expect(chat.reticulumAttachmentKind).toBe('audio');
+    expect(chat.reticulumAudioMode).toBe(16);
+    expect(chat.reticulumAudioDurationSec).toBe(0.9);
+  });
+
+  it('reticulumDbRowToMessageRecord infers audio kind from .ogg attachment path', () => {
+    const record = reticulumDbRowToMessageRecord({
+      sender_id: 'aa'.repeat(16),
+      sender_name: 'Me',
+      payload: '[voice:600]',
+      timestamp: 1,
+      message_hash: 'bb'.repeat(32),
+      attachment_path: '/tmp/voice-memo-out.ogg',
+    });
+    expect(record.reticulumAttachmentPath).toBe('/tmp/voice-memo-out.ogg');
+    expect(record.reticulumAttachmentKind).toBe('audio');
+  });
 });

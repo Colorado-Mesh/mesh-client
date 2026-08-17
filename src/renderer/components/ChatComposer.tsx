@@ -1612,27 +1612,35 @@ function VoiceMemoComposerButton({
   const recording = phase === 'recording' || phase === 'starting';
   const busy = phase === 'stopping' || phase === 'sending';
   return (
-    <button
-      type="button"
-      aria-label={
-        recording ? t('chatPanel.voiceMemo.sendAria') : t('chatPanel.voiceMemo.recordAria')
+    <HelpTooltip
+      text={
+        recording ? t('chatPanel.voiceMemo.sendTooltip') : t('chatPanel.voiceMemo.recordTooltip')
       }
-      onClick={onVoiceMemo}
-      disabled={disabled || busy}
-      className={
-        recording
-          ? 'rounded-xl bg-red-600/80 p-2.5 text-white hover:bg-red-500 disabled:opacity-40'
-          : 'rounded-xl p-2.5 text-gray-400 hover:bg-slate-600 hover:text-white disabled:opacity-40'
-      }
+      className="shrink-0"
+      nonFocusableWrapper
     >
-      <span className="flex items-center gap-1">
-        <Mic aria-hidden className="h-4 w-4" size={16} />
-        {recording && elapsedSec > 0 ? (
-          <span className="text-xs tabular-nums" aria-hidden>
-            {elapsedSec}s
-          </span>
-        ) : null}
-      </span>
-    </button>
+      <button
+        type="button"
+        aria-label={
+          recording ? t('chatPanel.voiceMemo.sendAria') : t('chatPanel.voiceMemo.recordAria')
+        }
+        onClick={onVoiceMemo}
+        disabled={disabled || busy}
+        className={
+          recording
+            ? 'rounded-xl bg-red-600/80 p-2.5 text-white hover:bg-red-500 disabled:opacity-40'
+            : 'rounded-xl p-2.5 text-gray-400 hover:bg-slate-600 hover:text-white disabled:opacity-40'
+        }
+      >
+        <span className="flex items-center gap-1">
+          <Mic aria-hidden className="h-4 w-4" size={16} />
+          {recording && elapsedSec > 0 ? (
+            <span className="text-xs tabular-nums" aria-hidden>
+              {elapsedSec}s
+            </span>
+          ) : null}
+        </span>
+      </button>
+    </HelpTooltip>
   );
 }

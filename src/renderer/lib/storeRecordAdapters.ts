@@ -474,7 +474,10 @@ export function reticulumDbRowToMessageRecord(row: {
     ...(receivedVia ? { receivedVia } : {}),
     ...(deliveryMethod ? { reticulumDeliveryMethod: deliveryMethod } : {}),
     ...(row.attachment_path ? { reticulumAttachmentPath: row.attachment_path } : {}),
-    ...(row.attachment_path && row.audio_mode != null
+    ...(row.attachment_path &&
+    (row.audio_mode != null ||
+      row.attachment_path.toLowerCase().endsWith('.ogg') ||
+      /^\[voice:/i.test(row.payload))
       ? { reticulumAttachmentKind: 'audio' as const }
       : {}),
     ...(row.audio_mode != null ? { reticulumAudioMode: row.audio_mode } : {}),

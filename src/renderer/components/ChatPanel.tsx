@@ -2867,8 +2867,10 @@ function ChatPanel({
                             {/* Message text with optional search highlight (div: ChatPayloadText may render block link previews) */}
                             <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
                               {hasReticulumVoiceMemo &&
-                              msg.reticulumAttachmentKind === 'audio' &&
-                              msg.reticulumAttachmentPath ? (
+                              msg.reticulumAttachmentPath &&
+                              (msg.reticulumAttachmentKind === 'audio' ||
+                                msg.reticulumAttachmentPath.toLowerCase().endsWith('.ogg') ||
+                                /^\[voice:/i.test(msg.payload)) ? (
                                 <ReticulumVoiceMemoLine
                                   attachmentPath={msg.reticulumAttachmentPath}
                                   durationSec={msg.reticulumAudioDurationSec}

@@ -705,7 +705,9 @@
       "micDenied": "Microfoontoegang is vereist om een spraakmemo op te nemen.",
       "tooLargeForWire": "Spraakmemo is te groot om te verzenden. Neem een kortere clip op.",
       "tooLargeForPropagation": "Spraakbericht is groter dan de limiet van de voortplantingsnode. Het wordt alleen bezorgd wanneer de ontvanger online is. Verkort het om het op te slaan voor offline bezorging.",
-      "directOnlyBadge": "Alleen direct — te groot voor offline opslag"
+      "directOnlyBadge": "Alleen direct — te groot voor offline opslag",
+      "recordTooltip": "LXMF-spraakmemo — neemt een korte Opus-clip op voor dit directe bericht. Ondersteund door mesh-client, Ratspeak en Sideband (FIELD_AUDIO). Niet hetzelfde als LXST Call.",
+      "sendTooltip": "Verstuur de opgenomen LXMF-spraakmemo"
     }
   },
   "chatPayload": {

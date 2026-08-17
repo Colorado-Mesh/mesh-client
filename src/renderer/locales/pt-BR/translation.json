@@ -705,7 +705,9 @@
       "micDenied": "O acesso ao microfone é necessário para gravar um memorando de voz.",
       "tooLargeForWire": "O memorando de voz é muito grande para enviar. Grave um clipe mais curto.",
       "tooLargeForPropagation": "A mensagem de voz é maior do que o limite do nó de propagação. Ele só será entregue quando o destinatário estiver online. Encurte-o para armazená-lo para entrega offline.",
-      "directOnlyBadge": "Apenas direto — muito grande para armazenamento offline"
+      "directOnlyBadge": "Apenas direto — muito grande para armazenamento offline",
+      "recordTooltip": "Memorando de voz LXMF — grava um pequeno clipe Opus para esta mensagem direta. Suportado por mesh-client, Ratspeak e Sideband (FIELD_AUDIO). Não é o mesmo que Chamada LXST.",
+      "sendTooltip": "Envie o memorando de voz LXMF gravado"
     }
   },
   "chatPayload": {

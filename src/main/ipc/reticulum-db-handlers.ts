@@ -211,7 +211,8 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
                    END,
                    received_via = COALESCE(?, received_via),
                    sender_name = COALESCE(?, sender_name),
-                   delivery_method = COALESCE(?, delivery_method)
+                   delivery_method = COALESCE(?, delivery_method),
+                   attachment_path = COALESCE(?, attachment_path)
                WHERE id = ?`,
             ).run(
               deliveryStatus,
@@ -219,6 +220,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
               receivedVia,
               senderName,
               deliveryMethod,
+              attachmentPath,
               existing.id,
             );
             return { changes: 1 };

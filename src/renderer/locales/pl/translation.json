@@ -709,7 +709,9 @@
       "micDenied": "Dostęp do mikrofonu jest wymagany do nagrywania notatki głosowej.",
       "tooLargeForWire": "Notatka głosowa jest zbyt duża, aby ją wysłać. Nagraj krótszy klip.",
       "tooLargeForPropagation": "Wiadomość głosowa jest większa niż limit węzła propagacji. Dostawa będzie możliwa tylko wtedy, gdy odbiorca jest online. Skróć go, aby przechowywać go w celu dostawy offline.",
-      "directOnlyBadge": "Tylko bezpośrednie — zbyt duże dla przechowywania offline"
+      "directOnlyBadge": "Tylko bezpośrednie — zbyt duże dla przechowywania offline",
+      "recordTooltip": "Notatka głosowa LXMF — nagrywa krótki klip Opus dla tej bezpośredniej wiadomości. Obsługiwane przez mesh-client, Ratspeak i Sideband (FIELD_AUDIO). To nie to samo, co połączenie LXST.",
+      "sendTooltip": "Wyślij nagraną notatkę głosową LXMF"
     }
   },
   "chatPayload": {

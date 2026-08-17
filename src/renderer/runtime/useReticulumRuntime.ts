@@ -665,11 +665,18 @@ export function useReticulumRuntime(): ProtocolRuntime {
         if (p.attachment?.data_base64 && p.direction !== 'outbound') {
           attachmentPath = await cacheReticulumInboundAttachment(p.attachment);
           if (attachmentPath) attachmentKind = 'image';
-        } else if (p.audio?.data_base64 && p.direction !== 'outbound') {
-          attachmentPath = await cacheReticulumInboundAudio(p.audio);
-          if (attachmentPath) {
-            attachmentKind = 'audio';
-            audioMode = p.audio.mode;
+        } else if (p.audio?.data_base64) {
+          // Cache inbound always. For outbound echoes, fill a path when the optimistic
+          // row lost the race with an early Completes (rename used to drop pending path).
+          const known = p.message_hash
+            ? useMessageStore.getState().messages[identityId]?.[p.message_hash]
+            : undefined;
+          if (p.direction !== 'outbound' || !known?.reticulumAttachmentPath) {
+            attachmentPath = await cacheReticulumInboundAudio(p.audio);
+            if (attachmentPath) {
+              attachmentKind = 'audio';
+              audioMode = p.audio.mode;
+            }
           }
         }
         // Already-known rows (DB hydrate / prior session) must not re-fire RNCP

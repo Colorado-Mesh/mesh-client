@@ -705,7 +705,9 @@
       "micDenied": "录制语音备忘录需要麦克风访问权限。",
       "tooLargeForWire": "语音备忘录太大，无法发送。录制一个较短的剪辑。",
       "tooLargeForPropagation": "语音消息大于传播节点限制。只有当收件人在线时，它才会派送。缩短存储时间，以便线下派送。",
-      "directOnlyBadge": "仅限直接存储—对于离线存储来说太大"
+      "directOnlyBadge": "仅限直接存储—对于离线存储来说太大",
+      "recordTooltip": "LXMF语音备忘录—为此直接消息录制一个简短的Opus剪辑。支持mesh-client、Ratspeak和Sideband (FIELD_AUDIO)。与LXST呼叫不同。",
+      "sendTooltip": "发送录制的LXMF语音备忘录"
     }
   },
   "chatPayload": {

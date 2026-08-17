@@ -705,7 +705,9 @@
       "micDenied": "Se requiere acceso al micrófono para grabar una nota de voz.",
       "tooLargeForWire": "La nota de voz es demasiado grande para enviarla. Graba un clip más corto.",
       "tooLargeForPropagation": "El mensaje de voz es mayor que el límite del nodo de propagación. Solo se entregará cuando el destinatario esté conectado. Acórtalo para guardarlo para la entrega sin conexión.",
-      "directOnlyBadge": "Solo directo: demasiado grande para almacenamiento sin conexión"
+      "directOnlyBadge": "Solo directo: demasiado grande para almacenamiento sin conexión",
+      "recordTooltip": "Nota de voz LXMF: graba un breve clip de Opus para este mensaje directo. Compatible con mesh-client, Ratspeak y Sideband (FIELD_AUDIO). No es lo mismo que LXST Call.",
+      "sendTooltip": "Enviar la nota de voz LXMF grabada"
     }
   },
   "chatPayload": {

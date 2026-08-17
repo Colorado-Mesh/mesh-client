@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -13,6 +13,7 @@ vi.mock('react-i18next', () => ({
 
 // computeWaveformFromOgg needs decodeAudioData — stub out for unit tests
 vi.mock('@/renderer/lib/reticulum/computeWaveform', () => ({
+  computeWaveform: vi.fn().mockReturnValue(new Array<number>(40).fill(0.5)),
   computeWaveformFromOgg: vi.fn().mockResolvedValue({
     bars: new Array<number>(40).fill(0.5),
     durationSec: 3,
@@ -36,6 +37,9 @@ beforeEach(() => {
 async function renderAxe(ui: ReactElement): Promise<ReturnType<typeof render>> {
   const view = render(ui);
   hydrateAxeThemeColors(view.container);
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'chatPanel.voiceMemo.playAria' })).toBeDisabled();
+  });
   expect(await axe(view.container)).toHaveNoViolations();
   return view;
 }

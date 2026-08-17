@@ -214,6 +214,26 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
           attachmentKind: 'audio',
           audioMode: LXMF_AUDIO_MODE_OPUS_OGG,
         });
+        // Re-persist final hash with attachment path: an early WS Completes insert can
+        // land first without a path; SQLite UPDATE now coalesces, but only if we pass it.
+        if (attachmentPath && senderHash) {
+          const finalRow = useMessageStore.getState().messages[identityId][hash];
+          persistReticulumOutboundRecord(
+            identityId,
+            {
+              ...finalRow,
+              reticulumAttachmentPath: attachmentPath,
+              reticulumAttachmentKind: 'audio',
+              reticulumAudioMode: LXMF_AUDIO_MODE_OPUS_OGG,
+              reticulumAudioDurationSec: durationMs / 1000,
+            },
+            senderHash,
+            senderName,
+            destHash,
+            finalRow.status === 'acked' ? 'acked' : 'sending',
+            replacesMessageHash,
+          );
+        }
         flushPendingReticulumOutboundDeliveryStatus(identityId, hash);
         const afterFlush = useMessageStore.getState().messages[identityId][hash].status;
         if (afterFlush !== 'acked' && afterFlush !== 'failed') {

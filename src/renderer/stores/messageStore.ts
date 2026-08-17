@@ -296,7 +296,25 @@ export function renameMessageId(identityId: IdentityId, fromId: string, toId: st
     const rest = omitRecordKey(byIdentity, fromId);
     const target = byIdentity[toId];
     if (target?.status === 'acked') {
-      return mergeIdentityMessages(s, identityId, rest);
+      // Keep Completes text/status, but carry forward local attachment metadata from the
+      // optimistic row (voice memos cache Ogg before the LXMF hash is known).
+      const merged: MessageRecord = {
+        ...target,
+        ...(existing.reticulumAttachmentPath && !target.reticulumAttachmentPath
+          ? {
+              reticulumAttachmentPath: existing.reticulumAttachmentPath,
+              reticulumAttachmentKind:
+                existing.reticulumAttachmentKind ?? target.reticulumAttachmentKind,
+              reticulumAudioMode: existing.reticulumAudioMode ?? target.reticulumAudioMode,
+              reticulumAudioDurationSec:
+                existing.reticulumAudioDurationSec ?? target.reticulumAudioDurationSec,
+            }
+          : {}),
+      };
+      if (messageRecordFieldsEqual(target, merged)) {
+        return mergeIdentityMessages(s, identityId, rest);
+      }
+      return mergeIdentityMessages(s, identityId, { ...rest, [toId]: merged });
     }
     return mergeIdentityMessages(s, identityId, { ...rest, [toId]: { ...existing, id: toId } });
   });

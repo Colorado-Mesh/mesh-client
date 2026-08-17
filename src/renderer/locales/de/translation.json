@@ -705,7 +705,9 @@
       "micDenied": "Für die Aufzeichnung einer Sprachnotiz ist ein Mikrofonzugriff erforderlich.",
       "tooLargeForWire": "Sprachnotiz ist zu groß zum Senden. Nehmen Sie einen kürzeren Clip auf.",
       "tooLargeForPropagation": "Sprachnachricht ist größer als die Ausbreitungsknotengrenze. Es wird nur geliefert, wenn der Empfänger online ist. Kürzen Sie es, um es für die Offline-Lieferung aufzubewahren.",
-      "directOnlyBadge": "Nur direkt — zu groß für Offline-Speicher"
+      "directOnlyBadge": "Nur direkt — zu groß für Offline-Speicher",
+      "recordTooltip": "LXMF-Sprachnotiz — zeichnet einen kurzen Opus-Clip für diese Direktnachricht auf. Unterstützt von mesh-client, Ratspeak und Sideband (FIELD_AUDIO). Nicht das gleiche wie LXST Call.",
+      "sendTooltip": "Die aufgezeichnete LXMF-Sprachnotiz senden"
     }
   },
   "chatPayload": {

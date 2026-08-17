@@ -707,7 +707,9 @@
       "micDenied": "Pro nahrání hlasové poznámky je vyžadován přístup k mikrofonu.",
       "tooLargeForWire": "Hlasová poznámka je příliš velká na odeslání. Nahrajte kratší klip.",
       "tooLargeForPropagation": "Hlasová zpráva je větší než limit propagačního uzlu. Doručuje se pouze tehdy, když je příjemce online. Zkraťte jej a uložte pro offline doručení.",
-      "directOnlyBadge": "Pouze přímé — příliš velké pro offline úložiště"
+      "directOnlyBadge": "Pouze přímé — příliš velké pro offline úložiště",
+      "recordTooltip": "Hlasová poznámka LXMF — nahrává krátký klip Opus pro tuto přímou zprávu. Podporováno mesh-client, Ratspeak a Sideband (FIELD_AUDIO). Není to stejné jako LXST Call.",
+      "sendTooltip": "Odeslat nahranou hlasovou poznámku LXMF"
     }
   },
   "chatPayload": {

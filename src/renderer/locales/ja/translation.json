@@ -705,7 +705,9 @@
       "micDenied": "ボイスメモを録音するには、マイクへのアクセスが必要です。",
       "tooLargeForWire": "ボイスメモが大きすぎて送信できません。短いクリップを録画します。",
       "tooLargeForPropagation": "ボイスメッセージが伝播ノードの制限を超えています。受取人がオンラインの場合にのみ配達されます。オフライン配送用に保存するには短くしてください。",
-      "directOnlyBadge": "ダイレクトのみ—オフラインストレージには大きすぎます"
+      "directOnlyBadge": "ダイレクトのみ—オフラインストレージには大きすぎます",
+      "recordTooltip": "LXMFボイスメモ—このダイレクトメッセージの短いOpusクリップを記録します。mesh-client、Ratspeak、Sideband (FIELD_AUDIO) でサポートされています。LXST Callとは異なります。",
+      "sendTooltip": "録音したLXMFボイスメモを送信する"
     }
   },
   "chatPayload": {

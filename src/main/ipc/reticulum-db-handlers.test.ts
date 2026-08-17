@@ -1,9 +1,15 @@
 // @vitest-environment node
 import type { IpcMain, IpcMainInvokeEvent } from 'electron';
-import { mkdtempSync, rmSync } from 'fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('electron', () => ({
+  app: {
+    getPath: () => join(tmpdir(), 'mesh-client-test-userdata-rns-db'),
+  },
+}));
 
 vi.mock('../db-ipc-lifecycle', () => ({
   getDbForIpc: vi.fn(() => null),
@@ -19,6 +25,7 @@ vi.mock('../validate-ipc-sender', () => ({
 import { NodeSqliteDB } from '../db-compat';
 import { getDbForIpc } from '../db-ipc-lifecycle';
 import { runSchemaUpgrade } from '../db-schema-sync';
+import { getReticulumAttachmentsDir } from '../reticulum-attachment-path';
 import { registerReticulumDbIpcHandlers } from './reticulum-db-handlers';
 
 type IpcHandler = (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown;
@@ -276,28 +283,39 @@ describe('reticulum destination / activity prune IPC', () => {
     expect(row.delivery_status).toBe('sending');
   });
 
-  it('saveReticulumMessage persists paper received_via and delivery_method', () => {
-    const identityId = 'id-rt-paper';
-    const messageHash = 'ef'.repeat(32);
+  it('saveReticulumMessage coalesces attachment_path onto an existing Completes row', () => {
+    const identityId = 'id-rt-attach-coalesce';
+    const messageHash = 'a1'.repeat(32);
     const save = handlers.get('db:saveReticulumMessage');
     save?.(event, {
       identity_id: identityId,
       sender_id: 'cc'.repeat(16),
       sender_name: 'Me',
-      payload: 'paper hello',
+      payload: '[voice:600]',
       timestamp: 1_700_000_000_000,
       message_hash: messageHash,
       delivery_status: 'delivered',
-      delivery_method: 'paper',
-      received_via: 'paper',
+    });
+    const attachmentPath = join(getReticulumAttachmentsDir(), 'voice-memo-out.ogg');
+    mkdirSync(getReticulumAttachmentsDir(), { recursive: true });
+    writeFileSync(attachmentPath, Buffer.from('OggS'));
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: 'cc'.repeat(16),
+      sender_name: 'Me',
+      payload: '[voice:600]',
+      timestamp: 1_700_000_000_000,
+      message_hash: messageHash,
+      delivery_status: 'sending',
+      attachment_path: attachmentPath,
     });
     const row = db!
       .prepareOnce(
-        'SELECT received_via, delivery_method FROM reticulum_messages WHERE identity_id = ? AND message_hash = ?',
+        'SELECT delivery_status, attachment_path FROM reticulum_messages WHERE identity_id = ? AND message_hash = ?',
       )
-      .get(identityId, messageHash) as { received_via: string; delivery_method: string };
-    expect(row.received_via).toBe('paper');
-    expect(row.delivery_method).toBe('paper');
+      .get(identityId, messageHash) as { delivery_status: string; attachment_path: string | null };
+    expect(row.delivery_status).toBe('delivered');
+    expect(row.attachment_path).toBe(resolve(attachmentPath));
   });
 
   it('saveReticulumMessage replaces exact pending hash while still sending', () => {
