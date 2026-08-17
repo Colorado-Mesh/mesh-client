@@ -4,13 +4,13 @@ import {
   ingestReticulumLxmfPayloadWithSideEffects,
   persistReticulumOutboundRecord,
   resolveReticulumOutboundSenderHash,
-  type ReticulumLxmfPayload,
 } from '@/renderer/lib/ingest/reticulumIngest';
 import { flushPendingReticulumOutboundDeliveryStatus } from '@/renderer/lib/reticulum/applyReticulumOutboundDeliveryStatus';
 import {
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
+import { extractLxmfPayloadFromSendResponse } from '@/renderer/lib/reticulum/lxmfSendResponse';
 import { cacheReticulumVoiceMemoOgg } from '@/renderer/lib/reticulum/reticulumAudioAttachmentCache';
 import { shouldDeletePriorReticulumOutboundHash } from '@/renderer/lib/reticulum/reticulumOutboundRetry';
 import { stopReticulumVoiceMemoRecorder } from '@/renderer/lib/reticulum/reticulumVoiceMemo';
@@ -172,14 +172,12 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
         text,
         audio: { mode: LXMF_AUDIO_MODE_OPUS_OGG, data_base64: oggBase64 },
       };
-      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/send', body)) as {
-        ok?: boolean;
-        error?: string;
-        message?: ReticulumLxmfPayload;
-      };
+      const res = await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/send', body);
+      const resObj =
+        res && typeof res === 'object' ? (res as { ok?: boolean; error?: string }) : null;
 
-      if (res.ok === false) {
-        const err = res.error ?? 'lxmf_send_failed';
+      if (resObj?.ok === false) {
+        const err = resObj.error ?? 'lxmf_send_failed';
         if (err === 'no_propagation_node') {
           onNoPropagationNode();
           updateMessageStatus(
@@ -198,7 +196,8 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
         return;
       }
 
-      const lxmfPayload = res.message;
+      // Same unwrap as text send — live sidecar nests `{ ok, message: { …wire… } }`.
+      const lxmfPayload = extractLxmfPayloadFromSendResponse(res);
       const hash = lxmfPayload?.message_hash;
       if (!lxmfPayload || !hash) {
         updateMessageStatus(identityId, pendingId, 'failed', 'missing_message_hash');

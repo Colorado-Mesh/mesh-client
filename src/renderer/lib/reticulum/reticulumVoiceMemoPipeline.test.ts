@@ -15,8 +15,14 @@ vi.mock('@/renderer/lib/i18n', () => ({
 import type { ReticulumLxmfPayload } from '@/renderer/lib/ingest/reticulumIngest';
 import { ingestReticulumLxmfPayload } from '@/renderer/lib/ingest/reticulumIngest';
 import { applyReticulumOutboundDeliveryStatus } from '@/renderer/lib/reticulum/applyReticulumOutboundDeliveryStatus';
+import { extractLxmfPayloadFromSendResponse } from '@/renderer/lib/reticulum/lxmfSendResponse';
 import { mergeReticulumIngestRecord } from '@/renderer/lib/reticulum/reticulumIngestMerge';
-import { addMessage, type MessageRecord, useMessageStore } from '@/renderer/stores/messageStore';
+import {
+  addMessage,
+  type MessageRecord,
+  renameMessageId,
+  useMessageStore,
+} from '@/renderer/stores/messageStore';
 import { useReticulumVoiceMemoStore } from '@/renderer/stores/reticulumVoiceMemoStore';
 import { LXMF_AUDIO_MODE_OPUS_OGG } from '@/shared/reticulum-voice-memo-types';
 
@@ -132,6 +138,50 @@ describe('reticulumVoiceMemoPipeline — optimistic send record', () => {
     expect(stored.reticulumAttachmentKind).toBe('audio');
     expect(stored.reticulumAudioMode).toBe(LXMF_AUDIO_MODE_OPUS_OGG);
     expect(stored.reticulumAudioDurationSec).toBe(5);
+  });
+
+  it('nested lxmf/send response rekeys pending → hash (no duplicate bubble)', () => {
+    const pendingId = 'reticulum-pending-voice-1';
+    const hash = 'cd'.repeat(32);
+    addMessage(IDENTITY_ID, {
+      id: pendingId,
+      from: 9999,
+      to: 1234,
+      payload: '[voice:3000]',
+      channelIndex: 0,
+      timestamp: 1_700_000_000_000,
+      status: 'sending',
+      reticulumAttachmentPath: '/cache/out.ogg',
+      reticulumAttachmentKind: 'audio',
+      reticulumAudioMode: LXMF_AUDIO_MODE_OPUS_OGG,
+    });
+
+    // Live sidecar nests the wire payload (same shape text send already unwraps).
+    const nestedRes = {
+      ok: true,
+      message: {
+        ok: true,
+        sent_via: 'tcp',
+        message: {
+          sender_hash: SELF_HASH,
+          text: '[voice:3000]',
+          message_hash: hash,
+          direction: 'outbound',
+          delivery_status: 'sending',
+          to_hash: SENDER_HASH,
+        },
+      },
+    };
+    const lxmfPayload = extractLxmfPayloadFromSendResponse(nestedRes);
+    expect(lxmfPayload?.message_hash).toBe(hash);
+    // Bug without unwrap: res.message.message_hash is undefined → pending never renamed.
+    expect((nestedRes.message as { message_hash?: string }).message_hash).toBeUndefined();
+
+    renameMessageId(IDENTITY_ID, pendingId, hash);
+    const bucket = getMessages(IDENTITY_ID);
+    expect(bucket[pendingId]).toBeUndefined();
+    expect(bucket[hash].reticulumAttachmentPath).toBe('/cache/out.ogg');
+    expect(bucket[hash].status).toBe('sending');
   });
 });
 

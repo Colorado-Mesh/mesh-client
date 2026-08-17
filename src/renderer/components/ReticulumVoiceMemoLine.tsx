@@ -76,7 +76,11 @@ export function ReticulumVoiceMemoLine({
         }
         bufferRef.current = buffer;
         setLoadError(false);
-        setResolvedDuration((prev) => (prev > 0 ? prev : buffer.duration));
+        // Prefer decoded duration so the seek bar matches what Web Audio will play
+        // (ingest wall-clock can disagree with Ogg granule timing).
+        if (buffer.duration > 0) {
+          setResolvedDuration(buffer.duration);
+        }
         if (waveform) {
           setBars(waveform.bars);
         } else {

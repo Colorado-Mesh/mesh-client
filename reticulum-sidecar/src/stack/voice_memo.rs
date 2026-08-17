@@ -19,6 +19,8 @@ pub const VOICE_MEMO_MAX_OGG_BYTES: usize = 240 * 1024;
 pub const VOICE_MEMO_MAX_FRAME_COUNT: usize = 4_000;
 const FRAME_MS: u64 = 60;
 const SAMPLE_RATE_HZ: u32 = 24_000;
+/// Opus Ogg granule clock is fixed at 48 kHz (RFC 7845 §4), not the input rate.
+const OPUS_GRANULE_HZ: u64 = 48_000;
 const CHANNELS: u8 = 1;
 const SAMPLES_PER_FRAME: usize = (SAMPLE_RATE_HZ as usize * FRAME_MS as usize) / 1000;
 /// QualityMedium ~8 kbps → ~60 B/packet; allow headroom.
@@ -190,6 +192,10 @@ fn decode_f32_le_base64(samples_b64: &str) -> Result<Vec<f32>, String> {
 }
 
 /// RFC 7845 Ogg Opus mux: OpusHead + OpusTags (vendor Ratspeak) + audio pages.
+///
+/// Granule positions are always in **48 kHz PCM samples** (RFC 7845 §4), even when
+/// OpusHead advertises a 24 kHz input rate. Using the input rate here made Chromium
+/// `decodeAudioData` report ~half duration and truncate playback.
 pub fn mux_opus_ogg(opus_packets: &[Vec<u8>]) -> Result<Vec<u8>, String> {
     if opus_packets.is_empty() {
         return Err("voice_memo_empty".into());
@@ -205,14 +211,16 @@ pub fn mux_opus_ogg(opus_packets: &[Vec<u8>]) -> Result<Vec<u8>, String> {
         writer
             .write_packet(tags, 0x1000_0001, PacketWriteEndInfo::EndPage, 0)
             .map_err(|e| format!("ogg_write_tags: {e}"))?;
-        let granule_per_packet = (SAMPLE_RATE_HZ as u64 * FRAME_MS) / 1000;
+        // Opus granule clock is fixed at 48 kHz regardless of encoder input rate.
+        let granule_per_packet = (OPUS_GRANULE_HZ * FRAME_MS) / 1000;
         let last = opus_packets.len() - 1;
         for (i, packet) in opus_packets.iter().enumerate() {
             let granule = granule_per_packet * (i as u64 + 1);
             let end = if i == last {
                 PacketWriteEndInfo::EndStream
             } else {
-                PacketWriteEndInfo::NormalPacket
+                // One packet per page keeps granule positions visible to demuxers.
+                PacketWriteEndInfo::EndPage
             };
             writer
                 .write_packet(packet.clone(), 0x1000_0001, end, granule)
@@ -271,6 +279,48 @@ mod tests {
             ogg[head_at + 15],
         ]);
         assert_eq!(rate, 24_000);
+    }
+
+    fn ogg_page_granules(ogg: &[u8]) -> Vec<u64> {
+        let mut granules = Vec::new();
+        let mut i = 0usize;
+        while i + 27 <= ogg.len() {
+            if &ogg[i..i + 4] != b"OggS" {
+                i += 1;
+                continue;
+            }
+            let granule = u64::from_le_bytes(ogg[i + 6..i + 14].try_into().expect("8 bytes"));
+            let page_segments = ogg[i + 26] as usize;
+            let table_end = i + 27 + page_segments;
+            if table_end > ogg.len() {
+                break;
+            }
+            let body_len: usize = ogg[i + 27..table_end].iter().map(|&b| b as usize).sum();
+            let page_end = table_end + body_len;
+            if page_end > ogg.len() {
+                break;
+            }
+            granules.push(granule);
+            i = page_end;
+        }
+        granules
+    }
+
+    #[test]
+    fn mux_opus_ogg_granules_use_48khz_clock() {
+        let packets = vec![vec![0u8; 8], vec![1u8; 10], vec![2u8; 12]];
+        let ogg = mux_opus_ogg(&packets).expect("mux");
+        let granules = ogg_page_granules(&ogg);
+        // Head + tags pages use granule 0; each 60 ms audio page advances by 2880 @ 48 kHz.
+        assert!(
+            granules.len() >= 5,
+            "expected header + audio pages, got {granules:?}"
+        );
+        assert_eq!(granules[0], 0);
+        assert_eq!(granules[1], 0);
+        assert_eq!(granules[2], 2_880);
+        assert_eq!(granules[3], 5_760);
+        assert_eq!(granules[4], 8_640);
     }
 
     #[test]
