@@ -3,6 +3,10 @@ import { EventEmitter } from 'events';
 import { attMtuOrDefault, maxWriteRequestPayloadBytes } from '../shared/bleAttWriteLimit';
 import { withTimeout } from '../shared/withTimeout';
 import { bleCoexistenceCoordinator, type BlePeripheralOwner } from './ble-coexistence-coordinator';
+import {
+  loadDarwinBluetoothNameAddressMap,
+  resolveDarwinScanAddress,
+} from './darwinBluetoothNameAddressMap';
 import { logDeviceConnection, sanitizeLogMessage } from './log-service';
 
 interface NobleAdvertisement {
@@ -184,8 +188,8 @@ export interface NobleBleDevice {
   /** Advertised / last-seen BLE RSSI in dBm; null when unknown. */
   rssi: number | null;
   /**
-   * Hardware BLE MAC when the OS exposes one (Noble `peripheral.address`).
-   * On macOS this is typically empty until after a prior GATT connect (CoreBluetoothCache).
+   * Hardware BLE MAC when the OS exposes one (Noble `peripheral.address`, or on
+   * macOS a unique GAP-name lookup from system_profiler when CoreBluetooth omits the MAC).
    */
   address?: string | null;
 }
@@ -298,6 +302,11 @@ export class NobleBleManager extends EventEmitter {
   private scanStartInFlight: Promise<void> | null = null;
   private lastAdapterState = noble?.state ?? 'unknown';
   private releaseHandlesCallCount = 0;
+  /**
+   * macOS: unique GAP name → sticker MAC from system_profiler (Noble `peripheral.address` is
+   * empty — CoreBluetoothCache is no longer in the readable Bluetooth plist).
+   */
+  private darwinNameToMac = new Map<string, string>();
 
   constructor() {
     super();
@@ -343,14 +352,9 @@ export class NobleBleManager extends EventEmitter {
         }
       }
       const id: string = peripheral.id;
-      const name: string = peripheral.advertisement?.localName || peripheral.address || id;
-      const rssi =
-        typeof peripheral.rssi === 'number' && Number.isFinite(peripheral.rssi)
-          ? peripheral.rssi
-          : null;
       this.knownPeripherals.set(id, peripheral);
       // Re-emit on rediscover so Connection pickers can refresh RSSI (not first-seen only).
-      this.emit('deviceDiscovered', toNobleDiscoveredDevice(id, name, rssi, peripheral.address));
+      this.emit('deviceDiscovered', this.toDiscoveredDevice(peripheral));
     });
   }
 
@@ -386,6 +390,45 @@ export class NobleBleManager extends EventEmitter {
       sessionEstablishedAtMs: null,
       lastConnectedPeripheralId: null,
     };
+  }
+
+  /**
+   * macOS: load unique Bluetooth GAP name → MAC from system_profiler before scanning.
+   * Noble's `peripheral.address` is empty because CoreBluetoothCache is no longer in the
+   * readable Bluetooth plist. Duplicate names are omitted (ambiguous).
+   * OS-specific: darwin only — linux/win32 already get MACs from Noble.
+   */
+  private async refreshDarwinNameAddressMap(): Promise<void> {
+    if (process.platform !== 'darwin') return;
+    try {
+      this.darwinNameToMac = await loadDarwinBluetoothNameAddressMap();
+      console.debug(
+        `[NobleBleManager] darwin Bluetooth name→MAC map: ${this.darwinNameToMac.size} unique names`,
+      );
+    } catch (error) {
+      console.debug(
+        `[NobleBleManager] darwin Bluetooth name→MAC map unavailable: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /** Noble MAC when present (linux/win32); else unique GAP-name lookup from system_profiler. */
+  private resolvePeripheralMac(peripheral: NoblePeripheral): string | undefined {
+    return resolveDarwinScanAddress(
+      peripheral.address,
+      peripheral.advertisement?.localName,
+      this.darwinNameToMac,
+    );
+  }
+
+  private toDiscoveredDevice(peripheral: NoblePeripheral): NobleBleDevice {
+    const id = peripheral.id;
+    const name = peripheral.advertisement?.localName || peripheral.address || id;
+    const rssi =
+      typeof peripheral.rssi === 'number' && Number.isFinite(peripheral.rssi)
+        ? peripheral.rssi
+        : null;
+    return toNobleDiscoveredDevice(id, name, rssi, this.resolvePeripheralMac(peripheral));
   }
 
   private stopLinkRssiPolling(session: NobleBleSession): void {
@@ -781,6 +824,9 @@ export class NobleBleManager extends EventEmitter {
 
   async startScanning(sessionId: NobleSessionId): Promise<void> {
     await bleCoexistenceCoordinator.acquireScan('noble');
+    // Load darwin GAP name→MAC before adding scan requesters so a concurrent stateChange
+    // doStartScanning cannot emit picker rows before the map is ready.
+    await this.refreshDarwinNameAddressMap();
     // Clear known peripherals so every device is re-emitted as discovered on each new scan.
     // Without this, devices found in a previous scan are never re-emitted (isNew = false),
     // so the picker stays empty on second and subsequent scan attempts.
@@ -793,12 +839,7 @@ export class NobleBleManager extends EventEmitter {
     this.knownPeripherals.clear();
     for (const [id, peripheral] of stillConnected) {
       this.knownPeripherals.set(id, peripheral);
-      const name: string = peripheral.advertisement?.localName || peripheral.address || id;
-      const rssi =
-        typeof peripheral.rssi === 'number' && Number.isFinite(peripheral.rssi)
-          ? peripheral.rssi
-          : null;
-      this.emit('deviceDiscovered', toNobleDiscoveredDevice(id, name, rssi, peripheral.address));
+      this.emit('deviceDiscovered', this.toDiscoveredDevice(peripheral));
     }
     this.scanRequesters.add(sessionId);
     if (!this.adapterReady) {
@@ -1212,18 +1253,10 @@ export class NobleBleManager extends EventEmitter {
           ? peripheral.rssi
           : null;
       console.debug(
-        `[BLE:${sessionId}] peripheral info — address=${peripheral.address ?? 'unknown'} addressType=${peripheral.addressType ?? 'unknown'} rssi=${connectRssi ?? 'unknown'} state=${peripheral.state} platform=${process.platform}`,
+        `[BLE:${sessionId}] peripheral info — address=${peripheral.address ?? 'unknown'} resolvedMac=${this.resolvePeripheralMac(peripheral) ?? 'none'} addressType=${peripheral.addressType ?? 'unknown'} rssi=${connectRssi ?? 'unknown'} state=${peripheral.state} platform=${process.platform}`,
       );
       // Refresh picker / connecting banner with connect-time RSSI (scan may have been empty).
-      this.emit(
-        'deviceDiscovered',
-        toNobleDiscoveredDevice(
-          peripheralId,
-          peripheral.advertisement?.localName || peripheral.address || peripheralId,
-          connectRssi,
-          peripheral.address,
-        ),
-      );
+      this.emit('deviceDiscovered', this.toDiscoveredDevice(peripheral));
       bleCoexistenceCoordinator.assertCanConnect(
         peripheralOwner,
         peripheral.address ?? peripheralId,

@@ -2283,6 +2283,65 @@ describe('ConnectionPanel BLE MAC identity', () => {
     }
   });
 
+  it('shows formatted MAC in the MeshCore BLE picker when address is provided', async () => {
+    const user = userEvent.setup();
+    const { restore } = mockMacNoblePlatform();
+    let capturedCb:
+      | ((device: {
+          deviceId: string;
+          deviceName: string;
+          rssi?: number | null;
+          address?: string | null;
+        }) => void)
+      | undefined;
+    vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockImplementation((cb) => {
+      capturedCb = cb;
+      return () => {};
+    });
+    const onConnect = vi.fn(
+      () =>
+        new Promise<void>(() => {
+          /* leave connecting so picker stays open */
+        }),
+    );
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={onConnect}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+        />,
+      );
+
+      const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+      expect(radioCard).toBeTruthy();
+      await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+      await waitFor(() => {
+        expect(capturedCb).toBeTruthy();
+      });
+      act(() => {
+        capturedCb?.({
+          deviceId: darwinUuid,
+          deviceName: 'MeshCore-NV0N',
+          address: 'ac:a7:04:00:d6:f1',
+          rssi: -62,
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('ac:a7:04:00:d6:f1')).toBeInTheDocument();
+      });
+      expect(screen.queryByText(darwinUuid)).not.toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
   it('shows Bluetooth MAC on Last Connection and the connected Radio Connection card', () => {
     localStorage.setItem(
       lastConnKey,

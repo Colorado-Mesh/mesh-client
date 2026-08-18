@@ -95,9 +95,27 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
 
   it('emits deviceDiscovered with rssi and address on scan and at connect start', () => {
     expect(SOURCE).toContain('toNobleDiscoveredDevice');
-    expect(SOURCE).toMatch(/toNobleDiscoveredDevice\(id, name, rssi, peripheral\.address\)/);
+    expect(SOURCE).toContain('toDiscoveredDevice');
+    expect(SOURCE).toContain('resolvePeripheralMac');
     expect(SOURCE).toContain('Refresh picker / connecting banner with connect-time RSSI');
-    expect(SOURCE).toMatch(/toNobleDiscoveredDevice\(\s*peripheralId,/);
+    expect(SOURCE).toMatch(/this\.toDiscoveredDevice\(peripheral\)/);
+  });
+
+  it('loads darwin GAP name→MAC map before scanning so picker rows can show sticker MACs', () => {
+    expect(SOURCE).toContain('refreshDarwinNameAddressMap');
+    expect(SOURCE).toContain('loadDarwinBluetoothNameAddressMap');
+    expect(SOURCE).toContain('resolveDarwinScanAddress');
+    const fnMatch = /async startScanning\b[\s\S]+?(?=\n {2}async stopScanning)/.exec(SOURCE);
+    expect(fnMatch).not.toBeNull();
+    const body = fnMatch![0];
+    const refreshIdx = body.indexOf('await this.refreshDarwinNameAddressMap()');
+    const requestersIdx = body.indexOf('this.scanRequesters.add(sessionId)');
+    const scanIdx = body.indexOf('this.doStartScanning()');
+    expect(refreshIdx).toBeGreaterThan(-1);
+    expect(requestersIdx).toBeGreaterThan(-1);
+    expect(scanIdx).toBeGreaterThan(-1);
+    expect(refreshIdx).toBeLessThan(requestersIdx);
+    expect(refreshIdx).toBeLessThan(scanIdx);
   });
 
   it('branches on sessionId to pick the correct service UUID for discovery', () => {

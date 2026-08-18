@@ -155,7 +155,7 @@ import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from '.
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
-import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
+import { type NobleBleDevice, NobleBleManager, type NobleSessionId } from './noble-ble-manager';
 import { readFileUpTo } from './readFileUpTo';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
 import {
@@ -2655,12 +2655,9 @@ ipcMain.on('device-disconnected', (event) => {
 nobleBleManager.on('adapterState', (state: string) => {
   mainWindow?.webContents.send('noble-ble-adapter-state', state);
 });
-nobleBleManager.on(
-  'deviceDiscovered',
-  (device: { deviceId: string; deviceName: string; rssi: number | null }) => {
-    mainWindow?.webContents.send('noble-ble-device-discovered', device);
-  },
-);
+nobleBleManager.on('deviceDiscovered', (device: NobleBleDevice) => {
+  mainWindow?.webContents.send('noble-ble-device-discovered', device);
+});
 nobleBleManager.on(
   'linkRssi',
   ({ sessionId, rssi }: { sessionId: NobleSessionId; rssi: number | null }) => {
