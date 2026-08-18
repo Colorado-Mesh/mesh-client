@@ -534,6 +534,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
           auditIssues,
           autoBeaconAlert: sidecarStatus.autoBeaconAlert ?? null,
           interfaceIssueAlert: sidecarStatus.interfaceIssueAlert ?? null,
+          stackFastFlapSuspected: sidecarStatus.stackFastFlapSuspected === true,
           shareInstanceEnabled,
           sidecarRunning: sidecarStatus.running,
           sidecarHealthy: sidecarStatus.healthy,

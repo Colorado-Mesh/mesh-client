@@ -19,6 +19,11 @@ export interface ReticulumSidecarStatus {
   unhealthySince?: number;
   autoBeaconAlert?: ReticulumAutoBeaconAlert | null;
   interfaceIssueAlert?: ReticulumInterfaceIssueAlert | null;
+  /**
+   * True when this client started the stack five or more times within 12 hours.
+   * Matches Reticulum 1.4.0+ BackboneInterface fast-flap IP block (not sidecar log parsing).
+   */
+  stackFastFlapSuspected?: boolean;
 }
 
 export type ReticulumAutoBeaconAlertKind = 'tunnel_only' | 'physical_failures';

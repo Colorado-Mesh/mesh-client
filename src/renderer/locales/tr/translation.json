@@ -1267,10 +1267,12 @@
       "connectingRow": "{{name}}: Bluetooth üzerinden bağlanılıyor",
       "offlineHintWifi": "RNode'un LAN'ınızda olduğunu, açık olduğunu ve yapılandırılmış IP'de erişilebilir olduğunu kontrol edin (varsayılan TCP bağlantı noktası 7633, 4242 değil). DHCP yeni bir adres atadıysa aşağıdaki ana bilgisayarı güncelleyin veya Reticulum Admin'de Wi-Fi'yi yeniden → sağlayın.",
       "tcpUnreachable": "{{name}}: TCP göbeğine ulaşılamıyor ({{host}}:{{port}})",
-      "tcpUnreachableHint": "Uzak Reticulum örneği çevrimdışı olabilir veya bağlantıları engelleyebilir. Bu arayüzü devre dışı bırakın veya ana bilgisayarı ve bağlantı noktasını doğrulayın.",
+      "tcpUnreachableHint": "Uzak Reticulum örneği çevrimdışı olabilir veya bağlantıları engelleyebilir. Bu arayüzü devre dışı bırakın veya ana bilgisayarı ve bağlantı noktasını doğrulayın. Sık mesh-client veya yığın yeniden başlatmaları, Reticulum 1.4.0+ hub'larının IP'nizi 12 saat boyunca engellemesine neden olabilir — yeniden başlatmak yerine bekleyin.",
       "connectingHintBle": "BLE RNode bağlantıları, yığın başladıktan sonra (İşletim Sistemi geçiş anahtarı penceresi) 60 saniye kadar sürebilir. İstenirse mevcut RNode PIN'ini girin - asla 123456 değil. Bu normaldir, bir hata değildir. Başarılı bir bağlantı sağlanıncaya kadar cihaz Sistem Ayarlarında görünmeyebilir.",
       "offlineHintBle": "Bu hatayı temizlemek için bu arayüzü kaldırmanız ve geri eklemeniz gerekebilir (Cihaz seç) böylece kaydedilen Bluetooth kimliği yenilenir, ardından yığını yeniden başlatın. İşletim sisteminiz 6 haneli bir Bluetooth PIN isteyebilir (macOS, Windows veya Linux). RNode her eşleşmede yeni bir kod üretir — asla 123456 kullanmayın (bu Meshtastic varsayılanıdır, RNode değil). Bu uygulama bağlanmadan önce RNode'un Sistem Ayarları → Bluetooth'ta görünmesi gerekmez; yığın eşleştiğinde işletim sistemi iletişim kutusu görünür. Ekransız radyolar: USB bağlayın → Reticulum Admin → Bluetooth → Eşleştirmeyi başlat → Yönetici panelinde gösterilen PIN'i (radyo ekranında değil) işletim sistemi iletişim kutusuna girin. Ekranlı radyolar: Heltec cihazlarda düğmeyi ~7 sn basılı tutun (süre değişir; birçok kartta ~10 sn Wi‑Fi AP açar), ekrandaki PIN'i okuyun ve işletim sistemi iletişim kutusuna girin. Yeniden denemeden önce işletim sistemi Bluetooth ayarlarından başarısız bağları temizleyin.",
-      "offlineHintBleBondStale": "macOS hâlâ bu RNode'u Eşleştirilmiş olarak gösteriyor, ancak Bluetooth anahtarları artık eşleşmiyor (eş eşleştirme bilgilerini kaldırdı). Sistem Ayarları → Bluetooth'ta cihazı unutun, RNode'u eşleştirme moduna alın (Yönetici → Bluetooth → Eşleştirmeyi başlat, veya düğmeyi ~7 sn basılı tutun), ardından bu arayüzü kaldırıp yeniden ekleyin (Cihaz seç), yığını yeniden başlatın ve istendiğinde yeni 6 haneli PIN'i girin."
+      "offlineHintBleBondStale": "macOS hâlâ bu RNode'u Eşleştirilmiş olarak gösteriyor, ancak Bluetooth anahtarları artık eşleşmiyor (eş eşleştirme bilgilerini kaldırdı). Sistem Ayarları → Bluetooth'ta cihazı unutun, RNode'u eşleştirme moduna alın (Yönetici → Bluetooth → Eşleştirmeyi başlat, veya düğmeyi ~7 sn basılı tutun), ardından bu arayüzü kaldırıp yeniden ekleyin (Cihaz seç), yığını yeniden başlatın ve istendiğinde yeni 6 haneli PIN'i girin.",
+      "tcpFastFlap": "{{name}}: Hub, sık sık yığın yeniden başlatıldıktan sonra muhtemelen IP'nizi engelledi ({{host}}:{{port}})",
+      "tcpFastFlapHint": "Reticulum 1.4.0+ genel hub'lar, 12 saat içinde beş kısa TCP oturumundan sonra bir IP'yi engeller. Hızlı mesh-client veya yığın yeniden başlatmaları sayılır. Bu hub'ı devre dışı bırakın ve 12 saate kadar bekleyin — yeniden başlatmak bloğu uzatır."
     },
     "autoConnectingTo": "{{deviceName}}'a otomatik bağlanılıyor…",
     "autoReconnectInProgress": "Otomatik yeniden bağlanma işlemi devam ediyor…",
@@ -1359,9 +1361,7 @@
       "txQueueDropsHintNeutral": "Bu arayüz TX kanalı dolu. Düşmeleri durdurmak için bu arayüzün bağlantı sağlığını kontrol edin (veya devre dışı bırakın).",
       "txQueueDropsHintBleFlowControl": "Radyo meşgulken ana bilgisayar TX kuyruğu geri basıncı (akış kontrolü açık). RF tıkanıklığı altında beklenir — sıkışmış bir bağlantı değil. Giden yükü azaltın veya yayın süresini bekleyin.",
       "tcpResetByPeer": "{{name}}: Hub TCP oturumunu sıfırladı (Bağlantı eş tarafından sıfırlandı)",
-      "tcpResetByPeerHint": "Merkez TCP'yi kabul etti ve ardından RNS bağlantısını kapattı. Başka bir cihaz aynı kimlikle bağlanabilir veya merkez bu oturumu reddedebilir. Diğer Reticulum uygulamalarından çıkın ve yeniden deneyin; yığın yeniden başlatması genellikle aktif bir hub sıfırlama döngüsünü düzeltmez.",
-      "tcpReadEof": "{{name}}: Hub TCP'yi temiz bir şekilde kapattı (BİLGİ: TCP okundu: EOF)",
-      "tcpReadEofHint": "RsReticulum'un TCP istemcisi içindeki sessiz bağlantı kesme — uzak hub oturumu RST olmadan kapattı. Genellikle sepet günlüklerinde ... yeniden bağlanmadan önce gelir."
+      "tcpReadEof": "{{name}}: Hub TCP'yi temiz bir şekilde kapattı (BİLGİ: TCP okundu: EOF)"
     },
     "reticulumSidecarBundledMissing": "Bu kurulumda birlikte verilen Reticulum sidecar eksik. Daha yeni bir sürüme yükseltin veya sorunu bildirin; kaynaktan derleme, paketli kurulumlarda mevcut değildir.",
     "radioMqttRootDivergesWarning": "Radyo MQTT kök konusu {{radioRoot}} 'dır, ancak bu panel {{appPrefix}}' e abone olur. Ülke çapındaki düğüm trafiğini sınırlamak için radyoyu eşleştirin — Konu Önekini güncelleyin ve MQTT'yi yeniden bağlayın.",
@@ -1759,7 +1759,8 @@
         "txQueueDropsBle": "Arabirim \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu) — BLE RNode bağlantısı takıldı; USB'yi tercih edin veya yeniden eşleştirin",
         "txQueueDropsBleBondStale": "Arayüz \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu) — BLE bond bayat; İşletim sistemi Bluetooth'unu unutun ve yeniden eşleştirin",
         "txQueueDropsNeutral": "Arabirim \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu) — arabirimin bağlantısını kontrol edin",
-        "txQueueDropsBleFlowControl": "Arayüz \"{{name}}\" düştü {{count}} giden paketler (ana bilgisayar TX kuyruğu dolu) — akış kontrolü açık; RF tıkanıklığı altında bekleniyor, sıkışmış bir bağlantı değil"
+        "txQueueDropsBleFlowControl": "Arayüz \"{{name}}\" düştü {{count}} giden paketler (ana bilgisayar TX kuyruğu dolu) — akış kontrolü açık; RF tıkanıklığı altında bekleniyor, sıkışmış bir bağlantı değil",
+        "tcpFastFlap": "TCP hub \"{{name}}\" sık yığın yeniden başlatıldıktan sonra bu IP'yi büyük olasılıkla engelledi ({{host}}:{{port}})"
       }
     },
     "routingPort": {

@@ -75,6 +75,10 @@ describe('reticulumTcpInterfaceRecovery', () => {
     expect(isReticulumTcpHubActivelyRejecting('Ratspeak', { tcpResetByPeer: ['Ratspeak'] })).toBe(
       true,
     );
+    expect(isReticulumTcpHubActivelyRejecting('Ratspeak', { tcpReadEof: ['Ratspeak'] })).toBe(true);
     expect(isReticulumTcpHubActivelyRejecting('Ratspeak', null)).toBe(false);
+    expect(isReticulumTcpHubActivelyRejecting('Ratspeak', { tcpResetByPeer: ['RMAP World'] })).toBe(
+      false,
+    );
   });
 });

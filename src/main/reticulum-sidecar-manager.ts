@@ -36,6 +36,7 @@ import {
   shouldForwardReticulumSidecarStdout,
 } from './reticulumSidecarStderrLog';
 import { startSidecarWatchdog } from './reticulumSidecarWatchdog';
+import { ReticulumStackSessionTracker } from './reticulumStackSessionTracker';
 
 const HEALTH_POLL_INTERVAL_MS = 250;
 const HEALTH_POLL_TIMEOUT_MS = 30 * MS_PER_SECOND;
@@ -198,6 +199,9 @@ export class ReticulumSidecarManager extends EventEmitter {
   private readonly stderrDedupe = new ReticulumSidecarStderrDedupe();
   private readonly autoBeaconTracker = new ReticulumSidecarAutoBeaconTracker();
   private readonly interfaceIssueTracker = new ReticulumSidecarInterfaceIssueTracker();
+  private readonly stackSessionTracker = new ReticulumStackSessionTracker(
+    path.join(app.getPath('userData'), 'reticulum', 'stack-sessions.json'),
+  );
   private lastIssueStatusEmitAt = 0;
   private watchdogStop: (() => void) | null = null;
   private _status: ReticulumSidecarStatus = {
@@ -216,6 +220,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       ...this._status,
       autoBeaconAlert: this.autoBeaconTracker.getAlert(),
       interfaceIssueAlert: this.interfaceIssueTracker.getAlert(),
+      stackFastFlapSuspected: this.stackSessionTracker.isFastFlapSuspected(),
     };
   }
 
@@ -266,6 +271,7 @@ export class ReticulumSidecarManager extends EventEmitter {
 
   private finalizeStopped(): void {
     this.stopWatchdog();
+    this.stackSessionTracker.recordStop();
     this.clearSidecarTrackers();
     this._status = { running: false, port: 0, pid: null, healthy: true, unhealthySince: undefined };
     this.emit('status', this.getStatus());
@@ -419,6 +425,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       console.debug(`[ReticulumSidecar] exited code=${code ?? 'null'} signal=${signal ?? 'null'}`);
       this.teardownWs();
       this.proc = null;
+      this.stackSessionTracker.recordStop();
       this.clearSidecarTrackers();
       this._status = {
         running: false,
@@ -445,6 +452,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       healthy: true,
       unhealthySince: undefined,
     };
+    this.stackSessionTracker.recordStart();
     this.connectWs(port);
     this.startWatchdog();
     this.emit('status', this.getStatus());

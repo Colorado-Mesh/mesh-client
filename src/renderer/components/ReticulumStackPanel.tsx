@@ -185,8 +185,11 @@ export function ReticulumStackPanel({
   );
   const localAlerts = useMemo(
     (): ReticulumLocalInterfaceAlert[] =>
-      collectReticulumInterfaceAlerts(interfaces, serialPortPaths, healthOptions),
-    [interfaces, serialPortPaths, healthOptions],
+      collectReticulumInterfaceAlerts(interfaces, serialPortPaths, {
+        ...healthOptions,
+        stackFastFlapSuspected: sidecarStatus.stackFastFlapSuspected === true,
+      }),
+    [interfaces, serialPortPaths, healthOptions, sidecarStatus.stackFastFlapSuspected],
   );
   const connectingInterfaces = useMemo(
     () => collectReticulumLocalInterfaceConnecting(interfaces, serialPortPaths, healthOptions),
@@ -220,6 +223,7 @@ export function ReticulumStackPanel({
     sidecarReady: sidecarApiReady,
     connecting,
     interfaceIssueAlert: sidecarStatus.interfaceIssueAlert,
+    stackFastFlapSuspected: sidecarStatus.stackFastFlapSuspected === true,
     onRecover: handleRestartStack,
   });
 

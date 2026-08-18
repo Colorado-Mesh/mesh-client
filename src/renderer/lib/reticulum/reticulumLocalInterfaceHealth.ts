@@ -28,7 +28,7 @@ export interface ReticulumLocalInterfaceInput {
 
 export interface ReticulumLocalInterfaceAlert {
   iface: ReticulumLocalInterfaceInput;
-  reason: 'stale_port' | 'enabled_down' | 'tcp_unreachable';
+  reason: 'stale_port' | 'enabled_down' | 'tcp_unreachable' | 'tcp_fast_flap';
 }
 
 /** True when mesh-client attached as a shared-instance client (local hubs not spawned). */
@@ -46,6 +46,11 @@ export interface ReticulumLocalInterfaceHealthOptions {
   /** When set and `now` is before this timestamp, enabled BLE RNodes show as connecting. */
   bleConnectGraceExpiresAt?: number;
   now?: number;
+  /**
+   * When true, enabled TCP hubs that are down use the fast-flap lockout copy
+   * (rapid stack restarts), not the generic unreachable hint.
+   */
+  stackFastFlapSuspected?: boolean;
 }
 
 function isWithinBleConnectGrace(options?: ReticulumLocalInterfaceHealthOptions): boolean {
@@ -243,16 +248,18 @@ export function collectReticulumLocalInterfaceAlerts(
 /** Enabled TCP hub interfaces that are unreachable (connection refused, etc.). */
 export function collectReticulumRemoteInterfaceAlerts(
   interfaces: readonly ReticulumLocalInterfaceInput[],
+  options?: Pick<ReticulumLocalInterfaceHealthOptions, 'stackFastFlapSuspected'>,
 ): ReticulumLocalInterfaceAlert[] {
   // Shared-instance client mode never spawns local TCP hubs — skip false unreachable.
   if (isReticulumSharedInstanceClientMode(interfaces)) {
     return [];
   }
+  const reason = options?.stackFastFlapSuspected ? 'tcp_fast_flap' : 'tcp_unreachable';
   const alerts: ReticulumLocalInterfaceAlert[] = [];
   for (const iface of interfaces) {
     const health = classifyReticulumRemoteInterface(iface);
     if (health === 'enabled_down') {
-      alerts.push({ iface, reason: 'tcp_unreachable' });
+      alerts.push({ iface, reason });
     }
   }
   return alerts;
@@ -265,7 +272,7 @@ export function collectReticulumInterfaceAlerts(
 ): ReticulumLocalInterfaceAlert[] {
   return [
     ...collectReticulumLocalInterfaceAlerts(interfaces, osSerialPorts, options),
-    ...collectReticulumRemoteInterfaceAlerts(interfaces),
+    ...collectReticulumRemoteInterfaceAlerts(interfaces, options),
   ];
 }
 

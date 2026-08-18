@@ -46,6 +46,9 @@ export function ReticulumLocalInterfaceAlertsBlock({
   }
 
   const showSerialPortContext = alerts.some(alertNeedsSerialPortContext);
+  const showRestartStack =
+    onRestartStack != null && !alerts.some((alert) => alert.reason === 'tcp_fast_flap');
+  const showRefreshPorts = onRefreshPorts != null && showSerialPortContext;
 
   return (
     <div
@@ -64,37 +67,45 @@ export function ReticulumLocalInterfaceAlertsBlock({
                     name: alert.iface.name,
                     port: alert.iface.serial_port ?? '',
                   })
-                : alert.reason === 'tcp_unreachable'
-                  ? t('connectionPanel.reticulumLocalInterfaces.tcpUnreachable', {
+                : alert.reason === 'tcp_fast_flap'
+                  ? t('connectionPanel.reticulumLocalInterfaces.tcpFastFlap', {
                       name: alert.iface.name,
                       host: alert.iface.host ?? '',
                       port: alert.iface.port ?? '',
                     })
-                  : t('connectionPanel.reticulumLocalInterfaces.offline', {
-                      name: alert.iface.name,
-                    })}
+                  : alert.reason === 'tcp_unreachable'
+                    ? t('connectionPanel.reticulumLocalInterfaces.tcpUnreachable', {
+                        name: alert.iface.name,
+                        host: alert.iface.host ?? '',
+                        port: alert.iface.port ?? '',
+                      })
+                    : t('connectionPanel.reticulumLocalInterfaces.offline', {
+                        name: alert.iface.name,
+                      })}
             </p>
             {!compact ? (
               <p className="text-muted mt-0.5 text-[11px]">
                 {alert.reason === 'stale_port'
                   ? t('connectionPanel.reticulumLocalInterfaces.stalePortHint')
-                  : alert.reason === 'tcp_unreachable'
-                    ? t('connectionPanel.reticulumLocalInterfaces.tcpUnreachableHint')
-                    : (() => {
-                        const kind = reticulumLocalOfflineDisplayKind(alert.iface);
-                        if (kind === 'ble') {
-                          if (ifaceHasBleBondRemoved(alert.iface.name, bleBondRemovedNames)) {
-                            return t(
-                              'connectionPanel.reticulumLocalInterfaces.offlineHintBleBondStale',
-                            );
+                  : alert.reason === 'tcp_fast_flap'
+                    ? t('connectionPanel.reticulumLocalInterfaces.tcpFastFlapHint')
+                    : alert.reason === 'tcp_unreachable'
+                      ? t('connectionPanel.reticulumLocalInterfaces.tcpUnreachableHint')
+                      : (() => {
+                          const kind = reticulumLocalOfflineDisplayKind(alert.iface);
+                          if (kind === 'ble') {
+                            if (ifaceHasBleBondRemoved(alert.iface.name, bleBondRemovedNames)) {
+                              return t(
+                                'connectionPanel.reticulumLocalInterfaces.offlineHintBleBondStale',
+                              );
+                            }
+                            return t('connectionPanel.reticulumLocalInterfaces.offlineHintBle');
                           }
-                          return t('connectionPanel.reticulumLocalInterfaces.offlineHintBle');
-                        }
-                        if (kind === 'wifi') {
-                          return t('connectionPanel.reticulumLocalInterfaces.offlineHintWifi');
-                        }
-                        return t('connectionPanel.reticulumLocalInterfaces.offlineHint');
-                      })()}
+                          if (kind === 'wifi') {
+                            return t('connectionPanel.reticulumLocalInterfaces.offlineHintWifi');
+                          }
+                          return t('connectionPanel.reticulumLocalInterfaces.offlineHint');
+                        })()}
               </p>
             ) : null}
           </li>
@@ -107,30 +118,34 @@ export function ReticulumLocalInterfaceAlertsBlock({
           })}
         </p>
       ) : null}
-      <div className="mt-2 flex flex-wrap gap-2">
-        {onRestartStack ? (
-          <button
-            type="button"
-            onClick={() => {
-              void onRestartStack();
-            }}
-            className="rounded bg-amber-700/80 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-600"
-            aria-label={t('connectionPanel.reticulumLocalInterfaces.restartStackAria')}
-          >
-            {t('connectionPanel.reticulumLocalInterfaces.restartStack')}
-          </button>
-        ) : null}
-        {onRefreshPorts && showSerialPortContext ? (
-          <button
-            type="button"
-            onClick={onRefreshPorts}
-            className="rounded border border-amber-600/60 px-2.5 py-1 text-xs text-amber-100 hover:bg-amber-900/40"
-            aria-label={t('connectionPanel.reticulumLocalInterfaces.refreshPorts')}
-          >
-            {t('connectionPanel.reticulumLocalInterfaces.refreshPorts')}
-          </button>
-        ) : null}
-      </div>
+      {showRestartStack || showRefreshPorts ? (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {showRestartStack ? (
+            <button
+              type="button"
+              onClick={() => {
+                void onRestartStack?.();
+              }}
+              className="rounded bg-amber-700/80 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-600"
+              aria-label={t('connectionPanel.reticulumLocalInterfaces.restartStackAria')}
+            >
+              {t('connectionPanel.reticulumLocalInterfaces.restartStack')}
+            </button>
+          ) : null}
+          {showRefreshPorts ? (
+            <button
+              type="button"
+              onClick={() => {
+                onRefreshPorts?.();
+              }}
+              className="rounded border border-amber-600/60 px-2.5 py-1 text-xs text-amber-100 hover:bg-amber-900/40"
+              aria-label={t('connectionPanel.reticulumLocalInterfaces.refreshPorts')}
+            >
+              {t('connectionPanel.reticulumLocalInterfaces.refreshPorts')}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

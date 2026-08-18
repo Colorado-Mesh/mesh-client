@@ -1267,10 +1267,12 @@
       "connectingRow": "{{name}}: 블루투스를 통해 연결 중",
       "offlineHintWifi": "RNode가 LAN에 있고 전원이 켜져 있으며 구성된 IP (기본 TCP 포트 7633, 4242 아님) 에서 연결 가능한지 확인하십시오. DHCP가 새 주소를 지정한 경우 아래 호스트를 업데이트하거나 Reticulum → Admin에서 Wi-Fi를 다시 프로비저닝합니다.",
       "tcpUnreachable": "{{name}}: TCP 허브에 연결할 수 없음 ({{host}}: {{port}})",
-      "tcpUnreachableHint": "원격 Reticulum 인스턴스는 오프라인 또는 차단 연결일 수 있습니다. 이 인터페이스를 비활성화하거나 호스트와 포트를 확인하십시오.",
+      "tcpUnreachableHint": "원격 Reticulum 인스턴스는 오프라인이거나 연결을 차단 중일 수 있습니다. 이 인터페이스를 비활성화하거나 호스트와 포트를 확인하십시오. mesh-client 또는 스택을 자주 재시작하면 Reticulum 1.4.0+ 허브가 IP를 12시간 동안 차단할 수 있습니다. 다시 시작하지 말고 기다리십시오.",
       "connectingHintBle": "BLE RNode 링크는 스택이 시작된 후 최대 60초가 걸릴 수 있습니다(OS 암호 키 창). 메시지가 나타나면 현재 RNode PIN을 입력하세요. 123456은 입력하지 마세요. 이는 오류가 아닌 정상입니다. 장치는 성공적으로 결합될 때까지 시스템 설정에 나타나지 않을 수 있습니다.",
       "offlineHintBle": "이 오류를 지우려면 이 인터페이스를 제거하고 다시 추가(장치 선택)하여 저장된 Bluetooth ID를 새로 고친 다음 스택을 다시 시작해야 할 수 있습니다. OS에서 6자리 Bluetooth PIN을 요청할 수 있습니다(macOS, Windows 또는 Linux). RNode는 페어링할 때마다 새 코드를 생성합니다. 123456을 사용하지 마세요(Meshtastic 기본값이며 RNode가 아닙니다). 이 앱이 연결되기 전에 RNode가 시스템 설정 → Bluetooth에 나타날 필요는 없습니다. 스택이 페어링할 때 OS 대화 상자가 나타납니다. 디스플레이가 없는 라디오: USB 연결 → Reticulum Admin → Bluetooth → 페어링 시작 → 관리자 패널에 표시된 PIN(라디오 디스플레이가 아님)을 OS 대화 상자에 입력하세요. 디스플레이가 있는 라디오: Heltec 장치에서 버튼을 약 7초 동안 길게 누르고(타이밍은 다를 수 있으며, 많은 보드에서는 약 10초에 Wi‑Fi AP가 활성화됨), 화면의 PIN을 읽은 다음 OS 대화 상자에 입력하세요. 다시 시도하기 전에 OS Bluetooth 설정에서 실패한 연결을 지우세요.",
-      "offlineHintBleBondStale": "macOS는 여전히 이 RNode를 페어링됨으로 표시하지만 블루투스 키가 더 이상 일치하지 않습니다 (피어 제거 페어링 정보). 시스템 설정 → 블루투스에서 장치를 잊어 버리고 RNode를 페어링 모드 (관리자 → 블루투스 페어링 → 시작 또는 ~ 7 초) 에 놓은 다음이 인터페이스 (장치 선택) 를 제거하고 다시 추가하고 스택을 다시 시작한 다음 메시지가 나타나면 새 6 자리 PIN을 입력하십시오."
+      "offlineHintBleBondStale": "macOS는 여전히 이 RNode를 페어링됨으로 표시하지만 블루투스 키가 더 이상 일치하지 않습니다 (피어 제거 페어링 정보). 시스템 설정 → 블루투스에서 장치를 잊어 버리고 RNode를 페어링 모드 (관리자 → 블루투스 페어링 → 시작 또는 ~ 7 초) 에 놓은 다음이 인터페이스 (장치 선택) 를 제거하고 다시 추가하고 스택을 다시 시작한 다음 메시지가 나타나면 새 6 자리 PIN을 입력하십시오.",
+      "tcpFastFlap": "{{name}}: 잦은 스택 재시작 후 허브가 IP를 차단했을 수 있음 ({{host}}: {{port}})",
+      "tcpFastFlapHint": "Reticulum 1.4.0+ 퍼블릭 허브는 12시간 이내에 짧은 TCP 세션 5회 후 IP를 차단합니다. mesh-client 또는 스택의 빠른 재시작이 포함됩니다. 이 허브를 비활성화하고 최대 12시간을 기다리십시오. 다시 시작하면 차단이 연장됩니다."
     },
     "autoConnectingTo": "{{deviceName}}에 자동 연결 중…",
     "autoReconnectInProgress": "자동 재연결 진행 중…",
@@ -1359,9 +1361,7 @@
       "txQueueDropsHintNeutral": "이 인터페이스 TX 채널이 가득 찼습니다. 해당 인터페이스의 링크 상태를 확인하거나 비활성화하여 드롭을 중지하십시오.",
       "txQueueDropsHintBleFlowControl": "라디오가 사용 중인 동안 호스트 TX 대기열 배압 (유량 제어 켜짐). RF 정체 시 예상 — 링크가 고정되지 않음. 아웃바운드 화물을 줄이거나 대기 시간을 기다리세요.",
       "tcpResetByPeer": "{{name}}: 허브 TCP 세션 재설정 (피어별 연결 재설정)",
-      "tcpResetByPeerHint": "허브가 TCP를 수락한 다음 RNS 링크를 닫았습니다. 다른 장치가 동일한 ID로 연결되었거나 허브가 이 세션을 거부했을 수 있습니다. 다른 Reticulum 앱을 종료하고 다시 시도하십시오. 스택 재시작만으로는 일반적으로 활성 허브 재설정 루프가 수정되지 않습니다.",
-      "tcpReadEof": "{{name}}: 허브가 TCP를 깨끗하게 닫음 (정보: TCP 읽기: EOF)",
-      "tcpReadEofHint": "RsReticulum의 TCP 클라이언트 내부에서 자동 연결 해제 — 원격 허브가 RST 없이 세션을 닫았습니다. 종종 사이드카 로그에서... 에 다시 연결하기 전에."
+      "tcpReadEof": "{{name}}: 허브가 TCP를 깨끗하게 닫음 (정보: TCP 읽기: EOF)"
     },
     "reticulumSidecarBundledMissing": "이 설치에는 번들로 제공되는 Reticulum 사이드카가 없습니다. 최신 릴리스로 업그레이드하거나 문제를 보고하세요. 패키지 설치에서는 소스에서 빌드할 수 없습니다.",
     "radioMqttRootDivergesWarning": "라디오 MQTT 루트 주제는 {{radioRoot}} 이지만 이 패널은 {{appPrefix}} 을 (를) 구독합니다. 라디오를 일치시켜 전국 노드 트래픽을 제한하십시오 — 주제 접두사를 업데이트하고 MQTT를 다시 연결하십시오.",
@@ -1759,7 +1759,8 @@
         "txQueueDropsBle": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — BLE RNode 링크가 중단됨, USB 또는 재페어링 선호",
         "txQueueDropsBleBondStale": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — BLE 본드 오래됨; OS 블루투스는 잊어버리고 다시 페어링",
         "txQueueDropsNeutral": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — 해당 인터페이스의 링크 확인",
-        "txQueueDropsBleFlowControl": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (호스트 TX 대기열 꽉 참) — 흐름 제어 켜짐, RF 혼잡 시 예상, 링크 정지 아님"
+        "txQueueDropsBleFlowControl": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (호스트 TX 대기열 꽉 참) — 흐름 제어 켜짐, RF 혼잡 시 예상, 링크 정지 아님",
+        "tcpFastFlap": "TCP 허브 \"{{name}}\" 는 잦은 스택 재시작 후 이 IP를 차단했을 가능성이 높습니다 ({{host}}: {{port}})."
       }
     },
     "routingPort": {

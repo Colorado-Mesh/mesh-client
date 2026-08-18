@@ -1269,10 +1269,12 @@
       "connectingRow": "{{name}}: połączenie przez Bluetooth",
       "offlineHintWifi": "Sprawdź, czy RNode znajduje się w sieci LAN, jest włączony i osiągalny w skonfigurowanym IP (domyślny port TCP 7633, a nie 4242). Zaktualizuj poniższy host, jeśli DHCP przypisał nowy adres lub ponownie udostępnij Wi-Fi w → administratora Reticulum.",
       "tcpUnreachable": "{{name}}: nieosiągalny koncentrator TCP ({{host}}:{{port}})",
-      "tcpUnreachableHint": "Zdalna instancja Reticulum może być offline lub blokować połączenia. Wyłącz ten interfejs lub sprawdź host i port.",
+      "tcpUnreachableHint": "Zdalna instancja Reticulum może być offline lub blokować połączenia. Wyłącz ten interfejs lub sprawdź host i port. Częste restarty mesh-client lub stosu mogą sprawić, że koncentratory Reticulum 1.4.0+ zablokują Twój adres IP na 12 godzin — poczekaj zamiast restartować ponownie.",
       "connectingHintBle": "Łączenie węzła BLE RNode może zająć do 60 sekund po uruchomieniu stosu (okno hasła systemu operacyjnego). Wprowadź bieżący kod PIN RNode, jeśli zostaniesz o to poproszony — nigdy 123456. Jest to normalne, a nie błąd. Urządzenie może pojawić się w Ustawieniach systemu dopiero po pomyślnym nawiązaniu połączenia.",
       "offlineHintBle": "Aby usunąć ten błąd, konieczne może być usunięcie tego interfejsu i dodanie go z powrotem (wybierz urządzenie), aby odświeżyć zapisany identyfikator Bluetooth, a następnie ponownie uruchomić stos. Twój system operacyjny może poprosić o 6-cyfrowy kod PIN Bluetooth (macOS, Windows lub Linux). RNode generuje nowy kod dla każdej pary — nigdy nie używaj 123456 (jest to domyślne ustawienie Meshtastic, a nie RNode). Kod RNode nie musi pojawić się w ustawieniach systemowych → Bluetooth przed połączeniem z tą aplikacją; okno dialogowe systemu operacyjnego pojawia się, gdy stos zostanie sparowany. Radia bezgłowe: podłączanie USB → Reticulum Admin → Bluetooth → Rozpocznij parowanie → wprowadź KOD PIN pokazany w panelu administracyjnym (nie na wyświetlaczu radia) w oknie dialogowym systemu operacyjnego. Radia z wyświetlaczem: przytrzymaj przycisk ~7 s na urządzeniach Heltec (czas jest różny; ~10 s na wielu płytach zamiast tego włącza punkt dostępu Wi-Fi), odczytaj KOD PIN na ekranie, a następnie wprowadź go w oknie dialogowym systemu operacyjnego. Wyczyść nieudane powiązania w ustawieniach Bluetooth systemu operacyjnego przed ponowną próbą.",
-      "offlineHintBleBondStale": "macOS nadal wyświetla ten RNode jako sparowany, ale klucze Bluetooth już nie pasują (informacje o parowaniu zostały usunięte przez peer). Zapomnij urządzenie w Ustawieniach systemowych → Bluetooth, przełącz RNode w tryb parowania (Admin → Bluetooth → Rozpocznij parowanie lub przytrzymaj przycisk ~7 s), następnie usuń i ponownie dodaj ten interfejs (Wybierz urządzenie), uruchom ponownie stos i wprowadź nowy 6‑cyfrowy PIN, gdy pojawi się monit."
+      "offlineHintBleBondStale": "macOS nadal wyświetla ten RNode jako sparowany, ale klucze Bluetooth już nie pasują (informacje o parowaniu zostały usunięte przez peer). Zapomnij urządzenie w Ustawieniach systemowych → Bluetooth, przełącz RNode w tryb parowania (Admin → Bluetooth → Rozpocznij parowanie lub przytrzymaj przycisk ~7 s), następnie usuń i ponownie dodaj ten interfejs (Wybierz urządzenie), uruchom ponownie stos i wprowadź nowy 6‑cyfrowy PIN, gdy pojawi się monit.",
+      "tcpFastFlap": "{{name}}: Hub prawdopodobnie zablokował Twój adres IP po częstym ponownym uruchomieniu stosu ({{host}}:{{port}})",
+      "tcpFastFlapHint": "Publiczne koncentratory Reticulum 1.4.0+ blokują adres IP po pięciu krótkich sesjach TCP w ciągu 12 godzin. Szybkie restarty mesh-client lub stosu się liczą. Wyłącz to centrum i odczekaj do 12 godzin — ponowne uruchomienie wydłuża blokadę."
     },
     "autoConnectingTo": "Automatyczne łączenie z {{deviceName}}…",
     "autoReconnectInProgress": "Automatyczne ponowne łączenie w toku…",
@@ -1361,9 +1363,7 @@
       "txQueueDropsHintNeutral": "Ten kanał interfejsu TX jest pełny. Sprawdź stan łącza w tym interfejsie (lub wyłącz je), aby zatrzymać spadki.",
       "txQueueDropsHintBleFlowControl": "Wsteczne ciśnienie kolejki hosta TX, gdy radio jest zajęte (kontrola przepływu włączona). Przewidywane w przypadku przeciążenia falami radiowymi — nie zablokowane łącze. Zmniejsz obciążenie wychodzące lub poczekaj na czas antenowy.",
       "tcpResetByPeer": "{{name}}: Hub resetuje sesję TCP (reset połączenia przez partnera)",
-      "tcpResetByPeerHint": "Koncentrator zaakceptował TCP, a następnie zamknął łącze RNS. Inne urządzenie może być połączone z tą samą tożsamością lub koncentrator odrzucił tę sesję. Zamknij inne aplikacje Reticulum i spróbuj ponownie; sam restart stosu zwykle nie naprawi aktywnej pętli resetowania koncentratora.",
-      "tcpReadEof": "{{name}}: koncentrator zamknięty w czysty sposób TCP (INFO: TCP odczytano: EOF)",
-      "tcpReadEofHint": "Cichy rozłącznik wewnątrz klienta TCP rsReticulum — zdalny hub zamknął sesję bez RST. Często poprzedza ponowne połączenie… w dziennikach bocznych."
+      "tcpReadEof": "{{name}}: koncentrator zamknięty w czysty sposób TCP (INFO: TCP odczytano: EOF)"
     },
     "reticulumSidecarBundledMissing": "W tej instalacji brakuje dołączonego sidecar Reticulum. Uaktualnij do nowszej wersji lub zgłoś problem — budowanie ze źródła nie jest możliwe w przypadku instalacji pakietowych.",
     "radioMqttRootDivergesWarning": "Główny temat radia MQTT to {{radioRoot}}, ale ten panel subskrybuje {{appPrefix}}. Dopasuj radio, aby ograniczyć ogólnokrajowy ruch w węzłach — zaktualizuj prefiks tematu i ponownie połącz MQTT.",
@@ -1763,7 +1763,8 @@
         "txQueueDropsBle": "Interfejs \"{{name}}\" upuścił pakiety wychodzące {{count}} (kolejka TX pełna) — BLE RNode link zablokowany; wolisz USB lub ponownie sparować",
         "txQueueDropsBleBondStale": "Interfejs \"{{name}}\" odrzucił pakiety wychodzące {{count}} (kolejka TX pełna) — Nieaktualne połączenie BLE; Zapomnij w systemie operacyjnym Bluetooth i sparuj ponownie",
         "txQueueDropsNeutral": "Interfejs \"{{name}}\" upuścił pakiety wychodzące {{count}} (kolejka TX pełna) — sprawdź link do tego interfejsu",
-        "txQueueDropsBleFlowControl": "Interfejs \"{{name}}\" upuścił pakiety wychodzące {{count}} (kolejka hosta TX pełna) — kontrola przepływu włączona; oczekuje się, że w przypadku przeciążenia RF, a nie zablokowanego łącza"
+        "txQueueDropsBleFlowControl": "Interfejs \"{{name}}\" upuścił pakiety wychodzące {{count}} (kolejka hosta TX pełna) — kontrola przepływu włączona; oczekuje się, że w przypadku przeciążenia RF, a nie zablokowanego łącza",
+        "tcpFastFlap": "Koncentrator TCP „{{name}}” prawdopodobnie zablokował ten adres IP po częstym ponownym uruchomieniu stosu ({{host}}:{{port}})"
       }
     },
     "routingPort": {

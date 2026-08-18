@@ -82,7 +82,7 @@ export function ReticulumSidecarIssueAlertsBlock({
           <li key={`tcp-rst-${name}`}>
             <p>{t('connectionPanel.reticulumSidecarIssues.tcpResetByPeer', { name })}</p>
             <p className="text-muted mt-0.5 text-[11px]">
-              {t('connectionPanel.reticulumSidecarIssues.tcpResetByPeerHint')}
+              {t('connectionPanel.reticulumLocalInterfaces.tcpUnreachableHint')}
             </p>
           </li>
         ))}
@@ -90,7 +90,7 @@ export function ReticulumSidecarIssueAlertsBlock({
           <li key={`tcp-eof-${name}`}>
             <p>{t('connectionPanel.reticulumSidecarIssues.tcpReadEof', { name })}</p>
             <p className="text-muted mt-0.5 text-[11px]">
-              {t('connectionPanel.reticulumSidecarIssues.tcpReadEofHint')}
+              {t('connectionPanel.reticulumLocalInterfaces.tcpUnreachableHint')}
             </p>
           </li>
         ))}

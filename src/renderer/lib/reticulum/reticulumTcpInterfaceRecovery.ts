@@ -33,7 +33,13 @@ export function resolveReticulumTcpRecoveryCooldownMs(
 /** Hub is actively RST/EOF-looping — auto stack restart will not help. */
 export function isReticulumTcpHubActivelyRejecting(
   ifaceName: string,
-  alert: { tcpResetByPeer?: string[]; tcpReadEof?: string[] } | null | undefined,
+  alert:
+    | {
+        tcpResetByPeer?: string[];
+        tcpReadEof?: string[];
+      }
+    | null
+    | undefined,
 ): boolean {
   if (!alert) return false;
   return (

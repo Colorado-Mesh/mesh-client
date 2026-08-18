@@ -19,7 +19,9 @@ export interface UseReticulumTcpInterfaceRecoveryOptions {
   sidecarReady: boolean;
   /** Stack is mid connect/restart — skip recovery. */
   connecting: boolean;
-  interfaceIssueAlert?: ReticulumInterfaceIssueAlert | null;
+  interfaceIssueAlert?: Pick<ReticulumInterfaceIssueAlert, 'tcpResetByPeer' | 'tcpReadEof'> | null;
+  /** Skip auto stack restart when this client already triggered hub fast-flap. */
+  stackFastFlapSuspected?: boolean;
   onRecover: () => Promise<void>;
 }
 
@@ -33,6 +35,7 @@ export function useReticulumTcpInterfaceRecovery({
   sidecarReady,
   connecting,
   interfaceIssueAlert,
+  stackFastFlapSuspected = false,
   onRecover,
 }: UseReticulumTcpInterfaceRecoveryOptions): void {
   const streakByIdRef = useRef<Map<string, number>>(new Map());
@@ -108,7 +111,10 @@ export function useReticulumTcpInterfaceRecovery({
         return;
       }
 
-      if (isReticulumTcpHubActivelyRejecting(worst.iface.name, interfaceIssueAlert)) {
+      if (
+        stackFastFlapSuspected ||
+        isReticulumTcpHubActivelyRejecting(worst.iface.name, interfaceIssueAlert)
+      ) {
         return;
       }
 
@@ -145,5 +151,13 @@ export function useReticulumTcpInterfaceRecovery({
     return () => {
       cancelled = true;
     };
-  }, [interfaces, rttById, rttKey, sidecarReady, connecting, interfaceIssueAlert]);
+  }, [
+    interfaces,
+    rttById,
+    rttKey,
+    sidecarReady,
+    connecting,
+    interfaceIssueAlert,
+    stackFastFlapSuspected,
+  ]);
 }

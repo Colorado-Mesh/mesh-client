@@ -1267,10 +1267,12 @@
       "connectingRow": "{{name}}: conexión a través de Bluetooth",
       "offlineHintWifi": "Compruebe que el RNode esté en su LAN, encendido y accesible en la IP configurada (puerto TCP predeterminado 7633, no 4242). Actualiza el host a continuación si DHCP asignó una nueva dirección o vuelve a proporcionar Wi-Fi en Reticulum → Admin.",
       "tcpUnreachable": "{{name}}: No se puede acceder al centro TCP ({{host}}:{{port}})",
-      "tcpUnreachableHint": "La instancia remota de Reticulum puede estar desconectada o bloqueando conexiones. Deshabilite esta interfaz o verifique el host y el puerto.",
+      "tcpUnreachableHint": "La instancia remota de Reticulum puede estar desconectada o bloqueando conexiones. Deshabilite esta interfaz o verifique el host y el puerto. Los reinicios frecuentes de mesh-client o de la pila pueden hacer que los hubs Reticulum 1.4.0+ bloqueen su IP durante 12 horas: espere en lugar de reiniciar de nuevo.",
       "connectingHintBle": "Los enlaces BLE RNode pueden tardar hasta 60 segundos después de que se inicia la pila (ventana de clave de acceso del sistema operativo). Ingrese el PIN actual de RNode si se le solicita; nunca 123456. Esto es normal, no es un error. Es posible que el dispositivo no aparezca en Configuración del sistema hasta después de una vinculación exitosa.",
       "offlineHintBle": "Para borrar este error, es posible que deba eliminar esta interfaz y volver a agregarla (Seleccionar dispositivo) para que se actualice el ID de Bluetooth guardado y, a continuación, reinicie la pila. Su sistema operativo puede solicitar un PIN Bluetooth de 6 dígitos (macOS, Windows o Linux). RNode genera un nuevo código cada emparejamiento; nunca use 123456 (ese es el valor predeterminado de Meshtastic, no RNode). No es necesario que el RNode aparezca en Configuración del sistema → Bluetooth antes de que esta aplicación se conecte; el cuadro de diálogo del sistema operativo aparece cuando la pila se empareja. Radios sin cabeza: conecte USB → Reticulum Admin → Bluetooth → Comience a emparejar → introduzca el PIN que se muestra en el panel de administración (no en la pantalla de la radio) en el cuadro de diálogo del sistema operativo. Radios con pantalla: mantenga presionado el botón ~7 s en los dispositivos Heltec (el tiempo varía; ~10 s en muchas placas habilita Wi-Fi AP en su lugar), lea el PIN en la pantalla y luego ingréselo en el cuadro de diálogo del sistema operativo. Borre los enlaces fallidos en la configuración de Bluetooth de su sistema operativo antes de volver a intentarlo.",
-      "offlineHintBleBondStale": "macOS sigue mostrando este RNode como emparejado, pero las claves Bluetooth ya no coinciden (el par eliminó la información de emparejamiento). Olvide el dispositivo en Ajustes del sistema → Bluetooth, ponga el RNode en modo de emparejamiento (Admin → Bluetooth → Iniciar emparejamiento, o mantenga pulsado el botón ~7 s), luego quite y vuelva a agregar esta interfaz (Seleccionar dispositivo), reinicie la pila e introduzca el nuevo PIN de 6 dígitos cuando se le solicite."
+      "offlineHintBleBondStale": "macOS sigue mostrando este RNode como emparejado, pero las claves Bluetooth ya no coinciden (el par eliminó la información de emparejamiento). Olvide el dispositivo en Ajustes del sistema → Bluetooth, ponga el RNode en modo de emparejamiento (Admin → Bluetooth → Iniciar emparejamiento, o mantenga pulsado el botón ~7 s), luego quite y vuelva a agregar esta interfaz (Seleccionar dispositivo), reinicie la pila e introduzca el nuevo PIN de 6 dígitos cuando se le solicite.",
+      "tcpFastFlap": "{{name}}: Hub probablemente bloqueó tu IP después de reiniciar la pila con frecuencia ({{host}}:{{port}})",
+      "tcpFastFlapHint": "Los hubs públicos de Reticulum 1.4.0+ bloquean una IP después de cinco sesiones TCP cortas en 12 horas. Los reinicios rápidos de mesh-client o de la pila cuentan. Deshabilite este concentrador y espere hasta 12 horas: reiniciar de nuevo extiende el bloqueo."
     },
     "autoConnectingTo": "Conectando automáticamente a {{deviceName}}…",
     "autoReconnectInProgress": "Reconexión automática en curso…",
@@ -1359,9 +1361,7 @@
       "txQueueDropsHintNeutral": "Este canal TX de interfaz está lleno. Compruebe el estado del enlace de esa interfaz (o desactívelo) para detener las caídas.",
       "txQueueDropsHintBleFlowControl": "Contrapresión de la cola de TX del host mientras la radio está ocupada (control de flujo activado). Se espera bajo congestión de RF, no un enlace atascado. Reduzca la carga saliente o espere el tiempo de aire.",
       "tcpResetByPeer": "{{name}}: hub reset the TCP session (Restablecimiento de conexión por peer)",
-      "tcpResetByPeerHint": "El concentrador aceptó TCP y luego cerró el enlace RNS. Es posible que otro dispositivo esté conectado con la misma identidad o que el concentrador haya rechazado esta sesión. Salga de otras aplicaciones de Reticulum y vuelva a intentarlo; un reinicio de pila solo generalmente no solucionará un bucle de restablecimiento de concentrador activo.",
-      "tcpReadEof": "{{name}}: hub cerrado TCP limpiamente (INFO: TCP leer: EOF)",
-      "tcpReadEofHint": "Desconexión silenciosa dentro del cliente TCP de rsReticulum: el hub remoto cerró la sesión sin un RST. A menudo precede a la reconexión en ... en los registros del sidecar."
+      "tcpReadEof": "{{name}}: hub cerrado TCP limpiamente (INFO: TCP leer: EOF)"
     },
     "reticulumSidecarBundledMissing": "A esta instalación le falta el sidecar Reticulum incluido. Actualice a una versión más reciente o informe el problema: la compilación desde el código fuente no está disponible en instalaciones empaquetadas.",
     "radioMqttRootDivergesWarning": "El tema raíz de MQTT de radio es {{radioRoot}}, pero este panel se suscribe a {{appPrefix}}. Haga coincidir la radio para limitar el tráfico de nodos a nivel nacional: actualice el prefijo del tema y vuelva a conectar MQTT.",
@@ -1759,7 +1759,8 @@
         "txQueueDropsBle": "Interfaz \"{{name}}\" eliminada {{count}} paquetes salientes (cola TX llena) — Enlace ble RNode bloqueado; prefiera USB o volver a emparejar",
         "txQueueDropsBleBondStale": "Interfaz \"{{name}}\" eliminada {{count}} paquetes salientes (cola TX llena) — enlace ble obsoleto; Olvídese de Bluetooth del sistema operativo y vuelva a emparejar",
         "txQueueDropsNeutral": "La interfaz \"{{name}}\" ha eliminado {{count}} paquetes salientes (cola TX llena): comprueba el enlace de esa interfaz",
-        "txQueueDropsBleFlowControl": "La interfaz \"{{name}}\" eliminó {{count}} paquetes salientes (la cola de TX del host está llena) — control de flujo activado; se espera bajo congestión de RF, no un enlace atascado"
+        "txQueueDropsBleFlowControl": "La interfaz \"{{name}}\" eliminó {{count}} paquetes salientes (la cola de TX del host está llena) — control de flujo activado; se espera bajo congestión de RF, no un enlace atascado",
+        "tcpFastFlap": "El concentrador TCP \"{{name}}\" probablemente bloqueó esta IP después de reiniciar la pila con frecuencia ({{host}}:{{port}})"
       }
     },
     "routingPort": {
