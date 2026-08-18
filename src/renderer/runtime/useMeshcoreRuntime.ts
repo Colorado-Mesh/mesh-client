@@ -152,6 +152,10 @@ import type {
   RxPacketEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
 import {
+  rememberedMeshcoreLiveAdvertName,
+  rememberMeshcoreLiveAdvertName,
+} from '../lib/meshcore/meshcoreLiveContactPersist';
+import {
   MESHCORE_ERR_NODE_NOT_FOUND,
   MESHCORE_ERR_NOT_CONNECTED,
   MESHCORE_ERR_REQUEST_FAILED,
@@ -390,9 +394,11 @@ import {
   meshcoreIsSyntheticPlaceholderPubKeyHex,
   meshcoreManufacturerModelFromDeviceQuery,
   meshcoreMergeChannelDisplayNameOntoNode,
+  meshcoreMergeContactAdvNameFromPrevious,
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreMinimalNodeFromAdvertEvent,
+  meshcorePreviousAdvertNameForRebuild,
   meshcoreRemoveContactErrorMessage,
   meshcoreScaledAdvLatLonToDeg,
   meshcoreSyntheticPlaceholderPubKeyHex,
@@ -1193,6 +1199,7 @@ export function useMeshcoreRuntime() {
       const dbPubKeyHexByNodeId = new Map<number, string>();
       for (const row of dbContacts) {
         if (row.nickname) nicknameMapRef.current.set(row.node_id, row.nickname);
+        rememberMeshcoreLiveAdvertName(row.node_id, row.adv_name);
         const hex = row.public_key.replace(/\s/g, '').toLowerCase();
         if (!meshcoreIsSyntheticPlaceholderPubKeyHex(hex) && hex.length >= 12) {
           const pairs = hex.match(/.{2}/g);
@@ -1582,7 +1589,29 @@ export function useMeshcoreRuntime() {
           effectivePrevHops,
           slicedPath.length,
         );
-        const node: MeshNode = { ...base, last_heard, hops_away: hopsAway };
+        const nick = nicknameMapRef.current.get(base.node_id);
+        // Nickname overlay runs after this loop; merge stored advert name, not the nick.
+        const mergedAdvName = meshcoreMergeContactAdvNameFromPrevious(
+          base.long_name,
+          meshcorePreviousAdvertNameForRebuild(
+            prevNode?.long_name,
+            nick,
+            rememberedMeshcoreLiveAdvertName(base.node_id),
+            base.node_id,
+          ),
+          base.node_id,
+          {
+            prevLastHeard: prevNode?.last_heard,
+            radioLastAdvert: contact.lastAdvert,
+          },
+        );
+        rememberMeshcoreLiveAdvertName(base.node_id, mergedAdvName);
+        const node: MeshNode = {
+          ...base,
+          last_heard,
+          hops_away: hopsAway,
+          long_name: mergedAdvName,
+        };
         if (prevNode?.channel_utilization != null) {
           node.channel_utilization = prevNode.channel_utilization;
         }
@@ -1619,7 +1648,13 @@ export function useMeshcoreRuntime() {
         const onRadio = opts?.contactsFromRadio ? 1 : 0;
         const prevHopsAway = prevNode?.hops_away;
         const hopsToSave = hopsAway ?? prevHopsAway ?? undefined;
-        const dbRow = contactToDbRow(contact, undefined, onRadio, now, hopsToSave);
+        const dbRow = contactToDbRow(
+          { ...contact, advName: mergedAdvName },
+          undefined,
+          onRadio,
+          now,
+          hopsToSave,
+        );
         pendingDbRows.push(dbRow);
       }
       replaceMeshcorePubKeyRegistry(
@@ -1800,7 +1835,10 @@ export function useMeshcoreRuntime() {
         });
       } else {
         setNodes((prev) => {
-          const existing = prev.get(nodeId);
+          // Live RF/advert upserts nodeStore, not this useState map. Seed from Zustand so the
+          // syncNodesMapToIdentityStore effect cannot restore the companion's old advName.
+          const fromStore = readMeshcoreNodes().get(nodeId);
+          const existing = fromStore ?? prev.get(nodeId);
           if (!existing) return prev;
           const next = new Map(prev);
           next.set(nodeId, {
@@ -1854,7 +1892,7 @@ export function useMeshcoreRuntime() {
       }, MESHCORE_PATH_UPDATED_CONTACTS_REBUILD_DEBOUNCE_MS);
       requestChatOutboxDrain('meshcore');
     },
-    [meshcorePreviousNodesBaselineForBuild],
+    [meshcorePreviousNodesBaselineForBuild, readMeshcoreNodes],
   );
 
   /** Returned by {@link setupEventListeners}; run before `conn.close()` or replacing the connection. */

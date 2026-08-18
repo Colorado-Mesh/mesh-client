@@ -3885,7 +3885,7 @@ function AppContent() {
                       role="tabpanel"
                       aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), MODULES_PANEL_INDEX))}`}
                       hidden={activePanelIndex !== MODULES_PANEL_INDEX}
-                      className="w-full min-w-0"
+                      className="h-full min-h-0 w-full min-w-0"
                     >
                       {activePanelIndex === MODULES_PANEL_INDEX &&
                       capabilities.modulesTabUsesRepeatersLabel ? (

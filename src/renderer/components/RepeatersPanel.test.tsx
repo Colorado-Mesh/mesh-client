@@ -122,6 +122,17 @@ describe('RepeatersPanel', () => {
     expect(results).toHaveNoViolations();
   });
 
+  it('fills leftover height with the table scroller instead of a 70vh cap', async () => {
+    const { container } = render(<RepeatersPanel {...makeBaseProps()} />);
+    const table = screen.getByRole('table');
+    const scroller = table.parentElement;
+    expect(scroller).toHaveClass('flex-1', 'min-h-0');
+    expect(scroller?.className).not.toContain('70vh');
+    hydrateAxeThemeColors(container);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
   it('shows error toast when requestRepeaterStatus fails', async () => {
     const props = makeBaseProps();
     props.onRequestRepeaterStatus = vi.fn().mockRejectedValue(new Error('radio timeout'));

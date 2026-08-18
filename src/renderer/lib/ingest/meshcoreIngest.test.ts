@@ -84,7 +84,7 @@ describe('attachMeshcoreIngest', () => {
       ID,
     );
     expect(saveMeshcoreContact).not.toHaveBeenCalled();
-    expect(updateAdvert).toHaveBeenCalledWith(nid, 1_700_000_100, null, null, undefined);
+    expect(updateAdvert).toHaveBeenCalledWith(nid, 1_700_000_100, null, null, 'LiveAdvert');
     detach();
   });
 
