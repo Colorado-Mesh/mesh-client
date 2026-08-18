@@ -1431,7 +1431,11 @@
     "sortByNameAsc": "Seřadit podle názvu: A až Z",
     "sortByNameDesc": "Řadit podle názvu (Z až A)",
     "sortByRssiAsc": "Řadit podle RSSI, nejdříve nejslabší",
-    "sortByRssiDesc": "Řadit podle RSSI, nejdřív nejsilnější"
+    "sortByRssiDesc": "Řadit podle RSSI, nejdřív nejsilnější",
+    "pickerDeviceAria": "{{name}} {{address}}",
+    "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+    "bluetoothMac": "Bluetooth MAC",
+    "bluetoothId": "Bluetooth ID"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

@@ -1429,7 +1429,11 @@
     "sortByNameAsc": "이름 A-Z",
     "sortByNameDesc": "이름 Z-A",
     "sortByRssiAsc": "RSSI 기준으로 정렬, 가장 먼저 약함",
-    "sortByRssiDesc": "RSSI로 정렬, 최강자 우선"
+    "sortByRssiDesc": "RSSI로 정렬, 최강자 우선",
+    "pickerDeviceAria": "{{name}} {{address}}",
+    "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+    "bluetoothMac": "블루투스 맥",
+    "bluetoothId": "블루투스 ID"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",

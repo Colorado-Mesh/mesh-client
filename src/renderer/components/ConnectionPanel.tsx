@@ -26,6 +26,7 @@ import {
   MQTT_MAX_RECONNECT_ATTEMPTS,
 } from '@/shared/meshtasticMqttReconnect';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
+import { type BlePickerIdentity, resolveBlePickerIdentity } from '@/shared/normalizeBleMac';
 import { clampTcpPort, parseTcpPortFromString } from '@/shared/tcpPort';
 
 import { useActiveMeshIdentity } from '../hooks/useActiveMeshIdentity';
@@ -37,6 +38,11 @@ import {
   loadProtocolMqttSettings,
   persistMqttSettingsIfChanged,
 } from '../hooks/useProtocolMqttSettings';
+import {
+  cacheBleDeviceMac,
+  getBleDeviceMac,
+  loadBleDeviceMacCache,
+} from '../lib/bleDeviceMacCache';
 import { reconnectBleWithScan, startNobleBleScanningWithRetry } from '../lib/bleReconnectHelper';
 import {
   humanizeBleError,
@@ -139,6 +145,8 @@ interface LastConnection {
   httpAddress?: string;
   bleDeviceId?: string;
   bleDeviceName?: string;
+  /** Formatted BLE MAC when known (macOS UUID deviceId + CoreBluetoothCache address). */
+  bleMac?: string;
   serialPortId?: string;
 }
 
@@ -324,6 +332,20 @@ function getBleDeviceName(deviceId: string): string | null {
       'ConnectionPanel bleDeviceNames',
     ) ?? {};
   return cache[deviceId] ?? null;
+}
+
+function resolveLastBleIdentity(
+  last: LastConnection | null,
+  protocol: MeshProtocol,
+): BlePickerIdentity | null {
+  const deviceId = last?.bleDeviceId ?? loadLastBleDevice(protocol) ?? '';
+  if (!deviceId && !last?.bleMac) return null;
+  const identity = resolveBlePickerIdentity({
+    deviceId,
+    address: last?.bleMac,
+    cachedMac: deviceId ? getBleDeviceMac(deviceId) : null,
+  });
+  return identity.display ? identity : null;
 }
 
 function MqttGlobeStatusIcon({ status }: { status: MQTTStatus }) {
@@ -720,6 +742,15 @@ export default function ConnectionPanel({
     }
     return cache;
   }, [bleDevices]);
+  const bleDeviceMacsCache = useMemo(() => {
+    const parsed = loadBleDeviceMacCache();
+    const cache: Record<string, string> = {};
+    for (const device of bleDevices) {
+      const cached = parsed[device.deviceId];
+      if (cached) cache[device.deviceId] = cached;
+    }
+    return cache;
+  }, [bleDevices]);
   const getBlePickerName = useCallback(
     (device: NobleBleDevice) =>
       blePickerDisplayName(
@@ -777,6 +808,8 @@ export default function ConnectionPanel({
   const [autoConnectBleTarget, setAutoConnectBleTarget] = useState<string | null>(null);
   // Tracks BLE device name at selection time, used when saving LastConnection
   const lastSelectedBleNameRef = useRef<string | null>(null);
+  // Noble `peripheral.address` (sticker MAC) at selection time — distinct from Linux pairing MAC id
+  const lastSelectedBleAddressRef = useRef<string | null>(null);
   // Tracks BLE device MAC for potential re-pairing on Linux
   const lastSelectedBleMacRef = useRef<string | null>(null);
   /**
@@ -792,6 +825,8 @@ export default function ConnectionPanel({
   const meshcoreLinuxReconnectPairingCheckRef = useRef(false);
   const lastConnectionBleDeviceNameFallbackRef = useRef(lastConnection?.bleDeviceName);
   lastConnectionBleDeviceNameFallbackRef.current = lastConnection?.bleDeviceName;
+  const lastConnectionBleMacFallbackRef = useRef(lastConnection?.bleMac);
+  lastConnectionBleMacFallbackRef.current = lastConnection?.bleMac;
   /** Prior store status for distinguishing pre-connect BLE scan from failed RF attempts. */
   const prevStoreStatusRef = useRef(state.status);
   /** Mount-only auto-connect reads latest props/state via refs so the effect can stay `[]`. */
@@ -859,14 +894,21 @@ export default function ConnectionPanel({
         if (state.connectionType === 'http' || state.connectionType === 'tcp') {
           conn.httpAddress = activeHostAddress;
         } else if (state.connectionType === 'ble') {
-          const bleId = loadLastBleDevice(protocol);
+          const prev = lastConnectionRef.current;
+          const bleId = loadLastBleDevice(protocol) ?? prev?.bleDeviceId;
           if (bleId) {
             conn.bleDeviceId = bleId;
             conn.bleDeviceName =
               getBleDeviceName(bleId) ??
               lastSelectedBleNameRef.current ??
               lastConnectionBleDeviceNameFallbackRef.current ??
-              undefined;
+              prev?.bleDeviceName;
+            const bleIdentity = resolveBlePickerIdentity({
+              deviceId: bleId,
+              address: lastSelectedBleAddressRef.current,
+              cachedMac: getBleDeviceMac(bleId) ?? lastConnectionBleMacFallbackRef.current,
+            });
+            if (bleIdentity.isMac) conn.bleMac = bleIdentity.display;
           }
         } else if (state.connectionType === 'serial') {
           const serialId = loadLastSerialPort();
@@ -914,17 +956,28 @@ export default function ConnectionPanel({
   // Listen for BLE devices discovered by noble in main process
   useEffect(() => {
     return window.electronAPI.onNobleBleDeviceDiscovered((device) => {
+      if (device.address) cacheBleDeviceMac(device.deviceId, device.address);
       setBleDevices((prev) => {
         const idx = prev.findIndex((d) => d.deviceId === device.deviceId);
         if (idx >= 0) {
           const existing = prev[idx];
           if (!existing) return prev;
           const nextRssi = device.rssi !== undefined ? device.rssi : existing.rssi;
-          if (existing.deviceName === device.deviceName && existing.rssi === nextRssi) {
+          const nextAddress = device.address ?? existing.address;
+          if (
+            existing.deviceName === device.deviceName &&
+            existing.rssi === nextRssi &&
+            existing.address === nextAddress
+          ) {
             return prev;
           }
           const next = [...prev];
-          next[idx] = { ...existing, deviceName: device.deviceName, rssi: nextRssi };
+          next[idx] = {
+            ...existing,
+            deviceName: device.deviceName,
+            rssi: nextRssi,
+            address: nextAddress,
+          };
           return next;
         }
         return [...prev, device];
@@ -956,6 +1009,9 @@ export default function ConnectionPanel({
     return window.electronAPI.onBluetoothDevicesDiscovered((devices, generation) => {
       if (typeof generation === 'number' && Number.isFinite(generation)) {
         linuxBleChooserGenerationRef.current = generation;
+      }
+      for (const device of devices) {
+        if (device.address) cacheBleDeviceMac(device.deviceId, device.address);
       }
       setBleDevices(devices);
       const lastId = lastConnectionRef.current?.bleDeviceId ?? loadLastBleDevice(protocol);
@@ -1424,6 +1480,12 @@ export default function ConnectionPanel({
       // Save BLE advertisement name for use in LastConnection display
       const found = bleDevices.find((d) => d.deviceId === deviceId);
       lastSelectedBleNameRef.current = found?.deviceName ?? null;
+      if (found?.address) {
+        cacheBleDeviceMac(deviceId, found.address);
+        lastSelectedBleAddressRef.current = found.address;
+      } else {
+        lastSelectedBleAddressRef.current = getBleDeviceMac(deviceId);
+      }
       // Store MAC address for potential re-pairing on Linux
       lastSelectedBleMacRef.current = deviceId;
       setShowBlePicker(false);
@@ -1676,6 +1738,7 @@ export default function ConnectionPanel({
     state.status === 'configured' ||
     state.status === 'stale' ||
     state.status === 'reconnecting';
+  const lastBleIdentity = resolveLastBleIdentity(lastConnection, protocol);
 
   useEffect(() => {
     const rfBusy =
@@ -1891,10 +1954,22 @@ export default function ConnectionPanel({
               ) : (
                 sortedBleDevices.map((device) => {
                   const displayName = getBlePickerName(device);
+                  const identity = resolveBlePickerIdentity({
+                    deviceId: device.deviceId,
+                    address: device.address,
+                    cachedMac: bleDeviceMacsCache[device.deviceId],
+                  });
                   const hasRssi = device.rssi != null && Number.isFinite(device.rssi);
                   const bleAriaLabel = hasRssi
-                    ? `${displayName} ${device.deviceId} ${Math.round(device.rssi!)} dBm`
-                    : `${displayName} ${device.deviceId}`;
+                    ? t('connectionPanel.pickerDeviceAriaWithRssi', {
+                        name: displayName,
+                        address: identity.display,
+                        rssi: Math.round(device.rssi!),
+                      })
+                    : t('connectionPanel.pickerDeviceAria', {
+                        name: displayName,
+                        address: identity.display,
+                      });
                   return (
                     <button
                       key={device.deviceId}
@@ -1918,7 +1993,9 @@ export default function ConnectionPanel({
                           </span>
                         ) : null}
                       </div>
-                      <div className="text-muted ml-7 font-mono text-xs">{device.deviceId}</div>
+                      {identity.display !== displayName ? (
+                        <div className="text-muted ml-7 font-mono text-xs">{identity.display}</div>
+                      ) : null}
                     </button>
                   );
                 })
@@ -2999,6 +3076,18 @@ export default function ConnectionPanel({
               <span className="text-muted">{t('connectionPanel.connectionType')}</span>
               <span className="text-gray-200 uppercase">{state.connectionType}</span>
             </div>
+            {state.connectionType === 'ble' && lastBleIdentity ? (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted">
+                  {t(
+                    lastBleIdentity.isMac
+                      ? 'connectionPanel.bluetoothMac'
+                      : 'connectionPanel.bluetoothId',
+                  )}
+                </span>
+                <span className="font-mono text-gray-200">{lastBleIdentity.display}</span>
+              </div>
+            ) : null}
             {hostLinkMeter.kind != null && (
               <ConnectionLinkMeter
                 kind={hostLinkMeter.kind}
@@ -3113,7 +3202,11 @@ export default function ConnectionPanel({
                       ? t('connectionPanel.serialDevice')
                       : (lastConnection.httpAddress ?? t('connectionPanel.wifiDevice'))}
                 </p>
-                <p className="text-muted text-xs uppercase">{lastConnection.type}</p>
+                {lastConnection.type === 'ble' && lastBleIdentity ? (
+                  <p className="text-muted font-mono text-xs">{lastBleIdentity.display}</p>
+                ) : (
+                  <p className="text-muted text-xs uppercase">{lastConnection.type}</p>
+                )}
               </div>
             </div>
             <button

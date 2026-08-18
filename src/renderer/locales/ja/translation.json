@@ -1429,7 +1429,11 @@
     "sortByNameAsc": "名前で並べ替え、AからZ",
     "sortByNameDesc": "名前で並べ替え、ZからA",
     "sortByRssiAsc": "RSSIで並べ替え、弱い順",
-    "sortByRssiDesc": "RSSIで並べ替え、最強順"
+    "sortByRssiDesc": "RSSIで並べ替え、最強順",
+    "pickerDeviceAria": "{{name}} {{address}}",
+    "pickerDeviceAriaWithRssi": "{{name}} {{address}}、{{rssi}} dBm",
+    "bluetoothMac": "Bluetooth MAC",
+    "bluetoothId": "Bluetooth ID"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

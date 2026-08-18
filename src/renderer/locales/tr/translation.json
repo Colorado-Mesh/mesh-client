@@ -1429,7 +1429,11 @@
     "sortByNameAsc": "Alfabetik sırala (A'dan Z'ye)",
     "sortByNameDesc": "Alfabetik sırala (Z'den A'ya)",
     "sortByRssiAsc": "RSSI'ye göre sırala, önce en zayıf",
-    "sortByRssiDesc": "RSSI'ye göre sırala, önce en güçlü"
+    "sortByRssiDesc": "RSSI'ye göre sırala, önce en güçlü",
+    "pickerDeviceAria": "{{name}} {{address}}",
+    "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+    "bluetoothMac": "Bluetooth MAC",
+    "bluetoothId": "Bluetooth Kimliği"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

@@ -867,6 +867,8 @@
     "selectBluetoothDevice": "Select Bluetooth Device",
     "bleWeakSignalWarning": "Bluetooth signal is weak ({{rssi}} dBm). Move closer for a stable connection.",
     "bleRssiDbm": "{{rssi}} dBm",
+    "pickerDeviceAria": "{{name}} {{address}}",
+    "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "hostSignal": "Signal",
     "hostSignalUnavailable": "—",
     "linkQuality": "Link quality",
@@ -1318,6 +1320,8 @@
       "disable": "Disable"
     },
     "connectionType": "Connection Type",
+    "bluetoothMac": "Bluetooth MAC",
+    "bluetoothId": "Bluetooth ID",
     "myNode": "My Node",
     "battery": "Battery",
     "firmware": "Firmware",

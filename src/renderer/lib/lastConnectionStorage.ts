@@ -7,6 +7,8 @@ export interface LastConnection {
   httpAddress?: string;
   bleDeviceId?: string;
   bleDeviceName?: string;
+  /** Formatted BLE MAC when known (macOS UUID deviceId + CoreBluetoothCache address). */
+  bleMac?: string;
   serialPortId?: string;
 }
 

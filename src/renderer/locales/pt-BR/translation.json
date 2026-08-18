@@ -1429,7 +1429,11 @@
     "sortByNameAsc": "Ordenar por nome de A a Z",
     "sortByNameDesc": "Ordenar por nome: z à a",
     "sortByRssiAsc": "Ordenar por RSSI, mais fraco primeiro",
-    "sortByRssiDesc": "Ordenar por RSSI, mais forte primeiro"
+    "sortByRssiDesc": "Ordenar por RSSI, mais forte primeiro",
+    "pickerDeviceAria": "{{name}} {{address}}",
+    "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+    "bluetoothMac": "MAC BLUETOOTH",
+    "bluetoothId": "ID Bluetooth"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",
