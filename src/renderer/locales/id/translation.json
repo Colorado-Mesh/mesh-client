@@ -1422,7 +1422,14 @@
     "letsMeshRegionEu": "UE",
     "letsMeshRequiresWebSocket": "Prasetel broker ini membutuhkan transportasi WebSocket (wss).",
     "letsMeshRequiresPort": "Prasetel broker ini membutuhkan port {{port}} (WebSocket TLS).",
-    "letsMeshKnownBrokersOnly": "Preset ini hanya mendukung broker MQTT MeshCore publik yang dikenal. Beralih ke Custom untuk broker lain."
+    "letsMeshKnownBrokersOnly": "Preset ini hanya mendukung broker MQTT MeshCore publik yang dikenal. Beralih ke Custom untuk broker lain.",
+    "sortName": "Nama",
+    "sortRssi": "RSSI",
+    "sortToolbar": "Urutkan daftar perangkat",
+    "sortByNameAsc": "Menurut Nama - A ke Z",
+    "sortByNameDesc": "Menurut Nama - Z ke A",
+    "sortByRssiAsc": "Urutkan berdasarkan RSSI, terlemah dulu",
+    "sortByRssiDesc": "Urutkan berdasarkan RSSI, terkuat dulu"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -4201,7 +4208,25 @@
     "openRoom": "Buka ruangan",
     "savedPasswordOrphanRoomLabel": "Ruangan {{nodeId}}",
     "roomCliNeedsAdminPassword": "CLI ruangan jarak jauh membutuhkan kata sandi admin ruangan (SendLogin ACL). Simpan di Repeaters → kata sandi untuk ruangan ini, lalu coba lagi. Login BBS tamu tidak cukup.",
-    "cliHistoryError": "[Kesalahan: {{detail}}]"
+    "cliHistoryError": "[Kesalahan: {{detail}}]",
+    "sortByStatusAsc": "Urutkan berdasarkan Status, offline dulu",
+    "sortByStatusDesc": "Urutkan berdasarkan Status, online dulu",
+    "sortByNameAsc": "Menurut Nama - A ke Z",
+    "sortByNameDesc": "Menurut Nama - Z ke A",
+    "sortByLastHeardAsc": "Urutkan berdasarkan Last Heard, tertua lebih dulu",
+    "sortByLastHeardDesc": "Urutkan berdasarkan Last Heard, terbaru dulu",
+    "sortBySnrAsc": "Urutkan berdasarkan SNR, terendah dulu",
+    "sortBySnrDesc": "Urutkan berdasarkan SNR, tertinggi pertama",
+    "sortByRssiAsc": "Urutkan berdasarkan RSSI, terlemah dulu",
+    "sortByRssiDesc": "Urutkan berdasarkan RSSI, terkuat dulu",
+    "sortByHopsAsc": "Urutkan berdasarkan Hop, paling dekat dulu",
+    "sortByHopsDesc": "Urutkan berdasarkan Hop, terjauh dulu",
+    "sortByUptimeAsc": "Urutkan berdasarkan Uptime, terpendek dulu",
+    "sortByUptimeDesc": "Urutkan berdasarkan Uptime, terpanjang dulu",
+    "sortByAirPctAsc": "Urutkan berdasarkan % Udara, terendah dulu",
+    "sortByAirPctDesc": "Urutkan berdasarkan % Udara, tertinggi dulu",
+    "sortByReliabilityAsc": "Urutkan berdasarkan Keandalan, terendah dulu",
+    "sortByReliabilityDesc": "Urutkan berdasarkan Keandalan, tertinggi pertama"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",

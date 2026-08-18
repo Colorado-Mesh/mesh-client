@@ -1424,7 +1424,14 @@
     "letsMeshRegionEu": "ЕС",
     "letsMeshRequiresWebSocket": "Для этой предустановки брокера требуется транспорт WebSocket (wss).",
     "letsMeshRequiresPort": "Для этой предустановки брокера требуется порт {{port}} (WebSocket TLS).",
-    "letsMeshKnownBrokersOnly": "Эта предустановка поддерживает только известные общедоступные брокеры MeshCore MQTT. Переключитесь на Custom для других брокеров."
+    "letsMeshKnownBrokersOnly": "Эта предустановка поддерживает только известные общедоступные брокеры MeshCore MQTT. Переключитесь на Custom для других брокеров.",
+    "sortName": "Имя",
+    "sortRssi": "RSSI",
+    "sortToolbar": "Список устройств",
+    "sortByNameAsc": "Сортировать по имени А - Я",
+    "sortByNameDesc": "Сортировать по имени Я - А",
+    "sortByRssiAsc": "Сортировать по RSSI, сначала самые слабые",
+    "sortByRssiDesc": "Сортировать по RSSI, сначала сильнейшие"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",
@@ -4203,7 +4210,25 @@
     "openRoom": "Открыть комнату",
     "savedPasswordOrphanRoomLabel": "Комната {{nodeId}}",
     "roomCliNeedsAdminPassword": "Удалённый CLI комнаты требует пароль администратора комнаты (SendLogin ACL). Сохраните его в Repeaters → пароль для этой комнаты и повторите попытку. Гостевого входа BBS недостаточно.",
-    "cliHistoryError": "[Ошибка: {{detail}}]"
+    "cliHistoryError": "[Ошибка: {{detail}}]",
+    "sortByStatusAsc": "Сортировать по статусу, сначала офлайн",
+    "sortByStatusDesc": "Сортировать по статусу, сначала онлайн",
+    "sortByNameAsc": "Сортировать по имени А - Я",
+    "sortByNameDesc": "Сортировать по имени Я - А",
+    "sortByLastHeardAsc": "Сортировать по последним услышанным, сначала по самым старым",
+    "sortByLastHeardDesc": "Сортировать по последним услышанным, сначала новые",
+    "sortBySnrAsc": "Сортировать по SNR, сначала по самому низкому",
+    "sortBySnrDesc": "Сортировать по SNR, сначала по наивысшему",
+    "sortByRssiAsc": "Сортировать по RSSI, сначала самые слабые",
+    "sortByRssiDesc": "Сортировать по RSSI, сначала сильнейшие",
+    "sortByHopsAsc": "Сортировать по хопам, сначала по ближайшим",
+    "sortByHopsDesc": "Сортировать по хопам, сначала самые дальние",
+    "sortByUptimeAsc": "Сортировать по времени безотказной работы, сначала самое короткое",
+    "sortByUptimeDesc": "Сортировать по времени безотказной работы, сначала по длительности",
+    "sortByAirPctAsc": "Сортировать по Air%, сначала самые низкие",
+    "sortByAirPctDesc": "Сортировать по Air%, сначала самые высокие",
+    "sortByReliabilityAsc": "Сортировать по надежности, сначала самая низкая",
+    "sortByReliabilityDesc": "Сортировать по надежности, сначала наивысшая"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Интервал объявления (секунды)",

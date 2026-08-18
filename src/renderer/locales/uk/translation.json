@@ -1424,7 +1424,14 @@
     "letsMeshRegionEu": "ЄС",
     "letsMeshRequiresWebSocket": "Для цього попереднього налаштування брокера потрібен транспорт WebSocket (wss).",
     "letsMeshRequiresPort": "Для цього попереднього налаштування брокера потрібен порт {{port}} (WebSocket TLS).",
-    "letsMeshKnownBrokersOnly": "Цей попередній набір підтримує лише відомих публічних брокерів MeshCore MQTT. Перейдіть до користувацького для інших брокерів."
+    "letsMeshKnownBrokersOnly": "Цей попередній набір підтримує лише відомих публічних брокерів MeshCore MQTT. Перейдіть до користувацького для інших брокерів.",
+    "sortName": "Назва",
+    "sortRssi": "RSSI (індикатор потужності прийнятого сигналу)",
+    "sortToolbar": "Перелік пристроїв",
+    "sortByNameAsc": "Сортувати за назвою, від А до Я",
+    "sortByNameDesc": "Сортувати за назвою, від Я до А",
+    "sortByRssiAsc": "Сортувати за RSSI, спочатку найслабші",
+    "sortByRssiDesc": "Сортувати за RSSI, спочатку найсильніші"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",
@@ -4203,7 +4210,25 @@
     "openRoom": "Відкрити кімнату",
     "savedPasswordOrphanRoomLabel": "Кімната {{nodeId}}",
     "roomCliNeedsAdminPassword": "Віддаленому CLI кімнати потрібен пароль адміністратора кімнати (SendLogin ACL). Збережіть його в Repeaters → пароль для цієї кімнати та спробуйте знову. Гостьового входу BBS недостатньо.",
-    "cliHistoryError": "[Помилка: {{detail}}]"
+    "cliHistoryError": "[Помилка: {{detail}}]",
+    "sortByStatusAsc": "Сортувати за статусом, спочатку офлайн",
+    "sortByStatusDesc": "Сортувати за статусом, спочатку онлайн",
+    "sortByNameAsc": "Сортувати за назвою, від А до Я",
+    "sortByNameDesc": "Сортувати за назвою, від Я до А",
+    "sortByLastHeardAsc": "Сортувати за останнім почутим, спочатку найстарішим",
+    "sortByLastHeardDesc": "Сортувати за останніми почутими, спочатку найновішими",
+    "sortBySnrAsc": "Сортувати за SNR, спочатку найнижчий",
+    "sortBySnrDesc": "Сортувати за SNR, спочатку найвищий",
+    "sortByRssiAsc": "Сортувати за RSSI, спочатку найслабші",
+    "sortByRssiDesc": "Сортувати за RSSI, спочатку найсильніші",
+    "sortByHopsAsc": "Сортувати за хопами, спочатку найближчими",
+    "sortByHopsDesc": "Сортувати за хопами, спочатку найдалі",
+    "sortByUptimeAsc": "Сортувати за часом безперебійної роботи, спочатку найкоротшим",
+    "sortByUptimeDesc": "Сортувати за часом безперебійної роботи, спочатку за тривалістю",
+    "sortByAirPctAsc": "Сортувати за Air%, спочатку найнижчий",
+    "sortByAirPctDesc": "Сортувати за Air%, спочатку найвищий",
+    "sortByReliabilityAsc": "Сортувати за надійністю, спочатку найнижча",
+    "sortByReliabilityDesc": "Сортувати за надійністю, спочатку найвища"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Інтервал оголошення (секунди)",

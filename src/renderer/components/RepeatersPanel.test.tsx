@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
+import type { MeshCoreRepeaterStatus } from '../lib/meshcore/meshcoreHookTypes';
 import { meshcoreStoredUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import type { MeshNode } from '../lib/types';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
@@ -778,6 +779,34 @@ describe('RepeatersPanel', () => {
     expect(dbOutcomeSpy).toHaveBeenCalledWith(repeater.node_id, pathHash, true, undefined);
   });
 
+  it('shows 0% airtime when uptime is positive and airtime is zero', () => {
+    const status: MeshCoreRepeaterStatus = {
+      battMilliVolts: 0,
+      noiseFloor: 0,
+      lastRssi: 0,
+      lastSnr: 0,
+      nPacketsRecv: 0,
+      nPacketsSent: 0,
+      totalAirTimeSecs: 0,
+      totalUpTimeSecs: 120,
+      nSentFlood: 0,
+      nSentDirect: 0,
+      nRecvFlood: 0,
+      nRecvDirect: 0,
+      errEvents: 0,
+      nDirectDups: 0,
+      nFloodDups: 0,
+      currTxQueueLen: 0,
+    };
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        meshcoreNodeStatus={new Map([[repeater.node_id, status]])}
+      />,
+    );
+    expect(screen.getByText('0.0%')).toBeInTheDocument();
+  });
+
   it('loads getMeshcoreContacts only once on mount when nodes grow', async () => {
     const contactsSpy = vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts');
     const props = makeBaseProps();
@@ -1118,5 +1147,139 @@ describe('RepeatersPanel', () => {
     );
     expect(await screen.findByRole('textbox', { name: 'CLI command input' })).toBeInTheDocument();
     expect(onPendingFocusConsumed).toHaveBeenCalled();
+  });
+
+  it('pins favorited rows first when sorting by name', async () => {
+    const user = userEvent.setup();
+    const now = Math.floor(Date.now() / 1000);
+    const alpha = mockRepeaterNodeWithFavorited(0x100, false);
+    alpha.long_name = 'Alpha';
+    alpha.last_heard = now;
+    const zulu = mockRepeaterNodeWithFavorited(0x200, false);
+    zulu.long_name = 'Zulu';
+    zulu.last_heard = now - 10;
+    const favMid = mockRepeaterNodeWithFavorited(0x300, true);
+    favMid.long_name = 'Mid Fav';
+    favMid.last_heard = now - 5;
+
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={
+          new Map([
+            [alpha.node_id, alpha],
+            [zulu.node_id, zulu],
+            [favMid.node_id, favMid],
+          ])
+        }
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Sort by Name, A to Z' }));
+    const names = screen
+      .getAllByRole('button', { name: /Alpha|Zulu|Mid Fav/ })
+      .filter((b) => b.className.includes('underline'))
+      .map((b) => b.textContent);
+    expect(names).toEqual(['Mid Fav', 'Alpha', 'Zulu']);
+
+    await user.click(screen.getByRole('button', { name: 'Sort by Name, A to Z' }));
+    const reversed = screen
+      .getAllByRole('button', { name: /Alpha|Zulu|Mid Fav/ })
+      .filter((b) => b.className.includes('underline'))
+      .map((b) => b.textContent);
+    expect(reversed).toEqual(['Mid Fav', 'Zulu', 'Alpha']);
+  });
+
+  it('sorts by RSSI and Last Heard from column headings', async () => {
+    const user = userEvent.setup();
+    const now = Math.floor(Date.now() / 1000);
+    const weak = mockRepeaterNodeWithFavorited(0x10, false);
+    weak.long_name = 'Weak';
+    weak.last_heard = now;
+    weak.rssi = -90;
+    const strong = mockRepeaterNodeWithFavorited(0x20, false);
+    strong.long_name = 'Strong';
+    strong.last_heard = now - 500;
+    strong.rssi = -40;
+
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={
+          new Map([
+            [weak.node_id, weak],
+            [strong.node_id, strong],
+          ])
+        }
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Sort by RSSI, strongest first' }));
+    let names = screen
+      .getAllByRole('button', { name: /Weak|Strong/ })
+      .filter((b) => b.className.includes('underline'))
+      .map((b) => b.textContent);
+    expect(names).toEqual(['Strong', 'Weak']);
+
+    await user.click(screen.getByRole('button', { name: 'Sort by Last Heard, newest first' }));
+    names = screen
+      .getAllByRole('button', { name: /Weak|Strong/ })
+      .filter((b) => b.className.includes('underline'))
+      .map((b) => b.textContent);
+    expect(names).toEqual(['Weak', 'Strong']);
+  });
+
+  it('sets aria-sort on the active column and does not sort Actions', async () => {
+    const user = userEvent.setup();
+    render(<RepeatersPanel {...makeBaseProps()} />);
+
+    const nameBtn = screen.getByRole('button', { name: 'Sort by Name, A to Z' });
+    const lastHeardBtn = screen.getByRole('button', { name: 'Sort by Last Heard, newest first' });
+    expect(nameBtn.closest('th')).toHaveAttribute('aria-sort', 'none');
+    expect(lastHeardBtn.closest('th')).toHaveAttribute('aria-sort', 'descending');
+
+    await user.click(nameBtn);
+    expect(
+      screen.getByRole('button', { name: 'Sort by Name, A to Z' }).closest('th'),
+    ).toHaveAttribute('aria-sort', 'ascending');
+    expect(
+      screen.getByRole('button', { name: 'Sort by Last Heard, newest first' }).closest('th'),
+    ).toHaveAttribute('aria-sort', 'none');
+    expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
+    expect(screen.getByText('Actions')).toBeInTheDocument();
+    const table = screen.getByRole('table');
+    hydrateAxeThemeColors(table);
+    expect(await axe(table)).toHaveNoViolations();
+  });
+
+  it('applies type filter before sort', async () => {
+    const user = userEvent.setup();
+    const repeater = mockRepeaterNodeWithFavorited(0x10, false);
+    repeater.long_name = 'Zulu Repeater';
+    const room = {
+      ...mockRepeaterNodeWithFavorited(0x20, false),
+      hw_model: 'Room',
+      long_name: 'Alpha Room',
+    };
+
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={
+          new Map([
+            [repeater.node_id, repeater],
+            [room.node_id, room],
+          ])
+        }
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Rooms' }));
+    await user.click(screen.getByRole('button', { name: 'Sort by Name, A to Z' }));
+    const names = screen
+      .getAllByRole('button')
+      .filter((b) => b.className.includes('underline'))
+      .map((b) => b.textContent);
+    expect(names).toEqual(['Alpha Room']);
   });
 });

@@ -1422,7 +1422,14 @@
     "letsMeshRegionEu": "EU",
     "letsMeshRequiresWebSocket": "Deze broker preset vereist WebSocket transport (wss).",
     "letsMeshRequiresPort": "Deze makelaarspreset vereist poort {{port}} (WebSocket TLS).",
-    "letsMeshKnownBrokersOnly": "Deze preset ondersteunt alleen bekende openbare MeshCore MQTT-makelaars. Schakel over naar Aangepast voor andere makelaars."
+    "letsMeshKnownBrokersOnly": "Deze preset ondersteunt alleen bekende openbare MeshCore MQTT-makelaars. Schakel over naar Aangepast voor andere makelaars.",
+    "sortName": "Naam",
+    "sortRssi": "RSSI",
+    "sortToolbar": "Lijst met apparaten",
+    "sortByNameAsc": "Sorteer op naam: A tot Z",
+    "sortByNameDesc": "Sorteer op Naam, Z tot A",
+    "sortByRssiAsc": "Sorteren op RSSI, zwakste eerst",
+    "sortByRssiDesc": "Sorteren op RSSI, sterkste eerst"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -4201,7 +4208,25 @@
     "openRoom": "Ruimte openen",
     "savedPasswordOrphanRoomLabel": "Ruimte {{nodeId}}",
     "roomCliNeedsAdminPassword": "Externe room-CLI heeft het room-adminwachtwoord nodig (SendLogin ACL). Sla het op onder Repeaters → wachtwoord voor deze ruimte en probeer opnieuw. Gast-BBS-login is niet genoeg.",
-    "cliHistoryError": "[Fout: {{detail}}]"
+    "cliHistoryError": "[Fout: {{detail}}]",
+    "sortByStatusAsc": "Sorteren op status, eerst offline",
+    "sortByStatusDesc": "Sorteren op status, eerst online",
+    "sortByNameAsc": "Sorteer op naam: A tot Z",
+    "sortByNameDesc": "Sorteer op Naam, Z tot A",
+    "sortByLastHeardAsc": "Sorteren op Laatst gehoord, oudste eerst",
+    "sortByLastHeardDesc": "Sorteren op Laatst gehoord, nieuwste eerst",
+    "sortBySnrAsc": "Sorteren op SNR, laagste eerst",
+    "sortBySnrDesc": "Sorteren op SNR, hoogste eerst",
+    "sortByRssiAsc": "Sorteren op RSSI, zwakste eerst",
+    "sortByRssiDesc": "Sorteren op RSSI, sterkste eerst",
+    "sortByHopsAsc": "Sorteer op Hop, dichtstbijzijnde eerst",
+    "sortByHopsDesc": "Sorteer op Hop, verste eerst",
+    "sortByUptimeAsc": "Sorteren op uptime, kortste eerst",
+    "sortByUptimeDesc": "Sorteren op uptime, langste eerst",
+    "sortByAirPctAsc": "Sorteer op Lucht%, laagste bovenaan",
+    "sortByAirPctDesc": "Sorteer op Lucht%, hoogste bovenaan",
+    "sortByReliabilityAsc": "Sorteren op Betrouwbaarheid, laagste eerst",
+    "sortByReliabilityDesc": "Sorteren op Betrouwbaarheid, hoogste eerst"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",

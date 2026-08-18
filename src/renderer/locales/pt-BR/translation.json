@@ -1422,7 +1422,14 @@
     "letsMeshRegionEu": "UE",
     "letsMeshRequiresWebSocket": "Esta predefinição de corretor requer transporte WebSocket (wss).",
     "letsMeshRequiresPort": "Esta predefinição de corretor requer a porta {{port}} (WebSocket TLS).",
-    "letsMeshKnownBrokersOnly": "Esta predefinição suporta apenas corretoras públicas conhecidas do MeshCore MQTT. Mude para Personalizado para outras corretoras."
+    "letsMeshKnownBrokersOnly": "Esta predefinição suporta apenas corretoras públicas conhecidas do MeshCore MQTT. Mude para Personalizado para outras corretoras.",
+    "sortName": "Nome",
+    "sortRssi": "RSSI",
+    "sortToolbar": "Lista de Dispositivos",
+    "sortByNameAsc": "Ordenar por nome de A a Z",
+    "sortByNameDesc": "Ordenar por nome: z à a",
+    "sortByRssiAsc": "Ordenar por RSSI, mais fraco primeiro",
+    "sortByRssiDesc": "Ordenar por RSSI, mais forte primeiro"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",
@@ -4201,7 +4208,25 @@
     "openRoom": "Abrir sala",
     "savedPasswordOrphanRoomLabel": "Sala {{nodeId}}",
     "roomCliNeedsAdminPassword": "A CLI remota da sala precisa da senha de administrador da sala (SendLogin ACL). Salve em Repeaters → senha desta sala e tente novamente. O login BBS de convidado não é suficiente.",
-    "cliHistoryError": "[Erro: {{detail}}]"
+    "cliHistoryError": "[Erro: {{detail}}]",
+    "sortByStatusAsc": "Ordenar por Status, offline primeiro",
+    "sortByStatusDesc": "Ordenar por Status, online primeiro",
+    "sortByNameAsc": "Ordenar por nome de A a Z",
+    "sortByNameDesc": "Ordenar por nome: z à a",
+    "sortByLastHeardAsc": "Ordenar por Último Ouvido, mais antigo primeiro",
+    "sortByLastHeardDesc": "Ordenar por Último Ouvido, mais recentes primeiro",
+    "sortBySnrAsc": "Ordenar por SNR, menor primeiro",
+    "sortBySnrDesc": "Ordenar por SNR, maior primeiro",
+    "sortByRssiAsc": "Ordenar por RSSI, mais fraco primeiro",
+    "sortByRssiDesc": "Ordenar por RSSI, mais forte primeiro",
+    "sortByHopsAsc": "Ordenar por saltos, o mais próximo primeiro",
+    "sortByHopsDesc": "Ordenar por saltos, o mais distante primeiro",
+    "sortByUptimeAsc": "Ordenar por tempo de atividade, o mais curto primeiro",
+    "sortByUptimeDesc": "Ordenar por tempo de atividade, mais longo primeiro",
+    "sortByAirPctAsc": "Ordenar por % de ar, menor primeiro",
+    "sortByAirPctDesc": "Ordenar por % de ar, maior primeiro",
+    "sortByReliabilityAsc": "Ordenar por Confiabilidade, menor primeiro",
+    "sortByReliabilityDesc": "Ordenar por Confiabilidade, maior primeiro"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anúncio (segundos)",

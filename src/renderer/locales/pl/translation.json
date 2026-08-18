@@ -1426,7 +1426,14 @@
     "letsMeshRegionEu": "UE",
     "letsMeshRequiresWebSocket": "To ustawienie wstępne brokera wymaga transportu WebSocket (wss).",
     "letsMeshRequiresPort": "To ustawienie wstępne brokera wymaga portu {{port}} (WebSocket TLS).",
-    "letsMeshKnownBrokersOnly": "To ustawienie wstępne obsługuje tylko znanych publicznych brokerów MeshCore MQTT. Przełącz na Niestandardowe dla innych brokerów."
+    "letsMeshKnownBrokersOnly": "To ustawienie wstępne obsługuje tylko znanych publicznych brokerów MeshCore MQTT. Przełącz na Niestandardowe dla innych brokerów.",
+    "sortName": "Nazwisko",
+    "sortRssi": "RSSI",
+    "sortToolbar": "wykaz urządzeń",
+    "sortByNameAsc": "Sortuj wg nazwy: od A do Z",
+    "sortByNameDesc": "Sortuj wg nazwy: od Z do A",
+    "sortByRssiAsc": "Sortuj według RSSI, najpierw najsłabsze",
+    "sortByRssiDesc": "Sortuj według RSSI, najpierw najsilniejsze"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",
@@ -4205,7 +4212,25 @@
     "openRoom": "Otwórz pokój",
     "savedPasswordOrphanRoomLabel": "Pokój {{nodeId}}",
     "roomCliNeedsAdminPassword": "Zdalne CLI pokoju wymaga hasła administratora pokoju (SendLogin ACL). Zapisz je w Repeaters → hasło dla tego pokoju i spróbuj ponownie. Logowanie gościa BBS nie wystarczy.",
-    "cliHistoryError": "[Błąd: {{detail}}]"
+    "cliHistoryError": "[Błąd: {{detail}}]",
+    "sortByStatusAsc": "Sortuj według statusu, najpierw offline",
+    "sortByStatusDesc": "Sortuj według statusu, najpierw online",
+    "sortByNameAsc": "Sortuj wg nazwy: od A do Z",
+    "sortByNameDesc": "Sortuj wg nazwy: od Z do A",
+    "sortByLastHeardAsc": "Sortuj według ostatnio słyszanych, najpierw najstarsze",
+    "sortByLastHeardDesc": "Sortuj według ostatnio słyszanych, najpierw najnowsze",
+    "sortBySnrAsc": "Sortuj według SNR, najpierw najniższe",
+    "sortBySnrDesc": "Sortuj według SNR, najpierw najwyższe",
+    "sortByRssiAsc": "Sortuj według RSSI, najpierw najsłabsze",
+    "sortByRssiDesc": "Sortuj według RSSI, najpierw najsilniejsze",
+    "sortByHopsAsc": "Sortuj według przeskoków, najpierw najbliższe",
+    "sortByHopsDesc": "Sortuj według przeskoków, najpierw najdalej",
+    "sortByUptimeAsc": "Sortuj według czasu pracy, najpierw najkrótszy",
+    "sortByUptimeDesc": "Sortuj według czasu sprawności, najpierw najdłuższy",
+    "sortByAirPctAsc": "Sortuj według powietrza%, najpierw najniższe",
+    "sortByAirPctDesc": "Sortuj według powietrza%, najpierw najwyższe",
+    "sortByReliabilityAsc": "Sortuj według niezawodności, najpierw najniższa",
+    "sortByReliabilityDesc": "Sortuj według niezawodności, najpierw najwyższa"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",

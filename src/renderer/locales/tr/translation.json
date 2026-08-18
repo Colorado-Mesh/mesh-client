@@ -1422,7 +1422,14 @@
     "letsMeshRegionEu": "AB",
     "letsMeshRequiresWebSocket": "Bu broker ön ayarı WebSocket taşımacılığı (wss) gerektirir.",
     "letsMeshRequiresPort": "Bu aracı kurum ön ayarı {{port}} (WebSocket TLS) bağlantı noktasını gerektirir.",
-    "letsMeshKnownBrokersOnly": "Bu ön ayar yalnızca bilinen genel MeshCore MQTT brokerlerini destekler. Diğer brokerler için Özel'e geçin."
+    "letsMeshKnownBrokersOnly": "Bu ön ayar yalnızca bilinen genel MeshCore MQTT brokerlerini destekler. Diğer brokerler için Özel'e geçin.",
+    "sortName": "Adı",
+    "sortRssi": "RSSI",
+    "sortToolbar": "Cihaz Listesi",
+    "sortByNameAsc": "Alfabetik sırala (A'dan Z'ye)",
+    "sortByNameDesc": "Alfabetik sırala (Z'den A'ya)",
+    "sortByRssiAsc": "RSSI'ye göre sırala, önce en zayıf",
+    "sortByRssiDesc": "RSSI'ye göre sırala, önce en güçlü"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -4201,7 +4208,25 @@
     "openRoom": "Odayı aç",
     "savedPasswordOrphanRoomLabel": "Oda {{nodeId}}",
     "roomCliNeedsAdminPassword": "Uzak oda CLI, oda yönetici şifresine ihtiyaç duyar (SendLogin ACL). Bunu Repeaters → bu oda için şifre altına kaydedin, sonra tekrar deneyin. Misafir BBS girişi yeterli değil.",
-    "cliHistoryError": "[Hata: {{detail}}]"
+    "cliHistoryError": "[Hata: {{detail}}]",
+    "sortByStatusAsc": "Duruma göre sırala, önce çevrimdışı",
+    "sortByStatusDesc": "Duruma göre sırala, önce çevrimiçi",
+    "sortByNameAsc": "Alfabetik sırala (A'dan Z'ye)",
+    "sortByNameDesc": "Alfabetik sırala (Z'den A'ya)",
+    "sortByLastHeardAsc": "Son Duyulana göre sırala, önce en eski",
+    "sortByLastHeardDesc": "Son Duyulana göre sırala, önce en yenisi",
+    "sortBySnrAsc": "SNR'ye göre sırala, önce en düşük",
+    "sortBySnrDesc": "SNR'ye göre sırala, önce en yüksek",
+    "sortByRssiAsc": "RSSI'ye göre sırala, önce en zayıf",
+    "sortByRssiDesc": "RSSI'ye göre sırala, önce en güçlü",
+    "sortByHopsAsc": "Atlamaya göre sırala, önce en yakın",
+    "sortByHopsDesc": "Atlamaya göre sırala, önce en uzak",
+    "sortByUptimeAsc": "Çalışma Süresine göre sırala, önce en kısa",
+    "sortByUptimeDesc": "Çalışma Süresine göre sırala, önce en uzun",
+    "sortByAirPctAsc": "Havaya göre sırala %, önce en düşük",
+    "sortByAirPctDesc": "Havaya göre sırala %, önce en yüksek",
+    "sortByReliabilityAsc": "Güvenilirliğe göre sırala, önce en düşük",
+    "sortByReliabilityDesc": "Güvenilirliğe göre sırala, önce en yüksek"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",

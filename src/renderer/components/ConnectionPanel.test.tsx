@@ -2082,3 +2082,128 @@ describe('ConnectionPanel Reticulum', () => {
     expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalled();
   });
 });
+
+describe('ConnectionPanel device picker sort', () => {
+  it('sorts BLE devices by RSSI then Name', async () => {
+    const user = userEvent.setup();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+
+    const discovered = {
+      cb: null as
+        | ((
+            devices: { deviceId: string; deviceName: string; rssi?: number | null }[],
+            generation?: number,
+          ) => void)
+        | null,
+    };
+    vi.mocked(window.electronAPI.onBluetoothDevicesDiscovered).mockImplementation((cb) => {
+      discovered.cb = cb;
+      return () => {};
+    });
+
+    const onConnect = vi.fn(
+      () =>
+        new Promise<void>(() => {
+          /* leave connecting so picker stays open */
+        }),
+    );
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    await waitFor(() => {
+      expect(discovered.cb).toBeTruthy();
+    });
+    discovered.cb?.(
+      [
+        { deviceId: 'id-z', deviceName: 'Zulu', rssi: -90 },
+        { deviceId: 'id-a', deviceName: 'Alpha', rssi: -40 },
+        { deviceId: 'id-m', deviceName: 'Mid', rssi: -70 },
+        { deviceId: 'id-n', deviceName: 'NoRssi' },
+      ],
+      1,
+    );
+
+    const names = () =>
+      screen
+        .getAllByRole('button')
+        .map((el) => el.getAttribute('aria-label') ?? '')
+        .filter((label) => /Alpha|Mid|Zulu|NoRssi/.test(label) && label.includes('id-'))
+        .map((label) => label.split(' ')[0]);
+
+    await waitFor(() => {
+      expect(names()).toEqual(['Alpha', 'Mid', 'Zulu', 'NoRssi']);
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Sort by Name, A to Z' }));
+    expect(names()).toEqual(['Alpha', 'Mid', 'NoRssi', 'Zulu']);
+
+    await user.click(screen.getByRole('button', { name: 'Sort by Name, A to Z' }));
+    expect(names()).toEqual(['Zulu', 'NoRssi', 'Mid', 'Alpha']);
+
+    userAgentSpy.mockRestore();
+  });
+
+  it('sorts serial ports A–Z by default and reverses on Name click', async () => {
+    const user = userEvent.setup();
+    let capturedCb: ((ports: SerialPort[]) => void) | undefined;
+    vi.mocked(window.electronAPI.onSerialPortsDiscovered).mockImplementation((cb) => {
+      capturedCb = cb;
+      return () => {};
+    });
+    const onConnect = vi.fn(() => new Promise<void>(() => {}));
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('radio', { name: /USB Serial/i }));
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    act(() => {
+      flushSync(() => {
+        capturedCb!([
+          { portId: 'z', displayName: 'Zulu USB', portName: '/dev/ttyUSB1' },
+          { portId: 'a', displayName: 'Alpha USB', portName: '/dev/ttyUSB0' },
+        ]);
+      });
+    });
+
+    const names = () =>
+      screen
+        .getAllByRole('button')
+        .map((el) => el.getAttribute('aria-label') ?? '')
+        .filter((label) => label.includes('USB'))
+        .map((label) => (label.includes('Alpha') ? 'Alpha USB' : 'Zulu USB'));
+
+    expect(screen.getByText('Select Serial Port')).toBeInTheDocument();
+    expect(names()).toEqual(['Alpha USB', 'Zulu USB']);
+
+    await user.click(screen.getByRole('button', { name: 'Sort by Name, A to Z' }));
+    expect(names()).toEqual(['Zulu USB', 'Alpha USB']);
+  });
+});

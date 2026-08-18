@@ -1422,7 +1422,14 @@
     "letsMeshRegionEu": "UE",
     "letsMeshRequiresWebSocket": "Ce préréglage de courtier nécessite le transport WebSocket (wss).",
     "letsMeshRequiresPort": "Ce préréglage de courtier nécessite le port {{port}} (WebSocket TLS).",
-    "letsMeshKnownBrokersOnly": "Ce préréglage ne prend en charge que les courtiers MeshCore MQTT publics connus. Passez à Personnalisé pour les autres courtiers."
+    "letsMeshKnownBrokersOnly": "Ce préréglage ne prend en charge que les courtiers MeshCore MQTT publics connus. Passez à Personnalisé pour les autres courtiers.",
+    "sortName": "Nom",
+    "sortRssi": "RSSI",
+    "sortToolbar": "Liste des dispositifs",
+    "sortByNameAsc": "Tri par nom : A à Z",
+    "sortByNameDesc": "Tri par nom : Z à A",
+    "sortByRssiAsc": "Trier par RSSI, le plus faible en premier",
+    "sortByRssiDesc": "Trier par RSSI, le plus fort en premier"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",
@@ -4201,7 +4208,25 @@
     "openRoom": "Ouvrir la salle",
     "savedPasswordOrphanRoomLabel": "Salle {{nodeId}}",
     "roomCliNeedsAdminPassword": "La CLI distante de la salle nécessite le mot de passe admin de la salle (SendLogin ACL). Enregistrez-le sous Repeaters → mot de passe pour cette salle, puis réessayez. La connexion BBS invité ne suffit pas.",
-    "cliHistoryError": "[Erreur : {{detail}}]"
+    "cliHistoryError": "[Erreur : {{detail}}]",
+    "sortByStatusAsc": "Trier par statut, hors ligne en premier",
+    "sortByStatusDesc": "Trier par statut, en ligne en premier",
+    "sortByNameAsc": "Tri par nom : A à Z",
+    "sortByNameDesc": "Tri par nom : Z à A",
+    "sortByLastHeardAsc": "Trier par Last Heard, le plus ancien en premier",
+    "sortByLastHeardDesc": "Trier par Last Heard, le plus récent en premier",
+    "sortBySnrAsc": "Trier par SNR, le plus bas en premier",
+    "sortBySnrDesc": "Trier par SNR, le plus élevé en premier",
+    "sortByRssiAsc": "Trier par RSSI, le plus faible en premier",
+    "sortByRssiDesc": "Trier par RSSI, le plus fort en premier",
+    "sortByHopsAsc": "Trier par sauts, le plus proche en premier",
+    "sortByHopsDesc": "Trier par sauts, le plus éloigné en premier",
+    "sortByUptimeAsc": "Trier par Uptime, le plus court en premier",
+    "sortByUptimeDesc": "Trier par Uptime, le plus long en premier",
+    "sortByAirPctAsc": "Trier par Air%, le plus bas en premier",
+    "sortByAirPctDesc": "Trier par Air%, le plus élevé en premier",
+    "sortByReliabilityAsc": "Trier par Fiabilité, le plus bas en premier",
+    "sortByReliabilityDesc": "Trier par Fiabilité, le plus élevé en premier"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalle d'annonce (secondes)",
