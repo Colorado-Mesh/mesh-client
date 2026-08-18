@@ -1431,7 +1431,11 @@
     "sortByNameAsc": "Сортировать по имени А - Я",
     "sortByNameDesc": "Сортировать по имени Я - А",
     "sortByRssiAsc": "Сортировать по RSSI, сначала самые слабые",
-    "sortByRssiDesc": "Сортировать по RSSI, сначала сильнейшие"
+    "sortByRssiDesc": "Сортировать по RSSI, сначала сильнейшие",
+    "pickerDeviceAria": "{{name}} {{address}}",
+    "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} дБм",
+    "bluetoothMac": "Bluetooth MAC",
+    "bluetoothId": "Идентификатор Bluetooth"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",

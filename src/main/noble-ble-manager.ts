@@ -183,9 +183,30 @@ export interface NobleBleDevice {
   deviceName: string;
   /** Advertised / last-seen BLE RSSI in dBm; null when unknown. */
   rssi: number | null;
+  /**
+   * Hardware BLE MAC when the OS exposes one (Noble `peripheral.address`).
+   * On macOS this is typically empty until after a prior GATT connect (CoreBluetoothCache).
+   */
+  address?: string | null;
 }
 
 import type { MeshProtocol } from '../shared/meshProtocol';
+
+function noblePeripheralAddress(address: string | undefined): string | undefined {
+  const trimmed = address?.trim();
+  if (!trimmed || trimmed.toLowerCase() === 'unknown') return undefined;
+  return trimmed;
+}
+
+function toNobleDiscoveredDevice(
+  deviceId: string,
+  deviceName: string,
+  rssi: number | null,
+  address?: string,
+): NobleBleDevice {
+  const mac = noblePeripheralAddress(address);
+  return mac ? { deviceId, deviceName, rssi, address: mac } : { deviceId, deviceName, rssi };
+}
 
 export type NobleSessionId = MeshProtocol;
 
@@ -329,7 +350,7 @@ export class NobleBleManager extends EventEmitter {
           : null;
       this.knownPeripherals.set(id, peripheral);
       // Re-emit on rediscover so Connection pickers can refresh RSSI (not first-seen only).
-      this.emit('deviceDiscovered', { deviceId: id, deviceName: name, rssi });
+      this.emit('deviceDiscovered', toNobleDiscoveredDevice(id, name, rssi, peripheral.address));
     });
   }
 
@@ -777,7 +798,7 @@ export class NobleBleManager extends EventEmitter {
         typeof peripheral.rssi === 'number' && Number.isFinite(peripheral.rssi)
           ? peripheral.rssi
           : null;
-      this.emit('deviceDiscovered', { deviceId: id, deviceName: name, rssi });
+      this.emit('deviceDiscovered', toNobleDiscoveredDevice(id, name, rssi, peripheral.address));
     }
     this.scanRequesters.add(sessionId);
     if (!this.adapterReady) {
@@ -1194,11 +1215,15 @@ export class NobleBleManager extends EventEmitter {
         `[BLE:${sessionId}] peripheral info — address=${peripheral.address ?? 'unknown'} addressType=${peripheral.addressType ?? 'unknown'} rssi=${connectRssi ?? 'unknown'} state=${peripheral.state} platform=${process.platform}`,
       );
       // Refresh picker / connecting banner with connect-time RSSI (scan may have been empty).
-      this.emit('deviceDiscovered', {
-        deviceId: peripheralId,
-        deviceName: peripheral.advertisement?.localName || peripheral.address || peripheralId,
-        rssi: connectRssi,
-      });
+      this.emit(
+        'deviceDiscovered',
+        toNobleDiscoveredDevice(
+          peripheralId,
+          peripheral.advertisement?.localName || peripheral.address || peripheralId,
+          connectRssi,
+          peripheral.address,
+        ),
+      );
       bleCoexistenceCoordinator.assertCanConnect(
         peripheralOwner,
         peripheral.address ?? peripheralId,

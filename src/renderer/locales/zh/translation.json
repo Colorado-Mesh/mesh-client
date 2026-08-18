@@ -1429,7 +1429,11 @@
     "sortByNameAsc": "按名称排序 - A 到 Z",
     "sortByNameDesc": "按名称排序 - Z 到 A",
     "sortByRssiAsc": "按RSSI排序，最弱者优先",
-    "sortByRssiDesc": "按RSSI排序，最强优先"
+    "sortByRssiDesc": "按RSSI排序，最强优先",
+    "pickerDeviceAria": "{{name}} {{address}}",
+    "pickerDeviceAriaWithRssi": "{{name}} {{address}} ， {{rssi}} dBm",
+    "bluetoothMac": "蓝牙MAC",
+    "bluetoothId": "蓝牙编号："
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

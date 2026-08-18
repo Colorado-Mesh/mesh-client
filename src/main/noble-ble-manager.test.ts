@@ -93,11 +93,11 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
     );
   });
 
-  it('emits deviceDiscovered with rssi on scan and at connect start', () => {
-    expect(SOURCE).toMatch(
-      /emit\('deviceDiscovered',\s*\{\s*deviceId:\s*id,\s*deviceName:\s*name,\s*rssi\s*\}\)/,
-    );
+  it('emits deviceDiscovered with rssi and address on scan and at connect start', () => {
+    expect(SOURCE).toContain('toNobleDiscoveredDevice');
+    expect(SOURCE).toMatch(/toNobleDiscoveredDevice\(id, name, rssi, peripheral\.address\)/);
     expect(SOURCE).toContain('Refresh picker / connecting banner with connect-time RSSI');
+    expect(SOURCE).toMatch(/toNobleDiscoveredDevice\(\s*peripheralId,/);
   });
 
   it('branches on sessionId to pick the correct service UUID for discovery', () => {

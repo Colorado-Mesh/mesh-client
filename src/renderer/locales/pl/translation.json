@@ -1433,7 +1433,11 @@
     "sortByNameAsc": "Sortuj wg nazwy: od A do Z",
     "sortByNameDesc": "Sortuj wg nazwy: od Z do A",
     "sortByRssiAsc": "Sortuj według RSSI, najpierw najsłabsze",
-    "sortByRssiDesc": "Sortuj według RSSI, najpierw najsilniejsze"
+    "sortByRssiDesc": "Sortuj według RSSI, najpierw najsilniejsze",
+    "pickerDeviceAria": "{{name}} {{address}}",
+    "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+    "bluetoothMac": "KOMPUTER MAC z Bluetooth",
+    "bluetoothId": "Identyfikator Bluetooth"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",
