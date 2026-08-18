@@ -19,4 +19,11 @@ describe('vite build config', () => {
     expect(VITE_CONFIG).not.toMatch(/__dirname/);
     expect(VITE_CONFIG).toMatch(/import\.meta\.dirname/);
   });
+
+  it('uses the Tailwind Vite plugin instead of a global PostCSS pipeline', () => {
+    expect(VITE_CONFIG).toMatch(/from '@tailwindcss\/vite'/);
+    expect(VITE_CONFIG).toMatch(/tailwindcss\(\)/);
+    expect(VITE_CONFIG).not.toMatch(/css:\s*\{/);
+    expect(VITE_CONFIG).not.toMatch(/postcss/);
+  });
 });

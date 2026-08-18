@@ -1,4 +1,7 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
+@source './index.html';
+@source './**/*.{ts,tsx}';
+@source not './**/*.test.{ts,tsx}';
 
 @theme {
   --color-app-bg: #020617;
