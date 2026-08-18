@@ -617,6 +617,47 @@ export function meshcoreMergeContactHopsAwayFromPrevious(
   return inferred;
 }
 
+export interface MeshcoreMergeContactAdvNameOpts {
+  prevLastHeard?: number;
+  radioLastAdvert?: number;
+}
+
+/**
+ * When rebuilding from `getContacts`, companion firmware often keeps the name from when the
+ * contact was first stored. Prefer a live advert name already in the UI unless the radio dump
+ * is strictly newer (connect/refresh after firmware actually renamed the contact).
+ */
+export function meshcoreMergeContactAdvNameFromPrevious(
+  radioAdvName: string | undefined,
+  prevLongName: string | undefined,
+  nodeId: number,
+  opts?: MeshcoreMergeContactAdvNameOpts,
+): string {
+  const radioTrim = (radioAdvName ?? '').trim();
+  const prevTrim = (prevLongName ?? '').trim();
+  const radioReal = radioTrim.length > 0 && !meshcoreIsPlaceholderNodeLongName(radioTrim, nodeId);
+  const prevReal = prevTrim.length > 0 && !meshcoreIsPlaceholderNodeLongName(prevTrim, nodeId);
+  const hexFallback = `Node-${nodeId.toString(16).toUpperCase()}`;
+
+  if (!radioReal && prevReal) return prevTrim;
+  if (!prevReal) return radioTrim || prevTrim || hexFallback;
+  if (radioTrim === prevTrim) return radioTrim;
+
+  const radioAdvert =
+    opts?.radioLastAdvert != null &&
+    Number.isFinite(opts.radioLastAdvert) &&
+    opts.radioLastAdvert > 0
+      ? opts.radioLastAdvert
+      : 0;
+  const prevHeard =
+    opts?.prevLastHeard != null && Number.isFinite(opts.prevLastHeard) ? opts.prevLastHeard : 0;
+  // Tie or missing radio time: companion often updates lastAdvert without renaming.
+  if (radioAdvert === 0 || prevHeard >= radioAdvert) {
+    return prevTrim;
+  }
+  return radioTrim;
+}
+
 /** Result of mapping a heard RF advert (push 0x80) into UI + DB when the node is not yet a contact. */
 export interface MeshcoreMinimalAdvertNodeResult {
   node: MeshNode;

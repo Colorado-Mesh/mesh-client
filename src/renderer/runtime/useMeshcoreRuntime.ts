@@ -390,6 +390,7 @@ import {
   meshcoreIsSyntheticPlaceholderPubKeyHex,
   meshcoreManufacturerModelFromDeviceQuery,
   meshcoreMergeChannelDisplayNameOntoNode,
+  meshcoreMergeContactAdvNameFromPrevious,
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreMinimalNodeFromAdvertEvent,
@@ -1582,7 +1583,23 @@ export function useMeshcoreRuntime() {
           effectivePrevHops,
           slicedPath.length,
         );
-        const node: MeshNode = { ...base, last_heard, hops_away: hopsAway };
+        const nick = nicknameMapRef.current.get(base.node_id);
+        // Nickname overlay runs after this loop; do not treat the nick as advert name for SQLite.
+        const mergedAdvName = meshcoreMergeContactAdvNameFromPrevious(
+          base.long_name,
+          nick ? undefined : prevNode?.long_name,
+          base.node_id,
+          {
+            prevLastHeard: prevNode?.last_heard,
+            radioLastAdvert: contact.lastAdvert,
+          },
+        );
+        const node: MeshNode = {
+          ...base,
+          last_heard,
+          hops_away: hopsAway,
+          long_name: mergedAdvName,
+        };
         if (prevNode?.channel_utilization != null) {
           node.channel_utilization = prevNode.channel_utilization;
         }
@@ -1619,7 +1636,13 @@ export function useMeshcoreRuntime() {
         const onRadio = opts?.contactsFromRadio ? 1 : 0;
         const prevHopsAway = prevNode?.hops_away;
         const hopsToSave = hopsAway ?? prevHopsAway ?? undefined;
-        const dbRow = contactToDbRow(contact, undefined, onRadio, now, hopsToSave);
+        const dbRow = contactToDbRow(
+          { ...contact, advName: mergedAdvName },
+          undefined,
+          onRadio,
+          now,
+          hopsToSave,
+        );
         pendingDbRows.push(dbRow);
       }
       replaceMeshcorePubKeyRegistry(
@@ -1800,7 +1823,10 @@ export function useMeshcoreRuntime() {
         });
       } else {
         setNodes((prev) => {
-          const existing = prev.get(nodeId);
+          // Live RF/advert upserts nodeStore, not this useState map. Seed from Zustand so the
+          // syncNodesMapToIdentityStore effect cannot restore the companion's old advName.
+          const fromStore = readMeshcoreNodes().get(nodeId);
+          const existing = fromStore ?? prev.get(nodeId);
           if (!existing) return prev;
           const next = new Map(prev);
           next.set(nodeId, {
@@ -1854,7 +1880,7 @@ export function useMeshcoreRuntime() {
       }, MESHCORE_PATH_UPDATED_CONTACTS_REBUILD_DEBOUNCE_MS);
       requestChatOutboxDrain('meshcore');
     },
-    [meshcorePreviousNodesBaselineForBuild],
+    [meshcorePreviousNodesBaselineForBuild, readMeshcoreNodes],
   );
 
   /** Returned by {@link setupEventListeners}; run before `conn.close()` or replacing the connection. */

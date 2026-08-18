@@ -44,9 +44,60 @@ describe('meshcoreLiveContactPersist', () => {
       1_700_000_000,
       null,
       null,
-      undefined,
+      'Alice',
     );
     expect(window.electronAPI.db.saveMeshcoreContact).not.toHaveBeenCalled();
+  });
+
+  it('persists a rename even when the store already has a real name', () => {
+    upsertNode(ID, { nodeId: NODE_ID, longName: 'Alice', lastHeardAt: 1_699_000_000 });
+    persistMeshcoreNodeInfoAfterAdvert(ID, advertEvent({ longName: 'Bob' }));
+    expect(window.electronAPI.db.updateMeshcoreContactAdvert).toHaveBeenCalledWith(
+      NODE_ID,
+      1_700_000_000,
+      null,
+      null,
+      'Bob',
+    );
+  });
+
+  it('persists the advert name after PacketRouter already upserted it', () => {
+    upsertNode(ID, { nodeId: NODE_ID, longName: 'Bob', lastHeardAt: 1_700_000_000 });
+    persistMeshcoreNodeInfoAfterAdvert(ID, advertEvent({ longName: 'Bob' }));
+    expect(window.electronAPI.db.updateMeshcoreContactAdvert).toHaveBeenCalledWith(
+      NODE_ID,
+      1_700_000_000,
+      null,
+      null,
+      'Bob',
+    );
+  });
+
+  it('does not persist an empty pubkey-only advert name over an existing contact', () => {
+    upsertNode(ID, { nodeId: NODE_ID, longName: 'Alice', lastHeardAt: 1_699_000_000 });
+    persistMeshcoreNodeInfoAfterAdvert(ID, advertEvent({ longName: '' }));
+    expect(window.electronAPI.db.updateMeshcoreContactAdvert).toHaveBeenCalledWith(
+      NODE_ID,
+      1_700_000_000,
+      null,
+      null,
+      undefined,
+    );
+  });
+
+  it('does not persist a Node-HEX placeholder name over an existing contact', () => {
+    upsertNode(ID, { nodeId: NODE_ID, longName: 'Alice', lastHeardAt: 1_699_000_000 });
+    persistMeshcoreNodeInfoAfterAdvert(
+      ID,
+      advertEvent({ longName: `Node-${NODE_ID.toString(16).toUpperCase()}` }),
+    );
+    expect(window.electronAPI.db.updateMeshcoreContactAdvert).toHaveBeenCalledWith(
+      NODE_ID,
+      1_700_000_000,
+      null,
+      null,
+      undefined,
+    );
   });
 
   it('inserts a new contact when store row is missing', () => {

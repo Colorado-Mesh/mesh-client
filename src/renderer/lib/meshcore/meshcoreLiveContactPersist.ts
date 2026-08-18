@@ -29,6 +29,16 @@ import { registerMeshcorePubKey } from './meshcorePubKeyRegistry';
 
 const MESHCORE_COORD_SCALE = 1e6;
 
+/** Non-empty, non-placeholder advert name to write to SQLite; otherwise omit the column. */
+function persistableMeshcoreAdvertName(
+  longName: string | undefined,
+  nodeId: number,
+): string | undefined {
+  const trim = typeof longName === 'string' && longName.trim() ? longName.trim() : undefined;
+  if (!trim || meshcoreIsPlaceholderNodeLongName(trim, nodeId)) return undefined;
+  return trim;
+}
+
 export interface PersistMeshcoreNodeInfoOpts {
   /** MeshCore contact type from advert (138) when known. */
   contactType?: number;
@@ -135,17 +145,11 @@ export function persistMeshcoreNodeInfoAfterAdvert(
     return;
   }
 
-  const advNameTrim =
-    typeof event.longName === 'string' && event.longName.trim() ? event.longName.trim() : undefined;
+  // Persist a real on-air name even when the store already has one (PacketRouter upserts
+  // before this runs; companion getContacts often keeps the old advName). Empty / Node-HEX
+  // 128 payloads must not wipe a known name.
+  const persistAdvName = persistableMeshcoreAdvertName(event.longName, nodeId);
   const existingHw = existingRecord.hwModel;
-  let persistAdvName: string | undefined;
-  if (
-    advNameTrim &&
-    (!existingRecord.longName?.trim() ||
-      meshcoreIsPlaceholderNodeLongName(existingRecord.longName, nodeId))
-  ) {
-    persistAdvName = advNameTrim;
-  }
   if (opts?.contactType != null && Number.isFinite(opts.contactType)) {
     const newHw = CONTACT_TYPE_LABELS[Math.floor(opts.contactType)] ?? 'Unknown';
     const merged = mergeHwModelOnContactUpdate(existingHw, newHw);
