@@ -24,6 +24,18 @@ describe('normalizeBleMac', () => {
   it('returns empty string for blank input', () => {
     expect(normalizeBleMac('   ')).toBe('');
   });
+
+  it('rejects malformed suffixes instead of stripping them into a MAC', () => {
+    expect(normalizeBleMac('AA:BB:CC:DD:EE:FF-extra')).toBe('aa:bb:cc:dd:ee:ff-extra');
+    expect(normalizeBleMac('AABBCCDDEEFF00')).toBe('aabbccddeeff00');
+    expect(normalizeBleMac('aa:bb:cc:dd:ee:ff/dev')).toBe('aa:bb:cc:dd:ee:ff/dev');
+  });
+
+  it('rejects unsupported separators instead of stripping them into a MAC', () => {
+    expect(normalizeBleMac('AA.BB.CC.DD.EE.FF')).toBe('aa.bb.cc.dd.ee.ff');
+    expect(normalizeBleMac('AA BB CC DD EE FF')).toBe('aa bb cc dd ee ff');
+    expect(normalizeBleMac('AA:BB-CC:DD:EE:FF')).toBe('aa:bb-cc:dd:ee:ff');
+  });
 });
 
 describe('isTwelveHexBleMac', () => {
@@ -37,6 +49,11 @@ describe('isTwelveHexBleMac', () => {
     expect(isTwelveHexBleMac('eccf2847-e1fd-3f5f-0811-064db1639a3d')).toBe(false);
     expect(isTwelveHexBleMac('eccf2847e1fd3f5f0811064db1639a3d')).toBe(false);
     expect(isTwelveHexBleMac('linux-web-bt-opaque-id')).toBe(false);
+  });
+
+  it('rejects suffixes and unsupported separators', () => {
+    expect(isTwelveHexBleMac('aa:bb:cc:dd:ee:ff-extra')).toBe(false);
+    expect(isTwelveHexBleMac('aa.bb.cc.dd.ee.ff')).toBe(false);
   });
 });
 
