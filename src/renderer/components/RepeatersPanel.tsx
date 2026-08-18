@@ -841,7 +841,7 @@ export default function RepeatersPanel({
 
   return (
     <>
-      <div className="flex flex-col gap-4">
+      <div className="flex h-full min-h-0 flex-col gap-4">
         <div className="flex flex-col flex-wrap items-stretch justify-between gap-3 min-[480px]:flex-row min-[480px]:items-center">
           <h2 className="text-bright-green text-lg font-semibold">{t('repeatersPanel.title')}</h2>
           <div className="flex flex-wrap items-center gap-2">
@@ -962,10 +962,10 @@ export default function RepeatersPanel({
             {t('repeatersPanel.noRepeatersMatch')}
           </div>
         ) : (
-          <div ref={repeaterTableScrollRef} className="max-h-[min(70vh,48rem)] overflow-auto">
+          <div ref={repeaterTableScrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-700 text-left text-gray-400">
+                <tr className="bg-app-bg sticky top-0 z-10 border-b border-gray-700 text-left text-gray-400">
                   {(
                     [
                       ['status', 'repeatersPanel.columnStatus'],
