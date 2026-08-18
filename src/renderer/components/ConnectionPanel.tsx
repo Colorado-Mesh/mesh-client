@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
 import { PARENT_HOVER_ATTR } from 'lucide-react-motion';
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Trans, useTranslation } from 'react-i18next';
 
@@ -102,6 +102,13 @@ import {
 } from '../lib/meshtasticMqttTlsMigration';
 import { tryAutoLaunchMqtt } from '../lib/mqttAutoLaunch';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import {
+  blePickerDisplayName,
+  defaultPickerSort,
+  nextPickerSort,
+  sortPickerItems,
+  useDebouncedPickerSort,
+} from '../lib/pickerListSort';
 import { getSerialPortNodeName } from '../lib/serialPortNodeNames';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { isWeakBleRssi } from '../lib/signal';
@@ -123,6 +130,7 @@ import ConnectionLinkMeter from './ConnectionLinkMeter';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
 import { MqttNetworkPresetSelect } from './MqttNetworkPresetSelect';
+import { PickerSortControls } from './PickerSortControls';
 import { ReticulumStackPanel } from './ReticulumStackPanel';
 import SignalBars from './SignalBars';
 // ─── Last Connection (localStorage) ───────────────────────────────
@@ -698,6 +706,23 @@ export default function ConnectionPanel({
   // ─── BLE device picker state ──────────────────────────────────
   const [bleDevices, setBleDevices] = useState<NobleBleDevice[]>([]);
   const [showBlePicker, setShowBlePicker] = useState(false);
+  const [blePickerSort, setBlePickerSort] = useState(() => defaultPickerSort('ble'));
+  const getBlePickerName = useCallback((device: NobleBleDevice) => {
+    const cache =
+      parseStoredJson<Record<string, string>>(
+        localStorage.getItem('mesh-client:bleDeviceNames'),
+        'ConnectionPanel bleDeviceNames list',
+      ) ?? {};
+    return blePickerDisplayName(device.deviceId, device.deviceName, cache[device.deviceId]);
+  }, []);
+  const getBlePickerId = useCallback((device: NobleBleDevice) => device.deviceId, []);
+  const getBlePickerRssi = useCallback((device: NobleBleDevice) => device.rssi, []);
+  const sortedBleDevices = useDebouncedPickerSort(
+    bleDevices,
+    blePickerSort.key,
+    blePickerSort.dir,
+    { getName: getBlePickerName, getId: getBlePickerId, getRssi: getBlePickerRssi },
+  );
   const isLinux = window.electronAPI.getPlatform() === 'linux';
   const [webBluetoothDevice, setWebBluetoothDevice] = useState<{
     deviceId: string;
@@ -707,6 +732,26 @@ export default function ConnectionPanel({
   // ─── Serial port picker state ─────────────────────────────────
   const [serialPorts, setSerialPorts] = useState<SerialPortInfo[]>([]);
   const [showSerialPicker, setShowSerialPicker] = useState(false);
+  const [serialPickerSort, setSerialPickerSort] = useState(() => defaultPickerSort('serial'));
+  const getSerialPickerName = useCallback(
+    (port: SerialPortInfo) => getSerialPortNodeName(port.portId) ?? port.displayName,
+    [],
+  );
+  const getSerialPickerId = useCallback((port: SerialPortInfo) => port.portId, []);
+  const sortedSerialPorts = useMemo(
+    () =>
+      sortPickerItems(serialPorts, serialPickerSort.key, serialPickerSort.dir, {
+        getName: getSerialPickerName,
+        getId: getSerialPickerId,
+      }),
+    [
+      getSerialPickerId,
+      getSerialPickerName,
+      serialPickerSort.dir,
+      serialPickerSort.key,
+      serialPorts,
+    ],
+  );
 
   // ─── Last connection + reconnect UI state ─────────────────────
   const [lastConnection, setLastConnection] = useState<LastConnection | null>(() =>
@@ -1801,13 +1846,25 @@ export default function ConnectionPanel({
             aria-labelledby="ble-device-picker-heading"
             className="bg-deep-black w-full overflow-hidden rounded-lg border border-gray-600"
           >
-            <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-600 px-4 py-2.5">
+            <div className="bg-secondary-dark flex items-center justify-between gap-2 border-b border-gray-600 px-4 py-2.5">
               <span id="ble-device-picker-heading" className="text-sm font-medium text-gray-200">
                 {t('connectionPanel.selectBluetoothDevice')}
               </span>
-              <span className="text-xs text-gray-300" aria-live="polite">
-                {t('connectionPanel.devicesFound', { count: bleDevices.length })}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-300" aria-live="polite">
+                  {t('connectionPanel.devicesFound', { count: bleDevices.length })}
+                </span>
+                {bleDevices.length > 0 ? (
+                  <PickerSortControls
+                    mode="ble"
+                    sortKey={blePickerSort.key}
+                    sortDir={blePickerSort.dir}
+                    onSortClick={(key) => {
+                      setBlePickerSort((prev) => nextPickerSort(prev, key));
+                    }}
+                  />
+                ) : null}
+              </div>
             </div>
             <div className="max-h-60 overflow-y-auto">
               {bleDevices.length === 0 ? (
@@ -1818,52 +1875,39 @@ export default function ConnectionPanel({
                   })}
                 </div>
               ) : (
-                (() => {
-                  const bleDeviceNamesCache =
-                    parseStoredJson<Record<string, string>>(
-                      localStorage.getItem('mesh-client:bleDeviceNames'),
-                      'ConnectionPanel bleDeviceNames list',
-                    ) ?? {};
-                  return bleDevices.map((device) => {
-                    const cached = bleDeviceNamesCache[device.deviceId];
-                    const advertisedName = device.deviceName || null;
-                    const displayName = cached
-                      ? advertisedName && advertisedName !== cached
-                        ? `${cached} (${advertisedName})`
-                        : cached
-                      : (advertisedName ?? device.deviceId);
-                    const hasRssi = device.rssi != null && Number.isFinite(device.rssi);
-                    const bleAriaLabel = hasRssi
-                      ? `${displayName} ${device.deviceId} ${Math.round(device.rssi!)} dBm`
-                      : `${displayName} ${device.deviceId}`;
-                    return (
-                      <button
-                        key={device.deviceId}
-                        type="button"
-                        aria-label={bleAriaLabel}
-                        {...{ [PARENT_HOVER_ATTR]: '' }}
-                        onClick={() => {
-                          handleSelectBleDevice(device.deviceId);
-                        }}
-                        className="hover:bg-secondary-dark w-full border-b border-gray-700 px-4 py-3 text-left transition-colors last:border-b-0"
-                      >
-                        <div className="flex items-center gap-2 text-sm text-gray-200">
-                          <ConnectionIcon type="ble" trigger={parentIconTrigger} />
-                          <span className="min-w-0 flex-1 truncate">{displayName}</span>
-                          {hasRssi ? (
-                            <span className="text-muted flex shrink-0 items-center gap-1 text-xs">
-                              <SignalBars rssi={device.rssi} className="h-3 w-4" />
-                              {t('connectionPanel.bleRssiDbm', {
-                                rssi: Math.round(device.rssi!),
-                              })}
-                            </span>
-                          ) : null}
-                        </div>
-                        <div className="text-muted ml-7 font-mono text-xs">{device.deviceId}</div>
-                      </button>
-                    );
-                  });
-                })()
+                sortedBleDevices.map((device) => {
+                  const displayName = getBlePickerName(device);
+                  const hasRssi = device.rssi != null && Number.isFinite(device.rssi);
+                  const bleAriaLabel = hasRssi
+                    ? `${displayName} ${device.deviceId} ${Math.round(device.rssi!)} dBm`
+                    : `${displayName} ${device.deviceId}`;
+                  return (
+                    <button
+                      key={device.deviceId}
+                      type="button"
+                      aria-label={bleAriaLabel}
+                      {...{ [PARENT_HOVER_ATTR]: '' }}
+                      onClick={() => {
+                        handleSelectBleDevice(device.deviceId);
+                      }}
+                      className="hover:bg-secondary-dark w-full border-b border-gray-700 px-4 py-3 text-left transition-colors last:border-b-0"
+                    >
+                      <div className="flex items-center gap-2 text-sm text-gray-200">
+                        <ConnectionIcon type="ble" trigger={parentIconTrigger} />
+                        <span className="min-w-0 flex-1 truncate">{displayName}</span>
+                        {hasRssi ? (
+                          <span className="text-muted flex shrink-0 items-center gap-1 text-xs">
+                            <SignalBars rssi={device.rssi} className="h-3 w-4" />
+                            {t('connectionPanel.bleRssiDbm', {
+                              rssi: Math.round(device.rssi!),
+                            })}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="text-muted ml-7 font-mono text-xs">{device.deviceId}</div>
+                    </button>
+                  );
+                })
               )}
             </div>
             {(() => {
@@ -1896,13 +1940,25 @@ export default function ConnectionPanel({
             aria-labelledby="serial-port-picker-heading"
             className="bg-deep-black w-full overflow-hidden rounded-lg border border-gray-600"
           >
-            <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-600 px-4 py-2.5">
+            <div className="bg-secondary-dark flex items-center justify-between gap-2 border-b border-gray-600 px-4 py-2.5">
               <span id="serial-port-picker-heading" className="text-sm font-medium text-gray-200">
                 {t('connectionPanel.selectSerialPort')}
               </span>
-              <span className="text-xs text-gray-300" aria-live="polite">
-                {t('connectionPanel.devicesFound', { count: serialPorts.length })}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-300" aria-live="polite">
+                  {t('connectionPanel.devicesFound', { count: serialPorts.length })}
+                </span>
+                {serialPorts.length > 0 ? (
+                  <PickerSortControls
+                    mode="serial"
+                    sortKey={serialPickerSort.key}
+                    sortDir={serialPickerSort.dir}
+                    onSortClick={(key) => {
+                      setSerialPickerSort((prev) => nextPickerSort(prev, key));
+                    }}
+                  />
+                ) : null}
+              </div>
             </div>
             <div className="max-h-60 overflow-y-auto">
               {serialPorts.length === 0 ? (
@@ -1910,7 +1966,7 @@ export default function ConnectionPanel({
                   {t('connectionPanel.noSerialPorts')}
                 </div>
               ) : (
-                serialPorts.map((port) => {
+                sortedSerialPorts.map((port) => {
                   const cachedNodeName = getSerialPortNodeName(port.portId);
                   const serialDetails = `${port.portName}${port.vendorId ? ` (VID: ${port.vendorId})` : ''}${port.productId ? ` PID: ${port.productId}` : ''}`;
                   const serialAriaLabel = `${cachedNodeName ? `${cachedNodeName} ` : ''}${port.displayName} ${serialDetails}`;

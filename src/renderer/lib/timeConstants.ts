@@ -333,3 +333,6 @@ export const RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS = 75 * MS_PER_SECOND;
  * Stack TCP features should already be up; this is a safety net during connect races.
  */
 export const RETICULUM_IPC_SEND_TIMEOUT_MS = 15 * MS_PER_SECOND;
+
+/** BLE picker: keep live dBm, but wait this long before re-ordering by RSSI so rows do not jump. */
+export const PICKER_RSSI_REORDER_DEBOUNCE_MS = MS_PER_SECOND;

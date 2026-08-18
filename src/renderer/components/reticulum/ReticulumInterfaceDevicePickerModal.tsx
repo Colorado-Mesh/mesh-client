@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect -- reset sort default when switching serial vs BLE */
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type {
@@ -7,10 +9,17 @@ import type {
 } from '@/renderer/hooks/useReticulumInterfaceDevicePicker';
 import { ConnectionIcon } from '@/renderer/lib/icons/connectionIcons';
 import { SpinnerIcon } from '@/renderer/lib/icons/spinnerIcon';
+import {
+  defaultPickerSort,
+  nextPickerSort,
+  sortPickerItems,
+  useDebouncedPickerSort,
+} from '@/renderer/lib/pickerListSort';
 import { reticulumPickerScanErrorI18nKey } from '@/renderer/lib/reticulum/reticulumPickerScanError';
 import { isWeakBleRssi, weakestBleRssi } from '@/renderer/lib/signal';
 
 import { BleWeakSignalBanner } from '../BleWeakSignalBanner';
+import { PickerSortControls } from '../PickerSortControls';
 import SignalBars from '../SignalBars';
 
 export interface ReticulumInterfaceDevicePickerModalProps {
@@ -49,10 +58,43 @@ export function ReticulumInterfaceDevicePickerModal({
   onRescanBle,
 }: ReticulumInterfaceDevicePickerModalProps) {
   const { t } = useTranslation();
+  const isSerial = mode === 'serial';
+  const [sortPref, setSortPref] = useState(() => defaultPickerSort(isSerial ? 'serial' : 'ble'));
+
+  useEffect(() => {
+    setSortPref(defaultPickerSort(isSerial ? 'serial' : 'ble'));
+  }, [isSerial]);
+
+  const getBleName = useCallback(
+    (device: ReticulumPickerDevice) => device.name?.trim() || device.address,
+    [],
+  );
+  const getBleId = useCallback(
+    (device: ReticulumPickerDevice) => `${device.address}-${device.kind ?? 'ble'}`,
+    [],
+  );
+  const getBleRssi = useCallback((device: ReticulumPickerDevice) => device.rssi, []);
+  const sortedDevices = useDebouncedPickerSort(devices, sortPref.key, sortPref.dir, {
+    getName: getBleName,
+    getId: getBleId,
+    getRssi: getBleRssi,
+  });
+  const getSerialName = useCallback(
+    (port: { path: string; label?: string }) => port.label?.trim() || port.path,
+    [],
+  );
+  const getSerialId = useCallback((port: { path: string; label?: string }) => port.path, []);
+  const sortedSerialPorts = useMemo(
+    () =>
+      sortPickerItems(serialPorts, sortPref.key, sortPref.dir, {
+        getName: getSerialName,
+        getId: getSerialId,
+      }),
+    [getSerialId, getSerialName, serialPorts, sortPref.dir, sortPref.key],
+  );
 
   if (!open) return null;
 
-  const isSerial = mode === 'serial';
   const count = isSerial ? serialPorts.length : devices.length;
 
   return (
@@ -71,10 +113,20 @@ export function ReticulumInterfaceDevicePickerModal({
       >
         <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-600 px-4 py-2.5">
           <span className="text-sm font-medium text-gray-200">{t(titleKey(mode))}</span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <span className="text-xs text-gray-300" aria-live="polite">
               {t('connectionPanel.devicesFound', { count })}
             </span>
+            {count > 0 ? (
+              <PickerSortControls
+                mode={isSerial ? 'serial' : 'ble'}
+                sortKey={sortPref.key}
+                sortDir={sortPref.dir}
+                onSortClick={(key) => {
+                  setSortPref((prev) => nextPickerSort(prev, key));
+                }}
+              />
+            ) : null}
             {isSerial ? (
               <button
                 type="button"
@@ -144,7 +196,7 @@ export function ReticulumInterfaceDevicePickerModal({
                 ) : null}
               </div>
             ) : (
-              serialPorts.map((port) => (
+              sortedSerialPorts.map((port) => (
                 <button
                   key={port.path}
                   type="button"
@@ -181,7 +233,7 @@ export function ReticulumInterfaceDevicePickerModal({
                   : t('connectionPanel.reticulumInterfaces.pickerBleEmpty')}
             </p>
           ) : (
-            devices.map((device) => {
+            sortedDevices.map((device) => {
               const displayName = device.name?.trim() || device.address;
               const value = mode === 'ble-rnode' ? `ble://${device.address}` : device.address;
               const hasRssi = device.rssi != null && Number.isFinite(device.rssi);

@@ -1422,7 +1422,14 @@
     "letsMeshRegionEu": "EU",
     "letsMeshRequiresWebSocket": "このブローカープリセットには、WebSocketトランスポート（ WSS ）が必要です。",
     "letsMeshRequiresPort": "このブローカープリセットにはポート{{port}} (WebSocket TLS)が必要です。",
-    "letsMeshKnownBrokersOnly": "このプリセットは、既知のパブリックMeshCore MQTTブローカーのみをサポートします。他のブローカーの場合はカスタムに切り替えます。"
+    "letsMeshKnownBrokersOnly": "このプリセットは、既知のパブリックMeshCore MQTTブローカーのみをサポートします。他のブローカーの場合はカスタムに切り替えます。",
+    "sortName": "氏名",
+    "sortRssi": "RSSI",
+    "sortToolbar": "機器リスト",
+    "sortByNameAsc": "名前で並べ替え、AからZ",
+    "sortByNameDesc": "名前で並べ替え、ZからA",
+    "sortByRssiAsc": "RSSIで並べ替え、弱い順",
+    "sortByRssiDesc": "RSSIで並べ替え、最強順"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -4201,7 +4208,25 @@
     "openRoom": "ルームを開く",
     "savedPasswordOrphanRoomLabel": "ルーム {{nodeId}}",
     "roomCliNeedsAdminPassword": "リモートルームCLIにはルーム管理者パスワード（SendLogin ACL）が必要です。Repeaters → このルームのパスワードに保存してから再試行してください。ゲストBBSログインでは不十分です。",
-    "cliHistoryError": "[エラー： {{detail}}]"
+    "cliHistoryError": "[エラー： {{detail}}]",
+    "sortByStatusAsc": "ステータスで並べ替え、オフラインで最初に",
+    "sortByStatusDesc": "ステータスで並べ替え、オンラインで最初に",
+    "sortByNameAsc": "名前で並べ替え、AからZ",
+    "sortByNameDesc": "名前で並べ替え、ZからA",
+    "sortByLastHeardAsc": "最後のヒアリングで並べ替え、古い順",
+    "sortByLastHeardDesc": "最後のヒアリングで並べ替え、新しい順",
+    "sortBySnrAsc": "SNRで並べ替え、最も低い順",
+    "sortBySnrDesc": "SNRで並べ替え、最も高い順",
+    "sortByRssiAsc": "RSSIで並べ替え、弱い順",
+    "sortByRssiDesc": "RSSIで並べ替え、最強順",
+    "sortByHopsAsc": "ホップで並べ替え、最も近い順",
+    "sortByHopsDesc": "ホップで並べ替え、最も遠い順",
+    "sortByUptimeAsc": "稼働時間で並べ替え、最も短い順",
+    "sortByUptimeDesc": "稼働時間で並べ替え、最も長い順",
+    "sortByAirPctAsc": "空気%で並べ替え、最も低い順",
+    "sortByAirPctDesc": "空気%で並べ替え、最も高い順",
+    "sortByReliabilityAsc": "信頼性で並べ替え、最も低い順",
+    "sortByReliabilityDesc": "信頼性で並べ替え、最も高い順"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",

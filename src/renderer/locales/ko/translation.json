@@ -1422,7 +1422,14 @@
     "letsMeshRegionEu": "EU",
     "letsMeshRequiresWebSocket": "이 브로커 사전 설정에는 WebSocket 전송 (wss) 이 필요합니다.",
     "letsMeshRequiresPort": "이 브로커 사전 설정에는 포트 {{port}} (WebSocket TLS) 이 필요합니다.",
-    "letsMeshKnownBrokersOnly": "이 사전 설정은 알려진 공용 MeshCore MQTT 브로커만 지원합니다. 다른 브로커의 경우 사용자 지정으로 전환합니다."
+    "letsMeshKnownBrokersOnly": "이 사전 설정은 알려진 공용 MeshCore MQTT 브로커만 지원합니다. 다른 브로커의 경우 사용자 지정으로 전환합니다.",
+    "sortName": "이름",
+    "sortRssi": "RSSI",
+    "sortToolbar": "기기 목록",
+    "sortByNameAsc": "이름 A-Z",
+    "sortByNameDesc": "이름 Z-A",
+    "sortByRssiAsc": "RSSI 기준으로 정렬, 가장 먼저 약함",
+    "sortByRssiDesc": "RSSI로 정렬, 최강자 우선"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -4201,7 +4208,25 @@
     "openRoom": "룸 열기",
     "savedPasswordOrphanRoomLabel": "룸 {{nodeId}}",
     "roomCliNeedsAdminPassword": "원격 룸 CLI에는 룸 관리자 암호(SendLogin ACL)가 필요합니다. Repeaters → 이 룸의 암호에 저장한 다음 다시 시도하세요. 게스트 BBS 로그인으로는 부족합니다.",
-    "cliHistoryError": "[오류: {{detail}}]"
+    "cliHistoryError": "[오류: {{detail}}]",
+    "sortByStatusAsc": "상태순으로 정렬, 오프라인 우선",
+    "sortByStatusDesc": "상태순으로 정렬, 온라인 우선",
+    "sortByNameAsc": "이름 A-Z",
+    "sortByNameDesc": "이름 Z-A",
+    "sortByLastHeardAsc": "마지막 청문회, 가장 오래된 순서로 정렬",
+    "sortByLastHeardDesc": "마지막 청문회 기준으로 정렬, 최신순",
+    "sortBySnrAsc": "SNR 순으로 정렬, 가장 낮은 순",
+    "sortBySnrDesc": "SNR 순으로 정렬, 가장 높은 순",
+    "sortByRssiAsc": "RSSI 기준으로 정렬, 가장 먼저 약함",
+    "sortByRssiDesc": "RSSI로 정렬, 최강자 우선",
+    "sortByHopsAsc": "홉으로 정렬, 가장 가까운 우선순위",
+    "sortByHopsDesc": "홉 순으로 정렬, 가장 먼 순",
+    "sortByUptimeAsc": "가동 시간 순으로 정렬, 가장 짧은 순서로 정렬",
+    "sortByUptimeDesc": "가동 시간 순으로 정렬, 가장 긴 순서로 정렬",
+    "sortByAirPctAsc": "항공순 정렬 %, 최저 우선",
+    "sortByAirPctDesc": "항공순 정렬 %, 가장 높은 순",
+    "sortByReliabilityAsc": "신뢰도 순으로 정렬, 가장 낮은 순",
+    "sortByReliabilityDesc": "신뢰도 순으로 정렬, 가장 높은 순"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",

@@ -1422,7 +1422,14 @@
     "letsMeshRegionEu": "EU",
     "letsMeshRequiresWebSocket": "此Broker预设需要WebSocket传输(wss)。",
     "letsMeshRequiresPort": "此代理预设需要端口{{port}} （ WebSocket TLS ）。",
-    "letsMeshKnownBrokersOnly": "此预设仅支持已知的公共MeshCore MQTT代理。对于其他经纪商，请切换到自定义。"
+    "letsMeshKnownBrokersOnly": "此预设仅支持已知的公共MeshCore MQTT代理。对于其他经纪商，请切换到自定义。",
+    "sortName": "姓名",
+    "sortRssi": "RSSI",
+    "sortToolbar": "设备列表",
+    "sortByNameAsc": "按名称排序 - A 到 Z",
+    "sortByNameDesc": "按名称排序 - Z 到 A",
+    "sortByRssiAsc": "按RSSI排序，最弱者优先",
+    "sortByRssiDesc": "按RSSI排序，最强优先"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -4201,7 +4208,25 @@
     "openRoom": "打开房间",
     "savedPasswordOrphanRoomLabel": "房间 {{nodeId}}",
     "roomCliNeedsAdminPassword": "远程房间 CLI 需要房间管理员密码（SendLogin ACL）。请在 Repeaters → 此房间的密码下保存，然后重试。访客 BBS 登录不够。",
-    "cliHistoryError": "[错误： {{detail}}]"
+    "cliHistoryError": "[错误： {{detail}}]",
+    "sortByStatusAsc": "按状态排序，脱机优先",
+    "sortByStatusDesc": "按状态排序，在线优先",
+    "sortByNameAsc": "按名称排序 - A 到 Z",
+    "sortByNameDesc": "按名称排序 - Z 到 A",
+    "sortByLastHeardAsc": "按上次听到排序，最早在前",
+    "sortByLastHeardDesc": "按上次听到排序，最新在前",
+    "sortBySnrAsc": "按信噪比排序，从低到高",
+    "sortBySnrDesc": "按信噪比排序，最高优先",
+    "sortByRssiAsc": "按RSSI排序，最弱者优先",
+    "sortByRssiDesc": "按RSSI排序，最强优先",
+    "sortByHopsAsc": "按跃点排序，最近的在前",
+    "sortByHopsDesc": "按跃点排序，最远的在前",
+    "sortByUptimeAsc": "按正常运行时间排序，最短在前",
+    "sortByUptimeDesc": "按正常运行时间排序，最长在前",
+    "sortByAirPctAsc": "按空气百分比排序，从低到低",
+    "sortByAirPctDesc": "按空气百分比排序，最高优先",
+    "sortByReliabilityAsc": "按可靠性排序，从低到高",
+    "sortByReliabilityDesc": "按可靠性排序，最高优先"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",

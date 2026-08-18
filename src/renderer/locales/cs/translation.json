@@ -1424,7 +1424,14 @@
     "letsMeshRegionEu": "EU",
     "letsMeshRequiresWebSocket": "Tato předvolba makléře vyžaduje přenos WebSocket (wss).",
     "letsMeshRequiresPort": "Tato předvolba makléře vyžaduje port {{port}} (WebSocket TLS).",
-    "letsMeshKnownBrokersOnly": "Tato předvolba podporuje pouze známé veřejné makléře MeshCore MQTT. Přepnout na vlastní pro ostatní makléře."
+    "letsMeshKnownBrokersOnly": "Tato předvolba podporuje pouze známé veřejné makléře MeshCore MQTT. Přepnout na vlastní pro ostatní makléře.",
+    "sortName": "Název",
+    "sortRssi": "RSSI",
+    "sortToolbar": "Seznam zařízení",
+    "sortByNameAsc": "Seřadit podle názvu: A až Z",
+    "sortByNameDesc": "Řadit podle názvu (Z až A)",
+    "sortByRssiAsc": "Řadit podle RSSI, nejdříve nejslabší",
+    "sortByRssiDesc": "Řadit podle RSSI, nejdřív nejsilnější"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -4203,7 +4210,25 @@
     "openRoom": "Otevřít místnost",
     "savedPasswordOrphanRoomLabel": "Místnost {{nodeId}}",
     "roomCliNeedsAdminPassword": "Vzdálené CLI místnosti vyžaduje admin heslo místnosti (SendLogin ACL). Uložte ho pod Repeaters → heslo pro tuto místnost a zkuste to znovu. Host BBS přihlášení nestačí.",
-    "cliHistoryError": "[Chyba: {{detail}}]"
+    "cliHistoryError": "[Chyba: {{detail}}]",
+    "sortByStatusAsc": "Seřadit podle stavu, nejdříve offline",
+    "sortByStatusDesc": "Seřadit podle stavu, nejprve online",
+    "sortByNameAsc": "Seřadit podle názvu: A až Z",
+    "sortByNameDesc": "Řadit podle názvu (Z až A)",
+    "sortByLastHeardAsc": "Seřadit podle posledního slyšeného, nejstarší jako první",
+    "sortByLastHeardDesc": "Seřadit podle posledního slyšeného, nejnovější jako první",
+    "sortBySnrAsc": "Seřadit podle SNR, nejdříve nejnižší",
+    "sortBySnrDesc": "Třídit podle SNR, nejvyšší jako první",
+    "sortByRssiAsc": "Řadit podle RSSI, nejdříve nejslabší",
+    "sortByRssiDesc": "Řadit podle RSSI, nejdřív nejsilnější",
+    "sortByHopsAsc": "Třídit podle skoků, nejdříve nejblíže",
+    "sortByHopsDesc": "Třídit podle skoků, nejdále",
+    "sortByUptimeAsc": "Řadit podle provozuschopnosti, nejdříve nejkratší",
+    "sortByUptimeDesc": "Seřadit podle dostupnosti, nejdéle",
+    "sortByAirPctAsc": "Řadit podle Air%, nejdříve nejnižší",
+    "sortByAirPctDesc": "Řadit podle Air%, nejprve nejvyšší",
+    "sortByReliabilityAsc": "Řadit podle spolehlivosti, nejdříve nejnižší",
+    "sortByReliabilityDesc": "Řadit podle Spolehlivost, nejvyšší jako první"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",
