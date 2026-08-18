@@ -36,6 +36,7 @@ function getAppVersion(): string {
   try {
     return app.getVersion();
   } catch {
+    // catch-no-log-ok app.getVersion() rarely throws; version is cosmetic only
     return 'unknown';
   }
 }
@@ -53,6 +54,17 @@ function formatErrorForTitle(ctx: CrashContext): string {
   const msg = ctx.error instanceof Error ? ctx.error.message : String(ctx.error);
   const cleaned = sanitizeLogMessage(msg).replace(/\n/g, ' ').slice(0, 80);
   return `[Crash] ${cleaned}`;
+}
+
+/**
+ * Sanitize text for inclusion in the GitHub issue body.
+ * Unlike sanitizeLogMessage (which collapses all whitespace including newlines),
+ * this preserves newlines so stack traces remain readable in code fences.
+ */
+function sanitizeForBody(text: string): string {
+  return text
+    .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F\u2028\u2029]+/g, ' ')
+    .replace(/[ \t]+/g, ' ');
 }
 
 function formatErrorForBody(ctx: CrashContext): string {
@@ -78,18 +90,20 @@ function formatErrorForBody(ctx: CrashContext): string {
     '',
     '**Error message:**',
     '```',
-    sanitizeLogMessage(msg),
+    sanitizeForBody(msg),
     '```',
     '',
     '**Stack trace:**',
     '```',
-    sanitizeLogMessage(stack),
+    sanitizeForBody(stack),
     '```',
     '',
     '---',
     '',
     '**Diagnostic bundle:**',
     'Please also attach the zip from **App → Support / Bug reports → Export for GitHub** if the app is still responsive.',
+    '',
+    '**Do not** attach **Export for Developer** or `mesh-client.db` to this public issue — the database may contain saved passwords.',
     '',
     '**Steps to reproduce (please fill in):**',
     '1. ',
@@ -103,32 +117,27 @@ function formatErrorForBody(ctx: CrashContext): string {
 
 /**
  * Build a GitHub new-issue URL pre-filled with crash context.
- * Truncates body if the URL exceeds safe browser limits.
+ * Truncates body iteratively until the encoded URL fits within browser limits.
  */
 export function buildCrashReportUrl(ctx: CrashContext): string {
   const title = formatErrorForTitle(ctx);
   let body = formatErrorForBody(ctx);
 
   const baseUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/new`;
-  const params = new URLSearchParams({
-    template: ISSUE_TEMPLATE,
-    title,
-    body,
-  });
 
-  let url = `${baseUrl}?${params.toString()}`;
+  function makeUrl(b: string): string {
+    const params = new URLSearchParams({ template: ISSUE_TEMPLATE, title, body: b });
+    return `${baseUrl}?${params.toString()}`;
+  }
 
-  if (url.length > MAX_URL_LENGTH) {
-    const overhead = url.length - body.length;
-    const maxBody = MAX_URL_LENGTH - overhead - 100;
-    body =
-      body.slice(0, maxBody) + '\n\n_(truncated — attach Export for GitHub zip for full details)_';
-    const truncatedParams = new URLSearchParams({
-      template: ISSUE_TEMPLATE,
-      title,
-      body,
-    });
-    url = `${baseUrl}?${truncatedParams.toString()}`;
+  let url = makeUrl(body);
+
+  // Iteratively shrink body until the percent-encoded URL fits.
+  // Multi-byte characters expand during encoding, so we must measure the final URL.
+  while (url.length > MAX_URL_LENGTH && body.length > 200) {
+    body = body.slice(0, Math.floor(body.length * 0.75));
+    body += '\n\n_(truncated — attach Export for GitHub zip for full details)_';
+    url = makeUrl(body);
   }
 
   return url;

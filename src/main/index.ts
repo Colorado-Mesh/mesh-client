@@ -500,6 +500,8 @@ process.on('uncaughtException', (error) => {
     '[main] Uncaught exception:',
     sanitizeLogMessage(error?.stack ?? error?.message ?? String(error)),
   );
+  // Flush is fire-and-forget here (sync handler), but showMessageBoxSync runs a nested
+  // event loop so the flush can settle before the user dismisses the dialog.
   void flushLogBeforeQuit();
   showCrashReportDialog({ source: 'uncaughtException', error });
 });
@@ -509,9 +511,10 @@ process.on('unhandledRejection', (reason) => {
     '[main] Unhandled rejection:',
     sanitizeLogMessage(reason instanceof Error ? (reason.stack ?? reason.message) : String(reason)),
   );
-  void flushLogBeforeQuit();
-  const error = reason instanceof Error ? reason : new Error(String(reason));
-  showCrashReportDialog({ source: 'unhandledRejection', error });
+  void flushLogBeforeQuit().then(() => {
+    const error = reason instanceof Error ? reason : new Error(String(reason));
+    showCrashReportDialog({ source: 'unhandledRejection', error });
+  });
 });
 
 // ─── Bluetooth pairing handler (Linux only) ──────────────────────────

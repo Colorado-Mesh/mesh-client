@@ -194,6 +194,7 @@ describe('showCrashReportDialog', () => {
     };
 
     expect(() => showCrashReportDialog(ctx)).not.toThrow();
+    resetCrashDialogCooldownForTests();
     expect(showCrashReportDialog(ctx)).toBe(false);
   });
 
