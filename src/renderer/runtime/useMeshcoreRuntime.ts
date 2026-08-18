@@ -152,6 +152,10 @@ import type {
   RxPacketEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
 import {
+  rememberedMeshcoreLiveAdvertName,
+  rememberMeshcoreLiveAdvertName,
+} from '../lib/meshcore/meshcoreLiveContactPersist';
+import {
   MESHCORE_ERR_NODE_NOT_FOUND,
   MESHCORE_ERR_NOT_CONNECTED,
   MESHCORE_ERR_REQUEST_FAILED,
@@ -394,6 +398,7 @@ import {
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreMinimalNodeFromAdvertEvent,
+  meshcorePreviousAdvertNameForRebuild,
   meshcoreRemoveContactErrorMessage,
   meshcoreScaledAdvLatLonToDeg,
   meshcoreSyntheticPlaceholderPubKeyHex,
@@ -1194,6 +1199,7 @@ export function useMeshcoreRuntime() {
       const dbPubKeyHexByNodeId = new Map<number, string>();
       for (const row of dbContacts) {
         if (row.nickname) nicknameMapRef.current.set(row.node_id, row.nickname);
+        rememberMeshcoreLiveAdvertName(row.node_id, row.adv_name);
         const hex = row.public_key.replace(/\s/g, '').toLowerCase();
         if (!meshcoreIsSyntheticPlaceholderPubKeyHex(hex) && hex.length >= 12) {
           const pairs = hex.match(/.{2}/g);
@@ -1584,16 +1590,22 @@ export function useMeshcoreRuntime() {
           slicedPath.length,
         );
         const nick = nicknameMapRef.current.get(base.node_id);
-        // Nickname overlay runs after this loop; do not treat the nick as advert name for SQLite.
+        // Nickname overlay runs after this loop; merge stored advert name, not the nick.
         const mergedAdvName = meshcoreMergeContactAdvNameFromPrevious(
           base.long_name,
-          nick ? undefined : prevNode?.long_name,
+          meshcorePreviousAdvertNameForRebuild(
+            prevNode?.long_name,
+            nick,
+            rememberedMeshcoreLiveAdvertName(base.node_id),
+            base.node_id,
+          ),
           base.node_id,
           {
             prevLastHeard: prevNode?.last_heard,
             radioLastAdvert: contact.lastAdvert,
           },
         );
+        rememberMeshcoreLiveAdvertName(base.node_id, mergedAdvName);
         const node: MeshNode = {
           ...base,
           last_heard,

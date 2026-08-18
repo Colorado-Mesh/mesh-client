@@ -623,6 +623,29 @@ export interface MeshcoreMergeContactAdvNameOpts {
 }
 
 /**
+ * Advert name to merge against a `getContacts` dump. UI `long_name` is often the nickname overlay,
+ * so prefer a real previous advert name and fall back to the stored SQLite/live advert name.
+ */
+export function meshcorePreviousAdvertNameForRebuild(
+  prevLongName: string | undefined,
+  nickname: string | undefined,
+  storedAdvertName: string | undefined,
+  nodeId: number,
+): string | undefined {
+  const prev = (prevLongName ?? '').trim();
+  const nick = (nickname ?? '').trim();
+  const stored = (storedAdvertName ?? '').trim();
+  const prevIsNick = nick.length > 0 && prev === nick;
+  if (prev && !prevIsNick && !meshcoreIsPlaceholderNodeLongName(prev, nodeId)) {
+    return prev;
+  }
+  if (stored && !meshcoreIsPlaceholderNodeLongName(stored, nodeId)) {
+    return stored;
+  }
+  return undefined;
+}
+
+/**
  * When rebuilding from `getContacts`, companion firmware often keeps the name from when the
  * contact was first stored. Prefer a live advert name already in the UI unless the radio dump
  * is strictly newer (connect/refresh after firmware actually renamed the contact).

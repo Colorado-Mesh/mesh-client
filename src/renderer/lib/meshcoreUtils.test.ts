@@ -28,6 +28,7 @@ import {
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreMinimalNodeFromAdvertEvent,
+  meshcorePreviousAdvertNameForRebuild,
   meshcorePubkeyShortId,
   meshcoreRemoveContactErrorMessage,
   meshcoreResolvedTxPowerMax,
@@ -612,6 +613,33 @@ describe('meshcoreMergeContactAdvNameFromPrevious', () => {
   });
 });
 
+describe('meshcorePreviousAdvertNameForRebuild', () => {
+  const nodeId = 0xabcd1234;
+
+  it('uses prev long name when it is not the nickname overlay', () => {
+    expect(meshcorePreviousAdvertNameForRebuild('NewRoom', 'MyNick', 'OldRoom', nodeId)).toBe(
+      'NewRoom',
+    );
+  });
+
+  it('uses stored advert name when UI long name is the nickname', () => {
+    expect(meshcorePreviousAdvertNameForRebuild('MyNick', 'MyNick', 'NewRoom', nodeId)).toBe(
+      'NewRoom',
+    );
+  });
+
+  it('ignores placeholder stored names', () => {
+    expect(
+      meshcorePreviousAdvertNameForRebuild(
+        'MyNick',
+        'MyNick',
+        `Node-${nodeId.toString(16).toUpperCase()}`,
+        nodeId,
+      ),
+    ).toBeUndefined();
+  });
+});
+
 describe('buildNodesFromContacts advert-name merge (path-updated rebuild)', () => {
   const key32 = new Uint8Array(32);
   for (let i = 0; i < 32; i++) key32[i] = (i * 13 + 5) & 0xff;
@@ -633,6 +661,39 @@ describe('buildNodesFromContacts advert-name merge (path-updated rebuild)', () =
       { prevLastHeard: 1_700_000_100, radioLastAdvert: contact.lastAdvert },
     );
     expect(merged).toBe('NewRoom');
+  });
+
+  it('keeps stored advert name when nickname overlays long name and radio is stale or placeholder', () => {
+    const contact = {
+      publicKey: key32,
+      type: 3,
+      advName: 'OldRoom',
+      lastAdvert: 1_700_000_100,
+      advLat: 0,
+      advLon: 0,
+    };
+    const radio = meshcoreContactToMeshNode(contact);
+    const nick = 'MyNick';
+    const storedAdvName = 'NewRoom';
+    const prevAdvertName = meshcorePreviousAdvertNameForRebuild(
+      nick,
+      nick,
+      storedAdvName,
+      radio.node_id,
+    );
+    expect(
+      meshcoreMergeContactAdvNameFromPrevious(radio.long_name, prevAdvertName, radio.node_id, {
+        prevLastHeard: 1_700_000_100,
+        radioLastAdvert: contact.lastAdvert,
+      }),
+    ).toBe('NewRoom');
+    expect(
+      meshcoreMergeContactAdvNameFromPrevious(
+        `Node-${radio.node_id.toString(16).toUpperCase()}`,
+        prevAdvertName,
+        radio.node_id,
+      ),
+    ).toBe('NewRoom');
   });
 });
 
