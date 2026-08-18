@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
 
+import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 import type { ReticulumInterfaceIssueAlert } from '@/shared/reticulum-types';
 
+import { HOST_LINK_QUALITY_POLL_MS } from '../lib/hostLinkQuality';
 import { fetchReticulumInterfaces } from '../lib/reticulum/reticulumSidecarReads';
 import {
   isReticulumTcpHubActivelyRejecting,
@@ -43,17 +45,21 @@ export function useReticulumTcpInterfaceRecovery({
   const lastRecoveryAtRef = useRef(0);
   const readySinceRef = useRef<number | null>(null);
   const onRecoverRef = useRef(onRecover);
+  const interfacesRef = useRef(interfaces);
+  const rttByIdRef = useRef(rttById);
+  const interfaceIssueAlertRef = useRef(interfaceIssueAlert);
+  const stackFastFlapSuspectedRef = useRef(stackFastFlapSuspected);
 
   useEffect(() => {
     onRecoverRef.current = onRecover;
   }, [onRecover]);
 
-  const rttKey = [...rttById.entries()]
-    .map(([id, rtt]) => `${id}:${rtt ?? 'null'}`)
-    .sort()
-    .join('|');
-
-  const lastRttKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    interfacesRef.current = interfaces;
+    rttByIdRef.current = rttById;
+    interfaceIssueAlertRef.current = interfaceIssueAlert;
+    stackFastFlapSuspectedRef.current = stackFastFlapSuspected;
+  }, [interfaces, rttById, interfaceIssueAlert, stackFastFlapSuspected]);
 
   useEffect(() => {
     if (!sidecarReady) {
@@ -65,99 +71,118 @@ export function useReticulumTcpInterfaceRecovery({
   }, [sidecarReady]);
 
   useEffect(() => {
-    if (!sidecarReady || connecting || recoveryInFlightRef.current) {
+    if (!sidecarReady || connecting) {
       return;
     }
-    if (rttKey === lastRttKeyRef.current) {
-      return;
-    }
-    lastRttKeyRef.current = rttKey;
 
     let cancelled = false;
+    let postReadyTicks = 0;
+    let tickInFlight = false;
+    let interval: ReturnType<typeof setInterval> | null = null;
 
-    void (async () => {
-      const readySince = readySinceRef.current;
-      if (readySince != null && Date.now() - readySince < RETICULUM_TCP_RECOVERY_STARTUP_GRACE_MS) {
+    const tick = async () => {
+      if (cancelled || recoveryInFlightRef.current || tickInFlight) {
         return;
       }
-
-      // Bypass the 5s interfaces cache — stale "up" masked post-restart regressions in logs.
-      let statusRows: readonly ReticulumTcpRecoveryRow[] = interfaces;
-      try {
-        statusRows = await fetchReticulumInterfaces({ bypassCache: true });
-      } catch {
-        // catch-no-log-ok fall back to snapshot rows when proxy is rate-limited
+      if (postReadyTicks >= RETICULUM_TCP_PROBE_SIDECAR_MISMATCH_STREAK) {
+        return;
       }
-      if (cancelled) return;
-
-      const mismatches = listReticulumTcpProbeSidecarMismatches(statusRows, rttById);
-      const streakById = streakByIdRef.current;
-      const mismatchIds = new Set(mismatches.map((m) => m.id));
-
-      for (const id of [...streakById.keys()]) {
-        if (!mismatchIds.has(id)) {
-          streakById.delete(id);
+      tickInFlight = true;
+      postReadyTicks += 1;
+      try {
+        const snapshotRows = interfacesRef.current;
+        const storedRttById = rttByIdRef.current;
+        // Bypass the 5s interfaces cache — stale "up" must not mask a live down row.
+        // bypassCache failures rethrow; fall back to the snapshot the panel already has.
+        let statusRows: readonly ReticulumTcpRecoveryRow[] = snapshotRows;
+        try {
+          statusRows = await fetchReticulumInterfaces({ bypassCache: true });
+        } catch {
+          // catch-no-log-ok use snapshot rows when the live fetch fails
+          statusRows = snapshotRows;
         }
-      }
-      for (const iface of mismatches) {
-        streakById.set(iface.id, (streakById.get(iface.id) ?? 0) + 1);
-      }
+        if (cancelled) return;
 
-      const worst = mismatches
-        .map((iface) => ({ iface, streak: streakById.get(iface.id) ?? 0 }))
-        .sort((a, b) => b.streak - a.streak)[0];
+        const mismatches = listReticulumTcpProbeSidecarMismatches(statusRows, storedRttById);
+        const streakById = streakByIdRef.current;
+        const mismatchIds = new Set(mismatches.map((m) => m.id));
 
-      if (!worst || worst.streak < RETICULUM_TCP_PROBE_SIDECAR_MISMATCH_STREAK) {
-        return;
-      }
+        for (const id of [...streakById.keys()]) {
+          if (!mismatchIds.has(id)) {
+            streakById.delete(id);
+          }
+        }
+        for (const iface of mismatches) {
+          streakById.set(iface.id, (streakById.get(iface.id) ?? 0) + 1);
+        }
 
-      if (
-        stackFastFlapSuspected ||
-        isReticulumTcpHubActivelyRejecting(worst.iface.name, interfaceIssueAlert)
-      ) {
-        return;
-      }
+        const worst = mismatches
+          .map((iface) => ({ iface, streak: streakById.get(iface.id) ?? 0 }))
+          .sort((a, b) => b.streak - a.streak)[0];
 
-      const now = Date.now();
-      const cooldownMs = resolveReticulumTcpRecoveryCooldownMs(now, lastRecoveryAtRef.current);
-      const sinceLastRecovery = now - lastRecoveryAtRef.current;
-      if (lastRecoveryAtRef.current > 0 && sinceLastRecovery < cooldownMs) {
-        return;
-      }
+        if (!worst || worst.streak < RETICULUM_TCP_PROBE_SIDECAR_MISMATCH_STREAK) {
+          return;
+        }
 
-      recoveryInFlightRef.current = true;
-      lastRecoveryAtRef.current = now;
-      streakByIdRef.current.clear();
+        if (
+          stackFastFlapSuspectedRef.current ||
+          isReticulumTcpHubActivelyRejecting(worst.iface.name, interfaceIssueAlertRef.current)
+        ) {
+          return;
+        }
 
-      console.warn(
-        `[Reticulum] TCP hub "${worst.iface.name}" reachable but sidecar link is down — restarting stack`,
-      );
+        const now = Date.now();
+        const cooldownMs = resolveReticulumTcpRecoveryCooldownMs(now, lastRecoveryAtRef.current);
+        const sinceLastRecovery = now - lastRecoveryAtRef.current;
+        if (lastRecoveryAtRef.current > 0 && sinceLastRecovery < cooldownMs) {
+          return;
+        }
 
-      try {
-        await onRecoverRef.current();
-      } catch (err: unknown) {
+        recoveryInFlightRef.current = true;
+        lastRecoveryAtRef.current = now;
+        streakByIdRef.current.clear();
+
         console.warn(
-          '[Reticulum] TCP interface auto-recovery restart failed:',
-          err instanceof Error ? err.message : String(err),
+          `[Reticulum] TCP hub "${sanitizeLogMessage(worst.iface.name)}" reachable but sidecar link is down — restarting stack`,
         );
-      } finally {
-        if (!cancelled) {
+
+        try {
+          await onRecoverRef.current();
+        } catch (err: unknown) {
+          console.warn(
+            '[Reticulum] TCP interface auto-recovery restart failed:',
+            err instanceof Error ? err.message : String(err),
+          );
+        } finally {
           recoveryInFlightRef.current = false;
-          readySinceRef.current = Date.now();
+          if (!cancelled) {
+            readySinceRef.current = Date.now();
+          }
         }
+      } finally {
+        tickInFlight = false;
       }
-    })();
+    };
+
+    const startPolling = () => {
+      if (cancelled) return;
+      void tick();
+      interval = setInterval(() => {
+        void tick();
+      }, HOST_LINK_QUALITY_POLL_MS);
+    };
+
+    const readySince = readySinceRef.current ?? Date.now();
+    const graceRemaining = Math.max(
+      0,
+      RETICULUM_TCP_RECOVERY_STARTUP_GRACE_MS - (Date.now() - readySince),
+    );
+    const graceTimer = setTimeout(startPolling, graceRemaining);
 
     return () => {
       cancelled = true;
+      clearTimeout(graceTimer);
+      if (interval) clearInterval(interval);
     };
-  }, [
-    interfaces,
-    rttById,
-    rttKey,
-    sidecarReady,
-    connecting,
-    interfaceIssueAlert,
-    stackFastFlapSuspected,
-  ]);
+  }, [sidecarReady, connecting]);
 }

@@ -221,6 +221,9 @@ export async function fetchReticulumInterfaces(
     if (!isReticulumSidecarExpectedProxyError(e)) {
       console.debug('[reticulumSidecarReads] interfaces ' + errLikeToLogString(e));
     }
+    if (opts?.bypassCache) {
+      throw e instanceof Error ? e : new Error(String(e));
+    }
     if (cachedReticulumInterfaces.length > 0) {
       return cachedReticulumInterfaces;
     }

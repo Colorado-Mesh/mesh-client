@@ -48,7 +48,13 @@ const TCP_RST_LINE =
 
 const TCP_EOF_LINE = 'TCP read: EOF interface_id = 3';
 
+const TCP_READ_TIMEOUT_LINE = 'TCP read error interface_id = 3 error = timed out';
+
+const TCP_EOF_LINE_RMAP = 'TCP read: EOF interface_id = 7';
+
 const TCP_RECONNECT_RATSPEAK = 'reconnecting in 5s name = Ratspeak';
+
+const TCP_RECONNECT_RMAP = 'reconnecting in 5s name = RMAP World';
 
 describe('ReticulumSidecarInterfaceIssueTracker', () => {
   let tracker: ReticulumSidecarInterfaceIssueTracker;
@@ -144,6 +150,35 @@ describe('ReticulumSidecarInterfaceIssueTracker', () => {
     tracker.recordLine(TCP_RECONNECT_RATSPEAK, 1_050);
     const alert = tracker.getAlert(1_500);
     expect(alert?.tcpReadEof).toEqual(['Ratspeak']);
+  });
+
+  it('ignores TCP read errors that are not connection-reset-by-peer', () => {
+    tracker.retainInterfaces(new Set(['Ratspeak']));
+    tracker.recordLine(TCP_READ_TIMEOUT_LINE, 1_000);
+    tracker.recordLine(TCP_RECONNECT_RATSPEAK, 1_050);
+    expect(tracker.getAlert(1_500)).toBeNull();
+  });
+
+  it('leaves interleaved unnamed reconnects unattached rather than guessing', () => {
+    tracker.retainInterfaces(new Set(['Ratspeak', 'RMAP World']));
+    tracker.recordLine(TCP_RST_LINE, 1_000);
+    tracker.recordLine(TCP_EOF_LINE_RMAP, 1_010);
+    tracker.recordLine(TCP_RECONNECT_RATSPEAK, 1_050);
+    tracker.recordLine(TCP_RECONNECT_RMAP, 1_060);
+    const alert = tracker.getAlert(1_500);
+    expect(alert).toBeNull();
+  });
+
+  it('attaches sequential two-interface disconnect/reconnect pairs and reuses known ids', () => {
+    tracker.retainInterfaces(new Set(['Ratspeak', 'RMAP World']));
+    tracker.recordLine(TCP_RST_LINE, 1_000);
+    tracker.recordLine(TCP_RECONNECT_RATSPEAK, 1_050);
+    tracker.recordLine(TCP_EOF_LINE_RMAP, 1_100);
+    tracker.recordLine(TCP_RECONNECT_RMAP, 1_150);
+    tracker.recordLine(TCP_RST_LINE, 1_200);
+    const alert = tracker.getAlert(1_500);
+    expect(alert?.tcpResetByPeer).toEqual(['Ratspeak']);
+    expect(alert?.tcpReadEof).toEqual(['RMAP World']);
   });
 
   it('tracks link timeouts, transport saturation, and slow transport queries', () => {

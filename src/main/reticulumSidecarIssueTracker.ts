@@ -30,8 +30,7 @@ const BLE_RNODE_CONNECT_FAILED_PREFIX = 'BLE RNode connect failed';
 const TCP_DISCONNECT_NAME_ASSOCIATE_MS = 2 * MS_PER_SECOND;
 
 interface PendingTcpDisconnect {
-  kind: 'eof' | 'reset' | 'read_error';
-  interfaceId: number | null;
+  kind: 'eof' | 'reset';
   atMs: number;
 }
 
@@ -168,7 +167,8 @@ export class ReticulumSidecarInterfaceIssueTracker {
   private tcpResetByPeer = new Map<string, number>();
   /** INFO EOF — interface name → last-seen ms. */
   private tcpReadEof = new Map<string, number>();
-  private pendingTcpDisconnect: PendingTcpDisconnect | null = null;
+  /** EOF/RST lines keyed by sidecar interface_id until a reconnect names them. */
+  private pendingTcpDisconnects = new Map<number, PendingTcpDisconnect>();
   private interfaceIdToName = new Map<number, string>();
   private transportSaturatedCount = 0;
   private transportSaturatedAtMs: number | null = null;
@@ -195,20 +195,53 @@ export class ReticulumSidecarInterfaceIssueTracker {
     }
   }
 
-  private flushPendingDisconnectForName(name: string, nowMs: number): void {
-    const pending = this.pendingTcpDisconnect;
-    if (!pending || nowMs - pending.atMs > TCP_DISCONNECT_NAME_ASSOCIATE_MS) {
+  private prunePendingDisconnects(nowMs: number): void {
+    for (const [interfaceId, pending] of this.pendingTcpDisconnects) {
+      if (nowMs - pending.atMs > TCP_DISCONNECT_NAME_ASSOCIATE_MS) {
+        this.pendingTcpDisconnects.delete(interfaceId);
+      }
+    }
+  }
+
+  private latchPendingDisconnect(
+    kind: 'eof' | 'reset',
+    interfaceId: number | null,
+    nowMs: number,
+  ): void {
+    if (interfaceId == null) {
       return;
     }
-    if (pending.interfaceId != null) {
-      this.interfaceIdToName.set(pending.interfaceId, name);
+    const knownName = this.interfaceIdToName.get(interfaceId);
+    if (knownName) {
+      this.latchNamedTcpDisconnect(knownName, kind, nowMs);
+      this.pendingTcpDisconnects.delete(interfaceId);
+      return;
     }
-    if (pending.kind === 'eof') {
-      this.latchNamedTcpDisconnect(name, 'eof', nowMs);
-    } else if (pending.kind === 'reset' || pending.kind === 'read_error') {
-      this.latchNamedTcpDisconnect(name, 'reset', nowMs);
+    this.pendingTcpDisconnects.set(interfaceId, { kind, atMs: nowMs });
+  }
+
+  private attachReconnectName(name: string, interfaceId: number | null, nowMs: number): void {
+    this.prunePendingDisconnects(nowMs);
+    if (interfaceId != null) {
+      this.interfaceIdToName.set(interfaceId, name);
+      const pending = this.pendingTcpDisconnects.get(interfaceId);
+      if (pending) {
+        this.latchNamedTcpDisconnect(name, pending.kind, nowMs);
+        this.pendingTcpDisconnects.delete(interfaceId);
+      }
+      return;
     }
-    this.pendingTcpDisconnect = null;
+    if (this.pendingTcpDisconnects.size !== 1) {
+      return;
+    }
+    const only = this.pendingTcpDisconnects.entries().next();
+    if (only.done) {
+      return;
+    }
+    const [onlyId, pending] = only.value;
+    this.interfaceIdToName.set(onlyId, name);
+    this.latchNamedTcpDisconnect(name, pending.kind, nowMs);
+    this.pendingTcpDisconnects.delete(onlyId);
   }
 
   recordLine(line: string, nowMs = Date.now()): void {
@@ -221,24 +254,19 @@ export class ReticulumSidecarInterfaceIssueTracker {
       return;
     }
     if (plain.includes(TCP_READ_EOF_MARKER)) {
-      const interfaceId = parseSidecarInterfaceId(plain);
-      this.pendingTcpDisconnect = { kind: 'eof', interfaceId, atMs: nowMs };
+      this.latchPendingDisconnect('eof', parseSidecarInterfaceId(plain), nowMs);
       return;
     }
     if (plain.includes(TCP_READ_ERROR_MARKER)) {
-      const interfaceId = parseSidecarInterfaceId(plain);
-      const isReset = plain.includes('Connection reset by peer');
-      this.pendingTcpDisconnect = {
-        kind: isReset ? 'reset' : 'read_error',
-        interfaceId,
-        atMs: nowMs,
-      };
+      if (plain.includes('Connection reset by peer')) {
+        this.latchPendingDisconnect('reset', parseSidecarInterfaceId(plain), nowMs);
+      }
       return;
     }
     if (plain.includes(TCP_RECONNECTING_MARKER)) {
       const name = parseSidecarNameField(plain);
       if (name) {
-        this.flushPendingDisconnectForName(name, nowMs);
+        this.attachReconnectName(name, parseSidecarInterfaceId(plain), nowMs);
       }
       return;
     }
@@ -314,7 +342,7 @@ export class ReticulumSidecarInterfaceIssueTracker {
     this.blePairingTimedOut.clear();
     this.tcpResetByPeer.clear();
     this.tcpReadEof.clear();
-    this.pendingTcpDisconnect = null;
+    this.pendingTcpDisconnects.clear();
     this.interfaceIdToName.clear();
     this.transportSaturatedCount = 0;
     this.transportSaturatedAtMs = null;

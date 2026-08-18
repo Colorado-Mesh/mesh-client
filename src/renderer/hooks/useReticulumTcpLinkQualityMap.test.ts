@@ -114,6 +114,46 @@ describe('useReticulumTcpLinkQualityMap', () => {
     expect(window.electronAPI.hostLink.probeTcpRtt).not.toHaveBeenCalled();
   });
 
+  it('keeps pre-ready RTT after the sidecar becomes ready and does not probe again', async () => {
+    const { result, rerender } = renderHook(
+      ({ ready }: { ready: boolean }) =>
+        useReticulumTcpLinkQualityMap(
+          [{ id: 'hub', enabled: true, type: 'tcp', host: 'rmap.world', port: 4242 }],
+          ready,
+        ),
+      { initialProps: { ready: false } },
+    );
+    await waitFor(() => {
+      expect(result.current.get('hub')).toBe(42);
+    });
+    const callsAfterProbe = vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mock.calls.length;
+    rerender({ ready: true });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result.current.get('hub')).toBe(42);
+    expect(vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mock.calls.length).toBe(
+      callsAfterProbe,
+    );
+  });
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY])(
+    'stores null when the probe returns %s',
+    async (rtt) => {
+      vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mockResolvedValue(rtt);
+      const { result } = renderHook(() =>
+        useReticulumTcpLinkQualityMap(
+          [{ id: 'hub', enabled: true, type: 'tcp', host: 'rmap.world', port: 4242 }],
+          false,
+        ),
+      );
+      await waitFor(() => {
+        expect(result.current.has('hub')).toBe(true);
+        expect(result.current.get('hub')).toBeNull();
+      });
+    },
+  );
+
   it('does not restart TCP probe poll when interfaces array identity churns', async () => {
     const { result } = renderHook(() =>
       useReticulumTcpLinkQualityMap(

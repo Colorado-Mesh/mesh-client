@@ -88,4 +88,22 @@ describe('ReticulumStackSessionTracker', () => {
     expect(tracker.isFastFlapSuspected(10_000)).toBe(true);
     expect(tracker.isFastFlapSuspected(RETICULUM_STACK_FAST_FLAP_WINDOW_MS + 20_000)).toBe(false);
   });
+
+  it('ignores persisted future starts after a clock rollback', () => {
+    const file = persistPath();
+    const first = new ReticulumStackSessionTracker(file);
+    const futureBase = 50_000_000;
+    for (let i = 0; i < RETICULUM_STACK_FAST_FLAP_THRESHOLD; i++) {
+      const start = futureBase + i * 60_000;
+      first.recordStart(start);
+      first.recordStop(start + 5_000);
+    }
+    expect(first.isFastFlapSuspected(400_000)).toBe(false);
+    expect(first.getSessionsForTests(400_000)).toHaveLength(RETICULUM_STACK_FAST_FLAP_THRESHOLD);
+
+    const second = new ReticulumStackSessionTracker(file);
+    expect(second.isFastFlapSuspected(400_000)).toBe(false);
+    expect(second.getSessionsForTests(400_000)).toHaveLength(RETICULUM_STACK_FAST_FLAP_THRESHOLD);
+    expect(second.isFastFlapSuspected(futureBase + 400_000)).toBe(true);
+  });
 });

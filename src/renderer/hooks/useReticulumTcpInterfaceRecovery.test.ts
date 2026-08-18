@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { HOST_LINK_QUALITY_POLL_MS } from '@/renderer/lib/hostLinkQuality';
 import { RETICULUM_TCP_RECOVERY_STARTUP_GRACE_MS } from '@/renderer/lib/reticulum/reticulumTcpInterfaceRecovery';
 
 vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
@@ -21,6 +22,8 @@ const ratspeakHub = {
   port: 4242,
 };
 
+const storedRtt = new Map([['ratspeak', 100]]);
+
 describe('useReticulumTcpInterfaceRecovery', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -33,8 +36,16 @@ describe('useReticulumTcpInterfaceRecovery', () => {
     vi.clearAllMocks();
   });
 
-  function advancePastStartupGrace(): void {
-    vi.advanceTimersByTime(RETICULUM_TCP_RECOVERY_STARTUP_GRACE_MS + 1_000);
+  async function runBoundedPostReadyTicks(): Promise<void> {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(RETICULUM_TCP_RECOVERY_STARTUP_GRACE_MS);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(HOST_LINK_QUALITY_POLL_MS);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(HOST_LINK_QUALITY_POLL_MS);
+    });
   }
 
   it('invokes onRecover after sustained probe-ok / sidecar-down mismatch', async () => {
@@ -46,8 +57,8 @@ describe('useReticulumTcpInterfaceRecovery', () => {
       {
         initialProps: {
           interfaces: [ratspeakHub],
-          rttById: new Map([['ratspeak', 100]]),
-          sidecarReady: true,
+          rttById: storedRtt,
+          sidecarReady: false,
           connecting: false,
           interfaceIssueAlert: null,
           onRecover,
@@ -55,22 +66,49 @@ describe('useReticulumTcpInterfaceRecovery', () => {
       },
     );
 
-    advancePastStartupGrace();
+    rerender({
+      interfaces: [ratspeakHub],
+      rttById: storedRtt,
+      sidecarReady: true,
+      connecting: false,
+      interfaceIssueAlert: null,
+      onRecover,
+    });
 
-    for (const rtt of [101, 102, 103]) {
-      await act(async () => {
-        rerender({
+    await runBoundedPostReadyTicks();
+
+    expect(onRecover).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to snapshot rows when a bypassed interfaces fetch fails', async () => {
+    vi.mocked(fetchReticulumInterfaces).mockRejectedValue(new Error('rate limit exceeded'));
+    const onRecover = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = renderHook(
+      (props: Parameters<typeof useReticulumTcpInterfaceRecovery>[0]) => {
+        useReticulumTcpInterfaceRecovery(props);
+      },
+      {
+        initialProps: {
           interfaces: [ratspeakHub],
-          rttById: new Map([['ratspeak', rtt]]),
-          sidecarReady: true,
+          rttById: storedRtt,
+          sidecarReady: false,
           connecting: false,
           interfaceIssueAlert: null,
           onRecover,
-        });
-        await Promise.resolve();
-        await Promise.resolve();
-      });
-    }
+        },
+      },
+    );
+
+    rerender({
+      interfaces: [ratspeakHub],
+      rttById: storedRtt,
+      sidecarReady: true,
+      connecting: false,
+      interfaceIssueAlert: null,
+      onRecover,
+    });
+
+    await runBoundedPostReadyTicks();
 
     expect(onRecover).toHaveBeenCalledTimes(1);
   });
@@ -84,8 +122,8 @@ describe('useReticulumTcpInterfaceRecovery', () => {
       {
         initialProps: {
           interfaces: [ratspeakHub],
-          rttById: new Map([['ratspeak', 100]]),
-          sidecarReady: true,
+          rttById: storedRtt,
+          sidecarReady: false,
           connecting: false,
           interfaceIssueAlert: { tcpResetByPeer: ['Ratspeak'] },
           onRecover,
@@ -93,21 +131,17 @@ describe('useReticulumTcpInterfaceRecovery', () => {
       },
     );
 
-    advancePastStartupGrace();
+    rerender({
+      interfaces: [ratspeakHub],
+      rttById: storedRtt,
+      sidecarReady: true,
+      connecting: false,
+      interfaceIssueAlert: { tcpResetByPeer: ['Ratspeak'] },
+      onRecover,
+    });
 
-    for (const rtt of [101, 102, 103, 104, 105]) {
-      rerender({
-        interfaces: [ratspeakHub],
-        rttById: new Map([['ratspeak', rtt]]),
-        sidecarReady: true,
-        connecting: false,
-        interfaceIssueAlert: { tcpResetByPeer: ['Ratspeak'] },
-        onRecover,
-      });
-      await Promise.resolve();
-    }
+    await runBoundedPostReadyTicks();
 
-    await Promise.resolve();
     expect(onRecover).not.toHaveBeenCalled();
   });
 
@@ -120,8 +154,8 @@ describe('useReticulumTcpInterfaceRecovery', () => {
       {
         initialProps: {
           interfaces: [ratspeakHub],
-          rttById: new Map([['ratspeak', 100]]),
-          sidecarReady: true,
+          rttById: storedRtt,
+          sidecarReady: false,
           connecting: false,
           interfaceIssueAlert: null,
           stackFastFlapSuspected: true,
@@ -130,22 +164,18 @@ describe('useReticulumTcpInterfaceRecovery', () => {
       },
     );
 
-    advancePastStartupGrace();
+    rerender({
+      interfaces: [ratspeakHub],
+      rttById: storedRtt,
+      sidecarReady: true,
+      connecting: false,
+      interfaceIssueAlert: null,
+      stackFastFlapSuspected: true,
+      onRecover,
+    });
 
-    for (const rtt of [101, 102, 103, 104, 105]) {
-      rerender({
-        interfaces: [ratspeakHub],
-        rttById: new Map([['ratspeak', rtt]]),
-        sidecarReady: true,
-        connecting: false,
-        interfaceIssueAlert: null,
-        stackFastFlapSuspected: true,
-        onRecover,
-      });
-      await Promise.resolve();
-    }
+    await runBoundedPostReadyTicks();
 
-    await Promise.resolve();
     expect(onRecover).not.toHaveBeenCalled();
   });
 });

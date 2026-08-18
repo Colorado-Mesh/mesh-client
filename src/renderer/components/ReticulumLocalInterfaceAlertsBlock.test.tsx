@@ -3,8 +3,7 @@
  */
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-
-import en from '@/renderer/locales/en/translation.json';
+import { axe } from 'vitest-axe';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -15,6 +14,9 @@ vi.mock('react-i18next', () => ({
     },
   }),
 }));
+
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import en from '@/renderer/locales/en/translation.json';
 
 import { ReticulumLocalInterfaceAlertsBlock } from './ReticulumLocalInterfaceAlertsBlock';
 
@@ -73,9 +75,9 @@ describe('ReticulumLocalInterfaceAlertsBlock', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows fast-flap lockout copy and hides Restart stack', () => {
+  it('shows fast-flap lockout copy and hides Restart stack', async () => {
     const onRestartStack = vi.fn();
-    render(
+    const { container } = render(
       <ReticulumLocalInterfaceAlertsBlock
         alerts={[
           {
@@ -107,6 +109,8 @@ describe('ReticulumLocalInterfaceAlertsBlock', () => {
         name: 'connectionPanel.reticulumLocalInterfaces.restartStackAria',
       }),
     ).not.toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });
 

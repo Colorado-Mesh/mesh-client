@@ -54,7 +54,8 @@ function decodeTcpProbeTargetKey(targetKey: string): TcpProbeTarget[] {
 /**
  * Map of interface id → last TCP connect RTT (ms) for enabled Reticulum TCP Client rows.
  * Probes run only while the sidecar is **not** ready — once RNS owns the TCP session,
- * raw host:port connects can collide with the sidecar link.
+ * raw host:port connects can collide with the sidecar link. The last pre-ready RTT
+ * map is kept so TCP recovery can consume that evidence without starting new probes.
  */
 export function useReticulumTcpLinkQualityMap(
   interfaces: readonly ReticulumTcpLinkQualityRow[],
@@ -70,8 +71,11 @@ export function useReticulumTcpLinkQualityMap(
 
   useEffect(() => {
     const targets = decodeTcpProbeTargetKey(targetKey);
-    if (sidecarReady || targets.length === 0) {
+    if (targets.length === 0) {
       setRttById(new Map());
+      return;
+    }
+    if (sidecarReady) {
       return;
     }
 

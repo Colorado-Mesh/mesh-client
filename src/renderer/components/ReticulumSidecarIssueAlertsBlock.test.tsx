@@ -318,6 +318,27 @@ describe('ReticulumSidecarIssueAlertsBlock', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('renders hub EOF with the unreachable/blocking hint', async () => {
+    const { container } = render(
+      <ReticulumSidecarIssueAlertsBlock
+        alert={baseAlert({
+          tcpReadEof: ['Ratspeak'],
+        })}
+      />,
+    );
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.heading:1'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.tcpReadEof:Ratspeak'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumLocalInterfaces.tcpUnreachableHint'),
+    ).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it('shows share-instance hint when the hub resets the TCP session', () => {
     render(
       <ReticulumSidecarIssueAlertsBlock

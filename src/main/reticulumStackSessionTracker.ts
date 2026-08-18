@@ -91,7 +91,9 @@ export class ReticulumStackSessionTracker {
 
   private countStarts(nowMs: number): number {
     return this.sessions.filter(
-      (session) => nowMs - session.startedAtMs <= RETICULUM_STACK_FAST_FLAP_WINDOW_MS,
+      (session) =>
+        session.startedAtMs <= nowMs &&
+        nowMs - session.startedAtMs <= RETICULUM_STACK_FAST_FLAP_WINDOW_MS,
     ).length;
   }
 
