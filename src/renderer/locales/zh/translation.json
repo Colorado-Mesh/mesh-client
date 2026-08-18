@@ -1267,10 +1267,12 @@
       "connectingRow": "{{name}}：通过蓝牙连接",
       "offlineHintWifi": "检查RNode是否在您的LAN上，已通电，并且可以在配置的IP上访问（默认TCP端口7633 ，而不是4242 ）。如果DHCP分配了新地址，请在下方更新主机，或在Reticulum → Admin中重新配置Wi-Fi。",
       "tcpUnreachable": "{{name}} ：无法访问TCP集线器（ {{host}} ： {{port}} ）",
-      "tcpUnreachableHint": "远程Reticulum实例可能处于离线状态或阻塞连接。禁用此接口或验证主机和端口。",
+      "tcpUnreachableHint": "远程 Reticulum 实例可能处于离线状态或正在阻止连接。请禁用此接口或验证主机和端口。频繁重启 mesh-client 或协议栈可能导致 Reticulum 1.4.0+ 枢纽将您的 IP 封锁 12 小时 — 请等待，不要再次重启。",
       "connectingHintBle": "堆栈启动后，BLE RNode 链接可能需要长达 60 秒的时间（操作系统密钥窗口）。如果出现提示，请输入当前的 RNode PIN — 切勿输入 123456。这是正常现象，不是错误。成功绑定后，该设备可能不会出现在系统设置中。",
       "offlineHintBle": "要清除此错误，您可能需要删除此接口并重新添加（选择设备），以刷新已保存的蓝牙 ID，然后重新启动堆栈。操作系统可能会提示输入 6 位蓝牙 PIN（macOS、Windows 或 Linux）。RNode 每次配对都会生成新代码——切勿使用 123456（那是 Meshtastic 的默认值，不是 RNode）。在此应用连接之前，RNode 不必出现在系统设置 → 蓝牙中；堆栈配对时会出现操作系统对话框。无显示屏的电台：连接 USB → Reticulum Admin → 蓝牙 → 开始配对 → 将管理面板中显示的 PIN（不是电台屏幕上的）输入到操作系统对话框。有显示屏的电台：在 Heltec 设备上按住按钮约 7 秒（时间因机型而异；许多板上约 10 秒会启用 Wi‑Fi AP），读取屏幕上的 PIN，然后输入到操作系统对话框。重试前请在操作系统蓝牙设置中清除失败的绑定。",
-      "offlineHintBleBondStale": "macOS 仍将此 RNode 显示为已配对，但蓝牙密钥不再匹配（对等方已删除配对信息）。在系统设置 → 蓝牙中忘记该设备，将 RNode 置于配对模式（管理 → 蓝牙 → 开始配对，或按住按钮约 7 秒），然后删除并重新添加此接口（选择设备），重新启动堆栈，并在提示时输入新的 6 位 PIN。"
+      "offlineHintBleBondStale": "macOS 仍将此 RNode 显示为已配对，但蓝牙密钥不再匹配（对等方已删除配对信息）。在系统设置 → 蓝牙中忘记该设备，将 RNode 置于配对模式（管理 → 蓝牙 → 开始配对，或按住按钮约 7 秒），然后删除并重新添加此接口（选择设备），重新启动堆栈，并在提示时输入新的 6 位 PIN。",
+      "tcpFastFlap": "{{name}} ： HUB可能在频繁重启堆栈后阻止了您的IP （ {{host}}: {{port}} ）",
+      "tcpFastFlapHint": "Reticulum 1.4.0+ 公共枢纽会在 12 小时内五次短 TCP 会话后封锁 IP。快速重启 mesh-client 或协议栈会计入。请禁用此枢纽并等待最多 12 小时 — 再次重启会延长封锁。"
     },
     "autoConnectingTo": "正在自动连接到 {{deviceName}}…",
     "autoReconnectInProgress": "正在自动重新连接…",
@@ -1357,7 +1359,9 @@
       "txQueueDropsHintBle": "此BLE RNode无法排出其TX队列（链接卡住或抖动）。首选USB串行或Wi-Fi (tcp://) ，或在忘记系统设置→蓝牙后停止堆栈并重新配对。",
       "txQueueDropsHintBleBondStale": "TX队列已满，因为BLE绑定已过时。在系统设置→蓝牙中忘记此RNode ，然后使用管理→蓝牙（清除配对/开始配对）或切换到USB。",
       "txQueueDropsHintNeutral": "此接口TX通道已满。检查该接口的链接健康状况（或禁用它）以停止丢弃。",
-      "txQueueDropsHintBleFlowControl": "无线电忙时主机TX队列背压（流量控制开启）。在射频拥塞下预期—不是卡住的链路。减少出站负载或等待通话时间。"
+      "txQueueDropsHintBleFlowControl": "无线电忙时主机TX队列背压（流量控制开启）。在射频拥塞下预期—不是卡住的链路。减少出站负载或等待通话时间。",
+      "tcpResetByPeer": "{{name}} ：集线器重置TCP会话（对等体重置连接）",
+      "tcpReadEof": "{{name}} ：集线器已干净关闭TCP （信息： TCP读取： EOF ）"
     },
     "reticulumSidecarBundledMissing": "此安装缺少捆绑的 Reticulum sidecar。升级到较新的版本或报告问题 - 在打包安装中无法从源代码构建。",
     "radioMqttRootDivergesWarning": "无线电MQTT根主题为{{radioRoot}} ，但此面板订阅了{{appPrefix}}。匹配无线电以限制全国节点流量—更新主题前缀并重新连接MQTT。",
@@ -1755,7 +1759,8 @@
         "txQueueDropsBle": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满） — BLE RNode链接卡住；首选USB或重新配对",
         "txQueueDropsBleBondStale": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满） — BLE绑定已过期；忘记操作系统蓝牙并重新配对",
         "txQueueDropsNeutral": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满） —检查该接口的链路",
-        "txQueueDropsBleFlowControl": "接口“{{name}}”丢弃了{{count}}个出站数据包（主机TX队列已满） —流量控制已打开；预计在射频拥塞下，而不是卡住链路"
+        "txQueueDropsBleFlowControl": "接口“{{name}}”丢弃了{{count}}个出站数据包（主机TX队列已满） —流量控制已打开；预计在射频拥塞下，而不是卡住链路",
+        "tcpFastFlap": "TCP集线器“{{name}}”可能在频繁重启堆栈后阻止了此IP （ {{host}}: {{port}} ）"
       }
     },
     "routingPort": {

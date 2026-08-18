@@ -24,6 +24,8 @@ export interface ReticulumSidecarIssueAlertsBlockProps {
 function countSidecarInterfaceIssues(alert: ReticulumInterfaceIssueAlert): number {
   return (
     alert.tcpConnectFailed.length +
+    (alert.tcpResetByPeer?.length ?? 0) +
+    (alert.tcpReadEof?.length ?? 0) +
     alert.txQueueDrops.length +
     (alert.bleBondRemoved?.length ?? 0) +
     (alert.blePairingTimedOut?.length ?? 0) +
@@ -46,10 +48,16 @@ export function ReticulumSidecarIssueAlertsBlock({
     return null;
   }
 
-  const showShareInstanceHint =
-    shareInstanceEnabled && (alert.transportSaturatedCount > 0 || alert.txQueueDrops.length > 0);
   const bleBondRemoved = alert.bleBondRemoved ?? [];
   const blePairingTimedOut = alert.blePairingTimedOut ?? [];
+  const tcpResetByPeer = alert.tcpResetByPeer ?? [];
+  const tcpReadEof = alert.tcpReadEof ?? [];
+  const showShareInstanceHint =
+    shareInstanceEnabled &&
+    (alert.transportSaturatedCount > 0 ||
+      alert.txQueueDrops.length > 0 ||
+      tcpResetByPeer.length > 0 ||
+      tcpReadEof.length > 0);
   const showBleBondActions =
     bleBondRemoved.length > 0 && (onStopStack != null || onOpenAdminBluetooth != null);
 
@@ -67,6 +75,22 @@ export function ReticulumSidecarIssueAlertsBlock({
             <p>{t('connectionPanel.reticulumSidecarIssues.tcpConnectFailed', { name })}</p>
             <p className="text-muted mt-0.5 text-[11px]">
               {t('connectionPanel.reticulumSidecarIssues.tcpConnectFailedHint')}
+            </p>
+          </li>
+        ))}
+        {tcpResetByPeer.map((name) => (
+          <li key={`tcp-rst-${name}`}>
+            <p>{t('connectionPanel.reticulumSidecarIssues.tcpResetByPeer', { name })}</p>
+            <p className="text-muted mt-0.5 text-[11px]">
+              {t('connectionPanel.reticulumLocalInterfaces.tcpUnreachableHint')}
+            </p>
+          </li>
+        ))}
+        {tcpReadEof.map((name) => (
+          <li key={`tcp-eof-${name}`}>
+            <p>{t('connectionPanel.reticulumSidecarIssues.tcpReadEof', { name })}</p>
+            <p className="text-muted mt-0.5 text-[11px]">
+              {t('connectionPanel.reticulumLocalInterfaces.tcpUnreachableHint')}
             </p>
           </li>
         ))}

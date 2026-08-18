@@ -66,6 +66,32 @@ describe('ReticulumDiagnosticEngine', () => {
     );
   });
 
+  it('flags unreachable TCP hubs as fast-flap when stack restarts exceeded the hub window', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+      {
+        stackFastFlapSuspected: true,
+        interfaces: [
+          {
+            id: 'ratspeak',
+            name: 'Ratspeak',
+            type: 'tcp',
+            enabled: true,
+            status: 'down',
+            host: 'rns.ratspeak.org',
+            port: 4242,
+          },
+        ],
+      },
+    );
+    const row = rows.find(
+      (r): r is RfDiagnosticRow => r.kind === 'rf' && r.condition === 'reticulum/tcp-fast-flap',
+    );
+    expect(row).toBeDefined();
+    expect(row?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.runtime.tcpFastFlap');
+    expect(row?.reticulumRepairKind).toBe('disable');
+  });
+
   it('adds sidecar interface issue rows for tcp failures and tx drops', () => {
     const rows = buildReticulumDiagnosticRows(
       { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },

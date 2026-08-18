@@ -3,8 +3,7 @@
  */
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-
-import en from '@/renderer/locales/en/translation.json';
+import { axe } from 'vitest-axe';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -15,6 +14,9 @@ vi.mock('react-i18next', () => ({
     },
   }),
 }));
+
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import en from '@/renderer/locales/en/translation.json';
 
 import { ReticulumLocalInterfaceAlertsBlock } from './ReticulumLocalInterfaceAlertsBlock';
 
@@ -71,6 +73,44 @@ describe('ReticulumLocalInterfaceAlertsBlock', () => {
     expect(
       screen.getByText('connectionPanel.reticulumLocalInterfaces.offlineHintBleBondStale'),
     ).toBeInTheDocument();
+  });
+
+  it('shows fast-flap lockout copy and hides Restart stack', async () => {
+    const onRestartStack = vi.fn();
+    const { container } = render(
+      <ReticulumLocalInterfaceAlertsBlock
+        alerts={[
+          {
+            reason: 'tcp_fast_flap',
+            iface: {
+              id: 'ratspeak',
+              name: 'Ratspeak',
+              type: 'tcp',
+              enabled: true,
+              status: 'down',
+              host: 'rns.ratspeak.org',
+              port: 4242,
+            },
+          },
+        ]}
+        availablePorts={[]}
+        onRestartStack={onRestartStack}
+      />,
+    );
+
+    expect(
+      screen.getByText('connectionPanel.reticulumLocalInterfaces.tcpFastFlap:Ratspeak'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumLocalInterfaces.tcpFastFlapHint'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: 'connectionPanel.reticulumLocalInterfaces.restartStackAria',
+      }),
+    ).not.toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });
 

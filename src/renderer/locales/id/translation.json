@@ -1267,10 +1267,12 @@
       "connectingRow": "{{name}}: menghubungkan melalui Bluetooth",
       "offlineHintWifi": "Periksa apakah RNode ada di Lan Anda, dinyalakan, dan dapat dijangkau pada IP yang dikonfigurasi (port TCP default 7633, bukan 4242). Perbarui host di bawah ini jika DHCP menetapkan alamat baru, atau menyediakan kembali Wi-Fi di → Admin Reticulum.",
       "tcpUnreachable": "{{name}}: Hub TCP tidak dapat dijangkau ({{host}}:{{port}})",
-      "tcpUnreachableHint": "Instansi Reticulum jarak jauh mungkin offline atau memblokir koneksi. Nonaktifkan antarmuka ini atau verifikasi host dan port.",
+      "tcpUnreachableHint": "Instansi Reticulum jarak jauh mungkin offline atau memblokir koneksi. Nonaktifkan antarmuka ini atau verifikasi host dan port. Restart mesh-client atau stack yang sering dapat membuat hub Reticulum 1.4.0+ memblokir IP Anda selama 12 jam — lebih baik menunggu daripada me-restart lagi.",
       "connectingHintBle": "Tautan BLE RNode dapat memakan waktu hingga 60 detik setelah tumpukan dimulai (jendela kunci sandi OS). Masukkan PIN RNode saat ini jika diminta — jangan pernah 123456. Ini normal, bukan kesalahan. Perangkat mungkin tidak muncul di Pengaturan Sistem sampai ikatan berhasil.",
       "offlineHintBle": "Untuk menghapus kesalahan ini, Anda mungkin perlu menghapus antarmuka ini dan menambahkannya kembali (Pilih perangkat) agar ID Bluetooth tersimpan diperbarui, lalu mulai ulang stack. OS Anda mungkin meminta PIN Bluetooth 6 digit (macOS, Windows, atau Linux). RNode menghasilkan kode baru setiap pemasangan — jangan pernah menggunakan 123456 (itu default Meshtastic, bukan RNode). RNode tidak perlu muncul di Pengaturan Sistem → Bluetooth sebelum aplikasi ini terhubung; dialog OS muncul saat stack memasangkan. Radio tanpa layar: sambungkan USB → Reticulum Admin → Bluetooth → Mulai pemasangan → masukkan PIN yang ditampilkan di panel Admin (bukan di layar radio) ke dialog OS. Radio dengan layar: tahan tombol ~7 dtk pada perangkat Heltec (waktu bervariasi; ~10 dtk pada banyak papan mengaktifkan Wi‑Fi AP), baca PIN di layar, lalu masukkan ke dialog OS. Hapus ikatan yang gagal di pengaturan Bluetooth OS sebelum mencoba lagi.",
-      "offlineHintBleBondStale": "macOS masih menampilkan RNode ini sebagai Dipasangkan, tetapi kunci Bluetooth tidak lagi cocok (informasi pemasangan dihapus oleh peer). Lupakan perangkat di Pengaturan Sistem → Bluetooth, masukkan RNode ke mode pemasangan (Admin → Bluetooth → Mulai pemasangan, atau tahan tombol ~7 dtk), lalu hapus dan tambahkan kembali antarmuka ini (Pilih perangkat), mulai ulang stack, dan masukkan PIN 6 digit baru saat diminta."
+      "offlineHintBleBondStale": "macOS masih menampilkan RNode ini sebagai Dipasangkan, tetapi kunci Bluetooth tidak lagi cocok (informasi pemasangan dihapus oleh peer). Lupakan perangkat di Pengaturan Sistem → Bluetooth, masukkan RNode ke mode pemasangan (Admin → Bluetooth → Mulai pemasangan, atau tahan tombol ~7 dtk), lalu hapus dan tambahkan kembali antarmuka ini (Pilih perangkat), mulai ulang stack, dan masukkan PIN 6 digit baru saat diminta.",
+      "tcpFastFlap": "{{name}}: hub kemungkinan memblokir IP Anda setelah tumpukan sering dimulai ulang ({{host}}:{{port}})",
+      "tcpFastFlapHint": "Reticulum 1.4.0+ hub publik memblokir IP setelah lima sesi TCP singkat dalam waktu 12 jam. Restart cepat mesh-client atau stack dihitung. Nonaktifkan hub ini dan tunggu hingga 12 jam — memulai ulang lagi memperpanjang blok."
     },
     "autoConnectingTo": "Menghubungkan otomatis ke {{deviceName}}…",
     "autoReconnectInProgress": "Sambungan ulang otomatis sedang berlangsung…",
@@ -1357,7 +1359,9 @@
       "txQueueDropsHintBle": "BLE RNode ini tidak dapat menguras antrean TX-nya (tautan macet atau flapping). Lebih suka USB serial atau Wi-Fi (tcp://), atau Stop stack dan re-pair setelah Forget di Pengaturan Sistem → Bluetooth.",
       "txQueueDropsHintBleBondStale": "Antrian TX penuh karena ikatan BLE sudah usang. Lupakan RNode ini di Pengaturan Sistem → Bluetooth, lalu gunakan Admin → Bluetooth (Hapus terpasang / Mulai pairing) atau beralih ke USB.",
       "txQueueDropsHintNeutral": "Saluran TX antarmuka ini penuh. Periksa kesehatan tautan antarmuka itu (atau nonaktifkan) untuk menghentikan tetesan.",
-      "txQueueDropsHintBleFlowControl": "Tekanan balik antrean TX host saat radio sedang sibuk (kontrol aliran aktif). Diharapkan di bawah kemacetan RF — bukan tautan yang macet. Kurangi muatan keluar atau tunggu waktu tayang."
+      "txQueueDropsHintBleFlowControl": "Tekanan balik antrean TX host saat radio sedang sibuk (kontrol aliran aktif). Diharapkan di bawah kemacetan RF — bukan tautan yang macet. Kurangi muatan keluar atau tunggu waktu tayang.",
+      "tcpResetByPeer": "{{name}}: hub mengatur ulang sesi TCP (Pengaturan ulang koneksi oleh rekan)",
+      "tcpReadEof": "{{name}}: hub menutup TCP dengan bersih (INFO: TCP baca: EOF)"
     },
     "reticulumSidecarBundledMissing": "Instalasi ini tidak memiliki sespan Reticulum yang dibundel. Tingkatkan versi ke rilis yang lebih baru atau laporkan masalahnya — pembuatan dari sumber tidak tersedia dalam paket instalasi.",
     "radioMqttRootDivergesWarning": "Topik utama Radio MQTT adalah {{radioRoot}} tetapi panel ini berlangganan {{appPrefix}}. Cocokkan radio untuk membatasi lalu lintas simpul nasional — perbarui Prefiks Topik dan sambungkan kembali MQTT.",
@@ -1755,7 +1759,8 @@
         "txQueueDropsBle": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX penuh) — tautan BLE RNode macet; lebih suka USB atau pasang ulang",
         "txQueueDropsBleBondStale": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX penuh) — ikatan BLE basi; Lupakan di OS Bluetooth dan pasangkan kembali",
         "txQueueDropsNeutral": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX penuh) — periksa tautan antarmuka tersebut",
-        "txQueueDropsBleFlowControl": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX tuan rumah penuh) — kontrol aliran aktif; diharapkan di bawah kemacetan RF, bukan tautan yang macet"
+        "txQueueDropsBleFlowControl": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX tuan rumah penuh) — kontrol aliran aktif; diharapkan di bawah kemacetan RF, bukan tautan yang macet",
+        "tcpFastFlap": "Hub TCP \"{{name}}\" kemungkinan memblokir IP ini setelah sering memulai ulang tumpukan ({{host}}:{{port}})"
       }
     },
     "routingPort": {

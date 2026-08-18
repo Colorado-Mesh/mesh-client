@@ -93,6 +93,18 @@ describe('reticulumSidecarReads', () => {
     expect(proxyGet).toHaveBeenCalledTimes(3);
   });
 
+  it('fetchReticulumInterfaces rethrows bypassCache failures instead of returning cache', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyGet.mockResolvedValueOnce({
+      interfaces: [{ id: '1', name: 'tcp', type: 'tcp', enabled: true, status: 'up' }],
+    });
+    await expect(fetchReticulumInterfaces()).resolves.toHaveLength(1);
+
+    proxyGet.mockRejectedValue(new Error('sidecar GET /api/v1/interfaces failed: 503'));
+    await expect(fetchReticulumInterfaces({ bypassCache: true })).rejects.toThrow('failed: 503');
+    await expect(fetchReticulumInterfaces()).resolves.toHaveLength(1);
+  });
+
   it('fetchReticulumSerialPortOptions shares cache and rate-limit fallback with path helper', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyGet.mockResolvedValueOnce({
