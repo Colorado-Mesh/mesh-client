@@ -88,6 +88,31 @@ function idArrayEquals(a: readonly string[], b: readonly string[]): boolean {
   return true;
 }
 
+/** Keep existing IDs in committed order; insert newcomers at their fully-sorted rank. */
+function mergePickerOrderOnMembershipChange(
+  committedIds: readonly string[],
+  sortedIds: readonly string[],
+): string[] {
+  const committedSet = new Set(committedIds);
+  const nextSet = new Set(sortedIds);
+  const kept = committedIds.filter((id) => nextSet.has(id));
+  const rank = new Map(sortedIds.map((id, i) => [id, i]));
+  const merged = [...kept];
+  for (const id of sortedIds) {
+    if (committedSet.has(id)) continue;
+    const newRank = rank.get(id) ?? Number.MAX_SAFE_INTEGER;
+    let insertAt = merged.length;
+    for (let i = 0; i < merged.length; i++) {
+      if ((rank.get(merged[i]) ?? Number.MAX_SAFE_INTEGER) > newRank) {
+        insertAt = i;
+        break;
+      }
+    }
+    merged.splice(insertAt, 0, id);
+  }
+  return merged;
+}
+
 /** Sort a picker list. Missing RSSI is always last. Tie-break on id. */
 export function sortPickerItems<T>(
   items: readonly T[],
@@ -150,8 +175,9 @@ function remapById<T>(
 /**
  * Name sort is immediate. User changes to RSSI key/direction are immediate.
  * Live RSSI advertisements keep the previous row order until
- * {@link PICKER_RSSI_REORDER_DEBOUNCE_MS} elapses, unless the device set changes
- * (add/remove) — then the new membership is inserted in sorted position immediately.
+ * {@link PICKER_RSSI_REORDER_DEBOUNCE_MS} elapses. Add/remove updates membership
+ * immediately while preserving the committed relative order of existing IDs;
+ * RSSI-only reordering of those IDs still waits for the debounce.
  * Item payloads (live dBm) always come from `items`.
  */
 export function useDebouncedPickerSort<T>(
@@ -186,9 +212,21 @@ export function useDebouncedPickerSort<T>(
     }
     const prev = committedIdsRef.current;
     const membershipChanged = !idSetEquals(prev, nextIds);
-    if (membershipChanged || prev.length === 0) {
+    if (prev.length === 0) {
       applyNow();
       return;
+    }
+    if (membershipChanged) {
+      const merged = mergePickerOrderOnMembershipChange(prev, nextIds);
+      committedIdsRef.current = merged;
+      setOrderIds(merged);
+      if (idArrayEquals(merged, nextIds)) return;
+      const timer = window.setTimeout(() => {
+        applyNow();
+      }, PICKER_RSSI_REORDER_DEBOUNCE_MS);
+      return () => {
+        window.clearTimeout(timer);
+      };
     }
     if (idArrayEquals(prev, nextIds)) return;
     const timer = window.setTimeout(() => {

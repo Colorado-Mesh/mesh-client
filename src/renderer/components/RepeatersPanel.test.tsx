@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
+import type { MeshCoreRepeaterStatus } from '../lib/meshcore/meshcoreHookTypes';
 import { meshcoreStoredUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import type { MeshNode } from '../lib/types';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
@@ -776,6 +777,34 @@ describe('RepeatersPanel', () => {
 
     expect(screen.getByText('100%')).toBeInTheDocument();
     expect(dbOutcomeSpy).toHaveBeenCalledWith(repeater.node_id, pathHash, true, undefined);
+  });
+
+  it('shows 0% airtime when uptime is positive and airtime is zero', () => {
+    const status: MeshCoreRepeaterStatus = {
+      battMilliVolts: 0,
+      noiseFloor: 0,
+      lastRssi: 0,
+      lastSnr: 0,
+      nPacketsRecv: 0,
+      nPacketsSent: 0,
+      totalAirTimeSecs: 0,
+      totalUpTimeSecs: 120,
+      nSentFlood: 0,
+      nSentDirect: 0,
+      nRecvFlood: 0,
+      nRecvDirect: 0,
+      errEvents: 0,
+      nDirectDups: 0,
+      nFloodDups: 0,
+      currTxQueueLen: 0,
+    };
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        meshcoreNodeStatus={new Map([[repeater.node_id, status]])}
+      />,
+    );
+    expect(screen.getByText('0.0%')).toBeInTheDocument();
   });
 
   it('loads getMeshcoreContacts only once on mount when nodes grow', async () => {

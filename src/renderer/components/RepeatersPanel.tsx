@@ -53,6 +53,7 @@ import {
   type RepeaterContactSignal,
   type RepeaterSortDir,
   type RepeaterSortKey,
+  resolveRepeaterAirPct,
   resolveRepeaterReliability,
   resolveRepeaterRssi,
   resolveRepeaterSnr,
@@ -1052,10 +1053,7 @@ export default function RepeatersPanel({
                         })
                       : [];
                   const reliabilityText = displayReliability(paths);
-                  const airPct =
-                    status?.totalAirTimeSecs && status?.totalUpTimeSecs
-                      ? ((status.totalAirTimeSecs / status.totalUpTimeSecs) * 100).toFixed(1)
-                      : null;
+                  const airPct = resolveRepeaterAirPct(status);
                   const isStatusLoading = isRepeaterAdminRpcPending(
                     meshcoreRepeaterRpcPending,
                     node.node_id,
@@ -1259,7 +1257,9 @@ export default function RepeatersPanel({
                           )}
                         </td>
                         <td className="py-2 pr-4">{formatUptime(t, status?.totalUpTimeSecs)}</td>
-                        <td className="py-2 pr-4">{airPct != null ? `${airPct}%` : '—'}</td>
+                        <td className="py-2 pr-4">
+                          {airPct != null ? `${airPct.toFixed(1)}%` : '—'}
+                        </td>
                         <td className="py-2 pr-4">{reliabilityText}</td>
                         <td className="py-2">
                           <div className="flex flex-wrap gap-1">

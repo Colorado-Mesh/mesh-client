@@ -707,14 +707,28 @@ export default function ConnectionPanel({
   const [bleDevices, setBleDevices] = useState<NobleBleDevice[]>([]);
   const [showBlePicker, setShowBlePicker] = useState(false);
   const [blePickerSort, setBlePickerSort] = useState(() => defaultPickerSort('ble'));
-  const getBlePickerName = useCallback((device: NobleBleDevice) => {
-    const cache =
+  const bleDeviceNamesCache = useMemo(() => {
+    const parsed =
       parseStoredJson<Record<string, string>>(
         localStorage.getItem('mesh-client:bleDeviceNames'),
         'ConnectionPanel bleDeviceNames list',
       ) ?? {};
-    return blePickerDisplayName(device.deviceId, device.deviceName, cache[device.deviceId]);
-  }, []);
+    const cache: Record<string, string> = {};
+    for (const device of bleDevices) {
+      const cached = parsed[device.deviceId];
+      if (cached) cache[device.deviceId] = cached;
+    }
+    return cache;
+  }, [bleDevices]);
+  const getBlePickerName = useCallback(
+    (device: NobleBleDevice) =>
+      blePickerDisplayName(
+        device.deviceId,
+        device.deviceName,
+        bleDeviceNamesCache[device.deviceId],
+      ),
+    [bleDeviceNamesCache],
+  );
   const getBlePickerId = useCallback((device: NobleBleDevice) => device.deviceId, []);
   const getBlePickerRssi = useCallback((device: NobleBleDevice) => device.rssi, []);
   const sortedBleDevices = useDebouncedPickerSort(

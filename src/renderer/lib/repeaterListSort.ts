@@ -25,8 +25,6 @@ export const DEFAULT_REPEATER_SORT: RepeaterSortPreference = {
   dir: 'desc',
 };
 
-const SIGNAL_MAX_AGE_MS = MS_PER_DAY;
-
 export interface RepeaterContactSignal {
   node_id: number;
   last_snr: number | null;
@@ -97,7 +95,7 @@ export function isRepeaterSignalRecent(lastAdvert: number | null | undefined): b
   if (lastAdvert == null) return false;
   const advertMs = normalizeLastHeardMs(lastAdvert);
   if (!advertMs) return false;
-  return Date.now() - advertMs < SIGNAL_MAX_AGE_MS;
+  return Date.now() - advertMs < MS_PER_DAY;
 }
 
 function finiteNonZero(value: number | null | undefined): number | null {

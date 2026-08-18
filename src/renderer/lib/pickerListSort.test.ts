@@ -269,4 +269,48 @@ describe('useDebouncedPickerSort', () => {
     });
     expect(result.current.map((d) => d.id)).toEqual(['strong', 'weak']);
   });
+
+  it('keeps committed RSSI order when a device is added before debounce fires', () => {
+    const { result, rerender } = renderHook(
+      ({ items }: { items: BleItem[] }) =>
+        useDebouncedPickerSort(items, 'rssi', 'desc', bleAccessors),
+      {
+        initialProps: {
+          items: [
+            { id: 'a', name: 'A', rssi: -40 },
+            { id: 'b', name: 'B', rssi: -90 },
+          ],
+        },
+      },
+    );
+    expect(result.current.map((d) => d.id)).toEqual(['a', 'b']);
+
+    rerender({
+      items: [
+        { id: 'a', name: 'A', rssi: -95 },
+        { id: 'b', name: 'B', rssi: -30 },
+      ],
+    });
+    expect(result.current.map((d) => d.id)).toEqual(['a', 'b']);
+
+    rerender({
+      items: [
+        { id: 'a', name: 'A', rssi: -95 },
+        { id: 'b', name: 'B', rssi: -30 },
+        { id: 'c', name: 'C', rssi: -50 },
+      ],
+    });
+    expect(result.current.map((d) => d.id)).toEqual(['c', 'a', 'b']);
+    expect(result.current.find((d) => d.id === 'b')?.rssi).toBe(-30);
+
+    act(() => {
+      vi.advanceTimersByTime(PICKER_RSSI_REORDER_DEBOUNCE_MS - 1);
+    });
+    expect(result.current.map((d) => d.id)).toEqual(['c', 'a', 'b']);
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(result.current.map((d) => d.id)).toEqual(['b', 'c', 'a']);
+  });
 });
