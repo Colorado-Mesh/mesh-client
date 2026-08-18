@@ -11,16 +11,19 @@ assignees: ''
 **Crash source:** `(filled by crash reporter)`
 
 **Desktop:**
+
 - OS:
 - App version:
 - Packaged:
 
 **Error message:**
+
 ```
 (filled by crash reporter)
 ```
 
 **Stack trace:**
+
 ```
 (filled by crash reporter)
 ```
@@ -33,9 +36,9 @@ Please attach the zip from **App → Support / Bug reports → Export for GitHub
 **Do not** attach **Export for Developer** or `mesh-client.db` to this public issue — the database may contain saved passwords.
 
 **Steps to reproduce (please fill in):**
+
 1.
 2.
 3.
 
 **Additional context:**
-

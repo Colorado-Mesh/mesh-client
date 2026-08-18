@@ -55,7 +55,7 @@ describe('buildCrashReportUrl', () => {
       error: new Error('ENOENT'),
     };
 
-    const url = decodeURIComponent(buildCrashReportUrl(ctx));
+    const url = decodeURIComponent(buildCrashReportUrl(ctx).replace(/\+/g, '%20'));
 
     expect(url).toContain(`App version: 5.24.1`);
     expect(url).toContain('Packaged: yes');

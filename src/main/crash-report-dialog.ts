@@ -10,8 +10,9 @@
  * - 60s cooldown prevents dialog spam from error loops
  * - `showMessageBoxSync` for synchronous uncaughtException context
  */
-import { app, dialog, shell } from 'electron';
 import { release as osRelease } from 'node:os';
+
+import { app, dialog, shell } from 'electron';
 
 import { sanitizeLogMessage } from './sanitize-log-message';
 
@@ -51,7 +52,7 @@ function getPlatformLabel(): string {
 }
 
 function formatErrorForTitle(ctx: CrashContext): string {
-  const msg = ctx.error instanceof Error ? ctx.error.message : String(ctx.error);
+  const msg = ctx.error instanceof Error ? ctx.error.message : ctx.error;
   const cleaned = sanitizeLogMessage(msg).replace(/\n/g, ' ').slice(0, 80);
   return `[Crash] ${cleaned}`;
 }
@@ -63,12 +64,12 @@ function formatErrorForTitle(ctx: CrashContext): string {
  */
 function sanitizeForBody(text: string): string {
   return text
-    .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F\u2028\u2029]+/g, ' ')
+    .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F\u2028\u2029]+/g, ' ') // eslint-disable-line no-control-regex
     .replace(/[ \t]+/g, ' ');
 }
 
 function formatErrorForBody(ctx: CrashContext): string {
-  const msg = ctx.error instanceof Error ? ctx.error.message : String(ctx.error);
+  const msg = ctx.error instanceof Error ? ctx.error.message : ctx.error;
   const stack =
     ctx.error instanceof Error && ctx.error.stack
       ? ctx.error.stack.slice(0, MAX_STACK_LENGTH)
@@ -160,7 +161,7 @@ export function showCrashReportDialog(ctx: CrashContext): boolean {
   }
   lastCrashDialogAt = now;
 
-  const msg = ctx.error instanceof Error ? ctx.error.message : String(ctx.error);
+  const msg = ctx.error instanceof Error ? ctx.error.message : ctx.error;
   const detail = [
     `Source: ${ctx.source}`,
     '',
