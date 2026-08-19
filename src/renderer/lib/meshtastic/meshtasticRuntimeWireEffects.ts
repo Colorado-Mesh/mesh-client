@@ -41,6 +41,11 @@ import type {
   TelemetryPoint,
 } from '../types';
 import { recordMeshtasticClientNotification } from './meshtasticClientNotification';
+import {
+  getMeshtasticConfigurePhase,
+  setMeshtasticConfigurePhase,
+  setMeshtasticConfigureProgressHandler,
+} from './meshtasticConfigurePhase';
 import { meshtasticDeviceStatusForCode } from './meshtasticDeviceStatus';
 import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
 import type { ModulePortEvent, PaxCounterPoint } from './meshtasticModuleEvents';
@@ -267,6 +272,24 @@ export function attachMeshtasticRuntimeWireEffects(
       clearTimeout(metadataRetryTimerRef.current);
       metadataRetryTimerRef.current = null;
     }
+    setMeshtasticConfigureProgressHandler(null);
+  });
+
+  const armBleConfigureStallTimeout = (): void => {
+    if (type !== 'ble' || isBleReconnectAttemptActive()) return;
+    clearConfigureTimeout();
+    configureTimeoutRef.current = setTimeout(() => {
+      console.warn(
+        `[useMeshtasticRuntime] configure stall timeout (BLE ${MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS / 1000}s) — forcing disconnect`,
+      );
+      clearConfigureTimeout();
+      handleConnectionLostRef.current();
+    }, MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS);
+  };
+
+  setMeshtasticConfigureProgressHandler(() => {
+    if (!getMeshtasticConfigurePhase() || type !== 'ble' || isBleReconnectAttemptActive()) return;
+    armBleConfigureStallTimeout();
   });
 
   const {
@@ -391,7 +414,7 @@ export function attachMeshtasticRuntimeWireEffects(
   }
   if (identityId) {
     meshtasticIngestSessionRef.current = attachMeshtasticIngest(identityId, {
-      getIsConfiguring: () => isConfiguringRef.current,
+      getIsConfiguring: getMeshtasticConfigurePhase,
       getMyNodeNum: () => myNodeNumRef.current,
     });
   }
@@ -411,6 +434,7 @@ export function attachMeshtasticRuntimeWireEffects(
     if (status === DeviceStatusEnum.DeviceRestarting) {
       deviceConfiguredRef.current = false;
       isConfiguringRef.current = true;
+      setMeshtasticConfigurePhase(true);
       meshtasticIngestSessionRef.current?.setConfiguring(true);
       schedulePostCommitRebootRecoveryRef.current('DeviceRestarting');
     }
@@ -422,6 +446,7 @@ export function attachMeshtasticRuntimeWireEffects(
       status === DeviceStatusEnum.DeviceConfiguring
     ) {
       isConfiguringRef.current = true;
+      setMeshtasticConfigurePhase(true);
       meshtasticIngestSessionRef.current?.setConfiguring(true);
       // Initial BLE connect only — during reconnect the 90s attempt budget owns stall detection.
       if (
@@ -430,11 +455,7 @@ export function attachMeshtasticRuntimeWireEffects(
         !configureTimeoutRef.current &&
         !isBleReconnectAttemptActive()
       ) {
-        configureTimeoutRef.current = setTimeout(() => {
-          console.warn('[useMeshtasticRuntime] configure timeout (BLE 30s) — forcing disconnect');
-          clearConfigureTimeout();
-          handleConnectionLostRef.current();
-        }, MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS);
+        armBleConfigureStallTimeout();
       }
     }
 
@@ -443,6 +464,7 @@ export function attachMeshtasticRuntimeWireEffects(
       clearPostCommitRebootRecoveryRef.current();
       clearConfigureTimeout();
       isConfiguringRef.current = false;
+      setMeshtasticConfigurePhase(false);
       meshtasticIngestSessionRef.current?.setConfiguring(false);
       lastDataReceivedRef.current = Date.now();
       startWatchdog();
@@ -497,6 +519,8 @@ export function attachMeshtasticRuntimeWireEffects(
       lastNodeInfoRequestAtRef.current.clear();
       clearConfigureTimeout();
       isConfiguringRef.current = false;
+      setMeshtasticConfigurePhase(false);
+      meshtasticIngestSessionRef.current?.setConfiguring(false);
       stopWatchdog();
       stopGpsInterval();
       cleanupSubscriptions();
@@ -627,7 +651,7 @@ export function attachMeshtasticRuntimeWireEffects(
     opts?: { ignoreDisplayIdentity?: boolean },
   ): void => {
     if (from === 0 || from === myNodeNumRef.current) return;
-    if (isConfiguringRef.current) return;
+    if (getMeshtasticConfigurePhase()) return;
     // Missing-recipient-key recovery must refresh even nodes that already have a
     // display name (we know who they are, we just lack a usable public key), so it
     // opts out of the display-identity short-circuit while keeping the rate limit.
@@ -679,7 +703,7 @@ export function attachMeshtasticRuntimeWireEffects(
       }),
       attachMeshtasticRawPacketSideEffects(identityId, {
         getMyNodeNum: () => myNodeNumRef.current,
-        getIsConfiguring: () => isConfiguringRef.current,
+        getIsConfiguring: getMeshtasticConfigurePhase,
         setRawPackets,
         setSignalTelemetry,
         touchLastData,
@@ -722,7 +746,7 @@ export function attachMeshtasticRuntimeWireEffects(
       attachMeshtasticNodeSideEffects(identityId, {
         connectionType: type,
         getMyNodeNum: () => myNodeNumRef.current,
-        getIsConfiguring: () => isConfiguringRef.current,
+        getIsConfiguring: getMeshtasticConfigurePhase,
         getBluetoothDeviceId: () =>
           (device.transport as { __bluetoothDevice?: { id?: string } }).__bluetoothDevice?.id,
         touchLastData,

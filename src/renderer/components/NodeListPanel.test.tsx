@@ -103,6 +103,12 @@ vi.mock('./Toast', () => ({
   }),
 }));
 
+vi.mock('../lib/downloadBlob', () => ({
+  downloadBlob: vi.fn(),
+}));
+
+import { downloadBlob } from '../lib/downloadBlob';
+
 const defaultFilter = {
   enabled: false,
   maxDistance: 500,
@@ -855,6 +861,39 @@ describe('NodeListPanel meshtastic node id display', () => {
       />,
     );
     expect(screen.getByText('!0bcd5737')).toBeInTheDocument();
+  });
+});
+
+describe('NodeListPanel JSON export', () => {
+  beforeEach(() => {
+    vi.mocked(downloadBlob).mockClear();
+  });
+
+  it('exports millisecond last_heard as unix seconds with last_heard_unit', async () => {
+    const user = userEvent.setup();
+    const lastHeardMs = 1_700_000_000_000;
+    const nodes = new Map<number, MeshNode>([
+      [42, makeNode({ node_id: 42, long_name: 'Export Node', last_heard: lastHeardMs })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Export JSON' }));
+    expect(downloadBlob).toHaveBeenCalledTimes(1);
+    const [blob] = vi.mocked(downloadBlob).mock.calls[0];
+    const text = await blob.text();
+    const parsed = JSON.parse(text) as {
+      nodes: { last_heard: number; last_heard_unit: string }[];
+    };
+    expect(parsed.nodes[0]?.last_heard).toBe(1_700_000_000);
+    expect(parsed.nodes[0]?.last_heard_unit).toBe('unix_sec');
   });
 });
 

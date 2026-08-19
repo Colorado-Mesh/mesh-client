@@ -159,7 +159,7 @@ describe('Windows packaging (contract)', () => {
     expect(buildWorkflow).toContain('label: x64 NSIS install');
     expect(buildWorkflow).toContain('node scripts/test-win-nsis-install.mjs --arch x64');
     expect(buildWorkflow).toContain('label: arm64 NSIS install (WoA)');
-    expect(buildWorkflow).toContain('- os: windows-11-arm');
+    expect(buildWorkflow).toContain('- os: windows-11-vs2026-arm');
     expect(buildWorkflow).toContain(
       'node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z',
     );
@@ -215,7 +215,7 @@ describe('Windows packaging (contract)', () => {
     expect(releaseWorkflow).toContain('label: x64 NSIS install');
     expect(releaseWorkflow).toContain('node scripts/test-win-nsis-install.mjs --arch x64');
     expect(releaseWorkflow).toContain('label: arm64 NSIS install (WoA)');
-    expect(releaseWorkflow).toContain('- os: windows-11-arm');
+    expect(releaseWorkflow).toContain('- os: windows-11-vs2026-arm');
     expect(releaseWorkflow).toContain(
       'node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z',
     );

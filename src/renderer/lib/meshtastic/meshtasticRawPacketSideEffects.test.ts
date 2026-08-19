@@ -142,6 +142,44 @@ describe('attachMeshtasticRawPacketSideEffects', () => {
     detach();
   });
 
+  it('does not bump last_heard during configure replay', () => {
+    const staleHeard = Date.now() - 7 * 24 * 60 * 60_000;
+    const nodeMirror = new Map<number, MeshNode>([
+      [PEER, { ...emptyNode(PEER), last_heard: staleHeard, snr: 1 }],
+    ]);
+    syncNodesMapToIdentityStore(IDENTITY, nodeMirror);
+    const deps: MeshtasticRawPacketSideEffectsDeps = {
+      getMyNodeNum: () => MY_NODE,
+      getIsConfiguring: () => true,
+      setRawPackets: vi.fn(),
+      setSignalTelemetry: vi.fn(),
+      touchLastData: vi.fn(),
+    };
+    const detach = attachMeshtasticRawPacketSideEffects(IDENTITY, deps);
+    packetRouter.dispatch(
+      {
+        type: 'raw_packet',
+        payload: {
+          ts: Date.now(),
+          snr: 12,
+          rssi: -70,
+          raw: new Uint8Array([0x01]),
+          fromNodeId: PEER,
+          portLabel: 'TEXT_MESSAGE_APP',
+          viaMqtt: false,
+          hopsAway: 1,
+          packetId: 99,
+          portnum: 1,
+        },
+      },
+      IDENTITY,
+    );
+    const node = getIdentityNode(IDENTITY, PEER);
+    expect(node?.last_heard).toBe(staleHeard);
+    expect(node?.snr).toBe(12);
+    detach();
+  });
+
   it('skips sniffer log when the active protocol tab is not meshtastic', () => {
     localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'meshcore');
     const { deps } = makeDeps();
@@ -166,6 +204,35 @@ describe('attachMeshtasticRawPacketSideEffects', () => {
     expect(deps.setRawPackets).not.toHaveBeenCalled();
     // SNR patch still applies — diagnostics gating is tab-scoped, signal is not.
     expect(getIdentityNode(IDENTITY, PEER)?.snr).toBe(1);
+    detach();
+  });
+
+  it('updates hops for sec-valued last_heard from DB hydration when node is not stale', () => {
+    const heardSec = Math.floor((Date.now() - 30 * 60_000) / 1000);
+    const nodeMirror = new Map<number, MeshNode>([
+      [PEER, { ...emptyNode(PEER), last_heard: heardSec, snr: 1 }],
+    ]);
+    syncNodesMapToIdentityStore(IDENTITY, nodeMirror);
+    const { deps } = makeDeps();
+    const detach = attachMeshtasticRawPacketSideEffects(IDENTITY, deps);
+    packetRouter.dispatch(
+      {
+        type: 'raw_packet',
+        payload: {
+          ts: Date.now(),
+          snr: 8,
+          rssi: -85,
+          raw: new Uint8Array([0xaa]),
+          fromNodeId: PEER,
+          portLabel: 'NODEINFO_APP',
+          viaMqtt: false,
+          hopsAway: 2,
+          packetId: 9,
+        },
+      },
+      IDENTITY,
+    );
+    expect(getIdentityNode(IDENTITY, PEER)?.hops_away).toBe(2);
     detach();
   });
 

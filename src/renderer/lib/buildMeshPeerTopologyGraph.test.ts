@@ -176,6 +176,12 @@ describe('isMeshPeerOnline', () => {
   it('treats recently heard nodes as online', () => {
     expect(isMeshPeerOnline(node(1, { last_heard: Date.now() - 1000 }))).toBe(true);
   });
+
+  it('treats sec-valued last_heard from DB hydration as recently heard', () => {
+    const nowMs = Date.now();
+    const secHeard = Math.floor((nowMs - 30 * 60_000) / 1000);
+    expect(isMeshPeerOnline(node(1, { last_heard: secHeard }), nowMs)).toBe(true);
+  });
 });
 
 function peerMap(peerCount: number, hopsAway: number | undefined): Map<number, MeshNode> {

@@ -70,6 +70,17 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(failureBlock.length).toBeGreaterThan(0);
     expect(failureBlock).toContain('isReconnectingRef.current = false');
     expect(failureBlock).toContain('reconnectGenerationRef.current += 1');
+    expect(failureBlock).toContain('clearMeshtasticConfigureState()');
+  });
+
+  it('clears configure phase on reconnect attempt error', () => {
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toMatch(/onAttemptError:[\s\S]*?clearMeshtasticConfigureState\(\)/);
+  });
+
+  it('clears configure phase in requestRefresh finally', () => {
+    const refreshBody = extractUseCallbackBody(SOURCE, 'requestRefresh');
+    expect(refreshBody).toMatch(/finally[\s\S]*?clearMeshtasticConfigureState\(\)/);
   });
 
   it('exports power suspend/resume handlers for usePowerRecovery', () => {
@@ -290,7 +301,7 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     );
     expect(wireSource).toContain('!isBleReconnectAttemptActive()');
     expect(wireSource).toMatch(
-      /configure timeout \(BLE 30s\)[\s\S]*?handleConnectionLostRef\.current\(\)/,
+      /configure stall timeout \(BLE [\s\S]*?handleConnectionLostRef\.current\(\)/,
     );
   });
 

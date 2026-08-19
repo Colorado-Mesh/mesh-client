@@ -230,7 +230,7 @@ jobs:
             label: x64 NSIS install
             artifact: mesh-client-windows-${{ github.sha }}
             smoke_run: node scripts/test-win-nsis-install.mjs --arch x64
-          - os: windows-11-arm
+          - os: windows-11-vs2026-arm
             label: arm64 NSIS install (WoA)
             artifact: mesh-client-windows-${{ github.sha }}
             smoke_run: node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z
@@ -262,7 +262,7 @@ jobs:
           retention-days: 7
 
       - name: Upload Windows arm64 install failure logs
-        if: failure() && matrix.os == 'windows-11-arm'
+        if: failure() && matrix.os == 'windows-11-vs2026-arm'
         uses: actions/upload-artifact@v7
         with:
           name: mesh-client-win-arm64-install-logs-${{ github.sha }}

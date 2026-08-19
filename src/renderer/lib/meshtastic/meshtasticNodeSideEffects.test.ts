@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { setConnection } from '../../stores/connectionStore';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { addIdentity, useIdentityStore } from '../../stores/identityStore';
 import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
@@ -10,10 +11,16 @@ import {
 } from '../connectedMeshcoreBleMac';
 import { packetRouter } from '../drivers/PacketRouter';
 import { getIdentityNode } from '../identityStoreReads';
+import { getNodeStatus } from '../nodeStatus';
 import { meshtasticProtocol } from '../protocols/MeshtasticProtocol';
 import { MESH_PROTOCOL_STORAGE_KEY } from '../storedMeshProtocol';
 import { meshNodeToNodeRecord } from '../storeRecordAdapters';
+import { MS_PER_DAY } from '../timeConstants';
 import type { MeshNode } from '../types';
+import {
+  resetMeshtasticConfigurePhaseForTests,
+  setMeshtasticConfigurePhase,
+} from './meshtasticConfigurePhase';
 import {
   attachMeshtasticNodeSideEffects,
   type MeshtasticNodeSideEffectsDeps,
@@ -238,6 +245,125 @@ describe('attachMeshtasticNodeSideEffects', () => {
     );
     expect(deps.touchLastData).not.toHaveBeenCalled();
     detach();
+  });
+
+  describe('configure replay last_heard', () => {
+    const STALE_MS = Date.now() - 7 * MS_PER_DAY;
+    const RADIO_SEC = Math.floor(STALE_MS / 1000);
+
+    beforeEach(() => {
+      resetMeshtasticConfigurePhaseForTests();
+      setMeshtasticConfigurePhase(true);
+      setConnection(IDENTITY, { myNodeNum: MY_NODE, status: 'connected', connectionType: 'ble' });
+      upsertNodeRecord(
+        IDENTITY,
+        meshNodeToNodeRecord({
+          ...emptyNode(PEER),
+          long_name: 'Peer Node',
+          short_name: 'PEER',
+          last_heard: STALE_MS,
+        }),
+      );
+      vi.mocked(window.electronAPI.db.saveNode).mockClear();
+    });
+
+    afterEach(() => {
+      resetMeshtasticConfigurePhaseForTests();
+    });
+
+    it('keeps hydrated timestamp when NodeDB then synthetic UserPacket arrive during configure', () => {
+      const { deps } = makeDeps({ getIsConfiguring: () => true });
+      const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
+      packetRouter.dispatch(
+        {
+          type: 'node_info',
+          payload: {
+            nodeId: PEER,
+            longName: 'Peer Node',
+            shortName: 'PEER',
+            lastHeardAt: RADIO_SEC,
+            fromUserPacket: false,
+          },
+        },
+        IDENTITY,
+      );
+      packetRouter.dispatch(
+        {
+          type: 'node_info',
+          payload: {
+            nodeId: PEER,
+            longName: 'Peer Node',
+            shortName: 'PEER',
+            fromUserPacket: true,
+            lastHeardAt: Date.now(),
+          },
+        },
+        IDENTITY,
+      );
+      const node = getIdentityNode(IDENTITY, PEER);
+      expect(node?.last_heard).toBe(STALE_MS);
+      expect(getNodeStatus(node?.last_heard ?? 0)).not.toBe('online');
+      const saveCalls = vi.mocked(window.electronAPI.db.saveNode).mock.calls;
+      expect(saveCalls.length).toBeGreaterThan(0);
+      const lastSaved = saveCalls[saveCalls.length - 1]?.[0];
+      expect(lastSaved.last_heard).toBe(node?.last_heard);
+      detach();
+    });
+
+    it('saves position without bumping last_heard to position timestamp during configure', () => {
+      const { deps } = makeDeps({ getIsConfiguring: () => true });
+      const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
+      packetRouter.dispatch(
+        {
+          type: 'node_info',
+          payload: {
+            nodeId: PEER,
+            longName: 'Peer Node',
+            shortName: 'PEER',
+            lastHeardAt: RADIO_SEC,
+            latitude: 39.7,
+            longitude: -105,
+            fromUserPacket: false,
+          },
+        },
+        IDENTITY,
+      );
+      packetRouter.dispatch(
+        {
+          type: 'position',
+          payload: {
+            nodeId: PEER,
+            latitude: 39.74,
+            longitude: -104.99,
+            timestamp: Date.now(),
+          },
+        },
+        IDENTITY,
+      );
+      const node = getIdentityNode(IDENTITY, PEER);
+      expect(node?.latitude).toBe(39.74);
+      expect(node?.last_heard).toBe(STALE_MS);
+      detach();
+    });
+
+    it('leaves week-old seed offline after configure replay sequence', () => {
+      const { deps } = makeDeps({ getIsConfiguring: () => true });
+      const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
+      packetRouter.dispatch(
+        {
+          type: 'node_info',
+          payload: {
+            nodeId: PEER,
+            longName: 'Peer Node',
+            fromUserPacket: true,
+            lastHeardAt: Date.now(),
+          },
+        },
+        IDENTITY,
+      );
+      expect(getNodeStatus(getIdentityNode(IDENTITY, PEER)?.last_heard ?? 0)).not.toBe('online');
+      detach();
+    });
   });
 
   describe('MeshCore BLE ghost suppression', () => {

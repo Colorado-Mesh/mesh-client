@@ -3,10 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS } from '../timeConstants';
 import type { ConnectionType, DeviceState } from '../types';
+import {
+  resetMeshtasticConfigurePhaseForTests,
+  touchMeshtasticConfigureProgress,
+} from './meshtasticConfigurePhase';
 import { attachMeshtasticRuntimeWireEffects } from './meshtasticRuntimeWireEffects';
 
 /** DeviceConfiguring — see Types.DeviceStatusEnum */
 const DEVICE_CONFIGURING = 6;
+/** DeviceConfigured — see Types.DeviceStatusEnum */
+const DEVICE_CONFIGURED = 7;
 
 function makeDeps(opts?: { isBleReconnectAttemptActive?: () => boolean }) {
   const touchLastData = vi.fn();
@@ -171,6 +177,7 @@ function attachBleWithStatusSubscribers(
       },
     }),
     setHeartbeatInterval: vi.fn(),
+    heartbeat: vi.fn().mockResolvedValue(undefined),
   } as unknown as MeshDevice;
   attachMeshtasticRuntimeWireEffects(device, 'ble', { driverIdentityId: 'id-1' }, deps);
   return statusSubscribers;
@@ -254,12 +261,14 @@ describe('meshtasticRuntimeWireEffects DeviceRestarting', () => {
 describe('meshtasticRuntimeWireEffects BLE configure timeout arming', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    resetMeshtasticConfigurePhaseForTests();
   });
   afterEach(() => {
     vi.useRealTimers();
+    resetMeshtasticConfigurePhaseForTests();
   });
 
-  it('arms 30s timeout on DeviceConfiguring when reconnect is inactive', () => {
+  it('arms stall timeout on DeviceConfiguring when reconnect is inactive', () => {
     const { deps, configureTimeoutRef } = makeDeps({
       isBleReconnectAttemptActive: () => false,
     });
@@ -281,7 +290,7 @@ describe('meshtasticRuntimeWireEffects BLE configure timeout arming', () => {
     expect(configureTimeoutRef.current).toBeNull();
   });
 
-  it('fires handleConnectionLost after BLE configure timeout when armed', () => {
+  it('fires handleConnectionLost after BLE configure stall timeout when armed', () => {
     const { deps, configureTimeoutRef } = makeDeps({
       isBleReconnectAttemptActive: () => false,
     });
@@ -293,6 +302,43 @@ describe('meshtasticRuntimeWireEffects BLE configure timeout arming', () => {
 
     vi.advanceTimersByTime(MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS);
 
+    expect(onLost).toHaveBeenCalledTimes(1);
+    expect(configureTimeoutRef.current).toBeNull();
+  });
+
+  it('resets stall timer when configure progress arrives mid-stream', () => {
+    const { deps, configureTimeoutRef } = makeDeps({
+      isBleReconnectAttemptActive: () => false,
+    });
+    const onLost = vi.mocked(deps.handleConnectionLostRef.current);
+    const statusSubscribers = attachBleWithStatusSubscribers(deps);
+
+    for (const cb of statusSubscribers) cb(DEVICE_CONFIGURING);
+    vi.advanceTimersByTime(MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS - 5_000);
+    touchMeshtasticConfigureProgress();
+    vi.advanceTimersByTime(MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS - 5_000);
+    expect(onLost).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(10_000);
+    expect(onLost).toHaveBeenCalledTimes(1);
+    expect(configureTimeoutRef.current).toBeNull();
+  });
+
+  it('resets stall timer after DeviceConfigured when configure runs again', () => {
+    const { deps, configureTimeoutRef } = makeDeps({
+      isBleReconnectAttemptActive: () => false,
+    });
+    const onLost = vi.mocked(deps.handleConnectionLostRef.current);
+    const statusSubscribers = attachBleWithStatusSubscribers(deps);
+
+    for (const cb of statusSubscribers) cb(DEVICE_CONFIGURING);
+    for (const cb of statusSubscribers) cb(DEVICE_CONFIGURED);
+    for (const cb of statusSubscribers) cb(DEVICE_CONFIGURING);
+
+    vi.advanceTimersByTime(MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS - 5_000);
+    touchMeshtasticConfigureProgress();
+    vi.advanceTimersByTime(MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS - 5_000);
+    expect(onLost).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(10_000);
     expect(onLost).toHaveBeenCalledTimes(1);
     expect(configureTimeoutRef.current).toBeNull();
   });

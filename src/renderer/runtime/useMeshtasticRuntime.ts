@@ -117,6 +117,7 @@ import {
 } from '../lib/meshcoreDualNobleBleInit';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
 import { setMeshtasticRemoteConfigTarget } from '../lib/meshtastic/meshtasticConfigIngressGuard';
+import { setMeshtasticConfigurePhase } from '../lib/meshtastic/meshtasticConfigurePhase';
 import { configureMeshtasticDeviceWithRetry } from '../lib/meshtastic/meshtasticConfigureRetry';
 import type { ModulePortEvent, PaxCounterPoint } from '../lib/meshtastic/meshtasticModuleEvents';
 import { normalizeMeshtasticMqttChatMessage } from '../lib/meshtastic/meshtasticMqttChatNormalize';
@@ -440,6 +441,12 @@ export function useMeshtasticRuntime() {
   // received during this window are historical and should not increment the unread counter.
   const isConfiguringRef = useRef<boolean>(false);
   const configureTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearMeshtasticConfigureState = (): void => {
+    isConfiguringRef.current = false;
+    setMeshtasticConfigurePhase(false);
+    meshtasticIngestSessionRef.current?.setConfiguring(false);
+  };
 
   // ─── GPS tracking ─────────────────────────────────────────────
   const deviceGpsModeRef = useRef<number>(0); // 0=DISABLED,1=ENABLED,2=NOT_PRESENT
@@ -976,6 +983,7 @@ export function useMeshtasticRuntime() {
       postRebootRecoveryScheduledRef.current = true;
       deviceConfiguredRef.current = false;
       isConfiguringRef.current = true;
+      setMeshtasticConfigurePhase(true);
       meshtasticIngestSessionRef.current?.setConfiguring(true);
       stopWatchdog();
       stopGpsInterval();
@@ -1933,7 +1941,7 @@ export function useMeshtasticRuntime() {
       clearConfigureTimeout,
       // isReconnectingRef only — not reconnectConnectInFlightRef. Manual prepareRfConnect clears
       // reconnecting while a superseded attempt may still hold in-flight; OR-ing would skip the
-      // 30s configure watchdog on the new connect (which has no 90s reconnect budget).
+      // 60s configure watchdog on the new connect (which has no 90s reconnect budget).
       isBleReconnectAttemptActive: () => isReconnectingRef.current,
       applyMeshtasticForeignLoraFromLog,
       emptyNode,
@@ -2040,6 +2048,7 @@ export function useMeshtasticRuntime() {
       clearPostCommitRebootRecovery();
       deviceConfiguredRef.current = false;
       isConfiguringRef.current = false;
+      setMeshtasticConfigurePhase(false);
       meshtasticIngestSessionRef.current?.setConfiguring(false);
       // Tear down GATT/SDK before unsubscribing so toDevice stays defined for disconnect.
       clearConfigureTimeout();
@@ -2258,6 +2267,9 @@ export function useMeshtasticRuntime() {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('Reconnect superseded before configure');
         }
+        isConfiguringRef.current = true;
+        setMeshtasticConfigurePhase(true);
+        meshtasticIngestSessionRef.current?.setConfiguring(true);
         await configureMeshtasticDeviceWithRetry(opened.device, {
           logTag: 'useMeshtasticRuntime reconnect',
         });
@@ -2296,6 +2308,7 @@ export function useMeshtasticRuntime() {
         requestChatOutboxDrain('meshtastic');
       },
       onAttemptError: async (err, { lateTransport }) => {
+        clearMeshtasticConfigureState();
         const failedDriverIdentity =
           openedDriverIdentityId ??
           meshtasticIdentityIdRef.current ??
@@ -2584,6 +2597,9 @@ export function useMeshtasticRuntime() {
         }
       })();
 
+      isConfiguringRef.current = true;
+      setMeshtasticConfigurePhase(true);
+      meshtasticIngestSessionRef.current?.setConfiguring(true);
       await configureMeshtasticDeviceWithRetry(activeDevice, {
         logTag: 'useMeshtasticRuntime attachRfSession',
       });
@@ -2598,6 +2614,7 @@ export function useMeshtasticRuntime() {
   const handleRfConnectFailure = useCallback(
     async (driverIdentityId?: string, reason?: unknown): Promise<void> => {
       clearConfigureTimeout();
+      clearMeshtasticConfigureState();
       console.error(
         '[useMeshtasticRuntime] Connection failed: ' +
           errLikeToLogString(reason ?? new Error('unknown connection failure')),
@@ -4102,7 +4119,14 @@ export function useMeshtasticRuntime() {
 
   const requestRefresh = useCallback(async () => {
     if (!deviceRef.current) return;
-    await deviceRef.current.configure();
+    isConfiguringRef.current = true;
+    setMeshtasticConfigurePhase(true);
+    meshtasticIngestSessionRef.current?.setConfiguring(true);
+    try {
+      await deviceRef.current.configure();
+    } finally {
+      clearMeshtasticConfigureState();
+    }
   }, []);
 
   const sendReaction = useCallback(
