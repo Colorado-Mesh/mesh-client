@@ -52,7 +52,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @jsr/meshtastic__transport-web-serial | n/a             | ^0.2.5          | 0.2.5             | n/a                                                                                  |
 | @michaelhart/meshcore-decoder         | MIT             | ^0.3.0          | 0.3.0             | git+https://github.com/michaelhart/meshcore-decoder.git                              |
 | @playwright/test                      | Apache-2.0      | ^1.62.1         | 1.62.1            | git+https://github.com/microsoft/playwright.git                                      |
-| @tailwindcss/postcss                  | MIT             | ^4.3.3          | 4.3.3             | https://github.com/tailwindlabs/tailwindcss.git                                      |
+| @tailwindcss/vite                     | MIT             | ^4.3.3          | 4.3.3             | https://github.com/tailwindlabs/tailwindcss.git                                      |
 | @tanstack/react-virtual               | MIT             | ^3.14.9         | 3.14.9            | git+https://github.com/TanStack/virtual.git                                          |
 | @testing-library/jest-dom             | MIT             | ^6.10.0         | 6.10.0            | git+https://github.com/testing-library/jest-dom.git                                  |
 | @testing-library/react                | MIT             | ^16.3.2         | 16.3.2            | git+https://github.com/testing-library/react-testing-library.git                     |
@@ -87,7 +87,6 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | jsdom                                 | MIT             | ^29.1.1         | 29.1.1            | git+https://github.com/jsdom/jsdom.git                                               |
 | leaflet                               | BSD-2-Clause    | ^1.9.4          | 1.9.4             | git://github.com/Leaflet/Leaflet.git                                                 |
 | markdownlint-cli2                     | MIT             | ^0.22.1         | 0.22.1            | git+https://github.com/DavidAnson/markdownlint-cli2.git                              |
-| postcss                               | MIT             | ^8.5.26         | 8.5.26            | git+https://github.com/postcss/postcss.git                                           |
 | prettier                              | MIT             | ^3.9.6          | 3.9.6             | git+https://github.com/prettier/prettier.git                                         |
 | prettier-plugin-sh                    | MIT             | ^0.18.1         | 0.18.1            | git+https://github.com/un-ts/prettier.git                                            |
 | prettier-plugin-tailwindcss           | MIT             | ^0.7.4          | 0.7.4             | git+https://github.com/tailwindlabs/prettier-plugin-tailwindcss.git                  |

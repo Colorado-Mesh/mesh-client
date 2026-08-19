@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -133,5 +134,87 @@ describe('ReticulumInterfaceDevicePickerModal', () => {
       />,
     );
     expect(screen.queryByText(/connectionPanel\.bleWeakSignalWarning/)).not.toBeInTheDocument();
+  });
+
+  function bleDeviceOrder(): string[] {
+    return screen
+      .getAllByRole('button')
+      .map((el) => el.getAttribute('aria-label') ?? '')
+      .filter((label) => label.includes('pickerDeviceAria'))
+      .map((label) => {
+        const match = /"name":"([^"]+)"/.exec(label);
+        return match?.[1] ?? label;
+      });
+  }
+
+  it('defaults BLE list to RSSI strongest first and reorders on Name / RSSI clicks', async () => {
+    const user = userEvent.setup();
+    render(
+      <ReticulumInterfaceDevicePickerModal
+        open
+        mode="ble-peer"
+        devices={[
+          { address: 'AA:01', name: 'Zulu', rssi: -90 },
+          { address: 'AA:02', name: 'Alpha', rssi: -40 },
+          { address: 'AA:03', name: 'Mid', rssi: -70 },
+        ]}
+        serialPorts={[]}
+        scanning={false}
+        scanError={null}
+        manualPath=""
+        onManualPathChange={vi.fn()}
+        onSelect={vi.fn()}
+        onCancel={vi.fn()}
+        onRefreshSerial={vi.fn()}
+        onRescanBle={vi.fn()}
+      />,
+    );
+
+    expect(bleDeviceOrder()).toEqual(['Alpha', 'Mid', 'Zulu']);
+
+    await user.click(screen.getByRole('button', { name: 'connectionPanel.sortByNameAsc' }));
+    expect(bleDeviceOrder()).toEqual(['Alpha', 'Mid', 'Zulu']);
+
+    await user.click(screen.getByRole('button', { name: 'connectionPanel.sortByNameAsc' }));
+    expect(bleDeviceOrder()).toEqual(['Zulu', 'Mid', 'Alpha']);
+
+    await user.click(screen.getByRole('button', { name: 'connectionPanel.sortByRssiDesc' }));
+    expect(bleDeviceOrder()).toEqual(['Alpha', 'Mid', 'Zulu']);
+
+    await user.click(screen.getByRole('button', { name: 'connectionPanel.sortByRssiDesc' }));
+    expect(bleDeviceOrder()).toEqual(['Zulu', 'Mid', 'Alpha']);
+  });
+
+  it('sorts serial ports A–Z by default and reverses on Name click', async () => {
+    const user = userEvent.setup();
+    render(
+      <ReticulumInterfaceDevicePickerModal
+        open
+        mode="serial"
+        devices={[]}
+        serialPorts={[
+          { path: '/dev/ttyUSB1', label: 'Zulu Port' },
+          { path: '/dev/ttyUSB0', label: 'Alpha Port' },
+        ]}
+        scanning={false}
+        scanError={null}
+        manualPath=""
+        onManualPathChange={vi.fn()}
+        onSelect={vi.fn()}
+        onCancel={vi.fn()}
+        onRefreshSerial={vi.fn()}
+        onRescanBle={vi.fn()}
+      />,
+    );
+
+    const labels = () =>
+      screen
+        .getAllByRole('button')
+        .map((el) => el.getAttribute('aria-label'))
+        .filter((label): label is string => label === 'Alpha Port' || label === 'Zulu Port');
+    expect(labels()).toEqual(['Alpha Port', 'Zulu Port']);
+
+    await user.click(screen.getByRole('button', { name: 'connectionPanel.sortByNameAsc' }));
+    expect(labels()).toEqual(['Zulu Port', 'Alpha Port']);
   });
 });

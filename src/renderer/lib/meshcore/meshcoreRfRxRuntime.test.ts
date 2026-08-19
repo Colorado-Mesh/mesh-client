@@ -311,6 +311,42 @@ describe('handleMeshcoreRfRx advert identity', () => {
     expect(window.electronAPI.db.updateMeshcoreContactAdvert).not.toHaveBeenCalled();
   });
 
+  it('persists an on-air rename for an existing contact via updateMeshcoreContactAdvert', () => {
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => (i + 9) & 0xff);
+    const nodeId = pubkeyToNodeId(publicKey);
+    upsertNodeRecord(ID, {
+      nodeId,
+      longName: 'Alice',
+      hwModel: 'Companion',
+      lastHeardAt: 1_699_000_000,
+      publicKey,
+    });
+    const { deps } = makeDeps({ myNodeNumRef: ref(1) });
+    vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockClear();
+    vi.mocked(window.electronAPI.db.updateMeshcoreContactAdvert).mockClear();
+    vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.db.updateMeshcoreContactAdvert).mockResolvedValue(undefined);
+
+    handleMeshcoreRfRx(
+      {
+        lastSnr: 7,
+        lastRssi: -28,
+        raw: buildFloodAdvertPacket({ publicKey, name: 'Bob', deviceRole: 1 }),
+      },
+      deps,
+    );
+
+    expect(useNodeStore.getState().nodes[ID][nodeId].longName).toBe('Bob');
+    expect(window.electronAPI.db.updateMeshcoreContactAdvert).toHaveBeenCalledWith(
+      nodeId,
+      1_700_000_000,
+      null,
+      null,
+      'Bob',
+    );
+    expect(window.electronAPI.db.saveMeshcoreContact).not.toHaveBeenCalled();
+  });
+
   it('revives a locally deleted contact when a live RF advert is heard', () => {
     const publicKey = Uint8Array.from({ length: 32 }, (_, i) => (i + 5) & 0xff);
     const nodeId = pubkeyToNodeId(publicKey);

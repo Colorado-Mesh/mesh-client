@@ -21,12 +21,19 @@ if [[ ! -f "${PATCH_FILE}" ]]; then
   exit 1
 fi
 
-# Upstream has HasPath-gated RecallDestination (a945ba0) but still Deregisters
-# announce handlers by aspect. Marker fallback (when reverse-apply misses) is
-# the Nomad recall path: RecallDestination without HasPath, await_path, and GC
-# with aspect_filter: None. Upstream PR: https://github.com/ratspeak/rsReticulum/pull/14
+# Marker fallback (when reverse-apply misses):
+# - Floated origin/main uses handler-free destination_resolver (supersedes
+#   discover_remote_public_key + await_path; ratspeak/rsReticulum#14).
+# - Older pins still use RecallDestination without HasPath, await_path, and GC
+#   with aspect_filter: None.
 overlay_already_present() {
   [[ -f "${LINK_CLIENT_RS}" ]] || return 1
+  # Handler-free resolver: destination_resolver without discover/await_path.
+  if grep -qE 'resolve_destination_on_transport\(' "${LINK_CLIENT_RS}" \
+    && ! grep -qE 'fn discover_remote_public_key\(' "${LINK_CLIENT_RS}" \
+    && ! grep -qE 'await_path\(' "${LINK_CLIENT_RS}"; then
+    return 0
+  fi
   grep -qE 'fn discover_remote_public_key\(' "${LINK_CLIENT_RS}" \
     && grep -qE 'fn gc_closed_announce_handlers\(' "${LINK_CLIENT_RS}" \
     && grep -qE 'const PATH_LOOKUP_TIMEOUT' "${LINK_CLIENT_RS}" \

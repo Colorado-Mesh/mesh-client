@@ -153,6 +153,7 @@ describe('ReticulumSidecarManager', () => {
       unhealthySince: undefined,
       autoBeaconAlert: null,
       interfaceIssueAlert: null,
+      stackFastFlapSuspected: false,
     });
   });
 
@@ -186,6 +187,7 @@ describe('ReticulumSidecarManager', () => {
       unhealthySince: undefined,
       autoBeaconAlert: null,
       interfaceIssueAlert: null,
+      stackFastFlapSuspected: false,
     });
     expect(statusListener).toHaveBeenCalledWith({
       running: false,
@@ -195,6 +197,7 @@ describe('ReticulumSidecarManager', () => {
       unhealthySince: undefined,
       autoBeaconAlert: null,
       interfaceIssueAlert: null,
+      stackFastFlapSuspected: false,
     });
   });
 
@@ -213,6 +216,7 @@ describe('ReticulumSidecarManager', () => {
       unhealthySince: undefined,
       autoBeaconAlert: null,
       interfaceIssueAlert: null,
+      stackFastFlapSuspected: false,
     });
     expect(statusListener).toHaveBeenCalledWith({
       running: false,
@@ -222,6 +226,7 @@ describe('ReticulumSidecarManager', () => {
       unhealthySince: undefined,
       autoBeaconAlert: null,
       interfaceIssueAlert: null,
+      stackFastFlapSuspected: false,
     });
   });
 

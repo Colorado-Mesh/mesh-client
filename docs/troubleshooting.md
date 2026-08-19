@@ -607,7 +607,7 @@ IPv6 addresses work for Meshtastic Wi‑Fi, MeshCore TCP, and Reticulum RNode Wi
 
 ### Connection panel Link quality (TCP) shows "—" or unexpected latency
 
-**Cause:** For **Meshtastic WiFi/TCP** and **MeshCore TCP/IP OpenHop**, the Connection panel signal bars reflect **live-session responsiveness** — an EWMA of write→first-data delay on the already-open TCP socket — not a separate connect probe. Bars may show **"—"** until traffic has produced a sample, or after ~2 minutes without a completed sample (covers idle heartbeat gaps). Meshtastic **WiFi/HTTP** still uses a `/json/report` RTT probe (separate from the TCP session). Reticulum hub/RMAP rows still use a short-lived TCP connect probe (different risk profile).
+**Cause:** For **Meshtastic WiFi/TCP** and **MeshCore TCP/IP OpenHop**, the Connection panel signal bars reflect **live-session responsiveness** — an EWMA of write→first-data delay on the already-open TCP socket — not a separate connect probe. Bars may show **"—"** until traffic has produced a sample, or after ~2 minutes without a completed sample (covers idle heartbeat gaps). Meshtastic **WiFi/HTTP** still uses a `/json/report` RTT probe (separate from the TCP session). **Reticulum** hub rows use a short-lived TCP connect probe **only while the sidecar is starting** (before RNS owns the session); once the stack is ready, probes stop so a second raw connect cannot collide with the sidecar link.
 
 **Why not a second TCP connect?** Probing the same `host:port` as the live session every few seconds can RST ESP32/lwIP-class devices (see PR discussion around competing connections).
 
@@ -1106,6 +1106,26 @@ Log path: `~/Library/Application Support/mesh-client/mesh-client.log` (macOS).
 Healthy Auto is left preferred (RNS default). Public hubs are never chosen by the health preempt.
 
 **Manual workaround**: Connection → Interfaces → disable **Auto** → restart stack if prompted. Keep the private hub up; confirm it is not `ECONNREFUSED` in the log (`hostLink` TCP probe).
+
+### Reticulum public hub TCP blocked (fast-flapping client)
+
+**Symptoms**: A public TCP hub (e.g. **Ratspeak**, **RMAP World**) shows **down** in Connection → Interfaces. The amber Connection banner says **TCP hub unreachable** (the remote instance may be offline **or blocking connections**, including after frequent app/stack restarts) or, after five stack starts in 12 hours, **hub likely blocked your IP after frequent stack restarts**. Sidecar logs may show `TCP read: EOF`, `Connection reset by peer`, and `reconnecting in 5s name = …` in a loop. A host TCP probe can still succeed while the RNS session is rejected.
+
+**Cause**: Reticulum **1.4.0+** `BackboneInterface` listeners block client IPs that **fast-flap** — by default, **five TCP sessions shorter than ~20 seconds within 12 hours** triggers a **12-hour IP block** ([Interfaces manual](https://reticulum.network/manual/interfaces.html)). Hubs upgraded to 1.4.0 (RMAP World mid-2025; Ratspeak more recently) enforce this policy. Common mesh-client triggers:
+
+- **Quick mesh-client or stack restarts** — each restart drops the RNS TCP session; if the hub saw a short session, it counts as one flap.
+- **Share instance / duplicate Reticulum apps** — competing sessions connect and drop.
+- **Reconnect or auto-recovery loops** — repeated stack restarts while the hub is already rejecting make it worse.
+
+mesh-client counts **stack starts** (persisted across app restarts), not sidecar log timestamps and not whether each run lasted under 20 seconds. Testers who restart the client often still hit the notice. After five stack starts in 12 hours it shows the lockout banner, hides **Restart stack** on that alert, and skips auto stack restart. Host TCP probes run only before the sidecar is ready.
+
+**What to do**:
+
+1. **Stop restarting** the app or stack — more restarts add flaps and extend the block.
+2. Connection → Interfaces → **disable** the affected hub temporarily.
+3. Fully quit mesh-client and any other Reticulum apps (MeshChatX, Ratspeak, standalone `rnsd`) if **Share instance** is enabled.
+4. **Wait up to 12 hours** before re-enabling the hub (matches default hub `fast_flapping_block_time`).
+5. If you need connectivity sooner, use a different network path (another hub, LAN transport, or RF) — the block is per **source IP**, not identity.
 
 ### Reticulum DM shows "Stored at propagation node" but the reply never arrives (PN island / preferred mismatch)
 

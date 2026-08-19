@@ -1267,10 +1267,12 @@
       "connectingRow": "{{name}}: conectando via Bluetooth",
       "offlineHintWifi": "Verifique se o RNode está na sua LAN, ligado e acessível no IP configurado (porta TCP padrão 7633, não 4242). Atualize o host abaixo se o DHCP tiver atribuído um novo endereço ou reprovisione o Wi-Fi no Reticulum → Admin.",
       "tcpUnreachable": "{{name}}: TCP Hub inacessível ({{host}}:{{port}})",
-      "tcpUnreachableHint": "A instância remota do Reticulum pode estar offline ou bloqueando conexões. Desative esta interface ou verifique o host e a porta.",
+      "tcpUnreachableHint": "A instância remota do Reticulum pode estar offline ou bloqueando conexões. Desative esta interface ou verifique o host e a porta. Reinicializações frequentes do mesh-client ou da pilha podem fazer hubs Reticulum 1.4.0+ bloquearem seu IP por 12 horas — espere em vez de reiniciar de novo.",
       "connectingHintBle": "Os links BLE RNode podem levar até 60 segundos após o início da pilha (janela de chave de acesso do SO). Insira o PIN RNode atual, se solicitado – nunca 123456. Isso é normal, não é um erro. O dispositivo pode não aparecer nas configurações do sistema até que uma ligação seja bem-sucedida.",
       "offlineHintBle": "Para limpar esse erro, talvez seja necessário remover essa interface e adicioná-la novamente (Escolha o dispositivo) para que o ID do Bluetooth salvo seja atualizado e, em seguida, reinicie a pilha. Seu sistema operacional pode solicitar um PIN Bluetooth de 6 dígitos (macOS, Windows ou Linux). RNode gera um novo código a cada emparelhamento — nunca use 123456 (que é o padrão da Meshtastic, não RNode). O RNode não precisa aparecer nas Configurações do Sistema → Bluetooth antes que este aplicativo se conecte; a caixa de diálogo do sistema operacional aparece quando a pilha é emparelhada. Rádios sem cabeça: conectar USB → Reticulum Admin → Bluetooth → Iniciar o emparelhamento → digite o PIN mostrado no painel de administração (não no visor do rádio) na caixa de diálogo do sistema operacional. Rádios com um visor: segure o botão ~7 s nos dispositivos Heltec (o tempo varia; ~10 s em muitas placas habilita o Wi-Fi AP), leia o PIN na tela e, em seguida, insira-o na caixa de diálogo do sistema operacional. Limpe as ligações com falha nas configurações Bluetooth do sistema operacional antes de tentar novamente.",
-      "offlineHintBleBondStale": "O macOS ainda mostra este RNode como Emparelhado, mas as chaves Bluetooth não correspondem mais (informações de emparelhamento removidas pelo par). Esqueça o dispositivo em Ajustes do Sistema → Bluetooth, coloque o RNode no modo de emparelhamento (Admin → Bluetooth → Iniciar emparelhamento, ou segure o botão ~7 s), depois remova e adicione novamente esta interface (Escolher dispositivo), reinicie a pilha e digite o novo PIN de 6 dígitos quando solicitado."
+      "offlineHintBleBondStale": "O macOS ainda mostra este RNode como Emparelhado, mas as chaves Bluetooth não correspondem mais (informações de emparelhamento removidas pelo par). Esqueça o dispositivo em Ajustes do Sistema → Bluetooth, coloque o RNode no modo de emparelhamento (Admin → Bluetooth → Iniciar emparelhamento, ou segure o botão ~7 s), depois remova e adicione novamente esta interface (Escolher dispositivo), reinicie a pilha e digite o novo PIN de 6 dígitos quando solicitado.",
+      "tcpFastFlap": "{{name}}: o hub provavelmente bloqueou seu IP após reinicializações frequentes do stack ({{host}}:{{port}})",
+      "tcpFastFlapHint": "Os hubs públicos do Reticulum 1.4.0+ bloqueiam um IP após cinco sessões TCP curtas em 12 horas. Reinicializações rápidas do mesh-client ou da pilha contam. Desative este hub e aguarde até 12 horas — reiniciar de novo prolonga o bloqueio."
     },
     "autoConnectingTo": "Conectando-se automaticamente a {{deviceName}}…",
     "autoReconnectInProgress": "Auto-reconexão em andamento…",
@@ -1357,7 +1359,9 @@
       "txQueueDropsHintBle": "Este BLE RNode não pode drenar sua fila TX (link preso ou flapping). Prefira USB serial ou Wi-Fi (tcp://), ou Pare de empilhar e emparelhe novamente depois de Esquecer nas Configurações do Sistema → Bluetooth.",
       "txQueueDropsHintBleBondStale": "A fila TX está cheia porque a ligação BLE está obsoleta. Esqueça este RNode nas Configurações do Sistema → Bluetooth e use Admin → Bluetooth (Limpar emparelhado / Iniciar emparelhamento) ou mude para USB.",
       "txQueueDropsHintNeutral": "Este canal TX de interface está cheio. Verifique a integridade do link dessa interface (ou desative-a) para interromper as quedas.",
-      "txQueueDropsHintBleFlowControl": "Contrapressão da fila TX do host enquanto o rádio está ocupado (controle de fluxo ligado). Esperado sob congestionamento de RF — não um link preso. Reduza a carga de saída ou aguarde o tempo de antena."
+      "txQueueDropsHintBleFlowControl": "Contrapressão da fila TX do host enquanto o rádio está ocupado (controle de fluxo ligado). Esperado sob congestionamento de RF — não um link preso. Reduza a carga de saída ou aguarde o tempo de antena.",
+      "tcpResetByPeer": "{{name}}: Hub redefine a sessão TCP (Redefinição de conexão por peer)",
+      "tcpReadEof": "{{name}}: Hub fechou o TCP de forma limpa (INFO: TCP leu: EOF)"
     },
     "reticulumSidecarBundledMissing": "Esta instalação não contém o sidecar Reticulum incluído. Atualize para uma versão mais recente ou relate o problema – a compilação a partir do código-fonte não está disponível em instalações empacotadas.",
     "radioMqttRootDivergesWarning": "O tópico raiz do MQTT de rádio é {{radioRoot}}, mas este painel assina {{appPrefix}}. Combine o rádio para limitar o tráfego de nós em todo o país — atualize o Prefixo do Tópico e reconecte o MQTT.",
@@ -1418,7 +1422,18 @@
     "letsMeshRegionEu": "UE",
     "letsMeshRequiresWebSocket": "Esta predefinição de corretor requer transporte WebSocket (wss).",
     "letsMeshRequiresPort": "Esta predefinição de corretor requer a porta {{port}} (WebSocket TLS).",
-    "letsMeshKnownBrokersOnly": "Esta predefinição suporta apenas corretoras públicas conhecidas do MeshCore MQTT. Mude para Personalizado para outras corretoras."
+    "letsMeshKnownBrokersOnly": "Esta predefinição suporta apenas corretoras públicas conhecidas do MeshCore MQTT. Mude para Personalizado para outras corretoras.",
+    "sortName": "Nome",
+    "sortRssi": "RSSI",
+    "sortToolbar": "Lista de Dispositivos",
+    "sortByNameAsc": "Ordenar por nome de A a Z",
+    "sortByNameDesc": "Ordenar por nome: z à a",
+    "sortByRssiAsc": "Ordenar por RSSI, mais fraco primeiro",
+    "sortByRssiDesc": "Ordenar por RSSI, mais forte primeiro",
+    "pickerDeviceAria": "{{name}} {{address}}",
+    "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+    "bluetoothMac": "MAC BLUETOOTH",
+    "bluetoothId": "ID Bluetooth"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",
@@ -1755,7 +1770,8 @@
         "txQueueDropsBle": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX cheia) — link BLE RNode travado; prefira USB ou emparelhe novamente",
         "txQueueDropsBleBondStale": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX cheia) — BLE Bond obsoleto; Esqueça no OS Bluetooth e emparelhe novamente",
         "txQueueDropsNeutral": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX cheia) — verifique o link dessa interface",
-        "txQueueDropsBleFlowControl": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX do host cheia) — controle de fluxo ativado; esperado sob congestionamento de RF, não um link travado"
+        "txQueueDropsBleFlowControl": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX do host cheia) — controle de fluxo ativado; esperado sob congestionamento de RF, não um link travado",
+        "tcpFastFlap": "O TCP Hub \"{{name}}\" provavelmente bloqueou este IP após reinicializações frequentes da pilha ({{host}}:{{port}})"
       }
     },
     "routingPort": {
@@ -4196,7 +4212,25 @@
     "openRoom": "Abrir sala",
     "savedPasswordOrphanRoomLabel": "Sala {{nodeId}}",
     "roomCliNeedsAdminPassword": "A CLI remota da sala precisa da senha de administrador da sala (SendLogin ACL). Salve em Repeaters → senha desta sala e tente novamente. O login BBS de convidado não é suficiente.",
-    "cliHistoryError": "[Erro: {{detail}}]"
+    "cliHistoryError": "[Erro: {{detail}}]",
+    "sortByStatusAsc": "Ordenar por Status, offline primeiro",
+    "sortByStatusDesc": "Ordenar por Status, online primeiro",
+    "sortByNameAsc": "Ordenar por nome de A a Z",
+    "sortByNameDesc": "Ordenar por nome: z à a",
+    "sortByLastHeardAsc": "Ordenar por Último Ouvido, mais antigo primeiro",
+    "sortByLastHeardDesc": "Ordenar por Último Ouvido, mais recentes primeiro",
+    "sortBySnrAsc": "Ordenar por SNR, menor primeiro",
+    "sortBySnrDesc": "Ordenar por SNR, maior primeiro",
+    "sortByRssiAsc": "Ordenar por RSSI, mais fraco primeiro",
+    "sortByRssiDesc": "Ordenar por RSSI, mais forte primeiro",
+    "sortByHopsAsc": "Ordenar por saltos, o mais próximo primeiro",
+    "sortByHopsDesc": "Ordenar por saltos, o mais distante primeiro",
+    "sortByUptimeAsc": "Ordenar por tempo de atividade, o mais curto primeiro",
+    "sortByUptimeDesc": "Ordenar por tempo de atividade, mais longo primeiro",
+    "sortByAirPctAsc": "Ordenar por % de ar, menor primeiro",
+    "sortByAirPctDesc": "Ordenar por % de ar, maior primeiro",
+    "sortByReliabilityAsc": "Ordenar por Confiabilidade, menor primeiro",
+    "sortByReliabilityDesc": "Ordenar por Confiabilidade, maior primeiro"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anúncio (segundos)",

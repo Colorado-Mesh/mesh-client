@@ -77,6 +77,8 @@ export interface ReticulumDiagnosticsBuildOptions {
   auditIssues?: ReticulumConfigAuditIssue[];
   autoBeaconAlert?: ReticulumAutoBeaconAlert | null;
   interfaceIssueAlert?: ReticulumInterfaceIssueAlert | null;
+  /** Rapid stack restarts already in the hub fast-flap window. */
+  stackFastFlapSuspected?: boolean;
   /** When true, append shared-instance conflict hint on transport saturation rows. */
   shareInstanceEnabled?: boolean;
   /** Sidecar hung watchdog — only emit when running && healthy === false. */
@@ -107,6 +109,7 @@ export const RETICULUM_RUNTIME_CAUSE_I18N_KEYS = [
   'diagnosticsPanel.reticulum.runtime.localStalePort',
   'diagnosticsPanel.reticulum.runtime.localOffline',
   'diagnosticsPanel.reticulum.runtime.tcpUnreachable',
+  'diagnosticsPanel.reticulum.runtime.tcpFastFlap',
   'diagnosticsPanel.reticulum.runtime.interfaceDown',
   'diagnosticsPanel.reticulum.runtime.tcpConnectFailed',
   'diagnosticsPanel.reticulum.runtime.txQueueDrops',
@@ -191,7 +194,9 @@ export function buildReticulumDiagnosticRows(
   const osSerialPorts = options?.osSerialPorts ?? [];
   const localAlerts = collectReticulumLocalInterfaceAlerts(healthInterfaces, osSerialPorts);
   const localAlertIds = new Set(localAlerts.map((a) => a.iface.id));
-  const remoteAlerts = collectReticulumRemoteInterfaceAlerts(healthInterfaces);
+  const remoteAlerts = collectReticulumRemoteInterfaceAlerts(healthInterfaces, {
+    stackFastFlapSuspected: options?.stackFastFlapSuspected === true,
+  });
   const remoteAlertIds = new Set(remoteAlerts.map((a) => a.iface.id));
 
   for (const alert of localAlerts) {
@@ -231,13 +236,16 @@ export function buildReticulumDiagnosticRows(
   for (const alert of remoteAlerts) {
     const host = alert.iface.host ?? '';
     const port = alert.iface.port != null && alert.iface.port > 0 ? String(alert.iface.port) : '';
+    const fastFlap = alert.reason === 'tcp_fast_flap';
     rows.push({
       kind: 'rf',
       id: rfRowId(homeNodeId, `reticulum/tcp-unreachable/${alert.iface.id}`),
       nodeId: homeNodeId,
-      condition: 'reticulum/tcp-unreachable',
-      cause: `TCP interface "${alert.iface.name}" is unreachable`,
-      causeI18n: runtimeCauseI18n('tcpUnreachable', {
+      condition: fastFlap ? 'reticulum/tcp-fast-flap' : 'reticulum/tcp-unreachable',
+      cause: fastFlap
+        ? `TCP interface "${alert.iface.name}" likely blocked this IP after frequent stack restarts`
+        : `TCP interface "${alert.iface.name}" is unreachable`,
+      causeI18n: runtimeCauseI18n(fastFlap ? 'tcpFastFlap' : 'tcpUnreachable', {
         name: alert.iface.name,
         host,
         port,

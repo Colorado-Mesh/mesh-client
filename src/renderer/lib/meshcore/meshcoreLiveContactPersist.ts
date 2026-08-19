@@ -29,6 +29,35 @@ import { registerMeshcorePubKey } from './meshcorePubKeyRegistry';
 
 const MESHCORE_COORD_SCALE = 1e6;
 
+const liveAdvertNamesByNodeId = new Map<number, string>();
+
+/** Non-empty, non-placeholder advert name to write to SQLite; otherwise omit the column. */
+function persistableMeshcoreAdvertName(
+  longName: string | undefined,
+  nodeId: number,
+): string | undefined {
+  const trim = typeof longName === 'string' && longName.trim() ? longName.trim() : undefined;
+  if (!trim || meshcoreIsPlaceholderNodeLongName(trim, nodeId)) return undefined;
+  return trim;
+}
+
+/** Keep the last real advert name so PathUpdated rebuilds can merge independently of nicknames. */
+export function rememberMeshcoreLiveAdvertName(
+  nodeId: number,
+  name: string | null | undefined,
+): void {
+  const persistable = persistableMeshcoreAdvertName(name ?? undefined, nodeId);
+  if (persistable) liveAdvertNamesByNodeId.set(nodeId, persistable);
+}
+
+export function rememberedMeshcoreLiveAdvertName(nodeId: number): string | undefined {
+  return liveAdvertNamesByNodeId.get(nodeId);
+}
+
+export function resetMeshcoreLiveAdvertNamesForTests(): void {
+  liveAdvertNamesByNodeId.clear();
+}
+
 export interface PersistMeshcoreNodeInfoOpts {
   /** MeshCore contact type from advert (138) when known. */
   contactType?: number;
@@ -105,15 +134,15 @@ export function persistMeshcoreNodeInfoAfterAdvert(
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
   if (!existingRecord || tombstoned) {
     if (built) {
-      let advName: string | null =
-        typeof event.longName === 'string' && event.longName.trim() ? event.longName.trim() : null;
+      let advName: string | null = persistableMeshcoreAdvertName(event.longName, nodeId) ?? null;
       if (!advName) {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.
         const stored = existingRecord?.longName?.trim();
-        if (stored && !meshcoreIsPlaceholderNodeLongName(existingRecord.longName, nodeId)) {
+        if (stored && !meshcoreIsPlaceholderNodeLongName(stored, nodeId)) {
           advName = stored;
         }
       }
+      rememberMeshcoreLiveAdvertName(nodeId, advName);
       void window.electronAPI.db
         .saveMeshcoreContact({
           node_id: nodeId,
@@ -135,17 +164,12 @@ export function persistMeshcoreNodeInfoAfterAdvert(
     return;
   }
 
-  const advNameTrim =
-    typeof event.longName === 'string' && event.longName.trim() ? event.longName.trim() : undefined;
+  // Persist a real on-air name even when the store already has one (PacketRouter upserts
+  // before this runs; companion getContacts often keeps the old advName). Empty / Node-HEX
+  // 128 payloads must not wipe a known name.
+  const persistAdvName = persistableMeshcoreAdvertName(event.longName, nodeId);
+  rememberMeshcoreLiveAdvertName(nodeId, persistAdvName);
   const existingHw = existingRecord.hwModel;
-  let persistAdvName: string | undefined;
-  if (
-    advNameTrim &&
-    (!existingRecord.longName?.trim() ||
-      meshcoreIsPlaceholderNodeLongName(existingRecord.longName, nodeId))
-  ) {
-    persistAdvName = advNameTrim;
-  }
   if (opts?.contactType != null && Number.isFinite(opts.contactType)) {
     const newHw = CONTACT_TYPE_LABELS[Math.floor(opts.contactType)] ?? 'Unknown';
     const merged = mergeHwModelOnContactUpdate(existingHw, newHw);

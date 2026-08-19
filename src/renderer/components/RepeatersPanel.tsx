@@ -1,10 +1,12 @@
 /* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as NodeListPanel */
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { TFunction } from 'i18next';
+import { ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react-motion';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import { MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
@@ -39,16 +41,24 @@ import type { MeshcoreRepeaterRpcPendingMap } from '../lib/meshcoreRepeaterAdmin
 import { isRepeaterAdminRpcPending } from '../lib/meshcoreRepeaterAdminPending';
 import { isMeshcoreRepeaterCliDangerCommand } from '../lib/meshcoreRepeaterCliDanger';
 import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
-import {
-  effectiveLastHeardMs,
-  getNodeStatus,
-  mergeMeshcoreLastHeardFromAdvert,
-  normalizeLastHeardMs,
-} from '../lib/nodeStatus';
+import { effectiveLastHeardMs, getNodeStatus } from '../lib/nodeStatus';
 import type { PathRecord } from '../lib/pathHistoryTypes';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { REPEATER_CLI_MAX_COMMAND_LENGTH } from '../lib/repeaterCommandService';
-import { MS_PER_DAY } from '../lib/timeConstants';
+import {
+  DEFAULT_REPEATER_SORT,
+  defaultRepeaterSortDir,
+  nextRepeaterSort,
+  prepareRepeaterSortRows,
+  type RepeaterContactSignal,
+  type RepeaterSortDir,
+  type RepeaterSortKey,
+  resolveRepeaterAirPct,
+  resolveRepeaterReliability,
+  resolveRepeaterRssi,
+  resolveRepeaterSnr,
+  sortPreparedRepeaterRows,
+} from '../lib/repeaterListSort';
 import type { MeshNode } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
@@ -128,7 +138,6 @@ interface Props {
   onPendingFocusConsumed?: () => void;
 }
 
-const SIGNAL_MAX_AGE_MS = MS_PER_DAY;
 const REPEATER_ROW_ESTIMATE_PX = 48;
 const REPEATER_ROW_EXPANDED_EXTRA_PX = 160;
 const REPEATER_VIRTUALIZE_THRESHOLD = 100;
@@ -144,21 +153,6 @@ function formatComputerUtcStamp(d = new Date()): string {
 
 function isRepeaterCliClockCannotGoBackwards(command: string, response: string): boolean {
   return command.trim().toLowerCase() === 'clock sync' && /cannot go backwards/i.test(response);
-}
-
-function effectiveRepeaterLastAdvert(
-  dbAdvert: number | null | undefined,
-  nodeLastHeard: number | undefined,
-): number | null {
-  const merged = mergeMeshcoreLastHeardFromAdvert(dbAdvert ?? undefined, nodeLastHeard);
-  return merged > 0 ? merged : null;
-}
-
-function isSignalRecent(lastAdvert: number | null | undefined): boolean {
-  if (lastAdvert == null) return false;
-  const advertMs = normalizeLastHeardMs(lastAdvert);
-  if (!advertMs) return false;
-  return Date.now() - advertMs < SIGNAL_MAX_AGE_MS;
 }
 
 function formatRelativeTime(t: TFunction, lastHeard: number | null | undefined): string {
@@ -223,74 +217,112 @@ interface SignalPoint {
   snr: number;
 }
 
-/** Prefer on-demand repeater status (remote query); contact list SNR/RSSI are often stale for MeshCore. */
 function displayRepeaterSnr(
   node: MeshNode,
   status: MeshCoreRepeaterStatus | undefined,
   history?: SignalPoint[],
-  contacts?: Map<
-    number,
-    {
-      node_id: number;
-      last_snr: number | null;
-      last_rssi: number | null;
-      last_advert: number | null;
-    }
-  >,
+  contacts?: Map<number, RepeaterContactSignal>,
 ): string {
-  if (status !== undefined && Number.isFinite(status.lastSnr)) {
-    return status.lastSnr.toFixed(1);
-  }
-  const latestSignal = history && history.length > 0 ? history[history.length - 1] : undefined;
-  if (latestSignal != null && Number.isFinite(latestSignal.snr)) {
-    return latestSignal.snr.toFixed(1);
-  }
-  const contactSignal = contacts?.get(node.node_id);
-  if (
-    contactSignal?.last_snr != null &&
-    contactSignal.last_snr !== 0 &&
-    isSignalRecent(effectiveRepeaterLastAdvert(contactSignal?.last_advert, node.last_heard))
-  ) {
-    return contactSignal.last_snr.toFixed(1);
-  }
-  if (node.snr != null && node.snr !== 0) return node.snr.toFixed(1);
-  return '—';
+  const snr = resolveRepeaterSnr(node, status, history, contacts);
+  return snr == null ? '—' : snr.toFixed(1);
 }
 
 function displayRepeaterRssi(
   node: MeshNode,
   status: MeshCoreRepeaterStatus | undefined,
-  contacts?: Map<
-    number,
-    {
-      node_id: number;
-      last_snr: number | null;
-      last_rssi: number | null;
-      last_advert: number | null;
-    }
-  >,
+  contacts?: Map<number, RepeaterContactSignal>,
 ): string {
-  if (status !== undefined && Number.isFinite(status.lastRssi)) {
-    return String(status.lastRssi);
-  }
-  const contactSignal = contacts?.get(node.node_id);
-  if (
-    contactSignal?.last_rssi != null &&
-    contactSignal.last_rssi !== 0 &&
-    isSignalRecent(effectiveRepeaterLastAdvert(contactSignal?.last_advert, node.last_heard))
-  ) {
-    return String(contactSignal.last_rssi);
-  }
-  if (node.rssi != null && node.rssi !== 0) return String(node.rssi);
-  return '—';
+  const rssi = resolveRepeaterRssi(node, status, contacts);
+  return rssi == null ? '—' : String(rssi);
 }
 
 function displayReliability(paths: PathRecord[]): string {
-  if (!paths.length) return '—';
-  const total = paths.reduce((sum, p) => sum + p.successCount + p.failureCount, 0);
-  if (total === 0) return '—';
-  const successes = paths.reduce((sum, p) => sum + p.successCount, 0);
-  return `${((successes / total) * 100).toFixed(0)}%`;
+  const pct = resolveRepeaterReliability(paths);
+  return pct == null ? '—' : `${pct.toFixed(0)}%`;
+}
+
+function RepeaterSortIcon({
+  field,
+  sortKey,
+  sortDir,
+}: {
+  field: RepeaterSortKey;
+  sortKey: RepeaterSortKey;
+  sortDir: RepeaterSortDir;
+}) {
+  const trigger = useIconTrigger();
+  const p = { 'aria-hidden': true as const, trigger, size: 12 };
+  if (sortKey !== field) {
+    return <ArrowUpDown {...p} className="ml-1 inline h-3 w-3 text-gray-600" />;
+  }
+  return sortDir === 'asc' ? (
+    <ChevronUp {...p} className="text-bright-green ml-1 inline h-3 w-3" />
+  ) : (
+    <ChevronDown {...p} className="text-bright-green ml-1 inline h-3 w-3" />
+  );
+}
+
+function repeaterSortAriaKey(key: RepeaterSortKey, dir: RepeaterSortDir): string {
+  switch (key) {
+    case 'status':
+      return dir === 'asc' ? 'repeatersPanel.sortByStatusAsc' : 'repeatersPanel.sortByStatusDesc';
+    case 'name':
+      return dir === 'asc' ? 'repeatersPanel.sortByNameAsc' : 'repeatersPanel.sortByNameDesc';
+    case 'lastHeard':
+      return dir === 'asc'
+        ? 'repeatersPanel.sortByLastHeardAsc'
+        : 'repeatersPanel.sortByLastHeardDesc';
+    case 'snr':
+      return dir === 'asc' ? 'repeatersPanel.sortBySnrAsc' : 'repeatersPanel.sortBySnrDesc';
+    case 'rssi':
+      return dir === 'asc' ? 'repeatersPanel.sortByRssiAsc' : 'repeatersPanel.sortByRssiDesc';
+    case 'hops':
+      return dir === 'asc' ? 'repeatersPanel.sortByHopsAsc' : 'repeatersPanel.sortByHopsDesc';
+    case 'uptime':
+      return dir === 'asc' ? 'repeatersPanel.sortByUptimeAsc' : 'repeatersPanel.sortByUptimeDesc';
+    case 'airPct':
+      return dir === 'asc' ? 'repeatersPanel.sortByAirPctAsc' : 'repeatersPanel.sortByAirPctDesc';
+    case 'reliability':
+      return dir === 'asc'
+        ? 'repeatersPanel.sortByReliabilityAsc'
+        : 'repeatersPanel.sortByReliabilityDesc';
+  }
+}
+
+function RepeaterSortHeader({
+  columnKey,
+  sortKey,
+  sortDir,
+  columnLabel,
+  ariaLabel,
+  title,
+  onSort,
+}: {
+  columnKey: RepeaterSortKey;
+  sortKey: RepeaterSortKey;
+  sortDir: RepeaterSortDir;
+  columnLabel: string;
+  ariaLabel: string;
+  title?: string;
+  onSort: (key: RepeaterSortKey) => void;
+}) {
+  const ariaSort =
+    sortKey === columnKey ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none';
+  return (
+    <th className="py-2 pr-4 font-medium" aria-sort={ariaSort} title={title}>
+      <button
+        type="button"
+        className="hover:text-gray-200"
+        aria-label={ariaLabel}
+        onClick={() => {
+          onSort(columnKey);
+        }}
+      >
+        {columnLabel}
+        <RepeaterSortIcon field={columnKey} sortKey={sortKey} sortDir={sortDir} />
+      </button>
+    </th>
+  );
 }
 
 export default function RepeatersPanel({
@@ -329,6 +361,9 @@ export default function RepeatersPanel({
   const [savedPasswordsOpen, setSavedPasswordsOpen] = useState(false);
   const [forgetConfirmKey, setForgetConfirmKey] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [sortPref, setSortPref] = useState(DEFAULT_REPEATER_SORT);
+  const sortKey = sortPref.key;
+  const sortDir = sortPref.dir;
   const lastConsumedPendingFocusRef = useRef<number | null>(null);
   const refreshStoredSecrets = useCallback(() => {
     setSavedAdminEntries(listSavedAdminPasswords());
@@ -412,14 +447,7 @@ export default function RepeatersPanel({
 
   const infraNodes = useMemo(
     () =>
-      Array.from(nodes.values())
-        .filter((n) => n.hw_model === 'Repeater' || n.hw_model === 'Room')
-        .sort((a, b) => {
-          const aFav = a.favorited ? 1 : 0;
-          const bFav = b.favorited ? 1 : 0;
-          if (aFav !== bFav) return bFav - aFav;
-          return normalizeLastHeardMs(b.last_heard ?? 0) - normalizeLastHeardMs(a.last_heard ?? 0);
-        }),
+      Array.from(nodes.values()).filter((n) => n.hw_model === 'Repeater' || n.hw_model === 'Room'),
     [nodes],
   );
 
@@ -436,12 +464,49 @@ export default function RepeatersPanel({
       list = list.filter((n) => n.hw_model === 'Room');
     }
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter(
-      (n) =>
-        n.long_name.toLowerCase().includes(q) || n.node_id.toString(16).toLowerCase().includes(q),
-    );
-  }, [infraNodes, searchQuery, typeFilter]);
+    if (q) {
+      list = list.filter(
+        (n) =>
+          n.long_name.toLowerCase().includes(q) || n.node_id.toString(16).toLowerCase().includes(q),
+      );
+    }
+    const tracePathLenByNodeId = new Map<number, number>();
+    for (const [id, trace] of meshcoreTraceResults) {
+      if (trace.pathLen != null) tracePathLenByNodeId.set(id, trace.pathLen);
+    }
+    const currentRouteHopByNodeId = new Map<number, number>();
+    const selectBestPath = usePathHistoryStore.getState().selectBestPath;
+    for (const node of list) {
+      const paths = pathHistory.get(node.node_id) ?? [];
+      if (paths.length === 0) continue;
+      const route = meshcoreDisplayRouteFromPathSelection(selectBestPath(node.node_id));
+      if (route?.hopCount != null) currentRouteHopByNodeId.set(node.node_id, route.hopCount);
+    }
+    const prepared = prepareRepeaterSortRows(list, {
+      statusByNodeId: meshcoreNodeStatus,
+      contacts: meshcoreContactsDb,
+      signalHistory,
+      pathHistory,
+      tracePathLenByNodeId,
+      currentRouteHopByNodeId,
+      nodeStaleThresholdMs,
+      nodeOfflineThresholdMs,
+    });
+    return sortPreparedRepeaterRows(prepared, sortKey, sortDir).map((row) => row.node);
+  }, [
+    infraNodes,
+    meshcoreContactsDb,
+    meshcoreNodeStatus,
+    meshcoreTraceResults,
+    nodeOfflineThresholdMs,
+    nodeStaleThresholdMs,
+    pathHistory,
+    searchQuery,
+    signalHistory,
+    sortDir,
+    sortKey,
+    typeFilter,
+  ]);
 
   useEffect(() => {
     if (pendingFocusNodeId == null) return;
@@ -458,6 +523,9 @@ export default function RepeatersPanel({
     lastConsumedPendingFocusRef.current = pendingFocusNodeId;
     onPendingFocusConsumed?.();
   }, [nodes, onPendingFocusConsumed, pendingFocusNodeId]);
+  const toggleRepeaterSort = useCallback((key: RepeaterSortKey) => {
+    setSortPref((prev) => nextRepeaterSort(prev, key));
+  }, []);
   const repeaterTableScrollRef = useRef<HTMLDivElement>(null);
   const shouldVirtualizeRepeaterRows = repeatersFiltered.length > REPEATER_VIRTUALIZE_THRESHOLD;
   const repeaterRowVirtualizer = useVirtualizer({
@@ -773,7 +841,7 @@ export default function RepeatersPanel({
 
   return (
     <>
-      <div className="flex flex-col gap-4">
+      <div className="flex h-full min-h-0 flex-col gap-4">
         <div className="flex flex-col flex-wrap items-stretch justify-between gap-3 min-[480px]:flex-row min-[480px]:items-center">
           <h2 className="text-bright-green text-lg font-semibold">{t('repeatersPanel.title')}</h2>
           <div className="flex flex-wrap items-center gap-2">
@@ -894,25 +962,39 @@ export default function RepeatersPanel({
             {t('repeatersPanel.noRepeatersMatch')}
           </div>
         ) : (
-          <div ref={repeaterTableScrollRef} className="max-h-[min(70vh,48rem)] overflow-auto">
+          <div ref={repeaterTableScrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-700 text-left text-gray-400">
-                  <th className="py-2 pr-4 font-medium">{t('repeatersPanel.columnStatus')}</th>
-                  <th className="py-2 pr-4 font-medium">{t('repeatersPanel.columnName')}</th>
-                  <th className="py-2 pr-4 font-medium">{t('repeatersPanel.columnLastHeard')}</th>
-                  <th className="py-2 pr-4 font-medium" title={t('repeatersPanel.snrDbTooltip')}>
-                    {t('repeatersPanel.columnSnr')}
-                  </th>
-                  <th className="py-2 pr-4 font-medium" title={t('repeatersPanel.rssiDbmTooltip')}>
-                    {t('repeatersPanel.columnRssi')}
-                  </th>
-                  <th className="py-2 pr-4 font-medium" title={t('repeatersPanel.hopCountTooltip')}>
-                    {t('repeatersPanel.columnHops')}
-                  </th>
-                  <th className="py-2 pr-4 font-medium">{t('repeatersPanel.columnUptime')}</th>
-                  <th className="py-2 pr-4 font-medium">{t('repeatersPanel.columnAirPct')}</th>
-                  <th className="py-2 pr-4 font-medium">{t('repeatersPanel.columnReliability')}</th>
+                <tr className="bg-app-bg sticky top-0 z-10 border-b border-gray-700 text-left text-gray-400">
+                  {(
+                    [
+                      ['status', 'repeatersPanel.columnStatus'],
+                      ['name', 'repeatersPanel.columnName'],
+                      ['lastHeard', 'repeatersPanel.columnLastHeard'],
+                      ['snr', 'repeatersPanel.columnSnr', 'repeatersPanel.snrDbTooltip'],
+                      ['rssi', 'repeatersPanel.columnRssi', 'repeatersPanel.rssiDbmTooltip'],
+                      ['hops', 'repeatersPanel.columnHops', 'repeatersPanel.hopCountTooltip'],
+                      ['uptime', 'repeatersPanel.columnUptime'],
+                      ['airPct', 'repeatersPanel.columnAirPct'],
+                      ['reliability', 'repeatersPanel.columnReliability'],
+                    ] as const
+                  ).map(([columnKey, labelKey, titleKey]) => (
+                    <RepeaterSortHeader
+                      key={columnKey}
+                      columnKey={columnKey}
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      columnLabel={t(labelKey)}
+                      ariaLabel={t(
+                        repeaterSortAriaKey(
+                          columnKey,
+                          sortKey === columnKey ? sortDir : defaultRepeaterSortDir(columnKey),
+                        ),
+                      )}
+                      title={titleKey ? t(titleKey) : undefined}
+                      onSort={toggleRepeaterSort}
+                    />
+                  ))}
                   <th className="py-2 font-medium">{t('repeatersPanel.columnActions')}</th>
                 </tr>
               </thead>
@@ -971,10 +1053,7 @@ export default function RepeatersPanel({
                         })
                       : [];
                   const reliabilityText = displayReliability(paths);
-                  const airPct =
-                    status?.totalAirTimeSecs && status?.totalUpTimeSecs
-                      ? ((status.totalAirTimeSecs / status.totalUpTimeSecs) * 100).toFixed(1)
-                      : null;
+                  const airPct = resolveRepeaterAirPct(status);
                   const isStatusLoading = isRepeaterAdminRpcPending(
                     meshcoreRepeaterRpcPending,
                     node.node_id,
@@ -1178,7 +1257,9 @@ export default function RepeatersPanel({
                           )}
                         </td>
                         <td className="py-2 pr-4">{formatUptime(t, status?.totalUpTimeSecs)}</td>
-                        <td className="py-2 pr-4">{airPct != null ? `${airPct}%` : '—'}</td>
+                        <td className="py-2 pr-4">
+                          {airPct != null ? `${airPct.toFixed(1)}%` : '—'}
+                        </td>
                         <td className="py-2 pr-4">{reliabilityText}</td>
                         <td className="py-2">
                           <div className="flex flex-wrap gap-1">

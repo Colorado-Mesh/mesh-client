@@ -374,7 +374,13 @@ describe('ReticulumInterfacesPanel', () => {
   });
 
   it('shows Link quality on enabled TCP Client rows', async () => {
-    render(<ReticulumInterfacesPanel {...defaultProps} interfaces={[rmapWorldHub]} />);
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        sidecarApiReady={false}
+        interfaces={[rmapWorldHub]}
+      />,
+    );
 
     const meter = screen.getByTestId('reticulum-tcp-link-rmap-world');
     expect(meter).toBeInTheDocument();
@@ -427,7 +433,13 @@ describe('ReticulumInterfacesPanel', () => {
 
   it('shows Link quality unavailable when TCP probe fails', async () => {
     window.electronAPI.hostLink.probeTcpRtt = vi.fn().mockResolvedValue(null);
-    render(<ReticulumInterfacesPanel {...defaultProps} interfaces={[rmapWorldHub]} />);
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        sidecarApiReady={false}
+        interfaces={[rmapWorldHub]}
+      />,
+    );
     const meter = screen.getByTestId('reticulum-tcp-link-rmap-world');
     await waitFor(() => {
       expect(within(meter).getByText('connectionPanel.linkQualityUnavailable')).toBeInTheDocument();
@@ -448,6 +460,7 @@ describe('ReticulumInterfacesPanel', () => {
     render(
       <ReticulumInterfacesPanel
         {...defaultProps}
+        sidecarApiReady={false}
         interfaces={[
           {
             id: 'rnode-ble',

@@ -87,6 +87,7 @@ import {
 } from '../lib/appSettingsStorage';
 import {
   classifyMeshcoreBleTimeoutStage,
+  isMeshcoreMissingServicesErrorMessage,
   isMeshcoreSetupAbortError,
   isMeshcoreTcpTransportDeadError,
   MESHCORE_SETUP_ABORT_MESSAGE,
@@ -151,6 +152,10 @@ import type {
   MeshcoreTraceResultEntry,
   RxPacketEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
+import {
+  rememberedMeshcoreLiveAdvertName,
+  rememberMeshcoreLiveAdvertName,
+} from '../lib/meshcore/meshcoreLiveContactPersist';
 import {
   MESHCORE_ERR_NODE_NOT_FOUND,
   MESHCORE_ERR_NOT_CONNECTED,
@@ -387,12 +392,15 @@ import {
   meshcoreConnectionImpliesUsbPower,
   meshcoreContactToMeshNode,
   meshcoreIsChatStubNodeId,
+  meshcoreIsPlaceholderNodeLongName,
   meshcoreIsSyntheticPlaceholderPubKeyHex,
   meshcoreManufacturerModelFromDeviceQuery,
   meshcoreMergeChannelDisplayNameOntoNode,
+  meshcoreMergeContactAdvNameFromPrevious,
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreMinimalNodeFromAdvertEvent,
+  meshcorePreviousAdvertNameForRebuild,
   meshcoreRemoveContactErrorMessage,
   meshcoreScaledAdvLatLonToDeg,
   meshcoreSyntheticPlaceholderPubKeyHex,
@@ -1193,6 +1201,7 @@ export function useMeshcoreRuntime() {
       const dbPubKeyHexByNodeId = new Map<number, string>();
       for (const row of dbContacts) {
         if (row.nickname) nicknameMapRef.current.set(row.node_id, row.nickname);
+        rememberMeshcoreLiveAdvertName(row.node_id, row.adv_name);
         const hex = row.public_key.replace(/\s/g, '').toLowerCase();
         if (!meshcoreIsSyntheticPlaceholderPubKeyHex(hex) && hex.length >= 12) {
           const pairs = hex.match(/.{2}/g);
@@ -1493,11 +1502,16 @@ export function useMeshcoreRuntime() {
         !mqttPlaceholderSavedRef.current.has(resolvedId)
       ) {
         mqttPlaceholderSavedRef.current.add(resolvedId);
+        const existingLongName = readMeshcoreNodes().get(resolvedId)?.long_name;
+        const shouldProtectExistingName =
+          typeof existingLongName === 'string' &&
+          existingLongName.trim().length > 0 &&
+          !meshcoreIsPlaceholderNodeLongName(existingLongName, resolvedId);
         void window.electronAPI.db
           .saveMeshcoreContact({
             node_id: resolvedId,
             public_key: meshcoreSyntheticPlaceholderPubKeyHex(resolvedId),
-            adv_name: m.senderName ?? displayName,
+            adv_name: shouldProtectExistingName ? null : (m.senderName ?? displayName),
             contact_type: 1,
             last_advert: tsSec,
             nickname: null,
@@ -1582,7 +1596,29 @@ export function useMeshcoreRuntime() {
           effectivePrevHops,
           slicedPath.length,
         );
-        const node: MeshNode = { ...base, last_heard, hops_away: hopsAway };
+        const nick = nicknameMapRef.current.get(base.node_id);
+        // Nickname overlay runs after this loop; merge stored advert name, not the nick.
+        const mergedAdvName = meshcoreMergeContactAdvNameFromPrevious(
+          base.long_name,
+          meshcorePreviousAdvertNameForRebuild(
+            prevNode?.long_name,
+            nick,
+            rememberedMeshcoreLiveAdvertName(base.node_id),
+            base.node_id,
+          ),
+          base.node_id,
+          {
+            prevLastHeard: prevNode?.last_heard,
+            radioLastAdvert: contact.lastAdvert,
+          },
+        );
+        rememberMeshcoreLiveAdvertName(base.node_id, mergedAdvName);
+        const node: MeshNode = {
+          ...base,
+          last_heard,
+          hops_away: hopsAway,
+          long_name: mergedAdvName,
+        };
         if (prevNode?.channel_utilization != null) {
           node.channel_utilization = prevNode.channel_utilization;
         }
@@ -1619,7 +1655,13 @@ export function useMeshcoreRuntime() {
         const onRadio = opts?.contactsFromRadio ? 1 : 0;
         const prevHopsAway = prevNode?.hops_away;
         const hopsToSave = hopsAway ?? prevHopsAway ?? undefined;
-        const dbRow = contactToDbRow(contact, undefined, onRadio, now, hopsToSave);
+        const dbRow = contactToDbRow(
+          { ...contact, advName: mergedAdvName },
+          undefined,
+          onRadio,
+          now,
+          hopsToSave,
+        );
         pendingDbRows.push(dbRow);
       }
       replaceMeshcorePubKeyRegistry(
@@ -1800,7 +1842,10 @@ export function useMeshcoreRuntime() {
         });
       } else {
         setNodes((prev) => {
-          const existing = prev.get(nodeId);
+          // Live RF/advert upserts nodeStore, not this useState map. Seed from Zustand so the
+          // syncNodesMapToIdentityStore effect cannot restore the companion's old advName.
+          const fromStore = readMeshcoreNodes().get(nodeId);
+          const existing = fromStore ?? prev.get(nodeId);
           if (!existing) return prev;
           const next = new Map(prev);
           next.set(nodeId, {
@@ -1854,7 +1899,7 @@ export function useMeshcoreRuntime() {
       }, MESHCORE_PATH_UPDATED_CONTACTS_REBUILD_DEBOUNCE_MS);
       requestChatOutboxDrain('meshcore');
     },
-    [meshcorePreviousNodesBaselineForBuild],
+    [meshcorePreviousNodesBaselineForBuild, readMeshcoreNodes],
   );
 
   /** Returned by {@link setupEventListeners}; run before `conn.close()` or replacing the connection. */
@@ -3985,7 +4030,7 @@ export function useMeshcoreRuntime() {
         const isAlreadyInProgress = /already in progress|Connection already in progress/i.test(
           safeMessage,
         );
-        const isMissingServices = /could not find all requested services/i.test(safeMessage);
+        const isMissingServices = isMeshcoreMissingServicesErrorMessage(safeMessage);
         const isPeripheralInUse = /already in use by the/i.test(safeMessage);
         const bleTimeoutStage =
           type === 'ble' ? classifyMeshcoreBleTimeoutStage(safeMessage) : 'unknown';
@@ -4703,11 +4748,34 @@ export function useMeshcoreRuntime() {
       for (const contact of contacts) {
         const id = pubkeyToNodeId(contact.publicKey);
         if (id === myId) continue;
+        const prevNode = readMeshcoreNodes().get(id);
+        const nickname = nicknameMapRef.current.get(id);
         const prevHops = getIdentityNode(meshcoreIdentityIdRef.current, id)?.hops_away;
         const base = meshcoreContactToMeshNode(contact);
         const mergedHops = meshcoreMergeContactHopsAwayFromPrevious(base.hops_away, prevHops, 0);
+        const mergedAdvName = meshcoreMergeContactAdvNameFromPrevious(
+          base.long_name,
+          meshcorePreviousAdvertNameForRebuild(
+            prevNode?.long_name,
+            nickname,
+            rememberedMeshcoreLiveAdvertName(id),
+            id,
+          ),
+          id,
+          {
+            prevLastHeard: prevNode?.last_heard,
+            radioLastAdvert: contact.lastAdvert,
+          },
+        );
+        rememberMeshcoreLiveAdvertName(id, mergedAdvName);
         pendingDbRows.push(
-          contactToDbRow(contact, nicknameMapRef.current.get(id) ?? null, 1, now, mergedHops),
+          contactToDbRow(
+            { ...contact, advName: mergedAdvName },
+            nickname ?? null,
+            1,
+            now,
+            mergedHops,
+          ),
         );
       }
       const toRemove = pendingDbRows.length;
@@ -4755,7 +4823,7 @@ export function useMeshcoreRuntime() {
       }
       return removed;
     },
-    [],
+    [readMeshcoreNodes],
   );
 
   const setOwner = useCallback(

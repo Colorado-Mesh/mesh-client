@@ -3,9 +3,11 @@ import { useEffect, useRef } from 'react';
 import { reconnectBleWithScan } from '@/renderer/lib/bleReconnectHelper';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
+  clearStoredBleSelection,
   type LastConnection,
   loadLastBleDeviceId,
   loadLastConnection,
+  notifyBleSelectionCleared,
   saveLastConnection,
 } from '@/renderer/lib/lastConnectionStorage';
 import {
@@ -28,6 +30,8 @@ import { tryGetMeshcoreSession } from '@/renderer/lib/sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from '@/renderer/lib/sessions/meshtasticSession';
 import { POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS } from '@/renderer/lib/timeConstants';
 import type { DeviceState, MeshProtocol } from '@/renderer/lib/types';
+
+import { shouldClearMeshcoreBleSelectionForError } from '../lib/bleConnectErrors';
 
 export interface UseProtocolRfAutoConnectOptions {
   protocol: MeshProtocol;
@@ -143,6 +147,14 @@ export function useProtocolRfAutoConnect({
       error: unknown,
       transport: 'serial' | 'ble' | 'tcp' | 'http' = 'ble',
     ) => {
+      if (
+        protocol === 'meshcore' &&
+        transport === 'ble' &&
+        shouldClearMeshcoreBleSelectionForError(error)
+      ) {
+        clearStoredBleSelection('meshcore');
+        notifyBleSelectionCleared('meshcore');
+      }
       clearAutoConnectTimeout();
       console.warn(
         `[useProtocolRfAutoConnect] ${protocol} ${transport} auto-connect failed: ${errLikeToLogString(error)}`,

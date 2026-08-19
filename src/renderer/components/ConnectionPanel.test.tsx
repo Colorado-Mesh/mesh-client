@@ -5,7 +5,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { act } from 'react';
 import { flushSync } from 'react-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import type { SerialPort } from '@/shared/electron-api.types';
@@ -1056,6 +1056,92 @@ describe('ConnectionPanel Linux BLE path', () => {
     expect(screen.getByText(/paired with your computer using a PIN/i)).toBeInTheDocument();
     userAgentSpy.mockRestore();
   });
+
+  it('clears remembered MeshCore BLE selection after Linux missing-services failure', async () => {
+    const user = userEvent.setup();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    const lastConnKey = 'mesh-client:lastConnection:meshcore';
+    const lastBleKey = 'mesh-client:lastBleDevice:meshcore';
+    localStorage.setItem(lastConnKey, JSON.stringify({ type: 'ble', bleDeviceId: 'bad-device' }));
+    localStorage.setItem(lastBleKey, 'bad-device');
+    const onConnect = vi.fn().mockRejectedValue(new Error('Could not find all requested services'));
+
+    try {
+      await withMockedConsoleWarn(async () => {
+        render(
+          <ConnectionPanel
+            state={disconnectedState}
+            onConnect={onConnect}
+            onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+            onDisconnect={vi.fn().mockResolvedValue(undefined)}
+            mqttStatus="disconnected"
+            protocol="meshcore"
+          />,
+        );
+
+        const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+        expect(radioCard).toBeTruthy();
+        await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+        await waitFor(() => {
+          expect(onConnect).toHaveBeenCalledWith('ble', undefined);
+          expect(localStorage.getItem(lastConnKey)).toBeNull();
+          expect(localStorage.getItem(lastBleKey)).toBeNull();
+        });
+      });
+    } finally {
+      localStorage.removeItem(lastConnKey);
+      localStorage.removeItem(lastBleKey);
+      userAgentSpy.mockRestore();
+    }
+  });
+
+  it('clears remembered MeshCore BLE selection after Linux missing-services reconnect failure', async () => {
+    const user = userEvent.setup();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    const lastConnKey = 'mesh-client:lastConnection:meshcore';
+    const lastBleKey = 'mesh-client:lastBleDevice:meshcore';
+    localStorage.setItem(lastConnKey, JSON.stringify({ type: 'ble', bleDeviceId: 'bad-device' }));
+    localStorage.setItem(lastBleKey, 'bad-device');
+    const onConnect = vi.fn().mockRejectedValue(new Error('Could not find all requested services'));
+
+    try {
+      await withMockedConsoleWarn(async () => {
+        render(
+          <ConnectionPanel
+            state={disconnectedState}
+            onConnect={onConnect}
+            onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+            onDisconnect={vi.fn().mockResolvedValue(undefined)}
+            mqttStatus="disconnected"
+            protocol="meshcore"
+          />,
+        );
+
+        await waitFor(() => {
+          expect(screen.getByRole('button', { name: /^Reconnect$/i })).toBeInTheDocument();
+        });
+
+        await user.click(screen.getByRole('button', { name: /^Reconnect$/i }));
+
+        await waitFor(() => {
+          expect(onConnect).toHaveBeenCalledWith('ble', undefined);
+          expect(localStorage.getItem(lastConnKey)).toBeNull();
+          expect(localStorage.getItem(lastBleKey)).toBeNull();
+        });
+      });
+    } finally {
+      localStorage.removeItem(lastConnKey);
+      localStorage.removeItem(lastBleKey);
+      userAgentSpy.mockRestore();
+    }
+  });
 });
 
 // ─── Firmware status indicator ────────────────────────────────────
@@ -2080,5 +2166,500 @@ describe('ConnectionPanel Reticulum', () => {
     // Graceful sidecar stop here would add ~2s before quit; main stops it quit-fast.
     expect(onDisconnect).not.toHaveBeenCalled();
     expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalled();
+  });
+});
+
+describe('ConnectionPanel device picker sort', () => {
+  it('sorts BLE devices by RSSI then Name', async () => {
+    const user = userEvent.setup();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+
+    const discovered = {
+      cb: null as
+        | ((
+            devices: { deviceId: string; deviceName: string; rssi?: number | null }[],
+            generation?: number,
+          ) => void)
+        | null,
+    };
+    vi.mocked(window.electronAPI.onBluetoothDevicesDiscovered).mockImplementation((cb) => {
+      discovered.cb = cb;
+      return () => {};
+    });
+
+    const onConnect = vi.fn(
+      () =>
+        new Promise<void>(() => {
+          /* leave connecting so picker stays open */
+        }),
+    );
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    await waitFor(() => {
+      expect(discovered.cb).toBeTruthy();
+    });
+    discovered.cb?.(
+      [
+        { deviceId: 'id-z', deviceName: 'Zulu', rssi: -90 },
+        { deviceId: 'id-a', deviceName: 'Alpha', rssi: -40 },
+        { deviceId: 'id-m', deviceName: 'Mid', rssi: -70 },
+        { deviceId: 'id-n', deviceName: 'NoRssi' },
+      ],
+      1,
+    );
+
+    const names = () =>
+      screen
+        .getAllByRole('button')
+        .map((el) => el.getAttribute('aria-label') ?? '')
+        .filter((label) => /Alpha|Mid|Zulu|NoRssi/.test(label) && label.includes('id-'))
+        .map((label) => label.split(' ')[0]);
+
+    await waitFor(() => {
+      expect(names()).toEqual(['Alpha', 'Mid', 'Zulu', 'NoRssi']);
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Sort by Name, A to Z' }));
+    expect(names()).toEqual(['Alpha', 'Mid', 'NoRssi', 'Zulu']);
+
+    await user.click(screen.getByRole('button', { name: 'Sort by Name, A to Z' }));
+    expect(names()).toEqual(['Zulu', 'NoRssi', 'Mid', 'Alpha']);
+
+    userAgentSpy.mockRestore();
+  });
+
+  it('sorts serial ports A–Z by default and reverses on Name click', async () => {
+    const user = userEvent.setup();
+    let capturedCb: ((ports: SerialPort[]) => void) | undefined;
+    vi.mocked(window.electronAPI.onSerialPortsDiscovered).mockImplementation((cb) => {
+      capturedCb = cb;
+      return () => {};
+    });
+    const onConnect = vi.fn(() => new Promise<void>(() => {}));
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('radio', { name: /USB Serial/i }));
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    act(() => {
+      flushSync(() => {
+        capturedCb!([
+          { portId: 'z', displayName: 'Zulu USB', portName: '/dev/ttyUSB1' },
+          { portId: 'a', displayName: 'Alpha USB', portName: '/dev/ttyUSB0' },
+        ]);
+      });
+    });
+
+    const names = () =>
+      screen
+        .getAllByRole('button')
+        .map((el) => el.getAttribute('aria-label') ?? '')
+        .filter((label) => label.includes('USB'))
+        .map((label) => (label.includes('Alpha') ? 'Alpha USB' : 'Zulu USB'));
+
+    expect(screen.getByText('Select Serial Port')).toBeInTheDocument();
+    expect(names()).toEqual(['Alpha USB', 'Zulu USB']);
+
+    await user.click(screen.getByRole('button', { name: 'Sort by Name, A to Z' }));
+    expect(names()).toEqual(['Zulu USB', 'Alpha USB']);
+  });
+});
+
+describe('ConnectionPanel BLE MAC identity', () => {
+  const darwinUuid = 'eccf2847e1fd3f5f0811064db1639a3d';
+  const lastConnKey = 'mesh-client:lastConnection:meshtastic';
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.mocked(window.electronAPI.startNobleBleScanning).mockResolvedValue({ ok: true });
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('shows formatted MAC in the picker when Noble provides address for a CoreBluetooth UUID', async () => {
+    const user = userEvent.setup();
+    const { restore } = mockMacNoblePlatform();
+    let capturedCb:
+      | ((device: {
+          deviceId: string;
+          deviceName: string;
+          rssi?: number | null;
+          address?: string | null;
+        }) => void)
+      | undefined;
+    vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockImplementation((cb) => {
+      capturedCb = cb;
+      return () => {};
+    });
+    const onConnect = vi.fn(
+      () =>
+        new Promise<void>(() => {
+          /* leave connecting so picker stays open */
+        }),
+    );
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={onConnect}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+        />,
+      );
+
+      const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+      expect(radioCard).toBeTruthy();
+      await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+      await waitFor(() => {
+        expect(capturedCb).toBeTruthy();
+      });
+      act(() => {
+        capturedCb?.({
+          deviceId: darwinUuid,
+          deviceName: 'MeshCore',
+          address: 'aa-bb-cc-dd-ee-ff',
+          rssi: -55,
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('aa:bb:cc:dd:ee:ff')).toBeInTheDocument();
+      });
+      expect(screen.queryByText(darwinUuid)).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /MeshCore aa:bb:cc:dd:ee:ff/ }),
+      ).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it('shows formatted MAC in the MeshCore BLE picker when address is provided', async () => {
+    const user = userEvent.setup();
+    const { restore } = mockMacNoblePlatform();
+    let capturedCb:
+      | ((device: {
+          deviceId: string;
+          deviceName: string;
+          rssi?: number | null;
+          address?: string | null;
+        }) => void)
+      | undefined;
+    vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockImplementation((cb) => {
+      capturedCb = cb;
+      return () => {};
+    });
+    const onConnect = vi.fn(
+      () =>
+        new Promise<void>(() => {
+          /* leave connecting so picker stays open */
+        }),
+    );
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={onConnect}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+        />,
+      );
+
+      const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+      expect(radioCard).toBeTruthy();
+      await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+      await waitFor(() => {
+        expect(capturedCb).toBeTruthy();
+      });
+      act(() => {
+        capturedCb?.({
+          deviceId: darwinUuid,
+          deviceName: 'MeshCore-NV0N',
+          address: 'ac:a7:04:00:d6:f1',
+          rssi: -62,
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('ac:a7:04:00:d6:f1')).toBeInTheDocument();
+      });
+      expect(screen.queryByText(darwinUuid)).not.toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it('clears remembered MeshCore BLE selection after missing-services connect failure', async () => {
+    const user = userEvent.setup();
+    const { restore } = mockMacNoblePlatform();
+    const lastConnKey = 'mesh-client:lastConnection:meshcore';
+    const lastBleKey = 'mesh-client:lastBleDevice:meshcore';
+    localStorage.setItem(
+      lastConnKey,
+      JSON.stringify({
+        type: 'ble',
+        bleDeviceId: darwinUuid,
+        bleDeviceName: 'MeshCore-NV0N',
+        bleMac: 'ac:a7:04:00:d6:f1',
+      }),
+    );
+    localStorage.setItem(lastBleKey, darwinUuid);
+    let capturedCb:
+      | ((device: {
+          deviceId: string;
+          deviceName: string;
+          rssi?: number | null;
+          address?: string | null;
+        }) => void)
+      | undefined;
+    vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockImplementation((cb) => {
+      capturedCb = cb;
+      return () => {};
+    });
+    const onConnect = vi
+      .fn()
+      .mockRejectedValue(new Error('Failed to find required BLE characteristics'));
+
+    try {
+      await withMockedConsoleWarn(async () => {
+        render(
+          <ConnectionPanel
+            state={disconnectedState}
+            onConnect={onConnect}
+            onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+            onDisconnect={vi.fn().mockResolvedValue(undefined)}
+            mqttStatus="disconnected"
+            protocol="meshcore"
+          />,
+        );
+
+        expect(screen.getByRole('button', { name: /^Reconnect$/i })).toBeInTheDocument();
+        const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+        expect(radioCard).toBeTruthy();
+        await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+        await waitFor(() => {
+          expect(capturedCb).toBeTruthy();
+        });
+        act(() => {
+          capturedCb?.({
+            deviceId: darwinUuid,
+            deviceName: 'MeshCore-NV0N',
+            address: 'ac:a7:04:00:d6:f1',
+            rssi: -62,
+          });
+        });
+
+        await user.click(
+          await screen.findByRole('button', { name: /MeshCore-NV0N ac:a7:04:00:d6:f1/i }),
+        );
+
+        await waitFor(() => {
+          expect(localStorage.getItem(lastConnKey)).toBeNull();
+          expect(localStorage.getItem(lastBleKey)).toBeNull();
+        });
+        await waitFor(() => {
+          expect(screen.queryByRole('button', { name: /^Reconnect$/i })).not.toBeInTheDocument();
+        });
+      });
+    } finally {
+      localStorage.removeItem(lastConnKey);
+      localStorage.removeItem(lastBleKey);
+      restore();
+    }
+  });
+
+  it('shows Bluetooth MAC on Last Connection and the connected Radio Connection card', () => {
+    localStorage.setItem(
+      lastConnKey,
+      JSON.stringify({
+        type: 'ble',
+        bleDeviceId: darwinUuid,
+        bleDeviceName: 'MeshCore',
+        bleMac: 'aa:bb:cc:dd:ee:ff',
+      }),
+    );
+
+    try {
+      const { unmount } = render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+        />,
+      );
+      expect(screen.getByText('MeshCore')).toBeInTheDocument();
+      expect(screen.getByText('aa:bb:cc:dd:ee:ff')).toBeInTheDocument();
+      unmount();
+
+      render(
+        <ConnectionPanel
+          state={configuredState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+        />,
+      );
+      expect(screen.getByText('Bluetooth MAC')).toBeInTheDocument();
+      expect(screen.getByText('aa:bb:cc:dd:ee:ff')).toBeInTheDocument();
+    } finally {
+      localStorage.removeItem(lastConnKey);
+    }
+  });
+
+  it('labels a UUID-only last device as Bluetooth ID, not MAC', () => {
+    localStorage.setItem(
+      lastConnKey,
+      JSON.stringify({
+        type: 'ble',
+        bleDeviceId: darwinUuid,
+        bleDeviceName: 'MeshCore',
+      }),
+    );
+
+    try {
+      render(
+        <ConnectionPanel
+          state={configuredState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+        />,
+      );
+      expect(screen.getByText('Bluetooth ID')).toBeInTheDocument();
+      expect(screen.getByText(darwinUuid)).toBeInTheDocument();
+      expect(screen.queryByText('Bluetooth MAC')).not.toBeInTheDocument();
+    } finally {
+      localStorage.removeItem(lastConnKey);
+    }
+  });
+
+  it('clears reconnect card when BLE selection-cleared event is emitted', async () => {
+    const lastConnKey = 'mesh-client:lastConnection:meshcore';
+    localStorage.setItem(lastConnKey, JSON.stringify({ type: 'ble', bleDeviceId: darwinUuid }));
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: /^Reconnect$/i })).toBeInTheDocument();
+      window.dispatchEvent(
+        new CustomEvent('mesh-client:ble-selection-cleared', { detail: { protocol: 'meshcore' } }),
+      );
+      await waitFor(() => {
+        expect(screen.queryByRole('button', { name: /^Reconnect$/i })).not.toBeInTheDocument();
+      });
+    } finally {
+      localStorage.removeItem(lastConnKey);
+    }
+  });
+
+  it('formats a compact 12-hex picker deviceId as a colon MAC', async () => {
+    const user = userEvent.setup();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+
+    const discovered = {
+      cb: null as
+        | ((
+            devices: { deviceId: string; deviceName: string; rssi?: number | null }[],
+            generation?: number,
+          ) => void)
+        | null,
+    };
+    vi.mocked(window.electronAPI.onBluetoothDevicesDiscovered).mockImplementation((cb) => {
+      discovered.cb = cb;
+      return () => {};
+    });
+    const onConnect = vi.fn(
+      () =>
+        new Promise<void>(() => {
+          /* leave connecting so picker stays open */
+        }),
+    );
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={onConnect}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+        />,
+      );
+
+      const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+      expect(radioCard).toBeTruthy();
+      await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+      await waitFor(() => {
+        expect(discovered.cb).toBeTruthy();
+      });
+      discovered.cb?.([{ deviceId: 'AABBCCDDEEFF', deviceName: 'MeshCore', rssi: -40 }], 1);
+
+      await waitFor(() => {
+        expect(screen.getByText('aa:bb:cc:dd:ee:ff')).toBeInTheDocument();
+      });
+    } finally {
+      userAgentSpy.mockRestore();
+    }
   });
 });

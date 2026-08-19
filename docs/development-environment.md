@@ -304,6 +304,8 @@ flatpak install --user -y flathub org.electronjs.Electron2.BaseApp//24.08
 # See scripts/flatpakPnpmStoreVersion.mjs FLATPAK_NODE_GENERATOR_GIT.
 pip install --force-reinstall --no-cache-dir \
   "git+https://github.com/flatpak/flatpak-builder-tools@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node"
+# Skip Playwright browser vendoring (GitHub /raw/ 404s; Electron E2E skips downloads).
+node scripts/patch-flatpak-node-generator-playwright.mjs
 # Must match package.json packageManager major (pnpm 11 → v11). Generator defaults to v10.
 PNPM_MAJOR="$(node -p "require('./package.json').packageManager.match(/^pnpm@(\\d+)/)[1]")"
 STORE_VERSION="v${PNPM_MAJOR}"

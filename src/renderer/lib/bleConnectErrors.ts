@@ -53,6 +53,21 @@ export function classifyMeshcoreBleTimeoutStage(message: string): MeshcoreBleTim
   return 'unknown';
 }
 
+const MESHCORE_MISSING_SERVICES_RE =
+  /could not find all requested services|failed to find required ble characteristics/i;
+
+export function isMeshcoreMissingServicesErrorMessage(message: string): boolean {
+  return MESHCORE_MISSING_SERVICES_RE.test(message);
+}
+
+export function shouldClearMeshcoreBleSelectionForError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    isMeshcoreMissingServicesErrorMessage(message) ||
+    message === 'meshcore.errors.bleMissingServices'
+  );
+}
+
 /** WinRT / BlueZ sometimes drop the link during GATT service or characteristic discovery. */
 const MESHCORE_RETRYABLE_GATT_DISCOVERY_FLAKES_RE =
   /unreachable while discovering services|unreachable while discovering characteristics|gatt.*unreachable/i;

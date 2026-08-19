@@ -357,6 +357,56 @@ describe('useMeshcoreRuntime mount hydration', () => {
     );
   });
 
+  it('mqtt placeholder persistence does not overwrite an existing real contact name', async () => {
+    const senderNodeId = 0xabcd1234;
+    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([
+      {
+        ...sampleMeshcoreDbRow(),
+        id: 74,
+        sender_id: senderNodeId,
+        sender_name: 'ExistingRealName',
+        payload: 'Prior persisted message',
+      },
+    ]);
+    let meshcoreChatHandler: ((raw: unknown) => void) | undefined;
+    vi.mocked(window.electronAPI.mqtt.onMeshcoreChat).mockImplementation((cb) => {
+      meshcoreChatHandler = cb;
+      return () => {};
+    });
+
+    renderHook(() => useMeshcoreRuntime());
+    await waitFor(() => {
+      expect(meshcoreChatHandler).toBeDefined();
+    });
+
+    vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockClear();
+    act(() => {
+      meshcoreChatHandler!({
+        text: 'StaleAlias: mqtt line from unresolved sender',
+        channelIdx: 0,
+        senderName: 'StaleAlias',
+        senderNodeId,
+        timestamp: Date.now(),
+      });
+    });
+
+    await waitFor(() => {
+      expect(window.electronAPI.db.saveMeshcoreMessage).toHaveBeenCalled();
+    });
+    const contactUpserts = vi.mocked(window.electronAPI.db.saveMeshcoreContact).mock.calls;
+    if (contactUpserts.length > 0) {
+      expect(contactUpserts[0]?.[0]).toEqual(
+        expect.objectContaining({
+          node_id: senderNodeId,
+          adv_name: null,
+        }),
+      );
+    }
+    expect(window.electronAPI.db.saveMeshcoreContact).not.toHaveBeenCalledWith(
+      expect.objectContaining({ adv_name: 'StaleAlias' }),
+    );
+  });
+
   it('merges RF history + MQTT duplicate into one message with receivedVia both', async () => {
     const senderName = 'SynthUser';
     const baseTs = 1_700_000_010_000;

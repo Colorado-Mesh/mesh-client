@@ -1267,10 +1267,12 @@
       "connectingRow": "{{name}}: Bluetooth 経由で接続しています",
       "offlineHintWifi": "RNodeがLAN上にあり、電源が入っており、設定されたIP （ 4242ではなくデフォルトのTCPポート7633 ）で到達可能であることを確認します。DHCPが新しいアドレスを割り当てた場合は、以下のホストを更新するか、Reticulum → AdminでWi-Fiを再プロビジョニングします。",
       "tcpUnreachable": "{{name}} ： TCPハブに到達できません（ {{host}} ： {{port}} ）",
-      "tcpUnreachableHint": "リモートReticulumインスタンスは、オフラインであっても、接続をブロックしていてもよい。このインターフェイスを無効にするか、ホストとポートを確認します。",
+      "tcpUnreachableHint": "リモートReticulumインスタンスはオフラインか、接続をブロックしている可能性があります。このインターフェイスを無効にするか、ホストとポートを確認してください。mesh-client やスタックの頻繁な再起動は、Reticulum 1.4.0+ ハブが IP を 12 時間ブロックする原因になります。再起動せずに待ってください。",
       "connectingHintBle": "BLE RNode リンクは、スタックの開始後 (OS パスキー ウィンドウ) に最大 60 秒かかる場合があります。プロンプトが表示されたら、現在の RNode PIN を入力します。決して 123456 を入力しないでください。これは正常であり、エラーではありません。接続が成功するまで、デバイスはシステム設定に表示されない場合があります。",
       "offlineHintBle": "このエラーを解消するには、このインターフェースを削除して再度追加（デバイスを選択）し、保存済みの Bluetooth ID を更新してからスタックを再起動する必要がある場合があります。OS から 6 桁の Bluetooth PIN の入力を求められることがあります（macOS、Windows、または Linux）。RNode はペアリングのたびに新しいコードを生成します。123456 は使用しないでください（Meshtastic のデフォルトであり、RNode ではありません）。このアプリが接続する前に、RNode がシステム設定 → Bluetooth に表示されている必要はありません。スタックがペアリングすると OS のダイアログが表示されます。ディスプレイのない無線機：USB を接続 → Reticulum Admin → Bluetooth → ペアリング開始 → 管理パネルに表示された PIN（無線機の画面ではありません）を OS ダイアログに入力します。ディスプレイ付き無線機：Heltec デバイスでボタンを約 7 秒押し続け（タイミングは機種により異なります。多くのボードでは約 10 秒で Wi‑Fi AP が有効になります）、画面の PIN を読み取り、OS ダイアログに入力します。再試行する前に、OS の Bluetooth 設定で失敗したボンディングをクリアしてください。",
-      "offlineHintBleBondStale": "macOSは引き続きこのRNodeをペアリング済みとして表示しますが、Bluetoothキーは一致しなくなりました（ピアが削除されたペアリング情報）。システム設定→Bluetoothでデバイスを忘れ、RNodeをペアリングモードにします（管理→Bluetooth→開始ペアリング、またはボタンを7秒間押したままにします）。次に、このインターフェース（デバイスを選択）を削除して再追加し、スタックを再起動し、プロンプトが表示されたら新しい6桁のPINを入力します。"
+      "offlineHintBleBondStale": "macOSは引き続きこのRNodeをペアリング済みとして表示しますが、Bluetoothキーは一致しなくなりました（ピアが削除されたペアリング情報）。システム設定→Bluetoothでデバイスを忘れ、RNodeをペアリングモードにします（管理→Bluetooth→開始ペアリング、またはボタンを7秒間押したままにします）。次に、このインターフェース（デバイスを選択）を削除して再追加し、スタックを再起動し、プロンプトが表示されたら新しい6桁のPINを入力します。",
+      "tcpFastFlap": "{{name}} ：頻繁にスタックを再起動した後、ハブがIPをブロックした可能性があります（ {{host}} ： {{port}} ）",
+      "tcpFastFlapHint": "Reticulum 1.4.0+ のパブリックハブは、12時間以内に5回の短いTCPセッションの後にIPをブロックします。mesh-client やスタックの素早い再起動もカウントされます。このハブを無効にして最大12時間待ってください。再起動するとブロックが延びます。"
     },
     "autoConnectingTo": "{{deviceName}} に自動接続中…",
     "autoReconnectInProgress": "自動再接続中です…",
@@ -1357,7 +1359,9 @@
       "txQueueDropsHintBle": "このBLE RNodeはTXキューを排出できません（リンクがスタックまたはフラッピング）。USBシリアルまたはWi-Fi (tcp://)を優先するか、システム設定→BluetoothでForgetした後にスタックを停止して再ペアリングしてください。",
       "txQueueDropsHintBleBondStale": "BLEボンドが古くなっているため、TXキューがいっぱいです。システム設定→BluetoothでこのRNodeを忘れ、管理→Bluetooth （ペアリングを解除/ペアリングを開始）を使用するか、USBに切り替えます。",
       "txQueueDropsHintNeutral": "このインターフェースTXチャネルは満杯です。ドロップを停止するには、そのインターフェイスのリンクの状態を確認するか、無効にします。",
-      "txQueueDropsHintBleFlowControl": "無線がビジー状態の間、ホストTXキューバックプレッシャー（フロー制御オン）。RF輻輳下で予想されます—リンクがスタックしていません。アウトバウンドロードを減らすか、通話時間を待ちます。"
+      "txQueueDropsHintBleFlowControl": "無線がビジー状態の間、ホストTXキューバックプレッシャー（フロー制御オン）。RF輻輳下で予想されます—リンクがスタックしていません。アウトバウンドロードを減らすか、通話時間を待ちます。",
+      "tcpResetByPeer": "{{name}} ：ハブがTCPセッションをリセットしました（ピアによって接続がリセットされました）",
+      "tcpReadEof": "{{name}} ：ハブはTCPをクリーンに閉じました（情報： TCP読み取り： EOF ）"
     },
     "reticulumSidecarBundledMissing": "このインストールには、バンドルされている Reticulum サイドカーがありません。新しいリリースにアップグレードするか、問題を報告してください。パッケージ化されたインストールではソースからのビルドは利用できません。",
     "radioMqttRootDivergesWarning": "ラジオMQTTルートトピックは{{radioRoot}}ですが、このパネルは{{appPrefix}}に加入しています。全国のノードトラフィックを制限するために無線を一致させます—トピックプレフィックスを更新し、MQTTを再接続します。",
@@ -1418,7 +1422,18 @@
     "letsMeshRegionEu": "EU",
     "letsMeshRequiresWebSocket": "このブローカープリセットには、WebSocketトランスポート（ WSS ）が必要です。",
     "letsMeshRequiresPort": "このブローカープリセットにはポート{{port}} (WebSocket TLS)が必要です。",
-    "letsMeshKnownBrokersOnly": "このプリセットは、既知のパブリックMeshCore MQTTブローカーのみをサポートします。他のブローカーの場合はカスタムに切り替えます。"
+    "letsMeshKnownBrokersOnly": "このプリセットは、既知のパブリックMeshCore MQTTブローカーのみをサポートします。他のブローカーの場合はカスタムに切り替えます。",
+    "sortName": "氏名",
+    "sortRssi": "RSSI",
+    "sortToolbar": "機器リスト",
+    "sortByNameAsc": "名前で並べ替え、AからZ",
+    "sortByNameDesc": "名前で並べ替え、ZからA",
+    "sortByRssiAsc": "RSSIで並べ替え、弱い順",
+    "sortByRssiDesc": "RSSIで並べ替え、最強順",
+    "pickerDeviceAria": "{{name}} {{address}}",
+    "pickerDeviceAriaWithRssi": "{{name}} {{address}}、{{rssi}} dBm",
+    "bluetoothMac": "Bluetooth MAC",
+    "bluetoothId": "Bluetooth ID"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -1755,7 +1770,8 @@
         "txQueueDropsBle": "インターフェース「{{name}}」が{{count}}送信パケットをドロップしました（ TXキューがいっぱいです） — BLE RNodeリンクが固着しています。USBを使用するか、再ペアリングしてください",
         "txQueueDropsBleBondStale": "インターフェース「{{name}}」が{{count}}個のアウトバウンドパケットをドロップしました（ TXキューがいっぱいです） — BLEボンドが古くなっています。OS Bluetoothで忘れてから再ペアリングしてください",
         "txQueueDropsNeutral": "インターフェース「{{name}}」が{{count}}送信パケットをドロップしました（ TXキューがいっぱいです） —そのインターフェースのリンクを確認してください",
-        "txQueueDropsBleFlowControl": "インターフェース「{{name}}」が{{count}}発信パケット（ホストTXキューがいっぱい）をドロップしました—フロー制御がオンになっています。リンクがスタックしているのではなく、RF輻輳の下で予想されます"
+        "txQueueDropsBleFlowControl": "インターフェース「{{name}}」が{{count}}発信パケット（ホストTXキューがいっぱい）をドロップしました—フロー制御がオンになっています。リンクがスタックしているのではなく、RF輻輳の下で予想されます",
+        "tcpFastFlap": "TCPハブ\"{{name}}\"は、スタックを頻繁に再起動した後、このIPをブロックした可能性があります({{host}}: {{port}})"
       }
     },
     "routingPort": {
@@ -4196,7 +4212,25 @@
     "openRoom": "ルームを開く",
     "savedPasswordOrphanRoomLabel": "ルーム {{nodeId}}",
     "roomCliNeedsAdminPassword": "リモートルームCLIにはルーム管理者パスワード（SendLogin ACL）が必要です。Repeaters → このルームのパスワードに保存してから再試行してください。ゲストBBSログインでは不十分です。",
-    "cliHistoryError": "[エラー： {{detail}}]"
+    "cliHistoryError": "[エラー： {{detail}}]",
+    "sortByStatusAsc": "ステータスで並べ替え、オフラインで最初に",
+    "sortByStatusDesc": "ステータスで並べ替え、オンラインで最初に",
+    "sortByNameAsc": "名前で並べ替え、AからZ",
+    "sortByNameDesc": "名前で並べ替え、ZからA",
+    "sortByLastHeardAsc": "最後のヒアリングで並べ替え、古い順",
+    "sortByLastHeardDesc": "最後のヒアリングで並べ替え、新しい順",
+    "sortBySnrAsc": "SNRで並べ替え、最も低い順",
+    "sortBySnrDesc": "SNRで並べ替え、最も高い順",
+    "sortByRssiAsc": "RSSIで並べ替え、弱い順",
+    "sortByRssiDesc": "RSSIで並べ替え、最強順",
+    "sortByHopsAsc": "ホップで並べ替え、最も近い順",
+    "sortByHopsDesc": "ホップで並べ替え、最も遠い順",
+    "sortByUptimeAsc": "稼働時間で並べ替え、最も短い順",
+    "sortByUptimeDesc": "稼働時間で並べ替え、最も長い順",
+    "sortByAirPctAsc": "空気%で並べ替え、最も低い順",
+    "sortByAirPctDesc": "空気%で並べ替え、最も高い順",
+    "sortByReliabilityAsc": "信頼性で並べ替え、最も低い順",
+    "sortByReliabilityDesc": "信頼性で並べ替え、最も高い順"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",

@@ -1424,7 +1424,11 @@ export default function NodeListPanel({
                       >
                         <div className="flex min-w-0 flex-col gap-0.5">
                           <span className="inline-flex min-w-0 items-center gap-1">
-                            <span className="truncate">
+                            <span
+                              className={
+                                mode === 'meshcore' ? 'break-words whitespace-normal' : 'truncate'
+                              }
+                            >
                               {mode === 'meshcore'
                                 ? meshcoreContactDisplayName(node.node_id, node.long_name)
                                 : node.long_name || '-'}

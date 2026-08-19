@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useReticulumTcpInterfaceRecovery } from '@/renderer/hooks/useReticulumTcpInterfaceRecovery';
+import { useReticulumTcpLinkQualityMap } from '@/renderer/hooks/useReticulumTcpLinkQualityMap';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
 import {
@@ -183,8 +185,11 @@ export function ReticulumStackPanel({
   );
   const localAlerts = useMemo(
     (): ReticulumLocalInterfaceAlert[] =>
-      collectReticulumInterfaceAlerts(interfaces, serialPortPaths, healthOptions),
-    [interfaces, serialPortPaths, healthOptions],
+      collectReticulumInterfaceAlerts(interfaces, serialPortPaths, {
+        ...healthOptions,
+        stackFastFlapSuspected: sidecarStatus.stackFastFlapSuspected === true,
+      }),
+    [interfaces, serialPortPaths, healthOptions, sidecarStatus.stackFastFlapSuspected],
   );
   const connectingInterfaces = useMemo(
     () => collectReticulumLocalInterfaceConnecting(interfaces, serialPortPaths, healthOptions),
@@ -210,6 +215,17 @@ export function ReticulumStackPanel({
       );
     }
   }, [beginBleConnectGrace, refresh, t]);
+
+  const tcpRttById = useReticulumTcpLinkQualityMap(interfaces, sidecarApiReady);
+  useReticulumTcpInterfaceRecovery({
+    interfaces,
+    rttById: tcpRttById,
+    sidecarReady: sidecarApiReady,
+    connecting,
+    interfaceIssueAlert: sidecarStatus.interfaceIssueAlert,
+    stackFastFlapSuspected: sidecarStatus.stackFastFlapSuspected === true,
+    onRecover: handleRestartStack,
+  });
 
   const stackStatusIdentityLabel = resolveReticulumSelfHeaderLabel({
     identityDisplayName: identity?.display_name,
