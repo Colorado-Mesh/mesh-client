@@ -665,13 +665,13 @@ describe('NodeListPanel import contacts', () => {
     },
   );
 
-  it('shows full MeshCore room long names without forcing truncate', () => {
+  it('shows full MeshCore room long names without forcing truncate', async () => {
     const nodeId = 0xfaceb00c;
     const longName = 'Richmond upon Thames Chat';
     const nodes = new Map<number, MeshNode>([
       [nodeId, makeNode({ node_id: nodeId, long_name: longName, hw_model: 'Room' })],
     ]);
-    render(
+    const { container } = render(
       <NodeListPanel
         nodes={nodes}
         myNodeNum={0}
@@ -687,6 +687,10 @@ describe('NodeListPanel import contacts', () => {
     expect(longNameNode).toBeInTheDocument();
     expect(screen.getByLabelText('Has public key')).toBeInTheDocument();
     expect(longNameNode.className).not.toContain('truncate');
+    expect(longNameNode.className).toContain('whitespace-normal');
+
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('hides the key icon when the MeshCore contact has no known public key', () => {

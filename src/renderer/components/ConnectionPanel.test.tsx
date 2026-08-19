@@ -1098,6 +1098,50 @@ describe('ConnectionPanel Linux BLE path', () => {
       userAgentSpy.mockRestore();
     }
   });
+
+  it('clears remembered MeshCore BLE selection after Linux missing-services reconnect failure', async () => {
+    const user = userEvent.setup();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    const lastConnKey = 'mesh-client:lastConnection:meshcore';
+    const lastBleKey = 'mesh-client:lastBleDevice:meshcore';
+    localStorage.setItem(lastConnKey, JSON.stringify({ type: 'ble', bleDeviceId: 'bad-device' }));
+    localStorage.setItem(lastBleKey, 'bad-device');
+    const onConnect = vi.fn().mockRejectedValue(new Error('Could not find all requested services'));
+
+    try {
+      await withMockedConsoleWarn(async () => {
+        render(
+          <ConnectionPanel
+            state={disconnectedState}
+            onConnect={onConnect}
+            onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+            onDisconnect={vi.fn().mockResolvedValue(undefined)}
+            mqttStatus="disconnected"
+            protocol="meshcore"
+          />,
+        );
+
+        await waitFor(() => {
+          expect(screen.getByRole('button', { name: /^Reconnect$/i })).toBeInTheDocument();
+        });
+
+        await user.click(screen.getByRole('button', { name: /^Reconnect$/i }));
+
+        await waitFor(() => {
+          expect(onConnect).toHaveBeenCalledWith('ble', undefined);
+          expect(localStorage.getItem(lastConnKey)).toBeNull();
+          expect(localStorage.getItem(lastBleKey)).toBeNull();
+        });
+      });
+    } finally {
+      localStorage.removeItem(lastConnKey);
+      localStorage.removeItem(lastBleKey);
+      userAgentSpy.mockRestore();
+    }
+  });
 });
 
 // ─── Firmware status indicator ────────────────────────────────────
