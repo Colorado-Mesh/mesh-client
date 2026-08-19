@@ -87,6 +87,7 @@ import {
 } from '../lib/appSettingsStorage';
 import {
   classifyMeshcoreBleTimeoutStage,
+  isMeshcoreMissingServicesErrorMessage,
   isMeshcoreSetupAbortError,
   isMeshcoreTcpTransportDeadError,
   MESHCORE_SETUP_ABORT_MESSAGE,
@@ -4023,7 +4024,7 @@ export function useMeshcoreRuntime() {
         const isAlreadyInProgress = /already in progress|Connection already in progress/i.test(
           safeMessage,
         );
-        const isMissingServices = /could not find all requested services/i.test(safeMessage);
+        const isMissingServices = isMeshcoreMissingServicesErrorMessage(safeMessage);
         const isPeripheralInUse = /already in use by the/i.test(safeMessage);
         const bleTimeoutStage =
           type === 'ble' ? classifyMeshcoreBleTimeoutStage(safeMessage) : 'unknown';

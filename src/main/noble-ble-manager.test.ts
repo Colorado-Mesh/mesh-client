@@ -143,6 +143,15 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
     const meshcoreBranch = meshcoreBranchMatch![1];
     expect(meshcoreBranch).not.toContain('fromNumChar');
   });
+
+  it('retries MeshCore non-Windows discovery once with full discovery after missing-services failure', () => {
+    expect(SOURCE).toContain('isMeshcoreMissingServicesDiscoveryError');
+    expect(SOURCE).toContain('retrying once with full discovery');
+    expect(SOURCE).toContain('BLE full GATT discovery (meshcore fallback)');
+    expect(SOURCE).toMatch(
+      /isMeshcore &&\s*!IS_WIN32 &&\s*isMeshcoreMissingServicesDiscoveryError/,
+    );
+  });
 });
 
 describe('NobleBleManager.connect — macOS wake zombie peripheral (regression)', () => {

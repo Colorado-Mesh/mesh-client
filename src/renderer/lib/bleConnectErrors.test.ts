@@ -1,12 +1,48 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  classifyMeshcoreBleTimeoutStage,
+  isMeshcoreMissingServicesErrorMessage,
   isMeshcoreRetryableBleErrorMessage,
   isMeshcoreSetupAbortError,
   isMeshcoreTcpTransportDeadError,
   MESHCORE_SETUP_ABORT_MESSAGE,
   rethrowMeshcoreSetupAbortFromTcpDead,
 } from './bleConnectErrors';
+
+describe('isMeshcoreMissingServicesErrorMessage', () => {
+  it('matches noble missing requested services message', () => {
+    expect(isMeshcoreMissingServicesErrorMessage('Could not find all requested services')).toBe(
+      true,
+    );
+  });
+
+  it('matches main-process missing required BLE characteristics message', () => {
+    expect(
+      isMeshcoreMissingServicesErrorMessage('Failed to find required BLE characteristics'),
+    ).toBe(true);
+  });
+
+  it('does not match unrelated BLE errors', () => {
+    expect(isMeshcoreMissingServicesErrorMessage('Bluetooth adapter is not powered on')).toBe(
+      false,
+    );
+  });
+});
+
+describe('classifyMeshcoreBleTimeoutStage', () => {
+  it('keeps existing timeout classification for known timeout messages', () => {
+    expect(classifyMeshcoreBleTimeoutStage('BLE characteristic discovery timed out')).toBe(
+      'ipc-open',
+    );
+  });
+
+  it('does not classify missing services as a timeout', () => {
+    expect(classifyMeshcoreBleTimeoutStage('Could not find all requested services')).toBe(
+      'unknown',
+    );
+  });
+});
 
 describe('isMeshcoreSetupAbortError', () => {
   it('matches MeshCore setup cancel AbortError', () => {
