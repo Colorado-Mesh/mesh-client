@@ -38,6 +38,7 @@ import {
   loadProtocolMqttSettings,
   persistMqttSettingsIfChanged,
 } from '../hooks/useProtocolMqttSettings';
+import { isMeshcoreMissingServicesErrorMessage } from '../lib/bleConnectErrors';
 import {
   cacheBleDeviceMac,
   getBleDeviceMac,
@@ -305,6 +306,14 @@ function saveLastBleDevice(protocol: MeshProtocol, id: string) {
     localStorage.setItem(lastBleDeviceKey(protocol), id);
   } catch (e) {
     console.debug('[ConnectionPanel] saveLastBleDevice ' + errLikeToLogString(e));
+  }
+}
+
+function clearLastBleDevice(protocol: MeshProtocol) {
+  try {
+    localStorage.removeItem(lastBleDeviceKey(protocol));
+  } catch (e) {
+    console.debug('[ConnectionPanel] clearLastBleDevice ' + errLikeToLogString(e));
   }
 }
 
@@ -834,6 +843,21 @@ export default function ConnectionPanel({
   deviceStateRef.current = state;
   const lastConnectionRef = useRef(lastConnection);
   lastConnectionRef.current = lastConnection;
+
+  const clearMeshcoreBleSelectionOnMissingServices = useCallback(
+    (err: unknown) => {
+      if (protocol !== 'meshcore') return;
+      const message = err instanceof Error ? err.message : String(err);
+      const isMissingServices =
+        isMeshcoreMissingServicesErrorMessage(message) ||
+        message === 'meshcore.errors.bleMissingServices';
+      if (!isMissingServices) return;
+      clearLastConnection('meshcore');
+      clearLastBleDevice('meshcore');
+      setLastConnection(null);
+    },
+    [protocol, setLastConnection],
+  );
   const connectionTypeRef = useRef(connectionType);
   connectionTypeRef.current = connectionType;
   const onAutoConnectRef = useRef(onAutoConnect);
@@ -1535,6 +1559,7 @@ export default function ConnectionPanel({
         onConnect('ble', undefined, deviceId).catch((err: unknown) => {
           const errMsg = err instanceof Error ? err.message : String(err);
           console.warn(`[ConnectionPanel] BLE connect after selection failed ${errMsg}`);
+          clearMeshcoreBleSelectionOnMissingServices(err);
           const bleErrMsg = humanizeBleError(err, t);
           if (bleErrMsg) setError(bleErrMsg);
           setConnecting(false);
@@ -1542,7 +1567,15 @@ export default function ConnectionPanel({
         });
       }
     },
-    [bleDevices, isLinux, onConnect, protocol, t, capabilities.hasNobleBleScanning],
+    [
+      bleDevices,
+      isLinux,
+      onConnect,
+      protocol,
+      t,
+      capabilities.hasNobleBleScanning,
+      clearMeshcoreBleSelectionOnMissingServices,
+    ],
   );
 
   const handleSelectSerialPort = useCallback((portId: string) => {
@@ -1657,6 +1690,7 @@ export default function ConnectionPanel({
             // catch-no-log-ok reconnect errors surfaced via setError/humanizeBleError
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
+            clearMeshcoreBleSelectionOnMissingServices(err);
             const bleErrMsg = humanizeBleError(err, t);
             if (bleErrMsg) setError(bleErrMsg);
             setConnecting(false);
@@ -1730,6 +1764,7 @@ export default function ConnectionPanel({
     protocol,
     tcpHost,
     isLinux,
+    clearMeshcoreBleSelectionOnMissingServices,
     t,
   ]);
 

@@ -35,12 +35,28 @@ export function saveLastConnection(protocol: MeshProtocol, connection: LastConne
   }
 }
 
+export function clearLastConnection(protocol: MeshProtocol): void {
+  try {
+    localStorage.removeItem(lastConnectionKey(protocol));
+  } catch {
+    // catch-no-log-ok localStorage unavailable in tests or private mode
+  }
+}
+
 export function loadLastBleDeviceId(protocol: MeshProtocol): string | null {
   try {
     return localStorage.getItem(lastBleDeviceKey(protocol));
   } catch {
     // catch-no-log-ok localStorage unavailable in tests or private mode
     return null;
+  }
+}
+
+export function clearLastBleDeviceId(protocol: MeshProtocol): void {
+  try {
+    localStorage.removeItem(lastBleDeviceKey(protocol));
+  } catch {
+    // catch-no-log-ok localStorage unavailable in tests or private mode
   }
 }
 
