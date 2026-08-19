@@ -2,6 +2,8 @@ import { parseStoredJson } from './parseStoredJson';
 import { LAST_SERIAL_PORT_KEY } from './serialPortSignature';
 import type { ConnectionType, MeshProtocol } from './types';
 
+export const BLE_SELECTION_CLEARED_EVENT = 'mesh-client:ble-selection-cleared';
+
 export interface LastConnection {
   type: ConnectionType;
   httpAddress?: string;
@@ -35,6 +37,14 @@ export function saveLastConnection(protocol: MeshProtocol, connection: LastConne
   }
 }
 
+export function clearLastConnection(protocol: MeshProtocol): void {
+  try {
+    localStorage.removeItem(lastConnectionKey(protocol));
+  } catch {
+    // catch-no-log-ok localStorage unavailable in tests or private mode
+  }
+}
+
 export function loadLastBleDeviceId(protocol: MeshProtocol): string | null {
   try {
     return localStorage.getItem(lastBleDeviceKey(protocol));
@@ -42,6 +52,28 @@ export function loadLastBleDeviceId(protocol: MeshProtocol): string | null {
     // catch-no-log-ok localStorage unavailable in tests or private mode
     return null;
   }
+}
+
+export function clearLastBleDeviceId(protocol: MeshProtocol): void {
+  try {
+    localStorage.removeItem(lastBleDeviceKey(protocol));
+  } catch {
+    // catch-no-log-ok localStorage unavailable in tests or private mode
+  }
+}
+
+export function clearStoredBleSelection(protocol: MeshProtocol): void {
+  clearLastConnection(protocol);
+  clearLastBleDeviceId(protocol);
+}
+
+export function notifyBleSelectionCleared(protocol: MeshProtocol): void {
+  if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return;
+  window.dispatchEvent(
+    new CustomEvent<{ protocol: MeshProtocol }>(BLE_SELECTION_CLEARED_EVENT, {
+      detail: { protocol },
+    }),
+  );
 }
 
 export function resolveLastBlePeripheralId(protocol: MeshProtocol): string | undefined {

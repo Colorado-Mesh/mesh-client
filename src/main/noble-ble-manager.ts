@@ -169,6 +169,13 @@ function meshcorePickBestChar(
   return candidates.reduce((best, c) => (score(c) > score(best) ? c : best), candidates[0]);
 }
 
+function isMeshcoreMissingServicesDiscoveryError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /could not find all requested services|failed to find required ble characteristics/i.test(
+    message,
+  );
+}
+
 function formatBleDisconnectReason(reason: unknown): string {
   if (reason instanceof Error) return reason.message;
   if (reason == null) return 'none';
@@ -1435,15 +1442,35 @@ export class NobleBleManager extends EventEmitter {
         );
         characteristics = all.characteristics;
       } else {
-        const discovered = await withTimeout<NobleDiscoveryResult>(
-          peripheral.discoverSomeServicesAndCharacteristicsAsync(
-            discoverServiceUuids,
-            discoverCharUuids,
-          ),
-          BLE_DISCOVERY_TIMEOUT_MS,
-          'BLE characteristic discovery',
-        );
-        characteristics = discovered.characteristics;
+        try {
+          const discovered = await withTimeout<NobleDiscoveryResult>(
+            peripheral.discoverSomeServicesAndCharacteristicsAsync(
+              discoverServiceUuids,
+              discoverCharUuids,
+            ),
+            BLE_DISCOVERY_TIMEOUT_MS,
+            'BLE characteristic discovery',
+          );
+          characteristics = discovered.characteristics;
+        } catch (err) {
+          const shouldRetryFullDiscovery =
+            isMeshcore && !IS_WIN32 && isMeshcoreMissingServicesDiscoveryError(err);
+          if (!shouldRetryFullDiscovery) {
+            throw err;
+          }
+          console.debug(
+            `[BLE:${sessionId}] targeted characteristic discovery failed for MeshCore; retrying once with full discovery`,
+          );
+          const discoveredAll = await withTimeout<NobleDiscoveryResult>(
+            peripheral.discoverAllServicesAndCharacteristicsAsync(),
+            BLE_DISCOVERY_TIMEOUT_MS,
+            'BLE full GATT discovery (meshcore fallback)',
+          );
+          characteristics = discoveredAll.characteristics;
+          console.debug(
+            `[BLE:${sessionId}] fallback full discovery succeeded for MeshCore after targeted discovery failure`,
+          );
+        }
       }
       if (isMeshcore) {
         const rxCandidates: NobleCharacteristic[] = [];

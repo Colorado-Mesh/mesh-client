@@ -38,6 +38,7 @@ import {
   loadProtocolMqttSettings,
   persistMqttSettingsIfChanged,
 } from '../hooks/useProtocolMqttSettings';
+import { shouldClearMeshcoreBleSelectionForError } from '../lib/bleConnectErrors';
 import {
   cacheBleDeviceMac,
   getBleDeviceMac,
@@ -56,6 +57,10 @@ import {
   runConnectionPanelStorageMigrations,
 } from '../lib/connectionPanelStorageMigrations';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
+import {
+  BLE_SELECTION_CLEARED_EVENT,
+  clearStoredBleSelection as clearStoredBleSelectionForProtocol,
+} from '../lib/lastConnectionStorage';
 import {
   letsMeshPresetConfigurationDeviation,
   validateLetsMeshManualCredentials,
@@ -834,6 +839,15 @@ export default function ConnectionPanel({
   deviceStateRef.current = state;
   const lastConnectionRef = useRef(lastConnection);
   lastConnectionRef.current = lastConnection;
+
+  const clearMeshcoreBleSelectionOnMissingServices = useCallback(
+    (err: unknown) => {
+      if (protocol !== 'meshcore' || !shouldClearMeshcoreBleSelectionForError(err)) return;
+      clearStoredBleSelectionForProtocol('meshcore');
+      setLastConnection(null);
+    },
+    [protocol, setLastConnection],
+  );
   const connectionTypeRef = useRef(connectionType);
   connectionTypeRef.current = connectionType;
   const onAutoConnectRef = useRef(onAutoConnect);
@@ -842,6 +856,18 @@ export default function ConnectionPanel({
   // Reload last connection when protocol switches (each protocol has its own key)
   useEffect(() => {
     setLastConnection(loadLastConnection(protocol));
+  }, [protocol]);
+
+  useEffect(() => {
+    const handleBleSelectionCleared = (event: Event) => {
+      const detail = (event as CustomEvent<{ protocol: MeshProtocol }>).detail;
+      if (detail?.protocol !== protocol) return;
+      setLastConnection(null);
+    };
+    window.addEventListener(BLE_SELECTION_CLEARED_EVENT, handleBleSelectionCleared);
+    return () => {
+      window.removeEventListener(BLE_SELECTION_CLEARED_EVENT, handleBleSelectionCleared);
+    };
   }, [protocol]);
 
   useEffect(() => {
@@ -1346,6 +1372,7 @@ export default function ConnectionPanel({
           return;
         } catch (err) {
           // catch-no-log-ok -- error is humanized and surfaced via setError
+          clearMeshcoreBleSelectionOnMissingServices(err);
           const bleErrMsg = humanizeBleError(err, t);
           const mac = lastSelectedBleMacRef.current;
           if (mac) {
@@ -1413,7 +1440,15 @@ export default function ConnectionPanel({
       setConnecting(false);
       setConnectionStage('');
     }
-  }, [connectionType, activeHostAddress, onConnect, protocol, isLinux, t]);
+  }, [
+    connectionType,
+    activeHostAddress,
+    onConnect,
+    protocol,
+    isLinux,
+    t,
+    clearMeshcoreBleSelectionOnMissingServices,
+  ]);
 
   const handleCancelConnection = useCallback(() => {
     cancelProtocolRfAutoConnect(protocol);
@@ -1535,6 +1570,7 @@ export default function ConnectionPanel({
         onConnect('ble', undefined, deviceId).catch((err: unknown) => {
           const errMsg = err instanceof Error ? err.message : String(err);
           console.warn(`[ConnectionPanel] BLE connect after selection failed ${errMsg}`);
+          clearMeshcoreBleSelectionOnMissingServices(err);
           const bleErrMsg = humanizeBleError(err, t);
           if (bleErrMsg) setError(bleErrMsg);
           setConnecting(false);
@@ -1542,7 +1578,15 @@ export default function ConnectionPanel({
         });
       }
     },
-    [bleDevices, isLinux, onConnect, protocol, t, capabilities.hasNobleBleScanning],
+    [
+      bleDevices,
+      isLinux,
+      onConnect,
+      protocol,
+      t,
+      capabilities.hasNobleBleScanning,
+      clearMeshcoreBleSelectionOnMissingServices,
+    ],
   );
 
   const handleSelectSerialPort = useCallback((portId: string) => {
@@ -1624,6 +1668,7 @@ export default function ConnectionPanel({
             // catch-no-log-ok reconnect errors surfaced via setError/humanizeBleError
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
+            clearMeshcoreBleSelectionOnMissingServices(err);
             const bleErrMsg = humanizeBleError(err, t);
             if (bleErrMsg) setError(bleErrMsg);
             const isPairingRelatedError = shouldShowLinuxRePairFromBleError(err, bleErrMsg);
@@ -1657,6 +1702,7 @@ export default function ConnectionPanel({
             // catch-no-log-ok reconnect errors surfaced via setError/humanizeBleError
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
+            clearMeshcoreBleSelectionOnMissingServices(err);
             const bleErrMsg = humanizeBleError(err, t);
             if (bleErrMsg) setError(bleErrMsg);
             setConnecting(false);
@@ -1730,6 +1776,7 @@ export default function ConnectionPanel({
     protocol,
     tcpHost,
     isLinux,
+    clearMeshcoreBleSelectionOnMissingServices,
     t,
   ]);
 
