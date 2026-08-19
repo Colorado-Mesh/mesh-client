@@ -442,6 +442,12 @@ export function useMeshtasticRuntime() {
   const isConfiguringRef = useRef<boolean>(false);
   const configureTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const clearMeshtasticConfigureState = (): void => {
+    isConfiguringRef.current = false;
+    setMeshtasticConfigurePhase(false);
+    meshtasticIngestSessionRef.current?.setConfiguring(false);
+  };
+
   // ─── GPS tracking ─────────────────────────────────────────────
   const deviceGpsModeRef = useRef<number>(0); // 0=DISABLED,1=ENABLED,2=NOT_PRESENT
   const gpsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -2302,6 +2308,7 @@ export function useMeshtasticRuntime() {
         requestChatOutboxDrain('meshtastic');
       },
       onAttemptError: async (err, { lateTransport }) => {
+        clearMeshtasticConfigureState();
         const failedDriverIdentity =
           openedDriverIdentityId ??
           meshtasticIdentityIdRef.current ??
@@ -2607,6 +2614,7 @@ export function useMeshtasticRuntime() {
   const handleRfConnectFailure = useCallback(
     async (driverIdentityId?: string, reason?: unknown): Promise<void> => {
       clearConfigureTimeout();
+      clearMeshtasticConfigureState();
       console.error(
         '[useMeshtasticRuntime] Connection failed: ' +
           errLikeToLogString(reason ?? new Error('unknown connection failure')),
@@ -4114,7 +4122,11 @@ export function useMeshtasticRuntime() {
     isConfiguringRef.current = true;
     setMeshtasticConfigurePhase(true);
     meshtasticIngestSessionRef.current?.setConfiguring(true);
-    await deviceRef.current.configure();
+    try {
+      await deviceRef.current.configure();
+    } finally {
+      clearMeshtasticConfigureState();
+    }
   }, []);
 
   const sendReaction = useCallback(

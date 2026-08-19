@@ -293,7 +293,8 @@ function meshtasticLastHeardPatch(
   return merged > 0 ? merged : undefined;
 }
 
-function maybeTouchMeshtasticNodeDbConfigureProgress(): void {
+function maybeTouchMeshtasticNodeDbConfigureProgress(identityId: IdentityId): void {
+  if (getIdentity(identityId)?.protocol.type !== 'meshtastic') return;
   if (getMeshtasticConfigurePhase()) {
     touchMeshtasticConfigureProgress();
   }
@@ -384,7 +385,7 @@ export function updatePosition(identityId: IdentityId, event: PositionEvent): vo
     const { nodeId, latitude, longitude, altitude, timestamp, groundSpeed, groundTrack } = event;
     const existing = byId[nodeId];
     const lastHeardAt = meshtasticLastHeardPatch(identityId, timestamp, existing?.lastHeardAt);
-    maybeTouchMeshtasticNodeDbConfigureProgress();
+    maybeTouchMeshtasticNodeDbConfigureProgress(identityId);
     return {
       nodes: {
         ...s.nodes,
@@ -423,7 +424,7 @@ export function updateTelemetry(identityId: IdentityId, event: TelemetryEvent): 
     } = event;
     const existing = byId[nodeId];
     const lastHeardAt = meshtasticLastHeardPatch(identityId, timestamp, existing?.lastHeardAt);
-    maybeTouchMeshtasticNodeDbConfigureProgress();
+    maybeTouchMeshtasticNodeDbConfigureProgress(identityId);
     return {
       nodes: {
         ...s.nodes,

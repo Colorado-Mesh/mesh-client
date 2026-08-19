@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as configurePhase from '../lib/meshtastic/meshtasticConfigurePhase';
 import {
   resetMeshtasticConfigurePhaseForTests,
   setMeshtasticConfigurePhase,
 } from '../lib/meshtastic/meshtasticConfigurePhase';
 import { getNodeStatus } from '../lib/nodeStatus';
+import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
 import { MS_PER_DAY } from '../lib/timeConstants';
 import { setConnection } from './connectionStore';
@@ -18,6 +20,7 @@ import {
 } from './nodeStore';
 
 const ID_MT = 'id-mt-config-replay';
+const ID_MC = 'id-mc-config-replay';
 const PEER = 42;
 const MY_NODE = 1;
 const NOW = new Date('2026-08-19T20:48:30.000Z').getTime();
@@ -46,6 +49,14 @@ describe('nodeStore configure replay last_heard', () => {
       lastSeenAt: NOW,
     });
     setConnection(ID_MT, { myNodeNum: MY_NODE, status: 'connected', connectionType: 'ble' });
+    addIdentity({
+      id: ID_MC,
+      protocol: meshcoreProtocol,
+      signature: 'meshcore:config-replay',
+      transports: [],
+      createdAt: NOW,
+      lastSeenAt: NOW,
+    });
   });
 
   afterEach(() => {
@@ -202,5 +213,24 @@ describe('nodeStore configure replay last_heard', () => {
     const lastHeardAt = useNodeStore.getState().nodes[ID_MT][MY_NODE].lastHeardAt;
     expect(lastHeardAt).toBe(NOW);
     expect(getNodeStatus(lastHeardAt!)).toBe('online');
+  });
+
+  it('does not touch configure progress for MeshCore position during configure phase', () => {
+    const touchSpy = vi.spyOn(configurePhase, 'touchMeshtasticConfigureProgress');
+    setMeshtasticConfigurePhase(true);
+    useNodeStore.setState({
+      nodes: { [ID_MC]: { [PEER]: { nodeId: PEER, lastHeardAt: NOW - 7 * MS_PER_DAY } } },
+      traceRoutes: {},
+      waypoints: {},
+      neighborInfo: {},
+    });
+    updatePosition(ID_MC, {
+      nodeId: PEER,
+      latitude: 39.7,
+      longitude: -105,
+      timestamp: NOW,
+    });
+    expect(touchSpy).not.toHaveBeenCalled();
+    touchSpy.mockRestore();
   });
 });
