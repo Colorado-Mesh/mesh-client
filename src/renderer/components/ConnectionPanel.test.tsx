@@ -1056,6 +1056,48 @@ describe('ConnectionPanel Linux BLE path', () => {
     expect(screen.getByText(/paired with your computer using a PIN/i)).toBeInTheDocument();
     userAgentSpy.mockRestore();
   });
+
+  it('clears remembered MeshCore BLE selection after Linux missing-services failure', async () => {
+    const user = userEvent.setup();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    const lastConnKey = 'mesh-client:lastConnection:meshcore';
+    const lastBleKey = 'mesh-client:lastBleDevice:meshcore';
+    localStorage.setItem(lastConnKey, JSON.stringify({ type: 'ble', bleDeviceId: 'bad-device' }));
+    localStorage.setItem(lastBleKey, 'bad-device');
+    const onConnect = vi.fn().mockRejectedValue(new Error('Could not find all requested services'));
+
+    try {
+      await withMockedConsoleWarn(async () => {
+        render(
+          <ConnectionPanel
+            state={disconnectedState}
+            onConnect={onConnect}
+            onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+            onDisconnect={vi.fn().mockResolvedValue(undefined)}
+            mqttStatus="disconnected"
+            protocol="meshcore"
+          />,
+        );
+
+        const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+        expect(radioCard).toBeTruthy();
+        await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+        await waitFor(() => {
+          expect(onConnect).toHaveBeenCalledWith('ble', undefined);
+          expect(localStorage.getItem(lastConnKey)).toBeNull();
+          expect(localStorage.getItem(lastBleKey)).toBeNull();
+        });
+      });
+    } finally {
+      localStorage.removeItem(lastConnKey);
+      localStorage.removeItem(lastBleKey);
+      userAgentSpy.mockRestore();
+    }
+  });
 });
 
 // ─── Firmware status indicator ────────────────────────────────────
@@ -2489,6 +2531,34 @@ describe('ConnectionPanel BLE MAC identity', () => {
       expect(screen.getByText('Bluetooth ID')).toBeInTheDocument();
       expect(screen.getByText(darwinUuid)).toBeInTheDocument();
       expect(screen.queryByText('Bluetooth MAC')).not.toBeInTheDocument();
+    } finally {
+      localStorage.removeItem(lastConnKey);
+    }
+  });
+
+  it('clears reconnect card when BLE selection-cleared event is emitted', async () => {
+    const lastConnKey = 'mesh-client:lastConnection:meshcore';
+    localStorage.setItem(lastConnKey, JSON.stringify({ type: 'ble', bleDeviceId: darwinUuid }));
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: /^Reconnect$/i })).toBeInTheDocument();
+      window.dispatchEvent(
+        new CustomEvent('mesh-client:ble-selection-cleared', { detail: { protocol: 'meshcore' } }),
+      );
+      await waitFor(() => {
+        expect(screen.queryByRole('button', { name: /^Reconnect$/i })).not.toBeInTheDocument();
+      });
     } finally {
       localStorage.removeItem(lastConnKey);
     }

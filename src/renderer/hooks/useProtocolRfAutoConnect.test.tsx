@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   loadLastBleDeviceId: vi.fn(),
   saveLastConnection: vi.fn(),
   clearStoredBleSelection: vi.fn(),
+  notifyBleSelectionCleared: vi.fn(),
   reconnectBleWithScan: vi.fn(),
   awaitReticulumBleCoexistenceClear: vi.fn(),
   dualNobleBleBothRadiosConfigured: vi.fn(),
@@ -25,6 +26,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/renderer/lib/lastConnectionStorage', () => ({
   clearStoredBleSelection: mocks.clearStoredBleSelection,
+  notifyBleSelectionCleared: mocks.notifyBleSelectionCleared,
   loadLastConnection: mocks.loadLastConnection,
   loadLastBleDeviceId: mocks.loadLastBleDeviceId,
   saveLastConnection: mocks.saveLastConnection,
@@ -71,6 +73,7 @@ describe('useProtocolRfAutoConnect cold-start skip paths', () => {
     mocks.loadLastConnection.mockReturnValue(null);
     mocks.loadLastBleDeviceId.mockReturnValue(null);
     mocks.clearStoredBleSelection.mockReset();
+    mocks.notifyBleSelectionCleared.mockReset();
     mocks.reconnectBleWithScan.mockImplementation(async (_p, _id, attempt) => {
       await attempt();
     });
@@ -228,6 +231,7 @@ describe('useProtocolRfAutoConnect cold-start TCP/HTTP', () => {
     mocks.loadLastConnection.mockReturnValue(null);
     mocks.loadLastBleDeviceId.mockReturnValue(null);
     mocks.clearStoredBleSelection.mockReset();
+    mocks.notifyBleSelectionCleared.mockReset();
     mocks.awaitReticulumBleCoexistenceClear.mockResolvedValue(undefined);
     mocks.dualNobleBleBothRadiosConfigured.mockReturnValue(false);
     mocks.getNobleBleDualRadioPrimaryProtocol.mockReturnValue(null);
@@ -402,6 +406,7 @@ describe('useProtocolRfAutoConnect cold-start serial + BLE', () => {
     mocks.loadLastConnection.mockReturnValue(null);
     mocks.loadLastBleDeviceId.mockReturnValue(null);
     mocks.clearStoredBleSelection.mockReset();
+    mocks.notifyBleSelectionCleared.mockReset();
     mocks.reconnectBleWithScan.mockImplementation(async (_p, _id, attempt) => {
       await attempt();
     });
@@ -622,5 +627,6 @@ describe('useProtocolRfAutoConnect cold-start serial + BLE', () => {
     await waitFor(() => {
       expect(mocks.clearStoredBleSelection).toHaveBeenCalledWith('meshcore');
     });
+    expect(mocks.notifyBleSelectionCleared).toHaveBeenCalledWith('meshcore');
   });
 });

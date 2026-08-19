@@ -2,6 +2,8 @@ import { parseStoredJson } from './parseStoredJson';
 import { LAST_SERIAL_PORT_KEY } from './serialPortSignature';
 import type { ConnectionType, MeshProtocol } from './types';
 
+export const BLE_SELECTION_CLEARED_EVENT = 'mesh-client:ble-selection-cleared';
+
 export interface LastConnection {
   type: ConnectionType;
   httpAddress?: string;
@@ -63,6 +65,15 @@ export function clearLastBleDeviceId(protocol: MeshProtocol): void {
 export function clearStoredBleSelection(protocol: MeshProtocol): void {
   clearLastConnection(protocol);
   clearLastBleDeviceId(protocol);
+}
+
+export function notifyBleSelectionCleared(protocol: MeshProtocol): void {
+  if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return;
+  window.dispatchEvent(
+    new CustomEvent<{ protocol: MeshProtocol }>(BLE_SELECTION_CLEARED_EVENT, {
+      detail: { protocol },
+    }),
+  );
 }
 
 export function resolveLastBlePeripheralId(protocol: MeshProtocol): string | undefined {

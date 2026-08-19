@@ -57,7 +57,10 @@ import {
   runConnectionPanelStorageMigrations,
 } from '../lib/connectionPanelStorageMigrations';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
-import { clearStoredBleSelection as clearStoredBleSelectionForProtocol } from '../lib/lastConnectionStorage';
+import {
+  BLE_SELECTION_CLEARED_EVENT,
+  clearStoredBleSelection as clearStoredBleSelectionForProtocol,
+} from '../lib/lastConnectionStorage';
 import {
   letsMeshPresetConfigurationDeviation,
   validateLetsMeshManualCredentials,
@@ -856,6 +859,18 @@ export default function ConnectionPanel({
   }, [protocol]);
 
   useEffect(() => {
+    const handleBleSelectionCleared = (event: Event) => {
+      const detail = (event as CustomEvent<{ protocol: MeshProtocol }>).detail;
+      if (detail?.protocol !== protocol) return;
+      setLastConnection(null);
+    };
+    window.addEventListener(BLE_SELECTION_CLEARED_EVENT, handleBleSelectionCleared);
+    return () => {
+      window.removeEventListener(BLE_SELECTION_CLEARED_EVENT, handleBleSelectionCleared);
+    };
+  }, [protocol]);
+
+  useEffect(() => {
     pendingMeshcoreLinuxWbMacRef.current = null;
   }, [protocol]);
 
@@ -1357,6 +1372,7 @@ export default function ConnectionPanel({
           return;
         } catch (err) {
           // catch-no-log-ok -- error is humanized and surfaced via setError
+          clearMeshcoreBleSelectionOnMissingServices(err);
           const bleErrMsg = humanizeBleError(err, t);
           const mac = lastSelectedBleMacRef.current;
           if (mac) {
@@ -1424,7 +1440,15 @@ export default function ConnectionPanel({
       setConnecting(false);
       setConnectionStage('');
     }
-  }, [connectionType, activeHostAddress, onConnect, protocol, isLinux, t]);
+  }, [
+    connectionType,
+    activeHostAddress,
+    onConnect,
+    protocol,
+    isLinux,
+    t,
+    clearMeshcoreBleSelectionOnMissingServices,
+  ]);
 
   const handleCancelConnection = useCallback(() => {
     cancelProtocolRfAutoConnect(protocol);
@@ -1644,6 +1668,7 @@ export default function ConnectionPanel({
             // catch-no-log-ok reconnect errors surfaced via setError/humanizeBleError
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
+            clearMeshcoreBleSelectionOnMissingServices(err);
             const bleErrMsg = humanizeBleError(err, t);
             if (bleErrMsg) setError(bleErrMsg);
             const isPairingRelatedError = shouldShowLinuxRePairFromBleError(err, bleErrMsg);

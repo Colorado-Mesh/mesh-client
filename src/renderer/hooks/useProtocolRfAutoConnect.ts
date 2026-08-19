@@ -7,6 +7,7 @@ import {
   type LastConnection,
   loadLastBleDeviceId,
   loadLastConnection,
+  notifyBleSelectionCleared,
   saveLastConnection,
 } from '@/renderer/lib/lastConnectionStorage';
 import {
@@ -152,6 +153,7 @@ export function useProtocolRfAutoConnect({
         shouldClearMeshcoreBleSelectionForError(error)
       ) {
         clearStoredBleSelection('meshcore');
+        notifyBleSelectionCleared('meshcore');
       }
       clearAutoConnectTimeout();
       console.warn(
