@@ -183,7 +183,7 @@ After builds finish, **`packaging-smoke`** runs on:
 - macOS — `verify-mac-packaging.mjs` (includes bundled Reticulum sidecar in `.app`)
 - Linux — `verify-linux-packaging.mjs` plus `test-linux-appimage-reticulum-sidecar.mjs` (extracts x64/arm64 AppImages and asserts sidecar). **`verify-linux-packaging.mjs`** also asserts each `.deb` **Description** field is ASCII-only (no mojibake `??`) via `dpkg-deb -f` — non-ASCII control metadata breaks some package managers and mirrors.
 - Windows x64 — NSIS install smoke test (`test-win-nsis-install.mjs`, asserts sidecar after install)
-- **`windows-11-arm`** — arm64 NSIS install smoke test with 7z probe (asserts sidecar inside installer payload and after install)
+- **`windows-11-vs2026-arm`** — arm64 NSIS install smoke test with 7z probe (asserts sidecar inside installer payload and after install). Uses GitHub's advance-testing WoA runner ahead of the Sept 2026 VS 2026 rollout on `windows-11-arm`.
 
 Build jobs also run `verify-reticulum-sidecar-staged.mjs` after staging sidecars and before `electron-builder`.
 

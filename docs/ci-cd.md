@@ -268,7 +268,7 @@ node scripts/run-act.mjs ci -- -n
 | Windows `.exe`                          | —                      | —                           | —                      | `pnpm run dist:win`    |
 | Flatpak x86_64                          | `act:flatpak`          | use local Flatpak docs      | same                   | same                   |
 
-**Not run locally via act:** `docs.yml` (`mkdocs gh-deploy`), release publish legs, `macos-latest` / `windows-latest` / `windows-11-arm` matrix jobs, and `ubuntu-24.04-arm` Flatpak builds (no faithful local emulation).
+**Not run locally via act:** `docs.yml` (`mkdocs gh-deploy`), release publish legs, `macos-latest` / `windows-latest` / `windows-11-vs2026-arm` matrix jobs, and `ubuntu-24.04-arm` Flatpak builds (no faithful local emulation).
 
 Note: The test results artifact upload step is automatically skipped when running under `act` (detected by actor `nektos/act` in [`tests.yaml`](../.github/workflows/tests.yaml)).
 
