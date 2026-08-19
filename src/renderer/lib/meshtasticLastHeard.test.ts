@@ -105,6 +105,15 @@ describe('computeNodeInfoLastHeardMs', () => {
     expect(lastHeardMs).toBeGreaterThanOrEqual(before);
     expect(lastHeardMs).toBeLessThanOrEqual(after);
   });
+
+  it('clamps ms-sized input mistaken for NodeDB seconds (UserPacket must not use this path)', () => {
+    const before = Date.now();
+    const msInput = 1_756_000_000_000;
+    const lastHeardMs = computeNodeInfoLastHeardMs(msInput, 0, false);
+    const after = Date.now();
+    expect(lastHeardMs).toBeGreaterThanOrEqual(before);
+    expect(lastHeardMs).toBeLessThanOrEqual(after);
+  });
 });
 
 describe('meshtasticTracerouteLastHeardNodeIds', () => {

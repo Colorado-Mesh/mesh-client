@@ -221,8 +221,8 @@ export const MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS = 15_000;
 /** Delay before one retry of getMetadata after configure (NodeDB flood can starve BLE). */
 export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS = 8_000;
 
-/** BLE configure stall watchdog — force disconnect if DeviceConfigured never arrives. */
-export const MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS = 30 * MS_PER_SECOND;
+/** BLE configure stall watchdog — force disconnect if FromRadio progress stalls. */
+export const MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS = 60 * MS_PER_SECOND;
 
 /**
  * Hard ceiling for one LoRa reconnect open+configure/attach attempt (Meshtastic + MeshCore),

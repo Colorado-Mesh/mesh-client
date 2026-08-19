@@ -63,6 +63,30 @@ describe('buildMeshtasticNodeMapFromDbRows', () => {
     expect(map.has(0xabc123)).toBe(false);
     expect(map.has(42)).toBe(true);
   });
+
+  it('normalizes SQLite last_heard seconds to epoch ms in memory', () => {
+    const map = buildMeshtasticNodeMapFromDbRows([
+      {
+        node_id: 42,
+        long_name: 'T-Beam',
+        short_name: 'TB',
+        hw_model: 'TBEAM',
+        battery: 0,
+        snr: 0,
+        rssi: 0,
+        last_heard: 1_700_000_000,
+        latitude: null,
+        longitude: null,
+        role: 0,
+        favorited: 0,
+        source: 'rf',
+        hops: null,
+        path: null,
+        hops_away: 0,
+      } as never,
+    ]);
+    expect(map.get(42)?.last_heard).toBe(1_700_000_000_000);
+  });
 });
 
 describe('dedupeMeshtasticHydrationOrphanSends', () => {

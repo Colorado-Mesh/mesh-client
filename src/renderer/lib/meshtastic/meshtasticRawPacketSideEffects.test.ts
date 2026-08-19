@@ -169,6 +169,35 @@ describe('attachMeshtasticRawPacketSideEffects', () => {
     detach();
   });
 
+  it('updates hops for sec-valued last_heard from DB hydration when node is not stale', () => {
+    const heardSec = Math.floor((Date.now() - 30 * 60_000) / 1000);
+    const nodeMirror = new Map<number, MeshNode>([
+      [PEER, { ...emptyNode(PEER), last_heard: heardSec, snr: 1 }],
+    ]);
+    syncNodesMapToIdentityStore(IDENTITY, nodeMirror);
+    const { deps } = makeDeps();
+    const detach = attachMeshtasticRawPacketSideEffects(IDENTITY, deps);
+    packetRouter.dispatch(
+      {
+        type: 'raw_packet',
+        payload: {
+          ts: Date.now(),
+          snr: 8,
+          rssi: -85,
+          raw: new Uint8Array([0xaa]),
+          fromNodeId: PEER,
+          portLabel: 'NODEINFO_APP',
+          viaMqtt: false,
+          hopsAway: 2,
+          packetId: 9,
+        },
+      },
+      IDENTITY,
+    );
+    expect(getIdentityNode(IDENTITY, PEER)?.hops_away).toBe(2);
+    detach();
+  });
+
   it('ignores events routed for a different identity', () => {
     const { deps } = makeDeps();
     const detach = attachMeshtasticRawPacketSideEffects(IDENTITY, deps);

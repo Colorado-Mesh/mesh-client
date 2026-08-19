@@ -3,8 +3,13 @@ import { create } from 'zustand';
 import { preferNonEmptyTrimmedString } from '@/shared/nodeNameUtils';
 
 import {
+  getMeshtasticConfigurePhase,
+  touchMeshtasticConfigureProgress,
+} from '../lib/meshtastic/meshtasticConfigurePhase';
+import {
   computeNodeInfoLastHeardMs,
   mergeMeshtasticLivePacketLastHeard,
+  mergeMeshtasticUserPacketLastHeard,
 } from '../lib/meshtasticLastHeard';
 import { mergeMeshcoreLastHeardFromAdvert } from '../lib/nodeStatus';
 import type {
@@ -196,11 +201,22 @@ export function upsertNode(identityId: IdentityId, event: NodeInfoEvent): void {
     } else if (protocolType === 'meshtastic') {
       const selfNum = getConnection(identityId)?.myNodeNum ?? 0;
       const isSelf = selfNum > 0 && nodeId === selfNum;
-      lastHeardAt = computeNodeInfoLastHeardMs(
-        eventLastHeardAt,
-        existing?.lastHeardAt ?? 0,
-        isSelf,
-      );
+      if (event.fromUserPacket) {
+        lastHeardAt = mergeMeshtasticUserPacketLastHeard(
+          existing?.lastHeardAt ?? 0,
+          eventLastHeardAt ?? 0,
+          getMeshtasticConfigurePhase(),
+        );
+      } else {
+        lastHeardAt = computeNodeInfoLastHeardMs(
+          eventLastHeardAt,
+          existing?.lastHeardAt ?? 0,
+          isSelf,
+        );
+      }
+      if (getMeshtasticConfigurePhase()) {
+        touchMeshtasticConfigureProgress();
+      }
     }
     const identityFields = nodeIdentityPatch(
       existing,
@@ -272,7 +288,7 @@ function meshtasticLastHeardPatch(
   const merged = mergeMeshtasticLivePacketLastHeard(
     existingLastHeardAt ?? 0,
     packetTimestampMs,
-    false,
+    getMeshtasticConfigurePhase(),
   );
   return merged > 0 ? merged : undefined;
 }

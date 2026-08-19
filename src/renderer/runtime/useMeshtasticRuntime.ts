@@ -117,6 +117,7 @@ import {
 } from '../lib/meshcoreDualNobleBleInit';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
 import { setMeshtasticRemoteConfigTarget } from '../lib/meshtastic/meshtasticConfigIngressGuard';
+import { setMeshtasticConfigurePhase } from '../lib/meshtastic/meshtasticConfigurePhase';
 import { configureMeshtasticDeviceWithRetry } from '../lib/meshtastic/meshtasticConfigureRetry';
 import type { ModulePortEvent, PaxCounterPoint } from '../lib/meshtastic/meshtasticModuleEvents';
 import { normalizeMeshtasticMqttChatMessage } from '../lib/meshtastic/meshtasticMqttChatNormalize';
@@ -976,6 +977,7 @@ export function useMeshtasticRuntime() {
       postRebootRecoveryScheduledRef.current = true;
       deviceConfiguredRef.current = false;
       isConfiguringRef.current = true;
+      setMeshtasticConfigurePhase(true);
       meshtasticIngestSessionRef.current?.setConfiguring(true);
       stopWatchdog();
       stopGpsInterval();
@@ -2040,6 +2042,7 @@ export function useMeshtasticRuntime() {
       clearPostCommitRebootRecovery();
       deviceConfiguredRef.current = false;
       isConfiguringRef.current = false;
+      setMeshtasticConfigurePhase(false);
       meshtasticIngestSessionRef.current?.setConfiguring(false);
       // Tear down GATT/SDK before unsubscribing so toDevice stays defined for disconnect.
       clearConfigureTimeout();

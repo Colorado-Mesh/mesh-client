@@ -20,6 +20,7 @@ import { errLikeToLogString } from '../errLikeToLogString';
 import { getIdentityNode } from '../identityStoreReads';
 import { shouldSuppressMeshtasticNodeHear } from '../meshcoreBleMacMeshtasticNodeId';
 import { mergeMeshtasticLivePacketLastHeard } from '../meshtasticLastHeard';
+import { effectiveLastHeardMs } from '../nodeStatus';
 import type { RawPacketEntry } from '../protocols/Protocol';
 import { MESHTASTIC_CAPABILITIES } from '../radio/BaseRadioProvider';
 import {
@@ -89,7 +90,8 @@ function applySignalAndHops(
 
   const isStale =
     existing.last_heard > 0 &&
-    Date.now() - existing.last_heard > MESHTASTIC_CAPABILITIES.nodeStaleThresholdMs;
+    Date.now() - effectiveLastHeardMs(existing.last_heard) >
+      MESHTASTIC_CAPABILITIES.nodeStaleThresholdMs;
   const node: MeshNode = {
     ...existing,
     ...(payload.snr ? { snr: payload.snr } : {}),
