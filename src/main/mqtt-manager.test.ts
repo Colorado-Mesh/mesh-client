@@ -7,6 +7,8 @@ import * as mqtt from 'mqtt';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { MQTTSettings } from '../renderer/lib/types';
+import { computeMeshtasticChannelHash } from '../shared/meshtasticChannelHash';
+import { MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES } from '../shared/meshtasticDefaultPublicPsk';
 import {
   BAD_ENVELOPE_SIGNATURE_MAX,
   bufferListIncludesKey,
@@ -38,13 +40,36 @@ const { ServiceEnvelopeSchema } = MqttProto;
 const { UserSchema, PositionSchema, DataSchema, MeshPacketSchema } = Mesh;
 const { PortNum } = Portnums;
 
-const DEFAULT_PSK = Buffer.from([
-  0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-]);
+// The real firmware default channel key (Channels.h `defaultpsk`) — matches production
+// MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES / mqtt-manager DEFAULT_PSK, not a hand-copied literal,
+// so this fixture can't silently drift from the value parsePsk("AQ==") actually produces.
+const DEFAULT_PSK = Buffer.from(MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES);
 
 const CUSTOM_PSK = Buffer.from([
   0x1e, 0x2f, 0x3a, 0x4b, 0x5c, 0x6d, 0x7e, 0x8f, 0x90, 0xa1, 0xb2, 0xc3, 0xd4, 0xe5, 0xf6, 0x07,
 ]);
+
+/** Wire a mock, already-connected `mqtt` client + settings onto `manager`; returns the publish spy. */
+function wireConnected(manager: MQTTManager): ReturnType<typeof vi.fn> {
+  const publish = vi.fn();
+  (manager as unknown as { client: unknown }).client = {
+    on: vi.fn(),
+    end: vi.fn(),
+    removeAllListeners: vi.fn(),
+    connected: true,
+    publish,
+    subscribe: vi.fn(),
+  };
+  (manager as unknown as { currentSettings: MQTTSettings }).currentSettings = {
+    server: 'localhost',
+    port: 1883,
+    username: '',
+    password: '',
+    topicPrefix: 'msh/US/',
+    autoLaunch: false,
+  };
+  return publish;
+}
 
 /** Build the AES-128-CTR nonce used by Meshtastic: packetId (4 LE) + fromId (4 LE) + 8 zeros */
 function makeNonce(packetId: number, fromId: number): Buffer {
@@ -165,11 +190,28 @@ describe('parsePsk', () => {
     expect(result!).toEqual(CUSTOM_PSK);
   });
 
-  it('zero-pads a short key (1 byte) to 16 bytes', () => {
+  it('expands the default PSK shorthand alias (AQ== / 0x01) to the real firmware key, not zero-padded', () => {
     const result = parsePsk('AQ=='); // [0x01]
     expect(result).not.toBeNull();
     expect(result!.length).toBe(16);
-    expect(result![0]).toBe(0x01);
+    expect(result).toEqual(Buffer.from(MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES));
+  });
+
+  it('expands "simple" preset shorthand aliases (0x02-0x0a) via the default key + offset', () => {
+    for (let index = 2; index <= 10; index++) {
+      const result = parsePsk(Buffer.from([index]).toString('base64'));
+      expect(result).not.toBeNull();
+      const expected = Buffer.from(MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES);
+      expected[15] = (expected[15] + (index - 1)) & 0xff;
+      expect(result).toEqual(expected);
+    }
+  });
+
+  it('zero-pads a 1-byte value outside the defined 0x01-0x0a alias range', () => {
+    const result = parsePsk(Buffer.from([200]).toString('base64'));
+    expect(result).not.toBeNull();
+    expect(result!.length).toBe(16);
+    expect(result![0]).toBe(200);
     expect(result!.subarray(1).every((b) => b === 0)).toBe(true);
   });
 
@@ -282,27 +324,6 @@ describe('parseMeshtasticMqttEncryptedTopicGatewayId', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('publish — MQTT uplink JSON mirror', () => {
-  function wireConnected(manager: MQTTManager): ReturnType<typeof vi.fn> {
-    const publish = vi.fn();
-    (manager as unknown as { client: unknown }).client = {
-      on: vi.fn(),
-      end: vi.fn(),
-      removeAllListeners: vi.fn(),
-      connected: true,
-      publish,
-      subscribe: vi.fn(),
-    };
-    (manager as unknown as { currentSettings: MQTTSettings }).currentSettings = {
-      server: 'localhost',
-      port: 1883,
-      username: '',
-      password: '',
-      topicPrefix: 'msh/US/',
-      autoLaunch: false,
-    };
-    return publish;
-  }
-
   it('publishes only protobuf when publishJsonMirror is false', () => {
     const manager = new MQTTManager();
     const publish = wireConnected(manager);
@@ -365,6 +386,116 @@ describe('publish — MQTT uplink JSON mirror', () => {
     const body = JSON.parse(publish.mock.calls[1][1] as string) as Record<string, unknown>;
     expect(body.portnum).toBe('WAYPOINT_APP');
     expect(body.type).toBe('waypoint');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// publishEncryptedData — MeshPacket.channel is the wire hash, not the local slot index
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('publish — MeshPacket.channel wire hash', () => {
+  function decodePublishedPacket(publish: ReturnType<typeof vi.fn>, callIndex = 0) {
+    const envelope = fromBinary(
+      ServiceEnvelopeSchema,
+      publish.mock.calls[callIndex][1] as Uint8Array,
+    );
+    return envelope.packet;
+  }
+
+  it('publish() stamps the name+PSK hash, not the local slot index, for the default channel', () => {
+    const manager = new MQTTManager();
+    const publish = wireConnected(manager);
+    manager.publish({
+      text: 'hi',
+      from: 0x11223344,
+      channel: 5, // local slot index — must not leak onto the wire
+      channelName: 'LongFast',
+      publishJsonMirror: false,
+    });
+    const packet = decodePublishedPacket(publish);
+    expect(packet?.channel).toBe(computeMeshtasticChannelHash('LongFast', DEFAULT_PSK));
+    expect(packet?.channel).not.toBe(5);
+  });
+
+  it('publish() stamps the name+PSK hash for a custom-PSK channel', () => {
+    const manager = new MQTTManager();
+    const publish = wireConnected(manager);
+    manager.publish({
+      text: 'hi',
+      from: 0x11223344,
+      channel: 1,
+      channelName: 'TGIFMESH',
+      pskBase64: CUSTOM_PSK.toString('base64'),
+      publishJsonMirror: false,
+    });
+    const packet = decodePublishedPacket(publish);
+    expect(packet?.channel).toBe(computeMeshtasticChannelHash('TGIFMESH', CUSTOM_PSK));
+  });
+
+  it('publishNodeInfo() stamps the hash instead of its hardcoded 0', () => {
+    const manager = new MQTTManager();
+    const publish = wireConnected(manager);
+    manager.publishNodeInfo(
+      0x11223344,
+      'Long Name',
+      'LN',
+      'TGIFMESH',
+      undefined,
+      false,
+      CUSTOM_PSK.toString('base64'),
+    );
+    const packet = decodePublishedPacket(publish);
+    expect(packet?.channel).toBe(computeMeshtasticChannelHash('TGIFMESH', CUSTOM_PSK));
+  });
+
+  it('publishPosition() and publishWaypoint() also stamp the hash, not the passed slot index', () => {
+    const manager = new MQTTManager();
+    const publish = wireConnected(manager);
+    manager.publishPosition(
+      0x11223344,
+      3,
+      'TGIFMESH',
+      450000000,
+      -900000000,
+      undefined,
+      false,
+      CUSTOM_PSK.toString('base64'),
+    );
+    expect(decodePublishedPacket(publish)?.channel).toBe(
+      computeMeshtasticChannelHash('TGIFMESH', CUSTOM_PSK),
+    );
+
+    manager.publishWaypoint(
+      0x11223344,
+      0xffffffff,
+      3,
+      'TGIFMESH',
+      { id: 1, latitudeI: 0, longitudeI: 0, name: 'x' },
+      false,
+      CUSTOM_PSK.toString('base64'),
+    );
+    expect(decodePublishedPacket(publish, 1)?.channel).toBe(
+      computeMeshtasticChannelHash('TGIFMESH', CUSTOM_PSK),
+    );
+  });
+
+  it('JSON mirror channel field matches the same hash as the encrypted packet, not the local slot', () => {
+    const manager = new MQTTManager();
+    const publish = wireConnected(manager);
+    manager.publish({
+      text: 'hi',
+      from: 0x11223344,
+      channel: 4, // local slot index — must not leak into either wire representation
+      channelName: 'TGIFMESH',
+      pskBase64: CUSTOM_PSK.toString('base64'),
+      publishJsonMirror: true,
+    });
+    expect(publish).toHaveBeenCalledTimes(2);
+    const encryptedChannel = decodePublishedPacket(publish, 0)?.channel;
+    const jsonBody = JSON.parse(publish.mock.calls[1][1] as string) as Record<string, unknown>;
+    const expectedHash = computeMeshtasticChannelHash('TGIFMESH', CUSTOM_PSK);
+    expect(encryptedChannel).toBe(expectedHash);
+    expect(jsonBody.channel).toBe(expectedHash);
   });
 });
 
@@ -1605,27 +1736,6 @@ describe('updateChannelKeys', () => {
 });
 
 describe('publish — decrypt round-trip (explicit PSK)', () => {
-  function wireConnected(manager: MQTTManager): ReturnType<typeof vi.fn> {
-    const publish = vi.fn();
-    (manager as unknown as { client: unknown }).client = {
-      on: vi.fn(),
-      end: vi.fn(),
-      removeAllListeners: vi.fn(),
-      connected: true,
-      publish,
-      subscribe: vi.fn(),
-    };
-    (manager as unknown as { currentSettings: MQTTSettings }).currentSettings = {
-      server: 'localhost',
-      port: 1883,
-      username: '',
-      password: '',
-      topicPrefix: 'msh/US/',
-      autoLaunch: false,
-    };
-    return publish;
-  }
-
   it('decrypts broker echo of publish when pskBase64 is only passed on publish IPC', () => {
     const manager = new MQTTManager();
     (manager as any)._doConnect = () => {};

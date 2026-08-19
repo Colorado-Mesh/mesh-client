@@ -37,6 +37,16 @@ vi.mock('./ble-coexistence-coordinator', () => ({
   },
 }));
 
+/** Noble skips session init on Linux (Web Bluetooth in renderer); seed both LoRa sessions for connect() tests. */
+function seedNobleSessions(manager: unknown): void {
+  const m = manager as {
+    sessions: Map<string, unknown>;
+    createSessionState: () => unknown;
+  };
+  m.sessions.set('meshtastic', m.createSessionState());
+  m.sessions.set('meshcore', m.createSessionState());
+}
+
 describe('NobleBleManager.startScanning (regression)', () => {
   it('preserves connected peripherals and re-emits deviceDiscovered when clearing knownPeripherals', () => {
     expect(SOURCE).toMatch(/stillConnected/);
@@ -244,6 +254,7 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
 
     // Avoid leaving active timers in the test process.
     manager.startLinkRssiPolling = vi.fn();
+    seedNobleSessions(manager);
     (manager as any).adapterReady = true;
     manager.knownPeripherals.set(peripheralId, peripheral);
 
@@ -322,6 +333,7 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
     };
 
     manager.startLinkRssiPolling = vi.fn();
+    seedNobleSessions(manager);
     (manager as any).adapterReady = true;
     manager.knownPeripherals.set(peripheralId, peripheral);
 
@@ -401,6 +413,7 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
       };
 
       manager.startLinkRssiPolling = vi.fn();
+      seedNobleSessions(manager);
       (manager as any).adapterReady = true;
       manager.knownPeripherals.set(peripheralId, peripheral);
 
