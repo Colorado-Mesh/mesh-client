@@ -464,7 +464,7 @@ Ranked multi-path slots (up to 3 per destination) plus global / per-peer RF-vs-n
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `70b7399` (+ prior mesh-client overlays) |
+| **Base commit** | `b4c0358` (+ prior mesh-client overlays) |
 | **Upstream PR** | none yet (mesh-client-local) |
 
 **Touches:** `constants.rs`, `path_table.rs`, `messages.rs`, `actor/{inbound,mod,rpc,outbound,persistence}.rs`
