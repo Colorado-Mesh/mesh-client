@@ -771,19 +771,10 @@ index 7327d22..dc92509 100644
                  },
              );
 diff --git a/crates/rns-transport/src/actor/rpc.rs b/crates/rns-transport/src/actor/rpc.rs
-index 07f3b52..1d900a0 100644
+index 07f3b52..2ec775d 100644
 --- a/crates/rns-transport/src/actor/rpc.rs
 +++ b/crates/rns-transport/src/actor/rpc.rs
-@@ -120,6 +120,8 @@ impl TransportActor {
-                             announce_cap: entry.announce_cap,
-                             ifac_size: entry.ifac_size,
-                             tx_drops: entry.tx_drops.load(std::sync::atomic::Ordering::Relaxed),
-+                            tx_queue_used: (entry.tx.max_capacity() - entry.tx.capacity()) as u64,
-+                            tx_queue_max: entry.tx.max_capacity() as u64,
-                         }
-                     })
-                     .collect();
-@@ -262,6 +264,41 @@ impl TransportActor {
+@@ -262,6 +262,41 @@ impl TransportActor {
                      self.suppress_path_interface(dest, interface_id, duration)
                  }))
              }
@@ -916,7 +907,7 @@ index 1747689..a6d48a1 100644
  #[derive(Debug, Clone, Copy, PartialEq, Eq)]
  pub enum InterfaceMode {
 diff --git a/crates/rns-transport/src/messages.rs b/crates/rns-transport/src/messages.rs
-index a96aae4..fff523f 100644
+index a96aae4..8d810ae 100644
 --- a/crates/rns-transport/src/messages.rs
 +++ b/crates/rns-transport/src/messages.rs
 @@ -809,6 +809,23 @@ pub enum TransportQuery {
@@ -984,17 +975,6 @@ index a96aae4..fff523f 100644
  #[derive(Debug, Clone)]
  pub struct InterfaceStatRpcEntry {
      pub id: InterfaceId,
-@@ -981,6 +1025,10 @@ pub struct InterfaceStatRpcEntry {
-     pub announce_cap: f64,
-     pub ifac_size: usize,
-     pub tx_drops: u64,
-+    /// Host outbound TX mpsc fill (`max_capacity - capacity`).
-+    pub tx_queue_used: u64,
-+    /// Host outbound TX mpsc `max_capacity`.
-+    pub tx_queue_max: u64,
- }
- 
- #[derive(Debug, Clone)]
 diff --git a/crates/rns-transport/src/path_table.rs b/crates/rns-transport/src/path_table.rs
 index e051675..23a7728 100644
 --- a/crates/rns-transport/src/path_table.rs
