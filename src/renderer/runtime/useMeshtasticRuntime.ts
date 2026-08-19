@@ -1935,7 +1935,7 @@ export function useMeshtasticRuntime() {
       clearConfigureTimeout,
       // isReconnectingRef only — not reconnectConnectInFlightRef. Manual prepareRfConnect clears
       // reconnecting while a superseded attempt may still hold in-flight; OR-ing would skip the
-      // 30s configure watchdog on the new connect (which has no 90s reconnect budget).
+      // 60s configure watchdog on the new connect (which has no 90s reconnect budget).
       isBleReconnectAttemptActive: () => isReconnectingRef.current,
       applyMeshtasticForeignLoraFromLog,
       emptyNode,
@@ -2261,6 +2261,9 @@ export function useMeshtasticRuntime() {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('Reconnect superseded before configure');
         }
+        isConfiguringRef.current = true;
+        setMeshtasticConfigurePhase(true);
+        meshtasticIngestSessionRef.current?.setConfiguring(true);
         await configureMeshtasticDeviceWithRetry(opened.device, {
           logTag: 'useMeshtasticRuntime reconnect',
         });
@@ -2587,6 +2590,9 @@ export function useMeshtasticRuntime() {
         }
       })();
 
+      isConfiguringRef.current = true;
+      setMeshtasticConfigurePhase(true);
+      meshtasticIngestSessionRef.current?.setConfiguring(true);
       await configureMeshtasticDeviceWithRetry(activeDevice, {
         logTag: 'useMeshtasticRuntime attachRfSession',
       });
@@ -4105,6 +4111,9 @@ export function useMeshtasticRuntime() {
 
   const requestRefresh = useCallback(async () => {
     if (!deviceRef.current) return;
+    isConfiguringRef.current = true;
+    setMeshtasticConfigurePhase(true);
+    meshtasticIngestSessionRef.current?.setConfiguring(true);
     await deviceRef.current.configure();
   }, []);
 

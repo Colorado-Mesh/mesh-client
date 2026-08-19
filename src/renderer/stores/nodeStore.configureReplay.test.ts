@@ -121,6 +121,20 @@ describe('nodeStore configure replay last_heard', () => {
     expect(useNodeStore.getState().nodes[ID_MT][PEER].lastHeardAt).toBe(clientMs);
   });
 
+  it('NodeDB applies fresher radio last_heard over stale client during configure', () => {
+    const clientMs = NOW - 3_600_000;
+    seedPeer(clientMs);
+    setMeshtasticConfigurePhase(true);
+    const radioSec = Math.floor((NOW - 1_800_000) / 1000);
+    upsertNode(ID_MT, {
+      nodeId: PEER,
+      fromUserPacket: false,
+      lastHeardAt: radioSec,
+      longName: 'Peer',
+    });
+    expect(useNodeStore.getState().nodes[ID_MT][PEER].lastHeardAt).toBe(radioSec * 1000);
+  });
+
   it('does not bump position last_heard during configure', () => {
     const staleMs = NOW - 7 * MS_PER_DAY;
     seedPeer(staleMs);
@@ -167,6 +181,14 @@ describe('nodeStore configure replay last_heard', () => {
     setMeshtasticConfigurePhase(true);
     bumpMeshtasticNodesLastHeardAt(ID_MT, [PEER], NOW);
     expect(useNodeStore.getState().nodes[ID_MT][PEER].lastHeardAt).toBe(staleMs);
+  });
+
+  it('bumps traceroute last_heard after configure', () => {
+    const staleMs = NOW - 7 * MS_PER_DAY;
+    seedPeer(staleMs);
+    setMeshtasticConfigurePhase(false);
+    bumpMeshtasticNodesLastHeardAt(ID_MT, [PEER], NOW);
+    expect(useNodeStore.getState().nodes[ID_MT][PEER].lastHeardAt).toBe(NOW);
   });
 
   it('self node NodeDB with zero lastHeard still falls back to now during configure', () => {

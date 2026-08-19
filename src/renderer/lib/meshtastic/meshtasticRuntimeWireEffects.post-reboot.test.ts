@@ -11,6 +11,8 @@ import { attachMeshtasticRuntimeWireEffects } from './meshtasticRuntimeWireEffec
 
 /** DeviceConfiguring — see Types.DeviceStatusEnum */
 const DEVICE_CONFIGURING = 6;
+/** DeviceConfigured — see Types.DeviceStatusEnum */
+const DEVICE_CONFIGURED = 7;
 
 function makeDeps(opts?: { isBleReconnectAttemptActive?: () => boolean }) {
   const touchLastData = vi.fn();
@@ -312,6 +314,26 @@ describe('meshtasticRuntimeWireEffects BLE configure timeout arming', () => {
     const statusSubscribers = attachBleWithStatusSubscribers(deps);
 
     for (const cb of statusSubscribers) cb(DEVICE_CONFIGURING);
+    vi.advanceTimersByTime(MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS - 5_000);
+    touchMeshtasticConfigureProgress();
+    vi.advanceTimersByTime(MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS - 5_000);
+    expect(onLost).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(10_000);
+    expect(onLost).toHaveBeenCalledTimes(1);
+    expect(configureTimeoutRef.current).toBeNull();
+  });
+
+  it('resets stall timer after DeviceConfigured when configure runs again', () => {
+    const { deps, configureTimeoutRef } = makeDeps({
+      isBleReconnectAttemptActive: () => false,
+    });
+    const onLost = vi.mocked(deps.handleConnectionLostRef.current);
+    const statusSubscribers = attachBleWithStatusSubscribers(deps);
+
+    for (const cb of statusSubscribers) cb(DEVICE_CONFIGURING);
+    for (const cb of statusSubscribers) cb(DEVICE_CONFIGURED);
+    for (const cb of statusSubscribers) cb(DEVICE_CONFIGURING);
+
     vi.advanceTimersByTime(MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS - 5_000);
     touchMeshtasticConfigureProgress();
     vi.advanceTimersByTime(MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS - 5_000);

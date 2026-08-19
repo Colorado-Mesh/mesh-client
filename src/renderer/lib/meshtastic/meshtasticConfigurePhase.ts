@@ -5,7 +5,7 @@ let onConfigureProgress: (() => void) | null = null;
 
 export function setMeshtasticConfigurePhase(value: boolean): void {
   configuring = value;
-  if (!value) onConfigureProgress = null;
+  // Progress handler lifetime == wire attach lifetime (cleared on detach / test reset only).
 }
 
 export function getMeshtasticConfigurePhase(): boolean {

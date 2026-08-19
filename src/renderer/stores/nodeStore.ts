@@ -214,7 +214,7 @@ export function upsertNode(identityId: IdentityId, event: NodeInfoEvent): void {
           isSelf,
         );
       }
-      if (getMeshtasticConfigurePhase()) {
+      if (getMeshtasticConfigurePhase() && !event.fromUserPacket) {
         touchMeshtasticConfigureProgress();
       }
     }
@@ -291,6 +291,12 @@ function meshtasticLastHeardPatch(
     getMeshtasticConfigurePhase(),
   );
   return merged > 0 ? merged : undefined;
+}
+
+function maybeTouchMeshtasticNodeDbConfigureProgress(): void {
+  if (getMeshtasticConfigurePhase()) {
+    touchMeshtasticConfigureProgress();
+  }
 }
 
 /** Toggle favorite flag on a node in the identity-scoped store (UI reads this bucket). */
@@ -378,6 +384,7 @@ export function updatePosition(identityId: IdentityId, event: PositionEvent): vo
     const { nodeId, latitude, longitude, altitude, timestamp, groundSpeed, groundTrack } = event;
     const existing = byId[nodeId];
     const lastHeardAt = meshtasticLastHeardPatch(identityId, timestamp, existing?.lastHeardAt);
+    maybeTouchMeshtasticNodeDbConfigureProgress();
     return {
       nodes: {
         ...s.nodes,
@@ -416,6 +423,7 @@ export function updateTelemetry(identityId: IdentityId, event: TelemetryEvent): 
     } = event;
     const existing = byId[nodeId];
     const lastHeardAt = meshtasticLastHeardPatch(identityId, timestamp, existing?.lastHeardAt);
+    maybeTouchMeshtasticNodeDbConfigureProgress();
     return {
       nodes: {
         ...s.nodes,

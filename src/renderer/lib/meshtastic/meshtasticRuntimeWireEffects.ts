@@ -42,6 +42,7 @@ import type {
 } from '../types';
 import { recordMeshtasticClientNotification } from './meshtasticClientNotification';
 import {
+  getMeshtasticConfigurePhase,
   setMeshtasticConfigurePhase,
   setMeshtasticConfigureProgressHandler,
 } from './meshtasticConfigurePhase';
@@ -287,7 +288,7 @@ export function attachMeshtasticRuntimeWireEffects(
   };
 
   setMeshtasticConfigureProgressHandler(() => {
-    if (!isConfiguringRef.current || type !== 'ble' || isBleReconnectAttemptActive()) return;
+    if (!getMeshtasticConfigurePhase() || type !== 'ble' || isBleReconnectAttemptActive()) return;
     armBleConfigureStallTimeout();
   });
 
@@ -413,7 +414,7 @@ export function attachMeshtasticRuntimeWireEffects(
   }
   if (identityId) {
     meshtasticIngestSessionRef.current = attachMeshtasticIngest(identityId, {
-      getIsConfiguring: () => isConfiguringRef.current,
+      getIsConfiguring: getMeshtasticConfigurePhase,
       getMyNodeNum: () => myNodeNumRef.current,
     });
   }
@@ -650,7 +651,7 @@ export function attachMeshtasticRuntimeWireEffects(
     opts?: { ignoreDisplayIdentity?: boolean },
   ): void => {
     if (from === 0 || from === myNodeNumRef.current) return;
-    if (isConfiguringRef.current) return;
+    if (getMeshtasticConfigurePhase()) return;
     // Missing-recipient-key recovery must refresh even nodes that already have a
     // display name (we know who they are, we just lack a usable public key), so it
     // opts out of the display-identity short-circuit while keeping the rate limit.
@@ -702,7 +703,7 @@ export function attachMeshtasticRuntimeWireEffects(
       }),
       attachMeshtasticRawPacketSideEffects(identityId, {
         getMyNodeNum: () => myNodeNumRef.current,
-        getIsConfiguring: () => isConfiguringRef.current,
+        getIsConfiguring: getMeshtasticConfigurePhase,
         setRawPackets,
         setSignalTelemetry,
         touchLastData,
@@ -745,7 +746,7 @@ export function attachMeshtasticRuntimeWireEffects(
       attachMeshtasticNodeSideEffects(identityId, {
         connectionType: type,
         getMyNodeNum: () => myNodeNumRef.current,
-        getIsConfiguring: () => isConfiguringRef.current,
+        getIsConfiguring: getMeshtasticConfigurePhase,
         getBluetoothDeviceId: () =>
           (device.transport as { __bluetoothDevice?: { id?: string } }).__bluetoothDevice?.id,
         touchLastData,

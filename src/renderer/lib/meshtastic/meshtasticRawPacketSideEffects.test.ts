@@ -142,6 +142,44 @@ describe('attachMeshtasticRawPacketSideEffects', () => {
     detach();
   });
 
+  it('does not bump last_heard during configure replay', () => {
+    const staleHeard = Date.now() - 7 * 24 * 60 * 60_000;
+    const nodeMirror = new Map<number, MeshNode>([
+      [PEER, { ...emptyNode(PEER), last_heard: staleHeard, snr: 1 }],
+    ]);
+    syncNodesMapToIdentityStore(IDENTITY, nodeMirror);
+    const deps: MeshtasticRawPacketSideEffectsDeps = {
+      getMyNodeNum: () => MY_NODE,
+      getIsConfiguring: () => true,
+      setRawPackets: vi.fn(),
+      setSignalTelemetry: vi.fn(),
+      touchLastData: vi.fn(),
+    };
+    const detach = attachMeshtasticRawPacketSideEffects(IDENTITY, deps);
+    packetRouter.dispatch(
+      {
+        type: 'raw_packet',
+        payload: {
+          ts: Date.now(),
+          snr: 12,
+          rssi: -70,
+          raw: new Uint8Array([0x01]),
+          fromNodeId: PEER,
+          portLabel: 'TEXT_MESSAGE_APP',
+          viaMqtt: false,
+          hopsAway: 1,
+          packetId: 99,
+          portnum: 1,
+        },
+      },
+      IDENTITY,
+    );
+    const node = getIdentityNode(IDENTITY, PEER);
+    expect(node?.last_heard).toBe(staleHeard);
+    expect(node?.snr).toBe(12);
+    detach();
+  });
+
   it('skips sniffer log when the active protocol tab is not meshtastic', () => {
     localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'meshcore');
     const { deps } = makeDeps();
