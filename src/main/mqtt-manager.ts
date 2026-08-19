@@ -14,7 +14,11 @@ import * as mqtt from 'mqtt';
 import type { ChatMessage, MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
 import { computeMeshtasticChannelHash } from '../shared/meshtasticChannelHash';
 import { splitChannelPskLine } from '../shared/meshtasticChannelPskLine';
-import { isMeshtasticDefaultPublicPsk } from '../shared/meshtasticDefaultPublicPsk';
+import {
+  expandMeshtasticPskAlias,
+  isMeshtasticDefaultPublicPsk,
+  MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES,
+} from '../shared/meshtasticDefaultPublicPsk';
 import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
   MQTT_MAX_RECONNECT_ATTEMPTS,
@@ -59,14 +63,15 @@ const TelemetrySchema =
 const PaxcountSchema = (PaxCount as unknown as { PaxcountSchema?: unknown }).PaxcountSchema ?? null;
 const MapReportSchema = (Mqtt as unknown as { MapReportSchema?: unknown }).MapReportSchema ?? null;
 
-// Default PSK for meshtastic: 0x01 followed by 15 zero bytes
-const DEFAULT_PSK = Buffer.from([
-  0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-]);
+// Default PSK for meshtastic: firmware Channels.h `defaultpsk` (shorthand alias 0x01 expands to
+// this — see expandMeshtasticPskAlias). NOT a zero-padded literal of the alias byte itself.
+const DEFAULT_PSK = Buffer.from(MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES);
 
 /**
  * Parse a base64-encoded PSK for Meshtastic MQTT (AES-128-CTR or AES-256-CTR).
- * Accepts exactly 16 or 32 decoded bytes; short keys (e.g. "AQ==") zero-pad to 16.
+ * Accepts exactly 16 or 32 decoded bytes. A single decoded byte is a firmware PSK shorthand
+ * alias (e.g. "AQ==" = 0x01, the default channel key) and is expanded via
+ * expandMeshtasticPskAlias — NOT zero-padded, which would produce the wrong key/channel hash.
  * Other lengths are rejected (returns null).
  */
 export function parsePsk(b64: string): Buffer | null {
@@ -80,6 +85,10 @@ export function parsePsk(b64: string): Buffer | null {
   }
   if (raw.length === 0) return null;
   if (raw.length === 16 || raw.length === 32) return raw;
+  if (raw.length === 1) {
+    const expanded = expandMeshtasticPskAlias(raw[0]);
+    if (expanded) return Buffer.from(expanded);
+  }
   if (raw.length < 16) {
     const out = Buffer.alloc(16, 0);
     raw.copy(out, 0, 0, raw.length);

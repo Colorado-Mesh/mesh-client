@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { MQTTSettings } from '../renderer/lib/types';
 import { computeMeshtasticChannelHash } from '../shared/meshtasticChannelHash';
+import { MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES } from '../shared/meshtasticDefaultPublicPsk';
 import {
   BAD_ENVELOPE_SIGNATURE_MAX,
   bufferListIncludesKey,
@@ -39,9 +40,10 @@ const { ServiceEnvelopeSchema } = MqttProto;
 const { UserSchema, PositionSchema, DataSchema, MeshPacketSchema } = Mesh;
 const { PortNum } = Portnums;
 
-const DEFAULT_PSK = Buffer.from([
-  0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-]);
+// The real firmware default channel key (Channels.h `defaultpsk`) — matches production
+// MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES / mqtt-manager DEFAULT_PSK, not a hand-copied literal,
+// so this fixture can't silently drift from the value parsePsk("AQ==") actually produces.
+const DEFAULT_PSK = Buffer.from(MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES);
 
 const CUSTOM_PSK = Buffer.from([
   0x1e, 0x2f, 0x3a, 0x4b, 0x5c, 0x6d, 0x7e, 0x8f, 0x90, 0xa1, 0xb2, 0xc3, 0xd4, 0xe5, 0xf6, 0x07,
@@ -188,11 +190,28 @@ describe('parsePsk', () => {
     expect(result!).toEqual(CUSTOM_PSK);
   });
 
-  it('zero-pads a short key (1 byte) to 16 bytes', () => {
+  it('expands the default PSK shorthand alias (AQ== / 0x01) to the real firmware key, not zero-padded', () => {
     const result = parsePsk('AQ=='); // [0x01]
     expect(result).not.toBeNull();
     expect(result!.length).toBe(16);
-    expect(result![0]).toBe(0x01);
+    expect(result).toEqual(Buffer.from(MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES));
+  });
+
+  it('expands "simple" preset shorthand aliases (0x02-0x0a) via the default key + offset', () => {
+    for (let index = 2; index <= 10; index++) {
+      const result = parsePsk(Buffer.from([index]).toString('base64'));
+      expect(result).not.toBeNull();
+      const expected = Buffer.from(MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES);
+      expected[15] = (expected[15] + (index - 1)) & 0xff;
+      expect(result).toEqual(expected);
+    }
+  });
+
+  it('zero-pads a 1-byte value outside the defined 0x01-0x0a alias range', () => {
+    const result = parsePsk(Buffer.from([200]).toString('base64'));
+    expect(result).not.toBeNull();
+    expect(result!.length).toBe(16);
+    expect(result![0]).toBe(200);
     expect(result!.subarray(1).every((b) => b === 0)).toBe(true);
   });
 
