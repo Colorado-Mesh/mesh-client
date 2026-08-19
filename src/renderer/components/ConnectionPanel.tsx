@@ -38,7 +38,7 @@ import {
   loadProtocolMqttSettings,
   persistMqttSettingsIfChanged,
 } from '../hooks/useProtocolMqttSettings';
-import { isMeshcoreMissingServicesErrorMessage } from '../lib/bleConnectErrors';
+import { shouldClearMeshcoreBleSelectionForError } from '../lib/bleConnectErrors';
 import {
   cacheBleDeviceMac,
   getBleDeviceMac,
@@ -57,6 +57,7 @@ import {
   runConnectionPanelStorageMigrations,
 } from '../lib/connectionPanelStorageMigrations';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
+import { clearStoredBleSelection as clearStoredBleSelectionForProtocol } from '../lib/lastConnectionStorage';
 import {
   letsMeshPresetConfigurationDeviation,
   validateLetsMeshManualCredentials,
@@ -306,14 +307,6 @@ function saveLastBleDevice(protocol: MeshProtocol, id: string) {
     localStorage.setItem(lastBleDeviceKey(protocol), id);
   } catch (e) {
     console.debug('[ConnectionPanel] saveLastBleDevice ' + errLikeToLogString(e));
-  }
-}
-
-function clearLastBleDevice(protocol: MeshProtocol) {
-  try {
-    localStorage.removeItem(lastBleDeviceKey(protocol));
-  } catch (e) {
-    console.debug('[ConnectionPanel] clearLastBleDevice ' + errLikeToLogString(e));
   }
 }
 
@@ -846,14 +839,8 @@ export default function ConnectionPanel({
 
   const clearMeshcoreBleSelectionOnMissingServices = useCallback(
     (err: unknown) => {
-      if (protocol !== 'meshcore') return;
-      const message = err instanceof Error ? err.message : String(err);
-      const isMissingServices =
-        isMeshcoreMissingServicesErrorMessage(message) ||
-        message === 'meshcore.errors.bleMissingServices';
-      if (!isMissingServices) return;
-      clearLastConnection('meshcore');
-      clearLastBleDevice('meshcore');
+      if (protocol !== 'meshcore' || !shouldClearMeshcoreBleSelectionForError(err)) return;
+      clearStoredBleSelectionForProtocol('meshcore');
       setLastConnection(null);
     },
     [protocol, setLastConnection],

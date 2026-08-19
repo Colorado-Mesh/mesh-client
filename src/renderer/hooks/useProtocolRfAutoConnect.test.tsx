@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   loadLastConnection: vi.fn(),
   loadLastBleDeviceId: vi.fn(),
   saveLastConnection: vi.fn(),
+  clearStoredBleSelection: vi.fn(),
   reconnectBleWithScan: vi.fn(),
   awaitReticulumBleCoexistenceClear: vi.fn(),
   dualNobleBleBothRadiosConfigured: vi.fn(),
@@ -23,6 +24,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/renderer/lib/lastConnectionStorage', () => ({
+  clearStoredBleSelection: mocks.clearStoredBleSelection,
   loadLastConnection: mocks.loadLastConnection,
   loadLastBleDeviceId: mocks.loadLastBleDeviceId,
   saveLastConnection: mocks.saveLastConnection,
@@ -68,6 +70,7 @@ describe('useProtocolRfAutoConnect cold-start skip paths', () => {
     vi.clearAllMocks();
     mocks.loadLastConnection.mockReturnValue(null);
     mocks.loadLastBleDeviceId.mockReturnValue(null);
+    mocks.clearStoredBleSelection.mockReset();
     mocks.reconnectBleWithScan.mockImplementation(async (_p, _id, attempt) => {
       await attempt();
     });
@@ -224,6 +227,7 @@ describe('useProtocolRfAutoConnect cold-start TCP/HTTP', () => {
     vi.clearAllMocks();
     mocks.loadLastConnection.mockReturnValue(null);
     mocks.loadLastBleDeviceId.mockReturnValue(null);
+    mocks.clearStoredBleSelection.mockReset();
     mocks.awaitReticulumBleCoexistenceClear.mockResolvedValue(undefined);
     mocks.dualNobleBleBothRadiosConfigured.mockReturnValue(false);
     mocks.getNobleBleDualRadioPrimaryProtocol.mockReturnValue(null);
@@ -397,6 +401,7 @@ describe('useProtocolRfAutoConnect cold-start serial + BLE', () => {
     vi.clearAllMocks();
     mocks.loadLastConnection.mockReturnValue(null);
     mocks.loadLastBleDeviceId.mockReturnValue(null);
+    mocks.clearStoredBleSelection.mockReset();
     mocks.reconnectBleWithScan.mockImplementation(async (_p, _id, attempt) => {
       await attempt();
     });
@@ -595,4 +600,27 @@ describe('useProtocolRfAutoConnect cold-start serial + BLE', () => {
       expect(protocolOrder).toBeLessThan(connectOrder);
     },
   );
+
+  it('clears remembered MeshCore BLE selection after missing-services auto-connect failure', async () => {
+    vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue('darwin');
+    mocks.loadLastConnection.mockReturnValue({ type: 'ble', bleDeviceId: 'meshcore-ble' });
+    const connectAutomatic = vi
+      .fn()
+      .mockRejectedValue(new Error('Failed to find required BLE characteristics'));
+
+    renderHook(() => {
+      useProtocolRfAutoConnect({
+        protocol: 'meshcore',
+        state: disconnected,
+        connectAutomatic,
+      });
+    });
+
+    await waitFor(() => {
+      expect(connectAutomatic).toHaveBeenCalledWith('ble', undefined, undefined, 'meshcore-ble');
+    });
+    await waitFor(() => {
+      expect(mocks.clearStoredBleSelection).toHaveBeenCalledWith('meshcore');
+    });
+  });
 });

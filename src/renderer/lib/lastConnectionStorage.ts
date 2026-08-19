@@ -60,6 +60,11 @@ export function clearLastBleDeviceId(protocol: MeshProtocol): void {
   }
 }
 
+export function clearStoredBleSelection(protocol: MeshProtocol): void {
+  clearLastConnection(protocol);
+  clearLastBleDeviceId(protocol);
+}
+
 export function resolveLastBlePeripheralId(protocol: MeshProtocol): string | undefined {
   const last = loadLastConnection(protocol);
   return last?.bleDeviceId ?? loadLastBleDeviceId(protocol) ?? undefined;

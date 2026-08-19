@@ -8,6 +8,7 @@ import {
   isMeshcoreTcpTransportDeadError,
   MESHCORE_SETUP_ABORT_MESSAGE,
   rethrowMeshcoreSetupAbortFromTcpDead,
+  shouldClearMeshcoreBleSelectionForError,
 } from './bleConnectErrors';
 
 describe('isMeshcoreMissingServicesErrorMessage', () => {
@@ -40,6 +41,28 @@ describe('classifyMeshcoreBleTimeoutStage', () => {
   it('does not classify missing services as a timeout', () => {
     expect(classifyMeshcoreBleTimeoutStage('Could not find all requested services')).toBe(
       'unknown',
+    );
+  });
+});
+
+describe('shouldClearMeshcoreBleSelectionForError', () => {
+  it('matches main-process missing characteristics errors', () => {
+    expect(
+      shouldClearMeshcoreBleSelectionForError(
+        new Error('Failed to find required BLE characteristics'),
+      ),
+    ).toBe(true);
+  });
+
+  it('matches translated MeshCore missing-services keys', () => {
+    expect(shouldClearMeshcoreBleSelectionForError('meshcore.errors.bleMissingServices')).toBe(
+      true,
+    );
+  });
+
+  it('does not match unrelated BLE failures', () => {
+    expect(shouldClearMeshcoreBleSelectionForError('Bluetooth adapter is not powered on')).toBe(
+      false,
     );
   });
 });

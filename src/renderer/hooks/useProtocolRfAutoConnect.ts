@@ -3,8 +3,7 @@ import { useEffect, useRef } from 'react';
 import { reconnectBleWithScan } from '@/renderer/lib/bleReconnectHelper';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
-  clearLastBleDeviceId,
-  clearLastConnection,
+  clearStoredBleSelection,
   type LastConnection,
   loadLastBleDeviceId,
   loadLastConnection,
@@ -31,7 +30,7 @@ import { tryGetMeshtasticSession } from '@/renderer/lib/sessions/meshtasticSessi
 import { POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS } from '@/renderer/lib/timeConstants';
 import type { DeviceState, MeshProtocol } from '@/renderer/lib/types';
 
-import { isMeshcoreMissingServicesErrorMessage } from '../lib/bleConnectErrors';
+import { shouldClearMeshcoreBleSelectionForError } from '../lib/bleConnectErrors';
 
 export interface UseProtocolRfAutoConnectOptions {
   protocol: MeshProtocol;
@@ -147,15 +146,12 @@ export function useProtocolRfAutoConnect({
       error: unknown,
       transport: 'serial' | 'ble' | 'tcp' | 'http' = 'ble',
     ) => {
-      if (protocol === 'meshcore' && transport === 'ble') {
-        const message = error instanceof Error ? error.message : String(error);
-        const isMissingServices =
-          isMeshcoreMissingServicesErrorMessage(message) ||
-          message === 'meshcore.errors.bleMissingServices';
-        if (isMissingServices) {
-          clearLastConnection('meshcore');
-          clearLastBleDeviceId('meshcore');
-        }
+      if (
+        protocol === 'meshcore' &&
+        transport === 'ble' &&
+        shouldClearMeshcoreBleSelectionForError(error)
+      ) {
+        clearStoredBleSelection('meshcore');
       }
       clearAutoConnectTimeout();
       console.warn(

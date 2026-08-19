@@ -2342,6 +2342,86 @@ describe('ConnectionPanel BLE MAC identity', () => {
     }
   });
 
+  it('clears remembered MeshCore BLE selection after missing-services connect failure', async () => {
+    const user = userEvent.setup();
+    const { restore } = mockMacNoblePlatform();
+    const lastConnKey = 'mesh-client:lastConnection:meshcore';
+    const lastBleKey = 'mesh-client:lastBleDevice:meshcore';
+    localStorage.setItem(
+      lastConnKey,
+      JSON.stringify({
+        type: 'ble',
+        bleDeviceId: darwinUuid,
+        bleDeviceName: 'MeshCore-NV0N',
+        bleMac: 'ac:a7:04:00:d6:f1',
+      }),
+    );
+    localStorage.setItem(lastBleKey, darwinUuid);
+    let capturedCb:
+      | ((device: {
+          deviceId: string;
+          deviceName: string;
+          rssi?: number | null;
+          address?: string | null;
+        }) => void)
+      | undefined;
+    vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockImplementation((cb) => {
+      capturedCb = cb;
+      return () => {};
+    });
+    const onConnect = vi
+      .fn()
+      .mockRejectedValue(new Error('Failed to find required BLE characteristics'));
+
+    try {
+      await withMockedConsoleWarn(async () => {
+        render(
+          <ConnectionPanel
+            state={disconnectedState}
+            onConnect={onConnect}
+            onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+            onDisconnect={vi.fn().mockResolvedValue(undefined)}
+            mqttStatus="disconnected"
+            protocol="meshcore"
+          />,
+        );
+
+        expect(screen.getByRole('button', { name: /^Reconnect$/i })).toBeInTheDocument();
+        const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+        expect(radioCard).toBeTruthy();
+        await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+        await waitFor(() => {
+          expect(capturedCb).toBeTruthy();
+        });
+        act(() => {
+          capturedCb?.({
+            deviceId: darwinUuid,
+            deviceName: 'MeshCore-NV0N',
+            address: 'ac:a7:04:00:d6:f1',
+            rssi: -62,
+          });
+        });
+
+        await user.click(
+          await screen.findByRole('button', { name: /MeshCore-NV0N ac:a7:04:00:d6:f1/i }),
+        );
+
+        await waitFor(() => {
+          expect(localStorage.getItem(lastConnKey)).toBeNull();
+          expect(localStorage.getItem(lastBleKey)).toBeNull();
+        });
+        await waitFor(() => {
+          expect(screen.queryByRole('button', { name: /^Reconnect$/i })).not.toBeInTheDocument();
+        });
+      });
+    } finally {
+      localStorage.removeItem(lastConnKey);
+      localStorage.removeItem(lastBleKey);
+      restore();
+    }
+  });
+
   it('shows Bluetooth MAC on Last Connection and the connected Radio Connection card', () => {
     localStorage.setItem(
       lastConnKey,
