@@ -263,7 +263,7 @@ describe('ReticulumSidecarManager', () => {
   it('filters mixed stdout chunks line by line and flushes trailing text', async () => {
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
     const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
-    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const proc = mockSidecarProc();
     proc.kill.mockImplementation(() => {
       proc.emit('exit', 0, null);
@@ -279,15 +279,15 @@ describe('ReticulumSidecarManager', () => {
     );
     stdout.emit('end');
 
-    expect(debugSpy).toHaveBeenCalledWith('[ReticulumSidecar]', 'WARN actual warning');
-    expect(debugSpy).toHaveBeenCalledWith('[ReticulumSidecar]', 'ERROR');
-    expect(debugSpy).not.toHaveBeenCalledWith(
+    expect(warnSpy).toHaveBeenCalledWith('[ReticulumSidecar]', 'WARN actual warning');
+    expect(warnSpy).toHaveBeenCalledWith('[ReticulumSidecar]', 'ERROR');
+    expect(warnSpy).not.toHaveBeenCalledWith(
       '[ReticulumSidecar]',
       'INFO packet route mentions ERROR',
     );
 
     await manager.stop();
-    debugSpy.mockRestore();
+    warnSpy.mockRestore();
     existsSpy.mockRestore();
     mkdirSpy.mockRestore();
   });
