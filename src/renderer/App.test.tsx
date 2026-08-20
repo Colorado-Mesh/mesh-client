@@ -340,6 +340,10 @@ vi.mock('./lib/radio/providerFactory', async (importOriginal) => {
   };
 });
 
+vi.mock('./components/ReticulumStackAutostartCoordinator', () => ({
+  ReticulumStackAutostartCoordinator: () => null,
+}));
+
 vi.mock('./lazyAppPanels', () => ({
   ChatPanel: (props: Record<string, unknown>) => {
     lastChatPanelProps.current = props;
@@ -348,7 +352,7 @@ vi.mock('./lazyAppPanels', () => ({
       : '';
     return <div data-testid="chat-panel-props">{channels}</div>;
   },
-  ConnectionPanel: () => null,
+  ConnectionPanel: () => <div data-testid="connection-panel-mock">connection</div>,
   LogPanel: () => null,
   NodeListPanel: () => null,
 }));
@@ -369,6 +373,15 @@ vi.mock('./lazyTabPanels', () => ({
   SecurityPanel: () => null,
   TakServerPanel: () => null,
   TelemetryPanel: () => null,
+  ReticulumNetworkPanel: ({ onOpenInterfaces }: { onOpenInterfaces?: () => void }) => (
+    <button
+      type="button"
+      aria-label="test-open-reticulum-interfaces"
+      onClick={() => onOpenInterfaces?.()}
+    >
+      open interfaces
+    </button>
+  ),
 }));
 
 vi.mock('./lib/reticulum/reticulumGamesSession', async (importOriginal) => {
@@ -1447,5 +1460,40 @@ describe('App accessibility', () => {
     });
     expect(screen.getByTestId('games-panel-mock')).toBeInTheDocument();
     expect(openReticulumGameSessionMock).toHaveBeenCalledWith('lrgp:test-session-from-meshcore');
+  });
+
+  it('dual-TCP Open Interfaces CTA activates the Reticulum Connection panel', async () => {
+    getStoredMeshProtocolMock.mockReturnValue('reticulum');
+    vi.mocked(providerFactory.useRadioProvider).mockImplementation((protocol) => {
+      if (protocol === 'reticulum') return RETICULUM_CAPABILITIES;
+      if (protocol === 'meshcore') return MESHCORE_CAPABILITIES;
+      return MESHTASTIC_CAPABILITIES;
+    });
+
+    renderApp();
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Network' })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('tab', { name: 'Network' }));
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'test-open-reticulum-interfaces' }),
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByRole('tab', { name: 'Connection' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'test-open-reticulum-interfaces' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Connection' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+    });
+    expect(screen.getByTestId('connection-panel-mock')).toBeInTheDocument();
   });
 });

@@ -4389,7 +4389,17 @@
     "ignoredForAutoTitle": "Ignorado para Automático",
     "ignoredForAutoHint": "El modo automático no se sincronizará ni almacenará y reenviará a través de estos nodos. La preferencia/sincronización manual sigue funcionando.",
     "modeHelpAuto": "Automático: sincroniza una sola vez el mejor nodo de propagación Descubierto (no lo añade ni cambia Preferido), luego configura los controles remotos y luego el nodo de propagación local. Se omiten los nodos ignorados. Sin interfaces de red, solo se instala localmente.",
-    "modeHelpManual": "Manual: sincroniza su nodo preferido o elige el nodo añadido más cercano para esa sincronización cuando no se prefiere ninguno. Si falla, se prueban los otros nodos añadidos, luego el nodo de propagación local."
+    "modeHelpManual": "Manual: sincroniza su nodo preferido o elige el nodo añadido más cercano para esa sincronización cuando no se prefiere ninguno. Si falla, se prueban los otros nodos añadidos, luego el nodo de propagación local.",
+    "establishRecoveryTitle": "Falta la prueba de enlace — dejó de probar otros nodos",
+    "establishRecoveryBody": "Es probable que falte la ruta inversa a su identidad en este cliente (no es un mal nodo de propagación). La sincronización no se conectará en cascada a otros controles remotos hasta que esto se solucione.",
+    "establishRecoveryAnnounce": "Anunciar ahora",
+    "establishRecoveryAnnounceAria": "Enviar un anuncio de entrega LXMF ahora",
+    "establishRecoveryRetry": "Reintentar sincronización",
+    "establishRecoveryRetryWaiting": "Reintentar sincronización ({{seconds}}s)",
+    "establishRecoveryRetryAria": "Espere a que se anuncie la liquidación, luego vuelva a intentar la sincronización en el objetivo preferido o último",
+    "establishRecoveryDualTcpTip": "Dos o más interfaces TCP están habilitadas. Anuncie y el enlace de sincronización puede salir en diferentes rutas: deshabilite una red troncal en → Interfaces de conexión, luego anuncie y vuelva a intentarlo.",
+    "establishRecoveryOpenInterfaces": "Interfaces abiertas",
+    "establishRecoveryOpenInterfacesAria": "Interfaces de conexión abiertas para ajustar los backbones TCP"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descubrimiento de RMAP v4",

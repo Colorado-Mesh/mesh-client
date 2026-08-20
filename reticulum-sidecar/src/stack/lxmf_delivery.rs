@@ -29,9 +29,9 @@ use super::persistence::PersistedState;
 
 pub const LXMF_APP: &str = "lxmf.delivery";
 
-/// Brief pause after a successful pre-sync LXMF announce so hubs can flood the reverse path
-/// before LinkRequest (matches the effective delay of “Announce now, then Sync”).
-pub const PROPAGATION_SYNC_ANNOUNCE_SETTLE: Duration = Duration::from_secs(2);
+/// Pause after a successful pre-sync LXMF announce so hubs can flood the reverse path
+/// before LinkRequest (matches the in-panel Announce → Retry Sync wait).
+pub const PROPAGATION_SYNC_ANNOUNCE_SETTLE: Duration = Duration::from_secs(10);
 
 const UNPACK_WARN_INTERVAL: Duration = Duration::from_secs(5);
 static LAST_UNPACK_WARN_MS: AtomicU64 = AtomicU64::new(0);
@@ -520,8 +520,8 @@ mod tests {
     }
 
     #[test]
-    fn propagation_sync_announce_settle_is_two_seconds() {
-        assert_eq!(PROPAGATION_SYNC_ANNOUNCE_SETTLE, Duration::from_secs(2));
+    fn propagation_sync_announce_settle_is_ten_seconds() {
+        assert_eq!(PROPAGATION_SYNC_ANNOUNCE_SETTLE, Duration::from_secs(10));
     }
 
     #[test]

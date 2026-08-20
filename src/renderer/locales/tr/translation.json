@@ -4389,7 +4389,17 @@
     "ignoredForAutoTitle": "Otomatik için yoksayıldı",
     "ignoredForAutoHint": "Otomatik mod, bu düğümler aracılığıyla senkronize edilmeyecek veya kaydedilip iletilmeyecektir. Manuel Tercih/Senkronizasyon hala çalışıyor.",
     "modeHelpAuto": "Otomatik: bir kerelik en iyi Keşfedilen yayılım düğümünü senkronize eder (eklemez veya Tercih Edilen'i değiştirmez), ardından yapılandırılmış uzaktan kumandaları, ardından yerel yayılım düğümünü senkronize eder. Yoksayılan düğümler atlanır. Ağ arabirimi olmadan, yalnızca yerel olarak yerleşir.",
-    "modeHelpManual": "Manuel: Tercih edilen düğümünüzü eşitler veya hiçbiri tercih edilmediğinde bu eşitleme için en yakın eklenen düğümü seçer. Başarısız olursa, diğer eklenen düğümler, ardından yerel yayılım düğümü denenir."
+    "modeHelpManual": "Manuel: Tercih edilen düğümünüzü eşitler veya hiçbiri tercih edilmediğinde bu eşitleme için en yakın eklenen düğümü seçer. Başarısız olursa, diğer eklenen düğümler, ardından yerel yayılım düğümü denenir.",
+    "establishRecoveryTitle": "Bağlantı kanıtı eksik — diğer düğümleri denemeyi durdurdu",
+    "establishRecoveryBody": "Bu istemcide kimliğinizin ters yolu muhtemelen eksik (kötü bir yayılma düğümü değil). Senkronizasyon, bu düzeltilinceye kadar diğer uzaktan kumandalara kademelendirilmeyecektir.",
+    "establishRecoveryAnnounce": "Şimdi duyur",
+    "establishRecoveryAnnounceAria": "Hemen bir LXMF teslimat duyurusu gönderin",
+    "establishRecoveryRetry": "Eşitlemeyi Yeniden Dene",
+    "establishRecoveryRetryWaiting": "Senkronizasyonu Yeniden Dene ({{seconds}}s)",
+    "establishRecoveryRetryAria": "Duyuru yerleşimini bekleyin, ardından tercih edilen veya son hedefte senkronizasyonu yeniden deneyin",
+    "establishRecoveryDualTcpTip": "İki veya daha fazla TCP arayüzü etkinleştirildi. Anons ve senkronizasyon bağlantısı farklı yollarda bırakılabilir — Bağlantı → Arabirimleri altında bir omurgayı devre dışı bırakın, ardından anons edin ve yeniden deneyin.",
+    "establishRecoveryOpenInterfaces": "Açık Arayüzler",
+    "establishRecoveryOpenInterfacesAria": "TCP omurgalarını ayarlamak için Bağlantı Arayüzlerini açın"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 keşfi",

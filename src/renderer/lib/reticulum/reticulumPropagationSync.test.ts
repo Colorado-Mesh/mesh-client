@@ -117,6 +117,9 @@ describe('reticulumPropagationSync', () => {
     expect(mapPropagationSyncError('propagation establish failed: LrproofIdentityMissing')).toBe(
       'reticulumPropagation.syncEstablishIdentityMissing',
     );
+    expect(mapPropagationSyncError('propagation establish failed: LrproofInvalid')).toBe(
+      'reticulumPropagation.syncEstablishInvalidProof',
+    );
     expect(mapPropagationSyncError('propagation establish failed: NoLinkProof')).toBe(
       'reticulumPropagation.syncEstablishNoLinkProof',
     );

@@ -1349,7 +1349,7 @@ Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the
 - **No path yet** → `PROPAGATION_PATH_UNKNOWN` (hard-fail after announce settle; UI `syncPathUnknown`) — not a 45s Establishing stall. Wait for a path / **Announce now**, retry.
 - Remote sync needs a known identity. Missing identity → `PROPAGATION_IDENTITY_UNKNOWN`.
 - Destinations that announce as delivery/other (including TCP hubs) → `PROPAGATION_TARGET_NOT_PN`. Add a destination that announces `lxmf.propagation`.
-- Establishing with **no LRPROOF** often means the PN lacks a reverse path to your LXMF identity. Sync always sends an LXMF delivery announce and waits briefly before Linking; if that still stalls, use Network → **Announce now** and retry.
+- Establishing with **no LRPROOF** often means the PN lacks a reverse path to your LXMF identity. Sync always sends an LXMF delivery announce and waits ~10s before Linking; if that still stalls, use the Propagation recovery callout (**Announce now**, wait, **Retry Sync**), or Network → **Announce now** and retry. Auto stops cascading other remotes after this class of establish failure (client reverse-path). Dual enabled TCP backbones can cause announce/Link asymmetry — try one backbone.
 - Soft-defer `PROPAGATION_RETRIEVE_BUSY` means Host silent `/get` or another retrieve owns the client — wait or Cancel; Cancel must call rsLXMF `abort_transfer` or the next Sync stays busy.
 - Auto keeps picking a bad Discovered PN → **Ignore for Auto** on that row (Manual Prefer/Sync still works).
 - HaveAll / Complete is success (not failure). Cancel or Establishing stall (~45s) must not advance “last synced”.

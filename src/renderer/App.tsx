@@ -3659,6 +3659,7 @@ function AppContent() {
                                 connecting={reticulumConnectionView.state.status === 'connecting'}
                                 onStartStack={startReticulumStackManual}
                                 propagationSectionOpenKey={reticulumPropagationNavKey}
+                                onOpenInterfaces={handleNavigateToReticulumConnection}
                                 onOpenAppGpsSettings={() => {
                                   const appTabIdx = tabSlotIds.indexOf('App');
                                   if (appTabIdx >= 0) {

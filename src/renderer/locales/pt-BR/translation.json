@@ -4389,7 +4389,17 @@
     "ignoredForAutoTitle": "Ignorado para Auto",
     "ignoredForAutoHint": "O modo automático não sincronizará de ou armazenará e encaminhará por meio desses nós. A preferência/sincronização manual ainda funciona.",
     "modeHelpAuto": "Automático: sincroniza uma única vez o melhor nó de propagação Descoberto (não o adiciona nem altera o Preferido), depois os controles remotos configurados e, em seguida, o nó de propagação local. Nós ignorados são ignorados. Sem interfaces de rede, instala apenas localmente.",
-    "modeHelpManual": "Manual: sincroniza seu nó Preferred ou escolhe o nó adicionado mais próximo para essa sincronização quando nenhum é preferido. Se falhar, os outros nós adicionados são tentados e, em seguida, o nó de propagação local."
+    "modeHelpManual": "Manual: sincroniza seu nó Preferred ou escolhe o nó adicionado mais próximo para essa sincronização quando nenhum é preferido. Se falhar, os outros nós adicionados são tentados e, em seguida, o nó de propagação local.",
+    "establishRecoveryTitle": "Prova de link ausente — parou de tentar outros nós",
+    "establishRecoveryBody": "O caminho inverso para sua identidade provavelmente está ausente neste cliente (não é um nó de propagação incorreto). A sincronização não entrará em cascata para outros controles remotos até que isso seja corrigido.",
+    "establishRecoveryAnnounce": "Anuncie agora",
+    "establishRecoveryAnnounceAria": "Envie um anúncio de entrega LXMF agora",
+    "establishRecoveryRetry": "Tentar sincronizar novamente",
+    "establishRecoveryRetryWaiting": "Tentar sincronizar novamente ({{seconds}}s)",
+    "establishRecoveryRetryAria": "Aguarde o anúncio de liquidação e, em seguida, tente novamente sincronizar no alvo preferido ou no último alvo",
+    "establishRecoveryDualTcpTip": "Duas ou mais interfaces TCP estão habilitadas. Anuncie e o link de sincronização pode sair em caminhos diferentes — desative um backbone em → Interfaces de Conexão, depois anuncie e tente novamente.",
+    "establishRecoveryOpenInterfaces": "Open interfaces",
+    "establishRecoveryOpenInterfacesAria": "Abrir Interfaces de Conexão para ajustar os backbones TCP"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descoberta do RMAP v4",

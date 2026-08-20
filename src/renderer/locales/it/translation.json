@@ -4389,7 +4389,17 @@
     "ignoredForAutoTitle": "Ignorato per Auto",
     "ignoredForAutoHint": "La modalità automatica non si sincronizzerà o memorizzerà e inoltrerà tramite questi nodi. Manual Prefer/Sync funziona ancora.",
     "modeHelpAuto": "Auto: sincronizza una volta il nodo di propagazione Scoperto migliore (non lo aggiunge o cambia Preferito), quindi i telecomandi configurati, quindi il nodo di propagazione locale. I nodi ignorati vengono ignorati. Senza interfacce di rete, si stabilisce solo in locale.",
-    "modeHelpManual": "Manuale: sincronizza il tuo nodo preferito o sceglie il nodo aggiunto più vicino per quella sincronizzazione quando nessuno è preferito. Se non riesce, vengono provati gli altri nodi aggiunti, quindi il nodo di propagazione locale."
+    "modeHelpManual": "Manuale: sincronizza il tuo nodo preferito o sceglie il nodo aggiunto più vicino per quella sincronizzazione quando nessuno è preferito. Se non riesce, vengono provati gli altri nodi aggiunti, quindi il nodo di propagazione locale.",
+    "establishRecoveryTitle": "Prova di collegamento mancante — ha smesso di provare altri nodi",
+    "establishRecoveryBody": "Il percorso inverso alla tua identità è probabilmente mancante su questo client (non un cattivo nodo di propagazione). La sincronizzazione non passerà ad altri telecomandi fino a quando questo problema non sarà risolto.",
+    "establishRecoveryAnnounce": "Annuncia ora",
+    "establishRecoveryAnnounceAria": "Invia ora un annuncio di consegna LXMF",
+    "establishRecoveryRetry": "Riprova la sincronizzazione",
+    "establishRecoveryRetryWaiting": "Riprova la sincronizzazione ({{seconds}}s)",
+    "establishRecoveryRetryAria": "Attendi l'annuncio della liquidazione, quindi riprova la sincronizzazione sulla destinazione preferita o sull'ultima destinazione",
+    "establishRecoveryDualTcpTip": "Sono abilitate due o più interfacce TCP. Annuncia e il collegamento di sincronizzazione può lasciare su percorsi diversi: disabilita una spina dorsale in → Interfacce di connessione, quindi annuncia e riprova.",
+    "establishRecoveryOpenInterfaces": "Interfacce Aperte",
+    "establishRecoveryOpenInterfacesAria": "Apri le interfacce di connessione per regolare i backbone TCP"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Scoperta RMAP v4",

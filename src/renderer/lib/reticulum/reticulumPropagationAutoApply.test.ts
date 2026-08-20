@@ -10,6 +10,7 @@ import {
   PROPAGATION_SYNC_NO_TARGET_KEY,
   resetPropagationSyncCascadeState,
   startPropagationSyncCascade,
+  startPropagationSyncSingleTarget,
   startPropagationSyncWithTarget,
 } from './reticulumPropagationAutoApply';
 import {
@@ -405,6 +406,182 @@ describe('reticulumPropagationAutoApply', () => {
     expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
       'reticulumPropagation.syncEstablishNoLinkProof',
     );
+  });
+
+  it.each([
+    'reticulumPropagation.syncEstablishNoLinkProof',
+    'reticulumPropagation.syncEstablishIdentityMissing',
+    'reticulumPropagation.syncEstablishInvalidProof',
+  ] as const)('Auto early-stops remotes after %s', async (errorKey) => {
+    const farHash = 'cccc'.repeat(8);
+    const startSync = vi.fn().mockImplementation((id?: string) => {
+      useReticulumPropagationStore.setState({
+        syncTargetId: id ?? null,
+        lastSyncError: errorKey,
+      });
+      return Promise.resolve('failed' as const);
+    });
+    useReticulumPropagationStore.setState({
+      nodes: [
+        { id: 'local-prop', name: 'Local', enabled: false, status: 'idle' },
+        {
+          id: 'pn-near',
+          name: 'Near',
+          enabled: true,
+          status: 'known',
+          hops: 1,
+          destination_hash: 'aabb'.repeat(8),
+        },
+        {
+          id: 'pn-far',
+          name: 'Far',
+          enabled: true,
+          status: 'known',
+          hops: 2,
+          destination_hash: 'bbbb'.repeat(8),
+        },
+      ],
+      discovered: [{ destination_hash: farHash, node_state: true, peering_cost: 0, hops: 1 }],
+      preferredId: null,
+      lastSyncError: null,
+      startSync,
+    });
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(false);
+    expect(startSync).toHaveBeenCalledTimes(1);
+    expect(startSync).toHaveBeenCalledWith(farHash);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(errorKey);
+  });
+
+  it('Auto still cascades after ordinary syncFailed', async () => {
+    const startSync = vi
+      .fn()
+      .mockImplementationOnce((id?: string) => {
+        useReticulumPropagationStore.setState({
+          syncTargetId: id ?? null,
+          lastSyncError: 'reticulumPropagation.syncFailed',
+          sync: { active: false, progress: 0, message: null },
+        });
+        return Promise.resolve('failed' as const);
+      })
+      .mockImplementationOnce((id?: string) => {
+        useReticulumPropagationStore.setState({
+          syncTargetId: id ?? null,
+          lastSyncError: null,
+          sync: { active: false, progress: 0, message: null },
+        });
+        return Promise.resolve('accepted' as const);
+      });
+    useReticulumPropagationStore.setState({
+      nodes: [
+        { id: 'local-prop', name: 'Local', enabled: true, status: 'known' },
+        {
+          id: 'pn-aabb1111',
+          name: 'Remote',
+          enabled: true,
+          status: 'known',
+          hops: 2,
+          destination_hash: 'aabb'.repeat(8),
+        },
+      ],
+      discovered: [],
+      preferredId: null,
+      startSync,
+    });
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
+    expect(startSync.mock.calls.map((c) => c[0])).toEqual(['pn-aabb1111', 'local-prop']);
+  });
+
+  it('Manual Prefer NoLinkProof does not burn through other remotes', async () => {
+    writeReticulumPropagationMode('manual');
+    const startSync = vi.fn().mockImplementation((id?: string) => {
+      useReticulumPropagationStore.setState({
+        syncTargetId: id ?? null,
+        lastSyncError: 'reticulumPropagation.syncEstablishNoLinkProof',
+      });
+      return Promise.resolve('failed' as const);
+    });
+    useReticulumPropagationStore.setState({
+      nodes: [
+        { id: 'local-prop', name: 'Local', enabled: false, status: 'idle' },
+        { id: 'pn-near', name: 'Near', enabled: true, status: 'known', hops: 1 },
+        { id: 'pn-far', name: 'Far', enabled: true, status: 'known', hops: 4 },
+      ],
+      preferredId: 'pn-far',
+      lastSyncError: null,
+      startSync,
+    });
+    await expect(startPropagationSyncCascade()).resolves.toBe(false);
+    expect(startSync).toHaveBeenCalledTimes(1);
+    expect(startSync).toHaveBeenCalledWith('pn-far');
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      'reticulumPropagation.syncEstablishNoLinkProof',
+    );
+  });
+
+  it('settles local-prop after establish early-stop when local is enabled', async () => {
+    const startSync = vi
+      .fn()
+      .mockImplementationOnce((id?: string) => {
+        useReticulumPropagationStore.setState({
+          syncTargetId: id ?? null,
+          lastSyncError: 'reticulumPropagation.syncEstablishNoLinkProof',
+          sync: { active: false, progress: 0, message: null },
+        });
+        return Promise.resolve('failed' as const);
+      })
+      .mockImplementationOnce((id?: string) => {
+        useReticulumPropagationStore.setState({
+          syncTargetId: id ?? null,
+          lastSyncError: null,
+          sync: { active: false, progress: 0, message: null },
+        });
+        return Promise.resolve('accepted' as const);
+      });
+    useReticulumPropagationStore.setState({
+      nodes: [
+        { id: 'local-prop', name: 'Local', enabled: true, status: 'known' },
+        {
+          id: 'pn-aabb1111',
+          name: 'Remote',
+          enabled: true,
+          status: 'known',
+          hops: 2,
+          destination_hash: 'aabb'.repeat(8),
+        },
+      ],
+      discovered: [],
+      preferredId: null,
+      startSync,
+    });
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
+    expect(startSync.mock.calls.map((c) => c[0])).toEqual(['pn-aabb1111', 'local-prop']);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      'reticulumPropagation.syncEstablishNoLinkProof',
+    );
+  });
+
+  it('singleTargetOnly retries one target without Auto cascade burn', async () => {
+    const otherHash = 'dddd'.repeat(8);
+    const startSync = vi.fn().mockResolvedValue('accepted');
+    useReticulumPropagationStore.setState({
+      nodes: [
+        { id: 'local-prop', name: 'Local', enabled: false, status: 'idle' },
+        {
+          id: 'pn-aabb1111',
+          name: 'Remote',
+          enabled: true,
+          status: 'known',
+          hops: 2,
+          destination_hash: 'aabb'.repeat(8),
+        },
+      ],
+      discovered: [{ destination_hash: otherHash, node_state: true, peering_cost: 0, hops: 1 }],
+      preferredId: 'pn-aabb1111',
+      startSync,
+    });
+    await expect(startPropagationSyncSingleTarget('pn-aabb1111')).resolves.toBe(true);
+    expect(startSync).toHaveBeenCalledTimes(1);
+    expect(startSync).toHaveBeenCalledWith('pn-aabb1111');
   });
 
   it('leaves the sync target naming the last node tried', async () => {

@@ -4389,7 +4389,17 @@
     "ignoredForAutoTitle": "Diabaikan untuk Otomatis",
     "ignoredForAutoHint": "Mode otomatis tidak akan disinkronkan dari atau disimpan dan diteruskan melalui node ini. Prefer/Sync Manual masih berfungsi.",
     "modeHelpAuto": "Auto: satu kali menyinkronkan simpul propagasi Discovered terbaik (tidak menambahkannya atau mengubah Preferred), kemudian mengkonfigurasi remote, lalu simpul propagasi lokal. Node yang diabaikan dilewati. Tanpa antarmuka jaringan, hanya mengendap lokal.",
-    "modeHelpManual": "Manual: menyinkronkan simpul Pilihan Anda, atau memilih simpul tambahan terdekat untuk sinkronisasi itu ketika tidak ada yang disukai. Jika gagal, node tambahan lainnya dicoba, kemudian node propagasi lokal."
+    "modeHelpManual": "Manual: menyinkronkan simpul Pilihan Anda, atau memilih simpul tambahan terdekat untuk sinkronisasi itu ketika tidak ada yang disukai. Jika gagal, node tambahan lainnya dicoba, kemudian node propagasi lokal.",
+    "establishRecoveryTitle": "Bukti tautan hilang — berhenti mencoba node lain",
+    "establishRecoveryBody": "Jalur balik ke identitas Anda kemungkinan hilang pada klien ini (bukan simpul propagasi yang buruk). Sinkronisasi tidak akan mengalir ke remote lain sampai ini diperbaiki.",
+    "establishRecoveryAnnounce": "Umumkan sekarang",
+    "establishRecoveryAnnounceAria": "Kirim pengumuman pengantaran LXMF sekarang",
+    "establishRecoveryRetry": "Coba Sinkronkan Lagi",
+    "establishRecoveryRetryWaiting": "Coba Sinkronkan Lagi ({{seconds}}s)",
+    "establishRecoveryRetryAria": "Tunggu pengumuman selesai, lalu coba lagi sinkronisasi pada target yang disukai atau terakhir",
+    "establishRecoveryDualTcpTip": "Dua atau lebih antarmuka TCP diaktifkan. Umumkan dan tautan sinkronisasi dapat berada di jalur yang berbeda — nonaktifkan satu tulang punggung di bawah → Antarmuka Koneksi, lalu umumkan dan coba lagi.",
+    "establishRecoveryOpenInterfaces": "Buka Antarmuka",
+    "establishRecoveryOpenInterfacesAria": "Buka Antarmuka Koneksi untuk menyesuaikan tulang punggung TCP"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Penemuan RMAP v4",

@@ -192,7 +192,6 @@ pub use rns::*;
 
 #[cfg(all(test, feature = "rns-stack"))]
 mod tests {
-    use super::rns::*;
     use super::*;
     use std::fs;
 
