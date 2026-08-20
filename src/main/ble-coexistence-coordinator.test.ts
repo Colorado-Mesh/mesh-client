@@ -19,8 +19,17 @@ describe('BleCoexistenceCoordinator', () => {
     expect(coordinator.getState().connections).toEqual([
       { mac: 'aa:bb:cc:dd:ee:01', owner: 'noble:meshtastic' },
     ]);
+    expect(coordinator.getState().nobleYieldDecisionPending).toBe(false);
     coordinator.unregister('AA:BB:CC:DD:EE:01', 'noble:meshtastic');
     expect(coordinator.getState().connections).toEqual([]);
+  });
+
+  it('tracks nobleYieldDecisionPending for RF coexistence gate', () => {
+    const coordinator = new BleCoexistenceCoordinator();
+    coordinator.setNobleYieldDecisionPending(true);
+    expect(coordinator.getState().nobleYieldDecisionPending).toBe(true);
+    coordinator.setNobleYieldDecisionPending(false);
+    expect(coordinator.getState().nobleYieldDecisionPending).toBe(false);
   });
 
   it('rejects registering the same MAC to a different owner', () => {

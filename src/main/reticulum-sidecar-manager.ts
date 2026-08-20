@@ -455,16 +455,26 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.stackSessionTracker.recordStart();
     this.connectWs(port);
     this.startWatchdog();
+    // Mark yield pending before status emit so RF auto-connect does not race fire-and-forget yield.
+    if (needsBleYieldAfterHealth) {
+      bleCoexistenceCoordinator.setNobleYieldDecisionPending(true);
+    } else {
+      bleCoexistenceCoordinator.setNobleYieldDecisionPending(false);
+    }
     this.emit('status', this.getStatus());
     // Do not await BLE yield — TCP/LXMF/RRC/Nomad are already usable. Start yield only
     // after health so Cancel during cargo never yanks Meshtastic/MeshCore.
     if (needsBleYieldAfterHealth) {
-      void this.yieldNobleForEnabledBleRnode().catch((e: unknown) => {
-        console.warn(
-          '[ReticulumSidecar] background Noble yield for BLE RNode failed:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-      });
+      void this.yieldNobleForEnabledBleRnode()
+        .catch((e: unknown) => {
+          console.warn(
+            '[ReticulumSidecar] background Noble yield for BLE RNode failed:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+        })
+        .finally(() => {
+          bleCoexistenceCoordinator.setNobleYieldDecisionPending(false);
+        });
     }
     return this.getStatus();
   }

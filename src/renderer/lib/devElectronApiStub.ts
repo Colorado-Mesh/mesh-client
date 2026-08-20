@@ -309,14 +309,46 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       onClientDisconnected: noopUnsub,
     },
     bleCoexistence: {
-      register: async () => ({ connections: [], scanOwner: null }),
-      unregister: async () => ({ connections: [], scanOwner: null }),
-      assertCanConnect: async () => ({ connections: [], scanOwner: null }),
-      getState: async () => ({ connections: [], scanOwner: null }),
-      acquireScan: async () => ({ connections: [], scanOwner: null }),
-      releaseScan: async () => ({ connections: [], scanOwner: null }),
-      pauseNobleScan: async () => ({ connections: [], scanOwner: null }),
-      suspendNobleForReticulumBleConnect: async () => ({ connections: [], scanOwner: null }),
+      register: async () => ({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      unregister: async () => ({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      assertCanConnect: async () => ({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      getState: async () => ({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      acquireScan: async () => ({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      releaseScan: async () => ({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      pauseNobleScan: async () => ({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      suspendNobleForReticulumBleConnect: async () => ({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
     },
     reticulum: {
       start: async () => ({ running: false, port: 0, pid: null }),

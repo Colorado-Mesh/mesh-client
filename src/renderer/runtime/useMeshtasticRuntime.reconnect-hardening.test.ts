@@ -65,6 +65,17 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).toContain('captureSerialIdentityForRediscovery');
   });
 
+  it('latches BLE reconnect exhausted and skips late Noble disconnect / connection-lost', () => {
+    expect(SOURCE).toContain('createBleReconnectExhaustLatch');
+    expect(SOURCE).toContain('meshtasticBleReconnectExhaustedRef');
+    expect(SOURCE).toContain('shouldSkipBleReconnectAfterExhaustion');
+    expect(SOURCE).toMatch(
+      /onExhausted:[\s\S]*?params\.type === 'ble'[\s\S]*?meshtasticBleReconnectExhaustedRef\.current\.markExhausted\(\)/,
+    );
+    expect(SOURCE).toMatch(/skip reconnect \(BLE budget exhausted\)/);
+    expect(SOURCE).toMatch(/Noble BLE disconnected — skip reconnect \(BLE budget exhausted\)/);
+  });
+
   it('clears reconnect refs in handleRfConnectFailure', () => {
     const failureBlock = extractUseCallbackBody(SOURCE, 'handleRfConnectFailure');
     expect(failureBlock.length).toBeGreaterThan(0);

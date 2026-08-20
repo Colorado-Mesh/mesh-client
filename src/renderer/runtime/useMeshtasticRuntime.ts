@@ -78,6 +78,10 @@ import {
   mergeAppSetting,
   mergeAppSettingsPartial,
 } from '../lib/appSettingsStorage';
+import {
+  createBleReconnectExhaustLatch,
+  shouldSkipBleReconnectAfterExhaustion,
+} from '../lib/bleReconnectExhaustLatch';
 import { verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import {
@@ -406,6 +410,8 @@ export function useMeshtasticRuntime() {
   const meshtasticRfReconnectRef = useRef(
     createRfReconnectController({ logTag: 'useMeshtasticRuntime' }),
   );
+  /** After one BLE reconnect budget cycle, stop auto-reconnect until user/power clears. */
+  const meshtasticBleReconnectExhaustedRef = useRef(createBleReconnectExhaustLatch());
   /** True while reconnect open+configure owns the session (single-flight; blocks overlapping opens). */
   const reconnectConnectInFlightRef = useRef(false);
   const reconnectGenerationRef = useRef<number>(0);
@@ -2015,6 +2021,16 @@ export function useMeshtasticRuntime() {
       console.debug('[useMeshtasticRuntime] skip reconnect (user disconnect)');
       return;
     }
+    if (
+      connectionParamsRef.current?.type === 'ble' &&
+      shouldSkipBleReconnectAfterExhaustion({
+        bleExhausted: meshtasticBleReconnectExhaustedRef.current.isExhausted(),
+        isReconnecting: isReconnectingRef.current,
+      })
+    ) {
+      console.debug('[useMeshtasticRuntime] skip reconnect (BLE budget exhausted)');
+      return;
+    }
     // Single-owner: while a cycle is active, onLinkLost only dirties — never schedules after
     // await disconnect (MeshCore n7eal TCP parity / #792–#796).
     const wasReconnecting = isReconnectingRef.current;
@@ -2184,6 +2200,13 @@ export function useMeshtasticRuntime() {
         cleanupSubscriptions();
         stopWatchdog();
         stopGpsInterval();
+        if (params.type === 'ble') {
+          bleConnectInProgressRef.current = false;
+          meshtasticBleReconnectExhaustedRef.current.markExhausted();
+          console.debug(
+            '[useMeshtasticRuntime] BLE reconnect budget exhausted — latch until user reconnect',
+          );
+        }
         const exhaustedSerialPort = params.type === 'serial' ? (params.serialPort ?? null) : null;
         if (params.type === 'serial') {
           const captured = captureSerialIdentityForRediscovery(exhaustedSerialPort);
@@ -2300,6 +2323,7 @@ export function useMeshtasticRuntime() {
         isReconnectingRef.current = false;
         meshtasticDeferredReconnectRef.current = false;
         meshtasticRfReconnectRef.current.markSuccess();
+        meshtasticBleReconnectExhaustedRef.current.clear();
         setState((s) => ({
           ...s,
           serialNeedsReselect: false,
@@ -2365,6 +2389,7 @@ export function useMeshtasticRuntime() {
     reconnectAttemptRef.current = 0;
     reconnectGenerationRef.current += 1;
     isReconnectingRef.current = false;
+    meshtasticBleReconnectExhaustedRef.current.clear();
     handleConnectionLostRef.current();
   }, []);
 
@@ -2402,6 +2427,17 @@ export function useMeshtasticRuntime() {
           '[useMeshtasticRuntime] Noble BLE disconnected — rehydrated reconnect params from storage',
         );
       }
+      if (
+        shouldSkipBleReconnectAfterExhaustion({
+          bleExhausted: meshtasticBleReconnectExhaustedRef.current.isExhausted(),
+          isReconnecting: isReconnectingRef.current,
+        })
+      ) {
+        console.debug(
+          '[useMeshtasticRuntime] Noble BLE disconnected — skip reconnect (BLE budget exhausted)',
+        );
+        return;
+      }
       console.warn('[useMeshtasticRuntime] Noble BLE disconnected');
       handleConnectionLostRef.current();
     });
@@ -2412,6 +2448,17 @@ export function useMeshtasticRuntime() {
       if (connectionParamsRef.current?.type !== 'ble') return;
       if (meshtasticExplicitDisconnectRef.current) return;
       if (meshtasticDriverConnectedRef.current && deviceConfiguredRef.current) {
+        return;
+      }
+      if (
+        shouldSkipBleReconnectAfterExhaustion({
+          bleExhausted: meshtasticBleReconnectExhaustedRef.current.isExhausted(),
+          isReconnecting: isReconnectingRef.current,
+        })
+      ) {
+        console.debug(
+          '[useMeshtasticRuntime] Noble BLE yield released — skip nudge (BLE budget exhausted)',
+        );
         return;
       }
       if (isReconnectingRef.current || bleConnectInProgressRef.current) {
@@ -2425,6 +2472,7 @@ export function useMeshtasticRuntime() {
       );
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
+      meshtasticBleReconnectExhaustedRef.current.clear();
       nobleYieldReconnectNudgeRef.current = true;
       handleConnectionLostRef.current();
     };
@@ -2499,6 +2547,7 @@ export function useMeshtasticRuntime() {
       reconnectConnectInFlightRef.current = false;
       reconnectGenerationRef.current++;
       meshtasticRfReconnectRef.current.cancel();
+      meshtasticBleReconnectExhaustedRef.current.clear();
       if (type === 'ble') {
         bleConnectInProgressRef.current = true;
         meshtasticDeferredReconnectRef.current = false;

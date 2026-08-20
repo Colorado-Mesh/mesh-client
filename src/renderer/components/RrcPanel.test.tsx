@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -23,6 +26,8 @@ vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
 
 const hubA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const hubB = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
+const RRC_PANEL_SOURCE = readFileSync(join(__dirname, 'RrcPanel.tsx'), 'utf-8');
 
 function whoSendCalls(): unknown[][] {
   return vi.mocked(window.electronAPI.reticulum.rrc.send).mock.calls.filter((args) => {
@@ -55,6 +60,12 @@ describe('RrcPanel', () => {
     clearRrcOpenDms(hubA);
     clearRrcOpenDms(hubB);
     vi.mocked(window.electronAPI.db.listRrcMessages).mockResolvedValue([]);
+  });
+
+  it('clears auto-join backoff on explicit Connect alongside disconnect suppress', () => {
+    expect(RRC_PANEL_SOURCE).toMatch(
+      /setRrcHubDisconnectSuppressed\(target, false\);\s*clearRrcHubAutoJoinBackoff\(target\);/,
+    );
   });
 
   it('renders amber hub chrome and select-hub prompt', async () => {

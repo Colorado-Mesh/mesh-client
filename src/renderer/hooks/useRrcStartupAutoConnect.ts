@@ -7,6 +7,10 @@ import { useEffect, useRef } from 'react';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { RETICULUM_CONFIGURED_EVENT } from '@/renderer/lib/reticulum/reticulumConfiguredEvent';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import {
+  isRrcHubAutoJoinBlocked,
+  recordRrcHubAutoJoinFailure,
+} from '@/renderer/lib/rrcHubAutoJoinBackoff';
 import { isRrcHubDisconnectSuppressed } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { loadRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { isRrcHubLinked } from '@/renderer/lib/rrcHubSession';
@@ -34,7 +38,10 @@ function isRrcHubLinkedNow(hub: string): boolean {
 
 function pendingRrcAutoJoinHubs(): string[] {
   return loadRrcHubAutoJoin().filter(
-    (hub) => !isRrcHubLinkedNow(hub) && !isRrcHubDisconnectSuppressed(hub),
+    (hub) =>
+      !isRrcHubLinkedNow(hub) &&
+      !isRrcHubDisconnectSuppressed(hub) &&
+      !isRrcHubAutoJoinBlocked(hub),
   );
 }
 
@@ -67,12 +74,16 @@ async function connectRrcHubForAutoJoin(hub: string, nickname: string): Promise<
     const res = await window.electronAPI.reticulum.rrc.connect({ dest_hash: hub, nickname });
     if (!res.ok) {
       const err = res.error ?? 'connect failed';
-      if (!/cancelled/i.test(err)) clearRrcHubIfStillConnecting(hub, err);
+      if (!/cancelled/i.test(err)) {
+        recordRrcHubAutoJoinFailure(hub);
+        clearRrcHubIfStillConnecting(hub, err);
+      }
     }
   } catch (e: unknown) {
     const msg = errLikeToLogString(e);
     if (!/cancelled/i.test(msg)) {
       console.debug(`[useRrcStartupAutoConnect] hub connect failed: ${msg}`);
+      recordRrcHubAutoJoinFailure(hub);
       clearRrcHubIfStillConnecting(hub, msg);
     }
   }

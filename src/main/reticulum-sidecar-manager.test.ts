@@ -26,12 +26,14 @@ vi.mock('./reticulum-sidecar-path', () => ({
 const suspendNobleMock = vi.fn().mockResolvedValue(undefined);
 const releaseScanMock = vi.fn();
 const getStateMock = vi.fn().mockReturnValue({ connections: [], scanOwner: null });
+const setNobleYieldDecisionPendingMock = vi.fn();
 
 vi.mock('./ble-coexistence-coordinator', () => ({
   bleCoexistenceCoordinator: {
     suspendNobleForReticulumBleConnect: (...args: unknown[]) => suspendNobleMock(...args),
     releaseScan: (...args: unknown[]) => releaseScanMock(...args),
     getState: (...args: unknown[]) => getStateMock(...args),
+    setNobleYieldDecisionPending: (...args: unknown[]) => setNobleYieldDecisionPendingMock(...args),
   },
 }));
 
@@ -122,6 +124,7 @@ describe('ReticulumSidecarManager', () => {
     spawnMock.mockReset();
     suspendNobleMock.mockClear();
     releaseScanMock.mockClear();
+    setNobleYieldDecisionPendingMock.mockClear();
     getStateMock.mockReturnValue({ connections: [], scanOwner: null });
     vi.mocked(reticulumConfigDirHasEnabledBleRnode).mockReturnValue(false);
     vi.stubGlobal(
@@ -605,7 +608,8 @@ describe('ReticulumSidecarManager', () => {
     const started = await manager.start();
     expect(started.running).toBe(true);
     expect(spawnMock).toHaveBeenCalledTimes(1);
-    // Yield kicks after health poll succeeds — start has already returned success.
+    // Yield pending is latched before status/RF unblock; suspend still runs after health.
+    expect(setNobleYieldDecisionPendingMock).toHaveBeenCalledWith(true);
     expect(suspendNobleMock).toHaveBeenCalledTimes(1);
     expect(spawnMock.mock.invocationCallOrder[0]).toBeLessThan(
       suspendNobleMock.mock.invocationCallOrder[0],
@@ -615,6 +619,7 @@ describe('ReticulumSidecarManager', () => {
     await yieldGate;
     await vi.waitFor(() => {
       expect(suspendNobleMock).toHaveBeenCalledTimes(1);
+      expect(setNobleYieldDecisionPendingMock).toHaveBeenCalledWith(false);
     });
 
     await manager.stop();

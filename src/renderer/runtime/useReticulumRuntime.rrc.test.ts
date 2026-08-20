@@ -47,6 +47,12 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
     );
   });
 
+  it('records auto-join backoff on will_reconnect=false handshake failures', () => {
+    expect(SOURCE).toContain('recordRrcHubAutoJoinFailure');
+    expect(SOURCE).toContain('isRrcAutoJoinBackoffWorthyReason');
+    expect(SOURCE).toContain('clearRrcHubAutoJoinBackoff');
+  });
+
   it('keeps rooms while sidecar auto-reconnects when will_reconnect is true or omitted', () => {
     expect(SOURCE).toMatch(/willReconnect \|\| p\.will_reconnect === undefined/);
     expect(SOURCE).toMatch(/applyStatus\('reconnecting'/);

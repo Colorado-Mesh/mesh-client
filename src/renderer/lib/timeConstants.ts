@@ -218,8 +218,11 @@ export const MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES = 60;
 /** Max wait for scheduler background route resolve (contacts only, no trace). */
 export const MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS = 15_000;
 
-/** Delay before one retry of getMetadata after configure (NodeDB flood can starve BLE). */
-export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS = 8_000;
+/** Defer first getMetadata after configure (NodeDB flood can starve the admin packet). */
+export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_DEFER_MS = 12 * MS_PER_SECOND;
+
+/** Delay before one retry of getMetadata after the deferred first attempt fails. */
+export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS = 30 * MS_PER_SECOND;
 
 /** BLE configure stall watchdog — force disconnect if FromRadio progress stalls. */
 export const MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS = 60 * MS_PER_SECOND;

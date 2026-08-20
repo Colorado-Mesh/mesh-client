@@ -368,16 +368,46 @@ export function createElectronAPIMock(): ElectronAPI {
       onClientDisconnected: vi.fn().mockReturnValue(() => {}),
     },
     bleCoexistence: {
-      register: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
-      unregister: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
-      assertCanConnect: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
-      getState: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
-      acquireScan: vi.fn().mockResolvedValue({ connections: [], scanOwner: 'reticulum' }),
-      releaseScan: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
-      pauseNobleScan: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
-      suspendNobleForReticulumBleConnect: vi
-        .fn()
-        .mockResolvedValue({ connections: [], scanOwner: null }),
+      register: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      unregister: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      assertCanConnect: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      getState: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      acquireScan: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: 'reticulum',
+        nobleYieldDecisionPending: false,
+      }),
+      releaseScan: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      pauseNobleScan: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      suspendNobleForReticulumBleConnect: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
     },
     reticulum: {
       start: vi.fn().mockResolvedValue({ running: true, port: 19437, pid: 1 }),

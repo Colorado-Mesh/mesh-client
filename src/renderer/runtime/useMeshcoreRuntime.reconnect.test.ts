@@ -258,6 +258,22 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     );
   });
 
+  it('latches BLE reconnect exhausted and skips late Noble disconnect / connection-lost', () => {
+    expect(RUNTIME_SOURCE).toContain('createBleReconnectExhaustLatch');
+    expect(RUNTIME_SOURCE).toContain('meshcoreBleReconnectExhaustedRef');
+    expect(RUNTIME_SOURCE).toContain('shouldSkipBleReconnectAfterExhaustion');
+    expect(RUNTIME_SOURCE).toMatch(
+      /onExhausted:[\s\S]*?rfType === 'ble'[\s\S]*?meshcoreBleReconnectExhaustedRef\.current\.markExhausted\(\)/,
+    );
+    expect(RUNTIME_SOURCE).toMatch(/skip reconnect \(BLE budget exhausted\)/);
+    expect(RUNTIME_SOURCE).toMatch(
+      /Noble BLE disconnected — skip reconnect \(BLE budget exhausted\)/,
+    );
+    expect(RUNTIME_SOURCE).toMatch(
+      /Noble BLE yield released — skip nudge \(BLE budget exhausted\)/,
+    );
+  });
+
   it('escalates serial reconnect exhaustion with forget and re-select UI flag', () => {
     expect(ATTEMPT_RUNNER).toContain('markExhausted()');
     expect(RUNTIME_SOURCE).toContain('escalateSerialReconnectExhaustion');
