@@ -68,13 +68,15 @@ impl TransportActor {
     /// Enqueue an announce on every eligible outbound interface (except
     /// optionally one). Eligibility mirrors Python's AP/roaming/boundary mode
     /// gates. Enqueueing lets \`process_announce_queues\` apply ANNOUNCE_CAP
-    /// spacing and hop priority.
+    /// spacing and hop priority. Python retains at most one queued entry per
+    /// destination, replacing it only when a newer announce is emitted.
     fn broadcast_announce_on_interfaces(&mut self, raw: &[u8], except: Option<InterfaceId>) {
         let destination_hash = rns_wire::header::PacketHeader::unpack(raw)
             .ok()
             .map(|(h, _)| h.destination_hash)
             .unwrap_or([0u8; 16]);
         let hops = raw.get(1).copied().unwrap_or(0);
+        let emitted = announce_emitted_from_raw(raw);
         let now = now_f64();
         // One copy at the boundary; per-interface queue entries clone the
         // shared Arc for free.

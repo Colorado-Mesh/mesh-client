@@ -1,16 +1,8 @@
-From: mesh-client
-Subject: Exclude RF sinks from announce rebroadcast enqueue
-
-With enable_transport, rebroadcasted mesh announces were enqueued onto every
-eligible OUT iface including flow-controlled BLE RNodes. Host TX mpsc filled
-while FC drained slowly. Local announces still use
-broadcast_local_announce_on_interfaces (unchanged). Inlines iface_is_rf_sink
-(RNode name or bitrate < 100 kbps).
-
 diff --git a/crates/rns-transport/src/actor/mod.rs b/crates/rns-transport/src/actor/mod.rs
+index e8f1d61..6bfa911 100644
 --- a/crates/rns-transport/src/actor/mod.rs
 +++ b/crates/rns-transport/src/actor/mod.rs
-@@ -39,6 +39,16 @@ mod rpc;
+@@ -40,6 +40,16 @@ mod rpc;
  const LOCAL_LINK_INITIATOR_INTERFACE: InterfaceId = InterfaceId::MAX;
  const LOCAL_LINK_RESPONDER_INTERFACE: InterfaceId = InterfaceId::MAX - 1;
  
@@ -27,10 +19,10 @@ diff --git a/crates/rns-transport/src/actor/mod.rs b/crates/rns-transport/src/ac
  #[derive(Clone)]
  struct LocalLinkRoute {
      initiator_tx: mpsc::Sender<crate::link_messages::DestinationEvent>,
-@@ -1700,6 +1710,11 @@ impl TransportActor {
-     /// optionally one). Eligibility mirrors Python's AP/roaming/boundary mode
+@@ -1833,6 +1843,11 @@ impl TransportActor {
      /// gates. Enqueueing lets `process_announce_queues` apply ANNOUNCE_CAP
-     /// spacing and hop priority.
+     /// spacing and hop priority. Python retains at most one queued entry per
+     /// destination, replacing it only when a newer announce is emitted.
 +    ///
 +    /// Flow-controlled RF sinks (RNode / low-bitrate) are skipped for
 +    /// *rebroadcast* — transport-enabled leaves otherwise enqueue every mesh
@@ -39,7 +31,7 @@ diff --git a/crates/rns-transport/src/actor/mod.rs b/crates/rns-transport/src/ac
      fn broadcast_announce_on_interfaces(&mut self, raw: &[u8], except: Option<InterfaceId>) {
          let destination_hash = rns_wire::header::PacketHeader::unpack(raw)
              .ok()
-@@ -1711,10 +1726,20 @@ impl TransportActor {
+@@ -1845,10 +1860,20 @@ impl TransportActor {
          // shared Arc for free.
          let shared = Bytes::copy_from_slice(raw);
  

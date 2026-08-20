@@ -1,5 +1,5 @@
 diff --git a/crates/rns-transport/src/actor/inbound.rs b/crates/rns-transport/src/actor/inbound.rs
-index e63666c..830cfb2 100644
+index 9ec6306..acb2edd 100644
 --- a/crates/rns-transport/src/actor/inbound.rs
 +++ b/crates/rns-transport/src/actor/inbound.rs
 @@ -375,24 +375,51 @@ impl TransportActor {
@@ -142,7 +142,7 @@ index e63666c..830cfb2 100644
              return;
          }
 diff --git a/crates/rns-transport/src/actor/mod.rs b/crates/rns-transport/src/actor/mod.rs
-index 9670424..34b4128 100644
+index dd53467..e8f1d61 100644
 --- a/crates/rns-transport/src/actor/mod.rs
 +++ b/crates/rns-transport/src/actor/mod.rs
 @@ -19,6 +19,7 @@ use crate::messages::{
@@ -153,7 +153,7 @@ index 9670424..34b4128 100644
  use crate::rate_limit::RateTable;
  use crate::reverse_table::ReverseTable;
  use crate::traffic::TrafficCounter;
-@@ -99,6 +100,11 @@ pub struct TransportActor {
+@@ -125,6 +126,11 @@ pub struct TransportActor {
      /// Used when a Direct LinkRequest timed out on one route, so the next
      /// path request can discover alternates instead of instantly reusing it.
      pub path_interface_suppressions: HashMap<([u8; 16], InterfaceId), f64>,
@@ -165,7 +165,7 @@ index 9670424..34b4128 100644
      last_discovery_pr_tx: f64,
      /// External interface waiting for a path response from a local shared client.
      /// Python calls this `pending_local_path_requests`.
-@@ -334,6 +340,8 @@ impl TransportActor {
+@@ -371,6 +377,8 @@ impl TransportActor {
              discovery_pr_tags: HashMap::new(),
              pending_discovery_prs: VecDeque::new(),
              path_interface_suppressions: HashMap::new(),
@@ -174,7 +174,7 @@ index 9670424..34b4128 100644
              last_discovery_pr_tx: 0.0,
              pending_local_path_requests: HashMap::new(),
              path_states: HashMap::new(),
-@@ -1269,15 +1277,92 @@ impl TransportActor {
+@@ -1408,15 +1416,92 @@ impl TransportActor {
          let until = now_f64() + duration;
          self.path_interface_suppressions
              .insert((dest, interface_id), until);
@@ -267,7 +267,7 @@ index 9670424..34b4128 100644
      fn is_path_interface_suppressed(
          &mut self,
          dest: [u8; 16],
-@@ -1731,16 +1816,6 @@ fn interface_marked_offline(entry: &InterfaceEntry) -> bool {
+@@ -1928,12 +2013,6 @@ fn interface_marked_offline(entry: &InterfaceEntry) -> bool {
          .unwrap_or(false)
  }
  
@@ -277,6 +277,13 @@ index 9670424..34b4128 100644
 -    u64::from_be_bytes(emitted)
 -}
 -
+ fn announce_emitted_from_raw(raw: &[u8]) -> Option<u64> {
+     let (header, data_offset) = rns_wire::header::PacketHeader::unpack(raw).ok()?;
+     if header.flags.packet_type != rns_wire::flags::PacketType::Announce || data_offset >= raw.len()
+@@ -1948,10 +2027,6 @@ fn announce_emitted_from_raw(raw: &[u8]) -> Option<u64> {
+     Some(announce_timebase(&announce.random_hash))
+ }
+ 
 -fn path_timebase_from_random_blobs<'a>(random_blobs: impl Iterator<Item = &'a [u8; 10]>) -> u64 {
 -    random_blobs.map(announce_timebase).max().unwrap_or(0)
 -}
@@ -284,7 +291,7 @@ index 9670424..34b4128 100644
  /// Random jitter in `[0, PATHFINDER_RW)` for announce rebroadcast timing.
  /// The jitter avoids synchronized retransmits when many nodes learn the
  /// same announce in the same tick.
-@@ -2043,6 +2118,14 @@ mod tests {
+@@ -2271,6 +2346,14 @@ mod tests {
          (entry, rx)
      }
  
@@ -299,7 +306,7 @@ index 9670424..34b4128 100644
      #[test]
      fn test_actor_creation() {
          let (actor, _tx) = TransportActor::new();
-@@ -4383,6 +4466,9 @@ mod tests {
+@@ -5465,6 +5548,9 @@ mod tests {
          assert!(actor.state_dirty);
      }
  
@@ -309,7 +316,7 @@ index 9670424..34b4128 100644
      #[test]
      fn test_replayed_announce_random_blob_does_not_replace_path() {
          let (mut actor, _tx) = TransportActor::new();
-@@ -4395,9 +4481,9 @@ mod tests {
+@@ -5477,9 +5563,9 @@ mod tests {
          let identity = rns_identity::identity::Identity::new();
          let blob = random_blob(0xA1, 100);
          let (raw_first, dest_hash) =
@@ -321,7 +328,7 @@ index 9670424..34b4128 100644
          let (htx, mut hrx) = mpsc::channel(8);
          actor.announce_handlers.push(AnnounceHandlerRegistration {
              id: crate::messages::AnnounceHandlerId(0),
-@@ -4415,7 +4501,7 @@ mod tests {
+@@ -5498,7 +5584,7 @@ mod tests {
              q: None,
          });
          let first_event = hrx.try_recv().expect("fresh announce should dispatch");
@@ -330,7 +337,7 @@ index 9670424..34b4128 100644
  
          actor.on_inbound(InboundPacket {
              raw: raw_replay,
-@@ -4426,13 +4512,19 @@ mod tests {
+@@ -5509,13 +5595,19 @@ mod tests {
          });
  
          let path = actor.path_table.get(&dest_hash).unwrap();
@@ -352,7 +359,7 @@ index 9670424..34b4128 100644
              "replayed announces must not refresh recent announce state"
          );
          assert!(
-@@ -4450,6 +4542,334 @@ mod tests {
+@@ -5533,6 +5625,334 @@ mod tests {
          );
      }
  
@@ -687,7 +694,7 @@ index 9670424..34b4128 100644
      #[test]
      fn test_newer_equal_or_higher_hop_announce_replaces_path() {
          let (mut actor, _tx) = TransportActor::new();
-@@ -7377,6 +7797,7 @@ mod tests {
+@@ -8508,6 +8928,7 @@ mod tests {
                  expires: now - 1.0,
                  random_blobs: Default::default(),
                  interface_id: 7,
@@ -696,10 +703,10 @@ index 9670424..34b4128 100644
              },
          );
 diff --git a/crates/rns-transport/src/actor/outbound.rs b/crates/rns-transport/src/actor/outbound.rs
-index 4fd8692..82470e8 100644
+index da06af8..276d72a 100644
 --- a/crates/rns-transport/src/actor/outbound.rs
 +++ b/crates/rns-transport/src/actor/outbound.rs
-@@ -925,6 +925,12 @@ impl TransportActor {
+@@ -939,6 +939,12 @@ impl TransportActor {
                      expires: tunnel_path.expires,
                      random_blobs: tunnel_path.random_blobs.iter().copied().collect(),
                      interface_id,
@@ -713,10 +720,10 @@ index 4fd8692..82470e8 100644
                  };
                  self.path_table.insert(*dest_hash, entry);
 diff --git a/crates/rns-transport/src/actor/persistence.rs b/crates/rns-transport/src/actor/persistence.rs
-index cfeb09d..ee7b3c2 100644
+index 7327d22..dc92509 100644
 --- a/crates/rns-transport/src/actor/persistence.rs
 +++ b/crates/rns-transport/src/actor/persistence.rs
-@@ -1061,6 +1061,14 @@ impl TransportActor {
+@@ -1064,6 +1064,14 @@ impl TransportActor {
      /// just-registered interface. Bound to `RegisterInterface` so each entry
      /// rebinds to whatever `interface_id` the runtime allocated this boot.
      pub(super) fn drain_pending_for_interface(&mut self, id: InterfaceId, name: &str) {
@@ -731,7 +738,7 @@ index cfeb09d..ee7b3c2 100644
          if !self.pending_path_entries.is_empty() {
              let mut promoted = 0usize;
              self.pending_path_entries.retain(|pe| {
-@@ -1104,6 +1112,7 @@ impl TransportActor {
+@@ -1107,6 +1115,7 @@ impl TransportActor {
                          })
                          .collect(),
                      interface_id: id,
@@ -739,7 +746,7 @@ index cfeb09d..ee7b3c2 100644
                      packet_hash: pe.packet_hash.as_ref().and_then(|h| {
                          if h.len() == 32 {
                              let mut arr = [0u8; 32];
-@@ -1316,6 +1325,7 @@ mod announce_sweep_actor_tests {
+@@ -1319,6 +1328,7 @@ mod announce_sweep_actor_tests {
                  expires: crate::now_f64() + 600.0,
                  random_blobs: std::collections::VecDeque::new(),
                  interface_id: 7,
@@ -747,7 +754,7 @@ index cfeb09d..ee7b3c2 100644
                  packet_hash: Some(path_hash),
              },
          );
-@@ -1471,6 +1481,7 @@ mod async_save_tests {
+@@ -1474,6 +1484,7 @@ mod async_save_tests {
                  expires: crate::now_f64() + 600.0,
                  random_blobs: std::collections::VecDeque::new(),
                  interface_id: 7,
@@ -755,7 +762,7 @@ index cfeb09d..ee7b3c2 100644
                  packet_hash: Some([0x33; 32]),
              },
          );
-@@ -1587,6 +1598,7 @@ mod async_save_tests {
+@@ -1590,6 +1601,7 @@ mod async_save_tests {
                      expires: crate::now_f64() + 600.0,
                      random_blobs: std::collections::VecDeque::new(),
                      interface_id: 7,
@@ -810,10 +817,10 @@ index 07f3b52..2ec775d 100644
                  for entry in self.interfaces.values_mut() {
                      entry.announce_queue.clear();
 diff --git a/crates/rns-transport/src/constants.rs b/crates/rns-transport/src/constants.rs
-index 879a965..350ee3e 100644
+index 1747689..a6d48a1 100644
 --- a/crates/rns-transport/src/constants.rs
 +++ b/crates/rns-transport/src/constants.rs
-@@ -47,6 +47,12 @@ pub const MAX_RANDOM_BLOBS: usize = 64;
+@@ -52,6 +52,12 @@ pub const MAX_RANDOM_BLOBS: usize = 64;
  /// Max local rebroadcasts before stopping.
  pub const LOCAL_REBROADCASTS_MAX: u32 = 2;
  
@@ -826,7 +833,7 @@ index 879a965..350ee3e 100644
  /// Path request timeout (seconds).
  pub const PATH_REQUEST_TIMEOUT: f64 = 15.0;
  
-@@ -274,6 +280,72 @@ pub enum PathState {
+@@ -279,6 +285,72 @@ pub enum PathState {
      Responsive = 0x02,
  }
  
@@ -900,10 +907,10 @@ index 879a965..350ee3e 100644
  #[derive(Debug, Clone, Copy, PartialEq, Eq)]
  pub enum InterfaceMode {
 diff --git a/crates/rns-transport/src/messages.rs b/crates/rns-transport/src/messages.rs
-index 1229814..486ee33 100644
+index a96aae4..8d810ae 100644
 --- a/crates/rns-transport/src/messages.rs
 +++ b/crates/rns-transport/src/messages.rs
-@@ -668,6 +668,23 @@ pub enum TransportQuery {
+@@ -809,6 +809,23 @@ pub enum TransportQuery {
          dest: [u8; 16],
          duration: f64,
      },
@@ -927,7 +934,7 @@ index 1229814..486ee33 100644
      DropAnnounceQueues,
      GetBlackholedIdentities,
      BlackholeIdentity {
-@@ -776,6 +793,7 @@ pub enum TransportQuery {
+@@ -917,6 +934,7 @@ pub enum TransportQuery {
  #[derive(Debug)]
  pub enum TransportQueryResponse {
      PathTable(Vec<PathTableRpcEntry>),
@@ -935,7 +942,7 @@ index 1229814..486ee33 100644
      InterfaceStats(Vec<InterfaceStatRpcEntry>),
      RateTable(Vec<RateTableRpcEntry>),
      Announces(Vec<AnnounceRpcEntry>),
-@@ -809,6 +827,32 @@ pub struct PathTableRpcEntry {
+@@ -950,6 +968,32 @@ pub struct PathTableRpcEntry {
      pub interface_role: InterfaceRole,
  }
  
