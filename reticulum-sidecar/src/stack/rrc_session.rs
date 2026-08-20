@@ -521,8 +521,8 @@ fn cancel_connect_job(job: &mut Option<ConnectJob>) {
             let _ = reply.send(Err("cancelled".into()));
         }
         // Dropping `fut` aborts establish_session. If a link was already open,
-        // dropping RrcLinkHandle closes cmd_tx so the link task deregisters.
-        // Mid-handshake registration is cleaned by DestinationRegistrationGuard.
+        // dropping RrcLinkHandle closes the LinkSession (cmd channel drop → close).
+        // Mid-handshake cleanup is owned by LinkSession / link_endpoint guards.
     }
 }
 

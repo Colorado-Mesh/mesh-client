@@ -5,6 +5,11 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
+  createBleReconnectExhaustLatch,
+  prepareNobleYieldReleasedReconnectNudge,
+  shouldSkipBleReconnectAfterExhaustion,
+} from '../lib/bleReconnectExhaustLatch';
+import {
   assertPowerResumeSkipsOnExplicitDisconnect,
   extractUseCallbackBody,
   loadRendererLibSource,
@@ -84,7 +89,10 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
 
   it('skips Noble yield nudge when reconnect is already in progress', () => {
     expect(RUNTIME_SOURCE).toMatch(
-      /onNobleYieldReleased[\s\S]*?meshcoreIsReconnectingRef\.current \|\| bleConnectInProgressRef\.current[\s\S]*?skip nudge \(reconnect in progress\)/,
+      /prepareNobleYieldReleasedReconnectNudge\(\{[\s\S]*?isReconnecting: meshcoreIsReconnectingRef\.current[\s\S]*?bleConnectInProgress: bleConnectInProgressRef\.current/,
+    );
+    expect(RUNTIME_SOURCE).toMatch(
+      /nudge === 'skip-in-progress'[\s\S]*?skip nudge \(reconnect in progress\)/,
     );
   });
 
@@ -255,6 +263,37 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(reconnectBody).toContain('bleConnectInProgress:');
     expect(reconnectBody).toMatch(
       /onExhausted:[\s\S]*?rfType === 'ble'[\s\S]*?bleConnectInProgressRef\.current = false/,
+    );
+  });
+
+  it('latches BLE reconnect exhausted; late lost skips; yield release clears for one nudge', () => {
+    // Behavioral lifecycle (same policy as onNobleYieldReleased / connection-lost guards).
+    const latch = createBleReconnectExhaustLatch();
+    latch.markExhausted();
+    expect(
+      shouldSkipBleReconnectAfterExhaustion({
+        bleExhausted: latch.isExhausted(),
+        isReconnecting: false,
+      }),
+    ).toBe(true);
+    expect(
+      prepareNobleYieldReleasedReconnectNudge({
+        latch,
+        isReconnecting: false,
+        bleConnectInProgress: false,
+      }),
+    ).toBe('nudge');
+    expect(latch.isExhausted()).toBe(false);
+    expect(RUNTIME_SOURCE).toContain('prepareNobleYieldReleasedReconnectNudge');
+    expect(RUNTIME_SOURCE).toMatch(
+      /onExhausted:[\s\S]*?rfType === 'ble'[\s\S]*?meshcoreBleReconnectExhaustedRef\.current\.markExhausted\(\)/,
+    );
+    expect(RUNTIME_SOURCE).toMatch(/skip reconnect \(BLE budget exhausted\)/);
+    expect(RUNTIME_SOURCE).toMatch(
+      /Noble BLE disconnected — skip reconnect \(BLE budget exhausted\)/,
+    );
+    expect(RUNTIME_SOURCE).not.toMatch(
+      /Noble BLE yield released — skip nudge \(BLE budget exhausted\)/,
     );
   });
 

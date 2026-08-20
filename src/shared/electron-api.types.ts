@@ -301,6 +301,12 @@ export interface BleRegisteredConnection {
 export interface BleCoexistenceState {
   connections: BleRegisteredConnection[];
   scanOwner: BleScanOwner | null;
+  /**
+   * True while main has decided a Reticulum BLE RNode Noble yield is required but has not yet
+   * finished acquire/skip. RF auto-connect must wait so it does not race fire-and-forget yield.
+   * Optional on older IPC shapes; treat missing as false.
+   */
+  nobleYieldDecisionPending?: boolean;
 }
 
 export interface ElectronAPI {

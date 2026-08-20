@@ -93,6 +93,11 @@ import {
   MESHCORE_SETUP_ABORT_MESSAGE,
   rethrowMeshcoreSetupAbortFromTcpDead,
 } from '../lib/bleConnectErrors';
+import {
+  createBleReconnectExhaustLatch,
+  prepareNobleYieldReleasedReconnectNudge,
+  shouldSkipBleReconnectAfterExhaustion,
+} from '../lib/bleReconnectExhaustLatch';
 import { verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
@@ -685,6 +690,8 @@ export function useMeshcoreRuntime() {
   const meshcoreRfReconnectRef = useRef(
     createRfReconnectController({ logTag: 'useMeshcoreRuntime' }),
   );
+  /** After one BLE 8-attempt cycle, block auto-reconnect until user/power clears. */
+  const meshcoreBleReconnectExhaustedRef = useRef(createBleReconnectExhaustLatch());
   const meshcoreConnectionParamsRef = useRef<{
     rfType: 'ble' | 'serial' | 'tcp';
     httpAddress?: string;
@@ -2083,6 +2090,7 @@ export function useMeshcoreRuntime() {
       meshcoreReconnectGenerationRef.current += 1;
       meshcoreIsReconnectingRef.current = false;
       bleConnectInProgressRef.current = false;
+      meshcoreBleReconnectExhaustedRef.current.clear();
       void (async () => {
         if (isRendererNobleBlePlatform()) {
           await awaitDualNobleBleMeshtasticSettle(POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS);
@@ -2142,6 +2150,17 @@ export function useMeshcoreRuntime() {
           '[useMeshcoreRuntime] Noble BLE disconnected — rehydrated reconnect params from storage',
         );
       }
+      if (
+        shouldSkipBleReconnectAfterExhaustion({
+          bleExhausted: meshcoreBleReconnectExhaustedRef.current.isExhausted(),
+          isReconnecting: meshcoreIsReconnectingRef.current,
+        })
+      ) {
+        console.debug(
+          '[useMeshcoreRuntime] Noble BLE disconnected — skip reconnect (BLE budget exhausted)',
+        );
+        return;
+      }
       console.warn('[useMeshcoreRuntime] Noble BLE disconnected');
       handleMeshcoreConnectionLostRef.current();
     });
@@ -2154,7 +2173,12 @@ export function useMeshcoreRuntime() {
       if (meshcoreDriverConnectedRef.current || connRef.current) {
         return;
       }
-      if (meshcoreIsReconnectingRef.current || bleConnectInProgressRef.current) {
+      const nudge = prepareNobleYieldReleasedReconnectNudge({
+        latch: meshcoreBleReconnectExhaustedRef.current,
+        isReconnecting: meshcoreIsReconnectingRef.current,
+        bleConnectInProgress: bleConnectInProgressRef.current,
+      });
+      if (nudge === 'skip-in-progress') {
         console.debug(
           '[useMeshcoreRuntime] Noble BLE yield released — skip nudge (reconnect in progress)',
         );
@@ -3200,6 +3224,7 @@ export function useMeshcoreRuntime() {
         meshcoreReconnectAttemptRef.current = 0;
         meshcoreIsReconnectingRef.current = false;
         meshcoreRfReconnectRef.current.cancel();
+        meshcoreBleReconnectExhaustedRef.current.clear();
       }
     },
     [teardownMeshcoreConnEventListeners],
@@ -3482,6 +3507,10 @@ export function useMeshcoreRuntime() {
         }
         if (params.rfType === 'ble') {
           bleConnectInProgressRef.current = false;
+          meshcoreBleReconnectExhaustedRef.current.markExhausted();
+          console.debug(
+            '[useMeshcoreRuntime] BLE reconnect budget exhausted — latch until user reconnect',
+          );
         }
         stopMeshcoreSerialWatchdog();
         if (params.rfType === 'serial') {
@@ -3600,6 +3629,7 @@ export function useMeshcoreRuntime() {
         meshcoreIsReconnectingRef.current = false;
         meshcoreDeferredReconnectRef.current = false;
         meshcoreRfReconnectRef.current.markSuccess();
+        meshcoreBleReconnectExhaustedRef.current.clear();
         setState((s) => ({
           ...s,
           serialNeedsReselect: false,
@@ -3666,6 +3696,16 @@ export function useMeshcoreRuntime() {
   const handleMeshcoreConnectionLost = useCallback(() => {
     if (meshcoreExplicitDisconnectRef.current) {
       console.debug('[useMeshcoreRuntime] skip reconnect (user disconnect)');
+      return;
+    }
+    if (
+      meshcoreConnectionParamsRef.current?.rfType === 'ble' &&
+      shouldSkipBleReconnectAfterExhaustion({
+        bleExhausted: meshcoreBleReconnectExhaustedRef.current.isExhausted(),
+        isReconnecting: meshcoreIsReconnectingRef.current,
+      })
+    ) {
+      console.debug('[useMeshcoreRuntime] skip reconnect (BLE budget exhausted)');
       return;
     }
     // Abort in-flight initConn immediately (before async driver teardown). Neal TCP: peer FIN
@@ -3907,6 +3947,7 @@ export function useMeshcoreRuntime() {
     meshcoreReconnectGenerationRef.current += 1;
     meshcoreIsReconnectingRef.current = false;
     bleConnectInProgressRef.current = false;
+    meshcoreBleReconnectExhaustedRef.current.clear();
     void (async () => {
       if (isRendererNobleBlePlatform() && meshcoreConnectionParamsRef.current?.rfType === 'ble') {
         console.debug(

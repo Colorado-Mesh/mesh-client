@@ -455,16 +455,30 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.stackSessionTracker.recordStart();
     this.connectWs(port);
     this.startWatchdog();
+    // Mark yield pending before status emit so RF auto-connect does not race fire-and-forget yield.
+    if (needsBleYieldAfterHealth) {
+      bleCoexistenceCoordinator.setNobleYieldDecisionPending(true);
+    } else {
+      bleCoexistenceCoordinator.setNobleYieldDecisionPending(false);
+    }
     this.emit('status', this.getStatus());
     // Do not await BLE yield — TCP/LXMF/RRC/Nomad are already usable. Start yield only
     // after health so Cancel during cargo never yanks Meshtastic/MeshCore.
     if (needsBleYieldAfterHealth) {
-      void this.yieldNobleForEnabledBleRnode().catch((e: unknown) => {
-        console.warn(
-          '[ReticulumSidecar] background Noble yield for BLE RNode failed:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-      });
+      const yieldGeneration = this.startAttemptGeneration;
+      void this.yieldNobleForEnabledBleRnode()
+        .catch((e: unknown) => {
+          console.warn(
+            '[ReticulumSidecar] background Noble yield for BLE RNode failed:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+        })
+        .finally(() => {
+          // Overlapping start/stop: only the current attempt may clear pending.
+          if (yieldGeneration === this.startAttemptGeneration) {
+            bleCoexistenceCoordinator.setNobleYieldDecisionPending(false);
+          }
+        });
     }
     return this.getStatus();
   }
@@ -526,6 +540,8 @@ export class ReticulumSidecarManager extends EventEmitter {
     // Abort in-flight start at checkpoints (cargo/BLE) so Cancel does not wait on build.
     this.startAbortRequested = true;
     this.startAttemptGeneration += 1;
+    // Invalidate any in-flight yield's finally before a subsequent start can latch pending again.
+    bleCoexistenceCoordinator.setNobleYieldDecisionPending(false);
     if (this.startPromise && !this.proc) {
       // Pre-spawn: do not await cargo — startOnce throws at next checkpoint.
       void this.startPromise.catch(() => {

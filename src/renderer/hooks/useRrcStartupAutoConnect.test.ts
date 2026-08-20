@@ -4,11 +4,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RETICULUM_CONFIGURED_EVENT } from '@/renderer/lib/reticulum/reticulumConfiguredEvent';
 import * as sidecarReads from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import {
+  clearRrcHubAutoJoinBackoff,
+  recordRrcHubAutoJoinFailure,
+  resetRrcHubAutoJoinBackoffForTests,
+  RRC_AUTO_JOIN_GIVE_UP_AFTER,
+} from '@/renderer/lib/rrcHubAutoJoinBackoff';
+import {
   resetRrcHubDisconnectSuppressForTests,
   setRrcHubDisconnectSuppressed,
 } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { saveRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
+import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 import {
   RRC_AUTO_CONNECT_FAST_MS,
@@ -24,19 +31,32 @@ async function flushMicrotasks(): Promise<void> {
   });
 }
 
+const HUB = 'aabbccddeeff00112233445566778899';
+
 describe('runRrcHubAutoConnectBatch', () => {
   beforeEach(() => {
     localStorage.clear();
     resetRrcHubDisconnectSuppressForTests();
+    resetRrcHubAutoJoinBackoffForTests();
     useRrcSessionStore.setState({
       sessionsByHub: new Map(),
       focusedHubHash: null,
     });
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({ ok: true });
+    vi.spyOn(sidecarReads, 'isReticulumRnsLiveReady').mockResolvedValue(true);
   });
 
   afterEach(() => {
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
+    resetRrcHubAutoJoinBackoffForTests();
+    vi.restoreAllMocks();
+  });
+
+  it('no-ops when live RNS is not ready (panel and App share this gate)', async () => {
+    vi.spyOn(sidecarReads, 'isReticulumRnsLiveReady').mockResolvedValue(false);
+    saveRrcHubAutoJoin([HUB]);
+    await runRrcHubAutoConnectBatch('tester');
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
   });
 
   it('no-ops when no hubs are marked for auto-join', async () => {
@@ -45,34 +65,79 @@ describe('runRrcHubAutoConnectBatch', () => {
   });
 
   it('connects pending auto-join hubs', async () => {
-    saveRrcHubAutoJoin(['aabbccddeeff00112233445566778899']);
+    saveRrcHubAutoJoin([HUB]);
     await runRrcHubAutoConnectBatch('tester');
     expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalledWith({
-      dest_hash: 'aabbccddeeff00112233445566778899',
+      dest_hash: HUB,
       nickname: 'tester',
     });
   });
 
   it('skips hubs with sticky disconnect suppress', async () => {
-    const hub = 'aabbccddeeff00112233445566778899';
-    saveRrcHubAutoJoin([hub]);
-    setRrcHubDisconnectSuppressed(hub, true);
+    saveRrcHubAutoJoin([HUB]);
+    setRrcHubDisconnectSuppressed(HUB, true);
     await runRrcHubAutoConnectBatch('tester');
     expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
   });
 
   it('skips hubs that are already linked', async () => {
     const linked = '11112222333344445555666677778888';
-    const pending = 'aabbccddeeff00112233445566778899';
-    saveRrcHubAutoJoin([linked, pending]);
+    saveRrcHubAutoJoin([linked, HUB]);
     useRrcSessionStore.getState().applyStatus('active', linked, null);
     await runRrcHubAutoConnectBatch('tester');
 
     expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalledTimes(1);
     expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalledWith({
-      dest_hash: pending,
+      dest_hash: HUB,
       nickname: 'tester',
     });
+  });
+
+  it('after connect failure does not reconnect until cooldown elapses', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({
+      ok: false,
+      error: 'timed out waiting for WELCOME',
+    });
+    saveRrcHubAutoJoin([HUB]);
+    await runRrcHubAutoConnectBatch('tester');
+    expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalledTimes(1);
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
+
+    await runRrcHubAutoConnectBatch('tester');
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
+
+    vi.setSystemTime(30 * MS_PER_SECOND);
+    await runRrcHubAutoConnectBatch('tester');
+    expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it('does not back off when connect fails only because live RNS is not ready yet', async () => {
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({
+      ok: false,
+      error: 'rrc connect requires live rns-stack sidecar',
+    });
+    saveRrcHubAutoJoin([HUB]);
+    await runRrcHubAutoConnectBatch('tester');
+    expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalledTimes(1);
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({ ok: true });
+    await runRrcHubAutoConnectBatch('tester');
+    expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalledTimes(1);
+  });
+
+  it('after give-up stays blocked until clearRrcHubAutoJoinBackoff', async () => {
+    saveRrcHubAutoJoin([HUB]);
+    for (let i = 0; i < RRC_AUTO_JOIN_GIVE_UP_AFTER; i++) {
+      recordRrcHubAutoJoinFailure(HUB, i * 60_000);
+    }
+    await runRrcHubAutoConnectBatch('tester');
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
+    clearRrcHubAutoJoinBackoff(HUB);
+    await runRrcHubAutoConnectBatch('tester');
+    expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -80,12 +145,14 @@ describe('useRrcStartupAutoConnect poll timing', () => {
   beforeEach(() => {
     localStorage.clear();
     resetRrcHubDisconnectSuppressForTests();
+    resetRrcHubAutoJoinBackoffForTests();
     useRrcSessionStore.setState({
       sessionsByHub: new Map(),
       focusedHubHash: null,
     });
     vi.useFakeTimers();
     vi.spyOn(sidecarReads, 'isReticulumSidecarRunning').mockResolvedValue(true);
+    vi.spyOn(sidecarReads, 'isReticulumRnsLiveReady').mockResolvedValue(true);
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({ ok: true });
   });
 
@@ -93,6 +160,7 @@ describe('useRrcStartupAutoConnect poll timing', () => {
     vi.useRealTimers();
     vi.restoreAllMocks();
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
+    resetRrcHubAutoJoinBackoffForTests();
   });
 
   it('derives fast/steady intervals from MS_PER_SECOND', () => {
@@ -100,13 +168,13 @@ describe('useRrcStartupAutoConnect poll timing', () => {
     expect(RRC_AUTO_CONNECT_STEADY_MS).toBe(4000);
   });
 
-  it('polls at the fast interval while hubs are pending', async () => {
-    // Keep hubs pending: failed connect rolls status back so linked-check stays false.
+  it('does not re-fire connect during auto-join cooldown after failure', async () => {
+    vi.setSystemTime(0);
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({
       ok: false,
-      error: 'rrc connect requires live rns-stack sidecar',
+      error: 'timed out waiting for WELCOME',
     });
-    saveRrcHubAutoJoin(['aabbccddeeff00112233445566778899']);
+    saveRrcHubAutoJoin([HUB]);
     renderHook(() => {
       useRrcStartupAutoConnect();
     });
@@ -119,21 +187,18 @@ describe('useRrcStartupAutoConnect poll timing', () => {
       await Promise.resolve();
       await Promise.resolve();
     });
-    expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalled();
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
   });
 
-  it('wakes immediately on RETICULUM_CONFIGURED_EVENT', async () => {
-    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({
-      ok: false,
-      error: 'rrc connect requires live rns-stack sidecar',
-    });
-    saveRrcHubAutoJoin(['aabbccddeeff00112233445566778899']);
+  it('wakes immediately on RETICULUM_CONFIGURED_EVENT when hub is eligible', async () => {
+    saveRrcHubAutoJoin([HUB]);
     renderHook(() => {
       useRrcStartupAutoConnect();
     });
     await flushMicrotasks();
     expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalledTimes(1);
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
+    useRrcSessionStore.getState().clearHubSession(HUB);
 
     await act(async () => {
       window.dispatchEvent(new CustomEvent(RETICULUM_CONFIGURED_EVENT));
@@ -141,6 +206,16 @@ describe('useRrcStartupAutoConnect poll timing', () => {
       await Promise.resolve();
     });
     expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalled();
+  });
+
+  it('does not start a batch while RNS live is not ready', async () => {
+    vi.spyOn(sidecarReads, 'isReticulumRnsLiveReady').mockResolvedValue(false);
+    saveRrcHubAutoJoin([HUB]);
+    renderHook(() => {
+      useRrcStartupAutoConnect();
+    });
+    await flushMicrotasks();
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
   });
 
   it('does not start a batch when unmounted while status await is pending', async () => {
@@ -151,7 +226,7 @@ describe('useRrcStartupAutoConnect poll timing', () => {
           resolveStatus = resolve;
         }),
     );
-    saveRrcHubAutoJoin(['aabbccddeeff00112233445566778899']);
+    saveRrcHubAutoJoin([HUB]);
     const { unmount } = renderHook(() => {
       useRrcStartupAutoConnect();
     });

@@ -25,7 +25,6 @@ import type { MeshtasticRawPacketEntry } from '../rawPacketLogConstants';
 import { getStoredMeshProtocol } from '../storedMeshProtocol';
 import {
   MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS,
-  MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS,
   MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS,
 } from '../timeConstants';
 import type {
@@ -47,6 +46,10 @@ import {
   setMeshtasticConfigureProgressHandler,
 } from './meshtasticConfigurePhase';
 import { meshtasticDeviceStatusForCode } from './meshtasticDeviceStatus';
+import {
+  cancelMeshtasticGetMetadataAfterConfigure,
+  scheduleMeshtasticGetMetadataAfterConfigure,
+} from './meshtasticGetMetadataAfterConfigure';
 import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
 import type { ModulePortEvent, PaxCounterPoint } from './meshtasticModuleEvents';
 import { attachMeshtasticModulePortSideEffects } from './meshtasticModulePortSideEffects';
@@ -68,29 +71,6 @@ import { pushMeshtasticTransportSideEffectUnsubs } from './meshtasticTransportSi
 
 const REQUEST_NODEINFO_MIN_INTERVAL_MS = 120_000;
 const { DeviceStatusEnum } = Types;
-
-/** After configure, request NodeDB metadata once; retry once if the first call fails. */
-function requestMetadataAfterConfigure(
-  device: MeshDevice,
-  myNode: number,
-  attempt: 1 | 2,
-  retryTimerRef: { current: ReturnType<typeof setTimeout> | null },
-): void {
-  void device.getMetadata(myNode).catch((e: unknown) => {
-    console.debug(
-      '[useMeshtasticRuntime] getMetadata after configure failed ' +
-        errLikeToLogString(e) +
-        (attempt === 2 ? ' (retry)' : ''),
-    );
-    if (attempt === 1) {
-      if (retryTimerRef.current != null) clearTimeout(retryTimerRef.current);
-      retryTimerRef.current = setTimeout(() => {
-        retryTimerRef.current = null;
-        requestMetadataAfterConfigure(device, myNode, 2, retryTimerRef);
-      }, MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS);
-    }
-  });
-}
 
 export type RequestStoreForwardHistoryResult =
   | { ok: true }
@@ -268,10 +248,7 @@ export function attachMeshtasticRuntimeWireEffects(
     current: null,
   };
   deps.unsubscribesRef.current.push(() => {
-    if (metadataRetryTimerRef.current != null) {
-      clearTimeout(metadataRetryTimerRef.current);
-      metadataRetryTimerRef.current = null;
-    }
+    cancelMeshtasticGetMetadataAfterConfigure(metadataRetryTimerRef);
     setMeshtasticConfigureProgressHandler(null);
   });
 
@@ -480,7 +457,7 @@ export function attachMeshtasticRuntimeWireEffects(
       mqttClientProxyBridgeRef.current?.flushPendingToDevice();
       const myNode = myNodeNumRef.current;
       if (myNode > 0) {
-        requestMetadataAfterConfigure(device, myNode, 1, metadataRetryTimerRef);
+        scheduleMeshtasticGetMetadataAfterConfigure(device, myNode, metadataRetryTimerRef);
       }
       if (localLoraConfigTimerRef.current != null) {
         clearTimeout(localLoraConfigTimerRef.current);
@@ -509,6 +486,7 @@ export function attachMeshtasticRuntimeWireEffects(
 
     // Always clean up on disconnect, even if we never reached configured
     if (status === DeviceStatusEnum.DeviceDisconnected) {
+      cancelMeshtasticGetMetadataAfterConfigure(metadataRetryTimerRef);
       if (localLoraConfigTimerRef.current != null) {
         clearTimeout(localLoraConfigTimerRef.current);
         localLoraConfigTimerRef.current = undefined;

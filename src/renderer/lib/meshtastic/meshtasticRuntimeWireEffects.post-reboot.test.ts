@@ -343,3 +343,51 @@ describe('meshtasticRuntimeWireEffects BLE configure timeout arming', () => {
     expect(configureTimeoutRef.current).toBeNull();
   });
 });
+
+/** DeviceDisconnected — see Types.DeviceStatusEnum */
+const DEVICE_DISCONNECTED = 2;
+
+describe('meshtasticRuntimeWireEffects DeviceDisconnected cancels deferred getMetadata', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('does not call getMetadata when disconnect arrives before defer expires', async () => {
+    const { deps } = makeDeps();
+    deps.myNodeNumRef.current = 0x1234;
+    const getMetadata = vi.fn().mockResolvedValue(undefined);
+    const statusSubscribers = new Set<(status: number) => void>();
+    const noopSub = { subscribe: () => () => {} };
+    const device = {
+      events: new Proxy({} as MeshDevice['events'], {
+        get: (_target, prop) => {
+          if (prop === 'onDeviceStatus') {
+            return {
+              subscribe: (cb: (status: number) => void) => {
+                statusSubscribers.add(cb);
+                return () => statusSubscribers.delete(cb);
+              },
+            };
+          }
+          return noopSub;
+        },
+      }),
+      setHeartbeatInterval: vi.fn(),
+      heartbeat: vi.fn().mockResolvedValue(undefined),
+      getMetadata,
+      getConfig: vi.fn().mockResolvedValue(undefined),
+    } as unknown as MeshDevice;
+
+    attachMeshtasticRuntimeWireEffects(device, 'ble', { driverIdentityId: 'id-1' }, deps);
+
+    for (const cb of statusSubscribers) cb(DEVICE_CONFIGURED);
+    expect(getMetadata).not.toHaveBeenCalled();
+
+    for (const cb of statusSubscribers) cb(DEVICE_DISCONNECTED);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(getMetadata).not.toHaveBeenCalled();
+  });
+});

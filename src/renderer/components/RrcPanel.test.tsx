@@ -4,7 +4,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
-import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import {
+  isReticulumRnsLiveReady,
+  isReticulumSidecarRunning,
+} from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import {
+  clearRrcHubAutoJoinBackoff,
+  isRrcHubAutoJoinBlocked,
+  recordRrcHubAutoJoinFailure,
+  resetRrcHubAutoJoinBackoffForTests,
+  RRC_AUTO_JOIN_GIVE_UP_AFTER,
+} from '@/renderer/lib/rrcHubAutoJoinBackoff';
 import {
   isRrcHubDisconnectSuppressed,
   resetRrcHubDisconnectSuppressForTests,
@@ -19,6 +29,7 @@ import RrcPanel from './RrcPanel';
 
 vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
   isReticulumSidecarRunning: vi.fn(() => Promise.resolve(false)),
+  isReticulumRnsLiveReady: vi.fn(() => Promise.resolve(true)),
 }));
 
 const hubA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -36,6 +47,7 @@ describe('RrcPanel', () => {
     useRrcSessionStore.getState().clearSession();
     useRrcHubStore.setState({ hubs: new Map() });
     resetRrcHubDisconnectSuppressForTests();
+    resetRrcHubAutoJoinBackoffForTests();
     resetRrcRoomHistoryForTests();
     hydrateAxeThemeColors(document.documentElement);
     vi.mocked(isReticulumSidecarRunning).mockResolvedValue(false);
@@ -55,6 +67,36 @@ describe('RrcPanel', () => {
     clearRrcOpenDms(hubA);
     clearRrcOpenDms(hubB);
     vi.mocked(window.electronAPI.db.listRrcMessages).mockResolvedValue([]);
+  });
+
+  it('clears auto-join backoff on explicit Connect', async () => {
+    for (let i = 0; i < RRC_AUTO_JOIN_GIVE_UP_AFTER; i++) {
+      recordRrcHubAutoJoinFailure(hubA, i * 60_000);
+    }
+    expect(isRrcHubAutoJoinBlocked(hubA)).toBe(true);
+    vi.mocked(isReticulumSidecarRunning).mockResolvedValue(true);
+    vi.mocked(window.electronAPI.reticulum.rrc.upsertHub).mockResolvedValue({
+      ok: true,
+      hub: {
+        destination_hash: hubA,
+        display_name: 'Hub A',
+        source: 'manual',
+        recommended: false,
+      },
+    });
+    render(<RrcPanel isActive />);
+    const hashInput = await screen.findByLabelText(/Hub destination hash/i);
+    await userEvent.clear(hashInput);
+    await userEvent.type(hashInput, hubA);
+    await userEvent.click(screen.getByRole('button', { name: /Connect to hash/i }));
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalledWith({
+        dest_hash: hubA,
+        nickname: expect.any(String),
+      });
+    });
+    expect(isRrcHubAutoJoinBlocked(hubA)).toBe(false);
+    clearRrcHubAutoJoinBackoff(hubA);
   });
 
   it('renders amber hub chrome and select-hub prompt', async () => {
@@ -88,6 +130,7 @@ describe('RrcPanel', () => {
 
   it('batch-connects auto-join hubs when the sidecar becomes ready', async () => {
     vi.mocked(isReticulumSidecarRunning).mockResolvedValue(true);
+    vi.mocked(isReticulumRnsLiveReady).mockResolvedValue(true);
     saveRrcHubAutoJoin([hubA, hubB]);
 
     render(<RrcPanel isActive />);
@@ -100,6 +143,20 @@ describe('RrcPanel', () => {
       .mock.calls.map((c) => (c[0] as { dest_hash: string }).dest_hash)
       .sort();
     expect(hashes).toEqual([hubA, hubB]);
+  });
+
+  it('does not auto-connect from panel mount while RNS live is not ready', async () => {
+    vi.mocked(isReticulumSidecarRunning).mockResolvedValue(true);
+    vi.mocked(isReticulumRnsLiveReady).mockResolvedValue(false);
+    saveRrcHubAutoJoin([hubA]);
+
+    render(<RrcPanel isActive />);
+
+    await waitFor(() => {
+      expect(isReticulumSidecarRunning).toHaveBeenCalled();
+    });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
   });
 
   it('skips auto-join connect for hubs already active', async () => {

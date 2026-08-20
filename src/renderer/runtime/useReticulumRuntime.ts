@@ -133,6 +133,11 @@ import {
 } from '@/renderer/lib/rncpLxmfControlSideEffectDedup';
 import { consumeRncpReceiveDestSharePending } from '@/renderer/lib/rncpReceiveDestSharePending';
 import { applyRrcDirectMessageRoom } from '@/renderer/lib/rrcDirectMessageRoute';
+import {
+  clearRrcHubAutoJoinBackoff,
+  isRrcAutoJoinBackoffWorthyReason,
+  recordRrcHubAutoJoinFailure,
+} from '@/renderer/lib/rrcHubAutoJoinBackoff';
 import { isRrcRoomMuted, resolveRrcAlertType } from '@/renderer/lib/rrcMention';
 import {
   resolveRrcHubScopedNoticeRoom,
@@ -1029,6 +1034,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         useRrcSessionStore.getState().applyStatus(st, hubDestHash ?? null, p.hub_name ?? null);
         if (st === 'active') {
           useRrcSessionStore.getState().setError(null, hubDestHash);
+          if (hubDestHash) clearRrcHubAutoJoinBackoff(hubDestHash);
         }
         if (p.capabilities) {
           useRrcSessionStore.getState().setCapabilities(
@@ -1096,6 +1102,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
             disconnectIntentForHub ||
             p.will_reconnect === false
           ) {
+            if (
+              p.will_reconnect === false &&
+              !disconnectIntentForHub &&
+              isRrcAutoJoinBackoffWorthyReason(p.reason)
+            ) {
+              // Initial handshake failed — back off hub auto-join so we do not thrash every ~21s.
+              recordRrcHubAutoJoinFailure(hubDestHash);
+            }
             session.clearHubSession(hubDestHash);
           } else if (willReconnect || p.will_reconnect === undefined) {
             // Sidecar auto-reconnects unintended drops; keep volatile rooms until reconnect settles.

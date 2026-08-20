@@ -20,6 +20,7 @@ import {
   rrcDmRoomKey,
 } from '@/renderer/lib/rrcDmRoom';
 import { formatRrcErrorMessage } from '@/renderer/lib/rrcErrorHumanize';
+import { clearRrcHubAutoJoinBackoff } from '@/renderer/lib/rrcHubAutoJoinBackoff';
 import { setRrcHubDisconnectSuppressed } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { isRrcHubAutoJoin, toggleRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { isRrcHubLinked } from '@/renderer/lib/rrcHubSession';
@@ -512,6 +513,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
       // this also creates the hub's session before the intent/error mutations below.
       useRrcSessionStore.getState().applyStatus('connecting', target, null);
       setRrcHubDisconnectSuppressed(target, false);
+      clearRrcHubAutoJoinBackoff(target);
       setDisconnectIntent(false, target);
       setError(null, target);
       try {

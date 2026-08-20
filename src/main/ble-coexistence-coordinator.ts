@@ -14,6 +14,8 @@ export interface BleRegisteredConnection {
 export interface BleCoexistenceState {
   connections: BleRegisteredConnection[];
   scanOwner: BleScanOwner | null;
+  /** See shared BleCoexistenceState.nobleYieldDecisionPending. */
+  nobleYieldDecisionPending?: boolean;
 }
 
 export class BlePeripheralConflictError extends Error {
@@ -55,6 +57,7 @@ export class BleCoexistenceCoordinator {
   private scanAcquireInFlight: Promise<void> | null = null;
   private nobleManager: NobleBleManager | null = null;
   private nobleScanPausedForExternal = false;
+  private nobleYieldDecisionPending = false;
 
   setNobleManager(manager: NobleBleManager): void {
     this.nobleManager = manager;
@@ -64,7 +67,13 @@ export class BleCoexistenceCoordinator {
     return {
       connections: [...this.connections.entries()].map(([mac, owner]) => ({ mac, owner })),
       scanOwner: this.scanOwner,
+      nobleYieldDecisionPending: this.nobleYieldDecisionPending,
     };
+  }
+
+  /** Mark that a Reticulum BLE Noble yield is about to run (before status emit / RF unblock). */
+  setNobleYieldDecisionPending(pending: boolean): void {
+    this.nobleYieldDecisionPending = pending;
   }
 
   register(mac: string, owner: BlePeripheralOwner): void {

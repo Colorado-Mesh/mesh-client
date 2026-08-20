@@ -13,6 +13,11 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
+  createBleReconnectExhaustLatch,
+  prepareNobleYieldReleasedReconnectNudge,
+  shouldSkipBleReconnectAfterExhaustion,
+} from '../lib/bleReconnectExhaustLatch';
+import {
   assertPowerResumeSkipsOnExplicitDisconnect,
   extractUseCallbackBody,
   loadRendererLibSource,
@@ -65,6 +70,32 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).toContain('captureSerialIdentityForRediscovery');
   });
 
+  it('latches BLE reconnect exhausted; late lost skips; yield release clears for one nudge', () => {
+    const latch = createBleReconnectExhaustLatch();
+    latch.markExhausted();
+    expect(
+      shouldSkipBleReconnectAfterExhaustion({
+        bleExhausted: latch.isExhausted(),
+        isReconnecting: false,
+      }),
+    ).toBe(true);
+    expect(
+      prepareNobleYieldReleasedReconnectNudge({
+        latch,
+        isReconnecting: false,
+        bleConnectInProgress: false,
+      }),
+    ).toBe('nudge');
+    expect(latch.isExhausted()).toBe(false);
+    expect(SOURCE).toContain('prepareNobleYieldReleasedReconnectNudge');
+    expect(SOURCE).toMatch(
+      /onExhausted:[\s\S]*?params\.type === 'ble'[\s\S]*?meshtasticBleReconnectExhaustedRef\.current\.markExhausted\(\)/,
+    );
+    expect(SOURCE).toMatch(/skip reconnect \(BLE budget exhausted\)/);
+    expect(SOURCE).toMatch(/Noble BLE disconnected — skip reconnect \(BLE budget exhausted\)/);
+    expect(SOURCE).not.toMatch(/Noble BLE yield released — skip nudge \(BLE budget exhausted\)/);
+  });
+
   it('clears reconnect refs in handleRfConnectFailure', () => {
     const failureBlock = extractUseCallbackBody(SOURCE, 'handleRfConnectFailure');
     expect(failureBlock.length).toBeGreaterThan(0);
@@ -113,7 +144,10 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
 
   it('skips Noble yield nudge when reconnect is already in progress', () => {
     expect(SOURCE).toMatch(
-      /onNobleYieldReleased[\s\S]*?isReconnectingRef\.current \|\| bleConnectInProgressRef\.current[\s\S]*?skip nudge \(reconnect in progress\)/,
+      /prepareNobleYieldReleasedReconnectNudge\(\{[\s\S]*?isReconnecting: isReconnectingRef\.current[\s\S]*?bleConnectInProgress: bleConnectInProgressRef\.current/,
+    );
+    expect(SOURCE).toMatch(
+      /nudge === 'skip-in-progress'[\s\S]*?skip nudge \(reconnect in progress\)/,
     );
   });
 
