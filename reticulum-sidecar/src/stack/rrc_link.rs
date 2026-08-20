@@ -36,6 +36,9 @@ pub enum RrcLinkError {
     LinkCrypto(String),
     #[error("link is closed")]
     Closed,
+    /// Frame rejected or deferred (size / resource / pending limits) — not a link teardown.
+    #[error("link send not accepted ({0})")]
+    SendNotAccepted(&'static str),
 }
 
 pub enum RrcLinkEvent {
@@ -195,12 +198,19 @@ fn map_link_session_error(e: LinkSessionError) -> RrcLinkError {
         LinkSessionError::HandshakeFailed(msg) => RrcLinkError::HandshakeFailed(msg),
         LinkSessionError::IdentificationUnavailable => RrcLinkError::NoSigningKey,
         LinkSessionError::LinkCrypto => RrcLinkError::LinkCrypto("link crypto".into()),
-        LinkSessionError::LinkNotActive
-        | LinkSessionError::SessionClosed
-        | LinkSessionError::PayloadTooLarge { .. }
-        | LinkSessionError::RequestRequiresResource { .. }
-        | LinkSessionError::RequestResourceFailed(_)
-        | LinkSessionError::TooManyPendingRequests => RrcLinkError::Closed,
+        LinkSessionError::LinkNotActive | LinkSessionError::SessionClosed => RrcLinkError::Closed,
+        LinkSessionError::PayloadTooLarge { .. } => {
+            RrcLinkError::SendNotAccepted("payload_too_large")
+        }
+        LinkSessionError::RequestRequiresResource { .. } => {
+            RrcLinkError::SendNotAccepted("requires_resource")
+        }
+        LinkSessionError::RequestResourceFailed(_) => {
+            RrcLinkError::SendNotAccepted("resource_failed")
+        }
+        LinkSessionError::TooManyPendingRequests => {
+            RrcLinkError::SendNotAccepted("too_many_pending")
+        }
     }
 }
 
@@ -217,7 +227,31 @@ mod tests {
     }
 
     #[test]
+    fn map_link_session_send_limits_are_not_closed() {
+        assert!(matches!(
+            map_link_session_error(LinkSessionError::PayloadTooLarge { actual: 1, max: 0 }),
+            RrcLinkError::SendNotAccepted("payload_too_large")
+        ));
+        assert!(matches!(
+            map_link_session_error(LinkSessionError::TooManyPendingRequests),
+            RrcLinkError::SendNotAccepted("too_many_pending")
+        ));
+        assert!(matches!(
+            map_link_session_error(LinkSessionError::LinkNotActive),
+            RrcLinkError::Closed
+        ));
+        assert!(matches!(
+            map_link_session_error(LinkSessionError::SessionClosed),
+            RrcLinkError::Closed
+        ));
+    }
+
+    #[test]
     fn close_reason_labels_are_stable() {
+        assert_eq!(
+            close_reason_label(LinkSessionCloseReason::Local),
+            "local_close"
+        );
         assert_eq!(
             close_reason_label(LinkSessionCloseReason::Remote),
             "remote_close"
@@ -225,6 +259,10 @@ mod tests {
         assert_eq!(
             close_reason_label(LinkSessionCloseReason::Timeout),
             "timeout"
+        );
+        assert_eq!(
+            close_reason_label(LinkSessionCloseReason::TransportUnavailable),
+            "transport_unavailable"
         );
     }
 }

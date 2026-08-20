@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   createBleReconnectExhaustLatch,
+  prepareNobleYieldReleasedReconnectNudge,
   shouldIgnoreNobleDisconnectForReconnect,
   shouldSkipBleReconnectAfterExhaustion,
 } from './bleReconnectExhaustLatch';
@@ -36,6 +37,41 @@ describe('bleReconnectExhaustLatch', () => {
         isReconnecting: false,
       }),
     ).toBe(true);
+  });
+
+  it('exhaust → skip late lost → yield release clears latch for exactly one nudge', () => {
+    const latch = createBleReconnectExhaustLatch();
+    latch.markExhausted();
+    expect(
+      shouldSkipBleReconnectAfterExhaustion({
+        bleExhausted: latch.isExhausted(),
+        isReconnecting: false,
+      }),
+    ).toBe(true);
+
+    expect(
+      prepareNobleYieldReleasedReconnectNudge({
+        latch,
+        isReconnecting: true,
+        bleConnectInProgress: false,
+      }),
+    ).toBe('skip-in-progress');
+    expect(latch.isExhausted()).toBe(true);
+
+    expect(
+      prepareNobleYieldReleasedReconnectNudge({
+        latch,
+        isReconnecting: false,
+        bleConnectInProgress: false,
+      }),
+    ).toBe('nudge');
+    expect(latch.isExhausted()).toBe(false);
+    expect(
+      shouldSkipBleReconnectAfterExhaustion({
+        bleExhausted: latch.isExhausted(),
+        isReconnecting: false,
+      }),
+    ).toBe(false);
   });
 
   it('ignores Noble disconnect when already disconnected with connectionLoss', () => {

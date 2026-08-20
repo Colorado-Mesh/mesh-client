@@ -7,6 +7,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resetReticulumManualStackStopSuppressForTests } from '@/renderer/lib/reticulum/reticulumManualStackStopSuppress';
 import { rrcDmRoomKey } from '@/renderer/lib/rrcDmRoom';
+import {
+  isRrcHubAutoJoinBlocked,
+  resetRrcHubAutoJoinBackoffForTests,
+} from '@/renderer/lib/rrcHubAutoJoinBackoff';
 import { RRC_HUB_STREAM_ROOM } from '@/renderer/lib/rrcRoomName';
 import { loadRuntimeSource } from '@/renderer/lib/sourceContractTestHelpers';
 import { useReticulumRuntime } from '@/renderer/runtime/useReticulumRuntime';
@@ -47,10 +51,65 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
     );
   });
 
-  it('records auto-join backoff on will_reconnect=false handshake failures', () => {
-    expect(SOURCE).toContain('recordRrcHubAutoJoinFailure');
-    expect(SOURCE).toContain('isRrcAutoJoinBackoffWorthyReason');
-    expect(SOURCE).toContain('clearRrcHubAutoJoinBackoff');
+  it('records auto-join backoff on will_reconnect=false handshake failures', async () => {
+    resetRrcHubAutoJoinBackoffForTests();
+    useRrcSessionStore.getState().clearSession();
+    useRrcSessionStore.getState().applyStatus('awaiting_welcome', HUB, null);
+    let eventHandler: ((evt: ReticulumSidecarEvent) => void) | null = null;
+    vi.mocked(window.electronAPI.reticulum.onEvent).mockImplementation((cb) => {
+      eventHandler = cb;
+      return () => {
+        if (eventHandler === cb) eventHandler = null;
+      };
+    });
+    vi.mocked(window.electronAPI.reticulum.start).mockResolvedValue({
+      running: true,
+      port: 19437,
+      pid: 1,
+    });
+    vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
+      running: true,
+      port: 19437,
+      pid: 1,
+      healthy: true,
+    });
+
+    const { result, unmount } = renderHook(() => useReticulumRuntime());
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(eventHandler).toBeTruthy();
+
+    act(() => {
+      eventHandler!({
+        type: 'rrc.disconnected',
+        payload: {
+          hub_dest_hash: HUB,
+          reason: 'timed out waiting for WELCOME',
+          will_reconnect: false,
+        },
+      });
+    });
+    expect(isRrcHubAutoJoinBlocked(HUB)).toBe(true);
+
+    act(() => {
+      eventHandler!({
+        type: 'rrc.connected',
+        payload: {
+          hub_dest_hash: HUB,
+          hub_name: 'Community',
+          status: 'active',
+          capabilities: {
+            direct_notice: true,
+            action: false,
+            resource_envelope: false,
+          },
+        },
+      });
+    });
+    expect(isRrcHubAutoJoinBlocked(HUB)).toBe(false);
+    unmount();
+    resetRrcHubAutoJoinBackoffForTests();
   });
 
   it('keeps rooms while sidecar auto-reconnects when will_reconnect is true or omitted', () => {

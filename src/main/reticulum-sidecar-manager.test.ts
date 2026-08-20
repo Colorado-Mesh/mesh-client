@@ -627,6 +627,63 @@ describe('ReticulumSidecarManager', () => {
     mkdirSpy.mockRestore();
   });
 
+  it('stale yield finally cannot clear a newer attempt pending flag', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    vi.mocked(reticulumConfigDirHasEnabledBleRnode).mockReturnValue(true);
+
+    let resolveYield1!: () => void;
+    const yieldGate1 = new Promise<void>((resolve) => {
+      resolveYield1 = resolve;
+    });
+    let resolveYield2!: () => void;
+    const yieldGate2 = new Promise<void>((resolve) => {
+      resolveYield2 = resolve;
+    });
+    suspendNobleMock
+      .mockImplementationOnce(() => yieldGate1)
+      .mockImplementationOnce(() => yieldGate2);
+
+    const proc1 = mockSidecarProc();
+    proc1.kill.mockImplementation(() => {
+      proc1.emit('exit', 0, null);
+    });
+    const proc2 = mockSidecarProc();
+    proc2.kill.mockImplementation(() => {
+      proc2.emit('exit', 0, null);
+    });
+    spawnMock.mockReturnValueOnce(proc1).mockReturnValueOnce(proc2);
+
+    const manager = new ReticulumSidecarManager();
+    await manager.start();
+    expect(setNobleYieldDecisionPendingMock).toHaveBeenCalledWith(true);
+
+    await manager.stop();
+    // stop invalidates generation and clears pending before a subsequent start.
+    expect(setNobleYieldDecisionPendingMock).toHaveBeenCalledWith(false);
+    setNobleYieldDecisionPendingMock.mockClear();
+
+    await manager.start();
+    expect(setNobleYieldDecisionPendingMock).toHaveBeenCalledWith(true);
+    setNobleYieldDecisionPendingMock.mockClear();
+
+    // Completing the first (stale) yield must not clear the second attempt's pending.
+    resolveYield1();
+    await yieldGate1;
+    await Promise.resolve();
+    expect(setNobleYieldDecisionPendingMock).not.toHaveBeenCalledWith(false);
+
+    resolveYield2();
+    await yieldGate2;
+    await vi.waitFor(() => {
+      expect(setNobleYieldDecisionPendingMock).toHaveBeenCalledWith(false);
+    });
+
+    await manager.stop();
+    existsSpy.mockRestore();
+    mkdirSpy.mockRestore();
+  });
+
   it('does not yield Noble when sidecar binary ensure fails before spawn', async () => {
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
     const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);

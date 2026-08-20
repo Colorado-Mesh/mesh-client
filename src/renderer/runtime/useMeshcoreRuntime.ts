@@ -95,6 +95,7 @@ import {
 } from '../lib/bleConnectErrors';
 import {
   createBleReconnectExhaustLatch,
+  prepareNobleYieldReleasedReconnectNudge,
   shouldSkipBleReconnectAfterExhaustion,
 } from '../lib/bleReconnectExhaustLatch';
 import { verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
@@ -2172,18 +2173,12 @@ export function useMeshcoreRuntime() {
       if (meshcoreDriverConnectedRef.current || connRef.current) {
         return;
       }
-      if (
-        shouldSkipBleReconnectAfterExhaustion({
-          bleExhausted: meshcoreBleReconnectExhaustedRef.current.isExhausted(),
-          isReconnecting: meshcoreIsReconnectingRef.current,
-        })
-      ) {
-        console.debug(
-          '[useMeshcoreRuntime] Noble BLE yield released — skip nudge (BLE budget exhausted)',
-        );
-        return;
-      }
-      if (meshcoreIsReconnectingRef.current || bleConnectInProgressRef.current) {
+      const nudge = prepareNobleYieldReleasedReconnectNudge({
+        latch: meshcoreBleReconnectExhaustedRef.current,
+        isReconnecting: meshcoreIsReconnectingRef.current,
+        bleConnectInProgress: bleConnectInProgressRef.current,
+      });
+      if (nudge === 'skip-in-progress') {
         console.debug(
           '[useMeshcoreRuntime] Noble BLE yield released — skip nudge (reconnect in progress)',
         );
@@ -2192,7 +2187,6 @@ export function useMeshcoreRuntime() {
       console.debug('[useMeshcoreRuntime] Noble BLE yield released — nudging MeshCore reconnect');
       meshcoreReconnectAttemptRef.current = 0;
       meshcoreIsReconnectingRef.current = false;
-      meshcoreBleReconnectExhaustedRef.current.clear();
       handleMeshcoreConnectionLostRef.current();
     };
     window.addEventListener(NOBLE_BLE_YIELD_RELEASED_EVENT, onNobleYieldReleased);

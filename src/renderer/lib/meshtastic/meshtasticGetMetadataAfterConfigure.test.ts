@@ -70,4 +70,44 @@ describe('meshtasticGetMetadataAfterConfigure', () => {
     await vi.advanceTimersByTimeAsync(MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_DEFER_MS * 2);
     expect(getMetadata).not.toHaveBeenCalled();
   });
+
+  it('cancel after getMetadata started prevents retry on reject', async () => {
+    let rejectFirst!: (e: Error) => void;
+    const first = new Promise<unknown>((_resolve, reject) => {
+      rejectFirst = reject;
+    });
+    const getMetadata = vi.fn().mockReturnValueOnce(first);
+    const timerRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };
+    scheduleMeshtasticGetMetadataAfterConfigure({ getMetadata }, 1, timerRef);
+    await vi.advanceTimersByTimeAsync(MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_DEFER_MS);
+    expect(getMetadata).toHaveBeenCalledTimes(1);
+    cancelMeshtasticGetMetadataAfterConfigure(timerRef);
+    rejectFirst(new Error('Packet timed out'));
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS * 2);
+    expect(getMetadata).toHaveBeenCalledTimes(1);
+  });
+
+  it('replacement schedule ignores stale reject from the prior getMetadata', async () => {
+    let rejectFirst!: (e: Error) => void;
+    const first = new Promise<unknown>((_resolve, reject) => {
+      rejectFirst = reject;
+    });
+    const getMetadata = vi.fn().mockReturnValueOnce(first).mockResolvedValueOnce(undefined);
+    const timerRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };
+    scheduleMeshtasticGetMetadataAfterConfigure({ getMetadata }, 1, timerRef);
+    await vi.advanceTimersByTimeAsync(MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_DEFER_MS);
+    expect(getMetadata).toHaveBeenCalledTimes(1);
+
+    scheduleMeshtasticGetMetadataAfterConfigure({ getMetadata }, 1, timerRef);
+    rejectFirst(new Error('stale Packet timed out'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    await vi.advanceTimersByTimeAsync(MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_DEFER_MS);
+    expect(getMetadata).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS * 2);
+    expect(getMetadata).toHaveBeenCalledTimes(2);
+  });
 });

@@ -64,6 +64,12 @@ describe('reticulumSidecarReads', () => {
     await expect(isReticulumRnsLiveReady()).resolves.toBe(false);
   });
 
+  it('isReticulumRnsLiveReady is false when proxyGet rejects while sidecar is running', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 19437, pid: 1 });
+    proxyGet.mockRejectedValue(new Error('Reticulum sidecar is not running'));
+    await expect(isReticulumRnsLiveReady()).resolves.toBe(false);
+  });
+
   it('classifies not-running, 404, and rate-limit proxy errors', () => {
     expect(isReticulumSidecarNotRunningError(new Error('Reticulum sidecar is not running'))).toBe(
       true,

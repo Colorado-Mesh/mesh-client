@@ -486,6 +486,7 @@ export function attachMeshtasticRuntimeWireEffects(
 
     // Always clean up on disconnect, even if we never reached configured
     if (status === DeviceStatusEnum.DeviceDisconnected) {
+      cancelMeshtasticGetMetadataAfterConfigure(metadataRetryTimerRef);
       if (localLoraConfigTimerRef.current != null) {
         clearTimeout(localLoraConfigTimerRef.current);
         localLoraConfigTimerRef.current = undefined;

@@ -43,11 +43,20 @@ describe('runRrcHubAutoConnectBatch', () => {
       focusedHubHash: null,
     });
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({ ok: true });
+    vi.spyOn(sidecarReads, 'isReticulumRnsLiveReady').mockResolvedValue(true);
   });
 
   afterEach(() => {
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
     resetRrcHubAutoJoinBackoffForTests();
+    vi.restoreAllMocks();
+  });
+
+  it('no-ops when live RNS is not ready (panel and App share this gate)', async () => {
+    vi.spyOn(sidecarReads, 'isReticulumRnsLiveReady').mockResolvedValue(false);
+    saveRrcHubAutoJoin([HUB]);
+    await runRrcHubAutoConnectBatch('tester');
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
   });
 
   it('no-ops when no hubs are marked for auto-join', async () => {

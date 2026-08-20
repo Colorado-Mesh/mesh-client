@@ -80,6 +80,7 @@ import {
 } from '../lib/appSettingsStorage';
 import {
   createBleReconnectExhaustLatch,
+  prepareNobleYieldReleasedReconnectNudge,
   shouldSkipBleReconnectAfterExhaustion,
 } from '../lib/bleReconnectExhaustLatch';
 import { verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
@@ -2450,18 +2451,12 @@ export function useMeshtasticRuntime() {
       if (meshtasticDriverConnectedRef.current && deviceConfiguredRef.current) {
         return;
       }
-      if (
-        shouldSkipBleReconnectAfterExhaustion({
-          bleExhausted: meshtasticBleReconnectExhaustedRef.current.isExhausted(),
-          isReconnecting: isReconnectingRef.current,
-        })
-      ) {
-        console.debug(
-          '[useMeshtasticRuntime] Noble BLE yield released — skip nudge (BLE budget exhausted)',
-        );
-        return;
-      }
-      if (isReconnectingRef.current || bleConnectInProgressRef.current) {
+      const nudge = prepareNobleYieldReleasedReconnectNudge({
+        latch: meshtasticBleReconnectExhaustedRef.current,
+        isReconnecting: isReconnectingRef.current,
+        bleConnectInProgress: bleConnectInProgressRef.current,
+      });
+      if (nudge === 'skip-in-progress') {
         console.debug(
           '[useMeshtasticRuntime] Noble BLE yield released — skip nudge (reconnect in progress)',
         );
@@ -2472,7 +2467,6 @@ export function useMeshtasticRuntime() {
       );
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
-      meshtasticBleReconnectExhaustedRef.current.clear();
       nobleYieldReconnectNudgeRef.current = true;
       handleConnectionLostRef.current();
     };

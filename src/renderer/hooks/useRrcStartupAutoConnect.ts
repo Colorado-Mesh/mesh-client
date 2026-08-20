@@ -102,6 +102,7 @@ async function connectRrcHubForAutoJoin(hub: string, nickname: string): Promise<
 /** Connect hubs marked for auto-join (no focus steal). Safe to call from panel + App. */
 export async function runRrcHubAutoConnectBatch(nickname: string): Promise<void> {
   if (hubAutoConnectBusy) return;
+  if (!(await isReticulumRnsLiveReady())) return;
   const pending = pendingRrcAutoJoinHubs();
   if (pending.length === 0) return;
 
@@ -158,6 +159,7 @@ export function useRrcStartupAutoConnect(): void {
         const running = await isReticulumSidecarRunning();
         if (cancelled) return;
         if (running) {
+          // Batch also gates on live RNS; keep a cheap probe here to avoid busy work.
           const liveReady = await isReticulumRnsLiveReady();
           if (liveReady) {
             await runRrcHubAutoConnectBatch(readRrcNickname());

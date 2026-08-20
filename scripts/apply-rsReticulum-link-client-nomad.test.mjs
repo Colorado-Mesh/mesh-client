@@ -194,13 +194,14 @@ afterEach(() => {
 });
 
 describe('apply-rsReticulum-link-client-nomad.sh', () => {
-  it('keeps RRC LinkClient recall on upstream RecallDestination', () => {
+  it('keeps RRC link discovery on LinkSession discover_destination (not retired pubkey RPC)', () => {
     const rrcLink = readFileSync(
       path.join(REPO_ROOT, 'reticulum-sidecar/src/stack/rrc_link.rs'),
       'utf8',
     );
-    expect(rrcLink).toContain('TransportQuery::RecallDestination');
-    expect(rrcLink).toContain('TransportQueryResponse::RecalledDestination');
+    // Hand-rolled Outbound without BindLinkEndpoint dropped LRRTT/HELLO; LinkSession binds.
+    expect(rrcLink).toContain('discover_destination');
+    expect(rrcLink).toContain('LinkSession::connect');
     expect(rrcLink).not.toContain('RecallDestinationPublicKey');
     expect(rrcLink).not.toContain('PublicKeyResult');
   });

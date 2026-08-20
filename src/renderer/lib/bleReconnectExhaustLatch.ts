@@ -24,8 +24,9 @@ export function createBleReconnectExhaustLatch(): BleReconnectExhaustLatch {
 }
 
 /**
- * Guard for connection-lost / Noble disconnect / yield-nudge paths.
+ * Guard for connection-lost / Noble disconnect paths.
  * Returns true when the caller should skip starting a new reconnect owner.
+ * Noble yield-release must not use this — it clears the latch and nudges instead.
  */
 export function shouldSkipBleReconnectAfterExhaustion(opts: {
   bleExhausted: boolean;
@@ -34,6 +35,22 @@ export function shouldSkipBleReconnectAfterExhaustion(opts: {
   if (!opts.bleExhausted) return false;
   if (opts.isReconnecting) return false;
   return true;
+}
+
+/**
+ * After Reticulum releases Noble, clear the BLE exhaust latch and allow one reconnect
+ * nudge unless a reconnect cycle is already running.
+ */
+export function prepareNobleYieldReleasedReconnectNudge(opts: {
+  latch: BleReconnectExhaustLatch;
+  isReconnecting: boolean;
+  bleConnectInProgress: boolean;
+}): 'skip-in-progress' | 'nudge' {
+  if (opts.isReconnecting || opts.bleConnectInProgress) {
+    return 'skip-in-progress';
+  }
+  opts.latch.clear();
+  return 'nudge';
 }
 
 /**
