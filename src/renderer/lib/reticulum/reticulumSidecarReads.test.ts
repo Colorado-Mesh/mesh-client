@@ -24,6 +24,7 @@ import {
   formatReticulumPeerPathToast,
   formatReticulumPeerProbeToast,
   invalidateReticulumInterfacesCache,
+  isReticulumRnsLiveReady,
   isReticulumSidecar404Error,
   isReticulumSidecarExpectedProxyError,
   isReticulumSidecarNotRunningError,
@@ -51,6 +52,16 @@ describe('reticulumSidecarReads', () => {
   it('isReticulumSidecarRunning returns false when sidecar is down', async () => {
     getStatus.mockResolvedValue({ running: false, port: 0, pid: null });
     await expect(isReticulumSidecarRunning()).resolves.toBe(false);
+  });
+
+  it('isReticulumRnsLiveReady requires running sidecar and rns_ready', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 19437, pid: 1 });
+    proxyGet.mockResolvedValue({ rns_ready: true });
+    await expect(isReticulumRnsLiveReady()).resolves.toBe(true);
+    proxyGet.mockResolvedValue({ rns_ready: false });
+    await expect(isReticulumRnsLiveReady()).resolves.toBe(false);
+    getStatus.mockResolvedValue({ running: false, port: 0, pid: null });
+    await expect(isReticulumRnsLiveReady()).resolves.toBe(false);
   });
 
   it('classifies not-running, 404, and rate-limit proxy errors', () => {

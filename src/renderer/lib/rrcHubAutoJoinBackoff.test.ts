@@ -6,6 +6,7 @@ import {
   clearRrcHubAutoJoinBackoff,
   isRrcAutoJoinBackoffWorthyReason,
   isRrcHubAutoJoinBlocked,
+  isRrcLiveNotReadyError,
   recordRrcHubAutoJoinFailure,
   resetRrcHubAutoJoinBackoffForTests,
   RRC_AUTO_JOIN_GIVE_UP_AFTER,
@@ -77,10 +78,19 @@ describe('rrcHubAutoJoinBackoff', () => {
     expect(isRrcHubAutoJoinBlocked(HUB, 1_000)).toBe(false);
   });
 
-  it('isRrcAutoJoinBackoffWorthyReason excludes local_disconnect and cancel', () => {
+  it('isRrcAutoJoinBackoffWorthyReason excludes local_disconnect, cancel, and live-not-ready', () => {
     expect(isRrcAutoJoinBackoffWorthyReason('timed out waiting for WELCOME')).toBe(true);
     expect(isRrcAutoJoinBackoffWorthyReason(null)).toBe(true);
     expect(isRrcAutoJoinBackoffWorthyReason('local_disconnect')).toBe(false);
     expect(isRrcAutoJoinBackoffWorthyReason('cancelled by user')).toBe(false);
+    expect(isRrcAutoJoinBackoffWorthyReason('rrc connect requires live rns-stack sidecar')).toBe(
+      false,
+    );
+  });
+
+  it('isRrcLiveNotReadyError matches listen-first error', () => {
+    expect(isRrcLiveNotReadyError('rrc connect requires live rns-stack sidecar')).toBe(true);
+    expect(isRrcLiveNotReadyError('lxmf send requires live rns-stack sidecar')).toBe(true);
+    expect(isRrcLiveNotReadyError('timed out waiting for WELCOME')).toBe(false);
   });
 });

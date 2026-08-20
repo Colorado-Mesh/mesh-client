@@ -48,6 +48,23 @@ export async function isReticulumSidecarRunning(): Promise<boolean> {
   }
 }
 
+/**
+ * True when live RNS is attached (`rns_ready`). HTTP can be up earlier (listen-first);
+ * RRC/LXMF need this before connect/send.
+ */
+export async function isReticulumRnsLiveReady(): Promise<boolean> {
+  if (!(await isReticulumSidecarRunning())) return false;
+  try {
+    const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/status')) as {
+      rns_ready?: boolean;
+    };
+    return body.rns_ready === true;
+  } catch {
+    // catch-no-log-ok status probe — treat as not live yet
+    return false;
+  }
+}
+
 export function isReticulumSidecarNotRunningError(err: unknown): boolean {
   return errLikeToLogString(err).toLowerCase().includes('not running');
 }

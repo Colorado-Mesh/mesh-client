@@ -86,14 +86,22 @@ export function clearRrcHubAutoJoinBackoff(hub: string): void {
 }
 
 /**
- * Sidecar disconnect reasons that should back off auto-join when will_reconnect=false.
- * Excludes local_disconnect / cancel (user or superseded connect).
+ * Sidecar disconnect / HTTP reasons that should back off auto-join when will_reconnect=false.
+ * Excludes local_disconnect / cancel (user or superseded connect) and listen-first
+ * "requires live rns-stack" (HTTP up before attach_live finishes — retry, do not cool down).
  */
 export function isRrcAutoJoinBackoffWorthyReason(reason: string | null | undefined): boolean {
   if (!reason) return true; // unknown initial-connect failure — still back off
   if (/local_disconnect/i.test(reason)) return false;
   if (/cancelled/i.test(reason)) return false;
+  if (isRrcLiveNotReadyError(reason)) return false;
   return true;
+}
+
+/** True when connect failed only because attach_live has not finished yet. */
+export function isRrcLiveNotReadyError(reason: string | null | undefined): boolean {
+  if (!reason) return false;
+  return /requires live rns-stack/i.test(reason);
 }
 
 export function resetRrcHubAutoJoinBackoffForTests(): void {
