@@ -1,3 +1,4 @@
+import { isClientLocalPropagationEstablishError } from '@/renderer/lib/reticulum/reticulumPropagationEstablishRecovery';
 import {
   hasEnabledLocalPropagationNode,
   isLocalPropagationLoading,
@@ -133,6 +134,12 @@ async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boole
   // look like a full cascade success (would advance Auto interval and suppress retries).
   const remotesSoftDeferredOnly = attempts.deferred && !attempts.any;
   const hadRemoteContact = attempts.any;
+  // Local settle's startSync clears lastSyncError — keep establish-class errors for the UI.
+  const priorEstablishError = isClientLocalPropagationEstablishError(
+    useReticulumPropagationStore.getState().lastSyncError,
+  )
+    ? useReticulumPropagationStore.getState().lastSyncError
+    : null;
   let { nodes } = useReticulumPropagationStore.getState();
   // Auto ticks can start with a stale nodes list (local still "disabled" until refresh).
   if (!hasEnabledLocalPropagationNode(nodes)) {
@@ -144,7 +151,12 @@ async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boole
       // Keep the nodes already read from the store and continue the enabled check.
     }
   }
-  if (!hasEnabledLocalPropagationNode(nodes)) return finishWithoutTarget(attempts);
+  if (!hasEnabledLocalPropagationNode(nodes)) {
+    if (priorEstablishError) {
+      useReticulumPropagationStore.getState().setLastSyncError(priorEstablishError);
+    }
+    return finishWithoutTarget(attempts);
+  }
   const priorSuccessAt = useReticulumPropagationStore.getState().lastPropagationSyncAt;
   const outcome = await attemptSync('local-prop', attempts);
   if (outcome === 'success') {
@@ -157,6 +169,9 @@ async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boole
     return true;
   }
   if (outcome === 'cancelled') return false;
+  if (priorEstablishError) {
+    useReticulumPropagationStore.getState().setLastSyncError(priorEstablishError);
+  }
   // Local soft-defer/fail with no prior remote contact → surface why (busy / loading / none).
   if (!hadRemoteContact) return finishWithoutTarget(attempts);
   return false;
@@ -184,7 +199,14 @@ export async function fetchHasEnabledReticulumInterfaces(): Promise<boolean> {
   }
 }
 
-type RemoteAttemptsResult = 'success' | 'stop' | 'exhausted';
+type RemoteAttemptsResult = 'success' | 'stop' | 'exhausted' | 'client_local';
+
+/** After a failed attempt, stop chaining remotes when the error is client-local establish. */
+function stopRemotesForClientLocalEstablish(): boolean {
+  return isClientLocalPropagationEstablishError(
+    useReticulumPropagationStore.getState().lastSyncError,
+  );
+}
 
 /**
  * Try configured remotes (skipping recently failed / already-tried ids or hashes).
@@ -221,6 +243,7 @@ async function runConfiguredRemoteAttempts(args: {
     const outcome = await attemptSync(id, attempts);
     if (outcome === 'success') return 'success';
     if (outcome === 'cancelled') return 'stop';
+    if (outcome === 'failed' && stopRemotesForClientLocalEstablish()) return 'client_local';
   }
   return 'exhausted';
 }
@@ -236,16 +259,22 @@ async function runConfiguredRemoteAttempts(args: {
  * then fails to establish hands off to the next candidate instead of ending the cascade.
  *
  * In Auto, `firstTargetId` is ignored — per-row Sync and bottom Sync both run the full
- * finite-discovered → configured → unknown-discovered → local cascade.
+ * finite-discovered → configured → unknown-discovered → local cascade — unless
+ * `singleTargetOnly` is set (recovery Retry Sync).
  */
 export async function startPropagationSyncCascade(opts?: {
-  /** Seeds Manual (Preferred / per-row Sync). Ignored in Auto. */
+  /** Seeds Manual (Preferred / per-row Sync). Ignored in Auto unless `singleTargetOnly`. */
   firstTargetId?: string | null;
   /**
    * When false, skip discovered/remote sync and settle local-prop (no active interfaces).
    * When omitted, Auto probes `/api/v1/interfaces`.
    */
   hasEnabledInterfaces?: boolean;
+  /**
+   * Attempt only `firstTargetId` (then local settle). Used by establish-recovery Retry so
+   * Auto does not burn through other remotes again.
+   */
+  singleTargetOnly?: boolean;
 }): Promise<boolean> {
   const explicitTarget = opts?.firstTargetId != null && opts.firstTargetId.length > 0;
   // A cascade now spans the whole attempt chain, so the 30s auto-sync tick would otherwise
@@ -262,7 +291,11 @@ export async function startPropagationSyncCascade(opts?: {
 
 async function runPropagationSyncCascade(
   generation: number,
-  opts?: { firstTargetId?: string | null; hasEnabledInterfaces?: boolean },
+  opts?: {
+    firstTargetId?: string | null;
+    hasEnabledInterfaces?: boolean;
+    singleTargetOnly?: boolean;
+  },
 ): Promise<boolean> {
   const mode = readReticulumPropagationMode();
   if (mode === 'off') return false;
@@ -279,6 +312,17 @@ async function runPropagationSyncCascade(
   /** Remote attempts ran long enough; stop chaining them but still settle the local inbox. */
   const remoteBudgetSpent = (): boolean => Date.now() >= remoteDeadlineMs;
 
+  // Establish-recovery Retry: one remote (or local) only, then local settle if needed.
+  if (opts?.singleTargetOnly && first != null && first.length > 0) {
+    if (first === 'local-prop') {
+      return tryLocalSettleIfEnabled(attempts);
+    }
+    const seedOutcome = await attemptSync(first, attempts);
+    if (seedOutcome === 'success') return true;
+    if (seedOutcome === 'cancelled') return false;
+    return tryLocalSettleIfEnabled(attempts);
+  }
+
   if (mode === 'auto') {
     const hasInterfaces =
       opts?.hasEnabledInterfaces ?? (await fetchHasEnabledReticulumInterfaces());
@@ -289,7 +333,7 @@ async function runPropagationSyncCascade(
     const tried = new Set<string>();
     const tryDiscoveredBatch = async (
       batch: { destinationHash: string; hops: number }[],
-    ): Promise<'success' | 'cancelled' | 'continue'> => {
+    ): Promise<'success' | 'cancelled' | 'continue' | 'client_local'> => {
       const targets = omitRecentlyFailedPropagationTargets(
         batch,
         (target) => target.destinationHash,
@@ -303,6 +347,7 @@ async function runPropagationSyncCascade(
         const outcome = await attemptSync(hash, attempts);
         if (outcome === 'success') return 'success';
         if (outcome === 'cancelled') return 'cancelled';
+        if (outcome === 'failed' && stopRemotesForClientLocalEstablish()) return 'client_local';
       }
       return 'continue';
     };
@@ -314,6 +359,7 @@ async function runPropagationSyncCascade(
     );
     if (finiteOutcome === 'success') return true;
     if (finiteOutcome === 'cancelled') return false;
+    if (finiteOutcome === 'client_local') return tryLocalSettleIfEnabled(attempts);
 
     const remotes = await runConfiguredRemoteAttempts({
       mode: 'auto',
@@ -325,12 +371,14 @@ async function runPropagationSyncCascade(
     });
     if (remotes === 'success') return true;
     if (remotes === 'stop') return false;
+    if (remotes === 'client_local') return tryLocalSettleIfEnabled(attempts);
 
     const unknownOutcome = await tryDiscoveredBatch(
       listUnknownHopDiscoveredPropagationTargets(nodes, discovered, autoBlacklist),
     );
     if (unknownOutcome === 'success') return true;
     if (unknownOutcome === 'cancelled') return false;
+    if (unknownOutcome === 'client_local') return tryLocalSettleIfEnabled(attempts);
 
     return tryLocalSettleIfEnabled(attempts);
   }
@@ -348,6 +396,9 @@ async function runPropagationSyncCascade(
   const seedOutcome = await attemptSync(seed, attempts);
   if (seedOutcome === 'success') return true;
   if (seedOutcome === 'cancelled') return false;
+  if (seedOutcome === 'failed' && stopRemotesForClientLocalEstablish()) {
+    return tryLocalSettleIfEnabled(attempts);
+  }
 
   const remotes = await runConfiguredRemoteAttempts({
     mode: 'manual',
@@ -358,6 +409,7 @@ async function runPropagationSyncCascade(
   });
   if (remotes === 'success') return true;
   if (remotes === 'stop') return false;
+  // client_local and exhausted both fall through to local settle
   return tryLocalSettleIfEnabled(attempts);
 }
 
@@ -368,4 +420,9 @@ async function runPropagationSyncCascade(
  */
 export async function startPropagationSyncWithTarget(targetId: string): Promise<boolean> {
   return startPropagationSyncCascade({ firstTargetId: targetId });
+}
+
+/** Retry one Prefer/last target after establish recovery (skips Auto multi-PN burn). */
+export async function startPropagationSyncSingleTarget(targetId: string): Promise<boolean> {
+  return startPropagationSyncCascade({ firstTargetId: targetId, singleTargetOnly: true });
 }

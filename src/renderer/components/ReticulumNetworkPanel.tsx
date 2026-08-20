@@ -107,6 +107,8 @@ export interface ReticulumNetworkPanelProps {
   onOpenAppGpsSettings?: () => void;
   /** When incremented, opens the propagation collapsible section. */
   propagationSectionOpenKey?: number;
+  /** Open Connection → Interfaces (PN establish dual-TCP recovery). */
+  onOpenInterfaces?: () => void;
 }
 
 function reticulumExportPinError(
@@ -131,6 +133,7 @@ export function ReticulumNetworkPanel({
   onStartStack,
   onOpenAppGpsSettings,
   propagationSectionOpenKey = 0,
+  onOpenInterfaces,
 }: ReticulumNetworkPanelProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
@@ -989,7 +992,7 @@ export function ReticulumNetworkPanel({
             title={t('connectionPanel.reticulumPropagation.title')}
             defaultOpen={propagationSectionOpenKey > 0}
           >
-            <ReticulumPropagationSection embedded />
+            <ReticulumPropagationSection embedded onOpenInterfaces={onOpenInterfaces} />
           </ReticulumCollapsibleSection>
 
           <ReticulumPnHostingDangerZone disabled={!sidecarApiReady} />

@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
-import { startPropagationSyncWithTarget } from '@/renderer/lib/reticulum/reticulumPropagationAutoApply';
+import {
+  startPropagationSyncSingleTarget,
+  startPropagationSyncWithTarget,
+} from '@/renderer/lib/reticulum/reticulumPropagationAutoApply';
 import {
   configuredPropagationDestinationHashes,
   hasPropagationCascadeCandidate,
@@ -24,6 +27,7 @@ import {
 } from '@/shared/reticulumPropagationAutoSync';
 
 import { ConfirmModal } from './ConfirmModal';
+import { ReticulumPropagationEstablishRecoveryCallout } from './ReticulumPropagationEstablishRecoveryCallout';
 import {
   getReticulumPropagationSyncTargetName,
   ReticulumPropagationLastRefreshed,
@@ -242,11 +246,14 @@ function DiscoveredPropagationList({
 export interface ReticulumPropagationSectionProps {
   onRefresh?: () => void;
   embedded?: boolean;
+  /** Navigate to Connection → Interfaces (dual-TCP recovery). */
+  onOpenInterfaces?: () => void;
 }
 
 export default function ReticulumPropagationSection({
   onRefresh,
   embedded = false,
+  onOpenInterfaces,
 }: ReticulumPropagationSectionProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
@@ -258,6 +265,7 @@ export default function ReticulumPropagationSection({
   const lastPropagationSyncAt = useReticulumPropagationStore((s) => s.lastPropagationSyncAt);
   const sync = useReticulumPropagationStore((s) => s.sync);
   const lastSyncError = useReticulumPropagationStore((s) => s.lastSyncError);
+  const syncTargetId = useReticulumPropagationStore((s) => s.syncTargetId);
   const chatNoticeDismissed = useReticulumPropagationStore((s) => s.chatNoticeDismissed);
   const setChatNoticeDismissed = useReticulumPropagationStore((s) => s.setChatNoticeDismissed);
   const refreshFromSidecar = useReticulumPropagationStore((s) => s.refreshFromSidecar);
@@ -285,10 +293,13 @@ export default function ReticulumPropagationSection({
   const [syncStarting, setSyncStarting] = useState(false);
   const [ignoreBusy, setIgnoreBusy] = useState(false);
 
-  const handleSyncNow = (targetId: string) => {
+  const handleSyncNow = (targetId: string, opts?: { singleTargetOnly?: boolean }) => {
     if (syncStarting || sync.active) return;
     setSyncStarting(true);
-    void startPropagationSyncWithTarget(targetId)
+    const run = opts?.singleTargetOnly
+      ? startPropagationSyncSingleTarget(targetId)
+      : startPropagationSyncWithTarget(targetId);
+    void run
       .then((ok) => {
         setSyncStarting(false);
         const name = getReticulumPropagationSyncTargetName(t('reticulumPropagation.localHostName'));
@@ -793,11 +804,19 @@ export default function ReticulumPropagationSection({
       </div>
       <p className="text-muted mt-1 text-xs">{t('reticulumPropagation.localHostHint')}</p>
       <p className="text-muted mt-1 text-xs">{t('reticulumPropagation.syncPathHint')}</p>
-      {lastSyncError === 'reticulumPropagation.syncEstablishNoLinkProof' ? (
-        <output className="mt-1 block text-xs text-amber-300/90">
-          {t('reticulumPropagation.syncEstablishNoLinkProof')}
-        </output>
-      ) : null}
+      <ReticulumPropagationEstablishRecoveryCallout
+        lastSyncError={lastSyncError}
+        retryTargetId={
+          syncTargetId && syncTargetId !== 'local-prop'
+            ? syncTargetId
+            : (preferredId ?? bottomSyncTargetId)
+        }
+        syncBusy={sync.active || syncStarting}
+        onRetrySync={(targetId) => {
+          handleSyncNow(targetId, { singleTargetOnly: true });
+        }}
+        onOpenInterfaces={onOpenInterfaces}
+      />
       {adding ? (
         <output className="text-muted mt-1 block text-xs">
           {t('reticulumPropagation.addProbing')}

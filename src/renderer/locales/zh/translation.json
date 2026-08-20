@@ -4389,7 +4389,17 @@
     "ignoredForAutoTitle": "已对 Auto 忽略",
     "ignoredForAutoHint": "自动模式不会通过这些节点同步或存储和转发。手动首选项/同步仍然有效。",
     "modeHelpAuto": "自动：一次性同步最佳发现传播节点（不添加或更改首选） ，然后配置远程节点，然后本地传播节点。忽略的节点将被跳过。没有网络接口，仅在本地设置。",
-    "modeHelpManual": "手动：同步首选节点，或在没有首选节点时为该同步选择最近添加的节点。如果失败，则尝试其他添加的节点，然后尝试本地传播节点。"
+    "modeHelpManual": "手动：同步首选节点，或在没有首选节点时为该同步选择最近添加的节点。如果失败，则尝试其他添加的节点，然后尝试本地传播节点。",
+    "establishRecoveryTitle": "缺少链接证明—已停止尝试其他节点",
+    "establishRecoveryBody": "此客户端上可能缺少指向您的标识的反向路径（不是坏的传播节点）。在修复此问题之前，同步不会级联到其他远程设备。",
+    "establishRecoveryAnnounce": "立即公告",
+    "establishRecoveryAnnounceAria": "立即发送LXMF派送公告",
+    "establishRecoveryRetry": "重试同步",
+    "establishRecoveryRetryWaiting": "重试同步（ {{seconds}}秒）",
+    "establishRecoveryRetryAria": "等待公告结算，然后在首选或最后一个目标上重试同步",
+    "establishRecoveryDualTcpTip": "启用了两个或多个TCP接口。公告和同步链接可以保留在不同的路径上—在连接→接口下禁用一个主干，然后公告并重试。",
+    "establishRecoveryOpenInterfaces": "打开接口",
+    "establishRecoveryOpenInterfacesAria": "打开连接接口以调整TCP骨干网"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4发现",

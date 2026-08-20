@@ -4389,7 +4389,17 @@
     "ignoredForAutoTitle": "Ignoré pour Auto",
     "ignoredForAutoHint": "Le mode Auto ne synchronisera pas depuis ces nœuds ni n’y fera de store-and-forward. Prefer/Sync manuel fonctionne toujours.",
     "modeHelpAuto": "Auto : synchronise une seule fois le meilleur nœud de propagation Découvert (ne l'ajoute pas ou ne change pas de Préféré), puis configure les télécommandes, puis le nœud de propagation local. Les nœuds ignorés sont ignorés. Sans interfaces réseau, s'installe uniquement en local.",
-    "modeHelpManual": "Manuel : synchronise votre nœud préféré ou sélectionne le nœud ajouté le plus proche pour cette synchronisation lorsqu'aucun n'est préféré. S'il échoue, les autres nœuds ajoutés sont essayés, puis le nœud de propagation local."
+    "modeHelpManual": "Manuel : synchronise votre nœud préféré ou sélectionne le nœud ajouté le plus proche pour cette synchronisation lorsqu'aucun n'est préféré. S'il échoue, les autres nœuds ajoutés sont essayés, puis le nœud de propagation local.",
+    "establishRecoveryTitle": "Preuve de lien manquante — a cessé d'essayer d'autres nœuds",
+    "establishRecoveryBody": "Le chemin inverse de votre identité est probablement manquant sur ce client (pas un mauvais nœud de propagation). La synchronisation ne se répercutera pas sur les autres télécommandes tant que ce problème n'est pas résolu.",
+    "establishRecoveryAnnounce": "Annoncez maintenant",
+    "establishRecoveryAnnounceAria": "Envoyer une annonce de livraison LXMF maintenant",
+    "establishRecoveryRetry": "Réessayer la synchronisation",
+    "establishRecoveryRetryWaiting": "Réessayer la synchronisation ({{seconds}}s)",
+    "establishRecoveryRetryAria": "Attendez d'annoncer le règlement, puis réessayez la synchronisation sur la cible préférée ou la dernière cible",
+    "establishRecoveryDualTcpTip": "Deux interfaces TCP ou plus sont activées. Annoncez et le lien de synchronisation peut partir sur différents chemins — désactivez une dorsale sous → Interfaces de connexion, puis annoncez et réessayez.",
+    "establishRecoveryOpenInterfaces": "interfaces ouverts",
+    "establishRecoveryOpenInterfacesAria": "Ouvrir les interfaces de connexion pour ajuster les backbones TCP"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Découverte RMAP v4",

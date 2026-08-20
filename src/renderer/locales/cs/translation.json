@@ -4391,7 +4391,17 @@
     "ignoredForAutoTitle": "Ignorováno pro Auto",
     "ignoredForAutoHint": "Režim Auto nebude z těchto uzlů synchronizovat ani přes ně ukládat a přeposílat. Ruční Prefer/Sync stále funguje.",
     "modeHelpAuto": "Auto: jednorázově synchronizuje nejlepší objevený propagační uzel (nepřidá jej ani nezmění preferovaný), poté nakonfigurované dálkové ovladače a poté místní propagační uzel. Ignorované uzly jsou přeskočeny. Bez síťových rozhraní se nastavuje pouze lokálně.",
-    "modeHelpManual": "Manuálně: synchronizuje váš preferovaný uzel nebo vybere nejbližší přidaný uzel pro tuto synchronizaci, pokud není preferován žádný. Pokud selže, jsou vyzkoušeny další přidané uzly, pak lokální propagační uzel."
+    "modeHelpManual": "Manuálně: synchronizuje váš preferovaný uzel nebo vybere nejbližší přidaný uzel pro tuto synchronizaci, pokud není preferován žádný. Pokud selže, jsou vyzkoušeny další přidané uzly, pak lokální propagační uzel.",
+    "establishRecoveryTitle": "Chybí nátisk odkazu — přestal zkoušet jiné uzly",
+    "establishRecoveryBody": "Na tomto klientovi pravděpodobně chybí zpětná cesta k vaší identitě (nejedná se o špatný propagační uzel). Synchronizace se nebude kaskádovat s jinými dálkovými ovladači, dokud to nebude opraveno.",
+    "establishRecoveryAnnounce": "Ohlásit nyní",
+    "establishRecoveryAnnounceAria": "Odešlete oznámení o doručení LXMF nyní",
+    "establishRecoveryRetry": "Zkusit synchronizaci znovu",
+    "establishRecoveryRetryWaiting": "Zkusit synchronizaci znovu ({{seconds}}s)",
+    "establishRecoveryRetryAria": "Počkejte na oznámení vyrovnání a poté opakujte synchronizaci s preferovaným nebo posledním cílem",
+    "establishRecoveryDualTcpTip": "Jsou povolena dvě nebo více rozhraní TCP. Oznamte a synchronizační odkaz může odejít na různých cestách — deaktivujte jednu páteř v části → Rozhraní připojení, poté oznamte a zkuste to znovu.",
+    "establishRecoveryOpenInterfaces": "Otevřená rozhraní.",
+    "establishRecoveryOpenInterfacesAria": "Otevřít rozhraní připojení pro úpravu páteře TCP"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Objevení RMAP v4",

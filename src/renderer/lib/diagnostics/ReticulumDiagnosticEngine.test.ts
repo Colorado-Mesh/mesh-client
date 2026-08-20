@@ -707,6 +707,23 @@ describe('ReticulumDiagnosticEngine', () => {
     expect(row?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.runtime.propagationSyncFailing');
   });
 
+  it('flags propagation-sync-failing for establish NoLinkProof', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+      {
+        propagation: {
+          syncActive: false,
+          syncProgress: 0,
+          lastSyncError: 'reticulumPropagation.syncEstablishNoLinkProof',
+          lastAttemptAt: Date.now() - 60_000,
+        },
+      },
+    );
+    expect(
+      rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/propagation-sync-failing'),
+    ).toBe(true);
+  });
+
   it('ignores user-cancelled propagation sync as failing', () => {
     const rows = buildReticulumDiagnosticRows(
       { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },

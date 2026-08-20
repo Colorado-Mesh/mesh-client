@@ -4389,7 +4389,17 @@
     "ignoredForAutoTitle": "自動で無視",
     "ignoredForAutoHint": "自動モードは、これらのノードから同期したり、ストアアンドフォワードしたりすることはありません。マニュアル優先/同期は引き続き機能します。",
     "modeHelpAuto": "自動：最適な検出された伝播ノードを1回だけ同期し（追加したり、優先ノードを変更したりしません）、設定されたリモート、ローカル伝播ノードを同期します。無視されたノードはスキップされます。ネットワークインターフェイスがない場合、はローカルのみを設定します。",
-    "modeHelpManual": "手動：優先ノードを同期するか、優先されない場合はその同期に最も近い追加ノードを選択します。失敗した場合、他の追加ノードが試行され、ローカル伝播ノードが試行されます。"
+    "modeHelpManual": "手動：優先ノードを同期するか、優先されない場合はその同期に最も近い追加ノードを選択します。失敗した場合、他の追加ノードが試行され、ローカル伝播ノードが試行されます。",
+    "establishRecoveryTitle": "リンク証明が見つかりません—他のノードの試行を停止しました",
+    "establishRecoveryBody": "アイデンティティへの逆パスがこのクライアントにない可能性があります（悪い伝播ノードではありません）。これが修正されるまで、同期は他のリモートにカスケードされません。",
+    "establishRecoveryAnnounce": "今すぐお知らせ",
+    "establishRecoveryAnnounceAria": "今すぐLXMF配達のお知らせを送信",
+    "establishRecoveryRetry": "同期を再試行",
+    "establishRecoveryRetryWaiting": "同期を再試行（ {{seconds}}秒）",
+    "establishRecoveryRetryAria": "アナウンスの解決を待ち、優先ターゲットまたは最後のターゲットで同期を再試行します",
+    "establishRecoveryDualTcpTip": "2つ以上のTCPインターフェイスがイネーブルになっています。アナウンスと同期リンクは異なるパスに残すことができます。接続→インターフェースの下の1つのバックボーンを無効にしてから、アナウンスして再試行します。",
+    "establishRecoveryOpenInterfaces": "インターフェースを開く",
+    "establishRecoveryOpenInterfacesAria": "TCPバックボーンを調整するために接続インターフェースを開きます"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v 4検出",

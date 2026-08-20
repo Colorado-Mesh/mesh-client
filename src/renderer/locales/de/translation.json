@@ -4389,7 +4389,17 @@
     "ignoredForAutoTitle": "Ignoriert für Auto",
     "ignoredForAutoHint": "Der Auto-Modus synchronisiert nicht von diesen Knoten und speichert/leitet nicht über sie weiter. Manuelles Prefer/Sync funktioniert weiterhin.",
     "modeHelpAuto": "Auto: Einmalige Synchronisierung des besten entdeckten Ausbreitungsknotens (fügt ihn nicht hinzu oder ändert ihn nicht), dann konfigurierte Fernbedienungen und dann den lokalen Ausbreitungsknoten. Ignorierte Knoten werden übersprungen. Da keine Netzwerkschnittstellen vorhanden sind, wird nur lokal abgerechnet.",
-    "modeHelpManual": "Manuell: Synchronisiert Ihren bevorzugten Knoten oder wählt den nächstgelegenen hinzugefügten Knoten für diese Synchronisierung aus, wenn keiner bevorzugt wird. Wenn es fehlschlägt, werden die anderen hinzugefügten Knoten ausprobiert, dann der lokale Ausbreitungsknoten."
+    "modeHelpManual": "Manuell: Synchronisiert Ihren bevorzugten Knoten oder wählt den nächstgelegenen hinzugefügten Knoten für diese Synchronisierung aus, wenn keiner bevorzugt wird. Wenn es fehlschlägt, werden die anderen hinzugefügten Knoten ausprobiert, dann der lokale Ausbreitungsknoten.",
+    "establishRecoveryTitle": "Link-Proof fehlt — hat aufgehört, andere Knoten auszuprobieren",
+    "establishRecoveryBody": "Der umgekehrte Pfad zu Ihrer Identität fehlt wahrscheinlich auf diesem Client (kein schlechter Ausbreitungsknoten). Sync wird nicht mit anderen Fernbedienungen kaskadiert, bis dies behoben ist.",
+    "establishRecoveryAnnounce": "Jetzt ankündigen",
+    "establishRecoveryAnnounceAria": "Senden Sie jetzt eine LXMF-Lieferankündigung",
+    "establishRecoveryRetry": "Synchronisierung erneut versuchen",
+    "establishRecoveryRetryWaiting": "Synchronisierung erneut versuchen ({{seconds}}s)",
+    "establishRecoveryRetryAria": "Warten Sie, bis die Ankündigung beglichen ist, und versuchen Sie dann erneut, das bevorzugte oder letzte Ziel zu synchronisieren",
+    "establishRecoveryDualTcpTip": "Zwei oder mehr TCP-Schnittstellen sind aktiviert. Ankündigen und der Sync-Link kann auf verschiedenen Pfaden verlassen werden — deaktivieren Sie einen Backbone unter Verbindungsschnittstellen, kündigen Sie → dann an und versuchen Sie es erneut.",
+    "establishRecoveryOpenInterfaces": "Offene Schnittstellen",
+    "establishRecoveryOpenInterfacesAria": "Öffnen Sie Verbindungsschnittstellen, um TCP-Backbones anzupassen"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 Entdeckung",

@@ -4393,7 +4393,17 @@
     "ignoredForAutoTitle": "Zignorowano dla trybu automatycznego",
     "ignoredForAutoHint": "Tryb automatyczny nie będzie synchronizowany ani przechowywany i przekazywany za pośrednictwem tych węzłów. Ręczna preferencja/synchronizacja nadal działa.",
     "modeHelpAuto": "Auto: jednorazowo synchronizuje najlepszy odkryty węzeł propagacji (nie dodaje go ani nie zmienia preferowanego), następnie skonfigurowane piloty, a następnie lokalny węzeł propagacji. Zignorowane węzły są pomijane. Bez interfejsów sieciowych, rozlicza się tylko lokalnie.",
-    "modeHelpManual": "Ręcznie: synchronizuje preferowany węzeł lub wybiera najbliższy dodany węzeł dla tej synchronizacji, gdy żaden nie jest preferowany. Jeśli się nie powiedzie, wypróbowywane są inne dodane węzły, a następnie lokalny węzeł propagacji."
+    "modeHelpManual": "Ręcznie: synchronizuje preferowany węzeł lub wybiera najbliższy dodany węzeł dla tej synchronizacji, gdy żaden nie jest preferowany. Jeśli się nie powiedzie, wypróbowywane są inne dodane węzły, a następnie lokalny węzeł propagacji.",
+    "establishRecoveryTitle": "Brak dowodu linku — przestano próbować innych węzłów",
+    "establishRecoveryBody": "W tym kliencie prawdopodobnie brakuje odwrotnej ścieżki do Twojej tożsamości (nie jest to zły węzeł propagacji). Synchronizacja nie będzie kaskadowa do innych pilotów, dopóki nie zostanie to naprawione.",
+    "establishRecoveryAnnounce": "Ogłoś teraz",
+    "establishRecoveryAnnounceAria": "Wyślij ogłoszenie dostawy LXMF teraz",
+    "establishRecoveryRetry": "Ponów synchronizację",
+    "establishRecoveryRetryWaiting": "Ponów synchronizację ({{seconds}}s)",
+    "establishRecoveryRetryAria": "Poczekaj na rozstrzygnięcie ogłoszenia, a następnie spróbuj ponownie zsynchronizować preferowany lub ostatni cel",
+    "establishRecoveryDualTcpTip": "Dwa lub więcej interfejsów TCP są włączone. Ogłoszenie i link do synchronizacji mogą pozostać na różnych ścieżkach — wyłącz jedną sieć szkieletową w obszarze → Interfejsy połączeń, a następnie ogłoś i spróbuj ponownie.",
+    "establishRecoveryOpenInterfaces": "Otwarte interfejsy",
+    "establishRecoveryOpenInterfacesAria": "Otwórz interfejsy połączeń, aby dostosować szkielety TCP"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Wykrywanie RMAP v4",

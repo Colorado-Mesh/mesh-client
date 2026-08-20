@@ -719,4 +719,26 @@ describe('ReticulumPropagationSection', () => {
     });
     expect(startSync).not.toHaveBeenCalled();
   });
+
+  it('shows establish recovery callout when lastSyncError is NoLinkProof', async () => {
+    Object.defineProperty(window, 'electronAPI', {
+      value: {
+        reticulum: {
+          proxyGet: vi.fn().mockResolvedValue({
+            interfaces: [{ enabled: true, type: 'tcp' }],
+          }),
+          proxyPost: vi.fn(),
+        },
+      },
+      configurable: true,
+    });
+    useReticulumPropagationStore.setState({
+      lastSyncError: 'reticulumPropagation.syncEstablishNoLinkProof',
+      syncTargetId: 'pn-aabb1111',
+      preferredId: 'pn-aabb1111',
+    });
+    render(<ReticulumPropagationSection embedded onOpenInterfaces={vi.fn()} />);
+    expect(await screen.findByTestId('propagation-establish-recovery')).toBeInTheDocument();
+    expect(screen.getByText('reticulumPropagation.establishRecoveryTitle')).toBeInTheDocument();
+  });
 });

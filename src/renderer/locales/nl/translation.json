@@ -4389,7 +4389,17 @@
     "ignoredForAutoTitle": "Genegeerd voor Auto",
     "ignoredForAutoHint": "De automatische modus zal niet synchroniseren van of opslaan en doorsturen via deze knooppunten. Handmatige voorkeur/synchronisatie werkt nog steeds.",
     "modeHelpAuto": "Automatisch: synchroniseert eenmalig het beste gedetecteerde propagatieknooppunt (voegt het niet toe of wijzigt het niet van voorkeur), configureert vervolgens afstandsbedieningen en vervolgens het lokale propagatieknooppunt. Genegeerde knooppunten worden overgeslagen. Zonder netwerkinterfaces, regelt alleen lokaal.",
-    "modeHelpManual": "Handmatig: synchroniseert uw voorkeursknooppunt of kiest het dichtstbijzijnde toegevoegde knooppunt voor die synchronisatie wanneer geen de voorkeur heeft. Als het mislukt, worden de andere toegevoegde knooppunten geprobeerd en vervolgens het lokale propagatieknooppunt."
+    "modeHelpManual": "Handmatig: synchroniseert uw voorkeursknooppunt of kiest het dichtstbijzijnde toegevoegde knooppunt voor die synchronisatie wanneer geen de voorkeur heeft. Als het mislukt, worden de andere toegevoegde knooppunten geprobeerd en vervolgens het lokale propagatieknooppunt.",
+    "establishRecoveryTitle": "Linkbewijs ontbreekt — stopte met het proberen van andere knooppunten",
+    "establishRecoveryBody": "Het omgekeerde pad naar uw identiteit ontbreekt waarschijnlijk op deze client (geen slecht propagatieknooppunt). Sync zal niet trapsgewijs naar andere afstandsbedieningen gaan totdat dit is opgelost.",
+    "establishRecoveryAnnounce": "Nu aankondigen",
+    "establishRecoveryAnnounceAria": "Stuur nu een LXMF-bezorgaankondiging",
+    "establishRecoveryRetry": "Synchronisatie opnieuw proberen",
+    "establishRecoveryRetryWaiting": "Synchronisatie opnieuw proberen ({{seconds}}s)",
+    "establishRecoveryRetryAria": "Wacht tot de aankondiging is afgewikkeld en probeer vervolgens opnieuw te synchroniseren op het voorkeurs- of laatste doelwit",
+    "establishRecoveryDualTcpTip": "Twee of meer TCP-interfaces zijn ingeschakeld. Kondig aan en de synchronisatielink kan op verschillende paden vertrekken — schakel één backbone uit onder Verbindingsinterfaces, kondig → vervolgens aan en probeer het opnieuw.",
+    "establishRecoveryOpenInterfaces": "Open interfaces",
+    "establishRecoveryOpenInterfacesAria": "Open verbindingsinterfaces om TCP-backbones aan te passen"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4-detectie",

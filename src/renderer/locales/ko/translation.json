@@ -4389,7 +4389,17 @@
     "ignoredForAutoTitle": "자동에 대해 무시됨",
     "ignoredForAutoHint": "자동 모드는 이러한 노드를 통해 동기화되거나 저장 및 전달되지 않습니다. 수동 선호/동기화는 여전히 작동합니다.",
     "modeHelpAuto": "자동: 가장 잘 검색된 전파 노드 (추가하거나 선호하는 노드를 변경하지 않음), 구성된 리모컨, 로컬 전파 노드를 일회성으로 동기화합니다. 무시된 노드는 건너뜁니다. 네트워크 인터페이스가 없으면 로컬로만 설정됩니다.",
-    "modeHelpManual": "수동: 선호하는 노드를 동기화하거나, 선호하는 노드가 없을 때 해당 동기화에 대해 가장 가까운 추가된 노드를 선택합니다. 실패하면 다른 추가된 노드를 시도한 다음 로컬 전파 노드를 시도합니다."
+    "modeHelpManual": "수동: 선호하는 노드를 동기화하거나, 선호하는 노드가 없을 때 해당 동기화에 대해 가장 가까운 추가된 노드를 선택합니다. 실패하면 다른 추가된 노드를 시도한 다음 로컬 전파 노드를 시도합니다.",
+    "establishRecoveryTitle": "링크 증명 누락 — 다른 노드 시도 중지",
+    "establishRecoveryBody": "귀하의 신원에 대한 역방향 경로가 이 클라이언트에서 누락되었을 수 있습니다 (잘못된 전파 노드가 아님). 이 문제가 해결될 때까지 동기화는 다른 리모컨에 캐스케이드되지 않습니다.",
+    "establishRecoveryAnnounce": "지금 발표하기",
+    "establishRecoveryAnnounceAria": "지금 LXMF 배달 공지 보내기",
+    "establishRecoveryRetry": "동기화 다시 시도",
+    "establishRecoveryRetryWaiting": "동기화 다시 시도 ({{seconds}} s)",
+    "establishRecoveryRetryAria": "정산 발표를 기다린 다음 기본 설정 또는 마지막 대상에 대해 동기화를 다시 시도하십시오.",
+    "establishRecoveryDualTcpTip": "둘 이상의 TCP 인터페이스가 활성화되어 있습니다. 을 (를) 알리면 동기화 링크가 다른 경로에 남을 수 있습니다. 연결 → 인터페이스 에서 하나의 백본을 비활성화한 다음 을 (를) 알리고 다시 시도하십시오.",
+    "establishRecoveryOpenInterfaces": "인터페이스 열기",
+    "establishRecoveryOpenInterfacesAria": "연결 인터페이스를 열어 TCP 백본 조정"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 검색",
