@@ -45,6 +45,19 @@ describe('shouldForwardReticulumSidecarStdout', () => {
       shouldForwardReticulumSidecarStdout('INFO target=lxmf-outbound LXMF advancing PN cascade'),
     ).toBe(true);
   });
+
+  it('does not forward INFO when PN markers appear only in message text', () => {
+    expect(
+      shouldForwardReticulumSidecarStdout(
+        'INFO reticulum_sidecar::stack::other: user said propagation-sync failed',
+      ),
+    ).toBe(false);
+    expect(
+      shouldForwardReticulumSidecarStdout(
+        'INFO reticulum_sidecar::stack::lxmf_delivery: Propagation sync: announce settle',
+      ),
+    ).toBe(false);
+  });
 });
 
 describe('resolveSidecarRustLog', () => {

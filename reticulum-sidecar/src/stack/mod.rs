@@ -1075,7 +1075,7 @@ impl StackHandle {
         Ok(result)
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle settings API awaited by HTTP handlers
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle settings API awaited by HTTP handlers
     pub async fn set_stack_settings(&self, settings: &StackSettings) -> Result<(), String> {
         config::set_stack_settings(&self.config_dir, settings)
     }
@@ -2847,12 +2847,12 @@ impl StackHandle {
         }
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle admin API awaited by HTTP handlers
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle admin API awaited by HTTP handlers
     pub async fn rnode_presets(&self) -> serde_json::Value {
         rf_profiles::presets_wire_json()
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle admin API awaited by HTTP handlers
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle admin API awaited by HTTP handlers
     pub async fn serial_ports(&self) -> serde_json::Value {
         serde_json::json!({ "ports": enumerate_serial_ports() })
     }
@@ -2876,7 +2876,7 @@ impl StackHandle {
         Ok(removed)
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle lifecycle API awaited by HTTP handlers
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle lifecycle API awaited by HTTP handlers
     pub async fn request_stack_restart(&self) -> Result<(), String> {
         self.emit_event("stack_restart_requested", serde_json::json!({ "ok": true }));
         Ok(())
@@ -2947,7 +2947,7 @@ impl StackHandle {
         config_audit::audit_config(&self.config_dir, &live, &settings, stack_running)
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle config API awaited by HTTP handlers
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle config API awaited by HTTP handlers
     pub async fn config_repair(
         &self,
         request: config_audit::ConfigRepairRequest,
@@ -3351,7 +3351,7 @@ impl StackHandle {
         }
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle identity API awaited by HTTP handlers
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle identity API awaited by HTTP handlers
     pub async fn delete_identity_slot(&self, identity_id: &str) -> Result<(), String> {
         let _op = self.identity_op_lock.lock().await;
         identity_slots::delete_slot(&self.config_dir, identity_id)

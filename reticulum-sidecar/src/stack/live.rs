@@ -926,7 +926,7 @@ impl LiveBridge {
     /// destination on our side.
     /// Returns page/file bytes plus the egress atom and overall timeout used for the Link.
     /// Remote errors after egress is known include that atom so the UI countdown can update.
-    #[allow(clippy::too_many_arguments)] // path ensure + progress correlation travel with Link args
+    #[allow(clippy::too_many_arguments, clippy::result_large_err)] // path ensure + Nomad Link Err diagnostics
     async fn query_nomad_node(
         &self,
         hash_hex: &str,
@@ -1315,7 +1315,7 @@ impl LiveBridge {
     ///
     /// `my_gen` is owned by the outer page request (see [`Self::query_nomad_node`]) so
     /// via-failover retries do not bump generation or cancel a newer page load.
-    #[allow(clippy::too_many_arguments)] // hops / budgets / path-ensure diagnostics travel together
+    #[allow(clippy::too_many_arguments, clippy::result_large_err)] // hops / budgets / Nomad Link Err diagnostics
     async fn nomad_link_client_query(
         &self,
         remote_hash: [u8; 16],
@@ -2288,32 +2288,32 @@ impl LiveBridge {
             .await
     }
 
-    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // sync GamesSessionManager call awaited by StackHandle API
     pub async fn games_status(&self) -> serde_json::Value {
         self.games_session.status()
     }
 
-    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // sync GamesSessionManager call awaited by StackHandle API
     pub async fn games_apps(&self) -> serde_json::Value {
         self.games_session.list_apps()
     }
 
-    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // sync GamesSessionManager call awaited by StackHandle API
     pub async fn games_sessions(&self, peer: Option<&str>) -> serde_json::Value {
         self.games_session.list_sessions(peer)
     }
 
-    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // sync GamesSessionManager call awaited by StackHandle API
     pub async fn games_session_detail(&self, session_id: &str) -> serde_json::Value {
         self.games_session.session_detail(session_id)
     }
 
-    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // sync GamesSessionManager call awaited by StackHandle API
     pub async fn games_mark_read(&self, session_id: &str) -> Result<(), String> {
         self.games_session.mark_read(session_id)
     }
 
-    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // sync GamesSessionManager call awaited by StackHandle API
     pub async fn games_delete_session(&self, session_id: &str) -> Result<(), String> {
         self.games_session.delete_session(session_id)
     }
@@ -4129,7 +4129,7 @@ impl LiveBridge {
         self.propagation.messagestore_load_pending()
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle propagation cancel API
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle propagation cancel API
     pub async fn cancel_propagation_sync(&self) {
         // Invalidate in-flight emitters before flipping cancel / clearing pins.
         // Hold lifecycle so emitter check+effect cannot race this generation bump.

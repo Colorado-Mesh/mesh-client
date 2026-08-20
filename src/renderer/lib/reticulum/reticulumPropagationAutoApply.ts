@@ -159,6 +159,11 @@ async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boole
   }
   const priorSuccessAt = useReticulumPropagationStore.getState().lastPropagationSyncAt;
   const outcome = await attemptSync('local-prop', attempts);
+  const restoreEstablishError = (): void => {
+    if (priorEstablishError) {
+      useReticulumPropagationStore.getState().setLastSyncError(priorEstablishError);
+    }
+  };
   if (outcome === 'success') {
     if (remotesSoftDeferredOnly) {
       // Undo local settle's success stamp so Auto retries remotes after retrieve idle.
@@ -166,12 +171,15 @@ async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boole
       useReticulumPropagationStore.getState().setLastSyncError(PROPAGATION_SYNC_RETRIEVE_BUSY_KEY);
       return false;
     }
+    // Keep establish-class error sticky for recovery UI even after local settle succeeds.
+    restoreEstablishError();
     return true;
   }
-  if (outcome === 'cancelled') return false;
-  if (priorEstablishError) {
-    useReticulumPropagationStore.getState().setLastSyncError(priorEstablishError);
+  if (outcome === 'cancelled') {
+    restoreEstablishError();
+    return false;
   }
+  restoreEstablishError();
   // Local soft-defer/fail with no prior remote contact → surface why (busy / loading / none).
   if (!hadRemoteContact) return finishWithoutTarget(attempts);
   return false;

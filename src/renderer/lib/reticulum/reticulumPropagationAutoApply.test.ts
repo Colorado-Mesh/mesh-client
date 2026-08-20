@@ -555,6 +555,9 @@ describe('reticulumPropagationAutoApply', () => {
     });
     await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
     expect(startSync.mock.calls.map((c) => c[0])).toEqual(['pn-aabb1111', 'local-prop']);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      'reticulumPropagation.syncEstablishNoLinkProof',
+    );
   });
 
   it('singleTargetOnly retries one target without Auto cascade burn', async () => {
