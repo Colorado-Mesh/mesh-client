@@ -15,6 +15,7 @@ import {
 import { createPacketDedupeRegistry } from '../drivers/packetDedupeRegistry';
 import { meshtasticHwModelName } from '../hardwareModels';
 import { meshtasticDeviceStatusForCode } from '../meshtastic/meshtasticDeviceStatus';
+import { meshtasticPacketRxTimeMs } from '../meshtasticLastHeard';
 import { meshtasticComputedRfHopsAway } from '../meshtasticRfHops';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import { MESHTASTIC_CAPABILITIES } from '../radio/BaseRadioProvider';
@@ -133,7 +134,7 @@ function boundedLatLonFromScaledI(
 interface TraceRouteMeshPacket {
   from: number;
   to?: number;
-  rxTime?: number;
+  rxTime?: Date | number;
   data?: { route?: readonly number[]; routeBack?: readonly number[] };
   payloadVariant?: {
     case?: string;
@@ -753,7 +754,7 @@ export class MeshtasticProtocol implements Protocol {
       to: number;
       id: number;
       channel?: number;
-      rxTime?: number;
+      rxTime?: Date | number;
       rxSnr?: number;
       rxRssi?: number;
       hopStart?: number;
@@ -785,7 +786,7 @@ export class MeshtasticProtocol implements Protocol {
           payload:
             text.length > MAX_TEXT_MESSAGE_CHARS ? text.slice(0, MAX_TEXT_MESSAGE_CHARS) : text,
           channelIndex: isFiniteNumber(p.channel) ? Math.trunc(p.channel) : 0,
-          timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
+          timestamp: meshtasticPacketRxTimeMs(p.rxTime) || Date.now(),
           rxSnr: p.rxSnr,
           rxRssi: p.rxRssi,
           ...(hopCount != null ? { hopCount } : {}),
@@ -799,7 +800,7 @@ export class MeshtasticProtocol implements Protocol {
   private decodeUserPacket(raw: unknown): DomainEvent[] {
     const p = raw as {
       from: number;
-      rxTime?: number;
+      rxTime?: Date | number;
       data?: {
         longName?: string;
         shortName?: string;
@@ -823,7 +824,7 @@ export class MeshtasticProtocol implements Protocol {
           role: user.role,
           publicKey: user.publicKey,
           isLicensed: user.isLicensed,
-          lastHeardAt: p.rxTime ? p.rxTime * 1000 : Date.now(),
+          lastHeardAt: meshtasticPacketRxTimeMs(p.rxTime) || Date.now(),
           fromUserPacket: true,
         },
       },
@@ -887,7 +888,7 @@ export class MeshtasticProtocol implements Protocol {
   private decodePosition(raw: unknown): DomainEvent[] {
     const p = raw as {
       from: number;
-      rxTime?: number;
+      rxTime?: Date | number;
       data: { latitudeI?: number; longitudeI?: number; altitude?: number };
     };
     const nodeId = normalizedNodeNum(p.from);
@@ -903,7 +904,7 @@ export class MeshtasticProtocol implements Protocol {
           latitude,
           longitude,
           altitude: isFiniteNumber(p.data.altitude) ? p.data.altitude : undefined,
-          timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
+          timestamp: meshtasticPacketRxTimeMs(p.rxTime) || Date.now(),
         },
       },
     ];
@@ -912,7 +913,7 @@ export class MeshtasticProtocol implements Protocol {
   private decodeTelemetry(raw: unknown): DomainEvent[] {
     const p = raw as {
       from: number;
-      rxTime?: number;
+      rxTime?: Date | number;
       data: {
         variant?: { case?: string; value?: Record<string, unknown> };
         deviceMetrics?: Record<string, unknown>;
@@ -925,7 +926,7 @@ export class MeshtasticProtocol implements Protocol {
         type: 'telemetry',
         payload: {
           nodeId: p.from,
-          timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
+          timestamp: meshtasticPacketRxTimeMs(p.rxTime) || Date.now(),
           variantCase: p.data.variant?.case ?? (p.data.deviceMetrics ? 'deviceMetrics' : undefined),
           batteryLevel: num('batteryLevel'),
           voltage: num('voltage'),
@@ -958,7 +959,7 @@ export class MeshtasticProtocol implements Protocol {
       from: number;
       to?: number;
       channel?: number;
-      rxTime?: number;
+      rxTime?: Date | number;
       data: {
         id?: number;
         name?: string;
@@ -991,7 +992,7 @@ export class MeshtasticProtocol implements Protocol {
           from: normalizedNodeNum(p.from) ?? 0,
           to: normalizedNodeNum(p.to),
           channelIndex: isFiniteNumber(p.channel) ? Math.trunc(p.channel) : undefined,
-          timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
+          timestamp: meshtasticPacketRxTimeMs(p.rxTime) || Date.now(),
         },
       },
     ];
@@ -1013,7 +1014,7 @@ export class MeshtasticProtocol implements Protocol {
           to: normalizedNodeNum(p.to) ?? fields.dataLayerDest ?? 0,
           route: fields.route,
           routeBack: fields.routeBack,
-          timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
+          timestamp: meshtasticPacketRxTimeMs(p.rxTime) || Date.now(),
           dataLayerDest: fields.dataLayerDest,
           dataLayerSource: fields.dataLayerSource,
           replyId: fields.replyId,
