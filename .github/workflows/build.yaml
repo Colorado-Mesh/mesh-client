@@ -246,10 +246,14 @@ jobs:
 
       - name: Install squashfs-tools (cross-arch AppImage extract)
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y squashfs-tools
+        run: sudo apt-get update && sudo apt-get install -y squashfs-tools xvfb
 
       - name: Run packaging smoke test
         run: ${{ matrix.smoke_run }}
+
+      - name: Headless Electron launch test (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: xvfb-run --auto-servernum node scripts/test-electron-headless-launch.mjs
 
       - name: Upload Windows x64 install failure logs
         if: failure() && matrix.os == 'windows-latest'
