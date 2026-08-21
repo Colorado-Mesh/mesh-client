@@ -713,7 +713,13 @@
       "startFailed": "Не удалось начать запись голосовой заметки. Повторите попытку.",
       "sendAriaWithElapsed": "Отправить голосовую заметку ({{seconds}} секунд записано)",
       "unavailable": "Голосовая заметка недоступна — вложение не кэшируется на этом устройстве."
-    }
+    },
+    "heardByRepeaters_one": "Слушает {{count}} повторитель",
+    "heardByRepeaters_other": "Услышано {{count}} повторителями",
+    "heardByRepeatersDetail": "Слышно повторителями {{count}}: {{names}}",
+    "heardByNetwork": "Слышно по сети",
+    "notHeardTimeout": "Не слышно (тайм-аут)",
+    "routeRelaysPredicted": "Маршрут: ~{{count}} реле через {{hop}}"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

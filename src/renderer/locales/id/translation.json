@@ -711,7 +711,13 @@
       "startFailed": "Tidak dapat memulai perekaman memo suara. Coba lagi.",
       "sendAriaWithElapsed": "Kirim memo suara ({{seconds}} detik direkam)",
       "unavailable": "Memo suara tidak tersedia — lampiran tidak di - cache pada perangkat ini."
-    }
+    },
+    "heardByRepeaters_one": "Didengar oleh {{count}} repeater",
+    "heardByRepeaters_other": "Didengar oleh {{count}} repeater",
+    "heardByRepeatersDetail": "Didengar oleh {{count}} repeater: {{names}}",
+    "heardByNetwork": "Didengar oleh jaringan",
+    "notHeardTimeout": "Tidak terdengar (timeout)",
+    "routeRelaysPredicted": "Rute: ~{{count}} relai melalui {{hop}}"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

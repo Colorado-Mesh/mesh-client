@@ -711,7 +711,13 @@
       "startFailed": "Kon opnemen van spraakmemo niet starten. Probeer het opnieuw.",
       "sendAriaWithElapsed": "Spraakmemo verzenden ({{seconds}} seconden opgenomen)",
       "unavailable": "Spraakmemo niet beschikbaar — bijlage niet in cache op dit apparaat."
-    }
+    },
+    "heardByRepeaters_one": "Gehoord door {{count}} repeater",
+    "heardByRepeaters_other": "Gehoord door {{count}} repeaters",
+    "heardByRepeatersDetail": "Gehoord door {{count}} repeaters: {{names}}",
+    "heardByNetwork": "Gehoord door netwerk",
+    "notHeardTimeout": "Niet gehoord (time-out)",
+    "routeRelaysPredicted": "Route: ~{{count}} relais via {{hop}}"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

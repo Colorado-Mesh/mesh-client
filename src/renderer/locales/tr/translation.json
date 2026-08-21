@@ -711,7 +711,13 @@
       "startFailed": "Sesli not kaydı başlatılamadı. Tekrar deneyin.",
       "sendAriaWithElapsed": "Sesli not gönder ({{seconds}} saniye kaydedildi)",
       "unavailable": "Sesli not kullanılamıyor — eklenti bu cihazda önbelleğe alınmadı."
-    }
+    },
+    "heardByRepeaters_one": "{{count}} tekrarlayıcı tarafından duyuldu",
+    "heardByRepeaters_other": "{{count}} tekrarlayıcı tarafından duyuldu",
+    "heardByRepeatersDetail": "{{count}} tekrarlayıcı tarafından duyuldu: {{names}}",
+    "heardByNetwork": "Ağ tarafından duyuldu",
+    "notHeardTimeout": "Duyulmadı (zaman aşımı)",
+    "routeRelaysPredicted": "Güzergah: ~{{count}} {{hop}} üzerinden röleler"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

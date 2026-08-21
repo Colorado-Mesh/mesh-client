@@ -21,6 +21,7 @@ import {
   type PacketClass,
 } from '../foreignLoraDetection';
 import { applyMeshcoreLateRfHopEnrichment } from '../meshcoreLateRfHopEnrichment';
+import { buildMeshcorePathResolutionFromNodes } from '../meshcorePathChainDisplay';
 import {
   meshcoreRawPacketLogFromBytesFallback,
   meshcoreRawPacketResolveFromParsed,
@@ -42,6 +43,7 @@ import { getStoredMeshProtocol } from '../storedMeshProtocol';
 import { meshNodeToNodeRecord } from '../storeRecordAdapters';
 import { MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS } from '../timeConstants';
 import type { MeshNode, MQTTStatus, TelemetryPoint } from '../types';
+import { recordMeshcoreRfRx, resolveMeshcoreHeardRepeaterFromNode } from './heardRepeatTracker';
 import type { DeviceLogEntry, MeshCoreSelfInfo, RxPacketEntry } from './meshcoreHookTypes';
 import { persistMeshcoreNodeInfoAfterAdvert } from './meshcoreLiveContactPersist';
 import {
@@ -673,6 +675,49 @@ function publishMeshcoreRfMqttPacketLog(
 }
 
 /**
+ * Credit Repeater/Room path hashes on self-originated channel TX overhear (relay coverage).
+ * Additive only — does not alter hops-away, Foreign LoRa bridge, or repeater-admin flows.
+ */
+function applyMeshcoreHeardRepeatFromRfRx(
+  ctx: MeshcoreRfParseContext,
+  effectiveFromNodeId: number | null,
+  rawU8: Uint8Array,
+  snr: number,
+  rssi: number,
+  now: number,
+  deps: MeshcoreRfRxDeps,
+): void {
+  const identityId = deps.meshcoreIdentityIdRef.current;
+  if (!identityId) return;
+  const myNodeNum = deps.myNodeNumRef.current;
+  if (myNodeNum === 0) return;
+
+  const selfPubKey =
+    deps.pubKeyMapRef.current.get(myNodeNum) ?? deps.selfInfoRef.current?.publicKey;
+  const isSelfRf = meshcoreRfIsSelfOriginated(rawU8, selfPubKey, myNodeNum);
+  const isOwnMeshcoreTx =
+    isSelfRf || (effectiveFromNodeId != null && effectiveFromNodeId === myNodeNum);
+  if (!isOwnMeshcoreTx) return;
+
+  const nodes = deps.readNodes();
+  const resolution = buildMeshcorePathResolutionFromNodes(nodes);
+  recordMeshcoreRfRx({
+    identityId,
+    isOwnMeshcoreTx: true,
+    pathBytes: ctx.pathBytes,
+    pathHashSizeBytes: ctx.pathHashSizeBytes,
+    myNodeNum,
+    snr,
+    rssi,
+    now,
+    candidates: resolution.candidates,
+    pubKeyByNodeId: resolution.pubKeyByNodeId,
+    resolveRepeater: (nodeId) =>
+      resolveMeshcoreHeardRepeaterFromNode(nodeId, nodes.get(nodeId) ?? null),
+  });
+}
+
+/**
  * Full RF RX (event 136) handling: device log + signal telemetry, raw packet log with hop/foreign
  * LoRa bridging, and throttled MQTT packet-log publish. Mirrors the original inline
  * `handleRfRx` — including its early return once the foreign-LoRa proximity gate fails, which
@@ -710,6 +755,7 @@ export function handleMeshcoreRfRx(payload: MeshcoreRfRxPayload, deps: MeshcoreR
       ctx.fromNodeId ?? meshtasticSenderIdForRawLogFallback(ctx.parseOk, rawU8);
     const rxEntry = buildMeshcoreRfRawPacketEntry(ctx, effectiveFromNodeId, now, snr, rssi, rawU8);
     pushMeshcoreRfRawPacketLog(deps, rxEntry);
+    applyMeshcoreHeardRepeatFromRfRx(ctx, effectiveFromNodeId, rawU8, snr, rssi, now, cachedDeps);
 
     if (
       ctx.parseOk &&

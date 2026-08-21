@@ -711,7 +711,13 @@
       "startFailed": "Impossible de démarrer l'enregistrement des notes vocales. Réessayez.",
       "sendAriaWithElapsed": "Envoyer un mémo vocal ({{seconds}} secondes enregistrées)",
       "unavailable": "Mémo vocal indisponible — pièce jointe non mise en cache sur cet appareil."
-    }
+    },
+    "heardByRepeaters_one": "Entendu par {{count}} répéteur",
+    "heardByRepeaters_other": "Entendu par {{count}} répéteurs",
+    "heardByRepeatersDetail": "Entendu par {{count}} répéteurs : {{names}}",
+    "heardByNetwork": "Entendu par réseau",
+    "notHeardTimeout": "Pas entendu (délai d'attente)",
+    "routeRelaysPredicted": "Itinéraire : ~{{count}} relais via {{hop}}"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

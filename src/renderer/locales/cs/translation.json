@@ -713,7 +713,13 @@
       "startFailed": "Nelze spustit nahrávání hlasové poznámky. Zkuste to znovu.",
       "sendAriaWithElapsed": "Odeslat hlasovou poznámku ({{seconds}} zaznamenaných sekund)",
       "unavailable": "Hlasová poznámka není k dispozici — příloha není v tomto zařízení uložena do mezipaměti."
-    }
+    },
+    "heardByRepeaters_one": "Slyšel/a {{count}} opakovač",
+    "heardByRepeaters_other": "Slyšel/a {{count}} opakovače",
+    "heardByRepeatersDetail": "Slyšeli {{count}} opakovači: {{names}}",
+    "heardByNetwork": "Slyšen sítí",
+    "notHeardTimeout": "Neslyšel (vypršel časový limit)",
+    "routeRelaysPredicted": "Trasa: ~{{count}} relé přes {{hop}}"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

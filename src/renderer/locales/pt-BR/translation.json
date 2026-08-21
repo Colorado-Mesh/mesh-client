@@ -711,7 +711,13 @@
       "startFailed": "Não foi possível iniciar a gravação do memorando de voz. Tente novamente.",
       "sendAriaWithElapsed": "Enviar memorando de voz ({{seconds}} segundos gravados)",
       "unavailable": "Memorando de voz indisponível — anexo não armazenado em cache neste dispositivo."
-    }
+    },
+    "heardByRepeaters_one": "Ouvido por {{count}} repetidor",
+    "heardByRepeaters_other": "Ouvido por {{count}} repetidores",
+    "heardByRepeatersDetail": "Ouvido por {{count}} repetidores: {{names}}",
+    "heardByNetwork": "Ouvido pela rede",
+    "notHeardTimeout": "Não ouvido (tempo esgotado)",
+    "routeRelaysPredicted": "Rota: ~{{count}} relés via {{hop}}"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

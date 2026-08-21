@@ -711,7 +711,13 @@
       "startFailed": "No se ha podido iniciar la grabación de notas de voz. Inténtelo de nuevo.",
       "sendAriaWithElapsed": "Enviar nota de voz ({{seconds}} segundos grabados)",
       "unavailable": "Nota de voz no disponible — archivo adjunto no almacenado en caché en este dispositivo."
-    }
+    },
+    "heardByRepeaters_one": "Escuchado por el repetidor {{count}}",
+    "heardByRepeaters_other": "Escuchado por {{count}} repetidores",
+    "heardByRepeatersDetail": "Escuchado por {{count}} repetidores: {{names}}",
+    "heardByNetwork": "Escuchado por la red",
+    "notHeardTimeout": "No escuchado (tiempo de espera)",
+    "routeRelaysPredicted": "Ruta: ~{{count}} relés a través de {{hop}}"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

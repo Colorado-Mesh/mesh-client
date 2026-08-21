@@ -715,7 +715,13 @@
       "startFailed": "Nie można rozpocząć nagrywania notatki głosowej. Spróbuj ponownie.",
       "sendAriaWithElapsed": "Wyślij notatkę głosową ({{seconds}} sekund nagranych)",
       "unavailable": "Notatka głosowa niedostępna — załącznik nie jest zapisany w pamięci podręcznej na tym urządzeniu."
-    }
+    },
+    "heardByRepeaters_one": "Otrzymane przez {{count}} repeater",
+    "heardByRepeaters_other": "Usłyszane przez {{count}} repeaterów",
+    "heardByRepeatersDetail": "Otrzymano od powtarzaczy {{count}}: {{names}}",
+    "heardByNetwork": "Usłyszane przez sieć",
+    "notHeardTimeout": "Nie słychać (limit czasu)",
+    "routeRelaysPredicted": "Trasa: ~{{count}} przekaźniki przez {{hop}}"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

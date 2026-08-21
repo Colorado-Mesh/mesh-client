@@ -713,7 +713,13 @@
       "startFailed": "Не вдалося розпочати запис голосової пам'яті. Спробуйте ще раз.",
       "sendAriaWithElapsed": "Надіслати голосову замітку ({{seconds}} секунд записано)",
       "unavailable": "Голосова нотатка недоступна — вкладення не кешовано на цьому пристрої."
-    }
+    },
+    "heardByRepeaters_one": "Слухає повторювач {{count}}",
+    "heardByRepeaters_other": "Слухають повторювачі {{count}}",
+    "heardByRepeatersDetail": "Слухали повторювачі {{count}}: {{names}}",
+    "heardByNetwork": "Прослуховується мережею",
+    "notHeardTimeout": "Не почуто (час очікування)",
+    "routeRelaysPredicted": "Маршрут: ~{{count}} реле через {{hop}}"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

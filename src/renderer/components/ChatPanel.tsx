@@ -160,6 +160,7 @@ import { ChatPayloadText } from './ChatPayloadText';
 import { ChatRfHopLabel } from './ChatRfHopLabel';
 import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
+import { RelayCoverageLine, relayCoverageMessageKey } from './RelayCoverageLine';
 import { ChatDmRncpControl } from './remote/ChatDmRncpControl';
 import { ChatDmRncpOfferBanner } from './remote/ChatDmRncpOfferBanner';
 import { ReticulumGameChallengeButton } from './reticulum/ReticulumGameChallengeButton';
@@ -3192,6 +3193,20 @@ function ChatPanel({
                                     error={msg.error}
                                   />
                                 ) : null}
+                                <RelayCoverageLine
+                                  protocol={protocol}
+                                  messageId={relayCoverageMessageKey(msg)}
+                                  isOwn={isOwn}
+                                />
+                              </div>
+                            )}
+                            {isOwn && !(msg.status || msg.mqttStatus) && (
+                              <div className="mt-0.5 flex items-center justify-end gap-1">
+                                <RelayCoverageLine
+                                  protocol={protocol}
+                                  messageId={relayCoverageMessageKey(msg)}
+                                  isOwn={isOwn}
+                                />
                               </div>
                             )}
                           </div>

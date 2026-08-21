@@ -9,6 +9,7 @@ import {
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
+import { setReticulumPredictedRoute } from '@/renderer/lib/reticulum/reticulumRouteCoverage';
 import {
   getReticulumSendMessage,
   resolveReticulumOutboundVia,
@@ -21,7 +22,10 @@ import {
   upsertMessage,
   useMessageStore,
 } from '@/renderer/stores/messageStore';
-import { reticulumHashForNodeId } from '@/renderer/stores/reticulumPeerStore';
+import {
+  reticulumHashForNodeId,
+  useReticulumPeerStore,
+} from '@/renderer/stores/reticulumPeerStore';
 
 export function resolveReticulumChatDestHash(destination: number | undefined): string | null {
   if (typeof destination === 'string') return destination;
@@ -129,6 +133,11 @@ export function sendReticulumChatMessage(opts: SendReticulumChatMessageOpts): bo
     };
     addMessage(identityId, record);
   }
+  const peer = useReticulumPeerStore.getState().getPeer(destHash);
+  setReticulumPredictedRoute(identityId, pendingId, {
+    hops: peer?.hops,
+    viaHash: peer?.via_hash,
+  });
   if (senderHash) {
     persistReticulumOutboundRecord(identityId, record, senderHash, senderName, destHash, 'sending');
   }

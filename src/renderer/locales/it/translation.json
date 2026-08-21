@@ -711,7 +711,13 @@
       "startFailed": "Impossibile avviare la registrazione del promemoria vocale. Riprova.",
       "sendAriaWithElapsed": "Invia promemoria vocale ({{seconds}} secondi registrati)",
       "unavailable": "Memo vocale non disponibile — allegato non memorizzato nella cache su questo dispositivo."
-    }
+    },
+    "heardByRepeaters_one": "Ascoltato dal ripetitore {{count}}",
+    "heardByRepeaters_other": "Ascoltato dai ripetitori {{count}}",
+    "heardByRepeatersDetail": "Ascoltato da {{count}} ripetitori: {{names}}",
+    "heardByNetwork": "Sentito dalla rete",
+    "notHeardTimeout": "Non sentito (timeout)",
+    "routeRelaysPredicted": "Percorso: ~{{count}} relè tramite {{hop}}"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

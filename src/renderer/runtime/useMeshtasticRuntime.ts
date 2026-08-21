@@ -124,6 +124,11 @@ import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
 import { setMeshtasticRemoteConfigTarget } from '../lib/meshtastic/meshtasticConfigIngressGuard';
 import { setMeshtasticConfigurePhase } from '../lib/meshtastic/meshtasticConfigurePhase';
 import { configureMeshtasticDeviceWithRetry } from '../lib/meshtastic/meshtasticConfigureRetry';
+import {
+  applyMeshtasticBroadcastTransportStatus,
+  isMeshtasticBroadcastDestination,
+  markMeshtasticBroadcastPending,
+} from '../lib/meshtastic/meshtasticHeardRepeat';
 import type { ModulePortEvent, PaxCounterPoint } from '../lib/meshtastic/meshtasticModuleEvents';
 import { normalizeMeshtasticMqttChatMessage } from '../lib/meshtastic/meshtasticMqttChatNormalize';
 import { MeshtasticMqttClientProxyBridge } from '../lib/meshtastic/meshtasticMqttClientProxy';
@@ -196,6 +201,7 @@ import { parseStoredJson } from '../lib/parseStoredJson';
 import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 import { reactionGlyphFromPicker } from '../lib/reactions';
+import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import { enrichMeshtasticReplyPreviews, resolveMeshtasticWireReplyId } from '../lib/replyPreview';
 import { rfConnectionTransportOpts } from '../lib/rfConnectionTypes';
 import { createRfReconnectController } from '../lib/rfReconnectController';
@@ -887,6 +893,7 @@ export function useMeshtasticRuntime() {
       }
       meshtasticIngressDetachRef.current = null;
     }
+    const clearedIdentity = meshtasticIdentityIdRef.current;
     meshtasticIdentityIdRef.current = null;
     meshtasticDriverConnectedRef.current = false;
     setMeshtasticIdentityId(null);
@@ -908,6 +915,9 @@ export function useMeshtasticRuntime() {
     unsubscribesRef.current = [];
     ackMeshPacketIdByTempIdRef.current.clear();
     outboundSendByTempIdRef.current.clear();
+    if (clearedIdentity) {
+      useRelayCoverageStore.getState().clearIdentity(clearedIdentity);
+    }
   }, []);
 
   const clearConfigureTimeout = useCallback(() => {
@@ -2921,6 +2931,13 @@ export function useMeshtasticRuntime() {
             }
             trackMeshtasticOutboundTempId(tempId, resolvedIdStr);
             updateMessageStatus(identityId, resolvedIdStr, 'acked');
+            applyMeshtasticBroadcastTransportStatus({
+              identityId,
+              transport: 'device',
+              status: 'acked',
+              messageIdBefore: storeKeyBeforeAck,
+              messageIdAfter: resolvedIdStr,
+            });
           }
           const ackSenderId = outboundSendByTempIdRef.current.get(tempId)?.sender_id;
           outboundSendByTempIdRef.current.delete(tempId);
@@ -2949,6 +2966,13 @@ export function useMeshtasticRuntime() {
             const storeKey = resolveMeshtasticOutboundStoreKey(tempId, tempIdStr);
             updateMessageStatus(identityId, storeKey, 'failed', error);
             clearMeshtasticOutboundTempId(tempId);
+            applyMeshtasticBroadcastTransportStatus({
+              identityId,
+              transport: 'device',
+              status: 'failed',
+              messageIdBefore: storeKey,
+              messageIdAfter: storeKey,
+            });
           }
           outboundSendByTempIdRef.current.delete(tempId);
           void window.electronAPI.db
@@ -3055,6 +3079,9 @@ export function useMeshtasticRuntime() {
       if (identityId) {
         trackMeshtasticOutboundTempId(tempId, String(tempId));
         addMessage(identityId, chatMessageToMessageRecord(msg));
+        if (deviceRef.current && isMeshtasticBroadcastDestination(destination)) {
+          markMeshtasticBroadcastPending(identityId, String(tempId));
+        }
       }
 
       // For device path: track this tempId so the RF echo can be suppressed (avoids duplicate)
