@@ -252,10 +252,10 @@ Halt BLE RNode reconnect when CoreBluetooth reports **Peer removed pairing infor
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | tip after `rsReticulum-ble-rnode-pairing-transition-debounce.patch` |
+| **Base commit** | `199eeb4` (`ratspeak/rsReticulum` `origin/main`) + `rsReticulum-ble-rnode-pairing-transition-debounce.patch` |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/21 |
 
-The upstream PR is **standalone off `main`** (independent of [#20](https://github.com/ratspeak/rsReticulum/pull/20) — the bond-desync code does not touch `PAIRING_TRANSITION_RETRY_WAIT`). The local overlay is still regenerated on top of the pairing-transition debounce overlay, so apply it **after** that overlay here.
+The upstream PR is **standalone off `main`** (independent of [#20](https://github.com/ratspeak/rsReticulum/pull/20) — the bond-desync code does not touch `PAIRING_TRANSITION_RETRY_WAIT`). The local overlay is regenerated on top of the pairing-transition debounce overlay against the generation-owner BLE connect path (`DesktopPairingTrigger` / `run_generation_operation`), so apply it **after** that overlay here.
 
 **Modifies (1 file):**
 
@@ -464,7 +464,7 @@ Ranked multi-path slots (up to 3 per destination) plus global / per-peer RF-vs-n
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `b4c0358` (+ prior mesh-client overlays) |
+| **Base commit** | `199eeb4` (`ratspeak/rsReticulum` `origin/main`) + prior mesh-client overlays through discovery-announce-egress |
 | **Upstream PR** | none yet (mesh-client-local) |
 
 **Touches:** `constants.rs`, `path_table.rs`, `messages.rs`, `actor/{inbound,mod,rpc,outbound,persistence}.rs`
