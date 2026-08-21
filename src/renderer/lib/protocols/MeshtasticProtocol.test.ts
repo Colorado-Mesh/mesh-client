@@ -518,6 +518,27 @@ describe('MeshtasticProtocol Date-shaped rxTime', () => {
     teardown();
   });
 
+  it('maps waypoint rxTime Date to epoch ms', () => {
+    const { device, emit } = mockMeshDevice();
+    const events: DomainEvent[] = [];
+    const teardown = meshtasticProtocol.subscribe(device, (e) => events.push(e));
+    emit('onWaypointPacket', {
+      from: 7,
+      to: 0xffffffff,
+      rxTime: new Date(EXPECTED_MS),
+      data: {
+        id: 1001,
+        name: 'WP',
+        latitudeI: 400_000_000,
+        longitudeI: -1_050_000_000,
+      },
+    });
+    const wp = events.find((e) => e.type === 'waypoint');
+    expect(wp?.type === 'waypoint' && wp.payload.timestamp).toBe(EXPECTED_MS);
+    expect(wp?.type === 'waypoint' && wp.payload.timestamp).not.toBe(DOUBLE_CONVERTED);
+    teardown();
+  });
+
   it('still converts numeric unix-second rxTime to epoch ms', () => {
     const { device, emit } = mockMeshDevice();
     const events: DomainEvent[] = [];
