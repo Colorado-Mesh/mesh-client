@@ -25,8 +25,14 @@ export type NodeStatus = 'online' | 'stale' | 'offline';
 
 export function normalizeLastHeardMs(lastHeard: number): number {
   if (!lastHeard || !Number.isFinite(lastHeard)) return 0;
+  let value = lastHeard;
+  // Collapse Date×1000 overshoot (~1e15) to epoch milliseconds.
+  const overshootMs = LAST_HEARD_MS_THRESHOLD * 1000;
+  for (let i = 0; i < 3 && value >= overshootMs; i++) {
+    value = Math.floor(value / 1000);
+  }
   // MeshCore uses epoch seconds; Meshtastic paths usually use epoch milliseconds.
-  return lastHeard < LAST_HEARD_MS_THRESHOLD ? lastHeard * 1000 : lastHeard;
+  return value < LAST_HEARD_MS_THRESHOLD ? value * 1000 : value;
 }
 
 /** Normalize epoch seconds or milliseconds to Unix seconds (for MeshCore contact merge). */

@@ -23,4 +23,13 @@ describe('normalizeLastHeardToUnixSec', () => {
       LAST_HEARD_MS_THRESHOLD - 1,
     );
   });
+
+  it('collapses Date×1000 overshoot (~1e15) to unix seconds', () => {
+    // Field afternoon shape: Protocol did Date×1000 → ~1e15 before a single export /1000.
+    expect(normalizeLastHeardToUnixSec(1_787_340_581_000_000)).toBe(1_787_340_581);
+  });
+
+  it('collapses single-scale epoch ms (~1e12) to unix seconds', () => {
+    expect(normalizeLastHeardToUnixSec(1_787_340_581_000)).toBe(1_787_340_581);
+  });
 });

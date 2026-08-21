@@ -1,14 +1,23 @@
 /** Values at or above this threshold are treated as epoch milliseconds; below as Unix seconds. */
 export const LAST_HEARD_MS_THRESHOLD = 1_000_000_000_000;
 
-/** Normalize epoch seconds or milliseconds to Unix seconds for SQLite `nodes.last_heard`. */
+/** Max divisions when collapsing Date×1000 overshoot (~1e15) down to unix seconds. */
+const LAST_HEARD_NORMALIZE_MAX_DIVISIONS = 3;
+
+/** Normalize epoch seconds or milliseconds (incl. double-converted ms) to Unix seconds. */
 export function normalizeLastHeardToUnixSec(lastHeard: number): number {
   if (!lastHeard || !Number.isFinite(lastHeard)) return 0;
-  return lastHeard >= LAST_HEARD_MS_THRESHOLD
-    ? Math.floor(lastHeard / 1000)
-    : Math.floor(lastHeard);
+  let value = Math.floor(lastHeard);
+  // Collapse double-converted ms (e.g. Date×1000 → ~1e15) down to unix seconds.
+  for (let i = 0; i < LAST_HEARD_NORMALIZE_MAX_DIVISIONS && value >= LAST_HEARD_MS_THRESHOLD; i++) {
+    value = Math.floor(value / 1000);
+  }
+  return value;
 }
 
-/** SQL expression fragment for comparing mixed-unit legacy `last_heard` values as Unix seconds. */
+/**
+ * SQL expression fragment for comparing mixed-unit legacy `last_heard` values as Unix seconds.
+ * Handles both single ms (~1e12) and Date×1000 overshoot (~1e15).
+ */
 export const NODES_LAST_HEARD_SEC_SQL =
-  'CASE WHEN last_heard >= 1000000000000 THEN CAST(last_heard / 1000 AS INTEGER) ELSE last_heard END';
+  'CASE WHEN last_heard >= 1000000000000000 THEN CAST(last_heard / 1000000 AS INTEGER) WHEN last_heard >= 1000000000000 THEN CAST(last_heard / 1000 AS INTEGER) ELSE last_heard END';

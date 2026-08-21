@@ -39,4 +39,12 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     require: /hydrateAxeThemeColors/,
     message: 'Call hydrateAxeThemeColors() before axe() so contrast checks use real theme tokens',
   },
+  {
+    id: 'meshtastic-protocol-rxtime-via-helper',
+    include: ['src/renderer/lib/protocols/MeshtasticProtocol.ts'],
+    require: /meshtasticPacketRxTimeMs/,
+    forbid: /rxTime\s*\*\s*1000/,
+    message:
+      'SDK PacketMetadata.rxTime is Date (ms); use meshtasticPacketRxTimeMs — never rxTime * 1000',
+  },
 ];
