@@ -142,7 +142,7 @@ index 9ec6306..acb2edd 100644
              return;
          }
 diff --git a/crates/rns-transport/src/actor/mod.rs b/crates/rns-transport/src/actor/mod.rs
-index dd53467..e8f1d61 100644
+index 3ca5514..7d3ecee 100644
 --- a/crates/rns-transport/src/actor/mod.rs
 +++ b/crates/rns-transport/src/actor/mod.rs
 @@ -19,6 +19,7 @@ use crate::messages::{
@@ -267,7 +267,7 @@ index dd53467..e8f1d61 100644
      fn is_path_interface_suppressed(
          &mut self,
          dest: [u8; 16],
-@@ -1928,12 +2013,6 @@ fn interface_marked_offline(entry: &InterfaceEntry) -> bool {
+@@ -1937,12 +2022,6 @@ fn interface_marked_offline(entry: &InterfaceEntry) -> bool {
          .unwrap_or(false)
  }
  
@@ -280,7 +280,7 @@ index dd53467..e8f1d61 100644
  fn announce_emitted_from_raw(raw: &[u8]) -> Option<u64> {
      let (header, data_offset) = rns_wire::header::PacketHeader::unpack(raw).ok()?;
      if header.flags.packet_type != rns_wire::flags::PacketType::Announce || data_offset >= raw.len()
-@@ -1948,10 +2027,6 @@ fn announce_emitted_from_raw(raw: &[u8]) -> Option<u64> {
+@@ -1957,10 +2036,6 @@ fn announce_emitted_from_raw(raw: &[u8]) -> Option<u64> {
      Some(announce_timebase(&announce.random_hash))
  }
  
@@ -291,7 +291,7 @@ index dd53467..e8f1d61 100644
  /// Random jitter in `[0, PATHFINDER_RW)` for announce rebroadcast timing.
  /// The jitter avoids synchronized retransmits when many nodes learn the
  /// same announce in the same tick.
-@@ -2271,6 +2346,14 @@ mod tests {
+@@ -2264,6 +2339,14 @@ mod tests {
          (entry, rx)
      }
  
@@ -303,10 +303,10 @@ index dd53467..e8f1d61 100644
 +        (entry, rx)
 +    }
 +
-     #[test]
-     fn test_actor_creation() {
-         let (actor, _tx) = TransportActor::new();
-@@ -5465,6 +5548,9 @@ mod tests {
+     fn make_test_interface_with_capacity(
+         name: &str,
+         capacity: usize,
+@@ -5492,6 +5575,9 @@ mod tests {
          assert!(actor.state_dirty);
      }
  
@@ -316,7 +316,7 @@ index dd53467..e8f1d61 100644
      #[test]
      fn test_replayed_announce_random_blob_does_not_replace_path() {
          let (mut actor, _tx) = TransportActor::new();
-@@ -5477,9 +5563,9 @@ mod tests {
+@@ -5504,9 +5590,9 @@ mod tests {
          let identity = rns_identity::identity::Identity::new();
          let blob = random_blob(0xA1, 100);
          let (raw_first, dest_hash) =
@@ -328,7 +328,7 @@ index dd53467..e8f1d61 100644
          let (htx, mut hrx) = mpsc::channel(8);
          actor.announce_handlers.push(AnnounceHandlerRegistration {
              id: crate::messages::AnnounceHandlerId(0),
-@@ -5498,7 +5584,7 @@ mod tests {
+@@ -5525,7 +5611,7 @@ mod tests {
              q: None,
          });
          let first_event = hrx.try_recv().expect("fresh announce should dispatch");
@@ -337,7 +337,7 @@ index dd53467..e8f1d61 100644
  
          actor.on_inbound(InboundPacket {
              raw: raw_replay,
-@@ -5509,13 +5595,19 @@ mod tests {
+@@ -5536,13 +5622,19 @@ mod tests {
          });
  
          let path = actor.path_table.get(&dest_hash).unwrap();
@@ -359,7 +359,7 @@ index dd53467..e8f1d61 100644
              "replayed announces must not refresh recent announce state"
          );
          assert!(
-@@ -5533,6 +5625,334 @@ mod tests {
+@@ -5560,6 +5652,334 @@ mod tests {
          );
      }
  
@@ -694,7 +694,7 @@ index dd53467..e8f1d61 100644
      #[test]
      fn test_newer_equal_or_higher_hop_announce_replaces_path() {
          let (mut actor, _tx) = TransportActor::new();
-@@ -8508,6 +8928,7 @@ mod tests {
+@@ -8535,6 +8955,7 @@ mod tests {
                  expires: now - 1.0,
                  random_blobs: Default::default(),
                  interface_id: 7,
@@ -703,10 +703,10 @@ index dd53467..e8f1d61 100644
              },
          );
 diff --git a/crates/rns-transport/src/actor/outbound.rs b/crates/rns-transport/src/actor/outbound.rs
-index da06af8..276d72a 100644
+index 9d2a79b..d46f233 100644
 --- a/crates/rns-transport/src/actor/outbound.rs
 +++ b/crates/rns-transport/src/actor/outbound.rs
-@@ -939,6 +939,12 @@ impl TransportActor {
+@@ -934,6 +934,12 @@ impl TransportActor {
                      expires: tunnel_path.expires,
                      random_blobs: tunnel_path.random_blobs.iter().copied().collect(),
                      interface_id,
