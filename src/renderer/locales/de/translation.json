@@ -711,7 +711,17 @@
       "startFailed": "Sprachnotizaufnahme konnte nicht gestartet werden. Versuchen Sie es erneut.",
       "sendAriaWithElapsed": "Sprachnotiz senden ({{seconds}} Sekunden aufgezeichnet)",
       "unavailable": "Sprachnotiz nicht verfügbar — Anhang nicht auf diesem Gerät zwischengespeichert."
-    }
+    },
+    "heardByRepeaters_one": "Gehört von {{count}}",
+    "heardByRepeaters_other": "Gehört von {{count}}",
+    "heardByNetwork": "Vom Netzwerk gehört",
+    "notHeardTimeout": "Nicht gehört (Timeout)",
+    "routeRelaysPredicted": "Route: ~{{count}} Relais über {{hop}}",
+    "routeViaPredicted": "Route: über {{hop}}",
+    "routeRelaysPredictedHopsOnly": "Route: ~{{count}} Relais",
+    "heardByRepeatersDetail_one": "Gehört von {{count}}: {{names}}",
+    "heardByRepeatersDetail_other": "Gehört von {{count}}: {{names}}",
+    "heardByRepeaterNodeFallback": "Knoten {{nodeId}}"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

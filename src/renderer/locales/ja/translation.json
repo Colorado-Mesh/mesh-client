@@ -711,7 +711,17 @@
       "startFailed": "ボイスメモの録音を開始できませんでした。もう一度やり直してください。",
       "sendAriaWithElapsed": "ボイスメモを送信（ {{seconds}}秒録音）",
       "unavailable": "音声メモは利用できません—添付ファイルはこのデバイスにキャッシュされていません。"
-    }
+    },
+    "heardByRepeaters_one": "{{count}}件で受信",
+    "heardByRepeaters_other": "{{count}}件で受信",
+    "heardByNetwork": "ネットワークで聞いた",
+    "notHeardTimeout": "未聴取（タイムアウト）",
+    "routeRelaysPredicted": "経路：〜{{count}}リレー経由{{hop}}",
+    "routeViaPredicted": "経路： {{hop}}経由",
+    "routeRelaysPredictedHopsOnly": "経路：〜{{count}}リレー",
+    "heardByRepeatersDetail_one": "{{count}}件で受信: {{names}}",
+    "heardByRepeatersDetail_other": "{{count}}件で受信: {{names}}",
+    "heardByRepeaterNodeFallback": "ノード{{nodeId}}"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

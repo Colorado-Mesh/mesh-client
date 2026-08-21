@@ -3200,6 +3200,7 @@ function AppContent() {
                             onDmTargetConsumed={handleDmTargetConsumed}
                             isActive={activePanelIndex === 1}
                             protocol={protocol}
+                            identityId={focusedIdentityId}
                             dmOnlyChat={capabilities.hasReticulumInterfaceConfig}
                             hasRncpTransfer={capabilities.hasRncpTransfer}
                             hasLxstVoice={capabilities.hasLxstVoice}

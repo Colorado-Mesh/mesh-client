@@ -711,7 +711,17 @@
       "startFailed": "음성 메모 녹음을 시작할 수 없습니다. 다시 시도하십시오.",
       "sendAriaWithElapsed": "음성 메모 전송 ({{seconds}} 초 녹음)",
       "unavailable": "음성 메모를 사용할 수 없음 — 이 장치에 첨부 파일이 캐시되지 않음."
-    }
+    },
+    "heardByRepeaters_one": "{{count}}개 수신",
+    "heardByRepeaters_other": "{{count}}개 수신",
+    "heardByNetwork": "네트워크에서 수신됨",
+    "notHeardTimeout": "들리지 않음 (시간 초과)",
+    "routeRelaysPredicted": "경로: ~{{count}} 릴레이 경유 {{hop}}",
+    "routeViaPredicted": "경로: {{hop}} 경유",
+    "routeRelaysPredictedHopsOnly": "경로: ~{{count}} 릴레이",
+    "heardByRepeatersDetail_one": "{{count}}개 수신: {{names}}",
+    "heardByRepeatersDetail_other": "{{count}}개 수신: {{names}}",
+    "heardByRepeaterNodeFallback": "노드 {{nodeId}}"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

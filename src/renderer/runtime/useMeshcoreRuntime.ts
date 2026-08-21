@@ -134,6 +134,12 @@ import {
   tryPersistMeshcorePublicKeyFromRadio,
 } from '../lib/letsMeshJwt';
 import { runLoraRfReconnectAttempt } from '../lib/loraRfReconnectAttempt';
+import {
+  clearHeardRepeatWindow,
+  clearHeardRepeatWindowIfMessage,
+  openHeardRepeatWindow,
+  renameHeardRepeatWindowMessageId,
+} from '../lib/meshcore/heardRepeatTracker';
 import { assignCayenneTemperatureFields } from '../lib/meshcore/meshcoreCayenneTemperature';
 import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreChatSenderNode';
 import { takeMeshcoreDiscoverSelfCache } from '../lib/meshcore/meshcoreDiscoverSelfCache';
@@ -440,6 +446,7 @@ import {
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { reactionGlyphFromPicker } from '../lib/reactions';
+import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import {
   calculateRepeaterCliTimeout,
   type CliHistoryEntry,
@@ -1937,9 +1944,15 @@ export function useMeshcoreRuntime() {
         }
         meshcoreIngressDetachRef.current = null;
       }
+      const coverageIdentity =
+        driverIdentity ?? meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current;
       meshcoreIdentityIdRef.current = null;
       meshcorePendingDriverIdentityRef.current = null;
       setMeshcoreIdentityId(null);
+      if (coverageIdentity) {
+        clearHeardRepeatWindow(coverageIdentity);
+        useRelayCoverageStore.getState().clearIdentity(coverageIdentity);
+      }
       clearMeshcorePubKeyRegistry();
       meshcoreConnEventListenersTeardownRef.current?.();
       meshcoreConnEventListenersTeardownRef.current = null;
@@ -4429,19 +4442,33 @@ export function useMeshcoreRuntime() {
             connRef.current != null ||
             isMeshcoreTcpOpenHopDeadAccepted() ||
             meshcoreTcpBridgeDeadRef.current;
+          const heardIdentityId = meshcoreIdentityIdRef.current;
+          const provisionalHeardId = `out:mc-ch:${sentAt}:${channelIdx}`;
+          if (hadRadioConn && heardIdentityId) {
+            // Open before TX so fast repeater overhears during send can still credit.
+            openHeardRepeatWindow(heardIdentityId, provisionalHeardId);
+          }
           if (hadRadioConn) {
-            await runMeshcoreUserTxWithLiveTcp(async () => {
-              const liveConn = connRef.current;
-              if (!liveConn) throw new Error('Not connected to radio');
-              const work = liveConn.sendChannelTextMessage(channelIdx, textToSend);
-              if (
-                isMeshcoreTcpOpenHopDeadAccepted() ||
-                meshcoreOpenHopUserTxReopenInFlightRef.current
-              ) {
-                trackMeshcoreTcpUserTxSend(work);
+            try {
+              await runMeshcoreUserTxWithLiveTcp(async () => {
+                const liveConn = connRef.current;
+                if (!liveConn) throw new Error('Not connected to radio');
+                const work = liveConn.sendChannelTextMessage(channelIdx, textToSend);
+                if (
+                  isMeshcoreTcpOpenHopDeadAccepted() ||
+                  meshcoreOpenHopUserTxReopenInFlightRef.current
+                ) {
+                  trackMeshcoreTcpUserTxSend(work);
+                }
+                await work;
+              });
+            } catch (txErr) {
+              if (heardIdentityId) {
+                clearHeardRepeatWindowIfMessage(heardIdentityId, provisionalHeardId);
+                useRelayCoverageStore.getState().remove(heardIdentityId, provisionalHeardId);
               }
-              await work;
-            });
+              throw txErr;
+            }
             markMeshcoreCompanionTx();
             void fetchAndUpdateLocalStats().catch((e: unknown) => {
               console.warn(
@@ -4449,7 +4476,7 @@ export function useMeshcoreRuntime() {
                   errLikeToLogString(e),
               );
             });
-            addMessage({
+            const channelMsgId = addMessage({
               sender_id: myNodeNumRef.current,
               sender_name: selfInfo?.name ?? 'Me',
               payload: displayPayload,
@@ -4458,6 +4485,12 @@ export function useMeshcoreRuntime() {
               status: 'acked',
               replyId: replyField,
             });
+            if (channelMsgId && heardIdentityId && channelMsgId !== provisionalHeardId) {
+              renameHeardRepeatWindowMessageId(heardIdentityId, provisionalHeardId, channelMsgId);
+              useRelayCoverageStore
+                .getState()
+                .renameMessage(heardIdentityId, provisionalHeardId, channelMsgId);
+            }
             if (mqttStatusRef.current === 'connected') {
               void window.electronAPI.mqtt
                 .publishMeshcorePacketLog({

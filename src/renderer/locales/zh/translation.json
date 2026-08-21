@@ -711,7 +711,17 @@
       "startFailed": "无法开始语音备忘录录制。请重试。",
       "sendAriaWithElapsed": "发送语音备忘录（记录{{seconds}}秒）",
       "unavailable": "语音备忘录不可用—附件未缓存在此设备上。"
-    }
+    },
+    "heardByRepeaters_one": "{{count}}个节点听到",
+    "heardByRepeaters_other": "{{count}}个节点听到",
+    "heardByNetwork": "被网络听到",
+    "notHeardTimeout": "未听到（超时）",
+    "routeRelaysPredicted": "路线： ~ {{count}}通过{{hop}}继电器",
+    "routeViaPredicted": "路线：通过{{hop}}",
+    "routeRelaysPredictedHopsOnly": "路线： ~ {{count}}个继电器",
+    "heardByRepeatersDetail_one": "{{count}}个节点听到：{{names}}",
+    "heardByRepeatersDetail_other": "{{count}}个节点听到：{{names}}",
+    "heardByRepeaterNodeFallback": "节点{{nodeId}}"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

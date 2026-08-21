@@ -150,7 +150,7 @@ import {
   groupChatReactionsByParentKey,
   reactionLookupKeysForParentMessage,
 } from '../lib/storeRecordAdapters';
-import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
+import type { ChatMessage, IdentityId, MeshNode, MeshProtocol } from '../lib/types';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
@@ -160,6 +160,7 @@ import { ChatPayloadText } from './ChatPayloadText';
 import { ChatRfHopLabel } from './ChatRfHopLabel';
 import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
+import { RelayCoverageLine, relayCoverageMessageKey } from './RelayCoverageLine';
 import { ChatDmRncpControl } from './remote/ChatDmRncpControl';
 import { ChatDmRncpOfferBanner } from './remote/ChatDmRncpOfferBanner';
 import { ReticulumGameChallengeButton } from './reticulum/ReticulumGameChallengeButton';
@@ -505,6 +506,8 @@ export interface ChatPanelProps {
   isActive?: boolean;
   /** When `meshcore`, show full names, hide redundant RF-only transport badge. */
   protocol?: MeshProtocol;
+  /** Identity bucket used for in-memory relay coverage lookup (matches runtime writers). */
+  identityId?: IdentityId | null;
   /** Ref for scroll-to-top (Chat has its own Top button positioned inside the message list). */
   scrollToTopRef?: React.RefObject<(() => void) | null>;
   /**
@@ -581,6 +584,7 @@ function ChatPanel({
   onDmTargetConsumed,
   isActive = true,
   protocol = 'meshtastic',
+  identityId = null,
   scrollToTopRef,
   outerScrollMetricsRootRef,
   compactMode = false,
@@ -3192,6 +3196,22 @@ function ChatPanel({
                                     error={msg.error}
                                   />
                                 ) : null}
+                                <RelayCoverageLine
+                                  protocol={protocol}
+                                  messageId={relayCoverageMessageKey(msg)}
+                                  isOwn={isOwn}
+                                  identityId={identityId}
+                                />
+                              </div>
+                            )}
+                            {isOwn && !(msg.status || msg.mqttStatus) && (
+                              <div className="mt-0.5 flex items-center justify-end gap-1">
+                                <RelayCoverageLine
+                                  protocol={protocol}
+                                  messageId={relayCoverageMessageKey(msg)}
+                                  isOwn={isOwn}
+                                  identityId={identityId}
+                                />
                               </div>
                             )}
                           </div>
