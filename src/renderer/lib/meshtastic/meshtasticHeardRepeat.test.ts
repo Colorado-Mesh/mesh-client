@@ -71,6 +71,19 @@ describe('meshtasticHeardRepeat', () => {
     expect(useRelayCoverageStore.getState().coverageFor(ID, 'wire-99')?.broadcastHeard).toBe(true);
   });
 
+  it('still marks heard when coverage was already re-keyed by renameMessageId', () => {
+    markMeshtasticBroadcastPending(ID, 'temp-1');
+    useRelayCoverageStore.getState().renameMessage(ID, 'temp-1', 'wire-99');
+    applyMeshtasticBroadcastTransportStatus({
+      identityId: ID,
+      transport: 'device',
+      status: 'acked',
+      messageIdBefore: 'temp-1',
+      messageIdAfter: 'wire-99',
+    });
+    expect(useRelayCoverageStore.getState().coverageFor(ID, 'wire-99')?.broadcastHeard).toBe(true);
+  });
+
   it('device fail sets timeout after rename', () => {
     markMeshtasticBroadcastPending(ID, 'temp-1');
     applyMeshtasticBroadcastTransportStatus({

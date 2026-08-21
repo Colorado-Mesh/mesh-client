@@ -62,12 +62,15 @@ export function applyMeshtasticBroadcastTransportStatus(args: {
   if (status !== 'acked' && status !== 'failed') return;
 
   const store = useRelayCoverageStore.getState();
-  const existing = store.coverageFor(identityId, messageIdBefore);
+  // Coverage may already have been re-keyed by messageStore.renameMessageId.
+  const atBefore = store.coverageFor(identityId, messageIdBefore);
+  const atAfter = store.coverageFor(identityId, messageIdAfter);
+  const existing = atBefore ?? atAfter;
   if (existing?.protocol !== 'meshtastic' || existing.mode !== 'binary-heard') {
     return;
   }
 
-  if (messageIdBefore !== messageIdAfter) {
+  if (atBefore && messageIdBefore !== messageIdAfter) {
     store.renameMessage(identityId, messageIdBefore, messageIdAfter);
   }
 

@@ -135,7 +135,7 @@ export function sendReticulumChatMessage(opts: SendReticulumChatMessageOpts): bo
   }
   const peer = useReticulumPeerStore.getState().getPeer(destHash);
   setReticulumPredictedRoute(identityId, pendingId, {
-    hops: peer?.hops,
+    hops: peer?.hops ?? peer?.path_hops,
     viaHash: peer?.via_hash,
   });
   if (senderHash) {

@@ -717,7 +717,8 @@
     "heardByRepeatersDetail": "{{count}} tekrarlayıcı tarafından duyuldu: {{names}}",
     "heardByNetwork": "Ağ tarafından duyuldu",
     "notHeardTimeout": "Duyulmadı (zaman aşımı)",
-    "routeRelaysPredicted": "Güzergah: ~{{count}} {{hop}} üzerinden röleler"
+    "routeRelaysPredicted": "Güzergah: ~{{count}} {{hop}} üzerinden röleler",
+    "routeViaPredicted": "Güzergah: {{hop}} üzerinden"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

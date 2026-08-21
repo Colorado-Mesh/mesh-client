@@ -34,7 +34,7 @@ describe('reticulumRouteCoverage', () => {
     expect(useRelayCoverageStore.getState().coverageFor(ID, MSG)?.predictedRelayHops).toBe(0);
   });
 
-  it('missing / non-finite hops → no predictedRelayHops', () => {
+  it('missing / non-finite hops with via still stores predictedFirstHop', () => {
     setReticulumPredictedRoute(ID, MSG, { hops: Number.NaN, viaHash: 'abcdef' });
     const entry = useRelayCoverageStore.getState().coverageFor(ID, MSG);
     expect(entry?.predictedRelayHops).toBeUndefined();

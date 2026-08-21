@@ -118,16 +118,25 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
     expect(screen.getByLabelText(/abcdef/)).toBeInTheDocument();
   });
 
-  it('hides Reticulum line when hops missing', () => {
+  it('hides Reticulum line when hops and via are both missing', () => {
     useRelayCoverageStore.getState().set(IDENTITY, MSG, {
       protocol: 'reticulum',
       mode: 'predicted',
-      predictedFirstHop: 'abcdef',
     });
     const { container } = render(
       <RelayCoverageLine protocol="reticulum" messageId={MSG} isOwn identityId={IDENTITY} />,
     );
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it('renders Reticulum via-only route when hops are unknown', () => {
+    useRelayCoverageStore.getState().set(IDENTITY, MSG, {
+      protocol: 'reticulum',
+      mode: 'predicted',
+      predictedFirstHop: 'abcdef0123456789',
+    });
+    render(<RelayCoverageLine protocol="reticulum" messageId={MSG} isOwn identityId={IDENTITY} />);
+    expect(screen.getByText(/Route: via abcdef/)).toBeInTheDocument();
   });
 
   it('hides coverage on incoming messages even when seeded', () => {

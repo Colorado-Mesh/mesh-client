@@ -500,6 +500,7 @@
     "heardByNetwork": "Heard by network",
     "notHeardTimeout": "Not heard (timeout)",
     "routeRelaysPredicted": "Route: ~{{count}} relays via {{hop}}",
+    "routeViaPredicted": "Route: via {{hop}}",
     "reticulumSendSending": "Sending…",
     "reticulumSendPropagated": "Queued at propagation node",
     "reticulumSendStoredAtPn": "Stored at propagation node",

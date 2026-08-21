@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import {
   addMessage,
   mergeMessageRecordsFromDbForIdentity,
@@ -28,6 +29,7 @@ function sampleRecord(id: string, from = 1): MessageRecord {
 describe('messageStore structural sharing', () => {
   beforeEach(() => {
     useMessageStore.setState({ messages: {} });
+    useRelayCoverageStore.setState({ coverage: {} });
   });
 
   it('preserves other identity bucket references when adding to one identity', () => {
@@ -99,6 +101,24 @@ describe('messageStore replace and prune', () => {
 describe('messageStore rename / status guards for Reticulum Completes', () => {
   beforeEach(() => {
     useMessageStore.setState({ messages: {} });
+    useRelayCoverageStore.setState({ coverage: {} });
+  });
+
+  it('renameMessageId re-keys relay coverage with the message id', () => {
+    const pending = 'reticulum-pending-1';
+    const hash = 'cc'.repeat(32);
+    addMessage(ID_A, { ...sampleRecord(pending), status: 'sending' });
+    useRelayCoverageStore.getState().set(ID_A, pending, {
+      protocol: 'reticulum',
+      mode: 'predicted',
+      predictedRelayHops: 2,
+      predictedFirstHop: 'abcdef',
+    });
+
+    renameMessageId(ID_A, pending, hash);
+
+    expect(useRelayCoverageStore.getState().coverageFor(ID_A, pending)).toBeUndefined();
+    expect(useRelayCoverageStore.getState().coverageFor(ID_A, hash)?.predictedRelayHops).toBe(2);
   });
 
   it('renameMessageId does not clobber an acked Completes target', () => {

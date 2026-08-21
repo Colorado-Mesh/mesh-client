@@ -719,7 +719,8 @@
     "heardByRepeatersDetail": "Slyšeli {{count}} opakovači: {{names}}",
     "heardByNetwork": "Slyšen sítí",
     "notHeardTimeout": "Neslyšel (vypršel časový limit)",
-    "routeRelaysPredicted": "Trasa: ~{{count}} relé přes {{hop}}"
+    "routeRelaysPredicted": "Trasa: ~{{count}} relé přes {{hop}}",
+    "routeViaPredicted": "Trasa: přes {{hop}}"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

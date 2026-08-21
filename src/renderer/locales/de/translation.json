@@ -717,7 +717,8 @@
     "heardByRepeatersDetail": "Von {{count}} Repeatern gehört: {{names}}",
     "heardByNetwork": "Vom Netzwerk gehört",
     "notHeardTimeout": "Nicht gehört (Timeout)",
-    "routeRelaysPredicted": "Route: ~{{count}} Relais über {{hop}}"
+    "routeRelaysPredicted": "Route: ~{{count}} Relais über {{hop}}",
+    "routeViaPredicted": "Route: via {{hop}}"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

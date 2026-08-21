@@ -717,7 +717,8 @@
     "heardByRepeatersDetail": "Gehoord door {{count}} repeaters: {{names}}",
     "heardByNetwork": "Gehoord door netwerk",
     "notHeardTimeout": "Niet gehoord (time-out)",
-    "routeRelaysPredicted": "Route: ~{{count}} relais via {{hop}}"
+    "routeRelaysPredicted": "Route: ~{{count}} relais via {{hop}}",
+    "routeViaPredicted": "Route: via {{hop}}"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

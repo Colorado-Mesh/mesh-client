@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
+import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import type { IdentityId } from '../lib/types';
 import { omitRecordKey } from './storeUtils';
 
@@ -321,6 +322,10 @@ export function renameMessageId(identityId: IdentityId, fromId: string, toId: st
     }
     return mergeIdentityMessages(s, identityId, { ...rest, [toId]: { ...existing, id: toId } });
   });
+  // Keep in-memory relay coverage keyed to the same bubble id ChatPanel looks up.
+  if (fromId !== toId) {
+    useRelayCoverageStore.getState().renameMessage(identityId, fromId, toId);
+  }
 }
 
 export function updateMessageStatus(

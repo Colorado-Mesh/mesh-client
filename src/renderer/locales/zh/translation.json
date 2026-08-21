@@ -717,7 +717,8 @@
     "heardByRepeatersDetail": "{{count}}中继器听到： {{names}}",
     "heardByNetwork": "通过网络收听",
     "notHeardTimeout": "未听到（超时）",
-    "routeRelaysPredicted": "路线： ~ {{count}}通过{{hop}}继电器"
+    "routeRelaysPredicted": "路线： ~ {{count}}通过{{hop}}继电器",
+    "routeViaPredicted": "路线：通过{{hop}}"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

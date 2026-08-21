@@ -717,7 +717,8 @@
     "heardByRepeatersDetail": "{{count}}リピーターからの連絡： {{names}}",
     "heardByNetwork": "ネットワークで聞いた",
     "notHeardTimeout": "未聴取（タイムアウト）",
-    "routeRelaysPredicted": "経路：〜{{count}}リレー経由{{hop}}"
+    "routeRelaysPredicted": "経路：〜{{count}}リレー経由{{hop}}",
+    "routeViaPredicted": "経路： {{hop}}経由"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

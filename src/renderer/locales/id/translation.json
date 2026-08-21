@@ -717,7 +717,8 @@
     "heardByRepeatersDetail": "Didengar oleh {{count}} repeater: {{names}}",
     "heardByNetwork": "Didengar oleh jaringan",
     "notHeardTimeout": "Tidak terdengar (timeout)",
-    "routeRelaysPredicted": "Rute: ~{{count}} relai melalui {{hop}}"
+    "routeRelaysPredicted": "Rute: ~{{count}} relai melalui {{hop}}",
+    "routeViaPredicted": "Rute: via {{hop}}"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

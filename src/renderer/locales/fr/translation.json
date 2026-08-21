@@ -717,7 +717,8 @@
     "heardByRepeatersDetail": "Entendu par {{count}} répéteurs : {{names}}",
     "heardByNetwork": "Entendu par réseau",
     "notHeardTimeout": "Pas entendu (délai d'attente)",
-    "routeRelaysPredicted": "Itinéraire : ~{{count}} relais via {{hop}}"
+    "routeRelaysPredicted": "Itinéraire : ~{{count}} relais via {{hop}}",
+    "routeViaPredicted": "Itinéraire : via {{hop}}"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

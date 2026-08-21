@@ -55,22 +55,33 @@ function MeshtasticHeardLine({ coverage }: { coverage: RelayCoverage }): ReactEl
 
 function ReticulumRouteLine({ coverage }: { coverage: RelayCoverage }): ReactElement | null {
   const { t } = useTranslation();
-  if (coverage.predictedRelayHops == null) return null;
   const hop = coverage.predictedFirstHop?.trim().slice(0, 6) ?? '';
-  const label = t('chatPanel.routeRelaysPredicted', {
-    count: coverage.predictedRelayHops,
-    hop,
-  });
-  return (
-    <span className="text-xs text-cyan-400" aria-label={label} title={label}>
-      {label}
-    </span>
-  );
+  if (coverage.predictedRelayHops != null) {
+    const label = t('chatPanel.routeRelaysPredicted', {
+      count: coverage.predictedRelayHops,
+      hop,
+    });
+    return (
+      <span className="text-xs text-cyan-400" aria-label={label} title={label}>
+        {label}
+      </span>
+    );
+  }
+  if (hop) {
+    const label = t('chatPanel.routeViaPredicted', { hop });
+    return (
+      <span className="text-xs text-cyan-400" aria-label={label} title={label}>
+        {label}
+      </span>
+    );
+  }
+  return null;
 }
 
 /** Stable coverage lookup key matching filler writers (store canonical id / packet id). */
 export function relayCoverageMessageKey(msg: ChatMessage): string | undefined {
   if (msg.storeId) return msg.storeId;
+  if (msg.reticulum_message_hash) return msg.reticulum_message_hash;
   if (msg.id != null) return String(msg.id);
   if (msg.packetId != null) return String(msg.packetId);
   return undefined;

@@ -719,7 +719,8 @@
     "heardByRepeatersDetail": "Слухали повторювачі {{count}}: {{names}}",
     "heardByNetwork": "Прослуховується мережею",
     "notHeardTimeout": "Не почуто (час очікування)",
-    "routeRelaysPredicted": "Маршрут: ~{{count}} реле через {{hop}}"
+    "routeRelaysPredicted": "Маршрут: ~{{count}} реле через {{hop}}",
+    "routeViaPredicted": "Шлях доставки: Via {{hop}}"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

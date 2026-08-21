@@ -721,7 +721,8 @@
     "heardByRepeatersDetail": "Otrzymano od powtarzaczy {{count}}: {{names}}",
     "heardByNetwork": "Usłyszane przez sieć",
     "notHeardTimeout": "Nie słychać (limit czasu)",
-    "routeRelaysPredicted": "Trasa: ~{{count}} przekaźniki przez {{hop}}"
+    "routeRelaysPredicted": "Trasa: ~{{count}} przekaźniki przez {{hop}}",
+    "routeViaPredicted": "Trasa: via {{hop}}"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
