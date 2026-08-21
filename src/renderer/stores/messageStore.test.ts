@@ -198,6 +198,43 @@ describe('messageStore rename / status guards for Reticulum Completes', () => {
     });
   });
 
+  it('renameMessageId onto acked Completes drops from coverage without touching to coverage', () => {
+    const successHash = 'aa'.repeat(32);
+    const failedHash = 'bb'.repeat(32);
+    addMessage(ID_A, {
+      ...sampleRecord(successHash),
+      payload: 'just delivered',
+      status: 'acked',
+      timestamp: 2_000,
+    });
+    addMessage(ID_A, {
+      ...sampleRecord(failedHash),
+      payload: 'older failed',
+      status: 'sending',
+      timestamp: 1_000,
+    });
+    useRelayCoverageStore.getState().set(ID_A, successHash, {
+      protocol: 'reticulum',
+      mode: 'predicted',
+      predictedRelayHops: 1,
+      predictedFirstHop: 'deadbeef',
+    });
+    useRelayCoverageStore.getState().set(ID_A, failedHash, {
+      protocol: 'reticulum',
+      mode: 'predicted',
+      predictedRelayHops: 9,
+      predictedFirstHop: 'badbad',
+    });
+
+    renameMessageId(ID_A, failedHash, successHash);
+
+    expect(useRelayCoverageStore.getState().coverageFor(ID_A, failedHash)).toBeUndefined();
+    expect(useRelayCoverageStore.getState().coverageFor(ID_A, successHash)).toMatchObject({
+      predictedRelayHops: 1,
+      predictedFirstHop: 'deadbeef',
+    });
+  });
+
   it('renameMessageId carries voice-memo attachment metadata onto an acked Completes target', () => {
     const successHash = 'aa'.repeat(32);
     const pending = 'reticulum-pending-voice-1';

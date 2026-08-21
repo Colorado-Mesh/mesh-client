@@ -2,7 +2,10 @@ import { create } from 'zustand';
 
 import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
-import { renameHeardRepeatWindowMessageId } from '../lib/meshcore/heardRepeatTracker';
+import {
+  clearHeardRepeatWindowIfMessage,
+  renameHeardRepeatWindowMessageId,
+} from '../lib/meshcore/heardRepeatTracker';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import type { IdentityId } from '../lib/types';
 import { omitRecordKey } from './storeUtils';
@@ -286,6 +289,11 @@ export function pruneMessageRecordsForIdentityByChannel(
  * delivered bubble into ⏳ via hash collision / rename races.
  */
 export function renameMessageId(identityId: IdentityId, fromId: string, toId: string): void {
+  const before = useMessageStore.getState().messages[identityId];
+  const fromExisting = before?.[fromId];
+  const dropOntoAckedCompletes =
+    fromId !== toId && fromExisting != null && before?.[toId]?.status === 'acked';
+
   useMessageStore.setState((s) => {
     const byIdentity = s.messages[identityId];
     const existing = byIdentity?.[fromId];
@@ -323,11 +331,18 @@ export function renameMessageId(identityId: IdentityId, fromId: string, toId: st
     }
     return mergeIdentityMessages(s, identityId, { ...rest, [toId]: { ...existing, id: toId } });
   });
+
   // Keep in-memory relay coverage keyed to the same bubble id ChatPanel looks up.
-  if (fromId !== toId) {
-    useRelayCoverageStore.getState().renameMessage(identityId, fromId, toId);
-    renameHeardRepeatWindowMessageId(identityId, fromId, toId);
+  // When dropping onto an already-acked Completes target, discard `fromId` coverage only —
+  // do not merge/rename onto the delivered bubble (hash-collision retries).
+  if (fromId === toId || fromExisting == null) return;
+  if (dropOntoAckedCompletes) {
+    useRelayCoverageStore.getState().remove(identityId, fromId);
+    clearHeardRepeatWindowIfMessage(identityId, fromId);
+    return;
   }
+  useRelayCoverageStore.getState().renameMessage(identityId, fromId, toId);
+  renameHeardRepeatWindowMessageId(identityId, fromId, toId);
 }
 
 export function updateMessageStatus(
