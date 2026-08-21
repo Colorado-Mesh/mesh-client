@@ -720,7 +720,8 @@
     "heardByNetwork": "Slyšen sítí",
     "notHeardTimeout": "Neslyšel (vypršel časový limit)",
     "routeRelaysPredicted": "Trasa: ~{{count}} relé přes {{hop}}",
-    "routeViaPredicted": "Trasa: přes {{hop}}"
+    "routeViaPredicted": "Trasa: přes {{hop}}",
+    "routeRelaysPredictedHopsOnly": "Trasa: ~{{count}} relé"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

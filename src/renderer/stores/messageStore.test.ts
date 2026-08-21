@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { meshcoreNodeHash } from '@/shared/meshcoreNodeHash';
+
+import {
+  openHeardRepeatWindow,
+  recordMeshcoreRfRx,
+  resetHeardRepeatWindowsForTests,
+} from '../lib/meshcore/heardRepeatTracker';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import {
   addMessage,
@@ -119,6 +126,50 @@ describe('messageStore rename / status guards for Reticulum Completes', () => {
 
     expect(useRelayCoverageStore.getState().coverageFor(ID_A, pending)).toBeUndefined();
     expect(useRelayCoverageStore.getState().coverageFor(ID_A, hash)?.predictedRelayHops).toBe(2);
+  });
+
+  it('renameMessageId keeps MeshCore heard-repeat window on the new message id', () => {
+    resetHeardRepeatWindowsForTests();
+    const provisional = 'out:meshcore-1';
+    const persisted = 'wire-meshcore-1';
+    const repeaterId = 0x0a0b0c0d;
+    addMessage(ID_A, { ...sampleRecord(provisional), status: 'sending' });
+    openHeardRepeatWindow(ID_A, provisional);
+
+    renameMessageId(ID_A, provisional, persisted);
+
+    recordMeshcoreRfRx({
+      identityId: ID_A,
+      isOwnMeshcoreTx: true,
+      pathBytes: [meshcoreNodeHash(repeaterId)],
+      pathHashSizeBytes: 1,
+      myNodeNum: 0x01020304,
+      candidates: [{ node_id: repeaterId, last_heard: 200 }],
+      resolveRepeater: (nodeId) => (nodeId === repeaterId ? { nodeId, name: 'Rep Alpha' } : null),
+    });
+
+    expect(useRelayCoverageStore.getState().coverageFor(ID_A, provisional)).toBeUndefined();
+    expect(useRelayCoverageStore.getState().coverageFor(ID_A, persisted)?.heardRepeaters).toEqual([
+      { nodeId: repeaterId, name: 'Rep Alpha', snr: undefined, rssi: undefined },
+    ]);
+  });
+
+  it('renameMessageId keeps hops-only predicted coverage (no via) after pending→hash', () => {
+    const pending = 'reticulum-pending-hops-only';
+    const hash = 'dd'.repeat(32);
+    addMessage(ID_A, { ...sampleRecord(pending), status: 'sending' });
+    useRelayCoverageStore.getState().set(ID_A, pending, {
+      protocol: 'reticulum',
+      mode: 'predicted',
+      predictedRelayHops: 2,
+    });
+
+    renameMessageId(ID_A, pending, hash);
+
+    const coverage = useRelayCoverageStore.getState().coverageFor(ID_A, hash);
+    expect(coverage?.predictedRelayHops).toBe(2);
+    expect(coverage?.predictedFirstHop).toBeUndefined();
+    expect(useRelayCoverageStore.getState().coverageFor(ID_A, pending)).toBeUndefined();
   });
 
   it('renameMessageId does not clobber an acked Completes target', () => {

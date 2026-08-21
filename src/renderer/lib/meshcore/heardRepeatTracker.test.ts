@@ -4,11 +4,15 @@ import { useRelayCoverageStore } from '@/renderer/lib/relayCoverage/relayCoverag
 import { meshcoreNodeHash } from '@/shared/meshcoreNodeHash';
 
 import {
+  listMeshcorePathPrefixMatches,
   MESHCORE_HEARD_REPEAT_WINDOW_MS,
   openHeardRepeatWindow,
   recordMeshcoreRfRx,
+  renameHeardRepeatWindowMessageId,
   resetHeardRepeatWindowsForTests,
+  resolveMeshcoreHeardPathHopFromNode,
   resolveMeshcoreHeardRepeaterFromNode,
+  syntheticHeardNodeIdFromPathSegment,
 } from './heardRepeatTracker';
 
 const IDENTITY = 'mc-id-1';
@@ -25,6 +29,13 @@ function hashByte(nodeId: number): number {
 }
 
 function resolveRepeater(nodeId: number) {
+  if (nodeId === REPEATER_ID) return { nodeId, name: 'Rep Alpha' };
+  if (nodeId === ROOM_ID) return { nodeId, name: 'Room Beta' };
+  return null;
+}
+
+function resolvePathHop(nodeId: number) {
+  if (nodeId === CHAT_ID) return { nodeId, name: 'Chat Gamma' };
   if (nodeId === REPEATER_ID) return { nodeId, name: 'Rep Alpha' };
   if (nodeId === ROOM_ID) return { nodeId, name: 'Room Beta' };
   return null;
@@ -169,6 +180,100 @@ describe('heardRepeatTracker', () => {
     );
   });
 
+  it('credits GRP_TXT channel-flood path hashes without cleartext self-origin', () => {
+    openHeardRepeatWindow(IDENTITY, MSG_A);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: false,
+      treatAsOwnChannelFlood: true,
+      pathBytes: [hashByte(REPEATER_ID)],
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      candidates,
+      resolveRepeater,
+    });
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
+      { nodeId: REPEATER_ID, name: 'Rep Alpha' },
+    ]);
+  });
+
+  it('treatAsOwnChannelFlood without an open window does not create coverage', () => {
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: false,
+      treatAsOwnChannelFlood: true,
+      pathBytes: [hashByte(REPEATER_ID)],
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      candidates,
+      resolveRepeater,
+    });
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)).toBeUndefined();
+  });
+
+  it('treatAsOwnChannelFlood credits Chat path hops via resolvePathHop fallback', () => {
+    openHeardRepeatWindow(IDENTITY, MSG_A);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: false,
+      treatAsOwnChannelFlood: true,
+      pathBytes: [hashByte(CHAT_ID)],
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      candidates,
+      resolveRepeater,
+      resolvePathHop,
+    });
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
+      { nodeId: CHAT_ID, name: 'Chat Gamma' },
+    ]);
+  });
+
+  it('prefers Repeater over fresher Chat on 1-byte path hash collision', () => {
+    const collideChat = 257; // same XOR hash as REPEATER_ID (0)
+    expect(hashByte(collideChat)).toBe(hashByte(REPEATER_ID));
+    openHeardRepeatWindow(IDENTITY, MSG_A);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: false,
+      treatAsOwnChannelFlood: true,
+      pathBytes: [hashByte(REPEATER_ID)],
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      candidates: [
+        { node_id: collideChat, last_heard: 999 },
+        { node_id: REPEATER_ID, last_heard: 1 },
+        { node_id: MY_NODE, last_heard: 100 },
+      ],
+      resolveRepeater: (id) => (id === REPEATER_ID ? { nodeId: id, name: 'Rep Alpha' } : null),
+      resolvePathHop: (id) =>
+        id === collideChat ? { nodeId: id, name: 'Fresh Chat' } : resolvePathHop(id),
+    });
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
+      { nodeId: REPEATER_ID, name: 'Rep Alpha' },
+    ]);
+  });
+
+  it('credits unresolved path segments as hex labels', () => {
+    openHeardRepeatWindow(IDENTITY, MSG_A);
+    const segment = Uint8Array.of(0xde, 0xad);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: true,
+      pathBytes: [0xde, 0xad],
+      pathHashSizeBytes: 2,
+      myNodeNum: MY_NODE,
+      candidates: [],
+      resolveRepeater,
+    });
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
+      {
+        nodeId: syntheticHeardNodeIdFromPathSegment(segment),
+        name: 'dead',
+      },
+    ]);
+  });
+
   it('no-ops when no window is open', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
@@ -203,6 +308,25 @@ describe('heardRepeatTracker', () => {
     ]);
   });
 
+  it('renameHeardRepeatWindowMessageId routes later credits to the new message id', () => {
+    openHeardRepeatWindow(IDENTITY, MSG_A);
+    useRelayCoverageStore.getState().renameMessage(IDENTITY, MSG_A, MSG_B);
+    renameHeardRepeatWindowMessageId(IDENTITY, MSG_A, MSG_B);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: true,
+      pathBytes: [hashByte(REPEATER_ID)],
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      candidates,
+      resolveRepeater,
+    });
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)).toBeUndefined();
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_B)?.heardRepeaters).toEqual([
+      { nodeId: REPEATER_ID, name: 'Rep Alpha', snr: undefined, rssi: undefined },
+    ]);
+  });
+
   it('resolves multibyte path segments via pubkey prefix', () => {
     const pubKey = new Uint8Array(32);
     pubKey[0] = 0xab;
@@ -223,7 +347,7 @@ describe('heardRepeatTracker', () => {
     ]);
   });
 
-  it('empty pathBytes and unresolved hashes do not credit', () => {
+  it('empty pathBytes do not credit; unresolved hashes credit as hex', () => {
     openHeardRepeatWindow(IDENTITY, MSG_A);
     recordMeshcoreRfRx({
       identityId: IDENTITY,
@@ -234,6 +358,9 @@ describe('heardRepeatTracker', () => {
       candidates,
       resolveRepeater,
     });
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual(
+      [],
+    );
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
@@ -243,9 +370,12 @@ describe('heardRepeatTracker', () => {
       candidates: [],
       resolveRepeater,
     });
-    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual(
-      [],
-    );
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
+      {
+        nodeId: syntheticHeardNodeIdFromPathSegment(Uint8Array.of(0x00)),
+        name: '00',
+      },
+    ]);
   });
 
   it('resolveMeshcoreHeardRepeaterFromNode filters by hw_model', () => {
@@ -258,6 +388,19 @@ describe('heardRepeatTracker', () => {
     expect(
       resolveMeshcoreHeardRepeaterFromNode(2, { hw_model: 'Chat', long_name: 'C' }),
     ).toBeNull();
+    expect(resolveMeshcoreHeardPathHopFromNode(2, { long_name: 'C' })).toEqual({
+      nodeId: 2,
+      name: 'C',
+    });
+  });
+
+  it('listMeshcorePathPrefixMatches returns all 1-byte collisions freshest-first', () => {
+    const collide = 257;
+    const ids = listMeshcorePathPrefixMatches(Uint8Array.of(hashByte(REPEATER_ID)), [
+      { node_id: collide, last_heard: 50 },
+      { node_id: REPEATER_ID, last_heard: 10 },
+    ]);
+    expect(ids).toEqual([collide, REPEATER_ID]);
   });
 
   it('default window matches MESHCORE_HEARD_REPEAT_WINDOW_MS', () => {

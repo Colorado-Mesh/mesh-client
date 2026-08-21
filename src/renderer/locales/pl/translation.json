@@ -722,7 +722,8 @@
     "heardByNetwork": "Usłyszane przez sieć",
     "notHeardTimeout": "Nie słychać (limit czasu)",
     "routeRelaysPredicted": "Trasa: ~{{count}} przekaźniki przez {{hop}}",
-    "routeViaPredicted": "Trasa: via {{hop}}"
+    "routeViaPredicted": "Trasa: via {{hop}}",
+    "routeRelaysPredictedHopsOnly": "Trasa: ~{{count}} przekaźniki"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

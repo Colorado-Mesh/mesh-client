@@ -718,7 +718,8 @@
     "heardByNetwork": "Sentito dalla rete",
     "notHeardTimeout": "Non sentito (timeout)",
     "routeRelaysPredicted": "Percorso: ~{{count}} relè tramite {{hop}}",
-    "routeViaPredicted": "Percorso: via {{hop}}"
+    "routeViaPredicted": "Percorso: via {{hop}}",
+    "routeRelaysPredictedHopsOnly": "Percorso: ~{{count}} relè"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

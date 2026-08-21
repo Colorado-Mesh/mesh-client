@@ -718,7 +718,8 @@
     "heardByNetwork": "通过网络收听",
     "notHeardTimeout": "未听到（超时）",
     "routeRelaysPredicted": "路线： ~ {{count}}通过{{hop}}继电器",
-    "routeViaPredicted": "路线：通过{{hop}}"
+    "routeViaPredicted": "路线：通过{{hop}}",
+    "routeRelaysPredictedHopsOnly": "路线： ~ {{count}}个继电器"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

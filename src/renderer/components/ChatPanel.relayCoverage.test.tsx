@@ -4,6 +4,7 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
+import { addMessage, renameMessageId, useMessageStore } from '../stores/messageStore';
 import ChatPanel from './ChatPanel';
 import { RelayCoverageLine } from './RelayCoverageLine';
 import { ToastProvider } from './Toast';
@@ -35,6 +36,7 @@ vi.mock('@tanstack/react-virtual', () => ({
 describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
   beforeEach(() => {
     useRelayCoverageStore.setState({ coverage: {} });
+    useMessageStore.setState({ messages: {} });
   });
 
   it('renders MeshCore singular heard-by with name and SNR in aria', () => {
@@ -118,6 +120,58 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
     expect(screen.getByLabelText(/abcdef/)).toBeInTheDocument();
   });
 
+  it('renders Reticulum hops-only route when via is missing', () => {
+    useRelayCoverageStore.getState().set(IDENTITY, MSG, {
+      protocol: 'reticulum',
+      mode: 'predicted',
+      predictedRelayHops: 2,
+    });
+    render(<RelayCoverageLine protocol="reticulum" messageId={MSG} isOwn identityId={IDENTITY} />);
+    expect(screen.getByText('Route: ~2 relays')).toBeInTheDocument();
+    expect(screen.queryByText(/via$/)).not.toBeInTheDocument();
+  });
+
+  it('still shows Reticulum route after pending→hash renameMessageId', () => {
+    const pending = 'reticulum-pending-ui';
+    const hash = 'ee'.repeat(32);
+    addMessage(IDENTITY, {
+      id: pending,
+      from: 1,
+      senderName: 'Me',
+      to: 2,
+      payload: 'hi',
+      channelIndex: 0,
+      timestamp: 1,
+      status: 'sending',
+    });
+    useRelayCoverageStore.getState().set(IDENTITY, pending, {
+      protocol: 'reticulum',
+      mode: 'predicted',
+      predictedRelayHops: 2,
+      predictedFirstHop: 'abcdef0123456789',
+    });
+    renameMessageId(IDENTITY, pending, hash);
+
+    render(<RelayCoverageLine protocol="reticulum" messageId={hash} isOwn identityId={IDENTITY} />);
+    expect(screen.getByText(/Route: ~2 relays via abcdef/)).toBeInTheDocument();
+  });
+
+  it('uses identityId prop when getIdentityIdForProtocol points elsewhere', () => {
+    const otherId = 'focused-meshcore-id';
+    useRelayCoverageStore.getState().set(otherId, MSG, {
+      protocol: 'meshcore',
+      mode: 'confirmed',
+      heardRepeaters: [{ nodeId: 9, name: 'FocusedRep' }],
+    });
+    // Mock returns IDENTITY; coverage lives under otherId — prop must win.
+    const { rerender } = render(
+      <RelayCoverageLine protocol="meshcore" messageId={MSG} isOwn identityId={otherId} />,
+    );
+    expect(screen.getByText('Heard by 1 repeater')).toBeInTheDocument();
+    rerender(<RelayCoverageLine protocol="meshcore" messageId={MSG} isOwn />);
+    expect(screen.queryByText('Heard by 1 repeater')).not.toBeInTheDocument();
+  });
+
   it('hides Reticulum line when hops and via are both missing', () => {
     useRelayCoverageStore.getState().set(IDENTITY, MSG, {
       protocol: 'reticulum',
@@ -199,10 +253,92 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
           nodes={new Map()}
           isActive
           protocol="meshtastic"
+          identityId={IDENTITY}
         />
       </ToastProvider>,
     );
     expect(screen.getByText('hello channel')).toBeInTheDocument();
     expect(screen.getByText('Heard by network')).toBeInTheDocument();
+  });
+
+  it('shows Reticulum hops-only coverage inside ChatPanel status row', () => {
+    const storeId = 'reticulum-pending-chat';
+    const now = Date.now();
+    useRelayCoverageStore.getState().set(IDENTITY, storeId, {
+      protocol: 'reticulum',
+      mode: 'predicted',
+      predictedRelayHops: 2,
+    });
+    render(
+      <ToastProvider>
+        <ChatPanel
+          messages={[
+            {
+              storeId,
+              sender_id: 1,
+              sender_name: 'Me',
+              payload: 'rns dm',
+              channel: 0,
+              timestamp: now,
+              status: 'sending',
+              to: 2,
+            },
+          ]}
+          channels={[{ index: 0, name: 'DM' }]}
+          myNodeNum={1}
+          onSend={vi.fn()}
+          onReact={vi.fn().mockResolvedValue(undefined)}
+          onResend={vi.fn()}
+          onNodeClick={vi.fn()}
+          isConnected
+          nodes={new Map()}
+          isActive
+          protocol="reticulum"
+          identityId={IDENTITY}
+          dmOnlyChat
+          showLxmfDeliveryStatus
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByText('Route: ~2 relays')).toBeInTheDocument();
+  });
+
+  it('shows MeshCore heard-by inside ChatPanel status row', () => {
+    const storeId = 'ch:0:1700000000';
+    const now = Date.now();
+    useRelayCoverageStore.getState().set(IDENTITY, storeId, {
+      protocol: 'meshcore',
+      mode: 'confirmed',
+      heardRepeaters: [{ nodeId: 3, name: 'Hilltop', snr: 2 }],
+    });
+    render(
+      <ToastProvider>
+        <ChatPanel
+          messages={[
+            {
+              storeId,
+              sender_id: 7,
+              sender_name: 'Me',
+              payload: 'mc channel',
+              channel: 0,
+              timestamp: now,
+              status: 'acked',
+            },
+          ]}
+          channels={[{ index: 0, name: 'Public' }]}
+          myNodeNum={7}
+          onSend={vi.fn()}
+          onReact={vi.fn().mockResolvedValue(undefined)}
+          onResend={vi.fn()}
+          onNodeClick={vi.fn()}
+          isConnected
+          nodes={new Map()}
+          isActive
+          protocol="meshcore"
+          identityId={IDENTITY}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByText('Heard by 1 repeater')).toBeInTheDocument();
   });
 });

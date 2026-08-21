@@ -55,4 +55,11 @@ describe('reticulumRouteCoverage', () => {
       useRelayCoverageStore.getState().coverageFor(ID, MSG)?.predictedFirstHop,
     ).toBeUndefined();
   });
+
+  it('stores hops-only coverage when via is absent (UI uses hops-only label)', () => {
+    setReticulumPredictedRoute(ID, MSG, { hops: 3 });
+    const entry = useRelayCoverageStore.getState().coverageFor(ID, MSG);
+    expect(entry?.predictedRelayHops).toBe(2);
+    expect(entry?.predictedFirstHop).toBeUndefined();
+  });
 });

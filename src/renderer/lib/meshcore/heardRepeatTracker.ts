@@ -1,14 +1,11 @@
 import type { HeardRepeater } from '@/renderer/lib/relayCoverage/relayCoverageStore';
 import { useRelayCoverageStore } from '@/renderer/lib/relayCoverage/relayCoverageStore';
 import type { IdentityId } from '@/renderer/lib/types';
-import type { NodeHashCandidate } from '@/shared/meshcoreNodeHash';
-import {
-  meshcoreResolveNodeFromPathPrefix,
-  meshcoreSplitPathHashSegments,
-} from '@/shared/meshcorePathHash';
+import { meshcoreNodeHash, type NodeHashCandidate } from '@/shared/meshcoreNodeHash';
+import { meshcoreSplitPathHashSegments } from '@/shared/meshcorePathHash';
 
 /** Window after a channel TX during which we credit rebroadcasts to that message. */
-export const MESHCORE_HEARD_REPEAT_WINDOW_MS = 6000;
+export const MESHCORE_HEARD_REPEAT_WINDOW_MS = 20_000;
 
 export type MeshcoreHashSizeBytes = 1 | 2 | 3;
 
@@ -26,6 +23,18 @@ const pendingByIdentity = new Map<IdentityId, PendingWindow>();
 
 export function resetHeardRepeatWindowsForTests(): void {
   pendingByIdentity.clear();
+}
+
+/** Keep the listen window message id in sync when the bubble id is renamed. */
+export function renameHeardRepeatWindowMessageId(
+  identityId: IdentityId,
+  fromMessageId: string,
+  toMessageId: string,
+): void {
+  if (fromMessageId === toMessageId) return;
+  const w = pendingByIdentity.get(identityId);
+  if (w?.messageId !== fromMessageId) return;
+  pendingByIdentity.set(identityId, { ...w, messageId: toMessageId });
 }
 
 export function openHeardRepeatWindow(
@@ -54,9 +63,68 @@ function activeWindow(identityId: IdentityId, now: number): PendingWindow | null
   return w;
 }
 
+function prefixMatches(pubKey: Uint8Array, segment: Uint8Array): boolean {
+  if (segment.length === 0 || pubKey.length < segment.length) return false;
+  for (let i = 0; i < segment.length; i++) {
+    if ((pubKey[i] & 0xff) !== (segment[i] & 0xff)) return false;
+  }
+  return true;
+}
+
+/**
+ * All known nodes matching a path-hash segment, freshest first.
+ * Unlike {@link meshcoreResolveNodeFromPathPrefix}, does not collapse collisions to one id —
+ * callers can prefer Repeater/Room among matches.
+ */
+export function listMeshcorePathPrefixMatches(
+  prefixBytes: Uint8Array,
+  candidates: readonly NodeHashCandidate[],
+  pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>,
+): number[] {
+  if (prefixBytes.length === 0 || candidates.length === 0) return [];
+
+  const matches: NodeHashCandidate[] = [];
+  if (prefixBytes.length === 1) {
+    const prefix = prefixBytes[0] & 0xff;
+    for (const node of candidates) {
+      if (meshcoreNodeHash(node.node_id) === prefix) matches.push(node);
+    }
+  } else {
+    for (const node of candidates) {
+      const pubKey = pubKeyByNodeId?.get(node.node_id);
+      if (!pubKey || !prefixMatches(pubKey, prefixBytes)) continue;
+      matches.push(node);
+    }
+  }
+
+  matches.sort((a, b) => b.last_heard - a.last_heard);
+  return matches.map((m) => m.node_id);
+}
+
+/** Stable negative id for an unresolved on-air path segment (avoids real node_id space). */
+export function syntheticHeardNodeIdFromPathSegment(segment: Uint8Array): number {
+  let h = 0x811c9dc5;
+  for (const byte of segment) {
+    h ^= byte;
+    h = Math.imul(h, 0x01000193);
+  }
+  return h | 0x80000000 | 0;
+}
+
+function pathSegmentHex(segment: Uint8Array): string {
+  return Array.from(segment, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export interface RecordMeshcoreRfRxArgs {
   identityId: IdentityId;
   isOwnMeshcoreTx: boolean;
+  /**
+   * GRP_TXT channel floods do not carry a cleartext originator pubkey, so
+   * `isOwnMeshcoreTx` is usually false on repeater overhears. When true and a
+   * listen window is open, credit path hashes without cleartext self-origin proof.
+   * Concurrent foreign channel floods in the same window can false-credit.
+   */
+  treatAsOwnChannelFlood?: boolean;
   pathBytes: readonly number[];
   pathHashSizeBytes: MeshcoreHashSizeBytes;
   myNodeNum: number;
@@ -65,17 +133,23 @@ export interface RecordMeshcoreRfRxArgs {
   now?: number;
   candidates: readonly NodeHashCandidate[];
   pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
-  /** Return a repeater entry only when the resolved node is Repeater/Room; else null. */
+  /** Prefer Repeater/Room; return null for other roles. */
   resolveRepeater: (nodeId: number) => MeshcoreHeardRepeater | null;
+  /**
+   * Fallback when no Repeater/Room matches the path hash (collisions / contact_type None).
+   * Path hops still prove an on-air forwarder heard the TX.
+   */
+  resolvePathHop?: (nodeId: number) => MeshcoreHeardRepeater | null;
 }
 
 /**
- * Credit foreign Repeater/Room path hashes on a self-originated RF overhear to the open TX window.
+ * Credit foreign path hashes on a self-originated / channel-flood RF overhear to the open TX window.
  */
 export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
   const {
     identityId,
     isOwnMeshcoreTx,
+    treatAsOwnChannelFlood,
     pathBytes,
     pathHashSizeBytes,
     myNodeNum,
@@ -84,9 +158,10 @@ export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
     candidates,
     pubKeyByNodeId,
     resolveRepeater,
+    resolvePathHop,
   } = args;
   const now = args.now ?? Date.now();
-  if (!isOwnMeshcoreTx) return;
+  if (!isOwnMeshcoreTx && !treatAsOwnChannelFlood) return;
   const window = activeWindow(identityId, now);
   if (!window) return;
   if (pathBytes.length === 0) return;
@@ -101,17 +176,43 @@ export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
   let changed = false;
 
   for (const segment of segments) {
-    const nodeId = meshcoreResolveNodeFromPathPrefix(segment, [...candidates], pubKeyByNodeId);
-    if (nodeId == null || nodeId === myNodeNum) continue;
-    const repeater = resolveRepeater(nodeId);
-    if (!repeater) continue;
+    const matches = listMeshcorePathPrefixMatches(segment, candidates, pubKeyByNodeId);
+    let credited: MeshcoreHeardRepeater | null = null;
+
+    for (const nodeId of matches) {
+      if (nodeId === myNodeNum) continue;
+      const repeater = resolveRepeater(nodeId);
+      if (repeater) {
+        credited = repeater;
+        break;
+      }
+    }
+    if (!credited && resolvePathHop) {
+      for (const nodeId of matches) {
+        if (nodeId === myNodeNum) continue;
+        const hop = resolvePathHop(nodeId);
+        if (hop) {
+          credited = hop;
+          break;
+        }
+      }
+    }
+    if (!credited && matches.length === 0 && segment.length > 0) {
+      const hex = pathSegmentHex(segment);
+      credited = {
+        nodeId: syntheticHeardNodeIdFromPathSegment(segment),
+        name: hex,
+      };
+    }
+    if (!credited) continue;
+
     const next: HeardRepeater = {
-      nodeId: repeater.nodeId,
-      name: repeater.name,
-      snr: snr ?? repeater.snr,
-      rssi: rssi ?? repeater.rssi,
+      nodeId: credited.nodeId,
+      name: credited.name,
+      snr: snr ?? credited.snr,
+      rssi: rssi ?? credited.rssi,
     };
-    const existing = byId.get(nodeId);
+    const existing = byId.get(next.nodeId);
     if (
       existing &&
       existing.name === next.name &&
@@ -120,7 +221,7 @@ export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
     ) {
       continue;
     }
-    byId.set(nodeId, next);
+    byId.set(next.nodeId, next);
     changed = true;
   }
 
@@ -133,7 +234,7 @@ export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
   });
 }
 
-/** True when MeshCore contact `hw_model` is a relay role we credit for heard-repeat. */
+/** True when MeshCore contact `hw_model` is a relay role we prefer for heard-repeat. */
 export function isMeshcoreHeardRepeatRole(hwModel: string | null | undefined): boolean {
   return hwModel === 'Repeater' || hwModel === 'Room';
 }
@@ -143,6 +244,16 @@ export function resolveMeshcoreHeardRepeaterFromNode(
   node: { long_name?: string | null; short_name?: string | null; hw_model?: string | null } | null,
 ): MeshcoreHeardRepeater | null {
   if (!node || !isMeshcoreHeardRepeatRole(node.hw_model)) return null;
+  const name = node.long_name?.trim() || node.short_name?.trim() || undefined;
+  return { nodeId, name };
+}
+
+/** Any foreign contact as a path hop (fallback when role is not Repeater/Room). */
+export function resolveMeshcoreHeardPathHopFromNode(
+  nodeId: number,
+  node: { long_name?: string | null; short_name?: string | null } | null,
+): MeshcoreHeardRepeater | null {
+  if (!node) return null;
   const name = node.long_name?.trim() || node.short_name?.trim() || undefined;
   return { nodeId, name };
 }

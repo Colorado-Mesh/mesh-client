@@ -6,6 +6,7 @@ import { messageToDbRow } from '../hooks/meshcore/meshcoreHookPreamble';
 import { isMeshcoreOpenWireCompatEnabled } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
+import { openHeardRepeatWindow } from '../lib/meshcore/heardRepeatTracker';
 import {
   isMeshcoreTcpOpenHopDeadAccepted,
   trackMeshcoreTcpUserTxSend,
@@ -190,6 +191,13 @@ export function useSendMessage(
         replyTo,
       };
       addMessage(identityId, record);
+
+      // MeshCore channel floods: Chat sends via this hook (not useMeshcoreRuntime).
+      // Open the heard-repeat listen window on the provisional bubble id (renameMessageId
+      // re-keys coverage if packetId later replaces it).
+      if (isMeshcore && !isMeshcoreDm) {
+        openHeardRepeatWindow(identityId, provisionalId);
+      }
 
       if (isMeshtastic) {
         void window.electronAPI.db

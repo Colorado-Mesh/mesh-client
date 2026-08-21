@@ -43,7 +43,11 @@ import { getStoredMeshProtocol } from '../storedMeshProtocol';
 import { meshNodeToNodeRecord } from '../storeRecordAdapters';
 import { MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS } from '../timeConstants';
 import type { MeshNode, MQTTStatus, TelemetryPoint } from '../types';
-import { recordMeshcoreRfRx, resolveMeshcoreHeardRepeaterFromNode } from './heardRepeatTracker';
+import {
+  recordMeshcoreRfRx,
+  resolveMeshcoreHeardPathHopFromNode,
+  resolveMeshcoreHeardRepeaterFromNode,
+} from './heardRepeatTracker';
 import type { DeviceLogEntry, MeshCoreSelfInfo, RxPacketEntry } from './meshcoreHookTypes';
 import { persistMeshcoreNodeInfoAfterAdvert } from './meshcoreLiveContactPersist';
 import {
@@ -697,13 +701,16 @@ function applyMeshcoreHeardRepeatFromRfRx(
   const isSelfRf = meshcoreRfIsSelfOriginated(rawU8, selfPubKey, myNodeNum);
   const isOwnMeshcoreTx =
     isSelfRf || (effectiveFromNodeId != null && effectiveFromNodeId === myNodeNum);
-  if (!isOwnMeshcoreTx) return;
+  // GRP_TXT has no cleartext originator — still credit path hashes while a TX window is open.
+  const treatAsOwnChannelFlood = ctx.payloadTypeString === 'GRP_TXT';
+  if (!isOwnMeshcoreTx && !treatAsOwnChannelFlood) return;
 
   const nodes = deps.readNodes();
   const resolution = buildMeshcorePathResolutionFromNodes(nodes);
   recordMeshcoreRfRx({
     identityId,
-    isOwnMeshcoreTx: true,
+    isOwnMeshcoreTx,
+    treatAsOwnChannelFlood,
     pathBytes: ctx.pathBytes,
     pathHashSizeBytes: ctx.pathHashSizeBytes,
     myNodeNum,
@@ -714,6 +721,8 @@ function applyMeshcoreHeardRepeatFromRfRx(
     pubKeyByNodeId: resolution.pubKeyByNodeId,
     resolveRepeater: (nodeId) =>
       resolveMeshcoreHeardRepeaterFromNode(nodeId, nodes.get(nodeId) ?? null),
+    resolvePathHop: (nodeId) =>
+      resolveMeshcoreHeardPathHopFromNode(nodeId, nodes.get(nodeId) ?? null),
   });
 }
 

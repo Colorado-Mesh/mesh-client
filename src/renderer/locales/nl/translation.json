@@ -718,7 +718,8 @@
     "heardByNetwork": "Gehoord door netwerk",
     "notHeardTimeout": "Niet gehoord (time-out)",
     "routeRelaysPredicted": "Route: ~{{count}} relais via {{hop}}",
-    "routeViaPredicted": "Route: via {{hop}}"
+    "routeViaPredicted": "Route: via {{hop}}",
+    "routeRelaysPredictedHopsOnly": "Route: ~{{count}} relais"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

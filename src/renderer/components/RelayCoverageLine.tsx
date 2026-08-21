@@ -5,6 +5,7 @@ import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
 import {
   type HeardRepeater,
   type RelayCoverage,
+  relayCoverageKey,
   useRelayCoverageStore,
 } from '@/renderer/lib/relayCoverage/relayCoverageStore';
 import type { ChatMessage, MeshProtocol } from '@/renderer/lib/types';
@@ -57,10 +58,14 @@ function ReticulumRouteLine({ coverage }: { coverage: RelayCoverage }): ReactEle
   const { t } = useTranslation();
   const hop = coverage.predictedFirstHop?.trim().slice(0, 6) ?? '';
   if (coverage.predictedRelayHops != null) {
-    const label = t('chatPanel.routeRelaysPredicted', {
-      count: coverage.predictedRelayHops,
-      hop,
-    });
+    const label = hop
+      ? t('chatPanel.routeRelaysPredicted', {
+          count: coverage.predictedRelayHops,
+          hop,
+        })
+      : t('chatPanel.routeRelaysPredictedHopsOnly', {
+          count: coverage.predictedRelayHops,
+        });
     return (
       <span className="text-xs text-cyan-400" aria-label={label} title={label}>
         {label}
@@ -106,8 +111,9 @@ export function RelayCoverageLine({
   identityId: identityIdProp,
 }: RelayCoverageLineProps): ReactElement | null {
   const identityId = identityIdProp ?? getIdentityIdForProtocol(protocol);
+  const coverageKey = identityId && messageId ? relayCoverageKey(identityId, messageId) : null;
   const coverage = useRelayCoverageStore((s) =>
-    identityId && messageId ? s.coverageFor(identityId, messageId) : undefined,
+    coverageKey ? s.coverage[coverageKey] : undefined,
   );
 
   if (!isOwn || !identityId || !messageId || !coverage) return null;

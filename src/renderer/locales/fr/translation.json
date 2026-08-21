@@ -718,7 +718,8 @@
     "heardByNetwork": "Entendu par réseau",
     "notHeardTimeout": "Pas entendu (délai d'attente)",
     "routeRelaysPredicted": "Itinéraire : ~{{count}} relais via {{hop}}",
-    "routeViaPredicted": "Itinéraire : via {{hop}}"
+    "routeViaPredicted": "Itinéraire : via {{hop}}",
+    "routeRelaysPredictedHopsOnly": "Itinéraire : ~{{count}} relais"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

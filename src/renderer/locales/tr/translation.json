@@ -718,7 +718,8 @@
     "heardByNetwork": "Ağ tarafından duyuldu",
     "notHeardTimeout": "Duyulmadı (zaman aşımı)",
     "routeRelaysPredicted": "Güzergah: ~{{count}} {{hop}} üzerinden röleler",
-    "routeViaPredicted": "Güzergah: {{hop}} üzerinden"
+    "routeViaPredicted": "Güzergah: {{hop}} üzerinden",
+    "routeRelaysPredictedHopsOnly": "Güzergah: ~{{count}} röleler"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

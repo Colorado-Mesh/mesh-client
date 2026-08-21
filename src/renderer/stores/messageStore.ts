@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
+import { renameHeardRepeatWindowMessageId } from '../lib/meshcore/heardRepeatTracker';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import type { IdentityId } from '../lib/types';
 import { omitRecordKey } from './storeUtils';
@@ -325,6 +326,7 @@ export function renameMessageId(identityId: IdentityId, fromId: string, toId: st
   // Keep in-memory relay coverage keyed to the same bubble id ChatPanel looks up.
   if (fromId !== toId) {
     useRelayCoverageStore.getState().renameMessage(identityId, fromId, toId);
+    renameHeardRepeatWindowMessageId(identityId, fromId, toId);
   }
 }
 

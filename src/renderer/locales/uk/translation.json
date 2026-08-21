@@ -720,7 +720,8 @@
     "heardByNetwork": "Прослуховується мережею",
     "notHeardTimeout": "Не почуто (час очікування)",
     "routeRelaysPredicted": "Маршрут: ~{{count}} реле через {{hop}}",
-    "routeViaPredicted": "Шлях доставки: Via {{hop}}"
+    "routeViaPredicted": "Шлях доставки: Via {{hop}}",
+    "routeRelaysPredictedHopsOnly": "Маршрут: ~{{count}} реле"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
