@@ -15,7 +15,7 @@ index 9142fbc9fda24c07082d63ced24117a35b29dc93..2f8cf2d68d1c32c1d7cc489f33527c9a
  
      readCString(maxLength) {
 diff --git a/src/connection/connection.js b/src/connection/connection.js
-index 541ce732e52444d094043e49fef295752da3d7bc..209edb4f2cccff89efee83c708796a5c226dff8d 100644
+index 8d7365431d912bc97d59c2d572d227482e180927..13a97ae3be75718bf6e560630eeb840659f78e84 100644
 --- a/src/connection/connection.js
 +++ b/src/connection/connection.js
 @@ -338,6 +338,14 @@ class Connection extends EventEmitter {
@@ -143,7 +143,7 @@ index 541ce732e52444d094043e49fef295752da3d7bc..209edb4f2cccff89efee83c708796a5c
          });
      }
  
-@@ -2401,6 +2456,33 @@ class Connection extends EventEmitter {
+@@ -2318,6 +2373,33 @@ class Connection extends EventEmitter {
          });
      }
  

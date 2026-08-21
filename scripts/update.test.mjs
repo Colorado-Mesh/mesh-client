@@ -97,10 +97,10 @@ describe('update.sh Reticulum stack functionality check', () => {
     const result = runUpdate([], { UPDATE_SH_TEST_HOOK: 'upstream-catalog-only' });
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toContain('RATSPEAK_RELEASE_WATCH_ENTRIES:');
-    expect(result.stdout).toContain('ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.1.2');
-    expect(result.stdout).toContain('ratspeak/lrgp-rs||lrgp-rs games (LRGP)|');
+    expect(result.stdout).toContain('ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.2.0');
+    expect(result.stdout).toContain('ratspeak/lrgp-rs||lrgp-rs games (LRGP)|v0.4.1');
     expect(result.stdout).toContain(
-      'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.25',
+      'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.28',
     );
     expect(result.stdout).toContain('ratspeak/LXMFace||');
     expect(result.stdout).toContain('file:js/lxmface.js@308a729d5bf951880633e5e174b3b7628203106b');
@@ -235,15 +235,19 @@ exit 0
     return {
       releases: {
         'ratspeak/rsLXST': {
-          tag_name: 'v0.1.2',
-          published_at: '2026-07-26T19:52:43Z',
-          body: 'rsLXST v0.1.2',
+          tag_name: 'v0.2.0',
+          published_at: '2026-08-17T23:34:17Z',
+          body: 'rsLXST v0.2.0',
         },
-        'ratspeak/lrgp-rs': { message: 'Not Found' },
+        'ratspeak/lrgp-rs': {
+          tag_name: 'v0.4.1',
+          published_at: '2026-08-17T23:34:25Z',
+          body: 'lrgp-rs v0.4.1',
+        },
         'ratspeak/Ratspeak': {
-          tag_name: 'v1.0.25',
-          published_at: '2026-07-19T05:00:50Z',
-          body: 'Protocol refresh: byte-exact parity with Reticulum 1.3.8 and LXMF 1.0.1',
+          tag_name: 'v1.0.28',
+          published_at: '2026-08-19T16:42:38Z',
+          body: 'Fixed RNode startup compatibility',
         },
       },
       commits: {
@@ -304,10 +308,10 @@ exit 0
       PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
-    expect(result.stdout).toContain('v1.0.25');
+    expect(result.stdout).toContain('v1.0.28');
     expect(result.stdout).toContain('reviewed; current');
     expect(result.stdout).toContain('js/lxmface.js @ 308a729d5bf9 (reviewed; current)');
-    expect(result.stdout).toContain('no published GitHub release');
+    expect(result.stdout).toContain('v0.4.1');
     expect(result.stdout).toContain(
       'Ratspeak upstream watch complete (reviewed baselines current; no new-repo warnings).',
     );
@@ -334,7 +338,7 @@ exit 0
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toContain('WARNING:');
-    expect(result.stdout).toContain('v1.0.25');
+    expect(result.stdout).toContain('v1.0.28');
     expect(result.stdout).toContain('v9.9.9');
     expect(result.stdout).toContain('docs/reticulum-games-parity.md');
     expect(result.stdout).not.toContain('Four in a Row');

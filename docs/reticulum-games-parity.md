@@ -7,7 +7,7 @@ Living matrix for [issue #773](https://github.com/Colorado-Mesh/mesh-client/issu
 
 Update this file when Games PRs land. `pnpm run update` warns only when a **published** Ratspeak GitHub Release is newer than the `reviewed-ref` pin on the `games-parity` entry in `scripts/update.sh` (bump that pin after review). Tags, `main`, and RCs without a GitHub Release are ignored.
 
-**Last review:** 2026-08-08 (Ratspeak v1.0.25 — no Games protocol/API delta, CSS-only; added win confetti; LXMF `FIELD_REACTION` 0x40 interop for Chat tapbacks). Prior: 2026-08-06 (delivery_state / envelope persist / optimistic board / Chess promotion+claims).
+**Last review:** 2026-08-20 (Ratspeak v1.0.28 — RNode/BLE/AppImage fixes; no new Games API. lrgp-rs v0.4.1 / Ratspeak `main` still expose Four in a Row; mesh-client UI board remains todo). Prior: 2026-08-08 (Ratspeak v1.0.25 — no Games protocol/API delta, CSS-only; win confetti; LXMF `FIELD_REACTION` 0x40).
 
 Status: `done` | `partial` | `wontfix` | `todo`
 
