@@ -4,7 +4,7 @@ import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 
 const PATCH = readFileSync(
-  join(__dirname, '../../patches/@liamcottle__meshcore.js@1.14.0.patch'),
+  join(__dirname, '../../patches/@liamcottle__meshcore.js@1.15.0.patch'),
   'utf-8',
 );
 
