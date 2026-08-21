@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useRelayCoverageStore } from './relayCoverageStore';
+import { RELAY_COVERAGE_SOFT_CAP, useRelayCoverageStore } from './relayCoverageStore';
 
 const ID_A = 'identity-a';
 const ID_B = 'identity-b';
@@ -162,5 +162,29 @@ describe('relayCoverageStore', () => {
     const entry = useRelayCoverageStore.getState().coverageFor(ID_A, MSG)!;
     expect(entry.heardRepeaters).toBeUndefined();
     expect(entry.broadcastHeard).toBe(true);
+  });
+
+  it('set prunes oldest entries when soft cap is exceeded (keeps current key)', () => {
+    for (let i = 0; i < RELAY_COVERAGE_SOFT_CAP; i++) {
+      vi.setSystemTime(new Date(Date.UTC(2026, 0, 1, 0, 0, 0, i)));
+      useRelayCoverageStore.getState().set(ID_A, `old-${i}`, {
+        protocol: 'meshcore',
+        mode: 'confirmed',
+        heardRepeaters: [],
+      });
+    }
+    vi.setSystemTime(new Date(Date.UTC(2026, 0, 1, 0, 1, 0)));
+    useRelayCoverageStore.getState().set(ID_A, 'keep-me', {
+      protocol: 'meshcore',
+      mode: 'confirmed',
+      heardRepeaters: [{ nodeId: 1 }],
+    });
+    expect(Object.keys(useRelayCoverageStore.getState().coverage).length).toBe(
+      RELAY_COVERAGE_SOFT_CAP,
+    );
+    expect(useRelayCoverageStore.getState().coverageFor(ID_A, 'keep-me')?.heardRepeaters).toEqual([
+      { nodeId: 1 },
+    ]);
+    expect(useRelayCoverageStore.getState().coverageFor(ID_A, 'old-0')).toBeUndefined();
   });
 });

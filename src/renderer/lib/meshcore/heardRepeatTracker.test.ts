@@ -22,9 +22,9 @@ const MSG_A = 'msg-a';
 const MSG_B = 'msg-b';
 /** Distinct XOR-fold hashes (1-byte path resolution). */
 const MY_NODE = 0x01020304; // hash 0x04
-const REPEATER_ID = 0x0a0b0c0d; // hash 0x0a^0x0b^0x0c^0x0d = 0x0a
+const REPEATER_ID = 0x0a0b0c0d; // hash 0x0a^0x0b^0x0c^0x0d = 0x00
 const ROOM_ID = 0x11223344; // hash 0x11^0x22^0x33^0x44 = 0x44
-const CHAT_ID = 0x55667788; // hash 0x55^0x66^0x77^0x88 = 0x66
+const CHAT_ID = 0x55667788; // hash 0x55^0x66^0x77^0x88 = 0xcc
 
 function hashByte(nodeId: number): number {
   return meshcoreNodeHash(nodeId);
@@ -370,12 +370,43 @@ describe('heardRepeatTracker', () => {
       candidates,
       resolveRepeater,
     });
-    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual(
-      [],
-    );
+    // Superseded empty confirmed seed for MSG_A is removed when MSG_B window opens.
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)).toBeUndefined();
     expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_B)?.heardRepeaters).toEqual([
       { nodeId: REPEATER_ID, name: 'Rep Alpha', snr: undefined, rssi: undefined },
     ]);
+  });
+
+  it('openHeardRepeatWindow removes prior empty confirmed coverage for the same identity', () => {
+    openHeardRepeatWindow(IDENTITY, MSG_A);
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual(
+      [],
+    );
+    openHeardRepeatWindow(IDENTITY, MSG_B);
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)).toBeUndefined();
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_B)?.heardRepeaters).toEqual(
+      [],
+    );
+  });
+
+  it('openHeardRepeatWindow keeps prior coverage that already credited repeaters', () => {
+    openHeardRepeatWindow(IDENTITY, MSG_A);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: true,
+      pathBytes: [hashByte(REPEATER_ID)],
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      candidates,
+      resolveRepeater,
+    });
+    openHeardRepeatWindow(IDENTITY, MSG_B);
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
+      { nodeId: REPEATER_ID, name: 'Rep Alpha', snr: undefined, rssi: undefined },
+    ]);
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_B)?.heardRepeaters).toEqual(
+      [],
+    );
   });
 
   it('renameHeardRepeatWindowMessageId routes later credits to the new message id', () => {

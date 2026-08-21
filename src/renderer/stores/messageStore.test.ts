@@ -109,6 +109,7 @@ describe('messageStore rename / status guards for Reticulum Completes', () => {
   beforeEach(() => {
     useMessageStore.setState({ messages: {} });
     useRelayCoverageStore.setState({ coverage: {} });
+    resetHeardRepeatWindowsForTests();
   });
 
   it('renameMessageId re-keys relay coverage with the message id', () => {
@@ -129,7 +130,6 @@ describe('messageStore rename / status guards for Reticulum Completes', () => {
   });
 
   it('renameMessageId keeps MeshCore heard-repeat window on the new message id', () => {
-    resetHeardRepeatWindowsForTests();
     const provisional = 'out:meshcore-1';
     const persisted = 'wire-meshcore-1';
     const repeaterId = 0x0a0b0c0d;

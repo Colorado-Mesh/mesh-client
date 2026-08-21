@@ -40,6 +40,39 @@ export function relayCoverageKey(identityId: IdentityId, messageId: string): str
   return `${identityId}:${messageId}`;
 }
 
+/**
+ * Soft cap for in-memory coverage rows. When exceeded on `set`, drop oldest-by-updatedAt
+ * entries (always retaining the key being written). Avoids unbounded growth on long sessions
+ * without paying O(n) on every small write.
+ */
+export const RELAY_COVERAGE_SOFT_CAP = 256;
+
+function pruneOldestCoverageEntries(
+  coverage: Record<string, RelayCoverage>,
+  keepKey: string,
+  softCap: number,
+): Record<string, RelayCoverage> {
+  const keys = Object.keys(coverage);
+  if (keys.length <= softCap) return coverage;
+  const ranked = keys
+    .map((k) => ({ k, updatedAt: coverage[k].updatedAt }))
+    .sort((a, b) => a.updatedAt - b.updatedAt);
+  const drop = new Set<string>();
+  let excess = keys.length - softCap;
+  for (const { k } of ranked) {
+    if (excess <= 0) break;
+    if (k === keepKey) continue;
+    drop.add(k);
+    excess -= 1;
+  }
+  if (drop.size === 0) return coverage;
+  const next: Record<string, RelayCoverage> = {};
+  for (const [k, v] of Object.entries(coverage)) {
+    if (!drop.has(k)) next[k] = v;
+  }
+  return next;
+}
+
 export const useRelayCoverageStore = create<RelayCoverageState>()((set, get) => ({
   coverage: {},
   set: (identityId, messageId, patch) => {
@@ -51,15 +84,17 @@ export const useRelayCoverageStore = create<RelayCoverageState>()((set, get) => 
         const modeChanged = prev.protocol !== patch.protocol || prev.mode !== patch.mode;
         if (!modeChanged) base = prev;
       }
+      const entry: RelayCoverage = {
+        ...base,
+        ...patch,
+        updatedAt: Date.now(),
+      };
+      const withEntry: Record<string, RelayCoverage> = {
+        ...s.coverage,
+        [k]: entry,
+      };
       return {
-        coverage: {
-          ...s.coverage,
-          [k]: {
-            ...base,
-            ...patch,
-            updatedAt: Date.now(),
-          },
-        },
+        coverage: pruneOldestCoverageEntries(withEntry, k, RELAY_COVERAGE_SOFT_CAP),
       };
     });
   },

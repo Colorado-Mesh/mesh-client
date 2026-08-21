@@ -6,6 +6,7 @@ import {
   markMeshcoreLocallyDeletedContact,
   resetMeshcoreLocallyDeletedContactsForTests,
 } from '../meshcoreLocallyDeletedContacts';
+import * as meshcorePathChainDisplay from '../meshcorePathChainDisplay';
 import { pubkeyToNodeId } from '../meshcoreUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../meshtasticConnectedNodeRef';
 import { useRelayCoverageStore } from '../relayCoverage/relayCoverageStore';
@@ -375,6 +376,8 @@ describe('handleMeshcoreRfRx advert identity', () => {
 /** FLOOD + GRP_TXT: path hashes 0x88, 0x07 (see meshcoreRfPacketParse.test.ts). */
 const FLOOD_GRP_TXT_HEX =
   '15028807111337a709eb7f50a1a94d8ee7e5ded8672cef2660e88c976c9782bf520ae1bf08b564ccd2c1afb5960e211a671a1282587e5836d0e80d46879a9069f08465733f5c79';
+/** Same flood with path_len=0 so heard-repeat skips path resolution. */
+const FLOOD_GRP_TXT_EMPTY_PATH_HEX = `1500${FLOOD_GRP_TXT_HEX.slice(8)}`;
 
 function hexToU8(hex: string): Uint8Array {
   const out = new Uint8Array(hex.length / 2);
@@ -424,6 +427,7 @@ describe('handleMeshcoreRfRx heard-repeat coverage', () => {
   });
 
   it('does not credit GRP_TXT path hashes when no listen window is open', () => {
+    const pathSpy = vi.spyOn(meshcorePathChainDisplay, 'buildMeshcorePathResolutionFromNodes');
     const nodes = new Map<number, MeshNode>([
       [REPEATER_88, makeNode(REPEATER_88, { hw_model: 'Repeater', long_name: 'Hill 88' })],
     ]);
@@ -435,6 +439,27 @@ describe('handleMeshcoreRfRx heard-repeat coverage', () => {
     handleMeshcoreRfRx({ lastSnr: 6, lastRssi: -50, raw: hexToU8(FLOOD_GRP_TXT_HEX) }, deps);
 
     expect(useRelayCoverageStore.getState().coverageFor(ID, MSG)).toBeUndefined();
+    expect(pathSpy).not.toHaveBeenCalled();
+  });
+
+  it('skips path resolution when GRP_TXT path is empty even with an open window', () => {
+    const pathSpy = vi.spyOn(meshcorePathChainDisplay, 'buildMeshcorePathResolutionFromNodes');
+    const nodes = new Map<number, MeshNode>([
+      [REPEATER_88, makeNode(REPEATER_88, { hw_model: 'Repeater', long_name: 'Hill 88' })],
+    ]);
+    const { deps } = makeDeps({
+      myNodeNumRef: ref(1),
+      readNodes: () => nodes,
+    });
+    openHeardRepeatWindow(ID, MSG);
+
+    handleMeshcoreRfRx(
+      { lastSnr: 6, lastRssi: -50, raw: hexToU8(FLOOD_GRP_TXT_EMPTY_PATH_HEX) },
+      deps,
+    );
+
+    expect(useRelayCoverageStore.getState().coverageFor(ID, MSG)?.heardRepeaters).toEqual([]);
+    expect(pathSpy).not.toHaveBeenCalled();
   });
 
   it('does not treat FLOOD ADVERT as channel-flood credit without self-origin', () => {

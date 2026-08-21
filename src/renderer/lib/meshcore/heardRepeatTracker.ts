@@ -54,6 +54,24 @@ export function openHeardRepeatWindow(
   windowMs: number = MESHCORE_HEARD_REPEAT_WINDOW_MS,
   openedAt: number = Date.now(),
 ): void {
+  const prev = pendingByIdentity.get(identityId);
+  if (prev) {
+    const expired = openedAt - prev.openedAt > prev.windowMs;
+    if (expired) {
+      pendingByIdentity.delete(identityId);
+    } else if (prev.messageId !== messageId) {
+      // One active window per identity: drop the prior bubble's empty confirmed seed so
+      // back-to-back channel sends do not leave orphan empty coverage for superseded ids.
+      const prior = useRelayCoverageStore.getState().coverageFor(identityId, prev.messageId);
+      if (
+        prior?.protocol === 'meshcore' &&
+        prior.mode === 'confirmed' &&
+        (prior.heardRepeaters?.length ?? 0) === 0
+      ) {
+        useRelayCoverageStore.getState().remove(identityId, prev.messageId);
+      }
+    }
+  }
   pendingByIdentity.set(identityId, {
     identityId,
     messageId,
@@ -75,6 +93,14 @@ function activeWindow(identityId: IdentityId, now: number): PendingWindow | null
     return null;
   }
   return w;
+}
+
+/** True when a non-expired listen window is open for this identity (same rule as credit path). */
+export function hasOpenHeardRepeatWindow(
+  identityId: IdentityId,
+  now: number = Date.now(),
+): boolean {
+  return activeWindow(identityId, now) != null;
 }
 
 function prefixMatches(pubKey: Uint8Array, segment: Uint8Array): boolean {

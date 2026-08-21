@@ -44,6 +44,7 @@ import { meshNodeToNodeRecord } from '../storeRecordAdapters';
 import { MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS } from '../timeConstants';
 import type { MeshNode, MQTTStatus, TelemetryPoint } from '../types';
 import {
+  hasOpenHeardRepeatWindow,
   recordMeshcoreRfRx,
   resolveMeshcoreHeardPathHopFromNode,
   resolveMeshcoreHeardRepeaterFromNode,
@@ -704,6 +705,9 @@ function applyMeshcoreHeardRepeatFromRfRx(
   // GRP_TXT has no cleartext originator — still credit path hashes while a TX window is open.
   const treatAsOwnChannelFlood = ctx.payloadTypeString === 'GRP_TXT';
   if (!isOwnMeshcoreTx && !treatAsOwnChannelFlood) return;
+  // Skip node-map path resolution when there is nothing to credit (empty path or no window).
+  if (ctx.pathBytes.length === 0) return;
+  if (!hasOpenHeardRepeatWindow(identityId, now)) return;
 
   const nodes = deps.readNodes();
   const resolution = buildMeshcorePathResolutionFromNodes(nodes);

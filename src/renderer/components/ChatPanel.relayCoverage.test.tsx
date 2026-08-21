@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
+import { activeDmStorageKey, openDmTabsStorageKey } from '../lib/chatPanelProtocolStorage';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import { addMessage, renameMessageId, useMessageStore } from '../stores/messageStore';
 import ChatPanel from './ChatPanel';
@@ -37,6 +38,12 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
   beforeEach(() => {
     useRelayCoverageStore.setState({ coverage: {} });
     useMessageStore.setState({ messages: {} });
+    // ChatPanel persists DM tabs/active peer in localStorage; clear so prior DM-only tests
+    // (e.g. axe Reticulum) do not leave the wrong conversation selected.
+    for (const protocol of ['meshtastic', 'meshcore', 'reticulum'] as const) {
+      localStorage.removeItem(openDmTabsStorageKey(protocol));
+      localStorage.removeItem(activeDmStorageKey(protocol));
+    }
   });
 
   it('relayCoverageMessageKey prefers storeId then reticulum hash then id then packetId', () => {
@@ -253,6 +260,92 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('has no axe violations for Meshtastic amber timeout in ChatPanel bubble context', async () => {
+    const now = Date.now();
+    useRelayCoverageStore.getState().set(IDENTITY, '42', {
+      protocol: 'meshtastic',
+      mode: 'binary-heard',
+      broadcastHeard: false,
+    });
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel
+          messages={[
+            {
+              id: 42,
+              packetId: 42,
+              storeId: '42',
+              sender_id: 7,
+              sender_name: 'Me',
+              payload: 'timeout bubble',
+              channel: 0,
+              timestamp: now,
+              status: 'failed',
+            },
+          ]}
+          channels={[{ index: 0, name: 'General' }]}
+          myNodeNum={7}
+          onSend={vi.fn()}
+          onReact={vi.fn().mockResolvedValue(undefined)}
+          onResend={vi.fn()}
+          onNodeClick={vi.fn()}
+          isConnected
+          nodes={new Map()}
+          isActive
+          protocol="meshtastic"
+          identityId={IDENTITY}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByText('Not heard (timeout)')).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('has no axe violations for Reticulum cyan route in ChatPanel bubble context', async () => {
+    const storeId = 'reticulum-axe-route';
+    const now = Date.now();
+    useRelayCoverageStore.getState().set(IDENTITY, storeId, {
+      protocol: 'reticulum',
+      mode: 'predicted',
+      predictedRelayHops: 2,
+      predictedFirstHop: 'abcdef0123456789',
+    });
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel
+          messages={[
+            {
+              storeId,
+              sender_id: 1,
+              sender_name: 'Me',
+              payload: 'route bubble',
+              channel: -1,
+              timestamp: now,
+              status: 'sending',
+              to: 99,
+            },
+          ]}
+          channels={[]}
+          myNodeNum={1}
+          onSend={vi.fn()}
+          onReact={vi.fn().mockResolvedValue(undefined)}
+          onResend={vi.fn()}
+          onNodeClick={vi.fn()}
+          isConnected
+          nodes={new Map()}
+          isActive
+          protocol="reticulum"
+          identityId={IDENTITY}
+          dmOnlyChat
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByText(/Route:/i)).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it('shows coverage inside ChatPanel own-message status row', () => {
     const now = Date.now();
     useRelayCoverageStore.getState().set(IDENTITY, '42', {
@@ -311,13 +404,13 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
               sender_id: 1,
               sender_name: 'Me',
               payload: 'rns dm',
-              channel: 0,
+              channel: -1,
               timestamp: now,
               status: 'sending',
               to: 2,
             },
           ]}
-          channels={[{ index: 0, name: 'DM' }]}
+          channels={[]}
           myNodeNum={1}
           onSend={vi.fn()}
           onReact={vi.fn().mockResolvedValue(undefined)}

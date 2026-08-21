@@ -221,6 +221,51 @@ describe('useSendMessage', () => {
     sendSpy.mockRestore();
   });
 
+  it('removes empty MeshCore coverage from a prior channel send when sending again', async () => {
+    const sendSpy = vi.spyOn(meshcoreProtocol, 'sendMessage').mockResolvedValue({});
+    const handle = { kind: 'rf' };
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
+    addIdentity({
+      id: ID_MC,
+      protocol: meshcoreProtocol,
+      signature: 'sig-mc',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
+
+    const { result } = renderHook(() => useSendMessage(ID_MC));
+    result.current('first', 0);
+    await vi.waitFor(() => {
+      expect(Object.values(useMessageStore.getState().messages[ID_MC] ?? {})).toHaveLength(1);
+    });
+    const firstRow = Object.values(useMessageStore.getState().messages[ID_MC] ?? {})[0];
+    expect(firstRow).toBeDefined();
+    if (!firstRow) throw new Error('expected first outbound message');
+    const firstId = firstRow.id;
+    expect(useRelayCoverageStore.getState().coverageFor(ID_MC, firstId)?.heardRepeaters).toEqual(
+      [],
+    );
+
+    result.current('second', 0);
+    await vi.waitFor(() => {
+      expect(
+        Object.values(useMessageStore.getState().messages[ID_MC] ?? {}).length,
+      ).toBeGreaterThanOrEqual(2);
+    });
+    const rows = Object.values(useMessageStore.getState().messages[ID_MC] ?? {});
+    const secondRow = rows.find((r) => r.id !== firstId);
+    expect(secondRow).toBeDefined();
+    if (!secondRow) throw new Error('expected second outbound message');
+    const secondId = secondRow.id;
+    expect(useRelayCoverageStore.getState().coverageFor(ID_MC, firstId)).toBeUndefined();
+    expect(useRelayCoverageStore.getState().coverageFor(ID_MC, secondId)?.heardRepeaters).toEqual(
+      [],
+    );
+    sendSpy.mockRestore();
+  });
+
   it('sends MeshCore channel reply with keyless @[Name] wire prefix when parent is in store', async () => {
     const sendSpy = vi.spyOn(meshcoreProtocol, 'sendMessage').mockResolvedValue({});
     const handle = { kind: 'rf' };
