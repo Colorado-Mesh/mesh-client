@@ -712,14 +712,16 @@
       "sendAriaWithElapsed": "Kirim memo suara ({{seconds}} detik direkam)",
       "unavailable": "Memo suara tidak tersedia — lampiran tidak di - cache pada perangkat ini."
     },
-    "heardByRepeaters_one": "Didengar oleh {{count}} repeater",
-    "heardByRepeaters_other": "Didengar oleh {{count}} repeater",
-    "heardByRepeatersDetail": "Didengar oleh {{count}} repeater: {{names}}",
+    "heardByRepeaters_one": "Didengar oleh {{count}}",
+    "heardByRepeaters_other": "Didengar oleh {{count}}",
     "heardByNetwork": "Didengar oleh jaringan",
     "notHeardTimeout": "Tidak terdengar (timeout)",
     "routeRelaysPredicted": "Rute: ~{{count}} relai melalui {{hop}}",
     "routeViaPredicted": "Rute: via {{hop}}",
-    "routeRelaysPredictedHopsOnly": "Rute: ~{{count}} relai"
+    "routeRelaysPredictedHopsOnly": "Rute: ~{{count}} relai",
+    "heardByRepeatersDetail_one": "Didengar oleh {{count}}: {{names}}",
+    "heardByRepeatersDetail_other": "Didengar oleh {{count}}: {{names}}",
+    "heardByRepeaterNodeFallback": "Node {{nodeId}}"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

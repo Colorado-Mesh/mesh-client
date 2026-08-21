@@ -20,8 +20,8 @@ export function setReticulumPredictedRoute(
     typeof hopsRaw === 'number' && Number.isFinite(hopsRaw)
       ? Math.max(0, Math.trunc(hopsRaw) - 1)
       : undefined;
-  const via = path.viaHash?.trim();
-  const predictedFirstHop = via && via.length > 0 ? via : undefined;
+  const viaRaw = path.viaHash?.trim();
+  const predictedFirstHop = viaRaw && viaRaw.length > 0 ? viaRaw.slice(0, 64) : undefined;
 
   if (predictedRelayHops == null && predictedFirstHop == null) {
     return;

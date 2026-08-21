@@ -712,14 +712,16 @@
       "sendAriaWithElapsed": "Spraakmemo verzenden ({{seconds}} seconden opgenomen)",
       "unavailable": "Spraakmemo niet beschikbaar — bijlage niet in cache op dit apparaat."
     },
-    "heardByRepeaters_one": "Gehoord door {{count}} repeater",
-    "heardByRepeaters_other": "Gehoord door {{count}} repeaters",
-    "heardByRepeatersDetail": "Gehoord door {{count}} repeaters: {{names}}",
+    "heardByRepeaters_one": "Gehoord door {{count}}",
+    "heardByRepeaters_other": "Gehoord door {{count}}",
     "heardByNetwork": "Gehoord door netwerk",
     "notHeardTimeout": "Niet gehoord (time-out)",
     "routeRelaysPredicted": "Route: ~{{count}} relais via {{hop}}",
     "routeViaPredicted": "Route: via {{hop}}",
-    "routeRelaysPredictedHopsOnly": "Route: ~{{count}} relais"
+    "routeRelaysPredictedHopsOnly": "Route: ~{{count}} relais",
+    "heardByRepeatersDetail_one": "Gehoord door {{count}}: {{names}}",
+    "heardByRepeatersDetail_other": "Gehoord door {{count}}: {{names}}",
+    "heardByRepeaterNodeFallback": "Knooppunt {{nodeId}}"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

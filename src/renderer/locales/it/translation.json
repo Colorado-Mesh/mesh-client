@@ -712,14 +712,16 @@
       "sendAriaWithElapsed": "Invia promemoria vocale ({{seconds}} secondi registrati)",
       "unavailable": "Memo vocale non disponibile — allegato non memorizzato nella cache su questo dispositivo."
     },
-    "heardByRepeaters_one": "Ascoltato dal ripetitore {{count}}",
-    "heardByRepeaters_other": "Ascoltato dai ripetitori {{count}}",
-    "heardByRepeatersDetail": "Ascoltato da {{count}} ripetitori: {{names}}",
+    "heardByRepeaters_one": "Ascoltato da {{count}}",
+    "heardByRepeaters_other": "Ascoltato da {{count}}",
     "heardByNetwork": "Sentito dalla rete",
     "notHeardTimeout": "Non sentito (timeout)",
     "routeRelaysPredicted": "Percorso: ~{{count}} relè tramite {{hop}}",
     "routeViaPredicted": "Percorso: via {{hop}}",
-    "routeRelaysPredictedHopsOnly": "Percorso: ~{{count}} relè"
+    "routeRelaysPredictedHopsOnly": "Percorso: ~{{count}} relè",
+    "heardByRepeatersDetail_one": "Ascoltato da {{count}}: {{names}}",
+    "heardByRepeatersDetail_other": "Ascoltato da {{count}}: {{names}}",
+    "heardByRepeaterNodeFallback": "Nodo {{nodeId}}"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

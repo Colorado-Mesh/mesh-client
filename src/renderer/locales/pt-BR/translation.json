@@ -712,14 +712,16 @@
       "sendAriaWithElapsed": "Enviar memorando de voz ({{seconds}} segundos gravados)",
       "unavailable": "Memorando de voz indisponível — anexo não armazenado em cache neste dispositivo."
     },
-    "heardByRepeaters_one": "Ouvido por {{count}} repetidor",
-    "heardByRepeaters_other": "Ouvido por {{count}} repetidores",
-    "heardByRepeatersDetail": "Ouvido por {{count}} repetidores: {{names}}",
+    "heardByRepeaters_one": "Ouvido por {{count}}",
+    "heardByRepeaters_other": "Ouvido por {{count}}",
     "heardByNetwork": "Ouvido pela rede",
     "notHeardTimeout": "Não ouvido (tempo esgotado)",
     "routeRelaysPredicted": "Rota: ~{{count}} relés via {{hop}}",
     "routeViaPredicted": "Rota: via {{hop}}",
-    "routeRelaysPredictedHopsOnly": "Rota: ~{{count}} relés"
+    "routeRelaysPredictedHopsOnly": "Rota: ~{{count}} relés",
+    "heardByRepeatersDetail_one": "Ouvido por {{count}}: {{names}}",
+    "heardByRepeatersDetail_other": "Ouvido por {{count}}: {{names}}",
+    "heardByRepeaterNodeFallback": "Nó {{nodeId}}"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

@@ -714,14 +714,16 @@
       "sendAriaWithElapsed": "Odeslat hlasovou poznámku ({{seconds}} zaznamenaných sekund)",
       "unavailable": "Hlasová poznámka není k dispozici — příloha není v tomto zařízení uložena do mezipaměti."
     },
-    "heardByRepeaters_one": "Slyšel/a {{count}} opakovač",
-    "heardByRepeaters_other": "Slyšel/a {{count}} opakovače",
-    "heardByRepeatersDetail": "Slyšeli {{count}} opakovači: {{names}}",
+    "heardByRepeaters_one": "Slyšeno {{count}}",
+    "heardByRepeaters_other": "Slyšeno {{count}}",
     "heardByNetwork": "Slyšen sítí",
     "notHeardTimeout": "Neslyšel (vypršel časový limit)",
     "routeRelaysPredicted": "Trasa: ~{{count}} relé přes {{hop}}",
     "routeViaPredicted": "Trasa: přes {{hop}}",
-    "routeRelaysPredictedHopsOnly": "Trasa: ~{{count}} relé"
+    "routeRelaysPredictedHopsOnly": "Trasa: ~{{count}} relé",
+    "heardByRepeatersDetail_one": "Slyšeno {{count}}: {{names}}",
+    "heardByRepeatersDetail_other": "Slyšeno {{count}}: {{names}}",
+    "heardByRepeaterNodeFallback": "Uzel {{nodeId}}"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

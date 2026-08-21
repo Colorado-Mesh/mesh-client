@@ -114,4 +114,53 @@ describe('relayCoverageStore', () => {
       useRelayCoverageStore.getState().coverageFor(ID_A, 'wire-99')?.broadcastHeard,
     ).toBeNull();
   });
+
+  it('remove deletes a single message coverage entry', () => {
+    useRelayCoverageStore.getState().set(ID_A, MSG, {
+      protocol: 'meshcore',
+      mode: 'confirmed',
+      heardRepeaters: [],
+    });
+    useRelayCoverageStore.getState().set(ID_A, 'keep-me', {
+      protocol: 'meshcore',
+      mode: 'confirmed',
+      heardRepeaters: [],
+    });
+    useRelayCoverageStore.getState().remove(ID_A, MSG);
+    expect(useRelayCoverageStore.getState().coverageFor(ID_A, MSG)).toBeUndefined();
+    expect(useRelayCoverageStore.getState().coverageFor(ID_A, 'keep-me')).toBeDefined();
+  });
+
+  it('renameMessage merges heardRepeaters when destination key already exists', () => {
+    useRelayCoverageStore.getState().set(ID_A, 'from', {
+      protocol: 'meshcore',
+      mode: 'confirmed',
+      heardRepeaters: [{ nodeId: 1, name: 'A' }],
+    });
+    useRelayCoverageStore.getState().set(ID_A, 'to', {
+      protocol: 'meshcore',
+      mode: 'confirmed',
+      heardRepeaters: [{ nodeId: 2, name: 'B' }],
+    });
+    useRelayCoverageStore.getState().renameMessage(ID_A, 'from', 'to');
+    expect(useRelayCoverageStore.getState().coverageFor(ID_A, 'from')).toBeUndefined();
+    const heard = useRelayCoverageStore.getState().coverageFor(ID_A, 'to')?.heardRepeaters ?? [];
+    expect(heard.map((r) => r.nodeId).sort()).toEqual([1, 2]);
+  });
+
+  it('set drops stale fields when protocol/mode changes', () => {
+    useRelayCoverageStore.getState().set(ID_A, MSG, {
+      protocol: 'meshcore',
+      mode: 'confirmed',
+      heardRepeaters: [{ nodeId: 9, name: 'Old' }],
+    });
+    useRelayCoverageStore.getState().set(ID_A, MSG, {
+      protocol: 'meshtastic',
+      mode: 'binary-heard',
+      broadcastHeard: true,
+    });
+    const entry = useRelayCoverageStore.getState().coverageFor(ID_A, MSG)!;
+    expect(entry.heardRepeaters).toBeUndefined();
+    expect(entry.broadcastHeard).toBe(true);
+  });
 });

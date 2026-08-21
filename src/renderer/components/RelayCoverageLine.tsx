@@ -10,17 +10,19 @@ import {
 } from '@/renderer/lib/relayCoverage/relayCoverageStore';
 import type { ChatMessage, MeshProtocol } from '@/renderer/lib/types';
 
-function formatRepeaterDetail(r: HeardRepeater): string {
-  const label = r.name?.trim() || `Node ${r.nodeId}`;
-  return r.snr != null ? `${label} (${r.snr} dB)` : label;
-}
-
 function MeshcoreHeardLine({ coverage }: { coverage: RelayCoverage }): ReactElement | null {
   const { t } = useTranslation();
   const heard = coverage.heardRepeaters ?? [];
   if (heard.length === 0) return null;
-  const names = heard.map((r) => r.name?.trim() || `Node ${r.nodeId}`).join(', ');
-  const detail = heard.map(formatRepeaterDetail).join('; ');
+  const fallback = (r: HeardRepeater) =>
+    r.name?.trim() || t('chatPanel.heardByRepeaterNodeFallback', { nodeId: r.nodeId });
+  const names = heard.map(fallback).join(', ');
+  const detail = heard
+    .map((r) => {
+      const label = fallback(r);
+      return r.snr != null ? `${label} (${r.snr} dB)` : label;
+    })
+    .join('; ');
   const label = t('chatPanel.heardByRepeaters', { count: heard.length });
   const detailLabel = t('chatPanel.heardByRepeatersDetail', {
     count: heard.length,
@@ -117,6 +119,8 @@ export function RelayCoverageLine({
   );
 
   if (!isOwn || !identityId || !messageId || !coverage) return null;
+  // Ignore stale keys if an identity id is reused across protocol tabs.
+  if (coverage.protocol !== protocol) return null;
 
   // Mode is protocol-unique for this store; avoid protocol === '…' string gates.
   if (coverage.mode === 'confirmed') {

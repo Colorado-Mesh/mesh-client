@@ -30,6 +30,8 @@ interface RelayCoverageState {
   set: (identityId: IdentityId, messageId: string, patch: RelayCoveragePatch) => void;
   coverageFor: (identityId: IdentityId, messageId: string) => RelayCoverage | undefined;
   clearIdentity: (identityId: IdentityId) => void;
+  /** Drop a single message's coverage (failed / abandoned send). */
+  remove: (identityId: IdentityId, messageId: string) => void;
   /** Re-key coverage when an outbound message id is renamed (e.g. Meshtastic tempId → wire id). */
   renameMessage: (identityId: IdentityId, fromMessageId: string, toMessageId: string) => void;
 }
@@ -43,12 +45,17 @@ export const useRelayCoverageStore = create<RelayCoverageState>()((set, get) => 
   set: (identityId, messageId, patch) => {
     set((s) => {
       const k = relayCoverageKey(identityId, messageId);
-      const prev = s.coverage[k];
+      let base: Partial<RelayCoverage> = {};
+      if (Object.hasOwn(s.coverage, k)) {
+        const prev = s.coverage[k];
+        const modeChanged = prev.protocol !== patch.protocol || prev.mode !== patch.mode;
+        if (!modeChanged) base = prev;
+      }
       return {
         coverage: {
           ...s.coverage,
           [k]: {
-            ...prev,
+            ...base,
             ...patch,
             updatedAt: Date.now(),
           },
@@ -67,18 +74,46 @@ export const useRelayCoverageStore = create<RelayCoverageState>()((set, get) => 
       return { coverage: next };
     });
   },
+  remove: (identityId, messageId) => {
+    set((s) => {
+      const k = relayCoverageKey(identityId, messageId);
+      if (!Object.hasOwn(s.coverage, k)) return s;
+      const next: Record<string, RelayCoverage> = {};
+      for (const [key, v] of Object.entries(s.coverage)) {
+        if (key !== k) next[key] = v;
+      }
+      return { coverage: next };
+    });
+  },
   renameMessage: (identityId, fromMessageId, toMessageId) => {
     if (fromMessageId === toMessageId) return;
     set((s) => {
       const fromKey = relayCoverageKey(identityId, fromMessageId);
       const toKey = relayCoverageKey(identityId, toMessageId);
       if (!Object.hasOwn(s.coverage, fromKey)) return s;
-      const entry = s.coverage[fromKey];
+      const fromEntry = s.coverage[fromKey];
+      const toEntry = Object.hasOwn(s.coverage, toKey) ? s.coverage[toKey] : undefined;
       const next: Record<string, RelayCoverage> = {};
       for (const [k, v] of Object.entries(s.coverage)) {
         if (k !== fromKey) next[k] = v;
       }
-      next[toKey] = { ...entry, updatedAt: Date.now() };
+      if (toEntry != null) {
+        const byId = new Map<number, HeardRepeater>();
+        for (const r of toEntry.heardRepeaters ?? []) byId.set(r.nodeId, r);
+        for (const r of fromEntry.heardRepeaters ?? []) {
+          if (!byId.has(r.nodeId)) byId.set(r.nodeId, r);
+        }
+        next[toKey] = {
+          ...fromEntry,
+          ...toEntry,
+          ...(toEntry.mode === 'confirmed' || fromEntry.mode === 'confirmed'
+            ? { heardRepeaters: [...byId.values()] }
+            : {}),
+          updatedAt: Date.now(),
+        };
+      } else {
+        next[toKey] = { ...fromEntry, updatedAt: Date.now() };
+      }
       return { coverage: next };
     });
   },

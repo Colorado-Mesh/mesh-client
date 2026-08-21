@@ -579,6 +579,8 @@ describe('useSendMessage', () => {
       expect(rows).toHaveLength(1);
       expect(rows[0]?.status).toBe('failed');
       expect(rows[0]?.error).toContain('rf down');
+      const msgId = rows[0].id;
+      expect(useRelayCoverageStore.getState().coverageFor(ID_MC_FAIL, msgId)).toBeUndefined();
     });
     sendSpy.mockRestore();
   });

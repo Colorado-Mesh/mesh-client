@@ -712,14 +712,16 @@
       "sendAriaWithElapsed": "Sesli not gönder ({{seconds}} saniye kaydedildi)",
       "unavailable": "Sesli not kullanılamıyor — eklenti bu cihazda önbelleğe alınmadı."
     },
-    "heardByRepeaters_one": "{{count}} tekrarlayıcı tarafından duyuldu",
-    "heardByRepeaters_other": "{{count}} tekrarlayıcı tarafından duyuldu",
-    "heardByRepeatersDetail": "{{count}} tekrarlayıcı tarafından duyuldu: {{names}}",
+    "heardByRepeaters_one": "{{count}} tarafından duyuldu",
+    "heardByRepeaters_other": "{{count}} tarafından duyuldu",
     "heardByNetwork": "Ağ tarafından duyuldu",
     "notHeardTimeout": "Duyulmadı (zaman aşımı)",
     "routeRelaysPredicted": "Güzergah: ~{{count}} {{hop}} üzerinden röleler",
     "routeViaPredicted": "Güzergah: {{hop}} üzerinden",
-    "routeRelaysPredictedHopsOnly": "Güzergah: ~{{count}} röleler"
+    "routeRelaysPredictedHopsOnly": "Güzergah: ~{{count}} röleler",
+    "heardByRepeatersDetail_one": "{{count}} tarafından duyuldu: {{names}}",
+    "heardByRepeatersDetail_other": "{{count}} tarafından duyuldu: {{names}}",
+    "heardByRepeaterNodeFallback": "Düğüm {{nodeId}}"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

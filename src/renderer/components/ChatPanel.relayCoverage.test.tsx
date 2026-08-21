@@ -6,7 +6,7 @@ import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import { addMessage, renameMessageId, useMessageStore } from '../stores/messageStore';
 import ChatPanel from './ChatPanel';
-import { RelayCoverageLine } from './RelayCoverageLine';
+import { RelayCoverageLine, relayCoverageMessageKey } from './RelayCoverageLine';
 import { ToastProvider } from './Toast';
 
 const IDENTITY = 'relay-cov-test-id';
@@ -39,6 +39,39 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
     useMessageStore.setState({ messages: {} });
   });
 
+  it('relayCoverageMessageKey prefers storeId then reticulum hash then id then packetId', () => {
+    expect(
+      relayCoverageMessageKey({
+        storeId: 'store-1',
+        reticulum_message_hash: 'hash',
+        id: 9,
+        packetId: 8,
+      } as never),
+    ).toBe('store-1');
+    expect(
+      relayCoverageMessageKey({
+        reticulum_message_hash: 'hash',
+        id: 9,
+        packetId: 8,
+      } as never),
+    ).toBe('hash');
+    expect(relayCoverageMessageKey({ id: 9, packetId: 8 } as never)).toBe('9');
+    expect(relayCoverageMessageKey({ packetId: 8 } as never)).toBe('8');
+    expect(relayCoverageMessageKey({} as never)).toBeUndefined();
+  });
+
+  it('ignores coverage when store protocol does not match UI protocol', () => {
+    useRelayCoverageStore.getState().set(IDENTITY, MSG, {
+      protocol: 'meshcore',
+      mode: 'confirmed',
+      heardRepeaters: [{ nodeId: 1, name: 'Hilltop' }],
+    });
+    const { container } = render(
+      <RelayCoverageLine protocol="meshtastic" messageId={MSG} isOwn identityId={IDENTITY} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it('renders MeshCore singular heard-by with name and SNR in aria', () => {
     useRelayCoverageStore.getState().set(IDENTITY, MSG, {
       protocol: 'meshcore',
@@ -46,7 +79,7 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
       heardRepeaters: [{ nodeId: 1, name: 'Hilltop', snr: 4.5 }],
     });
     render(<RelayCoverageLine protocol="meshcore" messageId={MSG} isOwn identityId={IDENTITY} />);
-    expect(screen.getByText('Heard by 1 repeater')).toBeInTheDocument();
+    expect(screen.getByText('Heard by 1')).toBeInTheDocument();
     expect(screen.getByLabelText(/Hilltop \(4\.5 dB\)/)).toBeInTheDocument();
   });
 
@@ -60,7 +93,7 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
       ],
     });
     render(<RelayCoverageLine protocol="meshcore" messageId={MSG} isOwn identityId={IDENTITY} />);
-    expect(screen.getByText('Heard by 2 repeaters')).toBeInTheDocument();
+    expect(screen.getByText('Heard by 2')).toBeInTheDocument();
     expect(screen.getByLabelText(/Alpha.*Beta/)).toBeInTheDocument();
   });
 
@@ -167,9 +200,9 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
     const { rerender } = render(
       <RelayCoverageLine protocol="meshcore" messageId={MSG} isOwn identityId={otherId} />,
     );
-    expect(screen.getByText('Heard by 1 repeater')).toBeInTheDocument();
+    expect(screen.getByText('Heard by 1')).toBeInTheDocument();
     rerender(<RelayCoverageLine protocol="meshcore" messageId={MSG} isOwn />);
-    expect(screen.queryByText('Heard by 1 repeater')).not.toBeInTheDocument();
+    expect(screen.queryByText('Heard by 1')).not.toBeInTheDocument();
   });
 
   it('hides Reticulum line when hops and via are both missing', () => {
@@ -339,6 +372,6 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
         />
       </ToastProvider>,
     );
-    expect(screen.getByText('Heard by 1 repeater')).toBeInTheDocument();
+    expect(screen.getByText('Heard by 1')).toBeInTheDocument();
   });
 });

@@ -714,14 +714,16 @@
       "sendAriaWithElapsed": "Отправить голосовую заметку ({{seconds}} секунд записано)",
       "unavailable": "Голосовая заметка недоступна — вложение не кэшируется на этом устройстве."
     },
-    "heardByRepeaters_one": "Слушает {{count}} повторитель",
-    "heardByRepeaters_other": "Услышано {{count}} повторителями",
-    "heardByRepeatersDetail": "Слышно повторителями {{count}}: {{names}}",
+    "heardByRepeaters_one": "Услышали {{count}}",
+    "heardByRepeaters_other": "Услышали {{count}}",
     "heardByNetwork": "Слышно по сети",
     "notHeardTimeout": "Не слышно (тайм-аут)",
     "routeRelaysPredicted": "Маршрут: ~{{count}} реле через {{hop}}",
-    "routeViaPredicted": "Маршрут: Via {{hop}}",
-    "routeRelaysPredictedHopsOnly": "Маршрут: ~{{count}} реле"
+    "routeViaPredicted": "Маршрут: через {{hop}}",
+    "routeRelaysPredictedHopsOnly": "Маршрут: ~{{count}} реле",
+    "heardByRepeatersDetail_one": "Услышали {{count}}: {{names}}",
+    "heardByRepeatersDetail_other": "Услышали {{count}}: {{names}}",
+    "heardByRepeaterNodeFallback": "Узел {{nodeId}}"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

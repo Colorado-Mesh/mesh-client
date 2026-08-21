@@ -62,4 +62,12 @@ describe('reticulumRouteCoverage', () => {
     expect(entry?.predictedRelayHops).toBe(2);
     expect(entry?.predictedFirstHop).toBeUndefined();
   });
+
+  it('caps via_hash length when storing predictedFirstHop', () => {
+    const long = 'ab'.repeat(40);
+    setReticulumPredictedRoute(ID, MSG, { hops: 2, viaHash: long });
+    expect(useRelayCoverageStore.getState().coverageFor(ID, MSG)?.predictedFirstHop).toBe(
+      long.slice(0, 64),
+    );
+  });
 });

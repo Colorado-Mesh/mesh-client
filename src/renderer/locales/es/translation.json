@@ -714,12 +714,14 @@
     },
     "heardByRepeaters_one": "Escuchado por el repetidor {{count}}",
     "heardByRepeaters_other": "Escuchado por {{count}} repetidores",
-    "heardByRepeatersDetail": "Escuchado por {{count}} repetidores: {{names}}",
     "heardByNetwork": "Escuchado por la red",
     "notHeardTimeout": "No escuchado (tiempo de espera)",
     "routeRelaysPredicted": "Ruta: ~{{count}} relés a través de {{hop}}",
-    "routeViaPredicted": "Vía: Via {{hop}}",
-    "routeRelaysPredictedHopsOnly": "Ruta: ~{{count}} relés"
+    "routeViaPredicted": "Ruta: vía {{hop}}",
+    "routeRelaysPredictedHopsOnly": "Ruta: ~{{count}} relés",
+    "heardByRepeatersDetail_one": "Escuchado por {{count}} repetidor: {{names}}",
+    "heardByRepeatersDetail_other": "Escuchado por {{count}} repetidores: {{names}}",
+    "heardByRepeaterNodeFallback": "Nodo {{nodeId}}"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

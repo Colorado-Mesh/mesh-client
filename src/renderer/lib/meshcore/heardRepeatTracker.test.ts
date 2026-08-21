@@ -4,6 +4,8 @@ import { useRelayCoverageStore } from '@/renderer/lib/relayCoverage/relayCoverag
 import { meshcoreNodeHash } from '@/shared/meshcoreNodeHash';
 
 import {
+  clearHeardRepeatWindow,
+  clearHeardRepeatWindowIfMessage,
   listMeshcorePathPrefixMatches,
   MESHCORE_HEARD_REPEAT_WINDOW_MS,
   openHeardRepeatWindow,
@@ -162,6 +164,74 @@ describe('heardRepeatTracker', () => {
     expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual(
       [],
     );
+  });
+
+  it('clearHeardRepeatWindow drops the listen window so later RX cannot credit', () => {
+    openHeardRepeatWindow(IDENTITY, MSG_A);
+    clearHeardRepeatWindow(IDENTITY);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: true,
+      pathBytes: [hashByte(REPEATER_ID)],
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      candidates,
+      resolveRepeater,
+    });
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual(
+      [],
+    );
+  });
+
+  it('clearHeardRepeatWindowIfMessage only clears when message ids match', () => {
+    openHeardRepeatWindow(IDENTITY, MSG_A);
+    clearHeardRepeatWindowIfMessage(IDENTITY, MSG_B);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: true,
+      pathBytes: [hashByte(REPEATER_ID)],
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      candidates,
+      resolveRepeater,
+    });
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
+      { nodeId: REPEATER_ID, name: 'Rep Alpha', snr: undefined, rssi: undefined },
+    ]);
+    clearHeardRepeatWindowIfMessage(IDENTITY, MSG_A);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: true,
+      pathBytes: [hashByte(ROOM_ID)],
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      candidates,
+      resolveRepeater,
+    });
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
+      { nodeId: REPEATER_ID, name: 'Rep Alpha', snr: undefined, rssi: undefined },
+    ]);
+  });
+
+  it('expired window is removed so a later open is a fresh listen', () => {
+    openHeardRepeatWindow(IDENTITY, MSG_A, 1000);
+    vi.advanceTimersByTime(1001);
+    openHeardRepeatWindow(IDENTITY, MSG_B, 5000);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: true,
+      pathBytes: [hashByte(REPEATER_ID)],
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      candidates,
+      resolveRepeater,
+    });
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual(
+      [],
+    );
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_B)?.heardRepeaters).toEqual([
+      { nodeId: REPEATER_ID, name: 'Rep Alpha', snr: undefined, rssi: undefined },
+    ]);
   });
 
   it('ignores non-self-originated events inside the window', () => {

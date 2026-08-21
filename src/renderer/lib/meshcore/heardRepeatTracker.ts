@@ -25,6 +25,17 @@ export function resetHeardRepeatWindowsForTests(): void {
   pendingByIdentity.clear();
 }
 
+/** Drop the listen window for an identity (disconnect / session teardown). */
+export function clearHeardRepeatWindow(identityId: IdentityId): void {
+  pendingByIdentity.delete(identityId);
+}
+
+/** Drop the listen window only when it still tracks `messageId`. */
+export function clearHeardRepeatWindowIfMessage(identityId: IdentityId, messageId: string): void {
+  const w = pendingByIdentity.get(identityId);
+  if (w?.messageId === messageId) pendingByIdentity.delete(identityId);
+}
+
 /** Keep the listen window message id in sync when the bubble id is renamed. */
 export function renameHeardRepeatWindowMessageId(
   identityId: IdentityId,
@@ -59,7 +70,10 @@ export function openHeardRepeatWindow(
 function activeWindow(identityId: IdentityId, now: number): PendingWindow | null {
   const w = pendingByIdentity.get(identityId);
   if (!w) return null;
-  if (now - w.openedAt > w.windowMs) return null;
+  if (now - w.openedAt > w.windowMs) {
+    pendingByIdentity.delete(identityId);
+    return null;
+  }
   return w;
 }
 
