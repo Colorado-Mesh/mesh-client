@@ -3869,12 +3869,14 @@ function MeshcoreChannelSection({
           )}
           {channels.map((ch) => {
             const revealed = revealedIdx.has(ch.index);
+            const channelName =
+              ch.name || t('radioPanel.meshcoreChannel.defaultName', { index: ch.index });
             const showShareQr = shareQrIdx === ch.index && ch.secret?.length === 16;
             let shareQrUri: string | null = null;
             if (showShareQr) {
               try {
                 shareQrUri = buildMeshcoreChannelAddUri({
-                  name: ch.name || t('radioPanel.meshcoreChannel.defaultName', { index: ch.index }),
+                  name: channelName,
                   secretHex: bytesToHex(ch.secret),
                 });
               } catch {
@@ -3888,9 +3890,7 @@ function MeshcoreChannelSection({
                   <span className="rounded bg-gray-700 px-1.5 py-0.5 font-mono text-xs font-bold text-gray-400">
                     {ch.index}
                   </span>
-                  <span className="flex-1 text-sm text-gray-200">
-                    {ch.name || t('radioPanel.meshcoreChannel.defaultName', { index: ch.index })}
-                  </span>
+                  <span className="flex-1 text-sm text-gray-200">{channelName}</span>
                   <span className="text-muted font-mono text-xs">
                     {revealed ? bytesToHex(ch.secret) : '••••••••••••••••'}
                   </span>
@@ -3928,7 +3928,9 @@ function MeshcoreChannelSection({
                         setShareQrIdx((prev) => (prev === ch.index ? null : ch.index));
                       }}
                       aria-expanded={shareQrIdx === ch.index}
-                      aria-label={t('radioPanel.meshcoreChannel.shareQrAria', { name: ch.name })}
+                      aria-label={t('radioPanel.meshcoreChannel.shareQrAria', {
+                        name: channelName,
+                      })}
                       className="px-1 text-xs text-amber-400 hover:text-amber-300"
                     >
                       {t('radioPanel.meshcoreChannel.shareQr')}
@@ -3975,7 +3977,7 @@ function MeshcoreChannelSection({
                     <QrCodeImage
                       value={shareQrUri}
                       size={160}
-                      ariaLabel={t('radioPanel.meshcoreChannel.shareQrAria', { name: ch.name })}
+                      ariaLabel={t('radioPanel.meshcoreChannel.shareQrAria', { name: channelName })}
                     />
                   </div>
                 ) : null}

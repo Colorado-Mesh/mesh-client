@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -741,11 +741,20 @@ describe('RadioPanel MeshCore Open wire and path hash', () => {
 });
 
 describe('RadioPanel MeshCore channel share QR placement', () => {
+  async function openMeshcoreChannelsDetails(user: ReturnType<typeof userEvent.setup>) {
+    const channelsDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Channels (MeshCore)';
+    });
+    expect(channelsDetails).toBeDefined();
+    await user.click(channelsDetails!.querySelector('summary')!);
+  }
+
   it('renders the share QR under the clicked channel row, not after the list', async () => {
     const user = userEvent.setup();
     const secretA = new Uint8Array(16).fill(0x11);
     const secretB = new Uint8Array(16).fill(0x22);
-    render(
+    const { container } = render(
       <ToastProvider>
         <RadioPanel
           {...defaultProps}
@@ -759,12 +768,7 @@ describe('RadioPanel MeshCore channel share QR placement', () => {
       </ToastProvider>,
     );
 
-    const channelsDetails = [...document.querySelectorAll('details')].find((d) => {
-      const span = d.querySelector(':scope > summary > span');
-      return span?.textContent?.trim() === 'Channels (MeshCore)';
-    });
-    expect(channelsDetails).toBeDefined();
-    await user.click(channelsDetails!.querySelector('summary')!);
+    await openMeshcoreChannelsDetails(user);
 
     const alphaQrButton = screen.getByRole('button', {
       name: 'Show MeshCore channel QR for Alpha',
@@ -791,5 +795,54 @@ describe('RadioPanel MeshCore channel share QR placement', () => {
     expect(betaItem).toBeDefined();
     expect(betaItem?.textContent).toContain('Beta');
     expect(betaItem?.querySelector('img')).toBeNull();
+
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('scrolls the share QR into view and clears it after deleting the channel', async () => {
+    const user = userEvent.setup();
+    const secretA = new Uint8Array(16).fill(0x11);
+    const secretB = new Uint8Array(16).fill(0x22);
+    const onMeshcoreDeleteChannel = vi.fn().mockResolvedValue(undefined);
+    const scrollIntoView = vi
+      .spyOn(HTMLElement.prototype, 'scrollIntoView')
+      .mockImplementation(() => {});
+
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          meshcoreChannels={[
+            { index: 0, name: 'Alpha', secret: secretA },
+            { index: 1, name: 'Beta', secret: secretB },
+          ]}
+          onMeshcoreDeleteChannel={onMeshcoreDeleteChannel}
+        />
+      </ToastProvider>,
+    );
+
+    await openMeshcoreChannelsDetails(user);
+
+    scrollIntoView.mockClear();
+    await user.click(screen.getByRole('button', { name: 'Show MeshCore channel QR for Alpha' }));
+    await screen.findByRole('img', { name: 'Show MeshCore channel QR for Alpha' });
+    await waitFor(() => {
+      expect(scrollIntoView).toHaveBeenCalled();
+    });
+
+    const alphaRow = screen.getByText('Alpha').closest('.space-y-1');
+    expect(alphaRow).not.toBeNull();
+    await user.click(within(alphaRow as HTMLElement).getByRole('button', { name: 'Delete' }));
+    await user.click(within(alphaRow as HTMLElement).getByRole('button', { name: 'Confirm' }));
+
+    await waitFor(() => {
+      expect(onMeshcoreDeleteChannel).toHaveBeenCalledWith(0);
+    });
+    expect(
+      screen.queryByRole('img', { name: 'Show MeshCore channel QR for Alpha' }),
+    ).not.toBeInTheDocument();
   });
 });
