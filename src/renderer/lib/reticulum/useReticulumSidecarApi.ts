@@ -8,6 +8,7 @@ import {
 } from '@/renderer/lib/appSettingsStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { isBleScanBusyErrorMessage } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
+import { refreshGamesSessions } from '@/renderer/lib/reticulum/reticulumGamesSession';
 import {
   isReticulumManualStackStopSuppress,
   setReticulumManualStackStopSuppress,
@@ -292,11 +293,7 @@ export function useReticulumSidecarApi({
     void refreshIdentity();
     if (sidecarApiReady) {
       void refreshAppInfo();
-      void import('./reticulumGamesSession')
-        .then(({ refreshGamesSessions }) => refreshGamesSessions())
-        .catch((e: unknown) => {
-          console.debug('[useReticulumSidecarApi] refreshGamesSessions ' + String(e));
-        });
+      void refreshGamesSessions();
     }
   }, [sidecarStatus.running, sidecarApiReady, refreshIdentity, refreshAppInfo]);
 
