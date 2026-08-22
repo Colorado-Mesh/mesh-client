@@ -11,6 +11,12 @@ import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import RadioPanel, { ConfigNumber } from './RadioPanel';
 import { ToastProvider } from './Toast';
 
+vi.mock('./QrCodeImage', () => ({
+  default: ({ value, ariaLabel }: { value: string; ariaLabel?: string }) => (
+    <img alt={ariaLabel ?? 'qr'} data-qr-value={value} />
+  ),
+}));
+
 /**
  * Returns true if the label element with the given text has a sibling HelpTooltip
  * (.cursor-help) inside the same flex row. Add entries to the checklists below
@@ -731,5 +737,59 @@ describe('RadioPanel MeshCore Open wire and path hash', () => {
     ).toBeInTheDocument();
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
+  });
+});
+
+describe('RadioPanel MeshCore channel share QR placement', () => {
+  it('renders the share QR under the clicked channel row, not after the list', async () => {
+    const user = userEvent.setup();
+    const secretA = new Uint8Array(16).fill(0x11);
+    const secretB = new Uint8Array(16).fill(0x22);
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          meshcoreChannels={[
+            { index: 0, name: 'Alpha', secret: secretA },
+            { index: 1, name: 'Beta', secret: secretB },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    const channelsDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Channels (MeshCore)';
+    });
+    expect(channelsDetails).toBeDefined();
+    await user.click(channelsDetails!.querySelector('summary')!);
+
+    const alphaQrButton = screen.getByRole('button', {
+      name: 'Show MeshCore channel QR for Alpha',
+    });
+    expect(alphaQrButton).toHaveAttribute('aria-expanded', 'false');
+    await user.click(alphaQrButton);
+
+    const qr = await screen.findByRole('img', {
+      name: 'Show MeshCore channel QR for Alpha',
+    });
+    expect(alphaQrButton).toHaveAttribute('aria-expanded', 'true');
+
+    const itemWrapper = qr.closest('.space-y-1');
+    expect(itemWrapper).not.toBeNull();
+    expect(itemWrapper!.textContent).toContain('Alpha');
+    expect(itemWrapper!.textContent).not.toContain('Beta');
+
+    const channelList = itemWrapper!.parentElement;
+    expect(channelList).not.toBeNull();
+    const items = [...channelList!.children].filter((el) => el.classList.contains('space-y-1'));
+    expect(items).toHaveLength(2);
+    expect(items[0]).toBe(itemWrapper);
+    const betaItem = items[1];
+    expect(betaItem).toBeDefined();
+    expect(betaItem?.textContent).toContain('Beta');
+    expect(betaItem?.querySelector('img')).toBeNull();
   });
 });
