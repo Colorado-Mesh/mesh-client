@@ -3726,6 +3726,7 @@ function MeshcoreChannelSection({
   const [shareQrIdx, setShareQrIdx] = useState<number | null>(null);
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
+  const shareQrRef = useRef<HTMLDivElement>(null);
 
   const isValidHex = editKeyHex.length === 32 && /^[0-9a-fA-F]{32}$/.test(editKeyHex);
 
@@ -3775,6 +3776,12 @@ function MeshcoreChannelSection({
     }
   }, [editingIdx, addingNew]);
 
+  useEffect(() => {
+    if (shareQrIdx != null && shareQrRef.current) {
+      shareQrRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [shareQrIdx]);
+
   function openEdit(ch: { index: number; name: string; secret: Uint8Array }) {
     setEditingIdx(ch.index);
     setEditName(ch.name);
@@ -3819,6 +3826,7 @@ function MeshcoreChannelSection({
       await onDeleteChannel(idx);
       setConfirmDeleteIdx(null);
       if (editingIdx === idx) setEditingIdx(null);
+      if (shareQrIdx === idx) setShareQrIdx(null);
     } catch (e) {
       console.warn('[MeshcoreChannelSection] delete failed ' + errLikeToLogString(e));
     } finally {
@@ -3861,121 +3869,122 @@ function MeshcoreChannelSection({
           )}
           {channels.map((ch) => {
             const revealed = revealedIdx.has(ch.index);
-            return (
-              <div
-                key={`ch-${ch.index}-${ch.name}`}
-                className="bg-deep-black/60 flex items-center gap-2 rounded-lg border border-gray-700/50 px-3 py-2"
-              >
-                <span className="rounded bg-gray-700 px-1.5 py-0.5 font-mono text-xs font-bold text-gray-400">
-                  {ch.index}
-                </span>
-                <span className="flex-1 text-sm text-gray-200">
-                  {ch.name || t('radioPanel.meshcoreChannel.defaultName', { index: ch.index })}
-                </span>
-                <span className="text-muted font-mono text-xs">
-                  {revealed ? bytesToHex(ch.secret) : '••••••••••••••••'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRevealedIdx((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(ch.index)) next.delete(ch.index);
-                      else next.add(ch.index);
-                      return next;
-                    });
-                  }}
-                  className="text-muted px-1 text-xs hover:text-gray-300"
-                  title={revealed ? t('radioPanel.hideKey') : t('radioPanel.revealKey')}
-                >
-                  {revealed ? t('common.hide') : t('common.show')}
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openEdit(ch);
-                  }}
-                  disabled={disabled}
-                  className="px-1 text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50"
-                >
-                  {t('common.edit')}
-                </button>
-                {ch.secret?.length === 16 ? (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShareQrIdx((prev) => (prev === ch.index ? null : ch.index));
-                    }}
-                    aria-label={t('radioPanel.meshcoreChannel.shareQrAria', { name: ch.name })}
-                    className="px-1 text-xs text-amber-400 hover:text-amber-300"
-                  >
-                    {t('radioPanel.meshcoreChannel.shareQr')}
-                  </button>
-                ) : null}
-                {confirmDeleteIdx === ch.index ? (
-                  <span className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(ch.index)}
-                      disabled={disabled || saving}
-                      className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
-                    >
-                      {t('common.confirm')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setConfirmDeleteIdx(null);
-                      }}
-                      className="text-muted text-xs hover:text-gray-300"
-                    >
-                      {t('common.cancel')}
-                    </button>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setConfirmDeleteIdx(ch.index);
-                    }}
-                    disabled={disabled || saving}
-                    className="px-1 text-xs text-red-500 hover:text-red-400 disabled:opacity-50"
-                  >
-                    {t('common.delete')}
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {shareQrIdx != null
-          ? (() => {
-              const ch = channels.find((c) => c.index === shareQrIdx);
-              if (!ch || ch.secret?.length !== 16) return null;
-              let uri: string;
+            const channelName =
+              ch.name || t('radioPanel.meshcoreChannel.defaultName', { index: ch.index });
+            const showShareQr = shareQrIdx === ch.index && ch.secret?.length === 16;
+            let shareQrUri: string | null = null;
+            if (showShareQr) {
               try {
-                uri = buildMeshcoreChannelAddUri({
-                  name: ch.name || t('radioPanel.meshcoreChannel.defaultName', { index: ch.index }),
+                shareQrUri = buildMeshcoreChannelAddUri({
+                  name: channelName,
                   secretHex: bytesToHex(ch.secret),
                 });
               } catch {
                 // catch-no-log-ok invalid channel secret hides QR
-                return null;
+                shareQrUri = null;
               }
-              return (
-                <div className="bg-deep-black/40 rounded-lg border border-gray-700/50 p-3">
-                  <QrCodeImage
-                    value={uri}
-                    size={160}
-                    ariaLabel={t('radioPanel.meshcoreChannel.shareQrAria', { name: ch.name })}
-                  />
+            }
+            return (
+              <div key={`ch-${ch.index}-${ch.name}`} className="space-y-1">
+                <div className="bg-deep-black/60 flex items-center gap-2 rounded-lg border border-gray-700/50 px-3 py-2">
+                  <span className="rounded bg-gray-700 px-1.5 py-0.5 font-mono text-xs font-bold text-gray-400">
+                    {ch.index}
+                  </span>
+                  <span className="flex-1 text-sm text-gray-200">{channelName}</span>
+                  <span className="text-muted font-mono text-xs">
+                    {revealed ? bytesToHex(ch.secret) : '••••••••••••••••'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRevealedIdx((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(ch.index)) next.delete(ch.index);
+                        else next.add(ch.index);
+                        return next;
+                      });
+                    }}
+                    className="text-muted px-1 text-xs hover:text-gray-300"
+                    title={revealed ? t('radioPanel.hideKey') : t('radioPanel.revealKey')}
+                  >
+                    {revealed ? t('common.hide') : t('common.show')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEdit(ch);
+                    }}
+                    disabled={disabled}
+                    className="px-1 text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50"
+                  >
+                    {t('common.edit')}
+                  </button>
+                  {ch.secret?.length === 16 ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShareQrIdx((prev) => (prev === ch.index ? null : ch.index));
+                      }}
+                      aria-expanded={shareQrIdx === ch.index}
+                      aria-label={t('radioPanel.meshcoreChannel.shareQrAria', {
+                        name: channelName,
+                      })}
+                      className="px-1 text-xs text-amber-400 hover:text-amber-300"
+                    >
+                      {t('radioPanel.meshcoreChannel.shareQr')}
+                    </button>
+                  ) : null}
+                  {confirmDeleteIdx === ch.index ? (
+                    <span className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(ch.index)}
+                        disabled={disabled || saving}
+                        className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
+                      >
+                        {t('common.confirm')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirmDeleteIdx(null);
+                        }}
+                        className="text-muted text-xs hover:text-gray-300"
+                      >
+                        {t('common.cancel')}
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setConfirmDeleteIdx(ch.index);
+                      }}
+                      disabled={disabled || saving}
+                      className="px-1 text-xs text-red-500 hover:text-red-400 disabled:opacity-50"
+                    >
+                      {t('common.delete')}
+                    </button>
+                  )}
                 </div>
-              );
-            })()
-          : null}
+                {shareQrUri != null ? (
+                  <div
+                    ref={shareQrRef}
+                    className="bg-deep-black/40 rounded-lg border border-gray-700/50 p-3"
+                  >
+                    <QrCodeImage
+                      value={shareQrUri}
+                      size={160}
+                      ariaLabel={t('radioPanel.meshcoreChannel.shareQrAria', { name: channelName })}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
 
         <div className="pt-1">
           <p className="text-muted mb-1 text-[11px]">{t('qrIngest.pasteImageHint')}</p>
