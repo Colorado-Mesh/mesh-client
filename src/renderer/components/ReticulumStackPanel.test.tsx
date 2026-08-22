@@ -23,6 +23,10 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+vi.mock('@/renderer/lib/reticulum/reticulumGamesSession', () => ({
+  refreshGamesSessions: vi.fn(async () => {}),
+}));
+
 vi.mock('@/renderer/lib/sessions/reticulumSession', () => ({
   tryGetReticulumSession: () => ({
     restartStack: vi.fn().mockResolvedValue(undefined),

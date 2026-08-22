@@ -12,6 +12,10 @@ vi.mock('@/renderer/lib/appSettingsStorage', () => ({
   setReticulumAutostartEnabled: vi.fn(),
 }));
 
+vi.mock('@/renderer/lib/reticulum/reticulumGamesSession', () => ({
+  refreshGamesSessions: vi.fn(async () => {}),
+}));
+
 vi.mock('@/renderer/lib/sessions/reticulumSession', () => ({
   tryGetReticulumSession: vi.fn(() => ({ connectAutomatic: vi.fn() })),
 }));
