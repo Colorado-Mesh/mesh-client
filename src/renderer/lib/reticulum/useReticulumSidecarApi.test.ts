@@ -21,6 +21,7 @@ vi.mock('@/renderer/lib/sessions/reticulumSession', () => ({
 }));
 
 import { isReticulumAutostartEnabled } from '@/renderer/lib/appSettingsStorage';
+import { refreshGamesSessions } from '@/renderer/lib/reticulum/reticulumGamesSession';
 import {
   resetReticulumIdentityStoreForTests,
   useReticulumIdentityStore,
@@ -35,6 +36,7 @@ describe('useReticulumSidecarApi', () => {
     onStatus.mockReset();
     onEvent.mockReset();
     onStartStack.mockReset();
+    vi.mocked(refreshGamesSessions).mockClear();
     resetReticulumManualStackStopSuppressForTests();
     vi.mocked(isReticulumAutostartEnabled).mockReturnValue(false);
     resetReticulumIdentityStoreForTests();
@@ -79,6 +81,34 @@ describe('useReticulumSidecarApi', () => {
       expect(result.current.sidecarUiRunning).toBe(true);
     });
     expect(result.current.sidecarApiReady).toBe(false);
+  });
+
+  it('refreshes games sessions when sidecarApiReady becomes true', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 59477, pid: 42 });
+
+    const { result, rerender } = renderHook(
+      ({ connecting }: { connecting: boolean }) =>
+        useReticulumSidecarApi({
+          connecting,
+          onStartStack,
+        }),
+      { initialProps: { connecting: true } },
+    );
+
+    await waitFor(() => {
+      expect(result.current.sidecarUiRunning).toBe(true);
+    });
+    expect(result.current.sidecarApiReady).toBe(false);
+    expect(refreshGamesSessions).not.toHaveBeenCalled();
+
+    rerender({ connecting: false });
+
+    await waitFor(() => {
+      expect(result.current.sidecarApiReady).toBe(true);
+    });
+    await waitFor(() => {
+      expect(refreshGamesSessions).toHaveBeenCalled();
+    });
   });
 
   it('shares refreshed identity status across hook instances', async () => {
