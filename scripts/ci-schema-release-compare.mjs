@@ -11,6 +11,22 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import {
+  compareReleaseTags,
+  pickLatestPublishedReleaseTag,
+  publishedReleaseGitTag,
+  SAFE_RELEASE_NAME_RE,
+  trustedReleaseTag,
+} from './github-release-version.mjs';
+
+export {
+  compareReleaseTags,
+  pickLatestPublishedReleaseTag,
+  publishedReleaseGitTag,
+  SAFE_RELEASE_NAME_RE,
+  trustedReleaseTag,
+};
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const SCHEMA_REL = 'src/main/db-schema-sync.ts';
@@ -102,72 +118,6 @@ export function isSchemaBumped(currSchema, prevSchema) {
 }
 
 /**
- * Reconstruct a trusted `vX.Y.Z` from validated digits (breaks CodeQL
- * `js/http-to-file-access` taint from GitHub release JSON → disk writes).
- * @param {unknown} tag
- * @returns {string}
- */
-export function trustedReleaseTag(tag) {
-  const m = typeof tag === 'string' ? /^v(\d+)\.(\d+)\.(\d+)$/.exec(tag) : null;
-  if (!m) {
-    throw new Error(`Unsafe release tag: ${JSON.stringify(tag)}`);
-  }
-  return `v${Number(m[1])}.${Number(m[2])}.${Number(m[3])}`;
-}
-
-/** Release display names are X.Y.Z (no leading v) on GitHub Releases. */
-export const SAFE_RELEASE_NAME_RE = /^(\d+)\.(\d+)\.(\d+)$/;
-
-/**
- * Compare two trusted `vX.Y.Z` tags. Negative if a < b.
- * @param {string} a
- * @param {string} b
- */
-export function compareReleaseTags(a, b) {
-  const pa = trustedReleaseTag(a).slice(1).split('.').map(Number);
-  const pb = trustedReleaseTag(b).slice(1).split('.').map(Number);
-  for (let i = 0; i < 3; i += 1) {
-    if (pa[i] !== pb[i]) return pa[i] - pb[i];
-  }
-  return 0;
-}
-
-/**
- * Map a GitHub Releases API row to a trusted git tag for schema lookup.
- * Skips drafts/prereleases. Accepts normal `tag_name: vX.Y.Z`, and published
- * releases that lost their tag (`untagged-*` or empty) when `name` is still `X.Y.Z`
- * (seen after draft-fork / publish races — otherwise test builds warn against
- * an older release/schema).
- *
- * @param {{ tag_name?: unknown, name?: unknown, draft?: unknown, prerelease?: unknown } | null | undefined} release
- * @returns {string | null}
- */
-export function publishedReleaseGitTag(release) {
-  if (!release || release.draft === true || release.prerelease === true) {
-    return null;
-  }
-  const tag = release.tag_name;
-  if (typeof tag === 'string' && /^v\d+\.\d+\.\d+$/.test(tag)) {
-    return trustedReleaseTag(tag);
-  }
-  // Name fallback only when tag is missing or GitHub's untagged-* placeholder —
-  // not for arbitrary invalid tags (e.g. tag_name "broken" + name "5.27.0").
-  const tagMissing = tag == null || tag === '';
-  const tagUntagged = typeof tag === 'string' && /^untagged-/i.test(tag);
-  if (!tagMissing && !tagUntagged) {
-    return null;
-  }
-  const name = release.name;
-  if (typeof name === 'string') {
-    const m = SAFE_RELEASE_NAME_RE.exec(name);
-    if (m) {
-      return trustedReleaseTag(`v${Number(m[1])}.${Number(m[2])}.${Number(m[3])}`);
-    }
-  }
-  return null;
-}
-
-/**
  * Coerce a schema version to a trusted positive integer.
  * @param {unknown} value
  * @returns {number}
@@ -192,33 +142,6 @@ export function readSchemaVersionFromGitTag(tag, cwd = ROOT) {
     maxBuffer: 2 * 1024 * 1024,
   });
   return trustedSchemaVersion(parseCurrentSchemaVersion(source));
-}
-
-/**
- * Pick the highest-semver published release tag from a GitHub Releases list.
- * @param {Array<{ tag_name?: unknown, name?: unknown, draft?: unknown, prerelease?: unknown }>} releases
- * @param {string} [excludeTag]
- * @returns {string | null}
- */
-export function pickLatestPublishedReleaseTag(releases, excludeTag) {
-  if (!Array.isArray(releases)) {
-    return null;
-  }
-  /** @type {string[]} */
-  const candidates = [];
-  for (const release of releases) {
-    const tag = publishedReleaseGitTag(release);
-    if (!tag) continue;
-    if (excludeTag && tag === excludeTag) continue;
-    candidates.push(tag);
-  }
-  if (candidates.length === 0) {
-    return null;
-  }
-  // Prefer highest semver — API order is not reliable when drafts / untagged
-  // rows interleave with published releases.
-  candidates.sort((a, b) => compareReleaseTags(b, a));
-  return candidates[0];
 }
 
 /**

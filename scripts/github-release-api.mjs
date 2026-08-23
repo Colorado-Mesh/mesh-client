@@ -7,6 +7,8 @@ import { execFileSync } from 'node:child_process';
 import { statSync } from 'node:fs';
 import path from 'node:path';
 
+import { releaseMatchesTag, versionFromTrustedTag } from './github-release-version.mjs';
+
 export const OWNER = 'Colorado-Mesh';
 export const REPO = 'mesh-client';
 export const API_ROOT = `https://api.github.com/repos/${OWNER}/${REPO}`;
@@ -172,10 +174,7 @@ export async function githubRequest(path, { token, method = 'GET', body, headers
   return { response, json };
 }
 
-export function releaseMatchesTag(release, tag) {
-  const version = versionFromTag(tag);
-  return release.tag_name === tag || (release.draft === true && release.name === version);
-}
+export { releaseMatchesTag } from './github-release-version.mjs';
 
 export async function listReleasesForTag(tag, token) {
   assertSafeReleaseTag(tag);
@@ -302,6 +301,61 @@ export async function patchRelease(releaseId, token, patch) {
  * when the commit differs in `.github/workflows/` from the default branch (HTTP 403
  * "Resource not accessible by integration"). The git tag already pins the SHA.
  */
+/**
+ * PATCH `tag_name` / `name` — must succeed (retries with fallbackToken on 403).
+ *
+ * @param {number | string} releaseId
+ * @param {string} tag trusted vX.Y.Z
+ * @param {string} token
+ * @param {{ fallbackToken?: string, draft?: boolean, log?: (...args: unknown[]) => void }} [opts]
+ */
+export async function patchReleaseTagMetadataRequired(
+  releaseId,
+  tag,
+  token,
+  { fallbackToken, draft, log = console.debug } = {},
+) {
+  assertSafeReleaseTag(tag);
+  const id = trustedGithubReleaseId(releaseId);
+  /** @type {Record<string, unknown>} */
+  const patch = {
+    tag_name: tag,
+    name: versionFromTrustedTag(tag),
+  };
+  if (draft === true) {
+    patch.draft = true;
+  }
+
+  const attempt = async (tok) => {
+    const { response, json } = await githubRequest(`/releases/${id}`, {
+      token: tok,
+      method: 'PATCH',
+      body: patch,
+    });
+    return { response, json };
+  };
+
+  let { response, json } = await attempt(token);
+  if (
+    !response.ok &&
+    response.status === 403 &&
+    typeof fallbackToken === 'string' &&
+    fallbackToken &&
+    fallbackToken !== token
+  ) {
+    log(`[github-release] tag PATCH 403 on release ${id}; retrying with fallback token`);
+    ({ response, json } = await attempt(fallbackToken));
+  }
+
+  if (!response.ok) {
+    fail(
+      `PATCH tag metadata on release ${id} failed (${response.status}): ` +
+        `${json?.message ?? response.statusText}`,
+    );
+  }
+  return json;
+}
+
 export async function patchReleaseMetadataBestEffort(releaseId, token, patch, log = console.debug) {
   if (!patch || Object.keys(patch).length === 0) {
     return null;
@@ -569,7 +623,7 @@ export async function downloadReleaseAsset(assetId, token) {
  * `targetCommitish` is accepted for call-site compatibility but never PATCHed
  * (GITHUB_TOKEN 403 — see patchReleaseMetadataBestEffort).
  */
-export async function consolidateReleases({ tag, token, log = console.debug }) {
+export async function consolidateReleases({ tag, token, fallbackToken, log = console.debug }) {
   const releases = await listReleasesForTag(tag, token);
   if (releases.length === 0) {
     fail(`No releases found for ${tag}`);
@@ -619,17 +673,17 @@ export async function consolidateReleases({ tag, token, log = console.debug }) {
     log(`[github-release] Deleted duplicate release ${release.id} for ${tag}`);
   }
 
-  const patch = {
-    tag_name: tag,
-    name: versionFromTag(tag),
+  const updated = await patchReleaseTagMetadataRequired(keeper.id, tag, token, {
+    fallbackToken,
     draft: true,
-  };
-  if (bestBody && bestBody !== keeper.body) {
-    patch.body = bestBody;
-  }
-
-  const updated = await patchReleaseMetadataBestEffort(keeper.id, token, patch, log);
-  const result = updated ?? keeper;
+    log,
+  });
+  const bodyPatch =
+    bestBody && bestBody !== (updated.body ?? keeper.body) ? { body: bestBody } : null;
+  const bodyUpdated = bodyPatch
+    ? await patchReleaseMetadataBestEffort(keeper.id, token, bodyPatch, log)
+    : null;
+  const result = bodyUpdated ?? updated ?? keeper;
   log(
     `[github-release] Consolidated ${tag} — release ${result.id} has ${result.assets?.length ?? keeperAssetNames.size} assets (moved ${moved})`,
   );
@@ -649,31 +703,30 @@ export async function consolidateReleases({ tag, token, log = console.debug }) {
  * `targetCommitish` is accepted for call-site compatibility but never PATCHed
  * (GITHUB_TOKEN 403 — see patchReleaseMetadataBestEffort).
  */
-export async function normalizeDraftReleasesForTag(tag, token, { log = console.debug } = {}) {
+export async function normalizeDraftReleasesForTag(
+  tag,
+  token,
+  { fallbackToken, log = console.debug } = {},
+) {
   const releases = await listReleasesForTag(tag, token);
   if (releases.length === 0) {
     return null;
   }
 
   if (releases.length > 1) {
-    return consolidateReleases({ tag, token, log });
+    return consolidateReleases({ tag, token, fallbackToken, log });
   }
 
   const release = releases[0];
-  const patch = {};
-  if (release.tag_name !== tag) {
-    patch.tag_name = tag;
-    patch.name = versionFromTag(tag);
-    patch.draft = true;
-  }
-  if (Object.keys(patch).length === 0) {
+  if (release.tag_name === tag) {
     return release;
   }
 
-  const updated = await patchReleaseMetadataBestEffort(release.id, token, patch, log);
-  if (!updated) {
-    return release;
-  }
+  const updated = await patchReleaseTagMetadataRequired(release.id, tag, token, {
+    fallbackToken,
+    draft: true,
+    log,
+  });
   log(`[github-release] Repaired release ${updated.id} metadata for ${tag}`);
   return updated;
 }
@@ -694,9 +747,10 @@ export async function ensureGithubDraftRelease({
   token,
   targetCommitish,
   allowCreate = false,
+  fallbackToken,
   log = console.debug,
 }) {
-  let keeper = await normalizeDraftReleasesForTag(tag, token, { log });
+  let keeper = await normalizeDraftReleasesForTag(tag, token, { fallbackToken, log });
   // Only reuse an existing *draft*. A published release for the same tag must not be
   // treated as the CI upload target (schema-note patches and artifact uploads are draft-only).
   if (keeper?.draft === true) {

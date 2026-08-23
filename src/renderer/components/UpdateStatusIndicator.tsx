@@ -29,7 +29,7 @@ export default function UpdateStatusIndicator({
   onViewRelease,
 }: Props) {
   const { t } = useTranslation();
-  const { phase, version, isPackaged, isMac, percent } = updateState;
+  const { phase, version, isPackaged, isMac, percent, errorMessage } = updateState;
   const useReleasePage = !isPackaged || isMac || window.electronAPI.getPlatform() === 'darwin';
 
   return (
@@ -113,7 +113,7 @@ export default function UpdateStatusIndicator({
           type="button"
           onClick={onCheck}
           className="font-inherit inline-flex min-w-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-gray-300 transition-colors hover:text-gray-100"
-          title={t('updateStatus.retryCheck')}
+          title={errorMessage?.trim() ? errorMessage : t('updateStatus.retryCheck')}
         >
           <IconWarning className="h-3.5 w-3.5 shrink-0 text-amber-500" />
           <span className="text-amber-500/90">{t('updateStatus.updateError')}</span>
