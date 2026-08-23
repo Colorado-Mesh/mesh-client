@@ -626,6 +626,56 @@ describe('consolidateReleases', () => {
     exitSpy.mockRestore();
   });
 
+  it('does not delete assets or releases when required tag PATCH fails for multiple drafts', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((code) => {
+      throw new Error(`exit:${code}`);
+    });
+    const fetchMock = vi.fn(async (url, init) => {
+      const method = init?.method ?? 'GET';
+      const href = String(url);
+      if (method === 'GET' && href.includes('/releases?')) {
+        return new Response(
+          JSON.stringify([
+            {
+              id: 1,
+              tag_name: 'untagged-deadbeef',
+              name: '5.21.0',
+              draft: true,
+              assets: [
+                { id: 101, name: 'a' },
+                { id: 103, name: 'c' },
+              ],
+            },
+            {
+              id: 2,
+              tag_name: 'untagged-cafebabe',
+              name: '5.21.0',
+              draft: true,
+              assets: [{ id: 102, name: 'b' }],
+            },
+          ]),
+          { status: 200 },
+        );
+      }
+      if (method === 'PATCH' && (href.endsWith('/releases/1') || href.endsWith('/releases/2'))) {
+        return new Response(JSON.stringify({ message: 'Resource not accessible by integration' }), {
+          status: 403,
+        });
+      }
+      if (method === 'DELETE') {
+        throw new Error(`Unexpected DELETE ${href}`);
+      }
+      throw new Error(`Unexpected fetch ${method} ${href}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      consolidateReleases({ tag: TAG, token: 'token', fallbackToken: 'fallback', log: () => {} }),
+    ).rejects.toThrow(/exit:1/);
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+    exitSpy.mockRestore();
+  });
+
   it('fails consolidate when metadata PATCH returns a non-403 error', async () => {
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined);
     const fetchMock = vi.fn(async (url, init) => {

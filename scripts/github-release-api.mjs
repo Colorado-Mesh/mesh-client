@@ -634,8 +634,16 @@ export async function consolidateReleases({ tag, token, fallbackToken, log = con
   }
 
   const keeper = pickCanonicalRelease(releases);
-  const keeperAssetNames = new Set((keeper.assets ?? []).map((asset) => asset.name));
-  let bestBody = keeper.body ?? '';
+  const updated = await patchReleaseTagMetadataRequired(keeper.id, tag, token, {
+    fallbackToken,
+    draft: true,
+    log,
+  });
+
+  const keeperAssetNames = new Set(
+    (updated.assets ?? keeper.assets ?? []).map((asset) => asset.name),
+  );
+  let bestBody = updated.body ?? keeper.body ?? '';
   let moved = 0;
 
   log(
@@ -673,11 +681,6 @@ export async function consolidateReleases({ tag, token, fallbackToken, log = con
     log(`[github-release] Deleted duplicate release ${release.id} for ${tag}`);
   }
 
-  const updated = await patchReleaseTagMetadataRequired(keeper.id, tag, token, {
-    fallbackToken,
-    draft: true,
-    log,
-  });
   const bodyPatch =
     bestBody && bestBody !== (updated.body ?? keeper.body) ? { body: bestBody } : null;
   const bodyUpdated = bodyPatch

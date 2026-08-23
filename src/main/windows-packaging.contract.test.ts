@@ -219,7 +219,7 @@ describe('Windows packaging (contract)', () => {
     expect(releaseWorkflow).toContain(
       'node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z',
     );
-    expect(releaseWorkflow).toContain('needs: release');
+    expect(releaseWorkflow).toContain('needs: [release, finalize-github-release]');
     expect(releaseWorkflow).not.toContain('win-arm64-install:');
 
     const releaseJobBlock = releaseWorkflow.slice(

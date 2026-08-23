@@ -15,12 +15,27 @@ export interface PublishedReleasePick {
   releaseUrl: string;
 }
 
+function hasReleaseVisibilityFields(release: GithubReleaseRow): boolean {
+  return typeof release.draft === 'boolean' && typeof release.prerelease === 'boolean';
+}
+
+export function trustedSemverComponent(raw: string | undefined): number {
+  if (raw === undefined || !/^\d+$/.test(raw)) {
+    throw new Error(`Unsafe release tag component: ${JSON.stringify(raw)}`);
+  }
+  const n = Number(raw);
+  if (!Number.isSafeInteger(n)) {
+    throw new Error(`Unsafe release tag component: ${JSON.stringify(raw)}`);
+  }
+  return n;
+}
+
 export function trustedReleaseTag(tag: unknown): string {
   const m = typeof tag === 'string' ? /^v(\d+)\.(\d+)\.(\d+)$/.exec(tag) : null;
   if (!m) {
     throw new Error(`Unsafe release tag: ${JSON.stringify(tag)}`);
   }
-  return `v${Number(m[1])}.${Number(m[2])}.${Number(m[3])}`;
+  return `v${trustedSemverComponent(m[1])}.${trustedSemverComponent(m[2])}.${trustedSemverComponent(m[3])}`;
 }
 
 export function compareReleaseTags(a: string, b: string): number {
@@ -43,6 +58,9 @@ export function releaseGitTagFromRow(
   opts: { includeDrafts?: boolean; includePrereleases?: boolean } = {},
 ): string | null {
   if (!release) {
+    return null;
+  }
+  if (!hasReleaseVisibilityFields(release)) {
     return null;
   }
   const includeDrafts = opts.includeDrafts === true;
@@ -69,7 +87,9 @@ export function releaseGitTagFromRow(
   if (typeof name === 'string') {
     const m = SAFE_RELEASE_NAME_RE.exec(name);
     if (m) {
-      return trustedReleaseTag(`v${Number(m[1])}.${Number(m[2])}.${Number(m[3])}`);
+      return trustedReleaseTag(
+        `v${trustedSemverComponent(m[1])}.${trustedSemverComponent(m[2])}.${trustedSemverComponent(m[3])}`,
+      );
     }
   }
   return null;

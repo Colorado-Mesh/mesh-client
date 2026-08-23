@@ -2,6 +2,7 @@ import type { BrowserWindow, IpcMainInvokeEvent } from 'electron';
 import { app, ipcMain, shell } from 'electron';
 import type { AppUpdater } from 'electron-updater';
 
+import { fetchAllGithubReleases } from '@/shared/fetchGithubReleases';
 import {
   type GithubReleaseRow,
   pickLatestPublishedRelease,
@@ -29,7 +30,6 @@ export function getCheckNowFromMenu(): (() => void) | null {
 
 const REPO = 'Colorado-Mesh/mesh-client';
 const RELEASES_URL = `https://github.com/${REPO}/releases`;
-const RELEASES_LIST_URL = `https://api.github.com/repos/${REPO}/releases?per_page=100`;
 
 type SendFn = (channel: string, payload?: unknown) => void;
 
@@ -38,17 +38,7 @@ function releaseUrlForVersion(version: string): string {
 }
 
 async function fetchGithubReleases(): Promise<GithubReleaseRow[]> {
-  const res = await fetch(RELEASES_LIST_URL, {
-    headers: { 'User-Agent': `mesh-client/${app.getVersion()}` },
-  });
-  if (!res.ok) {
-    throw new Error(`GitHub API responded with ${String(res.status)}`);
-  }
-  const data = (await res.json()) as GithubReleaseRow[];
-  if (!Array.isArray(data)) {
-    throw new Error('Unexpected GitHub releases payload');
-  }
-  return data;
+  return fetchAllGithubReleases(REPO, `mesh-client/${app.getVersion()}`);
 }
 
 async function openAppReleasePage(send: SendFn): Promise<void> {

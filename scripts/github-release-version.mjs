@@ -7,6 +7,21 @@
 export const SAFE_RELEASE_NAME_RE = /^(\d+)\.(\d+)\.(\d+)$/;
 
 /**
+ * @param {string} raw
+ * @returns {number}
+ */
+export function trustedSemverComponent(raw) {
+  if (!/^\d+$/.test(raw)) {
+    throw new Error(`Unsafe release tag component: ${JSON.stringify(raw)}`);
+  }
+  const n = Number(raw);
+  if (!Number.isSafeInteger(n)) {
+    throw new Error(`Unsafe release tag component: ${JSON.stringify(raw)}`);
+  }
+  return n;
+}
+
+/**
  * @param {unknown} tag
  * @returns {string}
  */
@@ -15,7 +30,7 @@ export function trustedReleaseTag(tag) {
   if (!m) {
     throw new Error(`Unsafe release tag: ${JSON.stringify(tag)}`);
   }
-  return `v${Number(m[1])}.${Number(m[2])}.${Number(m[3])}`;
+  return `v${trustedSemverComponent(m[1])}.${trustedSemverComponent(m[2])}.${trustedSemverComponent(m[3])}`;
 }
 
 /**
@@ -40,6 +55,14 @@ export function isUntaggedPlaceholderTag(tag) {
 }
 
 /**
+ * @param {{ draft?: unknown, prerelease?: unknown }} release
+ * @returns {boolean}
+ */
+function hasReleaseVisibilityFields(release) {
+  return typeof release.draft === 'boolean' && typeof release.prerelease === 'boolean';
+}
+
+/**
  * Resolve a trusted `vX.Y.Z` from a release row when tag is valid or untagged/missing + name.
  *
  * @param {{ tag_name?: unknown, name?: unknown, draft?: unknown, prerelease?: unknown } | null | undefined} release
@@ -48,6 +71,9 @@ export function isUntaggedPlaceholderTag(tag) {
  */
 export function releaseGitTagFromRow(release, opts = {}) {
   if (!release) {
+    return null;
+  }
+  if (!hasReleaseVisibilityFields(release)) {
     return null;
   }
   const includeDrafts = opts.includeDrafts === true;
@@ -74,7 +100,9 @@ export function releaseGitTagFromRow(release, opts = {}) {
   if (typeof name === 'string') {
     const m = SAFE_RELEASE_NAME_RE.exec(name);
     if (m) {
-      return trustedReleaseTag(`v${Number(m[1])}.${Number(m[2])}.${Number(m[3])}`);
+      return trustedReleaseTag(
+        `v${trustedSemverComponent(m[1])}.${trustedSemverComponent(m[2])}.${trustedSemverComponent(m[3])}`,
+      );
     }
   }
   return null;
@@ -100,7 +128,17 @@ export function releaseMatchesTag(release, tag) {
   if (resolved === tag) {
     return true;
   }
-  return release.tag_name === tag;
+  if (release.tag_name === tag) {
+    return true;
+  }
+  if (release.draft === true && typeof release.name === 'string') {
+    const tagMissing = release.tag_name == null || release.tag_name === '';
+    const tagUntagged = isUntaggedPlaceholderTag(release.tag_name);
+    if ((tagMissing || tagUntagged) && release.name === versionFromTrustedTag(tag)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**

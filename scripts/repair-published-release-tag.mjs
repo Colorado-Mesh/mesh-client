@@ -3,7 +3,7 @@
  * Repair a published GitHub release whose tag_name is still `untagged-*`.
  *
  * Usage:
- *   GH_TOKEN=<admin PAT> node scripts/repair-published-release-tag.mjs --tag v5.30.0
+ *   GH_TOKEN=YOUR_ADMIN_PAT node scripts/repair-published-release-tag.mjs --tag v5.30.0
  */
 import { pathToFileURL } from 'node:url';
 
@@ -24,19 +24,22 @@ import { isUntaggedPlaceholderTag } from './github-release-version.mjs';
  */
 export async function repairPublishedReleaseTag(tag, token, fallbackToken) {
   const releases = await listReleasesForTag(tag, token);
-  if (releases.length === 0) {
-    fail(`No GitHub release found for ${tag}`);
+  const published = releases.filter((release) => release.draft !== true);
+  if (published.length === 0) {
+    fail(`No published GitHub release found for ${tag}`);
   }
-  const broken = releases.find(
-    (release) =>
-      release.draft !== true &&
-      isUntaggedPlaceholderTag(release.tag_name) &&
-      release.tag_name !== tag,
+
+  const broken = published.find(
+    (release) => isUntaggedPlaceholderTag(release.tag_name) && release.tag_name !== tag,
   );
-  const target = broken ?? releases.find((release) => release.tag_name !== tag);
+  const target = broken ?? published.find((release) => release.tag_name !== tag);
   if (!target) {
+    const correct = published.find((release) => release.tag_name === tag);
+    if (!correct) {
+      fail(`No published GitHub release with tag ${tag}`);
+    }
     console.debug(`[repair-published-release-tag] ${tag} already has correct tag_name`);
-    return getRelease(target?.id ?? releases[0].id, token);
+    return getRelease(correct.id, token);
   }
   console.debug(
     `[repair-published-release-tag] Repairing release ${target.id} (${String(target.tag_name)} → ${tag})`,
