@@ -60,7 +60,9 @@ import {
 } from '@/renderer/lib/meshcoreConfiguredChatChannels';
 import { persistMeshcoreSelfNodeId } from '@/renderer/lib/meshcoreLastSelfNodeId';
 import { resolveMeshcoreOwnNodeIdSet } from '@/renderer/lib/meshcoreOwnNodeIds';
+import { getMeshcoreCompanionRepeaterRfBusySnapshot } from '@/renderer/lib/meshcoreRepeaterRpcInFlight';
 import { totalRoomsUnreadCount } from '@/renderer/lib/meshcoreRoomsUnread';
+import { getMeshcoreSilentBulkDrainSnapshot } from '@/renderer/lib/meshcoreWaitingMessagesDrain';
 import { meshcoreWaitingMessagesVisibleForProtocol } from '@/renderer/lib/meshcoreWaitingMessagesStatusText';
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
@@ -2068,6 +2070,8 @@ function AppContent() {
 
   useEffect(() => {
     const liveResolvedMessageCount = selectByProtocol(storeMessageCountByProtocol, protocol);
+    const rfBusy = getMeshcoreCompanionRepeaterRfBusySnapshot();
+    const silentBulk = getMeshcoreSilentBulkDrainSnapshot();
     setDebugSnapshotUiContext({
       activePanelIndex,
       chatTabVisited,
@@ -2077,6 +2081,15 @@ function AppContent() {
       activeProtocol: protocol,
       waitingMessagesSilentDrainActive: meshcoreRuntime.waitingMessagesSilentDrainActive,
       waitingMessagesDrainDeferred: meshcoreRuntime.waitingMessagesDrainDeferred,
+      meshcoreDrain: {
+        meshcoreCompanionRepeaterRfBusy: rfBusy.repeaterRfBusy,
+        meshcoreCliReplyHoldCount: rfBusy.cliReplyHoldCount,
+        meshcoreAdminRpcInFlightCount: rfBusy.adminRpcInFlightCount,
+        meshcoreTraceRpcInFlightCount: rfBusy.traceRpcInFlightCount,
+        meshcoreTraceResponsesInFlightCount: rfBusy.traceResponsesInFlightCount,
+        meshcoreSilentBulkSkipped: silentBulk.silentBulkSkipped,
+        meshcoreSilentBulkTimeoutStreak: silentBulk.silentBulkTimeoutStreak,
+      },
     });
   }, [
     activePanelIndex,

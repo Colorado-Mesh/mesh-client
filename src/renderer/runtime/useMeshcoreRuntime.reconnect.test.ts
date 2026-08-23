@@ -676,19 +676,36 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     );
   });
 
-  it('defers post-connect self telemetry once when waiting-message drain is busy', () => {
-    expect(RUNTIME_SOURCE).toContain('schedulePostConnectSelfTelemetry');
-    expect(RUNTIME_SOURCE).toContain(
-      'post-connect self telemetry deferred (waiting-message drain busy)',
+  it('schedules post-connect self telemetry after proactive MsgWaiting drain', () => {
+    const initConnBody = extractUseCallbackBody(RUNTIME_SOURCE, 'initConn');
+    const drainIdx = initConnBody.indexOf('scheduleMeshcoreWaitingMessagesDrain');
+    const telemetryIdx = initConnBody.indexOf('schedulePostConnectSelfTelemetryAfterDrain');
+    expect(drainIdx).toBeGreaterThan(-1);
+    expect(telemetryIdx).toBeGreaterThan(drainIdx);
+  });
+
+  it('does not schedule post-connect self telemetry from initConn requestAnimationFrame', () => {
+    expect(RUNTIME_SOURCE).not.toMatch(
+      /requestAnimationFrame\(\(\) => \{[\s\S]{0,1500}schedulePostConnectSelfTelemetry/,
     );
+  });
+
+  it('gates post-connect self telemetry on waiting-message drain idle', () => {
+    expect(RUNTIME_SOURCE).toContain('schedulePostConnectSelfTelemetryAfterDrain');
     expect(RUNTIME_SOURCE).toContain(
       'post-connect self telemetry skipped (waiting-message drain still busy)',
     );
     expect(RUNTIME_SOURCE).toMatch(
-      /schedulePostConnectSelfTelemetry = \(allowReschedule: boolean\)[\s\S]*?waitingMessagesDrainBusyRef\.current[\s\S]*?schedulePostConnectSelfTelemetry\(false\)/,
+      /schedulePostConnectSelfTelemetryAfterDrain[\s\S]*?awaitMeshcoreWaitingMessagesDrainIdle[\s\S]*?waitingMessagesDrainBusyRef\.current/,
     );
+  });
+
+  it('uses short TCP timeout for post-connect self telemetry', () => {
     expect(RUNTIME_SOURCE).toMatch(
-      /if \(waitingMessagesDrainBusyRef\.current\) \{[\s\S]*?schedulePostConnectSelfTelemetry\(false\);[\s\S]*?\} else \{[\s\S]*?schedulePostConnectSelfTelemetry\(true\);/,
+      /transportType === 'tcp'[\s\S]*?MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS/,
+    );
+    expect(RUNTIME_SOURCE).not.toMatch(
+      /schedulePostConnectSelfTelemetryAfterDrain[\s\S]{0,800}MESHCORE_TELEMETRY_TIMEOUT_MS/,
     );
   });
 

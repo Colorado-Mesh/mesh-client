@@ -802,6 +802,18 @@ When the Meshtastic SDK logs a routing / queue failure, mesh-client intercepts m
 
 **Reconnect ownership:** TCP disconnect/reconnect is owned by `useMeshcoreRuntime` + `rfReconnectController` (single-owner scheduler). Conn side effects **skip** `handleConnectionLost` when `connectType === 'tcp'` so the runtime `meshcore:tcp-disconnected` listener does not double-enter the reconnect scheduler.
 
+### MeshCore TCP / pyMC: initial connect MsgWaiting drain slow or paused
+
+**Symptoms**: After TCP connect to pyMC/OpenHop, the header shows **Fetching queued messages…** or **Message sync paused while the radio is busy…** for one to two minutes; Chat backlog arrives slowly; developer bundle may show `ui.waitingMessagesDrainDeferred: true` and log lines like `requestTelemetry error timeout` ~120s after connect.
+
+**Cause**: Post-connect self telemetry (optional altitude fetch) used to run before proactive MsgWaiting drain and could hold the companion RF lane for up to **120s**. Silent bulk `getWaitingMessages` on TCP also used a **45s** timeout before falling back to one-at-a-time `syncNextMessage`.
+
+**Fix**:
+
+1. Upgrade to a build that schedules MsgWaiting drain before post-connect telemetry and uses a **15s** silent bulk timeout on TCP (same as serial/BLE).
+2. On MeshCore tab, use **Sync now** if the header still shows a backlog after connect.
+3. In support bundles, check `ui.meshcoreDrain` for `meshcoreCompanionRepeaterRfBusy`, `meshcoreAdminRpcInFlightCount`, and `meshcoreSilentBulkTimeoutStreak` when triaging repeat reports.
+
 ### MeshCore contact delete and sticky Rooms badge
 
 - Deleting a contact from Chat/Contacts removes the SQLite contact row **and** room BBS messages for that `room_server_id` (so Rooms unread cannot outlive the room server).

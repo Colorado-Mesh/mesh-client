@@ -17,7 +17,6 @@ import {
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
   MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP,
-  MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
 } from '@/renderer/lib/timeConstants';
 import type { ChatMessage, DeviceState, TelemetryPoint } from '@/renderer/lib/types';
 import { useMessageStore } from '@/renderer/stores/messageStore';
@@ -412,11 +411,7 @@ describe('attachMeshcoreConnSideEffects', () => {
       detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
 
       const drainPromise = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
-      await vi.advanceTimersByTimeAsync(
-        connectionType === 'serial'
-          ? MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS
-          : MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
-      );
+      await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS);
       await vi.runAllTimersAsync();
       await drainPromise;
 
@@ -429,6 +424,25 @@ describe('attachMeshcoreConnSideEffects', () => {
     },
   );
 
+  it('silent bulk timeout on tcp uses 15s not 45s', async () => {
+    vi.useFakeTimers();
+    const h = makeHarness();
+    h.ctx.meshcoreConnectTypeRef.current = 'tcp';
+    vi.mocked(h.conn.getWaitingMessages).mockImplementation(() => new Promise(() => undefined));
+    h.syncNextMessage.mockResolvedValueOnce(null);
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    const drainPromise = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
+    await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS - 1);
+    expect(h.syncNextMessage).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    await vi.runAllTimersAsync();
+    await drainPromise;
+
+    expect(h.conn.getWaitingMessages).toHaveBeenCalled();
+    expect(h.syncNextMessage).toHaveBeenCalled();
+  });
+
   it('skips silent bulk after consecutive timeouts and drains incrementally', async () => {
     vi.useFakeTimers();
     const h = makeHarness();
@@ -440,7 +454,7 @@ describe('attachMeshcoreConnSideEffects', () => {
 
     for (let i = 0; i < MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP; i += 1) {
       const drainPromise = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
-      await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS);
+      await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS);
       await vi.runAllTimersAsync();
       await drainPromise;
     }
@@ -557,7 +571,7 @@ describe('attachMeshcoreConnSideEffects', () => {
     const drainPromise = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
     await Promise.resolve();
     resetMeshcoreWaitingMessagesDrainState(0);
-    await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS);
+    await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS);
     await vi.runAllTimersAsync();
     await drainPromise;
 

@@ -477,6 +477,8 @@ import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/s
 import {
   computeRoomPostTotalTimeoutMs,
   MESHCORE_MAX_RECONNECT_DELAY_MS,
+  MESHCORE_POST_CONNECT_SELF_TELEMETRY_DRAIN_WAIT_MS,
+  MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS,
   MESHCORE_REPEATER_PING_SETTLE_MAX_MS,
   MESHCORE_ROOM_AUTO_LOGIN_DEBOUNCE_MS,
   MESHCORE_ROOM_LOGIN_HOP_BASE_MS,
@@ -488,8 +490,6 @@ import {
   MESHCORE_ROOM_SYNC_TICK_MS,
   MESHCORE_STATS_POLL_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
-  MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS,
-  MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
   MESHCORE_WAITING_MESSAGES_POLL_MS,
   MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
   POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS,
@@ -817,7 +817,9 @@ export function useMeshcoreRuntime() {
     Promise.resolve(null),
   );
   /** Post-connect self telemetry (altitude); assigned to {@link requestTelemetry} below. */
-  const requestTelemetryMeshCoreRef = useRef<(nodeId: number) => Promise<void>>(async () => {});
+  const requestTelemetryMeshCoreRef = useRef<
+    (nodeId: number, opts?: { timeoutMs?: number }) => Promise<void>
+  >(async () => {});
   /** Rate-limit debug logs when optional packet-logger IPC publish fails. */
   const lastPacketLogPublishFailureLogAtRef = useRef(0);
   const meshcoreHookMountedRef = useRef(true);
@@ -2870,46 +2872,6 @@ export function useMeshcoreRuntime() {
                   '[useMeshcoreRuntime] post-connect refreshOurPosition ' + errLikeToLogString(e),
                 );
               });
-              // Give MsgWaiting drain a head start; if the lane is still busy, defer once
-              // more after the same window (do not drop telemetry on first busy sighting).
-              const postConnectTelemetryDelayMs =
-                MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS +
-                MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS;
-              const schedulePostConnectSelfTelemetry = (allowReschedule: boolean): void => {
-                window.setTimeout(() => {
-                  if (meshcoreSetupGenerationRef.current !== setupGen || connRef.current !== conn) {
-                    return;
-                  }
-                  if (waitingMessagesDrainBusyRef.current) {
-                    if (allowReschedule) {
-                      console.debug(
-                        '[useMeshcoreRuntime] post-connect self telemetry deferred (waiting-message drain busy)',
-                      );
-                      schedulePostConnectSelfTelemetry(false);
-                      return;
-                    }
-                    console.debug(
-                      '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting-message drain still busy)',
-                    );
-                    return;
-                  }
-                  void requestTelemetryMeshCoreRef.current(myNodeId).catch((e: unknown) => {
-                    if (isMeshcoreTcpTransportDeadError(e) || isMeshcoreSetupAbortError(e)) return;
-                    console.debug(
-                      '[useMeshcoreRuntime] post-connect self telemetry (altitude) ' +
-                        errLikeToLogString(e),
-                    );
-                  });
-                }, postConnectTelemetryDelayMs);
-              };
-              if (waitingMessagesDrainBusyRef.current) {
-                console.debug(
-                  '[useMeshcoreRuntime] post-connect self telemetry deferred (waiting-message drain busy)',
-                );
-                schedulePostConnectSelfTelemetry(false);
-              } else {
-                schedulePostConnectSelfTelemetry(true);
-              }
             });
           });
 
@@ -3100,6 +3062,47 @@ export function useMeshcoreRuntime() {
               },
             );
           }, MESHCORE_WAITING_MESSAGES_POLL_MS);
+
+          const schedulePostConnectSelfTelemetryAfterDrain = (): void => {
+            void (async () => {
+              const idle = await awaitMeshcoreWaitingMessagesDrainIdle(
+                () => waitingMessagesDrainBusyRef.current,
+                MESHCORE_POST_CONNECT_SELF_TELEMETRY_DRAIN_WAIT_MS,
+              );
+              if (meshcoreSetupGenerationRef.current !== setupGen || connRef.current !== conn) {
+                return;
+              }
+              if (
+                waitingMessagesCountRef.current > 0 ||
+                shouldRunMeshcoreWaitingMessagesPeriodicPoll(waitingMessagesCountRef.current)
+              ) {
+                console.debug(
+                  '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting messages pending)',
+                );
+                return;
+              }
+              if (!idle && waitingMessagesDrainBusyRef.current) {
+                console.debug(
+                  '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting-message drain still busy)',
+                );
+                return;
+              }
+              const telemetryTimeoutMs =
+                transportType === 'tcp'
+                  ? MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS
+                  : undefined;
+              void requestTelemetryMeshCoreRef
+                .current(myNodeId, { timeoutMs: telemetryTimeoutMs })
+                .catch((e: unknown) => {
+                  if (isMeshcoreTcpTransportDeadError(e) || isMeshcoreSetupAbortError(e)) return;
+                  console.debug(
+                    '[useMeshcoreRuntime] post-connect self telemetry (altitude) ' +
+                      errLikeToLogString(e),
+                  );
+                });
+            })();
+          };
+          schedulePostConnectSelfTelemetryAfterDrain();
 
           meshcoreRoomReconnectSyncRef.current();
         } else {
@@ -5659,7 +5662,7 @@ export function useMeshcoreRuntime() {
   );
 
   const requestTelemetry = useCallback(
-    async (nodeId: number) => {
+    async (nodeId: number, opts?: { timeoutMs?: number }) => {
       setMeshcoreRepeaterRpcPending((prev) =>
         setRepeaterAdminRpcPending(prev, nodeId, 'telemetry', true),
       );
@@ -5688,7 +5691,7 @@ export function useMeshcoreRuntime() {
             });
             throw new Error(MESHCORE_ERR_NOT_CONNECTED);
           }
-          const timeoutMs = MESHCORE_TELEMETRY_TIMEOUT_MS;
+          const timeoutMs = opts?.timeoutMs ?? MESHCORE_TELEMETRY_TIMEOUT_MS;
           try {
             const conn = resolveMeshcoreConn();
             if (!conn) {

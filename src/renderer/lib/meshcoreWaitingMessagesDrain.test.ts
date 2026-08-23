@@ -55,6 +55,12 @@ describe('waitingMessagesDrainTimeoutMs', () => {
     );
   });
 
+  it('uses the shorter silent timeout for TCP auto-drains', () => {
+    expect(waitingMessagesDrainTimeoutMs(false, 'tcp')).toBe(
+      MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
+    );
+  });
+
   it('uses the manual sync timeout for Chat Sync now', () => {
     expect(waitingMessagesDrainTimeoutMs(true)).toBe(MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS);
   });

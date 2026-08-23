@@ -155,6 +155,23 @@ export function resetMeshcoreRepeaterRpcInFlightForTests(): void {
   cliReplyHoldCount = 0;
 }
 
+/** Test / support-bundle snapshot of repeater RF congestion gates. */
+export function getMeshcoreCompanionRepeaterRfBusySnapshot(): {
+  repeaterRfBusy: boolean;
+  cliReplyHoldCount: number;
+  adminRpcInFlightCount: number;
+  traceRpcInFlightCount: number;
+  traceResponsesInFlightCount: number;
+} {
+  return {
+    repeaterRfBusy: meshcoreCompanionRepeaterRfBusy(),
+    cliReplyHoldCount,
+    adminRpcInFlightCount: inFlightByKey.size,
+    traceRpcInFlightCount: traceInFlightByKey.size,
+    traceResponsesInFlightCount: meshcoreTraceResponsesInFlightCount(),
+  };
+}
+
 /** Reset in-flight admin/trace queues when the radio disconnects. */
 export const resetMeshcoreRepeaterRpcInFlightOnDisconnect =
   resetMeshcoreRepeaterRpcInFlightForTests;
