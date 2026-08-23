@@ -3016,6 +3016,42 @@ export function useMeshcoreRuntime() {
           maybeAutoLaunchMeshcoreMqttAfterIdentity();
 
           // Proactively fetch any messages that queued while disconnected (no Chat banner).
+          const runPostConnectSelfTelemetryIfReady = async (): Promise<void> => {
+            await awaitMeshcoreWaitingMessagesDrainIdle(
+              () => waitingMessagesDrainBusyRef.current,
+              MESHCORE_POST_CONNECT_SELF_TELEMETRY_DRAIN_WAIT_MS,
+            );
+            if (meshcoreSetupGenerationRef.current !== setupGen || connRef.current !== conn) {
+              return;
+            }
+            if (
+              waitingMessagesCountRef.current > 0 ||
+              shouldRunMeshcoreWaitingMessagesPeriodicPoll(waitingMessagesCountRef.current)
+            ) {
+              console.debug(
+                '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting messages pending)',
+              );
+              return;
+            }
+            if (waitingMessagesDrainBusyRef.current) {
+              console.debug(
+                '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting-message drain still busy)',
+              );
+              return;
+            }
+            const telemetryTimeoutMs =
+              transportType === 'tcp' ? MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS : undefined;
+            await requestTelemetryMeshCoreRef
+              .current(myNodeId, { timeoutMs: telemetryTimeoutMs })
+              .catch((e: unknown) => {
+                if (isMeshcoreTcpTransportDeadError(e) || isMeshcoreSetupAbortError(e)) return;
+                console.debug(
+                  '[useMeshcoreRuntime] post-connect self telemetry (altitude) ' +
+                    errLikeToLogString(e),
+                );
+              });
+          };
+
           scheduleMeshcoreWaitingMessagesDrain(
             async () => {
               try {
@@ -3028,6 +3064,7 @@ export function useMeshcoreRuntime() {
                   false,
                 );
               }
+              await runPostConnectSelfTelemetryIfReady();
             },
             {
               isMounted: () => meshcoreHookMountedRef.current,
@@ -3062,47 +3099,6 @@ export function useMeshcoreRuntime() {
               },
             );
           }, MESHCORE_WAITING_MESSAGES_POLL_MS);
-
-          const schedulePostConnectSelfTelemetryAfterDrain = (): void => {
-            void (async () => {
-              const idle = await awaitMeshcoreWaitingMessagesDrainIdle(
-                () => waitingMessagesDrainBusyRef.current,
-                MESHCORE_POST_CONNECT_SELF_TELEMETRY_DRAIN_WAIT_MS,
-              );
-              if (meshcoreSetupGenerationRef.current !== setupGen || connRef.current !== conn) {
-                return;
-              }
-              if (
-                waitingMessagesCountRef.current > 0 ||
-                shouldRunMeshcoreWaitingMessagesPeriodicPoll(waitingMessagesCountRef.current)
-              ) {
-                console.debug(
-                  '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting messages pending)',
-                );
-                return;
-              }
-              if (!idle && waitingMessagesDrainBusyRef.current) {
-                console.debug(
-                  '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting-message drain still busy)',
-                );
-                return;
-              }
-              const telemetryTimeoutMs =
-                transportType === 'tcp'
-                  ? MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS
-                  : undefined;
-              void requestTelemetryMeshCoreRef
-                .current(myNodeId, { timeoutMs: telemetryTimeoutMs })
-                .catch((e: unknown) => {
-                  if (isMeshcoreTcpTransportDeadError(e) || isMeshcoreSetupAbortError(e)) return;
-                  console.debug(
-                    '[useMeshcoreRuntime] post-connect self telemetry (altitude) ' +
-                      errLikeToLogString(e),
-                  );
-                });
-            })();
-          };
-          schedulePostConnectSelfTelemetryAfterDrain();
 
           meshcoreRoomReconnectSyncRef.current();
         } else {

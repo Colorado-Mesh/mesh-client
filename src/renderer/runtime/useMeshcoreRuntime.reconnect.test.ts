@@ -678,25 +678,25 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
 
   it('schedules post-connect self telemetry after proactive MsgWaiting drain', () => {
     const initConnBody = extractUseCallbackBody(RUNTIME_SOURCE, 'initConn');
-    const drainIdx = initConnBody.indexOf('scheduleMeshcoreWaitingMessagesDrain');
-    const telemetryIdx = initConnBody.indexOf('schedulePostConnectSelfTelemetryAfterDrain');
-    expect(drainIdx).toBeGreaterThan(-1);
-    expect(telemetryIdx).toBeGreaterThan(drainIdx);
+    expect(initConnBody).toContain('runPostConnectSelfTelemetryIfReady');
+    expect(initConnBody).toMatch(
+      /scheduleMeshcoreWaitingMessagesDrain\([\s\S]*?await runPostConnectSelfTelemetryIfReady\(\)/,
+    );
   });
 
   it('does not schedule post-connect self telemetry from initConn requestAnimationFrame', () => {
     expect(RUNTIME_SOURCE).not.toMatch(
-      /requestAnimationFrame\(\(\) => \{[\s\S]{0,1500}schedulePostConnectSelfTelemetry/,
+      /requestAnimationFrame\(\(\) => \{[\s\S]{0,1500}runPostConnectSelfTelemetryIfReady/,
     );
   });
 
   it('gates post-connect self telemetry on waiting-message drain idle', () => {
-    expect(RUNTIME_SOURCE).toContain('schedulePostConnectSelfTelemetryAfterDrain');
+    expect(RUNTIME_SOURCE).toContain('runPostConnectSelfTelemetryIfReady');
     expect(RUNTIME_SOURCE).toContain(
       'post-connect self telemetry skipped (waiting-message drain still busy)',
     );
     expect(RUNTIME_SOURCE).toMatch(
-      /schedulePostConnectSelfTelemetryAfterDrain[\s\S]*?awaitMeshcoreWaitingMessagesDrainIdle[\s\S]*?waitingMessagesDrainBusyRef\.current/,
+      /runPostConnectSelfTelemetryIfReady[\s\S]*?awaitMeshcoreWaitingMessagesDrainIdle[\s\S]*?waitingMessagesDrainBusyRef\.current/,
     );
   });
 
@@ -705,7 +705,7 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
       /transportType === 'tcp'[\s\S]*?MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS/,
     );
     expect(RUNTIME_SOURCE).not.toMatch(
-      /schedulePostConnectSelfTelemetryAfterDrain[\s\S]{0,800}MESHCORE_TELEMETRY_TIMEOUT_MS/,
+      /runPostConnectSelfTelemetryIfReady[\s\S]{0,800}MESHCORE_TELEMETRY_TIMEOUT_MS/,
     );
   });
 
