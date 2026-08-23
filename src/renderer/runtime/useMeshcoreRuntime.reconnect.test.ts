@@ -676,19 +676,48 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     );
   });
 
-  it('defers post-connect self telemetry once when waiting-message drain is busy', () => {
-    expect(RUNTIME_SOURCE).toContain('schedulePostConnectSelfTelemetry');
-    expect(RUNTIME_SOURCE).toContain(
-      'post-connect self telemetry deferred (waiting-message drain busy)',
+  it('awaits proactive MsgWaiting drain before post-init side effects and telemetry', () => {
+    const initConnBody = extractUseCallbackBody(RUNTIME_SOURCE, 'initConn');
+    expect(initConnBody).toContain('runPostConnectSelfTelemetryIfReady');
+    expect(initConnBody).toMatch(
+      /await processWaitingMessagesRef\.current\?\.\(\{ showSyncBanner: false \}\)[\s\S]*?void runPostConnectSelfTelemetryIfReady\(\)/,
     );
+    const drainIdx = initConnBody.indexOf(
+      'await processWaitingMessagesRef.current?.({ showSyncBanner: false })',
+    );
+    const sideEffectsIdx = initConnBody.indexOf('conn.syncDeviceTime()');
+    expect(drainIdx).toBeGreaterThan(-1);
+    expect(sideEffectsIdx).toBeGreaterThan(-1);
+    expect(drainIdx).toBeLessThan(sideEffectsIdx);
+    const telemetryIdx = initConnBody.indexOf('void runPostConnectSelfTelemetryIfReady()');
+    expect(telemetryIdx).toBeGreaterThan(drainIdx);
+    expect(telemetryIdx).toBeLessThan(sideEffectsIdx);
+    const followUpIdx = initConnBody.indexOf('post-init follow-up getWaitingMessages failed');
+    expect(followUpIdx).toBeGreaterThan(sideEffectsIdx);
+  });
+
+  it('does not schedule post-connect self telemetry from initConn requestAnimationFrame', () => {
+    expect(RUNTIME_SOURCE).not.toMatch(
+      /requestAnimationFrame\(\(\) => \{[\s\S]{0,1500}runPostConnectSelfTelemetryIfReady/,
+    );
+  });
+
+  it('gates post-connect self telemetry on waiting-message drain idle', () => {
+    expect(RUNTIME_SOURCE).toContain('runPostConnectSelfTelemetryIfReady');
     expect(RUNTIME_SOURCE).toContain(
       'post-connect self telemetry skipped (waiting-message drain still busy)',
     );
     expect(RUNTIME_SOURCE).toMatch(
-      /schedulePostConnectSelfTelemetry = \(allowReschedule: boolean\)[\s\S]*?waitingMessagesDrainBusyRef\.current[\s\S]*?schedulePostConnectSelfTelemetry\(false\)/,
+      /runPostConnectSelfTelemetryIfReady[\s\S]*?awaitMeshcoreWaitingMessagesDrainIdle[\s\S]*?waitingMessagesDrainBusyRef\.current/,
     );
+  });
+
+  it('uses short TCP timeout for post-connect self telemetry', () => {
     expect(RUNTIME_SOURCE).toMatch(
-      /if \(waitingMessagesDrainBusyRef\.current\) \{[\s\S]*?schedulePostConnectSelfTelemetry\(false\);[\s\S]*?\} else \{[\s\S]*?schedulePostConnectSelfTelemetry\(true\);/,
+      /transportType === 'tcp'[\s\S]*?MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS/,
+    );
+    expect(RUNTIME_SOURCE).not.toMatch(
+      /runPostConnectSelfTelemetryIfReady[\s\S]{0,800}MESHCORE_TELEMETRY_TIMEOUT_MS/,
     );
   });
 

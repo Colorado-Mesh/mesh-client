@@ -137,6 +137,16 @@ export function shouldSkipMeshcoreSilentBulkGetWaitingMessages(): boolean {
   return silentBulkSkipped || silentBulkCliPreempt;
 }
 
+/**
+ * Silent auto-drain path: pyMC/OpenHop TCP often never answers bulk getWaitingMessages, so
+ * prefer syncNextMessage immediately instead of paying a silent bulk timeout every connect.
+ */
+export function shouldPreferMeshcoreSilentIncrementalDrain(
+  connectionType?: MeshcoreCompanionTransport,
+): boolean {
+  return connectionType === 'tcp' || shouldSkipMeshcoreSilentBulkGetWaitingMessages();
+}
+
 /** Record a successful silent bulk drain (including empty queue). */
 export function noteMeshcoreSilentBulkSuccess(): void {
   silentBulkTimeoutStreak = 0;
@@ -164,6 +174,17 @@ export function resetMeshcoreSilentBulkBreaker(): void {
   silentBulkCliPreempt = false;
 }
 
+/** Test / support-bundle snapshot of silent-bulk circuit state. */
+export function getMeshcoreSilentBulkDrainSnapshot(): {
+  silentBulkSkipped: boolean;
+  silentBulkTimeoutStreak: number;
+} {
+  return {
+    silentBulkSkipped: silentBulkSkipped,
+    silentBulkTimeoutStreak: silentBulkTimeoutStreak,
+  };
+}
+
 export type MeshcoreCompanionTransport = 'ble' | 'serial' | 'tcp' | null | undefined;
 
 export function waitingMessagesDrainTimeoutMs(
@@ -173,8 +194,8 @@ export function waitingMessagesDrainTimeoutMs(
   if (showSyncBanner) {
     return MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS;
   }
-  // BLE and USB serial both starve companion TX when bulk hangs — keep silent bulk short.
-  if (connectionType === 'serial' || connectionType === 'ble') {
+  // BLE, USB serial, and TCP/pyMC starve companion TX when bulk hangs — keep silent bulk short.
+  if (connectionType === 'serial' || connectionType === 'ble' || connectionType === 'tcp') {
     return MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS;
   }
   return MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS;

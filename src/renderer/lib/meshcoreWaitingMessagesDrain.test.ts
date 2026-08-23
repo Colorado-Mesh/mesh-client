@@ -23,6 +23,7 @@ import {
   resetMeshcoreWaitingMessagesDrainState,
   scheduleMeshcoreWaitingMessagesDrain,
   shouldActivateWaitingMessagesBanner,
+  shouldPreferMeshcoreSilentIncrementalDrain,
   shouldRunMeshcoreWaitingMessagesPeriodicPoll,
   shouldSkipMeshcoreSilentBulkGetWaitingMessages,
   waitingMessagesDrainTimeoutMs,
@@ -51,6 +52,12 @@ describe('waitingMessagesDrainTimeoutMs', () => {
 
   it('uses the shorter silent timeout for BLE auto-drains', () => {
     expect(waitingMessagesDrainTimeoutMs(false, 'ble')).toBe(
+      MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
+    );
+  });
+
+  it('uses the shorter silent timeout for TCP auto-drains', () => {
+    expect(waitingMessagesDrainTimeoutMs(false, 'tcp')).toBe(
       MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
     );
   });
@@ -421,6 +428,24 @@ describe('silent bulk timeout circuit breaker', () => {
       noteMeshcoreSilentBulkTimeout();
     }
     expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(true);
+  });
+});
+
+describe('shouldPreferMeshcoreSilentIncrementalDrain', () => {
+  afterEach(() => {
+    resetMeshcoreSilentBulkBreaker();
+  });
+
+  it('prefers incremental on TCP even when the bulk circuit is closed', () => {
+    expect(shouldPreferMeshcoreSilentIncrementalDrain('tcp')).toBe(true);
+    expect(shouldPreferMeshcoreSilentIncrementalDrain('ble')).toBe(false);
+  });
+
+  it('prefers incremental when the silent bulk circuit is open', () => {
+    for (let i = 0; i < MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP; i += 1) {
+      noteMeshcoreSilentBulkTimeout();
+    }
+    expect(shouldPreferMeshcoreSilentIncrementalDrain('ble')).toBe(true);
   });
 });
 

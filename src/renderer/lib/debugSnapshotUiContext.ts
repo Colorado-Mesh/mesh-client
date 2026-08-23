@@ -1,5 +1,15 @@
 import type { MeshProtocol } from './types';
 
+export interface DebugSnapshotMeshcoreDrainContext {
+  meshcoreCompanionRepeaterRfBusy: boolean;
+  meshcoreCliReplyHoldCount: number;
+  meshcoreAdminRpcInFlightCount: number;
+  meshcoreTraceRpcInFlightCount: number;
+  meshcoreTraceResponsesInFlightCount: number;
+  meshcoreSilentBulkSkipped: boolean;
+  meshcoreSilentBulkTimeoutStreak: number;
+}
+
 export interface DebugSnapshotUiContext {
   activePanelIndex: number;
   chatTabVisited: boolean;
@@ -9,7 +19,18 @@ export interface DebugSnapshotUiContext {
   activeProtocol: MeshProtocol;
   waitingMessagesSilentDrainActive: boolean;
   waitingMessagesDrainDeferred: boolean;
+  meshcoreDrain?: DebugSnapshotMeshcoreDrainContext;
 }
+
+const defaultMeshcoreDrainContext: DebugSnapshotMeshcoreDrainContext = {
+  meshcoreCompanionRepeaterRfBusy: false,
+  meshcoreCliReplyHoldCount: 0,
+  meshcoreAdminRpcInFlightCount: 0,
+  meshcoreTraceRpcInFlightCount: 0,
+  meshcoreTraceResponsesInFlightCount: 0,
+  meshcoreSilentBulkSkipped: false,
+  meshcoreSilentBulkTimeoutStreak: 0,
+};
 
 const defaultUiContext: DebugSnapshotUiContext = {
   activePanelIndex: 0,
@@ -20,6 +41,7 @@ const defaultUiContext: DebugSnapshotUiContext = {
   activeProtocol: 'meshtastic',
   waitingMessagesSilentDrainActive: false,
   waitingMessagesDrainDeferred: false,
+  meshcoreDrain: defaultMeshcoreDrainContext,
 };
 
 let uiContext: DebugSnapshotUiContext = { ...defaultUiContext };

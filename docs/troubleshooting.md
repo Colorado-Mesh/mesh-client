@@ -802,6 +802,18 @@ When the Meshtastic SDK logs a routing / queue failure, mesh-client intercepts m
 
 **Reconnect ownership:** TCP disconnect/reconnect is owned by `useMeshcoreRuntime` + `rfReconnectController` (single-owner scheduler). Conn side effects **skip** `handleConnectionLost` when `connectType === 'tcp'` so the runtime `meshcore:tcp-disconnected` listener does not double-enter the reconnect scheduler.
 
+### MeshCore TCP / pyMC: initial connect MsgWaiting drain slow or paused
+
+**Symptoms**: After TCP connect to pyMC/OpenHop, the header shows **Fetching queued messages…** or **Message sync paused while the radio is busy…** for one to two minutes; Chat backlog arrives slowly; developer bundle may show `ui.waitingMessagesDrainDeferred: true` and log lines like `requestTelemetry error timeout` ~120s after connect.
+
+**Cause**: Post-connect self telemetry (optional altitude fetch) used to run before proactive MsgWaiting drain and could hold the companion RF lane for up to **120s**. Silent bulk `getWaitingMessages` on TCP also used a **45s** timeout before falling back to one-at-a-time `syncNextMessage`. On busy meshes the companion queue can keep growing during init RPCs (contacts/channels dump, autoadd, MQTT export) before drain starts.
+
+**Fix**:
+
+1. Upgrade to a build that starts MsgWaiting drain right after the contacts/channels dump (not after all post-init side effects), runs post-connect telemetry only after drain, and uses **syncNextMessage-only** silent drain on TCP (pyMC/OpenHop often never answers bulk `getWaitingMessages`).
+2. On MeshCore tab, use **Sync now** if the header still shows a backlog after connect.
+3. In support bundles, check `ui.meshcoreDrain` for `meshcoreCompanionRepeaterRfBusy`, `meshcoreAdminRpcInFlightCount`, and `meshcoreSilentBulkTimeoutStreak` when triaging repeat reports.
+
 ### MeshCore contact delete and sticky Rooms badge
 
 - Deleting a contact from Chat/Contacts removes the SQLite contact row **and** room BBS messages for that `room_server_id` (so Rooms unread cannot outlive the room server).
@@ -945,7 +957,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 **Queue badge stuck at `Q: 255/256`**:
 
 - Usually means the companion radio outbound queue is nearly full. Enable debug logging and export logs if the badge stays red for minutes with no traffic; look for `[useMeshcoreRuntime] high queue depth=`.
-- Some **HTTP/TCP** companions pad the legacy 7-byte STATS CORE frame to 9 bytes with `raw[7]=0` and `raw[8]=0xff` (padding sentinel). mesh-client treats that signature as 7-byte layout (`queue_len` at byte 6). If chat send/receive works but the badge is red with `rawHex` ending in `0000ff`, upgrade to a build that includes this fix ([#600](https://github.com/Colorado-Mesh/mesh-client/issues/600)).
+- Some **HTTP/TCP** companions pad the legacy 7-byte STATS CORE frame to 9 bytes with `raw[7]=0` and `raw[8]=0xff` (padding sentinel) or `raw[8]=0x18` (`RESP_CODE_STATS` framing leak). mesh-client treats those signatures as 7-byte layout (`queue_len` at byte 6). If chat send/receive works but the badge shows a stuck non-zero depth (e.g. `Q: 24/256` with `rawHex` ending in `000018`), upgrade to a build that includes this fix ([#600](https://github.com/Colorado-Mesh/mesh-client/issues/600)).
 - On older builds, CORE stats could also be mis-parsed (false `Q: 255/256` with normal traffic).
 
 **Windows packaged updater: `Cannot find module 'semver'`**:

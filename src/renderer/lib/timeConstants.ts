@@ -183,7 +183,7 @@ export const MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS = 60_000;
 export const MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS = 45 * MS_PER_SECOND;
 /** Consecutive silent-bulk getWaitingMessages timeouts before skipping bulk until reconnect. */
 export const MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP = 2;
-/** Shorter silent timeout on USB serial (single companion RPC lane). */
+/** Shorter silent bulk timeout on USB serial, BLE, and TCP/pyMC (single companion RPC lane). */
 export const MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS = 15 * MS_PER_SECOND;
 /** Per-item timeout for silent syncNextMessage incremental drain. */
 export const MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS = 12 * MS_PER_SECOND;
@@ -217,6 +217,12 @@ export const MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES = 60;
 
 /** Max wait for scheduler background route resolve (contacts only, no trace). */
 export const MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS = 15_000;
+
+/** Optional post-connect self telemetry on TCP — altitude only; must not block MsgWaiting drain. */
+export const MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS = 15 * MS_PER_SECOND;
+
+/** Max wait for proactive MsgWaiting drain before post-connect self telemetry runs. */
+export const MESHCORE_POST_CONNECT_SELF_TELEMETRY_DRAIN_WAIT_MS = 30 * MS_PER_SECOND;
 
 /** Defer first getMetadata after configure (NodeDB flood can starve the admin packet). */
 export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_DEFER_MS = 12 * MS_PER_SECOND;
