@@ -676,12 +676,24 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     );
   });
 
-  it('schedules post-connect self telemetry after proactive MsgWaiting drain', () => {
+  it('awaits proactive MsgWaiting drain before post-init side effects and telemetry', () => {
     const initConnBody = extractUseCallbackBody(RUNTIME_SOURCE, 'initConn');
     expect(initConnBody).toContain('runPostConnectSelfTelemetryIfReady');
     expect(initConnBody).toMatch(
-      /scheduleMeshcoreWaitingMessagesDrain\([\s\S]*?await runPostConnectSelfTelemetryIfReady\(\)/,
+      /await processWaitingMessagesRef\.current\?\.\(\{ showSyncBanner: false \}\)[\s\S]*?void runPostConnectSelfTelemetryIfReady\(\)/,
     );
+    const drainIdx = initConnBody.indexOf(
+      'await processWaitingMessagesRef.current?.({ showSyncBanner: false })',
+    );
+    const sideEffectsIdx = initConnBody.indexOf('conn.syncDeviceTime()');
+    expect(drainIdx).toBeGreaterThan(-1);
+    expect(sideEffectsIdx).toBeGreaterThan(-1);
+    expect(drainIdx).toBeLessThan(sideEffectsIdx);
+    const telemetryIdx = initConnBody.indexOf('void runPostConnectSelfTelemetryIfReady()');
+    expect(telemetryIdx).toBeGreaterThan(drainIdx);
+    expect(telemetryIdx).toBeLessThan(sideEffectsIdx);
+    const followUpIdx = initConnBody.indexOf('post-init follow-up getWaitingMessages failed');
+    expect(followUpIdx).toBeGreaterThan(sideEffectsIdx);
   });
 
   it('does not schedule post-connect self telemetry from initConn requestAnimationFrame', () => {

@@ -359,7 +359,7 @@ describe('attachMeshcoreConnSideEffects', () => {
     expect(publish.mock.calls.length).toBeGreaterThan(0);
   });
 
-  it.each(['ble', 'serial', 'tcp'] as const)(
+  it.each(['ble', 'serial'] as const)(
     'silent drain prefers bulk getWaitingMessages on %s',
     async (connectionType) => {
       vi.useFakeTimers();
@@ -390,7 +390,32 @@ describe('attachMeshcoreConnSideEffects', () => {
     },
   );
 
-  it.each(['ble', 'serial', 'tcp'] as const)(
+  it('silent drain on tcp uses syncNextMessage without bulk getWaitingMessages', async () => {
+    vi.useFakeTimers();
+    const h = makeHarness();
+    h.ctx.meshcoreConnectTypeRef.current = 'tcp';
+    h.syncNextMessage
+      .mockResolvedValueOnce({
+        channelMessage: {
+          channelIdx: 0,
+          text: 'TcpPeer: queued',
+          senderTimestamp: 1_700_000_000,
+        },
+      })
+      .mockResolvedValueOnce(null);
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    dispatch({ type: 'meshcore_waiting_messages', payload: {} });
+    await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS + 50);
+    await vi.runAllTimersAsync();
+
+    expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
+    expect(h.syncNextMessage).toHaveBeenCalled();
+    expect(h.ctx.addMessagesBatch).toHaveBeenCalled();
+    expect(h.handleConnectionLost).not.toHaveBeenCalled();
+  });
+
+  it.each(['ble', 'serial'] as const)(
     'silent bulk timeout falls back to syncNextMessage on %s without disconnect',
     async (connectionType) => {
       vi.useFakeTimers();
@@ -424,7 +449,7 @@ describe('attachMeshcoreConnSideEffects', () => {
     },
   );
 
-  it('silent bulk timeout on tcp uses 15s not 45s', async () => {
+  it('TCP silent drain starts syncNextMessage immediately without bulk timeout wait', async () => {
     vi.useFakeTimers();
     const h = makeHarness();
     h.ctx.meshcoreConnectTypeRef.current = 'tcp';
@@ -433,13 +458,10 @@ describe('attachMeshcoreConnSideEffects', () => {
     detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
 
     const drainPromise = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
-    await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS - 1);
-    expect(h.syncNextMessage).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(1);
     await vi.runAllTimersAsync();
     await drainPromise;
 
-    expect(h.conn.getWaitingMessages).toHaveBeenCalled();
+    expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
     expect(h.syncNextMessage).toHaveBeenCalled();
   });
 
@@ -688,6 +710,17 @@ describe('attachMeshcoreConnSideEffects', () => {
       force: true,
       incrementalOnly: true,
     });
+
+    expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
+    expect(h.syncNextMessage).toHaveBeenCalled();
+  });
+
+  it('TCP silent auto-drain skips bulk getWaitingMessages', async () => {
+    const h = makeHarness();
+    h.ctx.meshcoreConnectTypeRef.current = 'tcp';
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    await h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false, force: true });
 
     expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
     expect(h.syncNextMessage).toHaveBeenCalled();

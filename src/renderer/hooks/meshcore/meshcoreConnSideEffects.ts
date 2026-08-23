@@ -45,7 +45,7 @@ import {
   resetMeshcoreWaitingMessagesDrainSchedule,
   scheduleMeshcoreWaitingMessagesDrain,
   shouldActivateWaitingMessagesBanner,
-  shouldSkipMeshcoreSilentBulkGetWaitingMessages,
+  shouldPreferMeshcoreSilentIncrementalDrain,
   waitingMessagesDrainTimeoutMs,
 } from '../../lib/meshcoreWaitingMessagesDrain';
 import type { DomainEvent } from '../../lib/protocols/Protocol';
@@ -317,7 +317,9 @@ async function drainWaitingMessagesSilent(
   opts?: { incrementalOnly?: boolean; syncNextTimeoutMs?: number },
 ): Promise<void> {
   const syncNextTimeoutMs = opts?.syncNextTimeoutMs ?? MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS;
-  if (opts?.incrementalOnly || shouldSkipMeshcoreSilentBulkGetWaitingMessages()) {
+  const preferIncremental =
+    opts?.incrementalOnly || shouldPreferMeshcoreSilentIncrementalDrain(deps.connectionType);
+  if (preferIncremental) {
     const retrieved = await drainWaitingMessagesIncremental(conn, state, deps, syncNextTimeoutMs);
     if (retrieved) noteMeshcoreSilentBulkSuccess();
     return;

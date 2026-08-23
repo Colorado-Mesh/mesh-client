@@ -2853,6 +2853,57 @@ export function useMeshcoreRuntime() {
           }
         }
 
+        // Await MsgWaiting drain before post-init side effects so syncDeviceTime / autoadd /
+        // MQTT export cannot contend with syncNextMessage on the companion TCP/RF lane.
+        const runPostConnectSelfTelemetryIfReady = async (): Promise<void> => {
+          await awaitMeshcoreWaitingMessagesDrainIdle(
+            () => waitingMessagesDrainBusyRef.current,
+            MESHCORE_POST_CONNECT_SELF_TELEMETRY_DRAIN_WAIT_MS,
+          );
+          if (meshcoreSetupGenerationRef.current !== setupGen || connRef.current !== conn) {
+            return;
+          }
+          if (
+            waitingMessagesCountRef.current > 0 ||
+            shouldRunMeshcoreWaitingMessagesPeriodicPoll(waitingMessagesCountRef.current)
+          ) {
+            console.debug(
+              '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting messages pending)',
+            );
+            return;
+          }
+          if (waitingMessagesDrainBusyRef.current) {
+            console.debug(
+              '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting-message drain still busy)',
+            );
+            return;
+          }
+          const telemetryTimeoutMs =
+            transportType === 'tcp' ? MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS : undefined;
+          await requestTelemetryMeshCoreRef
+            .current(myNodeId, { timeoutMs: telemetryTimeoutMs })
+            .catch((e: unknown) => {
+              if (isMeshcoreTcpTransportDeadError(e) || isMeshcoreSetupAbortError(e)) return;
+              console.debug(
+                '[useMeshcoreRuntime] post-connect self telemetry (altitude) ' +
+                  errLikeToLogString(e),
+              );
+            });
+        };
+
+        try {
+          await processWaitingMessagesRef.current?.({ showSyncBanner: false });
+        } catch (e: unknown) {
+          // catch-no-log-ok logMeshcoreWaitingMessagesDrainError handles logging
+          logMeshcoreWaitingMessagesDrainError(
+            'initConn: proactive getWaitingMessages failed',
+            e,
+            false,
+          );
+        }
+        // After drain: kick telemetry without blocking post-init companion RPCs (autoadd/time sync).
+        void runPostConnectSelfTelemetryIfReady();
+
         const skipTcpSocketWork = isMeshcoreTcpBurstDeadBridge({
           transportType,
           burstCaptured: meshcoreTcpInitBurstCapturedRef.current,
@@ -3015,43 +3066,8 @@ export function useMeshcoreRuntime() {
           assertInitConnStillLive();
           maybeAutoLaunchMeshcoreMqttAfterIdentity();
 
-          // Proactively fetch any messages that queued while disconnected (no Chat banner).
-          const runPostConnectSelfTelemetryIfReady = async (): Promise<void> => {
-            await awaitMeshcoreWaitingMessagesDrainIdle(
-              () => waitingMessagesDrainBusyRef.current,
-              MESHCORE_POST_CONNECT_SELF_TELEMETRY_DRAIN_WAIT_MS,
-            );
-            if (meshcoreSetupGenerationRef.current !== setupGen || connRef.current !== conn) {
-              return;
-            }
-            if (
-              waitingMessagesCountRef.current > 0 ||
-              shouldRunMeshcoreWaitingMessagesPeriodicPoll(waitingMessagesCountRef.current)
-            ) {
-              console.debug(
-                '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting messages pending)',
-              );
-              return;
-            }
-            if (waitingMessagesDrainBusyRef.current) {
-              console.debug(
-                '[useMeshcoreRuntime] post-connect self telemetry skipped (waiting-message drain still busy)',
-              );
-              return;
-            }
-            const telemetryTimeoutMs =
-              transportType === 'tcp' ? MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS : undefined;
-            await requestTelemetryMeshCoreRef
-              .current(myNodeId, { timeoutMs: telemetryTimeoutMs })
-              .catch((e: unknown) => {
-                if (isMeshcoreTcpTransportDeadError(e) || isMeshcoreSetupAbortError(e)) return;
-                console.debug(
-                  '[useMeshcoreRuntime] post-connect self telemetry (altitude) ' +
-                    errLikeToLogString(e),
-                );
-              });
-          };
-
+          // Messages often land during post-init (autoadd / time sync). pyMC TCP may not push
+          // event 131, so run one follow-up silent drain after the companion lane is free.
           scheduleMeshcoreWaitingMessagesDrain(
             async () => {
               try {
@@ -3059,12 +3075,11 @@ export function useMeshcoreRuntime() {
               } catch (e: unknown) {
                 // catch-no-log-ok logMeshcoreWaitingMessagesDrainError handles logging
                 logMeshcoreWaitingMessagesDrainError(
-                  'initConn: proactive getWaitingMessages failed',
+                  'initConn: post-init follow-up getWaitingMessages failed',
                   e,
                   false,
                 );
               }
-              await runPostConnectSelfTelemetryIfReady();
             },
             {
               isMounted: () => meshcoreHookMountedRef.current,

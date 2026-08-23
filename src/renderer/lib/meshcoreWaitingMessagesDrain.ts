@@ -137,6 +137,16 @@ export function shouldSkipMeshcoreSilentBulkGetWaitingMessages(): boolean {
   return silentBulkSkipped || silentBulkCliPreempt;
 }
 
+/**
+ * Silent auto-drain path: pyMC/OpenHop TCP often never answers bulk getWaitingMessages, so
+ * prefer syncNextMessage immediately instead of paying a silent bulk timeout every connect.
+ */
+export function shouldPreferMeshcoreSilentIncrementalDrain(
+  connectionType?: MeshcoreCompanionTransport,
+): boolean {
+  return connectionType === 'tcp' || shouldSkipMeshcoreSilentBulkGetWaitingMessages();
+}
+
 /** Record a successful silent bulk drain (including empty queue). */
 export function noteMeshcoreSilentBulkSuccess(): void {
   silentBulkTimeoutStreak = 0;
