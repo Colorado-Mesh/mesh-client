@@ -22,6 +22,14 @@ describe('queueLenFromMeshCoreCoreStatsRaw', () => {
     expect(queueLenFromMeshCoreCoreStatsRaw(raw, 0)).toBe(0);
   });
 
+  it('treats 0x18 as real queue_len when err_flags high byte is non-zero', () => {
+    const raw = new Uint8Array(9);
+    raw[6] = 0x05;
+    raw[7] = 0x01;
+    raw[8] = 0x18;
+    expect(queueLenFromMeshCoreCoreStatsRaw(raw, 5)).toBe(0x18);
+  });
+
   it('does not treat byte 8 as padding when byte 7 is non-zero', () => {
     const raw = new Uint8Array(9);
     raw[6] = 0x05;
