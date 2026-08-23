@@ -141,7 +141,7 @@ describe('messageStore rename / status guards for Reticulum Completes', () => {
     recordMeshcoreRfRx({
       identityId: ID_A,
       isOwnMeshcoreTx: true,
-      pathBytes: [meshcoreNodeHash(repeaterId)],
+      pathBytes: [meshcoreNodeHash(0x01020304), meshcoreNodeHash(repeaterId)],
       pathHashSizeBytes: 1,
       myNodeNum: 0x01020304,
       candidates: [{ node_id: repeaterId, last_heard: 200 }],

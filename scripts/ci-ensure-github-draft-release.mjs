@@ -27,12 +27,14 @@ export function writeReleaseIdOutput(githubOutput, releaseId) {
 async function main() {
   const tag = resolveTag(process.argv.slice(2), process.env);
   const token = authToken(process.env);
+  const fallbackToken = process.env.RELEASE_PUSH_TOKEN;
   const allowCreate = process.env.MESH_CLIENT_ALLOW_DRAFT_CREATE === '1';
   const release = await ensureGithubDraftRelease({
     tag,
     token,
     targetCommitish: resolveTargetCommitish(process.env),
     allowCreate,
+    fallbackToken,
   });
   writeReleaseIdOutput(process.env.GITHUB_OUTPUT, release.id);
   console.debug(

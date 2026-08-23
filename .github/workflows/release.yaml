@@ -301,7 +301,7 @@ jobs:
 
   finalize-github-release:
     name: Consolidate draft release assets
-    needs: release
+    needs: [release, prepare-github-release]
     # Require a successful build matrix — skipped/cancelled release must not consolidate.
     if: ${{ !cancelled() && needs.release.result == 'success' }}
     runs-on: ubuntu-latest
@@ -320,9 +320,18 @@ jobs:
       - name: Consolidate duplicate draft releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
           GITHUB_SHA: ${{ github.sha }}
           RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
         run: node scripts/ci-ensure-github-draft-release.mjs
+
+      - name: Verify draft release tag_name
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
+          RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
+          RELEASE_ID: ${{ needs.prepare-github-release.outputs.release_id }}
+        run: node scripts/ci-verify-github-draft-release.mjs
 
   packaging-smoke:
     name: Smoke test ${{ matrix.label }}

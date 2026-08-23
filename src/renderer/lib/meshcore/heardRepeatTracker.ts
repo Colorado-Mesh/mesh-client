@@ -151,8 +151,19 @@ export function syntheticHeardNodeIdFromPathSegment(segment: Uint8Array): number
   return h | 0x80000000 | 0;
 }
 
-function pathSegmentHex(segment: Uint8Array): string {
-  return Array.from(segment, (b) => b.toString(16).padStart(2, '0')).join('');
+/** True when the first on-air path segment is this node's routing hash. */
+export function meshcorePathOriginIsSelf(
+  firstSegment: Uint8Array,
+  myNodeNum: number,
+  pathHashSizeBytes: MeshcoreHashSizeBytes,
+  myPubKey?: Uint8Array | null,
+): boolean {
+  if (firstSegment.length === 0) return false;
+  if (pathHashSizeBytes === 1) {
+    return (firstSegment[0] & 0xff) === meshcoreNodeHash(myNodeNum);
+  }
+  if (!myPubKey || myPubKey.length < pathHashSizeBytes) return false;
+  return prefixMatches(myPubKey, firstSegment);
 }
 
 export interface RecordMeshcoreRfRxArgs {
@@ -161,25 +172,21 @@ export interface RecordMeshcoreRfRxArgs {
   /**
    * GRP_TXT channel floods do not carry a cleartext originator pubkey, so
    * `isOwnMeshcoreTx` is usually false on repeater overhears. When true and a
-   * listen window is open, credit path hashes without cleartext self-origin proof.
-   * Concurrent foreign channel floods in the same window can false-credit.
+   * listen window is open, credit Repeater/Room hops after a self-origin path prefix.
    */
   treatAsOwnChannelFlood?: boolean;
   pathBytes: readonly number[];
   pathHashSizeBytes: MeshcoreHashSizeBytes;
   myNodeNum: number;
+  /** Required for 2/3-byte path origin checks; optional for 1-byte XOR-fold paths. */
+  myPubKey?: Uint8Array | null;
   snr?: number;
   rssi?: number;
   now?: number;
   candidates: readonly NodeHashCandidate[];
   pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
-  /** Prefer Repeater/Room; return null for other roles. */
+  /** Repeater/Room only; return null for other roles. */
   resolveRepeater: (nodeId: number) => MeshcoreHeardRepeater | null;
-  /**
-   * Fallback when no Repeater/Room matches the path hash (collisions / contact_type None).
-   * Path hops still prove an on-air forwarder heard the TX.
-   */
-  resolvePathHop?: (nodeId: number) => MeshcoreHeardRepeater | null;
 }
 
 /**
@@ -193,12 +200,12 @@ export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
     pathBytes,
     pathHashSizeBytes,
     myNodeNum,
+    myPubKey,
     snr,
     rssi,
     candidates,
     pubKeyByNodeId,
     resolveRepeater,
-    resolvePathHop,
   } = args;
   const now = args.now ?? Date.now();
   if (!isOwnMeshcoreTx && !treatAsOwnChannelFlood) return;
@@ -207,7 +214,9 @@ export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
   if (pathBytes.length === 0) return;
 
   const segments = meshcoreSplitPathHashSegments(pathBytes, pathHashSizeBytes);
-  if (segments.length === 0) return;
+  const origin = segments.at(0);
+  if (!origin || segments.length < 2) return;
+  if (!meshcorePathOriginIsSelf(origin, myNodeNum, pathHashSizeBytes, myPubKey)) return;
 
   const prev =
     useRelayCoverageStore.getState().coverageFor(identityId, window.messageId)?.heardRepeaters ??
@@ -215,7 +224,7 @@ export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
   const byId = new Map<number, HeardRepeater>(prev.map((r) => [r.nodeId, r]));
   let changed = false;
 
-  for (const segment of segments) {
+  for (const segment of segments.slice(1)) {
     const matches = listMeshcorePathPrefixMatches(segment, candidates, pubKeyByNodeId);
     let credited: MeshcoreHeardRepeater | null = null;
 
@@ -226,23 +235,6 @@ export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
         credited = repeater;
         break;
       }
-    }
-    if (!credited && resolvePathHop) {
-      for (const nodeId of matches) {
-        if (nodeId === myNodeNum) continue;
-        const hop = resolvePathHop(nodeId);
-        if (hop) {
-          credited = hop;
-          break;
-        }
-      }
-    }
-    if (!credited && matches.length === 0 && segment.length > 0) {
-      const hex = pathSegmentHex(segment);
-      credited = {
-        nodeId: syntheticHeardNodeIdFromPathSegment(segment),
-        name: hex,
-      };
     }
     if (!credited) continue;
 

@@ -71,6 +71,7 @@ import { resolveReticulumOwnNodeIdSet } from '@/renderer/lib/reticulumOwnNodeIds
 import { resolveInactiveRrcNotificationType } from '@/renderer/lib/rrcInactiveNotifications';
 import { shouldPlayRrcNotification } from '@/renderer/lib/rrcNotificationGate';
 import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
+import { runUpdateAction } from '@/renderer/lib/runUpdateAction';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
 import type { RrcChatMessage } from '@/shared/rrc-types';
@@ -327,6 +328,7 @@ export interface UpdateState {
   isPackaged?: boolean;
   isMac?: boolean;
   percent?: number;
+  errorMessage?: string;
 }
 
 const LOG_PANEL_VISIBLE_KEY = 'mesh-client:logPanelVisible';
@@ -2307,7 +2309,7 @@ function AppContent() {
       setUpdateState((s) => ({ ...s, phase: 'ready' }));
     });
     const offError = window.electronAPI.update.onError((info) => {
-      setUpdateState((s) => ({ ...s, phase: 'error' }));
+      setUpdateState((s) => ({ ...s, phase: 'error', errorMessage: info.message }));
       menuUpdateNotifyCtrl.flushSettled('error', { message: info.message });
     });
     return () => {
@@ -4525,11 +4527,35 @@ function AppContent() {
                       setUpdateState((s) => ({ ...s, phase: 'error' }));
                     });
                   }}
-                  onDownload={() => window.electronAPI.update.download()}
-                  onInstall={() => window.electronAPI.update.install()}
-                  onViewRelease={() =>
-                    window.electronAPI.update.openReleases(updateState.releaseUrl)
-                  }
+                  onDownload={() => {
+                    void window.electronAPI.update.download().catch((e: unknown) => {
+                      console.warn('[App] update download failed ' + errLikeToLogString(e));
+                      setUpdateState((s) => ({
+                        ...s,
+                        phase: 'error',
+                        errorMessage: errLikeToLogString(e),
+                      }));
+                    });
+                  }}
+                  onInstall={() => {
+                    runUpdateAction(
+                      () => window.electronAPI.update.install(),
+                      setUpdateState,
+                      'update install',
+                    );
+                  }}
+                  onViewRelease={() => {
+                    void window.electronAPI.update
+                      .openReleases(updateState.releaseUrl)
+                      .catch((e: unknown) => {
+                        console.warn('[App] open release failed ' + errLikeToLogString(e));
+                        setUpdateState((s) => ({
+                          ...s,
+                          phase: 'error',
+                          errorMessage: errLikeToLogString(e),
+                        }));
+                      });
+                  }}
                 />
               </span>
             </footer>

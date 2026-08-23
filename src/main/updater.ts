@@ -2,6 +2,13 @@ import type { BrowserWindow, IpcMainInvokeEvent } from 'electron';
 import { app, ipcMain, shell } from 'electron';
 import type { AppUpdater } from 'electron-updater';
 
+import { fetchAllGithubReleases } from '@/shared/fetchGithubReleases';
+import {
+  type GithubReleaseRow,
+  pickLatestPublishedRelease,
+  semverGt,
+} from '@/shared/githubReleaseVersion';
+
 import { sanitizeLogMessage } from './log-service';
 import { assertIpcSender } from './validate-ipc-sender';
 
@@ -23,22 +30,16 @@ export function getCheckNowFromMenu(): (() => void) | null {
 
 const REPO = 'Colorado-Mesh/mesh-client';
 const RELEASES_URL = `https://github.com/${REPO}/releases`;
-const API_URL = `https://api.github.com/repos/${REPO}/releases/latest`;
-
-function semverGt(remote: string, local: string): boolean {
-  const parse = (v: string) =>
-    v
-      .replace(/^v/, '')
-      .split('.')
-      .map((n) => parseInt(n, 10) || 0);
-  const [rMaj, rMin, rPat] = parse(remote);
-  const [lMaj, lMin, lPat] = parse(local);
-  if (rMaj !== lMaj) return rMaj > lMaj;
-  if (rMin !== lMin) return rMin > lMin;
-  return rPat > lPat;
-}
 
 type SendFn = (channel: string, payload?: unknown) => void;
+
+function releaseUrlForVersion(version: string): string {
+  return `${RELEASES_URL}/tag/v${version}`;
+}
+
+async function fetchGithubReleases(): Promise<GithubReleaseRow[]> {
+  return fetchAllGithubReleases(REPO, `mesh-client/${app.getVersion()}`);
+}
 
 async function openAppReleasePage(send: SendFn): Promise<void> {
   try {
@@ -59,25 +60,14 @@ function registerGithubReleaseApiHandlers(send: SendFn, uiReportsPackaged: boole
   const doCheck = async () => {
     lastAppReleaseUrl = null;
     try {
-      const res = await fetch(API_URL, {
-        headers: { 'User-Agent': `mesh-client/${app.getVersion()}` },
-      });
-      if (!res.ok) {
-        console.warn('[updater] GitHub API responded with', String(res.status));
-        send('update:error', { message: 'Update check failed — check network connection' });
-        return;
-      }
-      if (res.redirected) {
-        console.warn('[updater] GitHub API redirected to', res.url, '— API_URL may need updating');
-      }
-      const data = (await res.json()) as { tag_name: string; html_url: string };
-      const remoteVersion = data.tag_name.replace(/^v/, '');
+      const releases = await fetchGithubReleases();
+      const latest = pickLatestPublishedRelease(releases);
       const localVersion = app.getVersion();
-      if (semverGt(remoteVersion, localVersion)) {
-        lastAppReleaseUrl = data.html_url;
+      if (latest && semverGt(latest.version, localVersion)) {
+        lastAppReleaseUrl = latest.releaseUrl;
         send('update:available', {
-          version: remoteVersion,
-          releaseUrl: data.html_url,
+          version: latest.version,
+          releaseUrl: latest.releaseUrl,
           isPackaged: uiReportsPackaged,
           isMac: process.platform === 'darwin',
         });
@@ -136,7 +126,7 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
   updater.autoInstallOnAppQuit = false;
 
   updater.on('update-available', (info: { version: string }) => {
-    const releaseUrl = `${RELEASES_URL}/tag/v${info.version}`;
+    const releaseUrl = releaseUrlForVersion(info.version);
     lastAppReleaseUrl = releaseUrl;
     send('update:available', {
       version: info.version,
@@ -144,6 +134,26 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
       isPackaged: true,
       isMac: process.platform === 'darwin',
     });
+    void (async () => {
+      try {
+        const releases = await fetchGithubReleases();
+        const match = pickLatestPublishedRelease(releases);
+        if (match?.version === info.version) {
+          lastAppReleaseUrl = match.releaseUrl;
+          send('update:available', {
+            version: match.version,
+            releaseUrl: match.releaseUrl,
+            isPackaged: true,
+            isMac: process.platform === 'darwin',
+          });
+        }
+      } catch (e: unknown) {
+        console.debug(
+          '[updater] release URL enrichment skipped:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+      }
+    })();
   });
 
   updater.on('update-not-available', () => {
