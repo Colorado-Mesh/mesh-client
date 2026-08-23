@@ -12,9 +12,7 @@ import {
   recordMeshcoreRfRx,
   renameHeardRepeatWindowMessageId,
   resetHeardRepeatWindowsForTests,
-  resolveMeshcoreHeardPathHopFromNode,
   resolveMeshcoreHeardRepeaterFromNode,
-  syntheticHeardNodeIdFromPathSegment,
 } from './heardRepeatTracker';
 
 const IDENTITY = 'mc-id-1';
@@ -30,14 +28,12 @@ function hashByte(nodeId: number): number {
   return meshcoreNodeHash(nodeId);
 }
 
-function resolveRepeater(nodeId: number) {
-  if (nodeId === REPEATER_ID) return { nodeId, name: 'Rep Alpha' };
-  if (nodeId === ROOM_ID) return { nodeId, name: 'Room Beta' };
-  return null;
+/** Self-origin prefix + relay hop hash bytes (1-byte path mode). */
+function selfOriginPath(...relayHopHashes: number[]): number[] {
+  return [hashByte(MY_NODE), ...relayHopHashes];
 }
 
-function resolvePathHop(nodeId: number) {
-  if (nodeId === CHAT_ID) return { nodeId, name: 'Chat Gamma' };
+function resolveRepeater(nodeId: number) {
   if (nodeId === REPEATER_ID) return { nodeId, name: 'Rep Alpha' };
   if (nodeId === ROOM_ID) return { nodeId, name: 'Room Beta' };
   return null;
@@ -68,7 +64,7 @@ describe('heardRepeatTracker', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       snr: 5.5,
@@ -95,7 +91,7 @@ describe('heardRepeatTracker', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [hashByte(ROOM_ID)],
+      pathBytes: selfOriginPath(hashByte(ROOM_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates,
@@ -127,7 +123,7 @@ describe('heardRepeatTracker', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       snr: 2,
@@ -137,7 +133,7 @@ describe('heardRepeatTracker', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       snr: 8,
@@ -155,7 +151,7 @@ describe('heardRepeatTracker', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates,
@@ -172,7 +168,7 @@ describe('heardRepeatTracker', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates,
@@ -189,7 +185,7 @@ describe('heardRepeatTracker', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates,
@@ -202,7 +198,7 @@ describe('heardRepeatTracker', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [hashByte(ROOM_ID)],
+      pathBytes: selfOriginPath(hashByte(ROOM_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates,
@@ -220,7 +216,7 @@ describe('heardRepeatTracker', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates,
@@ -239,7 +235,7 @@ describe('heardRepeatTracker', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: false,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates,
@@ -256,7 +252,7 @@ describe('heardRepeatTracker', () => {
       identityId: IDENTITY,
       isOwnMeshcoreTx: false,
       treatAsOwnChannelFlood: true,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates,
@@ -272,7 +268,7 @@ describe('heardRepeatTracker', () => {
       identityId: IDENTITY,
       isOwnMeshcoreTx: false,
       treatAsOwnChannelFlood: true,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates,
@@ -281,22 +277,21 @@ describe('heardRepeatTracker', () => {
     expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)).toBeUndefined();
   });
 
-  it('treatAsOwnChannelFlood credits Chat path hops via resolvePathHop fallback', () => {
+  it('treatAsOwnChannelFlood does not credit Chat path hops', () => {
     openHeardRepeatWindow(IDENTITY, MSG_A);
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: false,
       treatAsOwnChannelFlood: true,
-      pathBytes: [hashByte(CHAT_ID)],
+      pathBytes: selfOriginPath(hashByte(CHAT_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates,
       resolveRepeater,
-      resolvePathHop,
     });
-    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
-      { nodeId: CHAT_ID, name: 'Chat Gamma' },
-    ]);
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual(
+      [],
+    );
   });
 
   it('prefers Repeater over fresher Chat on 1-byte path hash collision', () => {
@@ -307,7 +302,7 @@ describe('heardRepeatTracker', () => {
       identityId: IDENTITY,
       isOwnMeshcoreTx: false,
       treatAsOwnChannelFlood: true,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates: [
@@ -316,39 +311,33 @@ describe('heardRepeatTracker', () => {
         { node_id: MY_NODE, last_heard: 100 },
       ],
       resolveRepeater: (id) => (id === REPEATER_ID ? { nodeId: id, name: 'Rep Alpha' } : null),
-      resolvePathHop: (id) =>
-        id === collideChat ? { nodeId: id, name: 'Fresh Chat' } : resolvePathHop(id),
     });
     expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
       { nodeId: REPEATER_ID, name: 'Rep Alpha' },
     ]);
   });
 
-  it('credits unresolved path segments as hex labels', () => {
+  it('ignores unresolved relay path segments', () => {
     openHeardRepeatWindow(IDENTITY, MSG_A);
-    const segment = Uint8Array.of(0xde, 0xad);
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [0xde, 0xad],
-      pathHashSizeBytes: 2,
+      pathBytes: selfOriginPath(0x99),
+      pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates: [],
       resolveRepeater,
     });
-    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
-      {
-        nodeId: syntheticHeardNodeIdFromPathSegment(segment),
-        name: 'dead',
-      },
-    ]);
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual(
+      [],
+    );
   });
 
   it('no-ops when no window is open', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates,
@@ -364,7 +353,7 @@ describe('heardRepeatTracker', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates,
@@ -394,7 +383,7 @@ describe('heardRepeatTracker', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates,
@@ -416,7 +405,7 @@ describe('heardRepeatTracker', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates,
@@ -429,18 +418,22 @@ describe('heardRepeatTracker', () => {
   });
 
   it('resolves multibyte path segments via pubkey prefix', () => {
-    const pubKey = new Uint8Array(32);
-    pubKey[0] = 0xab;
-    pubKey[1] = 0xcd;
+    const myPubKey = new Uint8Array(32);
+    myPubKey[0] = 0x11;
+    myPubKey[1] = 0x22;
+    const repPubKey = new Uint8Array(32);
+    repPubKey[0] = 0xab;
+    repPubKey[1] = 0xcd;
     openHeardRepeatWindow(IDENTITY, MSG_A);
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [0xab, 0xcd],
+      pathBytes: [0x11, 0x22, 0xab, 0xcd],
       pathHashSizeBytes: 2,
       myNodeNum: MY_NODE,
+      myPubKey,
       candidates: [{ node_id: REPEATER_ID, last_heard: 1 }],
-      pubKeyByNodeId: new Map([[REPEATER_ID, pubKey]]),
+      pubKeyByNodeId: new Map([[REPEATER_ID, repPubKey]]),
       resolveRepeater,
     });
     expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
@@ -448,7 +441,7 @@ describe('heardRepeatTracker', () => {
     ]);
   });
 
-  it('empty pathBytes do not credit; unresolved hashes credit as hex', () => {
+  it('empty pathBytes do not credit; single-hop paths do not credit', () => {
     openHeardRepeatWindow(IDENTITY, MSG_A);
     recordMeshcoreRfRx({
       identityId: IDENTITY,
@@ -465,18 +458,15 @@ describe('heardRepeatTracker', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [0x00],
+      pathBytes: [hashByte(MY_NODE)],
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates: [],
       resolveRepeater,
     });
-    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
-      {
-        nodeId: syntheticHeardNodeIdFromPathSegment(Uint8Array.of(0x00)),
-        name: '00',
-      },
-    ]);
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual(
+      [],
+    );
   });
 
   it('resolveMeshcoreHeardRepeaterFromNode filters by hw_model', () => {
@@ -489,10 +479,78 @@ describe('heardRepeatTracker', () => {
     expect(
       resolveMeshcoreHeardRepeaterFromNode(2, { hw_model: 'Chat', long_name: 'C' }),
     ).toBeNull();
-    expect(resolveMeshcoreHeardPathHopFromNode(2, { long_name: 'C' })).toEqual({
-      nodeId: 2,
-      name: 'C',
+  });
+
+  it('credits all repeater relays after self-origin in a multi-hop path', () => {
+    openHeardRepeatWindow(IDENTITY, MSG_A);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: true,
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID), hashByte(ROOM_ID)),
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      candidates,
+      resolveRepeater,
     });
+    const heard = useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters;
+    expect(heard?.map((r) => r.nodeId).sort()).toEqual([REPEATER_ID, ROOM_ID].sort());
+  });
+
+  it('credits repeater only when chat is also in the relay path', () => {
+    openHeardRepeatWindow(IDENTITY, MSG_A);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: true,
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID), hashByte(CHAT_ID)),
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      candidates,
+      resolveRepeater,
+    });
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
+      { nodeId: REPEATER_ID, name: 'Rep Alpha', snr: undefined, rssi: undefined },
+    ]);
+  });
+
+  it('does not credit foreign-origin paths during an open window', () => {
+    openHeardRepeatWindow(IDENTITY, MSG_A);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: false,
+      treatAsOwnChannelFlood: true,
+      pathBytes: [hashByte(CHAT_ID), hashByte(REPEATER_ID)],
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      candidates,
+      resolveRepeater,
+    });
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual(
+      [],
+    );
+  });
+
+  it('merges repeater credits from separate self-origin overhears', () => {
+    openHeardRepeatWindow(IDENTITY, MSG_A);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: true,
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      candidates,
+      resolveRepeater,
+    });
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: true,
+      pathBytes: selfOriginPath(hashByte(ROOM_ID)),
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      candidates,
+      resolveRepeater,
+    });
+    const heard = useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters;
+    expect(heard?.map((r) => r.nodeId).sort()).toEqual([REPEATER_ID, ROOM_ID].sort());
   });
 
   it('listMeshcorePathPrefixMatches returns all 1-byte collisions freshest-first', () => {
@@ -510,7 +568,7 @@ describe('heardRepeatTracker', () => {
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: true,
-      pathBytes: [hashByte(REPEATER_ID)],
+      pathBytes: selfOriginPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
       candidates,

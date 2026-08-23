@@ -46,7 +46,6 @@ import type { MeshNode, MQTTStatus, TelemetryPoint } from '../types';
 import {
   hasOpenHeardRepeatWindow,
   recordMeshcoreRfRx,
-  resolveMeshcoreHeardPathHopFromNode,
   resolveMeshcoreHeardRepeaterFromNode,
 } from './heardRepeatTracker';
 import type { DeviceLogEntry, MeshCoreSelfInfo, RxPacketEntry } from './meshcoreHookTypes';
@@ -718,6 +717,7 @@ function applyMeshcoreHeardRepeatFromRfRx(
     pathBytes: ctx.pathBytes,
     pathHashSizeBytes: ctx.pathHashSizeBytes,
     myNodeNum,
+    myPubKey: selfPubKey,
     snr,
     rssi,
     now,
@@ -725,8 +725,6 @@ function applyMeshcoreHeardRepeatFromRfRx(
     pubKeyByNodeId: resolution.pubKeyByNodeId,
     resolveRepeater: (nodeId) =>
       resolveMeshcoreHeardRepeaterFromNode(nodeId, nodes.get(nodeId) ?? null),
-    resolvePathHop: (nodeId) =>
-      resolveMeshcoreHeardPathHopFromNode(nodeId, nodes.get(nodeId) ?? null),
   });
 }
 
