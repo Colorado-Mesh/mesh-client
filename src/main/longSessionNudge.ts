@@ -3,14 +3,11 @@
  * Extracted for unit tests; wired from index.ts IPC handlers.
  */
 
-export const LONG_SESSION_DOCK_BADGE = '↻';
+import type { LongSessionRestartPayload } from '../shared/electron-api.types';
 
-export interface LongSessionRestartPayload {
-  title: string;
-  body: string;
-  restartLabel: string;
-  laterLabel: string;
-}
+export type { LongSessionRestartPayload };
+
+export const LONG_SESSION_DOCK_BADGE = '↻';
 
 export interface LongSessionNudgeHost {
   platform: NodeJS.Platform;

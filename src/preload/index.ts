@@ -4,6 +4,7 @@ import type {
   BlePeripheralOwner,
   BleScanOwner,
   ElectronAPI,
+  LongSessionRestartPayload,
   MeshNode,
   MeshProtocol,
   MQTTSettings,
@@ -922,12 +923,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   notify: {
     show: (title: string, body: string): Promise<void> =>
       ipcRenderer.invoke('notify:message', title, body),
-    longSessionRestart: (opts: {
-      title: string;
-      body: string;
-      restartLabel: string;
-      laterLabel: string;
-    }): Promise<void> => ipcRenderer.invoke('notify:longSessionRestart', opts),
+    longSessionRestart: (opts: LongSessionRestartPayload): Promise<void> =>
+      ipcRenderer.invoke('notify:longSessionRestart', opts),
     clearLongSessionNudge: (): Promise<void> => ipcRenderer.invoke('notify:clearLongSessionNudge'),
   },
 

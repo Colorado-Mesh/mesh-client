@@ -145,6 +145,14 @@ export function meshcoreWaitingMessagesPeriodicPollIntervalMs(): number {
     : MESHCORE_WAITING_MESSAGES_POLL_MS;
 }
 
+/** True when the periodic safety-net poll may run (respects circuit-open stretch). */
+export function meshcoreWaitingMessagesPeriodicPollDue(
+  lastRunAtMs: number,
+  nowMs: number,
+): boolean {
+  return nowMs - lastRunAtMs >= meshcoreWaitingMessagesPeriodicPollIntervalMs();
+}
+
 /** Congested-retry delay while companion TX is deferred (stretched when circuit is open). */
 export function meshcoreWaitingMessagesCongestedRetryMs(): number {
   return shouldSkipMeshcoreSilentBulkGetWaitingMessages()

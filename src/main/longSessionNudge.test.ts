@@ -191,6 +191,21 @@ describe('createLongSessionNudgeController', () => {
     expect(host.flash).toBe(false);
   });
 
+  it('win32 onMainWindowFocus stops flash while nudge active', () => {
+    host = makeHost({ platform: 'win32' });
+    const ctl = createLongSessionNudgeController(host);
+    ctl.show({
+      title: 'Restart',
+      body: 'Four days',
+      restartLabel: 'Restart now',
+      laterLabel: 'Later',
+    });
+    expect(host.flash).toBe(true);
+    ctl.onMainWindowFocus();
+    expect(host.flash).toBe(false);
+    expect(ctl.isActive()).toBe(true);
+  });
+
   it('second show while active is a no-op', () => {
     const ctl = createLongSessionNudgeController(host);
     const payload = {
