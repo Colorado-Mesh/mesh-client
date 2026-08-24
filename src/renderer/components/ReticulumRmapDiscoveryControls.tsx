@@ -3,7 +3,7 @@ import { ExternalLink } from 'lucide-react-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { getAppSettingsRaw } from '@/renderer/lib/appSettingsStorage';
+import { getAppSettingsRaw, isShareMyLocationEnabled } from '@/renderer/lib/appSettingsStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
 import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
@@ -113,7 +113,8 @@ export function ReticulumRmapDiscoveryControls({
     setCoords(resolveRmapCoordinates());
   }, [publishOn, interfaces.length]);
 
-  const controlsDisabled = disabled || busy || !sidecarApiReady;
+  const shareMyLocationEnabled = isShareMyLocationEnabled();
+  const controlsDisabled = disabled || busy || !sidecarApiReady || !shareMyLocationEnabled;
 
   const persistAndApply = async (enable: boolean) => {
     setBusy(true);
@@ -212,6 +213,7 @@ export function ReticulumRmapDiscoveryControls({
 
   const handleToggle = () => {
     if (controlsDisabled) return;
+    if (!shareMyLocationEnabled) return;
     const next = !publishOn;
     if (next && !resolveRmapCoordinates()) {
       setShowGpsPrompt(true);
@@ -260,6 +262,9 @@ export function ReticulumRmapDiscoveryControls({
           </div>
         </div>
         <p className="text-muted text-xs">{t('reticulumRmapDiscovery.hint')}</p>
+        {!shareMyLocationEnabled && (
+          <p className="text-xs text-amber-300">{t('reticulumRmapDiscovery.disabledShareOff')}</p>
+        )}
         {coords ? (
           <p className="text-xs text-gray-300" role="status">
             {t('reticulumRmapDiscovery.coordsStatus', {

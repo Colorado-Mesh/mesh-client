@@ -66,6 +66,15 @@ export function getStoreForwardHistoryProfile(): StoreForwardHistoryProfile {
   return DEFAULT_APP_SETTINGS_SHARED.storeForwardHistoryProfile;
 }
 
+/** Whether mesh-client may look up host GPS and send the user's location on any protocol. */
+export function isShareMyLocationEnabled(): boolean {
+  const parsed = parseStoredJson<{ shareMyLocation?: boolean }>(
+    getAppSettingsRaw(),
+    'isShareMyLocationEnabled',
+  );
+  return parsed?.shareMyLocation ?? DEFAULT_APP_SETTINGS_SHARED.shareMyLocation;
+}
+
 /** Whether chat location share also sends a Meshtastic Waypoint packet. */
 export function isShareLocationSendWaypointEnabled(): boolean {
   const parsed = parseStoredJson<{ shareLocationSendWaypoint?: boolean }>(

@@ -390,7 +390,10 @@
     "themeResetFailed": "Obnovení barev se nezdařilo.",
     "messageActionsBarBgVisible": "Zobrazit pozadí",
     "rrcUnreadAllRoomMessages": "RRC nepřečteno pro všechny zprávy z místnosti",
-    "rrcUnreadAllRoomMessagesHint": "Když je zapnuto, jakákoli nová zpráva RRC místnosti označí nepřečtené a může přehrát zvuk kanálu. Vypnout pro upozornění ve stylu IRC: pouze přímé zprávy a @zmínky."
+    "rrcUnreadAllRoomMessagesHint": "Když je zapnuto, jakákoli nová zpráva RRC místnosti označí nepřečtené a může přehrát zvuk kanálu. Vypnout pro upozornění ve stylu IRC: pouze přímé zprávy a @zmínky.",
+    "shareMyLocation": "Sdílet mé umístění",
+    "shareMyLocationOffInfo": "Sdílení polohy je vypnuto — aktualizace GPS hostitele a odesílání sítě jsou zakázány. Povolte možnost Sdílet moji polohu výše a použijte automatické obnovení nebo odešlete svou pozici.",
+    "shareMyLocationHint": "Pokud je tato aplikace povolena, může vyhledat vaši polohu v tomto počítači a odeslat ji přes Meshtastic, MeshCore nebo Reticulum (sdílení chatu, rádio push, RMAP). Po vypnutí jsou vyhledávání GPS hostitele a odesílání aplikací vypnuté; statické souřadnice stále fungují pouze pro vaši místní mapu. Rádio s vlastní GPS může stále zobrazovat vaši polohu lokálně. Firmware zařízení se může vysílat, dokud neupravíte nastavení rádia nebo modulů."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -3452,8 +3455,8 @@
         "label": "Zákazník"
       },
       "1": {
-        "description": "Klient, který nepřenáší",
-        "label": "Ztlumení klienta"
+        "label": "Ztlumení klienta",
+        "description": "Klient, který nepřeposílá pakety. Použití této role také zakáže vysílání GPS a zprávu o mapě na zařízení."
       },
       "2": {
         "description": "Vyhrazený router/repeater",
@@ -3953,7 +3956,9 @@
     "floodScopeSavedEmpty": "Zatím žádné uložené obory. Použijte vlastní hashtag nebo použijte vlastní rozsah z chatu a přidejte jej.",
     "floodScopeRemoveSaved": "Odebrat z uložených oborů",
     "floodScopeRemoveSavedAria": "Odebrat {{hashtag}} z uložených rozsahů",
-    "floodScopeInvalidHashtag": "Zadejte platný hashtag regionu (například #myregion)."
+    "floodScopeInvalidHashtag": "Zadejte platný hashtag regionu (například #myregion).",
+    "sendPositionDisabledShareOff": "Povolte Sdílení mé polohy v aplikaci → GPS / Poloha pro odeslání vaší polohy do zařízení.",
+    "clientMuteGpsSuppressed": "Bylo použito ztlumení klienta — vysílání GPS a hlášení map MQTT jsou na zařízení zakázány."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",
@@ -4442,7 +4447,8 @@
     "openGlobalMapAria": "Otevřete globální mapu RMAP v4 na rmap.world",
     "applyPartialSuccess": "Nastavení RMAP použito pro {{applied}} z {{total}} rozhraní.",
     "disablePartialSuccess": "Publikování RMAP je zakázáno na {{applied}} z {{total}} rozhraní.",
-    "hint": "Umožňuje publikování RMAP a souřadnice App GPS na všech povolených rozhraních podporujících RMAP (RNode/Multi, KISS, BLE peer, I2P, UDP, potrubí). Zaškrtávací políčko je zapnuto pouze v případě, že každé způsobilé rozhraní publikuje; částečný stav je neurčitý – zaškrtněte znovu pro synchronizaci zbytku. Pro jemné ovládání použijte přepínače RMAP pro jednotlivá rozhraní na Připojení. LoRa cesty také umožňují dopravu a rmap.world hub."
+    "hint": "Umožňuje publikování RMAP a souřadnice App GPS na všech povolených rozhraních podporujících RMAP (RNode/Multi, KISS, BLE peer, I2P, UDP, potrubí). Zaškrtávací políčko je zapnuto pouze v případě, že každé způsobilé rozhraní publikuje; částečný stav je neurčitý – zaškrtněte znovu pro synchronizaci zbytku. Pro jemné ovládání použijte přepínače RMAP pro jednotlivá rozhraní na Připojení. LoRa cesty také umožňují dopravu a rmap.world hub.",
+    "disabledShareOff": "Povolte Sdílení mé polohy v aplikaci → GPS / Umístění pro publikování na RMAP."
   },
   "reticulumTopology": {
     "title": "topologie sítě",

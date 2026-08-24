@@ -53,6 +53,7 @@ import { ConnectIcon } from '@/renderer/lib/icons/connectIcon';
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
 import { isMeshcoreTcpOpenHopDeadAccepted } from '@/renderer/lib/meshcore/meshcoreTcpInitBurst';
 import {
   meshcoreConfiguredChannelIndexSet,
@@ -1726,6 +1727,36 @@ function AppContent() {
   const isConnectedOrOperational =
     isOperational || activeConnectionView.state.status === 'connected';
 
+  const meshtasticSelfRole =
+    protocol === 'meshtastic'
+      ? (nodesForUi.get(meshtasticConnectionView.state.myNodeNum)?.role ?? null)
+      : null;
+
+  let chatShareLocationResolver: (() => Promise<{ lat: number; lon: number } | null>) | undefined;
+  if (protocol === 'meshtastic') {
+    if (canTransmitLocation({ protocol: 'meshtastic', meshtasticRole: meshtasticSelfRole })) {
+      chatShareLocationResolver = async () => {
+        const pos = await meshtasticPanelActions.refreshOurPosition();
+        return pos ? { lat: pos.lat, lon: pos.lon } : null;
+      };
+    }
+  } else if (protocol === 'meshcore') {
+    if (canTransmitLocation({ protocol: 'meshcore' })) {
+      chatShareLocationResolver = async () => {
+        const pos = await meshcorePanelActions.refreshOurPosition();
+        return pos ? { lat: pos.lat, lon: pos.lon } : null;
+      };
+    }
+  } else if (protocol === 'reticulum') {
+    if (canTransmitLocation({ protocol: 'reticulum' })) {
+      chatShareLocationResolver = async () => {
+        const stored = readStoredStaticGps();
+        const pos = await resolveOurPosition(undefined, undefined, stored?.lat, stored?.lon);
+        return pos ? { lat: pos.lat, lon: pos.lon } : null;
+      };
+    }
+  }
+
   const hasLocalMeshtasticRadio =
     capabilities.hasRemoteAdmin &&
     meshtasticConnectionView.state.myNodeNum > 0 &&
@@ -3352,27 +3383,9 @@ function AppContent() {
                                 reticulumConnectionView.state.status === 'connected' ||
                                 reticulumConnectionView.state.status === 'stale')
                             }
-                            resolveShareLocation={async () => {
-                              if (protocol === 'meshtastic') {
-                                const pos = await meshtasticPanelActions.refreshOurPosition();
-                                return pos ? { lat: pos.lat, lon: pos.lon } : null;
-                              }
-                              if (protocol === 'meshcore') {
-                                const pos = await meshcorePanelActions.refreshOurPosition();
-                                return pos ? { lat: pos.lat, lon: pos.lon } : null;
-                              }
-                              // Reticulum: no RF self-node GPS — use static / OS / IP waterfall.
-                              const stored = readStoredStaticGps();
-                              const pos = await resolveOurPosition(
-                                undefined,
-                                undefined,
-                                stored?.lat,
-                                stored?.lon,
-                              );
-                              return pos ? { lat: pos.lat, lon: pos.lon } : null;
-                            }}
+                            resolveShareLocation={chatShareLocationResolver}
                             onSendLocationWaypoint={
-                              protocol === 'meshtastic'
+                              protocol === 'meshtastic' && chatShareLocationResolver
                                 ? async (lat, lon, channel) => {
                                     const id =
                                       crypto.getRandomValues(new Uint32Array(1))[0] >>> 0 || 1;
@@ -3724,6 +3737,16 @@ function AppContent() {
                                   meshtasticConfigSlices={
                                     capabilities.hasChannelConfig
                                       ? effectiveMeshtasticConfigSlices
+                                      : undefined
+                                  }
+                                  moduleConfigs={
+                                    capabilities.hasChannelConfig
+                                      ? effectiveModuleConfigs
+                                      : undefined
+                                  }
+                                  onSetModuleConfig={
+                                    capabilities.hasChannelConfig
+                                      ? meshtasticPanelActions.setModuleConfig
                                       : undefined
                                   }
                                   onApplyChannelSet={

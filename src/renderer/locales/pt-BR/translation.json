@@ -390,7 +390,10 @@
     "themeResetFailed": "Falha ao redefinir as cores.",
     "messageActionsBarBgVisible": "Mostrar fundo",
     "rrcUnreadAllRoomMessages": "RRC não lido para todas as mensagens da sala",
-    "rrcUnreadAllRoomMessagesHint": "Quando ativada, qualquer nova mensagem da sala RRC marca como não lida e pode reproduzir um som de canal. Desativar para alertas no estilo IRC: apenas mensagens diretas e @menções."
+    "rrcUnreadAllRoomMessagesHint": "Quando ativada, qualquer nova mensagem da sala RRC marca como não lida e pode reproduzir um som de canal. Desativar para alertas no estilo IRC: apenas mensagens diretas e @menções.",
+    "shareMyLocation": "Compartilhar minha localização",
+    "shareMyLocationOffInfo": "O compartilhamento de localização está desativado — a atualização do GPS do anfitrião e o envio de malha estão desativados. Ative Compartilhar minha localização acima para usar a atualização automática ou enviar sua posição.",
+    "shareMyLocationHint": "Quando ativado, este aplicativo pode procurar sua localização neste computador e enviá-lo por Meshtastic, MeshCore ou Reticulum (compartilhamento de bate-papo, push de rádio, RMAP). Quando desativado, as pesquisas GPS do anfitrião e o envio da aplicação estão desativados; as coordenadas estáticas ainda funcionam apenas para o seu mapa local. Um rádio com seu próprio GPS ainda pode mostrar sua posição localmente. O firmware do dispositivo ainda pode ser transmitido até que você ajuste as configurações de Rádio ou Módulos."
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -3451,7 +3454,7 @@
       },
       "1": {
         "label": "Cliente mudo",
-        "description": "Cliente que não transmite"
+        "description": "Cliente que não encaminha pacotes. A aplicação desta função também desativa as transmissões GPS e o relatório de mapas no dispositivo."
       },
       "2": {
         "label": "Roteador",
@@ -3951,7 +3954,9 @@
     "floodScopeSavedEmpty": "Ainda não há escopos salvos. Aplique uma hashtag personalizada ou use o escopo personalizado do Chat para adicionar uma.",
     "floodScopeRemoveSaved": "Remover dos escopos salvos",
     "floodScopeRemoveSavedAria": "Remover {{hashtag}} dos escopos salvos",
-    "floodScopeInvalidHashtag": "Insira uma hashtag de região válida (por exemplo #myregion)."
+    "floodScopeInvalidHashtag": "Insira uma hashtag de região válida (por exemplo #myregion).",
+    "sendPositionDisabledShareOff": "Ative Compartilhar minha localização no aplicativo → GPS / Localização para enviar sua posição para o dispositivo.",
+    "clientMuteGpsSuppressed": "Cliente Mudo aplicado — transmissões GPS e relatórios de mapa MQTT desativados no dispositivo."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar pacotes",
@@ -4440,7 +4445,8 @@
     "openGlobalMapAria": "Abra o mapa global do RMAP v4 em rmap.world",
     "applyPartialSuccess": "Configurações de RMAP aplicadas às interfaces {{applied}} de {{total}}.",
     "disablePartialSuccess": "Publicação RMAP desativada nas interfaces {{applied}} de {{total}}.",
-    "hint": "Permite publicação RMAP e coordenadas GPS de aplicativos em todas as interfaces habilitadas com capacidade RMAP (RNode/Multi, KISS, peer BLE, I2P, UDP, pipe). A caixa de seleção fica ativada somente quando todas as interfaces qualificadas estão sendo publicadas; um estado parcial é indeterminado — verifique novamente para sincronizar o restante. Use alternâncias RMAP por interface em Conexão para controle preciso. Os caminhos LoRa também permitem o transporte e o hub rmap.world."
+    "hint": "Permite publicação RMAP e coordenadas GPS de aplicativos em todas as interfaces habilitadas com capacidade RMAP (RNode/Multi, KISS, peer BLE, I2P, UDP, pipe). A caixa de seleção fica ativada somente quando todas as interfaces qualificadas estão sendo publicadas; um estado parcial é indeterminado — verifique novamente para sincronizar o restante. Use alternâncias RMAP por interface em Conexão para controle preciso. Os caminhos LoRa também permitem o transporte e o hub rmap.world.",
+    "disabledShareOff": "Ative Compartilhar minha localização no aplicativo → GPS / Localização para publicar no RMAP."
   },
   "reticulumTopology": {
     "title": "Topologia de rede",

@@ -390,7 +390,10 @@
     "themeResetFailed": "Impossible de réinitialiser les couleurs.",
     "messageActionsBarBgVisible": "Afficher l'arrière-plan",
     "rrcUnreadAllRoomMessages": "RRC non lu pour tous les messages de la pièce",
-    "rrcUnreadAllRoomMessagesHint": "Lorsque cette option est activée, tout nouveau message de la salle RRC est non lu et peut lire un son de chaîne. Désactiver pour les alertes de type IRC : uniquement les messages directs et les @mentions."
+    "rrcUnreadAllRoomMessagesHint": "Lorsque cette option est activée, tout nouveau message de la salle RRC est non lu et peut lire un son de chaîne. Désactiver pour les alertes de type IRC : uniquement les messages directs et les @mentions.",
+    "shareMyLocation": "Partager mon emplacement",
+    "shareMyLocationOffInfo": "Le partage de localisation est désactivé — l'actualisation du GPS de l'hôte et l'envoi de maillage sont désactivés. Activez Partager ma position ci-dessus pour utiliser l'actualisation automatique ou envoyer votre position.",
+    "shareMyLocationHint": "Lorsqu'elle est activée, cette application peut rechercher votre position sur cet ordinateur et l'envoyer via Meshtastic, MeshCore ou Reticulum (partage de chat, push radio, RMAP). Lorsqu'elles sont désactivées, les recherches GPS de l'hôte et l'envoi d'applications sont désactivés ; les coordonnées statiques ne fonctionnent toujours que pour votre carte locale. Une radio avec son propre GPS peut toujours afficher votre position localement. Le micrologiciel de l'appareil peut continuer à diffuser jusqu'à ce que vous régliez les paramètres Radio ou Modules."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -3450,8 +3453,8 @@
         "label": "Maître d'Ouvrage"
       },
       "1": {
-        "description": "Client qui ne transmet pas",
-        "label": "Mise en sourdine du client"
+        "label": "Mise en sourdine du client",
+        "description": "Client qui ne transfère pas de paquets. L'application de ce rôle désactive également les diffusions GPS et les rapports cartographiques sur l'appareil."
       },
       "2": {
         "description": "Routeur/répéteur dédié",
@@ -3951,7 +3954,9 @@
     "floodScopeSavedEmpty": "Aucune étendue enregistrée pour le moment. Appliquez un hashtag personnalisé ou utilisez la portée personnalisée de Chat pour en ajouter un.",
     "floodScopeRemoveSaved": "Supprimer des étendues enregistrées",
     "floodScopeRemoveSavedAria": "Supprimer {{hashtag}} des étendues enregistrées",
-    "floodScopeInvalidHashtag": "Saisissez un hashtag de région valide (par exemple #myregion)."
+    "floodScopeInvalidHashtag": "Saisissez un hashtag de région valide (par exemple #myregion).",
+    "sendPositionDisabledShareOff": "Activez Partager ma position dans l'application → GPS / Localisation pour envoyer votre position à l'appareil.",
+    "clientMuteGpsSuppressed": "Mise en sourdine du client appliquée — Diffusions GPS et rapports de carte MQTT désactivés sur l'appareil."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",
@@ -4440,7 +4445,8 @@
     "openGlobalMapAria": "Ouvrez la carte globale RMAP v4 sur rmap.world",
     "applyPartialSuccess": "Paramètres RMAP appliqués à {{applied}} des interfaces {{total}}.",
     "disablePartialSuccess": "Publication RMAP désactivée sur {{applied}} des interfaces {{total}}.",
-    "hint": "Permet la publication RMAP et les coordonnées GPS de l'application sur toutes les interfaces compatibles RMAP activées (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). La case à cocher est activée uniquement lorsque chaque interface éligible publie ; un état partiel est indéterminé – vérifiez à nouveau pour synchroniser le reste. Utilisez les bascules RMAP par interface sur Connexion pour un contrôle précis. Les chemins LoRa permettent également le transport et le hub rmap.world."
+    "hint": "Permet la publication RMAP et les coordonnées GPS de l'application sur toutes les interfaces compatibles RMAP activées (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). La case à cocher est activée uniquement lorsque chaque interface éligible publie ; un état partiel est indéterminé – vérifiez à nouveau pour synchroniser le reste. Utilisez les bascules RMAP par interface sur Connexion pour un contrôle précis. Les chemins LoRa permettent également le transport et le hub rmap.world.",
+    "disabledShareOff": "Activez Partager ma position dans l'application → GPS / Localisation pour publier sur RMAP."
   },
   "reticulumTopology": {
     "title": "Topologie de réseau",

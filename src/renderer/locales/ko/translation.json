@@ -390,7 +390,10 @@
     "themeResetFailed": "색상을 재설정하지 못했습니다.",
     "messageActionsBarBgVisible": "배경 표시",
     "rrcUnreadAllRoomMessages": "모든 객실 메시지에 대해 읽지 않은 RRC",
-    "rrcUnreadAllRoomMessagesHint": "켜져 있으면 새로운 RRC 룸 메시지가 읽지 않음으로 표시되어 채널 사운드를 재생할 수 있습니다. IRC 스타일 알림의 경우: 다이렉트 메시지 및 @ 멘션만 꺼주세요."
+    "rrcUnreadAllRoomMessagesHint": "켜져 있으면 새로운 RRC 룸 메시지가 읽지 않음으로 표시되어 채널 사운드를 재생할 수 있습니다. IRC 스타일 알림의 경우: 다이렉트 메시지 및 @ 멘션만 꺼주세요.",
+    "shareMyLocation": "내 위치 공유",
+    "shareMyLocationOffInfo": "위치 공유가 꺼져 있음 — 호스트 GPS 새로 고침 및 메시 전송이 비활성화되었습니다. 자동 새로 고침을 사용하거나 위치를 보내려면 위의 내 위치 공유를 활성화하십시오.",
+    "shareMyLocationHint": "활성화되면 이 앱이 이 컴퓨터에서 사용자의 위치를 검색하여 Meshtastic, MeshCore 또는 Reticulum (채팅 공유, 라디오 푸시, RMAP) 을 통해 전송할 수 있습니다. 비활성화되면 호스트 GPS 조회 및 앱 전송이 꺼집니다. 정적 좌표는 현지 지도에서만 작동합니다. 자체 GPS가 있는 라디오는 여전히 로컬에서 위치를 표시할 수 있습니다. 라디오 또는 모듈 설정을 조정할 때까지 장치 펌웨어가 계속 브로드캐스트될 수 있습니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -3451,7 +3454,7 @@
       },
       "1": {
         "label": "클라이언트 음소거",
-        "description": "전송하지 않는 클라이언트"
+        "description": "패킷을 전달하지 않는 클라이언트. 이 역할을 적용하면 장치의 GPS 브로드캐스트 및 지도 보고서도 비활성화됩니다."
       },
       "2": {
         "label": "라우터",
@@ -3951,7 +3954,9 @@
     "floodScopeSavedEmpty": "아직 저장된 범위가 없습니다. 사용자 정의 해시태그를 적용하거나 Chat의 사용자 정의 범위를 사용하여 추가하세요.",
     "floodScopeRemoveSaved": "저장된 범위에서 제거",
     "floodScopeRemoveSavedAria": "저장된 범위에서 {{hashtag}} 제거",
-    "floodScopeInvalidHashtag": "유효한 지역 해시태그(예: #myregion)를 입력하세요."
+    "floodScopeInvalidHashtag": "유효한 지역 해시태그(예: #myregion)를 입력하세요.",
+    "sendPositionDisabledShareOff": "앱 → GPS/위치에서 내 위치 공유를 활성화하여 위치를 장치로 전송합니다.",
+    "clientMuteGpsSuppressed": "클라이언트 음소거 적용 — 장치에서 GPS 브로드캐스트 및 MQTT 맵 보고가 비활성화되었습니다."
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",
@@ -4440,7 +4445,8 @@
     "openGlobalMapAria": "Rmap.world에서 RMAP v4 글로벌 맵 열기",
     "applyPartialSuccess": "{{total}} 인터페이스의 {{applied}}에 RMAP 설정이 적용되었습니다.",
     "disablePartialSuccess": "{{total}} 인터페이스 중 {{applied}}에서 RMAP 게시가 비활성화되었습니다.",
-    "hint": "활성화된 모든 RMAP 지원 인터페이스(RNode/Multi, KISS, BLE 피어, I2P, UDP, 파이프)에서 RMAP 게시 및 앱 GPS 좌표를 활성화합니다. 확인란은 모든 적격 인터페이스가 게시될 때만 활성화됩니다. 부분적인 상태는 불확실합니다. 나머지를 동기화하려면 다시 확인하세요. 미세한 제어를 위해 Connection에서 인터페이스별 RMAP 토글을 사용합니다. LoRa 경로는 전송 및 rmap.world 허브도 가능하게 합니다."
+    "hint": "활성화된 모든 RMAP 지원 인터페이스(RNode/Multi, KISS, BLE 피어, I2P, UDP, 파이프)에서 RMAP 게시 및 앱 GPS 좌표를 활성화합니다. 확인란은 모든 적격 인터페이스가 게시될 때만 활성화됩니다. 부분적인 상태는 불확실합니다. 나머지를 동기화하려면 다시 확인하세요. 미세한 제어를 위해 Connection에서 인터페이스별 RMAP 토글을 사용합니다. LoRa 경로는 전송 및 rmap.world 허브도 가능하게 합니다.",
+    "disabledShareOff": "앱 → GPS/위치에서 내 위치 공유를 활성화하여 RMAP에 게시합니다."
   },
   "reticulumTopology": {
     "title": "네트워크 토폴로지",

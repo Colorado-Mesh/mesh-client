@@ -390,7 +390,10 @@
     "themeResetFailed": "Farben konnten nicht zurückgesetzt werden.",
     "messageActionsBarBgVisible": "Zeige Hintergrund",
     "rrcUnreadAllRoomMessages": "RRC ungelesen für alle Raumnachrichten",
-    "rrcUnreadAllRoomMessagesHint": "Wenn eingeschaltet, markiert jede neue RRC-Raumnachricht ungelesen und kann einen Kanalton wiedergeben. Deaktivieren Sie für Warnungen im IRC-Stil: nur Direktnachrichten und @Erwähnungen."
+    "rrcUnreadAllRoomMessagesHint": "Wenn eingeschaltet, markiert jede neue RRC-Raumnachricht ungelesen und kann einen Kanalton wiedergeben. Deaktivieren Sie für Warnungen im IRC-Stil: nur Direktnachrichten und @Erwähnungen.",
+    "shareMyLocation": "Meinen Standort teilen",
+    "shareMyLocationOffInfo": "Die Standortfreigabe ist deaktiviert — Host-GPS-Aktualisierung und Mesh-Versand sind deaktiviert. Aktivieren Sie Meinen Standort oben teilen, um die automatische Aktualisierung zu verwenden oder Ihre Position zu senden.",
+    "shareMyLocationHint": "Wenn diese App aktiviert ist, kann sie Ihren Standort auf diesem Computer nachschlagen und ihn über Meshtastic, MeshCore oder Reticulum (Chatfreigabe, Radio-Push, RMAP) senden. Wenn diese Option deaktiviert ist, sind Host-GPS-Suchvorgänge und das Senden von Apps deaktiviert. Statische Koordinaten funktionieren immer noch nur für deine lokale Karte. Ein Radio mit eigenem GPS kann immer noch Ihre Position vor Ort anzeigen. Die Geräte-Firmware kann weiterhin senden, bis Sie die Radio- oder Moduleinstellungen anpassen."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -3450,8 +3453,8 @@
         "label": "Client"
       },
       "1": {
-        "description": "Client, der nicht sendet",
-        "label": "Client stummschalten"
+        "label": "Client stummschalten",
+        "description": "Client, der keine Pakete weiterleitet. Durch Anwenden dieser Rolle werden auch GPS-Übertragungen und Kartenberichte auf dem Gerät deaktiviert."
       },
       "2": {
         "description": "Dedizierter Router/Repeater",
@@ -3951,7 +3954,9 @@
     "floodScopeSavedEmpty": "Noch keine gespeicherten Bereiche. Wenden Sie einen benutzerdefinierten Hashtag an oder verwenden Sie den benutzerdefinierten Bereich aus dem Chat, um einen hinzuzufügen.",
     "floodScopeRemoveSaved": "Aus gespeicherten Bereichen entfernen",
     "floodScopeRemoveSavedAria": "Entfernen Sie {{hashtag}} aus gespeicherten Bereichen",
-    "floodScopeInvalidHashtag": "Geben Sie einen gültigen Regions-Hashtag ein (zum Beispiel #myregion)."
+    "floodScopeInvalidHashtag": "Geben Sie einen gültigen Regions-Hashtag ein (zum Beispiel #myregion).",
+    "sendPositionDisabledShareOff": "Aktivieren Sie Meinen Standort in der App → GPS / Standort teilen, um Ihre Position an das Gerät zu senden.",
+    "clientMuteGpsSuppressed": "Client-Stummschaltung angewendet - GPS-Übertragungen und MQTT-Kartenberichterstattung auf dem Gerät deaktiviert."
   },
   "rawPacketLog": {
     "filterPackets": "Filterpakete",
@@ -4440,7 +4445,8 @@
     "openGlobalMapAria": "RMAP v4 Global Map auf rmap.world öffnen",
     "applyPartialSuccess": "RMAP-Einstellungen wurden auf {{applied}} von {{total}} Schnittstellen angewendet.",
     "disablePartialSuccess": "Die RMAP-Veröffentlichung ist auf {{applied}} von {{total}} Schnittstellen deaktiviert.",
-    "hint": "Ermöglicht RMAP-Veröffentlichung und App-GPS-Koordinaten auf allen aktivierten RMAP-fähigen Schnittstellen (RNode/Multi, KISS, BLE-Peer, I2P, UDP, Pipe). Das Kontrollkästchen ist nur aktiviert, wenn jede geeignete Schnittstelle veröffentlicht. Ein Teilzustand ist unbestimmt – überprüfen Sie ihn erneut, um den Rest zu synchronisieren. Verwenden Sie zur Feinsteuerung die RMAP-Umschaltung pro Schnittstelle für die Verbindung. LoRa-Pfade ermöglichen auch den Transport und den rmap.world-Hub."
+    "hint": "Ermöglicht RMAP-Veröffentlichung und App-GPS-Koordinaten auf allen aktivierten RMAP-fähigen Schnittstellen (RNode/Multi, KISS, BLE-Peer, I2P, UDP, Pipe). Das Kontrollkästchen ist nur aktiviert, wenn jede geeignete Schnittstelle veröffentlicht. Ein Teilzustand ist unbestimmt – überprüfen Sie ihn erneut, um den Rest zu synchronisieren. Verwenden Sie zur Feinsteuerung die RMAP-Umschaltung pro Schnittstelle für die Verbindung. LoRa-Pfade ermöglichen auch den Transport und den rmap.world-Hub.",
+    "disabledShareOff": "Aktivieren Sie Meinen Standort in der App → GPS / Standort freigeben, um ihn auf RMAP zu veröffentlichen."
   },
   "reticulumTopology": {
     "title": "Netzwerk-Topologie",

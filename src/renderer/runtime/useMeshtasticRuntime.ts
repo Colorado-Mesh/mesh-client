@@ -11,11 +11,15 @@ import {
 } from '@meshtastic/protobufs';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { getStoreForwardHistoryProfile } from '@/renderer/lib/appSettingsStorage';
+import {
+  getStoreForwardHistoryProfile,
+  isShareMyLocationEnabled,
+} from '@/renderer/lib/appSettingsStorage';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 import { getConnectedMeshcoreBleMac } from '@/renderer/lib/connectedMeshcoreBleMac';
 import { setDebugSnapshotMeshtasticContext } from '@/renderer/lib/debugSnapshotMeshtasticContext';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
 import { shouldSuppressMeshtasticNodeHear } from '@/renderer/lib/meshcoreBleMacMeshtasticNodeId';
 import {
   buildStoreForwardHistoryToRadioBytes,
@@ -370,8 +374,6 @@ export type RequestStoreForwardHistoryResult =
 
 const MQTT_ONLY_VIRTUAL_LONG_NAME = 'MQTT-only Virtual Address';
 const ROLE_CLIENT = 0;
-const ROLE_CLIENT_MUTE = 1;
-
 function meshtasticMqttPublishOpts(
   mqttOnly: boolean,
 ): ResolveMeshtasticMqttPublishOptions | undefined {
@@ -4112,13 +4114,13 @@ export function useMeshtasticRuntime() {
           if (selfNodeToPersist) persistMeshtasticNode(selfNodeToPersist);
         }
 
-        const isClientMute =
-          getIdentityNode(meshtasticIdentityIdRef.current, myNodeNumRef.current)?.role ===
-          ROLE_CLIENT_MUTE;
+        const meshtasticRole =
+          getIdentityNode(meshtasticIdentityIdRef.current, myNodeNumRef.current)?.role ?? null;
         const wouldSendWithoutMute =
           deviceRef.current &&
           (pos.source === 'static' || (pos.source === 'browser' && deviceGpsModeRef.current === 2));
-        const shouldSendToDevice = !isClientMute && wouldSendWithoutMute;
+        const shouldSendToDevice =
+          canTransmitLocation({ protocol: 'meshtastic', meshtasticRole }) && wouldSendWithoutMute;
 
         if (shouldSendToDevice && deviceRef.current) {
           deviceRef.current
@@ -4156,11 +4158,9 @@ export function useMeshtasticRuntime() {
 
   const sendPositionToDevice = useCallback(async (lat: number, lon: number, alt?: number) => {
     if (!deviceRef.current) return;
-    if (
-      getIdentityNode(meshtasticIdentityIdRef.current, myNodeNumRef.current)?.role ===
-      ROLE_CLIENT_MUTE
-    )
-      return;
+    const meshtasticRole =
+      getIdentityNode(meshtasticIdentityIdRef.current, myNodeNumRef.current)?.role ?? null;
+    if (!canTransmitLocation({ protocol: 'meshtastic', meshtasticRole })) return;
     await deviceRef.current.setPosition(
       createMeshtasticMessage(meshtasticMeshProtobuf.PositionSchema, {
         latitudeI: Math.round(lat * 1e7),
@@ -4174,7 +4174,7 @@ export function useMeshtasticRuntime() {
   const updateGpsInterval = useCallback(
     (secs: number) => {
       stopGpsInterval();
-      if (secs > 0) {
+      if (secs > 0 && isShareMyLocationEnabled()) {
         gpsIntervalRef.current = setInterval(() => {
           refreshOurPositionRef.current().catch((err: unknown) => {
             console.error(

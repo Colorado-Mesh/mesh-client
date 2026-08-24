@@ -46,6 +46,7 @@ import { useSyncFormFromConfig } from '../hooks/useSyncFormFromConfig';
 import { getAppSettingsRaw, mergeAppSetting } from '../lib/appSettingsStorage';
 import { DEFAULT_APP_SETTINGS_SHARED } from '../lib/defaultAppSettings';
 import type { OurPosition } from '../lib/gpsSource';
+import { canTransmitLocation } from '../lib/locationTransmit';
 import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../lib/meshcore/meshcoreHookTypes';
 import type { MeshcoreAutoaddWireState } from '../lib/meshcoreContactAutoAdd';
 import {
@@ -64,6 +65,11 @@ import {
   meshcoreSelfInfoBwToDisplayKhz,
   meshcoreSelfInfoFreqToDisplayHz,
 } from '../lib/meshcoreUtils';
+import {
+  buildClientMuteMqttSuppressValue,
+  buildClientMutePositionSuppressValue,
+  MESHTASTIC_CLIENT_MUTE_ROLE,
+} from '../lib/meshtastic/meshtasticClientMuteGpsSuppression';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { ConfigTargetContext, RemoteConfigChannelsTailStatus } from '../lib/types';
@@ -168,6 +174,11 @@ interface Props {
   }) => Promise<void>;
   meshcoreAutoadd?: MeshcoreAutoaddWireState | null;
   meshtasticLoraConfig?: MeshtasticLoraConfig | null;
+  /** Cached Meshtastic ModuleConfig slices for merge-on-apply (local device or remote snapshot). */
+  moduleConfigs?: Record<string, unknown>;
+  onSetModuleConfig?: (payload: {
+    payloadVariant: { case: string; value: Record<string, unknown> };
+  }) => Promise<void>;
   /** Cached Meshtastic Config slices for merge-on-apply (local device or remote snapshot). */
   meshtasticConfigSlices?: Record<string, unknown>;
   onApplyChannelSet?: (
@@ -693,6 +704,8 @@ export default function RadioPanel({
   loraConfig,
   meshtasticLoraConfig,
   meshtasticConfigSlices,
+  moduleConfigs,
+  onSetModuleConfig,
   onApplyChannelSet,
   meshcoreSelfInfo,
   meshcoreContactsForTelemetry,
@@ -1101,6 +1114,34 @@ export default function RadioPanel({
   const positionApplyDisabled =
     disabled || !positionConfigReady || capabilities?.hasFullPositionConfig === false;
   const networkApplyDisabled = disabled || !networkConfigReady;
+
+  const locationSendAllowed = useMemo(() => {
+    if (capabilities?.hasCompanionContactManagementConfig) {
+      return canTransmitLocation({ protocol: 'meshcore' });
+    }
+    return canTransmitLocation({ protocol: 'meshtastic', meshtasticRole: deviceRole });
+  }, [capabilities?.hasCompanionContactManagementConfig, deviceRole]);
+
+  const applyClientMuteGpsSuppression = async () => {
+    if (!onSetModuleConfig) return;
+    const positionMerged = buildClientMutePositionSuppressValue(meshtasticConfigSlices?.position);
+    await onSetConfig({
+      payloadVariant: {
+        case: 'position',
+        value: positionMerged,
+      },
+    });
+    const mqttMerged = buildClientMuteMqttSuppressValue(moduleConfigs?.mqtt);
+    await onSetModuleConfig({
+      payloadVariant: {
+        case: 'mqtt',
+        value: mqttMerged,
+      },
+    });
+    await onCommit();
+    setGpsMode(0);
+    setPositionBroadcastSecs(0);
+  };
 
   const applyConfig = async (
     sectionLabel: string,
@@ -1963,8 +2004,8 @@ export default function RadioPanel({
       {capabilities?.hasDeviceRoleConfig !== false && (
         <ConfigSection
           title={t('radioPanel.sectionDeviceRole')}
-          onApply={() =>
-            applyConfig(t('radioPanel.sectionDeviceRole'), 'device', {
+          onApply={async () => {
+            await applyConfig(t('radioPanel.sectionDeviceRole'), 'device', {
               role: deviceRole,
               rebroadcastMode,
               nodeInfoBroadcastSecs,
@@ -1974,8 +2015,27 @@ export default function RadioPanel({
               ledHeartbeatDisabled,
               buttonGpio,
               buzzerGpio,
-            })
-          }
+            });
+            if (deviceRole === MESHTASTIC_CLIENT_MUTE_ROLE && onSetModuleConfig) {
+              try {
+                clearMeshtasticClientNotification();
+                setApplyingSection('clientMuteGps');
+                await applyClientMuteGpsSuppression();
+                setStatus(t('radioPanel.clientMuteGpsSuppressed'));
+              } catch (err) {
+                console.warn(
+                  '[RadioPanel] Client Mute GPS suppression failed ' + errLikeToLogString(err),
+                );
+                setStatus(
+                  t('radioPanel.applyStatusFailed', {
+                    message: formatMeshtasticModuleApplyError(err, t),
+                  }),
+                );
+              } finally {
+                setApplyingSection(null);
+              }
+            }
+          }}
           applying={applyingSection === 'device'}
           disabled={deviceApplyDisabled}
         >
@@ -2304,7 +2364,10 @@ export default function RadioPanel({
                   );
                 }
               }}
-              disabled={disabled || !onSendPositionToDevice}
+              disabled={disabled || !onSendPositionToDevice || !locationSendAllowed}
+              title={
+                !locationSendAllowed ? t('radioPanel.sendPositionDisabledShareOff') : undefined
+              }
               className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
             >
               {t('radioPanel.sendPositionToDevice')}
