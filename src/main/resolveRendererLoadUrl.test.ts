@@ -1,3 +1,5 @@
+import net from 'node:net';
+
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -61,5 +63,37 @@ describe('resolveRendererLoadUrl', () => {
 describe('probeDevServerReachable', () => {
   it('returns false for invalid URLs', async () => {
     await expect(probeDevServerReachable('not-a-url', 100)).resolves.toBe(false);
+  });
+
+  it('returns false when TCP accepts but endpoint is not HTTP', async () => {
+    const server = net.createServer((socket) => {
+      socket.destroy();
+    });
+    await new Promise<void>((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(0, '127.0.0.1', () => {
+        resolve();
+      });
+    });
+    const address = server.address();
+    if (!address || typeof address === 'string') {
+      server.close();
+      throw new Error('expected TCP port');
+    }
+    try {
+      const resolved = await resolveRendererLoadUrl({
+        packaged: false,
+        distIndexPath: '/tmp/dist/renderer/index.html',
+        viteDevServerUrl: `http://127.0.0.1:${address.port}`,
+        probeTimeoutMs: 500,
+      });
+      expect(resolved.source).toBe('dist');
+    } finally {
+      await new Promise<void>((resolve) => {
+        server.close(() => {
+          resolve();
+        });
+      });
+    }
   });
 });

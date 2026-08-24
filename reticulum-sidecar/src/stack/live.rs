@@ -4446,23 +4446,16 @@ impl LiveBridge {
     /// Drop any cached route, then RequestPath so path ranking can move off stale TCP slots.
     pub async fn request_path_force(&self, hash: &str) -> Result<(), String> {
         let dest = parse_hash16(hash)?;
-        let already = self
-            .outbound
-            .lock()
-            .map(|d| d.has_path_to(hash))
-            .unwrap_or(false);
-        if already {
-            let _ = self
-                .query_control_timed(TransportQuery::DropPath { dest })
-                .await;
-            if let Ok(mut driver) = self.outbound.lock() {
-                driver.clear_path_to(hash);
-            }
-            if let Ok(mut cache) = self.peer_via_cache.lock() {
-                cache.remove(&hash.to_lowercase());
-            }
-            let _ = self.refresh_outbound_path_table().await;
+        let _ = self
+            .query_control_timed(TransportQuery::DropPath { dest })
+            .await;
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.clear_path_to(hash);
         }
+        if let Ok(mut cache) = self.peer_via_cache.lock() {
+            cache.remove(&hash.to_lowercase());
+        }
+        let _ = self.refresh_outbound_path_table().await;
         self.request_path(hash).await
     }
 
@@ -6654,6 +6647,30 @@ mod announce_display_name_tests {
         // Non-force / first discovery: any installed path is fine.
         assert!(force_path_refresh_accepts_current_path(false, true, false));
         assert!(force_path_refresh_accepts_current_path(true, false, false));
+    }
+
+    #[test]
+    fn request_path_force_clears_peer_via_without_outbound_cache() {
+        use super::lxmf_outbound::LxmfOutboundDriver;
+        use rns_identity::identity::Identity;
+        use std::collections::HashMap;
+        use tokio::sync::mpsc;
+
+        let hash = "d765e919676aa0340412a1afae006553";
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        assert!(!driver.has_path_to(hash));
+
+        let mut peer_via_cache: HashMap<String, String> =
+            HashMap::from([(hash.to_lowercase(), "TTP_TCP".into())]);
+
+        // Mirrors request_path_force cleanup (must run even when has_path_to is false).
+        driver.clear_path_to(hash);
+        peer_via_cache.remove(&hash.to_lowercase());
+
+        assert!(!driver.has_path_to(hash));
+        assert!(!peer_via_cache.contains_key(hash));
     }
 
     #[test]

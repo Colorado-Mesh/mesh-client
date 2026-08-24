@@ -1,4 +1,5 @@
-import net from 'node:net';
+import http from 'node:http';
+import https from 'node:https';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -21,7 +22,7 @@ export interface ResolvedRendererLoadUrl {
   source: RendererLoadSource;
 }
 
-/** TCP probe for a local Vite dev server (used when Electron starts without VITE_DEV_SERVER_URL). */
+/** HTTP(S) probe for a local Vite dev server (used when Electron starts without VITE_DEV_SERVER_URL). */
 export function probeDevServerReachable(url: string, timeoutMs: number): Promise<boolean> {
   let parsed: URL;
   try {
@@ -39,24 +40,41 @@ export function probeDevServerReachable(url: string, timeoutMs: number): Promise
     return Promise.resolve(false);
   }
 
+  const client = parsed.protocol === 'https:' ? https : http;
+
   return new Promise((resolve) => {
-    const socket = net.connect({ port, host });
+    let settled = false;
+    let req: http.ClientRequest | null = null;
     const finish = (ok: boolean): void => {
-      socket.removeAllListeners();
-      socket.destroy();
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      req?.destroy();
       resolve(ok);
     };
     const timer = setTimeout(() => {
       finish(false);
     }, timeoutMs);
-    socket.on('connect', () => {
-      clearTimeout(timer);
-      finish(true);
-    });
-    socket.on('error', () => {
-      clearTimeout(timer);
+    req = client.request(
+      {
+        hostname: host,
+        port,
+        path: '/',
+        method: 'HEAD',
+        timeout: timeoutMs,
+      },
+      (res) => {
+        res.resume();
+        finish(true);
+      },
+    );
+    req.on('timeout', () => {
       finish(false);
     });
+    req.on('error', () => {
+      finish(false);
+    });
+    req.end();
   });
 }
 

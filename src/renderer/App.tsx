@@ -77,6 +77,10 @@ import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { runUpdateAction } from '@/renderer/lib/runUpdateAction';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
+import {
+  meshtasticDeviceRoleFromConfigSlice,
+  resolveAppliedMeshtasticDeviceRole,
+} from '@/shared/meshtasticAppliedDeviceRole';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
 import BootSequence from './components/BootSequence';
@@ -1729,7 +1733,10 @@ function AppContent() {
 
   const meshtasticSelfRole =
     protocol === 'meshtastic'
-      ? (nodesForUi.get(meshtasticConnectionView.state.myNodeNum)?.role ?? null)
+      ? resolveAppliedMeshtasticDeviceRole(
+          meshtasticDeviceRoleFromConfigSlice(meshtasticRuntime.meshtasticConfigSlices?.device),
+          nodesForUi.get(meshtasticConnectionView.state.myNodeNum)?.role ?? null,
+        )
       : null;
 
   let chatShareLocationResolver: (() => Promise<{ lat: number; lon: number } | null>) | undefined;

@@ -23,6 +23,10 @@ import {
 } from '@/shared/meshClientDeepLink';
 import { isMeshcorePathHashMode, type MeshcorePathHashMode } from '@/shared/meshcorePathHash';
 import {
+  meshtasticDeviceRoleFromConfigSlice,
+  resolveAppliedMeshtasticDeviceRole,
+} from '@/shared/meshtasticAppliedDeviceRole';
+import {
   formatMeshtasticBluetoothPin,
   parseMeshtasticBluetoothPin,
   sanitizeMeshtasticBluetoothPinInput,
@@ -1142,8 +1146,12 @@ export default function RadioPanel({
     if (capabilities?.hasCompanionContactManagementConfig) {
       return canTransmitLocation({ protocol: 'meshcore' });
     }
-    return canTransmitLocation({ protocol: 'meshtastic', meshtasticRole: deviceRole });
-  }, [capabilities?.hasCompanionContactManagementConfig, deviceRole]);
+    const appliedRole = resolveAppliedMeshtasticDeviceRole(
+      meshtasticDeviceRoleFromConfigSlice(meshtasticConfigSlices?.device),
+      null,
+    );
+    return canTransmitLocation({ protocol: 'meshtastic', meshtasticRole: appliedRole });
+  }, [capabilities?.hasCompanionContactManagementConfig, meshtasticConfigSlices?.device]);
 
   const applyClientMuteGpsSuppression = async () => {
     if (!onSetModuleConfig) return;
@@ -1170,8 +1178,8 @@ export default function RadioPanel({
     sectionLabel: string,
     configCase: string,
     configValue: Record<string, unknown>,
-  ) => {
-    if (!isConnected) return;
+  ): Promise<boolean> => {
+    if (!isConnected) return false;
     clearMeshtasticClientNotification();
     setApplyingSection(configCase);
     setStatus(t('radioPanel.applyStatusApplying', { section: sectionLabel }));
@@ -1190,6 +1198,7 @@ export default function RadioPanel({
       try {
         await onCommit();
         setStatus(t('radioPanel.applyStatusSuccess', { section: sectionLabel }));
+        return true;
       } catch (err: unknown) {
         // catch-no-log-ok commit failure surfaced in panel status text
         setStatus(
@@ -1198,6 +1207,7 @@ export default function RadioPanel({
             message: formatMeshtasticModuleApplyError(err, t),
           }),
         );
+        return false;
       }
     } catch (err) {
       console.warn('[RadioPanel] apply section failed ' + errLikeToLogString(err));
@@ -1206,6 +1216,7 @@ export default function RadioPanel({
           message: formatMeshtasticModuleApplyError(err, t),
         }),
       );
+      return false;
     } finally {
       setApplyingSection(null);
     }
@@ -2042,7 +2053,7 @@ export default function RadioPanel({
         <ConfigSection
           title={t('radioPanel.sectionDeviceRole')}
           onApply={async () => {
-            await applyConfig(t('radioPanel.sectionDeviceRole'), 'device', {
+            const applied = await applyConfig(t('radioPanel.sectionDeviceRole'), 'device', {
               role: deviceRole,
               rebroadcastMode,
               nodeInfoBroadcastSecs,
@@ -2053,7 +2064,7 @@ export default function RadioPanel({
               buttonGpio,
               buzzerGpio,
             });
-            if (deviceRole === MESHTASTIC_CLIENT_MUTE_ROLE && onSetModuleConfig) {
+            if (applied && deviceRole === MESHTASTIC_CLIENT_MUTE_ROLE && onSetModuleConfig) {
               try {
                 clearMeshtasticClientNotification();
                 setApplyingSection('clientMuteGps');

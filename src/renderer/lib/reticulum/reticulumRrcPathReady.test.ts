@@ -184,4 +184,21 @@ describe('probeReticulumRrcPathReady', () => {
     expect(res2.ready).toBe(true);
     expect(sidecarReads.probeReticulumPeer).not.toHaveBeenCalled();
   });
+
+  it('retries RequestPath on a later cycle after a failed first path request', async () => {
+    vi.spyOn(sidecarReads, 'requestReticulumPeerPath')
+      .mockResolvedValueOnce({ ok: false, error: 'sidecar_busy' })
+      .mockResolvedValueOnce({ ok: true });
+    vi.spyOn(sidecarReads, 'probeReticulumPeer').mockResolvedValue({ ok: false, error: 'timeout' });
+
+    await probeReticulumRrcPathReady(HUB);
+    expect(sidecarReads.requestReticulumPeerPath).toHaveBeenCalledTimes(1);
+
+    resetReticulumRrcPathReadyForTests();
+    vi.spyOn(sidecarReads, 'requestReticulumPeerPath').mockResolvedValue({ ok: true });
+    vi.spyOn(sidecarReads, 'probeReticulumPeer').mockResolvedValue({ ok: true, hops: 2 });
+
+    await probeReticulumRrcPathReady(HUB);
+    expect(sidecarReads.requestReticulumPeerPath).toHaveBeenCalledWith(HUB);
+  });
 });

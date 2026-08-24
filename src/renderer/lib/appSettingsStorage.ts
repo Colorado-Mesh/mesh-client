@@ -125,6 +125,9 @@ export function mergeAppSettingsPartial(
     const raw = localStorage.getItem(APP_SETTINGS_STORAGE_KEY);
     const existing = parseStoredJson<Record<string, unknown>>(raw, parseContext) ?? {};
     localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ ...existing, ...partial }));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('mesh-client:appSettings'));
+    }
   } catch (e) {
     console.warn('[appSettingsStorage] mergeAppSettingsPartial failed ' + errLikeToLogString(e));
   }

@@ -130,14 +130,16 @@ export async function probeReticulumRrcPathReady(hubHash: string): Promise<Retic
   const passive = passivePathSnapshot(hub);
 
   if (!pathRequestSentForHub.has(hub)) {
-    pathRequestSentForHub.add(hub);
-    await requestReticulumPeerPath(hub);
-    try {
-      await refreshReticulumPeersFromSidecar({ forceRefresh: true });
-    } catch {
-      // catch-no-log-ok rate-limit or sidecar blip — fast poll will retry
+    const pathResult = await requestReticulumPeerPath(hub);
+    if (pathResult.ok) {
+      pathRequestSentForHub.add(hub);
+      try {
+        await refreshReticulumPeersFromSidecar({ forceRefresh: true });
+      } catch {
+        // catch-no-log-ok rate-limit or sidecar blip — fast poll will retry
+      }
+      Object.assign(passive, passivePathSnapshot(hub));
     }
-    Object.assign(passive, passivePathSnapshot(hub));
   }
 
   const transport = await probeReticulumRrcTransportReady();

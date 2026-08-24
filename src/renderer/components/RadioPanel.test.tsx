@@ -222,6 +222,10 @@ describe('RadioPanel Meshtastic Short Name validation', () => {
     const shortNameInput = screen.getByLabelText('Short Name');
     fireEvent.change(shortNameInput, { target: { value: '🐘👀' } });
     expect(shortNameInput).toHaveValue('🐘');
+    const shortNameField = shortNameInput.closest('.space-y-1');
+    expect(shortNameField).not.toBeNull();
+    hydrateAxeThemeColors(shortNameField!);
+    expect(await axe(shortNameField!)).toHaveNoViolations();
   });
 
   it('calls onSetOwner with four ASCII Short Name characters', async () => {
@@ -249,6 +253,10 @@ describe('RadioPanel Meshtastic Short Name validation', () => {
         isLicensed: false,
       });
     });
+    const shortNameField = screen.getByLabelText('Short Name').closest('.space-y-1');
+    expect(shortNameField).not.toBeNull();
+    hydrateAxeThemeColors(shortNameField!);
+    expect(await axe(shortNameField!)).toHaveNoViolations();
   });
 
   it('does not render Short Name for Reticulum capabilities', async () => {
@@ -267,6 +275,48 @@ describe('RadioPanel Meshtastic Short Name validation', () => {
     await openDeviceUserSection(user);
     expect(screen.queryByLabelText('Short Name')).not.toBeInTheDocument();
     expect(screen.queryByText('Licensed (Ham Radio Operator)')).not.toBeInTheDocument();
+    const longNameField = screen.getByLabelText('Long Name').closest('.space-y-1');
+    expect(longNameField).not.toBeNull();
+    hydrateAxeThemeColors(longNameField!);
+    expect(await axe(longNameField!)).toHaveNoViolations();
+  });
+
+  it('does not suppress GPS when Client Mute role apply fails', async () => {
+    const user = userEvent.setup();
+    const onSetConfig = vi.fn().mockRejectedValue(new Error('apply rejected'));
+    const onCommit = vi.fn().mockResolvedValue(undefined);
+    const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          onSetConfig={onSetConfig}
+          onCommit={onCommit}
+          onSetModuleConfig={onSetModuleConfig}
+          meshtasticConfigSlices={{ device: { role: 0 }, position: { gpsMode: 1 } }}
+          moduleConfigs={{ mqtt: { mapReportingEnabled: true } }}
+        />
+      </ToastProvider>,
+    );
+
+    const deviceDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Device Role';
+    });
+    expect(deviceDetails).toBeDefined();
+    await user.click(deviceDetails!.querySelector('summary')!);
+
+    const roleSelect = within(deviceDetails!).getAllByRole('combobox')[0];
+    fireEvent.change(roleSelect, { target: { value: '1' } });
+    await user.click(screen.getByRole('button', { name: 'Apply Device Role' }));
+
+    await waitFor(() => {
+      expect(onSetConfig).toHaveBeenCalled();
+    });
+    expect(onSetModuleConfig).not.toHaveBeenCalled();
+    expect(onCommit).not.toHaveBeenCalled();
   });
 });
 

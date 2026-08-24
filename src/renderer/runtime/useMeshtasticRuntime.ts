@@ -54,6 +54,10 @@ import {
 import { readMeshtasticMqttSettingsFromStorage } from '@/renderer/lib/meshtasticMqttSettingsStorage';
 import { NOBLE_BLE_YIELD_RELEASED_EVENT } from '@/renderer/lib/nobleBleYieldReleased';
 import {
+  meshtasticDeviceRoleFromConfigSlice,
+  resolveAppliedMeshtasticDeviceRole,
+} from '@/shared/meshtasticAppliedDeviceRole';
+import {
   type ApplyChannelSetResult,
   channelNameExists,
   countFreeChannelSlots,
@@ -375,6 +379,17 @@ export type RequestStoreForwardHistoryResult =
 
 const MQTT_ONLY_VIRTUAL_LONG_NAME = 'MQTT-only Virtual Address';
 const ROLE_CLIENT = 0;
+
+function readAppliedMeshtasticRole(identityId: string | null, nodeNum: number): number | null {
+  const nodeRole =
+    identityId && nodeNum > 0 ? (getIdentityNode(identityId, nodeNum)?.role ?? null) : null;
+  const deviceRecord = identityId ? useDeviceStore.getState().devices[identityId] : undefined;
+  const configRole = meshtasticDeviceRoleFromConfigSlice(
+    deviceRecord?.meshtasticConfigSlices?.device,
+  );
+  return resolveAppliedMeshtasticDeviceRole(configRole, nodeRole);
+}
+
 function meshtasticMqttPublishOpts(
   mqttOnly: boolean,
 ): ResolveMeshtasticMqttPublishOptions | undefined {
@@ -4116,8 +4131,10 @@ export function useMeshtasticRuntime() {
           if (selfNodeToPersist) persistMeshtasticNode(selfNodeToPersist);
         }
 
-        const meshtasticRole =
-          getIdentityNode(meshtasticIdentityIdRef.current, myNodeNumRef.current)?.role ?? null;
+        const meshtasticRole = readAppliedMeshtasticRole(
+          meshtasticIdentityIdRef.current,
+          myNodeNumRef.current,
+        );
         const wouldSendWithoutMute =
           deviceRef.current &&
           (pos.source === 'static' || (pos.source === 'browser' && deviceGpsModeRef.current === 2));
@@ -4160,8 +4177,10 @@ export function useMeshtasticRuntime() {
 
   const sendPositionToDevice = useCallback(async (lat: number, lon: number, alt?: number) => {
     if (!deviceRef.current) return;
-    const meshtasticRole =
-      getIdentityNode(meshtasticIdentityIdRef.current, myNodeNumRef.current)?.role ?? null;
+    const meshtasticRole = readAppliedMeshtasticRole(
+      meshtasticIdentityIdRef.current,
+      myNodeNumRef.current,
+    );
     if (!canTransmitLocation({ protocol: 'meshtastic', meshtasticRole })) return;
     await deviceRef.current.setPosition(
       createMeshtasticMessage(meshtasticMeshProtobuf.PositionSchema, {
