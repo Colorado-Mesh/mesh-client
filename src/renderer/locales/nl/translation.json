@@ -390,7 +390,10 @@
     "themeResetFailed": "Kan kleuren niet resetten.",
     "messageActionsBarBgVisible": "Achtergrond tonen",
     "rrcUnreadAllRoomMessages": "RRC ongelezen voor alle kamerberichten",
-    "rrcUnreadAllRoomMessagesHint": "Wanneer ingeschakeld, markeert elk nieuw RRC-kamerbericht ongelezen en kan een kanaalgeluid worden afgespeeld. Schakel uit voor waarschuwingen in IRC-stijl: alleen directe berichten en @vermeldingen."
+    "rrcUnreadAllRoomMessagesHint": "Wanneer ingeschakeld, markeert elk nieuw RRC-kamerbericht ongelezen en kan een kanaalgeluid worden afgespeeld. Schakel uit voor waarschuwingen in IRC-stijl: alleen directe berichten en @vermeldingen.",
+    "shareMyLocation": "Deel mijn locatie",
+    "shareMyLocationOffInfo": "Locatie delen is uitgeschakeld — host GPS verversen en mesh verzenden zijn uitgeschakeld. Schakel Mijn locatie hierboven delen in om automatisch vernieuwen te gebruiken of uw positie te verzenden.",
+    "shareMyLocationHint": "Indien ingeschakeld, kan deze app uw locatie op deze computer opzoeken en deze via Meshtastic, MeshCore of Reticulum verzenden (chat share, radio push, RMAP). Wanneer uitgeschakeld, zijn de GPS-zoekopdrachten van de host en het verzenden van de app uitgeschakeld; statische coördinaten werken nog steeds alleen voor je lokale kaart. Een radio met een eigen GPS kan uw positie nog steeds lokaal weergeven. Apparaatfirmware kan nog steeds uitzenden totdat u de radio- of module-instellingen aanpast."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -3451,7 +3454,7 @@
       },
       "1": {
         "label": "Klant dempen",
-        "description": "Client die niet verzendt"
+        "description": "Client die geen pakketten doorstuurt. Het toepassen van deze rol schakelt ook GPS-uitzendingen en kaartrapporten op het apparaat uit."
       },
       "2": {
         "label": "Router",
@@ -3951,7 +3954,11 @@
     "floodScopeSavedEmpty": "Er zijn nog geen opgeslagen bereiken. Pas een aangepaste hashtag toe of gebruik Aangepast bereik uit Chat om er een toe te voegen.",
     "floodScopeRemoveSaved": "Verwijderen uit opgeslagen bereiken",
     "floodScopeRemoveSavedAria": "Verwijder {{hashtag}} uit opgeslagen bereiken",
-    "floodScopeInvalidHashtag": "Voer een geldige regio-hashtag in (bijvoorbeeld #mijnregio)."
+    "floodScopeInvalidHashtag": "Voer een geldige regio-hashtag in (bijvoorbeeld #mijnregio).",
+    "sendPositionDisabledShareOff": "Schakel Mijn locatie delen in de → GPS / locatie van de app in om uw positie naar het apparaat te verzenden.",
+    "clientMuteGpsSuppressed": "Client Mute toegepast — GPS-uitzendingen en MQTT-kaartrapportage uitgeschakeld op het apparaat.",
+    "validationShortNameTooLong": "Korte naam moet binnen 4 UTF-8 bytes passen",
+    "validationShortNameEmojiTooLarge": "Dit teken is te groot voor korte naam (max. 4 UTF-8 bytes per naam)"
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",
@@ -4440,7 +4447,8 @@
     "openGlobalMapAria": "Open RMAP v4 globale kaart op rmap.world",
     "applyPartialSuccess": "RMAP-instellingen toegepast op {{applied}} van {{total}} interfaces.",
     "disablePartialSuccess": "RMAP-publicatie uitgeschakeld op {{applied}} van {{total}} interfaces.",
-    "hint": "Maakt RMAP-publicatie en app-GPS-coördinaten mogelijk op alle ingeschakelde RMAP-compatibele interfaces (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). Het selectievakje is alleen ingeschakeld als elke in aanmerking komende interface publiceert; een gedeeltelijke status is onbepaald. Controleer opnieuw om de rest te synchroniseren. Gebruik per interface RMAP-schakelaars op Verbinding voor nauwkeurige controle. LoRa-paden maken ook transport en de rmap.world-hub mogelijk."
+    "hint": "Maakt RMAP-publicatie en app-GPS-coördinaten mogelijk op alle ingeschakelde RMAP-compatibele interfaces (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). Het selectievakje is alleen ingeschakeld als elke in aanmerking komende interface publiceert; een gedeeltelijke status is onbepaald. Controleer opnieuw om de rest te synchroniseren. Gebruik per interface RMAP-schakelaars op Verbinding voor nauwkeurige controle. LoRa-paden maken ook transport en de rmap.world-hub mogelijk.",
+    "disabledShareOff": "Schakel Mijn locatie delen in app → GPS / locatie in om op RMAP te publiceren."
   },
   "reticulumTopology": {
     "title": "Netwerktopologie",

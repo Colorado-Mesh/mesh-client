@@ -390,7 +390,10 @@
     "themeResetFailed": "Impossibile reimpostare i colori.",
     "messageActionsBarBgVisible": "Mostra lo sfondo",
     "rrcUnreadAllRoomMessages": "RRC non letto per tutti i messaggi della stanza",
-    "rrcUnreadAllRoomMessagesHint": "Quando è acceso, qualsiasi nuovo messaggio della stanza RRC indica che non è stato letto ed è in grado di riprodurre un suono del canale. Disattiva per gli avvisi in stile IRC: solo messaggi diretti e @menzioni."
+    "rrcUnreadAllRoomMessagesHint": "Quando è acceso, qualsiasi nuovo messaggio della stanza RRC indica che non è stato letto ed è in grado di riprodurre un suono del canale. Disattiva per gli avvisi in stile IRC: solo messaggi diretti e @menzioni.",
+    "shareMyLocation": "Condividi la mia posizione",
+    "shareMyLocationOffInfo": "La condivisione della posizione è disattivata: l'aggiornamento GPS dell'host e l'invio mesh sono disabilitati. Abilita Condividi la mia posizione qui sopra per utilizzare l'aggiornamento automatico o inviare la tua posizione.",
+    "shareMyLocationHint": "Se abilitata, questa app potrebbe cercare la tua posizione su questo computer e inviarla tramite Meshtastic, MeshCore o Reticulum (chat share, radio push, RMAP). Se disabilitato, le ricerche GPS degli host e l'invio delle app sono disattivati; le coordinate statiche funzionano ancora solo per la tua mappa locale. Una radio con il proprio GPS può ancora mostrare la tua posizione a livello locale. Il firmware del dispositivo potrebbe continuare a trasmettere fino a quando non si regolano le impostazioni Radio o Moduli."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -3451,7 +3454,7 @@
       },
       "1": {
         "label": "Disattivazione dell'audio del cliente",
-        "description": "Client che non trasmette"
+        "description": "Client che non inoltra pacchetti. L'applicazione di questo ruolo disabilita anche le trasmissioni GPS e il report delle mappe sul dispositivo."
       },
       "2": {
         "label": "Router",
@@ -3951,7 +3954,11 @@
     "floodScopeSavedEmpty": "Nessun ambito ancora salvato. Applica un hashtag personalizzato o utilizza l'ambito personalizzato dalla chat per aggiungerne uno.",
     "floodScopeRemoveSaved": "Rimuovi dagli ambiti salvati",
     "floodScopeRemoveSavedAria": "Rimuovi {{hashtag}} dagli ambiti salvati",
-    "floodScopeInvalidHashtag": "Inserisci un hashtag regionale valido (ad esempio #myregion)."
+    "floodScopeInvalidHashtag": "Inserisci un hashtag regionale valido (ad esempio #myregion).",
+    "sendPositionDisabledShareOff": "Abilita Condividi la mia posizione nell'app → GPS / Posizione per inviare la tua posizione al dispositivo.",
+    "clientMuteGpsSuppressed": "Mute client applicato — Trasmissioni GPS e reporting mappa MQTT disabilitati sul dispositivo.",
+    "validationShortNameTooLong": "Il nome breve deve rientrare in 4 byte UTF-8",
+    "validationShortNameEmojiTooLarge": "Questo carattere è troppo grande per il nome breve (massimo 4 byte UTF-8 per nome)"
   },
   "rawPacketLog": {
     "filterPackets": "Filtra i pacchetti",
@@ -4440,7 +4447,8 @@
     "openGlobalMapAria": "Apri la mappa globale RMAP v4 su rmap.world",
     "applyPartialSuccess": "Impostazioni RMAP applicate alle interfacce {{applied}} di {{total}}.",
     "disablePartialSuccess": "Pubblicazione RMAP disabilitata sulle interfacce {{applied}} di {{total}}.",
-    "hint": "Abilita la pubblicazione RMAP e le coordinate GPS dell'app su tutte le interfacce abilitate con funzionalità RMAP (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). La casella di controllo è attiva solo quando tutte le interfacce idonee sono in fase di pubblicazione; uno stato parziale è indeterminato: ricontrolla per sincronizzare il resto. Utilizza RMAP per interfaccia su Connessione per un controllo accurato. I percorsi LoRa consentono anche il trasporto e l'hub rmap.world."
+    "hint": "Abilita la pubblicazione RMAP e le coordinate GPS dell'app su tutte le interfacce abilitate con funzionalità RMAP (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). La casella di controllo è attiva solo quando tutte le interfacce idonee sono in fase di pubblicazione; uno stato parziale è indeterminato: ricontrolla per sincronizzare il resto. Utilizza RMAP per interfaccia su Connessione per un controllo accurato. I percorsi LoRa consentono anche il trasporto e l'hub rmap.world.",
+    "disabledShareOff": "Abilita Condividi la mia posizione nell'app → GPS / Posizione per pubblicare su RMAP."
   },
   "reticulumTopology": {
     "title": "Topologia di rete.",

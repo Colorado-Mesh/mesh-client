@@ -133,6 +133,7 @@ import {
   meshcoreIdentityHasFullKeyPair,
   tryPersistMeshcorePublicKeyFromRadio,
 } from '../lib/letsMeshJwt';
+import { canTransmitLocation } from '../lib/locationTransmit';
 import { runLoraRfReconnectAttempt } from '../lib/loraRfReconnectAttempt';
 import {
   clearHeardRepeatWindow,
@@ -4984,6 +4985,7 @@ export function useMeshcoreRuntime() {
   const sendPositionToDeviceMeshCore = useCallback(
     async (lat: number, lon: number) => {
       if (!connRef.current) return;
+      if (!canTransmitLocation({ protocol: 'meshcore' })) return;
       const latInt = Math.round(lat * MESHCORE_COORD_SCALE);
       const lonInt = Math.round(lon * MESHCORE_COORD_SCALE);
       try {
@@ -7883,7 +7885,11 @@ export function useMeshcoreRuntime() {
         });
       }
 
-      if (pos.source === 'static' && connRef.current) {
+      if (
+        pos.source === 'static' &&
+        connRef.current &&
+        canTransmitLocation({ protocol: 'meshcore' })
+      ) {
         // Do not write SetAdvertLatLon during initConn contacts dump — OpenHop FINs mid-dump when
         // GPS/stats/advert RPCs interleave with getContacts (meshcore.js shared Ok/Err).
         if (meshcoreInitConnInFlightRef.current) {

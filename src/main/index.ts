@@ -23,7 +23,6 @@ import {
 import fs from 'fs';
 import net from 'net';
 import path from 'path';
-import { pathToFileURL } from 'url';
 import zlib from 'zlib';
 
 import type { MQTTSettings } from '../renderer/lib/types';
@@ -163,6 +162,7 @@ import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { type NobleBleDevice, NobleBleManager, type NobleSessionId } from './noble-ble-manager';
 import { readFileUpTo } from './readFileUpTo';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
+import { resolveRendererLoadUrl } from './resolveRendererLoadUrl';
 import {
   readReticulumAttachmentBytes,
   takeReticulumAttachmentAudioRateToken,
@@ -2104,24 +2104,33 @@ function createWindow() {
   });
 
   // Load the app
-  if (process.env.VITE_DEV_SERVER_URL) {
-    // Same startup diagnostics as packaged build so Log panel captures them in dev too
-    console.debug('[Startup] dev server URL:', sanitizeLogMessage(process.env.VITE_DEV_SERVER_URL));
+  void (async () => {
+    const distIndexPath = path.join(__dirname, '../../dist/renderer/index.html');
+    const resolved = await resolveRendererLoadUrl({
+      packaged: app.isPackaged,
+      devServerUrl: process.env.VITE_DEV_SERVER_URL,
+      distIndexPath,
+    });
+    console.debug('[Startup] renderer load source:', resolved.source);
+    console.debug('[Startup] renderer URL:', sanitizeLogMessage(resolved.url));
     console.debug('[Startup] app.isPackaged:', app.isPackaged);
     console.debug('[Startup] userData:', sanitizeLogMessage(app.getPath('userData')));
-    void mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-
-    mainWindow.webContents.openDevTools();
-  } else {
-    const indexPath = path.join(__dirname, '../../dist/renderer/index.html');
-    const indexUrl = pathToFileURL(indexPath).toString();
-    // Use loadURL with an explicit HTTP referrer so OpenStreetMap tile requests
-    // from the packaged app include a valid Referer header and comply with the
-    // OSM tile usage policy for web-style traffic.
-    void mainWindow.loadURL(indexUrl, {
-      httpReferrer: OSM_HTTP_REFERRER,
-    });
-  }
+    if (resolved.openDevTools) {
+      mainWindow.webContents.openDevTools();
+    }
+    if (resolved.source === 'dist') {
+      await mainWindow.loadURL(resolved.url, {
+        httpReferrer: OSM_HTTP_REFERRER,
+      });
+      return;
+    }
+    await mainWindow.loadURL(resolved.url);
+  })().catch((e: unknown) => {
+    console.error(
+      '[main] Failed to load renderer:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+  });
 
   mainWindow.on('closed', () => {
     setMainWindow(null);

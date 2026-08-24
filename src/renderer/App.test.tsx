@@ -405,6 +405,7 @@ vi.mock('./lib/appSettingsStorage', () => ({
   getAppSettingsRaw: vi.fn().mockReturnValue(null),
   mergeAppSetting: vi.fn(),
   mergeAppSettingsPartial: vi.fn(),
+  isShareMyLocationEnabled: vi.fn().mockReturnValue(true),
 }));
 
 vi.mock('./lib/firmwareCheck', () => ({

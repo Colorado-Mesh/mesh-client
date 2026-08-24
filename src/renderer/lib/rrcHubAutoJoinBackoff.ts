@@ -90,11 +90,23 @@ export function clearRrcHubAutoJoinBackoff(hub: string): void {
  * Excludes local_disconnect / cancel (user or superseded connect) and listen-first
  * "requires live rns-stack" (HTTP up before attach_live finishes — retry, do not cool down).
  */
+export function isRrcLinkProofNotReadyError(reason: string | null | undefined): boolean {
+  if (!reason) return false;
+  return /link proof|timed out waiting for link/i.test(reason);
+}
+
+export function isRrcPathNotReadyError(reason: string | null | undefined): boolean {
+  if (!reason) return false;
+  return /path not ready/i.test(reason);
+}
+
 export function isRrcAutoJoinBackoffWorthyReason(reason: string | null | undefined): boolean {
   if (!reason) return true; // unknown initial-connect failure — still back off
   if (/local_disconnect/i.test(reason)) return false;
   if (/cancelled/i.test(reason)) return false;
   if (isRrcLiveNotReadyError(reason)) return false;
+  if (isRrcLinkProofNotReadyError(reason)) return false;
+  if (isRrcPathNotReadyError(reason)) return false;
   return true;
 }
 

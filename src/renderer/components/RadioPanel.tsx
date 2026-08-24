@@ -23,11 +23,21 @@ import {
 } from '@/shared/meshClientDeepLink';
 import { isMeshcorePathHashMode, type MeshcorePathHashMode } from '@/shared/meshcorePathHash';
 import {
+  meshtasticDeviceRoleFromConfigSlice,
+  resolveAppliedMeshtasticDeviceRole,
+} from '@/shared/meshtasticAppliedDeviceRole';
+import {
   formatMeshtasticBluetoothPin,
   parseMeshtasticBluetoothPin,
   sanitizeMeshtasticBluetoothPinInput,
 } from '@/shared/meshtasticBluetoothPin';
 import type { ApplyChannelSetResult } from '@/shared/meshtasticChannelApply';
+import {
+  MESHTASTIC_SHORT_NAME_VALIDATION_I18N_KEYS,
+  MeshtasticShortNameValidationError,
+  truncateMeshtasticShortName,
+  validateMeshtasticShortName,
+} from '@/shared/meshtasticShortNameLimits';
 import {
   generateConfigUrl,
   type MeshtasticLoraConfig,
@@ -38,6 +48,16 @@ import {
 } from '@/shared/meshtasticUrlEncoder';
 
 import { serializeErrorLike } from '../hooks/meshcore/meshcoreHookPreamble';
+
+function setOwnerApplyErrorMessage(
+  err: unknown,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (err instanceof MeshtasticShortNameValidationError) {
+    return t(err.i18nKey);
+  }
+  return err instanceof Error ? err.message : t('common.unknown');
+}
 import {
   type OffloadContactsFromRadioFn,
   useMeshcoreContactCapacity,
@@ -46,6 +66,7 @@ import { useSyncFormFromConfig } from '../hooks/useSyncFormFromConfig';
 import { getAppSettingsRaw, mergeAppSetting } from '../lib/appSettingsStorage';
 import { DEFAULT_APP_SETTINGS_SHARED } from '../lib/defaultAppSettings';
 import type { OurPosition } from '../lib/gpsSource';
+import { canTransmitLocation } from '../lib/locationTransmit';
 import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../lib/meshcore/meshcoreHookTypes';
 import type { MeshcoreAutoaddWireState } from '../lib/meshcoreContactAutoAdd';
 import {
@@ -64,6 +85,11 @@ import {
   meshcoreSelfInfoBwToDisplayKhz,
   meshcoreSelfInfoFreqToDisplayHz,
 } from '../lib/meshcoreUtils';
+import {
+  buildClientMuteMqttSuppressValue,
+  buildClientMutePositionSuppressValue,
+  MESHTASTIC_CLIENT_MUTE_ROLE,
+} from '../lib/meshtastic/meshtasticClientMuteGpsSuppression';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { ConfigTargetContext, RemoteConfigChannelsTailStatus } from '../lib/types';
@@ -168,6 +194,11 @@ interface Props {
   }) => Promise<void>;
   meshcoreAutoadd?: MeshcoreAutoaddWireState | null;
   meshtasticLoraConfig?: MeshtasticLoraConfig | null;
+  /** Cached Meshtastic ModuleConfig slices for merge-on-apply (local device or remote snapshot). */
+  moduleConfigs?: Record<string, unknown>;
+  onSetModuleConfig?: (payload: {
+    payloadVariant: { case: string; value: Record<string, unknown> };
+  }) => Promise<void>;
   /** Cached Meshtastic Config slices for merge-on-apply (local device or remote snapshot). */
   meshtasticConfigSlices?: Record<string, unknown>;
   onApplyChannelSet?: (
@@ -693,6 +724,8 @@ export default function RadioPanel({
   loraConfig,
   meshtasticLoraConfig,
   meshtasticConfigSlices,
+  moduleConfigs,
+  onSetModuleConfig,
   onApplyChannelSet,
   meshcoreSelfInfo,
   meshcoreContactsForTelemetry,
@@ -731,10 +764,17 @@ export default function RadioPanel({
   useEffect(() => {
     if (deviceOwner) {
       setLongName(deviceOwner.longName);
-      setShortName(deviceOwner.shortName);
+      setShortName(truncateMeshtasticShortName(deviceOwner.shortName));
       setIsLicensed(deviceOwner.isLicensed);
     }
   }, [deviceOwner]);
+
+  const shortNameValidationIssue = capabilities?.hasChannelConfig
+    ? validateMeshtasticShortName(shortName)
+    : null;
+  const shortNameValidationError = shortNameValidationIssue
+    ? MESHTASTIC_SHORT_NAME_VALIDATION_I18N_KEYS[shortNameValidationIssue]
+    : null;
 
   // ─── LoRa settings ────────────────────────────────────────────
   const [region, setRegion] = useState(1);
@@ -1102,12 +1142,44 @@ export default function RadioPanel({
     disabled || !positionConfigReady || capabilities?.hasFullPositionConfig === false;
   const networkApplyDisabled = disabled || !networkConfigReady;
 
+  const locationSendAllowed = useMemo(() => {
+    if (capabilities?.hasCompanionContactManagementConfig) {
+      return canTransmitLocation({ protocol: 'meshcore' });
+    }
+    const appliedRole = resolveAppliedMeshtasticDeviceRole(
+      meshtasticDeviceRoleFromConfigSlice(meshtasticConfigSlices?.device),
+      null,
+    );
+    return canTransmitLocation({ protocol: 'meshtastic', meshtasticRole: appliedRole });
+  }, [capabilities?.hasCompanionContactManagementConfig, meshtasticConfigSlices?.device]);
+
+  const applyClientMuteGpsSuppression = async () => {
+    if (!onSetModuleConfig) return;
+    const positionMerged = buildClientMutePositionSuppressValue(meshtasticConfigSlices?.position);
+    await onSetConfig({
+      payloadVariant: {
+        case: 'position',
+        value: positionMerged,
+      },
+    });
+    const mqttMerged = buildClientMuteMqttSuppressValue(moduleConfigs?.mqtt);
+    await onSetModuleConfig({
+      payloadVariant: {
+        case: 'mqtt',
+        value: mqttMerged,
+      },
+    });
+    await onCommit();
+    setGpsMode(0);
+    setPositionBroadcastSecs(0);
+  };
+
   const applyConfig = async (
     sectionLabel: string,
     configCase: string,
     configValue: Record<string, unknown>,
-  ) => {
-    if (!isConnected) return;
+  ): Promise<boolean> => {
+    if (!isConnected) return false;
     clearMeshtasticClientNotification();
     setApplyingSection(configCase);
     setStatus(t('radioPanel.applyStatusApplying', { section: sectionLabel }));
@@ -1126,6 +1198,7 @@ export default function RadioPanel({
       try {
         await onCommit();
         setStatus(t('radioPanel.applyStatusSuccess', { section: sectionLabel }));
+        return true;
       } catch (err: unknown) {
         // catch-no-log-ok commit failure surfaced in panel status text
         setStatus(
@@ -1134,6 +1207,7 @@ export default function RadioPanel({
             message: formatMeshtasticModuleApplyError(err, t),
           }),
         );
+        return false;
       }
     } catch (err) {
       console.warn('[RadioPanel] apply section failed ' + errLikeToLogString(err));
@@ -1142,6 +1216,7 @@ export default function RadioPanel({
           message: formatMeshtasticModuleApplyError(err, t),
         }),
       );
+      return false;
     } finally {
       setApplyingSection(null);
     }
@@ -1407,6 +1482,14 @@ export default function RadioPanel({
         title={t('radioPanel.sectionDeviceUser')}
         onApply={async () => {
           if (!onSetOwner) return;
+          if (shortNameValidationIssue) {
+            setStatus(
+              t('radioPanel.applyStatusFailed', {
+                message: t(shortNameValidationError!),
+              }),
+            );
+            return;
+          }
           setApplyingSection('user');
           setStatus(t('radioPanel.applyUserApplying'));
           try {
@@ -1416,7 +1499,7 @@ export default function RadioPanel({
             console.warn('[RadioPanel] setOwner failed:', err instanceof Error ? err.message : err);
             setStatus(
               t('radioPanel.applyStatusFailed', {
-                message: err instanceof Error ? err.message : t('common.unknown'),
+                message: setOwnerApplyErrorMessage(err, t),
               }),
             );
           } finally {
@@ -1424,7 +1507,7 @@ export default function RadioPanel({
           }
         }}
         applying={applyingSection === 'user'}
-        disabled={disabled || !onSetOwner}
+        disabled={disabled || !onSetOwner || !!shortNameValidationIssue}
       >
         <div className="space-y-1">
           <label htmlFor="radio-long-name" className="text-muted text-sm">
@@ -1454,7 +1537,7 @@ export default function RadioPanel({
               : t('radioPanel.longNameHintMeshtastic')}
           </p>
         </div>
-        {capabilities?.protocol !== 'meshcore' && (
+        {capabilities?.hasChannelConfig && (
           <>
             <div className="space-y-1">
               <label htmlFor="radio-short-name" className="text-muted text-sm">
@@ -1465,14 +1548,20 @@ export default function RadioPanel({
                 type="text"
                 value={shortName}
                 onChange={(e) => {
-                  setShortName(e.target.value.slice(0, 4));
+                  setShortName(truncateMeshtasticShortName(e.target.value));
                 }}
-                maxLength={4}
                 disabled={disabled}
                 placeholder={t('radioPanel.namePlaceholder')}
+                aria-invalid={shortNameValidationIssue != null}
+                aria-describedby={shortNameValidationIssue ? 'radio-short-name-error' : undefined}
                 className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
               />
               <p className="text-muted text-xs">{t('radioPanel.shortNameHint')}</p>
+              {shortNameValidationIssue ? (
+                <p id="radio-short-name-error" className="text-xs text-red-400" role="alert">
+                  {t(shortNameValidationError!)}
+                </p>
+              ) : null}
             </div>
             <ConfigToggle
               label={t('radioPanel.licensedHamLabel')}
@@ -1963,8 +2052,8 @@ export default function RadioPanel({
       {capabilities?.hasDeviceRoleConfig !== false && (
         <ConfigSection
           title={t('radioPanel.sectionDeviceRole')}
-          onApply={() =>
-            applyConfig(t('radioPanel.sectionDeviceRole'), 'device', {
+          onApply={async () => {
+            const applied = await applyConfig(t('radioPanel.sectionDeviceRole'), 'device', {
               role: deviceRole,
               rebroadcastMode,
               nodeInfoBroadcastSecs,
@@ -1974,8 +2063,27 @@ export default function RadioPanel({
               ledHeartbeatDisabled,
               buttonGpio,
               buzzerGpio,
-            })
-          }
+            });
+            if (applied && deviceRole === MESHTASTIC_CLIENT_MUTE_ROLE && onSetModuleConfig) {
+              try {
+                clearMeshtasticClientNotification();
+                setApplyingSection('clientMuteGps');
+                await applyClientMuteGpsSuppression();
+                setStatus(t('radioPanel.clientMuteGpsSuppressed'));
+              } catch (err) {
+                console.warn(
+                  '[RadioPanel] Client Mute GPS suppression failed ' + errLikeToLogString(err),
+                );
+                setStatus(
+                  t('radioPanel.applyStatusFailed', {
+                    message: formatMeshtasticModuleApplyError(err, t),
+                  }),
+                );
+              } finally {
+                setApplyingSection(null);
+              }
+            }
+          }}
           applying={applyingSection === 'device'}
           disabled={deviceApplyDisabled}
         >
@@ -2304,7 +2412,10 @@ export default function RadioPanel({
                   );
                 }
               }}
-              disabled={disabled || !onSendPositionToDevice}
+              disabled={disabled || !onSendPositionToDevice || !locationSendAllowed}
+              title={
+                !locationSendAllowed ? t('radioPanel.sendPositionDisabledShareOff') : undefined
+              }
               className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
             >
               {t('radioPanel.sendPositionToDevice')}

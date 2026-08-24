@@ -1,9 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import * as pathReady from '@/renderer/lib/reticulum/reticulumRrcPathReady';
+import * as transportReady from '@/renderer/lib/reticulum/reticulumRrcTransportReady';
 import {
   isReticulumRnsLiveReady,
   isReticulumSidecarRunning,
@@ -51,6 +53,13 @@ describe('RrcPanel', () => {
     resetRrcRoomHistoryForTests();
     hydrateAxeThemeColors(document.documentElement);
     vi.mocked(isReticulumSidecarRunning).mockResolvedValue(false);
+    vi.spyOn(transportReady, 'probeReticulumRrcTransportReady').mockResolvedValue({ ready: true });
+    vi.spyOn(pathReady, 'probeReticulumRrcPathReady').mockResolvedValue({
+      ready: true,
+      hops: 2,
+      iface: 'Ratspeak',
+      source: 'passive',
+    });
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({ ok: true });
     vi.mocked(window.electronAPI.reticulum.rrc.disconnect).mockReset();
@@ -67,6 +76,10 @@ describe('RrcPanel', () => {
     clearRrcOpenDms(hubA);
     clearRrcOpenDms(hubB);
     vi.mocked(window.electronAPI.db.listRrcMessages).mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('clears auto-join backoff on explicit Connect', async () => {

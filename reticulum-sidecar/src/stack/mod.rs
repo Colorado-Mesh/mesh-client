@@ -1169,15 +1169,23 @@ impl StackHandle {
     }
 
     pub async fn request_peer_path(&self, hash: &str) -> Result<(), String> {
+        self.request_peer_path_with_opts(hash, false).await
+    }
+
+    pub async fn request_peer_path_with_opts(&self, hash: &str, force: bool) -> Result<(), String> {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live.get() {
-            let res = live.request_path(hash).await;
+            let res = if force {
+                live.request_path_force(hash).await
+            } else {
+                live.request_path(hash).await
+            };
             if res.is_ok() {
                 self.emit_event("peers_updated", serde_json::json!({ "hash": hash }));
             }
             return res;
         }
-        let _ = hash;
+        let _ = (hash, force);
         Ok(())
     }
 

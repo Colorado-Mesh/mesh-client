@@ -390,7 +390,10 @@
     "themeResetFailed": "无法重置颜色。",
     "messageActionsBarBgVisible": "显示背景",
     "rrcUnreadAllRoomMessages": "所有房间消息的RRC未读",
-    "rrcUnreadAllRoomMessagesHint": "开启时，任何新的RRC房间消息都会标记为未读，并且可以播放频道声音。关闭IRC样式警报：仅限直接消息和@提及。"
+    "rrcUnreadAllRoomMessagesHint": "开启时，任何新的RRC房间消息都会标记为未读，并且可以播放频道声音。关闭IRC样式警报：仅限直接消息和@提及。",
+    "shareMyLocation": "分享我的位置",
+    "shareMyLocationOffInfo": "位置共享已关闭—主机GPS刷新和网格发送已禁用。启用在上方分享我的位置，以使用自动刷新或发送您的位置。",
+    "shareMyLocationHint": "启用后，此应用可能会在此计算机上查找您的位置，并通过Meshtastic、MeshCore或Reticulum （聊天共享、无线电推送、RMAP ）发送。禁用后，主机GPS查找和应用程序发送将关闭；静态坐标仍然仅适用于您的本地地图。带有GPS的收音机可能仍会在本地显示您的位置。在您调整收音机或模块设置之前，设备固件仍可能进行广播。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -3450,8 +3453,8 @@
         "label": "客户端"
       },
       "1": {
-        "description": "不传输的客户端",
-        "label": "客户端静音"
+        "label": "客户端静音",
+        "description": "不转发数据包的客户端。应用此角色还会禁用设备上的GPS广播和地图报告。"
       },
       "2": {
         "description": "专用路由器/中继器",
@@ -3951,7 +3954,11 @@
     "floodScopeSavedEmpty": "尚未保存范围。应用自定义主题标签或使用聊天中的自定义范围来添加标签。",
     "floodScopeRemoveSaved": "从保存的范围中删除",
     "floodScopeRemoveSavedAria": "从保存的范围中删除 {{hashtag}}",
-    "floodScopeInvalidHashtag": "输入有效的区域标签（例如#myregion）。"
+    "floodScopeInvalidHashtag": "输入有效的区域标签（例如#myregion）。",
+    "sendPositionDisabledShareOff": "启用在应用程序→GPS/位置中共享我的位置，以便将您的位置发送到设备。",
+    "clientMuteGpsSuppressed": "已应用客户端静音—在设备上禁用GPS广播和MQTT地图报告。",
+    "validationShortNameTooLong": "短名称必须在4个UTF-8字节以内",
+    "validationShortNameEmojiTooLarge": "此字符对于短名称太大（每个名称最多4个UTF-8字节）"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",
@@ -4440,7 +4447,8 @@
     "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图",
     "applyPartialSuccess": "RMAP设置已应用于{{applied}}/{{total}}接口。",
     "disablePartialSuccess": "在{{applied}}/{{total}}接口上禁用RMAP发布。",
-    "hint": "在所有启用的支持 RMAP 的接口（RNode/Multi、KISS、BLE 对等、I2P、UDP、管道）上启用 RMAP 发布和应用程序 GPS 坐标。仅当每个符合条件的接口都在发布时，该复选框才会打开；部分状态是不确定的——再次检查以同步其余部分。使用连接上的每个接口 RMAP 切换进行精细控制。 LoRa 路径还支持传输和 rmap.world 中心。"
+    "hint": "在所有启用的支持 RMAP 的接口（RNode/Multi、KISS、BLE 对等、I2P、UDP、管道）上启用 RMAP 发布和应用程序 GPS 坐标。仅当每个符合条件的接口都在发布时，该复选框才会打开；部分状态是不确定的——再次检查以同步其余部分。使用连接上的每个接口 RMAP 切换进行精细控制。 LoRa 路径还支持传输和 rmap.world 中心。",
+    "disabledShareOff": "启用在应用程序→GPS/位置中共享我的位置以在RMAP上发布。"
   },
   "reticulumTopology": {
     "title": "网络拓扑图",

@@ -2120,7 +2120,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
         }
         localInterfacesRef.current = interfaces;
         logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
-        setQueueStatus(aggregateReticulumLocalRfTxQueue(interfaces));
+        const queueAgg = aggregateReticulumLocalRfTxQueue(interfaces);
+        setQueueStatus(queueAgg);
         const health = { interfaces, osSerialPorts };
         const peerCount = useReticulumPeerStore.getState().peers.size;
         // Large meshes: rely on WS-debounced diagnostics; avoid pairing a heavy

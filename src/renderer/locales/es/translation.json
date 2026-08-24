@@ -390,7 +390,10 @@
     "themeResetFailed": "Error al restablecer los colores.",
     "messageActionsBarBgVisible": "Mostrar fondo",
     "rrcUnreadAllRoomMessages": "RRC no leído para todos los mensajes de la habitación",
-    "rrcUnreadAllRoomMessagesHint": "Cuando está activado, cualquier mensaje nuevo de la sala RRC marca como no leído y puede reproducir un sonido de canal. Desactivar para alertas estilo IRC: solo mensajes directos y @menciones."
+    "rrcUnreadAllRoomMessagesHint": "Cuando está activado, cualquier mensaje nuevo de la sala RRC marca como no leído y puede reproducir un sonido de canal. Desactivar para alertas estilo IRC: solo mensajes directos y @menciones.",
+    "shareMyLocation": "Compartir mi Ubicación",
+    "shareMyLocationOffInfo": "El uso compartido de la ubicación está desactivado: la actualización del GPS del anfitrión y el envío en malla están desactivados. Habilite Compartir mi ubicación arriba para usar la actualización automática o enviar su posición.",
+    "shareMyLocationHint": "Cuando está habilitada, esta aplicación puede buscar tu ubicación en este ordenador y enviarla a través de Meshtastic, MeshCore o Reticulum (chat compartido, radio push, RMAP). Cuando está desactivado, las búsquedas de GPS del anfitrión y el envío de aplicaciones están desactivados; las coordenadas estáticas siguen funcionando solo para tu mapa local. Una radio con su propio GPS aún puede mostrar su posición localmente. El firmware del dispositivo aún puede transmitirse hasta que ajuste la configuración de Radio o Módulos."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -3451,7 +3454,7 @@
       },
       "1": {
         "label": "Silencio del cliente",
-        "description": "Cliente que no transmite"
+        "description": "Cliente que no reenvía paquetes. La aplicación de este rol también desactiva las transmisiones GPS y el informe de mapas en el dispositivo."
       },
       "2": {
         "label": "Enrutador",
@@ -3951,7 +3954,11 @@
     "floodScopeSavedEmpty": "Aún no hay ámbitos guardados. Aplique un hashtag personalizado o use el alcance personalizado del chat para agregar uno.",
     "floodScopeRemoveSaved": "Eliminar de ámbitos guardados",
     "floodScopeRemoveSavedAria": "Eliminar {{hashtag}} de los ámbitos guardados",
-    "floodScopeInvalidHashtag": "Ingrese un hashtag de región válido (por ejemplo, #miregión)."
+    "floodScopeInvalidHashtag": "Ingrese un hashtag de región válido (por ejemplo, #miregión).",
+    "sendPositionDisabledShareOff": "Habilitar Compartir mi ubicación en la aplicación → GPS / Ubicación para enviar su posición al dispositivo.",
+    "clientMuteGpsSuppressed": "Silencio del cliente aplicado: transmisiones GPS e informes de mapas MQTT deshabilitados en el dispositivo.",
+    "validationShortNameTooLong": "El nombre corto debe caber dentro de 4 bytes UTF-8",
+    "validationShortNameEmojiTooLarge": "Este carácter es demasiado grande para el nombre corto (máximo 4 UTF-8 bytes por nombre)"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar paquetes",
@@ -4440,7 +4447,8 @@
     "openGlobalMapAria": "Abra el mapa global de RMAP v4 en rmap.world",
     "applyPartialSuccess": "Configuración de RMAP aplicada a las interfaces {{applied}} de {{total}}.",
     "disablePartialSuccess": "Publicación RMAP deshabilitada en las interfaces {{applied}} de {{total}}.",
-    "hint": "Habilita la publicación de RMAP y las coordenadas GPS de la aplicación en todas las interfaces habilitadas con capacidad RMAP (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). La casilla de verificación está activada solo cuando se están publicando todas las interfaces elegibles; un estado parcial es indeterminado; verifique nuevamente para sincronizar el resto. Utilice RMAP por interfaz para alternar en Conexión para un control preciso. Las rutas LoRa también permiten el transporte y el centro rmap.world."
+    "hint": "Habilita la publicación de RMAP y las coordenadas GPS de la aplicación en todas las interfaces habilitadas con capacidad RMAP (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). La casilla de verificación está activada solo cuando se están publicando todas las interfaces elegibles; un estado parcial es indeterminado; verifique nuevamente para sincronizar el resto. Utilice RMAP por interfaz para alternar en Conexión para un control preciso. Las rutas LoRa también permiten el transporte y el centro rmap.world.",
+    "disabledShareOff": "Habilitar Compartir mi ubicación en la aplicación → GPS / Ubicación para publicar en RMAP."
   },
   "reticulumTopology": {
     "title": "Topología de red",

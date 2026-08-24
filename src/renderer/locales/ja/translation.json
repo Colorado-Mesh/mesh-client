@@ -390,7 +390,10 @@
     "themeResetFailed": "色をリセットできませんでした。",
     "messageActionsBarBgVisible": "背景を表示",
     "rrcUnreadAllRoomMessages": "すべてのルームメッセージのRRC未読",
-    "rrcUnreadAllRoomMessagesHint": "オンにすると、新しいRRCルームメッセージは未読になり、チャンネルサウンドを再生できます。IRCスタイルのアラートをオフにする：ダイレクトメッセージと@メンションのみ。"
+    "rrcUnreadAllRoomMessagesHint": "オンにすると、新しいRRCルームメッセージは未読になり、チャンネルサウンドを再生できます。IRCスタイルのアラートをオフにする：ダイレクトメッセージと@メンションのみ。",
+    "shareMyLocation": "現在位置を共有",
+    "shareMyLocationOffInfo": "位置情報の共有がオフになっています。ホストのGPSリフレッシュとメッシュ送信は無効になっています。自動更新を使用するか、ポジションを送信するには、上の「現在地を共有」を有効にします。",
+    "shareMyLocationHint": "有効にすると、このアプリはこのコンピューター上の現在地を検索し、Meshtastic、MeshCore、またはReticulum （チャット共有、ラジオプッシュ、RMAP ）を介して送信する場合があります。無効にすると、ホストのGPSルックアップとアプリの送信がオフになります。静的座標はローカルマップでのみ機能します。独自のGPSを備えたラジオは、依然としてあなたの位置をローカルに表示している可能性があります。ラジオまたはモジュールの設定を調整するまで、デバイスファームウェアがブロードキャストされることがあります。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -3451,7 +3454,7 @@
       },
       "1": {
         "label": "クライアントのミュート",
-        "description": "送信しないクライアント"
+        "description": "パケットを転送しないクライアント。この役割を適用すると、デバイス上のGPSブロードキャストと地図レポートも無効になります。"
       },
       "2": {
         "label": "ルーター",
@@ -3951,7 +3954,11 @@
     "floodScopeSavedEmpty": "保存されたスコープはまだありません。カスタム ハッシュタグを適用するか、チャットからカスタム スコープを使用してハッシュタグを追加します。",
     "floodScopeRemoveSaved": "保存されたスコープから削除する",
     "floodScopeRemoveSavedAria": "保存されたスコープから {{hashtag}} を削除します",
-    "floodScopeInvalidHashtag": "有効な地域ハッシュタグ (#myregion など) を入力します。"
+    "floodScopeInvalidHashtag": "有効な地域ハッシュタグ (#myregion など) を入力します。",
+    "sendPositionDisabledShareOff": "[アプリの→GPS/位置情報で位置情報を共有]を有効にして、位置情報をデバイスに送信します。",
+    "clientMuteGpsSuppressed": "クライアントミュートが適用されました— GPSブロードキャストとMQTTマップレポートがデバイスで無効になりました。",
+    "validationShortNameTooLong": "ショートネームは4 UTF -8バイト以内でなければなりません",
+    "validationShortNameEmojiTooLarge": "この文字はショートネームには大きすぎます（名前ごとに最大4つのUTF -8バイト）"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",
@@ -4440,7 +4447,8 @@
     "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く",
     "applyPartialSuccess": "RMAP設定は、{{total}}インターフェイスの{{applied}}に適用されます。",
     "disablePartialSuccess": "RMAPの公開は、{{total}}インターフェイスの{{applied}}で無効になっています。",
-    "hint": "すべての有効な RMAP 対応インターフェイス (RNode/Multi、KISS、BLE ピア、I2P、UDP、パイプ) で RMAP 公開とアプリ GPS 座標を有効にします。このチェックボックスは、対象となるすべてのインターフェイスが公開されている場合にのみオンになります。部分的な状態は不定です。残りを同期するにはもう一度確認してください。細かく制御するには、インターフェイスごとの RMAP の [接続] 切り替えを使用します。 LoRa パスにより、トランスポートと rmap.world ハブも有効になります。"
+    "hint": "すべての有効な RMAP 対応インターフェイス (RNode/Multi、KISS、BLE ピア、I2P、UDP、パイプ) で RMAP 公開とアプリ GPS 座標を有効にします。このチェックボックスは、対象となるすべてのインターフェイスが公開されている場合にのみオンになります。部分的な状態は不定です。残りを同期するにはもう一度確認してください。細かく制御するには、インターフェイスごとの RMAP の [接続] 切り替えを使用します。 LoRa パスにより、トランスポートと rmap.world ハブも有効になります。",
+    "disabledShareOff": "[アプリの→GPS/位置情報で位置情報を共有]を有効にして、RMAPで公開します。"
   },
   "reticulumTopology": {
     "title": "ネットワーク・トポロジー",

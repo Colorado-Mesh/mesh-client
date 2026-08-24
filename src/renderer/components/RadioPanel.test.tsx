@@ -4,7 +4,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import type { MeshCoreSelfInfo } from '@/renderer/lib/meshcore/meshcoreHookTypes';
-import { MESHCORE_CAPABILITIES } from '@/renderer/lib/radio/BaseRadioProvider';
+import {
+  MESHCORE_CAPABILITIES,
+  MESHTASTIC_CAPABILITIES,
+  RETICULUM_CAPABILITIES,
+} from '@/renderer/lib/radio/BaseRadioProvider';
 import { generateConfigUrl, MESHTASTIC_CHANNEL_ROLE } from '@/shared/meshtasticUrlEncoder';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
@@ -187,6 +191,132 @@ describe('RadioPanel MeshCore Device User / Identity', () => {
     expect(await axe(container)).toHaveNoViolations();
 
     expect(screen.getByLabelText('Name')).toHaveValue('TagName');
+  });
+});
+
+describe('RadioPanel Meshtastic Short Name validation', () => {
+  async function openDeviceUserSection(user: ReturnType<typeof userEvent.setup>) {
+    const userDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Device User / Identity';
+    });
+    expect(userDetails).toBeDefined();
+    await user.click(userDetails!.querySelector('summary')!);
+    return userDetails!;
+  }
+
+  it('truncates two emojis to one in the Short Name field', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHTASTIC_CAPABILITIES}
+          onSetOwner={vi.fn().mockResolvedValue(undefined)}
+        />
+      </ToastProvider>,
+    );
+
+    await openDeviceUserSection(user);
+    const shortNameInput = screen.getByLabelText('Short Name');
+    fireEvent.change(shortNameInput, { target: { value: '🐘👀' } });
+    expect(shortNameInput).toHaveValue('🐘');
+    const shortNameField = shortNameInput.closest('.space-y-1');
+    expect(shortNameField).not.toBeNull();
+    hydrateAxeThemeColors(shortNameField!);
+    expect(await axe(shortNameField!)).toHaveNoViolations();
+  });
+
+  it('calls onSetOwner with four ASCII Short Name characters', async () => {
+    const user = userEvent.setup();
+    const onSetOwner = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHTASTIC_CAPABILITIES}
+          onSetOwner={onSetOwner}
+        />
+      </ToastProvider>,
+    );
+
+    await openDeviceUserSection(user);
+    fireEvent.change(screen.getByLabelText('Short Name'), { target: { value: 'ABCD' } });
+    await user.click(screen.getByRole('button', { name: 'Apply Device User / Identity' }));
+
+    await waitFor(() => {
+      expect(onSetOwner).toHaveBeenCalledWith({
+        longName: '',
+        shortName: 'ABCD',
+        isLicensed: false,
+      });
+    });
+    const shortNameField = screen.getByLabelText('Short Name').closest('.space-y-1');
+    expect(shortNameField).not.toBeNull();
+    hydrateAxeThemeColors(shortNameField!);
+    expect(await axe(shortNameField!)).toHaveNoViolations();
+  });
+
+  it('does not render Short Name for Reticulum capabilities', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={RETICULUM_CAPABILITIES}
+          onSetOwner={vi.fn().mockResolvedValue(undefined)}
+        />
+      </ToastProvider>,
+    );
+
+    await openDeviceUserSection(user);
+    expect(screen.queryByLabelText('Short Name')).not.toBeInTheDocument();
+    expect(screen.queryByText('Licensed (Ham Radio Operator)')).not.toBeInTheDocument();
+    const longNameField = screen.getByLabelText('Long Name').closest('.space-y-1');
+    expect(longNameField).not.toBeNull();
+    hydrateAxeThemeColors(longNameField!);
+    expect(await axe(longNameField!)).toHaveNoViolations();
+  });
+
+  it('does not suppress GPS when Client Mute role apply fails', async () => {
+    const user = userEvent.setup();
+    const onSetConfig = vi.fn().mockRejectedValue(new Error('apply rejected'));
+    const onCommit = vi.fn().mockResolvedValue(undefined);
+    const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          onSetConfig={onSetConfig}
+          onCommit={onCommit}
+          onSetModuleConfig={onSetModuleConfig}
+          meshtasticConfigSlices={{ device: { role: 0 }, position: { gpsMode: 1 } }}
+          moduleConfigs={{ mqtt: { mapReportingEnabled: true } }}
+        />
+      </ToastProvider>,
+    );
+
+    const deviceDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Device Role';
+    });
+    expect(deviceDetails).toBeDefined();
+    await user.click(deviceDetails!.querySelector('summary')!);
+
+    const roleSelect = within(deviceDetails!).getAllByRole('combobox')[0];
+    fireEvent.change(roleSelect, { target: { value: '1' } });
+    await user.click(screen.getByRole('button', { name: 'Apply Device Role' }));
+
+    await waitFor(() => {
+      expect(onSetConfig).toHaveBeenCalled();
+    });
+    expect(onSetModuleConfig).not.toHaveBeenCalled();
+    expect(onCommit).not.toHaveBeenCalled();
   });
 });
 

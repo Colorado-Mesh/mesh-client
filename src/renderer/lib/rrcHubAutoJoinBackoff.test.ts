@@ -6,7 +6,9 @@ import {
   clearRrcHubAutoJoinBackoff,
   isRrcAutoJoinBackoffWorthyReason,
   isRrcHubAutoJoinBlocked,
+  isRrcLinkProofNotReadyError,
   isRrcLiveNotReadyError,
+  isRrcPathNotReadyError,
   recordRrcHubAutoJoinFailure,
   resetRrcHubAutoJoinBackoffForTests,
   RRC_AUTO_JOIN_GIVE_UP_AFTER,
@@ -92,5 +94,21 @@ describe('rrcHubAutoJoinBackoff', () => {
     expect(isRrcLiveNotReadyError('rrc connect requires live rns-stack sidecar')).toBe(true);
     expect(isRrcLiveNotReadyError('lxmf send requires live rns-stack sidecar')).toBe(true);
     expect(isRrcLiveNotReadyError('timed out waiting for WELCOME')).toBe(false);
+  });
+
+  it('isRrcLinkProofNotReadyError matches link proof timeouts', () => {
+    expect(isRrcLinkProofNotReadyError('timed out waiting for link proof')).toBe(true);
+    expect(isRrcLinkProofNotReadyError('link proof validation failed')).toBe(true);
+    expect(isRrcLinkProofNotReadyError('timed out waiting for WELCOME')).toBe(false);
+  });
+
+  it('isRrcPathNotReadyError matches sidecar path-not-ready rejects', () => {
+    expect(isRrcPathNotReadyError('path not ready')).toBe(true);
+    expect(isRrcPathNotReadyError('timed out waiting for link proof')).toBe(false);
+  });
+
+  it('isRrcAutoJoinBackoffWorthyReason excludes link proof startup timeouts', () => {
+    expect(isRrcAutoJoinBackoffWorthyReason('timed out waiting for link proof')).toBe(false);
+    expect(isRrcAutoJoinBackoffWorthyReason('path not ready')).toBe(false);
   });
 });

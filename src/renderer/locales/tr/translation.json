@@ -390,7 +390,10 @@
     "themeResetFailed": "Renkler sıfırlanamadı.",
     "messageActionsBarBgVisible": "Arka planı göster",
     "rrcUnreadAllRoomMessages": "Tüm oda mesajları için RRC okunmadı",
-    "rrcUnreadAllRoomMessagesHint": "Açık olduğunda, herhangi bir yeni RRC odası mesajı okunmadı olarak işaretlenir ve bir kanal sesi çalabilir. IRC tarzı uyarılar için kapatın: yalnızca doğrudan mesajlar ve @bahsetmeler."
+    "rrcUnreadAllRoomMessagesHint": "Açık olduğunda, herhangi bir yeni RRC odası mesajı okunmadı olarak işaretlenir ve bir kanal sesi çalabilir. IRC tarzı uyarılar için kapatın: yalnızca doğrudan mesajlar ve @bahsetmeler.",
+    "shareMyLocation": "Bulunduğum yeri paylaş",
+    "shareMyLocationOffInfo": "Konum paylaşımı kapalı — ana bilgisayar GPS yenileme ve mesh gönderme devre dışı. Otomatik yenilemeyi kullanmak veya konumunuzu göndermek için yukarıdaki Konumumu paylaş'ı etkinleştirin.",
+    "shareMyLocationHint": "Etkinleştirildiğinde, bu uygulama bu bilgisayardaki konumunuzu arayabilir ve Meshtastic, MeshCore veya Reticulum (sohbet paylaşımı, radyo iletisi, RMAP) üzerinden gönderebilir. Devre dışı bırakıldığında, ev sahibi GPS aramaları ve uygulama gönderme kapalıdır; statik koordinatlar yalnızca yerel haritanız için çalışmaya devam eder. Kendi GPS'ine sahip bir radyo yine de konumunuzu yerel olarak gösterebilir. Radyo veya Modül ayarlarını yapana kadar cihaz bellenimi yayınlanmaya devam edebilir."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -3451,7 +3454,7 @@
       },
       "1": {
         "label": "İstemciyi Sessize Alma",
-        "description": "İletim yapmayan istemci"
+        "description": "Paketleri iletmeyen istemci. Bu rolün uygulanması, cihazdaki GPS yayınlarını ve harita raporunu da devre dışı bırakır."
       },
       "2": {
         "label": "Yönlendirici",
@@ -3951,7 +3954,11 @@
     "floodScopeSavedEmpty": "Henüz kayıtlı kapsam yok. Özel bir etiket uygulayın veya eklemek için Sohbet'teki Özel kapsamı kullanın.",
     "floodScopeRemoveSaved": "Kaydedilen kapsamlardan kaldır",
     "floodScopeRemoveSavedAria": "{{hashtag}} öğesini kayıtlı kapsamlardan kaldırın",
-    "floodScopeInvalidHashtag": "Geçerli bir bölge hashtag'i girin (örneğin #myregion)."
+    "floodScopeInvalidHashtag": "Geçerli bir bölge hashtag'i girin (örneğin #myregion).",
+    "sendPositionDisabledShareOff": "Konumunuzu cihaza göndermek için Uygulama → GPS / Konum'da konumumu paylaş'ı etkinleştirin.",
+    "clientMuteGpsSuppressed": "İstemci Sessiz uygulandı — GPS yayınları ve MQTT harita raporlaması cihazda devre dışı bırakıldı.",
+    "validationShortNameTooLong": "Kısa Ad 4 UTF -8 bayta sığmalıdır",
+    "validationShortNameEmojiTooLarge": "Bu karakter Kısa Ad için çok büyük (ad başına maksimum 4 UTF -8 bayt)"
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",
@@ -4440,7 +4447,8 @@
     "openGlobalMapAria": "RMAP v4 global haritasını rmap.world'de açın",
     "applyPartialSuccess": "{{total}} arabirimlerinin {{applied}} öğesine uygulanan RMAP ayarları.",
     "disablePartialSuccess": "{{total}} arayüzlerinin {{applied}} üzerinde RMAP yayınlama devre dışı bırakıldı.",
-    "hint": "Etkinleştirilen tüm RMAP özellikli arayüzlerde (RNode/Multi, KISS, BLE eş, I2P, UDP, pipe) RMAP yayınlamayı ve Uygulama GPS koordinatlarını etkinleştirir. Onay kutusu yalnızca tüm uygun arayüzler yayınlanırken açıktır; kısmi bir durum belirsizdir; geri kalanını senkronize etmek için tekrar kontrol edin. Hassas kontrol için her arayüz için RMAP geçişlerini Bağlantı üzerinde kullanın. LoRa yolları aynı zamanda ulaşımı ve rmap.world merkezini de mümkün kılar."
+    "hint": "Etkinleştirilen tüm RMAP özellikli arayüzlerde (RNode/Multi, KISS, BLE eş, I2P, UDP, pipe) RMAP yayınlamayı ve Uygulama GPS koordinatlarını etkinleştirir. Onay kutusu yalnızca tüm uygun arayüzler yayınlanırken açıktır; kısmi bir durum belirsizdir; geri kalanını senkronize etmek için tekrar kontrol edin. Hassas kontrol için her arayüz için RMAP geçişlerini Bağlantı üzerinde kullanın. LoRa yolları aynı zamanda ulaşımı ve rmap.world merkezini de mümkün kılar.",
+    "disabledShareOff": "RMAP'te yayınlamak için Uygulama → GPS / Konumunda konumumu paylaş'ı etkinleştirin."
   },
   "reticulumTopology": {
     "title": "Ağ topolojisi",

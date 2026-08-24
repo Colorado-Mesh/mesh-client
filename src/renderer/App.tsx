@@ -53,6 +53,7 @@ import { ConnectIcon } from '@/renderer/lib/icons/connectIcon';
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
 import { isMeshcoreTcpOpenHopDeadAccepted } from '@/renderer/lib/meshcore/meshcoreTcpInitBurst';
 import {
   meshcoreConfiguredChannelIndexSet,
@@ -76,6 +77,10 @@ import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { runUpdateAction } from '@/renderer/lib/runUpdateAction';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
+import {
+  meshtasticDeviceRoleFromConfigSlice,
+  resolveAppliedMeshtasticDeviceRole,
+} from '@/shared/meshtasticAppliedDeviceRole';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
 import BootSequence from './components/BootSequence';
@@ -1726,6 +1731,39 @@ function AppContent() {
   const isConnectedOrOperational =
     isOperational || activeConnectionView.state.status === 'connected';
 
+  const meshtasticSelfRole =
+    protocol === 'meshtastic'
+      ? resolveAppliedMeshtasticDeviceRole(
+          meshtasticDeviceRoleFromConfigSlice(meshtasticRuntime.meshtasticConfigSlices?.device),
+          nodesForUi.get(meshtasticConnectionView.state.myNodeNum)?.role ?? null,
+        )
+      : null;
+
+  let chatShareLocationResolver: (() => Promise<{ lat: number; lon: number } | null>) | undefined;
+  if (protocol === 'meshtastic') {
+    if (canTransmitLocation({ protocol: 'meshtastic', meshtasticRole: meshtasticSelfRole })) {
+      chatShareLocationResolver = async () => {
+        const pos = await meshtasticPanelActions.refreshOurPosition();
+        return pos ? { lat: pos.lat, lon: pos.lon } : null;
+      };
+    }
+  } else if (protocol === 'meshcore') {
+    if (canTransmitLocation({ protocol: 'meshcore' })) {
+      chatShareLocationResolver = async () => {
+        const pos = await meshcorePanelActions.refreshOurPosition();
+        return pos ? { lat: pos.lat, lon: pos.lon } : null;
+      };
+    }
+  } else if (protocol === 'reticulum') {
+    if (canTransmitLocation({ protocol: 'reticulum' })) {
+      chatShareLocationResolver = async () => {
+        const stored = readStoredStaticGps();
+        const pos = await resolveOurPosition(undefined, undefined, stored?.lat, stored?.lon);
+        return pos ? { lat: pos.lat, lon: pos.lon } : null;
+      };
+    }
+  }
+
   const hasLocalMeshtasticRadio =
     capabilities.hasRemoteAdmin &&
     meshtasticConnectionView.state.myNodeNum > 0 &&
@@ -2729,7 +2767,12 @@ function AppContent() {
       : capabilities.modulesTabUsesRepeatersLabel
         ? t('app.meshcoreQueueTooltip')
         : t('app.meshtasticQueueTooltip');
-  const reticulumTxBuffering = protocol === 'reticulum' && queueShowBadge && queueUsed > 0;
+  const reticulumQueueBuffering =
+    protocol === 'reticulum' &&
+    legacyQueue != null &&
+    'buffering' in legacyQueue &&
+    legacyQueue.buffering === true;
+  const reticulumTxBuffering = reticulumQueueBuffering;
   const takStatusLabel =
     takClientLoss && takStatus.running
       ? t('app.takClientLost')
@@ -3347,27 +3390,9 @@ function AppContent() {
                                 reticulumConnectionView.state.status === 'connected' ||
                                 reticulumConnectionView.state.status === 'stale')
                             }
-                            resolveShareLocation={async () => {
-                              if (protocol === 'meshtastic') {
-                                const pos = await meshtasticPanelActions.refreshOurPosition();
-                                return pos ? { lat: pos.lat, lon: pos.lon } : null;
-                              }
-                              if (protocol === 'meshcore') {
-                                const pos = await meshcorePanelActions.refreshOurPosition();
-                                return pos ? { lat: pos.lat, lon: pos.lon } : null;
-                              }
-                              // Reticulum: no RF self-node GPS — use static / OS / IP waterfall.
-                              const stored = readStoredStaticGps();
-                              const pos = await resolveOurPosition(
-                                undefined,
-                                undefined,
-                                stored?.lat,
-                                stored?.lon,
-                              );
-                              return pos ? { lat: pos.lat, lon: pos.lon } : null;
-                            }}
+                            resolveShareLocation={chatShareLocationResolver}
                             onSendLocationWaypoint={
-                              protocol === 'meshtastic'
+                              protocol === 'meshtastic' && chatShareLocationResolver
                                 ? async (lat, lon, channel) => {
                                     const id =
                                       crypto.getRandomValues(new Uint32Array(1))[0] >>> 0 || 1;
@@ -3719,6 +3744,16 @@ function AppContent() {
                                   meshtasticConfigSlices={
                                     capabilities.hasChannelConfig
                                       ? effectiveMeshtasticConfigSlices
+                                      : undefined
+                                  }
+                                  moduleConfigs={
+                                    capabilities.hasChannelConfig
+                                      ? effectiveModuleConfigs
+                                      : undefined
+                                  }
+                                  onSetModuleConfig={
+                                    capabilities.hasChannelConfig
+                                      ? meshtasticPanelActions.setModuleConfig
                                       : undefined
                                   }
                                   onApplyChannelSet={
