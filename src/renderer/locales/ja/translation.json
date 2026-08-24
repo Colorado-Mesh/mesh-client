@@ -4840,8 +4840,7 @@
     "firmwareAvailable": "利用可能なファームウェアアップデート: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} 新しいメッセージ",
     "newMessages_other": "{{protocol}}: {{count}} 件の新しいメッセージ",
-    "meshcoreDistanceFilterHint": "地図上にGPS付きの連絡先が{{count}}件あります。アプリ → 外観で距離フィルターを有効にして、近くのノードに集中できます。",
-    "longSessionRestartNudge": "mesh-clientは4日間稼働しています。長時間のMeshCore BLEセッションでのクラッシュのリスクを減らすため、アプリを再起動してください。"
+    "meshcoreDistanceFilterHint": "地図上にGPS付きの連絡先が{{count}}件あります。アプリ → 外観で距離フィルターを有効にして、近くのノードに集中できます。"
   },
   "updateStatus": {
     "checking": "チェック中…",
@@ -5482,5 +5481,11 @@
     },
     "drawOfferWaitingBanner": "抽選オファーが送信されました。対戦相手を待っています…",
     "idleExpiryNotice": "ゲームは非アクティブの後に期限切れになり、削除することしかできません。未回答の課題： 24時間（すべてのゲーム）。アクティブなゲーム： 24時間後のチックタックトー、7日後のチェスと4 - in - a - row。"
+  },
+  "longSession": {
+    "title": "再起動をお勧めします",
+    "body": "mesh-clientは、Bluetooth無線接続で4日間稼働しています。アプリを再起動して、長時間のNoble BLEセッションでクラッシュするリスクを減らしましょう。",
+    "restart": "再始動",
+    "dismiss": "却下"
   }
 }

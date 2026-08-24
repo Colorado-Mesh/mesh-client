@@ -4842,8 +4842,7 @@
     "firmwareAvailable": "Dostupná aktualizace firmwaru: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} nová zpráva",
     "newMessages_other": "{{protocol}}: {{count}} nových zpráv",
-    "meshcoreDistanceFilterHint": "Na mapě máš {{count}} kontaktů s GPS. Povol filtr vzdálenosti v App → Vzhled a zaměř se na blízké uzly.",
-    "longSessionRestartNudge": "mesh-client běží již čtyři dny. Restartujte aplikaci, abyste snížili riziko pádů při dlouhých relacích MeshCore BLE."
+    "meshcoreDistanceFilterHint": "Na mapě máš {{count}} kontaktů s GPS. Povol filtr vzdálenosti v App → Vzhled a zaměř se na blízké uzly."
   },
   "updateStatus": {
     "checking": "Kontrola…",
@@ -5484,5 +5483,11 @@
     },
     "drawOfferWaitingBanner": "Nabídka byla odeslána. Čeká se na soupeře...",
     "idleExpiryNotice": "Platnost her vyprší po nečinnosti a poté je lze pouze smazat. Nezodpovězené výzvy: 24 hodin (všechny hry). Aktivní hry: tic-tac-toe po 24 hodinách, šachy a čtyři v řadě po 7 dnech."
+  },
+  "longSession": {
+    "title": "Doporučeno restartovat",
+    "body": "mesh-client běží již čtyři dny s připojeným Bluetooth rádiem. Restartujte aplikaci, abyste snížili riziko pádů při dlouhých sezeních Noble BLE.",
+    "restart": "Spustit znovu",
+    "dismiss": "Zamítnout"
   }
 }

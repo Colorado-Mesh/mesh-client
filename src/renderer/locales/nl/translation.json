@@ -4840,8 +4840,7 @@
     "firmwareAvailable": "Firmware-update beschikbaar: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} nieuw bericht",
     "newMessages_other": "{{protocol}}: {{count}} nieuwe berichten",
-    "meshcoreDistanceFilterHint": "Je hebt {{count}} contacten met GPS op de kaart. Schakel het afstandsfilter in onder App → Verschijning om je te concentreren op knooppunten in de buurt.",
-    "longSessionRestartNudge": "Mesh-client draait al vier dagen. Start de app opnieuw om het risico op crashes tijdens lange MeshCore BLE-sessies te verminderen."
+    "meshcoreDistanceFilterHint": "Je hebt {{count}} contacten met GPS op de kaart. Schakel het afstandsfilter in onder App → Verschijning om je te concentreren op knooppunten in de buurt."
   },
   "updateStatus": {
     "checking": "Controleren…",
@@ -5482,5 +5481,11 @@
     },
     "drawOfferWaitingBanner": "Tekenaanbod verzonden. Wachten op tegenstander...",
     "idleExpiryNotice": "Games verlopen na inactiviteit en kunnen dan alleen worden verwijderd. Onbeantwoorde uitdagingen: 24 uur (alle spellen). Actieve spellen: tic-tac-toe na 24 uur, schaken en four-in-a-row na 7 dagen."
+  },
+  "longSession": {
+    "title": "Herstart aanbevolen",
+    "body": "mesh-client draait al vier dagen met Bluetooth-radio aangesloten. Start de app opnieuw om het risico op crashes tijdens lange Noble BLE-sessies te verminderen.",
+    "restart": "Herstarten",
+    "dismiss": "Afwijzen"
   }
 }

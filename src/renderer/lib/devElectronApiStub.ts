@@ -202,6 +202,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
     notifyDeviceDisconnected: noop,
     setTrayUnread: noop,
     quitApp: noopAsync,
+    restartApp: noopAsync,
     getPlatform: () => 'linux',
     showEmojiPanel: noopAsync,
     clipboard: {
@@ -209,6 +210,8 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
     },
     notify: {
       show: noopAsync,
+      longSessionRestart: noopAsync,
+      clearLongSessionNudge: noopAsync,
     },
     safeStorage: {
       encrypt: async () => null,

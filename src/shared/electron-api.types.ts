@@ -968,10 +968,19 @@ export interface ElectronAPI {
   notifyDeviceDisconnected: () => void;
   setTrayUnread: (count: number) => void;
   quitApp: () => Promise<void>;
+  /** Full process relaunch (Noble BLE long-session restart). */
+  restartApp: () => Promise<void>;
 
   // ─── Native OS notifications ─────────────────────────────────────────────────
   notify: {
     show: (title: string, body: string) => Promise<void>;
+    longSessionRestart: (opts: {
+      title: string;
+      body: string;
+      restartLabel: string;
+      laterLabel: string;
+    }) => Promise<void>;
+    clearLongSessionNudge: () => Promise<void>;
   };
 
   // ─── Safe storage ────────────────────────────────────────────────────────────

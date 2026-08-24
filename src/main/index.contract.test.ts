@@ -469,6 +469,24 @@ describe('Long-session maintenance (source contract)', () => {
   it('exposes process uptime IPC for restart nudge', () => {
     expect(INDEX_SOURCE).toContain("'app:getProcessUptimeSec'");
   });
+
+  it('registers app:relaunch via shared quitMainProcess', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('app:relaunch'");
+    expect(INDEX_SOURCE).toContain("assertIpcSender(event, 'app:relaunch')");
+    expect(INDEX_SOURCE).toContain('async function quitMainProcess');
+    expect(INDEX_SOURCE).toContain('quitMainProcess({ relaunch: true })');
+    expect(INDEX_SOURCE).toContain('quitMainProcess({ relaunch: false })');
+    expect(INDEX_SOURCE).toMatch(/if \(opts\.relaunch\) \{\s*app\.relaunch\(\);/);
+    expect(INDEX_SOURCE).toContain('app.exit(0)');
+  });
+
+  it('registers long-session OS notify IPC with sender checks', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('notify:longSessionRestart'");
+    expect(INDEX_SOURCE).toContain("assertIpcSender(event, 'notify:longSessionRestart')");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('notify:clearLongSessionNudge'");
+    expect(INDEX_SOURCE).toContain("assertIpcSender(event, 'notify:clearLongSessionNudge')");
+    expect(INDEX_SOURCE).toContain('createLongSessionNudgeController');
+  });
 });
 
 describe('Native Electron call guards (source contract)', () => {

@@ -4840,8 +4840,7 @@
     "firmwareAvailable": "Ürün yazılımı güncellemesi mevcut: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} yeni mesaj",
     "newMessages_other": "{{protocol}}: {{count}} yeni mesajlar",
-    "meshcoreDistanceFilterHint": "Haritada GPS'li {{count}} kişi var. Yakındaki düğümlere odaklanmak için Uygulama → Dış görünüş bölümünde mesafe filtresini etkinleştirin.",
-    "longSessionRestartNudge": "mesh-client dört gündür çalışıyor. Uzun MeshCore BLE oturumlarında çökme riskini azaltmak için uygulamayı yeniden başlatın."
+    "meshcoreDistanceFilterHint": "Haritada GPS'li {{count}} kişi var. Yakındaki düğümlere odaklanmak için Uygulama → Dış görünüş bölümünde mesafe filtresini etkinleştirin."
   },
   "updateStatus": {
     "checking": "Kontrol ediliyor…",
@@ -5482,5 +5481,11 @@
     },
     "drawOfferWaitingBanner": "Beraberlik teklifi gönderildi. Rakip bekleniyor…",
     "idleExpiryNotice": "Oyunlar işlem yapılmadığında sona erer ve yalnızca silinebilir. Cevapsız zorluklar: 24 saat (tüm oyunlar). Aktif oyunlar: 24 saat sonra tic - tac - toe, 7 gün sonra satranç ve four - in - a - row."
+  },
+  "longSession": {
+    "title": "Yeniden başlatma önerilir",
+    "body": "mesh-client dört gündür Bluetooth radyo bağlı olarak çalışıyor. Uzun Noble BLE oturumlarında çökme riskini azaltmak için uygulamayı yeniden başlat.",
+    "restart": "Yeniden Başlat",
+    "dismiss": "Yok say"
   }
 }
