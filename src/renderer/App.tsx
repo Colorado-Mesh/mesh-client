@@ -86,6 +86,7 @@ import { GlobalInstantTooltip } from './components/GlobalInstantTooltip';
 import { HelpTooltip } from './components/HelpTooltip';
 import { InactiveProtocolNotifier } from './components/InactiveProtocolNotifier';
 import LanguageSelector from './components/LanguageSelector';
+import { LongSessionRestartBanner } from './components/LongSessionRestartBanner';
 import { MeshcoreWaitingMessagesHeaderIndicator } from './components/MeshcoreWaitingMessagesHeaderIndicator';
 import { ProtocolAutoConnectCoordinator } from './components/ProtocolAutoConnectCoordinator';
 import { ProtocolSwitcher } from './components/ProtocolSwitcher';
@@ -844,7 +845,7 @@ function AppContent() {
       },
     },
   });
-  useLongSessionMaintenance();
+  const longSessionMaintenance = useLongSessionMaintenance();
   useRendererHeartbeat();
   useSerialServiceListeners();
   useSpellcheckReplaceSync();
@@ -2976,6 +2977,13 @@ function AppContent() {
           reconnectAttempt={activeConnectionView.state.reconnectAttempt}
           onReconnect={handleReconnect}
         />
+
+        {longSessionMaintenance.visible ? (
+          <LongSessionRestartBanner
+            onRestart={longSessionMaintenance.onRestart}
+            onDismiss={longSessionMaintenance.onDismiss}
+          />
+        ) : null}
 
         {/* Telemetry disabled notice */}
         {isOperational && activeRuntime.telemetryEnabled === false && !telemetryNoticeDismissed && (

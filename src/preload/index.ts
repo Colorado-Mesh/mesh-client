@@ -4,6 +4,7 @@ import type {
   BlePeripheralOwner,
   BleScanOwner,
   ElectronAPI,
+  LongSessionRestartPayload,
   MeshNode,
   MeshProtocol,
   MQTTSettings,
@@ -899,6 +900,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('set-tray-unread', count);
   },
   quitApp: () => ipcRenderer.invoke('app:quit'),
+  restartApp: () => ipcRenderer.invoke('app:relaunch'),
 
   // ─── OS emoji panel ──────────────────────────────────────────────────────────
   getPlatform: () => process.platform,
@@ -921,6 +923,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   notify: {
     show: (title: string, body: string): Promise<void> =>
       ipcRenderer.invoke('notify:message', title, body),
+    longSessionRestart: (opts: LongSessionRestartPayload): Promise<void> =>
+      ipcRenderer.invoke('notify:longSessionRestart', opts),
+    clearLongSessionNudge: (): Promise<void> => ipcRenderer.invoke('notify:clearLongSessionNudge'),
   },
 
   // ─── Safe storage (OS-keychain-backed encryption) ──────────────

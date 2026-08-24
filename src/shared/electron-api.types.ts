@@ -174,6 +174,14 @@ export interface UpdateCheckingPayload {
   notifyOnSettled?: boolean;
 }
 
+/** Renderer → main long-session restart OS notification (Noble BLE day-4 nudge). */
+export interface LongSessionRestartPayload {
+  title: string;
+  body: string;
+  restartLabel: string;
+  laterLabel: string;
+}
+
 export interface NobleBleDevice {
   deviceId: string;
   deviceName: string;
@@ -968,10 +976,14 @@ export interface ElectronAPI {
   notifyDeviceDisconnected: () => void;
   setTrayUnread: (count: number) => void;
   quitApp: () => Promise<void>;
+  /** Full process relaunch (Noble BLE long-session restart). */
+  restartApp: () => Promise<void>;
 
   // ─── Native OS notifications ─────────────────────────────────────────────────
   notify: {
     show: (title: string, body: string) => Promise<void>;
+    longSessionRestart: (opts: LongSessionRestartPayload) => Promise<void>;
+    clearLongSessionNudge: () => Promise<void>;
   };
 
   // ─── Safe storage ────────────────────────────────────────────────────────────

@@ -4840,8 +4840,7 @@
     "firmwareAvailable": "固件更新可用： v {{version}}",
     "newMessages_one": "{{protocol}} ： {{count}}条新消息",
     "newMessages_other": "{{protocol}} ： {{count}}条新消息",
-    "meshcoreDistanceFilterHint": "地图上有 {{count}} 个带 GPS 的联系人。在应用 → 外貌中启用距离过滤器，以关注附近的节点。",
-    "longSessionRestartNudge": "Mesh-client已经运行了四天。重新启动应用程序，以降低长时间MeshCore BLE会话崩溃的风险。"
+    "meshcoreDistanceFilterHint": "地图上有 {{count}} 个带 GPS 的联系人。在应用 → 外貌中启用距离过滤器，以关注附近的节点。"
   },
   "updateStatus": {
     "checking": "正在检查...",
@@ -5482,5 +5481,11 @@
     },
     "drawOfferWaitingBanner": "抽奖活动已发送。正在等待对手……",
     "idleExpiryNotice": "游戏在不活动后过期，然后只能删除。未回答的挑战： 24小时（所有游戏）。活跃游戏： 24小时后抽搐， 7天后下棋和一排四棋。"
+  },
+  "longSession": {
+    "title": "建议重新启动",
+    "body": "在蓝牙无线电连接的情况下，mesh-client 已经运行了四天。重新启动应用程序，以降低长时间 Noble BLE 会话中崩溃的风险。",
+    "restart": "重启",
+    "dismiss": "解散"
   }
 }

@@ -9,6 +9,7 @@ import {
 import { meshcoreTraceResponsesInFlightCount } from './meshcoreTracePathMultiplex';
 import {
   MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS,
+  MESHCORE_WAITING_MESSAGES_CIRCUIT_OPEN_BACKOFF_FACTOR,
   MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS,
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
   MESHCORE_WAITING_MESSAGES_POLL_MS,
@@ -135,6 +136,29 @@ export function resetMeshcoreWaitingMessagesDrainSchedule(): void {
 /** Skip silent bulk getWaitingMessages after consecutive timeouts or CLI preempt. */
 export function shouldSkipMeshcoreSilentBulkGetWaitingMessages(): boolean {
   return silentBulkSkipped || silentBulkCliPreempt;
+}
+
+/** Poll interval for the 5-minute safety-net (stretched while silent-bulk circuit is open). */
+export function meshcoreWaitingMessagesPeriodicPollIntervalMs(): number {
+  return shouldSkipMeshcoreSilentBulkGetWaitingMessages()
+    ? MESHCORE_WAITING_MESSAGES_POLL_MS * MESHCORE_WAITING_MESSAGES_CIRCUIT_OPEN_BACKOFF_FACTOR
+    : MESHCORE_WAITING_MESSAGES_POLL_MS;
+}
+
+/** True when the periodic safety-net poll may run (respects circuit-open stretch). */
+export function meshcoreWaitingMessagesPeriodicPollDue(
+  lastRunAtMs: number,
+  nowMs: number,
+): boolean {
+  return nowMs - lastRunAtMs >= meshcoreWaitingMessagesPeriodicPollIntervalMs();
+}
+
+/** Congested-retry delay while companion TX is deferred (stretched when circuit is open). */
+export function meshcoreWaitingMessagesCongestedRetryMs(): number {
+  return shouldSkipMeshcoreSilentBulkGetWaitingMessages()
+    ? MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS *
+        MESHCORE_WAITING_MESSAGES_CIRCUIT_OPEN_BACKOFF_FACTOR
+    : MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS;
 }
 
 /**
@@ -307,7 +331,7 @@ export function scheduleMeshcoreWaitingMessagesDrain(
         debounceTimer = setTimeout(() => {
           debounceTimer = null;
           scheduleMeshcoreWaitingMessagesDrain(drain, options);
-        }, MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS);
+        }, meshcoreWaitingMessagesCongestedRetryMs());
         return;
       }
       options?.onDeferredChange?.(false);

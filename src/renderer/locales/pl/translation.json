@@ -4844,8 +4844,7 @@
     "firmwareAvailable": "Dostępna aktualizacja oprogramowania sprzętowego: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} nowa wiadomość",
     "newMessages_other": "{{protocol}}: {{count}} nowe wiadomości",
-    "meshcoreDistanceFilterHint": "Masz {{count}} kontaktów z GPS na mapie. Włącz filtr odległości w Aplikacja → Wygląd, aby skupić się na pobliskich węzłach.",
-    "longSessionRestartNudge": "mesh-client działa od czterech dni. Uruchom ponownie aplikację, aby zmniejszyć ryzyko awarii podczas długich sesji MeshCore BLE."
+    "meshcoreDistanceFilterHint": "Masz {{count}} kontaktów z GPS na mapie. Włącz filtr odległości w Aplikacja → Wygląd, aby skupić się na pobliskich węzłach."
   },
   "updateStatus": {
     "checking": "Sprawdzanie...",
@@ -5486,5 +5485,11 @@
     },
     "drawOfferWaitingBanner": "Oferta losowania wysłana. Oczekiwanie na przeciwnika…",
     "idleExpiryNotice": "Gry wygasają po bezczynności i można je usunąć tylko wtedy. Wyzwania bez odpowiedzi: 24 godziny (wszystkie gry). Aktywne gry: kółko i krzyżyk po 24 godzinach, szachy i cztery w rzędzie po 7 dniach."
+  },
+  "longSession": {
+    "title": "Zalecane ponowne uruchomienie",
+    "body": "mesh-client działa od czterech dni z podłączonym radiem Bluetooth. Uruchom ponownie aplikację, aby zmniejszyć ryzyko awarii podczas długich sesji Noble BLE.",
+    "restart": "Uruchom ponownie",
+    "dismiss": "Odrzuć"
   }
 }

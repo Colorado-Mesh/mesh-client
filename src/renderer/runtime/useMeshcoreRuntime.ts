@@ -427,6 +427,7 @@ import {
   endMeshcoreSilentBulkCliPreempt,
   logMeshcoreWaitingMessagesDrainError,
   markMeshcoreCompanionTx,
+  meshcoreWaitingMessagesPeriodicPollDue,
   preemptMeshcoreSilentBulkForCli,
   scheduleMeshcoreWaitingMessagesDrain,
   shouldRunMeshcoreWaitingMessagesPeriodicPoll,
@@ -3088,13 +3089,20 @@ export function useMeshcoreRuntime() {
           );
 
           // Periodic safety-net poll in case the device never re-sends event 131.
+          // Tick at the base interval; gate with circuit-open stretch via last-run timestamp.
           if (meshcoreWaitingMessagesPollRef.current)
             clearInterval(meshcoreWaitingMessagesPollRef.current);
+          let lastPeriodicWaitingMessagesDrainAt = Date.now();
           meshcoreWaitingMessagesPollRef.current = setInterval(() => {
             if (!meshcoreHookMountedRef.current) return;
             if (!shouldRunMeshcoreWaitingMessagesPeriodicPoll(waitingMessagesCountRef.current)) {
               return;
             }
+            const now = Date.now();
+            if (!meshcoreWaitingMessagesPeriodicPollDue(lastPeriodicWaitingMessagesDrainAt, now)) {
+              return;
+            }
+            lastPeriodicWaitingMessagesDrainAt = now;
             scheduleMeshcoreWaitingMessagesDrain(
               async () => {
                 try {

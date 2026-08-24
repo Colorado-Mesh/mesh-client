@@ -3068,6 +3068,16 @@ function checkFlasherIssues(ctx) {
     issues.push(...protectedBrandIssues(enVal, val, ['mesh-client']));
   }
 
+  if (locale !== 'en' && flatKey === 'longSession.body' && /\bBLE\b/.test(enVal)) {
+    if (!/\bBLE\b/.test(val)) {
+      issues.push('longSession.body must preserve protocol token "BLE"');
+    }
+    if (/\bNoble\b/.test(enVal) && !/\bNoble\b/.test(val)) {
+      issues.push('longSession.body must preserve protocol token "Noble"');
+    }
+    issues.push(...protectedBrandIssues(enVal, val, ['mesh-client']));
+  }
+
   return issues;
 }
 

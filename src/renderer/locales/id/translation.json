@@ -4840,8 +4840,7 @@
     "firmwareAvailable": "Pembaruan firmware tersedia: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} pesan baru",
     "newMessages_other": "{{protocol}}: {{count}} pesan baru",
-    "meshcoreDistanceFilterHint": "Anda memiliki {{count}} kontak dengan GPS di peta. Aktifkan filter jarak di Aplikasi → Penampilan untuk fokus pada node terdekat.",
-    "longSessionRestartNudge": "mesh-client telah berjalan selama empat hari. Mulai ulang aplikasi untuk mengurangi risiko crash pada sesi MeshCore BLE yang panjang."
+    "meshcoreDistanceFilterHint": "Anda memiliki {{count}} kontak dengan GPS di peta. Aktifkan filter jarak di Aplikasi → Penampilan untuk fokus pada node terdekat."
   },
   "updateStatus": {
     "checking": "Memeriksa…",
@@ -5482,5 +5481,11 @@
     },
     "drawOfferWaitingBanner": "Penawaran undian terkirim. Menunggu lawan…",
     "idleExpiryNotice": "Game kedaluwarsa setelah tidak aktif dan kemudian hanya dapat dihapus. Tantangan yang belum terjawab: 24 jam (semua game). Permainan aktif: tic - tac - toe setelah 24 jam, catur dan four - in - a - row setelah 7 hari."
+  },
+  "longSession": {
+    "title": "Mulai ulang direkomendasikan",
+    "body": "mesh-client telah berjalan selama empat hari dengan radio Bluetooth yang terhubung. Mulai ulang aplikasi untuk mengurangi risiko crash pada sesi Noble BLE yang panjang.",
+    "restart": "Start Ulang",
+    "dismiss": "Tutup"
   }
 }

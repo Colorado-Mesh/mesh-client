@@ -224,6 +224,12 @@ export function createElectronAPIMock(): ElectronAPI {
     notifyDeviceDisconnected: vi.fn(),
     setTrayUnread: vi.fn(),
     quitApp: vi.fn().mockResolvedValue(undefined),
+    restartApp: vi.fn().mockResolvedValue(undefined),
+    notify: {
+      show: vi.fn().mockResolvedValue(undefined),
+      longSessionRestart: vi.fn().mockResolvedValue(undefined),
+      clearLongSessionNudge: vi.fn().mockResolvedValue(undefined),
+    },
     getPlatform: vi.fn().mockReturnValue('linux'),
     showEmojiPanel: vi.fn().mockResolvedValue(undefined),
     media: {
@@ -232,9 +238,6 @@ export function createElectronAPIMock(): ElectronAPI {
     },
     clipboard: {
       writeText: vi.fn().mockResolvedValue(undefined),
-    },
-    notify: {
-      show: vi.fn().mockResolvedValue(undefined),
     },
     safeStorage: {
       encrypt: vi.fn().mockResolvedValue(null),

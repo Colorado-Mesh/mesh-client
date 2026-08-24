@@ -1703,6 +1703,40 @@ describe('roomsPanel saved passwords per-key quality', () => {
     ).toEqual([]);
   });
 
+  const enLongSessionBody =
+    'mesh-client has been running for four days with Bluetooth radio connected. Restart the app to reduce the risk of crashes on long Noble BLE sessions.';
+
+  it('flags missing BLE in longSession.body', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'longSession.body',
+      val: 'mesh-client läuft seit vier Tagen. Noble Sitzungen.',
+      enVal: enLongSessionBody,
+    });
+    expectIssue(issues, 'protocol token "BLE"');
+  });
+
+  it('flags missing Noble in longSession.body', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ja',
+      flatKey: 'longSession.body',
+      val: 'mesh-clientは4日間稼働。BLEセッション。',
+      enVal: enLongSessionBody,
+    });
+    expectIssue(issues, 'protocol token "Noble"');
+  });
+
+  it('accepts mesh-client and Noble BLE in longSession.body', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'zh',
+        flatKey: 'longSession.body',
+        val: 'mesh-client 已经运行了四天。降低长时间 Noble BLE 会话中崩溃的风险。',
+        enVal: enLongSessionBody,
+      }),
+    ).toEqual([]);
+  });
+
   const enMeshcoreOpenWireCompatHint =
     'When enabled, mesh-client sends keyed text replies (@[Name#key]), compact r: reactions, and g: Giphy GIFs. This may not match the official companion wire format; receivers need MeshCore Open-aware clients.';
 

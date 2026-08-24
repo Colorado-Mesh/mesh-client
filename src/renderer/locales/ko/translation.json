@@ -4840,8 +4840,7 @@
     "firmwareAvailable": "사용 가능한 펌웨어 업데이트: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} 새 메시지",
     "newMessages_other": "{{protocol}}: {{count}} 새 메시지",
-    "meshcoreDistanceFilterHint": "지도에 GPS가 있는 연락처가 {{count}}개 있습니다. 앱 → 모습에서 거리 필터를 활성화하여 근처 노드에 집중하세요.",
-    "longSessionRestartNudge": "Mesh-client가 4일 동안 실행되었습니다. 긴 MeshCore BLE 세션에서 충돌 위험을 줄이려면 앱을 다시 시작하십시오."
+    "meshcoreDistanceFilterHint": "지도에 GPS가 있는 연락처가 {{count}}개 있습니다. 앱 → 모습에서 거리 필터를 활성화하여 근처 노드에 집중하세요."
   },
   "updateStatus": {
     "checking": "확인 중…",
@@ -5482,5 +5481,11 @@
     },
     "drawOfferWaitingBanner": "무승부 오퍼가 전송되었습니다. 상대를 기다리는 중...",
     "idleExpiryNotice": "게임은 비활성 후에 만료되며 삭제할 수 있습니다. 답이 없는 챌린지: 24시간 (모든 게임). 진행 중인 게임: 24시간 후 틱택토, 7일 후 체스 및 포인어로우."
+  },
+  "longSession": {
+    "title": "재시작 권장",
+    "body": "mesh-client는 Bluetooth 라디오가 연결된 상태에서 4일 동안 실행되고 있습니다. 긴 Noble BLE 세션에서 충돌 위험을 줄이려면 앱을 다시 시작하세요.",
+    "restart": "재시작",
+    "dismiss": "무시하기"
   }
 }

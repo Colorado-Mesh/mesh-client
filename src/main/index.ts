@@ -148,6 +148,11 @@ import {
   sanitizeLogMessage,
   setMainWindow,
 } from './log-service';
+import {
+  createLongSessionNudgeController,
+  type LongSessionNudgeController,
+  parseLongSessionRestartPayload,
+} from './longSessionNudge';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
 import { meshtasticTcpWriteErrorIsNoSocket } from './meshtasticTcpWriteResult';
@@ -357,6 +362,135 @@ let appMenu: Menu | null = null;
 let isConnected = false;
 let isQuitting = false;
 let shutdownDone = false;
+/** Shared quit/relaunch single-flight (app:quit, app:relaunch, OS nudge Restart). */
+let quitMainInFlight = false;
+/** Last tray unread count — restore Dock badge after long-session nudge clears. */
+let lastTrayUnreadCount = 0;
+let longSessionNudge: LongSessionNudgeController | null = null;
+
+function getLongSessionNudge(): LongSessionNudgeController {
+  longSessionNudge ??= createLongSessionNudgeController({
+    platform: process.platform,
+    isNotificationSupported: () => Notification.isSupported(),
+    createNotification: (opts) => {
+      const note = new Notification(opts);
+      return {
+        on: (event, listener) => {
+          if (event === 'action') {
+            note.on('action', (...args: unknown[]) => {
+              listener(...args);
+            });
+          } else {
+            note.on('click', (...args: unknown[]) => {
+              listener(...args);
+            });
+          }
+        },
+        show: () => {
+          note.show();
+        },
+        close: () => {
+          note.close();
+        },
+      };
+    },
+    setDockBadge: (badge) => {
+      app.dock?.setBadge(badge);
+    },
+    flashFrame: (flash) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.flashFrame(flash);
+      }
+    },
+    showAndFocusMainWindow: () => {
+      if (!mainWindow || mainWindow.isDestroyed()) return;
+      mainWindow.show();
+      mainWindow.focus();
+    },
+    relaunchApp: () => {
+      void quitMainProcess({ relaunch: true });
+    },
+    getLastUnreadCount: () => lastTrayUnreadCount,
+    logWarn: (message) => {
+      console.warn(sanitizeLogMessage(message));
+    },
+  });
+  return longSessionNudge;
+}
+
+/**
+ * Graceful main-process exit used by app:quit / app:relaunch / OS long-session Restart.
+ * Mirrors historical app:quit cleanup; optional relaunch schedules a new instance before exit.
+ */
+async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void> {
+  if (quitMainInFlight) return;
+  quitMainInFlight = true;
+  isQuitting = true;
+  isConnected = false;
+  try {
+    try {
+      getLongSessionNudge().clear();
+    } catch {
+      // catch-no-log-ok best-effort OS cue clear before exit
+    }
+    await nobleBleManager.stopAllScanning();
+    try {
+      await nobleBleManager.disconnectAll();
+    } catch (err) {
+      console.error(
+        '[main] quitMainProcess BLE disconnectAll failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+    }
+
+    await shutdownAppResources();
+
+    if (meshcoreTcpSocket) {
+      try {
+        meshcoreTcpSocket.destroy();
+      } catch (err) {
+        console.debug(
+          '[main] quitMainProcess TCP socket destroy (ignored):',
+          err instanceof Error ? err.message : err,
+        ); // log-injection-ok internal Node.js socket error during cleanup
+      }
+      meshcoreTcpSocket = null;
+    }
+    if (meshtasticTcpSocket) {
+      try {
+        meshtasticTcpSocket.destroy();
+      } catch (err) {
+        console.debug(
+          '[main] quitMainProcess TCP socket destroy (ignored):',
+          err instanceof Error ? err.message : err,
+        ); // log-injection-ok internal Node.js socket error during cleanup
+      }
+      meshtasticTcpSocket = null;
+    }
+    stopPowerSaveBlocker();
+
+    nobleBleManager.releaseNobleProcessHandles();
+    tray?.destroy();
+    tray = null;
+    if (opts.relaunch) {
+      app.relaunch();
+    }
+    app.exit(0);
+  } catch (err) {
+    console.error(
+      '[main] quitMainProcess failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    if (opts.relaunch) {
+      try {
+        app.relaunch();
+      } catch {
+        // catch-no-log-ok relaunch already best-effort in failure path before quit
+      }
+    }
+    app.quit();
+  }
+}
 
 /** Stop network services, flush logs, and close SQLite before process exit. */
 async function shutdownAppResources(): Promise<void> {
@@ -2014,6 +2148,10 @@ function createWindow() {
     }
   });
 
+  win.on('focus', () => {
+    getLongSessionNudge().onMainWindowFocus();
+  });
+
   setupTray(mainWindow);
 
   initUpdater(mainWindow);
@@ -2027,6 +2165,7 @@ let _lastTrayUnreadVariant: boolean | null = null;
 ipcMain.on('set-tray-unread', (_event, count: unknown) => {
   try {
     const n = Math.max(0, Math.min(Math.floor(Number(count)) || 0, 99999));
+    lastTrayUnreadCount = n;
     const hasUnread = n > 0;
     if (_lastTrayUnreadVariant !== hasUnread) {
       _lastTrayUnreadVariant = hasUnread;
@@ -2042,7 +2181,9 @@ ipcMain.on('set-tray-unread', (_event, count: unknown) => {
     }
     tray?.setToolTip(hasUnread ? `Mesh-Client (${n} unread)` : 'Mesh-Client');
     if (process.platform === 'darwin') {
-      app.dock?.setBadge(hasUnread ? String(n) : '');
+      if (!getLongSessionNudge().shouldSuppressUnreadDockBadge()) {
+        app.dock?.setBadge(hasUnread ? String(n) : '');
+      }
     } else if (process.platform === 'linux') {
       app.setBadgeCount(hasUnread ? n : 0);
     } else if (process.platform === 'win32' && mainWindow) {
@@ -3457,6 +3598,18 @@ ipcMain.handle('notify:message', (event, title: unknown, body: unknown) => {
   }
 });
 
+ipcMain.handle('notify:longSessionRestart', (event, payload: unknown) => {
+  assertIpcSender(event, 'notify:longSessionRestart');
+  const parsed = parseLongSessionRestartPayload(payload);
+  if (!parsed) return;
+  getLongSessionNudge().show(parsed);
+});
+
+ipcMain.handle('notify:clearLongSessionNudge', (event) => {
+  assertIpcSender(event, 'notify:clearLongSessionNudge');
+  getLongSessionNudge().clear();
+});
+
 // ─── IPC: Safe storage (OS-keychain-backed encryption) ─────────────
 /** Export / import dialogs — max 5 / 60s. */
 const exportIpcRateLimit = createIpcRateLimiter({
@@ -3770,58 +3923,12 @@ ipcMain.handle('app:quit', async (event) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
   }
-  isQuitting = true;
-  isConnected = false;
-  try {
-    await nobleBleManager.stopAllScanning();
-    try {
-      await nobleBleManager.disconnectAll();
-    } catch (err) {
-      console.error(
-        '[IPC] app:quit BLE disconnectAll failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-    }
+  await quitMainProcess({ relaunch: false });
+});
 
-    await shutdownAppResources();
-
-    if (meshcoreTcpSocket) {
-      try {
-        meshcoreTcpSocket.destroy();
-      } catch (err) {
-        console.debug(
-          '[IPC] app:quit TCP socket destroy (ignored):',
-          err instanceof Error ? err.message : err,
-        ); // log-injection-ok internal Node.js socket error during cleanup
-      }
-      meshcoreTcpSocket = null;
-    }
-    if (meshtasticTcpSocket) {
-      try {
-        meshtasticTcpSocket.destroy();
-      } catch (err) {
-        console.debug(
-          '[IPC] app:quit TCP socket destroy (ignored):',
-          err instanceof Error ? err.message : err,
-        ); // log-injection-ok internal Node.js socket error during cleanup
-      }
-      meshtasticTcpSocket = null;
-    }
-    stopPowerSaveBlocker();
-
-    nobleBleManager.releaseNobleProcessHandles();
-    tray?.destroy();
-    tray = null;
-    app.exit(0);
-  } catch (err) {
-    console.error(
-      '[IPC] app:quit disconnect failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    app.quit();
-  } finally {
-    // no-op: handled above
-  }
+ipcMain.handle('app:relaunch', async (event) => {
+  assertIpcSender(event, 'app:relaunch');
+  await quitMainProcess({ relaunch: true });
 });
 
 // ─── IPC: Database operations ──────────────────────────────────────

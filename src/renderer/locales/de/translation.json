@@ -4840,8 +4840,7 @@
     "firmwareAvailable": "Firmware-Update verfügbar: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} neue Nachricht",
     "newMessages_other": "{{protocol}}: {{count}} neue Nachrichten",
-    "meshcoreDistanceFilterHint": "Du hast {{count}} Kontakte mit GPS auf der Karte. Aktiviere den Entfernungsfilter unter App → Aussehen, um dich auf nahe Knoten zu konzentrieren.",
-    "longSessionRestartNudge": "mesh-client läuft seit vier Tagen. Starten Sie die App neu, um das Risiko von Abstürzen bei langen MeshCore BLE-Sitzungen zu reduzieren."
+    "meshcoreDistanceFilterHint": "Du hast {{count}} Kontakte mit GPS auf der Karte. Aktiviere den Entfernungsfilter unter App → Aussehen, um dich auf nahe Knoten zu konzentrieren."
   },
   "updateStatus": {
     "checking": "Überprüfung…",
@@ -5482,5 +5481,11 @@
     },
     "drawOfferWaitingBanner": "Angebot ziehen gesendet. Warten auf Gegner...",
     "idleExpiryNotice": "Spiele laufen nach Inaktivität ab und können dann nur noch gelöscht werden. Unbeantwortete Herausforderungen: 24 Stunden (alle Spiele). Aktive Partien: Tic-Tac-Toe nach 24 Stunden, Schach und Four-in-a-row nach 7 Tagen."
+  },
+  "longSession": {
+    "title": "Neustart empfohlen",
+    "body": "mesh-client läuft seit vier Tagen mit Bluetooth-Funkverbindung. Starte die App neu, um das Risiko von Abstürzen bei langen Noble BLE-Sitzungen zu reduzieren.",
+    "restart": "Neustart",
+    "dismiss": "Ablehnen"
   }
 }

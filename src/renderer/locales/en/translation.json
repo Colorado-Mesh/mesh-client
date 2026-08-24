@@ -5459,10 +5459,15 @@
   },
   "toasts": {
     "firmwareAvailable": "Firmware update available: v{{version}}",
-    "longSessionRestartNudge": "Mesh-client has been running for four days. Restart the app to reduce the risk of crashes on long MeshCore BLE sessions.",
     "meshcoreDistanceFilterHint": "You have {{count}} contacts with GPS on the map. Enable the distance filter in App → Appearance to focus on nearby nodes.",
     "newMessages_one": "{{protocol}}: {{count}} new message",
     "newMessages_other": "{{protocol}}: {{count}} new messages"
+  },
+  "longSession": {
+    "title": "Restart recommended",
+    "body": "mesh-client has been running for four days with Bluetooth radio connected. Restart the app to reduce the risk of crashes on long Noble BLE sessions.",
+    "restart": "Restart",
+    "dismiss": "Dismiss"
   },
   "updateStatus": {
     "checking": "Checking…",

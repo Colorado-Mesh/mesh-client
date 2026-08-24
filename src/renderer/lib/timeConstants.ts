@@ -177,6 +177,8 @@ export const MESHCORE_STATS_POLL_MS = 30_000;
 
 /** Safety-net poll for queued waiting messages when event 131 may have been missed. */
 export const MESHCORE_WAITING_MESSAGES_POLL_MS = 5 * MS_PER_MINUTE;
+/** When silent-bulk circuit is open, stretch scheduled drain / poll intervals by this factor. */
+export const MESHCORE_WAITING_MESSAGES_CIRCUIT_OPEN_BACKOFF_FACTOR = 4;
 /** Max wait for manual Chat Sync now when a MsgWaiting backlog is confirmed. */
 export const MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS = 60_000;
 /** Fail-fast timeout for silent auto-drains (event 131, connect, poll). */
