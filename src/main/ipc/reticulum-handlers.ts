@@ -251,7 +251,8 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
         reticulumProxyIpcRateLimit.checkOrThrow();
       }
       const m = ensureManager();
-      return await m.proxyGet(pathArg);
+      const body = await m.proxyGet(pathArg);
+      return body;
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('proxyGet', err, pathArg);
@@ -278,7 +279,8 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     try {
       reticulumProxyIpcRateLimit.checkOrThrow();
       const m = ensureManager();
-      return await m.proxyPost(pathArg, body);
+      const result = await m.proxyPost(pathArg, body);
+      return result;
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('proxyPost', err, pathArg);

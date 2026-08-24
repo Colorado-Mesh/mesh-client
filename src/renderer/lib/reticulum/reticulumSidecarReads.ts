@@ -346,14 +346,17 @@ export async function registerReticulumKnownIdentity(
   }
 }
 
-export async function requestReticulumPeerPath(hash: string): Promise<ReticulumPeerPathResult> {
+export async function requestReticulumPeerPath(
+  hash: string,
+  opts?: { force?: boolean },
+): Promise<ReticulumPeerPathResult> {
   if (!(await isReticulumSidecarRunning())) {
     return { ok: false, error: 'sidecar_not_running' };
   }
   try {
     const res = (await window.electronAPI.reticulum.proxyPost(
       `/api/v1/peers/${hash}/path`,
-      {},
+      opts?.force ? { force: true } : {},
     )) as { ok?: boolean; error?: string };
     return { ok: Boolean(res.ok), error: res.error };
   } catch (e) {

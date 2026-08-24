@@ -15,23 +15,27 @@ function ReticulumQueueHeaderCluster({
   free,
   maxlen,
   interfaceName,
+  buffering,
 }: {
   free: number;
   maxlen: number;
   interfaceName: string;
+  buffering: boolean;
 }) {
   const used = maxlen - free;
   const color = queueBadgeColorClass(used, maxlen, 'ratio');
   return (
     <div>
-      {used > 0 ? (
+      {buffering ? (
         <ReticulumTxBufferingHeaderIndicator buffering interfaceName={interfaceName} />
       ) : null}
-      <HelpTooltip text={`Host TX queue for local RNode "${interfaceName}"`}>
-        <div aria-label={`Q: ${used}/${maxlen}`} className={color}>
-          {`Q: ${used}/${maxlen}`}
-        </div>
-      </HelpTooltip>
+      {buffering ? (
+        <HelpTooltip text={`Host TX queue for local RNode "${interfaceName}"`}>
+          <div aria-label={`Q: ${used}/${maxlen}`} className={color}>
+            {`Q: ${used}/${maxlen}`}
+          </div>
+        </HelpTooltip>
+      ) : null}
     </div>
   );
 }
@@ -41,19 +45,24 @@ describe('Reticulum queue header cluster', () => {
     vi.clearAllMocks();
   });
 
-  it('shows Q badge without spinner when empty', async () => {
+  it('shows nothing when idle baseline fill is not buffering', async () => {
     const { container } = render(
-      <ReticulumQueueHeaderCluster free={256} maxlen={256} interfaceName="RNode USB" />,
+      <ReticulumQueueHeaderCluster
+        free={245}
+        maxlen={256}
+        interfaceName="RNode 41F4"
+        buffering={false}
+      />,
     );
-    expect(screen.getByText('Q: 0/256')).toBeInTheDocument();
+    expect(screen.queryByText('Q: 11/256')).not.toBeInTheDocument();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it('shows buffering spinner and Q badge when fill > 0', async () => {
+  it('shows buffering spinner and Q badge when host TX is actively buffering', async () => {
     const { container } = render(
-      <ReticulumQueueHeaderCluster free={192} maxlen={256} interfaceName="RNode 41F4" />,
+      <ReticulumQueueHeaderCluster free={192} maxlen={256} interfaceName="RNode 41F4" buffering />,
     );
     expect(screen.getByText('Q: 64/256')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveAttribute('aria-busy', 'true');

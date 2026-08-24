@@ -2,6 +2,8 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RETICULUM_CONFIGURED_EVENT } from '@/renderer/lib/reticulum/reticulumConfiguredEvent';
+import * as pathReady from '@/renderer/lib/reticulum/reticulumRrcPathReady';
+import * as transportReady from '@/renderer/lib/reticulum/reticulumRrcTransportReady';
 import * as sidecarReads from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import {
   clearRrcHubAutoJoinBackoff,
@@ -44,6 +46,13 @@ describe('runRrcHubAutoConnectBatch', () => {
     });
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({ ok: true });
     vi.spyOn(sidecarReads, 'isReticulumRnsLiveReady').mockResolvedValue(true);
+    vi.spyOn(transportReady, 'probeReticulumRrcTransportReady').mockResolvedValue({ ready: true });
+    vi.spyOn(pathReady, 'probeReticulumRrcPathReady').mockResolvedValue({
+      ready: true,
+      hops: 2,
+      iface: 'Ratspeak',
+      source: 'passive',
+    });
   });
 
   afterEach(() => {
@@ -54,6 +63,28 @@ describe('runRrcHubAutoConnectBatch', () => {
 
   it('no-ops when live RNS is not ready (panel and App share this gate)', async () => {
     vi.spyOn(sidecarReads, 'isReticulumRnsLiveReady').mockResolvedValue(false);
+    saveRrcHubAutoJoin([HUB]);
+    await runRrcHubAutoConnectBatch('tester');
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
+  });
+
+  it('no-ops when transport is not ready (interfaces settling or RNode buffering)', async () => {
+    vi.spyOn(transportReady, 'probeReticulumRrcTransportReady').mockResolvedValue({
+      ready: false,
+      reason: 'rnode_tx_buffering',
+    });
+    saveRrcHubAutoJoin([HUB]);
+    await runRrcHubAutoConnectBatch('tester');
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
+  });
+
+  it('no-ops when hub path is not ready yet', async () => {
+    vi.spyOn(pathReady, 'probeReticulumRrcPathReady').mockResolvedValue({
+      ready: false,
+      reason: 'probe_failed',
+      passiveHops: 2,
+      passiveIface: 'Ratspeak',
+    });
     saveRrcHubAutoJoin([HUB]);
     await runRrcHubAutoConnectBatch('tester');
     expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
@@ -153,6 +184,12 @@ describe('useRrcStartupAutoConnect poll timing', () => {
     vi.useFakeTimers();
     vi.spyOn(sidecarReads, 'isReticulumSidecarRunning').mockResolvedValue(true);
     vi.spyOn(sidecarReads, 'isReticulumRnsLiveReady').mockResolvedValue(true);
+    vi.spyOn(transportReady, 'probeReticulumRrcTransportReady').mockResolvedValue({ ready: true });
+    vi.spyOn(pathReady, 'probeReticulumRrcPathReady').mockResolvedValue({
+      ready: true,
+      hops: 2,
+      source: 'passive',
+    });
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({ ok: true });
   });
 

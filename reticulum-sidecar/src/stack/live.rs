@@ -1821,8 +1821,36 @@ impl LiveBridge {
         let key = hash_hex.to_lowercase();
         entries
             .iter()
-            .find(|e| hex::encode(e.hash).to_lowercase() == key)
+            .filter(|e| hex::encode(e.hash).to_lowercase() == key)
             .map(|e| e.hops)
+            .min()
+    }
+
+    /// Lowest-hop live path slot within RRC link limits (default 8).
+    async fn best_rrc_path_route(&self, hash_hex: &str) -> Option<(u8, Option<String>)> {
+        const RRC_MAX_CONNECT_HOPS: u8 = 8;
+
+        let Ok(dest) = parse_hash16(hash_hex) else {
+            return None;
+        };
+        if let Some(TransportQueryResponse::PathSlots(entry)) = self
+            .query_control_timed(TransportQuery::GetPathSlots { dest })
+            .await
+        {
+            let best = entry
+                .slots
+                .iter()
+                .filter(|s| !s.expired && s.hops <= RRC_MAX_CONNECT_HOPS)
+                .min_by_key(|s| s.hops);
+            if let Some(slot) = best {
+                let iface = (!slot.interface.is_empty()).then(|| slot.interface.clone());
+                return Some((slot.hops, iface));
+            }
+        }
+        self.hops_to_destination(hash_hex)
+            .await
+            .filter(|&h| h <= RRC_MAX_CONNECT_HOPS)
+            .map(|h| (h, None))
     }
 
     /// Register handler for Nomad Network node announces (`nomadnetwork.node`).
@@ -2127,12 +2155,49 @@ impl LiveBridge {
         hops: u8,
         nickname: String,
     ) -> serde_json::Value {
+        let _ = self.refresh_outbound_path_table().await;
+        let Some((path_hops, path_iface)) = self.best_rrc_path_route(&dest_hash_hex).await else {
+            tracing::debug!(
+                target: "rrc",
+                hub = %dest_hash_hex,
+                stored_hops = hops,
+                "rrc connect rejected — no viable network path (≤8 hops)"
+            );
+            return serde_json::json!({ "ok": false, "error": "path not ready" });
+        };
+        let ifaces = self.fetch_interfaces().await.unwrap_or_default();
+        let egress = resolve_lxmf_sent_via(path_iface.as_deref(), &ifaces, None);
+        let egress_atom = match egress.as_str() {
+            "ble" => "ble",
+            "rf" => "rf",
+            "tcp" => "tcp",
+            _ => "network",
+        };
+        let link_hops = nomad_timeouts::nomad_link_initiator_hops(egress_atom, path_hops);
+        if path_hops != hops || link_hops != path_hops {
+            tracing::debug!(
+                target: "rrc",
+                hub = %dest_hash_hex,
+                stored_hops = hops,
+                path_hops,
+                link_hops,
+                egress = %egress,
+                path_iface = ?path_iface,
+                "rrc connect using scaled link hops"
+            );
+        }
         match self
             .rrc_session
-            .connect(dest_hash, dest_hash_hex, hops, nickname)
+            .connect(dest_hash, dest_hash_hex, link_hops, nickname)
             .await
         {
-            Ok(()) => serde_json::json!({ "ok": true }),
+            Ok(()) => serde_json::json!({
+                "ok": true,
+                "hops": path_hops,
+                "link_hops": link_hops,
+                "path_iface": path_iface,
+                "egress": egress,
+            }),
             Err(e) => serde_json::json!({ "ok": false, "error": e }),
         }
     }
@@ -4376,6 +4441,29 @@ impl LiveBridge {
             })
             .await
             .map_err(|e| e.to_string())
+    }
+
+    /// Drop any cached route, then RequestPath so path ranking can move off stale TCP slots.
+    pub async fn request_path_force(&self, hash: &str) -> Result<(), String> {
+        let dest = parse_hash16(hash)?;
+        let already = self
+            .outbound
+            .lock()
+            .map(|d| d.has_path_to(hash))
+            .unwrap_or(false);
+        if already {
+            let _ = self
+                .query_control_timed(TransportQuery::DropPath { dest })
+                .await;
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.clear_path_to(hash);
+            }
+            if let Ok(mut cache) = self.peer_via_cache.lock() {
+                cache.remove(&hash.to_lowercase());
+            }
+            let _ = self.refresh_outbound_path_table().await;
+        }
+        self.request_path(hash).await
     }
 
     pub async fn probe_peer(&self, hash: &str) -> Result<serde_json::Value, String> {

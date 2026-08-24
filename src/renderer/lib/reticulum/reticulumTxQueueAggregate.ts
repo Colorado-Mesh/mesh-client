@@ -25,6 +25,21 @@ function fillRatio(used: number, max: number): number {
   return max > 0 ? used / max : 0;
 }
 
+/** Host TX fill above this ratio (or absolute used) counts as user-visible buffering. */
+const RNODE_TX_BUFFERING_MIN_RATIO = 0.0625;
+const RNODE_TX_BUFFERING_MIN_USED = 16;
+
+export function isReticulumHostTxQueueBuffering(used: number, max: number): boolean {
+  if (used <= 0) return false;
+  return (
+    used >= RNODE_TX_BUFFERING_MIN_USED || fillRatio(used, max) >= RNODE_TX_BUFFERING_MIN_RATIO
+  );
+}
+
+function isHostTxQueueBuffering(used: number, max: number): boolean {
+  return isReticulumHostTxQueueBuffering(used, max);
+}
+
 /**
  * Worst host TX fill among enabled+online local RF interfaces (rnode / rnode_multi / kiss).
  * Excludes TCP/I2P/Auto hubs. Tie-break: higher used, then lexicographic name.
@@ -66,7 +81,7 @@ export function aggregateReticulumLocalRfTxQueue(
       continue;
     }
     const used = Math.min(usedRaw, max);
-    if (used > 0) {
+    if (isHostTxQueueBuffering(used, max)) {
       anyBuffering = true;
     }
     const ratio = fillRatio(used, max);
@@ -81,6 +96,10 @@ export function aggregateReticulumLocalRfTxQueue(
   }
 
   if (!best) {
+    return null;
+  }
+
+  if (!anyBuffering) {
     return null;
   }
 

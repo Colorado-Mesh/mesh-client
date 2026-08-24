@@ -2729,7 +2729,12 @@ function AppContent() {
       : capabilities.modulesTabUsesRepeatersLabel
         ? t('app.meshcoreQueueTooltip')
         : t('app.meshtasticQueueTooltip');
-  const reticulumTxBuffering = protocol === 'reticulum' && queueShowBadge && queueUsed > 0;
+  const reticulumQueueBuffering =
+    protocol === 'reticulum' &&
+    legacyQueue != null &&
+    'buffering' in legacyQueue &&
+    legacyQueue.buffering === true;
+  const reticulumTxBuffering = reticulumQueueBuffering;
   const takStatusLabel =
     takClientLoss && takStatus.running
       ? t('app.takClientLost')
