@@ -420,11 +420,12 @@ impl LiveBridge {
                 .map(hex::encode)
                 .unwrap_or_default();
             if msg.method == DeliveryMethod::Propagated {
-                tracing::info!(
+                let from_prefix = sender_hex.get(..12).unwrap_or(&sender_hex);
+                tracing::debug!(
                     target: "propagation-retrieve",
                     message_hash = %message_hash,
                     transient_id = %transient_id_hex,
-                    from = %sender_hex,
+                    from_prefix = %from_prefix,
                     "inbound LXMF delivered via propagation"
                 );
             }

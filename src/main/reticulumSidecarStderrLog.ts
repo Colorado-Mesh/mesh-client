@@ -8,8 +8,8 @@ const BEACON_FAIL_WARN_INTERVAL_MS = 60 * MS_PER_SECOND;
 
 /** Default tracing filter for sidecar child processes (overridable via env). */
 // PN connect triage: keep global warn; surface sync/deposit/outbound INFO. Keep
-// propagation-retrieve at warn by default (inbound peer/message metadata); opt in
-// via MESH_CLIENT_RUST_LOG (e.g. add propagation-retrieve=info).
+// propagation-retrieve at info for pn_hash / establish / failover lines; per-message
+// inbound delivery records stay debug-only with redacted from_prefix in live.rs.
 export const SIDECAR_DEFAULT_RUST_LOG =
   'warn,propagation-sync=info,propagation-retrieve=info,propagation-deposit=info,lxmf-outbound=info';
 
