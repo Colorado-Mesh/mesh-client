@@ -345,6 +345,19 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     );
   });
 
+  it('attachRfSession configures before awaiting SQLite node hydrate (#895)', () => {
+    const attachBody = extractUseCallbackBody(SOURCE, 'attachRfSession');
+    // wantConfigId must not wait on SQLite: hydrate runs in a void IIFE, configure is awaited
+    // on the attach path (same as reconnect).
+    expect(attachBody).toMatch(
+      /wireSubscriptions\([\s\S]*?isConfiguringRef\.current = true[\s\S]*?void \(async \(\) => \{[\s\S]*?loadMeshtasticNodeMapFromDb[\s\S]*?await configureMeshtasticDeviceWithRetry/,
+    );
+    const configureIdx = attachBody.indexOf('await configureMeshtasticDeviceWithRetry');
+    const wireIdx = attachBody.indexOf('wireSubscriptions');
+    expect(wireIdx).toBeGreaterThanOrEqual(0);
+    expect(configureIdx).toBeGreaterThan(wireIdx);
+  });
+
   it('uses nodeStore as the merge base and synchronizes runtime patches immediately', () => {
     const updateNodesBody = extractUseCallbackBody(SOURCE, 'updateNodes');
     expect(updateNodesBody).toContain('getIdentityNodeMap(identityId)');

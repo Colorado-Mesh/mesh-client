@@ -2634,21 +2634,31 @@ export function useMeshtasticRuntime() {
       }
       wireSubscriptions(activeDevice, type, { driverIdentityId });
 
-      // Show persisted nodes immediately while NodeDB configure replays over BLE/serial.
-      const dbCacheStart = performance.now();
-      let dbCacheNodeCount = 0;
-      try {
-        const cachedNodes = await loadMeshtasticNodeMapFromDb();
-        dbCacheNodeCount = cachedNodes.size;
-        applyMeshtasticNodesToUi(driverIdentityId, cachedNodes);
-      } catch (e) {
-        console.warn(
-          '[useMeshtasticRuntime] attachRfSession db cache hydrate failed ' + errLikeToLogString(e),
+      // Configure immediately (same as reconnect). Do not await SQLite hydrate first —
+      // a multi-hundred-ms gap before wantConfigId lets an orphaned PhoneAPI dump
+      // (nodeInfo/fileInfo) overlap a late configure and drop serial on some RAK4631s (#895).
+      isConfiguringRef.current = true;
+      setMeshtasticConfigurePhase(true);
+      meshtasticIngestSessionRef.current?.setConfiguring(true);
+
+      // Show persisted nodes/messages in parallel while NodeDB configure replays.
+      void (async () => {
+        const dbCacheStart = performance.now();
+        let dbCacheNodeCount = 0;
+        try {
+          const cachedNodes = await loadMeshtasticNodeMapFromDb();
+          dbCacheNodeCount = cachedNodes.size;
+          applyMeshtasticNodesToUi(driverIdentityId, cachedNodes);
+        } catch (e) {
+          console.warn(
+            '[useMeshtasticRuntime] attachRfSession db cache hydrate failed ' +
+              errLikeToLogString(e),
+          );
+        }
+        console.debug(
+          `[useMeshtasticRuntime] attachRfSession dbCache→UI ${Math.round(performance.now() - dbCacheStart)}ms (${dbCacheNodeCount} nodes)`,
         );
-      }
-      console.debug(
-        `[useMeshtasticRuntime] attachRfSession dbCache→UI ${Math.round(performance.now() - dbCacheStart)}ms (${dbCacheNodeCount} nodes)`,
-      );
+      })();
 
       void (async () => {
         try {
@@ -2668,9 +2678,6 @@ export function useMeshtasticRuntime() {
         }
       })();
 
-      isConfiguringRef.current = true;
-      setMeshtasticConfigurePhase(true);
-      meshtasticIngestSessionRef.current?.setConfiguring(true);
       await configureMeshtasticDeviceWithRetry(activeDevice, {
         logTag: 'useMeshtasticRuntime attachRfSession',
       });
