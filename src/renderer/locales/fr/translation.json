@@ -3956,7 +3956,9 @@
     "floodScopeRemoveSavedAria": "Supprimer {{hashtag}} des étendues enregistrées",
     "floodScopeInvalidHashtag": "Saisissez un hashtag de région valide (par exemple #myregion).",
     "sendPositionDisabledShareOff": "Activez Partager ma position dans l'application → GPS / Localisation pour envoyer votre position à l'appareil.",
-    "clientMuteGpsSuppressed": "Mise en sourdine du client appliquée — Diffusions GPS et rapports de carte MQTT désactivés sur l'appareil."
+    "clientMuteGpsSuppressed": "Mise en sourdine du client appliquée — Diffusions GPS et rapports de carte MQTT désactivés sur l'appareil.",
+    "validationShortNameTooLong": "Le nom abrégé doit correspondre à 4 octets UTF-8",
+    "validationShortNameEmojiTooLarge": "Ce caractère est trop grand pour le nom court (max 4 UTF-8 octets par nom)"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",

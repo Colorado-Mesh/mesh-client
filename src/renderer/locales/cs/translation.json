@@ -3958,7 +3958,9 @@
     "floodScopeRemoveSavedAria": "Odebrat {{hashtag}} z uložených rozsahů",
     "floodScopeInvalidHashtag": "Zadejte platný hashtag regionu (například #myregion).",
     "sendPositionDisabledShareOff": "Povolte Sdílení mé polohy v aplikaci → GPS / Poloha pro odeslání vaší polohy do zařízení.",
-    "clientMuteGpsSuppressed": "Bylo použito ztlumení klienta — vysílání GPS a hlášení map MQTT jsou na zařízení zakázány."
+    "clientMuteGpsSuppressed": "Bylo použito ztlumení klienta — vysílání GPS a hlášení map MQTT jsou na zařízení zakázány.",
+    "validationShortNameTooLong": "Krátký název se musí vejít do 4 bajtů UTF-8",
+    "validationShortNameEmojiTooLarge": "Tento znak je příliš velký pro Krátký název (max. 4 UTF-8 bajtů na název)"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",

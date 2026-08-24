@@ -3956,7 +3956,9 @@
     "floodScopeRemoveSavedAria": "保存されたスコープから {{hashtag}} を削除します",
     "floodScopeInvalidHashtag": "有効な地域ハッシュタグ (#myregion など) を入力します。",
     "sendPositionDisabledShareOff": "[アプリの→GPS/位置情報で位置情報を共有]を有効にして、位置情報をデバイスに送信します。",
-    "clientMuteGpsSuppressed": "クライアントミュートが適用されました— GPSブロードキャストとMQTTマップレポートがデバイスで無効になりました。"
+    "clientMuteGpsSuppressed": "クライアントミュートが適用されました— GPSブロードキャストとMQTTマップレポートがデバイスで無効になりました。",
+    "validationShortNameTooLong": "ショートネームは4 UTF -8バイト以内でなければなりません",
+    "validationShortNameEmojiTooLarge": "この文字はショートネームには大きすぎます（名前ごとに最大4つのUTF -8バイト）"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",

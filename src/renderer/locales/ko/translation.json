@@ -3956,7 +3956,9 @@
     "floodScopeRemoveSavedAria": "저장된 범위에서 {{hashtag}} 제거",
     "floodScopeInvalidHashtag": "유효한 지역 해시태그(예: #myregion)를 입력하세요.",
     "sendPositionDisabledShareOff": "앱 → GPS/위치에서 내 위치 공유를 활성화하여 위치를 장치로 전송합니다.",
-    "clientMuteGpsSuppressed": "클라이언트 음소거 적용 — 장치에서 GPS 브로드캐스트 및 MQTT 맵 보고가 비활성화되었습니다."
+    "clientMuteGpsSuppressed": "클라이언트 음소거 적용 — 장치에서 GPS 브로드캐스트 및 MQTT 맵 보고가 비활성화되었습니다.",
+    "validationShortNameTooLong": "짧은 이름은 4 UTF-8 바이트 이내여야 합니다",
+    "validationShortNameEmojiTooLarge": "이 문자는 짧은 이름에 비해 너무 큽니다 (이름당 최대 4 UTF-8 바이트)."
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",

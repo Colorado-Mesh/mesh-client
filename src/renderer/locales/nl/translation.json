@@ -3956,7 +3956,9 @@
     "floodScopeRemoveSavedAria": "Verwijder {{hashtag}} uit opgeslagen bereiken",
     "floodScopeInvalidHashtag": "Voer een geldige regio-hashtag in (bijvoorbeeld #mijnregio).",
     "sendPositionDisabledShareOff": "Schakel Mijn locatie delen in de → GPS / locatie van de app in om uw positie naar het apparaat te verzenden.",
-    "clientMuteGpsSuppressed": "Client Mute toegepast — GPS-uitzendingen en MQTT-kaartrapportage uitgeschakeld op het apparaat."
+    "clientMuteGpsSuppressed": "Client Mute toegepast — GPS-uitzendingen en MQTT-kaartrapportage uitgeschakeld op het apparaat.",
+    "validationShortNameTooLong": "Korte naam moet binnen 4 UTF-8 bytes passen",
+    "validationShortNameEmojiTooLarge": "Dit teken is te groot voor korte naam (max. 4 UTF-8 bytes per naam)"
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",

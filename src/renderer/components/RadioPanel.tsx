@@ -29,6 +29,12 @@ import {
 } from '@/shared/meshtasticBluetoothPin';
 import type { ApplyChannelSetResult } from '@/shared/meshtasticChannelApply';
 import {
+  MESHTASTIC_SHORT_NAME_VALIDATION_I18N_KEYS,
+  MeshtasticShortNameValidationError,
+  truncateMeshtasticShortName,
+  validateMeshtasticShortName,
+} from '@/shared/meshtasticShortNameLimits';
+import {
   generateConfigUrl,
   type MeshtasticLoraConfig,
   MeshtasticUrlError,
@@ -38,6 +44,16 @@ import {
 } from '@/shared/meshtasticUrlEncoder';
 
 import { serializeErrorLike } from '../hooks/meshcore/meshcoreHookPreamble';
+
+function setOwnerApplyErrorMessage(
+  err: unknown,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (err instanceof MeshtasticShortNameValidationError) {
+    return t(err.i18nKey);
+  }
+  return err instanceof Error ? err.message : t('common.unknown');
+}
 import {
   type OffloadContactsFromRadioFn,
   useMeshcoreContactCapacity,
@@ -744,10 +760,17 @@ export default function RadioPanel({
   useEffect(() => {
     if (deviceOwner) {
       setLongName(deviceOwner.longName);
-      setShortName(deviceOwner.shortName);
+      setShortName(truncateMeshtasticShortName(deviceOwner.shortName));
       setIsLicensed(deviceOwner.isLicensed);
     }
   }, [deviceOwner]);
+
+  const shortNameValidationIssue = capabilities?.hasChannelConfig
+    ? validateMeshtasticShortName(shortName)
+    : null;
+  const shortNameValidationError = shortNameValidationIssue
+    ? MESHTASTIC_SHORT_NAME_VALIDATION_I18N_KEYS[shortNameValidationIssue]
+    : null;
 
   // ─── LoRa settings ────────────────────────────────────────────
   const [region, setRegion] = useState(1);
@@ -1448,6 +1471,14 @@ export default function RadioPanel({
         title={t('radioPanel.sectionDeviceUser')}
         onApply={async () => {
           if (!onSetOwner) return;
+          if (shortNameValidationIssue) {
+            setStatus(
+              t('radioPanel.applyStatusFailed', {
+                message: t(shortNameValidationError!),
+              }),
+            );
+            return;
+          }
           setApplyingSection('user');
           setStatus(t('radioPanel.applyUserApplying'));
           try {
@@ -1457,7 +1488,7 @@ export default function RadioPanel({
             console.warn('[RadioPanel] setOwner failed:', err instanceof Error ? err.message : err);
             setStatus(
               t('radioPanel.applyStatusFailed', {
-                message: err instanceof Error ? err.message : t('common.unknown'),
+                message: setOwnerApplyErrorMessage(err, t),
               }),
             );
           } finally {
@@ -1465,7 +1496,7 @@ export default function RadioPanel({
           }
         }}
         applying={applyingSection === 'user'}
-        disabled={disabled || !onSetOwner}
+        disabled={disabled || !onSetOwner || !!shortNameValidationIssue}
       >
         <div className="space-y-1">
           <label htmlFor="radio-long-name" className="text-muted text-sm">
@@ -1495,7 +1526,7 @@ export default function RadioPanel({
               : t('radioPanel.longNameHintMeshtastic')}
           </p>
         </div>
-        {capabilities?.protocol !== 'meshcore' && (
+        {capabilities?.hasChannelConfig && (
           <>
             <div className="space-y-1">
               <label htmlFor="radio-short-name" className="text-muted text-sm">
@@ -1506,14 +1537,20 @@ export default function RadioPanel({
                 type="text"
                 value={shortName}
                 onChange={(e) => {
-                  setShortName(e.target.value.slice(0, 4));
+                  setShortName(truncateMeshtasticShortName(e.target.value));
                 }}
-                maxLength={4}
                 disabled={disabled}
                 placeholder={t('radioPanel.namePlaceholder')}
+                aria-invalid={shortNameValidationIssue != null}
+                aria-describedby={shortNameValidationIssue ? 'radio-short-name-error' : undefined}
                 className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
               />
               <p className="text-muted text-xs">{t('radioPanel.shortNameHint')}</p>
+              {shortNameValidationIssue ? (
+                <p id="radio-short-name-error" className="text-xs text-red-400" role="alert">
+                  {t(shortNameValidationError!)}
+                </p>
+              ) : null}
             </div>
             <ConfigToggle
               label={t('radioPanel.licensedHamLabel')}

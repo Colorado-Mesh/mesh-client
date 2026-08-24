@@ -3960,7 +3960,9 @@
     "floodScopeRemoveSavedAria": "Usuń {{hashtag}} z zapisanych zakresów",
     "floodScopeInvalidHashtag": "Wprowadź prawidłowy hashtag regionu (na przykład #myregion).",
     "sendPositionDisabledShareOff": "Włącz opcję Udostępnij moją lokalizację w aplikacji → GPS / Lokalizacja, aby wysłać swoją pozycję do urządzenia.",
-    "clientMuteGpsSuppressed": "Zastosowano wyciszenie klienta — transmisje GPS i raportowanie map MQTT wyłączone na urządzeniu."
+    "clientMuteGpsSuppressed": "Zastosowano wyciszenie klienta — transmisje GPS i raportowanie map MQTT wyłączone na urządzeniu.",
+    "validationShortNameTooLong": "Nazwa skrócona musi mieścić się w zakresie 4 UTF-8 bajtów",
+    "validationShortNameEmojiTooLarge": "Ten znak jest zbyt duży dla nazwy skróconej (maks. 4 UTF-8 bajtów na nazwę)"
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",

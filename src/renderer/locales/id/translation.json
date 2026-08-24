@@ -3956,7 +3956,9 @@
     "floodScopeRemoveSavedAria": "Hapus {{hashtag}} dari cakupan yang disimpan",
     "floodScopeInvalidHashtag": "Masukkan hashtag wilayah yang valid (misalnya #wilayahsaya).",
     "sendPositionDisabledShareOff": "Aktifkan Bagikan lokasi saya di Aplikasi → GPS / Lokasi untuk mengirim posisi Anda ke perangkat.",
-    "clientMuteGpsSuppressed": "Client Mute diterapkan — siaran GPS dan pelaporan peta MQTT dinonaktifkan pada perangkat."
+    "clientMuteGpsSuppressed": "Client Mute diterapkan — siaran GPS dan pelaporan peta MQTT dinonaktifkan pada perangkat.",
+    "validationShortNameTooLong": "Nama Pendek harus sesuai dalam 4 UTF -8 byte",
+    "validationShortNameEmojiTooLarge": "Karakter ini terlalu besar untuk Nama Pendek (maks 4 UTF -8 byte per nama)"
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",

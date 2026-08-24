@@ -3956,7 +3956,9 @@
     "floodScopeRemoveSavedAria": "{{hashtag}} öğesini kayıtlı kapsamlardan kaldırın",
     "floodScopeInvalidHashtag": "Geçerli bir bölge hashtag'i girin (örneğin #myregion).",
     "sendPositionDisabledShareOff": "Konumunuzu cihaza göndermek için Uygulama → GPS / Konum'da konumumu paylaş'ı etkinleştirin.",
-    "clientMuteGpsSuppressed": "İstemci Sessiz uygulandı — GPS yayınları ve MQTT harita raporlaması cihazda devre dışı bırakıldı."
+    "clientMuteGpsSuppressed": "İstemci Sessiz uygulandı — GPS yayınları ve MQTT harita raporlaması cihazda devre dışı bırakıldı.",
+    "validationShortNameTooLong": "Kısa Ad 4 UTF -8 bayta sığmalıdır",
+    "validationShortNameEmojiTooLarge": "Bu karakter Kısa Ad için çok büyük (ad başına maksimum 4 UTF -8 bayt)"
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",

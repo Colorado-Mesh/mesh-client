@@ -3956,7 +3956,9 @@
     "floodScopeRemoveSavedAria": "Remover {{hashtag}} dos escopos salvos",
     "floodScopeInvalidHashtag": "Insira uma hashtag de região válida (por exemplo #myregion).",
     "sendPositionDisabledShareOff": "Ative Compartilhar minha localização no aplicativo → GPS / Localização para enviar sua posição para o dispositivo.",
-    "clientMuteGpsSuppressed": "Cliente Mudo aplicado — transmissões GPS e relatórios de mapa MQTT desativados no dispositivo."
+    "clientMuteGpsSuppressed": "Cliente Mudo aplicado — transmissões GPS e relatórios de mapa MQTT desativados no dispositivo.",
+    "validationShortNameTooLong": "O nome abreviado deve caber dentro de 4 bytes UTF-8",
+    "validationShortNameEmojiTooLarge": "Este caractere é muito grande para o nome curto (máximo de 4 bytes UTF-8 por nome)"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar pacotes",

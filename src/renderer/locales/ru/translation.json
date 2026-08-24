@@ -3958,7 +3958,9 @@
     "floodScopeRemoveSavedAria": "Удалить {{hashtag}} из сохраненных областей.",
     "floodScopeInvalidHashtag": "Введите действительный хэштег региона (например, #myregion).",
     "sendPositionDisabledShareOff": "Включите опцию Поделиться моим местоположением в приложении → GPS / Location, чтобы отправить свое местоположение на устройство.",
-    "clientMuteGpsSuppressed": "Применено отключение звука клиента — GPS-трансляции и отчеты о карте MQTT отключены на устройстве."
+    "clientMuteGpsSuppressed": "Применено отключение звука клиента — GPS-трансляции и отчеты о карте MQTT отключены на устройстве.",
+    "validationShortNameTooLong": "Короткое имя должно вписываться в 4 байта UTF-8",
+    "validationShortNameEmojiTooLarge": "Этот символ слишком велик для короткого имени (максимум 4 байта UTF-8 на имя)"
   },
   "rawPacketLog": {
     "filterPackets": "Фильтровать пакеты",

@@ -3956,7 +3956,9 @@
     "floodScopeRemoveSavedAria": "从保存的范围中删除 {{hashtag}}",
     "floodScopeInvalidHashtag": "输入有效的区域标签（例如#myregion）。",
     "sendPositionDisabledShareOff": "启用在应用程序→GPS/位置中共享我的位置，以便将您的位置发送到设备。",
-    "clientMuteGpsSuppressed": "已应用客户端静音—在设备上禁用GPS广播和MQTT地图报告。"
+    "clientMuteGpsSuppressed": "已应用客户端静音—在设备上禁用GPS广播和MQTT地图报告。",
+    "validationShortNameTooLong": "短名称必须在4个UTF-8字节以内",
+    "validationShortNameEmojiTooLarge": "此字符对于短名称太大（每个名称最多4个UTF-8字节）"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",
