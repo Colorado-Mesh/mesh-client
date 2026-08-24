@@ -61,7 +61,7 @@ use super::packet_log::{
 use super::path_failover::{
     self, PathSlotCandidate, active_via_hash_from_slots, live_interface_names,
     record_path_failover_attempt, remaining_live_ifaces, select_unblocked_slot,
-    should_attempt_nomad_via_failover, via_prefix,
+    should_attempt_nomad_via_failover, should_attempt_propagation_via_failover, via_prefix,
 };
 use super::path_medium::{self, PathMediumPreferenceSetting, PathMediumSetting};
 use super::path_speed;
@@ -2427,6 +2427,24 @@ impl LiveBridge {
         hex::encode(self.identity.hash)
     }
 
+    /// Live path-table hops + interface name for a destination (propagation list enrichment).
+    pub fn live_path_fields_for_destination(
+        &self,
+        destination_hash_hex: &str,
+    ) -> (Option<u8>, Option<String>) {
+        let clean = destination_hash_hex.trim().to_lowercase();
+        self.path_peer_cache
+            .lock()
+            .ok()
+            .and_then(|cache| {
+                cache
+                    .iter()
+                    .find(|p| p.destination_hash == clean)
+                    .map(|p| (p.hops, p.interface.clone().filter(|name| !name.is_empty())))
+            })
+            .unwrap_or((None, None))
+    }
+
     /// rnsh/rncp gating decision for `destination_hash_hex`: resolves the
     /// path-table egress interface (if known) to a transport atom via
     /// [`super::via::classify_path_interface_name`] and buckets it with
@@ -2803,6 +2821,7 @@ impl LiveBridge {
                     // cancel_client_download()s so this poll loop exits on Idle/Failed.
                     let cancel = Arc::new(AtomicBool::new(false));
                     let started = spawn_client_download_driver_task(
+                        None,
                         Arc::clone(&propagation),
                         Arc::clone(&router),
                         Arc::clone(&outbound),
@@ -2993,8 +3012,12 @@ impl LiveBridge {
     }
 
     /// Shared path gate for offer probe + Sync (`PROPAGATION_PATH_UNKNOWN`).
-    async fn ensure_propagation_path_or_unknown(&self, dest_hex: &str) -> Result<(), String> {
-        if self.ensure_path_for_direct(dest_hex, true).await {
+    async fn ensure_propagation_path_or_unknown(
+        &self,
+        dest_hex: &str,
+        force: bool,
+    ) -> Result<(), String> {
+        if self.ensure_path_for_direct(dest_hex, force).await {
             Ok(())
         } else {
             Err("PROPAGATION_PATH_UNKNOWN".into())
@@ -3681,7 +3704,8 @@ impl LiveBridge {
         self.cancel_propagation_sync().await;
         self.rehydrate_propagation_identities_from_persisted();
         let identity_ok = self.ensure_identity_for_direct(&dest_hex).await;
-        self.ensure_propagation_path_or_unknown(&dest_hex).await?;
+        self.ensure_propagation_path_or_unknown(&dest_hex, true)
+            .await?;
         let identity_known_after = self
             .outbound
             .lock()
@@ -3785,7 +3809,10 @@ impl LiveBridge {
         )
     }
 
-    pub async fn start_propagation_sync(&self, destination_hash: &str) -> Result<(), String> {
+    pub async fn start_propagation_sync(
+        self: Arc<Self>,
+        destination_hash: &str,
+    ) -> Result<(), String> {
         let hash = parse_hash16(destination_hash)?;
         let dest_hex = destination_hash.to_lowercase();
         // Cancel any in-flight sync/emitter before starting a new one.
@@ -3861,7 +3888,10 @@ impl LiveBridge {
         // Do this before peering PoW — nonzero peering_cost stamps are expensive and useless
         // when there is no path (would previously burn CPU then stall into syncTimedOut).
         let hops = self.hops_to_destination(&dest_hex).await;
-        if let Err(err) = self.ensure_propagation_path_or_unknown(&dest_hex).await {
+        if let Err(err) = self
+            .ensure_propagation_path_or_unknown(&dest_hex, false)
+            .await
+        {
             // Path gate awaits; only clear if we still own this attempt's latch.
             if let Ok(mut driver) = self.outbound.lock() {
                 if driver.propagation_sync_target() == Some(hash) {
@@ -3936,6 +3966,7 @@ impl LiveBridge {
             }
         });
         if !self.spawn_client_download_driver(
+            Some(Arc::clone(&self)),
             hash,
             dest_hex.clone(),
             Arc::clone(&cancel),
@@ -3974,6 +4005,7 @@ impl LiveBridge {
     #[allow(clippy::too_many_arguments)] // shared /get driver args mirror spawn_client_download_driver_task
     fn spawn_client_download_driver(
         &self,
+        live: Option<Arc<LiveBridge>>,
         pn_hash: [u8; 16],
         pn_hex: String,
         cancel: Arc<AtomicBool>,
@@ -3983,6 +4015,7 @@ impl LiveBridge {
         emit_ui: bool,
     ) -> bool {
         spawn_client_download_driver_task(
+            live,
             Arc::clone(&self.propagation),
             Arc::clone(&self.router),
             Arc::clone(&self.outbound),
@@ -5974,10 +6007,61 @@ fn peer_route_fields_equal(a: &PeerRow, b: &PeerRow) -> bool {
         && a.public_key == b.public_key
 }
 
+/// After establish failure, suppress dead iface/via and retry client `/get` on another hub.
+#[allow(clippy::too_many_arguments)] // mirrors Nomad path failover state threaded through driver loop
+async fn propagation_download_attempt_failover(
+    live: Option<&Arc<LiveBridge>>,
+    bridge: &PropagationBridge,
+    pn_hash: [u8; 16],
+    pn_hex: &str,
+    failover_round: &mut u8,
+    tried_interfaces: &mut Vec<String>,
+    blocked_ifaces: &mut Vec<String>,
+    blocked_vias: &mut Vec<String>,
+    live_ifaces: &[String],
+    current_iface: &mut Option<String>,
+    current_via: &mut Option<String>,
+) -> bool {
+    if live.is_none() || !should_attempt_propagation_via_failover(*failover_round) {
+        return false;
+    }
+    bridge.cancel_client_download();
+    *failover_round = failover_round.saturating_add(1);
+    record_path_failover_attempt(
+        tried_interfaces,
+        blocked_ifaces,
+        blocked_vias,
+        current_iface.as_deref(),
+        current_via.as_deref(),
+    );
+    let Some(live_ref) = live else {
+        return false;
+    };
+    if let Some(found) = live_ref
+        .suppress_via_and_rediscover(pn_hex, blocked_ifaces, blocked_vias, live_ifaces)
+        .await
+    {
+        *current_iface = found.iface.clone();
+        *current_via = found.via.clone();
+    }
+    tracing::info!(
+        target: "propagation-sync",
+        pn_hash = %pn_hex,
+        failover_round = *failover_round,
+        iface = ?current_iface,
+        via_prefix = via_prefix(current_via.as_deref()),
+        establish_error = ?bridge.last_establish_error(),
+        tried_interfaces = ?tried_interfaces,
+        "propagation client /get establish failover"
+    );
+    bridge.start_client_download(pn_hash)
+}
+
 /// Shared client `/get` driver used by user Sync (`emit_ui: true`) and post-peer
 /// silent retrieve (`emit_ui: false`).
 #[allow(clippy::too_many_arguments)] // bridge + router + outbound + UI/callback wiring
 fn spawn_client_download_driver_task(
+    live: Option<Arc<LiveBridge>>,
     bridge: Arc<PropagationBridge>,
     router: Arc<tokio::sync::Mutex<LxmRouter>>,
     outbound: Arc<std::sync::Mutex<LxmfOutboundDriver>>,
@@ -6000,13 +6084,45 @@ fn spawn_client_download_driver_task(
         return false;
     }
     tokio::spawn(async move {
-        // Client tick cadence; the client's own 120s timeout bounds a stuck link.
         const POLL_INTERVAL: Duration = Duration::from_millis(500);
         const DOWNLOAD_WATCHDOG: Duration = Duration::from_secs(180);
         const ESTABLISH_STALL: Duration = Duration::from_secs(45);
         let mut interval = tokio::time::interval(POLL_INTERVAL);
-        let started = Instant::now();
-        let mut last_logged_progress = -1.0_f64;
+        let attempt_started = Instant::now();
+        let mut failover_round: u8 = 0;
+        let mut tried_interfaces: Vec<String> = Vec::new();
+        let mut blocked_ifaces: Vec<String> = Vec::new();
+        let mut blocked_vias: Vec<String> = Vec::new();
+        let mut live_ifaces: Vec<String> = Vec::new();
+        let mut current_iface: Option<String> = None;
+        let mut current_via: Option<String> = None;
+        if let Some(ref live_ref) = live {
+            if let Ok(ifaces) = live_ref.fetch_interfaces().await {
+                live_ifaces = super::auto_path_policy::order_live_ifaces_private_first(
+                    &live_interface_names(&ifaces),
+                    &ifaces,
+                );
+            }
+            if let Ok((slots, _)) = live_ref.path_slots(&pn_hex).await {
+                current_via = active_via_hash_from_slots(&slots);
+                current_iface = slots
+                    .iter()
+                    .find(|s| {
+                        s.get("active")
+                            .and_then(serde_json::Value::as_bool)
+                            .unwrap_or(false)
+                    })
+                    .and_then(|s| s.get("interface").and_then(|v| v.as_str()))
+                    .map(str::to_string);
+            }
+            record_path_failover_attempt(
+                &mut tried_interfaces,
+                &mut blocked_ifaces,
+                &mut blocked_vias,
+                current_iface.as_deref(),
+                current_via.as_deref(),
+            );
+        }
         let emit_progress = |active: bool, progress: f64, message: Option<&str>| {
             if !emit_ui {
                 return;
@@ -6046,122 +6162,178 @@ fn spawn_client_download_driver_task(
                 f();
             }
         };
-        // Immediate Establishing frame so the renderer stall watchdog sees progress.
-        run_guarded(&|| {
-            emit_progress(true, 10.0, None);
-        });
-        loop {
-            interval.tick().await;
-            // Superseded by a newer sync run: that run now owns the client,
-            // so exit without touching shared client state.
-            if !still_current() {
-                break;
-            }
-            // This run was cancelled: cancel the client only while we are
-            // still the active run (lifecycle-lock guarded via run_if_current).
-            if cancel.load(Ordering::SeqCst) {
-                run_guarded(&|| {
-                    bridge.cancel_client_download();
-                });
-                break;
-            }
-            let progress = bridge.client_download_progress();
-            if progress <= 10.0
-                && bridge.client_download_active()
-                && started.elapsed() > ESTABLISH_STALL
-            {
+        let terminal_establish_failure =
+            |bridge: &PropagationBridge, round: u8, tried: &[String]| {
+                let message = bridge.propagation_establish_fail_message();
                 tracing::info!(
-                    target: "propagation-retrieve",
+                    target: "propagation-sync",
                     pn_hash = %pn_hex,
-                    "client /get stalled while establishing"
+                    failover_round = round,
+                    message = %message,
+                    tried_interfaces = ?tried,
+                    "propagation client /get establish failed"
                 );
-                run_guarded(&|| {
-                    bridge.cancel_client_download();
-                    emit_progress(
-                        false,
-                        0.0,
-                        Some("propagation establish failed: NoLinkProof"),
-                    );
-                });
-                break;
-            }
-            if started.elapsed() > DOWNLOAD_WATCHDOG {
-                tracing::info!(
-                    target: "propagation-retrieve",
-                    pn_hash = %pn_hex,
-                    "client /get download watchdog timeout"
-                );
-                run_guarded(&|| {
-                    bridge.cancel_client_download();
-                    emit_progress(
-                        false,
-                        0.0,
-                        Some("propagation establish failed: NoLinkProof"),
-                    );
-                });
-                break;
-            }
-            if (progress - last_logged_progress).abs() >= 0.5 {
-                last_logged_progress = progress;
-                run_guarded(&|| {
-                    emit_progress(true, progress, None);
-                });
-            }
-            let known = outbound
-                .lock()
-                .ok()
-                .map(|d| d.known_identities_for_propagation())
-                .unwrap_or_default();
-            match bridge.poll_client_download(&known) {
-                ClientDownloadPoll::Idle => break,
-                // Keep polling on the next interval tick.
-                ClientDownloadPoll::InProgress => {}
-                ClientDownloadPoll::Failed => {
-                    tracing::info!(
-                        target: "propagation-retrieve",
-                        pn_hash = %pn_hex,
-                        "client /get download failed"
-                    );
-                    // Consume the terminal failed state → Idle so a later
-                    // sync can start a fresh retrieval.
+                message
+            };
+        'attempt: loop {
+            let round_started = Instant::now();
+            let mut last_logged_progress = -1.0_f64;
+            run_guarded(&|| {
+                emit_progress(true, 10.0, None);
+            });
+            loop {
+                interval.tick().await;
+                if !still_current() {
+                    break 'attempt;
+                }
+                if cancel.load(Ordering::SeqCst) {
                     run_guarded(&|| {
                         bridge.cancel_client_download();
-                        emit_progress(
-                            false,
-                            0.0,
-                            Some("propagation establish failed: NoLinkProof"),
-                        );
                     });
-                    break;
+                    break 'attempt;
                 }
-                ClientDownloadPoll::Complete {
-                    messages,
-                    listed,
-                    downloaded,
-                } => {
-                    let delivered = messages.len();
-                    {
-                        let router = router.lock().await;
-                        if let Some(ref cb) = router.delivery_callback {
-                            for msg in &messages {
-                                cb(msg);
-                            }
-                        }
-                    }
-                    // Empty list is success (result=0), not failure.
+                let progress = bridge.client_download_progress();
+                if progress <= 10.0
+                    && bridge.client_download_active()
+                    && round_started.elapsed() > ESTABLISH_STALL
+                {
                     tracing::info!(
                         target: "propagation-retrieve",
                         pn_hash = %pn_hex,
+                        failover_round,
+                        establish_error = ?bridge.last_establish_error(),
+                        "client /get stalled while establishing"
+                    );
+                    if propagation_download_attempt_failover(
+                        live.as_ref(),
+                        &bridge,
+                        pn_hash,
+                        &pn_hex,
+                        &mut failover_round,
+                        &mut tried_interfaces,
+                        &mut blocked_ifaces,
+                        &mut blocked_vias,
+                        &live_ifaces,
+                        &mut current_iface,
+                        &mut current_via,
+                    )
+                    .await
+                    {
+                        continue 'attempt;
+                    }
+                    let message =
+                        terminal_establish_failure(&bridge, failover_round, &tried_interfaces);
+                    run_guarded(&|| {
+                        emit_progress(false, 0.0, Some(&message));
+                    });
+                    break 'attempt;
+                }
+                if attempt_started.elapsed() > DOWNLOAD_WATCHDOG {
+                    tracing::info!(
+                        target: "propagation-retrieve",
+                        pn_hash = %pn_hex,
+                        "client /get download watchdog timeout"
+                    );
+                    if propagation_download_attempt_failover(
+                        live.as_ref(),
+                        &bridge,
+                        pn_hash,
+                        &pn_hex,
+                        &mut failover_round,
+                        &mut tried_interfaces,
+                        &mut blocked_ifaces,
+                        &mut blocked_vias,
+                        &live_ifaces,
+                        &mut current_iface,
+                        &mut current_via,
+                    )
+                    .await
+                    {
+                        continue 'attempt;
+                    }
+                    let message =
+                        terminal_establish_failure(&bridge, failover_round, &tried_interfaces);
+                    run_guarded(&|| {
+                        emit_progress(false, 0.0, Some(&message));
+                    });
+                    break 'attempt;
+                }
+                if (progress - last_logged_progress).abs() >= 0.5 {
+                    last_logged_progress = progress;
+                    run_guarded(&|| {
+                        emit_progress(true, progress, None);
+                    });
+                }
+                let known = outbound
+                    .lock()
+                    .ok()
+                    .map(|d| d.known_identities_for_propagation())
+                    .unwrap_or_default();
+                match bridge.poll_client_download(&known) {
+                    ClientDownloadPoll::Idle => break 'attempt,
+                    ClientDownloadPoll::InProgress => {}
+                    ClientDownloadPoll::Failed => {
+                        tracing::info!(
+                            target: "propagation-retrieve",
+                            pn_hash = %pn_hex,
+                            progress,
+                            establish_error = ?bridge.last_establish_error(),
+                            "client /get download failed"
+                        );
+                        if progress <= 10.0
+                            && propagation_download_attempt_failover(
+                                live.as_ref(),
+                                &bridge,
+                                pn_hash,
+                                &pn_hex,
+                                &mut failover_round,
+                                &mut tried_interfaces,
+                                &mut blocked_ifaces,
+                                &mut blocked_vias,
+                                &live_ifaces,
+                                &mut current_iface,
+                                &mut current_via,
+                            )
+                            .await
+                        {
+                            continue 'attempt;
+                        }
+                        let message =
+                            terminal_establish_failure(&bridge, failover_round, &tried_interfaces);
+                        run_guarded(&|| {
+                            bridge.cancel_client_download();
+                            emit_progress(false, 0.0, Some(&message));
+                        });
+                        break 'attempt;
+                    }
+                    ClientDownloadPoll::Complete {
+                        messages,
                         listed,
                         downloaded,
-                        delivered,
-                        retrieve_mode,
-                        "client /get download Completes"
-                    );
-                    run_guarded(&|| {
-                        emit_progress(false, 100.0, None);
-                    });
-                    break;
+                    } => {
+                        let delivered = messages.len();
+                        {
+                            let router = router.lock().await;
+                            if let Some(ref cb) = router.delivery_callback {
+                                for msg in &messages {
+                                    cb(msg);
+                                }
+                            }
+                        }
+                        tracing::info!(
+                            target: "propagation-retrieve",
+                            pn_hash = %pn_hex,
+                            listed,
+                            downloaded,
+                            delivered,
+                            retrieve_mode,
+                            "client /get download Completes"
+                        );
+                        run_guarded(&|| {
+                            emit_progress(false, 100.0, None);
+                        });
+                        break 'attempt;
+                    }
                 }
             }
         }

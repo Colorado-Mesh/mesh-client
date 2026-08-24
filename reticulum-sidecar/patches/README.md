@@ -573,6 +573,29 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 
 When upstream rsLXMF exposes equivalent abort / cancel mid-transfer cleanup, remove this patch and the apply step.
 
+## rsLXMF-propagation-client-lrproof-diagnostics.patch
+
+Adds sticky `last_establish_error` on `PropagationClient` so client `/get` Sync surfaces `LrproofIdentityMissing`, `LrproofInvalid`, and `LrproofInvalidKey` instead of a generic `NoLinkProof` (parity with peer `/offer` via `rsLXMF-propagation-sync-peering.patch`).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | floated rsLXMF `origin/main` at apply time |
+| **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsLXMF) |
+
+**Touches:** rsLXMF `PropagationClient` (`drain_events` / `handle_link_proof` establish diagnostics)
+
+### Apply locally
+
+```bash
+./scripts/apply-rsLXMF-propagation-client-lrproof-diagnostics.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`. Sidecar `PropagationBridge::poll_client_download` reads `client.last_establish_error()`.
+
+### Sunset
+
+When upstream rsLXMF exposes equivalent PropagationClient LRPROOF diagnostics, remove this patch and the apply step.
+
 ## Removed: rsLXMF-propagation-client-link-attached-tx.patch
 
 Sunset when floated rsLXMF `origin/main` pinned PropagationClient link-scoped TX with `SendLinkEndpoint` plus `attached_interface` (interface-pinned link TX). That superseded the local `OutboundAttached` / `queue_link_outbound` overlay for the same pathless-Link flood as [ratspeak/rsReticulum#22](https://github.com/ratspeak/rsReticulum/issues/22). Tracked entry removed from `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` after sunset confirmation.

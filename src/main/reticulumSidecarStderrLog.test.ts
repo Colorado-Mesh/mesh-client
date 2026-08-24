@@ -44,6 +44,11 @@ describe('shouldForwardReticulumSidecarStdout', () => {
     expect(
       shouldForwardReticulumSidecarStdout('INFO target=lxmf-outbound LXMF advancing PN cascade'),
     ).toBe(true);
+    expect(
+      shouldForwardReticulumSidecarStdout(
+        'INFO target=propagation-retrieve pn_hash=abc client /get stalled while establishing',
+      ),
+    ).toBe(true);
   });
 
   it('does not forward INFO when PN markers appear only in message text', () => {

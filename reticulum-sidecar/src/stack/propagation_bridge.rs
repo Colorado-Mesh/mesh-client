@@ -495,6 +495,9 @@ impl PropagationBridge {
     /// `lxmf.propagation.client` link. Returns false when a download is already
     /// in flight or the client refuses to start.
     pub fn start_client_download(&self, pn_hash: [u8; 16]) -> bool {
+        if let Ok(mut slot) = self.last_establish_error.lock() {
+            *slot = None;
+        }
         let Ok(mut client) = self.client.lock() else {
             return false;
         };
@@ -558,6 +561,11 @@ impl PropagationBridge {
             return ClientDownloadPoll::Idle;
         }
         client.drain_events(known_identities);
+        if let Some(err) = client.last_establish_error() {
+            if let Ok(mut slot) = self.last_establish_error.lock() {
+                *slot = Some(err);
+            }
+        }
         client.tick();
         match client.state() {
             PropagationClientState::Idle => ClientDownloadPoll::Idle,
@@ -862,6 +870,13 @@ impl PropagationBridge {
 
     pub fn last_establish_error(&self) -> Option<&'static str> {
         self.last_establish_error.lock().ok().and_then(|slot| *slot)
+    }
+
+    /// Terminal establish failure message for WS / UI (granular LRPROOF when available).
+    pub fn propagation_establish_fail_message(&self) -> String {
+        self.last_establish_error()
+            .map(|e| format!("propagation establish failed: {e}"))
+            .unwrap_or_else(|| "propagation establish failed: NoLinkProof".to_string())
     }
 
     /// Sticky success/failure after Complete/Failed collapses to Idle.
@@ -1629,6 +1644,60 @@ mod tests {
     }
 
     #[test]
+    fn propagation_establish_fail_message_prefers_sticky_error() {
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-bridge-failmsg-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let identity = rns_identity::identity::Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &identity,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+        assert_eq!(
+            bridge.propagation_establish_fail_message(),
+            "propagation establish failed: NoLinkProof"
+        );
+        if let Ok(mut slot) = bridge.last_establish_error.lock() {
+            *slot = Some("LrproofIdentityMissing");
+        }
+        assert_eq!(
+            bridge.propagation_establish_fail_message(),
+            "propagation establish failed: LrproofIdentityMissing"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn start_client_download_clears_sticky_establish_error() {
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-bridge-clear-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let identity = rns_identity::identity::Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.clone(),
+            &identity,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+        if let Ok(mut slot) = bridge.last_establish_error.lock() {
+            *slot = Some("LrproofInvalid");
+        }
+        let _started = bridge.start_client_download([0xcd; 16]);
+        assert_eq!(bridge.last_establish_error(), None);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn apply_peer_sync_terminal_complete_returns_idle_and_marks_generation() {
         use lxmf_core::constants::PeerState;
         use lxmf_core::peer::LxmPeer;
@@ -2076,6 +2145,23 @@ mod tests {
             .find("\n    pub ")
             .map_or(probe_fn.len(), |idx| idx + 1);
         let probe_body = &probe_fn[..probe_end];
+        assert!(
+            sync_body.contains("ensure_propagation_path_or_unknown(&dest_hex, false)"),
+            "start_propagation_sync must use cached path on first attempt"
+        );
+        assert!(
+            probe_body.contains("ensure_propagation_path_or_unknown(&dest_hex, true)"),
+            "offer probe must force-refresh path"
+        );
+        assert!(
+            live.contains("propagation_download_attempt_failover")
+                && live.contains("propagation_establish_fail_message"),
+            "client /get driver must failover and prefer granular establish errors"
+        );
+        assert!(
+            bridge.contains("client.last_establish_error()"),
+            "poll_client_download must read PropagationClient establish error"
+        );
         assert!(
             probe_body.contains("ensure_propagation_path_or_unknown"),
             "offer probe must use the same shared path gate as Sync"

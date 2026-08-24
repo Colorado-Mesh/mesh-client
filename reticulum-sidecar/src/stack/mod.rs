@@ -1371,15 +1371,35 @@ impl StackHandle {
             .iter()
             .map(|p| {
                 let preferred = preferred_id.as_deref() == Some(p.id.as_str());
+                let mut hops = p.hops;
+                let mut path_interface: Option<String> = None;
+                #[cfg(feature = "rns-stack")]
+                if p.id != "local-prop" {
+                    if let Some(live) = self.live.get() {
+                        if let Some(dest) = p.destination_hash.as_deref() {
+                            let (live_hops, live_iface) =
+                                live.live_path_fields_for_destination(dest);
+                            if hops.is_none() {
+                                hops = live_hops;
+                            }
+                            path_interface = live_iface;
+                        }
+                    }
+                }
                 let mut row = serde_json::json!({
                     "id": p.id,
                     "name": p.name,
-                    "hops": p.hops,
+                    "hops": hops,
                     "enabled": p.enabled,
                     "status": p.status,
                     "preferred": preferred,
                     "destination_hash": p.destination_hash,
                 });
+                if let Some(iface) = path_interface {
+                    if let Some(obj) = row.as_object_mut() {
+                        obj.insert("interface".into(), serde_json::Value::String(iface));
+                    }
+                }
                 #[cfg(feature = "rns-stack")]
                 if p.id == "local-prop" {
                     if let Some(stats) = &local_stats {
@@ -1628,7 +1648,7 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         {
             if let Some(live) = self.live.get() {
-                live.start_propagation_sync(&prop_hash).await?;
+                live.clone().start_propagation_sync(&prop_hash).await?;
                 return Ok(());
             }
             // Never fall through to the persistence stub: it marks sync active at
@@ -1679,7 +1699,7 @@ impl StackHandle {
         }
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live.get() {
-            live.start_propagation_sync(&prop_hash).await?;
+            live.clone().start_propagation_sync(&prop_hash).await?;
             return Ok(());
         }
         Err("PROPAGATION_STACK_NOT_LIVE".into())

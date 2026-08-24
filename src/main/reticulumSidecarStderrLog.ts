@@ -11,7 +11,7 @@ const BEACON_FAIL_WARN_INTERVAL_MS = 60 * MS_PER_SECOND;
 // propagation-retrieve at warn by default (inbound peer/message metadata); opt in
 // via MESH_CLIENT_RUST_LOG (e.g. add propagation-retrieve=info).
 export const SIDECAR_DEFAULT_RUST_LOG =
-  'warn,propagation-sync=info,propagation-deposit=info,lxmf-outbound=info';
+  'warn,propagation-sync=info,propagation-retrieve=info,propagation-deposit=info,lxmf-outbound=info';
 
 /**
  * Whether a sidecar stdout line should be written to the app log.
@@ -20,6 +20,7 @@ export const SIDECAR_DEFAULT_RUST_LOG =
  */
 const SIDECAR_STDOUT_INFO_FORWARD_MARKERS = [
   'propagation-sync',
+  'propagation-retrieve',
   'propagation-deposit',
   'lxmf-outbound',
 ] as const;
