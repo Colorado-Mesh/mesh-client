@@ -1,5 +1,5 @@
 diff --git a/crates/lxmf-core/src/propagation_client.rs b/crates/lxmf-core/src/propagation_client.rs
-index 44a8882..6075e5a 100644
+index 8335336..6075e5a 100644
 --- a/crates/lxmf-core/src/propagation_client.rs
 +++ b/crates/lxmf-core/src/propagation_client.rs
 @@ -145,6 +145,8 @@ pub struct PropagationClient {
@@ -27,33 +27,15 @@ index 44a8882..6075e5a 100644
      pub fn set_propagation_node(&mut self, dest_hash: [u8; 16]) {
          self.outbound_propagation_node = Some(dest_hash);
      }
-@@ -248,6 +256,25 @@ impl PropagationClient {
-         true
+@@ -264,6 +272,7 @@ impl PropagationClient {
+         self.status = PropagationTransferStatus::default();
+         self.identified = false;
+         self.started_at = None;
++        self.last_establish_error = None;
      }
  
-+    /// Abort an in-flight or terminal download and return to [`Idle`].
-+    ///
-+    /// Unlike [`Self::acknowledge_transfer`], this also tears down mid-transfer
-+    /// states (`LinkEstablishing` … `PurgeRequested`) so a cancelled Sync cannot
-+    /// leave the client permanently busy (`start_download` would keep failing).
-+    pub fn abort_transfer(&mut self) {
-+        if matches!(self.status.state, PropagationClientState::Idle) {
-+            return;
-+        }
-+        self.cleanup();
-+        self.available_messages.clear();
-+        self.received_messages.clear();
-+        self.received_ids.clear();
-+        self.status = PropagationTransferStatus::default();
-+        self.identified = false;
-+        self.started_at = None;
-+        self.last_establish_error = None;
-+    }
-+
      pub fn start_download(&mut self) -> bool {
-         self.start_download_with_limit(None)
-     }
-@@ -277,6 +304,7 @@ impl PropagationClient {
+@@ -295,6 +304,7 @@ impl PropagationClient {
          if !self.pending_transport.is_empty() {
              return false;
          }
@@ -61,7 +43,7 @@ index 44a8882..6075e5a 100644
  
          let (link, request_data) = Link::new_initiator(node_hash, 1);
          let link_id = link.link_id;
-@@ -622,9 +650,18 @@ impl PropagationClient {
+@@ -640,9 +650,18 @@ impl PropagationClient {
                              let node_hex = self.outbound_propagation_node.map(|h| hex_encode(&h));
                              if let Some(node_hex) = node_hex {
                                  if let Some(pub_key) = known_identities.get(&node_hex) {
@@ -83,7 +65,7 @@ index 44a8882..6075e5a 100644
                                      if let Ok(verify_key) =
                                          Ed25519PublicKey::from_bytes(&ed25519_bytes)
                                      {
-@@ -634,7 +671,21 @@ impl PropagationClient {
+@@ -652,7 +671,21 @@ impl PropagationClient {
                                              &ed25519_bytes,
                                              interface_id,
                                          );
@@ -105,7 +87,7 @@ index 44a8882..6075e5a 100644
                                  }
                              }
                          }
-@@ -710,6 +761,7 @@ impl PropagationClient {
+@@ -728,6 +761,7 @@ impl PropagationClient {
          };
  
          if let Ok(rtt_data) = link.validate_proof(proof_data, verify_key, ed25519_pub) {
@@ -113,7 +95,7 @@ index 44a8882..6075e5a 100644
              if let Some(link_id) = self.link_id {
                  let rtt_header = rns_wire::header::PacketHeader {
                      flags: rns_wire::flags::PacketFlags {
-@@ -750,6 +802,10 @@ impl PropagationClient {
+@@ -768,6 +802,10 @@ impl PropagationClient {
                      result_rx,
                  });
              }
