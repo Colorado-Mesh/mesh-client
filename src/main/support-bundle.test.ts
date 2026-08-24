@@ -111,6 +111,7 @@ describe('extractLxmfOutboundLogSlice', () => {
         'info target=propagation-retrieve sync transfer progress',
         'info target=propagation-sync propagation sync aborted — no path to PN',
         'warn propagation establish failed: NoLinkProof',
+        'warn propagation establish failed: LrproofIdentityMissing',
         'error PROPAGATION_PATH_UNKNOWN',
       ].join('\n'),
       'utf8',
@@ -122,6 +123,7 @@ describe('extractLxmfOutboundLogSlice', () => {
     expect(slice).toContain('propagation-retrieve');
     expect(slice).toContain('propagation-sync');
     expect(slice).toContain('propagation establish');
+    expect(slice).toContain('LrproofIdentityMissing');
     expect(slice).toContain('PROPAGATION_PATH_UNKNOWN');
     expect(slice).not.toContain('hello world');
     expect(slice).not.toContain('peer refresh ok');

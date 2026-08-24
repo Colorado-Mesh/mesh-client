@@ -206,6 +206,11 @@ pub fn should_retry_direct_path_failover(rounds_already: u8) -> bool {
     rounds_already < MAX_VIA_FAILOVERS
 }
 
+/// True when propagation client `/get` should attempt another iface/via after establish failure.
+pub fn should_attempt_propagation_via_failover(failover_round: u8) -> bool {
+    failover_round < MAX_VIA_FAILOVERS
+}
+
 /// True when Nomad should enter another via-failover round after a link result.
 ///
 /// Only `link_timeout` triggers in-request failover; other errors surface immediately.
@@ -482,6 +487,14 @@ mod tests {
         ));
         assert!(!should_attempt_nomad_via_failover("path_not_found", 0));
         assert!(!should_attempt_nomad_via_failover("nomad_busy", 0));
+    }
+
+    #[test]
+    fn should_attempt_propagation_via_failover_within_cap() {
+        assert!(should_attempt_propagation_via_failover(0));
+        assert!(should_attempt_propagation_via_failover(1));
+        assert!(!should_attempt_propagation_via_failover(2));
+        assert!(!should_attempt_propagation_via_failover(MAX_VIA_FAILOVERS));
     }
 
     #[test]
