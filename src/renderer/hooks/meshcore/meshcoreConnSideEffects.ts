@@ -25,6 +25,7 @@ import { processMeshcoreWaitingMessageItem } from '../../lib/meshcoreProcessWait
 import { resetMeshcoreRepeaterRpcInFlightOnDisconnect } from '../../lib/meshcoreRepeaterRpcInFlight';
 import { meshcoreSortedStorePrior } from '../../lib/meshcoreStoreDedup';
 import { resetMeshcoreTracePathMultiplexOnDisconnect } from '../../lib/meshcoreTracePathMultiplex';
+import { meshcoreIsPlaceholderNodeLongName } from '../../lib/meshcoreUtils';
 import {
   normalizeMeshcoreWaitingMessageBatch,
   normalizeMeshcoreWaitingMessageItem,
@@ -118,8 +119,9 @@ interface MeshcoreWaitingMessagesDrainState {
 
 /**
  * Waiting-drain mutations are last_heard (+ optional channel display-name). Rebuild patches
- * against the live store row so concurrent RF SNR/RSSI writes aren't overwritten by the
- * start-of-drain `workingNodes` snapshot.
+ * against the live store row so concurrent RF SNR/RSSI / advert-name writes aren't overwritten
+ * by the start-of-drain `workingNodes` snapshot. Only apply snapshot names when live is empty
+ * or a Node-HEX placeholder (channel enrichment upgrades placeholders only).
  */
 function collectDirtyWaitingNodeRecords(
   identityId: string,
@@ -140,10 +142,20 @@ function collectDirtyWaitingNodeRecords(
     const patch: NodeRecord = { nodeId, lastHeardAt: nextLastHeard };
     const workingLong = working.long_name?.trim();
     const workingShort = working.short_name?.trim();
-    if (workingLong && workingLong !== (live.longName ?? '').trim()) {
+    const liveLong = (live.longName ?? '').trim();
+    const liveShort = (live.shortName ?? '').trim();
+    if (
+      workingLong &&
+      workingLong !== liveLong &&
+      (!liveLong || meshcoreIsPlaceholderNodeLongName(liveLong, nodeId))
+    ) {
       patch.longName = workingLong;
     }
-    if (workingShort && workingShort !== (live.shortName ?? '').trim()) {
+    if (
+      workingShort &&
+      workingShort !== liveShort &&
+      (!liveShort || meshcoreIsPlaceholderNodeLongName(liveShort, nodeId))
+    ) {
       patch.shortName = workingShort;
     }
     if (

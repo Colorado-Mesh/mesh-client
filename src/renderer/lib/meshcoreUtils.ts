@@ -647,15 +647,17 @@ export function meshcorePreviousAdvertNameForRebuild(
 
 /**
  * When rebuilding from `getContacts`, companion firmware often keeps the name from when the
- * contact was first stored. Prefer a live advert name already in the UI unless the radio dump
- * is strictly newer (connect/refresh after firmware actually renamed the contact).
+ * contact was first stored and may bump `lastAdvert` without renaming. Prefer a live advert
+ * name already in the UI whenever both names are real and differ; on-air adverts / local
+ * setAdvertName are the authoritative rename paths (`opts` kept for call-site compat).
  */
 export function meshcoreMergeContactAdvNameFromPrevious(
   radioAdvName: string | undefined,
   prevLongName: string | undefined,
   nodeId: number,
-  opts?: MeshcoreMergeContactAdvNameOpts,
+  _opts?: MeshcoreMergeContactAdvNameOpts,
 ): string {
+  void _opts;
   const radioTrim = (radioAdvName ?? '').trim();
   const prevTrim = (prevLongName ?? '').trim();
   const radioReal = radioTrim.length > 0 && !meshcoreIsPlaceholderNodeLongName(radioTrim, nodeId);
@@ -665,20 +667,9 @@ export function meshcoreMergeContactAdvNameFromPrevious(
   if (!radioReal && prevReal) return prevTrim;
   if (!prevReal) return radioTrim || prevTrim || hexFallback;
   if (radioTrim === prevTrim) return radioTrim;
-
-  const radioAdvert =
-    opts?.radioLastAdvert != null &&
-    Number.isFinite(opts.radioLastAdvert) &&
-    opts.radioLastAdvert > 0
-      ? opts.radioLastAdvert
-      : 0;
-  const prevHeard =
-    opts?.prevLastHeard != null && Number.isFinite(opts.prevLastHeard) ? opts.prevLastHeard : 0;
-  // Tie or missing radio time: companion often updates lastAdvert without renaming.
-  if (radioAdvert === 0 || prevHeard >= radioAdvert) {
-    return prevTrim;
-  }
-  return radioTrim;
+  // Companion dump disagrees with a real live/previous name — keep the live name. lastAdvert
+  // is not a reliable name version (path hears often bump time without updating advName).
+  return prevTrim;
 }
 
 /** Result of mapping a heard RF advert (push 0x80) into UI + DB when the node is not yet a contact. */

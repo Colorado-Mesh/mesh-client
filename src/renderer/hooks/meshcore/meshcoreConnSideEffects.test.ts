@@ -8,6 +8,7 @@ import type {
   RxPacketEntry,
 } from '@/renderer/lib/meshcore/meshcoreHookTypes';
 import * as meshcoreRepeaterRpcInFlight from '@/renderer/lib/meshcoreRepeaterRpcInFlight';
+import { meshcoreChatStubNodeIdFromDisplayName } from '@/renderer/lib/meshcoreUtils';
 import {
   beginMeshcoreSilentBulkAttempt,
   resetMeshcoreWaitingMessagesDrainState,
@@ -829,6 +830,100 @@ describe('attachMeshcoreConnSideEffects', () => {
       snr: 9,
       rssi: -40,
       lastHeardAt: 1_700_000_100,
+    });
+  });
+
+  it('preserves concurrent advert longName when flushing waiting-drain last_heard', async () => {
+    const prefix = new Uint8Array([0xaa, 0xbb]);
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          42: {
+            nodeId: 42,
+            longName: 'OldPeer',
+            shortName: 'P',
+            snr: 5,
+            rssi: -80,
+            lastHeardAt: 100,
+            source: 'rf',
+          },
+        },
+      },
+    });
+    const h = makeHarness();
+    h.ctx.pubKeyPrefixMapRef.current.set('aabb', 42);
+    vi.mocked(h.conn.getWaitingMessages).mockImplementation(() => {
+      // Concurrent on-air advert rename while drain still holds OldPeer in workingNodes.
+      useNodeStore.setState((s) => ({
+        nodes: {
+          ...s.nodes,
+          [ID]: {
+            ...s.nodes[ID],
+            42: {
+              ...s.nodes[ID]?.[42],
+              nodeId: 42,
+              longName: 'NewPeer',
+              snr: 9,
+              rssi: -40,
+            },
+          },
+        },
+      }));
+      return Promise.resolve([
+        {
+          contactMessage: {
+            pubKeyPrefix: prefix,
+            text: 'hello from queue',
+            senderTimestamp: 1_700_000_100,
+          },
+        },
+      ]);
+    });
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    await h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: true });
+
+    expect(useNodeStore.getState().nodes[ID]?.[42]).toMatchObject({
+      longName: 'NewPeer',
+      snr: 9,
+      rssi: -40,
+      lastHeardAt: 1_700_000_100,
+    });
+  });
+
+  it('applies waiting-drain longName when live name is placeholder', async () => {
+    const nodeId = meshcoreChatStubNodeIdFromDisplayName('RealPeer');
+    const placeholder = `Node-${nodeId.toString(16).toUpperCase()}`;
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          [nodeId]: {
+            nodeId,
+            longName: placeholder,
+            shortName: '',
+            lastHeardAt: 100,
+            source: 'rf',
+          },
+        },
+      },
+    });
+    const h = makeHarness();
+    vi.mocked(h.conn.getWaitingMessages).mockResolvedValue([
+      {
+        channelMessage: {
+          channelIdx: 0,
+          text: 'RealPeer: queued channel message',
+          senderTimestamp: 1_700_000_200,
+        },
+      },
+    ]);
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    await h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: true });
+
+    expect(useNodeStore.getState().nodes[ID]?.[nodeId]).toMatchObject({
+      longName: 'RealPeer',
+      lastHeardAt: 1_700_000_200,
     });
   });
 

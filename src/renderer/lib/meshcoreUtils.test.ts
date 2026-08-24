@@ -594,13 +594,13 @@ describe('meshcoreMergeContactAdvNameFromPrevious', () => {
     ).toBe('Bob');
   });
 
-  it('takes radio name when radio lastAdvert is strictly newer', () => {
+  it('keeps live advert rename when radio lastAdvert is newer but advName is still old', () => {
     expect(
-      meshcoreMergeContactAdvNameFromPrevious('FirmwareRename', 'OldName', nodeId, {
+      meshcoreMergeContactAdvNameFromPrevious('OldRoom', 'NewRoom', nodeId, {
         prevLastHeard: 1_700_000_000,
         radioLastAdvert: 1_700_000_500,
       }),
-    ).toBe('FirmwareRename');
+    ).toBe('NewRoom');
   });
 
   it('keeps previous when radio lastAdvert is 0', () => {
@@ -650,6 +650,25 @@ describe('buildNodesFromContacts advert-name merge (path-updated rebuild)', () =
       type: 3,
       advName: 'OldRoom',
       lastAdvert: 1_700_000_100,
+      advLat: 0,
+      advLon: 0,
+    };
+    const radio = meshcoreContactToMeshNode(contact);
+    const merged = meshcoreMergeContactAdvNameFromPrevious(
+      radio.long_name,
+      'NewRoom',
+      radio.node_id,
+      { prevLastHeard: 1_700_000_100, radioLastAdvert: contact.lastAdvert },
+    );
+    expect(merged).toBe('NewRoom');
+  });
+
+  it('keeps live rename when getContacts bumps lastAdvert without updating advName', () => {
+    const contact = {
+      publicKey: key32,
+      type: 3,
+      advName: 'OldRoom',
+      lastAdvert: 1_700_000_500,
       advLat: 0,
       advLon: 0,
     };
