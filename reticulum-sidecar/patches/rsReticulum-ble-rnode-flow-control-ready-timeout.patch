@@ -1,0 +1,105 @@
+diff --git a/crates/rns-interface/src/ble_rnode.rs b/crates/rns-interface/src/ble_rnode.rs
+--- a/crates/rns-interface/src/ble_rnode.rs
++++ b/crates/rns-interface/src/ble_rnode.rs
+@@ -83,6 +83,11 @@
+ const SCAN_TIMEOUT: u64 = 3;
+ /// Bounds disable-while-offline teardown latency to ~1s.
+ const RUNNING_POLL: Duration = Duration::from_secs(1);
++/// When `flow_control` is on, wait this long for `CMD_READY` before releasing
++/// the one-packet permit anyway. BLE NUS often never delivers READY, which
++/// previously froze the host TX queue after the first frame; a short wait still
++/// paces bursts when READY works without hard-stalling when it does not.
++const BLE_FLOW_CONTROL_READY_TIMEOUT: Duration = Duration::from_secs(2);
+ /// No CoreBluetooth or GATT operation may hold the generation owner forever.
+ const BLE_OPERATION_TIMEOUT: Duration = Duration::from_secs(10);
+ /// Upstream Android RNode BLE applies each RF control independently.
+@@ -3450,6 +3455,7 @@
+             let mut last_rssi: Option<f32> = None;
+             let mut last_snr: Option<f32> = None;
+             let mut transport_closed = false;
++            let mut fc_wait_since: Option<tokio::time::Instant> = None;
+ 
+             enum GenerationEvent {
+                 Notification(Option<ValueNotification>),
+@@ -3613,7 +3619,29 @@
+                     }
+                 }
+ 
+-                if pending_outbound.is_some() && claim_ble_packet_permit(flow_control, &ready) {
++                // Flow-control gate: claim one-packet READY permit; if BLE never
++                // delivers CMD_READY, release after BLE_FLOW_CONTROL_READY_TIMEOUT
++                // so the host TX queue cannot freeze while still pacing bursts.
++                let mut permit_ok = pending_outbound.is_some()
++                    && claim_ble_packet_permit(flow_control, &ready);
++                if pending_outbound.is_some() && !permit_ok && flow_control {
++                    let waiting_since =
++                        fc_wait_since.get_or_insert_with(tokio::time::Instant::now);
++                    if waiting_since.elapsed() >= BLE_FLOW_CONTROL_READY_TIMEOUT {
++                        tracing::debug!(
++                            id,
++                            waited_ms = waiting_since.elapsed().as_millis(),
++                            "BLE RNode flow-control READY timeout; releasing permit"
++                        );
++                        ready.store(true, Ordering::SeqCst);
++                        fc_wait_since = None;
++                        permit_ok = claim_ble_packet_permit(true, &ready);
++                    }
++                } else if permit_ok {
++                    fc_wait_since = None;
++                }
++
++                if pending_outbound.is_some() && permit_ok {
+                     let pending = pending_outbound
+                         .as_ref()
+                         .expect("pending BLE outbound checked above");
+@@ -3637,6 +3665,7 @@
+                                 first_tx = Some(tokio::time::Instant::now());
+                             }
+                             pending_outbound = None;
++                            fc_wait_since = None;
+                         }
+                         Err(error) => {
+                             trace_ble_lifecycle(
+@@ -4224,6 +4253,7 @@
+             let mut buf = [0u8; 4096];
+             let mut transport_closed = false;
+             let mut bridge_acknowledged = 0u64;
++            let mut fc_wait_since: Option<tokio::time::Instant> = None;
+ 
+             // Complete frames after the exact Ready boundary are projected
+             // before any outbound payload can be selected.
+@@ -4420,7 +4450,25 @@
+                 let should_write = pending_outbound
+                     .as_ref()
+                     .is_some_and(|pending| pending.expected_ack.is_none());
+-                if should_write && claim_ble_packet_permit(flow_control, &ready) {
++                let mut permit_ok =
++                    should_write && claim_ble_packet_permit(flow_control, &ready);
++                if should_write && !permit_ok && flow_control {
++                    let waiting_since =
++                        fc_wait_since.get_or_insert_with(tokio::time::Instant::now);
++                    if waiting_since.elapsed() >= BLE_FLOW_CONTROL_READY_TIMEOUT {
++                        tracing::debug!(
++                            id,
++                            waited_ms = waiting_since.elapsed().as_millis(),
++                            "BLE RNode native flow-control READY timeout; releasing permit"
++                        );
++                        ready.store(true, Ordering::SeqCst);
++                        fc_wait_since = None;
++                        permit_ok = claim_ble_packet_permit(true, &ready);
++                    }
++                } else if permit_ok {
++                    fc_wait_since = None;
++                }
++                if should_write && permit_ok {
+                     let pending = pending_outbound
+                         .as_ref()
+                         .expect("native pending outbound checked above");
+@@ -4442,6 +4490,7 @@
+                         .as_mut()
+                         .expect("native pending outbound checked above")
+                         .sent_at = Some(tokio::time::Instant::now());
++                    fc_wait_since = None;
+                 }
+             }
+ 

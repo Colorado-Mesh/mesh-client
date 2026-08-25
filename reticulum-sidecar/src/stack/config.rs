@@ -78,7 +78,9 @@ fn iface_type_supports_flow_control(iface_type: &str) -> bool {
 }
 
 /// Default `flow_control` when adding/repairing an interface with the key absent.
-/// RF interfaces default on; all other types leave it unset.
+/// RF interfaces default on (USB / BLE / Wi‑Fi). BLE NUS may not deliver
+/// `CMD_READY`; rsReticulum releases the one-packet permit after a short wait
+/// so FC paces bursts without freezing the host TX queue.
 pub(crate) fn default_flow_control_for_iface_type(iface_type: &str) -> Option<bool> {
     if iface_type_supports_flow_control(iface_type) {
         Some(true)

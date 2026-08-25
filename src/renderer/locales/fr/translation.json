@@ -1252,7 +1252,8 @@
       "rmapFullModeHint": "Le mode complet avec RMAP publish conserve Full via ignore_config_warnings. Les annonces de livraison LXMF quitteront cette radio sur l'intervalle d'annonce de pile (par défaut 1 heure).",
       "effectiveModeBadge": "En vigueur le : {{mode}}",
       "effectiveModeAria": "Mode d'exécution effectif {{mode}}. Le mode configuré diffère de ce que Reticulum exécute.",
-      "effectiveModeTooltip": "Reticulum a réécrit cette interface découvrable au point d'accès (ou à un autre mode autorisé) car découvrable nécessite Gateway, Internal ou Access Point sauf si ignore_config_warnings est défini. Redémarrez la pile après que les tampons maillés-clients qui se désengagent de sorte que Full (ou votre mode configuré) prennent effet (mesh-client)."
+      "effectiveModeTooltip": "Reticulum a réécrit cette interface découvrable au point d'accès (ou à un autre mode autorisé) car découvrable nécessite Gateway, Internal ou Access Point sauf si ignore_config_warnings est défini. Redémarrez la pile après que les tampons maillés-clients qui se désengagent de sorte que Full (ou votre mode configuré) prennent effet (mesh-client).",
+      "flowControlBleHint": "Sur Bluetooth, la radio n'envoie souvent jamais CMD_READY. Mesh-Client suit toujours TX (attend brièvement d'ÊTRE PRÊT, puis continue) afin que le contrôle de flux réduise la surcharge sans geler la file d'attente."
     },
     "reticulumPeers": {
       "hops": "Hops",

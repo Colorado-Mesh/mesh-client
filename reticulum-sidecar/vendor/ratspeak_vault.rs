@@ -265,8 +265,16 @@ pub fn protect_identity(
         let v = read_vault(&enc_file)?;
         (decrypt_key(cur, &v)?, decrypt_mnemonic(cur, &v)?)
     } else if id_file.exists() {
-        let id = Identity::from_file(&id_file)
+        let data = std::fs::read(&id_file)
             .map_err(|e| VaultError::Invalid(format!("read identity: {e}")))?;
+        // Prefer raw 64-byte keys: Identity::from_file tries msgpack first and can
+        // mis-parse rare random keys as an empty private_key.
+        let id = if data.len() == 64 {
+            Identity::from_private_key(&data)
+        } else {
+            Identity::from_file(&id_file)
+        }
+        .map_err(|e| VaultError::Invalid(format!("read identity: {e}")))?;
         let key = id
             .get_private_key()
             .ok_or_else(|| VaultError::Invalid("identity has no private key".into()))?;
@@ -317,8 +325,13 @@ pub fn unprotect_identity(id_dir: &Path, passcode: &str) -> Result<(), VaultErro
     id.to_file(&id_file)
         .map_err(|e| VaultError::Io(format!("write identity: {e}")))?;
     // Confirm the plaintext loads before removing the vault.
-    Identity::from_file(&id_file)
-        .map_err(|e| VaultError::Invalid(format!("verify identity: {e}")))?;
+    let written = std::fs::read(&id_file).map_err(|e| VaultError::Io(e.to_string()))?;
+    if written.len() == 64 {
+        Identity::from_private_key(&written)
+    } else {
+        Identity::from_file(&id_file)
+    }
+    .map_err(|e| VaultError::Invalid(format!("verify identity: {e}")))?;
     // Restore the plaintext phrase sidecar so re-display keeps working unprotected.
     if let Some(m) = &mnemonic {
         write_seed_file(&seed_file, m)?;

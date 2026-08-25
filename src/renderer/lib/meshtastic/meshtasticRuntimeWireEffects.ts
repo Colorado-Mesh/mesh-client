@@ -252,12 +252,12 @@ export function attachMeshtasticRuntimeWireEffects(
     setMeshtasticConfigureProgressHandler(null);
   });
 
-  const armBleConfigureStallTimeout = (): void => {
-    if (type !== 'ble' || isBleReconnectAttemptActive()) return;
+  const armConfigureStallTimeout = (): void => {
+    if ((type !== 'ble' && type !== 'serial') || isBleReconnectAttemptActive()) return;
     clearConfigureTimeout();
     configureTimeoutRef.current = setTimeout(() => {
       console.warn(
-        `[useMeshtasticRuntime] configure stall timeout (BLE ${MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS / 1000}s) — forcing disconnect`,
+        `[useMeshtasticRuntime] configure stall timeout (${type} ${MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS / 1000}s) — forcing disconnect`,
       );
       clearConfigureTimeout();
       handleConnectionLostRef.current();
@@ -265,8 +265,14 @@ export function attachMeshtasticRuntimeWireEffects(
   };
 
   setMeshtasticConfigureProgressHandler(() => {
-    if (!getMeshtasticConfigurePhase() || type !== 'ble' || isBleReconnectAttemptActive()) return;
-    armBleConfigureStallTimeout();
+    if (
+      !getMeshtasticConfigurePhase() ||
+      (type !== 'ble' && type !== 'serial') ||
+      isBleReconnectAttemptActive()
+    ) {
+      return;
+    }
+    armConfigureStallTimeout();
   });
 
   const {
@@ -425,14 +431,14 @@ export function attachMeshtasticRuntimeWireEffects(
       isConfiguringRef.current = true;
       setMeshtasticConfigurePhase(true);
       meshtasticIngestSessionRef.current?.setConfiguring(true);
-      // Initial BLE connect only — during reconnect the 90s attempt budget owns stall detection.
+      // Initial BLE/serial connect only — during reconnect the attempt budget owns stall detection.
       if (
         status === DeviceStatusEnum.DeviceConfiguring &&
-        type === 'ble' &&
+        (type === 'ble' || type === 'serial') &&
         !configureTimeoutRef.current &&
         !isBleReconnectAttemptActive()
       ) {
-        armBleConfigureStallTimeout();
+        armConfigureStallTimeout();
       }
     }
 

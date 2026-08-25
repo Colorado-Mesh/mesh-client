@@ -1253,7 +1253,8 @@
       "rmapFullModeHint": "RMAP発行のフルモードは、IGNORE_CONFIG_WARNINGSを介してフルを維持します。LXMF配信アナウンスは、スタックアナウンス間隔（デフォルトは1時間）でこの無線を出力します。",
       "effectiveModeBadge": "有効期限： {{mode}}",
       "effectiveModeAria": "有効なランタイムモード{{mode}}。設定モードは、Reticulumが実行しているモードとは異なります。",
-      "effectiveModeTooltip": "Reticulumは、ignore_config_warningsが設定されていない限り、DISCOVERABLEにはゲートウェイ、内部、またはアクセスポイントが必要なため、この検出可能なインターフェイスをアクセスポイント（または別の許可されたモード）に書き換えました。フル（または設定モード）が有効になるようにオプトアウトするmesh-clientスタンプの後、スタックを再起動します。"
+      "effectiveModeTooltip": "Reticulumは、ignore_config_warningsが設定されていない限り、DISCOVERABLEにはゲートウェイ、内部、またはアクセスポイントが必要なため、この検出可能なインターフェイスをアクセスポイント（または別の許可されたモード）に書き換えました。フル（または設定モード）が有効になるようにオプトアウトするmesh-clientスタンプの後、スタックを再起動します。",
+      "flowControlBleHint": "Bluetoothでは、ラジオはCMD_READYを送信しないことがよくあります。Mesh-Clientは依然としてTXをペーシングします（READYを短時間待ってから続行します）。そのため、フロー制御はキューをフリーズさせることなく過負荷を軽減します。"
     },
     "reticulumPeers": {
       "hops": "Hops",

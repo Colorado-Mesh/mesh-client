@@ -31,6 +31,7 @@ describe('ratspeak overlay apply list', () => {
     expect(list).toContain('apply_ratspeak_rns_overlays');
     expect(list).toContain('apply-rsReticulum-path-medium-slots.sh');
     expect(list).toContain('apply-rsReticulum-announce-rebroadcast-exclude-rf.sh');
+    expect(list).toContain('apply-rsReticulum-ble-rnode-flow-control-ready-timeout.sh');
     expect(list).toContain('apply-rsLXMF-link-delivery-has-pending-to.sh');
   });
 
@@ -48,6 +49,7 @@ describe('ratspeak overlay apply list', () => {
     expect(update).not.toContain('rsReticulum-pathless-link-exclude-rf.patch');
     expect(update).not.toContain('rsLXMF-propagation-client-link-attached-tx.patch');
     expect(update).toContain('rsReticulum-announce-rebroadcast-exclude-rf.patch');
+    expect(update).toContain('rsReticulum-ble-rnode-flow-control-ready-timeout.patch');
     expect(update).toContain('ratspeak/rsReticulum/issues/24');
     expect(existsSync(path.join(patchesDir, 'rsReticulum-pathless-link-exclude-rf.patch'))).toBe(
       false,

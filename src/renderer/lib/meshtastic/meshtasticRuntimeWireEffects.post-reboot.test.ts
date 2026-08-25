@@ -157,8 +157,9 @@ function makeDeps(opts?: { isBleReconnectAttemptActive?: () => boolean }) {
   };
 }
 
-function attachBleWithStatusSubscribers(
+function attachWithStatusSubscribers(
   deps: ReturnType<typeof makeDeps>['deps'],
+  type: ConnectionType = 'ble',
 ): Set<(status: number) => void> {
   const statusSubscribers = new Set<(status: number) => void>();
   const noopSub = { subscribe: () => () => {} };
@@ -179,8 +180,14 @@ function attachBleWithStatusSubscribers(
     setHeartbeatInterval: vi.fn(),
     heartbeat: vi.fn().mockResolvedValue(undefined),
   } as unknown as MeshDevice;
-  attachMeshtasticRuntimeWireEffects(device, 'ble', { driverIdentityId: 'id-1' }, deps);
+  attachMeshtasticRuntimeWireEffects(device, type, { driverIdentityId: 'id-1' }, deps);
   return statusSubscribers;
+}
+
+function attachBleWithStatusSubscribers(
+  deps: ReturnType<typeof makeDeps>['deps'],
+): Set<(status: number) => void> {
+  return attachWithStatusSubscribers(deps, 'ble');
 }
 
 describe('meshtasticRuntimeWireEffects DeviceRestarting', () => {
@@ -340,6 +347,55 @@ describe('meshtasticRuntimeWireEffects BLE configure timeout arming', () => {
     expect(onLost).not.toHaveBeenCalled();
     vi.advanceTimersByTime(10_000);
     expect(onLost).toHaveBeenCalledTimes(1);
+    expect(configureTimeoutRef.current).toBeNull();
+  });
+});
+
+describe('meshtasticRuntimeWireEffects serial configure timeout arming', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    resetMeshtasticConfigurePhaseForTests();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    resetMeshtasticConfigurePhaseForTests();
+  });
+
+  it('arms stall timeout on DeviceConfiguring for serial when reconnect is inactive', () => {
+    const { deps, configureTimeoutRef } = makeDeps({
+      isBleReconnectAttemptActive: () => false,
+    });
+    const statusSubscribers = attachWithStatusSubscribers(deps, 'serial');
+
+    for (const cb of statusSubscribers) cb(DEVICE_CONFIGURING);
+
+    expect(configureTimeoutRef.current).not.toBeNull();
+  });
+
+  it('fires handleConnectionLost after serial configure stall timeout', () => {
+    const { deps, configureTimeoutRef } = makeDeps({
+      isBleReconnectAttemptActive: () => false,
+    });
+    const onLost = vi.mocked(deps.handleConnectionLostRef.current);
+    const statusSubscribers = attachWithStatusSubscribers(deps, 'serial');
+
+    for (const cb of statusSubscribers) cb(DEVICE_CONFIGURING);
+    expect(configureTimeoutRef.current).not.toBeNull();
+
+    vi.advanceTimersByTime(MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS);
+
+    expect(onLost).toHaveBeenCalledTimes(1);
+    expect(configureTimeoutRef.current).toBeNull();
+  });
+
+  it('does not arm serial stall when reconnect owns the attempt', () => {
+    const { deps, configureTimeoutRef } = makeDeps({
+      isBleReconnectAttemptActive: () => true,
+    });
+    const statusSubscribers = attachWithStatusSubscribers(deps, 'serial');
+
+    for (const cb of statusSubscribers) cb(DEVICE_CONFIGURING);
+
     expect(configureTimeoutRef.current).toBeNull();
   });
 });

@@ -803,7 +803,7 @@
     "staleLoss": "Connection may be lost — no data received recently",
     "reconnect": "Reconnect",
     "reconnectingAttempt": "Reconnecting… attempt {{attempt}}/{{max}}",
-    "serialReselect": "USB serial connection lost — select your device again",
+    "serialReselect": "USB serial connection lost — reselect the port, or power-cycle the radio if it still will not connect",
     "serialReselectAction": "Select serial port",
     "statusRegion": "Connection status"
   },
@@ -1204,6 +1204,7 @@
       "showPassphrase": "Show passphrase",
       "hidePassphrase": "Hide passphrase",
       "flowControl": "Flow control (TX ready-gate)",
+      "flowControlBleHint": "On Bluetooth, the radio often never sends CMD_READY. Mesh-Client still paces TX (waits briefly for READY, then continues) so flow control reduces overload without freezing the queue.",
       "advanced": "Advanced",
       "advancedHint": "Additional key=value pairs for this interface, one per line. Known fields (host, mode, network name, …) stay in the form above.",
       "advancedAria": "Advanced interface key-value options",
