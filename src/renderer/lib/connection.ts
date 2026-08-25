@@ -15,6 +15,7 @@ import {
 } from './connectionWebStreams';
 import { notifyNobleBlePrimaryRfLinkReady } from './meshcoreDualNobleBleInit';
 import { armMeshtasticLateConfigureRetryableSwallow } from './meshtastic/meshtasticConfigureRetry';
+import { sendMeshtasticPhoneApiDisconnect } from './meshtastic/meshtasticPhoneApiDisconnect';
 import { parseMeshtasticTcpAddress } from './parseMeshtasticTcpAddress';
 import {
   isBlePeripheralConflictErrorMessage,
@@ -575,6 +576,10 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
   // in-flight sendPacket().wait() then rejects with "Packet does not exist". These are expected
   // teardown races and must not surface as unhandled-rejection error logs.
   armMeshtasticLateConfigureRetryableSwallow();
+  // Serial only: tell firmware PhoneAPI to reset before we drop the CDC streams (#895).
+  if (getSerialPortFromMeshTransport(device.transport)) {
+    await sendMeshtasticPhoneApiDisconnect(device);
+  }
   try {
     await device.disconnect();
   } catch (err) {

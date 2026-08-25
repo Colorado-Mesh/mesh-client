@@ -198,3 +198,70 @@ index 9c0d192d0a22c1a158e70f4dc3b74460ea7bd22b..7d63cb22ad5c6a8cde8823b9925e93b6
          }
        }
      } finally {
+diff --git a/src/utils/transform/decodePacket.js b/src/utils/transform/decodePacket.js
+index b1cb39a13ac3f7fb5a368b04755d73a5c2f32743..78a812eaca5079a599e81e618399a247688a7786 100755
+--- a/src/utils/transform/decodePacket.js
++++ b/src/utils/transform/decodePacket.js
+@@ -71,8 +71,11 @@ export const decodePacket = (device)=>new WritableStream({
+                 }
+               case "configCompleteId":
+                 {
++                  // mesh-client: ignore stale completes from an orphaned PhoneAPI
++                  // handshake (different nonce) — do not mark DeviceConfigured (#895).
+                   if (decodedMessage.payloadVariant.value !== device.configId) {
+                     device.log.error(Types.Emitter[Types.Emitter.HandleFromRadio], `❌ Invalid config id received from device, expected ${device.configId} but received ${decodedMessage.payloadVariant.value}`);
++                    break;
+                   }
+                   device.log.info(Types.Emitter[Types.Emitter.HandleFromRadio], `⚙️ Valid config id received from device: ${device.configId}`);
+                   device.updateDeviceStatus(Types.DeviceStatusEnum.DeviceConfigured);
+@@ -133,6 +136,15 @@ export const decodePacket = (device)=>new WritableStream({
+                 {
+                   break;
+                 }
++              // mesh-client: known FromRadio variants decoded by protobufs but unused
++              // by core — silence WARN spam (fileInfo is part of the config handshake).
++              case "fileInfo":
++              case "clientNotification":
++              case "deviceuiConfig":
++              case "lockdownStatus":
++                {
++                  break;
++                }
+               default:
+                 {
+                   device.log.warn(Types.Emitter[Types.Emitter.HandleFromRadio], `⚠️ Unhandled payload variant: ${decodedMessage.payloadVariant.case}`);
+diff --git a/src/utils/transform/decodePacket.ts b/src/utils/transform/decodePacket.ts
+index ff5ccb00f5b9b1f80f0126a0fb6e757fd19ddc6b..2597e6af6783de19390ece201bd678a02fc930e1 100755
+--- a/src/utils/transform/decodePacket.ts
++++ b/src/utils/transform/decodePacket.ts
+@@ -104,11 +104,14 @@ export const decodePacket = (device: MeshDevice) =>
+             }
+ 
+             case "configCompleteId": {
++              // mesh-client: ignore stale completes from an orphaned PhoneAPI
++              // handshake (different nonce) — do not mark DeviceConfigured (#895).
+               if (decodedMessage.payloadVariant.value !== device.configId) {
+                 device.log.error(
+                   Types.Emitter[Types.Emitter.HandleFromRadio],
+                   `❌ Invalid config id received from device, expected ${device.configId} but received ${decodedMessage.payloadVariant.value}`,
+                 );
++                break;
+               }
+ 
+               device.log.info(
+@@ -209,6 +212,15 @@ export const decodePacket = (device: MeshDevice) =>
+               break;
+             }
+ 
++            // mesh-client: known FromRadio variants decoded by protobufs but unused
++            // by core — silence WARN spam (fileInfo is part of the config handshake).
++            case "fileInfo":
++            case "clientNotification":
++            case "deviceuiConfig":
++            case "lockdownStatus": {
++              break;
++            }
++
+             default: {
+               device.log.warn(
+                 Types.Emitter[Types.Emitter.HandleFromRadio],
