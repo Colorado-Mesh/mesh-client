@@ -1050,7 +1050,9 @@
       "importBackupAria": "Importovat zálohu Ratspeak .rsi z vloženého JSON",
       "importBackupFromFileAria": "Vyberte záložní soubor Ratspeak .rsi, který chcete importovat",
       "exportAria": "Exportovat zálohu identity Ratspeak .rsi šifrovanou pomocí kódu PIN",
-      "exportRawAria": "Exportovat nešifrovaný soubor identity RAW Reticulum"
+      "exportRawAria": "Exportovat nešifrovaný soubor identity RAW Reticulum",
+      "identityHashLabel": "Hash identity:",
+      "copyIdentityHash": "Kopírovat hash identity"
     },
     "reticulumInterfaces": {
       "title": "Rozhraní",

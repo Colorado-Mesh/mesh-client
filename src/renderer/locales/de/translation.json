@@ -1047,7 +1047,9 @@
       "importBackupAria": "Ratspeak .rsi-Backup aus eingefügtem json importieren",
       "importBackupFromFileAria": "Wählen Sie eine Ratspeak .rsi Backup-Datei zum Importieren",
       "exportAria": "PIN-verschlüsselte Ratspeak .rsi-Identitätssicherung exportieren",
-      "exportRawAria": "Unverschlüsselte RAW-Reticulum-Identitätsdatei exportieren"
+      "exportRawAria": "Unverschlüsselte RAW-Reticulum-Identitätsdatei exportieren",
+      "identityHashLabel": "Identitäts-Hash:",
+      "copyIdentityHash": "Identitäts-Hash kopieren"
     },
     "reticulumInterfaces": {
       "title": "Schnittstellen",

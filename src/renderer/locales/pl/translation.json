@@ -1051,7 +1051,9 @@
       "importBackupAria": "Importuj kopię zapasową Ratspeak .rsi z wklejonego JSON",
       "importBackupFromFileAria": "Wybierz plik kopii zapasowej Ratspeak .rsi do zaimportowania",
       "exportAria": "Eksportuj zaszyfrowaną kodem PIN kopię zapasową tożsamości Ratspeak .rsi",
-      "exportRawAria": "Eksportuj niezaszyfrowany surowy plik tożsamości Reticulum"
+      "exportRawAria": "Eksportuj niezaszyfrowany surowy plik tożsamości Reticulum",
+      "identityHashLabel": "Skrót tożsamości:",
+      "copyIdentityHash": "Skopiuj skrót tożsamości"
     },
     "reticulumInterfaces": {
       "title": "Interfejsy",

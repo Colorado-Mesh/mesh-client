@@ -1049,7 +1049,9 @@
       "importBackupAria": "Yapıştırılan JSON'dan Ratspeak .rsi yedeklemesini içe aktar",
       "importBackupFromFileAria": "İçe aktarmak için bir Ratspeak .rsi yedek dosyası seçin",
       "exportAria": "PIN şifreli Ratspeak .rsi kimlik yedeklemesini dışa aktarın",
-      "exportRawAria": "Şifrelenmemiş ham Reticulum kimlik dosyasını dışa aktar"
+      "exportRawAria": "Şifrelenmemiş ham Reticulum kimlik dosyasını dışa aktar",
+      "identityHashLabel": "Kimlik hash'i:",
+      "copyIdentityHash": "Kimlik karmasını kopyala"
     },
     "reticulumInterfaces": {
       "title": "Ara birimler",

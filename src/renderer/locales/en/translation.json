@@ -1018,6 +1018,8 @@
       "replaceIdentityConfirmAction": "Replace identity",
       "mnemonic": "Write down this phrase and store it safely.",
       "confirmSaved": "I have saved my recovery phrase",
+      "identityHashLabel": "Identity hash:",
+      "copyIdentityHash": "Copy identity hash",
       "hashLabel": "LXMF hash:",
       "copyLxmfHash": "Copy LXMF hash",
       "saveDisplayName": "Save display name",
