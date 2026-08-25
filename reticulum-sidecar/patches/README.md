@@ -596,6 +596,29 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 
 When upstream rsLXMF exposes equivalent PropagationClient LRPROOF diagnostics, remove this patch and the apply step.
 
+## rsReticulum-ble-rnode-flow-control-ready-timeout.patch
+
+When BLE RNode `flow_control` is on, wait up to 2s for `CMD_READY`, then release the one-packet permit so NUS links that never deliver READY cannot freeze the host 256-slot TX queue after the first frame. Still paces bursts when READY works.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | floated rsReticulum `origin/main` after other rsReticulum overlays |
+| **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsReticulum) |
+
+**Touches:** `crates/rns-interface/src/ble_rnode.rs` (main + native bridge TX loops)
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-ble-rnode-flow-control-ready-timeout.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`.
+
+### Sunset
+
+When upstream rsReticulum lands equivalent BLE READY timeout / non-blocking FC, remove this patch and the apply step.
+
 ## Removed: rsLXMF-propagation-client-link-attached-tx.patch
 
 Sunset when floated rsLXMF `origin/main` pinned PropagationClient link-scoped TX with `SendLinkEndpoint` plus `attached_interface` (interface-pinned link TX). That superseded the local `OutboundAttached` / `queue_link_outbound` overlay for the same pathless-Link flood as [ratspeak/rsReticulum#22](https://github.com/ratspeak/rsReticulum/issues/22). Tracked entry removed from `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` after sunset confirmation.

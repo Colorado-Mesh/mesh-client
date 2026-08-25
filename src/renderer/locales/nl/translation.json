@@ -1252,7 +1252,8 @@
       "rmapFullModeHint": "De volledige modus met RMAP-publicatie blijft vol via ignore_config_warnings. LXMF-leveringsaankondigingen verlaten deze radio op het aankondigingsinterval van de stapel (standaard 1 uur).",
       "effectiveModeBadge": "Met ingang van: {{mode}}",
       "effectiveModeAria": "Effectieve runtime-modus {{mode}}. Geconfigureerde modus verschilt van wat Reticulum draait.",
-      "effectiveModeTooltip": "Reticulum herschreef deze detecteerbare interface naar Access Point (of een andere toegestane modus) omdat detecteerbaar Gateway, Intern of Access Point vereist, tenzij ignore_config_warnings is ingesteld. Herstart de stack na mesh-client stempels die zich afmelden zodat Full (of uw geconfigureerde modus) van kracht wordt."
+      "effectiveModeTooltip": "Reticulum herschreef deze detecteerbare interface naar Access Point (of een andere toegestane modus) omdat detecteerbaar Gateway, Intern of Access Point vereist, tenzij ignore_config_warnings is ingesteld. Herstart de stack na mesh-client stempels die zich afmelden zodat Full (of uw geconfigureerde modus) van kracht wordt.",
+      "flowControlBleHint": "Op Bluetooth stuurt de radio vaak nooit CMD_READY. Mesh-Client beweegt nog steeds TX (wacht kort tot het KLAAR is en gaat dan verder), zodat de stroomregeling overbelasting vermindert zonder de wachtrij te bevriezen."
     },
     "reticulumPeers": {
       "hops": "Hops",

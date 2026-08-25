@@ -1251,7 +1251,8 @@
       "rmapFullModeHint": "La modalità Full con RMAP Publish mantiene Full tramite ignore_config_warnings. La consegna LXMF annuncia che uscirà da questa radio sull'intervallo di annuncio dello stack (predefinito 1 ora).",
       "effectiveModeBadge": "In vigore: {{mode}}",
       "effectiveModeAria": "Modalità runtime effettiva {{mode}}. La modalità configurata differisce da quella in esecuzione su Reticulum.",
-      "effectiveModeTooltip": "Reticulum ha riscritto questa interfaccia rilevabile su Access Point (o un'altra modalità consentita) perché Discoverable richiede Gateway, Internal o Access Point a meno che non sia impostato ignore_config_warnings. Riavviare lo stack dopo i timbri mesh-client che l'opt-out in modo Full (o la modalità configurata) ha effetto."
+      "effectiveModeTooltip": "Reticulum ha riscritto questa interfaccia rilevabile su Access Point (o un'altra modalità consentita) perché Discoverable richiede Gateway, Internal o Access Point a meno che non sia impostato ignore_config_warnings. Riavviare lo stack dopo i timbri mesh-client che l'opt-out in modo Full (o la modalità configurata) ha effetto.",
+      "flowControlBleHint": "Sul Bluetooth, la radio spesso non invia mai CMD_READY. Mesh-Client stimola ancora TX (attende brevemente di ESSERE PRONTO, quindi continua) in modo che il controllo del flusso riduca il sovraccarico senza congelare la coda."
     },
     "reticulumPeers": {
       "hops": "Hops",

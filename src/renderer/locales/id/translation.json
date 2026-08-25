@@ -1253,7 +1253,8 @@
       "rmapFullModeHint": "Mode penuh dengan RMAP publikasikan tetap Penuh melalui ignore_config_warnings. Pengiriman LXMF mengumumkan akan keluar dari radio ini pada interval pengumuman stack (default 1 jam).",
       "effectiveModeBadge": "Berlaku: {{mode}}",
       "effectiveModeAria": "Mode runtime efektif {{mode}}. Mode yang dikonfigurasi berbeda dari yang dijalankan Reticulum.",
-      "effectiveModeTooltip": "Reticulum menulis ulang antarmuka yang dapat ditemukan ini ke Access Point (atau mode lain yang diizinkan) karena dapat ditemukan memerlukan Gateway, Internal, atau Access Point kecuali jika ignore_config_warnings ditetapkan. Mulai ulang tumpukan setelah stempel mesh-client yang menyisih sehingga Full (atau mode terkonfigurasi Anda) berlaku."
+      "effectiveModeTooltip": "Reticulum menulis ulang antarmuka yang dapat ditemukan ini ke Access Point (atau mode lain yang diizinkan) karena dapat ditemukan memerlukan Gateway, Internal, atau Access Point kecuali jika ignore_config_warnings ditetapkan. Mulai ulang tumpukan setelah stempel mesh-client yang menyisih sehingga Full (atau mode terkonfigurasi Anda) berlaku.",
+      "flowControlBleHint": "Di Bluetooth, radio sering tidak pernah mengirimkan CMD_READY. Mesh-Client masih melangkah TX (menunggu sebentar untuk READY, lalu melanjutkan) sehingga kontrol aliran mengurangi kelebihan beban tanpa membekukan antrian."
     },
     "reticulumPeers": {
       "hops": "Hops",

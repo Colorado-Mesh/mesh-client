@@ -2036,6 +2036,48 @@ describe('ReticulumInterfacesPanel', () => {
       });
     });
 
+    it('shows the BLE flow-control hint when the add form is on Bluetooth transport', async () => {
+      const user = userEvent.setup();
+      window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+        if (path === '/api/v1/ble/availability') {
+          return Promise.resolve({ available: true });
+        }
+        if (path === '/api/v1/rnode/presets') {
+          return Promise.resolve({ presets: [] });
+        }
+        if (path === '/api/v1/config/audit') {
+          return Promise.resolve({ issues: [] });
+        }
+        if (path === '/api/v1/serial/ports') {
+          return Promise.resolve({ ports: [] });
+        }
+        return Promise.resolve({});
+      });
+      render(<ReticulumInterfacesPanel {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalledWith(
+          '/api/v1/ble/availability',
+        );
+      });
+      await user.selectOptions(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.type'),
+        'rnode',
+      );
+      await user.selectOptions(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.rnodeTransport'),
+        'ble',
+      );
+      expect(
+        screen.getByRole('checkbox', {
+          name: 'connectionPanel.reticulumInterfaces.flowControl',
+        }),
+      ).toBeChecked();
+      expect(
+        screen.getByText('connectionPanel.reticulumInterfaces.flowControlBleHint'),
+      ).toBeInTheDocument();
+    });
+
     it('does not show a flow-control checkbox for TCP add', () => {
       render(<ReticulumInterfacesPanel {...defaultProps} />);
       expect(

@@ -1833,10 +1833,10 @@ impl LiveBridge {
         let Ok(dest) = parse_hash16(hash_hex) else {
             return None;
         };
-        if let Some(TransportQueryResponse::PathSlots(entry)) = self
+        let slots_resp = self
             .query_control_timed(TransportQuery::GetPathSlots { dest })
-            .await
-        {
+            .await;
+        if let Some(TransportQueryResponse::PathSlots(entry)) = slots_resp {
             let best = entry
                 .slots
                 .iter()
@@ -2156,7 +2156,23 @@ impl LiveBridge {
         nickname: String,
     ) -> serde_json::Value {
         let _ = self.refresh_outbound_path_table().await;
-        let Some((path_hops, path_iface)) = self.best_rrc_path_route(&dest_hash_hex).await else {
+        let mut route = self.best_rrc_path_route(&dest_hash_hex).await;
+        if route.is_none() {
+            // Hubs often show announce hops in the peer list while live path
+            // slots are empty until RequestPath completes (especially after
+            // overnight idle). Discover before rejecting.
+            let _ = self
+                .ensure_path_for_direct_with_opts(
+                    &dest_hash_hex,
+                    true,
+                    Duration::from_secs(8),
+                    true,
+                )
+                .await;
+            let _ = self.refresh_outbound_path_table().await;
+            route = self.best_rrc_path_route(&dest_hash_hex).await;
+        }
+        let Some((path_hops, path_iface)) = route else {
             tracing::debug!(
                 target: "rrc",
                 hub = %dest_hash_hex,

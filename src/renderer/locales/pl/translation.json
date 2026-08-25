@@ -1255,7 +1255,8 @@
       "rmapFullModeHint": "Tryb pełny z publikacją RMAP utrzymuje pełny przez ignore_CONFIG_WARNINGS. Powiadomienia o dostawie LXMF opuszczą to radio w interwale powiadomień o stosie (domyślnie 1 godzina).",
       "effectiveModeBadge": "Obowiązuje: {{mode}}",
       "effectiveModeAria": "Efektywny tryb czasu pracy {{mode}}. Tryb skonfigurowany różni się od uruchomionego programu Reticulum.",
-      "effectiveModeTooltip": "Reticulum przepisała ten wykrywalny interfejs do punktu dostępu (lub innego dozwolonego trybu), ponieważ wykrywalny wymaga bramy, wewnętrznego lub punktu dostępu, chyba że ustawiono ignore_config_warnings. Zrestartuj stos po stemplach klienta siatkowego, które rezygnują, aby zadziałał tryb Full (lub skonfigurowany tryb) (mesh-client)."
+      "effectiveModeTooltip": "Reticulum przepisała ten wykrywalny interfejs do punktu dostępu (lub innego dozwolonego trybu), ponieważ wykrywalny wymaga bramy, wewnętrznego lub punktu dostępu, chyba że ustawiono ignore_config_warnings. Zrestartuj stos po stemplach klienta siatkowego, które rezygnują, aby zadziałał tryb Full (lub skonfigurowany tryb) (mesh-client).",
+      "flowControlBleHint": "W Bluetooth radio często nigdy nie wysyła CMD_READY. Mesh-Client nadal wykonuje TX (czeka krótko na GOTOWOŚĆ, a następnie kontynuuje), więc kontrola przepływu zmniejsza przeciążenie bez zamrażania kolejki."
     },
     "reticulumPeers": {
       "hops": "Hops",

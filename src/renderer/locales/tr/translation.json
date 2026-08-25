@@ -1253,7 +1253,8 @@
       "rmapFullModeHint": "RMAP yayınlı tam mod, ignore_config_warnings aracılığıyla Tam tutar. LXMF teslimat duyuruları, bu radyoyu yığın duyuru aralığından çıkaracaktır (varsayılan 1 saat).",
       "effectiveModeBadge": "Yürürlük Tarihi: {{mode}}",
       "effectiveModeAria": "Etkin çalışma zamanı modu {{mode}}. Yapılandırılmış mod, Reticulum'un çalıştığından farklıdır.",
-      "effectiveModeTooltip": "Reticulum, bu keşfedilebilir arayüzü Erişim Noktasına (veya izin verilen başka bir moda) yeniden yazdı, çünkü keşfedilebilir, ignore_config_warnings ayarlanmadığı sürece Ağ Geçidi, Dahili veya Erişim Noktası gerektirir. Tam (veya yapılandırılmış modunuzun) etkili olması için devre dışı bırakılan mesh-client damgalarından sonra yığını yeniden başlatın."
+      "effectiveModeTooltip": "Reticulum, bu keşfedilebilir arayüzü Erişim Noktasına (veya izin verilen başka bir moda) yeniden yazdı, çünkü keşfedilebilir, ignore_config_warnings ayarlanmadığı sürece Ağ Geçidi, Dahili veya Erişim Noktası gerektirir. Tam (veya yapılandırılmış modunuzun) etkili olması için devre dışı bırakılan mesh-client damgalarından sonra yığını yeniden başlatın.",
+      "flowControlBleHint": "Bluetooth'ta, radyo genellikle CMD_READY göndermez. Mesh-Client hala TX'i hızlandırır (READY için kısa bir süre bekler, sonra devam eder), böylece akış kontrolü kuyruğu dondurmadan aşırı yükü azaltır."
     },
     "reticulumPeers": {
       "hops": "Hops",
