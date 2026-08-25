@@ -1047,7 +1047,9 @@
       "importBackupAria": "Importa il backup Ratspeak .rsi da JSON incollato",
       "importBackupFromFileAria": "Scegli un file di backup Ratspeak .rsi da importare",
       "exportAria": "Esporta il backup dell'identità Ratspeak .rsi crittografato con PIN",
-      "exportRawAria": "Esporta file di identità RAW Reticulum non crittografato"
+      "exportRawAria": "Esporta file di identità RAW Reticulum non crittografato",
+      "identityHashLabel": "Hash identità:",
+      "copyIdentityHash": "Copia hash dell'identità"
     },
     "reticulumInterfaces": {
       "title": "interfacce",

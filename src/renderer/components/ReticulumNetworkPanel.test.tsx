@@ -171,6 +171,30 @@ describe('ReticulumNetworkPanel', () => {
     expect(img.getAttribute('data-value')).toBe(expected);
   });
 
+  it('renders identity hash label when identity is configured', async () => {
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    expect(
+      await screen.findByText('connectionPanel.reticulumIdentity.identityHashLabel'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('abc…')).toBeInTheDocument();
+  });
+
+  it('writes full identity hash to clipboard via electronAPI', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.mocked(window.electronAPI.clipboard.writeText);
+    writeText.mockClear();
+
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'connectionPanel.reticulumIdentity.copyIdentityHash',
+      }),
+    );
+    expect(writeText).toHaveBeenCalledWith('abc');
+  });
+
   it('writes full LXMF hash to clipboard via electronAPI', async () => {
     const user = userEvent.setup();
     const writeText = vi.mocked(window.electronAPI.clipboard.writeText);

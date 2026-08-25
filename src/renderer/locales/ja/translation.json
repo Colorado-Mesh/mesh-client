@@ -1049,7 +1049,9 @@
       "importBackupAria": "貼り付けられたJSONからRatspeak .rsiバックアップをインポートする",
       "importBackupFromFileAria": "インポートするRatspeak .rsiバックアップファイルを選択してください",
       "exportAria": "PIN暗号化されたRatspeak .rsi IDバックアップをエクスポート",
-      "exportRawAria": "暗号化されていないRAW Reticulum IDファイルをエクスポート"
+      "exportRawAria": "暗号化されていないRAW Reticulum IDファイルをエクスポート",
+      "identityHashLabel": "IDハッシュ：",
+      "copyIdentityHash": "IDハッシュをコピー"
     },
     "reticulumInterfaces": {
       "title": "インターフェース",

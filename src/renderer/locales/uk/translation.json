@@ -1051,7 +1051,9 @@
       "importBackupAria": "Імпортувати резервну копію Ratspeak .rsi зі вставленого JSON",
       "importBackupFromFileAria": "Виберіть файл резервної копії Ratspeak .rsi для імпорту",
       "exportAria": "Експортувати резервну копію ідентифікатора Ratspeak .rsi, зашифровану PIN-кодом",
-      "exportRawAria": "Експортувати незашифрований файл ідентифікації Reticulum"
+      "exportRawAria": "Експортувати незашифрований файл ідентифікації Reticulum",
+      "identityHashLabel": "Хеш посвідчення особи:",
+      "copyIdentityHash": "Скопіювати хеш посвідчення особи"
     },
     "reticulumInterfaces": {
       "title": "Інтерфейси",

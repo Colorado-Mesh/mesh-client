@@ -1049,7 +1049,9 @@
       "importBackupAria": "Impor cadangan Ratspeak .rsi dari JSON yang ditempelkan",
       "importBackupFromFileAria": "Pilih file cadangan Ratspeak .rsi untuk diimpor",
       "exportAria": "Ekspor cadangan identitas Ratspeak .rsi terenkripsi PIN",
-      "exportRawAria": "Ekspor file identitas Reticulum mentah yang tidak terenkripsi"
+      "exportRawAria": "Ekspor file identitas Reticulum mentah yang tidak terenkripsi",
+      "identityHashLabel": "Hash identitas:",
+      "copyIdentityHash": "Salin hash identitas"
     },
     "reticulumInterfaces": {
       "title": "Interface",

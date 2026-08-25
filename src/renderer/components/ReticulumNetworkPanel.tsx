@@ -1416,6 +1416,7 @@ function IdentityConfiguredView({
     setNameDraft(identity?.display_name?.trim() ?? '');
   }, [identity?.display_name]);
 
+  const identityHash = identity?.identity_hash?.trim() ?? '';
   const lxmfHash = identity?.lxmf_hash?.trim() ?? '';
   const [showIdentityQr, setShowIdentityQr] = useState(false);
   const identityQrUri = useMemo(() => {
@@ -1441,6 +1442,15 @@ function IdentityConfiguredView({
     }
   }, [identity, lxmfHash]);
 
+  const copyIdentityHash = useCallback(async () => {
+    if (!identityHash) return;
+    try {
+      await writeClipboardText(identityHash);
+    } catch (e) {
+      console.warn('[ReticulumNetworkPanel] copy identity hash ' + errLikeToLogString(e));
+    }
+  }, [identityHash]);
+
   const copyLxmfHash = useCallback(async () => {
     if (!lxmfHash) return;
     try {
@@ -1465,6 +1475,26 @@ function IdentityConfiguredView({
 
   return (
     <div className="mt-3 space-y-1 text-sm text-gray-300">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-muted">
+          {t('connectionPanel.reticulumIdentity.identityHashLabel')}
+        </span>
+        <code className="text-gray-200" title={identityHash || undefined}>
+          {identityHash ? `${identityHash.slice(0, 24)}…` : '—'}
+        </code>
+        {identityHash ? (
+          <button
+            type="button"
+            className="shrink-0 text-gray-400 hover:text-gray-300"
+            aria-label={t('connectionPanel.reticulumIdentity.copyIdentityHash')}
+            onClick={() => {
+              void copyIdentityHash();
+            }}
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-muted">{t('connectionPanel.reticulumIdentity.hashLabel')}</span>
         <code className="text-amber-300" title={lxmfHash || undefined}>

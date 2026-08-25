@@ -1048,7 +1048,9 @@
       "importBackupAria": "Importeer Ratspeak .rsi back-up van geplakte JSON",
       "importBackupFromFileAria": "Kies een Ratspeak .rsi back-upbestand om te importeren",
       "exportAria": "Export PIN-gecodeerde Ratspeak .rsi identiteitsback-up",
-      "exportRawAria": "Exporteer niet-versleuteld RAW Reticulum-identiteitsbestand"
+      "exportRawAria": "Exporteer niet-versleuteld RAW Reticulum-identiteitsbestand",
+      "identityHashLabel": "Identiteitshash:",
+      "copyIdentityHash": "Identiteitshash kopiëren"
     },
     "reticulumInterfaces": {
       "title": "Raakvlakken",

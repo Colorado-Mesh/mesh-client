@@ -1049,7 +1049,9 @@
       "importBackupAria": "从粘贴的JSON导入Ratspeak .rsi备份",
       "importBackupFromFileAria": "选择要导入的Ratspeak .rsi备份文件",
       "exportAria": "导出PIN加密的Ratspeak .rsi身份备份",
-      "exportRawAria": "导出未加密的原始 Reticulum 身份文件"
+      "exportRawAria": "导出未加密的原始 Reticulum 身份文件",
+      "identityHashLabel": "标识哈希：",
+      "copyIdentityHash": "复制标识哈希"
     },
     "reticulumInterfaces": {
       "title": "接口",
