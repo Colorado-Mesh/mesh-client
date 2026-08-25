@@ -602,7 +602,7 @@ When BLE RNode `flow_control` is on, wait up to 2s for `CMD_READY`, then release
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | floated rsReticulum `origin/main` after other rsReticulum overlays |
+| **Base commit** | floated rsReticulum `origin/main` @ `5b6b5eb` after other rsReticulum overlays |
 | **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsReticulum) |
 
 **Touches:** `crates/rns-interface/src/ble_rnode.rs` (main + native bridge TX loops)

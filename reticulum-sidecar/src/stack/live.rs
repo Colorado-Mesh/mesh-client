@@ -1798,15 +1798,22 @@ impl LiveBridge {
     }
 
     async fn query_control_timed(&self, query: TransportQuery) -> Option<TransportQueryResponse> {
-        if let Ok(resp) =
-            tokio::time::timeout(TRANSPORT_QUERY_TIMEOUT, self.handle.query_control(query)).await
-        {
+        self.query_control_timed_for(query, TRANSPORT_QUERY_TIMEOUT)
+            .await
+    }
+
+    async fn query_control_timed_for(
+        &self,
+        query: TransportQuery,
+        timeout: Duration,
+    ) -> Option<TransportQueryResponse> {
+        if timeout.is_zero() {
+            return None;
+        }
+        if let Ok(resp) = tokio::time::timeout(timeout, self.handle.query_control(query)).await {
             resp
         } else {
-            tracing::debug!(
-                "transport control query timed out after {:?}",
-                TRANSPORT_QUERY_TIMEOUT
-            );
+            tracing::debug!("transport control query timed out after {:?}", timeout);
             None
         }
     }
@@ -1828,13 +1835,24 @@ impl LiveBridge {
 
     /// Lowest-hop live path slot within RRC link limits (default 8).
     async fn best_rrc_path_route(&self, hash_hex: &str) -> Option<(u8, Option<String>)> {
+        self.best_rrc_path_route_within(hash_hex, TRANSPORT_QUERY_TIMEOUT)
+            .await
+    }
+
+    async fn best_rrc_path_route_within(
+        &self,
+        hash_hex: &str,
+        query_timeout: Duration,
+    ) -> Option<(u8, Option<String>)> {
         const RRC_MAX_CONNECT_HOPS: u8 = 8;
 
         let Ok(dest) = parse_hash16(hash_hex) else {
             return None;
         };
+        let deadline = tokio::time::Instant::now() + query_timeout;
+        let slots_budget = rrc_rediscovery_remaining(deadline)?;
         let slots_resp = self
-            .query_control_timed(TransportQuery::GetPathSlots { dest })
+            .query_control_timed_for(TransportQuery::GetPathSlots { dest }, slots_budget)
             .await;
         if let Some(TransportQueryResponse::PathSlots(entry)) = slots_resp {
             let best = entry
@@ -1847,8 +1865,20 @@ impl LiveBridge {
                 return Some((slot.hops, iface));
             }
         }
-        self.hops_to_destination(hash_hex)
-            .await
+        // Path-table hops fallback shares the same overall budget.
+        let rem = rrc_rediscovery_remaining(deadline)?;
+        let resp = self
+            .query_control_timed_for(TransportQuery::GetPathTable, rem)
+            .await?;
+        let TransportQueryResponse::PathTable(entries) = resp else {
+            return None;
+        };
+        let key = hash_hex.to_lowercase();
+        entries
+            .iter()
+            .filter(|e| hex::encode(e.hash).to_lowercase() == key)
+            .map(|e| e.hops)
+            .min()
             .filter(|&h| h <= RRC_MAX_CONNECT_HOPS)
             .map(|h| (h, None))
     }
@@ -2160,17 +2190,12 @@ impl LiveBridge {
         if route.is_none() {
             // Hubs often show announce hops in the peer list while live path
             // slots are empty until RequestPath completes (especially after
-            // overnight idle). Discover before rejecting.
-            let _ = self
-                .ensure_path_for_direct_with_opts(
-                    &dest_hash_hex,
-                    true,
-                    Duration::from_secs(8),
-                    true,
-                )
+            // overnight idle). Discover before rejecting — the full eight-second
+            // budget covers ensure + path-table refresh + second route select so
+            // a stalled transport cannot delay "path not ready" beyond that.
+            route = self
+                .rediscover_rrc_path_route(&dest_hash_hex, RRC_CONNECT_PATH_REDISCOVERY_BUDGET)
                 .await;
-            let _ = self.refresh_outbound_path_table().await;
-            route = self.best_rrc_path_route(&dest_hash_hex).await;
         }
         let Some((path_hops, path_iface)) = route else {
             tracing::debug!(
@@ -2179,7 +2204,7 @@ impl LiveBridge {
                 stored_hops = hops,
                 "rrc connect rejected — no viable network path (≤8 hops)"
             );
-            return serde_json::json!({ "ok": false, "error": "path not ready" });
+            return rrc_path_not_ready_response();
         };
         let ifaces = self.fetch_interfaces().await.unwrap_or_default();
         let egress = resolve_lxmf_sent_via(path_iface.as_deref(), &ifaces, None);
@@ -3065,8 +3090,14 @@ impl LiveBridge {
 
     /// Refresh outbound path table from transport when GetPathTable succeeds.
     async fn refresh_outbound_path_table(&self) -> bool {
-        let Some(TransportQueryResponse::PathTable(entries)) =
-            self.query_control_timed(TransportQuery::GetPathTable).await
+        self.refresh_outbound_path_table_within(TRANSPORT_QUERY_TIMEOUT)
+            .await
+    }
+
+    async fn refresh_outbound_path_table_within(&self, query_timeout: Duration) -> bool {
+        let Some(TransportQueryResponse::PathTable(entries)) = self
+            .query_control_timed_for(TransportQuery::GetPathTable, query_timeout)
+            .await
         else {
             return false;
         };
@@ -3082,6 +3113,25 @@ impl LiveBridge {
             driver.update_path_table(&path_entries);
         }
         true
+    }
+
+    /// Empty-slot RRC rediscovery under a shared wall-clock budget (ensure +
+    /// refresh + second route selection).
+    async fn rediscover_rrc_path_route(
+        &self,
+        dest_hash_hex: &str,
+        budget: Duration,
+    ) -> Option<(u8, Option<String>)> {
+        let deadline = tokio::time::Instant::now() + budget;
+        let ensure_budget = rrc_rediscovery_remaining(deadline)?;
+        let _ = self
+            .ensure_path_for_direct_with_opts(dest_hash_hex, true, ensure_budget, true)
+            .await;
+        if let Some(rem) = rrc_rediscovery_remaining(deadline) {
+            let _ = self.refresh_outbound_path_table_within(rem).await;
+        }
+        let rem = rrc_rediscovery_remaining(deadline)?;
+        self.best_rrc_path_route_within(dest_hash_hex, rem).await
     }
 
     /// Discover a path to the destination before falling back to the propagation node.
@@ -5748,6 +5798,46 @@ fn force_path_refresh_accepts_current_path(
     saw_path_absent
 }
 
+/// Shared wall-clock budget for RRC empty-slot rediscovery (ensure + refresh + reselect).
+const RRC_CONNECT_PATH_REDISCOVERY_BUDGET: Duration = Duration::from_secs(8);
+
+fn rrc_rediscovery_remaining(deadline: tokio::time::Instant) -> Option<Duration> {
+    let rem = deadline.saturating_duration_since(tokio::time::Instant::now());
+    (!rem.is_zero()).then_some(rem)
+}
+
+fn rrc_path_not_ready_response() -> serde_json::Value {
+    serde_json::json!({ "ok": false, "error": "path not ready" })
+}
+
+/// Sync stand-in for [`LiveBridge::rediscover_rrc_path_route`] so tests can
+/// assert forced RequestPath → path-table refresh → second route selection
+/// without a live transport.
+#[cfg(test)]
+fn rrc_empty_slot_rediscovery_sync<E, R, S>(
+    budget: Duration,
+    mut ensure_forced_request_path: E,
+    mut refresh_outbound: R,
+    mut second_route_select: S,
+) -> Option<(u8, Option<String>)>
+where
+    E: FnMut(Duration),
+    R: FnMut(Duration),
+    S: FnMut(Duration) -> Option<(u8, Option<String>)>,
+{
+    let deadline = std::time::Instant::now() + budget;
+    let remaining = |deadline: std::time::Instant| {
+        let rem = deadline.saturating_duration_since(std::time::Instant::now());
+        (!rem.is_zero()).then_some(rem)
+    };
+    let ensure_budget = remaining(deadline)?;
+    ensure_forced_request_path(ensure_budget);
+    if let Some(rem) = remaining(deadline) {
+        refresh_outbound(rem);
+    }
+    remaining(deadline).and_then(&mut second_route_select)
+}
+
 /// Timeout decision for [`LiveStack::ensure_path_for_direct_with_opts`].
 ///
 /// `accept_existing_on_timeout` is only for forced refresh of a path that was
@@ -6725,6 +6815,82 @@ mod announce_display_name_tests {
         ));
         assert!(has_path);
         assert_eq!(hops_after, Some(2));
+    }
+
+    #[test]
+    fn rrc_connect_empty_slots_rediscovery_requests_path_then_rejects() {
+        // Mirrors LiveBridge::rrc_connect when the first best_rrc_path_route is
+        // empty: forced RequestPath + outbound refresh + second select, then
+        // "path not ready" when rediscovery still yields no route.
+        use std::cell::RefCell;
+
+        let steps: RefCell<Vec<&'static str>> = RefCell::new(Vec::new());
+        let ensure_budgets: RefCell<Vec<Duration>> = RefCell::new(Vec::new());
+        let refresh_budgets: RefCell<Vec<Duration>> = RefCell::new(Vec::new());
+        let select_budgets: RefCell<Vec<Duration>> = RefCell::new(Vec::new());
+
+        let first_route: Option<(u8, Option<String>)> = None;
+        assert!(first_route.is_none());
+
+        let second = rrc_empty_slot_rediscovery_sync(
+            RRC_CONNECT_PATH_REDISCOVERY_BUDGET,
+            |budget| {
+                steps.borrow_mut().push("forced_request_path");
+                ensure_budgets.borrow_mut().push(budget);
+            },
+            |budget| {
+                steps.borrow_mut().push("refresh_outbound_path_table");
+                refresh_budgets.borrow_mut().push(budget);
+            },
+            |budget| {
+                steps.borrow_mut().push("second_route_selection");
+                select_budgets.borrow_mut().push(budget);
+                None
+            },
+        );
+
+        assert_eq!(
+            steps.into_inner(),
+            [
+                "forced_request_path",
+                "refresh_outbound_path_table",
+                "second_route_selection"
+            ]
+        );
+        let ensure_budgets = ensure_budgets.into_inner();
+        let refresh_budgets = refresh_budgets.into_inner();
+        let select_budgets = select_budgets.into_inner();
+        assert_eq!(ensure_budgets.len(), 1);
+        assert!(ensure_budgets[0] <= RRC_CONNECT_PATH_REDISCOVERY_BUDGET);
+        assert_eq!(refresh_budgets.len(), 1);
+        assert!(refresh_budgets[0] <= ensure_budgets[0]);
+        assert_eq!(select_budgets.len(), 1);
+        assert!(select_budgets[0] <= refresh_budgets[0]);
+        assert!(second.is_none());
+        let rejected = rrc_path_not_ready_response();
+        assert_eq!(rejected["ok"], false);
+        assert_eq!(rejected["error"], "path not ready");
+    }
+
+    #[test]
+    fn rrc_connect_empty_slots_rediscovery_accepts_second_route() {
+        let second = rrc_empty_slot_rediscovery_sync(
+            RRC_CONNECT_PATH_REDISCOVERY_BUDGET,
+            |_| {},
+            |_| {},
+            |_| Some((2, Some("TCP Client Interface".into()))),
+        );
+        assert_eq!(second, Some((2, Some("TCP Client Interface".into()))));
+    }
+
+    #[test]
+    fn rrc_rediscovery_remaining_is_none_when_deadline_elapsed() {
+        let past = tokio::time::Instant::now() - Duration::from_secs(1);
+        assert!(rrc_rediscovery_remaining(past).is_none());
+        let future = tokio::time::Instant::now() + Duration::from_secs(2);
+        let rem = rrc_rediscovery_remaining(future).expect("future deadline");
+        assert!(rem <= Duration::from_secs(2));
+        assert!(!rem.is_zero());
     }
 
     #[test]

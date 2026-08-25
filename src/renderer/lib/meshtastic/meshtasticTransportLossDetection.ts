@@ -189,6 +189,7 @@ export function attachMeshtasticTransportLossWatch(
   const deviceWithHook = device as DeviceWithPipeHook;
   const previousPipeHook = deviceWithHook.onFromDevicePipeError;
   deviceWithHook.onFromDevicePipeError = (err: unknown) => {
+    previousPipeHook?.(err);
     if (isMeshtasticTransportLostError(err)) {
       notify('read-pipe-failure', err);
     }

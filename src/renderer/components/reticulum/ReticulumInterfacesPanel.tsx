@@ -2422,7 +2422,7 @@ function InterfacesSection({
                 />
                 {t('connectionPanel.reticulumInterfaces.flowControl')}
               </label>
-              {rnodeTransport === 'ble' ? (
+              {showRnodeBle ? (
                 <p className="text-[10px] leading-snug text-gray-500">
                   {t('connectionPanel.reticulumInterfaces.flowControlBleHint')}
                 </p>

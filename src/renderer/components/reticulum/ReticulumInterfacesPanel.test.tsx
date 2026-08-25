@@ -2053,7 +2053,7 @@ describe('ReticulumInterfacesPanel', () => {
         }
         return Promise.resolve({});
       });
-      render(<ReticulumInterfacesPanel {...defaultProps} />);
+      const { container } = render(<ReticulumInterfacesPanel {...defaultProps} />);
 
       await waitFor(() => {
         expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalledWith(
@@ -2076,6 +2076,8 @@ describe('ReticulumInterfacesPanel', () => {
       expect(
         screen.getByText('connectionPanel.reticulumInterfaces.flowControlBleHint'),
       ).toBeInTheDocument();
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
     });
 
     it('does not show a flow-control checkbox for TCP add', () => {
