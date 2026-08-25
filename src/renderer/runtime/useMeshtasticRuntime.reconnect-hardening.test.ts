@@ -19,6 +19,7 @@ import {
 } from '../lib/bleReconnectExhaustLatch';
 import {
   assertPowerResumeSkipsOnExplicitDisconnect,
+  extractBalancedBlock,
   extractUseCallbackBody,
   loadRendererLibSource,
   loadRuntimeSource,
@@ -345,17 +346,38 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     );
   });
 
-  it('attachRfSession configures before awaiting SQLite node hydrate (#895)', () => {
+  it('attachRfSession configures outside the node-hydrate IIFE (#895)', () => {
     const attachBody = extractUseCallbackBody(SOURCE, 'attachRfSession');
-    // wantConfigId must not wait on SQLite: hydrate runs in a void IIFE, configure is awaited
-    // on the attach path (same as reconnect).
-    expect(attachBody).toMatch(
-      /wireSubscriptions\([\s\S]*?isConfiguringRef\.current = true[\s\S]*?void \(async \(\) => \{[\s\S]*?loadMeshtasticNodeMapFromDb[\s\S]*?await configureMeshtasticDeviceWithRetry/,
+    const voidMarker = 'void (async () => {';
+    let hydrateIifeEnd = -1;
+    for (let searchFrom = 0; searchFrom < attachBody.length;) {
+      const voidIdx = attachBody.indexOf(voidMarker, searchFrom);
+      if (voidIdx === -1) break;
+      const braceIdx = attachBody.indexOf('{', voidIdx);
+      expect(braceIdx).toBeGreaterThan(voidIdx);
+      const body = extractBalancedBlock(attachBody, braceIdx);
+      if (body.includes('loadMeshtasticNodeMapFromDb')) {
+        // Closing `}` of the IIFE body, then `)();`
+        const afterBrace = braceIdx + 1 + body.length;
+        expect(attachBody.slice(afterBrace, afterBrace + 5)).toMatch(/^\}\)\(\);/);
+        hydrateIifeEnd = attachBody.indexOf(';', afterBrace) + 1;
+        break;
+      }
+      searchFrom = voidIdx + 1;
+    }
+    expect(hydrateIifeEnd).toBeGreaterThan(0);
+    const configureIdx = attachBody.indexOf(
+      'await configureMeshtasticDeviceWithRetry',
+      hydrateIifeEnd,
     );
-    const configureIdx = attachBody.indexOf('await configureMeshtasticDeviceWithRetry');
-    const wireIdx = attachBody.indexOf('wireSubscriptions');
-    expect(wireIdx).toBeGreaterThanOrEqual(0);
-    expect(configureIdx).toBeGreaterThan(wireIdx);
+    expect(configureIdx).toBeGreaterThan(hydrateIifeEnd);
+  });
+
+  it('attachRfSession drops delayed node hydrate after reconnect generation bump (#895)', () => {
+    const attachBody = extractUseCallbackBody(SOURCE, 'attachRfSession');
+    expect(attachBody).toMatch(
+      /loadMeshtasticNodeMapFromDb\(\)[\s\S]*?reconnectGenerationRef\.current !== generation[\s\S]*?applyMeshtasticNodesToUi/,
+    );
   });
 
   it('uses nodeStore as the merge base and synchronizes runtime patches immediately', () => {

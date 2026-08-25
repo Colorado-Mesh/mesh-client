@@ -2647,6 +2647,10 @@ export function useMeshtasticRuntime() {
         let dbCacheNodeCount = 0;
         try {
           const cachedNodes = await loadMeshtasticNodeMapFromDb();
+          // Superseded attach must not stamp a stale snapshot onto a newer session (#895).
+          if (reconnectGenerationRef.current !== generation) {
+            return;
+          }
           dbCacheNodeCount = cachedNodes.size;
           applyMeshtasticNodesToUi(driverIdentityId, cachedNodes);
         } catch (e) {
@@ -2654,6 +2658,9 @@ export function useMeshtasticRuntime() {
             '[useMeshtasticRuntime] attachRfSession db cache hydrate failed ' +
               errLikeToLogString(e),
           );
+        }
+        if (reconnectGenerationRef.current !== generation) {
+          return;
         }
         console.debug(
           `[useMeshtasticRuntime] attachRfSession dbCache→UI ${Math.round(performance.now() - dbCacheStart)}ms (${dbCacheNodeCount} nodes)`,

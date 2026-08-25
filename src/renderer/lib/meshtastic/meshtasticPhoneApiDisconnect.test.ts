@@ -1,16 +1,21 @@
 import { fromBinary } from '@bufbuild/protobuf';
 import type { MeshDevice } from '@meshtastic/core';
 import { Mesh } from '@meshtastic/protobufs';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   buildToRadioDisconnectBytes,
+  MESHTASTIC_PHONE_API_DISCONNECT_TIMEOUT_MS,
   sendMeshtasticPhoneApiDisconnect,
 } from './meshtasticPhoneApiDisconnect';
 
 describe('meshtasticPhoneApiDisconnect', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('encodes ToRadio.disconnect', () => {
@@ -55,5 +60,25 @@ describe('meshtasticPhoneApiDisconnect', () => {
 
     await expect(sendMeshtasticPhoneApiDisconnect(device)).resolves.toBeUndefined();
     expect(debugSpy).toHaveBeenCalled();
+  });
+
+  it('resolves when writer.write never settles so safeDisconnect can continue', async () => {
+    vi.useFakeTimers();
+    const toDevice = new WritableStream<Uint8Array>({
+      write() {
+        return new Promise(() => {
+          // never settles
+        });
+      },
+    });
+    const device = {
+      transport: { toDevice },
+    } as unknown as MeshDevice;
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+
+    const pending = sendMeshtasticPhoneApiDisconnect(device);
+    await vi.advanceTimersByTimeAsync(MESHTASTIC_PHONE_API_DISCONNECT_TIMEOUT_MS);
+    await expect(pending).resolves.toBeUndefined();
+    expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('ToRadio.disconnect timed out'));
   });
 });
