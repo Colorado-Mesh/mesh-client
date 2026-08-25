@@ -336,7 +336,10 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     );
     expect(wireSource).toContain('!isBleReconnectAttemptActive()');
     expect(wireSource).toMatch(
-      /configure stall timeout \(BLE [\s\S]*?handleConnectionLostRef\.current\(\)/,
+      /configure stall timeout \(\$\{type\} [\s\S]*?handleConnectionLostRef\.current\(\)/,
+    );
+    expect(wireSource).toMatch(
+      /status === DeviceStatusEnum\.DeviceConfiguring &&\s*\(type === 'ble' \|\| type === 'serial'\)/,
     );
   });
 

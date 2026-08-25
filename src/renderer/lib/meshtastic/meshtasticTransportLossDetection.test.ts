@@ -155,6 +155,48 @@ describe('meshtasticTransportLossDetection', () => {
     expect(onLost).toHaveBeenCalledTimes(1);
   });
 
+  it('notifies on fromDevice pipe transport-lost errors via onFromDevicePipeError', () => {
+    const onLost = vi.fn();
+    const inner = new WritableStream<Uint8Array>({ write: vi.fn() });
+    const device = {
+      transport: { toDevice: inner },
+    } as unknown as MeshDevice & { onFromDevicePipeError?: (err: unknown) => void };
+
+    attachMeshtasticTransportLossWatch(device, 'serial', onLost);
+    expect(typeof device.onFromDevicePipeError).toBe('function');
+
+    device.onFromDevicePipeError?.(new DOMException('The device has been lost.', 'NetworkError'));
+    expect(onLost).toHaveBeenCalledTimes(1);
+
+    // Second call is coalesced (same as write-failure notify).
+    device.onFromDevicePipeError?.(new DOMException('The device has been lost.', 'NetworkError'));
+    expect(onLost).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores non-transport-lost fromDevice pipe errors', () => {
+    const onLost = vi.fn();
+    const inner = new WritableStream<Uint8Array>({ write: vi.fn() });
+    const device = {
+      transport: { toDevice: inner },
+    } as unknown as MeshDevice & { onFromDevicePipeError?: (err: unknown) => void };
+
+    attachMeshtasticTransportLossWatch(device, 'serial', onLost);
+    device.onFromDevicePipeError?.(new Error('Packet does not exist'));
+    expect(onLost).not.toHaveBeenCalled();
+  });
+
+  it('clears onFromDevicePipeError hook on cleanup', () => {
+    const inner = new WritableStream<Uint8Array>({ write: vi.fn() });
+    const device = {
+      transport: { toDevice: inner },
+    } as unknown as MeshDevice & { onFromDevicePipeError?: (err: unknown) => void };
+
+    const detach = attachMeshtasticTransportLossWatch(device, 'ble', vi.fn());
+    expect(typeof device.onFromDevicePipeError).toBe('function');
+    detach();
+    expect(device.onFromDevicePipeError).toBeUndefined();
+  });
+
   it('createSerializedWritableStream rejects writes when inner stream is missing', async () => {
     const serialized = createSerializedWritableStream(undefined);
     const writer = serialized.getWriter();

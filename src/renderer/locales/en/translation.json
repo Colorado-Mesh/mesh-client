@@ -803,7 +803,7 @@
     "staleLoss": "Connection may be lost — no data received recently",
     "reconnect": "Reconnect",
     "reconnectingAttempt": "Reconnecting… attempt {{attempt}}/{{max}}",
-    "serialReselect": "USB serial connection lost — select your device again",
+    "serialReselect": "USB serial connection lost — reselect the port, or power-cycle the radio if it still will not connect",
     "serialReselectAction": "Select serial port",
     "statusRegion": "Connection status"
   },

@@ -232,7 +232,7 @@ export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_DEFER_MS = 12 * MS_PER_SECO
 /** Delay before one retry of getMetadata after the deferred first attempt fails. */
 export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS = 30 * MS_PER_SECOND;
 
-/** BLE configure stall watchdog — force disconnect if FromRadio progress stalls. */
+/** BLE/serial configure stall watchdog — force disconnect if FromRadio progress stalls. */
 export const MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS = 60 * MS_PER_SECOND;
 
 /**
