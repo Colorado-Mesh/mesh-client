@@ -11,13 +11,19 @@ vi.mock('react-i18next', () => ({
 
 const refreshIdentity = vi.fn();
 
-const identityState = vi.hoisted(() => ({
-  configured: true,
-  identity_hash: 'abc',
-  lxmf_hash: 'def0123456789abcdef0123456789abc',
-  display_name: 'Existing Name',
-  public_key: null as string | null,
-}));
+const { TEST_IDENTITY_HASH, identityState } = vi.hoisted(() => {
+  const TEST_IDENTITY_HASH = 'aabbccddeeff00112233445566778899';
+  return {
+    TEST_IDENTITY_HASH,
+    identityState: {
+      configured: true,
+      identity_hash: TEST_IDENTITY_HASH,
+      lxmf_hash: 'def0123456789abcdef0123456789abc',
+      display_name: 'Existing Name',
+      public_key: null as string | null,
+    },
+  };
+});
 
 vi.mock('@/renderer/lib/reticulum/useReticulumSidecarApi', () => ({
   useReticulumSidecarApi: () => ({
@@ -50,7 +56,7 @@ describe('ReticulumNetworkPanel', () => {
     refreshIdentity.mockReset();
     identityState.public_key = null;
     identityState.lxmf_hash = 'def0123456789abcdef0123456789abc';
-    identityState.identity_hash = 'abc';
+    identityState.identity_hash = TEST_IDENTITY_HASH;
     identityState.display_name = 'Existing Name';
     window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
       if (path === '/api/v1/stack/settings') {
@@ -177,7 +183,7 @@ describe('ReticulumNetworkPanel', () => {
     expect(
       await screen.findByText('connectionPanel.reticulumIdentity.identityHashLabel'),
     ).toBeInTheDocument();
-    expect(screen.getByText('abc…')).toBeInTheDocument();
+    expect(screen.getByText(`${TEST_IDENTITY_HASH.slice(0, 24)}…`)).toBeInTheDocument();
   });
 
   it('writes full identity hash to clipboard via electronAPI', async () => {
@@ -192,7 +198,7 @@ describe('ReticulumNetworkPanel', () => {
         name: 'connectionPanel.reticulumIdentity.copyIdentityHash',
       }),
     );
-    expect(writeText).toHaveBeenCalledWith('abc');
+    expect(writeText).toHaveBeenCalledWith(TEST_IDENTITY_HASH);
   });
 
   it('writes full LXMF hash to clipboard via electronAPI', async () => {
