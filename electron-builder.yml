@@ -57,7 +57,7 @@ mac:
   # APPLE_APP_SPECIFIC_PASSWORD, and APPLE_TEAM_ID env vars at build time.
   # Automatically skipped when code signing is skipped (no cert available).
   notarize: true
-# Drag-to-install layout: app icon + Applications folder symlink (Finder DMG window).
+# Drag-to-install layout: app icon + Applications symlink + ZIP extract warning (Finder DMG window).
 dmg:
   contents:
     - x: 130
@@ -68,6 +68,11 @@ dmg:
       type: link
       path: /Applications
       name: Applications
+    - x: 130
+      y: 380
+      type: file
+      path: resources/macos/IMPORTANT-macOS-install.txt
+      name: IMPORTANT-Read-Me.txt
 linux:
   target:
     - target: AppImage

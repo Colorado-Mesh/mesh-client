@@ -1,11 +1,13 @@
 // @vitest-environment node
-import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'fs';
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync, mkdirSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 
 import {
   assertApplicationsSymlink,
+  assertDmgInstallNotice,
+  assertSiblingFrameworkSymlinks,
   VerificationFailure,
   fail,
   isCompleteAppBundle,
@@ -68,6 +70,38 @@ describe('verify-mac-packaging helpers', () => {
       rmSync(join(dir, 'Applications'));
       symlinkSync('/tmp', join(dir, 'Applications'));
       expect(() => assertApplicationsSymlink(dir)).toThrow(/must target \/Applications/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('assertDmgInstallNotice requires IMPORTANT-Read-Me.txt', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'verify-mac-dmg-notice-'));
+    try {
+      expect(() => assertDmgInstallNotice(dir)).toThrow(VerificationFailure);
+      writeFileSync(join(dir, 'IMPORTANT-Read-Me.txt'), 'macOS install notice '.repeat(8));
+      expect(() => assertDmgInstallNotice(dir)).not.toThrow();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('assertSiblingFrameworkSymlinks rejects flattened Squirrel.framework root link', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'verify-mac-squirrel-'));
+    const bundle = join(dir, 'Mesh-client.app');
+    const fwRoot = join(bundle, 'Contents', 'Frameworks', 'Squirrel.framework');
+    try {
+      mkdirSync(join(fwRoot, 'Versions', 'A'), { recursive: true });
+      writeFileSync(join(fwRoot, 'Versions', 'A', 'Squirrel'), 'x'.repeat(2048));
+      writeFileSync(join(fwRoot, 'Squirrel'), 'not-a-symlink');
+      symlinkSync('A', join(fwRoot, 'Versions', 'Current'));
+      expect(() =>
+        assertSiblingFrameworkSymlinks(bundle, 'test', {
+          dir: 'Squirrel.framework',
+          binary: 'Squirrel',
+          minBytes: 1024,
+        }),
+      ).toThrow(/must be a symlink/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

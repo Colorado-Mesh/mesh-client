@@ -13,6 +13,10 @@ import {
   trustedSchemaVersion,
 } from './ci-schema-release-compare.mjs';
 import {
+  formatMacosInstallReleaseMarkdown,
+  mergeMacosInstallNoteIntoReleaseBody,
+} from './macos-install-notice.mjs';
+import {
   authToken,
   ensureGithubDraftRelease,
   getRelease,
@@ -128,7 +132,11 @@ export async function patchDraftReleaseSchemaNote(opts) {
         : requireDraftReleaseForSchemaPatch(await listReleases(opts.tag, opts.token), opts.tag);
   }
 
-  const body = mergeSchemaNoteIntoReleaseBody(draft.body ?? '', opts.markdown);
+  const withSchema = mergeSchemaNoteIntoReleaseBody(draft.body ?? '', opts.markdown);
+  const body = mergeMacosInstallNoteIntoReleaseBody(
+    withSchema,
+    formatMacosInstallReleaseMarkdown(),
+  );
   await patch(draft.id, opts.token, { body });
   console.debug(`[ci-patch-draft-release-schema-note] Updated draft body for ${opts.tag}`);
 }
