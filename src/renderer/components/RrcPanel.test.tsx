@@ -513,7 +513,12 @@ describe('RrcPanel', () => {
     expect(whoCalls.some((args) => (args[0] as { body?: string }).body === '/who general')).toBe(
       true,
     );
-    expect(whoCalls.every((args) => (args[0] as { room?: string }).room == null)).toBe(true);
+    expect(
+      whoCalls.every((args) => {
+        const room = (args[0] as { room?: string }).room;
+        return room === 'general' || room === '#general';
+      }),
+    ).toBe(true);
   });
 
   it('does not re-send /who or reconnect when remounting a populated roster', async () => {
@@ -582,6 +587,7 @@ describe('RrcPanel', () => {
     });
     expect(whoSendCalls()[0]?.[0]).toEqual({
       hub_dest_hash: hubA,
+      room: 'general',
       body: '/who general',
       type: 'msg',
     });
@@ -662,6 +668,7 @@ describe('RrcPanel', () => {
     });
     expect(whoSendCalls()[0]?.[0]).toEqual({
       hub_dest_hash: hubA,
+      room: 'general',
       body: '/who general',
       type: 'msg',
     });
@@ -713,9 +720,35 @@ describe('RrcPanel', () => {
     });
     expect(whoSendCalls()[0]?.[0]).toEqual({
       hub_dest_hash: hubA,
+      room: 'general',
       body: '/who general',
       type: 'msg',
     });
+  });
+
+  it('does not add whoReplyMissing after part before /who timeout', async () => {
+    vi.useFakeTimers();
+    try {
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hubA, 'Hub A');
+      store.roomJoined('general');
+      store.setActiveRoom('general');
+      vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+      render(<RrcPanel isActive />);
+      await vi.waitFor(() => {
+        expect(whoSendCalls()).toHaveLength(1);
+      });
+
+      store.roomParted('general');
+      await vi.advanceTimersByTimeAsync(12_000);
+
+      const key = store.roomMessageKey('general', hubA);
+      const bodies = (store.messages.get(key ?? '') ?? []).map((m) => m.body);
+      expect(bodies.some((b) => b.includes('rrc.whoReplyMissing'))).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('retries auto /who after a failed send', async () => {
@@ -853,7 +886,7 @@ describe('RrcPanel', () => {
     });
   });
 
-  it('expands bare /who to include the focused room and omits K_ROOM', async () => {
+  it('expands bare /who to include the focused room and sets K_ROOM', async () => {
     const user = userEvent.setup();
     const store = useRrcSessionStore.getState();
     store.applyStatus('active', hubA, 'Hub A');
@@ -879,15 +912,12 @@ describe('RrcPanel', () => {
       expect(vi.mocked(window.electronAPI.reticulum.rrc.send)).toHaveBeenCalledWith(
         expect.objectContaining({
           hub_dest_hash: hubA,
+          room: 'general',
           body: '/who general',
           type: 'msg',
         }),
       );
     });
-    const call = vi.mocked(window.electronAPI.reticulum.rrc.send).mock.calls.at(-1)?.[0] as {
-      room?: string;
-    };
-    expect(call.room).toBeUndefined();
   });
 
   it('sends one /who per hub when switching focus', async () => {

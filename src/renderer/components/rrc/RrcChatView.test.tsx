@@ -341,6 +341,18 @@ describe('RrcChatView stick-to-bottom', () => {
     mockScrollToEnd.mockClear();
   });
 
+  it('keeps Chat/Rooms flex + overflow-anchor stream classes', () => {
+    render(<RrcChatView {...baseProps} messages={[makeMsg({ id: '1', body: 'one' })]} />);
+    const stream = screen.getByTestId('rrc-message-stream');
+    expect(stream).toHaveClass(
+      'overflow-y-auto',
+      'overscroll-contain',
+      'min-h-0',
+      '[overflow-anchor:none]',
+    );
+    expect(stream.parentElement).toHaveClass('min-h-0', 'flex-1');
+  });
+
   it('scrolls to end when a message appends while pinned', async () => {
     const { rerender } = render(
       <RrcChatView {...baseProps} messages={[makeMsg({ id: '1', body: 'one' })]} />,
@@ -361,6 +373,35 @@ describe('RrcChatView stick-to-bottom', () => {
     });
   });
 
+  it('follows when the latest id changes at a fixed list length (history cap)', async () => {
+    const firstBatch = [
+      makeMsg({ id: '1', body: 'old' }),
+      makeMsg({ id: '2', body: 'mid' }),
+      makeMsg({ id: '3', body: 'newer' }),
+    ];
+    const { rerender } = render(<RrcChatView {...baseProps} isActive messages={firstBatch} />);
+    await waitFor(() => {
+      expect(mockScrollToEnd).toHaveBeenCalled();
+    });
+    mockScrollToEnd.mockClear();
+
+    // Same length, new tail id — mirrors MAX_MESSAGES_PER_ROOM slice on busy rooms.
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        isActive
+        messages={[
+          makeMsg({ id: '2', body: 'mid' }),
+          makeMsg({ id: '3', body: 'newer' }),
+          makeMsg({ id: '4', body: 'newest' }),
+        ]}
+      />,
+    );
+    await waitFor(() => {
+      expect(mockScrollToEnd).toHaveBeenCalled();
+    });
+  });
+
   it('does not follow appends while the window is visible but unfocused', async () => {
     const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
     try {
@@ -373,6 +414,7 @@ describe('RrcChatView stick-to-bottom', () => {
       mockScrollToEnd.mockClear();
 
       hasFocusSpy.mockReturnValue(false);
+      fireEvent(window, new Event('blur'));
       rerender(
         <RrcChatView
           {...baseProps}
@@ -405,6 +447,32 @@ describe('RrcChatView stick-to-bottom', () => {
           messages={[makeMsg({ id: '1', body: 'one' }), makeMsg({ id: '2', body: 'two' })]}
         />,
       );
+      await waitFor(() => {
+        expect(mockScrollToEnd).toHaveBeenCalled();
+      });
+    } finally {
+      hasFocusSpy.mockRestore();
+    }
+  });
+
+  it('re-follows when focus returns while pinned', async () => {
+    const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    try {
+      render(
+        <RrcChatView {...baseProps} isActive messages={[makeMsg({ id: '1', body: 'one' })]} />,
+      );
+      await waitFor(() => {
+        expect(mockScrollToEnd).toHaveBeenCalled();
+      });
+      mockScrollToEnd.mockClear();
+
+      hasFocusSpy.mockReturnValue(false);
+      fireEvent(window, new Event('blur'));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(mockScrollToEnd).not.toHaveBeenCalled();
+
+      hasFocusSpy.mockReturnValue(true);
+      fireEvent(window, new Event('focus'));
       await waitFor(() => {
         expect(mockScrollToEnd).toHaveBeenCalled();
       });
@@ -461,6 +529,40 @@ describe('RrcChatView stick-to-bottom', () => {
     await waitFor(() => {
       expect(mockScrollToEnd).toHaveBeenCalled();
     });
+  });
+
+  it('scrolls to end when hub changes with the same room name', async () => {
+    const hubA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const hubB = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const { rerender } = render(
+      <RrcChatView
+        {...baseProps}
+        hubDestHash={hubA}
+        activeRoom="#general"
+        messages={[makeMsg({ id: '1', body: 'a', room: '#general' })]}
+      />,
+    );
+    await waitFor(() => {
+      expect(mockScrollToEnd).toHaveBeenCalled();
+    });
+
+    mockIsAtEnd = false;
+    fireEvent.scroll(screen.getByTestId('rrc-message-stream'));
+    expect(screen.getByLabelText('rrc.jumpToLatest')).toBeInTheDocument();
+    mockScrollToEnd.mockClear();
+
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        hubDestHash={hubB}
+        activeRoom="#general"
+        messages={[makeMsg({ id: '2', body: 'b', room: '#general' })]}
+      />,
+    );
+    await waitFor(() => {
+      expect(mockScrollToEnd).toHaveBeenCalled();
+    });
+    expect(screen.queryByLabelText('rrc.jumpToLatest')).not.toBeInTheDocument();
   });
 
   it('restores scrollTop on tab re-entry when not pinned', () => {

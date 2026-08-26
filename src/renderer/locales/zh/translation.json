@@ -1049,7 +1049,9 @@
       "importBackupAria": "从粘贴的JSON导入Ratspeak .rsi备份",
       "importBackupFromFileAria": "选择要导入的Ratspeak .rsi备份文件",
       "exportAria": "导出PIN加密的Ratspeak .rsi身份备份",
-      "exportRawAria": "导出未加密的原始 Reticulum 身份文件"
+      "exportRawAria": "导出未加密的原始 Reticulum 身份文件",
+      "identityHashLabel": "标识哈希：",
+      "copyIdentityHash": "复制标识哈希"
     },
     "reticulumInterfaces": {
       "title": "接口",
@@ -1253,7 +1255,8 @@
       "rmapFullModeHint": "RMAP发布的完整模式通过IGNORE_CONFIG_WARNINGS保持完整。LXMF传递公告将在堆栈公告间隔（默认为1小时）上退出此无线电。",
       "effectiveModeBadge": "有效期： {{mode}}",
       "effectiveModeAria": "有效运行时模式{{mode}}。配置的模式与Reticulum正在运行的模式不同。",
-      "effectiveModeTooltip": "Reticulum将此可发现接口重写到接入点（或其他允许的模式） ，因为除非设置了ignore_config_warnings ，否则DISCOVERABLE需要网关、内部或接入点。在选择退出的mesh-client戳后重新启动堆栈，以便完整（或您配置的模式）生效。"
+      "effectiveModeTooltip": "Reticulum将此可发现接口重写到接入点（或其他允许的模式） ，因为除非设置了ignore_config_warnings ，否则DISCOVERABLE需要网关、内部或接入点。在选择退出的mesh-client戳后重新启动堆栈，以便完整（或您配置的模式）生效。",
+      "flowControlBleHint": "在蓝牙上，收音机通常不会发送CMD_READY。Mesh-Client仍然步进TX （短暂等待就绪，然后继续） ，因此流量控制可以在不冻结队列的情况下减少过载。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -5036,7 +5039,8 @@
     "whisperReplyPlaceholder": "回复{{name}}或/msg…",
     "jumpToLatest": "跳到最新",
     "stackNotReady": "Reticulum 堆栈尚未就绪。请等到已连接后再重试。",
-    "sidecarNotRunning": "Reticulum sidecar 未运行。请在 Connection 启动协议栈，然后重试。"
+    "sidecarNotRunning": "Reticulum sidecar 未运行。请在 Connection 启动协议栈，然后重试。",
+    "whoReplyMissing": "中心没有{{room}}的成员列表（回复可能超过链接大小）。姓名将显示为人员加入或聊天。"
   },
   "signalMeter": {
     "rssi": "RSSI",

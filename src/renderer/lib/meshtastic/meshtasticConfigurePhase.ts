@@ -12,7 +12,7 @@ export function getMeshtasticConfigurePhase(): boolean {
   return configuring;
 }
 
-/** Register BLE configure stall watchdog reset (wireEffects only). */
+/** Register BLE/serial configure stall watchdog reset (wireEffects only). */
 export function setMeshtasticConfigureProgressHandler(handler: (() => void) | null): void {
   onConfigureProgress = handler;
 }

@@ -45,6 +45,36 @@ export function resolveMeshcoreNodeIdFromPubKeyPrefix(prefixHex: string): number
   return pubKeyPrefixByHex.get(prefixHex);
 }
 
+/**
+ * Resolve a SignedPlain room-author prefix (first 4 pubkey bytes as 8 hex chars).
+ * The live registry indexes 6-byte companion prefixes; room wire only carries 4 bytes.
+ */
+export function resolveMeshcoreNodeIdFromFourBytePubKeyPrefix(
+  prefixHex: string,
+): number | undefined {
+  const normalized = prefixHex.replace(/\s/g, '').toLowerCase();
+  if (normalized.length !== 8 || !/^[0-9a-f]{8}$/.test(normalized)) return undefined;
+  for (const [nodeId, publicKey] of pubKeyByNodeId) {
+    if (publicKey.length < 4) continue;
+    const four = Array.from(publicKey.slice(0, 4))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    if (four === normalized) return nodeId;
+  }
+  return undefined;
+}
+
+/** Seed a 4-byte pubkey-prefix → nodeId map from the global registry (room author strip). */
+export function seedMeshcoreFourBytePrefixLookupMap(out: Map<string, number>): void {
+  for (const [nodeId, publicKey] of pubKeyByNodeId) {
+    if (publicKey.length < 4 || nodeId === 0) continue;
+    const four = Array.from(publicKey.slice(0, 4))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    if (!out.has(four)) out.set(four, nodeId);
+  }
+}
+
 /** Seed per-subscription MeshCoreProtocol prefix maps from the global registry (post-connect contacts). */
 export function seedMeshcorePrefixLookupMaps(
   nodeIdByPrefix: Map<string, number>,

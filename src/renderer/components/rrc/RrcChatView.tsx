@@ -14,7 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import MentionAutocomplete from '@/renderer/components/MentionAutocomplete';
-import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
+import { useAppWindowActivity } from '@/renderer/lib/appWindowActivity';
 import { isSafeChatUrl } from '@/renderer/lib/chatMentionSegments';
 import {
   CHAT_SCROLL_END_THRESHOLD,
@@ -154,6 +154,8 @@ function NickSpan({ nick }: { nick: string }) {
 
 export interface RrcChatViewProps {
   connected: boolean;
+  /** Focused hub hash — stream identity with activeRoom (hub switch must re-pin). */
+  hubDestHash?: string | null;
   activeRoom: string | null;
   messages: RrcChatMessage[];
   showTimestamps: boolean;
@@ -176,6 +178,7 @@ export interface RrcChatViewProps {
 
 export function RrcChatView({
   connected,
+  hubDestHash = null,
   activeRoom,
   messages,
   showTimestamps,
@@ -191,6 +194,7 @@ export function RrcChatView({
   isActive = true,
 }: RrcChatViewProps) {
   const { t } = useTranslation();
+  const { inactive: appWindowInactive } = useAppWindowActivity();
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const composerPlaceholder = placeholder ?? t('rrc.messagePlaceholder');
 
@@ -201,11 +205,13 @@ export function RrcChatView({
   const skipMentionSyncRef = useRef(false);
   /** Sticky intent: user is reading latest messages and wants auto-follow on new traffic. */
   const isPinnedToBottomRef = useRef(true);
+  /** Hub/room stream switch — trust pin until the user scrolls (virtualizer can lag). */
+  const streamPinRef = useRef(false);
   const unreadStartIndexRef = useRef(-1);
   const savedScrollTopRef = useRef<number | null>(null);
   const savedWasPinnedToBottomRef = useRef(false);
   const wasActiveRef = useRef(isActive);
-  const prevActiveRoomRef = useRef(activeRoom);
+  const prevStreamKeyRef = useRef<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -310,11 +316,24 @@ export function RrcChatView({
   messageVirtualizerRef.current = messageVirtualizer;
 
   const computeIsAtChatEnd = useCallback(() => {
-    if (!scrollContainerRef.current) return false;
+    const el = scrollContainerRef.current;
+    if (!el) return false;
+    // When the stream actually overflows, trust DOM distance. Virtualizer isAtEnd can
+    // lag estimate→measure on large rooms and falsely clear the pin while scrollTop is maxed.
+    const hasOverflow = el.scrollHeight > el.clientHeight + 1;
+    if (hasOverflow) {
+      const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+      return dist <= CHAT_SCROLL_END_THRESHOLD;
+    }
     return messageVirtualizerRef.current.isAtEnd(CHAT_SCROLL_END_THRESHOLD);
   }, []);
 
   const updateScrollButtonVisibility = useCallback(() => {
+    if (streamPinRef.current) {
+      isPinnedToBottomRef.current = true;
+      setShowScrollButton(false);
+      return getDistFromChatBottom(scrollContainerRef.current, messagesEndRef.current, null);
+    }
     const atEnd = computeIsAtChatEnd();
     isPinnedToBottomRef.current = atEnd;
     setShowScrollButton(!atEnd);
@@ -322,6 +341,7 @@ export function RrcChatView({
   }, [computeIsAtChatEnd]);
 
   const handleStreamScroll = useCallback(() => {
+    streamPinRef.current = false;
     updateScrollButtonVisibility();
   }, [updateScrollButtonVisibility]);
 
@@ -331,28 +351,47 @@ export function RrcChatView({
     setShowScrollButton(false);
   }, []);
 
+  /** Last visible id — rooms at the 500-message cap grow without length change. */
+  const latestVisibleMessageId =
+    visibleMessages.length > 0 ? (visibleMessages[visibleMessages.length - 1]?.id ?? null) : null;
+
   // Follow new messages when pinned (Rooms/Chat contract).
   useEffect(() => {
-    if (!isActive || isAppWindowInactive() || !activeRoom) return;
+    if (!isActive || appWindowInactive || !activeRoom) return;
     if (isPinnedToBottomRef.current) {
       messageVirtualizerRef.current.scrollToEnd();
     }
     requestAnimationFrame(() => {
       updateScrollButtonVisibility();
     });
-  }, [visibleMessages.length, isActive, activeRoom, updateScrollButtonVisibility]);
+  }, [
+    visibleMessages.length,
+    latestVisibleMessageId,
+    isActive,
+    activeRoom,
+    appWindowInactive,
+    updateScrollButtonVisibility,
+  ]);
 
-  // Room switch while active → pin + scroll to end.
+  // Hub and/or room switch while active → pin + scroll to end.
+  // Same room name on another hub (e.g. general) must still re-pin; room-only key missed that.
   useLayoutEffect(() => {
-    const prevRoom = prevActiveRoomRef.current;
-    prevActiveRoomRef.current = activeRoom;
+    const streamKey =
+      activeRoom && hubDestHash
+        ? `${hubDestHash.toLowerCase()}::${activeRoom}`
+        : activeRoom
+          ? `::${activeRoom}`
+          : null;
+    const prevKey = prevStreamKeyRef.current;
+    prevStreamKeyRef.current = streamKey;
     if (!isActive) return;
-    if (prevRoom === activeRoom) return;
-    if (!activeRoom) return;
+    if (!streamKey) return;
+    if (prevKey === streamKey) return;
+    streamPinRef.current = true;
     isPinnedToBottomRef.current = true;
     messageVirtualizerRef.current.scrollToEnd();
     setShowScrollButton(false);
-  }, [activeRoom, isActive]);
+  }, [activeRoom, hubDestHash, isActive]);
 
   // Tab exit snapshot / tab return restore (Rooms contract).
   useLayoutEffect(() => {
@@ -489,13 +528,13 @@ export function RrcChatView({
   }
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col font-mono text-[13px]">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col font-mono text-[13px]">
       <div className="relative min-h-0 flex-1">
         <div
           ref={scrollContainerRef}
           data-testid="rrc-message-stream"
           onScroll={handleStreamScroll}
-          className="h-full overflow-y-auto px-3 py-2"
+          className="h-full min-h-0 overflow-y-auto overscroll-contain px-3 py-2 [overflow-anchor:none]"
         >
           {!activeRoom && (
             <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-amber-200/50">

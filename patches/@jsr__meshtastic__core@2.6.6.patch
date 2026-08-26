@@ -1,5 +1,5 @@
 diff --git a/src/meshDevice.js b/src/meshDevice.js
-index 8c58dc7d43f91d1a7c0759f2172950f1c987dd95..5dc13d3027c44a93b1b62e1ac4514c24e6926d7e 100755
+index 8c58dc7d43f91d1a7c0759f2172950f1c987dd95..7cb760e509e23b72626eab5833359f602b308b3a 100755
 --- a/src/meshDevice.js
 +++ b/src/meshDevice.js
 @@ -20,6 +20,8 @@ export class MeshDevice {
@@ -11,7 +11,7 @@ index 8c58dc7d43f91d1a7c0759f2172950f1c987dd95..5dc13d3027c44a93b1b62e1ac4514c24
    constructor(transport, configId){
      this.log = new Logger({
        name: "iMeshDevice",
-@@ -48,7 +50,16 @@ export class MeshDevice {
+@@ -48,7 +50,26 @@ export class MeshDevice {
      this.events.onPendingSettingsChange.subscribe((state)=>{
        this.pendingSettingsChanges = state;
      });
@@ -24,12 +24,22 @@ index 8c58dc7d43f91d1a7c0759f2172950f1c987dd95..5dc13d3027c44a93b1b62e1ac4514c24
 +      if (err?.name !== "AbortError") {
 +        const message = err instanceof Error ? err.message : String(err);
 +        this.log.error(Emitter[Emitter.ReadFromRadio], `Device decoding pipe failed: ${message}`);
++        // mesh-client: optional hook so transport-loss watch can reconnect on
++        // read-side "device has been lost" (write path already classifies this).
++        const hook = this.onFromDevicePipeError;
++        if (typeof hook === "function") {
++          try {
++            hook(err);
++          } catch  {
++          // ignore hook errors
++          }
++        }
 +      }
 +    });
    }
    /** Abstract method that connects to the radio */ // protected abstract connect(
    //   parameters: Types.ConnectionParameters,
-@@ -447,7 +458,23 @@ export class MeshDevice {
+@@ -447,7 +468,23 @@ export class MeshDevice {
        clearInterval(this._heartbeatIntervalId);
      }
      this.complete();
@@ -55,7 +65,7 @@ index 8c58dc7d43f91d1a7c0759f2172950f1c987dd95..5dc13d3027c44a93b1b62e1ac4514c24
    }
    /**
 diff --git a/src/meshDevice.ts b/src/meshDevice.ts
-index ddca80fc9134fa56ac273b17387e62af087c95c6..365b64b0e60cce8f23cb9d6a6d463b6d9591e190 100755
+index ddca80fc9134fa56ac273b17387e62af087c95c6..b9cdc7d703496cea5ed2037c1f19ecbcf3a09144 100755
 --- a/src/meshDevice.ts
 +++ b/src/meshDevice.ts
 @@ -41,6 +41,10 @@ export class MeshDevice {
@@ -69,7 +79,7 @@ index ddca80fc9134fa56ac273b17387e62af087c95c6..365b64b0e60cce8f23cb9d6a6d463b6d
    constructor(transport: Transport, configId?: number) {
      this.log = new Logger({
        name: "iMeshDevice",
-@@ -75,7 +79,22 @@ export class MeshDevice {
+@@ -75,7 +79,33 @@ export class MeshDevice {
        this.pendingSettingsChanges = state;
      });
  
@@ -88,12 +98,23 @@ index ddca80fc9134fa56ac273b17387e62af087c95c6..365b64b0e60cce8f23cb9d6a6d463b6d
 +          Emitter[Emitter.ReadFromRadio],
 +          `Device decoding pipe failed: ${message}`,
 +        );
++        // mesh-client: optional hook so transport-loss watch can reconnect on
++        // read-side "device has been lost" (write path already classifies this).
++        const hook = (this as { onFromDevicePipeError?: (e: unknown) => void })
++          .onFromDevicePipeError;
++        if (typeof hook === "function") {
++          try {
++            hook(err);
++          } catch {
++            // ignore hook errors
++          }
++        }
 +      }
 +    });
    }
  
    /** Abstract method that connects to the radio */
-@@ -817,7 +836,32 @@ export class MeshDevice {
+@@ -817,7 +847,32 @@ export class MeshDevice {
      }
  
      this.complete();

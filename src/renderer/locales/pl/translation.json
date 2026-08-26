@@ -1051,7 +1051,9 @@
       "importBackupAria": "Importuj kopię zapasową Ratspeak .rsi z wklejonego JSON",
       "importBackupFromFileAria": "Wybierz plik kopii zapasowej Ratspeak .rsi do zaimportowania",
       "exportAria": "Eksportuj zaszyfrowaną kodem PIN kopię zapasową tożsamości Ratspeak .rsi",
-      "exportRawAria": "Eksportuj niezaszyfrowany surowy plik tożsamości Reticulum"
+      "exportRawAria": "Eksportuj niezaszyfrowany surowy plik tożsamości Reticulum",
+      "identityHashLabel": "Skrót tożsamości:",
+      "copyIdentityHash": "Skopiuj skrót tożsamości"
     },
     "reticulumInterfaces": {
       "title": "Interfejsy",
@@ -1255,7 +1257,8 @@
       "rmapFullModeHint": "Tryb pełny z publikacją RMAP utrzymuje pełny przez ignore_CONFIG_WARNINGS. Powiadomienia o dostawie LXMF opuszczą to radio w interwale powiadomień o stosie (domyślnie 1 godzina).",
       "effectiveModeBadge": "Obowiązuje: {{mode}}",
       "effectiveModeAria": "Efektywny tryb czasu pracy {{mode}}. Tryb skonfigurowany różni się od uruchomionego programu Reticulum.",
-      "effectiveModeTooltip": "Reticulum przepisała ten wykrywalny interfejs do punktu dostępu (lub innego dozwolonego trybu), ponieważ wykrywalny wymaga bramy, wewnętrznego lub punktu dostępu, chyba że ustawiono ignore_config_warnings. Zrestartuj stos po stemplach klienta siatkowego, które rezygnują, aby zadziałał tryb Full (lub skonfigurowany tryb) (mesh-client)."
+      "effectiveModeTooltip": "Reticulum przepisała ten wykrywalny interfejs do punktu dostępu (lub innego dozwolonego trybu), ponieważ wykrywalny wymaga bramy, wewnętrznego lub punktu dostępu, chyba że ustawiono ignore_config_warnings. Zrestartuj stos po stemplach klienta siatkowego, które rezygnują, aby zadziałał tryb Full (lub skonfigurowany tryb) (mesh-client).",
+      "flowControlBleHint": "W Bluetooth radio często nigdy nie wysyła CMD_READY. Mesh-Client nadal wykonuje TX (czeka krótko na GOTOWOŚĆ, a następnie kontynuuje), więc kontrola przepływu zmniejsza przeciążenie bez zamrażania kolejki."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -5040,7 +5043,8 @@
     "whisperReplyPlaceholder": "Odpowiedz na {{name}} lub /msg…",
     "jumpToLatest": "Przejdź do najnowszych",
     "stackNotReady": "Stos Reticulum nie jest jeszcze gotowy. Poczekaj, aż połączenie zostanie nawiązane, a następnie spróbuj ponownie.",
-    "sidecarNotRunning": "Sidecar Reticulum nie działa. Uruchom stos w Połączeniu, a następnie spróbuj ponownie."
+    "sidecarNotRunning": "Sidecar Reticulum nie działa. Uruchom stos w Połączeniu, a następnie spróbuj ponownie.",
+    "whoReplyMissing": "Brak listy członków z centrum dla {{room}} (odpowiedź może przekroczyć rozmiar linku). Imiona i nazwiska pojawią się, gdy ludzie dołączą lub będą czatować."
   },
   "signalMeter": {
     "rssi": "RSSI",

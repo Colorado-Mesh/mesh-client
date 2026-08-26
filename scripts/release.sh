@@ -231,6 +231,12 @@ EOF
   fi
 
   echo ""
+  echo "### macOS install"
+  echo "- **Recommended:** open the **\`.dmg\`** and drag **Mesh-client** to **Applications**."
+  echo "- If you use the **\`.zip\`**: extract with **[Keka](https://www.keka.io/en/)** or \`ditto -xk\` — **do not use 7-Zip** (or Finder Archive Utility); they break framework symlinks and can crash at launch with \`Library not loaded: Squirrel.framework\`."
+  echo "- See docs/troubleshooting.md (macOS Squirrel.framework) if the app will not open after a ZIP extract."
+
+  echo ""
   echo "### Breaking Changes"
   # Supported type!: / type(scope)!: subjects (via detectReleaseBump.mjs) plus
   # line-anchored BREAKING CHANGE / BREAKING-CHANGE footers.

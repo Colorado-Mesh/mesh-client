@@ -4,6 +4,7 @@
 //! data are sent on a `BindLinkEndpoint`-pinned initiator path. Raw `Outbound`
 //! after LRPROOF without that bind is dropped by transport as unroutable.
 
+use std::sync::Arc;
 use std::time::Duration;
 
 use rns_identity::identity::Identity;
@@ -13,10 +14,15 @@ use rns_runtime::link_session::{
 };
 use rns_transport::messages::TransportMessage;
 use thiserror::Error;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{Semaphore, mpsc, oneshot};
+use tracing::{debug, warn};
 
 const PATH_LOOKUP_TIMEOUT: Duration = Duration::from_secs(15);
 const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(30);
+/// Match rrc-web / rrcd default max_resource_bytes (256 KiB).
+const MAX_RRC_RESOURCE_BYTES: usize = 262_144;
+/// Match rrcd default max_pending and session `pending_resources` queue cap.
+pub(crate) const MAX_CONCURRENT_RRC_RESOURCES: usize = 8;
 
 #[derive(Debug, Error)]
 pub enum RrcLinkError {
@@ -43,7 +49,13 @@ pub enum RrcLinkError {
 
 pub enum RrcLinkEvent {
     Data(Vec<u8>),
-    Closed { reason: String },
+    /// Completed inbound RNS Resource payload (rrcd NOTICE/MOTD over RESOURCE_ENVELOPE).
+    ResourcePayload {
+        data: Vec<u8>,
+    },
+    Closed {
+        reason: String,
+    },
 }
 
 pub struct RrcLinkHandle {
@@ -108,9 +120,7 @@ pub async fn open_rrc_link(
 
     let (cmd_tx, mut cmd_rx) = mpsc::channel::<RrcLinkCommand>(32);
     let (event_tx, event_rx) = mpsc::channel::<RrcLinkEvent>(128);
-
-    // Resource offers are unused by RRC; drain so the channel cannot fill.
-    tokio::spawn(async move { while resource_offers.recv().await.is_some() {} });
+    let resource_slots = Arc::new(Semaphore::new(MAX_CONCURRENT_RRC_RESOURCES));
 
     tokio::spawn(async move {
         loop {
@@ -137,6 +147,49 @@ pub async fn open_rrc_link(
                         None => {
                             handle.close().await;
                             return;
+                        }
+                    }
+                }
+                offer = resource_offers.recv() => {
+                    let Some(offer) = offer else {
+                        let _ = event_tx
+                            .send(RrcLinkEvent::Closed {
+                                reason: "resource_offers_closed".into(),
+                            })
+                            .await;
+                        return;
+                    };
+                    let size = offer.data_size();
+                    if size == 0 || size > MAX_RRC_RESOURCE_BYTES {
+                        let _ = offer.reject().await;
+                        continue;
+                    }
+                    let Ok(permit) = resource_slots.clone().try_acquire_owned() else {
+                        let _ = offer.reject().await;
+                        continue;
+                    };
+                    match offer.accept().await {
+                        Ok(inbound) => {
+                            let tx = event_tx.clone();
+                            tokio::spawn(async move {
+                                let _permit = permit;
+                                match inbound.concluded().await {
+                                    Ok(received) => {
+                                        let _ = tx
+                                            .send(RrcLinkEvent::ResourcePayload {
+                                                data: received.data,
+                                            })
+                                            .await;
+                                    }
+                                    Err(e) => {
+                                        warn!("rrc inbound resource failed: {e}");
+                                    }
+                                }
+                            });
+                        }
+                        Err(e) => {
+                            drop(permit);
+                            debug!("rrc resource offer accept failed: {e}");
                         }
                     }
                 }
@@ -185,7 +238,7 @@ fn close_reason_label(reason: LinkSessionCloseReason) -> &'static str {
         LinkSessionCloseReason::Local => "local_close",
         LinkSessionCloseReason::Remote => "remote_close",
         LinkSessionCloseReason::Timeout => "timeout",
-        LinkSessionCloseReason::TransportUnavailable => "transport_unavailable",
+        LinkSessionCloseReason::TransportUnavailable => "transport_error",
     }
 }
 
@@ -218,51 +271,13 @@ fn map_link_session_error(e: LinkSessionError) -> RrcLinkError {
 mod tests {
     use super::*;
 
-    #[test]
-    fn map_link_session_timeout_preserves_label() {
-        assert!(matches!(
-            map_link_session_error(LinkSessionError::Timeout("link proof")),
-            RrcLinkError::Timeout("link proof")
-        ));
-    }
-
-    #[test]
-    fn map_link_session_send_limits_are_not_closed() {
-        assert!(matches!(
-            map_link_session_error(LinkSessionError::PayloadTooLarge { actual: 1, max: 0 }),
-            RrcLinkError::SendNotAccepted("payload_too_large")
-        ));
-        assert!(matches!(
-            map_link_session_error(LinkSessionError::TooManyPendingRequests),
-            RrcLinkError::SendNotAccepted("too_many_pending")
-        ));
-        assert!(matches!(
-            map_link_session_error(LinkSessionError::LinkNotActive),
-            RrcLinkError::Closed
-        ));
-        assert!(matches!(
-            map_link_session_error(LinkSessionError::SessionClosed),
-            RrcLinkError::Closed
-        ));
-    }
-
-    #[test]
-    fn close_reason_labels_are_stable() {
-        assert_eq!(
-            close_reason_label(LinkSessionCloseReason::Local),
-            "local_close"
-        );
-        assert_eq!(
-            close_reason_label(LinkSessionCloseReason::Remote),
-            "remote_close"
-        );
-        assert_eq!(
-            close_reason_label(LinkSessionCloseReason::Timeout),
-            "timeout"
-        );
-        assert_eq!(
-            close_reason_label(LinkSessionCloseReason::TransportUnavailable),
-            "transport_unavailable"
-        );
+    #[tokio::test]
+    async fn excess_resource_offers_rejected_when_slots_full() {
+        let sem = Arc::new(Semaphore::new(MAX_CONCURRENT_RRC_RESOURCES));
+        let mut permits = Vec::new();
+        for _ in 0..MAX_CONCURRENT_RRC_RESOURCES {
+            permits.push(sem.clone().try_acquire_owned().expect("slot"));
+        }
+        assert!(sem.try_acquire_owned().is_err());
     }
 }

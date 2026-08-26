@@ -454,8 +454,10 @@ Post-build smoke tests:
 - **`scripts/verify-mac-packaging.mjs`** — macOS packaging guard (runs after `dist:mac` / `dist:mac:publish` and in `packaging-smoke` on tag releases). Validates:
   - **`.dmg` and `.zip`** artifacts exist under `release/` with minimum size thresholds
   - Bundle layout via **direct `.app`** (local dist), **`ditto -xk` ZIP extract** (CI artifact path — preserves symlinks), and **`hdiutil attach` DMG mount**
-  - DMG mount root includes an **`Applications` → `/Applications` symlink** (drag-to-install layout from `electron-builder.yml` `dmg.contents`)
+  - DMG mount root includes an **`Applications` → `/Applications` symlink** and **`IMPORTANT-Read-Me.txt`** (7-Zip / bad ZIP extract warning; prefer DMG or [Keka](https://www.keka.io/en/)) — drag-to-install layout from `electron-builder.yml` `dmg.contents`
   - **Electron Framework symlinks** (`Versions/Current`, root `Electron Framework`) remain symlinks — `upload-artifact` dereferences them and breaks the bundle (~3× framework bloat)
+  - **Squirrel / Mantle / ReactiveObjC** framework symlinks and binaries (7-Zip flattening breaks Squirrel at launch)
+  - Staged **`00-READ-ME-BEFORE-EXTRACTING-macOS-ZIP.txt`** uploaded beside macOS ZIP/DMG on GitHub Releases
   - Thin **MacOS launcher** + full **Electron Framework** binary sizes; bundled **Reticulum sidecar** present
   - CI uploads **DMG/ZIP only** — never raw `Mesh-client.app` (see comment in `release.yaml` **Upload macOS Artifact**)
   - Optional signing env (`CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`, `CSC_IDENTITY_AUTO_DISCOVERY`) is passed through from workflow secrets on `macos-latest`; verify script does not require them

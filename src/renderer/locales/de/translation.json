@@ -1047,7 +1047,9 @@
       "importBackupAria": "Ratspeak .rsi-Backup aus eingefügtem json importieren",
       "importBackupFromFileAria": "Wählen Sie eine Ratspeak .rsi Backup-Datei zum Importieren",
       "exportAria": "PIN-verschlüsselte Ratspeak .rsi-Identitätssicherung exportieren",
-      "exportRawAria": "Unverschlüsselte RAW-Reticulum-Identitätsdatei exportieren"
+      "exportRawAria": "Unverschlüsselte RAW-Reticulum-Identitätsdatei exportieren",
+      "identityHashLabel": "Identitäts-Hash:",
+      "copyIdentityHash": "Identitäts-Hash kopieren"
     },
     "reticulumInterfaces": {
       "title": "Schnittstellen",
@@ -1251,7 +1253,8 @@
       "rmapFullModeHint": "Der Vollmodus mit RMAP-Veröffentlichung hält Full über ignore_config_warnings. LXMF-Lieferansagen verlassen dieses Radio im Stack-Ankündigungsintervall (Standard 1 Stunde).",
       "effectiveModeBadge": "Gültig ab: {{mode}}",
       "effectiveModeAria": "Effektiver Laufzeitmodus {{mode}}. Der konfigurierte Modus unterscheidet sich von dem, was Reticulum ausführt.",
-      "effectiveModeTooltip": "Reticulum hat diese auffindbare Schnittstelle zum Access Point (oder einem anderen zulässigen Modus) neu geschrieben, da auffindbar Gateway, Intern oder Access Point erfordert, es sei denn, ignore_config_warnings ist eingestellt. Starten Sie den Stack neu, nachdem der mesh-client abgestempelt hat, dass die Abmeldung wirksam wird, damit Full (oder Ihr konfigurierter Modus) wirksam wird."
+      "effectiveModeTooltip": "Reticulum hat diese auffindbare Schnittstelle zum Access Point (oder einem anderen zulässigen Modus) neu geschrieben, da auffindbar Gateway, Intern oder Access Point erfordert, es sei denn, ignore_config_warnings ist eingestellt. Starten Sie den Stack neu, nachdem der mesh-client abgestempelt hat, dass die Abmeldung wirksam wird, damit Full (oder Ihr konfigurierter Modus) wirksam wird.",
+      "flowControlBleHint": "Bei Bluetooth sendet das Funkgerät oft nie cmd_READY. Der Mesh-Client beschleunigt TX immer noch (wartet kurz auf READY und fährt dann fort), sodass die Flusssteuerung die Überlastung reduziert, ohne die Warteschlange einzufrieren."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -5036,7 +5039,8 @@
     "whisperReplyPlaceholder": "Antworte auf {{name}} oder /msg…",
     "jumpToLatest": "Zum neuesten Stand springen",
     "stackNotReady": "Der Reticulum-Stack ist noch nicht bereit. Warten Sie, bis die Verbindung hergestellt ist, und versuchen Sie es erneut.",
-    "sidecarNotRunning": "Reticulum-Sidecar läuft nicht. Starten Sie den Stack unter Verbindung und versuchen Sie es erneut."
+    "sidecarNotRunning": "Reticulum-Sidecar läuft nicht. Starten Sie den Stack unter Verbindung und versuchen Sie es erneut.",
+    "whoReplyMissing": "Keine Mitgliederliste vom Hub für {{room}} (die Antwort darf die Linkgröße überschreiten). Namen werden angezeigt, wenn Personen beitreten oder chatten."
   },
   "signalMeter": {
     "rssi": "RSSI",

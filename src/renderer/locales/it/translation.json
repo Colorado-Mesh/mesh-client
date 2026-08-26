@@ -1047,7 +1047,9 @@
       "importBackupAria": "Importa il backup Ratspeak .rsi da JSON incollato",
       "importBackupFromFileAria": "Scegli un file di backup Ratspeak .rsi da importare",
       "exportAria": "Esporta il backup dell'identità Ratspeak .rsi crittografato con PIN",
-      "exportRawAria": "Esporta file di identità RAW Reticulum non crittografato"
+      "exportRawAria": "Esporta file di identità RAW Reticulum non crittografato",
+      "identityHashLabel": "Hash identità:",
+      "copyIdentityHash": "Copia hash dell'identità"
     },
     "reticulumInterfaces": {
       "title": "interfacce",
@@ -1251,7 +1253,8 @@
       "rmapFullModeHint": "La modalità Full con RMAP Publish mantiene Full tramite ignore_config_warnings. La consegna LXMF annuncia che uscirà da questa radio sull'intervallo di annuncio dello stack (predefinito 1 ora).",
       "effectiveModeBadge": "In vigore: {{mode}}",
       "effectiveModeAria": "Modalità runtime effettiva {{mode}}. La modalità configurata differisce da quella in esecuzione su Reticulum.",
-      "effectiveModeTooltip": "Reticulum ha riscritto questa interfaccia rilevabile su Access Point (o un'altra modalità consentita) perché Discoverable richiede Gateway, Internal o Access Point a meno che non sia impostato ignore_config_warnings. Riavviare lo stack dopo i timbri mesh-client che l'opt-out in modo Full (o la modalità configurata) ha effetto."
+      "effectiveModeTooltip": "Reticulum ha riscritto questa interfaccia rilevabile su Access Point (o un'altra modalità consentita) perché Discoverable richiede Gateway, Internal o Access Point a meno che non sia impostato ignore_config_warnings. Riavviare lo stack dopo i timbri mesh-client che l'opt-out in modo Full (o la modalità configurata) ha effetto.",
+      "flowControlBleHint": "Sul Bluetooth, la radio spesso non invia mai CMD_READY. Mesh-Client stimola ancora TX (attende brevemente di ESSERE PRONTO, quindi continua) in modo che il controllo del flusso riduca il sovraccarico senza congelare la coda."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -5036,7 +5039,8 @@
     "whisperReplyPlaceholder": "Rispondi a {{name}} o /msg...",
     "jumpToLatest": "Passa all'ultimo",
     "stackNotReady": "Lo stack Reticulum non è ancora pronto. Attendere fino alla connessione, quindi riprovare.",
-    "sidecarNotRunning": "Il sidecar Reticulum non è in esecuzione. Avviare lo stack su Connessione, quindi riprovare."
+    "sidecarNotRunning": "Il sidecar Reticulum non è in esecuzione. Avviare lo stack su Connessione, quindi riprovare.",
+    "whoReplyMissing": "Nessun elenco di membri dall'hub per {{room}} (la risposta potrebbe superare la dimensione del link). I nomi appariranno quando le persone si uniscono o chattano."
   },
   "signalMeter": {
     "rssi": "RSSI",

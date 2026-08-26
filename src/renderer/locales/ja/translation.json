@@ -1049,7 +1049,9 @@
       "importBackupAria": "貼り付けられたJSONからRatspeak .rsiバックアップをインポートする",
       "importBackupFromFileAria": "インポートするRatspeak .rsiバックアップファイルを選択してください",
       "exportAria": "PIN暗号化されたRatspeak .rsi IDバックアップをエクスポート",
-      "exportRawAria": "暗号化されていないRAW Reticulum IDファイルをエクスポート"
+      "exportRawAria": "暗号化されていないRAW Reticulum IDファイルをエクスポート",
+      "identityHashLabel": "IDハッシュ：",
+      "copyIdentityHash": "IDハッシュをコピー"
     },
     "reticulumInterfaces": {
       "title": "インターフェース",
@@ -1253,7 +1255,8 @@
       "rmapFullModeHint": "RMAP発行のフルモードは、IGNORE_CONFIG_WARNINGSを介してフルを維持します。LXMF配信アナウンスは、スタックアナウンス間隔（デフォルトは1時間）でこの無線を出力します。",
       "effectiveModeBadge": "有効期限： {{mode}}",
       "effectiveModeAria": "有効なランタイムモード{{mode}}。設定モードは、Reticulumが実行しているモードとは異なります。",
-      "effectiveModeTooltip": "Reticulumは、ignore_config_warningsが設定されていない限り、DISCOVERABLEにはゲートウェイ、内部、またはアクセスポイントが必要なため、この検出可能なインターフェイスをアクセスポイント（または別の許可されたモード）に書き換えました。フル（または設定モード）が有効になるようにオプトアウトするmesh-clientスタンプの後、スタックを再起動します。"
+      "effectiveModeTooltip": "Reticulumは、ignore_config_warningsが設定されていない限り、DISCOVERABLEにはゲートウェイ、内部、またはアクセスポイントが必要なため、この検出可能なインターフェイスをアクセスポイント（または別の許可されたモード）に書き換えました。フル（または設定モード）が有効になるようにオプトアウトするmesh-clientスタンプの後、スタックを再起動します。",
+      "flowControlBleHint": "Bluetoothでは、ラジオはCMD_READYを送信しないことがよくあります。Mesh-Clientは依然としてTXをペーシングします（READYを短時間待ってから続行します）。そのため、フロー制御はキューをフリーズさせることなく過負荷を軽減します。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -5036,7 +5039,8 @@
     "whisperReplyPlaceholder": "{{name}}または/msgに返信…",
     "jumpToLatest": "最新へジャンプ",
     "stackNotReady": "Reticulum スタックはまだ準備ができていません。接続されるまで待ってから再試行してください。",
-    "sidecarNotRunning": "Reticulum サイドカーが実行されていません。接続でスタックを開始してから、もう一度お試しください。"
+    "sidecarNotRunning": "Reticulum サイドカーが実行されていません。接続でスタックを開始してから、もう一度お試しください。",
+    "whoReplyMissing": "{{room}}のハブからのメンバーリストがありません（返信はリンクサイズを超える場合があります）。名前は、参加者またはチャットとして表示されます。"
   },
   "signalMeter": {
     "rssi": "RSSI",

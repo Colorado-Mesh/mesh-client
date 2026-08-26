@@ -216,7 +216,8 @@ export function ReticulumInterfacesPanel({
   });
   const [selectedPreset, setSelectedPreset] = useState('rnode_us');
   const [addRfFields, setAddRfFields] = useState<RnodeRfFieldValues>(defaultAddRnodeRfFields);
-  // RF interfaces default flow control on (TX ready-gate) to avoid BLE buffer bursts.
+  // RF interfaces default flow control on (TX ready-gate). BLE releases the
+  // permit after a short READY wait so FC paces without freezing.
   const [addFlowControl, setAddFlowControl] = useState(true);
   const [auditByInterfaceId, setAuditByInterfaceId] = useState<
     Map<string, ReticulumConfigAuditIssue[]>
@@ -230,6 +231,7 @@ export function ReticulumInterfacesPanel({
   const [seedAddresses, setSeedAddresses] = useState('');
   const devicePicker = useReticulumInterfaceDevicePicker();
   const [interfaceError, setInterfaceError] = useState<string | null>(null);
+
   const [pendingDeleteInterface, setPendingDeleteInterface] = useState<
     { mode: 'single'; id: string; name: string } | { mode: 'bulk'; ids: string[] } | null
   >(null);
@@ -1723,6 +1725,11 @@ function InterfaceEditPanel({
               />
               {t('connectionPanel.reticulumInterfaces.flowControl')}
             </label>
+            {isReticulumBleRnodeSerialPort(serialPort) ? (
+              <p className="text-[10px] leading-snug text-gray-500">
+                {t('connectionPanel.reticulumInterfaces.flowControlBleHint')}
+              </p>
+            ) : null}
           </>
         ) : null}
         {editRequiresCallsign ? (
@@ -2401,19 +2408,26 @@ function InterfacesSection({
             </button>
           ) : null}
           {showSerial ? (
-            <label className="flex items-center gap-2 text-xs text-gray-400">
-              <input
-                type="checkbox"
-                checked={addFlowControl}
-                disabled={actionsDisabled}
-                onChange={(e) => {
-                  onAddFlowControlChange(e.target.checked);
-                }}
-                className="h-3.5 w-3.5"
-                aria-label={t('connectionPanel.reticulumInterfaces.flowControl')}
-              />
-              {t('connectionPanel.reticulumInterfaces.flowControl')}
-            </label>
+            <>
+              <label className="flex items-center gap-2 text-xs text-gray-400">
+                <input
+                  type="checkbox"
+                  checked={addFlowControl}
+                  disabled={actionsDisabled}
+                  onChange={(e) => {
+                    onAddFlowControlChange(e.target.checked);
+                  }}
+                  className="h-3.5 w-3.5"
+                  aria-label={t('connectionPanel.reticulumInterfaces.flowControl')}
+                />
+                {t('connectionPanel.reticulumInterfaces.flowControl')}
+              </label>
+              {showRnodeBle ? (
+                <p className="text-[10px] leading-snug text-gray-500">
+                  {t('connectionPanel.reticulumInterfaces.flowControlBleHint')}
+                </p>
+              ) : null}
+            </>
           ) : null}
           <ReticulumIfacFields
             idPrefix="add-ifac"

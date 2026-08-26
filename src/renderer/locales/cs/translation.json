@@ -1050,7 +1050,9 @@
       "importBackupAria": "Importovat zálohu Ratspeak .rsi z vloženého JSON",
       "importBackupFromFileAria": "Vyberte záložní soubor Ratspeak .rsi, který chcete importovat",
       "exportAria": "Exportovat zálohu identity Ratspeak .rsi šifrovanou pomocí kódu PIN",
-      "exportRawAria": "Exportovat nešifrovaný soubor identity RAW Reticulum"
+      "exportRawAria": "Exportovat nešifrovaný soubor identity RAW Reticulum",
+      "identityHashLabel": "Hash identity:",
+      "copyIdentityHash": "Kopírovat hash identity"
     },
     "reticulumInterfaces": {
       "title": "Rozhraní",
@@ -1254,7 +1256,8 @@
       "rmapFullModeHint": "Plný režim s publikováním RMAP udržuje Plný prostřednictvím ignore_config_warnings. Oznámení o doručení LXMF opustí toto rádio v intervalu oznámení zásobníku (výchozí 1 hodina).",
       "effectiveModeBadge": "Účinnost: {{mode}}",
       "effectiveModeAria": "Efektivní režim běhu {{mode}}. Konfigurovaný režim se liší od toho, co běží Reticulum.",
-      "effectiveModeTooltip": "Reticulum přepsalo toto zjistitelné rozhraní na přístupový bod (nebo jiný povolený režim), protože zjistitelný vyžaduje bránu, interní nebo přístupový bod, pokud není nastaveno ignore_config_warnings. Restartujte zásobník po razítkách mesh-klienta, které se odhlásí, takže se projeví Full (nebo váš nakonfigurovaný režim) (mesh-client)."
+      "effectiveModeTooltip": "Reticulum přepsalo toto zjistitelné rozhraní na přístupový bod (nebo jiný povolený režim), protože zjistitelný vyžaduje bránu, interní nebo přístupový bod, pokud není nastaveno ignore_config_warnings. Restartujte zásobník po razítkách mesh-klienta, které se odhlásí, takže se projeví Full (nebo váš nakonfigurovaný režim) (mesh-client).",
+      "flowControlBleHint": "Na Bluetooth rádio často nikdy neodesílá cmd_READY. Mesh-Client stále přechází TX (krátce čeká na PŘIPRAVENOST, pak pokračuje), takže kontrola průtoku snižuje přetížení bez zmrazení fronty."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -5038,7 +5041,8 @@
     "whisperReplyPlaceholder": "Odpověz uživateli {{name}} nebo /msg…",
     "jumpToLatest": "Přejít na nejnovější",
     "stackNotReady": "Zásobník Reticulum ještě není připraven. Počkejte, až bude připojen, a zkuste to znovu.",
-    "sidecarNotRunning": "Reticulum sidecar neběží. Spusťte zásobník na Připojení a zkuste to znovu."
+    "sidecarNotRunning": "Reticulum sidecar neběží. Spusťte zásobník na Připojení a zkuste to znovu.",
+    "whoReplyMissing": "Žádný seznam členů z centra pro {{room}} (odpověď může přesáhnout velikost odkazu). Jména se zobrazí, když se lidé připojí nebo chatují."
   },
   "signalMeter": {
     "rssi": "\"RSSI\"",

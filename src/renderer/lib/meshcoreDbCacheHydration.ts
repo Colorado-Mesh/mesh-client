@@ -94,6 +94,38 @@ export function repairMeshcoreRoomStoredPostPayloads(
 }
 
 /**
+ * Fill room posts stored as sender_name "Unknown" when another row (or a name map) knows
+ * that sender_id. Failure point: ingest fell back to self / missed pubkey prefix at sync time.
+ * Fallback: peer-fill from same-batch named posts, then optional external node names.
+ */
+export function repairMeshcoreRoomUnknownSenderNames(
+  messages: ChatMessage[],
+  nameByNodeId?: ReadonlyMap<number, string>,
+): ChatMessage[] {
+  const knownNames = new Map<number, string>();
+  if (nameByNodeId) {
+    for (const [id, name] of nameByNodeId) {
+      const trimmed = name.trim();
+      if (id !== 0 && trimmed && trimmed !== 'Unknown') knownNames.set(id, trimmed);
+    }
+  }
+  for (const m of messages) {
+    if (!isMeshcoreRoomChatMessage(m) || m.sender_id === 0) continue;
+    const name = m.sender_name.trim();
+    if (name && name !== 'Unknown') knownNames.set(m.sender_id, name);
+  }
+  if (knownNames.size === 0) return messages;
+  return messages.map((m) => {
+    if (!isMeshcoreRoomChatMessage(m) || m.sender_id === 0) return m;
+    const name = m.sender_name.trim();
+    if (name && name !== 'Unknown') return m;
+    const known = knownNames.get(m.sender_id);
+    if (!known) return m;
+    return { ...m, sender_name: known };
+  });
+}
+
+/**
  * Strip firmware tail padding from channel/DM rows already stored in SQLite.
  * Failure point: older builds persisted wire text including bytes after NUL.
  * Fallback: re-run sanitizer on hydration so reload fixes historical rows.
@@ -128,19 +160,23 @@ export function repairMeshcoreHydratedMessages(
   roomServerIds: ReadonlySet<number>,
   selfNodeId?: number,
   pubKeyPrefixToNodeId?: Map<string, number>,
+  nameByNodeId?: ReadonlyMap<number, string>,
 ): ChatMessage[] {
-  return repairMeshcoreChatWireTailGarbage(
-    repairMeshcoreRoomStoredPostPayloads(
-      repairMeshcoreMisfiledRoomDmMessages(
-        repairMeshcoreHydratedDmRfDuplicates(
-          repairMeshcoreHydrationStaleRoomSends(
-            repairMeshcoreHydratedDmToNode(messages, selfNodeId),
+  return repairMeshcoreRoomUnknownSenderNames(
+    repairMeshcoreChatWireTailGarbage(
+      repairMeshcoreRoomStoredPostPayloads(
+        repairMeshcoreMisfiledRoomDmMessages(
+          repairMeshcoreHydratedDmRfDuplicates(
+            repairMeshcoreHydrationStaleRoomSends(
+              repairMeshcoreHydratedDmToNode(messages, selfNodeId),
+            ),
           ),
+          roomServerIds,
         ),
-        roomServerIds,
+        pubKeyPrefixToNodeId,
       ),
-      pubKeyPrefixToNodeId,
     ),
+    nameByNodeId,
   );
 }
 

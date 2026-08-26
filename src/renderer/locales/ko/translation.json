@@ -1049,7 +1049,9 @@
       "importBackupAria": "붙여넣은 JSON에서 Ratspeak .rsi 백업 가져오기",
       "importBackupFromFileAria": "가져올 Ratspeak .rsi 백업 파일 선택",
       "exportAria": "PIN 암호화 Ratspeak .rsi ID 백업 내보내기",
-      "exportRawAria": "암호화되지 않은 원시 Reticulum ID 파일 내보내기"
+      "exportRawAria": "암호화되지 않은 원시 Reticulum ID 파일 내보내기",
+      "identityHashLabel": "ID 해시:",
+      "copyIdentityHash": "ID 해시 복사"
     },
     "reticulumInterfaces": {
       "title": "연계 문서",
@@ -1253,7 +1255,8 @@
       "rmapFullModeHint": "RMAP 게시의 전체 모드는 IGNORE_CONFIG_WARNINGS를 통해 전체 모드를 유지합니다. LXMF 배달 알림은 스택 알림 간격 (기본 1시간) 에서 이 라디오를 내보냅니다.",
       "effectiveModeBadge": "유효: {{mode}}",
       "effectiveModeAria": "유효 런타임 모드 {{mode}}. 설정된 모드는 Reticulum이 실행 중인 모드와 다릅니다.",
-      "effectiveModeTooltip": "Reticulum은 ignore_config_warnings가 설정되지 않는 한 검색 가능한 인터페이스를 게이트웨이, 내부 또는 액세스 포인트가 필요하기 때문에 이 검색 가능한 인터페이스를 액세스 포인트 (또는 다른 허용 모드) 에 다시 작성했습니다. mesh-client 스탬프 후 스택을 다시 시작하여 Full (또는 구성된 모드) 이 적용되도록 옵트아웃합니다."
+      "effectiveModeTooltip": "Reticulum은 ignore_config_warnings가 설정되지 않는 한 검색 가능한 인터페이스를 게이트웨이, 내부 또는 액세스 포인트가 필요하기 때문에 이 검색 가능한 인터페이스를 액세스 포인트 (또는 다른 허용 모드) 에 다시 작성했습니다. mesh-client 스탬프 후 스택을 다시 시작하여 Full (또는 구성된 모드) 이 적용되도록 옵트아웃합니다.",
+      "flowControlBleHint": "블루투스에서는 라디오가 CMD_READY를 전송하지 않는 경우가 많습니다. Mesh-Client는 여전히 TX를 페이싱하므로 (잠시 기다렸다가 계속) 흐름 제어는 대기열을 멈추지 않고 과부하를 줄입니다."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -5036,7 +5039,8 @@
     "whisperReplyPlaceholder": "{{name}} 또는/msg에 회신…",
     "jumpToLatest": "최신으로 이동",
     "stackNotReady": "Reticulum 스택이 아직 준비되지 않았습니다. 연결될 때까지 기다린 다음 다시 시도하세요.",
-    "sidecarNotRunning": "Reticulum 사이드카가 실행되고 있지 않습니다. Connection에서 스택을 시작한 다음 다시 시도하십시오."
+    "sidecarNotRunning": "Reticulum 사이드카가 실행되고 있지 않습니다. Connection에서 스택을 시작한 다음 다시 시도하십시오.",
+    "whoReplyMissing": "{{room}} 에 대한 허브의 회원 목록이 없습니다 (답글은 링크 크기를 초과할 수 있음). 사람들이 참여하거나 채팅할 때 이름이 표시됩니다."
   },
   "signalMeter": {
     "rssi": "RSSI",

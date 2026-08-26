@@ -1049,7 +1049,9 @@
       "importBackupAria": "Importar copia de seguridad de Ratspeak .rsi desde JSON pegado",
       "importBackupFromFileAria": "Elija un archivo de copia de seguridad .rsi de Ratspeak para importar",
       "exportAria": "Exportar copia de seguridad de identidad Ratspeak .rsi cifrada con PIN",
-      "exportRawAria": "Exportar archivo de identidad de Reticulum sin cifrar"
+      "exportRawAria": "Exportar archivo de identidad de Reticulum sin cifrar",
+      "identityHashLabel": "Hash de identidad:",
+      "copyIdentityHash": "Copiar hash de identidad"
     },
     "reticulumInterfaces": {
       "title": "Interfaces",
@@ -1253,7 +1255,8 @@
       "rmapFullModeHint": "El modo completo con RMAP Publish se mantiene completo a través de ignore_config_Warnings. Los anuncios de entrega LXMF emitirán esta radio en el intervalo de anuncio de pila (por defecto 1 hora).",
       "effectiveModeBadge": "Vigencia: {{mode}}",
       "effectiveModeAria": "Modo de tiempo de ejecución efectivo {{mode}}. El modo configurado difiere de lo que está ejecutando Reticulum.",
-      "effectiveModeTooltip": "Reticulum reescribió esta interfaz detectable en Access Point (u otro modo permitido) porque Discoverable requiere Gateway, Internal o Access Point a menos que se establezca ignore_config_warnings. Reinicie la pila después de los sellos de cliente de malla que optan por no participar para que Full (o su modo configurado) surta efecto (mesh-client)."
+      "effectiveModeTooltip": "Reticulum reescribió esta interfaz detectable en Access Point (u otro modo permitido) porque Discoverable requiere Gateway, Internal o Access Point a menos que se establezca ignore_config_warnings. Reinicie la pila después de los sellos de cliente de malla que optan por no participar para que Full (o su modo configurado) surta efecto (mesh-client).",
+      "flowControlBleHint": "En Bluetooth, la radio a menudo nunca envía CMD_READY. Mesh-Client sigue marcando el ritmo de TX (espera brevemente a que ESTÉ LISTO, luego continúa) para que el control de flujo reduzca la sobrecarga sin congelar la cola."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -5036,7 +5039,8 @@
     "whisperReplyPlaceholder": "Responder a {{name}} o /msg...",
     "jumpToLatest": "Saltar a lo último",
     "stackNotReady": "La pila Reticulum aún no está lista. Espere a que esté conectada e inténtelo de nuevo.",
-    "sidecarNotRunning": "El sidecar de Reticulum no está en ejecución. Inicie la pila en Conexión e inténtelo de nuevo."
+    "sidecarNotRunning": "El sidecar de Reticulum no está en ejecución. Inicie la pila en Conexión e inténtelo de nuevo.",
+    "whoReplyMissing": "No hay ninguna lista de miembros del hub para {{room}} (la respuesta puede exceder el tamaño del enlace). Los nombres aparecerán cuando las personas se unan o chateen."
   },
   "signalMeter": {
     "rssi": "RSSI",
