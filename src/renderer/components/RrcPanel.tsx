@@ -54,6 +54,7 @@ import {
   MAX_RRC_HUB_SESSIONS,
   RRC_HUB_STREAM_ROOM,
   RRC_NICKNAME_STORAGE_KEY,
+  selectRrcActiveRoomMessages,
   useRrcSessionStore,
 } from '@/renderer/stores/rrcSessionStore';
 import type { RrcHubInfo, RrcRoomMember } from '@/shared/rrc-types';
@@ -116,7 +117,6 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
   const nickname = useRrcSessionStore((s) => s.nickname);
   const rooms = useRrcSessionStore((s) => s.rooms);
   const listedRooms = useRrcSessionStore((s) => s.listedRooms);
-  const messages = useRrcSessionStore((s) => s.messages);
   const activeRoom = useRrcSessionStore((s) => s.activeRoom);
   const lastError = useRrcSessionStore((s) => s.lastError);
   const moderationBanner = useRrcSessionStore((s) => s.moderationBanner);
@@ -132,7 +132,6 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
   const clearUnread = useRrcSessionStore((s) => s.clearUnread);
   const clearActiveRoomMessages = useRrcSessionStore((s) => s.clearActiveRoomMessages);
   const addMessage = useRrcSessionStore((s) => s.addMessage);
-  const messagesForActiveRoom = useRrcSessionStore((s) => s.messagesForActiveRoom);
   const markPartIntent = useRrcSessionStore((s) => s.markPartIntent);
   const localIdentityHash = useRrcSessionStore((s) => s.localIdentityHash);
   const setDisconnectIntent = useRrcSessionStore((s) => s.setDisconnectIntent);
@@ -242,9 +241,10 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
     };
   }, [isActive, setRrcPanelFocused]);
 
-  useEffect(() => {
-    if (isActive && activeRoom) clearUnread(activeRoom);
-  }, [isActive, activeRoom, clearUnread, messages]);
+  const handleCaughtUp = useCallback(() => {
+    if (!isActive || !activeRoom || !hubDestHash) return;
+    clearUnread(activeRoom, hubDestHash);
+  }, [isActive, activeRoom, hubDestHash, clearUnread]);
 
   const sendHubCommand = useCallback(
     async (body: string) => {
@@ -427,7 +427,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
     [recentRooms, joinedKeys, listedRooms],
   );
 
-  const activeMessages = messagesForActiveRoom();
+  const activeMessages = useRrcSessionStore(selectRrcActiveRoomMessages);
   const activeRoomInfo = activeRoom ? rooms.get(activeRoom) : undefined;
   const muteKey = hubDestHash && activeRoom ? `rrc:${hubDestHash}:${activeRoom}` : null;
   const isMuted = muteKey ? mutedViews.has(muteKey) : false;
@@ -1230,6 +1230,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             alwaysShowMessageActions={alwaysShowMessageActions}
             placeholder={whisperComposerPlaceholder}
             isActive={isActive}
+            onCaughtUp={handleCaughtUp}
           />
           {showNicklist && (
             <RrcNickList

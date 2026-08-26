@@ -6,7 +6,7 @@ import {
 } from '@/renderer/lib/rrcLegacyWhispersMigrate';
 import { clearRrcOpenDms, loadRrcOpenDms, saveRrcOpenDms } from '@/renderer/lib/rrcOpenDms';
 
-import { useRrcSessionStore } from './rrcSessionStore';
+import { selectRrcActiveRoomMessages, useRrcSessionStore } from './rrcSessionStore';
 
 describe('rrcSessionStore', () => {
   beforeEach(() => {
@@ -205,6 +205,71 @@ describe('rrcSessionStore', () => {
     expect(useRrcSessionStore.getState().unreadByRoom.size).toBe(0);
     expect(useRrcSessionStore.getState().unreadForHub(hub)).toBe(1);
     expect(useRrcSessionStore.getState().totalUnread()).toBe(1);
+  });
+
+  it('clearUnread drops live room counts and stashed unreadByHub for the hub', () => {
+    const store = useRrcSessionStore.getState();
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    store.setRrcPanelFocused(false);
+    store.addMessage(
+      {
+        id: '1',
+        room: '#lobby',
+        kind: 'msg',
+        body: 'hi',
+        sender_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        timestamp: 1,
+      },
+      { bumpUnread: true },
+    );
+    useRrcSessionStore.setState({
+      unreadByHub: new Map([[hub, 17]]),
+    });
+    expect(useRrcSessionStore.getState().totalUnread()).toBe(18);
+
+    store.clearUnread('#lobby', hub);
+
+    expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBeUndefined();
+    expect(useRrcSessionStore.getState().unreadByHub.get(hub)).toBeUndefined();
+    expect(useRrcSessionStore.getState().unreadForHub(hub)).toBe(0);
+    expect(useRrcSessionStore.getState().totalUnread()).toBe(0);
+  });
+
+  it('selectRrcActiveRoomMessages tracks the focused hub active room bucket', () => {
+    const store = useRrcSessionStore.getState();
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    expect(selectRrcActiveRoomMessages(useRrcSessionStore.getState())).toEqual([]);
+
+    store.addMessage({
+      id: '1',
+      room: '#lobby',
+      kind: 'msg',
+      body: 'live',
+      timestamp: 1,
+    });
+    expect(selectRrcActiveRoomMessages(useRrcSessionStore.getState()).map((m) => m.id)).toEqual([
+      '1',
+    ]);
+
+    store.mergeHistoryMessages(hub, '#lobby', [
+      {
+        id: 'hist',
+        room: 'lobby',
+        kind: 'msg',
+        body: 'sqlite',
+        timestamp: 0,
+      },
+    ]);
+    expect(selectRrcActiveRoomMessages(useRrcSessionStore.getState()).map((m) => m.id)).toEqual([
+      'hist',
+      '1',
+    ]);
   });
 
   it('does not bump unread for self echo', () => {
