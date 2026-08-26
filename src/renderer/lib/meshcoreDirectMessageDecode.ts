@@ -1,6 +1,9 @@
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
 
-import { resolveMeshcoreNodeIdFromPubKeyPrefix } from './meshcore/meshcorePubKeyRegistry';
+import {
+  resolveMeshcoreNodeIdFromFourBytePubKeyPrefix,
+  resolveMeshcoreNodeIdFromPubKeyPrefix,
+} from './meshcore/meshcorePubKeyRegistry';
 import {
   MESHCORE_TXT_TYPE_CLI_DATA,
   MESHCORE_TXT_TYPE_SIGNED_PLAIN,
@@ -48,7 +51,13 @@ function resolveRoomAuthorIdForMessageId(
   const shouldParseAuthor =
     txtType === MESHCORE_TXT_TYPE_SIGNED_PLAIN || (isKnownRoomNode && text.length > 4);
   if (!shouldParseAuthor) return undefined;
-  const authorId = parseMeshcoreRoomPostPayload(text, nodeIdByPrefix).authorId;
+  let authorId = parseMeshcoreRoomPostPayload(text, nodeIdByPrefix).authorId;
+  if (authorId === 0 && text.length > 4) {
+    const four = Array.from(text.slice(0, 4))
+      .map((c) => (c.charCodeAt(0) & 0xff).toString(16).padStart(2, '0'))
+      .join('');
+    authorId = resolveMeshcoreNodeIdFromFourBytePubKeyPrefix(four) ?? 0;
+  }
   return authorId !== 0 ? authorId : undefined;
 }
 

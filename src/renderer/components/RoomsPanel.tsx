@@ -45,7 +45,10 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { translateMeshcoreUserMessage } from '@/renderer/lib/meshcore/meshcoreMessageI18n';
-import { repairMeshcoreHydrationStaleRoomSends } from '@/renderer/lib/meshcoreDbCacheHydration';
+import {
+  repairMeshcoreHydrationStaleRoomSends,
+  repairMeshcoreRoomUnknownSenderNames,
+} from '@/renderer/lib/meshcoreDbCacheHydration';
 import {
   type MeshcoreRoomAclEntry,
   meshcoreRoomAclLevelLabel,
@@ -386,8 +389,16 @@ export default function RoomsPanel({
     const posts = messages
       .filter((m) => m.roomServerId === selectedRoomId)
       .sort((a, b) => a.timestamp - b.timestamp);
-    return repairMeshcoreHydrationStaleRoomSends(mergeDisplayedRoomPostChunks(posts));
-  }, [messages, selectedRoomId]);
+    const nameByNodeId = new Map<number, string>();
+    for (const [id, node] of nodes) {
+      const name = node.long_name?.trim();
+      if (name) nameByNodeId.set(id, name);
+    }
+    return repairMeshcoreRoomUnknownSenderNames(
+      repairMeshcoreHydrationStaleRoomSends(mergeDisplayedRoomPostChunks(posts)),
+      nameByNodeId,
+    );
+  }, [messages, nodes, selectedRoomId]);
 
   const filteredRoomPosts = useMemo(() => {
     let posts = roomPosts;
