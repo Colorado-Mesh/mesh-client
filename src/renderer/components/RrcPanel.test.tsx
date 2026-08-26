@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -23,11 +23,16 @@ import {
 } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { saveRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { clearRrcOpenDms, loadRrcOpenDms, upsertRrcOpenDm } from '@/renderer/lib/rrcOpenDms';
-import { resetRrcRoomHistoryForTests } from '@/renderer/lib/rrcRoomHistory';
+import { hydrateRrcRoomMessages, resetRrcRoomHistoryForTests } from '@/renderer/lib/rrcRoomHistory';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
-import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
+import { selectRrcActiveRoomMessages, useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 
 import RrcPanel from './RrcPanel';
+
+function ActiveRoomMessageCountProbe() {
+  const count = useRrcSessionStore((s) => selectRrcActiveRoomMessages(s).length);
+  return <div data-testid="active-room-message-count">{count}</div>;
+}
 
 vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
   isReticulumSidecarRunning: vi.fn(() => Promise.resolve(false)),
@@ -263,6 +268,53 @@ describe('RrcPanel', () => {
       expect(window.electronAPI.db.deleteRrcMessagesByRoom).toHaveBeenCalledWith(hubA, 'lobby');
     });
     expect(useRrcSessionStore.getState().messages.get(`${hubA}::lobby`)).toBeUndefined();
+  });
+
+  it('shows SQLite history merged by hydrateRrcRoomMessages after mount', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    store.addMessage({
+      id: 'live-1',
+      room: '#lobby',
+      kind: 'msg',
+      body: 'live only',
+      sender_hash: 'cccccccccccccccccccccccccccccccc',
+      timestamp: 200,
+    });
+
+    render(
+      <>
+        <ActiveRoomMessageCountProbe />
+        <RrcPanel isActive />
+      </>,
+    );
+    await waitFor(() => {
+      expect(screen.getByRole('textbox', { name: /Message or \/command/i })).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('active-room-message-count')).toHaveTextContent('1');
+
+    vi.mocked(window.electronAPI.db.listRrcMessages).mockResolvedValueOnce([
+      {
+        message_id: 'hist-1',
+        hub_hash: hubA,
+        room: 'lobby',
+        sender_hash: null,
+        nickname: 'alice',
+        kind: 'msg',
+        body: 'from sqlite',
+        timestamp: 100,
+      },
+    ]);
+
+    await act(async () => {
+      await hydrateRrcRoomMessages(hubA, '#lobby', { force: true });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('active-room-message-count')).toHaveTextContent('2');
+    });
   });
 
   it('Disconnect with hub auto-join does not reconnect via rrc.connect', async () => {

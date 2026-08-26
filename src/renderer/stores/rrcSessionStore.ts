@@ -399,6 +399,20 @@ function loadInitialRrcNickname(): string {
   return 'mesh-client';
 }
 
+const EMPTY_ACTIVE_ROOM_MESSAGES: RrcChatMessage[] = [];
+
+/**
+ * Zustand selector for the focused hub's active-room transcript. Reads one Map
+ * bucket so components re-render when that room's array changes, not when
+ * subscribing to the stable `messagesForActiveRoom` action reference.
+ */
+export function selectRrcActiveRoomMessages(s: RrcSessionStoreState): RrcChatMessage[] {
+  const hub = s.focusedHubHash;
+  const room = s.activeRoom;
+  if (!hub || !room) return EMPTY_ACTIVE_ROOM_MESSAGES;
+  return s.messages.get(msgKey(hub, room)) ?? EMPTY_ACTIVE_ROOM_MESSAGES;
+}
+
 export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   sessionsByHub: new Map(),
   focusedHubHash: null,

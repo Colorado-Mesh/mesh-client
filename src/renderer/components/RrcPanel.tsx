@@ -54,6 +54,7 @@ import {
   MAX_RRC_HUB_SESSIONS,
   RRC_HUB_STREAM_ROOM,
   RRC_NICKNAME_STORAGE_KEY,
+  selectRrcActiveRoomMessages,
   useRrcSessionStore,
 } from '@/renderer/stores/rrcSessionStore';
 import type { RrcHubInfo, RrcRoomMember } from '@/shared/rrc-types';
@@ -131,7 +132,6 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
   const clearUnread = useRrcSessionStore((s) => s.clearUnread);
   const clearActiveRoomMessages = useRrcSessionStore((s) => s.clearActiveRoomMessages);
   const addMessage = useRrcSessionStore((s) => s.addMessage);
-  const messagesForActiveRoom = useRrcSessionStore((s) => s.messagesForActiveRoom);
   const markPartIntent = useRrcSessionStore((s) => s.markPartIntent);
   const localIdentityHash = useRrcSessionStore((s) => s.localIdentityHash);
   const setDisconnectIntent = useRrcSessionStore((s) => s.setDisconnectIntent);
@@ -427,7 +427,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
     [recentRooms, joinedKeys, listedRooms],
   );
 
-  const activeMessages = messagesForActiveRoom();
+  const activeMessages = useRrcSessionStore(selectRrcActiveRoomMessages);
   const activeRoomInfo = activeRoom ? rooms.get(activeRoom) : undefined;
   const muteKey = hubDestHash && activeRoom ? `rrc:${hubDestHash}:${activeRoom}` : null;
   const isMuted = muteKey ? mutedViews.has(muteKey) : false;

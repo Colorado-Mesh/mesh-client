@@ -6,7 +6,7 @@ import {
 } from '@/renderer/lib/rrcLegacyWhispersMigrate';
 import { clearRrcOpenDms, loadRrcOpenDms, saveRrcOpenDms } from '@/renderer/lib/rrcOpenDms';
 
-import { useRrcSessionStore } from './rrcSessionStore';
+import { selectRrcActiveRoomMessages, useRrcSessionStore } from './rrcSessionStore';
 
 describe('rrcSessionStore', () => {
   beforeEach(() => {
@@ -236,6 +236,40 @@ describe('rrcSessionStore', () => {
     expect(useRrcSessionStore.getState().unreadByHub.get(hub)).toBeUndefined();
     expect(useRrcSessionStore.getState().unreadForHub(hub)).toBe(0);
     expect(useRrcSessionStore.getState().totalUnread()).toBe(0);
+  });
+
+  it('selectRrcActiveRoomMessages tracks the focused hub active room bucket', () => {
+    const store = useRrcSessionStore.getState();
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    expect(selectRrcActiveRoomMessages(useRrcSessionStore.getState())).toEqual([]);
+
+    store.addMessage({
+      id: '1',
+      room: '#lobby',
+      kind: 'msg',
+      body: 'live',
+      timestamp: 1,
+    });
+    expect(selectRrcActiveRoomMessages(useRrcSessionStore.getState()).map((m) => m.id)).toEqual([
+      '1',
+    ]);
+
+    store.mergeHistoryMessages(hub, '#lobby', [
+      {
+        id: 'hist',
+        room: 'lobby',
+        kind: 'msg',
+        body: 'sqlite',
+        timestamp: 0,
+      },
+    ]);
+    expect(selectRrcActiveRoomMessages(useRrcSessionStore.getState()).map((m) => m.id)).toEqual([
+      'hist',
+      '1',
+    ]);
   });
 
   it('does not bump unread for self echo', () => {
