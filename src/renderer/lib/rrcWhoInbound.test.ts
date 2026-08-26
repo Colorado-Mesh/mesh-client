@@ -68,4 +68,25 @@ describe('applyRrcWhoInboundNotice', () => {
     expect(useRrcSessionStore.getState().rooms.has('evil')).toBe(false);
     expect(useRrcSessionStore.getState().rooms.get('general')?.members ?? []).toEqual([]);
   });
+
+  it('applies /who when joined rooms are a one-shot Map.keys() iterator', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Hub A');
+    store.roomJoined('general');
+    const keys = useRrcSessionStore.getState().sessionsByHub.get(hub)?.rooms.keys() ?? [];
+    // Intentionally pass the live iterator (same as production) — must not exhaust
+    // before the join match.
+    const result = applyRrcWhoInboundNotice('members in general: Carol (cccccccccccc)', keys, {
+      hubDestHash: hub,
+      mergeRoomMembers: (room, members, mode, hubHash) => {
+        useRrcSessionStore.getState().mergeRoomMembers(room, members, mode, hubHash);
+      },
+      consumeWhoTranscriptSlot: (room, hubHash) =>
+        useRrcSessionStore.getState().consumeWhoTranscriptSlot(room, hubHash),
+    });
+    expect(result).toEqual({ action: 'transcript', room: 'general' });
+    expect(useRrcSessionStore.getState().rooms.get('general')?.members).toEqual([
+      { identity_hash: 'cccccccccccc', nickname: 'Carol' },
+    ]);
+  });
 });

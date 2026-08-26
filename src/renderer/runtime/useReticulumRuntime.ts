@@ -1132,6 +1132,23 @@ export function useReticulumRuntime(): ProtocolRuntime {
           useRrcSessionStore.getState().roomJoined(p.room, p.members, p.hub_dest_hash ?? undefined);
         }
       }
+      if (evt.type === 'rrc.room.peer_parted' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          room?: string;
+          members?: { identity_hash: string; nickname?: string | null }[];
+          hub_dest_hash?: string | null;
+        };
+        if (typeof p.room === 'string' && Array.isArray(p.members) && p.members.length > 0) {
+          useRrcSessionStore.getState().removeRoomMembers(
+            p.room,
+            p.members.map((m) => ({
+              identity_hash: typeof m.identity_hash === 'string' ? m.identity_hash : '',
+              nickname: typeof m.nickname === 'string' ? m.nickname : null,
+            })),
+            p.hub_dest_hash ?? undefined,
+          );
+        }
+      }
       if (evt.type === 'rrc.room.parted' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { room?: string; hub_dest_hash?: string | null };
         if (typeof p.room === 'string') {
@@ -1214,18 +1231,18 @@ export function useReticulumRuntime(): ProtocolRuntime {
             if (listed) session.setListedRooms(listed, hubDestHash);
             const hubKey = hubDestHash?.toLowerCase();
             const hubSession = hubKey ? session.sessionsByHub.get(hubKey) : undefined;
-            const whoResult = applyRrcWhoInboundNotice(
-              p.body,
-              hubDestHash ? (hubSession?.rooms.keys() ?? []) : session.rooms.keys(),
-              {
-                hubDestHash,
-                mergeRoomMembers: (whoRoom, members, mode, hub) => {
-                  session.mergeRoomMembers(whoRoom, members, mode, hub);
-                },
-                consumeWhoTranscriptSlot: (whoRoom, hub) =>
-                  session.consumeWhoTranscriptSlot(whoRoom, hub),
+            // Materialize Map.keys() — one-shot iterators must not be re-walked.
+            const joinedRooms = hubDestHash
+              ? [...(hubSession?.rooms.keys() ?? [])]
+              : [...session.rooms.keys()];
+            const whoResult = applyRrcWhoInboundNotice(p.body, joinedRooms, {
+              hubDestHash,
+              mergeRoomMembers: (whoRoom, members, mode, hub) => {
+                session.mergeRoomMembers(whoRoom, members, mode, hub);
               },
-            );
+              consumeWhoTranscriptSlot: (whoRoom, hub) =>
+                session.consumeWhoTranscriptSlot(whoRoom, hub),
+            });
             const topic = parseRrcTopicNotice(p.body);
             if (topic) session.setRoomTopic(topic.room, topic.topic || null, hubDestHash);
             // rrcd may emit join-info NOTICE without a usable JOINED member list —
@@ -1238,6 +1255,17 @@ export function useReticulumRuntime(): ProtocolRuntime {
               !topic.room.startsWith('@')
             ) {
               session.roomJoined(topic.room, undefined, hubDestHash);
+              // When actor JOINED with full roster is dropped (oversize MDU), join-info
+              // still means we are in-room — seed ourselves so the nicklist is not blank.
+              const selfHash = session.localIdentityHash;
+              if (selfHash && selfHash.length >= 8) {
+                session.mergeRoomMembers(
+                  topic.room,
+                  [{ identity_hash: selfHash, nickname: session.nickname || null }],
+                  'merge',
+                  hubDestHash,
+                );
+              }
             }
             if (isRrcModerationLanguage(p.body)) {
               // Reserve kick/ban banner copy for moderation notices; transcript keeps hub text.

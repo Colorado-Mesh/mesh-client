@@ -5039,7 +5039,8 @@
     "whisperReplyPlaceholder": "{{name}} 또는/msg에 회신…",
     "jumpToLatest": "최신으로 이동",
     "stackNotReady": "Reticulum 스택이 아직 준비되지 않았습니다. 연결될 때까지 기다린 다음 다시 시도하세요.",
-    "sidecarNotRunning": "Reticulum 사이드카가 실행되고 있지 않습니다. Connection에서 스택을 시작한 다음 다시 시도하십시오."
+    "sidecarNotRunning": "Reticulum 사이드카가 실행되고 있지 않습니다. Connection에서 스택을 시작한 다음 다시 시도하십시오.",
+    "whoReplyMissing": "{{room}} 에 대한 허브의 회원 목록이 없습니다 (답글은 링크 크기를 초과할 수 있음). 사람들이 참여하거나 채팅할 때 이름이 표시됩니다."
   },
   "signalMeter": {
     "rssi": "RSSI",

@@ -142,6 +142,14 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
     expect(SOURCE).toMatch(/whoResult\.action === 'transcript'[\s\S]*?room = whoResult\.room/);
   });
 
+  it('seeds self into nicklist on join-info when actor JOINED roster is missing', () => {
+    expect(SOURCE).toMatch(/isRrcJoinInfoNotice\(p\.body\)/);
+    expect(SOURCE).toMatch(/roomJoined\(topic\.room, undefined, hubDestHash\)/);
+    expect(SOURCE).toMatch(
+      /const selfHash = session\.localIdentityHash;[\s\S]*?mergeRoomMembers\(\s*topic\.room/,
+    );
+  });
+
   it('routes direct NOTICE into per-peer @hash DMs via applyRrcDirectMessageRoom', () => {
     expect(SOURCE).toContain('applyRrcDirectMessageRoom');
     expect(SOURCE).toMatch(/applyRrcDirectMessageRoom\(\{[\s\S]*?openDm:/);

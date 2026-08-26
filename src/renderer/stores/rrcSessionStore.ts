@@ -317,6 +317,8 @@ interface RrcSessionStoreState {
     mode: 'replace' | 'merge',
     hubHash?: string,
   ) => void;
+  /** EX1 peer PARTED fanout — drop hashes (and optional nick-only matches) from nicklist. */
+  removeRoomMembers: (room: string, members: RrcRoomMember[], hubHash?: string) => void;
   markPartIntent: (room: string, hubHash?: string) => void;
   clearPartIntent: (room: string, hubHash?: string) => void;
   setDisconnectIntent: (intent: boolean, hubHash?: string) => void;
@@ -538,6 +540,36 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
           topic: existing?.topic,
           members: nextMembers.slice(0, MAX_MEMBERS_PER_ROOM),
           member_count: Math.min(nextMembers.length, MAX_MEMBERS_PER_ROOM),
+        });
+        return { ...session, rooms: trimRoomMap(rooms) };
+      }),
+    );
+  },
+
+  removeRoomMembers: (room, members, hubHash) => {
+    if (members.length === 0) return;
+    set((s) =>
+      mutateHubSession(s, hubHash, (session) => {
+        const { key, existing, rooms } = coalesceRoomAliases(session.rooms, room);
+        if (!existing?.members?.length) return session;
+        const removeHashes = members
+          .map((m) => m.identity_hash.trim().toLowerCase())
+          .filter((h) => h.length >= 8);
+        const removeNicks = members
+          .map((m) => m.nickname?.trim().toLowerCase())
+          .filter((n): n is string => Boolean(n));
+        const nextMembers = existing.members.filter((m) => {
+          const h = m.identity_hash.toLowerCase();
+          if (removeHashes.some((rh) => rrcIdentityHashesMatch(h, rh))) return false;
+          const nick = m.nickname?.trim().toLowerCase();
+          if (nick && removeNicks.includes(nick)) return false;
+          return true;
+        });
+        rooms.set(key, {
+          ...existing,
+          name: existing.name ?? room,
+          members: nextMembers,
+          member_count: nextMembers.length,
         });
         return { ...session, rooms: trimRoomMap(rooms) };
       }),

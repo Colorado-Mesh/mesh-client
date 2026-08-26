@@ -5039,7 +5039,8 @@
     "whisperReplyPlaceholder": "Rispondi a {{name}} o /msg...",
     "jumpToLatest": "Passa all'ultimo",
     "stackNotReady": "Lo stack Reticulum non è ancora pronto. Attendere fino alla connessione, quindi riprovare.",
-    "sidecarNotRunning": "Il sidecar Reticulum non è in esecuzione. Avviare lo stack su Connessione, quindi riprovare."
+    "sidecarNotRunning": "Il sidecar Reticulum non è in esecuzione. Avviare lo stack su Connessione, quindi riprovare.",
+    "whoReplyMissing": "Nessun elenco di membri dall'hub per {{room}} (la risposta potrebbe superare la dimensione del link). I nomi appariranno quando le persone si uniscono o chattano."
   },
   "signalMeter": {
     "rssi": "RSSI",
