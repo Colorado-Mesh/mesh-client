@@ -207,6 +207,37 @@ describe('rrcSessionStore', () => {
     expect(useRrcSessionStore.getState().totalUnread()).toBe(1);
   });
 
+  it('clearUnread drops live room counts and stashed unreadByHub for the hub', () => {
+    const store = useRrcSessionStore.getState();
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    store.setRrcPanelFocused(false);
+    store.addMessage(
+      {
+        id: '1',
+        room: '#lobby',
+        kind: 'msg',
+        body: 'hi',
+        sender_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        timestamp: 1,
+      },
+      { bumpUnread: true },
+    );
+    useRrcSessionStore.setState({
+      unreadByHub: new Map([[hub, 17]]),
+    });
+    expect(useRrcSessionStore.getState().totalUnread()).toBe(18);
+
+    store.clearUnread('#lobby', hub);
+
+    expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBeUndefined();
+    expect(useRrcSessionStore.getState().unreadByHub.get(hub)).toBeUndefined();
+    expect(useRrcSessionStore.getState().unreadForHub(hub)).toBe(0);
+    expect(useRrcSessionStore.getState().totalUnread()).toBe(0);
+  });
+
   it('does not bump unread for self echo', () => {
     const store = useRrcSessionStore.getState();
     store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');

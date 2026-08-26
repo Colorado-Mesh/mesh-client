@@ -626,4 +626,49 @@ describe('RrcChatView stick-to-bottom', () => {
     expect(mockScrollToEnd).toHaveBeenCalled();
     expect((stream as HTMLDivElement).scrollTop).toBe(900);
   });
+
+  it('calls onCaughtUp after pinned tab re-entry when near bottom', async () => {
+    const onCaughtUp = vi.fn();
+    const { rerender } = render(
+      <RrcChatView
+        {...baseProps}
+        isActive
+        onCaughtUp={onCaughtUp}
+        messages={[makeMsg({ id: '1', body: 'one' })]}
+      />,
+    );
+    const stream = screen.getByTestId('rrc-message-stream');
+    Object.defineProperty(stream, 'scrollHeight', { value: 400, configurable: true });
+    Object.defineProperty(stream, 'clientHeight', { value: 400, configurable: true });
+    Object.defineProperty(stream, 'scrollTop', {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        isActive={false}
+        onCaughtUp={onCaughtUp}
+        messages={[makeMsg({ id: '1', body: 'one' })]}
+      />,
+    );
+
+    mockScrollToEnd.mockClear();
+    onCaughtUp.mockClear();
+
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        isActive
+        onCaughtUp={onCaughtUp}
+        messages={[makeMsg({ id: '1', body: 'one' }), makeMsg({ id: '2', body: 'two' })]}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(onCaughtUp).toHaveBeenCalled();
+    });
+  });
 });

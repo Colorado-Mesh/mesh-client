@@ -116,7 +116,6 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
   const nickname = useRrcSessionStore((s) => s.nickname);
   const rooms = useRrcSessionStore((s) => s.rooms);
   const listedRooms = useRrcSessionStore((s) => s.listedRooms);
-  const messages = useRrcSessionStore((s) => s.messages);
   const activeRoom = useRrcSessionStore((s) => s.activeRoom);
   const lastError = useRrcSessionStore((s) => s.lastError);
   const moderationBanner = useRrcSessionStore((s) => s.moderationBanner);
@@ -242,9 +241,10 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
     };
   }, [isActive, setRrcPanelFocused]);
 
-  useEffect(() => {
-    if (isActive && activeRoom) clearUnread(activeRoom);
-  }, [isActive, activeRoom, clearUnread, messages]);
+  const handleCaughtUp = useCallback(() => {
+    if (!isActive || !activeRoom || !hubDestHash) return;
+    clearUnread(activeRoom, hubDestHash);
+  }, [isActive, activeRoom, hubDestHash, clearUnread]);
 
   const sendHubCommand = useCallback(
     async (body: string) => {
@@ -1230,6 +1230,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             alwaysShowMessageActions={alwaysShowMessageActions}
             placeholder={whisperComposerPlaceholder}
             isActive={isActive}
+            onCaughtUp={handleCaughtUp}
           />
           {showNicklist && (
             <RrcNickList

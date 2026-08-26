@@ -911,15 +911,21 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   clearUnread: (room, hubHash) => {
-    set((s) =>
-      mutateHubSession(s, hubHash, (session) => {
+    set((s) => {
+      const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
+      if (!hub) return {};
+      const sessionMut = mutateHubSession(s, hub, (session) => {
         const unreadByRoom = new Map(session.unreadByRoom);
         for (const [rk] of session.unreadByRoom) {
           if (rrcRoomsMatch(rk, room)) unreadByRoom.delete(rk);
         }
         return { ...session, unreadByRoom };
-      }),
-    );
+      });
+      if (Object.keys(sessionMut).length === 0) return {};
+      const unreadByHub = new Map(s.unreadByHub);
+      unreadByHub.delete(hub);
+      return { ...sessionMut, unreadByHub };
+    });
   },
 
   clearActiveRoomMessages: (hubHash) => {

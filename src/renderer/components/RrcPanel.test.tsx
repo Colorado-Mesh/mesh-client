@@ -574,6 +574,60 @@ describe('RrcPanel', () => {
     expect(window.electronAPI.reticulum.rrc.disconnect).not.toHaveBeenCalled();
   });
 
+  it('clears unread when returning to pinned active room after traffic while away', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    store.addMessage(
+      {
+        id: 'seed',
+        room: '#lobby',
+        kind: 'msg',
+        body: 'seed',
+        sender_hash: 'cccccccccccccccccccccccccccccccc',
+        timestamp: 1,
+      },
+      { bumpUnread: false },
+    );
+
+    const { rerender } = render(<RrcPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByTestId('rrc-message-stream')).toBeInTheDocument();
+    });
+
+    const stream = screen.getByTestId('rrc-message-stream');
+    Object.defineProperty(stream, 'scrollHeight', { value: 400, configurable: true });
+    Object.defineProperty(stream, 'clientHeight', { value: 400, configurable: true });
+    Object.defineProperty(stream, 'scrollTop', {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+
+    rerender(<RrcPanel isActive={false} />);
+
+    useRrcSessionStore.getState().setRrcPanelFocused(false);
+    useRrcSessionStore.getState().addMessage(
+      {
+        id: 'away-1',
+        room: '#lobby',
+        kind: 'msg',
+        body: 'while away',
+        sender_hash: 'dddddddddddddddddddddddddddddddd',
+        timestamp: 2,
+      },
+      { bumpUnread: true },
+    );
+    expect(useRrcSessionStore.getState().totalUnread()).toBe(1);
+
+    rerender(<RrcPanel isActive />);
+
+    await waitFor(() => {
+      expect(useRrcSessionStore.getState().totalUnread()).toBe(0);
+    });
+  });
+
   it('sends one hub-global /who for an empty joined roster', async () => {
     const store = useRrcSessionStore.getState();
     store.applyStatus('active', hubA, 'Hub A');

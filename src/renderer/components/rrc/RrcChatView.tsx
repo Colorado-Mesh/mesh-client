@@ -174,6 +174,8 @@ export interface RrcChatViewProps {
   placeholder?: string;
   /** When false, skip follow-on-append and snapshot scroll for tab restore. */
   isActive?: boolean;
+  /** Called when the user has scrolled to (or restored) the latest messages. */
+  onCaughtUp?: () => void;
 }
 
 export function RrcChatView({
@@ -192,6 +194,7 @@ export function RrcChatView({
   alwaysShowMessageActions = false,
   placeholder,
   isActive = true,
+  onCaughtUp,
 }: RrcChatViewProps) {
   const { t } = useTranslation();
   const { inactive: appWindowInactive } = useAppWindowActivity();
@@ -340,16 +343,32 @@ export function RrcChatView({
     return getDistFromChatBottom(scrollContainerRef.current, messagesEndRef.current, null);
   }, [computeIsAtChatEnd]);
 
+  const applyNearBottomCaughtUp = useCallback(
+    (distFromBottom: number) => {
+      if (!isActive || appWindowInactive || distFromBottom >= 50) return;
+      onCaughtUp?.();
+    },
+    [appWindowInactive, isActive, onCaughtUp],
+  );
+
   const handleStreamScroll = useCallback(() => {
     streamPinRef.current = false;
-    updateScrollButtonVisibility();
-  }, [updateScrollButtonVisibility]);
+    const distFromBottom = updateScrollButtonVisibility();
+    if (distFromBottom != null) applyNearBottomCaughtUp(distFromBottom);
+  }, [applyNearBottomCaughtUp, updateScrollButtonVisibility]);
 
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
-    messageVirtualizerRef.current.scrollToEnd({ behavior });
-    isPinnedToBottomRef.current = true;
-    setShowScrollButton(false);
-  }, []);
+  const scrollToBottom = useCallback(
+    (behavior: ScrollBehavior = 'auto') => {
+      messageVirtualizerRef.current.scrollToEnd({ behavior });
+      isPinnedToBottomRef.current = true;
+      setShowScrollButton(false);
+      requestAnimationFrame(() => {
+        const dist = updateScrollButtonVisibility();
+        if (dist != null) applyNearBottomCaughtUp(dist);
+      });
+    },
+    [applyNearBottomCaughtUp, updateScrollButtonVisibility],
+  );
 
   /** Last visible id — rooms at the 500-message cap grow without length change. */
   const latestVisibleMessageId =
@@ -362,7 +381,8 @@ export function RrcChatView({
       messageVirtualizerRef.current.scrollToEnd();
     }
     requestAnimationFrame(() => {
-      updateScrollButtonVisibility();
+      const dist = updateScrollButtonVisibility();
+      if (dist != null) applyNearBottomCaughtUp(dist);
     });
   }, [
     visibleMessages.length,
@@ -371,6 +391,7 @@ export function RrcChatView({
     activeRoom,
     appWindowInactive,
     updateScrollButtonVisibility,
+    applyNearBottomCaughtUp,
   ]);
 
   // Hub and/or room switch while active → pin + scroll to end.
@@ -413,6 +434,10 @@ export function RrcChatView({
           messageVirtualizerRef.current.scrollToEnd();
           isPinnedToBottomRef.current = true;
           setShowScrollButton(false);
+          requestAnimationFrame(() => {
+            const dist = updateScrollButtonVisibility();
+            if (dist != null) applyNearBottomCaughtUp(dist);
+          });
         } else if (el) {
           el.scrollTop = savedScrollTopRef.current;
         }
@@ -420,7 +445,21 @@ export function RrcChatView({
         savedWasPinnedToBottomRef.current = false;
       }
     }
-  }, [isActive]);
+  }, [applyNearBottomCaughtUp, isActive, updateScrollButtonVisibility]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    const onFocus = () => {
+      requestAnimationFrame(() => {
+        const dist = updateScrollButtonVisibility();
+        if (dist != null) applyNearBottomCaughtUp(dist);
+      });
+    };
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [applyNearBottomCaughtUp, isActive, updateScrollButtonVisibility]);
 
   useLayoutEffect(() => {
     requestAnimationFrame(() => {
