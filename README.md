@@ -426,6 +426,8 @@ yay -S mesh-client # or: paru -S mesh-client
 
 **macOS (release download):**
 
+- **Recommended:** download the **arm64 `.dmg`**, open it, and drag **Mesh-client** to **Applications**.
+- If you use the **`.zip`** instead: extract with **[Keka](https://www.keka.io/en/)** or `ditto -xk` — **do not use 7-Zip** (or Finder Archive Utility). Those tools flatten macOS framework symlinks and can cause a launch crash: `Library not loaded: Squirrel.framework`.
 - **Official [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) (v5.22.0+):** macOS builds are **Developer ID signed and notarized**. Drag to **Applications** and open normally — you should **not** need `xattr` or Right-click → Open.
 - **Unsigned local or fork builds** (`pnpm run dist:mac` without signing secrets, CI artifacts from forks): Gatekeeper may show **"Mesh-client" is damaged and can't be opened** (or **File is damaged and cannot be opened**), especially on **Apple silicon**. That is quarantine on unsigned downloads, not a corrupt file.
 
@@ -440,7 +442,7 @@ xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
 
 After running `xattr`, check Privacy & Security again (scroll to the bottom); the entry should now appear with an **Allow** button.
 
-See [Troubleshooting; macOS: File is damaged…](docs/troubleshooting.md#macos-file-is-damaged-and-cannot-be-opened) and [this explanation for a similar Electron app](https://github.com/jeffvli/feishin/issues/104#issuecomment-1553914730).
+See [Troubleshooting; macOS: File is damaged…](docs/troubleshooting.md#macos-file-is-damaged-and-cannot-be-opened), [macOS: Library not loaded: Squirrel.framework…](docs/troubleshooting.md#macos-library-not-loaded-squirrelframework-after-zip-extract), and [this explanation for a similar Electron app](https://github.com/jeffvli/feishin/issues/104#issuecomment-1553914730).
 
 **Building from source / development setup:** see [docs/development-environment.md](docs/development-environment.md) for complete shared requirements, clone/install steps, test harness setup, and detailed macOS/Windows/Linux instructions.
 

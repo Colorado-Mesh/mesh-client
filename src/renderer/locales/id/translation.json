@@ -5039,7 +5039,8 @@
     "whisperReplyPlaceholder": "Balas {{name}} atau /msg…",
     "jumpToLatest": "Langsung ke Terbaru",
     "stackNotReady": "Stack Reticulum belum siap. Tunggu hingga terhubung, lalu coba lagi.",
-    "sidecarNotRunning": "Sidecar Reticulum tidak berjalan. Mulai stack di Connection, lalu coba lagi."
+    "sidecarNotRunning": "Sidecar Reticulum tidak berjalan. Mulai stack di Connection, lalu coba lagi.",
+    "whoReplyMissing": "Tidak ada daftar anggota dari hub untuk {{room}} (balasan dapat melebihi ukuran tautan). Nama akan muncul saat orang bergabung atau mengobrol."
   },
   "signalMeter": {
     "rssi": "RSSI",

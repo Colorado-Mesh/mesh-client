@@ -1,0 +1,30 @@
+Mesh-client — macOS install (read before extracting a ZIP)
+============================================================
+
+Prefer the .dmg (recommended)
+-----------------------------
+1. Open Mesh-client-*-arm64.dmg (or x64 if applicable).
+2. Drag Mesh-client to Applications.
+3. Open Mesh-client from Applications.
+
+If you use the .zip instead
+----------------------------
+Extract with a tool that preserves macOS symlinks:
+  • Keka — https://www.keka.io/en/
+  • Terminal: ditto -xk Mesh-client-*-mac.zip ~/Desktop/mesh-extract
+
+Do NOT use 7-Zip or Finder Archive Utility on the macOS ZIP. They can
+flatten framework symlinks and cause a launch crash such as:
+
+  Library not loaded: @rpath/Squirrel.framework/Squirrel
+
+After a good extract, move Mesh-client.app to /Applications.
+
+Quick check (optional)
+----------------------
+  ls -la /Applications/Mesh-client.app/Contents/Frameworks/Squirrel.framework
+
+Squirrel and Versions/Current should be symlinks; Versions/A/Squirrel should
+be a Mach-O dylib (not a tiny text file).
+
+More help: https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md#macos-library-not-loaded-squirrelframework-after-zip-extract

@@ -242,6 +242,14 @@ describe('useReticulumRuntime RRC empty-K_ROOM hub-scoped routing', () => {
     return (useRrcSessionStore.getState().messages.get(key ?? '') ?? []).map((m) => m.body);
   }
 
+  function roomMembers(room: string) {
+    const session = useRrcSessionStore.getState().sessionsByHub.get(HUB);
+    const info = session
+      ? [...session.rooms.values()].find((r) => r.name === room || r.name === `#${room}`)
+      : undefined;
+    return info?.members ?? [];
+  }
+
   function sendEmptyRoomMessage(
     onEvent: (evt: ReticulumSidecarEvent) => void,
     kind: 'notice' | 'error' | 'system',
@@ -263,6 +271,28 @@ describe('useReticulumRuntime RRC empty-K_ROOM hub-scoped routing', () => {
       });
     });
   }
+
+  it('seeds self into nicklist on join-info when actor JOINED roster is missing', async () => {
+    const { onEvent, unmount } = await connectAndGetOnEvent();
+    act(() => {
+      onEvent({
+        type: 'rrc.message',
+        payload: {
+          id: 'join-info-1',
+          hub_dest_hash: HUB,
+          room: 'general',
+          kind: 'notice',
+          body: 'room general: registered; mode=+nrt; topic=(none)',
+          sender_hash: HUB,
+          timestamp: Date.now(),
+        },
+      });
+    });
+    const members = roomMembers('general');
+    expect(members.some((m) => m.identity_hash === SELF)).toBe(true);
+    expect(members.find((m) => m.identity_hash === SELF)?.nickname).toBe('nv0n');
+    unmount();
+  });
 
   it.each(['notice', 'error', 'system'] as const)(
     'stores empty-room %s in the focused real room',

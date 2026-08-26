@@ -5043,7 +5043,8 @@
     "whisperReplyPlaceholder": "Odpowiedz na {{name}} lub /msg…",
     "jumpToLatest": "Przejdź do najnowszych",
     "stackNotReady": "Stos Reticulum nie jest jeszcze gotowy. Poczekaj, aż połączenie zostanie nawiązane, a następnie spróbuj ponownie.",
-    "sidecarNotRunning": "Sidecar Reticulum nie działa. Uruchom stos w Połączeniu, a następnie spróbuj ponownie."
+    "sidecarNotRunning": "Sidecar Reticulum nie działa. Uruchom stos w Połączeniu, a następnie spróbuj ponownie.",
+    "whoReplyMissing": "Brak listy członków z centrum dla {{room}} (odpowiedź może przekroczyć rozmiar linku). Imiona i nazwiska pojawią się, gdy ludzie dołączą lub będą czatować."
   },
   "signalMeter": {
     "rssi": "RSSI",

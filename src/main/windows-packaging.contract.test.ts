@@ -255,6 +255,9 @@ describe('Windows packaging (contract)', () => {
     expect(macVerify).toContain('hdiutil attach');
     expect(macVerify).toContain('isSymbolicLink');
     expect(macVerify).toContain('assertApplicationsSymlink');
+    expect(macVerify).toContain('assertDmgInstallNotice');
+    expect(macVerify).toContain('stageMacosInstallNoticeReleaseAsset');
+    expect(macVerify).toContain('Squirrel.framework');
     expect(macVerify).toContain('/Applications');
     expect(macVerify).toMatch(
       /function mountDmgAndValidate\([\s\S]*?assertApplicationsSymlink\(VERIFY_DMG_MOUNT_DIR\)/,
@@ -262,6 +265,8 @@ describe('Windows packaging (contract)', () => {
 
     const electronBuilder = readFileSync(join(REPO_ROOT, 'electron-builder.yml'), 'utf-8');
     expect(electronBuilder).toMatch(/type:\s*link\s*\n\s*path:\s*\/Applications/);
+    expect(electronBuilder).toContain('IMPORTANT-Read-Me.txt');
+    expect(electronBuilder).toContain('resources/macos/IMPORTANT-macOS-install.txt');
 
     const linuxVerify = readFileSync(
       join(REPO_ROOT, 'scripts', 'verify-linux-packaging.mjs'),

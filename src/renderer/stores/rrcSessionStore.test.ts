@@ -416,6 +416,21 @@ describe('rrcSessionStore', () => {
     expect(members.map((m) => m.nickname).sort()).toEqual(['Alice', 'Bob']);
   });
 
+  it('removes peer PARTED members from nicklist (EX1 fanout)', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
+    store.roomJoined('lobby', [
+      { identity_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', nickname: 'Alice' },
+      { identity_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', nickname: 'Bob' },
+    ]);
+    store.removeRoomMembers('lobby', [
+      { identity_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', nickname: 'Bob' },
+    ]);
+    const members = useRrcSessionStore.getState().rooms.get('lobby')?.members ?? [];
+    expect(members).toHaveLength(1);
+    expect(members[0]?.nickname).toBe('Alice');
+  });
+
   it('coalesces #general and general into one joined room', () => {
     const store = useRrcSessionStore.getState();
     store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');

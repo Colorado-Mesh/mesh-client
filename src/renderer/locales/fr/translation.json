@@ -5039,7 +5039,8 @@
     "whisperReplyPlaceholder": "Répondre à {{name}} ou /msg…",
     "jumpToLatest": "Aller au dernier",
     "stackNotReady": "La pile Reticulum n'est pas encore prête. Attendez d'être connecté, puis réessayez.",
-    "sidecarNotRunning": "Le sidecar Reticulum n'est pas en cours d'exécution. Démarrez la pile sur Connexion, puis réessayez."
+    "sidecarNotRunning": "Le sidecar Reticulum n'est pas en cours d'exécution. Démarrez la pile sur Connexion, puis réessayez.",
+    "whoReplyMissing": "Aucune liste de membres du hub pour {{room}} (la réponse peut dépasser la taille du lien). Les noms apparaîtront lorsque les gens rejoindront ou discuteront."
   },
   "signalMeter": {
     "rssi": "RSSI",

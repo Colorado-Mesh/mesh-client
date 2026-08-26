@@ -5041,7 +5041,8 @@
     "whisperReplyPlaceholder": "Odpověz uživateli {{name}} nebo /msg…",
     "jumpToLatest": "Přejít na nejnovější",
     "stackNotReady": "Zásobník Reticulum ještě není připraven. Počkejte, až bude připojen, a zkuste to znovu.",
-    "sidecarNotRunning": "Reticulum sidecar neběží. Spusťte zásobník na Připojení a zkuste to znovu."
+    "sidecarNotRunning": "Reticulum sidecar neběží. Spusťte zásobník na Připojení a zkuste to znovu.",
+    "whoReplyMissing": "Žádný seznam členů z centra pro {{room}} (odpověď může přesáhnout velikost odkazu). Jména se zobrazí, když se lidé připojí nebo chatují."
   },
   "signalMeter": {
     "rssi": "\"RSSI\"",

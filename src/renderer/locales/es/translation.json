@@ -5039,7 +5039,8 @@
     "whisperReplyPlaceholder": "Responder a {{name}} o /msg...",
     "jumpToLatest": "Saltar a lo último",
     "stackNotReady": "La pila Reticulum aún no está lista. Espere a que esté conectada e inténtelo de nuevo.",
-    "sidecarNotRunning": "El sidecar de Reticulum no está en ejecución. Inicie la pila en Conexión e inténtelo de nuevo."
+    "sidecarNotRunning": "El sidecar de Reticulum no está en ejecución. Inicie la pila en Conexión e inténtelo de nuevo.",
+    "whoReplyMissing": "No hay ninguna lista de miembros del hub para {{room}} (la respuesta puede exceder el tamaño del enlace). Los nombres aparecerán cuando las personas se unan o chateen."
   },
   "signalMeter": {
     "rssi": "RSSI",

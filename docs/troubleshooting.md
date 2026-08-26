@@ -342,6 +342,43 @@ After running `xattr`, check Privacy & Security again (scroll to the bottom); th
 - This may also be a native module signing issue; try rebuilding: `pnpm run dist:mac`
 - If building from source: make sure `pnpm install` completed without errors
 
+### macOS: Library not loaded: Squirrel.framework after ZIP extract
+
+**Symptom:** Mesh-client crashes immediately on launch (often on macOS 26 / Tahoe). Crash Reporter or Console shows:
+
+```text
+Termination Reason: Namespace DYLD, Code 1, Library missing
+Library not loaded: @rpath/Squirrel.framework/Squirrel
+Referenced from: .../Electron Framework.framework/Versions/A/Electron Framework
+```
+
+Similar errors may mention `Mantle.framework` or `ReactiveObjC.framework`. Electron Framework may load; the sibling auto-update frameworks fail first.
+
+**Cause:** The **macOS `.zip`** from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) was extracted with a tool that **does not preserve macOS framework symlinks** — especially **7-Zip**, and sometimes Finder Archive Utility. That flattens entries such as `Squirrel.framework/Squirrel` into tiny invalid files, so dyld aborts at launch. The release artifact itself is fine; the installed `.app` bundle is broken.
+
+**Fix:**
+
+1. Delete the broken copy (for example `/Applications/Mesh-client.app`).
+2. Reinstall using one of these (preferred first):
+   - **`.dmg` (recommended):** open the arm64 DMG, drag **Mesh-client** to **Applications**, launch from there.
+   - **`.zip` with [Keka](https://www.keka.io/en/)** or Terminal:
+     ```bash
+     ditto -xk Mesh-client-*-arm64-mac.zip ~/Desktop/mesh-extract
+     ```
+     Then move `Mesh-client.app` to `/Applications`.
+3. **Do not** re-extract the macOS ZIP with **7-Zip**.
+
+**Optional check** after a good install:
+
+```bash
+ls -la /Applications/Mesh-client.app/Contents/Frameworks/Squirrel.framework
+file /Applications/Mesh-client.app/Contents/Frameworks/Squirrel.framework/Versions/A/Squirrel
+```
+
+Expect `Squirrel` and `Versions/Current` to be **symlinks**; `Versions/A/Squirrel` should report a Mach-O dylib (not a tiny text file).
+
+Official releases also ship `00-READ-ME-BEFORE-EXTRACTING-macOS-ZIP.txt` on the release page, and the DMG includes **IMPORTANT-Read-Me.txt** with the same guidance.
+
 ### Flatpak: `vmwgfx: driver missing` (VMware on macOS)
 
 **Symptom**: `flatpak run org.coloradomesh.MeshClient` fails or exits after Mesa logs `vmwgfx: driver missing` (use `flatpak -v run ...` to see it). Common on **Linux guests in VMware Fusion or Workstation with a macOS host**, including **aarch64** Ubuntu/ARM VMs.

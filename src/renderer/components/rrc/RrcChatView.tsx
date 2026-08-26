@@ -154,6 +154,8 @@ function NickSpan({ nick }: { nick: string }) {
 
 export interface RrcChatViewProps {
   connected: boolean;
+  /** Focused hub hash — stream identity with activeRoom (hub switch must re-pin). */
+  hubDestHash?: string | null;
   activeRoom: string | null;
   messages: RrcChatMessage[];
   showTimestamps: boolean;
@@ -176,6 +178,7 @@ export interface RrcChatViewProps {
 
 export function RrcChatView({
   connected,
+  hubDestHash = null,
   activeRoom,
   messages,
   showTimestamps,
@@ -202,11 +205,13 @@ export function RrcChatView({
   const skipMentionSyncRef = useRef(false);
   /** Sticky intent: user is reading latest messages and wants auto-follow on new traffic. */
   const isPinnedToBottomRef = useRef(true);
+  /** Hub/room stream switch — trust pin until the user scrolls (virtualizer can lag). */
+  const streamPinRef = useRef(false);
   const unreadStartIndexRef = useRef(-1);
   const savedScrollTopRef = useRef<number | null>(null);
   const savedWasPinnedToBottomRef = useRef(false);
   const wasActiveRef = useRef(isActive);
-  const prevActiveRoomRef = useRef(activeRoom);
+  const prevStreamKeyRef = useRef<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -324,6 +329,11 @@ export function RrcChatView({
   }, []);
 
   const updateScrollButtonVisibility = useCallback(() => {
+    if (streamPinRef.current) {
+      isPinnedToBottomRef.current = true;
+      setShowScrollButton(false);
+      return getDistFromChatBottom(scrollContainerRef.current, messagesEndRef.current, null);
+    }
     const atEnd = computeIsAtChatEnd();
     isPinnedToBottomRef.current = atEnd;
     setShowScrollButton(!atEnd);
@@ -331,6 +341,7 @@ export function RrcChatView({
   }, [computeIsAtChatEnd]);
 
   const handleStreamScroll = useCallback(() => {
+    streamPinRef.current = false;
     updateScrollButtonVisibility();
   }, [updateScrollButtonVisibility]);
 
@@ -362,17 +373,25 @@ export function RrcChatView({
     updateScrollButtonVisibility,
   ]);
 
-  // Room switch while active → pin + scroll to end.
+  // Hub and/or room switch while active → pin + scroll to end.
+  // Same room name on another hub (e.g. general) must still re-pin; room-only key missed that.
   useLayoutEffect(() => {
-    const prevRoom = prevActiveRoomRef.current;
-    prevActiveRoomRef.current = activeRoom;
+    const streamKey =
+      activeRoom && hubDestHash
+        ? `${hubDestHash.toLowerCase()}::${activeRoom}`
+        : activeRoom
+          ? `::${activeRoom}`
+          : null;
+    const prevKey = prevStreamKeyRef.current;
+    prevStreamKeyRef.current = streamKey;
     if (!isActive) return;
-    if (prevRoom === activeRoom) return;
-    if (!activeRoom) return;
+    if (!streamKey) return;
+    if (prevKey === streamKey) return;
+    streamPinRef.current = true;
     isPinnedToBottomRef.current = true;
     messageVirtualizerRef.current.scrollToEnd();
     setShowScrollButton(false);
-  }, [activeRoom, isActive]);
+  }, [activeRoom, hubDestHash, isActive]);
 
   // Tab exit snapshot / tab return restore (Rooms contract).
   useLayoutEffect(() => {

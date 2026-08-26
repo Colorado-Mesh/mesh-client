@@ -115,6 +115,8 @@ describe('patchDraftReleaseSchemaNote', () => {
     expect(patch.mock.calls[0][0]).toBe(2);
     expect(patch.mock.calls[0][2].body).toContain('# Schema bumped');
     expect(patch.mock.calls[0][2].body).toContain('Draft release for v1.0.0.');
+    expect(patch.mock.calls[0][2].body).toContain('### macOS install');
+    expect(patch.mock.calls[0][2].body).toContain('7-Zip');
   });
 
   it('rejects RELEASE_ID when the release is published', async () => {

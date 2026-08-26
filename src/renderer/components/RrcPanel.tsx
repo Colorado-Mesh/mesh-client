@@ -251,10 +251,6 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
       if (status !== 'active' || !hubDestHash) return;
       const expanded = expandRrcHubSlashBody(body, activeRoom);
       const isWho = /^\s*\/(?:who|names)(?:\s|$)/i.test(expanded);
-      const hubRoom =
-        !isWho && activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)
-          ? activeRoom
-          : undefined;
       const whoForceRoom = isWho
         ? resolveRrcWhoTranscriptForceRoom(
             expanded.replace(/^\s*\/names\b/i, '/who'),
@@ -262,6 +258,12 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             rooms.keys(),
           )
         : null;
+      // Prefer the /who target room; otherwise the focused joined room (Python always sets K_ROOM).
+      const hubRoom =
+        (isWho ? whoForceRoom : null) ??
+        (activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)
+          ? activeRoom
+          : undefined);
       if (whoForceRoom) {
         useRrcSessionStore.getState().reserveWhoTranscriptForce(whoForceRoom, hubDestHash);
       }
@@ -305,11 +307,14 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
         session.markWhoRequested(room, hubDestHash);
         session.reserveWhoTranscriptForce(room, hubDestHash);
       }
-      // Hub-global slash command — omit K_ROOM so rrcd does not treat this as room chat.
+      // Python rrc-web always sets K_ROOM on MSG (including /who). Roomless /who
+      // works on some hubs but not others; slash commands are handled before
+      // forward so K_ROOM does not turn this into room chat.
       void (async () => {
         try {
           const res = await window.electronAPI.reticulum.rrc.send({
             hub_dest_hash: hubDestHash,
+            room,
             body: `/who ${token}`,
             type: 'msg',
           });
@@ -317,6 +322,31 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             const next = useRrcSessionStore.getState();
             next.releaseWhoRequested(room, hubDestHash);
             if (force) next.releaseWhoTranscriptForce(room, hubDestHash);
+          } else if (!force) {
+            // Stock rrcd `/who` uses emit_notice → single Packet.send (no chunk/resource).
+            // Busy rooms exceed Link MDU (~431); hub drops silently — one system line.
+            window.setTimeout(() => {
+              const s = useRrcSessionStore.getState();
+              const hub = hubDestHash.toLowerCase();
+              const session = s.sessionsByHub.get(hub);
+              const info = session
+                ? [...session.rooms.values()].find((r) => rrcRoomsMatch(r.name, room))
+                : undefined;
+              if (!info) return;
+              const count = info.members?.length ?? 0;
+              if (count > 0) return;
+              if (s.status !== 'active' || s.hubDestHash?.toLowerCase() !== hub) return;
+              s.addMessage(
+                {
+                  id: `who-miss-${hub.slice(0, 8)}-${rrcRoomMatchKey(room)}-${Date.now()}`,
+                  room,
+                  kind: 'system',
+                  body: t('rrc.whoReplyMissing', { room }),
+                  timestamp: Date.now(),
+                },
+                { hubDestHash },
+              );
+            }, 12_000);
           }
         } catch (e: unknown) {
           const next = useRrcSessionStore.getState();
@@ -326,7 +356,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
         }
       })();
     },
-    [status, hubDestHash, listedRooms, rooms],
+    [status, hubDestHash, listedRooms, rooms, t],
   );
 
   // rrcd JOINED member lists are optional (off by default) — request `/who` once per join.
@@ -850,14 +880,16 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
           if (whoForceRoom) {
             useRrcSessionStore.getState().reserveWhoTranscriptForce(whoForceRoom, hubDestHash);
           }
+          const commandRoom =
+            (isWho ? whoForceRoom : null) ??
+            (activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)
+              ? activeRoom
+              : undefined);
           let res: RrcSendResult;
           try {
             res = await rrcSendBounded({
               hub_dest_hash: hubDestHash,
-              room:
-                !isWho && activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)
-                  ? activeRoom
-                  : undefined,
+              room: commandRoom,
               body: expanded,
               type: 'msg',
             });
@@ -1184,6 +1216,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
         <div className="flex min-h-0 flex-1">
           <RrcChatView
             connected={connected}
+            hubDestHash={hubDestHash}
             activeRoom={activeRoom}
             messages={activeMessages}
             showTimestamps={showTimestamps}
