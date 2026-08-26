@@ -1215,6 +1215,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
         <div className="flex min-h-0 flex-1">
           <RrcChatView
             connected={connected}
+            hubDestHash={hubDestHash}
             activeRoom={activeRoom}
             messages={activeMessages}
             showTimestamps={showTimestamps}

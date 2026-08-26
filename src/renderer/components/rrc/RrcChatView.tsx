@@ -154,6 +154,8 @@ function NickSpan({ nick }: { nick: string }) {
 
 export interface RrcChatViewProps {
   connected: boolean;
+  /** Focused hub hash — stream identity with activeRoom (hub switch must re-pin). */
+  hubDestHash?: string | null;
   activeRoom: string | null;
   messages: RrcChatMessage[];
   showTimestamps: boolean;
@@ -176,6 +178,7 @@ export interface RrcChatViewProps {
 
 export function RrcChatView({
   connected,
+  hubDestHash = null,
   activeRoom,
   messages,
   showTimestamps,
@@ -206,7 +209,7 @@ export function RrcChatView({
   const savedScrollTopRef = useRef<number | null>(null);
   const savedWasPinnedToBottomRef = useRef(false);
   const wasActiveRef = useRef(isActive);
-  const prevActiveRoomRef = useRef(activeRoom);
+  const prevStreamKeyRef = useRef<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -362,17 +365,24 @@ export function RrcChatView({
     updateScrollButtonVisibility,
   ]);
 
-  // Room switch while active → pin + scroll to end.
+  // Hub and/or room switch while active → pin + scroll to end.
+  // Same room name on another hub (e.g. general) must still re-pin; room-only key missed that.
   useLayoutEffect(() => {
-    const prevRoom = prevActiveRoomRef.current;
-    prevActiveRoomRef.current = activeRoom;
+    const streamKey =
+      activeRoom && hubDestHash
+        ? `${hubDestHash.toLowerCase()}::${activeRoom}`
+        : activeRoom
+          ? `::${activeRoom}`
+          : null;
+    const prevKey = prevStreamKeyRef.current;
+    prevStreamKeyRef.current = streamKey;
     if (!isActive) return;
-    if (prevRoom === activeRoom) return;
-    if (!activeRoom) return;
+    if (!streamKey) return;
+    if (prevKey === streamKey) return;
     isPinnedToBottomRef.current = true;
     messageVirtualizerRef.current.scrollToEnd();
     setShowScrollButton(false);
-  }, [activeRoom, isActive]);
+  }, [activeRoom, hubDestHash, isActive]);
 
   // Tab exit snapshot / tab return restore (Rooms contract).
   useLayoutEffect(() => {

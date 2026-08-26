@@ -531,6 +531,40 @@ describe('RrcChatView stick-to-bottom', () => {
     });
   });
 
+  it('scrolls to end when hub changes with the same room name', async () => {
+    const hubA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const hubB = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const { rerender } = render(
+      <RrcChatView
+        {...baseProps}
+        hubDestHash={hubA}
+        activeRoom="#general"
+        messages={[makeMsg({ id: '1', body: 'a', room: '#general' })]}
+      />,
+    );
+    await waitFor(() => {
+      expect(mockScrollToEnd).toHaveBeenCalled();
+    });
+
+    mockIsAtEnd = false;
+    fireEvent.scroll(screen.getByTestId('rrc-message-stream'));
+    expect(screen.getByLabelText('rrc.jumpToLatest')).toBeInTheDocument();
+    mockScrollToEnd.mockClear();
+
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        hubDestHash={hubB}
+        activeRoom="#general"
+        messages={[makeMsg({ id: '2', body: 'b', room: '#general' })]}
+      />,
+    );
+    await waitFor(() => {
+      expect(mockScrollToEnd).toHaveBeenCalled();
+    });
+    expect(screen.queryByLabelText('rrc.jumpToLatest')).not.toBeInTheDocument();
+  });
+
   it('restores scrollTop on tab re-entry when not pinned', () => {
     const { rerender } = render(
       <RrcChatView {...baseProps} isActive messages={[makeMsg({ id: '1', body: 'one' })]} />,
