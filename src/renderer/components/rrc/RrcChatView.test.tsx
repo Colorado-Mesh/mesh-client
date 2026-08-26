@@ -341,6 +341,18 @@ describe('RrcChatView stick-to-bottom', () => {
     mockScrollToEnd.mockClear();
   });
 
+  it('keeps Chat/Rooms flex + overflow-anchor stream classes', () => {
+    render(<RrcChatView {...baseProps} messages={[makeMsg({ id: '1', body: 'one' })]} />);
+    const stream = screen.getByTestId('rrc-message-stream');
+    expect(stream).toHaveClass(
+      'overflow-y-auto',
+      'overscroll-contain',
+      'min-h-0',
+      '[overflow-anchor:none]',
+    );
+    expect(stream.parentElement).toHaveClass('min-h-0', 'flex-1');
+  });
+
   it('scrolls to end when a message appends while pinned', async () => {
     const { rerender } = render(
       <RrcChatView {...baseProps} messages={[makeMsg({ id: '1', body: 'one' })]} />,
@@ -373,6 +385,7 @@ describe('RrcChatView stick-to-bottom', () => {
       mockScrollToEnd.mockClear();
 
       hasFocusSpy.mockReturnValue(false);
+      fireEvent(window, new Event('blur'));
       rerender(
         <RrcChatView
           {...baseProps}
@@ -405,6 +418,32 @@ describe('RrcChatView stick-to-bottom', () => {
           messages={[makeMsg({ id: '1', body: 'one' }), makeMsg({ id: '2', body: 'two' })]}
         />,
       );
+      await waitFor(() => {
+        expect(mockScrollToEnd).toHaveBeenCalled();
+      });
+    } finally {
+      hasFocusSpy.mockRestore();
+    }
+  });
+
+  it('re-follows when focus returns while pinned', async () => {
+    const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    try {
+      render(
+        <RrcChatView {...baseProps} isActive messages={[makeMsg({ id: '1', body: 'one' })]} />,
+      );
+      await waitFor(() => {
+        expect(mockScrollToEnd).toHaveBeenCalled();
+      });
+      mockScrollToEnd.mockClear();
+
+      hasFocusSpy.mockReturnValue(false);
+      fireEvent(window, new Event('blur'));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(mockScrollToEnd).not.toHaveBeenCalled();
+
+      hasFocusSpy.mockReturnValue(true);
+      fireEvent(window, new Event('focus'));
       await waitFor(() => {
         expect(mockScrollToEnd).toHaveBeenCalled();
       });
