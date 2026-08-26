@@ -311,7 +311,15 @@ export function RrcChatView({
   messageVirtualizerRef.current = messageVirtualizer;
 
   const computeIsAtChatEnd = useCallback(() => {
-    if (!scrollContainerRef.current) return false;
+    const el = scrollContainerRef.current;
+    if (!el) return false;
+    // When the stream actually overflows, trust DOM distance. Virtualizer isAtEnd can
+    // lag estimate→measure on large rooms and falsely clear the pin while scrollTop is maxed.
+    const hasOverflow = el.scrollHeight > el.clientHeight + 1;
+    if (hasOverflow) {
+      const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+      return dist <= CHAT_SCROLL_END_THRESHOLD;
+    }
     return messageVirtualizerRef.current.isAtEnd(CHAT_SCROLL_END_THRESHOLD);
   }, []);
 
@@ -332,6 +340,10 @@ export function RrcChatView({
     setShowScrollButton(false);
   }, []);
 
+  /** Last visible id — rooms at the 500-message cap grow without length change. */
+  const latestVisibleMessageId =
+    visibleMessages.length > 0 ? (visibleMessages[visibleMessages.length - 1]?.id ?? null) : null;
+
   // Follow new messages when pinned (Rooms/Chat contract).
   useEffect(() => {
     if (!isActive || appWindowInactive || !activeRoom) return;
@@ -343,6 +355,7 @@ export function RrcChatView({
     });
   }, [
     visibleMessages.length,
+    latestVisibleMessageId,
     isActive,
     activeRoom,
     appWindowInactive,

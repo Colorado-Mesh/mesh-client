@@ -373,6 +373,35 @@ describe('RrcChatView stick-to-bottom', () => {
     });
   });
 
+  it('follows when the latest id changes at a fixed list length (history cap)', async () => {
+    const firstBatch = [
+      makeMsg({ id: '1', body: 'old' }),
+      makeMsg({ id: '2', body: 'mid' }),
+      makeMsg({ id: '3', body: 'newer' }),
+    ];
+    const { rerender } = render(<RrcChatView {...baseProps} isActive messages={firstBatch} />);
+    await waitFor(() => {
+      expect(mockScrollToEnd).toHaveBeenCalled();
+    });
+    mockScrollToEnd.mockClear();
+
+    // Same length, new tail id — mirrors MAX_MESSAGES_PER_ROOM slice on busy rooms.
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        isActive
+        messages={[
+          makeMsg({ id: '2', body: 'mid' }),
+          makeMsg({ id: '3', body: 'newer' }),
+          makeMsg({ id: '4', body: 'newest' }),
+        ]}
+      />,
+    );
+    await waitFor(() => {
+      expect(mockScrollToEnd).toHaveBeenCalled();
+    });
+  });
+
   it('does not follow appends while the window is visible but unfocused', async () => {
     const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
     try {
