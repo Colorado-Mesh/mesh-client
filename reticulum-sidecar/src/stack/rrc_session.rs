@@ -27,7 +27,9 @@ use super::rrc_codec::{
     parse_welcome_capabilities, parse_welcome_hub_name, parse_welcome_hub_version,
     parse_welcome_limits, text_body,
 };
-use super::rrc_link::{RrcLinkError, RrcLinkEvent, RrcLinkHandle, open_rrc_link};
+use super::rrc_link::{
+    MAX_CONCURRENT_RRC_RESOURCES, RrcLinkError, RrcLinkEvent, RrcLinkHandle, open_rrc_link,
+};
 
 const CLIENT_NAME: &str = "mesh-client";
 const CLIENT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -133,6 +135,14 @@ impl RrcSessionInner {
             self.pending_rejoins.push((room, join_key));
         }
     }
+}
+
+fn reset_hub_metadata(g: &mut RrcSessionInner) {
+    g.hub_name = None;
+    g.hub_version = None;
+    g.capabilities = RrcWelcomeCapabilities::default();
+    g.limits = RrcWelcomeLimits::default();
+    g.pending_resources.clear();
 }
 
 /// Handle to one hub's session task: a command channel for actions that must
@@ -636,12 +646,11 @@ async fn session_loop(
                             let mut g = inner.lock().await;
                             g.status = RrcSessionStatus::Connecting;
                             g.nickname = Some(nickname.clone());
-                            g.hub_name = None;
                             g.rooms.clear();
                             g.desired_rooms.clear();
                             g.pending_rejoins.clear();
                             g.last_error = None;
-                            g.capabilities = RrcWelcomeCapabilities::default();
+                            reset_hub_metadata(&mut g);
                         }
                         emit(
                             &event_tx,
@@ -677,7 +686,7 @@ async fn session_loop(
                             g.rooms.clear();
                             g.desired_rooms.clear();
                             g.pending_rejoins.clear();
-                            g.hub_name = None;
+                            reset_hub_metadata(&mut g);
                         }
                         emit(
                             &event_tx,
@@ -1368,7 +1377,7 @@ async fn handle_inbound(
             if let Some(meta) = meta {
                 let mut g = inner.lock().await;
                 // Bound pending expectations (rrcd default max_pending=8).
-                while g.pending_resources.len() >= 8 {
+                while g.pending_resources.len() >= MAX_CONCURRENT_RRC_RESOURCES {
                     g.pending_resources.pop_front();
                 }
                 g.pending_resources
@@ -1447,58 +1456,80 @@ fn apply_joined_to_room(
     members
 }
 
+fn purge_stale_pending_resources(
+    pending: &mut VecDeque<(RrcResourceEnvelopeMeta, Option<String>, Instant)>,
+) {
+    let now = Instant::now();
+    while pending
+        .front()
+        .is_some_and(|(_, _, t)| now.duration_since(*t) > Duration::from_secs(30))
+    {
+        pending.pop_front();
+    }
+}
+
+/// Match RESOURCE_ENVELOPE metadata to a completed payload by SHA256 (not FIFO).
+fn take_pending_resource_for_digest(
+    pending: &mut VecDeque<(RrcResourceEnvelopeMeta, Option<String>, Instant)>,
+    digest: [u8; 32],
+) -> Option<(RrcResourceEnvelopeMeta, Option<String>)> {
+    purge_stale_pending_resources(pending);
+    if let Some(idx) = pending
+        .iter()
+        .position(|(meta, _, _)| meta.sha256 == Some(digest))
+    {
+        let (meta, room, _) = pending.remove(idx)?;
+        return Some((meta, room));
+    }
+    None
+}
+
 async fn dispatch_resource_payload(
     inner: &Arc<Mutex<RrcSessionInner>>,
     event_tx: &broadcast::Sender<String>,
     hub_dest_hash: &str,
     data: Vec<u8>,
 ) {
+    let digest: [u8; 32] = Sha256::digest(&data).into();
     let expectation = {
         let mut g = inner.lock().await;
-        // Drop stale expectations (>30s, matching rrcd default TTL).
-        let now = Instant::now();
-        while g
-            .pending_resources
-            .front()
-            .is_some_and(|(_, _, t)| now.duration_since(*t) > Duration::from_secs(30))
-        {
-            g.pending_resources.pop_front();
-        }
-        g.pending_resources.pop_front()
+        take_pending_resource_for_digest(&mut g.pending_resources, digest)
     };
-    let (meta, room) = match expectation {
-        Some((meta, room, _)) => (Some(meta), room.unwrap_or_default()),
-        None => (None, String::new()),
+    let Some((meta, room)) = expectation else {
+        debug!(
+            "rrc resource payload with no matching envelope hub={} bytes={}",
+            hub_dest_hash,
+            data.len()
+        );
+        return;
     };
-    if let Some(ref meta) = meta {
-        if let Some(expected) = meta.sha256 {
-            let digest = Sha256::digest(&data);
-            if digest.as_slice() != expected.as_slice() {
-                warn!(
-                    "rrc resource sha256 mismatch hub={} kind={} size={}",
-                    hub_dest_hash,
-                    meta.kind,
-                    data.len()
-                );
-                return;
-            }
-        }
-        if meta.kind == "blob" {
-            debug!(
-                "rrc resource blob ignored hub={} bytes={}",
+    if let Some(expected) = meta.sha256 {
+        if expected != digest {
+            warn!(
+                "rrc resource sha256 mismatch hub={} kind={} size={}",
                 hub_dest_hash,
+                meta.kind,
                 data.len()
             );
             return;
         }
-        if meta.kind != "notice" && meta.kind != "motd" {
-            debug!(
-                "rrc resource unknown kind={} hub={}",
-                meta.kind, hub_dest_hash
-            );
-            return;
-        }
     }
+    if meta.kind == "blob" {
+        debug!(
+            "rrc resource blob ignored hub={} bytes={}",
+            hub_dest_hash,
+            data.len()
+        );
+        return;
+    }
+    if meta.kind != "notice" && meta.kind != "motd" {
+        debug!(
+            "rrc resource unknown kind={} hub={}",
+            meta.kind, hub_dest_hash
+        );
+        return;
+    }
+    let room = room.unwrap_or_default();
     let Ok(text) = String::from_utf8(data) else {
         warn!("rrc resource payload is not utf-8 hub={hub_dest_hash}");
         return;
@@ -1711,5 +1742,61 @@ mod tests {
             "128eb883f0c94439bdb2069947319022",
             Some("me"),
         ));
+    }
+
+    #[test]
+    fn connect_reset_clears_hub_metadata() {
+        let mut inner = RrcSessionInner::new([0u8; 16]);
+        inner.hub_version = Some("0.3.2".into());
+        inner.limits.max_nick_bytes = Some(32);
+        inner.pending_resources.push_back((
+            RrcResourceEnvelopeMeta {
+                id: None,
+                kind: "notice".into(),
+                size: 1,
+                sha256: Some([1u8; 32]),
+                encoding: "utf-8".into(),
+            },
+            Some("general".into()),
+            Instant::now(),
+        ));
+        reset_hub_metadata(&mut inner);
+        assert!(inner.hub_version.is_none());
+        assert!(inner.limits.max_nick_bytes.is_none());
+        assert!(inner.pending_resources.is_empty());
+    }
+
+    #[test]
+    fn take_pending_resource_matches_by_sha256_not_fifo() {
+        let mut pending = VecDeque::new();
+        let hash_a = [0xAAu8; 32];
+        let hash_b = [0xBBu8; 32];
+        pending.push_back((
+            RrcResourceEnvelopeMeta {
+                id: None,
+                kind: "notice".into(),
+                size: 1,
+                sha256: Some(hash_a),
+                encoding: "utf-8".into(),
+            },
+            Some("room-a".into()),
+            Instant::now(),
+        ));
+        pending.push_back((
+            RrcResourceEnvelopeMeta {
+                id: None,
+                kind: "notice".into(),
+                size: 2,
+                sha256: Some(hash_b),
+                encoding: "utf-8".into(),
+            },
+            Some("room-b".into()),
+            Instant::now(),
+        ));
+        let second = take_pending_resource_for_digest(&mut pending, hash_b).expect("match b");
+        assert_eq!(second.1.as_deref(), Some("room-b"));
+        assert_eq!(pending.len(), 1);
+        assert!(take_pending_resource_for_digest(&mut pending, [0xCCu8; 32]).is_none());
+        assert_eq!(pending.len(), 1);
     }
 }

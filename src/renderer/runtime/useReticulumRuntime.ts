@@ -1138,15 +1138,24 @@ export function useReticulumRuntime(): ProtocolRuntime {
           members?: { identity_hash: string; nickname?: string | null }[];
           hub_dest_hash?: string | null;
         };
-        if (typeof p.room === 'string' && Array.isArray(p.members) && p.members.length > 0) {
-          useRrcSessionStore.getState().removeRoomMembers(
-            p.room,
-            p.members.map((m) => ({
-              identity_hash: typeof m.identity_hash === 'string' ? m.identity_hash : '',
-              nickname: typeof m.nickname === 'string' ? m.nickname : null,
-            })),
-            p.hub_dest_hash ?? undefined,
-          );
+        if (typeof p.room === 'string' && Array.isArray(p.members)) {
+          const validMembers = p.members.flatMap((m) => {
+            if (m == null || typeof m !== 'object') return [];
+            const identity_hash = (m as { identity_hash?: unknown }).identity_hash;
+            if (typeof identity_hash !== 'string' || identity_hash.length === 0) return [];
+            const nickname = (m as { nickname?: unknown }).nickname;
+            return [
+              {
+                identity_hash,
+                nickname: typeof nickname === 'string' ? nickname : null,
+              },
+            ];
+          });
+          if (validMembers.length > 0) {
+            useRrcSessionStore
+              .getState()
+              .removeRoomMembers(p.room, validMembers, p.hub_dest_hash ?? undefined);
+          }
         }
       }
       if (evt.type === 'rrc.room.parted' && evt.payload && typeof evt.payload === 'object') {

@@ -332,7 +332,8 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
               const info = session
                 ? [...session.rooms.values()].find((r) => rrcRoomsMatch(r.name, room))
                 : undefined;
-              const count = info?.members?.length ?? 0;
+              if (!info) return;
+              const count = info.members?.length ?? 0;
               if (count > 0) return;
               if (s.status !== 'active' || s.hubDestHash?.toLowerCase() !== hub) return;
               s.addMessage(

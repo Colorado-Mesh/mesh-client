@@ -403,7 +403,9 @@ fn parse_identity_hash_value(item: &Value) -> Option<(String, Option<String>)> {
                                 hash = Some(hex::encode(b));
                             }
                         } else if let Some(t) = as_text(v) {
-                            hash = Some(t.to_lowercase());
+                            if t.len() == 32 && t.chars().all(|c| c.is_ascii_hexdigit()) {
+                                hash = Some(t.to_lowercase());
+                            }
                         }
                     }
                     Some(1) => nick = as_text(v).map(str::to_string),
@@ -562,6 +564,31 @@ mod tests {
             panic!("expected map");
         };
         assert_eq!(entries[0].1, Value::Text("mesh-client".into()));
+        let caps_entry = entries
+            .iter()
+            .find(|(k, _)| integer_key(k) == Some(2))
+            .map(|(_, v)| v)
+            .expect("HELLO key 2 capabilities");
+        let Value::Map(caps) = caps_entry else {
+            panic!("expected capabilities map");
+        };
+        for key in [0u64, 1, 2] {
+            let flag = caps
+                .iter()
+                .find(|(k, _)| integer_key(k) == Some(key))
+                .map(|(_, v)| v)
+                .unwrap_or_else(|| panic!("missing capability key {key}"));
+            assert_eq!(flag, &Value::Bool(true), "capability {key} must be true");
+        }
+    }
+
+    #[test]
+    fn parse_joined_members_rejects_malformed_text_hash_in_map() {
+        let body = Value::Map(vec![
+            (Value::Integer(0.into()), Value::Text("alice".into())),
+            (Value::Integer(1.into()), Value::Text("Alice".into())),
+        ]);
+        assert!(parse_joined_members(Some(&body)).is_empty());
     }
 
     #[test]

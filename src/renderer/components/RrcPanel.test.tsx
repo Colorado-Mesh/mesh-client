@@ -726,6 +726,31 @@ describe('RrcPanel', () => {
     });
   });
 
+  it('does not add whoReplyMissing after part before /who timeout', async () => {
+    vi.useFakeTimers();
+    try {
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hubA, 'Hub A');
+      store.roomJoined('general');
+      store.setActiveRoom('general');
+      vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+      render(<RrcPanel isActive />);
+      await vi.waitFor(() => {
+        expect(whoSendCalls()).toHaveLength(1);
+      });
+
+      store.roomParted('general');
+      await vi.advanceTimersByTimeAsync(12_000);
+
+      const key = store.roomMessageKey('general', hubA);
+      const bodies = (store.messages.get(key ?? '') ?? []).map((m) => m.body);
+      expect(bodies.some((b) => b.includes('rrc.whoReplyMissing'))).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('retries auto /who after a failed send', async () => {
     vi.mocked(window.electronAPI.reticulum.rrc.send).mockRejectedValueOnce(new Error('offline'));
     const store = useRrcSessionStore.getState();

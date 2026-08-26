@@ -205,6 +205,8 @@ export function RrcChatView({
   const skipMentionSyncRef = useRef(false);
   /** Sticky intent: user is reading latest messages and wants auto-follow on new traffic. */
   const isPinnedToBottomRef = useRef(true);
+  /** Hub/room stream switch — trust pin until the user scrolls (virtualizer can lag). */
+  const streamPinRef = useRef(false);
   const unreadStartIndexRef = useRef(-1);
   const savedScrollTopRef = useRef<number | null>(null);
   const savedWasPinnedToBottomRef = useRef(false);
@@ -327,6 +329,11 @@ export function RrcChatView({
   }, []);
 
   const updateScrollButtonVisibility = useCallback(() => {
+    if (streamPinRef.current) {
+      isPinnedToBottomRef.current = true;
+      setShowScrollButton(false);
+      return getDistFromChatBottom(scrollContainerRef.current, messagesEndRef.current, null);
+    }
     const atEnd = computeIsAtChatEnd();
     isPinnedToBottomRef.current = atEnd;
     setShowScrollButton(!atEnd);
@@ -334,6 +341,7 @@ export function RrcChatView({
   }, [computeIsAtChatEnd]);
 
   const handleStreamScroll = useCallback(() => {
+    streamPinRef.current = false;
     updateScrollButtonVisibility();
   }, [updateScrollButtonVisibility]);
 
@@ -379,6 +387,7 @@ export function RrcChatView({
     if (!isActive) return;
     if (!streamKey) return;
     if (prevKey === streamKey) return;
+    streamPinRef.current = true;
     isPinnedToBottomRef.current = true;
     messageVirtualizerRef.current.scrollToEnd();
     setShowScrollButton(false);
