@@ -117,7 +117,8 @@ export function repairMeshcoreRoomUnknownSenderNames(
   if (knownNames.size === 0) return messages;
   return messages.map((m) => {
     if (!isMeshcoreRoomChatMessage(m) || m.sender_id === 0) return m;
-    if (m.sender_name.trim() && m.sender_name !== 'Unknown') return m;
+    const name = m.sender_name.trim();
+    if (name && name !== 'Unknown') return m;
     const known = knownNames.get(m.sender_id);
     if (!known) return m;
     return { ...m, sender_name: known };

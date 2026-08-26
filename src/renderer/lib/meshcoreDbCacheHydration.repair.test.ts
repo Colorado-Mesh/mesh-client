@@ -131,6 +131,25 @@ describe('repairMeshcoreRoomUnknownSenderNames', () => {
     expect(fixed[1]?.sender_name).toBe('🛜 NV0N 01');
     expect(fixed[1]?.payload).toBe('@[🛜 NV0N 01] 👋');
   });
+
+  it('replaces whitespace-padded Unknown sender names from the node map', () => {
+    const roomId = 0xac200e59;
+    const senderId = 1429514792;
+    const paddedUnknown: ChatMessage = {
+      sender_id: senderId,
+      sender_name: '  Unknown  ',
+      payload: 'hello',
+      channel: MESHCORE_ROOM_MESSAGE_CHANNEL,
+      timestamp: 1,
+      roomServerId: roomId,
+      to: roomId,
+    };
+    const [fixed] = repairMeshcoreRoomUnknownSenderNames(
+      [paddedUnknown],
+      new Map([[senderId, '🛜 NV0N 01']]),
+    );
+    expect(fixed.sender_name).toBe('🛜 NV0N 01');
+  });
 });
 describe('repairMeshcoreChatWireTailGarbage', () => {
   it('strips tail garbage from stored channel rows', () => {
