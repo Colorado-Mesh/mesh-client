@@ -10,6 +10,7 @@ import {
   repairMeshcoreHydratedMessages,
   repairMeshcoreMisfiledRoomDmMessages,
   repairMeshcoreRoomStoredPostPayloads,
+  repairMeshcoreRoomUnknownSenderNames,
 } from './meshcoreDbCacheHydration';
 
 describe('repairMeshcoreMisfiledRoomDmMessages', () => {
@@ -47,6 +48,20 @@ describe('repairMeshcoreRoomStoredPostPayloads', () => {
     expect(fixed.payload).toBe('Test from og app');
   });
 
+  it('does not strip emoji tapback room posts that look non-ASCII via surrogates', () => {
+    const tapback: ChatMessage = {
+      sender_id: 1429514792,
+      sender_name: 'Unknown',
+      payload: '@[🛜 NV0N 01] 👋',
+      channel: MESHCORE_ROOM_MESSAGE_CHANNEL,
+      timestamp: 1_700_000_000,
+      roomServerId: 0xac200e59,
+      to: 0xac200e59,
+    };
+    const [fixed] = repairMeshcoreRoomStoredPostPayloads([tapback]);
+    expect(fixed.payload).toBe('@[🛜 NV0N 01] 👋');
+  });
+
   it('repairs garbled room rows via repairMeshcoreHydratedMessages', () => {
     const authorPrefix = String.fromCharCode(0x93, 0x6c, 0x73, 0x49);
     const roomId = 0xac200e59;
@@ -64,6 +79,59 @@ describe('repairMeshcoreRoomStoredPostPayloads', () => {
   });
 });
 
+describe('repairMeshcoreRoomUnknownSenderNames', () => {
+  it('peer-fills Unknown room sender names from other posts with the same sender_id', () => {
+    const roomId = 0xac200e59;
+    const selfId = 1429514792;
+    const named: ChatMessage = {
+      sender_id: selfId,
+      sender_name: '🛜 NV0N 01',
+      payload: 'testing',
+      channel: MESHCORE_ROOM_MESSAGE_CHANNEL,
+      timestamp: 1,
+      roomServerId: roomId,
+      to: roomId,
+    };
+    const unknown: ChatMessage = {
+      sender_id: selfId,
+      sender_name: 'Unknown',
+      payload: 'Test 12:19',
+      channel: MESHCORE_ROOM_MESSAGE_CHANNEL,
+      timestamp: 2,
+      roomServerId: roomId,
+      to: roomId,
+    };
+    const [a, b] = repairMeshcoreRoomUnknownSenderNames([named, unknown]);
+    expect(a.sender_name).toBe('🛜 NV0N 01');
+    expect(b.sender_name).toBe('🛜 NV0N 01');
+  });
+
+  it('fills Unknown names via repairMeshcoreHydratedMessages peer pass', () => {
+    const roomId = 0xac200e59;
+    const selfId = 1429514792;
+    const named: ChatMessage = {
+      sender_id: selfId,
+      sender_name: '🛜 NV0N 01',
+      payload: 'testing',
+      channel: MESHCORE_ROOM_MESSAGE_CHANNEL,
+      timestamp: 1,
+      roomServerId: roomId,
+      to: roomId,
+    };
+    const unknown: ChatMessage = {
+      sender_id: selfId,
+      sender_name: 'Unknown',
+      payload: '@[🛜 NV0N 01] 👋',
+      channel: MESHCORE_ROOM_MESSAGE_CHANNEL,
+      timestamp: 2,
+      roomServerId: roomId,
+      to: roomId,
+    };
+    const fixed = repairMeshcoreHydratedMessages([named, unknown], new Set([roomId]));
+    expect(fixed[1]?.sender_name).toBe('🛜 NV0N 01');
+    expect(fixed[1]?.payload).toBe('@[🛜 NV0N 01] 👋');
+  });
+});
 describe('repairMeshcoreChatWireTailGarbage', () => {
   it('strips tail garbage from stored channel rows', () => {
     const tail = String.fromCharCode(0x93, 0x6c, 0x73, 0x49);
