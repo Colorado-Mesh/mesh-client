@@ -140,10 +140,10 @@ In Electron dev: open the **Reticulum** protocol pill (amber) → **Connection**
 
 #### Keep Rust and the sidecar current
 
-`pnpm run update` updates Node dependencies **and**, when `cargo` is available:
+`pnpm run update` updates Node dependencies and:
 
-1. Runs `rustup update` (or `brew upgrade rust` if you use Homebrew rust without rustup)
-2. Rebuilds the sidecar with `cargo build` in `reticulum-sidecar/`
+1. Syncs Flatpak vendored Electron archives to match `package.json` (`scripts/sync-flatpak-electron.mjs`)
+2. When `cargo` is available: runs `rustup update` (or `brew upgrade rust` if you use Homebrew rust without rustup) and rebuilds the sidecar with `cargo build` in `reticulum-sidecar/`
 
 **Scope:** `pnpm update` / `pnpm-lock.yaml` changes are **repo-local** (commit the lockfile on your branch). The sidecar rebuild writes only to gitignored `reticulum-sidecar/target/`. **Rust toolchain updates are not repo-scoped** — `rustup update` refreshes the toolchain in your user profile (`~/.rustup`, `~/.cargo/bin`), shared by any Rust project on the machine. The committed [`rust-toolchain.toml`](../reticulum-sidecar/rust-toolchain.toml) selects `stable` and required components for this crate; rustup applies it when you build or lint inside `reticulum-sidecar/`.
 

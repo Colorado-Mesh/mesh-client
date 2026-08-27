@@ -127,6 +127,17 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(upstreamCall).toBeGreaterThan(patchesCall);
   });
 
+  it('syncs Flatpak Electron archives after pnpm prune', () => {
+    expect(updateScript).toContain('sync_flatpak_electron()');
+    expect(updateScript).toContain('node scripts/sync-flatpak-electron.mjs');
+    const pruneIdx = updateScript.lastIndexOf("echo 'Running pnpm prune...'");
+    const syncCallIdx = updateScript.lastIndexOf('\nsync_flatpak_electron\n');
+    const rustIdx = updateScript.lastIndexOf('\nupdate_rust_toolchain\n');
+    expect(pruneIdx).toBeGreaterThanOrEqual(0);
+    expect(syncCallIdx).toBeGreaterThan(pruneIdx);
+    expect(rustIdx).toBeGreaterThan(syncCallIdx);
+  });
+
   const LXMFACE_REVIEWED_SHA = '308a729d5bf951880633e5e174b3b7628203106b';
 
   /**

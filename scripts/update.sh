@@ -97,6 +97,21 @@ update_rust_toolchain() {
   return 0
 }
 
+# Keep Flatpak offline Electron archives aligned with package.json (CI check:flatpak).
+# Idempotent when already in sync; fetches SHASUMS256.txt when Electron moved.
+sync_flatpak_electron() {
+  if [ ! -f 'scripts/sync-flatpak-electron.mjs' ]; then
+    echo 'scripts/sync-flatpak-electron.mjs missing — skipping Flatpak Electron sync.' >&2
+    return 0
+  fi
+  if ! command -v node > /dev/null 2>&1; then
+    echo 'Error: node is required to sync Flatpak Electron archives.' >&2
+    return 1
+  fi
+  echo 'Syncing Flatpak Electron vendored archives...'
+  node scripts/sync-flatpak-electron.mjs
+}
+
 # Rebuild Reticulum sidecar after dependency/toolchain updates
 rebuild_reticulum_sidecar() {
   if [ ! -f 'reticulum-sidecar/Cargo.toml' ]; then
@@ -755,6 +770,9 @@ pnpm install
 echo ''
 echo 'Running pnpm prune...'
 pnpm prune
+
+echo ''
+sync_flatpak_electron
 
 HAS_WARNING=0
 
