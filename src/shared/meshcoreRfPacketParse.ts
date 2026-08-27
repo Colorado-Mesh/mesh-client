@@ -26,19 +26,54 @@ export function meshCorePacketFingerprintHex(raw: Uint8Array): string {
 }
 
 /**
- * Path-invariant packet identity for matching a flood to its rebroadcasts.
+ * Path-invariant flood identity for matching a packet to its rebroadcasts.
  * Firmware `Packet::calculatePacketHash` is SHA-256(payload_type || payload) and **excludes**
- * the path — so hop growth does not change identity. We use CRC-32 of the same inputs for a
- * sync UI key (collision-safe inside the short heard-repeat window).
+ * the path — hop growth does not change identity. We keep a CRC-32 of the same inputs as a
+ * short lookup key, but equality always validates `payloadTypeNibble` + full `innerPayload`
+ * so a CRC collision cannot bind foreign traffic to the heard-repeat window.
  */
+export interface MeshCorePathInvariantPayloadId {
+  /** CRC-32 of (type||payload); display/lookup only — not authoritative alone. */
+  crcHex: string;
+  payloadTypeNibble: number;
+  innerPayload: Uint8Array;
+}
+
+export function meshCorePathInvariantPayloadId(
+  payloadTypeNibble: number,
+  innerPayload: Uint8Array,
+): MeshCorePathInvariantPayloadId {
+  const type = payloadTypeNibble & 0x0f;
+  const copy = new Uint8Array(innerPayload);
+  const buf = new Uint8Array(1 + copy.length);
+  buf[0] = type;
+  buf.set(copy, 1);
+  return {
+    crcHex: meshCorePacketFingerprintHex(buf),
+    payloadTypeNibble: type,
+    innerPayload: copy,
+  };
+}
+
+/** CRC-only form of {@link meshCorePathInvariantPayloadId} (tests / display). */
 export function meshCorePathInvariantPayloadIdHex(
   payloadTypeNibble: number,
   innerPayload: Uint8Array,
 ): string {
-  const buf = new Uint8Array(1 + innerPayload.length);
-  buf[0] = payloadTypeNibble & 0x0f;
-  buf.set(innerPayload, 1);
-  return meshCorePacketFingerprintHex(buf);
+  return meshCorePathInvariantPayloadId(payloadTypeNibble, innerPayload).crcHex;
+}
+
+export function meshCorePathInvariantPayloadIdsEqual(
+  a: MeshCorePathInvariantPayloadId,
+  b: MeshCorePathInvariantPayloadId,
+): boolean {
+  if (a.crcHex !== b.crcHex) return false;
+  if (a.payloadTypeNibble !== b.payloadTypeNibble) return false;
+  if (a.innerPayload.length !== b.innerPayload.length) return false;
+  for (let i = 0; i < a.innerPayload.length; i++) {
+    if (a.innerPayload[i] !== b.innerPayload[i]) return false;
+  }
+  return true;
 }
 
 export interface MeshCoreAdvertParsed {

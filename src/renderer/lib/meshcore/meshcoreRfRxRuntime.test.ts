@@ -462,6 +462,37 @@ describe('handleMeshcoreRfRx heard-repeat coverage', () => {
     expect(pathSpy).not.toHaveBeenCalled();
   });
 
+  it('binds empty-path GRP_TXT and rejects a later foreign payload path credit', () => {
+    const pathSpy = vi.spyOn(meshcorePathChainDisplay, 'buildMeshcorePathResolutionFromNodes');
+    const nodes = new Map<number, MeshNode>([
+      [REPEATER_88, makeNode(REPEATER_88, { hw_model: 'Repeater', long_name: 'Hill 88' })],
+    ]);
+    const { deps } = makeDeps({
+      myNodeNumRef: ref(1),
+      readNodes: () => nodes,
+    });
+    openHeardRepeatWindow(ID, MSG);
+
+    handleMeshcoreRfRx(
+      { lastSnr: 6, lastRssi: -50, raw: hexToU8(FLOOD_GRP_TXT_EMPTY_PATH_HEX) },
+      deps,
+    );
+
+    expect(useRelayCoverageStore.getState().coverageFor(ID, MSG)?.heardRepeaters).toEqual([]);
+    expect(pathSpy).not.toHaveBeenCalled();
+
+    // Different inner payload (flip last byte), same forwarder path — must not credit.
+    const foreignHex = `${FLOOD_GRP_TXT_HEX.slice(0, -2)}${(
+      (parseInt(FLOOD_GRP_TXT_HEX.slice(-2), 16) ^ 0xff) &
+      0xff
+    )
+      .toString(16)
+      .padStart(2, '0')}`;
+    handleMeshcoreRfRx({ lastSnr: 7, lastRssi: -48, raw: hexToU8(foreignHex) }, deps);
+
+    expect(useRelayCoverageStore.getState().coverageFor(ID, MSG)?.heardRepeaters).toEqual([]);
+  });
+
   it('skips path resolution when GRP_TXT path is empty even with an open window', () => {
     const pathSpy = vi.spyOn(meshcorePathChainDisplay, 'buildMeshcorePathResolutionFromNodes');
     const nodes = new Map<number, MeshNode>([

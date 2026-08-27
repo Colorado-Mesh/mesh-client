@@ -10,7 +10,7 @@ import type { Dispatch, RefObject, SetStateAction } from 'react';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import {
-  meshCorePathInvariantPayloadIdHex,
+  meshCorePathInvariantPayloadId,
   parseMeshCoreRfPacket,
 } from '../../../shared/meshcoreRfPacketParse';
 import { MAX_DEVICE_LOGS, MAX_TELEMETRY_POINTS } from '../../hooks/meshcore/meshcoreHookPreamble';
@@ -706,14 +706,34 @@ function applyMeshcoreHeardRepeatFromRfRx(
     isSelfRf || (effectiveFromNodeId != null && effectiveFromNodeId === myNodeNum);
   // GRP_TXT has no cleartext originator — still credit path hashes while a TX window is open.
   const treatAsOwnChannelFlood = ctx.payloadTypeString === 'GRP_TXT';
-  const payloadIdentityHex =
+  const payloadIdentity =
     ctx.parseOk && ctx.parsed.ok
-      ? meshCorePathInvariantPayloadIdHex(ctx.parsed.payloadTypeNibble, ctx.parsed.innerPayload)
+      ? meshCorePathInvariantPayloadId(ctx.parsed.payloadTypeNibble, ctx.parsed.innerPayload)
       : null;
   if (!isOwnMeshcoreTx && !treatAsOwnChannelFlood) return;
-  // Skip node-map path resolution when there is nothing to credit (empty path or no window).
-  if (ctx.pathBytes.length === 0) return;
   if (!hasOpenHeardRepeatWindow(identityId, now)) return;
+
+  // Empty-path channel flood: bind payload identity only (no path segments to credit).
+  if (ctx.pathBytes.length === 0) {
+    if (treatAsOwnChannelFlood || isOwnMeshcoreTx) {
+      recordMeshcoreRfRx({
+        identityId,
+        isOwnMeshcoreTx,
+        treatAsOwnChannelFlood,
+        pathBytes: [],
+        pathHashSizeBytes: ctx.pathHashSizeBytes,
+        myNodeNum,
+        myPubKey: selfPubKey,
+        payloadIdentity,
+        snr,
+        rssi,
+        now,
+        candidates: [],
+        resolveRepeater: () => null,
+      });
+    }
+    return;
+  }
 
   const nodes = deps.readNodes();
   const resolution = buildMeshcorePathResolutionFromNodes(nodes);
@@ -731,7 +751,7 @@ function applyMeshcoreHeardRepeatFromRfRx(
     pathHashSizeBytes: ctx.pathHashSizeBytes,
     myNodeNum,
     myPubKey: selfPubKey,
-    payloadIdentityHex,
+    payloadIdentity,
     snr,
     rssi,
     now,

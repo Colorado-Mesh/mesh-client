@@ -74,6 +74,7 @@ const REQUIRED_CAPABILITY_KEYS: (keyof ProtocolCapabilities)[] = [
   'hasFirmwareUpdateCheck',
   'dedupeQueueBadgeForLocalSending',
   'prefersDeviceOwnerLongNameInHeader',
+  'prefersDeviceDeliveryStatusOverMqtt',
   'hasReticulumInterfaceConfig',
   'hasReticulumNetworkPanel',
   'hasRNodeFlasher',
@@ -201,6 +202,7 @@ describe('ProtocolCapabilities contract', () => {
         "nodeListTabUsesPeersLabel": false,
         "nodeOfflineThresholdMs": 604800000,
         "nodeStaleThresholdMs": 7200000,
+        "prefersDeviceDeliveryStatusOverMqtt": false,
         "prefersDeviceOwnerLongNameInHeader": false,
         "protocol": "meshtastic",
       }
@@ -288,6 +290,7 @@ describe('ProtocolCapabilities contract', () => {
         "nodeListTabUsesPeersLabel": false,
         "nodeOfflineThresholdMs": 345600000,
         "nodeStaleThresholdMs": 172800000,
+        "prefersDeviceDeliveryStatusOverMqtt": true,
         "prefersDeviceOwnerLongNameInHeader": true,
         "protocol": "meshcore",
       }
@@ -382,6 +385,7 @@ describe('ProtocolCapabilities contract', () => {
         "nodeListTabUsesPeersLabel": true,
         "nodeOfflineThresholdMs": 2592000000,
         "nodeStaleThresholdMs": 604800000,
+        "prefersDeviceDeliveryStatusOverMqtt": false,
         "prefersDeviceOwnerLongNameInHeader": false,
         "protocol": "reticulum",
       }

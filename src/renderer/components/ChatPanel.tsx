@@ -135,6 +135,7 @@ import {
 } from '../lib/meshcoreConfiguredChatChannels';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { useRadioProvider } from '../lib/radio/providerFactory';
 import {
   emojiDisplayLabel,
   isReactionPickerEmojiGlyph,
@@ -611,6 +612,7 @@ function ChatPanel({
   onSendLocationWaypoint,
 }: ChatPanelProps) {
   const { t } = useTranslation();
+  const capabilities = useRadioProvider(protocol);
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const parentIconTrigger = useParentIconTrigger();
   const { addToast } = useToast();
@@ -3176,7 +3178,8 @@ function ChatPanel({
                                     deliveryMethod={msg.reticulumDeliveryMethod}
                                     error={msg.error}
                                   />
-                                ) : protocol === 'meshcore' && msg.status ? (
+                                ) : capabilities.prefersDeviceDeliveryStatusOverMqtt &&
+                                  msg.status ? (
                                   // Prefer RF/device delivery status over MQTT ✓ on MeshCore
                                   // (coverage line carries heard-by; MQTT badge was masking it).
                                   <MessageStatusBadge

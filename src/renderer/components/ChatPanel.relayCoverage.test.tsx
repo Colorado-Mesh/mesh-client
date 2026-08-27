@@ -481,4 +481,41 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
     );
     expect(screen.getByText('Heard by 1')).toBeInTheDocument();
   });
+
+  it('prefers MeshCore device status badge over MQTT when both are set', () => {
+    const now = Date.now();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          messages={[
+            {
+              storeId: 'mc-status-vs-mqtt',
+              sender_id: 7,
+              sender_name: 'Me',
+              payload: 'status check',
+              channel: 0,
+              timestamp: now,
+              status: 'acked',
+              mqttStatus: 'acked',
+            },
+          ]}
+          channels={[{ index: 0, name: 'Public' }]}
+          myNodeNum={7}
+          onSend={vi.fn()}
+          onReact={vi.fn().mockResolvedValue(undefined)}
+          onResend={vi.fn()}
+          onNodeClick={vi.fn()}
+          isConnected
+          nodes={new Map()}
+          isActive
+          protocol="meshcore"
+          identityId={IDENTITY}
+          connectionType="ble"
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByLabelText(/Device:.*delivered/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/MQTT:/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^MQTT /)).not.toBeInTheDocument();
+  });
 });

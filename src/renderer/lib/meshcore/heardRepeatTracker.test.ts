@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useRelayCoverageStore } from '@/renderer/lib/relayCoverage/relayCoverageStore';
 import { meshcoreNodeHash } from '@/shared/meshcoreNodeHash';
+import { meshCorePathInvariantPayloadId } from '@/shared/meshcoreRfPacketParse';
 
 import {
   clearHeardRepeatWindow,
@@ -21,6 +22,11 @@ const MSG_A = 'msg-a';
 const MSG_B = 'msg-b';
 /** Distinct XOR-fold hashes (1-byte path resolution). */
 const MY_NODE = 0x01020304; // hash 0x04
+
+function payloadId(tag: string) {
+  return meshCorePathInvariantPayloadId(5, new TextEncoder().encode(tag));
+}
+
 const REPEATER_ID = 0x0a0b0c0d; // hash 0x0a^0x0b^0x0c^0x0d = 0x00
 const ROOM_ID = 0x11223344; // hash 0x11^0x22^0x33^0x44 = 0x44
 const CHAT_ID = 0x55667788; // hash 0x55^0x66^0x77^0x88 = 0xcc
@@ -550,7 +556,7 @@ describe('heardRepeatTracker', () => {
       pathBytes: [],
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
-      payloadIdentityHex: 'AAAAAAAA',
+      payloadIdentity: payloadId('AAAAAAAA'),
       candidates,
       resolveRepeater,
     });
@@ -561,7 +567,7 @@ describe('heardRepeatTracker', () => {
       pathBytes: floodPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
-      payloadIdentityHex: 'BBBBBBBB',
+      payloadIdentity: payloadId('BBBBBBBB'),
       candidates,
       resolveRepeater,
     });
@@ -575,7 +581,7 @@ describe('heardRepeatTracker', () => {
       pathBytes: floodPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
-      payloadIdentityHex: 'AAAAAAAA',
+      payloadIdentity: payloadId('AAAAAAAA'),
       candidates,
       resolveRepeater,
     });
@@ -643,7 +649,7 @@ describe('heardRepeatTracker', () => {
       pathBytes: floodPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
-      payloadIdentityHex: 'FOREIGN01',
+      payloadIdentity: payloadId('FOREIGN01'),
       candidates,
       resolveRepeater,
     });
@@ -654,7 +660,7 @@ describe('heardRepeatTracker', () => {
       pathBytes: floodPath(hashByte(ROOM_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
-      payloadIdentityHex: 'OWNMSG02',
+      payloadIdentity: payloadId('OWNMSG02'),
       candidates,
       resolveRepeater,
     });
@@ -696,6 +702,13 @@ describe('heardRepeatTracker', () => {
     expect(isSyntheticHeardNodeId(REPEATER_ID)).toBe(false);
   });
 
+  it('does not treat unsigned high-bit real node ids as synthetic', () => {
+    const highBitReal = 0x80000001 >>> 0;
+    expect(highBitReal).toBeGreaterThan(0);
+    expect(isSyntheticHeardNodeId(highBitReal)).toBe(false);
+    expect(isSyntheticHeardNodeId(-1)).toBe(true);
+  });
+
   it('binds payload identity from empty-path channel flood echo', () => {
     openHeardRepeatWindow(IDENTITY, MSG_A);
     recordMeshcoreRfRx({
@@ -705,7 +718,7 @@ describe('heardRepeatTracker', () => {
       pathBytes: [],
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
-      payloadIdentityHex: 'EMPTYPATH',
+      payloadIdentity: payloadId('EMPTYPATH'),
       candidates,
       resolveRepeater,
     });
@@ -716,7 +729,7 @@ describe('heardRepeatTracker', () => {
       pathBytes: floodPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
-      payloadIdentityHex: 'OTHERFLOD',
+      payloadIdentity: payloadId('OTHERFLOD'),
       candidates,
       resolveRepeater,
     });

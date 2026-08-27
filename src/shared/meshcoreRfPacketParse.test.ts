@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   meshCorePacketFingerprintHex,
+  meshCorePathInvariantPayloadId,
   meshCorePathInvariantPayloadIdHex,
+  meshCorePathInvariantPayloadIdsEqual,
   meshCoreTransportCodeForRegion,
   parseMeshCoreRfPacket,
 } from './meshcoreRfPacketParse';
@@ -132,8 +134,24 @@ describe('parseMeshCoreRfPacket', () => {
     expect(meshCorePathInvariantPayloadIdHex(a.payloadTypeNibble, a.innerPayload)).toBe(
       meshCorePathInvariantPayloadIdHex(b.payloadTypeNibble, b.innerPayload),
     );
+    expect(
+      meshCorePathInvariantPayloadIdsEqual(
+        meshCorePathInvariantPayloadId(a.payloadTypeNibble, a.innerPayload),
+        meshCorePathInvariantPayloadId(b.payloadTypeNibble, b.innerPayload),
+      ),
+    ).toBe(true);
     // Full-raw CRC fingerprint changes with path; identity must not.
     expect(a.messageFingerprintHex).not.toBe(b.messageFingerprintHex);
+  });
+
+  it('rejects payload identity equality when only CRC would collide without full bytes', () => {
+    const a = meshCorePathInvariantPayloadId(5, new Uint8Array([1, 2, 3]));
+    const spoof: ReturnType<typeof meshCorePathInvariantPayloadId> = {
+      crcHex: a.crcHex,
+      payloadTypeNibble: 5,
+      innerPayload: new Uint8Array([9, 9, 9]),
+    };
+    expect(meshCorePathInvariantPayloadIdsEqual(a, spoof)).toBe(false);
   });
 });
 

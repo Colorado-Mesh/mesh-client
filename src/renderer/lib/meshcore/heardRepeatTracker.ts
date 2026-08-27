@@ -3,6 +3,10 @@ import { useRelayCoverageStore } from '@/renderer/lib/relayCoverage/relayCoverag
 import type { IdentityId } from '@/renderer/lib/types';
 import { meshcoreNodeHash, type NodeHashCandidate } from '@/shared/meshcoreNodeHash';
 import { meshcoreSplitPathHashSegments } from '@/shared/meshcorePathHash';
+import {
+  type MeshCorePathInvariantPayloadId,
+  meshCorePathInvariantPayloadIdsEqual,
+} from '@/shared/meshcoreRfPacketParse';
 
 /** Window after a channel TX during which we credit rebroadcasts to that message.
  * Large meshes often need ≥60s for multi-hop floods to return; keep headroom. */
@@ -21,7 +25,7 @@ interface PendingWindow {
    * Path-invariant flood id (type||payload). Bound from empty-path / own TX when seen;
    * once set, only matching rebroadcasts credit (blocks concurrent foreign GRP_TXT).
    */
-  payloadIdentityHex?: string;
+  payloadIdentity?: MeshCorePathInvariantPayloadId;
 }
 
 /** Latest open listen window per identity. */
@@ -160,12 +164,13 @@ export function syntheticHeardNodeIdFromPathSegment(segment: Uint8Array): number
     h ^= byte;
     h = Math.imul(h, 0x01000193);
   }
+  // Force signed high bit → always negative in JS (real node ids use >>> 0, so ≥ 0).
   return h | 0x80000000 | 0;
 }
 
-/** True when `nodeId` was minted by {@link syntheticHeardNodeIdFromPathSegment} (signed high bit). */
+/** True when `nodeId` was minted by {@link syntheticHeardNodeIdFromPathSegment} (negative). */
 export function isSyntheticHeardNodeId(nodeId: number): boolean {
-  return nodeId >>> 0 >= 0x80000000;
+  return nodeId < 0;
 }
 
 function pathSegmentHex(segment: Uint8Array): string {
@@ -210,11 +215,11 @@ export interface RecordMeshcoreRfRxArgs {
   /** Used to skip self on path segments; prefer pubkey prefix over XOR-fold. */
   myPubKey?: Uint8Array | null;
   /**
-   * Path-invariant flood id ({@link meshCorePathInvariantPayloadIdHex}). When the
+   * Path-invariant flood id ({@link MeshCorePathInvariantPayloadId}). When the
    * window already bound an id, mismatched packets are ignored (foreign floods).
    * Empty-path / own TX binds the id for later rebroadcasts.
    */
-  payloadIdentityHex?: string | null;
+  payloadIdentity?: MeshCorePathInvariantPayloadId | null;
   snr?: number;
   rssi?: number;
   now?: number;
@@ -242,7 +247,7 @@ export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
     pathHashSizeBytes,
     myNodeNum,
     myPubKey,
-    payloadIdentityHex,
+    payloadIdentity,
     snr,
     rssi,
     candidates,
@@ -254,20 +259,21 @@ export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
   const window = activeWindow(identityId, now);
   if (!window) return;
 
-  const incomingId =
-    typeof payloadIdentityHex === 'string' && payloadIdentityHex.length > 0
-      ? payloadIdentityHex.toUpperCase()
-      : null;
+  const incomingId = payloadIdentity ?? null;
   // Bind only from own-TX or empty-path channel echo — never from first credited hop.
   const canBindIdentity =
     Boolean(incomingId) &&
-    !window.payloadIdentityHex &&
+    !window.payloadIdentity &&
     (isOwnMeshcoreTx || (Boolean(treatAsOwnChannelFlood) && pathBytes.length === 0));
   if (canBindIdentity && incomingId) {
-    window.payloadIdentityHex = incomingId;
+    window.payloadIdentity = incomingId;
     pendingByIdentity.set(identityId, { ...window });
   }
-  if (window.payloadIdentityHex && incomingId && window.payloadIdentityHex !== incomingId) {
+  if (
+    window.payloadIdentity &&
+    incomingId &&
+    !meshCorePathInvariantPayloadIdsEqual(window.payloadIdentity, incomingId)
+  ) {
     return;
   }
 
