@@ -724,7 +724,9 @@
     "routeRelaysPredictedHopsOnly": "Rute: ~{{count}} relai",
     "heardByRepeatersDetail_one": "Didengar oleh {{count}}: {{names}}",
     "heardByRepeatersDetail_other": "Didengar oleh {{count}}: {{names}}",
-    "heardByRepeaterNodeFallback": "Node {{nodeId}}"
+    "heardByRepeaterNodeFallback": "Node {{nodeId}}",
+    "heardByRepeatersAdditional_one": "{{count}} forwarder tak dikenal tambahan (hash: {{hashes}})",
+    "heardByRepeatersAdditional_other": "{{count}} forwarder tak dikenal tambahan (hash: {{hashes}})"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

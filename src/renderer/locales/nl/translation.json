@@ -724,7 +724,9 @@
     "routeRelaysPredictedHopsOnly": "Route: ~{{count}} relais",
     "heardByRepeatersDetail_one": "Gehoord door {{count}}: {{names}}",
     "heardByRepeatersDetail_other": "Gehoord door {{count}}: {{names}}",
-    "heardByRepeaterNodeFallback": "Knooppunt {{nodeId}}"
+    "heardByRepeaterNodeFallback": "Knooppunt {{nodeId}}",
+    "heardByRepeatersAdditional_one": "{{count}} extra niet-geïdentificeerde expediteur (hashes: {{hashes}})",
+    "heardByRepeatersAdditional_other": "{{count}} extra niet-geïdentificeerde expediteurs (hashes: {{hashes}})"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

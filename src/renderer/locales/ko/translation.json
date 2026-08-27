@@ -724,7 +724,9 @@
     "routeRelaysPredictedHopsOnly": "경로: ~{{count}} 릴레이",
     "heardByRepeatersDetail_one": "{{count}}개 수신: {{names}}",
     "heardByRepeatersDetail_other": "{{count}}개 수신: {{names}}",
-    "heardByRepeaterNodeFallback": "노드 {{nodeId}}"
+    "heardByRepeaterNodeFallback": "노드 {{nodeId}}",
+    "heardByRepeatersAdditional_one": "{{count}} 추가 미확인 전달자 (해시: {{hashes}})",
+    "heardByRepeatersAdditional_other": "{{count}} 추가 미확인 전달자 (해시: {{hashes}})"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

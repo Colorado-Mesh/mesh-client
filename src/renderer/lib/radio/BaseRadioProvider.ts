@@ -128,6 +128,11 @@ export interface ProtocolCapabilities {
   dedupeQueueBadgeForLocalSending: boolean;
   /** Header self-node label prefers deviceOwner.longName over picker label */
   prefersDeviceOwnerLongNameInHeader: boolean;
+  /**
+   * Chat: when an own message has both device `status` and `mqttStatus`, show only the
+   * device badge (MeshCore — MQTT ✓ was masking RF heard-by). Meshtastic keeps dual badges.
+   */
+  prefersDeviceDeliveryStatusOverMqtt: boolean;
   /** Meshtastic-centric routing/RF diagnostics (Hop Goblins, CU, foreign LoRa). */
   hasDiagnosticsPanel: boolean;
   /** Reticulum: Connection panel interface editor (TCP, Auto, serial) */
@@ -229,6 +234,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasFirmwareUpdateCheck: true,
   dedupeQueueBadgeForLocalSending: true,
   prefersDeviceOwnerLongNameInHeader: false,
+  prefersDeviceDeliveryStatusOverMqtt: false,
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
@@ -310,6 +316,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasFirmwareUpdateCheck: true,
   dedupeQueueBadgeForLocalSending: false,
   prefersDeviceOwnerLongNameInHeader: true,
+  prefersDeviceDeliveryStatusOverMqtt: true,
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
@@ -390,6 +397,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasFirmwareUpdateCheck: false,
   dedupeQueueBadgeForLocalSending: false,
   prefersDeviceOwnerLongNameInHeader: false,
+  prefersDeviceDeliveryStatusOverMqtt: false,
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: true,
   hasReticulumNetworkPanel: true,

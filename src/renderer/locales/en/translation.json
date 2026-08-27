@@ -501,6 +501,8 @@
     "heardByRepeaters_other": "Heard by {{count}}",
     "heardByRepeatersDetail_one": "Heard by {{count}}: {{names}}",
     "heardByRepeatersDetail_other": "Heard by {{count}}: {{names}}",
+    "heardByRepeatersAdditional_one": "{{count}} additional unidentified forwarder (hashes: {{hashes}})",
+    "heardByRepeatersAdditional_other": "{{count}} additional unidentified forwarders (hashes: {{hashes}})",
     "heardByRepeaterNodeFallback": "Node {{nodeId}}",
     "heardByNetwork": "Heard by network",
     "notHeardTimeout": "Not heard (timeout)",

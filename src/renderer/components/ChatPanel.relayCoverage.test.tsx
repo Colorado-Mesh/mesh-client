@@ -104,6 +104,20 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
     expect(screen.getByLabelText(/Alpha.*Beta/)).toBeInTheDocument();
   });
 
+  it('renders MeshCore additional unidentified forwarders in tooltip', () => {
+    useRelayCoverageStore.getState().set(IDENTITY, MSG, {
+      protocol: 'meshcore',
+      mode: 'confirmed',
+      heardRepeaters: [
+        { nodeId: 1, name: 'NamedRep' },
+        { nodeId: -1234567890, name: '0647' },
+      ],
+    });
+    render(<RelayCoverageLine protocol="meshcore" messageId={MSG} isOwn identityId={IDENTITY} />);
+    expect(screen.getByText('Heard by 2')).toBeInTheDocument();
+    expect(screen.getByLabelText(/additional unidentified forwarder.*0647/i)).toBeInTheDocument();
+  });
+
   it('hides MeshCore line when heardRepeaters empty', () => {
     useRelayCoverageStore.getState().set(IDENTITY, MSG, {
       protocol: 'meshcore',
@@ -466,5 +480,42 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
       </ToastProvider>,
     );
     expect(screen.getByText('Heard by 1')).toBeInTheDocument();
+  });
+
+  it('prefers MeshCore device status badge over MQTT when both are set', () => {
+    const now = Date.now();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          messages={[
+            {
+              storeId: 'mc-status-vs-mqtt',
+              sender_id: 7,
+              sender_name: 'Me',
+              payload: 'status check',
+              channel: 0,
+              timestamp: now,
+              status: 'acked',
+              mqttStatus: 'acked',
+            },
+          ]}
+          channels={[{ index: 0, name: 'Public' }]}
+          myNodeNum={7}
+          onSend={vi.fn()}
+          onReact={vi.fn().mockResolvedValue(undefined)}
+          onResend={vi.fn()}
+          onNodeClick={vi.fn()}
+          isConnected
+          nodes={new Map()}
+          isActive
+          protocol="meshcore"
+          identityId={IDENTITY}
+          connectionType="ble"
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByLabelText(/Device:.*delivered/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/MQTT:/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^MQTT /)).not.toBeInTheDocument();
   });
 });
