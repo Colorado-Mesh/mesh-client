@@ -105,12 +105,12 @@ modules:
         strip-components: 0
         only-arches: [aarch64]
       - type: archive
-        url: https://github.com/electron/electron/releases/download/v41.10.6/electron-v41.10.6-linux-x64.zip
-        sha256: a27291d502b16170fe49d14beab68c4d9a1040192500e1643a9ab0b11274f075
+        url: https://github.com/electron/electron/releases/download/v41.10.7/electron-v41.10.7-linux-x64.zip
+        sha256: 21bf93906685c77f350f618d034f33202f0764aabbfc204e6b724f82196537f9
         dest: electron-prebuilt
         only-arches: [x86_64]
       - type: archive
-        url: https://github.com/electron/electron/releases/download/v41.10.6/electron-v41.10.6-linux-arm64.zip
-        sha256: 9dbb040d575c33f8b2d2ab944e429979b01b5261c0240cff4749892be1bc56ea
+        url: https://github.com/electron/electron/releases/download/v41.10.7/electron-v41.10.7-linux-arm64.zip
+        sha256: b2b6528212e1e832889ea1493050ff5be04525cc2b8cb10161dfce83dd502c1f
         dest: electron-prebuilt
         only-arches: [aarch64]
