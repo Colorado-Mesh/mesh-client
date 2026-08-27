@@ -726,7 +726,9 @@
     "routeRelaysPredictedHopsOnly": "Trasa: ~{{count}} relé",
     "heardByRepeatersDetail_one": "Slyšeno {{count}}: {{names}}",
     "heardByRepeatersDetail_other": "Slyšeno {{count}}: {{names}}",
-    "heardByRepeaterNodeFallback": "Uzel {{nodeId}}"
+    "heardByRepeaterNodeFallback": "Uzel {{nodeId}}",
+    "heardByRepeatersAdditional_one": "{{count}} další neidentifikovaný odesílatel (hash: {{hashes}})",
+    "heardByRepeatersAdditional_other": "{{count}} další neidentifikovaní přeposílatelé (hash: {{hashes}})"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

@@ -3176,6 +3176,15 @@ function ChatPanel({
                                     deliveryMethod={msg.reticulumDeliveryMethod}
                                     error={msg.error}
                                   />
+                                ) : protocol === 'meshcore' && msg.status ? (
+                                  // Prefer RF/device delivery status over MQTT ✓ on MeshCore
+                                  // (coverage line carries heard-by; MQTT badge was masking it).
+                                  <MessageStatusBadge
+                                    status={msg.status}
+                                    transport="device"
+                                    connectionType={connectionType}
+                                    error={msg.error}
+                                  />
                                 ) : msg.mqttStatus ? (
                                   <>
                                     <MessageStatusBadge status={msg.mqttStatus} transport="mqtt" />

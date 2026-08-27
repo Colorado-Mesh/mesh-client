@@ -4,8 +4,9 @@ import type { IdentityId } from '@/renderer/lib/types';
 import { meshcoreNodeHash, type NodeHashCandidate } from '@/shared/meshcoreNodeHash';
 import { meshcoreSplitPathHashSegments } from '@/shared/meshcorePathHash';
 
-/** Window after a channel TX during which we credit rebroadcasts to that message. */
-export const MESHCORE_HEARD_REPEAT_WINDOW_MS = 20_000;
+/** Window after a channel TX during which we credit rebroadcasts to that message.
+ * Large meshes often need ≥60s for multi-hop floods to return; keep headroom. */
+export const MESHCORE_HEARD_REPEAT_WINDOW_MS = 120_000;
 
 export type MeshcoreHashSizeBytes = 1 | 2 | 3;
 
@@ -16,6 +17,11 @@ interface PendingWindow {
   identityId: IdentityId;
   openedAt: number;
   windowMs: number;
+  /**
+   * Path-invariant flood id (type||payload). Bound from empty-path / own TX when seen;
+   * once set, only matching rebroadcasts credit (blocks concurrent foreign GRP_TXT).
+   */
+  payloadIdentityHex?: string;
 }
 
 /** Latest open listen window per identity. */
@@ -125,9 +131,15 @@ export function listMeshcorePathPrefixMatches(
 
   const matches: NodeHashCandidate[] = [];
   if (prefixBytes.length === 1) {
+    // Air format: 1-byte path hash = first pubkey byte. XOR-fold of node_id is fallback only.
     const prefix = prefixBytes[0] & 0xff;
     for (const node of candidates) {
-      if (meshcoreNodeHash(node.node_id) === prefix) matches.push(node);
+      const pubKey = pubKeyByNodeId?.get(node.node_id);
+      if (pubKey && pubKey.length > 0) {
+        if ((pubKey[0] & 0xff) === prefix) matches.push(node);
+      } else if (meshcoreNodeHash(node.node_id) === prefix) {
+        matches.push(node);
+      }
     }
   } else {
     for (const node of candidates) {
@@ -151,7 +163,20 @@ export function syntheticHeardNodeIdFromPathSegment(segment: Uint8Array): number
   return h | 0x80000000 | 0;
 }
 
-/** True when the first on-air path segment is this node's routing hash. */
+/** True when `nodeId` was minted by {@link syntheticHeardNodeIdFromPathSegment} (signed high bit). */
+export function isSyntheticHeardNodeId(nodeId: number): boolean {
+  return nodeId >>> 0 >= 0x80000000;
+}
+
+function pathSegmentHex(segment: Uint8Array): string {
+  return Array.from(segment, (b) => (b & 0xff).toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * True when a path segment matches this node's routing hash.
+ * MeshCore flood paths do **not** include the originator — only forwarders append
+ * hashes — so this is used to skip self if it ever appears, not as an origin gate.
+ */
 export function meshcorePathOriginIsSelf(
   firstSegment: Uint8Array,
   myNodeNum: number,
@@ -160,6 +185,9 @@ export function meshcorePathOriginIsSelf(
 ): boolean {
   if (firstSegment.length === 0) return false;
   if (pathHashSizeBytes === 1) {
+    if (myPubKey && myPubKey.length > 0) {
+      return (firstSegment[0] & 0xff) === (myPubKey[0] & 0xff);
+    }
     return (firstSegment[0] & 0xff) === meshcoreNodeHash(myNodeNum);
   }
   if (!myPubKey || myPubKey.length < pathHashSizeBytes) return false;
@@ -172,25 +200,38 @@ export interface RecordMeshcoreRfRxArgs {
   /**
    * GRP_TXT channel floods do not carry a cleartext originator pubkey, so
    * `isOwnMeshcoreTx` is usually false on repeater overhears. When true and a
-   * listen window is open, credit Repeater/Room hops after a self-origin path prefix.
+   * listen window is open, credit Repeater/Room hashes in the flood path
+   * (forwarders only — MeshCore never puts the originator in `path`).
    */
   treatAsOwnChannelFlood?: boolean;
   pathBytes: readonly number[];
   pathHashSizeBytes: MeshcoreHashSizeBytes;
   myNodeNum: number;
-  /** Required for 2/3-byte path origin checks; optional for 1-byte XOR-fold paths. */
+  /** Used to skip self on path segments; prefer pubkey prefix over XOR-fold. */
   myPubKey?: Uint8Array | null;
+  /**
+   * Path-invariant flood id ({@link meshCorePathInvariantPayloadIdHex}). When the
+   * window already bound an id, mismatched packets are ignored (foreign floods).
+   * Empty-path / own TX binds the id for later rebroadcasts.
+   */
+  payloadIdentityHex?: string | null;
   snr?: number;
   rssi?: number;
   now?: number;
   candidates: readonly NodeHashCandidate[];
   pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
-  /** Repeater/Room only; return null for other roles. */
+  /** Repeater/Room only; return null for other roles (Chat / users are never credited). */
   resolveRepeater: (nodeId: number) => MeshcoreHeardRepeater | null;
 }
 
 /**
- * Credit foreign path hashes on a self-originated / channel-flood RF overhear to the open TX window.
+ * Credit flood-path forwarder hashes on a channel-flood / own-TX RF overhear to the open TX window.
+ *
+ * Correlation:
+ * - Bind path-invariant payload id only from own-TX echo or empty-path channel flood (never from
+ *   the first credited hop — that races with foreign GRP_TXT).
+ * - Once bound, mismatched ids are ignored; unbound windows credit all window GRP_TXT forwarders
+ *   (pre-#888 best-effort; Chat hops still excluded).
  */
 export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
   const {
@@ -201,6 +242,7 @@ export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
     pathHashSizeBytes,
     myNodeNum,
     myPubKey,
+    payloadIdentityHex,
     snr,
     rssi,
     candidates,
@@ -211,12 +253,28 @@ export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
   if (!isOwnMeshcoreTx && !treatAsOwnChannelFlood) return;
   const window = activeWindow(identityId, now);
   if (!window) return;
+
+  const incomingId =
+    typeof payloadIdentityHex === 'string' && payloadIdentityHex.length > 0
+      ? payloadIdentityHex.toUpperCase()
+      : null;
+  // Bind only from own-TX or empty-path channel echo — never from first credited hop.
+  const canBindIdentity =
+    Boolean(incomingId) &&
+    !window.payloadIdentityHex &&
+    (isOwnMeshcoreTx || (Boolean(treatAsOwnChannelFlood) && pathBytes.length === 0));
+  if (canBindIdentity && incomingId) {
+    window.payloadIdentityHex = incomingId;
+    pendingByIdentity.set(identityId, { ...window });
+  }
+  if (window.payloadIdentityHex && incomingId && window.payloadIdentityHex !== incomingId) {
+    return;
+  }
+
   if (pathBytes.length === 0) return;
 
   const segments = meshcoreSplitPathHashSegments(pathBytes, pathHashSizeBytes);
-  const origin = segments.at(0);
-  if (!origin || segments.length < 2) return;
-  if (!meshcorePathOriginIsSelf(origin, myNodeNum, pathHashSizeBytes, myPubKey)) return;
+  if (segments.length === 0) return;
 
   const prev =
     useRelayCoverageStore.getState().coverageFor(identityId, window.messageId)?.heardRepeaters ??
@@ -224,17 +282,32 @@ export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
   const byId = new Map<number, HeardRepeater>(prev.map((r) => [r.nodeId, r]));
   let changed = false;
 
-  for (const segment of segments.slice(1)) {
+  for (const segment of segments) {
     const matches = listMeshcorePathPrefixMatches(segment, candidates, pubKeyByNodeId);
     let credited: MeshcoreHeardRepeater | null = null;
+    let skippedSelf = false;
 
     for (const nodeId of matches) {
-      if (nodeId === myNodeNum) continue;
+      if (nodeId === myNodeNum) {
+        skippedSelf = true;
+        continue;
+      }
       const repeater = resolveRepeater(nodeId);
       if (repeater) {
         credited = repeater;
         break;
       }
+    }
+    if (!credited && meshcorePathOriginIsSelf(segment, myNodeNum, pathHashSizeBytes, myPubKey)) {
+      skippedSelf = true;
+    }
+    // Flood path hops are forwarders. Unresolved hashes still prove network reach.
+    if (!credited && !skippedSelf && matches.length === 0 && segment.length > 0) {
+      const hex = pathSegmentHex(segment);
+      credited = {
+        nodeId: syntheticHeardNodeIdFromPathSegment(segment),
+        name: hex,
+      };
     }
     if (!credited) continue;
 

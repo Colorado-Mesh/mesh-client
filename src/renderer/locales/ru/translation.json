@@ -726,7 +726,9 @@
     "routeRelaysPredictedHopsOnly": "Маршрут: ~{{count}} реле",
     "heardByRepeatersDetail_one": "Услышали {{count}}: {{names}}",
     "heardByRepeatersDetail_other": "Услышали {{count}}: {{names}}",
-    "heardByRepeaterNodeFallback": "Узел {{nodeId}}"
+    "heardByRepeaterNodeFallback": "Узел {{nodeId}}",
+    "heardByRepeatersAdditional_one": "{{count}} дополнительный неопознанный экспедитор (хэши: {{hashes}})",
+    "heardByRepeatersAdditional_other": "{{count}} дополнительные неопознанные экспедиторы (хеши: {{hashes}})"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

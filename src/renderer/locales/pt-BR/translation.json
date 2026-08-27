@@ -724,7 +724,9 @@
     "routeRelaysPredictedHopsOnly": "Rota: ~{{count}} relés",
     "heardByRepeatersDetail_one": "Ouvido por {{count}}: {{names}}",
     "heardByRepeatersDetail_other": "Ouvido por {{count}}: {{names}}",
-    "heardByRepeaterNodeFallback": "Nó {{nodeId}}"
+    "heardByRepeaterNodeFallback": "Nó {{nodeId}}",
+    "heardByRepeatersAdditional_one": "{{count}} encaminhador adicional não identificado (hashes: {{hashes}})",
+    "heardByRepeatersAdditional_other": "{{count}} encaminhadores adicionais não identificados (hashes: {{hashes}})"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

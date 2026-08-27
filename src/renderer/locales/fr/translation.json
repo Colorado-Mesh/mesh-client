@@ -724,7 +724,9 @@
     "routeRelaysPredictedHopsOnly": "Itinéraire : ~{{count}} relais",
     "heardByRepeatersDetail_one": "Entendu par {{count}} : {{names}}",
     "heardByRepeatersDetail_other": "Entendu par {{count}} : {{names}}",
-    "heardByRepeaterNodeFallback": "Nœud {{nodeId}}"
+    "heardByRepeaterNodeFallback": "Nœud {{nodeId}}",
+    "heardByRepeatersAdditional_one": "{{count}} expéditeur supplémentaire non identifié (hachages : {{hashes}})",
+    "heardByRepeatersAdditional_other": "{{count}} expéditeurs supplémentaires non identifiés (hachages : {{hashes}})"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

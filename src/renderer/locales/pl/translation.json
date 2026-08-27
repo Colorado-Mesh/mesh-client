@@ -728,7 +728,9 @@
     "routeRelaysPredictedHopsOnly": "Trasa: ~{{count}} przekaźniki",
     "heardByRepeatersDetail_one": "Odebrano przez {{count}}: {{names}}",
     "heardByRepeatersDetail_other": "Odebrano przez {{count}}: {{names}}",
-    "heardByRepeaterNodeFallback": "Węzeł {{nodeId}}"
+    "heardByRepeaterNodeFallback": "Węzeł {{nodeId}}",
+    "heardByRepeatersAdditional_one": "{{count}} dodatkowy niezidentyfikowany spedytor (skróty: {{hashes}})",
+    "heardByRepeatersAdditional_other": "{{count}} dodatkowych niezidentyfikowanych spedytorów (skróty: {{hashes}})"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

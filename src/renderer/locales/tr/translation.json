@@ -724,7 +724,9 @@
     "routeRelaysPredictedHopsOnly": "Güzergah: ~{{count}} röleler",
     "heardByRepeatersDetail_one": "{{count}} tarafından duyuldu: {{names}}",
     "heardByRepeatersDetail_other": "{{count}} tarafından duyuldu: {{names}}",
-    "heardByRepeaterNodeFallback": "Düğüm {{nodeId}}"
+    "heardByRepeaterNodeFallback": "Düğüm {{nodeId}}",
+    "heardByRepeatersAdditional_one": "{{count}} EK tanımlanamayan nakliyeci (hash'ler: {{hashes}})",
+    "heardByRepeatersAdditional_other": "{{count}} kimliği belirsiz ek göndericiler (hash'ler: {{hashes}})"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

@@ -25,6 +25,22 @@ export function meshCorePacketFingerprintHex(raw: Uint8Array): string {
   return ((crc ^ 0xffffffff) >>> 0).toString(16).padStart(8, '0').toUpperCase();
 }
 
+/**
+ * Path-invariant packet identity for matching a flood to its rebroadcasts.
+ * Firmware `Packet::calculatePacketHash` is SHA-256(payload_type || payload) and **excludes**
+ * the path — so hop growth does not change identity. We use CRC-32 of the same inputs for a
+ * sync UI key (collision-safe inside the short heard-repeat window).
+ */
+export function meshCorePathInvariantPayloadIdHex(
+  payloadTypeNibble: number,
+  innerPayload: Uint8Array,
+): string {
+  const buf = new Uint8Array(1 + innerPayload.length);
+  buf[0] = payloadTypeNibble & 0x0f;
+  buf.set(innerPayload, 1);
+  return meshCorePacketFingerprintHex(buf);
+}
+
 export interface MeshCoreAdvertParsed {
   publicKey: Uint8Array;
   timestampSec: number;

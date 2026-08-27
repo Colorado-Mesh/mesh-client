@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
+import { isSyntheticHeardNodeId } from '@/renderer/lib/meshcore/heardRepeatTracker';
 import {
   type HeardRepeater,
   type RelayCoverage,
@@ -14,20 +15,47 @@ function MeshcoreHeardLine({ coverage }: { coverage: RelayCoverage }): ReactElem
   const { t } = useTranslation();
   const heard = coverage.heardRepeaters ?? [];
   if (heard.length === 0) return null;
+
+  const named: HeardRepeater[] = [];
+  const additional: HeardRepeater[] = [];
+  for (const r of heard) {
+    if (isSyntheticHeardNodeId(r.nodeId)) additional.push(r);
+    else named.push(r);
+  }
+
   const fallback = (r: HeardRepeater) =>
     r.name?.trim() || t('chatPanel.heardByRepeaterNodeFallback', { nodeId: r.nodeId });
-  const names = heard.map(fallback).join(', ');
-  const detail = heard
+  const namedDetail = named
     .map((r) => {
       const label = fallback(r);
       return r.snr != null ? `${label} (${r.snr} dB)` : label;
     })
     .join('; ');
+  const hashes = additional
+    .map((r) => r.name?.trim() || fallback(r))
+    .filter(Boolean)
+    .join(', ');
+
   const label = t('chatPanel.heardByRepeaters', { count: heard.length });
-  const detailLabel = t('chatPanel.heardByRepeatersDetail', {
-    count: heard.length,
-    names: detail || names,
-  });
+  const parts: string[] = [];
+  if (named.length > 0) {
+    parts.push(
+      t('chatPanel.heardByRepeatersDetail', {
+        count: named.length,
+        names: namedDetail,
+      }),
+    );
+  }
+  if (additional.length > 0) {
+    parts.push(
+      t('chatPanel.heardByRepeatersAdditional', {
+        count: additional.length,
+        hashes,
+      }),
+    );
+  }
+  const detailLabel = parts.join(' · ') || label;
+
   return (
     <span className="text-xs text-green-400" aria-label={detailLabel} title={detailLabel}>
       {label}

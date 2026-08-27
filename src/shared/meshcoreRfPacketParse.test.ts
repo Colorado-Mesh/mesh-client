@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   meshCorePacketFingerprintHex,
+  meshCorePathInvariantPayloadIdHex,
   meshCoreTransportCodeForRegion,
   parseMeshCoreRfPacket,
 } from './meshcoreRfPacketParse';
@@ -117,6 +118,22 @@ describe('parseMeshCoreRfPacket', () => {
     if (!p.ok) return;
     expect(p.payloadTypeNibble).toBe(15);
     expect(p.payloadTypeString).toBe('RAW_CUSTOM');
+  });
+
+  it('path-invariant payload id is stable when path grows', () => {
+    const withPath = hexToU8(FLOOD_GRP_TXT_HEX);
+    const emptyPath = hexToU8(`1500${FLOOD_GRP_TXT_HEX.slice(8)}`);
+    const a = parseMeshCoreRfPacket(withPath);
+    const b = parseMeshCoreRfPacket(emptyPath);
+    expect(a.ok && b.ok).toBe(true);
+    if (!a.ok || !b.ok) return;
+    expect(a.pathBytes.length).toBeGreaterThan(0);
+    expect(b.pathBytes.length).toBe(0);
+    expect(meshCorePathInvariantPayloadIdHex(a.payloadTypeNibble, a.innerPayload)).toBe(
+      meshCorePathInvariantPayloadIdHex(b.payloadTypeNibble, b.innerPayload),
+    );
+    // Full-raw CRC fingerprint changes with path; identity must not.
+    expect(a.messageFingerprintHex).not.toBe(b.messageFingerprintHex);
   });
 });
 

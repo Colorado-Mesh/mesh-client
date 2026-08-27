@@ -724,7 +724,9 @@
     "routeRelaysPredictedHopsOnly": "Route: ~{{count}} Relais",
     "heardByRepeatersDetail_one": "Gehört von {{count}}: {{names}}",
     "heardByRepeatersDetail_other": "Gehört von {{count}}: {{names}}",
-    "heardByRepeaterNodeFallback": "Knoten {{nodeId}}"
+    "heardByRepeaterNodeFallback": "Knoten {{nodeId}}",
+    "heardByRepeatersAdditional_one": "{{count}} zusätzlicher nicht identifizierter Spediteur (Hashes: {{hashes}})",
+    "heardByRepeatersAdditional_other": "{{count}} weitere nicht identifizierte Spediteure (Hashes: {{hashes}})"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
