@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "Quando è acceso, qualsiasi nuovo messaggio della stanza RRC indica che non è stato letto ed è in grado di riprodurre un suono del canale. Disattiva per gli avvisi in stile IRC: solo messaggi diretti e @menzioni.",
     "shareMyLocation": "Condividi la mia posizione",
     "shareMyLocationOffInfo": "La condivisione della posizione è disattivata: l'aggiornamento GPS dell'host e l'invio mesh sono disabilitati. Abilita Condividi la mia posizione qui sopra per utilizzare l'aggiornamento automatico o inviare la tua posizione.",
-    "shareMyLocationHint": "Se abilitata, questa app potrebbe cercare la tua posizione su questo computer e inviarla tramite Meshtastic, MeshCore o Reticulum (chat share, radio push, RMAP). Se disabilitato, le ricerche GPS degli host e l'invio delle app sono disattivati; le coordinate statiche funzionano ancora solo per la tua mappa locale. Una radio con il proprio GPS può ancora mostrare la tua posizione a livello locale. Il firmware del dispositivo potrebbe continuare a trasmettere fino a quando non si regolano le impostazioni Radio o Moduli."
+    "shareMyLocationHint": "Se abilitata, questa app potrebbe cercare la tua posizione su questo computer e inviarla tramite Meshtastic, MeshCore o Reticulum (chat share, radio push, RMAP). Se disabilitato, le ricerche GPS degli host e l'invio delle app sono disattivati; le coordinate statiche funzionano ancora solo per la tua mappa locale. Una radio con il proprio GPS può ancora mostrare la tua posizione a livello locale. Il firmware del dispositivo potrebbe continuare a trasmettere fino a quando non si regolano le impostazioni Radio o Moduli.",
+    "reticulumBlocklist": {
+      "description": "I mittenti bloccati vengono eliminati prima che i loro messaggi LXMF raggiungano la tua casella di posta. Esporta l'elenco per spostarlo in un'altra installazione o importa un elenco per bloccare più mittenti contemporaneamente.",
+      "exportButton": "Esporta elenco bloccati",
+      "exportAria": "Esporta contatti bloccati",
+      "importButton": "Importa elenco bloccati",
+      "importAria": "Importa contatti bloccati",
+      "exportOk": "Contatti bloccati {{count}} esportati",
+      "exportEmpty": "Non ci sono contatti bloccati da esportare.",
+      "exportFailed": "Impossibile esportare l'elenco bloccati.",
+      "importOk": "Contatti bloccati {{imported}} importati ({{skipped}} ignorati)",
+      "importFailed": "Impossibile importare l'elenco bloccati.",
+      "unblockAria": "Sblocca {{hash}}",
+      "unblockFailed": "Impossibile sbloccare il contatto.",
+      "empty": "Contatti bloccati",
+      "title": "Contatti bloccati"
+    }
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -1481,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "BlueTooth MAC",
-    "bluetoothId": "ID Bluetooth"
+    "bluetoothId": "ID Bluetooth",
+    "reticulumAutoResendOnAnnounce": "Riprova i messaggi non riusciti quando un collega annuncia"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",
@@ -2817,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "Scansione / importazione",
       "hint": "Scansiona o incolla un QR per contatti, schede Columba lxma:// o messaggi cartacei LXMF crittografati."
+    },
+    "reticulumPathTable": {
+      "title": "Tabella dei percorsi",
+      "description": "La cancellazione della tabella dei percorsi comporta l'eliminazione di ogni percorso memorizzato nella cache. I percorsi vengono ripresi man mano che arrivano nuovi annunci, quindi il primo messaggio a un collega potrebbe richiedere più tempo.",
+      "clear": "Cancella tabella percorsi",
+      "clearing": "Sta cancellando...",
+      "confirmTitle": "Cancellare la tabella dei percorsi?",
+      "confirmBody": "Ogni percorso memorizzato nella cache viene eliminato. I percorsi vengono ricostruiti dai nuovi annunci.",
+      "clearOk": "Tabella dei percorsi cancellata ({{count}} percorsi abbandonati)",
+      "clearFailed": "Impossibile cancellare la tabella del percorso.",
+      "clearAria": "Cancella la tabella dei percorsi",
+      "confirmAction": "Cancella"
     }
   },
   "nodeDetailModal": {

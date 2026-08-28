@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "Lorsque cette option est activée, tout nouveau message de la salle RRC est non lu et peut lire un son de chaîne. Désactiver pour les alertes de type IRC : uniquement les messages directs et les @mentions.",
     "shareMyLocation": "Partager mon emplacement",
     "shareMyLocationOffInfo": "Le partage de localisation est désactivé — l'actualisation du GPS de l'hôte et l'envoi de maillage sont désactivés. Activez Partager ma position ci-dessus pour utiliser l'actualisation automatique ou envoyer votre position.",
-    "shareMyLocationHint": "Lorsqu'elle est activée, cette application peut rechercher votre position sur cet ordinateur et l'envoyer via Meshtastic, MeshCore ou Reticulum (partage de chat, push radio, RMAP). Lorsqu'elles sont désactivées, les recherches GPS de l'hôte et l'envoi d'applications sont désactivés ; les coordonnées statiques ne fonctionnent toujours que pour votre carte locale. Une radio avec son propre GPS peut toujours afficher votre position localement. Le micrologiciel de l'appareil peut continuer à diffuser jusqu'à ce que vous régliez les paramètres Radio ou Modules."
+    "shareMyLocationHint": "Lorsqu'elle est activée, cette application peut rechercher votre position sur cet ordinateur et l'envoyer via Meshtastic, MeshCore ou Reticulum (partage de chat, push radio, RMAP). Lorsqu'elles sont désactivées, les recherches GPS de l'hôte et l'envoi d'applications sont désactivés ; les coordonnées statiques ne fonctionnent toujours que pour votre carte locale. Une radio avec son propre GPS peut toujours afficher votre position localement. Le micrologiciel de l'appareil peut continuer à diffuser jusqu'à ce que vous régliez les paramètres Radio ou Modules.",
+    "reticulumBlocklist": {
+      "description": "Les expéditeurs bloqués sont déposés avant que leurs messages LXMF n'atteignent votre boîte de réception. Exportez la liste pour la déplacer vers une autre installation, ou importez une liste pour bloquer plusieurs expéditeurs à la fois.",
+      "exportButton": "Exporter la blocklist",
+      "exportAria": "Exporter les contacts bloqués",
+      "importButton": "Importer une liste de blocage",
+      "importAria": "Importer les contacts bloqués",
+      "exportOk": "Contacts bloqués {{count}} exportés",
+      "exportEmpty": "Il n'y a pas de contacts bloqués à exporter.",
+      "exportFailed": "Impossible d'exporter la liste de blocage.",
+      "importOk": "Contacts bloqués {{imported}} importés ({{skipped}} ignorés)",
+      "importFailed": "Impossible d'importer la liste de blocage.",
+      "unblockAria": "Débloquer {{hash}}",
+      "unblockFailed": "Impossible de débloquer ce contact.",
+      "empty": "Pas de contacts bloqués",
+      "title": "Contacts bloqués"
+    }
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -1481,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
-    "bluetoothId": "Bluetooth ID"
+    "bluetoothId": "Bluetooth ID",
+    "reticulumAutoResendOnAnnounce": "Réessayer les messages ayant échoué lorsqu'un pair annonce"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",
@@ -2817,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "Numériser/importer",
       "hint": "Numérisez ou collez un QR pour les contacts, les cartes Columba lxma:// ou les messages papier chiffrés LXMF."
+    },
+    "reticulumPathTable": {
+      "title": "Tableau des chemins",
+      "description": "L'effacement de la table Path supprime chaque itinéraire mis en cache. Les itinéraires sont réappris à mesure que de nouvelles annonces arrivent, de sorte que le premier message à un pair peut prendre plus de temps.",
+      "clear": "Effacer la table des chemins",
+      "clearing": "Suppression…",
+      "confirmTitle": "Effacer la table des chemins ?",
+      "confirmBody": "Chaque itinéraire mis en cache est supprimé. Les itinéraires sont reconstruits à partir de nouvelles annonces.",
+      "clearOk": "Chemin d'accès effacé ({{count}} itinéraires abandonnés)",
+      "clearFailed": "Impossible d'effacer la table des chemins.",
+      "clearAria": "Effacer la table de routage",
+      "confirmAction": "Effacer"
     }
   },
   "nodeDetailModal": {

@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "オンにすると、新しいRRCルームメッセージは未読になり、チャンネルサウンドを再生できます。IRCスタイルのアラートをオフにする：ダイレクトメッセージと@メンションのみ。",
     "shareMyLocation": "現在位置を共有",
     "shareMyLocationOffInfo": "位置情報の共有がオフになっています。ホストのGPSリフレッシュとメッシュ送信は無効になっています。自動更新を使用するか、ポジションを送信するには、上の「現在地を共有」を有効にします。",
-    "shareMyLocationHint": "有効にすると、このアプリはこのコンピューター上の現在地を検索し、Meshtastic、MeshCore、またはReticulum （チャット共有、ラジオプッシュ、RMAP ）を介して送信する場合があります。無効にすると、ホストのGPSルックアップとアプリの送信がオフになります。静的座標はローカルマップでのみ機能します。独自のGPSを備えたラジオは、依然としてあなたの位置をローカルに表示している可能性があります。ラジオまたはモジュールの設定を調整するまで、デバイスファームウェアがブロードキャストされることがあります。"
+    "shareMyLocationHint": "有効にすると、このアプリはこのコンピューター上の現在地を検索し、Meshtastic、MeshCore、またはReticulum （チャット共有、ラジオプッシュ、RMAP ）を介して送信する場合があります。無効にすると、ホストのGPSルックアップとアプリの送信がオフになります。静的座標はローカルマップでのみ機能します。独自のGPSを備えたラジオは、依然としてあなたの位置をローカルに表示している可能性があります。ラジオまたはモジュールの設定を調整するまで、デバイスファームウェアがブロードキャストされることがあります。",
+    "reticulumBlocklist": {
+      "description": "ブロックされた送信者は、LXMFメッセージが受信トレイに届く前にドロップされます。リストをエクスポートして別のインストールに移動するか、リストをインポートして一度に多くの送信者をブロックします。",
+      "exportButton": "ブロックリストをエクスポート",
+      "exportAria": "ブロックされた連絡先をエクスポート",
+      "importButton": "ブロックリストをインポート",
+      "importAria": "ブロックされた連絡先をインポート",
+      "exportOk": "エクスポートされた{{count}}ブロックされた連絡先",
+      "exportEmpty": "エクスポートするブロックされた連絡先はありません。",
+      "exportFailed": "ブロックリストをエクスポートできませんでした。",
+      "importOk": "インポートされた{{imported}}ブロックされた連絡先（ {{skipped}}はスキップされました）",
+      "importFailed": "ブロックリストをインポートできませんでした。",
+      "unblockAria": "{{hash}}のブロックを解除",
+      "unblockFailed": "その連絡先のブロックを解除できませんでした。",
+      "empty": "ブロックされた連絡先",
+      "title": "ブロックした連絡先"
+    }
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -1481,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}、{{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
-    "bluetoothId": "Bluetooth ID"
+    "bluetoothId": "Bluetooth ID",
+    "reticulumAutoResendOnAnnounce": "ピアがアナウンスしたときに失敗したメッセージを再試行する"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -2817,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "スキャン/インポート",
       "hint": "連絡先、Columba lxma:// カード、または暗号化された LXMF 紙メッセージの QR をスキャンまたは貼り付けます。"
+    },
+    "reticulumPathTable": {
+      "title": "パステーブル",
+      "description": "パステーブルをクリアすると、キャッシュされたすべてのルートが廃棄されます。ルートは新しいアナウンスが到着すると再学習されるため、ピアへの最初のメッセージに時間がかかる場合があります。",
+      "clear": "パステーブルをクリア",
+      "clearing": "消去中...",
+      "confirmTitle": "パステーブルをクリアしますか？",
+      "confirmBody": "キャッシュされたルートはすべて廃棄されます。ルートは新しいアナウンスから再構築されます。",
+      "clearOk": "パステーブルがクリアされました（ {{count}}ルートが削除されました）",
+      "clearFailed": "パステーブルをクリアできませんでした。",
+      "clearAria": "パステーブルをクリア",
+      "confirmAction": "クリア"
     }
   },
   "nodeDetailModal": {

@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "开启时，任何新的RRC房间消息都会标记为未读，并且可以播放频道声音。关闭IRC样式警报：仅限直接消息和@提及。",
     "shareMyLocation": "分享我的位置",
     "shareMyLocationOffInfo": "位置共享已关闭—主机GPS刷新和网格发送已禁用。启用在上方分享我的位置，以使用自动刷新或发送您的位置。",
-    "shareMyLocationHint": "启用后，此应用可能会在此计算机上查找您的位置，并通过Meshtastic、MeshCore或Reticulum （聊天共享、无线电推送、RMAP ）发送。禁用后，主机GPS查找和应用程序发送将关闭；静态坐标仍然仅适用于您的本地地图。带有GPS的收音机可能仍会在本地显示您的位置。在您调整收音机或模块设置之前，设备固件仍可能进行广播。"
+    "shareMyLocationHint": "启用后，此应用可能会在此计算机上查找您的位置，并通过Meshtastic、MeshCore或Reticulum （聊天共享、无线电推送、RMAP ）发送。禁用后，主机GPS查找和应用程序发送将关闭；静态坐标仍然仅适用于您的本地地图。带有GPS的收音机可能仍会在本地显示您的位置。在您调整收音机或模块设置之前，设备固件仍可能进行广播。",
+    "reticulumBlocklist": {
+      "description": "被阻止的发件人将在其LXMF消息到达您的收件箱之前被删除。导出列表以将其移动到另一个安装，或导入列表以一次阻止多个发件人。",
+      "exportButton": "导出阻止列表",
+      "exportAria": "导出被阻止的联系人",
+      "importButton": "导入阻止列表",
+      "importAria": "导入被阻止的联系人",
+      "exportOk": "已导出{{count}}个被阻止的联系人",
+      "exportEmpty": "没有要导出的被阻止的联系人。",
+      "exportFailed": "无法导出阻止列表。",
+      "importOk": "已导入{{imported}}封锁的联系人（已跳过{{skipped}} ）",
+      "importFailed": "无法导入阻止列表。",
+      "unblockAria": "取消屏蔽{{hash}}",
+      "unblockFailed": "无法取消阻止该联系人。",
+      "empty": "已阻止的联系人",
+      "title": "已屏蔽的联系人"
+    }
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -1481,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}} ， {{rssi}} dBm",
     "bluetoothMac": "蓝牙MAC",
-    "bluetoothId": "蓝牙编号："
+    "bluetoothId": "蓝牙编号：",
+    "reticulumAutoResendOnAnnounce": "当对等体宣布时重试失败的消息"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -2817,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "扫描/导入",
       "hint": "扫描或粘贴 QR 码以查找联系人、Columba lxma:// 卡或加密的 LXMF 纸质消息。"
+    },
+    "reticulumPathTable": {
+      "title": "路径表",
+      "description": "清除路径表将丢弃每个缓存路由。路由会在新公告到达时重新学习，因此发送给同行的第一条消息可能需要更长时间。",
+      "clear": "清除路径表",
+      "clearing": "清理中...",
+      "confirmTitle": "清除路径表？",
+      "confirmBody": "每个缓存的路由都会被丢弃。根据新公告重建路由。",
+      "clearOk": "路径表已清除（ {{count}}路由已丢弃）",
+      "clearFailed": "无法清除路径表。",
+      "clearAria": "清除路径表",
+      "confirmAction": "清除"
     }
   },
   "nodeDetailModal": {

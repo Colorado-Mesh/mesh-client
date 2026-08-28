@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "Wenn eingeschaltet, markiert jede neue RRC-Raumnachricht ungelesen und kann einen Kanalton wiedergeben. Deaktivieren Sie für Warnungen im IRC-Stil: nur Direktnachrichten und @Erwähnungen.",
     "shareMyLocation": "Meinen Standort teilen",
     "shareMyLocationOffInfo": "Die Standortfreigabe ist deaktiviert — Host-GPS-Aktualisierung und Mesh-Versand sind deaktiviert. Aktivieren Sie Meinen Standort oben teilen, um die automatische Aktualisierung zu verwenden oder Ihre Position zu senden.",
-    "shareMyLocationHint": "Wenn diese App aktiviert ist, kann sie Ihren Standort auf diesem Computer nachschlagen und ihn über Meshtastic, MeshCore oder Reticulum (Chatfreigabe, Radio-Push, RMAP) senden. Wenn diese Option deaktiviert ist, sind Host-GPS-Suchvorgänge und das Senden von Apps deaktiviert. Statische Koordinaten funktionieren immer noch nur für deine lokale Karte. Ein Radio mit eigenem GPS kann immer noch Ihre Position vor Ort anzeigen. Die Geräte-Firmware kann weiterhin senden, bis Sie die Radio- oder Moduleinstellungen anpassen."
+    "shareMyLocationHint": "Wenn diese App aktiviert ist, kann sie Ihren Standort auf diesem Computer nachschlagen und ihn über Meshtastic, MeshCore oder Reticulum (Chatfreigabe, Radio-Push, RMAP) senden. Wenn diese Option deaktiviert ist, sind Host-GPS-Suchvorgänge und das Senden von Apps deaktiviert. Statische Koordinaten funktionieren immer noch nur für deine lokale Karte. Ein Radio mit eigenem GPS kann immer noch Ihre Position vor Ort anzeigen. Die Geräte-Firmware kann weiterhin senden, bis Sie die Radio- oder Moduleinstellungen anpassen.",
+    "reticulumBlocklist": {
+      "description": "Blockierte Absender werden gelöscht, bevor ihre LXMF-Nachrichten Ihren Posteingang erreichen. Exportieren Sie die Liste, um sie in eine andere Installation zu verschieben, oder importieren Sie eine Liste, um viele Absender gleichzeitig zu blockieren.",
+      "exportButton": "Sperrliste exportieren",
+      "exportAria": "Gesperrte Kontakte exportieren",
+      "importButton": "Sperrliste importieren",
+      "importAria": "Blockierte Kontakte importieren",
+      "exportOk": "{{count}} gesperrte Kontakte exportiert",
+      "exportEmpty": "Es gibt keine gesperrten Kontakte zum Exportieren.",
+      "exportFailed": "Die Sperrliste konnte nicht exportiert werden.",
+      "importOk": "{{imported}} gesperrte Kontakte importiert ({{skipped}} übersprungen)",
+      "importFailed": "Die Sperrliste konnte nicht importiert werden.",
+      "unblockAria": "Entsperren {{hash}}",
+      "unblockFailed": "Dieser Kontakt konnte nicht entsperrt werden.",
+      "empty": "Blockierte Kontakte",
+      "title": "Blockierte Kontakte"
+    }
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -1481,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
-    "bluetoothId": "Bluetooth-ID"
+    "bluetoothId": "Bluetooth-ID",
+    "reticulumAutoResendOnAnnounce": "Wiederholen Sie fehlgeschlagene Nachrichten, wenn ein Peer dies ankündigt"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",
@@ -2817,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "Scannen und Importieren",
       "hint": "Scannen oder fügen Sie einen QR für Kontakte, Columba lxma://-Karten oder verschlüsselte LXMF-Papiernachrichten ein."
+    },
+    "reticulumPathTable": {
+      "title": "Pfad-Tabelle",
+      "description": "Beim Löschen der Pfadtabelle werden alle zwischengespeicherten Routen gelöscht. Routen werden neu erlernt, wenn neue Ankündigungen eintreffen, sodass die erste Nachricht an einen Kollegen länger dauern kann.",
+      "clear": "Pfad-Tabelle löschen",
+      "clearing": "Reinigen…",
+      "confirmTitle": "Pfad-Tabelle löschen?",
+      "confirmBody": "Jede zwischengespeicherte Route wird gelöscht. Routen werden aus neuen Ansagen neu aufgebaut.",
+      "clearOk": "Pfad-Tabelle gelöscht ({{count}} Routen abgelegt)",
+      "clearFailed": "Die Pfad-Tabelle konnte nicht gelöscht werden.",
+      "clearAria": "Pfadtabelle löschen",
+      "confirmAction": "Löschen"
     }
   },
   "nodeDetailModal": {

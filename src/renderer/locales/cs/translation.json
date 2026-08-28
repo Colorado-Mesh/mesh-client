@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "Když je zapnuto, jakákoli nová zpráva RRC místnosti označí nepřečtené a může přehrát zvuk kanálu. Vypnout pro upozornění ve stylu IRC: pouze přímé zprávy a @zmínky.",
     "shareMyLocation": "Sdílet mé umístění",
     "shareMyLocationOffInfo": "Sdílení polohy je vypnuto — aktualizace GPS hostitele a odesílání sítě jsou zakázány. Povolte možnost Sdílet moji polohu výše a použijte automatické obnovení nebo odešlete svou pozici.",
-    "shareMyLocationHint": "Pokud je tato aplikace povolena, může vyhledat vaši polohu v tomto počítači a odeslat ji přes Meshtastic, MeshCore nebo Reticulum (sdílení chatu, rádio push, RMAP). Po vypnutí jsou vyhledávání GPS hostitele a odesílání aplikací vypnuté; statické souřadnice stále fungují pouze pro vaši místní mapu. Rádio s vlastní GPS může stále zobrazovat vaši polohu lokálně. Firmware zařízení se může vysílat, dokud neupravíte nastavení rádia nebo modulů."
+    "shareMyLocationHint": "Pokud je tato aplikace povolena, může vyhledat vaši polohu v tomto počítači a odeslat ji přes Meshtastic, MeshCore nebo Reticulum (sdílení chatu, rádio push, RMAP). Po vypnutí jsou vyhledávání GPS hostitele a odesílání aplikací vypnuté; statické souřadnice stále fungují pouze pro vaši místní mapu. Rádio s vlastní GPS může stále zobrazovat vaši polohu lokálně. Firmware zařízení se může vysílat, dokud neupravíte nastavení rádia nebo modulů.",
+    "reticulumBlocklist": {
+      "description": "Blokovaní odesílatelé jsou vysazeni dříve, než se jejich zprávy LXMF dostanou do vaší doručené pošty. Exportujte seznam a přesuňte jej do jiné instalace nebo importujte seznam a zablokujte více odesílatelů najednou.",
+      "exportButton": "Exportovat seznam blokovaných položek",
+      "exportAria": "Exportovat blokované kontakty",
+      "importButton": "Importovat seznam blokovaných položek",
+      "importAria": "Importovat blokované kontakty",
+      "exportOk": "Exportované {{count}} blokované kontakty",
+      "exportEmpty": "Neexistují žádné blokované kontakty pro export.",
+      "exportFailed": "Nelze exportovat seznam blokovaných položek.",
+      "importOk": "Importované {{imported}} blokované kontakty ({{skipped}} přeskočeno)",
+      "importFailed": "Nelze importovat seznam blokovaných položek.",
+      "unblockAria": "Odblokovat {{hash}}",
+      "unblockFailed": "Tento kontakt se nepodařilo odblokovat.",
+      "empty": "Blokované kontakty",
+      "title": "Blokované kontakty"
+    }
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -1483,7 +1499,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
-    "bluetoothId": "Bluetooth ID"
+    "bluetoothId": "Bluetooth ID",
+    "reticulumAutoResendOnAnnounce": "Opakujte neúspěšné zprávy, když kolega oznámí"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -2819,6 +2836,18 @@
     "reticulumScanImport": {
       "title": "Skenovat / importovat",
       "hint": "Naskenujte nebo vložte QR pro kontakty, karty Columba lxma:// nebo šifrované papírové zprávy LXMF."
+    },
+    "reticulumPathTable": {
+      "title": "Tabulka cest",
+      "description": "Vymazání tabulky cest přeruší každou trasu uloženou v mezipaměti. Trasy se znovu naučí, jakmile dorazí nová oznámení, takže první zpráva pro kolegu může trvat déle.",
+      "clear": "Vymazat tabulku cest",
+      "clearing": "Čištění",
+      "confirmTitle": "Vymazat tabulku cest?",
+      "confirmBody": "Každá cesta uložená v mezipaměti je vynechána. Trasy jsou přestavěny z nových oznámení.",
+      "clearOk": "Tabulka tras vymazána ({{count}} vynechaných tras)",
+      "clearFailed": "Nelze vymazat tabulku cesty.",
+      "clearAria": "Vymazat tabulku cest",
+      "confirmAction": "Vymazat"
     }
   },
   "nodeDetailModal": {

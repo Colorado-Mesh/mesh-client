@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "Gdy włączone, każdy nowy komunikat pokoju RRC oznacza nieprzeczytany i może odtwarzać dźwięk kanału. Wyłącz dla alertów w stylu IRC: tylko wiadomości bezpośrednie i @wzmianki.",
     "shareMyLocation": "Udostępnij moją lokalizację",
     "shareMyLocationOffInfo": "Udostępnianie lokalizacji jest wyłączone — odświeżanie GPS hosta i wysyłanie siatki są wyłączone. Włącz opcję Udostępnij moją lokalizację powyżej, aby użyć automatycznego odświeżania lub wysłać swoją pozycję.",
-    "shareMyLocationHint": "Po włączeniu ta aplikacja może wyszukać Twoją lokalizację na tym komputerze i wysłać ją przez Meshtastic, MeshCore lub Reticulum (udostępnianie czatu, push radiowy, RMAP). Gdy ta opcja jest wyłączona, wyszukiwanie GPS hosta i wysyłanie aplikacji są wyłączone; współrzędne statyczne nadal działają tylko dla Twojej lokalnej mapy. Radio z własnym GPS może nadal lokalnie pokazywać Twoją pozycję. Oprogramowanie sprzętowe urządzenia może nadal nadawać, dopóki nie dostosujesz ustawień radia lub modułów."
+    "shareMyLocationHint": "Po włączeniu ta aplikacja może wyszukać Twoją lokalizację na tym komputerze i wysłać ją przez Meshtastic, MeshCore lub Reticulum (udostępnianie czatu, push radiowy, RMAP). Gdy ta opcja jest wyłączona, wyszukiwanie GPS hosta i wysyłanie aplikacji są wyłączone; współrzędne statyczne nadal działają tylko dla Twojej lokalnej mapy. Radio z własnym GPS może nadal lokalnie pokazywać Twoją pozycję. Oprogramowanie sprzętowe urządzenia może nadal nadawać, dopóki nie dostosujesz ustawień radia lub modułów.",
+    "reticulumBlocklist": {
+      "description": "Zablokowani nadawcy są usuwani, zanim ich wiadomości LXMF dotrą do Twojej skrzynki odbiorczej. Wyeksportuj listę, aby przenieść ją do innej instalacji, lub zaimportuj listę, aby zablokować wielu nadawców jednocześnie.",
+      "exportButton": "Eksportuj listę blokad",
+      "exportAria": "Eksportuj zablokowane kontakty",
+      "importButton": "Importuj listę blokad",
+      "importAria": "Importuj zablokowane kontakty",
+      "exportOk": "Zablokowane kontakty: {{count}}",
+      "exportEmpty": "Brak zablokowanych kontaktów do wyeksportowania.",
+      "exportFailed": "Nie można wyeksportować listy blokad.",
+      "importOk": "Zaimportowano zablokowane kontakty {{imported}} (pominięto {{skipped}})",
+      "importFailed": "Nie można zaimportować listy blokad.",
+      "unblockAria": "Odblokuj {{hash}}",
+      "unblockFailed": "Nie można odblokować tego kontaktu.",
+      "empty": "Kontakty zablokowane",
+      "title": "Zablokowane kontakty"
+    }
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -1485,7 +1501,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "KOMPUTER MAC z Bluetooth",
-    "bluetoothId": "Identyfikator Bluetooth"
+    "bluetoothId": "Identyfikator Bluetooth",
+    "reticulumAutoResendOnAnnounce": "Ponów nieudane próby wysłania wiadomości, gdy współpracownik ogłosi"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",
@@ -2821,6 +2838,18 @@
     "reticulumScanImport": {
       "title": "Skanuj / importuj",
       "hint": "Zeskanuj lub wklej kod QR dla kontaktów, kart Columba lxma:// lub zaszyfrowanych wiadomości papierowych LXMF."
+    },
+    "reticulumPathTable": {
+      "title": "Tabela ścieżek",
+      "description": "Czyszczenie tablicy ścieżek upuszcza każdą zapisaną w pamięci podręcznej trasę. Trasy są ponownie zdobywane wraz z nadejściem nowych ogłoszeń, więc pierwsza wiadomość do współpracownika może potrwać dłużej.",
+      "clear": "Wyczyść tabelę ścieżek",
+      "clearing": "Oczyszczanie...",
+      "confirmTitle": "Wyczyścić tabelę ścieżek?",
+      "confirmBody": "Każda trasa zapisana w pamięci podręcznej jest usuwana. Trasy są przebudowywane z nowych ogłoszeń.",
+      "clearOk": "Tabela ścieżek wyczyszczona (trasy {{count}} upuszczone)",
+      "clearFailed": "Nie można wyczyścić tabeli ścieżek.",
+      "clearAria": "Wyczyść tabelę ścieżek",
+      "confirmAction": "Wyczyść"
     }
   },
   "nodeDetailModal": {

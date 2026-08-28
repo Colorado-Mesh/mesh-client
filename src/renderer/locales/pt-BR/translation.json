@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "Quando ativada, qualquer nova mensagem da sala RRC marca como não lida e pode reproduzir um som de canal. Desativar para alertas no estilo IRC: apenas mensagens diretas e @menções.",
     "shareMyLocation": "Compartilhar minha localização",
     "shareMyLocationOffInfo": "O compartilhamento de localização está desativado — a atualização do GPS do anfitrião e o envio de malha estão desativados. Ative Compartilhar minha localização acima para usar a atualização automática ou enviar sua posição.",
-    "shareMyLocationHint": "Quando ativado, este aplicativo pode procurar sua localização neste computador e enviá-lo por Meshtastic, MeshCore ou Reticulum (compartilhamento de bate-papo, push de rádio, RMAP). Quando desativado, as pesquisas GPS do anfitrião e o envio da aplicação estão desativados; as coordenadas estáticas ainda funcionam apenas para o seu mapa local. Um rádio com seu próprio GPS ainda pode mostrar sua posição localmente. O firmware do dispositivo ainda pode ser transmitido até que você ajuste as configurações de Rádio ou Módulos."
+    "shareMyLocationHint": "Quando ativado, este aplicativo pode procurar sua localização neste computador e enviá-lo por Meshtastic, MeshCore ou Reticulum (compartilhamento de bate-papo, push de rádio, RMAP). Quando desativado, as pesquisas GPS do anfitrião e o envio da aplicação estão desativados; as coordenadas estáticas ainda funcionam apenas para o seu mapa local. Um rádio com seu próprio GPS ainda pode mostrar sua posição localmente. O firmware do dispositivo ainda pode ser transmitido até que você ajuste as configurações de Rádio ou Módulos.",
+    "reticulumBlocklist": {
+      "description": "Os remetentes bloqueados são descartados antes que suas mensagens LXMF cheguem à sua caixa de entrada. Exporte a lista para movê-la para outra instalação ou importe uma lista para bloquear vários remetentes de uma só vez.",
+      "exportButton": "Exportar lista de bloqueios",
+      "exportAria": "Exportar contatos bloqueados",
+      "importButton": "Importar lista de bloqueios",
+      "importAria": "Importar contatos bloqueados",
+      "exportOk": "Contatos bloqueados {{count}} exportados",
+      "exportEmpty": "Não há contatos bloqueados para exportar.",
+      "exportFailed": "Não foi possível exportar a lista de bloqueio.",
+      "importOk": "{{imported}} contatos bloqueados importados ({{skipped}} ignorados)",
+      "importFailed": "Não foi possível importar a lista de bloqueio.",
+      "unblockAria": "Desbloquear {{hash}}",
+      "unblockFailed": "Não foi possível desbloquear esse contato.",
+      "empty": "Contactos bloqueados",
+      "title": "Contatos bloqueados"
+    }
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -1481,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "MAC BLUETOOTH",
-    "bluetoothId": "ID Bluetooth"
+    "bluetoothId": "ID Bluetooth",
+    "reticulumAutoResendOnAnnounce": "Repetir mensagens com falha quando um colega anunciar"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",
@@ -2817,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "Digitalizar/Importar",
       "hint": "Digitalize ou cole um QR para contatos, cartões Columba lxma:// ou mensagens de papel LXMF criptografadas."
+    },
+    "reticulumPathTable": {
+      "title": "Tabela de caminho",
+      "description": "Limpar a tabela de caminho elimina todas as rotas em cache. As rotas são reaprendidas à medida que novos anúncios chegam, portanto, a primeira mensagem para um colega pode demorar mais.",
+      "clear": "Limpar tabela de caminho",
+      "clearing": "Limpando...",
+      "confirmTitle": "Limpar tabela de caminho?",
+      "confirmBody": "Cada rota em cache é descartada. As rotas são reconstruídas a partir de novos anúncios.",
+      "clearOk": "Tabela de caminho apagada ({{count}} rotas descartadas)",
+      "clearFailed": "Não foi possível limpar a tabela de caminho.",
+      "clearAria": "Limpar a tabela de rotas",
+      "confirmAction": "Limpar"
     }
   },
   "nodeDetailModal": {

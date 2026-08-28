@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "Wanneer ingeschakeld, markeert elk nieuw RRC-kamerbericht ongelezen en kan een kanaalgeluid worden afgespeeld. Schakel uit voor waarschuwingen in IRC-stijl: alleen directe berichten en @vermeldingen.",
     "shareMyLocation": "Deel mijn locatie",
     "shareMyLocationOffInfo": "Locatie delen is uitgeschakeld — host GPS verversen en mesh verzenden zijn uitgeschakeld. Schakel Mijn locatie hierboven delen in om automatisch vernieuwen te gebruiken of uw positie te verzenden.",
-    "shareMyLocationHint": "Indien ingeschakeld, kan deze app uw locatie op deze computer opzoeken en deze via Meshtastic, MeshCore of Reticulum verzenden (chat share, radio push, RMAP). Wanneer uitgeschakeld, zijn de GPS-zoekopdrachten van de host en het verzenden van de app uitgeschakeld; statische coördinaten werken nog steeds alleen voor je lokale kaart. Een radio met een eigen GPS kan uw positie nog steeds lokaal weergeven. Apparaatfirmware kan nog steeds uitzenden totdat u de radio- of module-instellingen aanpast."
+    "shareMyLocationHint": "Indien ingeschakeld, kan deze app uw locatie op deze computer opzoeken en deze via Meshtastic, MeshCore of Reticulum verzenden (chat share, radio push, RMAP). Wanneer uitgeschakeld, zijn de GPS-zoekopdrachten van de host en het verzenden van de app uitgeschakeld; statische coördinaten werken nog steeds alleen voor je lokale kaart. Een radio met een eigen GPS kan uw positie nog steeds lokaal weergeven. Apparaatfirmware kan nog steeds uitzenden totdat u de radio- of module-instellingen aanpast.",
+    "reticulumBlocklist": {
+      "description": "Geblokkeerde afzenders worden verwijderd voordat hun LXMF-berichten je inbox bereiken. Exporteer de lijst om deze naar een andere installatie te verplaatsen, of importeer een lijst om veel afzenders tegelijk te blokkeren.",
+      "exportButton": "Blokkeerlijst exporteren",
+      "exportAria": "Geblokkeerde contacten exporteren",
+      "importButton": "Blokkeerlijst importeren",
+      "importAria": "Geblokkeerde contacten importeren",
+      "exportOk": "{{count}} geblokkeerde contacten geëxporteerd",
+      "exportEmpty": "Er zijn geen geblokkeerde contacten om te exporteren.",
+      "exportFailed": "Kon de blokkeerlijst niet exporteren.",
+      "importOk": "Geïmporteerde {{imported}} geblokkeerde contacten ({{skipped}} overgeslagen)",
+      "importFailed": "Kon de blokkeerlijst niet importeren.",
+      "unblockAria": "Deblokkeer {{hash}}",
+      "unblockFailed": "Kon dat contact niet deblokkeren.",
+      "empty": "Geblokkeerde contactpersonen",
+      "title": "Geblokkeerde contacten"
+    }
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -1481,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
-    "bluetoothId": "Bluetooth-ID"
+    "bluetoothId": "Bluetooth-ID",
+    "reticulumAutoResendOnAnnounce": "Probeer mislukte berichten opnieuw wanneer een collega aankondigt"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -2817,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "Scannen / importeren",
       "hint": "Scan of plak een QR voor contacten, Columba lxma://-kaarten of gecodeerde LXMF-papieren berichten."
+    },
+    "reticulumPathTable": {
+      "title": "Padtabel",
+      "description": "Het wissen van de padtabel laat elke gecachete route vallen. Routes worden opnieuw geleerd als er nieuwe aankondigingen binnenkomen, dus het eerste bericht aan een collega kan langer duren.",
+      "clear": "Padtabel wissen",
+      "clearing": "Aan het wissen….",
+      "confirmTitle": "Padtabel wissen?",
+      "confirmBody": "Elke gecachete route wordt gedropt. Routes worden herbouwd op basis van nieuwe aankondigingen.",
+      "clearOk": "Padtabel gewist ({{count}} routes verwijderd)",
+      "clearFailed": "Kan de padtabel niet wissen.",
+      "clearAria": "Padtabel wissen",
+      "confirmAction": "Wissen"
     }
   },
   "nodeDetailModal": {

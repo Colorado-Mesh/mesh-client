@@ -1190,6 +1190,19 @@ impl StackHandle {
         Ok(())
     }
 
+    /// Clear the whole RNS path table; returns the number of routes dropped.
+    pub async fn drop_path_table(&self) -> Result<i64, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live.get() {
+            let res = live.drop_path_table().await;
+            if res.is_ok() {
+                self.emit_event("peers_updated", serde_json::json!({}));
+            }
+            return res;
+        }
+        Ok(0)
+    }
+
     pub async fn probe_peer(&self, hash: &str) -> Result<serde_json::Value, String> {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live.get() {

@@ -3753,6 +3753,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'use24HourTime',
   'alwaysShowMessageActions',
   'reticulumAutostart',
+  'reticulumAutoResendOnAnnounce',
   'reticulumLastSelfLxmfHash',
   'reticulumRmapAnnounceIntervalMin',
   'reticulumRmapReachableOn',

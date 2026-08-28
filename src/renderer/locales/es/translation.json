@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "Cuando está activado, cualquier mensaje nuevo de la sala RRC marca como no leído y puede reproducir un sonido de canal. Desactivar para alertas estilo IRC: solo mensajes directos y @menciones.",
     "shareMyLocation": "Compartir mi Ubicación",
     "shareMyLocationOffInfo": "El uso compartido de la ubicación está desactivado: la actualización del GPS del anfitrión y el envío en malla están desactivados. Habilite Compartir mi ubicación arriba para usar la actualización automática o enviar su posición.",
-    "shareMyLocationHint": "Cuando está habilitada, esta aplicación puede buscar tu ubicación en este ordenador y enviarla a través de Meshtastic, MeshCore o Reticulum (chat compartido, radio push, RMAP). Cuando está desactivado, las búsquedas de GPS del anfitrión y el envío de aplicaciones están desactivados; las coordenadas estáticas siguen funcionando solo para tu mapa local. Una radio con su propio GPS aún puede mostrar su posición localmente. El firmware del dispositivo aún puede transmitirse hasta que ajuste la configuración de Radio o Módulos."
+    "shareMyLocationHint": "Cuando está habilitada, esta aplicación puede buscar tu ubicación en este ordenador y enviarla a través de Meshtastic, MeshCore o Reticulum (chat compartido, radio push, RMAP). Cuando está desactivado, las búsquedas de GPS del anfitrión y el envío de aplicaciones están desactivados; las coordenadas estáticas siguen funcionando solo para tu mapa local. Una radio con su propio GPS aún puede mostrar su posición localmente. El firmware del dispositivo aún puede transmitirse hasta que ajuste la configuración de Radio o Módulos.",
+    "reticulumBlocklist": {
+      "description": "Los remitentes bloqueados se eliminan antes de que sus mensajes LXMF lleguen a su bandeja de entrada. Exporte la lista para moverla a otra instalación o importe una lista para bloquear varios remitentes a la vez.",
+      "exportButton": "Exportar lista de bloqueo",
+      "exportAria": "Exportar contactos bloqueados",
+      "importButton": "Importar lista de bloqueo",
+      "importAria": "Importar contactos bloqueados",
+      "exportOk": "Se exportaron {{count}} contactos bloqueados",
+      "exportEmpty": "No hay contactos bloqueados para exportar.",
+      "exportFailed": "No se ha podido exportar la lista de bloqueo.",
+      "importOk": "{{imported}} contactos bloqueados importados ({{skipped}} omitidos)",
+      "importFailed": "No se ha podido importar la lista de bloqueo.",
+      "unblockAria": "Desbloquea {{hash}}",
+      "unblockFailed": "No se ha podido desbloquear ese contacto.",
+      "empty": "Contactos bloqueados",
+      "title": "Contactos bloqueados"
+    }
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -1481,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
-    "bluetoothId": "Bluetooth ID"
+    "bluetoothId": "Bluetooth ID",
+    "reticulumAutoResendOnAnnounce": "Reintentar mensajes fallidos cuando un compañero anuncia"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",
@@ -2817,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "Escanear / Importar",
       "hint": "Escanee o pegue un QR en busca de contactos, tarjetas Columba lxma:// o mensajes cifrados en papel LXMF."
+    },
+    "reticulumPathTable": {
+      "title": "Tabla de rutas",
+      "description": "Al borrar la tabla de rutas, se eliminan todas las rutas almacenadas en caché. Las rutas se vuelven a aprender a medida que llegan nuevos anuncios, por lo que el primer mensaje a un compañero puede tardar más.",
+      "clear": "Borrar tabla de rutas",
+      "clearing": "Limpiando…",
+      "confirmTitle": "¿Borrar tabla de rutas?",
+      "confirmBody": "Todas las rutas almacenadas en caché se eliminan. Las rutas se reconstruyen a partir de nuevos anuncios.",
+      "clearOk": "Se borró la tabla de rutas ({{count}} rutas eliminadas)",
+      "clearFailed": "No se ha podido borrar la tabla de rutas.",
+      "clearAria": "Borrar la tabla de rutas",
+      "confirmAction": "Borrar"
     }
   },
   "nodeDetailModal": {

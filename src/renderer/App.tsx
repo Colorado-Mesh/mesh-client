@@ -243,6 +243,7 @@ import { queueBadgeColorClass } from './lib/queueBadgeColors';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
+import { buildResendArgs } from './lib/reticulum/buildResendArgs';
 import { reticulumHashToNodeId } from './lib/reticulum/destHash';
 import { openReticulumDmFromHash } from './lib/reticulum/reticulumDestinationInput';
 import {
@@ -1940,10 +1941,14 @@ function AppContent() {
 
   const handleResend = useCallback(
     (msg: ChatMessage) => {
-      const replyTo =
-        msg.reticulum_reply_to_hash ?? (msg.replyId != null ? String(msg.replyId) : undefined);
-      const retryOfStoreId = msg.reticulum_message_hash ?? msg.storeId;
-      sendMessage(msg.payload, msg.channel, msg.to ?? undefined, replyTo, retryOfStoreId);
+      const args = buildResendArgs(msg);
+      sendMessage(
+        args.text,
+        args.channelIndex,
+        args.destination,
+        args.replyTo,
+        args.retryOfStoreId,
+      );
     },
     [sendMessage],
   );

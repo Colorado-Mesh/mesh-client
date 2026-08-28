@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "Saat aktif, setiap pesan ruang RRC baru menandai belum dibaca dan dapat memutar suara saluran. Nonaktifkan untuk peringatan bergaya IRC: hanya pesan langsung dan @mention.",
     "shareMyLocation": "Bagikan lokasi saya",
     "shareMyLocationOffInfo": "Berbagi lokasi tidak aktif — penyegaran GPS host dan pengiriman jala dinonaktifkan. Aktifkan Bagikan lokasi saya di atas untuk menggunakan penyegaran otomatis atau kirim posisi Anda.",
-    "shareMyLocationHint": "Saat diaktifkan, aplikasi ini dapat mencari lokasi Anda di komputer ini dan mengirimkannya melalui Meshtastic, MeshCore, atau Reticulum (berbagi obrolan, push radio, RMAP). Saat dinonaktifkan, pencarian GPS tuan rumah dan pengiriman aplikasi tidak aktif; koordinat statis masih berfungsi untuk peta lokal Anda saja. Radio dengan GPS sendiri mungkin masih menunjukkan posisi Anda secara lokal. Firmware perangkat mungkin masih disiarkan sampai Anda menyesuaikan pengaturan Radio atau Modul."
+    "shareMyLocationHint": "Saat diaktifkan, aplikasi ini dapat mencari lokasi Anda di komputer ini dan mengirimkannya melalui Meshtastic, MeshCore, atau Reticulum (berbagi obrolan, push radio, RMAP). Saat dinonaktifkan, pencarian GPS tuan rumah dan pengiriman aplikasi tidak aktif; koordinat statis masih berfungsi untuk peta lokal Anda saja. Radio dengan GPS sendiri mungkin masih menunjukkan posisi Anda secara lokal. Firmware perangkat mungkin masih disiarkan sampai Anda menyesuaikan pengaturan Radio atau Modul.",
+    "reticulumBlocklist": {
+      "description": "Pengirim yang diblokir dijatuhkan sebelum pesan LXMF mereka mencapai kotak masuk Anda. Ekspor daftar untuk memindahkannya ke instalasi lain, atau impor daftar untuk memblokir banyak pengirim sekaligus.",
+      "exportButton": "Ekspor daftar blokir",
+      "exportAria": "Ekspor kontak yang diblokir",
+      "importButton": "Impor daftar blokir",
+      "importAria": "Impor kontak yang diblokir",
+      "exportOk": "Mengekspor {{count}} kontak yang diblokir",
+      "exportEmpty": "Tidak ada kontak yang diblokir untuk diekspor.",
+      "exportFailed": "Tidak dapat mengekspor daftar blokir.",
+      "importOk": "Mengimpor {{imported}} kontak yang diblokir ({{skipped}} dilewati)",
+      "importFailed": "Tidak dapat mengimpor daftar blokir.",
+      "unblockAria": "Buka blokiran {{hash}}",
+      "unblockFailed": "Tidak dapat membuka blokir kontak itu.",
+      "empty": "Tidak ada kontak yang diblokir.",
+      "title": "Kontak yang diblokir"
+    }
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -1481,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
-    "bluetoothId": "ID Bluetooth"
+    "bluetoothId": "ID Bluetooth",
+    "reticulumAutoResendOnAnnounce": "Coba lagi pesan yang gagal saat rekan mengumumkan"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -2817,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "Pindai / impor",
       "hint": "Pindai atau tempel QR untuk kontak, kartu Columba lxma://, atau pesan kertas LXMF terenkripsi."
+    },
+    "reticulumPathTable": {
+      "title": "Tabel jalur",
+      "description": "Menghapus tabel jalur akan menghapus setiap rute yang di-cache. Rute dipelajari kembali saat pengumuman baru tiba, sehingga pesan pertama ke rekan mungkin memerlukan waktu lebih lama.",
+      "clear": "Hapus tabel jalur",
+      "clearing": "Membersihkan...",
+      "confirmTitle": "Hapus tabel jalur?",
+      "confirmBody": "Setiap rute yang di-cache akan dihapus. Rute dibangun kembali dari pengumuman baru.",
+      "clearOk": "Tabel jalur dibersihkan (rute {{count}} dibatalkan)",
+      "clearFailed": "Tidak dapat menghapus tabel jalur.",
+      "clearAria": "Hapus tabel jalur",
+      "confirmAction": "Hapus"
     }
   },
   "nodeDetailModal": {

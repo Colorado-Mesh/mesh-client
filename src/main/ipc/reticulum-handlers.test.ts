@@ -68,6 +68,11 @@ vi.mock('../reticulum-identity-import', () => ({
   saveReticulumIdentityExportDialog: vi.fn(),
 }));
 
+vi.mock('../reticulum-blocklist-file', () => ({
+  saveBlocklistToFile: vi.fn(() => Promise.resolve({ path: null, error: null })),
+  readBlocklistFromFile: vi.fn(() => Promise.resolve({ hashes: null, skipped: 0, error: null })),
+}));
+
 vi.mock('../reticulum-remote-paths', () => ({
   showRncpOpenFileDialog: vi.fn(),
   showRncpSaveDirectoryDialog: vi.fn(),
@@ -192,6 +197,8 @@ describe('registerReticulumIpcHandlers', () => {
         'reticulum:showIdentityImportDialog',
         'reticulum:showIdentityBackupImportDialog',
         'reticulum:saveIdentityExportDialog',
+        'reticulum:saveBlocklistDialog',
+        'reticulum:openBlocklistDialog',
         'reticulum:showNomadContentSourceDialog',
         'reticulum:setNomadContentSource',
         'reticulum:validateConfig',
@@ -227,16 +234,39 @@ describe('registerReticulumIpcHandlers', () => {
         defaultPath: 'x.rsi',
         contentBase64: 'YQ==',
       });
+      await handlers.get('reticulum:saveBlocklistDialog')?.(event, []);
+      await handlers.get('reticulum:openBlocklistDialog')?.(event);
       await handlers.get('reticulum:showNomadContentSourceDialog')?.(event);
       await handlers.get('reticulum:setNomadContentSource')?.(event, '/tmp/site');
       await handlers.get('reticulum:validateConfig')?.(event);
 
-      expect(assertIpcSenderMock).toHaveBeenCalledTimes(17);
+      expect(assertIpcSenderMock).toHaveBeenCalledTimes(19);
+      expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:saveBlocklistDialog');
+      expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:openBlocklistDialog');
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:start');
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:proxyPost');
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:voiceSendAudio');
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:setNomadContentSource');
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:validateConfig');
+    });
+
+    it('saveBlocklistDialog rejects non-array payloads without opening a dialog', async () => {
+      const { saveBlocklistToFile } = await import('../reticulum-blocklist-file');
+      vi.mocked(saveBlocklistToFile).mockClear();
+
+      const result = await handlers.get('reticulum:saveBlocklistDialog')?.(event, 'nope');
+
+      expect(result).toEqual({ path: null, error: 'invalid_opts' });
+      expect(saveBlocklistToFile).not.toHaveBeenCalled();
+    });
+
+    it('saveBlocklistDialog drops non-string entries before writing', async () => {
+      const { saveBlocklistToFile } = await import('../reticulum-blocklist-file');
+      vi.mocked(saveBlocklistToFile).mockClear();
+
+      await handlers.get('reticulum:saveBlocklistDialog')?.(event, ['abc', 42, null]);
+
+      expect(saveBlocklistToFile).toHaveBeenCalledWith(['abc']);
     });
 
     it('rejects unauthorized senders before ensureManager/getManager run', async () => {

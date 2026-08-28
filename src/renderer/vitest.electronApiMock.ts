@@ -83,6 +83,8 @@ export function createElectronAPIMock(): ElectronAPI {
       getBlockedContacts: vi.fn().mockResolvedValue([]),
       blockContact: vi.fn().mockResolvedValue({ changes: 1 }),
       unblockContact: vi.fn().mockResolvedValue({ changes: 1 }),
+      exportBlockedContacts: vi.fn().mockResolvedValue([]),
+      importBlockedContacts: vi.fn().mockResolvedValue({ imported: 0, skipped: 0 }),
       getReticulumIdentityActivity: vi.fn().mockResolvedValue([]),
       upsertReticulumIdentityActivity: vi.fn().mockResolvedValue({ changes: 1 }),
       upsertReticulumIdentityActivityBatch: vi.fn().mockResolvedValue({ changes: 1 }),
@@ -431,6 +433,8 @@ export function createElectronAPIMock(): ElectronAPI {
         .fn()
         .mockResolvedValue({ path: null, contentText: null, error: null }),
       saveIdentityExportDialog: vi.fn().mockResolvedValue({ path: null, error: null }),
+      saveBlocklistDialog: vi.fn().mockResolvedValue({ path: null, error: null }),
+      openBlocklistDialog: vi.fn().mockResolvedValue({ hashes: null, skipped: 0, error: null }),
       showNomadContentSourceDialog: vi.fn().mockResolvedValue({ canceled: true, path: null }),
       setNomadContentSource: vi.fn().mockResolvedValue({ ok: true }),
       validateConfig: vi.fn().mockResolvedValue({ ok: true, issues: [] }),
