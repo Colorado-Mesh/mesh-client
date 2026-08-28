@@ -17,6 +17,10 @@ export function parseRelatedPaths(value) {
   return parsed;
 }
 
+export function normalizeRelatedPathForVitest(filePath) {
+  return filePath.startsWith('-') ? `./${filePath}` : filePath;
+}
+
 export function buildCiVitestArgs({ mode, project, relatedPaths = [] }) {
   if (!PROJECTS.has(project)) throw new Error(`Unknown Vitest project: ${project}`);
 
@@ -31,7 +35,7 @@ export function buildCiVitestArgs({ mode, project, relatedPaths = [] }) {
     return ['run', '--coverage', '--coverage.clean=false', ...reportArgs];
   }
   if (mode === 'related' && relatedPaths.length > 0) {
-    return ['related', '--run', ...reportArgs, ...relatedPaths];
+    return ['related', '--run', ...reportArgs, ...relatedPaths.map(normalizeRelatedPathForVitest)];
   }
   throw new Error(`Invalid Vitest CI selection: mode=${mode}, paths=${relatedPaths.length}`);
 }

@@ -1,7 +1,12 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
 
-import { buildCiVitestArgs, parseRelatedPaths, runCiVitest } from './ci-run-vitest.mjs';
+import {
+  buildCiVitestArgs,
+  normalizeRelatedPathForVitest,
+  parseRelatedPaths,
+  runCiVitest,
+} from './ci-run-vitest.mjs';
 
 describe('ci-run-vitest', () => {
   it('builds a coverage shard for a full run', () => {
@@ -49,6 +54,18 @@ describe('ci-run-vitest', () => {
     expect(() => parseRelatedPaths('[1]')).toThrow(
       'VITEST_PATHS_JSON must be a JSON array of strings',
     );
+  });
+
+  it('normalizes option-like relative paths before passing them to Vitest', () => {
+    expect(normalizeRelatedPathForVitest('-dangerous.test.ts')).toBe('./-dangerous.test.ts');
+    expect(normalizeRelatedPathForVitest('src/main/database.ts')).toBe('src/main/database.ts');
+    expect(
+      buildCiVitestArgs({
+        mode: 'related',
+        project: 'main',
+        relatedPaths: ['-dangerous.test.ts'],
+      }),
+    ).toContain('./-dangerous.test.ts');
   });
 
   it('rejects unknown projects and empty related selections', () => {
