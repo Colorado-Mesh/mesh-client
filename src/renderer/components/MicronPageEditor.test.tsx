@@ -33,6 +33,7 @@ function source(): HTMLTextAreaElement {
 
 describe('MicronPageEditor', () => {
   beforeEach(() => {
+    localStorage.clear();
     putServingPage.mockReset();
     deleteServingPage.mockReset();
     putServingPage.mockResolvedValue({ ok: true });
@@ -209,6 +210,87 @@ describe('MicronPageEditor', () => {
       screen.getByRole('button', { name: 'nomadNetwork.serving.discardConfirmAria' }),
     );
     expect(onClose).toHaveBeenCalled();
+  });
+
+  describe('preview parity with the Nomad browser', () => {
+    function previewRoot(container: HTMLElement): HTMLElement {
+      const el = container.querySelector<HTMLElement>('.nomad-micron-page');
+      if (!el) throw new Error('preview is not rendered through NomadMicronPageView');
+      return el;
+    }
+
+    // The class is what supplies `white-space: pre` and MeshClientNomadMono, which is
+    // what makes box-drawing art render the same as in the browser.
+    it('renders the preview through the shared nomad-micron-page container', async () => {
+      const { container } = render(
+        <MicronPageEditor path="index.mu" initialContent=">Hi" onClose={vi.fn()} />,
+      );
+      await waitFor(() => {
+        expect(screen.getByText('Hi')).toBeInTheDocument();
+      });
+      expect(previewRoot(container)).toBeInTheDocument();
+    });
+
+    it('preserves the padding spaces that box-drawing art depends on', async () => {
+      const art = ['┌──────────┐', '│  mesh    │', '│    node  │', '└──────────┘'].join('\n');
+      const { container } = render(
+        <MicronPageEditor path="art.mu" initialContent={art} onClose={vi.fn()} />,
+      );
+
+      await waitFor(() => {
+        expect(previewRoot(container).textContent).toContain('┌──────────┐');
+      });
+      const text = previewRoot(container).textContent ?? '';
+      // Runs of interior spaces must survive verbatim; collapsing them is the bug.
+      expect(text).toContain('│  mesh    │');
+      expect(text).toContain('│    node  │');
+    });
+
+    it('defaults to fit-width and drops the modifier when opened up', async () => {
+      const user = userEvent.setup();
+      const { container } = render(
+        <MicronPageEditor path="index.mu" initialContent=">Hi" onClose={vi.fn()} />,
+      );
+      await waitFor(() => {
+        expect(screen.getByText('Hi')).toBeInTheDocument();
+      });
+      expect(previewRoot(container).className).toContain('nomad-micron-page--fit-width');
+
+      await user.click(screen.getByRole('button', { name: 'nomadNetwork.openWidth' }));
+
+      expect(previewRoot(container).className).not.toContain('nomad-micron-page--fit-width');
+      expect(localStorage.getItem('mesh-client:nomadPageFitWidth')).toBe('false');
+    });
+
+    it('adopts the width preference already set by the browser', async () => {
+      localStorage.setItem('mesh-client:nomadPageFitWidth', 'false');
+      const { container } = render(
+        <MicronPageEditor path="index.mu" initialContent=">Hi" onClose={vi.fn()} />,
+      );
+      await waitFor(() => {
+        expect(screen.getByText('Hi')).toBeInTheDocument();
+      });
+      expect(previewRoot(container).className).not.toContain('nomad-micron-page--fit-width');
+    });
+
+    it('keeps preview links inert', async () => {
+      const user = userEvent.setup();
+      const { container } = render(
+        <MicronPageEditor
+          path="index.mu"
+          initialContent="`[Docs`/page/docs.mu]"
+          onClose={vi.fn()}
+        />,
+      );
+      await waitFor(() => {
+        expect(screen.getByText('Docs')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText('Docs'));
+      // No navigation surface exists in the editor; the click must simply do nothing.
+      expect(previewRoot(container)).toBeInTheDocument();
+      expect(screen.getByText('Docs')).toBeInTheDocument();
+    });
   });
 
   it('has no axe violations', async () => {

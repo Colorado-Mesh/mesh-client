@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { mountNomadMicronHtml, renderNomadMicronPage } from '@/renderer/lib/nomad/micronParser';
+import { DEFAULT_NOMAD_NODE_PAGE_PATH } from '@/renderer/lib/nomad/micronParser';
 import {
   applyMicronDivider,
   applyMicronLinePrefix,
@@ -12,10 +12,21 @@ import {
   type MicronWrapAction,
 } from '@/renderer/lib/nomad/micronToolbar';
 import { humanizeNomadPageError } from '@/renderer/lib/nomad/nomadPageErrorHumanize';
+import {
+  readNomadPageFitWidth,
+  writeNomadPageFitWidth,
+} from '@/renderer/lib/nomad/nomadPageFitWidth';
 import { deleteServingPage, putServingPage } from '@/renderer/lib/nomad/nomadServingApi';
+
+import NomadMicronPageView from './NomadMicronPageView';
 
 /** Preview re-render debounce; keeps typing responsive on large pages. */
 const PREVIEW_DEBOUNCE_MS = 200;
+
+/** Links are inert while editing; there is no browsing context in the modal. */
+const noopNavigate = () => {
+  /* inert in preview */
+};
 
 export interface MicronPageEditorProps {
   /** Content-relative path, e.g. `index.mu` or `page/foo.mu`. */
@@ -62,8 +73,9 @@ export default function MicronPageEditor({
   const [error, setError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmingClose, setConfirmingClose] = useState(false);
+  /** Shared with the Nomad browser so both surfaces wrap (or not) identically. */
+  const [fitWidth, setFitWidth] = useState(readNomadPageFitWidth);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const previewRef = useRef<HTMLDivElement>(null);
 
   const dirty = content !== savedContent;
 
@@ -75,13 +87,6 @@ export default function MicronPageEditor({
       window.clearTimeout(timer);
     };
   }, [content]);
-
-  useEffect(() => {
-    const container = previewRef.current;
-    if (!container) return;
-    // Parser output is DOMPurify-sanitized; mount avoids an innerHTML sink.
-    mountNomadMicronHtml(container, renderNomadMicronPage(preview));
-  }, [preview]);
 
   /** Apply a toolbar transform and restore the caret the transform asked for. */
   const applyEdit = useCallback((next: MicronEditResult) => {
@@ -244,6 +249,28 @@ export default function MicronPageEditor({
           >
             {t('nomadNetwork.serving.toolbar.link')}
           </button>
+
+          {/* Wide box-drawing art needs open width; fit-width wraps and breaks it. */}
+          <button
+            type="button"
+            aria-label={fitWidth ? t('nomadNetwork.openWidth') : t('nomadNetwork.fitWidth')}
+            title={fitWidth ? t('nomadNetwork.openWidth') : t('nomadNetwork.fitWidth')}
+            aria-pressed={fitWidth}
+            onClick={() => {
+              setFitWidth((prev) => {
+                const next = !prev;
+                writeNomadPageFitWidth(next);
+                return next;
+              });
+            }}
+            className={`ml-auto rounded border px-2 py-1 text-xs ${
+              fitWidth
+                ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'
+                : 'border-gray-600 text-gray-200 hover:bg-slate-800'
+            }`}
+          >
+            {fitWidth ? t('nomadNetwork.openWidth') : t('nomadNetwork.fitWidth')}
+          </button>
         </div>
 
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2">
@@ -257,11 +284,19 @@ export default function MicronPageEditor({
             aria-label={t('nomadNetwork.serving.editorAria')}
             className="min-h-0 resize-none rounded border border-gray-600 bg-slate-900 p-3 font-mono text-xs text-gray-200"
           />
-          <div className="min-h-0 overflow-y-auto rounded border border-gray-600 bg-slate-900 p-3">
+          {/* Mirrors the browser's nomad-page-scroll shell: both axes, so wide art is reachable. */}
+          <div className="min-h-0 min-w-0 overflow-auto rounded border border-gray-600 bg-slate-900 p-3">
             <p className="text-muted mb-2 text-[10px] uppercase">
               {t('nomadNetwork.serving.editorPreview')}
             </p>
-            <div ref={previewRef} />
+            <NomadMicronPageView
+              content={preview}
+              defaultPagePath={DEFAULT_NOMAD_NODE_PAGE_PATH}
+              selectedHash=""
+              fitWidth={fitWidth}
+              onNavigate={noopNavigate}
+              onDownloadFile={noopNavigate}
+            />
           </div>
         </div>
 
