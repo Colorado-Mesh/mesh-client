@@ -5115,7 +5115,9 @@
     "jumpToLatest": "Ir para as últimas",
     "stackNotReady": "A pilha Reticulum ainda não está pronta. Aguarde até conectar e tente novamente.",
     "sidecarNotRunning": "O sidecar Reticulum não está em execução. Inicie a pilha em Conexão e tente novamente.",
-    "whoReplyMissing": "Nenhuma lista de membros do hub para {{room}} (a resposta pode exceder o tamanho do link). Os nomes aparecerão quando as pessoas entrarem ou conversarem."
+    "whoReplyMissing": "Nenhuma lista de membros do hub para {{room}} (a resposta pode exceder o tamanho do link). Os nomes aparecerão quando as pessoas entrarem ou conversarem.",
+    "openNomadPage": "Abrir página do Nomad {{address}}",
+    "openDm": "Abrir mensagem direta com {{address}}"
   },
   "signalMeter": {
     "rssi": "RSSI",

@@ -5115,7 +5115,9 @@
     "jumpToLatest": "Langsung ke Terbaru",
     "stackNotReady": "Stack Reticulum belum siap. Tunggu hingga terhubung, lalu coba lagi.",
     "sidecarNotRunning": "Sidecar Reticulum tidak berjalan. Mulai stack di Connection, lalu coba lagi.",
-    "whoReplyMissing": "Tidak ada daftar anggota dari hub untuk {{room}} (balasan dapat melebihi ukuran tautan). Nama akan muncul saat orang bergabung atau mengobrol."
+    "whoReplyMissing": "Tidak ada daftar anggota dari hub untuk {{room}} (balasan dapat melebihi ukuran tautan). Nama akan muncul saat orang bergabung atau mengobrol.",
+    "openNomadPage": "Buka halaman Nomad {{address}}",
+    "openDm": "Buka pesan langsung dengan {{address}}"
   },
   "signalMeter": {
     "rssi": "RSSI",

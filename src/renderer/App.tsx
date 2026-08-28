@@ -235,6 +235,7 @@ import {
 } from './lib/meshtasticMqttLiveIngest';
 import { shouldAutoLaunchMeshcoreMqttAtStartup, tryAutoLaunchMqtt } from './lib/mqttAutoLaunch';
 import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
+import { OPEN_NOMAD_PAGE_EVENT, type OpenNomadPageDetail } from './lib/nomad/openNomadPageFromLink';
 import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities';
 import { parseStoredJson } from './lib/parseStoredJson';
 import { protocolHeaderBorderClass } from './lib/protocolTheme';
@@ -286,6 +287,7 @@ import { useIdentityStore } from './stores/identityStore';
 import { useMapLayerStore } from './stores/mapLayerStore';
 import { useMapViewportStore } from './stores/mapViewportStore';
 import { useNodeStore } from './stores/nodeStore';
+import { useNomadPageViewerStore } from './stores/nomadPageViewerStore';
 import { usePathHistoryStore } from './stores/pathHistoryStore';
 import { usePositionHistoryStore } from './stores/positionHistoryStore';
 import { useReticulumGamesStore } from './stores/reticulumGamesStore';
@@ -2057,6 +2059,48 @@ function AppContent() {
     };
   }, [handleOpenGamesSession]);
 
+  const handleOpenNomadPage = useCallback(
+    (destinationHash: string, path: string) => {
+      // Gate on Reticulum capabilities — links must work while another protocol is active.
+      if (!reticulumCapabilities.hasNomadNetworkPanel) return;
+      if (protocol !== 'reticulum') {
+        lastTabByProtocol.current.set(protocol, activeTab);
+        lastPanelByProtocol.current.set(protocol, activePanelIndex);
+        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+        setProtocol('reticulum');
+      }
+      const nomadTabIndex = findFilteredTabIndexForPanel(
+        selectByProtocol(tabsByProtocol, 'reticulum'),
+        NOMAD_NETWORK_PANEL_INDEX,
+      );
+      if (nomadTabIndex >= 0) {
+        setActiveTab(nomadTabIndex);
+        setNomadTabVisited(true);
+      }
+      void useNomadPageViewerStore.getState().loadPage(destinationHash, path);
+    },
+    [
+      activePanelIndex,
+      activeTab,
+      protocol,
+      reticulumCapabilities.hasNomadNetworkPanel,
+      tabsByProtocol,
+    ],
+  );
+
+  useEffect(() => {
+    const onOpen = (event: Event) => {
+      const detail = (event as CustomEvent<OpenNomadPageDetail>).detail;
+      if (detail?.destinationHash) {
+        handleOpenNomadPage(detail.destinationHash, detail.path);
+      }
+    };
+    window.addEventListener(OPEN_NOMAD_PAGE_EVENT, onOpen);
+    return () => {
+      window.removeEventListener(OPEN_NOMAD_PAGE_EVENT, onOpen);
+    };
+  }, [handleOpenNomadPage]);
+
   useEffect(() => {
     setReticulumGamesTabFocused(
       protocol === 'reticulum' &&
@@ -3464,6 +3508,7 @@ function AppContent() {
                                   activePanelIndex === RRC_PANEL_INDEX && capabilities.hasRrcPanel
                                 }
                                 alwaysShowMessageActions={alwaysShowMessageActions}
+                                onOpenDm={handleOpenReticulumDmByHash}
                               />
                             </div>
                           </Suspense>

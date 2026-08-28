@@ -5190,6 +5190,8 @@
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",
+    "openNomadPage": "Open Nomad page {{address}}",
+    "openDm": "Open direct message with {{address}}",
     "hubs": {
       "favourites": "Favourites",
       "discovered": "Discovered"

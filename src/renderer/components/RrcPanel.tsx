@@ -102,9 +102,15 @@ export interface RrcPanelProps {
   isActive: boolean;
   /** Keep RRC per-message copy visible (same App Appearance setting as Chat). */
   alwaysShowMessageActions?: boolean;
+  /** Open a Chat DM for an LXMF destination hash posted in a room. */
+  onOpenDm?: (destinationHash: string) => void;
 }
 
-export default function RrcPanel({ isActive, alwaysShowMessageActions = false }: RrcPanelProps) {
+export default function RrcPanel({
+  isActive,
+  alwaysShowMessageActions = false,
+  onOpenDm,
+}: RrcPanelProps) {
   const { t } = useTranslation();
   const hubs = useRrcHubStore((s) => s.hubs);
   const refreshFromSidecar = useRrcHubStore((s) => s.refreshFromSidecar);
@@ -1231,6 +1237,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             placeholder={whisperComposerPlaceholder}
             isActive={isActive}
             onCaughtUp={handleCaughtUp}
+            onOpenDm={onOpenDm}
           />
           {showNicklist && (
             <RrcNickList

@@ -5115,7 +5115,9 @@
     "jumpToLatest": "最新へジャンプ",
     "stackNotReady": "Reticulum スタックはまだ準備ができていません。接続されるまで待ってから再試行してください。",
     "sidecarNotRunning": "Reticulum サイドカーが実行されていません。接続でスタックを開始してから、もう一度お試しください。",
-    "whoReplyMissing": "{{room}}のハブからのメンバーリストがありません（返信はリンクサイズを超える場合があります）。名前は、参加者またはチャットとして表示されます。"
+    "whoReplyMissing": "{{room}}のハブからのメンバーリストがありません（返信はリンクサイズを超える場合があります）。名前は、参加者またはチャットとして表示されます。",
+    "openNomadPage": "Nomad ページ {{address}} を開く",
+    "openDm": "{{address}}とのダイレクトメッセージを開く"
   },
   "signalMeter": {
     "rssi": "RSSI",

@@ -5115,7 +5115,9 @@
     "jumpToLatest": "跳到最新",
     "stackNotReady": "Reticulum 堆栈尚未就绪。请等到已连接后再重试。",
     "sidecarNotRunning": "Reticulum sidecar 未运行。请在 Connection 启动协议栈，然后重试。",
-    "whoReplyMissing": "中心没有{{room}}的成员列表（回复可能超过链接大小）。姓名将显示为人员加入或聊天。"
+    "whoReplyMissing": "中心没有{{room}}的成员列表（回复可能超过链接大小）。姓名将显示为人员加入或聊天。",
+    "openNomadPage": "打开 Nomad 页面 {{address}}",
+    "openDm": "打开与{{address}}的直接消息"
   },
   "signalMeter": {
     "rssi": "RSSI",

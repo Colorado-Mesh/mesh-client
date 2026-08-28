@@ -5115,7 +5115,9 @@
     "jumpToLatest": "En Yeniye Atla",
     "stackNotReady": "Reticulum yığını henüz hazır değil. Bağlanana kadar bekleyin, ardından tekrar deneyin.",
     "sidecarNotRunning": "Reticulum sidecar çalışmıyor. Bağlantı bölümünde yığını başlatın, sonra tekrar deneyin.",
-    "whoReplyMissing": "{{room}} için merkezden üye listesi yok (yanıt bağlantı boyutunu aşabilir). Kişiler katılırken veya sohbet ederken adlar görünecektir."
+    "whoReplyMissing": "{{room}} için merkezden üye listesi yok (yanıt bağlantı boyutunu aşabilir). Kişiler katılırken veya sohbet ederken adlar görünecektir.",
+    "openNomadPage": "Nomad sayfasını aç {{address}}",
+    "openDm": "{{address}} ile doğrudan mesajı açın"
   },
   "signalMeter": {
     "rssi": "RSSI",

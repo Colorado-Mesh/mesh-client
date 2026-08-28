@@ -5115,7 +5115,9 @@
     "jumpToLatest": "Spring naar de laatste",
     "stackNotReady": "De Reticulum-stack is nog niet klaar. Wacht tot deze verbonden is en probeer het opnieuw.",
     "sidecarNotRunning": "Reticulum-sidecar draait niet. Start de stack op Verbinding en probeer het opnieuw.",
-    "whoReplyMissing": "Geen ledenlijst van de hub voor {{room}} (het antwoord mag groter zijn dan de linkgrootte). Namen worden weergegeven als mensen deelnemen of chatten."
+    "whoReplyMissing": "Geen ledenlijst van de hub voor {{room}} (het antwoord mag groter zijn dan de linkgrootte). Namen worden weergegeven als mensen deelnemen of chatten.",
+    "openNomadPage": "Open Nomad-pagina {{address}}",
+    "openDm": "Direct bericht openen met {{address}}"
   },
   "signalMeter": {
     "rssi": "RSSI",
