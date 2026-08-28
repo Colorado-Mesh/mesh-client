@@ -22,17 +22,17 @@ export function ReticulumPathTableMaintenance({
 
   return (
     <>
-      <div className="mt-3 rounded border border-slate-700/70 bg-slate-900/40 p-3">
-        <h4 className="text-sm font-medium text-gray-300">
+      <div className="mt-3 rounded-lg border border-yellow-700 bg-yellow-900/30 px-3 py-2 text-yellow-300">
+        <h4 className="text-sm font-medium text-yellow-200">
           {t('networkPanel.reticulumPathTable.title')}
         </h4>
-        <p className="text-muted mt-1 text-xs">
+        <p className="mt-1 text-xs text-yellow-200/80">
           {t('networkPanel.reticulumPathTable.description')}
         </p>
         <button
           type="button"
           disabled={disabled || clearing}
-          className="mt-3 rounded border border-slate-600 bg-slate-800 px-3 py-1.5 text-sm text-gray-200 hover:bg-slate-700 disabled:opacity-40"
+          className="mt-3 rounded border border-yellow-600 bg-yellow-900/50 px-3 py-1.5 text-sm text-yellow-100 hover:bg-yellow-800/50 disabled:opacity-40"
           aria-label={t('networkPanel.reticulumPathTable.clearAria')}
           onClick={() => {
             setPendingConfirm(true);
@@ -48,7 +48,6 @@ export function ReticulumPathTableMaintenance({
           title={t('networkPanel.reticulumPathTable.confirmTitle')}
           message={t('networkPanel.reticulumPathTable.confirmBody')}
           confirmLabel={t('networkPanel.reticulumPathTable.confirmAction')}
-          danger
           onConfirm={() => {
             setPendingConfirm(false);
             setClearing(true);
