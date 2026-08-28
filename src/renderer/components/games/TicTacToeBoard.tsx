@@ -51,9 +51,9 @@ export function TicTacToeBoard({ session, onMove, disabled = false }: TicTacToeB
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="text-sm text-amber-100">{statusText}</div>
+      <div className="text-sm text-gray-100">{statusText}</div>
       {myMarker && (
-        <div className="text-xs text-amber-200/60">
+        <div className="text-xs text-gray-400">
           {t('gamesPanel.ttt.yourMarker', { marker: myMarker })}
           {moveCount > 0 ? ` · ${t('gamesPanel.ttt.moveCount', { count: moveCount })}` : ''}
         </div>
@@ -70,7 +70,7 @@ export function TicTacToeBoard({ session, onMove, disabled = false }: TicTacToeB
             <button
               key={index}
               type="button"
-              className="flex h-14 w-14 items-center justify-center rounded border border-amber-800/50 bg-amber-950/40 text-2xl font-bold text-amber-100 enabled:hover:bg-amber-900/60 disabled:cursor-default disabled:opacity-70"
+              className="flex h-14 w-14 items-center justify-center rounded border border-gray-600 bg-slate-800/80 text-2xl font-bold text-gray-100 enabled:hover:bg-gray-700 disabled:cursor-default disabled:opacity-70"
               aria-label={
                 isEmpty
                   ? t('gamesPanel.ttt.cellEmptyAria', { index: index + 1 })

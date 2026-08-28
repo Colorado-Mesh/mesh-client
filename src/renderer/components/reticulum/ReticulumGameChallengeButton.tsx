@@ -70,12 +70,12 @@ export function ReticulumGameChallengeButton({
         <span>{t('gamesPanel.challenge')}</span>
       </button>
       {showMenu && (
-        <div className="absolute top-full right-0 z-10 mt-1 w-36 rounded border border-amber-800/60 bg-slate-900 shadow-lg">
+        <div className="bg-deep-black absolute top-full right-0 z-10 mt-1 w-36 rounded border border-gray-600 shadow-lg">
           {CHALLENGE_APPS.map((appId) => (
             <button
               key={appId}
               type="button"
-              className="block w-full px-3 py-1.5 text-left text-xs text-amber-100 hover:bg-amber-900/60 disabled:opacity-50"
+              className="block w-full px-3 py-1.5 text-left text-xs text-gray-100 hover:bg-gray-800 disabled:opacity-50"
               disabled={disabled}
               aria-label={t('gamesPanel.challengeAppAria', {
                 app: t(`gamesPanel.apps.${appId}`, { defaultValue: appId }),

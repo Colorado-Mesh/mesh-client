@@ -10,14 +10,14 @@ export function RrcTopicBar({ room, topic, memberCount }: RrcTopicBarProps) {
   const { t } = useTranslation();
   if (!room || room.startsWith('[') || room.startsWith('@')) return null;
   return (
-    <div className="flex items-center gap-2 border-b border-amber-800/40 bg-amber-950/20 px-3 py-1.5 text-xs text-amber-100/80">
-      <span className="font-semibold text-amber-200">{room}</span>
-      <span className="text-amber-500/50">|</span>
-      <span className="min-w-0 flex-1 truncate text-amber-200/60 italic">
+    <div className="flex items-center gap-2 border-b border-gray-700 bg-slate-800/50 px-3 py-1.5 text-xs text-gray-200">
+      <span className="font-semibold text-gray-100">{room}</span>
+      <span className="text-gray-600">|</span>
+      <span className="min-w-0 flex-1 truncate text-gray-400 italic">
         {topic?.trim() ? topic : t('rrc.noTopic')}
       </span>
       {memberCount != null && memberCount > 0 && (
-        <span className="shrink-0 text-amber-200/50">
+        <span className="shrink-0 text-gray-400">
           {t('rrc.memberCount', { count: memberCount })}
         </span>
       )}

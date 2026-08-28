@@ -359,7 +359,7 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 
 ## RRC (Reticulum Relay Chat)
 
-IRC-style multi-pane client (`RrcPanel` + `rrcHubStore` / `rrcSessionStore`):
+IRC-style multi-pane client (`RrcPanel` + `rrcHubStore` / `rrcSessionStore`). Panel chrome uses the standard app slate/green theme (same as Nomad, Peers, and LXMF Chat); IRC mono transcript layout is unchanged.
 
 - Discover hubs from announces, connect by hash, or favourite hubs (Nomad-style). Soft cap **8** concurrent hub sessions.
 - Headless hub **auto-connect** (`useRrcStartupAutoConnect`, mounted from App): polls ~**500 ms** while any preferred hub is still pending (waiting for live attach / first link), then ~**4 s** steady; also wakes immediately on `RETICULUM_CONFIGURED_EVENT`.
