@@ -34,12 +34,14 @@ import type {
   ReticulumSidecarEvent,
 } from '@/shared/reticulum-types';
 
+import { useReticulumBlocklistIdentityId } from '../stores/blockStore';
 import { refreshReticulumPeersFromSidecar } from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
 import { IdentityVaultPanel } from './IdentityVaultPanel';
 import QrCodeImage from './QrCodeImage';
 import QrIngestControl from './QrIngestControl';
 import { ReticulumAnnounceControls } from './ReticulumAnnounceControls';
+import { ReticulumBlockedContactsSection } from './ReticulumBlockedContactsSection';
 import { ReticulumPathTableMaintenance } from './ReticulumPathTableMaintenance';
 import ReticulumPnHostingDangerZone from './ReticulumPnHostingDangerZone';
 import ReticulumPropagationSection from './ReticulumPropagationSection';
@@ -166,6 +168,7 @@ export function ReticulumNetworkPanel({
   const [pendingReplaceAction, setPendingReplaceAction] = useState<IdentityReplaceAction | null>(
     null,
   );
+  const reticulumBlocklistIdentityId = useReticulumBlocklistIdentityId();
   const [configPaste, setConfigPaste] = useState('');
   const [importWarnings, setImportWarnings] = useState<string[]>([]);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
@@ -864,6 +867,13 @@ export function ReticulumNetworkPanel({
             identityDisplayName={identity?.display_name ?? displayName}
             onOpenAppGpsSettings={onOpenAppGpsSettings}
           />
+        </ReticulumCollapsibleSection>
+      ) : null}
+
+      {/* Not gated on sidecarApiReady — the blocklist is local DB state, editable with the stack stopped. */}
+      {reticulumBlocklistIdentityId ? (
+        <ReticulumCollapsibleSection title={t('appPanel.reticulumBlocklist.title')}>
+          <ReticulumBlockedContactsSection identityId={reticulumBlocklistIdentityId} />
         </ReticulumCollapsibleSection>
       ) : null}
 

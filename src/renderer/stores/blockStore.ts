@@ -98,3 +98,13 @@ export const useBlockStore = create<BlockStoreState>((set, get) => ({
     return get().blockedHashes.has(normalizeBlockedHash(blockedHash));
   },
 }));
+
+/**
+ * Identity whose blocklist the Reticulum UI should show, or `null`.
+ *
+ * The store holds one protocol at a time and only `useReticulumRuntime` hydrates
+ * it, so the scope check lives here rather than in each consuming component.
+ */
+export function useReticulumBlocklistIdentityId(): string | null {
+  return useBlockStore((s) => (s.protocol === 'reticulum' ? s.identityId : null));
+}

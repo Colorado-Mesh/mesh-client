@@ -74,7 +74,6 @@ export function ReticulumBlockedContactsSection({
 
   return (
     <div className="space-y-3">
-      <h3 className="text-muted text-sm font-medium">{t('appPanel.reticulumBlocklist.title')}</h3>
       <p className="text-muted text-xs">{t('appPanel.reticulumBlocklist.description')}</p>
       <div className="flex flex-wrap gap-2">
         <button

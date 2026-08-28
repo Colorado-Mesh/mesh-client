@@ -50,7 +50,6 @@ import {
   type ThemeColorKey,
 } from '../lib/themeColors';
 import type { MeshNode, MeshProtocol } from '../lib/types';
-import { useBlockStore } from '../stores/blockStore';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useNodeStore } from '../stores/nodeStore';
@@ -59,7 +58,6 @@ import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
-import { ReticulumBlockedContactsSection } from './ReticulumBlockedContactsSection';
 import { useToast } from './Toast';
 
 /** Sentinel for "clear all channels" so MeshCore DM (`channel_idx === -1`) does not collide with "All". */
@@ -288,10 +286,6 @@ export default function AppPanel({
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const reticulumContactCount = useReticulumPeerStore((s) => s.contacts.size);
   const clearAllReticulumContacts = useReticulumPeerStore((s) => s.clearAllContacts);
-  // blockStore is hydrated for Reticulum only (useReticulumRuntime), so scope on protocol.
-  const reticulumBlocklistIdentityId = useBlockStore((s) =>
-    s.protocol === 'reticulum' ? s.identityId : null,
-  );
 
   const historyWindowOptionLabels = useMemo((): Record<number, string> => {
     return {
@@ -1890,8 +1884,6 @@ export default function AppPanel({
           </button>
         </div>
       </div>
-
-      <ReticulumBlockedContactsSection identityId={reticulumBlocklistIdentityId} />
 
       {/* Appearance — collapsible; preset-only colors (no text input — Electron macOS menu warnings). */}
       <div className="space-y-2">
