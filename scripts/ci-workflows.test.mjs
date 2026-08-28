@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const CHECKOUT_SHA = 'd23441a48e516b6c34aea4fa41551a30e30af803';
+const SETUP_NODE_SHA = '249970729cb0ef3589644e2896645e5dc5ba9c38';
 
 function read(relativePath) {
   return fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
@@ -50,6 +52,17 @@ describe('CI workflow contracts', () => {
     expect(ciWorkflow).toContain('uses: ./.github/actions/setup-node-pnpm');
     expect(testsWorkflow).toContain('uses: ./.github/actions/setup-node-pnpm');
     expect(setupAction).toContain('pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271');
+    expect(setupAction).toContain(`actions/setup-node@${SETUP_NODE_SHA}`);
+    expect(setupAction).toContain("default: '22.23.2'");
     expect(setupAction).toContain('pnpm install --frozen-lockfile');
+  });
+
+  it('pins checkout and removes persisted credentials before running repository code', () => {
+    expect(ciWorkflow.match(new RegExp(`actions/checkout@${CHECKOUT_SHA}`, 'g'))).toHaveLength(5);
+    expect(testsWorkflow.match(new RegExp(`actions/checkout@${CHECKOUT_SHA}`, 'g'))).toHaveLength(
+      4,
+    );
+    expect(ciWorkflow.match(/persist-credentials: false/g)).toHaveLength(5);
+    expect(testsWorkflow.match(/persist-credentials: false/g)).toHaveLength(4);
   });
 });

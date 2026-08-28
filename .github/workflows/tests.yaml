@@ -29,8 +29,10 @@ jobs:
       vitest_paths: ${{ steps.vitest.outputs.vitest_paths }}
       vitest_projects: ${{ steps.vitest.outputs.vitest_projects }}
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
+          persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           # Full history is required for merge-base change detection and paths-filter on push.
           fetch-depth: 0
@@ -68,9 +70,11 @@ jobs:
     env:
       VITEST_COVERAGE_SHARD: '1'
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         if: contains(fromJSON(needs.changes.outputs.vitest_projects), matrix.project)
         with:
+          persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: ./.github/actions/setup-node-pnpm
         if: contains(fromJSON(needs.changes.outputs.vitest_projects), matrix.project)
@@ -105,8 +109,10 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
+          persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
         shell: bash
@@ -168,9 +174,11 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         if: needs.changes.outputs.vitest_mode != 'skip'
         with:
+          persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: ./.github/actions/setup-node-pnpm
         if: needs.changes.outputs.vitest_mode != 'skip'

@@ -5,7 +5,7 @@ inputs:
   node-version:
     description: Node.js version used by CI
     required: false
-    default: '22'
+    default: '22.23.2'
 
 runs:
   using: composite
@@ -14,7 +14,8 @@ runs:
       uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
 
     - name: Setup Node
-      uses: actions/setup-node@v6
+      # actions/setup-node v6.5.0
+      uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
       with:
         node-version: ${{ inputs.node-version }}
         cache: pnpm

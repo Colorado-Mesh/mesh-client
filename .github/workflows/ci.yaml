@@ -29,8 +29,10 @@ jobs:
     outputs:
       flatpak: ${{ steps.filter.outputs.flatpak }}
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
+          persist-credentials: false
           # paths-filter also handles push-like merge_group events from this checkout.
           fetch-depth: 0
       # dorny/paths-filter v4.0.0
@@ -57,7 +59,10 @@ jobs:
     name: Code quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
 
       - name: Format check
@@ -93,7 +98,10 @@ jobs:
     name: Typecheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
       - run: pnpm run typecheck
 
@@ -101,7 +109,10 @@ jobs:
     name: Application build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
       - run: pnpm run build
 
@@ -111,7 +122,10 @@ jobs:
     if: needs.changes.outputs.flatpak == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
 
       - name: Check Flatpak
