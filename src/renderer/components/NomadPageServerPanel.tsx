@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { isValidMicronPageName } from '@/renderer/lib/nomad/micronPageName';
 import { humanizeNomadPageError } from '@/renderer/lib/nomad/nomadPageErrorHumanize';
 import {
   planServingListsApply,
   planServingStatusApply,
 } from '@/renderer/lib/nomad/nomadPageServerRefresh';
 import {
+  deleteServingPage,
+  getServingPageRaw,
   getServingStatus,
   listServingPages,
   pickServingContentSource,
@@ -14,6 +17,18 @@ import {
   setServingContentSource,
 } from '@/renderer/lib/nomad/nomadServingApi';
 import type { NomadServingPageEntry, NomadServingStatus } from '@/shared/nomad-types';
+
+import MicronPageEditor from './MicronPageEditor';
+
+/** Starter body for a brand-new page so the preview is not blank. */
+const NEW_PAGE_TEMPLATE = '>New page\n\nEdit this text.\n';
+
+interface EditorTarget {
+  path: string;
+  content: string;
+  /** False for a page that does not exist on disk yet. */
+  existing: boolean;
+}
 
 /** Avoid repeating the same hosting failure warn on every poll. */
 let lastLoggedHostingError: string | null = null;
@@ -34,6 +49,9 @@ export default function NomadPageServerPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [editorTarget, setEditorTarget] = useState<EditorTarget | null>(null);
+  /** Content-relative path awaiting delete confirmation, if any. */
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const refreshInFlightRef = useRef(false);
   const refreshSeqRef = useRef(0);
   /** Prefer local edits over poll/status refresh until Start/Stop serving succeeds. */
@@ -187,6 +205,53 @@ export default function NomadPageServerPanel({
       await refresh();
     } finally {
       setBusy(false);
+    }
+  };
+
+  const newPage = () => {
+    const name = window.prompt(t('nomadNetwork.serving.newPageName'), 'index.mu');
+    if (name == null) return;
+    const trimmed = name.trim();
+    if (!isValidMicronPageName(trimmed)) {
+      setError(t('nomadNetwork.serving.invalidPageName'));
+      return;
+    }
+    setError(null);
+    setEditorTarget({ path: trimmed, content: NEW_PAGE_TEMPLATE, existing: false });
+  };
+
+  const editPage = async (entry: NomadServingPageEntry) => {
+    setBusy(true);
+    setError(null);
+    try {
+      // Pass the listed path through verbatim; it is what the read route expects.
+      const res = await getServingPageRaw(entry.path);
+      if (!res.ok) {
+        console.warn('[NomadHosting] page read failed:', res.error);
+        // Do not open an empty editor over a page we failed to read.
+        setError(humanizeNomadPageError(res.error, t) || t('nomadNetwork.serving.openError'));
+        return;
+      }
+      setEditorTarget({ path: entry.path, content: res.content, existing: true });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removePage = async (path: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await deleteServingPage(path);
+      if (!res.ok) {
+        console.warn('[NomadHosting] page delete failed:', res.error);
+        setError(humanizeNomadPageError(res.error, t) || t('nomadNetwork.serving.deleteError'));
+        return;
+      }
+      await refresh();
+    } finally {
+      setBusy(false);
+      setPendingDelete(null);
     }
   };
 
@@ -349,9 +414,18 @@ export default function NomadPageServerPanel({
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
       <div className="border-t border-gray-700 pt-3">
-        <h4 className="mb-2 text-sm font-medium text-gray-100">
-          {t('nomadNetwork.serving.myPages')}
-        </h4>
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <h4 className="text-sm font-medium text-gray-100">{t('nomadNetwork.serving.myPages')}</h4>
+          <button
+            type="button"
+            disabled={busy || !sidecarRunning || !hasContentSource}
+            onClick={newPage}
+            aria-label={t('nomadNetwork.serving.newPage')}
+            className="border-bright-green/60 text-bright-green hover:bg-bright-green/10 rounded border px-2 py-1 text-xs disabled:opacity-40"
+          >
+            {t('nomadNetwork.serving.newPage')}
+          </button>
+        </div>
         <ul className="mb-3 space-y-1">
           {pages.length === 0 ? (
             <li className="text-muted text-sm">{t('nomadNetwork.serving.noPages')}</li>
@@ -360,11 +434,78 @@ export default function NomadPageServerPanel({
               <li key={page.path} className="flex items-center gap-2 text-sm">
                 <span className="truncate text-gray-200">{page.path}</span>
                 <span className="text-muted shrink-0 text-[10px]">{page.size} B</span>
+                <button
+                  type="button"
+                  disabled={busy || !sidecarRunning || !hasContentSource}
+                  onClick={() => {
+                    void editPage(page);
+                  }}
+                  aria-label={t('nomadNetwork.serving.editPage', { path: page.path })}
+                  className="ml-auto shrink-0 rounded border border-gray-600 px-2 py-0.5 text-[10px] text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+                >
+                  {t('nomadNetwork.serving.edit')}
+                </button>
+                {pendingDelete === page.path ? (
+                  <>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => {
+                        void removePage(page.path);
+                      }}
+                      aria-label={t('nomadNetwork.serving.deleteConfirmAria')}
+                      className="shrink-0 rounded border border-red-600 px-2 py-0.5 text-[10px] text-red-300 hover:bg-red-900/30 disabled:opacity-40"
+                    >
+                      {t('common.confirm')}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => {
+                        setPendingDelete(null);
+                      }}
+                      aria-label={t('common.cancel')}
+                      className="shrink-0 rounded border border-gray-600 px-2 py-0.5 text-[10px] text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={busy || !sidecarRunning || !hasContentSource}
+                    onClick={() => {
+                      setPendingDelete(page.path);
+                    }}
+                    aria-label={t('nomadNetwork.serving.deletePage', { path: page.path })}
+                    className="shrink-0 rounded border border-red-600 px-2 py-0.5 text-[10px] text-red-300 hover:bg-red-900/30 disabled:opacity-40"
+                  >
+                    {t('nomadNetwork.serving.delete')}
+                  </button>
+                )}
               </li>
             ))
           )}
         </ul>
       </div>
+
+      {editorTarget ? (
+        <MicronPageEditor
+          path={editorTarget.path}
+          initialContent={editorTarget.content}
+          canDelete={editorTarget.existing}
+          onSaved={() => {
+            void refresh();
+          }}
+          onDeleted={() => {
+            setEditorTarget(null);
+            void refresh();
+          }}
+          onClose={() => {
+            setEditorTarget(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
