@@ -8,8 +8,8 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 | Workflow                    | Trigger                                      | Purpose                                                                         |
 | --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`    | Lint, typecheck, build, Flatpak manifest validation                             |
-| `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`    | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
+| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`    | Parallel lint, typecheck, build, and path-gated Flatpak validation              |
+| `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`    | Affected PR tests; full protected-event coverage; path-gated sidecar `llvm-cov` |
 | `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS; not a PR gate)                 |
 | `build.yaml`                | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build (+ schema compare vs last official)           |
 | `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                       |
@@ -23,24 +23,14 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## CI Build (`ci.yaml`)
 
-Runs on every push, pull request, and merge-queue `merge_group` for `main` (and `workflow_dispatch`):
+Runs on every push, pull request, and merge-queue `merge_group` for `main` (and `workflow_dispatch`). After one change-detection job, independent lanes run concurrently:
 
-1. Checkout code
-2. Setup pnpm
-3. Setup Node 22
-4. Install dependencies (`pnpm install --frozen-lockfile`)
-5. Format check (`pnpm run format:check`)
-6. Markdown lint (`pnpm run lint:md`)
-7. Run lint (`pnpm run lint`)
-8. Audit Open Source Licenses (`pnpm run check:licenses` — SPDX allowlist via `pnpm licenses list`)
-9. actionlint (via `pnpm run setup:actionlint`)
-10. `pnpm audit --audit-level=high` (non-blocking warning)
-11. Run `yamllint` on workflow/config YAML
-12. Run typecheck (`pnpm run typecheck`)
-13. Run build (`pnpm run build`)
-14. Run `check:flatpak`, `check:flatpak-offline-pnpm` (needs `flatpak-node-generator`), `desktop-file-validate`, and `appstreamcli validate` on Flatpak metadata
+- **Code quality:** format, markdownlint, ESLint, license allowlist, actionlint, dependency audit, and yamllint
+- **Typecheck:** `pnpm run typecheck`
+- **Application build:** `pnpm run build`
+- **Flatpak checks:** only when Flatpak inputs change; runs `check:flatpak`, `check:flatpak-offline-pnpm`, `desktop-file-validate`, and `appstreamcli validate`
 
-All blocking steps must pass before a PR can be merged.
+Each Node lane uses the same pinned Node 22/pnpm setup action and frozen install. The final `Build & Test` job aggregates every lane so the existing required check name remains stable. Superseded runs for the same pull request or ref are cancelled.
 
 ---
 
@@ -48,12 +38,15 @@ All blocking steps must pass before a PR can be merged.
 
 Runs on every push, pull request, and merge-queue `merge_group` for `main`:
 
-1. Checkout code, setup pnpm + Node 22, install dependencies
-2. **Parallel matrix** — coverage per Vitest project (`renderer-ui`, `renderer-logic`, `main`) with blob reporter (`VITEST_COVERAGE_SHARD=1` skips per-shard threshold checks)
-3. **Merge job** — downloads blob artifacts, runs `pnpm run test:coverage:merge` (enforces global coverage thresholds)
-4. **`reticulum-sidecar-coverage`** (when `reticulum-sidecar/**` or related scripts change, via `paths-filter`) — clones the `.rsstack/` workspace, runs `cargo llvm-cov --fail-under-lines 45` on ubuntu-latest; uploads `lcov.info` artifact (no Codecov upload on free org plan)
-5. Upload Cobertura coverage to GitHub Code Coverage (non-fork PRs / pushes) — Vitest merge job only
-6. Upload merged test results artifact (retained 7 days)
+1. **Detect scope:** compare a pull request head with its true merge base and reuse the local staged-test planner to select related paths and Vitest projects.
+2. **Pull requests:** run `vitest related` without coverage for the affected project lanes. Docs-only changes skip Vitest. Shared contracts select all projects.
+3. **Safe fallback:** test infrastructure, dependency manifests, deleted/renamed paths, oversized output, or detector failures run the full matrix.
+4. **Protected events:** `merge_group`, pushes to `main`, and manual runs always run full coverage across `renderer-ui`, `renderer-logic`, and `main`.
+5. **Merge job:** combine scoped blob reports for PR feedback, or run `pnpm run test:coverage:merge` on protected events to enforce global thresholds.
+6. **`reticulum-sidecar-coverage`:** when sidecar paths change, clone the `.rsstack/` workspace, run `cargo llvm-cov --fail-under-lines 45`, and upload `lcov.info`.
+7. Upload merged test results (retained 7 days).
+
+The three `Coverage (...)` job names and `Merge coverage` remain stable for the repository ruleset, including when a project or the whole test matrix has no relevant PR work. Superseded runs for the same pull request or ref are cancelled.
 
 Static analysis on PRs is **CodeQL** (security) plus ESLint, Clippy, and pre-commit `check:*` scanners. AI PR review is **CodeRabbit** (see [CodeRabbit](#coderabbit) below). SonarQube Cloud is not used.
 
@@ -353,7 +346,7 @@ All PRs (and merge-queue groups) for `main` must pass the **required check names
 
 - Lint, format, markdown, licenses, actionlint, yamllint (`pnpm run lint` and related steps in `ci.yaml`)
 - Typecheck and build (`pnpm run typecheck`, `pnpm run build`)
-- Tests with coverage (`pnpm run test:coverage:merge` — `locale-quality.test.ts` runs `check:i18n` as part of the Vitest suite)
+- Affected Vitest tests on pull requests; full Vitest with global coverage thresholds on `merge_group`, `main`, and manual runs
 
 ---
 
@@ -369,7 +362,7 @@ The pre-commit hook (`.githooks/pre-commit`) runs checks beyond what GitHub Acti
 - `pnpm audit` only when dependency manifests staged; `actionlint` / `yamllint` only when relevant files are staged
 - `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
 
-**PR CI** ([`tests.yaml`](../.github/workflows/tests.yaml)) and **`pnpm run release`** always run the **full** Vitest suite (`pnpm run test:run`). Green pre-commit does not replace those gates.
+**PR CI** ([`tests.yaml`](../.github/workflows/tests.yaml)) selects merge-base-related Vitest work and fails closed to the full suite when scoping is unsafe. The merge queue and **`pnpm run release`** always run full Vitest; green pre-commit does not replace those gates.
 
 CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage tests. i18n quality is enforced locally via pre-commit and indirectly in CI through Vitest (`locale-quality.test.ts`).
 

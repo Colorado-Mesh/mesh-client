@@ -15,24 +15,50 @@ on:
   merge_group:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
-    name: Build & Test
+  changes:
+    name: Detect CI changes
+    permissions:
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    outputs:
+      flatpak: ${{ steps.filter.outputs.flatpak }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # paths-filter also handles push-like merge_group events from this checkout.
+          fetch-depth: 0
+      # dorny/paths-filter v4.0.0
+      - uses: dorny/paths-filter@9d7afb8d214ad99e78fbd4247752c4caed2b6e4c
+        id: filter
+        with:
+          filters: |
+            flatpak:
+              - 'flatpak/**'
+              - 'org.coloradomesh.MeshClient.yml'
+              - '.npmrc'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'patches/**'
+              - 'scripts/check-flatpak*.mjs'
+              - 'scripts/flatpakPnpmStoreVersion*.mjs'
+              - 'scripts/flatpak-pnpm-install*'
+              - 'scripts/sync-flatpak-electron*'
+              - '.github/actions/setup-node-pnpm/action.yaml'
+              - '.github/workflows/ci.yaml'
+
+  quality:
+    name: Code quality
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-node-pnpm
 
       - name: Format check
         run: pnpm run format:check
@@ -63,11 +89,30 @@ jobs:
       - name: YAML Lint
         run: yamllint -f github -s .
 
-      - name: Typecheck
-        run: pnpm run typecheck
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-node-pnpm
+      - run: pnpm run typecheck
 
-      - name: Build
-        run: pnpm run build
+  app-build:
+    name: Application build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-node-pnpm
+      - run: pnpm run build
+
+  flatpak:
+    name: Flatpak checks
+    needs: changes
+    if: needs.changes.outputs.flatpak == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-node-pnpm
 
       - name: Check Flatpak
         run: pnpm run check:flatpak
@@ -93,3 +138,37 @@ jobs:
 
       - name: Validate metainfo
         run: appstreamcli validate --no-net flatpak/org.coloradomesh.MeshClient.metainfo.xml
+
+  build:
+    name: Build & Test
+    needs: [changes, quality, typecheck, app-build, flatpak]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    env:
+      CHANGES_RESULT: ${{ needs.changes.result }}
+      QUALITY_RESULT: ${{ needs.quality.result }}
+      TYPECHECK_RESULT: ${{ needs.typecheck.result }}
+      BUILD_RESULT: ${{ needs.app-build.result }}
+      FLATPAK_RESULT: ${{ needs.flatpak.result }}
+    steps:
+      - name: Verify CI fan-out
+        shell: bash
+        run: |
+          required_ok=true
+          for result in "$CHANGES_RESULT" "$QUALITY_RESULT" "$TYPECHECK_RESULT" "$BUILD_RESULT"; do
+            [[ "$result" == 'success' ]] || required_ok=false
+          done
+          flatpak_ok=false
+          [[ "$FLATPAK_RESULT" == 'success' || "$FLATPAK_RESULT" == 'skipped' ]] && flatpak_ok=true
+
+          {
+            echo '## CI fan-out'
+            echo
+            echo "- Changes: $CHANGES_RESULT"
+            echo "- Code quality: $QUALITY_RESULT"
+            echo "- Typecheck: $TYPECHECK_RESULT"
+            echo "- Application build: $BUILD_RESULT"
+            echo "- Flatpak checks: $FLATPAK_RESULT"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          [[ "$required_ok" == true && "$flatpak_ok" == true ]]
