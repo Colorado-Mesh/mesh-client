@@ -1134,7 +1134,10 @@
         "blePeer": "シード ピア アドレスを使用する BLE ピア メッシュ。",
         "generic": "Reticulumネットワークインターフェース。",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "このマシン上のルーター経由の I2P バックボーン。SAM アプリケーションブリッジ（127.0.0.1:7656）を有効にしてください — HTTP/HTTPS の I2PTunnel プロキシ（4444/4445）ではありません。SAM を有効にしたあと I2P を再起動してブリッジが待ち受けるようにし、このインターフェースがダウンのままなら Reticulum スタックも再起動してください。"
+        "i2p": "このマシン上のルーター経由の I2P バックボーン。SAM アプリケーションブリッジ（127.0.0.1:7656）を有効にしてください — HTTP/HTTPS の I2PTunnel プロキシ（4444/4445）ではありません。SAM を有効にしたあと I2P を再起動してブリッジが待ち受けるようにし、このインターフェースがダウンのままなら Reticulum スタックも再起動してください。",
+        "serial": "TNC、モデム、または他のホストへの一般的なシリアルリンク。遠端に一致するようにラインパラメータを設定します。",
+        "ax25kiss": "KISS TNCを介したAX.25パケットラジオ。このステーションを識別するコールサインとSSID （ 0 -15 ）が必要です。",
+        "local": "このマシン上の共有インスタンスソケット。他のローカルツール（ rnsd、Nomad Network、rnsh ）は、このスタックを介してこのスタックに接続できます。ソケットパスはこのインターフェイスの名前から派生しているため、名前を変更すると、他のツールが使用しなければならないアドレスが変更されます。"
       },
       "rfProfile": {
         "coordinated": "地域連携",
@@ -1258,7 +1261,34 @@
       "effectiveModeBadge": "有効期限： {{mode}}",
       "effectiveModeAria": "有効なランタイムモード{{mode}}。設定モードは、Reticulumが実行しているモードとは異なります。",
       "effectiveModeTooltip": "Reticulumは、ignore_config_warningsが設定されていない限り、DISCOVERABLEにはゲートウェイ、内部、またはアクセスポイントが必要なため、この検出可能なインターフェイスをアクセスポイント（または別の許可されたモード）に書き換えました。フル（または設定モード）が有効になるようにオプトアウトするmesh-clientスタンプの後、スタックを再起動します。",
-      "flowControlBleHint": "Bluetoothでは、ラジオはCMD_READYを送信しないことがよくあります。Mesh-Clientは依然としてTXをペーシングします（READYを短時間待ってから続行します）。そのため、フロー制御はキューをフリーズさせることなく過負荷を軽減します。"
+      "flowControlBleHint": "Bluetoothでは、ラジオはCMD_READYを送信しないことがよくあります。Mesh-Clientは依然としてTXをペーシングします（READYを短時間待ってから続行します）。そのため、フロー制御はキューをフリーズさせることなく過負荷を軽減します。",
+      "advancedFields": "詳細設定",
+      "field": {
+        "port": "ポート",
+        "speed": "速度（ボー）",
+        "databits": "データビット",
+        "parity": "パリティ",
+        "stopbits": "ストップビット",
+        "callsign": "識別信号",
+        "ssid": "SSID",
+        "flow_control": "フロー制御",
+        "preamble": "プリアンブル（ミリ秒）",
+        "txtail": "TXテール（ミリ秒）",
+        "persistence": "永続 化",
+        "slottime": "スロットタイム（ミリ秒）"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "0",
+          "E": "Even",
+          "O": "奇数"
+        }
+      },
+      "fieldRequired": "これは必須欄です.",
+      "fieldNotANumber": "整数（数字のみ）を入力してください。",
+      "fieldOutOfRange": "値が許容範囲外です。",
+      "fieldTooLong": "値が長すぎます。",
+      "fieldInvalidOption": "サポートされていない値です。"
     },
     "reticulumPeers": {
       "hops": "Hops",

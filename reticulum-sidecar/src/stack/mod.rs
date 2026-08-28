@@ -10,6 +10,7 @@ mod identity_apply;
 mod identity_backup;
 mod identity_import;
 mod identity_slots;
+pub mod interface_catalog;
 mod local_rnode_primary;
 mod lxmf_inbound_log;
 mod nomad_content_source;

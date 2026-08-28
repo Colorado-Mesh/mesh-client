@@ -1133,7 +1133,10 @@
         "blePeer": "Maillage d’homologues BLE utilisant des adresses d’homologues de départ.",
         "generic": "Interface réseau Reticulum.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "Backbone I2P via un routeur sur cette machine. Activez le pont d'application SAM (127.0.0.1:7656) — pas les proxys HTTP/HTTPS I2PTunnel (4444/4445). Redémarrez I2P après avoir activé SAM pour que le pont écoute, puis redémarrez la pile Reticulum si cette interface reste en panne."
+        "i2p": "Backbone I2P via un routeur sur cette machine. Activez le pont d'application SAM (127.0.0.1:7656) — pas les proxys HTTP/HTTPS I2PTunnel (4444/4445). Redémarrez I2P après avoir activé SAM pour que le pont écoute, puis redémarrez la pile Reticulum si cette interface reste en panne.",
+        "serial": "Lien série générique vers un TNC, un modem ou un autre hôte via un fil. Définissez les paramètres de ligne pour qu'ils correspondent à l'extrémité éloignée.",
+        "ax25kiss": "Radio par paquets AX.25 via un TNC KISS. Nécessite votre indicatif d'appel et un SSID (0-15) identifiant cette station.",
+        "local": "Prise en instance partagée sur cette machine. D'autres outils locaux (rnsd, Nomad Network, rnsh) peuvent s'attacher à cette pile à travers elle. Le chemin du socket est dérivé du nom de cette interface, donc le renommer change l'adresse que les autres outils doivent utiliser."
       },
       "rfProfile": {
         "coordinated": "Coordination régionale",
@@ -1257,7 +1260,34 @@
       "effectiveModeBadge": "En vigueur le : {{mode}}",
       "effectiveModeAria": "Mode d'exécution effectif {{mode}}. Le mode configuré diffère de ce que Reticulum exécute.",
       "effectiveModeTooltip": "Reticulum a réécrit cette interface découvrable au point d'accès (ou à un autre mode autorisé) car découvrable nécessite Gateway, Internal ou Access Point sauf si ignore_config_warnings est défini. Redémarrez la pile après que les tampons maillés-clients qui se désengagent de sorte que Full (ou votre mode configuré) prennent effet (mesh-client).",
-      "flowControlBleHint": "Sur Bluetooth, la radio n'envoie souvent jamais CMD_READY. Mesh-Client suit toujours TX (attend brièvement d'ÊTRE PRÊT, puis continue) afin que le contrôle de flux réduise la surcharge sans geler la file d'attente."
+      "flowControlBleHint": "Sur Bluetooth, la radio n'envoie souvent jamais CMD_READY. Mesh-Client suit toujours TX (attend brièvement d'ÊTRE PRÊT, puis continue) afin que le contrôle de flux réduise la surcharge sans geler la file d'attente.",
+      "advancedFields": "Paramètres avancé",
+      "field": {
+        "port": "Port",
+        "speed": "Vitesse [Bauds]",
+        "databits": "Bits de donnÃ©es",
+        "parity": "Parité",
+        "stopbits": "Bits d'arrêt",
+        "callsign": "Indicatif d’appel",
+        "ssid": "SSID",
+        "flow_control": "Régulation du débit",
+        "preamble": "Préambule (ms)",
+        "txtail": "TX queue (ms)",
+        "persistence": "Persistance",
+        "slottime": "Temps de créneau (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "Aucune",
+          "E": "Normale",
+          "O": "Impair"
+        }
+      },
+      "fieldRequired": "Ce champ est obligatoire.",
+      "fieldNotANumber": "Entrez un nombre entier (chiffres seulement).",
+      "fieldOutOfRange": "La valeur est hors de la plage autorisée.",
+      "fieldTooLong": "La valeur est trop longue",
+      "fieldInvalidOption": "Valeur enum non prise en charge"
     },
     "reticulumPeers": {
       "hops": "Hops",

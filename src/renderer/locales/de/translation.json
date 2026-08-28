@@ -1132,7 +1132,10 @@
         "blePeer": "BLE-Peer-Mesh unter Verwendung von Seed-Peer-Adressen.",
         "generic": "Reticulum-Netzwerkschnittstelle.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "I2P-Backbone über einen Router auf dieser Maschine. Aktivieren SIE die SAM-Anwendungsbrücke (127.0.0.1:7656) — nicht HTTP/HTTPS-I2PTunnel-Proxys (4444/4445). Starten Sie I2P neu, nachdem Sie SAM aktiviert haben, damit die Brücke zuhört, und starten Sie dann den Reticulum-Stack neu, wenn diese Schnittstelle ausgeschaltet bleibt."
+        "i2p": "I2P-Backbone über einen Router auf dieser Maschine. Aktivieren SIE die SAM-Anwendungsbrücke (127.0.0.1:7656) — nicht HTTP/HTTPS-I2PTunnel-Proxys (4444/4445). Starten Sie I2P neu, nachdem Sie SAM aktiviert haben, damit die Brücke zuhört, und starten Sie dann den Reticulum-Stack neu, wenn diese Schnittstelle ausgeschaltet bleibt.",
+        "serial": "Generische serielle Verbindung zu einem TNC, Modem oder einem anderen Host über eine Leitung. Stellen Sie die Linienparameter so ein, dass sie mit dem fernen Ende übereinstimmen.",
+        "ax25kiss": "AX.25 Paketradio durch einen KISS TNC. Erfordert Ihr Rufzeichen und eine SSID (0-15), die diese Station identifiziert.",
+        "local": "Shared-Instance-Buchse auf dieser Maschine. Andere lokale Tools (rnsd, Nomad Network, rnsh) können über diesen Stack angeschlossen werden. Der Socket-Pfad leitet sich vom Namen dieser Schnittstelle ab, sodass die Umbenennung die Adresse ändert, die andere Tools verwenden müssen."
       },
       "rfProfile": {
         "coordinated": "Regional koordiniert",
@@ -1256,7 +1259,34 @@
       "effectiveModeBadge": "Gültig ab: {{mode}}",
       "effectiveModeAria": "Effektiver Laufzeitmodus {{mode}}. Der konfigurierte Modus unterscheidet sich von dem, was Reticulum ausführt.",
       "effectiveModeTooltip": "Reticulum hat diese auffindbare Schnittstelle zum Access Point (oder einem anderen zulässigen Modus) neu geschrieben, da auffindbar Gateway, Intern oder Access Point erfordert, es sei denn, ignore_config_warnings ist eingestellt. Starten Sie den Stack neu, nachdem der mesh-client abgestempelt hat, dass die Abmeldung wirksam wird, damit Full (oder Ihr konfigurierter Modus) wirksam wird.",
-      "flowControlBleHint": "Bei Bluetooth sendet das Funkgerät oft nie cmd_READY. Der Mesh-Client beschleunigt TX immer noch (wartet kurz auf READY und fährt dann fort), sodass die Flusssteuerung die Überlastung reduziert, ohne die Warteschlange einzufrieren."
+      "flowControlBleHint": "Bei Bluetooth sendet das Funkgerät oft nie cmd_READY. Der Mesh-Client beschleunigt TX immer noch (wartet kurz auf READY und fährt dann fort), sodass die Flusssteuerung die Überlastung reduziert, ohne die Warteschlange einzufrieren.",
+      "advancedFields": "Erweiterte Einstellungen",
+      "field": {
+        "port": "Port",
+        "speed": "Geschwindigkeit (Baud)",
+        "databits": "Datenbits",
+        "parity": "Parität",
+        "stopbits": "Stoppbits",
+        "callsign": "Rufzeichen",
+        "ssid": "SSID",
+        "flow_control": "Durchflusskontrolle",
+        "preamble": "Präambel (ms)",
+        "txtail": "TX Tail (ms)",
+        "persistence": "Beharrlichkeit sagt",
+        "slottime": "Zeit (ms):"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "None",
+          "E": "gerade",
+          "O": "Ungerade"
+        }
+      },
+      "fieldRequired": "Dieses Feld ist ein Pflichtfeld.",
+      "fieldNotANumber": "Geben Sie eine ganze Zahl ein (nur Ziffern).",
+      "fieldOutOfRange": "Der Wert liegt außerhalb des zulässigen Bereichs.",
+      "fieldTooLong": "Wert ist zu lang",
+      "fieldInvalidOption": "Wert ungültig"
     },
     "reticulumPeers": {
       "hops": "Hops",

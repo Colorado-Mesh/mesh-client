@@ -1134,7 +1134,10 @@
         "blePeer": "Malla de pares BLE que utiliza direcciones de pares iniciales.",
         "generic": "Interfaz de red Reticulum.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "Red troncal I2P a través de un router en esta máquina. Habilite el puente de aplicación SAM (127.0.0.1:7656), no los proxies HTTP/HTTPS I2PTunnel (4444/4445). Reinicie I2P después de habilitar SAM para que el puente escuche, luego reinicie la pila Reticulum si esta interfaz permanece inactiva."
+        "i2p": "Red troncal I2P a través de un router en esta máquina. Habilite el puente de aplicación SAM (127.0.0.1:7656), no los proxies HTTP/HTTPS I2PTunnel (4444/4445). Reinicie I2P después de habilitar SAM para que el puente escuche, luego reinicie la pila Reticulum si esta interfaz permanece inactiva.",
+        "serial": "Enlace serie genérico a un TNC, módem u otro host a través de un cable. Establezca los parámetros de línea para que coincidan con el extremo lejano.",
+        "ax25kiss": "Radio por paquetes AX.25 a través de un TNC de KISS. Requiere su indicativo y un SSID (0-15) que identifique esta estación.",
+        "local": "Enchufe de instancia compartida en esta máquina. Otras herramientas locales (rnsd, Nomad Network, rnsh) se pueden conectar a esta pila a través de ella. La ruta del socket se deriva del nombre de esta interfaz, por lo que cambiarle el nombre cambia la dirección que deben usar otras herramientas."
       },
       "rfProfile": {
         "coordinated": "Regional coordinado",
@@ -1258,7 +1261,34 @@
       "effectiveModeBadge": "Vigencia: {{mode}}",
       "effectiveModeAria": "Modo de tiempo de ejecución efectivo {{mode}}. El modo configurado difiere de lo que está ejecutando Reticulum.",
       "effectiveModeTooltip": "Reticulum reescribió esta interfaz detectable en Access Point (u otro modo permitido) porque Discoverable requiere Gateway, Internal o Access Point a menos que se establezca ignore_config_warnings. Reinicie la pila después de los sellos de cliente de malla que optan por no participar para que Full (o su modo configurado) surta efecto (mesh-client).",
-      "flowControlBleHint": "En Bluetooth, la radio a menudo nunca envía CMD_READY. Mesh-Client sigue marcando el ritmo de TX (espera brevemente a que ESTÉ LISTO, luego continúa) para que el control de flujo reduzca la sobrecarga sin congelar la cola."
+      "flowControlBleHint": "En Bluetooth, la radio a menudo nunca envía CMD_READY. Mesh-Client sigue marcando el ritmo de TX (espera brevemente a que ESTÉ LISTO, luego continúa) para que el control de flujo reduzca la sobrecarga sin congelar la cola.",
+      "advancedFields": "Ajustes avanzados",
+      "field": {
+        "port": "Puerto",
+        "speed": "Velocidad (baudios)",
+        "databits": "Bits de datos",
+        "parity": "Paridad",
+        "stopbits": "Bit de parada",
+        "callsign": "Señal de llamada",
+        "ssid": "SSID",
+        "flow_control": "Control del caudal",
+        "preamble": "Preámbulo (ms)",
+        "txtail": "TX cola (ms)",
+        "persistence": "Persistencia",
+        "slottime": "Tiempo de ranura (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "Ninguno",
+          "E": "Incluso",
+          "O": "Impar"
+        }
+      },
+      "fieldRequired": "Este campo es obligatorio.",
+      "fieldNotANumber": "Introduce un número entero (solo dígitos).",
+      "fieldOutOfRange": "El valor está fuera del rango permitido.",
+      "fieldTooLong": "El valor es demasiado largo",
+      "fieldInvalidOption": "Valor no admitido."
     },
     "reticulumPeers": {
       "hops": "Hops",

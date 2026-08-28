@@ -1136,7 +1136,10 @@
         "blePeer": "Siatka równorzędna BLE wykorzystująca adresy równorzędne początkowe.",
         "generic": "Interfejs sieciowy Reticulum.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "Szkielet I2P za pośrednictwem routera na tym komputerze. Włącz mostek aplikacji SAM (127.0.0.1:7656) — nie proxy HTTP/HTTPS I2PTunnel (4444/4445). Uruchom ponownie I2P po włączeniu SAM, aby mostek nasłuchiwał, a następnie uruchom ponownie stos Reticulum, jeśli ten interfejs pozostanie wyłączony."
+        "i2p": "Szkielet I2P za pośrednictwem routera na tym komputerze. Włącz mostek aplikacji SAM (127.0.0.1:7656) — nie proxy HTTP/HTTPS I2PTunnel (4444/4445). Uruchom ponownie I2P po włączeniu SAM, aby mostek nasłuchiwał, a następnie uruchom ponownie stos Reticulum, jeśli ten interfejs pozostanie wyłączony.",
+        "serial": "Ogólne łącze szeregowe do TNC, modemu lub innego hosta przez kabel. Ustaw parametry linii tak, aby pasowały do końca.",
+        "ax25kiss": "Radio pakietowe AX.25 przez TNC KISS. Wymagany jest Twój znak wywoławczy i identyfikator SSID (0-15) identyfikujący tę stację.",
+        "local": "Współdzielone gniazdo instancji na tej maszynie. Inne narzędzia lokalne (rnsd, Nomad Network, rnsh) mogą być podłączone do tego stosu za jego pośrednictwem. Ścieżka gniazda pochodzi od nazwy tego interfejsu, więc zmiana jego nazwy zmienia adres, którego muszą używać inne narzędzia."
       },
       "rfProfile": {
         "coordinated": "Skoordynowane regionalnie",
@@ -1260,7 +1263,34 @@
       "effectiveModeBadge": "Obowiązuje: {{mode}}",
       "effectiveModeAria": "Efektywny tryb czasu pracy {{mode}}. Tryb skonfigurowany różni się od uruchomionego programu Reticulum.",
       "effectiveModeTooltip": "Reticulum przepisała ten wykrywalny interfejs do punktu dostępu (lub innego dozwolonego trybu), ponieważ wykrywalny wymaga bramy, wewnętrznego lub punktu dostępu, chyba że ustawiono ignore_config_warnings. Zrestartuj stos po stemplach klienta siatkowego, które rezygnują, aby zadziałał tryb Full (lub skonfigurowany tryb) (mesh-client).",
-      "flowControlBleHint": "W Bluetooth radio często nigdy nie wysyła CMD_READY. Mesh-Client nadal wykonuje TX (czeka krótko na GOTOWOŚĆ, a następnie kontynuuje), więc kontrola przepływu zmniejsza przeciążenie bez zamrażania kolejki."
+      "flowControlBleHint": "W Bluetooth radio często nigdy nie wysyła CMD_READY. Mesh-Client nadal wykonuje TX (czeka krótko na GOTOWOŚĆ, a następnie kontynuuje), więc kontrola przepływu zmniejsza przeciążenie bez zamrażania kolejki.",
+      "advancedFields": "Ustawienia zaawansowane",
+      "field": {
+        "port": "Port",
+        "speed": "BAUD",
+        "databits": "Bit",
+        "parity": "Parzystość",
+        "stopbits": "Bity stopu",
+        "callsign": "Znak wywoławczy",
+        "ssid": "SSID",
+        "flow_control": "Sterowanie przepływem",
+        "preamble": "Preambuła (ms)",
+        "txtail": "Końcówka TX (ms)",
+        "persistence": "Persistence (Trwałość)",
+        "slottime": "Czas szczeliny (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "Brak",
+          "E": "Równy",
+          "O": "Nieparzysty"
+        }
+      },
+      "fieldRequired": "To pole jest obowiązkowe.",
+      "fieldNotANumber": "Wprowadź liczbę całkowitą (tylko cyfry).",
+      "fieldOutOfRange": "Wartość wykracza poza dozwolony zakres.",
+      "fieldTooLong": "Wartość jest zbyt długa.",
+      "fieldInvalidOption": "Nieobsługiwane"
     },
     "reticulumPeers": {
       "hops": "Hops",

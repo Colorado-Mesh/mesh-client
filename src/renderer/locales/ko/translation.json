@@ -1134,7 +1134,10 @@
         "blePeer": "시드 피어 주소를 사용하는 BLE 피어 메시.",
         "generic": "Reticulum 네트워크 인터페이스.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "이 기계의 라우터를 통해 I2P 백본. HTTP/HTTPS I2PTunnel 프록시 (4444/4445) 가 아닌 SAM 응용 프로그램 브리지 (127.0.0.1: 7656) 를 활성화합니다. 브리지가 수신 대기하도록 SAM을 활성화한 후 I2P를 다시 시작한 다음 이 인터페이스가 다운된 경우 Reticulum 스택을 다시 시작하십시오."
+        "i2p": "이 기계의 라우터를 통해 I2P 백본. HTTP/HTTPS I2PTunnel 프록시 (4444/4445) 가 아닌 SAM 응용 프로그램 브리지 (127.0.0.1: 7656) 를 활성화합니다. 브리지가 수신 대기하도록 SAM을 활성화한 후 I2P를 다시 시작한 다음 이 인터페이스가 다운된 경우 Reticulum 스택을 다시 시작하십시오.",
+        "serial": "와이어를 통해 TNC, 모뎀 또는 다른 호스트에 대한 일반 직렬 링크. 원단과 일치하도록 라인 매개 변수를 설정하십시오.",
+        "ax25kiss": "KISS TNC를 통한 AX.25 패킷 라디오. 콜사인과 이 스테이션을 식별하는 SSID (0-15) 가 필요합니다.",
+        "local": "이 기기의 공유 인스턴스 소켓. 다른 로컬 도구 (rnsd, Nomad Network, rnsh) 를 통해 이 스택에 연결할 수 있습니다. 소켓 경로는 이 인터페이스의 이름에서 파생되었으므로 이름을 바꾸면 다른 도구가 사용해야 하는 주소가 변경됩니다."
       },
       "rfProfile": {
         "coordinated": "지역별 조정",
@@ -1258,7 +1261,34 @@
       "effectiveModeBadge": "유효: {{mode}}",
       "effectiveModeAria": "유효 런타임 모드 {{mode}}. 설정된 모드는 Reticulum이 실행 중인 모드와 다릅니다.",
       "effectiveModeTooltip": "Reticulum은 ignore_config_warnings가 설정되지 않는 한 검색 가능한 인터페이스를 게이트웨이, 내부 또는 액세스 포인트가 필요하기 때문에 이 검색 가능한 인터페이스를 액세스 포인트 (또는 다른 허용 모드) 에 다시 작성했습니다. mesh-client 스탬프 후 스택을 다시 시작하여 Full (또는 구성된 모드) 이 적용되도록 옵트아웃합니다.",
-      "flowControlBleHint": "블루투스에서는 라디오가 CMD_READY를 전송하지 않는 경우가 많습니다. Mesh-Client는 여전히 TX를 페이싱하므로 (잠시 기다렸다가 계속) 흐름 제어는 대기열을 멈추지 않고 과부하를 줄입니다."
+      "flowControlBleHint": "블루투스에서는 라디오가 CMD_READY를 전송하지 않는 경우가 많습니다. Mesh-Client는 여전히 TX를 페이싱하므로 (잠시 기다렸다가 계속) 흐름 제어는 대기열을 멈추지 않고 과부하를 줄입니다.",
+      "advancedFields": "고급 설정",
+      "field": {
+        "port": "포팅하기",
+        "speed": "속도 (baud)",
+        "databits": "비트",
+        "parity": "출산 횟수",
+        "stopbits": "중지 비트",
+        "callsign": "콜사인",
+        "ssid": "SSID",
+        "flow_control": "플로우 스테이트",
+        "preamble": "Preamble (ms)",
+        "txtail": "TX tail (ms)",
+        "persistence": "굳게 지킴",
+        "slottime": "슬롯 시간 (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "없음",
+          "E": "Even",
+          "O": "홀수"
+        }
+      },
+      "fieldRequired": "필수입력 항목입니다",
+      "fieldNotANumber": "정수 (숫자만) 를 입력하세요.",
+      "fieldOutOfRange": "값이 허용된 범위를 벗어났습니다.",
+      "fieldTooLong": "값이 너무 깁니다.",
+      "fieldInvalidOption": "지원되지 않는 값입니다."
     },
     "reticulumPeers": {
       "hops": "Hops",

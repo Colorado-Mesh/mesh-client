@@ -1134,7 +1134,10 @@
         "blePeer": "Malha de pares BLE usando endereços de pares iniciais.",
         "generic": "Interface de rede Reticulum.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "Backbone I2P através de um roteador nesta máquina. Habilite a ponte do aplicativo SAM (127.0.0.1:7656) — não proxies HTTP/HTTPS I2PTunnel (4444/4445). Reinicie o I2P depois de habilitar o SAM para que a ponte ouça e reinicie a pilha Reticulum se essa interface permanecer inativa."
+        "i2p": "Backbone I2P através de um roteador nesta máquina. Habilite a ponte do aplicativo SAM (127.0.0.1:7656) — não proxies HTTP/HTTPS I2PTunnel (4444/4445). Reinicie o I2P depois de habilitar o SAM para que a ponte ouça e reinicie a pilha Reticulum se essa interface permanecer inativa.",
+        "serial": "Link serial genérico para um TNC, modem ou outro host por um fio. Defina os parâmetros da linha para corresponder à extremidade mais distante.",
+        "ax25kiss": "Rádio de pacote AX.25 através de um KISS TNC. Requer o seu indicativo e um SSID (0-15) identificando esta estação.",
+        "local": "Tomada de instância compartilhada nesta máquina. Outras ferramentas locais (rnsd, Nomad Network, rnsh) podem ser anexadas a esta pilha através dela. O caminho do socket é derivado do nome dessa interface, portanto, renomeá-lo altera o endereço que outras ferramentas devem usar."
       },
       "rfProfile": {
         "coordinated": "Regional coordenado",
@@ -1258,7 +1261,34 @@
       "effectiveModeBadge": "Em vigor: {{mode}}",
       "effectiveModeAria": "Modo de tempo de execução efetivo {{mode}}. O modo configurado difere do que o Reticulum está executando.",
       "effectiveModeTooltip": "Reticulum reescreveu essa interface detectável para o Ponto de Acesso (ou outro modo permitido) porque o detectável requer Gateway, Interno ou Ponto de Acesso, a menos que ignore_config_warnings esteja definido. Reinicie a pilha após os carimbos mesh-client que desativam o Full (ou seu modo configurado) entrarem em vigor.",
-      "flowControlBleHint": "No Bluetooth, o rádio geralmente nunca envia CMD_READY. Mesh-Client ainda paces TX (espera brevemente por PRONTO, depois continua) para que o controle de fluxo reduza a sobrecarga sem congelar a fila."
+      "flowControlBleHint": "No Bluetooth, o rádio geralmente nunca envia CMD_READY. Mesh-Client ainda paces TX (espera brevemente por PRONTO, depois continua) para que o controle de fluxo reduza a sobrecarga sem congelar a fila.",
+      "advancedFields": "Definições Avançadas",
+      "field": {
+        "port": "Bombordo",
+        "speed": "Velocidade (baud)",
+        "databits": "Bits de dados",
+        "parity": "Paridade",
+        "stopbits": "Bits de parada",
+        "callsign": "Indicativo de chamada",
+        "ssid": "SSID",
+        "flow_control": "Controle de fluxo",
+        "preamble": "Preâmbulo (ms)",
+        "txtail": "Cauda TX (ms)",
+        "persistence": "Persistência",
+        "slottime": "Tempo de slot (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "Nenhuma.",
+          "E": "Evento",
+          "O": "Ímpar"
+        }
+      },
+      "fieldRequired": "Este campo é obrigatório.",
+      "fieldNotANumber": "Insira um número inteiro (apenas dígitos).",
+      "fieldOutOfRange": "O valor está fora do intervalo permitido.",
+      "fieldTooLong": "O valor é muito longo",
+      "fieldInvalidOption": "Valor não suportado."
     },
     "reticulumPeers": {
       "hops": "Hops",

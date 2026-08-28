@@ -1135,7 +1135,10 @@
         "blePeer": "BLE peer mesh pomocí seed peer adres.",
         "generic": "Síťové rozhraní Reticulum.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "I2P páteř přes router na tomto stroji. Povolte most aplikace SAM (127.0.0.1:7656) — ne http/HTTPS I2PTunnel proxy (4444/4445). Restartujte I2P po povolení SAM, aby most poslouchal, a poté restartujte zásobník Reticulum, pokud toto rozhraní zůstane mimo provoz."
+        "i2p": "I2P páteř přes router na tomto stroji. Povolte most aplikace SAM (127.0.0.1:7656) — ne http/HTTPS I2PTunnel proxy (4444/4445). Restartujte I2P po povolení SAM, aby most poslouchal, a poté restartujte zásobník Reticulum, pokud toto rozhraní zůstane mimo provoz.",
+        "serial": "Generický sériový odkaz na TNC, modem nebo jiného hostitele přes drát. Nastavte parametry linky tak, aby odpovídaly vzdálenému konci.",
+        "ax25kiss": "Paketové rádio AX.25 prostřednictvím KISS TNC. Vyžaduje vaši volací značku a SSID (0-15) identifikující tuto stanici.",
+        "local": "Zásuvka sdílené instance na tomto stroji. K tomuto zásobníku se mohou připojit další místní nástroje (rnsd, Nomad Network, rnsh). Cesta soketu je odvozena od názvu tohoto rozhraní, takže přejmenováním změníte adresu, kterou musí ostatní nástroje použít."
       },
       "rfProfile": {
         "coordinated": "Koordinované regionální",
@@ -1259,7 +1262,34 @@
       "effectiveModeBadge": "Účinnost: {{mode}}",
       "effectiveModeAria": "Efektivní režim běhu {{mode}}. Konfigurovaný režim se liší od toho, co běží Reticulum.",
       "effectiveModeTooltip": "Reticulum přepsalo toto zjistitelné rozhraní na přístupový bod (nebo jiný povolený režim), protože zjistitelný vyžaduje bránu, interní nebo přístupový bod, pokud není nastaveno ignore_config_warnings. Restartujte zásobník po razítkách mesh-klienta, které se odhlásí, takže se projeví Full (nebo váš nakonfigurovaný režim) (mesh-client).",
-      "flowControlBleHint": "Na Bluetooth rádio často nikdy neodesílá cmd_READY. Mesh-Client stále přechází TX (krátce čeká na PŘIPRAVENOST, pak pokračuje), takže kontrola průtoku snižuje přetížení bez zmrazení fronty."
+      "flowControlBleHint": "Na Bluetooth rádio často nikdy neodesílá cmd_READY. Mesh-Client stále přechází TX (krátce čeká na PŘIPRAVENOST, pak pokračuje), takže kontrola průtoku snižuje přetížení bez zmrazení fronty.",
+      "advancedFields": "Pokročilá nastavení",
+      "field": {
+        "port": "Port",
+        "speed": "Rychlost (baud)",
+        "databits": "Datové bity",
+        "parity": "Para",
+        "stopbits": "Zastavovací bity",
+        "callsign": "Volací značka",
+        "ssid": "SSID",
+        "flow_control": "regulace průtoku",
+        "preamble": "Preambule (ms)",
+        "txtail": "TX tail (ms)",
+        "persistence": "Perzistence:",
+        "slottime": "Čas otvoru (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "neuvedeny",
+          "E": "Sudá",
+          "O": "Lichá"
+        }
+      },
+      "fieldRequired": "Tato položka msí být vyplněna.",
+      "fieldNotANumber": "Zadejte celé číslo (pouze číslice).",
+      "fieldOutOfRange": "Hodnota je mimo povolený rozsah.",
+      "fieldTooLong": "Hodnota je příliš dlouhá.",
+      "fieldInvalidOption": "Nepodporovaná hodnota."
     },
     "reticulumPeers": {
       "hops": "Hops",

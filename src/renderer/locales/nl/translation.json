@@ -1133,7 +1133,10 @@
         "blePeer": "BLE-peer mesh met behulp van zaad-peer-adressen.",
         "generic": "Reticulum-netwerkinterface.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "I2P-backbone via een router op deze machine. Schakel de SAM-toepassingsbrug (127.0.0.1:7656) in — niet HTTP/HTTPS I2PTunnel-proxy's (4444/4445). Start I2P opnieuw op nadat SAM is ingeschakeld, zodat de brug luistert, en start vervolgens de Reticulum-stack opnieuw als deze interface niet werkt."
+        "i2p": "I2P-backbone via een router op deze machine. Schakel de SAM-toepassingsbrug (127.0.0.1:7656) in — niet HTTP/HTTPS I2PTunnel-proxy's (4444/4445). Start I2P opnieuw op nadat SAM is ingeschakeld, zodat de brug luistert, en start vervolgens de Reticulum-stack opnieuw als deze interface niet werkt.",
+        "serial": "Generieke seriële link naar een TNC, modem of andere host via een kabel. Stel de lijnparameters zo in dat ze overeenkomen met het uiteinde.",
+        "ax25kiss": "AX.25 pakketradio via een KUS TNC. Vereist uw roepnaam en een SSID (0-15) die dit station identificeren.",
+        "local": "Socket met gedeelde instantie op deze machine. Andere lokale tools (rnsd, Nomad Network, rnsh) kunnen via deze stack aan deze stack worden gekoppeld. Het socketpad is afgeleid van de naam van deze interface, dus het hernoemen ervan verandert het adres dat andere tools moeten gebruiken."
       },
       "rfProfile": {
         "coordinated": "Regionaal gecoördineerd",
@@ -1257,7 +1260,34 @@
       "effectiveModeBadge": "Met ingang van: {{mode}}",
       "effectiveModeAria": "Effectieve runtime-modus {{mode}}. Geconfigureerde modus verschilt van wat Reticulum draait.",
       "effectiveModeTooltip": "Reticulum herschreef deze detecteerbare interface naar Access Point (of een andere toegestane modus) omdat detecteerbaar Gateway, Intern of Access Point vereist, tenzij ignore_config_warnings is ingesteld. Herstart de stack na mesh-client stempels die zich afmelden zodat Full (of uw geconfigureerde modus) van kracht wordt.",
-      "flowControlBleHint": "Op Bluetooth stuurt de radio vaak nooit CMD_READY. Mesh-Client beweegt nog steeds TX (wacht kort tot het KLAAR is en gaat dan verder), zodat de stroomregeling overbelasting vermindert zonder de wachtrij te bevriezen."
+      "flowControlBleHint": "Op Bluetooth stuurt de radio vaak nooit CMD_READY. Mesh-Client beweegt nog steeds TX (wacht kort tot het KLAAR is en gaat dan verder), zodat de stroomregeling overbelasting vermindert zonder de wachtrij te bevriezen.",
+      "advancedFields": "Geavanceerde instellingen",
+      "field": {
+        "port": "Poort",
+        "speed": "Snelheid (baud)",
+        "databits": "Data-bits",
+        "parity": "Parity",
+        "stopbits": "Stop bits",
+        "callsign": "Roepletters",
+        "ssid": "SSID",
+        "flow_control": "Stroomregeling",
+        "preamble": "Preambule (ms)",
+        "txtail": "TX staart (ms)",
+        "persistence": "Persistentie",
+        "slottime": "Slottijd (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "Geen",
+          "E": "Even",
+          "O": "Oneven"
+        }
+      },
+      "fieldRequired": "Dit veld is verplicht.",
+      "fieldNotANumber": "Voer een geheel getal in (alleen cijfers).",
+      "fieldOutOfRange": "Waarde valt buiten het toegestane bereik.",
+      "fieldTooLong": "Waarde is te lang",
+      "fieldInvalidOption": "Niet-ondersteund waardetype"
     },
     "reticulumPeers": {
       "hops": "Hops",

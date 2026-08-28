@@ -1134,7 +1134,10 @@
         "blePeer": "使用种子对等地址的 BLE 对等网格。",
         "generic": "Reticulum 网络接口。",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "通过此机器上的路由器的I2P骨干网。启用SAM应用程序桥(127.0.0.1: 7656) —而不是HTTP/HTTPS I2P隧道代理(4444/4445)。在启用SAM后重新启动I2P ，以便桥接器侦听，然后如果此接口保持关闭状态，则重新启动Reticulum堆栈。"
+        "i2p": "通过此机器上的路由器的I2P骨干网。启用SAM应用程序桥(127.0.0.1: 7656) —而不是HTTP/HTTPS I2P隧道代理(4444/4445)。在启用SAM后重新启动I2P ，以便桥接器侦听，然后如果此接口保持关闭状态，则重新启动Reticulum堆栈。",
+        "serial": "通过有线连接到TNC、调制解调器或其他主机的通用串行链路。设置线路参数以匹配远端。",
+        "ax25kiss": "通过KISS TNC的AX.25分组无线电。需要您的呼号以及标识此电台的SSID (0-15)。",
+        "local": "此机器上的共享实例套接字。其他本地工具（ rnsd、Nomad Network、rnsh ）可以通过它连接到此堆栈。套接字路径派生自此接口的名称，因此重命名它会更改其他工具必须使用的地址。"
       },
       "rfProfile": {
         "coordinated": "区域协调",
@@ -1258,7 +1261,34 @@
       "effectiveModeBadge": "有效期： {{mode}}",
       "effectiveModeAria": "有效运行时模式{{mode}}。配置的模式与Reticulum正在运行的模式不同。",
       "effectiveModeTooltip": "Reticulum将此可发现接口重写到接入点（或其他允许的模式） ，因为除非设置了ignore_config_warnings ，否则DISCOVERABLE需要网关、内部或接入点。在选择退出的mesh-client戳后重新启动堆栈，以便完整（或您配置的模式）生效。",
-      "flowControlBleHint": "在蓝牙上，收音机通常不会发送CMD_READY。Mesh-Client仍然步进TX （短暂等待就绪，然后继续） ，因此流量控制可以在不冻结队列的情况下减少过载。"
+      "flowControlBleHint": "在蓝牙上，收音机通常不会发送CMD_READY。Mesh-Client仍然步进TX （短暂等待就绪，然后继续） ，因此流量控制可以在不冻结队列的情况下减少过载。",
+      "advancedFields": "高级设置",
+      "field": {
+        "port": "端口",
+        "speed": "速度（波特率）",
+        "databits": "数据位",
+        "parity": "奇偶性",
+        "stopbits": "停止位",
+        "callsign": "呼号",
+        "ssid": "SSID",
+        "flow_control": "流量控制",
+        "preamble": "前言（毫秒）",
+        "txtail": "TX尾部(ms)",
+        "persistence": "一致性",
+        "slottime": "时隙时间（毫秒）"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "无",
+          "E": "偶數",
+          "O": "奇数"
+        }
+      },
+      "fieldRequired": "此字段为必填项。",
+      "fieldNotANumber": "输入整数（仅限数字）。",
+      "fieldOutOfRange": "值超出允许的范围。",
+      "fieldTooLong": "此值太长。",
+      "fieldInvalidOption": "不支持的V值。"
     },
     "reticulumPeers": {
       "hops": "Hops",

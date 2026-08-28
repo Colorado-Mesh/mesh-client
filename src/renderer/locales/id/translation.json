@@ -1134,7 +1134,10 @@
         "blePeer": "Mesh rekan BLE menggunakan alamat rekan benih.",
         "generic": "Antarmuka jaringan Reticulum.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "Backbone I2P melalui router pada mesin ini. Aktifkan jembatan aplikasi SAM (127.0.0.1:7656) — bukan proxy HTTP/https I2PTunnel (4444/4445). Mulai ulang I2P setelah mengaktifkan SAM sehingga bridge mendengarkan, lalu mulai ulang tumpukan Reticulum jika antarmuka ini tetap down."
+        "i2p": "Backbone I2P melalui router pada mesin ini. Aktifkan jembatan aplikasi SAM (127.0.0.1:7656) — bukan proxy HTTP/https I2PTunnel (4444/4445). Mulai ulang I2P setelah mengaktifkan SAM sehingga bridge mendengarkan, lalu mulai ulang tumpukan Reticulum jika antarmuka ini tetap down.",
+        "serial": "Tautan serial umum ke TNC, modem, atau host lain melalui kabel. Atur parameter garis agar sesuai dengan ujung.",
+        "ax25kiss": "Radio paket AX.25 melalui TNC KISS. Memerlukan tanda panggil Anda dan SSID (0 -15) yang mengidentifikasi stasiun ini.",
+        "local": "Soket instansi bersama pada mesin ini. Alat lokal lainnya (rnsd, Nomad Network, rnsh) dapat dilampirkan ke tumpukan ini melaluinya. Jalur soket berasal dari nama antarmuka ini, jadi mengganti namanya mengubah alamat yang harus digunakan alat lain."
       },
       "rfProfile": {
         "coordinated": "Daerah yang terkoordinasi",
@@ -1258,7 +1261,34 @@
       "effectiveModeBadge": "Berlaku: {{mode}}",
       "effectiveModeAria": "Mode runtime efektif {{mode}}. Mode yang dikonfigurasi berbeda dari yang dijalankan Reticulum.",
       "effectiveModeTooltip": "Reticulum menulis ulang antarmuka yang dapat ditemukan ini ke Access Point (atau mode lain yang diizinkan) karena dapat ditemukan memerlukan Gateway, Internal, atau Access Point kecuali jika ignore_config_warnings ditetapkan. Mulai ulang tumpukan setelah stempel mesh-client yang menyisih sehingga Full (atau mode terkonfigurasi Anda) berlaku.",
-      "flowControlBleHint": "Di Bluetooth, radio sering tidak pernah mengirimkan CMD_READY. Mesh-Client masih melangkah TX (menunggu sebentar untuk READY, lalu melanjutkan) sehingga kontrol aliran mengurangi kelebihan beban tanpa membekukan antrian."
+      "flowControlBleHint": "Di Bluetooth, radio sering tidak pernah mengirimkan CMD_READY. Mesh-Client masih melangkah TX (menunggu sebentar untuk READY, lalu melanjutkan) sehingga kontrol aliran mengurangi kelebihan beban tanpa membekukan antrian.",
+      "advancedFields": "Pengaturan tingkat lanjut",
+      "field": {
+        "port": "Port",
+        "speed": "Kecepatan (baud)",
+        "databits": "Data Bit",
+        "parity": "Paritas",
+        "stopbits": "Bit penghenti",
+        "callsign": "Callsign",
+        "ssid": "SSID",
+        "flow_control": "Kontrol Aliran",
+        "preamble": "Pembukaan",
+        "txtail": "TX tail (ms)",
+        "persistence": "Pantang menyerah",
+        "slottime": "Waktu slot (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "Tidak Ada",
+          "E": "Even",
+          "O": "Ganjil"
+        }
+      },
+      "fieldRequired": "Bidang ini wajib diisi.",
+      "fieldNotANumber": "Masukkan bilangan bulat (digit saja).",
+      "fieldOutOfRange": "Nilai berada di luar rentang yang diizinkan.",
+      "fieldTooLong": "Nilai terlalu panjang.",
+      "fieldInvalidOption": "Nilai tidak didukung."
     },
     "reticulumPeers": {
       "hops": "Hops",

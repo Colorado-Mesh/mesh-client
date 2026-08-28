@@ -1134,7 +1134,10 @@
         "blePeer": "Çekirdek eş adreslerini kullanan BLE eş ağı.",
         "generic": "Reticulum ağ arayüzü.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "Bu makinedeki bir yönlendirici aracılığıyla I2P omurgası. HTTP/https I2PTunnel proxy'leri (4444/4445) değil, SAM uygulama köprüsünü (127.0.0.1:7656) etkinleştirin. Köprünün dinlemesi için SAM'İ etkinleştirdikten sonra I2P'yi yeniden başlatın, ardından bu arayüz kapalı kalırsa Reticulum yığınını yeniden başlatın."
+        "i2p": "Bu makinedeki bir yönlendirici aracılığıyla I2P omurgası. HTTP/https I2PTunnel proxy'leri (4444/4445) değil, SAM uygulama köprüsünü (127.0.0.1:7656) etkinleştirin. Köprünün dinlemesi için SAM'İ etkinleştirdikten sonra I2P'yi yeniden başlatın, ardından bu arayüz kapalı kalırsa Reticulum yığınını yeniden başlatın.",
+        "serial": "Bir tel üzerinden bir TNC, modem veya başka bir ana bilgisayara genel seri bağlantı. Hat parametrelerini uzak uca uyacak şekilde ayarlayın.",
+        "ax25kiss": "KİSS TNC aracılığıyla AX.25 paket radyo. Çağrı işaretinizi ve bu istasyonu tanımlayan bir SSID (0 -15) gerektirir.",
+        "local": "Bu makinede paylaşılan örnek soketi. Diğer yerel araçlar (rnsd, Nomad Network, rnsh) bu yığına onun üzerinden bağlanabilir. Soket yolu bu arabirimin adından türetilmiştir, bu nedenle yeniden adlandırılması diğer araçların kullanması gereken adresi değiştirir."
       },
       "rfProfile": {
         "coordinated": "Koordineli bölgesel",
@@ -1258,7 +1261,34 @@
       "effectiveModeBadge": "Yürürlük Tarihi: {{mode}}",
       "effectiveModeAria": "Etkin çalışma zamanı modu {{mode}}. Yapılandırılmış mod, Reticulum'un çalıştığından farklıdır.",
       "effectiveModeTooltip": "Reticulum, bu keşfedilebilir arayüzü Erişim Noktasına (veya izin verilen başka bir moda) yeniden yazdı, çünkü keşfedilebilir, ignore_config_warnings ayarlanmadığı sürece Ağ Geçidi, Dahili veya Erişim Noktası gerektirir. Tam (veya yapılandırılmış modunuzun) etkili olması için devre dışı bırakılan mesh-client damgalarından sonra yığını yeniden başlatın.",
-      "flowControlBleHint": "Bluetooth'ta, radyo genellikle CMD_READY göndermez. Mesh-Client hala TX'i hızlandırır (READY için kısa bir süre bekler, sonra devam eder), böylece akış kontrolü kuyruğu dondurmadan aşırı yükü azaltır."
+      "flowControlBleHint": "Bluetooth'ta, radyo genellikle CMD_READY göndermez. Mesh-Client hala TX'i hızlandırır (READY için kısa bir süre bekler, sonra devam eder), böylece akış kontrolü kuyruğu dondurmadan aşırı yükü azaltır.",
+      "advancedFields": "Gelişmiş ayarlar",
+      "field": {
+        "port": "Liman",
+        "speed": "Hız (baud)",
+        "databits": "Veri bitleri",
+        "parity": "Parite",
+        "stopbits": "Bitleri Durdur:",
+        "callsign": "Çağrı kodu",
+        "ssid": "SSID",
+        "flow_control": "Akış kontrolü",
+        "preamble": "Giriş (msn)",
+        "txtail": "TX kuyruk (msn)",
+        "persistence": "Kararlılık",
+        "slottime": "Slot süresi (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "Yok",
+          "E": "Şu koku bile,",
+          "O": "Garip"
+        }
+      },
+      "fieldRequired": "Bu alan gereklidir.",
+      "fieldNotANumber": "Bir tam sayı girin (yalnızca rakam).",
+      "fieldOutOfRange": "Değer izin verilen aralığın dışında.",
+      "fieldTooLong": "Değer fazla uzun.",
+      "fieldInvalidOption": "Desteklenmeyen değer."
     },
     "reticulumPeers": {
       "hops": "Hops",

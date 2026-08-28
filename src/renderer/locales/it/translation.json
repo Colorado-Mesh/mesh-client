@@ -1132,7 +1132,10 @@
         "blePeer": "Mesh peer BLE che utilizza indirizzi peer seed.",
         "generic": "Interfaccia di rete Reticulum.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "Dorsale I2P tramite un router su questa macchina. Abilitare il bridge dell'applicazione SAM (127.0.0.1:7656) — non i proxy HTTP/HTTPS I2PTunnel (4444/4445). Riavviare I2P dopo aver abilitato SAM in modo che il bridge ascolti, quindi riavviare lo stack Reticulum se questa interfaccia rimane inattiva."
+        "i2p": "Dorsale I2P tramite un router su questa macchina. Abilitare il bridge dell'applicazione SAM (127.0.0.1:7656) — non i proxy HTTP/HTTPS I2PTunnel (4444/4445). Riavviare I2P dopo aver abilitato SAM in modo che il bridge ascolti, quindi riavviare lo stack Reticulum se questa interfaccia rimane inattiva.",
+        "serial": "Collegamento seriale generico a un TNC, modem o altro host su un cavo. Impostare i parametri della linea in modo che corrispondano all'estremità.",
+        "ax25kiss": "AX.25 packet radio attraverso un KISS TNC. Richiede il tuo nominativo e un SSID (0-15) che identifichi questa stazione.",
+        "local": "Presa a istanza condivisa su questa macchina. Altri strumenti locali (rnsd, Nomad Network, rnsh) possono collegarsi a questo stack attraverso di esso. Il percorso del socket deriva dal nome di questa interfaccia, quindi rinominarlo cambia l'indirizzo che gli altri strumenti devono utilizzare."
       },
       "rfProfile": {
         "coordinated": "Coordinamento regionale",
@@ -1256,7 +1259,34 @@
       "effectiveModeBadge": "In vigore: {{mode}}",
       "effectiveModeAria": "Modalità runtime effettiva {{mode}}. La modalità configurata differisce da quella in esecuzione su Reticulum.",
       "effectiveModeTooltip": "Reticulum ha riscritto questa interfaccia rilevabile su Access Point (o un'altra modalità consentita) perché Discoverable richiede Gateway, Internal o Access Point a meno che non sia impostato ignore_config_warnings. Riavviare lo stack dopo i timbri mesh-client che l'opt-out in modo Full (o la modalità configurata) ha effetto.",
-      "flowControlBleHint": "Sul Bluetooth, la radio spesso non invia mai CMD_READY. Mesh-Client stimola ancora TX (attende brevemente di ESSERE PRONTO, quindi continua) in modo che il controllo del flusso riduca il sovraccarico senza congelare la coda."
+      "flowControlBleHint": "Sul Bluetooth, la radio spesso non invia mai CMD_READY. Mesh-Client stimola ancora TX (attende brevemente di ESSERE PRONTO, quindi continua) in modo che il controllo del flusso riduca il sovraccarico senza congelare la coda.",
+      "advancedFields": "Impostazioni avanzate",
+      "field": {
+        "port": "Porta",
+        "speed": "Velocità (baud)",
+        "databits": "Bit di dati",
+        "parity": "Parità",
+        "stopbits": "Bit di stop",
+        "callsign": "Nome in codice",
+        "ssid": "SSID",
+        "flow_control": "Controllo del flusso",
+        "preamble": "Premessa (ms)",
+        "txtail": "Coda TX (ms)",
+        "persistence": "Persistenza",
+        "slottime": "Tempo slot (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "Nessuna",
+          "E": "Pari",
+          "O": "Quota"
+        }
+      },
+      "fieldRequired": "Campo obbligatorio.",
+      "fieldNotANumber": "Inserisci un numero intero (solo cifre).",
+      "fieldOutOfRange": "Il valore non è compreso nell'intervallo consentito.",
+      "fieldTooLong": "Il valore è troppo lungo",
+      "fieldInvalidOption": "Valore non supportato."
     },
     "reticulumPeers": {
       "hops": "Hops",

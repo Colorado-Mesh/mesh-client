@@ -1263,12 +1263,42 @@
         "rnodeBle": "LoRa mesh via Bluetooth RNode.",
         "rnodeWifi": "LoRa mesh via RNode Wi-Fi (tcp:// host).",
         "blePeer": "BLE peer mesh using seed peer addresses.",
-        "generic": "Reticulum network interface."
+        "generic": "Reticulum network interface.",
+        "serial": "Generic serial link to a TNC, modem, or another host over a wire. Set the line parameters to match the far end.",
+        "ax25kiss": "AX.25 packet radio through a KISS TNC. Requires your callsign and an SSID (0-15) identifying this station.",
+        "local": "Shared-instance socket on this machine. Other local tools (rnsd, Nomad Network, rnsh) can attach to this stack through it. The socket path is derived from this interface's name, so renaming it changes the address other tools must use."
       },
       "rfProfile": {
         "coordinated": "Coordinated regional",
         "fallback": "Global fallback",
         "legacy": "Legacy presets"
+      },
+      "advancedFields": "Advanced settings",
+      "fieldRequired": "This field is required.",
+      "fieldNotANumber": "Enter a whole number (digits only).",
+      "fieldOutOfRange": "Value is out of the allowed range.",
+      "fieldTooLong": "Value is too long.",
+      "fieldInvalidOption": "Unsupported value.",
+      "field": {
+        "port": "Port",
+        "speed": "Speed (baud)",
+        "databits": "Data bits",
+        "parity": "Parity",
+        "stopbits": "Stop bits",
+        "callsign": "Callsign",
+        "ssid": "SSID",
+        "flow_control": "Flow control",
+        "preamble": "Preamble (ms)",
+        "txtail": "TX tail (ms)",
+        "persistence": "Persistence",
+        "slottime": "Slot time (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "None",
+          "E": "Even",
+          "O": "Odd"
+        }
       }
     },
     "reticulumRmap": {
