@@ -238,18 +238,81 @@ describe('RrcChatView Reticulum links', () => {
     }
   });
 
-  it('renders a bare destination hash as a DM button', () => {
-    const onOpenDm = vi.fn();
-    render(
+  function renderBareHash(onOpenDm: () => void) {
+    return render(
       <RrcChatView
         {...baseProps}
         onOpenDm={onOpenDm}
         messages={[makeMsg({ id: '1', body: `ping ${HASH.toUpperCase()}` })]}
       />,
     );
-    const button = screen.getByRole('button', { name: /openDm/i });
-    fireEvent.click(button);
+  }
+
+  it('prompts instead of acting when a bare hash is clicked', () => {
+    const events: CustomEvent[] = [];
+    const listener = (e: Event) => events.push(e as CustomEvent);
+    window.addEventListener('mesh-client:openNomadPage', listener);
+    const onOpenDm = vi.fn();
+    try {
+      renderBareHash(onOpenDm);
+      fireEvent.click(screen.getByRole('button', { name: 'rrc.openReticulumAddress' }));
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+      expect(onOpenDm).not.toHaveBeenCalled();
+      expect(events).toHaveLength(0);
+    } finally {
+      window.removeEventListener('mesh-client:openNomadPage', listener);
+    }
+  });
+
+  it('opens the Nomad page when that choice is picked', () => {
+    const events: CustomEvent[] = [];
+    const listener = (e: Event) => events.push(e as CustomEvent);
+    window.addEventListener('mesh-client:openNomadPage', listener);
+    const onOpenDm = vi.fn();
+    try {
+      renderBareHash(onOpenDm);
+      fireEvent.click(screen.getByRole('button', { name: 'rrc.openReticulumAddress' }));
+      fireEvent.click(screen.getByRole('button', { name: 'rrc.addressChoiceNomad' }));
+      expect(events).toHaveLength(1);
+      expect(events[0].detail).toEqual({ destinationHash: HASH, path: '/page/index.mu' });
+      expect(onOpenDm).not.toHaveBeenCalled();
+      expect(screen.queryByRole('alertdialog')).toBeNull();
+    } finally {
+      window.removeEventListener('mesh-client:openNomadPage', listener);
+    }
+  });
+
+  it('opens a DM when that choice is picked', () => {
+    const onOpenDm = vi.fn();
+    renderBareHash(onOpenDm);
+    fireEvent.click(screen.getByRole('button', { name: 'rrc.openReticulumAddress' }));
+    fireEvent.click(screen.getByRole('button', { name: 'rrc.addressChoiceDm' }));
     expect(onOpenDm).toHaveBeenCalledWith(HASH);
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('does nothing when the choice dialog is dismissed with Escape', () => {
+    const events: CustomEvent[] = [];
+    const listener = (e: Event) => events.push(e as CustomEvent);
+    window.addEventListener('mesh-client:openNomadPage', listener);
+    const onOpenDm = vi.fn();
+    try {
+      renderBareHash(onOpenDm);
+      fireEvent.click(screen.getByRole('button', { name: 'rrc.openReticulumAddress' }));
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(onOpenDm).not.toHaveBeenCalled();
+      expect(events).toHaveLength(0);
+      expect(screen.queryByRole('alertdialog')).toBeNull();
+    } finally {
+      window.removeEventListener('mesh-client:openNomadPage', listener);
+    }
+  });
+
+  it('has no axe violations with the choice dialog open', async () => {
+    const { container } = renderBareHash(vi.fn());
+    fireEvent.click(screen.getByRole('button', { name: 'rrc.openReticulumAddress' }));
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('renders an lxmf:// address as a DM button', () => {
@@ -261,13 +324,14 @@ describe('RrcChatView Reticulum links', () => {
         messages={[makeMsg({ id: '1', body: `lxmf://${HASH}` })]}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /openDm/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'rrc.openDm' }));
     expect(onOpenDm).toHaveBeenCalledWith(HASH);
+    expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 
   it('leaves a destination hash as plain text when no DM handler is provided', () => {
     render(<RrcChatView {...baseProps} messages={[makeMsg({ id: '1', body: HASH })]} />);
-    expect(screen.queryByRole('button', { name: /openDm/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /openDm|openReticulumAddress/i })).toBeNull();
     expect(screen.getByTestId('rrc-chat-line').textContent).toContain(HASH);
   });
 

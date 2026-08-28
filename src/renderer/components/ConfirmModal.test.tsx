@@ -130,4 +130,57 @@ describe('ConfirmModal', () => {
     expect(screen.getByRole('button', { name: 'Switch to LetsMesh' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'I am in Colorado' })).toBeInTheDocument();
   });
+
+  it('omits the alt action button unless both alt props are provided', () => {
+    render(
+      <ConfirmModal
+        title="Open address"
+        message="Which one?"
+        confirmLabel="Nomad page"
+        altActionLabel="Direct message"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Direct message' })).toBeNull();
+  });
+
+  it('calls onAltAction when the alt action button is clicked', async () => {
+    const user = userEvent.setup();
+    const onAltAction = vi.fn();
+    const onConfirm = vi.fn();
+
+    render(
+      <ConfirmModal
+        title="Open address"
+        message="Which one?"
+        confirmLabel="Nomad page"
+        altActionLabel="Direct message"
+        onAltAction={onAltAction}
+        onConfirm={onConfirm}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Direct message' }));
+    expect(onAltAction).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('has no axe violations with an alt action', async () => {
+    const { container } = render(
+      <ConfirmModal
+        title="Open address"
+        message="Which one?"
+        confirmLabel="Nomad page"
+        altActionLabel="Direct message"
+        onAltAction={vi.fn()}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
 });

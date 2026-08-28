@@ -5,7 +5,15 @@ import { parseNomadNetworkLinkUrl } from './micronParser';
 /** A Reticulum address detected inside free-form chat text. */
 export type ReticulumChatLink =
   | { kind: 'nomadPage'; start: number; end: number; url: string }
-  | { kind: 'dm'; start: number; end: number; url: string; destinationHash: string };
+  | {
+      kind: 'dm';
+      start: number;
+      end: number;
+      url: string;
+      destinationHash: string;
+      /** Bare hash — could equally be a Nomad node, so the user must choose. */
+      ambiguous: boolean;
+    };
 
 /** Hash only; schemes and page paths are sliced off separately to keep this linear. */
 const HASH_PATTERN = /[0-9a-fA-F]{32}/gu;
@@ -77,7 +85,14 @@ export function findReticulumChatLinks(text: string): ReticulumChatLink[] {
 
     const destinationHash = parseReticulumDestinationInput(token);
     if (destinationHash) {
-      links.push({ kind: 'dm', start, end, url: token, destinationHash });
+      links.push({
+        kind: 'dm',
+        start,
+        end,
+        url: token,
+        destinationHash,
+        ambiguous: scheme === '',
+      });
     }
   }
   return links;

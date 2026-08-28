@@ -5146,7 +5146,12 @@
     "sidecarNotRunning": "Sidecar Reticulum tidak berjalan. Mulai stack di Connection, lalu coba lagi.",
     "whoReplyMissing": "Tidak ada daftar anggota dari hub untuk {{room}} (balasan dapat melebihi ukuran tautan). Nama akan muncul saat orang bergabung atau mengobrol.",
     "openNomadPage": "Buka halaman Nomad {{address}}",
-    "openDm": "Buka pesan langsung dengan {{address}}"
+    "openDm": "Buka pesan langsung dengan {{address}}",
+    "openReticulumAddress": "Buka alamat Reticulum {{address}}",
+    "addressChoiceTitle": "Buka alamat Reticulum",
+    "addressChoiceMessage": "{{address}} bisa berupa halaman Nomad atau sebuah peer. Mana yang ingin dibuka?",
+    "addressChoiceNomad": "Halaman Nomad",
+    "addressChoiceDm": "Pesan langsung"
   },
   "signalMeter": {
     "rssi": "RSSI",

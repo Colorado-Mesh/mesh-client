@@ -5146,7 +5146,12 @@
     "sidecarNotRunning": "Reticulum sidecar çalışmıyor. Bağlantı bölümünde yığını başlatın, sonra tekrar deneyin.",
     "whoReplyMissing": "{{room}} için merkezden üye listesi yok (yanıt bağlantı boyutunu aşabilir). Kişiler katılırken veya sohbet ederken adlar görünecektir.",
     "openNomadPage": "Nomad sayfasını aç {{address}}",
-    "openDm": "{{address}} ile doğrudan mesajı açın"
+    "openDm": "{{address}} ile doğrudan mesajı açın",
+    "openReticulumAddress": "Reticulum adresini aç: {{address}}",
+    "addressChoiceTitle": "Reticulum adresini aç",
+    "addressChoiceMessage": "{{address}} bir Nomad sayfası veya eş olabilir. Hangisini açmak istersiniz?",
+    "addressChoiceNomad": "Nomad sayfası",
+    "addressChoiceDm": "Doğrudan mesaj"
   },
   "signalMeter": {
     "rssi": "RSSI",

@@ -13,6 +13,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import MentionAutocomplete from '@/renderer/components/MentionAutocomplete';
 import { useAppWindowActivity } from '@/renderer/lib/appWindowActivity';
 import { isSafeChatUrl } from '@/renderer/lib/chatMentionSegments';
@@ -111,12 +112,20 @@ function findRrcLinkSegments(text: string): RrcLinkSegment[] {
 interface RrcInlineOpts {
   /** Localized aria-label lookup (passed in; these are module functions, not hooks). */
   t: (key: string, opts?: Record<string, unknown>) => string;
-  onOpenDm?: (destinationHash: string) => void;
+  /** Non-http Reticulum address click; the component decides page vs DM vs prompt. */
+  onAddressClick?: (link: ReticulumChatLink) => void;
+  /** Whether DM targets are actionable at all (no handler wired ⇒ render as text). */
+  canOpenDm: boolean;
+}
+
+function reticulumAddressLabelKey(link: ReticulumChatLink): string {
+  if (link.kind === 'nomadPage') return 'rrc.openNomadPage';
+  return link.ambiguous ? 'rrc.openReticulumAddress' : 'rrc.openDm';
 }
 
 /** Inline URL + plain text segments (no block wrappers — keeps IRC one-liners). */
 function renderRrcInlineText(text: string, keyPrefix: string, opts: RrcInlineOpts): ReactNode[] {
-  const { t, onOpenDm } = opts;
+  const { t, onAddressClick, canOpenDm } = opts;
   const nodes: ReactNode[] = [];
   let last = 0;
   for (const segment of findRrcLinkSegments(text)) {
@@ -155,34 +164,19 @@ function renderRrcInlineText(text: string, keyPrefix: string, opts: RrcInlineOpt
           </span>,
         );
       }
-    } else if (segment.kind === 'nomadPage') {
-      const url = segment.url;
+    } else if (onAddressClick && (segment.kind === 'nomadPage' || canOpenDm)) {
+      const link = segment;
       nodes.push(
         <button
           key={key}
           type="button"
           className={RRC_LINK_CLASS}
-          aria-label={t('rrc.openNomadPage', { address: url })}
+          aria-label={t(reticulumAddressLabelKey(link), { address: link.url })}
           onClick={() => {
-            openNomadPageFromLink(url);
+            onAddressClick(link);
           }}
         >
-          {url}
-        </button>,
-      );
-    } else if (onOpenDm) {
-      const hash = segment.destinationHash;
-      nodes.push(
-        <button
-          key={key}
-          type="button"
-          className={RRC_LINK_CLASS}
-          aria-label={t('rrc.openDm', { address: segment.url })}
-          onClick={() => {
-            onOpenDm(hash);
-          }}
-        >
-          {segment.url}
+          {link.url}
         </button>,
       );
     } else {
@@ -289,7 +283,31 @@ export function RrcChatView({
   const { inactive: appWindowInactive } = useAppWindowActivity();
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const composerPlaceholder = placeholder ?? t('rrc.messagePlaceholder');
-  const inlineOpts = useMemo<RrcInlineOpts>(() => ({ t, onOpenDm }), [t, onOpenDm]);
+  /** Bare hash awaiting a Nomad-page-vs-DM choice from the user. */
+  const [pendingAddress, setPendingAddress] = useState<{
+    url: string;
+    destinationHash: string;
+  } | null>(null);
+
+  const handleAddressClick = useCallback(
+    (link: ReticulumChatLink) => {
+      if (link.kind === 'nomadPage') {
+        openNomadPageFromLink(link.url);
+        return;
+      }
+      if (link.ambiguous) {
+        setPendingAddress({ url: link.url, destinationHash: link.destinationHash });
+        return;
+      }
+      onOpenDm?.(link.destinationHash);
+    },
+    [onOpenDm],
+  );
+
+  const inlineOpts = useMemo<RrcInlineOpts>(
+    () => ({ t, onAddressClick: handleAddressClick, canOpenDm: onOpenDm != null }),
+    [t, handleAddressClick, onOpenDm],
+  );
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -849,6 +867,25 @@ export function RrcChatView({
           {t('rrc.send')}
         </button>
       </div>
+      {pendingAddress && (
+        <ConfirmModal
+          title={t('rrc.addressChoiceTitle')}
+          message={t('rrc.addressChoiceMessage', { address: pendingAddress.url })}
+          confirmLabel={t('rrc.addressChoiceNomad')}
+          altActionLabel={t('rrc.addressChoiceDm')}
+          onConfirm={() => {
+            openNomadPageFromLink(pendingAddress.url);
+            setPendingAddress(null);
+          }}
+          onAltAction={() => {
+            onOpenDm?.(pendingAddress.destinationHash);
+            setPendingAddress(null);
+          }}
+          onCancel={() => {
+            setPendingAddress(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -8,6 +8,9 @@ export interface ConfirmModalProps {
   /** Defaults to `common.cancel`. */
   cancelLabel?: string;
   danger?: boolean;
+  /** Optional second positive action (e.g. a choice between two destinations). */
+  altActionLabel?: string;
+  onAltAction?: () => void;
   onConfirm: () => void;
   onCancel: () => void;
   preserveFavorites?: boolean;
@@ -24,6 +27,8 @@ export function ConfirmModal({
   confirmLabel,
   cancelLabel,
   danger,
+  altActionLabel,
+  onAltAction,
   onConfirm,
   onCancel,
   preserveFavorites,
@@ -136,6 +141,15 @@ export function ConfirmModal({
           >
             {resolvedCancelLabel}
           </button>
+          {altActionLabel != null && onAltAction != null && (
+            <button
+              type="button"
+              onClick={onAltAction}
+              className="flex-1 rounded-lg bg-cyan-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-cyan-600"
+            >
+              {altActionLabel}
+            </button>
+          )}
           <button
             type="button"
             onClick={onConfirm}

@@ -5148,7 +5148,12 @@
     "sidecarNotRunning": "Sidecar Reticulum не працює. Запустіть стек на Підключенні, а потім спробуйте ще раз.",
     "whoReplyMissing": "Немає списку учасників з концентратора для {{room}} (розмір відповіді може перевищувати розмір посилання). Імена відображатимуться, коли люди приєднуються або спілкуються.",
     "openNomadPage": "Open Nomad page {{address}}",
-    "openDm": "Відкрити пряме повідомлення за допомогою {{address}}"
+    "openDm": "Відкрити пряме повідомлення за допомогою {{address}}",
+    "openReticulumAddress": "Відкрити адресу Reticulum {{address}}",
+    "addressChoiceTitle": "Відкрити адресу Reticulum",
+    "addressChoiceMessage": "{{address}} може бути сторінкою Nomad або вузлом. Що ви хочете відкрити?",
+    "addressChoiceNomad": "Сторінка Nomad",
+    "addressChoiceDm": "Пряме повідомлення"
   },
   "signalMeter": {
     "rssi": "RSSI (індикатор потужності прийнятого сигналу)",

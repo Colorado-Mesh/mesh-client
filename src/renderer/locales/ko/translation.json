@@ -5146,7 +5146,12 @@
     "sidecarNotRunning": "Reticulum 사이드카가 실행되고 있지 않습니다. Connection에서 스택을 시작한 다음 다시 시도하십시오.",
     "whoReplyMissing": "{{room}} 에 대한 허브의 회원 목록이 없습니다 (답글은 링크 크기를 초과할 수 있음). 사람들이 참여하거나 채팅할 때 이름이 표시됩니다.",
     "openNomadPage": "Nomad 페이지 열기 {{address}}",
-    "openDm": "{{address}} (으) 로 다이렉트 메시지 열기"
+    "openDm": "{{address}} (으) 로 다이렉트 메시지 열기",
+    "openReticulumAddress": "Reticulum 주소 {{address}} 열기",
+    "addressChoiceTitle": "Reticulum 주소 열기",
+    "addressChoiceMessage": "{{address}}는 Nomad 페이지이거나 피어일 수 있습니다. 무엇을 열까요?",
+    "addressChoiceNomad": "Nomad 페이지",
+    "addressChoiceDm": "다이렉트 메시지"
   },
   "signalMeter": {
     "rssi": "RSSI",

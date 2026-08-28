@@ -26,19 +26,34 @@ describe('findReticulumChatLinks', () => {
     expect(links[0].kind).toBe('nomadPage');
   });
 
-  it('detects a bare hash as a DM link', () => {
+  it('detects a bare hash as an ambiguous DM link', () => {
     const links = findReticulumChatLinks(HASH);
     expect(links).toEqual([
-      { kind: 'dm', start: 0, end: HASH.length, url: HASH, destinationHash: HASH },
+      {
+        kind: 'dm',
+        start: 0,
+        end: HASH.length,
+        url: HASH,
+        destinationHash: HASH,
+        ambiguous: true,
+      },
     ]);
   });
 
-  it.each(['lxmf://', 'lxmf@', 'lxmf.delivery@'])('detects %s addresses as DM links', (prefix) => {
-    const text = `${prefix}${HASH}`;
-    const links = findReticulumChatLinks(text);
-    expect(links).toHaveLength(1);
-    expect(links[0]).toMatchObject({ kind: 'dm', destinationHash: HASH, url: text });
-  });
+  it.each(['lxmf://', 'lxmf@', 'lxmf.delivery@'])(
+    'detects %s addresses as unambiguous DM links',
+    (prefix) => {
+      const text = `${prefix}${HASH}`;
+      const links = findReticulumChatLinks(text);
+      expect(links).toHaveLength(1);
+      expect(links[0]).toMatchObject({
+        kind: 'dm',
+        destinationHash: HASH,
+        url: text,
+        ambiguous: false,
+      });
+    },
+  );
 
   it('normalizes uppercase hashes', () => {
     const links = findReticulumChatLinks(HASH.toUpperCase());
@@ -56,7 +71,14 @@ describe('findReticulumChatLinks', () => {
   it('strips a trailing paren', () => {
     const links = findReticulumChatLinks(`(${HASH})`);
     expect(links).toEqual([
-      { kind: 'dm', start: 1, end: 1 + HASH.length, url: HASH, destinationHash: HASH },
+      {
+        kind: 'dm',
+        start: 1,
+        end: 1 + HASH.length,
+        url: HASH,
+        destinationHash: HASH,
+        ambiguous: true,
+      },
     ]);
   });
 

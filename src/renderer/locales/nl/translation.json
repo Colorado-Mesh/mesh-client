@@ -5146,7 +5146,12 @@
     "sidecarNotRunning": "Reticulum-sidecar draait niet. Start de stack op Verbinding en probeer het opnieuw.",
     "whoReplyMissing": "Geen ledenlijst van de hub voor {{room}} (het antwoord mag groter zijn dan de linkgrootte). Namen worden weergegeven als mensen deelnemen of chatten.",
     "openNomadPage": "Open Nomad-pagina {{address}}",
-    "openDm": "Direct bericht openen met {{address}}"
+    "openDm": "Direct bericht openen met {{address}}",
+    "openReticulumAddress": "Reticulum-adres {{address}} openen",
+    "addressChoiceTitle": "Reticulum-adres openen",
+    "addressChoiceMessage": "{{address}} kan een Nomad-pagina of een peer zijn. Wat wil je openen?",
+    "addressChoiceNomad": "Nomad-pagina",
+    "addressChoiceDm": "Direct bericht"
   },
   "signalMeter": {
     "rssi": "RSSI",

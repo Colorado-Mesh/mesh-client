@@ -5150,7 +5150,12 @@
     "sidecarNotRunning": "Sidecar Reticulum nie działa. Uruchom stos w Połączeniu, a następnie spróbuj ponownie.",
     "whoReplyMissing": "Brak listy członków z centrum dla {{room}} (odpowiedź może przekroczyć rozmiar linku). Imiona i nazwiska pojawią się, gdy ludzie dołączą lub będą czatować.",
     "openNomadPage": "Otwórz stronę Nomad {{address}}",
-    "openDm": "Otwórz bezpośrednią wiadomość za pomocą {{address}}"
+    "openDm": "Otwórz bezpośrednią wiadomość za pomocą {{address}}",
+    "openReticulumAddress": "Otwórz adres Reticulum {{address}}",
+    "addressChoiceTitle": "Otwórz adres Reticulum",
+    "addressChoiceMessage": "{{address}} może być stroną Nomad lub węzłem. Co chcesz otworzyć?",
+    "addressChoiceNomad": "Strona Nomad",
+    "addressChoiceDm": "Wiadomość bezpośrednia"
   },
   "signalMeter": {
     "rssi": "RSSI",

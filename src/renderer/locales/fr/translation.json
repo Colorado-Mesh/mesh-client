@@ -5146,7 +5146,12 @@
     "sidecarNotRunning": "Le sidecar Reticulum n'est pas en cours d'exécution. Démarrez la pile sur Connexion, puis réessayez.",
     "whoReplyMissing": "Aucune liste de membres du hub pour {{room}} (la réponse peut dépasser la taille du lien). Les noms apparaîtront lorsque les gens rejoindront ou discuteront.",
     "openNomadPage": "Ouvrir la page Nomad {{address}}",
-    "openDm": "Ouvrir un message direct avec {{address}}"
+    "openDm": "Ouvrir un message direct avec {{address}}",
+    "openReticulumAddress": "Ouvrir l'adresse Reticulum {{address}}",
+    "addressChoiceTitle": "Ouvrir l'adresse Reticulum",
+    "addressChoiceMessage": "{{address}} peut être une page Nomad ou un pair. Que voulez-vous ouvrir ?",
+    "addressChoiceNomad": "Page Nomad",
+    "addressChoiceDm": "Message direct"
   },
   "signalMeter": {
     "rssi": "RSSI",

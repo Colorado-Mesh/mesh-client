@@ -5148,7 +5148,12 @@
     "sidecarNotRunning": "Sidecar Reticulum не запущен. Запустите стек в разделе Connection и повторите попытку.",
     "whoReplyMissing": "Нет списка участников из центра для {{room}} (размер ответа может превышать размер ссылки). Имена появятся, когда люди присоединятся к чату.",
     "openNomadPage": "Открыть страницу Nomad {{address}}",
-    "openDm": "Откройте прямое сообщение с {{address}}"
+    "openDm": "Откройте прямое сообщение с {{address}}",
+    "openReticulumAddress": "Открыть адрес Reticulum {{address}}",
+    "addressChoiceTitle": "Открыть адрес Reticulum",
+    "addressChoiceMessage": "{{address}} может быть страницей Nomad или узлом. Что вы хотите открыть?",
+    "addressChoiceNomad": "Страница Nomad",
+    "addressChoiceDm": "Личное сообщение"
   },
   "signalMeter": {
     "rssi": "РССИ",

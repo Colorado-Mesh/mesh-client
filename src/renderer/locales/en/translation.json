@@ -5221,6 +5221,11 @@
     "hubsTitle": "RRC Hubs",
     "openNomadPage": "Open Nomad page {{address}}",
     "openDm": "Open direct message with {{address}}",
+    "openReticulumAddress": "Open Reticulum address {{address}}",
+    "addressChoiceTitle": "Open Reticulum address",
+    "addressChoiceMessage": "{{address}} could be a Nomad page or a peer. Which would you like to open?",
+    "addressChoiceNomad": "Nomad page",
+    "addressChoiceDm": "Direct message",
     "hubs": {
       "favourites": "Favourites",
       "discovered": "Discovered"
