@@ -39,6 +39,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | readable-stream            | MIT                           | ^4.7.0          | 4.7.0             | git://github.com/nodejs/readable-stream.git                                    |
 | semver                     | ISC                           | ^7.8.5          | 7.8.5             | git+https://github.com/npm/node-semver.git                                     |
 | systeminformation          | MIT                           | ^5.33.4         | 5.33.4            | git+https://github.com/sebhildebrandt/systeminformation.git                    |
+| undici                     | MIT                           | ^8.10.0         | 8.10.0            | git+https://github.com/nodejs/undici.git                                       |
 
 ## Development dependencies
 

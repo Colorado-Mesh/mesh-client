@@ -219,6 +219,34 @@ process.stdin.on("end", () => {
 ' 2> /dev/null || echo 'unknown'
 }
 
+# Warn when a pinned override in pnpm-workspace.yaml is behind a newer major.
+# Network-dependent and warn-only: exit 10 means unexplained drift, anything else
+# (including offline) is treated as clean. See scripts/check-pinned-majors.mjs.
+check_pinned_majors() {
+  if ! command -v node > /dev/null 2>&1; then
+    echo ''
+    echo 'Checking pinned overrides for newer major versions... node missing — skip.'
+    return 0
+  fi
+
+  local status=0
+  node scripts/check-pinned-majors.mjs || status=$?
+  if [ "${status}" -eq 10 ]; then
+    HAS_WARNING=1
+  elif [ "${status}" -ne 0 ]; then
+    echo -e "  ${YELLOW}check-pinned-majors exited ${status} — treating as inconclusive.${NC}"
+  fi
+  return 0
+}
+
+# Test hook: exercise check_pinned_majors without running the rest of the update.
+if [ "${UPDATE_SH_TEST_HOOK:-}" = 'pinned-majors-only' ]; then
+  HAS_WARNING=0
+  check_pinned_majors
+  printf 'HAS_WARNING=%s\n' "${HAS_WARNING}"
+  exit 0
+fi
+
 # Warn when local Ratspeak overlays may be obsolete after upstream merges.
 # Keep patch basenames in sync with scripts/lib/ratspeak-overlay-apply-list.sh
 # and reticulum-sidecar/patches/*.patch / patches/README.md.
@@ -802,6 +830,7 @@ for i in "${!KEYS[@]}"; do
   fi
 done
 
+check_pinned_majors
 check_ratspeak_patches
 check_ratspeak_upstream
 

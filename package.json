@@ -66,6 +66,7 @@
     "check:log-injection": "node scripts/check-log-injection.mjs",
     "check:log-panel-filter": "node scripts/check-log-panel-filter.mjs",
     "check:log-service-sinks": "node scripts/check-log-service-sinks.mjs",
+    "check:pinned-majors": "node scripts/check-pinned-majors.mjs",
     "check:pn-hosting-policy": "node scripts/check-pn-hosting-policy.mjs",
     "check:pr": "node scripts/check-pr.mjs",
     "check:protocol-string-gates": "node scripts/check-protocol-string-gates.mjs",
@@ -168,7 +169,8 @@
     "react-leaflet-cluster": "^4.1.3",
     "readable-stream": "^4.7.0",
     "semver": "^7.8.5",
-    "systeminformation": "^5.33.4"
+    "systeminformation": "^5.33.4",
+    "undici": "^8.10.0"
   },
   "devDependencies": {
     "@axe-core/react": "^4.13.0",

@@ -22,7 +22,7 @@ overrides:
   shell-quote: ^1.9.0
   tar: ^7.5.18
   tmp: ^0.2.6
-  undici: ^7.29.0
+  undici@<7.29.0: ^7.29.0
   undici-types: ^7.29.0
   ws: ^8.21.0
 
@@ -119,6 +119,9 @@ importers:
       systeminformation:
         specifier: ^5.33.4
         version: 5.33.4
+      undici:
+        specifier: ^8.10.0
+        version: 8.10.0
     devDependencies:
       '@axe-core/react':
         specifier: ^4.13.0
@@ -4341,6 +4344,10 @@ packages:
   undici@7.29.0:
     resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
     engines: {node: '>=20.18.1'}
+
+  undici@8.10.0:
+    resolution: {integrity: sha512-HvltHd7avK13QIw/oLe4qoOLyoVSoafqJ2jYOrtMRBkbYT31eiBQ8O0ehRKZiEZCMEyLFQNIADpgCWC5fALvYQ==}
+    engines: {node: '>=22.19.0'}
 
   unicorn-magic@0.4.0:
     resolution: {integrity: sha512-wH590V9VNgYH9g3lH9wWjTrUoKsjLF6sGLjhR4sH1LWpLmCOH0Zf7PukhDA8BiS7KHe4oPNkcTHqYkj7SOGUOw==}
@@ -9026,6 +9033,8 @@ snapshots:
   undici-types@7.29.0: {}
 
   undici@7.29.0: {}
+
+  undici@8.10.0: {}
 
   unicorn-magic@0.4.0: {}
 

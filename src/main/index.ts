@@ -111,6 +111,7 @@ import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from './db-ip
 import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fatal-startup-dialog';
 import { fetchLinkPreview } from './fetchLinkPreview';
 import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
+import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
@@ -629,6 +630,13 @@ const OSM_HTTP_REFERRER = 'https://meshtastic-client.app/';
 
 // ─── Global error handlers (prevent silent crashes in packaged app) ──
 process.on('uncaughtException', (error) => {
+  if (isHarmlessSocketOptionError(error)) {
+    console.warn(
+      '[main] Ignoring best-effort socket QoS failure:',
+      sanitizeLogMessage(error.message),
+    );
+    return;
+  }
   console.error(
     '[main] Uncaught exception:',
     sanitizeLogMessage(error?.stack ?? error?.message ?? String(error)),
@@ -649,6 +657,13 @@ let lastUnhandledRejectionDialogAt = 0;
 const UNHANDLED_REJECTION_DIALOG_COOLDOWN_MS = 60_000;
 
 process.on('unhandledRejection', (reason) => {
+  if (isHarmlessSocketOptionError(reason)) {
+    console.warn(
+      '[main] Ignoring best-effort socket QoS failure:',
+      sanitizeLogMessage(reason instanceof Error ? reason.message : String(reason)),
+    );
+    return;
+  }
   console.error(
     '[main] Unhandled rejection:',
     sanitizeLogMessage(reason instanceof Error ? (reason.stack ?? reason.message) : String(reason)),
