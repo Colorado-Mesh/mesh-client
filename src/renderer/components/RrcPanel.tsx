@@ -1006,7 +1006,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
     : null;
 
   return (
-    <div className="bg-primary-dark flex h-full w-full min-w-0 text-amber-50">
+    <div className="flex h-full min-h-0 w-full min-w-0 text-gray-100">
       <RrcHubBrowser
         collapsed={collapsed}
         onToggleCollapsed={() => {
@@ -1103,12 +1103,12 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
       )}
 
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex flex-wrap items-center gap-2 border-b border-amber-800/40 px-3 py-2">
+        <header className="flex flex-wrap items-center gap-2 border-b border-gray-700 px-3 py-2">
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold text-amber-100">
+            <div className="truncate text-sm font-semibold text-gray-100">
               {hubName ?? hubDestHash ?? t('rrc.selectHubPrompt')}
             </div>
-            <div className="text-xs text-amber-200/50">
+            <div className="text-xs text-gray-400">
               {t(`rrc.status.${status}`)}
               {activeRoomHeaderLabel ? ` · ${activeRoomHeaderLabel}` : ''}
               {capabilities.direct_notice ? ` · ${t('rrc.capDirectNotice')}` : ''}
@@ -1118,7 +1118,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
             <>
               <button
                 type="button"
-                className={`rounded p-1.5 hover:bg-amber-950/50 ${showTimestamps ? 'text-amber-400' : 'text-amber-200/60'}`}
+                className={`rounded p-1.5 hover:bg-gray-800/60 ${showTimestamps ? 'text-bright-green' : 'text-gray-400'}`}
                 aria-label={t('rrc.toggleTimestamps')}
                 title={t('rrc.toggleTimestamps')}
                 onClick={() => {
@@ -1129,7 +1129,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
               </button>
               <button
                 type="button"
-                className={`rounded p-1.5 hover:bg-amber-950/50 ${isMuted ? 'text-amber-400' : 'text-amber-200/60'}`}
+                className={`rounded p-1.5 hover:bg-gray-800/60 ${isMuted ? 'text-bright-green' : 'text-gray-400'}`}
                 aria-label={isMuted ? t('rrc.unmuteRoom') : t('rrc.muteRoom')}
                 title={isMuted ? t('rrc.unmuteRoom') : t('rrc.muteRoom')}
                 disabled={!muteKey}
@@ -1140,7 +1140,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
               {activeRoom && (
                 <button
                   type="button"
-                  className="rounded p-1.5 text-amber-200/60 hover:bg-amber-950/50"
+                  className="rounded p-1.5 text-gray-400 hover:bg-gray-800/60"
                   aria-label={t('rrc.clearHistory')}
                   title={t('rrc.clearHistory')}
                   disabled={actionBusy}
@@ -1154,7 +1154,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
               {activeRoom && (!activeRoom.startsWith('[') || isRrcDmRoom(activeRoom)) && (
                 <button
                   type="button"
-                  className="rounded p-1.5 text-amber-200/60 hover:bg-amber-950/50"
+                  className="rounded p-1.5 text-gray-400 hover:bg-gray-800/60"
                   aria-label={t('rrc.leaveRoom')}
                   title={t('rrc.leaveRoom')}
                   disabled={actionBusy}
@@ -1168,7 +1168,7 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
           {canCancelSession && (
             <button
               type="button"
-              className="rounded bg-amber-900/60 px-2 py-1 text-xs text-amber-100"
+              className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-gray-800/60"
               aria-label={cancelSessionLabel ? t('rrc.cancelConnect') : t('rrc.disconnect')}
               title={cancelSessionLabel ? t('rrc.cancelConnect') : t('rrc.disconnect')}
               disabled={actionBusy}
@@ -1179,11 +1179,11 @@ export default function RrcPanel({ isActive, alwaysShowMessageActions = false }:
           )}
         </header>
         {bannerText && (
-          <div className="flex items-start gap-2 border-b border-amber-700/60 bg-amber-900/40 px-3 py-1.5 text-xs text-amber-100">
+          <div className="flex items-start gap-2 border-b border-gray-700 bg-slate-800/80 px-3 py-1.5 text-xs text-gray-200">
             <span className="min-w-0 flex-1">{bannerText}</span>
             <button
               type="button"
-              className="shrink-0 p-0.5 text-amber-200/70 hover:text-amber-50"
+              className="shrink-0 p-0.5 text-gray-400 hover:text-gray-100"
               aria-label={t('rrc.dismissBanner')}
               onClick={() => {
                 setModerationBanner(null);

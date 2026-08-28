@@ -1,6 +1,6 @@
 /**
  * Classic IRC-style stable nick colors for RRC transcript + nicklist.
- * Fixed Tailwind palette — avoids amber chrome and low-contrast greys.
+ * Fixed Tailwind palette — avoids low-contrast greys and panel text colors.
  */
 
 export const RRC_NICK_COLOR_CLASSES = [

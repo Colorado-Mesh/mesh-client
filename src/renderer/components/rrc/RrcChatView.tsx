@@ -560,7 +560,7 @@ export function RrcChatView({
 
   if (!connected) {
     return (
-      <div className="flex flex-1 items-center justify-center p-6 text-sm text-amber-200/50">
+      <div className="flex flex-1 items-center justify-center p-6 text-sm text-gray-400">
         {t('rrc.selectHubPrompt')}
       </div>
     );
@@ -576,9 +576,9 @@ export function RrcChatView({
           className="h-full min-h-0 overflow-y-auto overscroll-contain px-3 py-2 [overflow-anchor:none]"
         >
           {!activeRoom && (
-            <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-amber-200/50">
+            <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-gray-400">
               <p>{t('rrc.joinRoomPrompt')}</p>
-              <p className="max-w-md text-xs text-amber-200/40">{t('rrc.joinRoomHelp')}</p>
+              <p className="text-muted max-w-md text-xs">{t('rrc.joinRoomHelp')}</p>
             </div>
           )}
           {activeRoom && (
@@ -609,14 +609,14 @@ export function RrcChatView({
                     (msg.kind === 'notice' || msg.kind === 'msg') &&
                     Boolean(nick));
                 const lineClass = whisperAsRoomMsg
-                  ? 'text-amber-50/90'
+                  ? 'text-gray-100'
                   : msg.kind === 'notice' || msg.kind === 'system'
-                    ? 'text-amber-300/90'
+                    ? 'text-gray-400'
                     : msg.kind === 'action'
                       ? 'text-cyan-200/90 italic'
                       : msg.kind === 'error'
                         ? 'text-red-300'
-                        : 'text-amber-50/90';
+                        : 'text-gray-100';
                 const body = highlightRrcSelfMentions(
                   whisperEcho ? whisperEcho.text : msg.body,
                   nickname,
@@ -632,9 +632,7 @@ export function RrcChatView({
                     style={{ transform: `translateY(${vi.start}px)` }}
                   >
                     <div className="group flex items-start gap-1 leading-snug">
-                      {time && (
-                        <span className="shrink-0 text-[10px] text-amber-200/35">[{time}]</span>
-                      )}
+                      {time && <span className="text-muted shrink-0 text-[10px]">[{time}]</span>}
                       <div className="min-w-0 flex-1 break-words whitespace-pre-wrap">
                         {msg.kind === 'action' ? (
                           <>
@@ -654,7 +652,7 @@ export function RrcChatView({
                             {msg.kind === 'notice' && nick ? (
                               <span className={rrcNickColorClass(nick)}>-{nick}- </span>
                             ) : (
-                              <span className="text-amber-500/70">* </span>
+                              <span className="text-gray-500">* </span>
                             )}
                             {body}
                           </>
@@ -662,7 +660,7 @@ export function RrcChatView({
                       </div>
                       <button
                         type="button"
-                        className={`shrink-0 p-0.5 text-amber-200/20 hover:text-amber-100 ${
+                        className={`message-action shrink-0 rounded p-0.5 text-xs text-gray-600 ${
                           alwaysShowMessageActions
                             ? 'opacity-100'
                             : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
@@ -691,7 +689,7 @@ export function RrcChatView({
             onClick={() => {
               scrollToBottom('smooth');
             }}
-            className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-amber-800/60 bg-slate-900/95 px-3 py-1.5 text-xs font-medium text-amber-100 shadow-lg transition-all hover:bg-slate-800"
+            className="bg-deep-black/95 absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-100 shadow-lg transition-all hover:bg-gray-800"
             aria-label={t('rrc.jumpToLatest')}
           >
             <ArrowDown aria-hidden className="h-3.5 w-3.5" size={14} />
@@ -699,7 +697,7 @@ export function RrcChatView({
           </button>
         )}
       </div>
-      <div className="relative flex gap-2 border-t border-amber-800/40 p-2">
+      <div className="relative flex gap-2 border-t border-gray-700 p-2">
         {mentionQuery != null && mentionCandidates.length > 0 && (
           <MentionAutocomplete
             listboxId={RRC_MENTION_LISTBOX_ID}
@@ -745,12 +743,12 @@ export function RrcChatView({
             aria-label={composerPlaceholder}
             aria-autocomplete="list"
             rows={2}
-            className="w-full resize-none rounded border border-amber-800/50 bg-slate-900/80 px-2 py-1.5 font-sans text-sm text-amber-50 disabled:opacity-50"
+            className="bg-deep-black w-full resize-none rounded border border-gray-600 px-2 py-1.5 font-sans text-sm text-gray-100 disabled:opacity-50"
           />
         </div>
         <button
           type="button"
-          className="self-end rounded bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+          className="bg-readable-green self-end rounded px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
           aria-label={t('rrc.send')}
           disabled={!canSend || isMuted || !draft.trim()}
           onClick={() => {

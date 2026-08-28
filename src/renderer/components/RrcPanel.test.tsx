@@ -117,10 +117,10 @@ describe('RrcPanel', () => {
     clearRrcHubAutoJoinBackoff(hubA);
   });
 
-  it('renders amber hub chrome and select-hub prompt', async () => {
+  it('renders standard hub chrome and select-hub prompt', async () => {
     const { container } = render(<RrcPanel isActive />);
     expect(screen.getAllByText(/Select an RRC hub/i).length).toBeGreaterThan(0);
-    expect(container.querySelector('[class*="border-amber"]')).toBeTruthy();
+    expect(container.querySelector('[class*="border-gray-700"]')).toBeTruthy();
     expect(await axe(container)).toHaveNoViolations();
   });
 
