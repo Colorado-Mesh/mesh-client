@@ -1,0 +1,27 @@
+{
+  "seed": "ci",
+  "budget": {
+    "maxActions": 800,
+    "maxDurationMs": 600000,
+    "maxDepth": 12,
+    "maxPages": 10
+  },
+  "explore": {
+    "crawl": true
+  },
+  "guardrails": {
+    "billing": {
+      "mode": "refuse"
+    }
+  },
+  "detectors": {
+    "ignoreHttpStatuses": [401, 403],
+    "ignorePatterns": [
+      "ResizeObserver loop",
+      "controls\\.start\\(\\) should only be called after a component has mounted",
+      "Cannot read properties of undefined \\(reading '_leaflet_pos'\\)",
+      "\\[useMeshtasticRuntime\\] Connection failed: BLE peripheral ID required on Mac/Windows"
+    ]
+  },
+  "failOn": "high"
+}
