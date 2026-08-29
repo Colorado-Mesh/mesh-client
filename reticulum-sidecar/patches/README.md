@@ -125,69 +125,19 @@ git -C /tmp/rsReticulum-patch-test apply --check ../../reticulum-sidecar/patches
 
 When [ratspeak/rsReticulum#11](https://github.com/ratspeak/rsReticulum/pull/11) merges and floated `origin/main` includes it, remove this patch and drop the apply step (same as packet-tap).
 
-## rsReticulum-link-client-nomad.patch
+## Removed: rsReticulum-link-client-nomad.patch
 
-Recall cached destination public keys in `LinkClient` before waiting on path-response announces; GC temporary announce handlers without wiping long-lived Nomad directory listeners. Fixes Nomad page loads hanging until overall timeout.
-
-Upstream `a945ba0` landed HasPath-gated `RecallDestination`, but still waits on a fresh announce when the path table is cold and still Deregisters handlers by `aspect_filter`. This overlay uses `RecallDestination` without the HasPath gate, then `await_path`, and GCs closed handlers only.
-
-On current floated `origin/main`, `LinkClient::query` already uses handler-free `resolve_destination_on_transport` (no temporary announce handlers). The apply script is a **no-op** in that case; keep the patch for older `RS_RETICULUM_REF` pins.
-
-| Field | Value |
-| ----- | ----- |
-| **Base commit** | `47dbbf1febc0a9d3259f179a0512d9b56bb2320d` (`ratspeak/rsReticulum` `origin/main`; apply no-op) |
-| **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/14 |
-
-**Modifies (1 file):**
-
-- `crates/rns-runtime/src/link_client.rs` — `discover_remote_public_key` + `await_path`; safe announce-handler GC
-
-### Apply locally
-
-From mesh-client repo root (`.rsstack/rsReticulum` required):
-
-```bash
-./scripts/apply-rsReticulum-link-client-nomad.sh
-```
-
-Apply after packet-tap + auto-beacon when rebuilding against floated `origin/main`:
-
-```bash
-./scripts/apply-rsReticulum-packet-tap.sh
-./scripts/apply-rsReticulum-auto-beacon-utun.sh
-./scripts/apply-rsReticulum-link-client-nomad.sh
-```
-
-### Regenerate
-
-Regenerate against floated `origin/main` (record the short SHA in the PR):
-
-```bash
-# From a clean tip with the other overlays applied, then the LinkClient edits:
-git -C /tmp/rsReticulum-patch-test fetch origin
-git -C /tmp/rsReticulum-patch-test checkout --detach origin/main
-git -C /tmp/rsReticulum-patch-test apply reticulum-sidecar/patches/rsReticulum-packet-tap.patch
-git -C /tmp/rsReticulum-patch-test apply reticulum-sidecar/patches/rsReticulum-auto-beacon-utun.patch
-git -C /tmp/rsReticulum-linkclient-nomad format-patch -1 --stdout \
-  | git -C /tmp/rsReticulum-patch-test apply
-git -C /tmp/rsReticulum-patch-test diff \
-  > reticulum-sidecar/patches/rsReticulum-link-client-nomad.patch
-```
-
-### Sunset
-
-When [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14) merges and floated `origin/main` includes it, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
+Sunset when floated `origin/main` moved `LinkClient::query` to handler-free `resolve_destination_on_transport` (no HasPath gate, no temporary announce handlers) — the overlay's `discover_remote_public_key` + `await_path` + announce-handler GC is fully superseded. [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14) was closed as superseded; mesh-client no longer carries the overlay or `scripts/apply-rsReticulum-link-client-nomad.sh`. Tracked entry removed from `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` after sunset confirmation.
 
 ## rsReticulum-link-client-proof-budget.patch
 
-Keep `LinkClient::query` proof wait on the **remaining overall deadline** (v5.25.0 / release parity). Earlier overlays capped at `establishment_timeout` (hops×6) or `max(establishment, 30s)` and false-failed multi-hop TCP hub Nomad pages (e.g. Northern Ireland) that need the rest of the MeshChat 45s window. Apply **after** the LinkClient Nomad overlay; the apply script migrates those older caps to remaining-deadline.
+Keep `LinkClient::query` proof wait on the **remaining overall deadline** (v5.25.0 / release parity). Earlier overlays capped at `establishment_timeout` (hops×6) or `max(establishment, 30s)` and false-failed multi-hop TCP hub Nomad pages (e.g. Northern Ireland) that need the rest of the MeshChat 45s window. The apply script migrates those older caps to remaining-deadline.
 
 On current floated `origin/main`, proof wait is `timeout(time_remaining(deadline)?, wait_for_valid_proof(...))`. The apply script is a **no-op** in that case; keep the patch for older pins.
 
 | Field | Value |
 | ----- | ----- |
-| **Depends on** | `rsReticulum-link-client-nomad.patch` |
-| **Upstream PR** | (mesh-client local; fold into #14 follow-up when possible) |
+| **Upstream PR** | (mesh-client local) |
 
 ### Apply locally
 
@@ -225,7 +175,6 @@ Apply after the other rsReticulum overlays when rebuilding against floated `orig
 ```bash
 ./scripts/apply-rsReticulum-packet-tap.sh
 ./scripts/apply-rsReticulum-auto-beacon-utun.sh
-./scripts/apply-rsReticulum-link-client-nomad.sh
 ./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
 ./scripts/apply-rsReticulum-discovery-announce-egress.sh
 ```
@@ -296,7 +245,6 @@ Apply **after** the other rsReticulum overlays (packet-tap also touches `reticul
 ```bash
 ./scripts/apply-rsReticulum-packet-tap.sh
 ./scripts/apply-rsReticulum-auto-beacon-utun.sh
-./scripts/apply-rsReticulum-link-client-nomad.sh
 ./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
 ./scripts/apply-rsReticulum-discovery-announce-egress.sh
 ```
