@@ -499,6 +499,51 @@ describe('RadioPanel apply status placement', () => {
     expect(userDetails!.contains(statusEl)).toBe(true);
   });
 
+  it('reports a Meshtastic applyConfig result inside its own section', async () => {
+    const user = userEvent.setup();
+    const onSetConfig = vi.fn().mockResolvedValue(undefined);
+    const onCommit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          onSetConfig={onSetConfig}
+          onCommit={onCommit}
+          meshtasticConfigSlices={{
+            device: { role: 0 },
+            bluetooth: { enabled: true, mode: 1, fixedPin: 123456 },
+          }}
+        />
+      </ToastProvider>,
+    );
+
+    const findSection = (title: string) =>
+      [...document.querySelectorAll('details')].find((d) => {
+        const span = d.querySelector(':scope > summary > span');
+        return span?.textContent?.trim() === title;
+      });
+    const deviceDetails = findSection('Device Role');
+    const bluetoothDetails = findSection('Bluetooth');
+    expect(deviceDetails).toBeDefined();
+    expect(bluetoothDetails).toBeDefined();
+    await user.click(deviceDetails!.querySelector('summary')!);
+    await user.click(bluetoothDetails!.querySelector('summary')!);
+
+    await user.click(screen.getByRole('button', { name: 'Apply Device Role' }));
+
+    await waitFor(() => {
+      expect(onCommit).toHaveBeenCalled();
+    });
+    const statusEl = await screen.findByRole('status');
+    expect(deviceDetails!.contains(statusEl)).toBe(true);
+    expect(bluetoothDetails!.contains(statusEl)).toBe(false);
+    // Styling comes from the reported outcome, not from matching English message text.
+    await waitFor(() => {
+      expect(statusEl.className).toContain('bg-brand-green/10');
+    });
+  });
+
   it('keeps a section status out of other sections', async () => {
     const user = userEvent.setup();
     const onSetOwner = vi.fn().mockResolvedValue(undefined);

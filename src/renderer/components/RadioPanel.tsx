@@ -575,20 +575,28 @@ export function ConfigBluetoothPin({
 
 /** Collapsible section wrapper */
 /** Apply result / progress text. Rendered inline under a section's Apply button. */
-function StatusMessage({ message }: { message: string | null }) {
-  if (!message) return null;
+/** Outcome of a reported status. Drives styling — never infer this from message text. */
+type StatusKind = 'success' | 'error' | 'neutral';
+
+interface PanelStatus {
+  message: string;
+  kind: StatusKind;
+}
+
+const STATUS_KIND_CLASSES: Record<StatusKind, string> = {
+  error: 'border border-red-700 bg-red-900/50 text-red-300',
+  success: 'bg-brand-green/10 border-brand-green text-bright-green border',
+  neutral: 'bg-deep-black text-muted',
+};
+
+function StatusMessage({ status }: { status: PanelStatus | null }) {
+  if (!status) return null;
   return (
     <div
       role="status"
-      className={`rounded-lg px-4 py-2 text-sm ${
-        message.includes('Failed')
-          ? 'border border-red-700 bg-red-900/50 text-red-300'
-          : message.includes('success')
-            ? 'bg-brand-green/10 border-brand-green text-bright-green border'
-            : 'bg-deep-black text-muted'
-      }`}
+      className={`rounded-lg px-4 py-2 text-sm ${STATUS_KIND_CLASSES[status.kind]}`}
     >
-      {message}
+      {status.message}
     </div>
   );
 }
@@ -609,7 +617,7 @@ function ConfigSection({
   disabled: boolean;
   hideApply?: boolean;
   /** Status for this section's own Apply action, shown directly under the button. */
-  status?: string | null;
+  status?: PanelStatus | null;
 }) {
   const { t } = useTranslation();
   return (
@@ -632,7 +640,7 @@ function ConfigSection({
               : t('modulePanel.applySection', { section: title })}
           </button>
         )}
-        <StatusMessage message={status} />
+        <StatusMessage status={status} />
       </div>
     </details>
   );
@@ -1079,22 +1087,19 @@ export default function RadioPanel({
   ]);
 
   // ─── Shared state ─────────────────────────────────────────────
-  const [status, setStatus] = useState<string | null>(null);
   const [applyingSection, setApplyingSection] = useState<string | null>(null);
-  /** Section key the current `status` belongs to; null means panel-level status. */
-  const [statusSection, setStatusSection] = useState<string | null>(null);
+  /** Current status plus the section it belongs to; a null section means panel-level. */
+  const [status, setStatus] = useState<(PanelStatus & { section: string | null }) | null>(null);
   /** Report an apply result inline under the given section's Apply button. */
-  const showSectionStatus = (section: string, message: string): void => {
-    setStatusSection(section);
-    setStatus(message);
+  const showSectionStatus = (section: string, message: string, kind: StatusKind): void => {
+    setStatus({ section, message, kind });
   };
-  /** Status text for a section, so unrelated sections stay quiet. */
-  const sectionStatus = (section: string): string | null =>
-    statusSection === section ? status : null;
+  /** Status for a section, so unrelated sections stay quiet. */
+  const sectionStatus = (section: string): PanelStatus | null =>
+    status?.section === section ? status : null;
   /** Report a status not tied to a section's Apply button (channel URL, channel list edits). */
-  const showPanelStatus = (message: string): void => {
-    setStatusSection(null);
-    setStatus(message);
+  const showPanelStatus = (message: string, kind: StatusKind): void => {
+    setStatus({ section: null, message, kind });
   };
 
   const { addToast } = useToast();
@@ -1251,7 +1256,11 @@ export default function RadioPanel({
     if (!isConnected) return false;
     clearMeshtasticClientNotification();
     setApplyingSection(configCase);
-    showSectionStatus(configCase, t('radioPanel.applyStatusApplying', { section: sectionLabel }));
+    showSectionStatus(
+      configCase,
+      t('radioPanel.applyStatusApplying', { section: sectionLabel }),
+      'neutral',
+    );
     const deviceSlice =
       configCase === 'lora' && meshtasticLoraConfig
         ? meshtasticLoraConfig
@@ -1269,6 +1278,7 @@ export default function RadioPanel({
         showSectionStatus(
           configCase,
           t('radioPanel.applyStatusSuccess', { section: sectionLabel }),
+          'success',
         );
         return true;
       } catch (err: unknown) {
@@ -1279,6 +1289,7 @@ export default function RadioPanel({
             section: sectionLabel,
             message: formatMeshtasticModuleApplyError(err, t),
           }),
+          'error',
         );
         return false;
       }
@@ -1289,6 +1300,7 @@ export default function RadioPanel({
         t('radioPanel.applyStatusFailed', {
           message: formatMeshtasticModuleApplyError(err, t),
         }),
+        'error',
       );
       return false;
     } finally {
@@ -1562,14 +1574,15 @@ export default function RadioPanel({
               t('radioPanel.applyStatusFailed', {
                 message: t(shortNameValidationError!),
               }),
+              'error',
             );
             return;
           }
           setApplyingSection('user');
-          showSectionStatus('user', t('radioPanel.applyUserApplying'));
+          showSectionStatus('user', t('radioPanel.applyUserApplying'), 'neutral');
           try {
             await onSetOwner({ longName, shortName, isLicensed });
-            showSectionStatus('user', t('radioPanel.applyUserSuccess'));
+            showSectionStatus('user', t('radioPanel.applyUserSuccess'), 'success');
           } catch (err) {
             console.warn('[RadioPanel] setOwner failed:', err instanceof Error ? err.message : err);
             showSectionStatus(
@@ -1577,6 +1590,7 @@ export default function RadioPanel({
               t('radioPanel.applyStatusFailed', {
                 message: setOwnerApplyErrorMessage(err, t),
               }),
+              'error',
             );
           } finally {
             setApplyingSection(null);
@@ -1663,6 +1677,7 @@ export default function RadioPanel({
               showSectionStatus(
                 'lora',
                 t('radioPanel.applyStatusApplying', { section: t('radioPanel.sectionLora') }),
+                'neutral',
               );
               try {
                 const clampedTxPower = Math.min(Math.max(1, txPower), meshcoreTxPowerMax);
@@ -1673,7 +1688,7 @@ export default function RadioPanel({
                   cr: codingRate,
                   txPower: clampedTxPower,
                 });
-                showSectionStatus('lora', t('radioPanel.applyLoraSuccess'));
+                showSectionStatus('lora', t('radioPanel.applyLoraSuccess'), 'success');
               } catch (err) {
                 console.warn(
                   '[RadioPanel] setLoRaConfig failed:',
@@ -1684,6 +1699,7 @@ export default function RadioPanel({
                   t('radioPanel.applyStatusFailed', {
                     message: err instanceof Error ? err.message : t('common.unknown'),
                   }),
+                  'error',
                 );
               } finally {
                 setApplyingSection(null);
@@ -1762,6 +1778,7 @@ export default function RadioPanel({
               showSectionStatus(
                 'txPower',
                 t('radioPanel.applyStatusApplying', { section: t('radioPanel.sectionTxPower') }),
+                'neutral',
               );
               try {
                 const clampedTxPower = Math.min(Math.max(1, txPower), meshcoreTxPowerMax);
@@ -1772,7 +1789,7 @@ export default function RadioPanel({
                   cr: codingRate,
                   txPower: clampedTxPower,
                 });
-                showSectionStatus('txPower', t('radioPanel.applyTxPowerSuccess'));
+                showSectionStatus('txPower', t('radioPanel.applyTxPowerSuccess'), 'success');
               } catch (err) {
                 console.warn(
                   '[RadioPanel] setTxPower failed:',
@@ -1783,6 +1800,7 @@ export default function RadioPanel({
                   t('radioPanel.applyStatusFailed', {
                     message: err instanceof Error ? err.message : t('common.unknown'),
                   }),
+                  'error',
                 );
               } finally {
                 setApplyingSection(null);
@@ -1824,10 +1842,15 @@ export default function RadioPanel({
                 showSectionStatus(
                   'floodScope',
                   t('radioPanel.applyStatusApplying', { section: t('radioPanel.floodScopeTitle') }),
+                  'neutral',
                 );
                 try {
                   await floodScopeRef.current?.apply();
-                  showSectionStatus('floodScope', t('radioPanel.floodScopeApplySuccess'));
+                  showSectionStatus(
+                    'floodScope',
+                    t('radioPanel.floodScopeApplySuccess'),
+                    'success',
+                  );
                 } catch (err) {
                   // catch-no-log-ok MeshcoreFloodScopeSection logs; inline status shown below
                   showSectionStatus(
@@ -1835,6 +1858,7 @@ export default function RadioPanel({
                     t('radioPanel.applyStatusFailed', {
                       message: err instanceof Error ? err.message : t('common.unknown'),
                     }),
+                    'error',
                   );
                 } finally {
                   setApplyingSection(null);
@@ -2156,7 +2180,7 @@ export default function RadioPanel({
                 clearMeshtasticClientNotification();
                 setApplyingSection('clientMuteGps');
                 await applyClientMuteGpsSuppression();
-                showSectionStatus('device', t('radioPanel.clientMuteGpsSuppressed'));
+                showSectionStatus('device', t('radioPanel.clientMuteGpsSuppressed'), 'success');
               } catch (err) {
                 console.warn(
                   '[RadioPanel] Client Mute GPS suppression failed ' + errLikeToLogString(err),
@@ -2166,6 +2190,7 @@ export default function RadioPanel({
                   t('radioPanel.applyStatusFailed', {
                     message: formatMeshtasticModuleApplyError(err, t),
                   }),
+                  'error',
                 );
               } finally {
                 setApplyingSection(null);
@@ -2860,7 +2885,7 @@ export default function RadioPanel({
       )}
 
       {/* Status for actions outside a section's Apply button (section results render inline) */}
-      {statusSection === null && <StatusMessage message={status} />}
+      {status?.section === null && <StatusMessage status={status} />}
 
       {/* Device Actions (MeshCore) — non-destructive commands */}
       {(onSendAdvert ||
@@ -3082,7 +3107,7 @@ function ChannelUrlImportExport({
     options?: { applyLora?: boolean },
   ) => Promise<ApplyChannelSetResult>;
   disabled: boolean;
-  setStatus: (s: string) => void;
+  setStatus: (message: string, kind: StatusKind) => void;
 }) {
   const { t } = useTranslation();
   const [includeSecondary, setIncludeSecondary] = useState(true);
@@ -3119,10 +3144,10 @@ function ChannelUrlImportExport({
     } catch (e) {
       console.debug('[RadioPanel] channel URL export failed ' + errLikeToLogString(e));
       if (e instanceof MeshtasticUrlError && e.message.includes('No channels selected')) {
-        setStatus(t('radioPanel.channelUrl.noChannelsToExport'));
+        setStatus(t('radioPanel.channelUrl.noChannelsToExport'), 'error');
       } else {
         const msg = e instanceof Error ? e.message : t('common.unknown');
-        setStatus(t('radioPanel.channelUrl.exportFailed', { message: msg }));
+        setStatus(t('radioPanel.channelUrl.exportFailed', { message: msg }), 'error');
       }
     }
   };
@@ -3131,10 +3156,10 @@ function ChannelUrlImportExport({
     if (!text) return;
     try {
       await writeClipboardText(text);
-      setStatus(t('radioPanel.channelUrl.copied'));
+      setStatus(t('radioPanel.channelUrl.copied'), 'success');
     } catch (e) {
       console.warn('[RadioPanel] channel URL copy failed ' + errLikeToLogString(e));
-      setStatus(t('radioPanel.channelUrl.copyFailed'));
+      setStatus(t('radioPanel.channelUrl.copyFailed'), 'error');
     }
   };
 
@@ -3190,9 +3215,10 @@ function ChannelUrlImportExport({
             applied: result.appliedCount,
             skipped: result.skipped.length,
           }),
+          'success',
         );
       } else {
-        setStatus(t('radioPanel.channelUrl.applySuccess'));
+        setStatus(t('radioPanel.channelUrl.applySuccess'), 'success');
       }
       setImportUrl('');
       setConfirmApply(null);
@@ -3202,6 +3228,7 @@ function ChannelUrlImportExport({
         t('radioPanel.channelUrl.applyFailed', {
           message: e instanceof Error ? e.message : t('common.unknown'),
         }),
+        'error',
       );
     } finally {
       setApplying(false);
@@ -3443,7 +3470,7 @@ function ChannelSection({
   onClearChannel: Props['onClearChannel'];
   onCommit: Props['onCommit'];
   disabled: boolean;
-  setStatus: (s: string) => void;
+  setStatus: (message: string, kind: StatusKind) => void;
   meshtasticLoraConfig?: MeshtasticLoraConfig | null;
   onApplyChannelSet?: (
     parsed: ParsedChannelSet,
@@ -3528,13 +3555,14 @@ function ChannelSection({
         },
       });
       await onCommit();
-      setStatus(t('radioPanel.channelSavedStatus', { index: selectedIndex }));
+      setStatus(t('radioPanel.channelSavedStatus', { index: selectedIndex }), 'success');
     } catch (err) {
       console.warn('[RadioPanel] save channel failed ' + errLikeToLogString(err));
       setStatus(
         t('radioPanel.channelSaveFailed', {
           message: err instanceof Error ? err.message : t('common.unknown'),
         }),
+        'error',
       );
     } finally {
       setSaving(false);
@@ -3561,13 +3589,14 @@ function ChannelSection({
         await onClearChannel(selectedIndex);
       }
       await onCommit();
-      setStatus(t('radioPanel.channelResetStatus', { index: selectedIndex }));
+      setStatus(t('radioPanel.channelResetStatus', { index: selectedIndex }), 'success');
     } catch (err) {
       console.warn('[RadioPanel] reset channel failed ' + errLikeToLogString(err));
       setStatus(
         t('radioPanel.channelSaveFailed', {
           message: err instanceof Error ? err.message : t('common.unknown'),
         }),
+        'error',
       );
     } finally {
       setSaving(false);
