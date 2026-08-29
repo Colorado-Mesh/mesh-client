@@ -14,6 +14,7 @@ import {
   mergeMeshtasticConfigApplyValue,
   meshtasticConfigSlice,
   meshtasticConfigSliceHydrated,
+  stripMeshtasticProtobufMeta,
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { bytesToHex, hexToBytesExactOrThrow } from '@/shared/hexBytes';
@@ -573,6 +574,25 @@ export function ConfigBluetoothPin({
 }
 
 /** Collapsible section wrapper */
+/** Apply result / progress text. Rendered inline under a section's Apply button. */
+function StatusMessage({ message }: { message: string | null }) {
+  if (!message) return null;
+  return (
+    <div
+      role="status"
+      className={`rounded-lg px-4 py-2 text-sm ${
+        message.includes('Failed')
+          ? 'border border-red-700 bg-red-900/50 text-red-300'
+          : message.includes('success')
+            ? 'bg-brand-green/10 border-brand-green text-bright-green border'
+            : 'bg-deep-black text-muted'
+      }`}
+    >
+      {message}
+    </div>
+  );
+}
+
 function ConfigSection({
   title,
   children,
@@ -580,6 +600,7 @@ function ConfigSection({
   applying,
   disabled,
   hideApply = false,
+  status = null,
 }: {
   title: string;
   children: React.ReactNode;
@@ -587,6 +608,8 @@ function ConfigSection({
   applying: boolean;
   disabled: boolean;
   hideApply?: boolean;
+  /** Status for this section's own Apply action, shown directly under the button. */
+  status?: string | null;
 }) {
   const { t } = useTranslation();
   return (
@@ -609,6 +632,7 @@ function ConfigSection({
               : t('modulePanel.applySection', { section: title })}
           </button>
         )}
+        <StatusMessage message={status} />
       </div>
     </details>
   );
@@ -764,6 +788,8 @@ export default function RadioPanel({
   const syncedDeviceOwnerRef = useRef<string | null>(null);
   /** Last device-reported MeshCore LoRa params applied to the form. */
   const syncedMeshcoreLoraRef = useRef<string | null>(null);
+  /** Last device-reported Meshtastic LoRa slice applied to the form. */
+  const syncedMeshtasticLoraRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (deviceOwner) {
@@ -997,6 +1023,11 @@ export default function RadioPanel({
     const loraRaw = meshtasticLoraConfig ?? meshtasticConfigSlices?.lora;
     const lora = meshtasticConfigSlice(loraRaw);
     if (Object.keys(lora).length === 0) return;
+    // Skip unchanged re-pushes (the radio can resend an identical config) so a sync cannot
+    // overwrite edits the user is still typing.
+    const signature = JSON.stringify(stripMeshtasticProtobufMeta(lora));
+    if (syncedMeshtasticLoraRef.current === signature) return;
+    syncedMeshtasticLoraRef.current = signature;
     if (typeof lora.region === 'number') setRegion(lora.region);
     if (typeof lora.modemPreset === 'number') setModemPreset(lora.modemPreset);
     if (typeof lora.usePreset === 'boolean') setUsePreset(lora.usePreset);
@@ -1050,6 +1081,21 @@ export default function RadioPanel({
   // ─── Shared state ─────────────────────────────────────────────
   const [status, setStatus] = useState<string | null>(null);
   const [applyingSection, setApplyingSection] = useState<string | null>(null);
+  /** Section key the current `status` belongs to; null means panel-level status. */
+  const [statusSection, setStatusSection] = useState<string | null>(null);
+  /** Report an apply result inline under the given section's Apply button. */
+  const showSectionStatus = (section: string, message: string): void => {
+    setStatusSection(section);
+    setStatus(message);
+  };
+  /** Status text for a section, so unrelated sections stay quiet. */
+  const sectionStatus = (section: string): string | null =>
+    statusSection === section ? status : null;
+  /** Report a status not tied to a section's Apply button (channel URL, channel list edits). */
+  const showPanelStatus = (message: string): void => {
+    setStatusSection(null);
+    setStatus(message);
+  };
 
   const { addToast } = useToast();
   const { t } = useTranslation();
@@ -1205,7 +1251,7 @@ export default function RadioPanel({
     if (!isConnected) return false;
     clearMeshtasticClientNotification();
     setApplyingSection(configCase);
-    setStatus(t('radioPanel.applyStatusApplying', { section: sectionLabel }));
+    showSectionStatus(configCase, t('radioPanel.applyStatusApplying', { section: sectionLabel }));
     const deviceSlice =
       configCase === 'lora' && meshtasticLoraConfig
         ? meshtasticLoraConfig
@@ -1220,11 +1266,15 @@ export default function RadioPanel({
       });
       try {
         await onCommit();
-        setStatus(t('radioPanel.applyStatusSuccess', { section: sectionLabel }));
+        showSectionStatus(
+          configCase,
+          t('radioPanel.applyStatusSuccess', { section: sectionLabel }),
+        );
         return true;
       } catch (err: unknown) {
         // catch-no-log-ok commit failure surfaced in panel status text
-        setStatus(
+        showSectionStatus(
+          configCase,
           t('radioPanel.applyStatusCommitFailed', {
             section: sectionLabel,
             message: formatMeshtasticModuleApplyError(err, t),
@@ -1234,7 +1284,8 @@ export default function RadioPanel({
       }
     } catch (err) {
       console.warn('[RadioPanel] apply section failed ' + errLikeToLogString(err));
-      setStatus(
+      showSectionStatus(
+        configCase,
         t('radioPanel.applyStatusFailed', {
           message: formatMeshtasticModuleApplyError(err, t),
         }),
@@ -1506,7 +1557,8 @@ export default function RadioPanel({
         onApply={async () => {
           if (!onSetOwner) return;
           if (shortNameValidationIssue) {
-            setStatus(
+            showSectionStatus(
+              'user',
               t('radioPanel.applyStatusFailed', {
                 message: t(shortNameValidationError!),
               }),
@@ -1514,13 +1566,14 @@ export default function RadioPanel({
             return;
           }
           setApplyingSection('user');
-          setStatus(t('radioPanel.applyUserApplying'));
+          showSectionStatus('user', t('radioPanel.applyUserApplying'));
           try {
             await onSetOwner({ longName, shortName, isLicensed });
-            setStatus(t('radioPanel.applyUserSuccess'));
+            showSectionStatus('user', t('radioPanel.applyUserSuccess'));
           } catch (err) {
             console.warn('[RadioPanel] setOwner failed:', err instanceof Error ? err.message : err);
-            setStatus(
+            showSectionStatus(
+              'user',
               t('radioPanel.applyStatusFailed', {
                 message: setOwnerApplyErrorMessage(err, t),
               }),
@@ -1530,6 +1583,7 @@ export default function RadioPanel({
           }
         }}
         applying={applyingSection === 'user'}
+        status={sectionStatus('user')}
         disabled={disabled || !onSetOwner || !!shortNameValidationIssue}
       >
         <div className="space-y-1">
@@ -1606,7 +1660,8 @@ export default function RadioPanel({
             onApply={async () => {
               if (!onApplyLoraParams) return;
               setApplyingSection('lora');
-              setStatus(
+              showSectionStatus(
+                'lora',
                 t('radioPanel.applyStatusApplying', { section: t('radioPanel.sectionLora') }),
               );
               try {
@@ -1618,13 +1673,14 @@ export default function RadioPanel({
                   cr: codingRate,
                   txPower: clampedTxPower,
                 });
-                setStatus(t('radioPanel.applyLoraSuccess'));
+                showSectionStatus('lora', t('radioPanel.applyLoraSuccess'));
               } catch (err) {
                 console.warn(
                   '[RadioPanel] setLoRaConfig failed:',
                   err instanceof Error ? err.message : err,
                 );
-                setStatus(
+                showSectionStatus(
+                  'lora',
                   t('radioPanel.applyStatusFailed', {
                     message: err instanceof Error ? err.message : t('common.unknown'),
                   }),
@@ -1634,6 +1690,7 @@ export default function RadioPanel({
               }
             }}
             applying={applyingSection === 'lora'}
+            status={sectionStatus('lora')}
             disabled={loraDisabled}
           >
             <div className="space-y-1">
@@ -1702,7 +1759,8 @@ export default function RadioPanel({
             onApply={async () => {
               if (!onApplyLoraParams) return;
               setApplyingSection('txPower');
-              setStatus(
+              showSectionStatus(
+                'txPower',
                 t('radioPanel.applyStatusApplying', { section: t('radioPanel.sectionTxPower') }),
               );
               try {
@@ -1714,13 +1772,14 @@ export default function RadioPanel({
                   cr: codingRate,
                   txPower: clampedTxPower,
                 });
-                setStatus(t('radioPanel.applyTxPowerSuccess'));
+                showSectionStatus('txPower', t('radioPanel.applyTxPowerSuccess'));
               } catch (err) {
                 console.warn(
                   '[RadioPanel] setTxPower failed:',
                   err instanceof Error ? err.message : err,
                 );
-                setStatus(
+                showSectionStatus(
+                  'txPower',
                   t('radioPanel.applyStatusFailed', {
                     message: err instanceof Error ? err.message : t('common.unknown'),
                   }),
@@ -1730,6 +1789,7 @@ export default function RadioPanel({
               }
             }}
             applying={applyingSection === 'txPower'}
+            status={sectionStatus('txPower')}
             disabled={loraDisabled}
           >
             <ConfigNumber
@@ -1761,15 +1821,17 @@ export default function RadioPanel({
               title={t('radioPanel.floodScopeTitle')}
               onApply={async () => {
                 setApplyingSection('floodScope');
-                setStatus(
+                showSectionStatus(
+                  'floodScope',
                   t('radioPanel.applyStatusApplying', { section: t('radioPanel.floodScopeTitle') }),
                 );
                 try {
                   await floodScopeRef.current?.apply();
-                  setStatus(t('radioPanel.floodScopeApplySuccess'));
+                  showSectionStatus('floodScope', t('radioPanel.floodScopeApplySuccess'));
                 } catch (err) {
                   // catch-no-log-ok MeshcoreFloodScopeSection logs; inline status shown below
-                  setStatus(
+                  showSectionStatus(
+                    'floodScope',
                     t('radioPanel.applyStatusFailed', {
                       message: err instanceof Error ? err.message : t('common.unknown'),
                     }),
@@ -1779,6 +1841,7 @@ export default function RadioPanel({
                 }
               }}
               applying={applyingSection === 'floodScope'}
+              status={sectionStatus('floodScope')}
               disabled={loraDisabled}
             >
               <MeshcoreFloodScopeSection
@@ -1824,6 +1887,7 @@ export default function RadioPanel({
             })
           }
           applying={applyingSection === 'lora'}
+          status={sectionStatus('lora')}
           disabled={loraDisabled}
         >
           <ConfigSelect
@@ -1993,7 +2057,7 @@ export default function RadioPanel({
           onClearChannel={onClearChannel}
           onCommit={onCommit}
           disabled={disabled}
-          setStatus={setStatus}
+          setStatus={showPanelStatus}
           meshtasticLoraConfig={meshtasticLoraConfig}
           onApplyChannelSet={onApplyChannelSet}
           remoteChannelFailedIndices={remoteChannelFailedIndices}
@@ -2092,12 +2156,13 @@ export default function RadioPanel({
                 clearMeshtasticClientNotification();
                 setApplyingSection('clientMuteGps');
                 await applyClientMuteGpsSuppression();
-                setStatus(t('radioPanel.clientMuteGpsSuppressed'));
+                showSectionStatus('device', t('radioPanel.clientMuteGpsSuppressed'));
               } catch (err) {
                 console.warn(
                   '[RadioPanel] Client Mute GPS suppression failed ' + errLikeToLogString(err),
                 );
-                setStatus(
+                showSectionStatus(
+                  'device',
                   t('radioPanel.applyStatusFailed', {
                     message: formatMeshtasticModuleApplyError(err, t),
                   }),
@@ -2108,6 +2173,7 @@ export default function RadioPanel({
             }
           }}
           applying={applyingSection === 'device'}
+          status={sectionStatus('device')}
           disabled={deviceApplyDisabled}
         >
           {!deviceConfigReady && isConnected && (
@@ -2217,6 +2283,7 @@ export default function RadioPanel({
                 })
         }
         applying={applyingSection === 'position'}
+        status={sectionStatus('position')}
         disabled={positionApplyDisabled}
       >
         {capabilities?.hasFullPositionConfig !== false && !positionConfigReady && isConnected && (
@@ -2462,6 +2529,7 @@ export default function RadioPanel({
             })
           }
           applying={applyingSection === 'power'}
+          status={sectionStatus('power')}
           disabled={powerApplyDisabled}
         >
           {!powerConfigReady && isConnected && (
@@ -2567,6 +2635,7 @@ export default function RadioPanel({
             })
           }
           applying={applyingSection === 'network'}
+          status={sectionStatus('network')}
           disabled={networkApplyDisabled}
         >
           {!networkConfigReady && isConnected && (
@@ -2650,6 +2719,7 @@ export default function RadioPanel({
             })
           }
           applying={applyingSection === 'display'}
+          status={sectionStatus('display')}
           disabled={displayApplyDisabled}
         >
           {!displayConfigReady && isConnected && (
@@ -2755,6 +2825,7 @@ export default function RadioPanel({
             });
           }}
           applying={applyingSection === 'bluetooth'}
+          status={sectionStatus('bluetooth')}
           disabled={bluetoothApplyDisabled}
         >
           {!bluetoothConfigReady && isConnected && (
@@ -2788,20 +2859,8 @@ export default function RadioPanel({
         </ConfigSection>
       )}
 
-      {/* Status */}
-      {status && (
-        <div
-          className={`rounded-lg px-4 py-2 text-sm ${
-            status.includes('Failed')
-              ? 'border border-red-700 bg-red-900/50 text-red-300'
-              : status.includes('success')
-                ? 'bg-brand-green/10 border-brand-green text-bright-green border'
-                : 'bg-deep-black text-muted'
-          }`}
-        >
-          {status}
-        </div>
-      )}
+      {/* Status for actions outside a section's Apply button (section results render inline) */}
+      {statusSection === null && <StatusMessage message={status} />}
 
       {/* Device Actions (MeshCore) — non-destructive commands */}
       {(onSendAdvert ||
