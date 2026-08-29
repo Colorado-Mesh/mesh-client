@@ -409,7 +409,23 @@
       "unblockFailed": "Nie można odblokować tego kontaktu.",
       "empty": "Kontakty zablokowane",
       "title": "Zablokowane kontakty"
-    }
+    },
+    "deleteOldNodesConfirm_few": "Spowoduje to trwałe usunięcie wszystkich węzłów, które nie były słyszane w ciągu ostatnich {{days}} dni. Zostaną ponownie odkryte, gdy zostaną ponownie nadane.",
+    "deleteOldNodesConfirm_many": "Spowoduje to trwałe usunięcie wszystkich węzłów, które nie były słyszane w ciągu ostatnich {{days}} dni. Zostaną ponownie odkryte, gdy zostaną ponownie nadane.",
+    "pruneDistantDeleteConfirm_few": "Usuń {{count}} węzły",
+    "pruneDistantDeleteConfirm_many": "Usuń {{count}} węzłów",
+    "pruneDistantNodesConfirm_few": "Spowoduje to trwałe usunięcie {{count}} węzłów poza {{distance}} {{unit}} z Twojego urządzenia. Tego nie można cofnąć.",
+    "pruneDistantNodesConfirm_many": "Spowoduje to trwałe usunięcie {{count}} węzłów poza {{distance}} {{unit}} z Twojego urządzenia. Tego nie można cofnąć.",
+    "pruneNoFixDeleteConfirm_few": "Usuń {{count}} węzły",
+    "pruneNoFixDeleteConfirm_many": "Usuń {{count}} węzłów",
+    "pruneNoFixNodesConfirm_few": "Spowoduje to trwałe usunięcie {{count}} węzłów o współrzędnych zerowych lub bliskich zera (bez ustalenia GPS lub wyspy zerowej). Tego nie można cofnąć.",
+    "pruneNoFixNodesConfirm_many": "Spowoduje to trwałe usunięcie {{count}} węzłów o współrzędnych zerowych lub bliskich zera (bez ustalenia GPS lub wyspy zerowej). Tego nie można cofnąć.",
+    "pruneOfflineDeleteConfirm_few": "Usuń {{count}} węzły",
+    "pruneOfflineDeleteConfirm_many": "Usuń {{count}} węzłów",
+    "pruneOfflineNodesConfirm_few": "Spowoduje to trwałe usunięcie {{count}} węzłów, których nie słychać od {{days}} {{daysLabel}}. Tego nie można cofnąć.",
+    "pruneOfflineNodesConfirm_many": "Spowoduje to trwałe usunięcie {{count}} węzłów, których nie słychać od {{days}} {{daysLabel}}. Tego nie można cofnąć.",
+    "reticulumDestinationsUnit_few": "miejsca docelowe",
+    "reticulumDestinationsUnit_many": "miejsc docelowych"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -457,7 +473,13 @@
     "transportSerial": "Seryjny",
     "transportHttp": "HTTP",
     "transportRadio": "Radio",
-    "radioInterfaceFallback": "interfejs radiowy"
+    "radioInterfaceFallback": "interfejs radiowy",
+    "contacts_few": "Kontakty: załadowano {{count}} kontakty",
+    "contacts_many": "Kontakty: załadowano {{count}} kontaktów",
+    "databaseNodes_few": "Baza danych: zsynchronizowano {{count}} węzły",
+    "databaseNodes_many": "Baza danych: zsynchronizowano {{count}} węzłów",
+    "routes_few": "Trasy: {{count}} węzły w siatce",
+    "routes_many": "Trasy: {{count}} węzłów w siatce"
   },
   "channelUtilization": {
     "title": "Wykorzystanie kanału",
@@ -538,7 +560,9 @@
         "title": "Wiadomość zbyt długa dla MeshCore",
         "body": "MeshCore wysyła każdą wiadomość jako pojedynczy pakiet radiowy (do {{limit}} znaków). Dłuższe wiadomości muszą być podzielone na ponumerowane części, ale na zatłoczonych wtórnikach siatkowych rutynowo upuszczają niektóre z tych części — aby osoba, z którą wysyłasz wiadomość, otrzymała niekompletną wiadomość bez możliwości jej sprawdzenia. Aby wiadomości były wiarygodne, nie są dzielone automatycznie. Skróć tę wiadomość lub wyślij ją jako kilka oddzielnych krótszych wiadomości.",
         "hint": "MeshCore wysyła jeden pakiet na wiadomość; podzielone części są często upuszczane przez zajęte wtórniki, więc dłuższe wiadomości nie mogą być wysyłane."
-      }
+      },
+      "sendParts_few": "Wyślij {{count}} części",
+      "sendParts_many": "Wyślij {{count}} części"
     },
     "sendFailed": "Wysyłanie nieudane",
     "outboxStatusQueued": "W kolejce",
@@ -663,7 +687,9 @@
       "forgotAddressToast": "Nie pamiętasz zapisanego miejsca docelowego rncp dla tego partnera.",
       "filledFromChatToast": "Wypełnione miejsce docelowe z czatu (niezapisane — zaznacz Pamiętaj, aby je zachować).",
       "offerBannerTitle": "Przychodzące oferty plików",
-      "offerBannerTitleAria": "Oczekujące oferty plików przychodzących od tego partnera"
+      "offerBannerTitleAria": "Oczekujące oferty plików przychodzących od tego partnera",
+      "pendingOffersBadgeAria_few": "{{count}} oczekujące oferty plików przychodzących od tego partnera",
+      "pendingOffersBadgeAria_many": "{{count}} oczekujących ofert plików przychodzących od tego partnera"
     },
     "shareLocation": "Udostępnij lokalizację",
     "shareLocationLabel": "📍 Udostępniona lokalizacja",
@@ -746,7 +772,15 @@
     "heardByRepeatersDetail_other": "Odebrano przez {{count}}: {{names}}",
     "heardByRepeaterNodeFallback": "Węzeł {{nodeId}}",
     "heardByRepeatersAdditional_one": "{{count}} dodatkowy niezidentyfikowany spedytor (skróty: {{hashes}})",
-    "heardByRepeatersAdditional_other": "{{count}} dodatkowych niezidentyfikowanych spedytorów (skróty: {{hashes}})"
+    "heardByRepeatersAdditional_other": "{{count}} dodatkowych niezidentyfikowanych spedytorów (skróty: {{hashes}})",
+    "heardByRepeaters_few": "Odebrano przez {{count}}",
+    "heardByRepeaters_many": "Odebrano przez {{count}}",
+    "heardByRepeatersAdditional_few": "{{count}} dodatkowe niezidentyfikowane spedytory (skróty: {{hashes}})",
+    "heardByRepeatersAdditional_many": "{{count}} dodatkowych niezidentyfikowanych spedytorów (skróty: {{hashes}})",
+    "heardByRepeatersDetail_few": "Odebrano przez {{count}}: {{names}}",
+    "heardByRepeatersDetail_many": "Odebrano przez {{count}}: {{names}}",
+    "searchResults_few": "{{count}} wyniki",
+    "searchResults_many": "{{count}} wyników"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -1525,7 +1559,9 @@
     "confirmDeleteButton": "Usunąć?",
     "manageMembersOf": "Zarządzaj członkami {{name}}",
     "renameGroupNamed": "Zmień nazwę {{name}}",
-    "deleteGroupNamed": "Usuń {{name}}"
+    "deleteGroupNamed": "Usuń {{name}}",
+    "memberCount_few": "{{count}} członkowie",
+    "memberCount_many": "{{count}} członków"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Usuń wiersze routingu starsze niż {{hours}} godzin (1–168)",
@@ -1864,7 +1900,19 @@
     "km": "km",
     "distanceOffsetHelp": "Dodaje płaski kilometr do progów odległości hop-goblina i złej trasy (0–50).",
     "ignoreMqttToggle": "Ignoruj MQTT",
-    "ignoreMqttHelp": "Wyszarz węzły działające tylko przez MQTT i wyklucz je z diagnostyki"
+    "ignoreMqttHelp": "Wyszarz węzły działające tylko przez MQTT i wyklucz je z diagnostyki",
+    "errorCount_few": "{{count}} błędy",
+    "errorCount_many": "{{count}} błędów",
+    "nodesWithTelemetry_few": "{{count}} węzły z telemetrią",
+    "nodesWithTelemetry_many": "{{count}} węzłów z telemetrią",
+    "severityErrors_few": "Błędy ({{count}})",
+    "severityErrors_many": "Błędy ({{count}})",
+    "severityNotes_few": "Notatki ({{count}})",
+    "severityNotes_many": "Notatki ({{count}})",
+    "severityWarnings_few": "Ostrzeżenia ({{count}})",
+    "severityWarnings_many": "Ostrzeżenia ({{count}})",
+    "warningCount_few": "{{count}} ostrzeżenia",
+    "warningCount_many": "{{count}} ostrzeżeń"
   },
   "diagnosticsPing": {
     "title": "Ciągły ping",
@@ -2323,7 +2371,9 @@
     "applying": "Stosowanie…",
     "applyButton": "Zastosuj prywatność telemetrii",
     "contactCount_one": "{{count}} kontakt",
-    "contactCount_other": "{{count}} kontakty"
+    "contactCount_other": "{{count}} kontakty",
+    "contactCount_few": "{{count}} kontakty",
+    "contactCount_many": "{{count}} kontaktów"
   },
   "messageStatusBadge": {
     "queuedTooltip": "W kolejce — wyśle po połączeniu",
@@ -2742,7 +2792,9 @@
       "8": {
         "label": "K9"
       }
-    }
+    },
+    "statusLine_few": "{{label}}: {{total}} pakietów z {{count}} węzłów (ostatni {{lastSeen}})",
+    "statusLine_many": "{{label}}: {{total}} pakietów z {{count}} węzłów (ostatni {{lastSeen}})"
   },
   "networkPanel": {
     "reticulumStackSettings": {
@@ -2782,11 +2834,13 @@
       "running": "Checking…",
       "ok": "Config looks good — no audit issues.",
       "failed": "Config check failed: {{message}}",
-      "issuesHeading_one": "{{count}} config issue",
-      "issuesHeading_other": "{{count}} config issues",
+      "issuesHeading_one": "{{count}} problem z konfiguracją",
+      "issuesHeading_other": "{{count}} problemów z konfiguracją",
       "severityError": "error",
       "severityWarning": "warning",
-      "severityInfo": "info"
+      "severityInfo": "info",
+      "issuesHeading_few": "{{count}} problemy z konfiguracją",
+      "issuesHeading_many": "{{count}} problemów z konfiguracją"
     },
     "reticulumPnHosting": {
       "title": "Zaawansowany hosting PN (strefa niebezpieczna)",
@@ -3031,7 +3085,9 @@
     "shareContactQrAria": "Pokaż kontaktowy kod QR MeshCore do oficjalnego importu aplikacji",
     "publicKeyCopied": "Klucz publiczny skopiowano do schowka.",
     "hasPublicKeyNoDm": "Posiada klucz publiczny (bez bezpośrednich wiadomości)",
-    "copyPublicKey": "Klucz publiczny"
+    "copyPublicKey": "Klucz publiczny",
+    "hopLabel_few": "{{count}} przeskoki",
+    "hopLabel_many": "{{count}} przeskoków"
   },
   "nodeInfoBody": {
     "longName": "Długie imię",
@@ -3106,7 +3162,11 @@
     "hybridMqttPathTooltip": "Odebrane przez RF; niektóre pakiety używają ścieżki przekaźnika MQTT",
     "hybridMqttPathAria": "Ścieżka RF i MQTT",
     "connectedViaRfAndMqttTooltip": "Połączony przez RF i MQTT",
-    "connectedViaRfAndMqttAria": "Połączony przez RF i MQTT"
+    "connectedViaRfAndMqttAria": "Połączony przez RF i MQTT",
+    "changes_few": "{{count}} zmiany",
+    "changes_many": "{{count}} zmian",
+    "echoes_few": "{{count}} echa",
+    "echoes_many": "{{count}} ech"
   },
   "nodeListPanel": {
     "refreshFailed": "Odświeżanie nie powiodło się: {{message}}",
@@ -3202,7 +3262,19 @@
     "meshcoreTypeNone": "Brak",
     "meshcoreTypeUnknown": "Nieznany",
     "columnHealth": "Stan węzłów",
-    "hasPublicKeyTitle": "Klucz publiczny"
+    "hasPublicKeyTitle": "Klucz publiczny",
+    "distanceFilterActiveBanner_few": "Aktywny filtr odległości — {{count}} węzły ukryte poza {{maxDistance}} {{unit}}.",
+    "distanceFilterActiveBanner_many": "Aktywny filtr odległości — {{count}} węzłów ukrytych poza {{maxDistance}} {{unit}}.",
+    "importResultSuccess_few": "Zaimportowano {{count}} kontakty.",
+    "importResultSuccess_many": "Zaimportowano {{count}} kontaktów.",
+    "importResultSuccessWithSkipped_few": "Zaimportowano {{count}} kontakty, pominięto {{skipped}}.",
+    "importResultSuccessWithSkipped_many": "Zaimportowano {{count}} kontaktów, pominięto {{skipped}}.",
+    "summaryOffline_few": "{{count}} offline",
+    "summaryOffline_many": "{{count}} offline",
+    "summaryOnline_few": "{{count}} w Internecie",
+    "summaryOnline_many": "{{count}} w Internecie",
+    "summaryStale_few": "{{count}} nieaktualne",
+    "summaryStale_many": "{{count}} nieaktualnych"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3363,7 +3435,9 @@
     "pageProgressFailover": "Próbuję innej trasy przez {{iface}} ({{hops}} przeskoków)…",
     "pageProgressFailoverIface": "Próbuję innej trasy przez {{iface}}…",
     "pageProgressFailoverGeneric": "Próbuję wybrać inną trasę…",
-    "pageProgressNoAlternate": "Brak innych dostępnych tras — kończenie tej próby…"
+    "pageProgressNoAlternate": "Brak innych dostępnych tras — kończenie tej próby…",
+    "hopsAway_few": "{{count}} przeskoki dalej",
+    "hopsAway_many": "{{count}} przeskoków dalej"
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",
@@ -3382,7 +3456,9 @@
     "packets_one": "Pakiet {{count}}",
     "packets_other": "{{count}} pakietów",
     "other": "Inny",
-    "noSenderId": "Brak identyfikatora nadawcy w surowej ramce"
+    "noSenderId": "Brak identyfikatora nadawcy w surowej ramce",
+    "packets_few": "{{count}} pakiety",
+    "packets_many": "{{count}} pakietów"
   },
   "peerDetailModal": {
     "networkSection": "Sieć",
@@ -4912,7 +4988,9 @@
     "regenerateWarning": "Regeneracja unieważnia istniejące pakiety danych ATAK — konieczne będzie ponowne zaimportowanie.",
     "durationSec": "{{s}}s",
     "durationMin": "{{m}}m",
-    "durationHourMin": "{{h}}h {{m}}m"
+    "durationHourMin": "{{h}}h {{m}}m",
+    "packets_few": "{{count}} pakiety",
+    "packets_many": "{{count}} pakietów"
   },
   "telemetryPanel": {
     "title": "Telemetria",
@@ -4959,7 +5037,9 @@
     "firmwareAvailable": "Dostępna aktualizacja oprogramowania sprzętowego: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} nowa wiadomość",
     "newMessages_other": "{{protocol}}: {{count}} nowe wiadomości",
-    "meshcoreDistanceFilterHint": "Masz {{count}} kontaktów z GPS na mapie. Włącz filtr odległości w Aplikacja → Wygląd, aby skupić się na pobliskich węzłach."
+    "meshcoreDistanceFilterHint": "Masz {{count}} kontaktów z GPS na mapie. Włącz filtr odległości w Aplikacja → Wygląd, aby skupić się na pobliskich węzłach.",
+    "newMessages_few": "{{protocol}}: {{count}} nowe wiadomości",
+    "newMessages_many": "{{protocol}}: {{count}} nowych wiadomości"
   },
   "updateStatus": {
     "checking": "Sprawdzanie...",
@@ -5155,7 +5235,13 @@
     "addressChoiceTitle": "Otwórz adres Reticulum",
     "addressChoiceMessage": "{{address}} może być stroną Nomad lub węzłem. Co chcesz otworzyć?",
     "addressChoiceNomad": "Strona Nomad",
-    "addressChoiceDm": "Wiadomość bezpośrednia"
+    "addressChoiceDm": "Wiadomość bezpośrednia",
+    "hopsAway_few": "{{count}} przeskoki dalej",
+    "hopsAway_many": "{{count}} przeskoków dalej",
+    "memberCount_few": "{{count}} członkowie",
+    "memberCount_many": "{{count}} członków",
+    "userCount_few": "{{count}} użytkownicy",
+    "userCount_many": "{{count}} użytkowników"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5241,14 +5327,16 @@
     },
     "pathCapability": {
       "checking": "Sprawdzam ścieżkę…",
-      "hops_one": "{{count}} hop",
-      "hops_other": "{{count}} hops",
+      "hops_one": "{{count}} przeskok",
+      "hops_other": "{{count}} przeskoków",
       "speed": {
         "high": "Szybka ścieżka",
         "constrained": "Ograniczona ścieżka",
         "mixed": "Ścieżka mieszana",
         "unknown": "Nieznana ścieżka"
-      }
+      },
+      "hops_few": "{{count}} przeskoki",
+      "hops_many": "{{count}} przeskoków"
     },
     "shell": {
       "addressPlaceholder": "Skrót miejsca docelowego (32 znaki szesnastkowe)",
@@ -5356,7 +5444,9 @@
       "listenerLikelyOffConfirm": "Wyślij prośbę o włączenie",
       "pendingOffersBadgeAriaCapped": "Ponad 99 oczekujących ofert plików przychodzących",
       "listenerLikelyOffBody": "Brak ścieżki do miejsca docelowego odbioru pliku, ale szukają czatu w Internecie. Poproś ich o włączenie odbierania plików rncp i wysłanie skrótu odbioru rncp, a następnie spróbuj ponownie.",
-      "listenerLikelyOffToast": "Brak ścieżki do miejsca docelowego odbioru pliku; odbieranie plików może być wyłączone. Poproś ich, aby umożliwili rncp odbieranie i wysyłanie skrótu, a następnie spróbuj ponownie."
+      "listenerLikelyOffToast": "Brak ścieżki do miejsca docelowego odbioru pliku; odbieranie plików może być wyłączone. Poproś ich, aby umożliwili rncp odbieranie i wysyłanie skrótu, a następnie spróbuj ponownie.",
+      "pendingOffersBadgeAria_few": "{{count}} oczekujące oferty plików przychodzących",
+      "pendingOffersBadgeAria_many": "{{count}} oczekujących ofert plików przychodzących"
     },
     "enableRequest": {
       "title": "Włączyć odbiór plików?",

@@ -409,7 +409,23 @@
       "unblockFailed": "Не удалось разблокировать этот контакт.",
       "empty": "Заблокированные контакты",
       "title": "Заблокированные контакты"
-    }
+    },
+    "deleteOldNodesConfirm_few": "Это приведет к безвозвратному удалению всех узлов, которые не были услышаны за последние {{days}} дня. Они будут вновь обнаружены, когда снова начнут трансляцию.",
+    "deleteOldNodesConfirm_many": "Это приведет к безвозвратному удалению всех узлов, которые не были услышаны за последние {{days}} дней. Они будут вновь обнаружены, когда снова начнут трансляцию.",
+    "pruneDistantDeleteConfirm_few": "Удалить {{count}} узла",
+    "pruneDistantDeleteConfirm_many": "Удалить {{count}} узлов",
+    "pruneDistantNodesConfirm_few": "Это приведет к безвозвратному удалению {{count}} узла за пределами {{distance}} {{unit}} от вашего устройства. Это невозможно отменить.",
+    "pruneDistantNodesConfirm_many": "Это приведет к безвозвратному удалению {{count}} узлов за пределами {{distance}} {{unit}} от вашего устройства. Это невозможно отменить.",
+    "pruneNoFixDeleteConfirm_few": "Удалить {{count}} узла",
+    "pruneNoFixDeleteConfirm_many": "Удалить {{count}} узлов",
+    "pruneNoFixNodesConfirm_few": "Это приведет к безвозвратному удалению {{count}} узла с нулевыми или близкими к нулю координатами (без привязки GPS или нулевого острова). Это невозможно отменить.",
+    "pruneNoFixNodesConfirm_many": "Это приведет к безвозвратному удалению {{count}} узлов с нулевыми или близкими к нулю координатами (без привязки GPS или нулевого острова). Это невозможно отменить.",
+    "pruneOfflineDeleteConfirm_few": "Удалить {{count}} узла",
+    "pruneOfflineDeleteConfirm_many": "Удалить {{count}} узлов",
+    "pruneOfflineNodesConfirm_few": "Это приведет к безвозвратному удалению {{count}} узла, которые не прослушивались более {{days}} {{daysLabel}}. Это невозможно отменить.",
+    "pruneOfflineNodesConfirm_many": "Это приведет к безвозвратному удалению {{count}} узлов, которые не прослушивались более {{days}} {{daysLabel}}. Это невозможно отменить.",
+    "reticulumDestinationsUnit_few": "пункта назначения",
+    "reticulumDestinationsUnit_many": "пунктов назначения"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -457,7 +473,13 @@
     "transportSerial": "Serial",
     "transportHttp": "HTTP",
     "transportRadio": "Радиосвязь",
-    "radioInterfaceFallback": "радиоинтерфейс"
+    "radioInterfaceFallback": "радиоинтерфейс",
+    "contacts_few": "Контакты: загружено {{count}} контакта",
+    "contacts_many": "Контакты: загружено {{count}} контактов",
+    "databaseNodes_few": "База данных: синхронизировано {{count}} узла",
+    "databaseNodes_many": "База данных: синхронизировано {{count}} узлов",
+    "routes_few": "Маршруты: {{count}} узла в сетке",
+    "routes_many": "Маршруты: {{count}} узлов в сетке"
   },
   "channelUtilization": {
     "title": "Использование канала",
@@ -539,7 +561,9 @@
         "title": "Сообщение слишком длинное для MeshCore",
         "body": "MeshCore отправляет каждое сообщение в виде одного радиопакета (до {{limit}} символов). Более длинные сообщения должны быть разделены на пронумерованные части, но на занятых повторителях сетки обычно отбрасываются некоторые из этих частей, поэтому человек, которому вы отправляете сообщение, получит неполное сообщение без возможности сказать. Чтобы сообщения оставались надежными, они не разделяются автоматически. Сократите это сообщение или отправьте его в виде нескольких отдельных коротких сообщений.",
         "hint": "MeshCore отправляет один пакет на сообщение; разделенные части часто отбрасываются занятыми повторителями, поэтому более длинные сообщения не могут быть отправлены."
-      }
+      },
+      "sendParts_few": "Отправить {{count}} части",
+      "sendParts_many": "Отправить {{count}} частей"
     },
     "sendFailed": "Сбой отправки",
     "outboxStatusQueued": "В очереди",
@@ -662,7 +686,11 @@
       "forgotAddressToast": "Забыт сохраненный пункт назначения rncp для этого однорангового узла.",
       "filledFromChatToast": "Заполненный пункт назначения из чата (не сохранен — отметьте Не забудьте сохранить его).",
       "offerBannerTitle": "Входящие файловые предложения",
-      "offerBannerTitleAria": "Ожидающие предложения входящих файлов от этого узла"
+      "offerBannerTitleAria": "Ожидающие предложения входящих файлов от этого узла",
+      "activeTransfersBadgeAria_few": "{{count}} активные передачи файлов с этим одноранговым узлом",
+      "activeTransfersBadgeAria_many": "{{count}} активных передач файлов с этим одноранговым узлом",
+      "pendingOffersBadgeAria_few": "{{count}} ожидающих предложения по входящим файлам от этого участника",
+      "pendingOffersBadgeAria_many": "{{count}} ожидающих предложений по входящим файлам от этого участника"
     },
     "shareLocation": "Поделиться местоположением",
     "shareLocationLabel": "📍 Общая локация",
@@ -744,7 +772,15 @@
     "heardByRepeatersDetail_other": "Услышали {{count}}: {{names}}",
     "heardByRepeaterNodeFallback": "Узел {{nodeId}}",
     "heardByRepeatersAdditional_one": "{{count}} дополнительный неопознанный экспедитор (хэши: {{hashes}})",
-    "heardByRepeatersAdditional_other": "{{count}} дополнительные неопознанные экспедиторы (хеши: {{hashes}})"
+    "heardByRepeatersAdditional_other": "{{count}} дополнительные неопознанные экспедиторы (хеши: {{hashes}})",
+    "heardByRepeaters_few": "Услышали {{count}}",
+    "heardByRepeaters_many": "Услышали {{count}}",
+    "heardByRepeatersAdditional_few": "{{count}} дополнительных неопознанных экспедитора (хеши: {{hashes}})",
+    "heardByRepeatersAdditional_many": "{{count}} дополнительных неопознанных экспедиторов (хеши: {{hashes}})",
+    "heardByRepeatersDetail_few": "Услышали {{count}}: {{names}}",
+    "heardByRepeatersDetail_many": "Услышали {{count}}: {{names}}",
+    "searchResults_few": "{{count}} результата",
+    "searchResults_many": "{{count}} результатов"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -1523,7 +1559,9 @@
     "confirmDeleteButton": "Удалить?",
     "manageMembersOf": "Управление участниками {{name}}",
     "renameGroupNamed": "Переименовать {{name}}",
-    "deleteGroupNamed": "Удалить {{name}}"
+    "deleteGroupNamed": "Удалить {{name}}",
+    "memberCount_few": "{{count}} участника",
+    "memberCount_many": "{{count}} участников"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Удалить строки маршрутизации старше {{hours}} часов (1–168).",
@@ -1862,7 +1900,19 @@
     "km": "км",
     "distanceOffsetHelp": "Добавляет плоский километраж к порогам расстояния прыжка-гоблина и плохого маршрута (0–50).",
     "ignoreMqttToggle": "Игнорировать MQTT",
-    "ignoreMqttHelp": "Отображать узлы только с MQTT серым цветом и исключать их из диагностики"
+    "ignoreMqttHelp": "Отображать узлы только с MQTT серым цветом и исключать их из диагностики",
+    "errorCount_few": "{{count}} ошибки",
+    "errorCount_many": "{{count}} ошибок",
+    "nodesWithTelemetry_few": "{{count}} узла с телеметрией",
+    "nodesWithTelemetry_many": "{{count}} узлов с телеметрией",
+    "severityErrors_few": "Ошибки ({{count}})",
+    "severityErrors_many": "Ошибки ({{count}})",
+    "severityNotes_few": "Примечания ({{count}})",
+    "severityNotes_many": "Примечания ({{count}})",
+    "severityWarnings_few": "Предупреждения ({{count}})",
+    "severityWarnings_many": "Предупреждения ({{count}})",
+    "warningCount_few": "{{count}} предупреждения",
+    "warningCount_many": "{{count}} предупреждений"
   },
   "diagnosticsPing": {
     "title": "Непрерывный пинг",
@@ -2321,7 +2371,9 @@
     "applying": "Применение…",
     "applyButton": "Применить конфиденциальность телеметрии",
     "contactCount_one": "{{count}} контакт",
-    "contactCount_other": "{{count}} контакты"
+    "contactCount_other": "{{count}} контакты",
+    "contactCount_few": "{{count}} контакта",
+    "contactCount_many": "{{count}} контактов"
   },
   "messageStatusBadge": {
     "queuedTooltip": "В очереди — отправит при подключении",
@@ -2740,7 +2792,9 @@
       "8": {
         "label": "К9"
       }
-    }
+    },
+    "statusLine_few": "{{label}}: {{total}} пакетов от {{count}} узлов (последний {{lastSeen}})",
+    "statusLine_many": "{{label}}: {{total}} пакетов от {{count}} узлов (последний {{lastSeen}})"
   },
   "networkPanel": {
     "reticulumStackSettings": {
@@ -2780,11 +2834,13 @@
       "running": "Checking…",
       "ok": "Config looks good — no audit issues.",
       "failed": "Config check failed: {{message}}",
-      "issuesHeading_one": "{{count}} config issue",
-      "issuesHeading_other": "{{count}} config issues",
+      "issuesHeading_one": "{{count}} проблема конфигурации",
+      "issuesHeading_other": "{{count}} проблем конфигурации",
       "severityError": "error",
       "severityWarning": "warning",
-      "severityInfo": "info"
+      "severityInfo": "info",
+      "issuesHeading_few": "{{count}} проблемы конфигурации",
+      "issuesHeading_many": "{{count}} проблем конфигурации"
     },
     "reticulumPnHosting": {
       "title": "Расширенный хостинг PN (опасная зона)",
@@ -3029,7 +3085,9 @@
     "shareContactQrAria": "Показать контактный QR-код MeshCore для официального импорта приложения",
     "publicKeyCopied": "Открытый ключ скопирован в буфер обмена.",
     "hasPublicKeyNoDm": "Имеет открытый ключ (нет прямых сообщений)",
-    "copyPublicKey": "Копировать открытый ключ"
+    "copyPublicKey": "Копировать открытый ключ",
+    "hopLabel_few": "{{count}} хопа",
+    "hopLabel_many": "{{count}} хопов"
   },
   "nodeInfoBody": {
     "longName": "Длинное имя",
@@ -3104,7 +3162,11 @@
     "hybridMqttPathTooltip": "Получено через RF; некоторые пакеты используют путь ретрансляции MQTT",
     "hybridMqttPathAria": "Путь RF и MQTT",
     "connectedViaRfAndMqttTooltip": "Подключено через RF и MQTT",
-    "connectedViaRfAndMqttAria": "Подключено через RF и MQTT"
+    "connectedViaRfAndMqttAria": "Подключено через RF и MQTT",
+    "changes_few": "{{count}} изменения",
+    "changes_many": "{{count}} изменений",
+    "echoes_few": "{{count}} эхо",
+    "echoes_many": "{{count}} эхо"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Контакты обновлены.",
@@ -3200,7 +3262,19 @@
     "meshcoreTypeNone": "Нет",
     "meshcoreTypeUnknown": "Неизвестно",
     "columnHealth": "Состояние узла",
-    "hasPublicKeyTitle": "открытый ключ"
+    "hasPublicKeyTitle": "открытый ключ",
+    "distanceFilterActiveBanner_few": "Фильтр расстояний активен — {{count}} узла скрыты за пределами {{maxDistance}} {{unit}}.",
+    "distanceFilterActiveBanner_many": "Фильтр расстояний активен — {{count}} узлов скрыто за пределами {{maxDistance}} {{unit}}.",
+    "importResultSuccess_few": "Импортировано {{count}} контакта.",
+    "importResultSuccess_many": "Импортировано {{count}} контактов.",
+    "importResultSuccessWithSkipped_few": "Импортировано {{count}} контакта, пропущено {{skipped}}.",
+    "importResultSuccessWithSkipped_many": "Импортировано {{count}} контактов, пропущено {{skipped}}.",
+    "summaryOffline_few": "{{count}} оффлайн",
+    "summaryOffline_many": "{{count}} оффлайн",
+    "summaryOnline_few": "{{count}} онлайн",
+    "summaryOnline_many": "{{count}} онлайн",
+    "summaryStale_few": "{{count}} устаревших",
+    "summaryStale_many": "{{count}} устаревших"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3361,7 +3435,9 @@
     "pageProgressFailover": "Попытка изменить маршрут с помощью {{iface}} ({{hops}} HOPS)...",
     "pageProgressFailoverIface": "Попытка изменить маршрут через {{iface}}…",
     "pageProgressFailoverGeneric": "Попробовать другой маршрут...",
-    "pageProgressNoAlternate": "Нет других доступных маршрутов — завершение этой попытки..."
+    "pageProgressNoAlternate": "Нет других доступных маршрутов — завершение этой попытки...",
+    "hopsAway_few": "На расстоянии {{count}} хопов",
+    "hopsAway_many": "На расстоянии {{count}} хопов"
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",
@@ -3380,7 +3456,9 @@
     "packets_one": "{{count}} пакет",
     "packets_other": "{{count}} пакетов",
     "other": "Другой",
-    "noSenderId": "В необработанном кадре нет идентификатора отправителя"
+    "noSenderId": "В необработанном кадре нет идентификатора отправителя",
+    "packets_few": "{{count}} пакета",
+    "packets_many": "{{count}} пакетов"
   },
   "peerDetailModal": {
     "networkSection": "Сеть",
@@ -4910,7 +4988,9 @@
     "regenerateWarning": "Повторное создание делает недействительными существующие пакеты данных ATAK — вам придется выполнить повторный импорт.",
     "durationSec": "{{s}}s",
     "durationMin": "{{m}}м",
-    "durationHourMin": "{{h}}h {{m}}m"
+    "durationHourMin": "{{h}}h {{m}}m",
+    "packets_few": "{{count}} пакета",
+    "packets_many": "{{count}} пакетов"
   },
   "telemetryPanel": {
     "title": "Телеметрия",
@@ -4957,7 +5037,9 @@
     "firmwareAvailable": "Доступно обновление прошивки: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} новое сообщение",
     "newMessages_other": "{{protocol}}: {{count}} новых сообщений",
-    "meshcoreDistanceFilterHint": "У вас {{count}} контактов с GPS на карте. Включите фильтр расстояния в Приложение → Появление, чтобы сосредоточиться на близлежащих узлах."
+    "meshcoreDistanceFilterHint": "У вас {{count}} контактов с GPS на карте. Включите фильтр расстояния в Приложение → Появление, чтобы сосредоточиться на близлежащих узлах.",
+    "newMessages_few": "{{protocol}}: {{count}} новых сообщения",
+    "newMessages_many": "{{protocol}}: {{count}} новых сообщений"
   },
   "updateStatus": {
     "checking": "Проверка…",
@@ -5153,7 +5235,13 @@
     "addressChoiceTitle": "Открыть адрес Reticulum",
     "addressChoiceMessage": "{{address}} может быть страницей Nomad или узлом. Что вы хотите открыть?",
     "addressChoiceNomad": "Страница Nomad",
-    "addressChoiceDm": "Личное сообщение"
+    "addressChoiceDm": "Личное сообщение",
+    "hopsAway_few": "На расстоянии {{count}} хопов",
+    "hopsAway_many": "На расстоянии {{count}} хопов",
+    "memberCount_few": "{{count}} участника",
+    "memberCount_many": "{{count}} участников",
+    "userCount_few": "{{count}} пользователя",
+    "userCount_many": "{{count}} пользователей"
   },
   "signalMeter": {
     "rssi": "РССИ",
@@ -5239,14 +5327,16 @@
     },
     "pathCapability": {
       "checking": "Проверка пути",
-      "hops_one": "{{count}} Hop",
+      "hops_one": "{{count}} хоп",
       "hops_other": "{{count}} хопов",
       "speed": {
         "high": "быстрый путь",
         "constrained": "Ограниченный путь",
         "mixed": "Смешанный путь",
         "unknown": "Неизвестный путь"
-      }
+      },
+      "hops_few": "{{count}} хопа",
+      "hops_many": "{{count}} хопов"
     },
     "shell": {
       "addressPlaceholder": "Хеш назначения (32 шестнадцатеричных символа)",
@@ -5354,7 +5444,9 @@
       "listenerLikelyOffConfirm": "Отправить запрос на включение",
       "pendingOffersBadgeAriaCapped": "Более 99 ожидающих предложений по входящим файлам",
       "listenerLikelyOffBody": "Нет пути к месту назначения их файла, но они ищут чат в Интернете. Попросите их включить получение файлов rncp и отправить хэш получения rncp, а затем повторите попытку.",
-      "listenerLikelyOffToast": "Нет пути к месту назначения файла; прием файлов может быть отключен. Попросите их включить получение и отправку хэша по rncp, а затем повторите попытку."
+      "listenerLikelyOffToast": "Нет пути к месту назначения файла; прием файлов может быть отключен. Попросите их включить получение и отправку хэша по rncp, а затем повторите попытку.",
+      "pendingOffersBadgeAria_few": "{{count}} ожидающих предложения по входящим файлам",
+      "pendingOffersBadgeAria_many": "{{count}} ожидающих предложений по входящим файлам"
     },
     "enableRequest": {
       "title": "Включить получение файлов?",
