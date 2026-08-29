@@ -5496,7 +5496,8 @@
     "sessionRowAria": "{{peer}}との{{app}}ゲーム",
     "apps": {
       "ttt": "三目並べ",
-      "chess": "チェス"
+      "chess": "チェス",
+      "four_in_a_row": "四目並べ"
     },
     "status": {
       "pending": "保留",

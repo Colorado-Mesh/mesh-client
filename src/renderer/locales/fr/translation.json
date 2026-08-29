@@ -5496,7 +5496,8 @@
     "sessionRowAria": "{{app}} jeu avec {{peer}}",
     "apps": {
       "ttt": "Tictacto",
-      "chess": "Échecs"
+      "chess": "Échecs",
+      "four_in_a_row": "Puissance 4"
     },
     "status": {
       "pending": "En attente",

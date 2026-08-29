@@ -5496,7 +5496,8 @@
     "sessionRowAria": "Jogo {{app}} com {{peer}}",
     "apps": {
       "ttt": "Jogo da velha",
-      "chess": "Xadrez"
+      "chess": "Xadrez",
+      "four_in_a_row": "Quatro em linha"
     },
     "status": {
       "pending": "Pendente",

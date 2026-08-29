@@ -5496,7 +5496,8 @@
     "sessionRowAria": "{{app}} game met {{peer}}",
     "apps": {
       "ttt": "Boter-kaas-eierenmahjongg map name",
-      "chess": "Chess"
+      "chess": "Chess",
+      "four_in_a_row": "Vier op een rij"
     },
     "status": {
       "pending": "Openstaand",

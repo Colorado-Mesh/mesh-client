@@ -5496,7 +5496,8 @@
     "sessionRowAria": "{{app}}游戏与{{peer}}",
     "apps": {
       "ttt": "井字游戏",
-      "chess": "棋格"
+      "chess": "棋格",
+      "four_in_a_row": "四子棋"
     },
     "status": {
       "pending": "待定",

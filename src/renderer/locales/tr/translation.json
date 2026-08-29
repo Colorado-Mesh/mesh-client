@@ -5496,7 +5496,8 @@
     "sessionRowAria": "{{app}} ile {{peer}} oyunu",
     "apps": {
       "ttt": "Tic Tac Toe",
-      "chess": "Satranç"
+      "chess": "Satranç",
+      "four_in_a_row": "Dört Taş"
     },
     "status": {
       "pending": "Bekleyen",

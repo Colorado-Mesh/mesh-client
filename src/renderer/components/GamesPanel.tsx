@@ -32,6 +32,7 @@ import { resolveReticulumRemoteHashLabel } from '@/renderer/lib/reticulumVoiceRe
 import { useReticulumGamesStore } from '@/renderer/stores/reticulumGamesStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 import {
+  GAMES_CHALLENGE_APPS,
   GAMES_CMD,
   GAMES_DRAW_CLAIM,
   type GamesAppId,
@@ -47,7 +48,6 @@ type GamesFilter = 'all' | 'active' | 'pending' | 'completed';
 
 const GAMES_FILTERS: GamesFilter[] = ['all', 'active', 'pending', 'completed'];
 const COMPLETED_STATUSES = new Set(['completed', 'expired', 'declined']);
-const CHALLENGE_APPS: GamesAppId[] = ['ttt', 'chess'];
 /** Delay before retrying a win celebration that was skipped because a burst was already animating. */
 export const CELEBRATION_RETRY_MS = 400;
 
@@ -341,7 +341,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                 setChallengeApp(e.target.value as GamesAppId);
               }}
             >
-              {CHALLENGE_APPS.map((appId) => (
+              {GAMES_CHALLENGE_APPS.map((appId) => (
                 <option key={appId} value={appId}>
                   {t(`gamesPanel.apps.${appId}`)}
                 </option>

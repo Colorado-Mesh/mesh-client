@@ -2028,7 +2028,8 @@
     "sessionRowAria": "{{app}} game with {{peer}}",
     "apps": {
       "ttt": "Tic-Tac-Toe",
-      "chess": "Chess"
+      "chess": "Chess",
+      "four_in_a_row": "Four in a Row"
     },
     "status": {
       "pending": "Pending",

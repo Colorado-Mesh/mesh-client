@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { pushAppToast } from '@/renderer/components/Toast';
 import { sendGamesChallenge } from '@/renderer/lib/reticulum/reticulumGamesSession';
 import { RETICULUM_DM_HEADER_ACTION_CLASS } from '@/renderer/lib/reticulumDmHeaderActions';
-import type { GamesAppId } from '@/shared/games-types';
+import { GAMES_CHALLENGE_APPS, type GamesAppId } from '@/shared/games-types';
 
 interface ReticulumGameChallengeButtonProps {
   lxmfPeerHash: string;
@@ -13,9 +13,7 @@ interface ReticulumGameChallengeButtonProps {
   className?: string;
 }
 
-const CHALLENGE_APPS: GamesAppId[] = ['ttt', 'chess'];
-
-/** Compact "Challenge" control for Peers rows / Chat DM header — opens LRGP ttt/chess. */
+/** Compact "Challenge" control for Peers rows / Chat DM header — opens an LRGP game. */
 export function ReticulumGameChallengeButton({
   lxmfPeerHash,
   disabled = false,
@@ -71,7 +69,7 @@ export function ReticulumGameChallengeButton({
       </button>
       {showMenu && (
         <div className="bg-deep-black absolute top-full right-0 z-10 mt-1 w-36 rounded border border-gray-600 shadow-lg">
-          {CHALLENGE_APPS.map((appId) => (
+          {GAMES_CHALLENGE_APPS.map((appId) => (
             <button
               key={appId}
               type="button"

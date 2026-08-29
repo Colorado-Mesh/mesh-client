@@ -5590,7 +5590,8 @@
     "sessionRowAria": "{{app}} гра з {{peer}}",
     "apps": {
       "ttt": "Хрестики-нулики",
-      "chess": "Шахи"
+      "chess": "Шахи",
+      "four_in_a_row": "Чотири в ряд"
     },
     "status": {
       "pending": "Очікується",

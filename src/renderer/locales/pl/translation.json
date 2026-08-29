@@ -5590,7 +5590,8 @@
     "sessionRowAria": "{{app}} gra Z {{peer}}",
     "apps": {
       "ttt": "Kółko i krzyżyk",
-      "chess": "Szachy"
+      "chess": "Szachy",
+      "four_in_a_row": "Cztery w rzędzie"
     },
     "status": {
       "pending": "Oczekujące",

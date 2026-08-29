@@ -5590,7 +5590,8 @@
     "sessionRowAria": "{{app}} игра с {{peer}}",
     "apps": {
       "ttt": "Крестики Нолики",
-      "chess": "Шахматы"
+      "chess": "Шахматы",
+      "four_in_a_row": "Четыре в ряд"
     },
     "status": {
       "pending": "В процессе",

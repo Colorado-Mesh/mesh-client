@@ -5496,7 +5496,8 @@
     "sessionRowAria": "{{peer}} 과 (와) 의 {{app}} 게임",
     "apps": {
       "ttt": "Tic Tac Toe",
-      "chess": "체스"
+      "chess": "체스",
+      "four_in_a_row": "사목"
     },
     "status": {
       "pending": "대기",

@@ -5496,7 +5496,8 @@
     "sessionRowAria": "{{app}} gioco con {{peer}}",
     "apps": {
       "ttt": "Tris",
-      "chess": "Scacchiera"
+      "chess": "Scacchiera",
+      "four_in_a_row": "Forza 4"
     },
     "status": {
       "pending": "In sospeso",

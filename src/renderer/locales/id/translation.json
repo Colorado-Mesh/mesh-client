@@ -5496,7 +5496,8 @@
     "sessionRowAria": "{{app}} permainan dengan {{peer}}",
     "apps": {
       "ttt": "Tic Tac Toe",
-      "chess": "Catur"
+      "chess": "Catur",
+      "four_in_a_row": "Empat Berderet"
     },
     "status": {
       "pending": "Tertunda",

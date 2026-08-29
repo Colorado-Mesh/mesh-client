@@ -5544,7 +5544,8 @@
     "sessionRowAria": "{{app}} hra s {{peer}}",
     "apps": {
       "ttt": "Piškvorky",
-      "chess": "Šachy"
+      "chess": "Šachy",
+      "four_in_a_row": "Čtyři v řadě"
     },
     "status": {
       "pending": "Čekající",
