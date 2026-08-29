@@ -731,6 +731,23 @@ describe('rrcSessionStore', () => {
     expect(useRrcSessionStore.getState().consumeWhoTranscriptSlot('general')).toBe(false);
   });
 
+  it('re-arms auto /who when a reconnect re-runs the handshake', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('general');
+    expect(store.markWhoRequested('general')).toBe(true);
+    expect(store.consumeWhoTranscriptSlot('general')).toBe(true);
+    store.applyStatus('reconnecting', hub);
+    store.applyStatus('awaiting_welcome', hub);
+    store.applyStatus('active', hub, 'Community');
+    const session = useRrcSessionStore.getState().sessionsByHub.get(hub);
+    expect(session?.rooms.has('general')).toBe(true);
+    // Roster refresh is re-armed, but the NOTICE stays out of the transcript.
+    expect(useRrcSessionStore.getState().markWhoRequested('general')).toBe(true);
+    expect(useRrcSessionStore.getState().consumeWhoTranscriptSlot('general')).toBe(false);
+  });
+
   it('drops /who gates on clearHubSession so a new connection can show one roster', () => {
     const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
     const store = useRrcSessionStore.getState();

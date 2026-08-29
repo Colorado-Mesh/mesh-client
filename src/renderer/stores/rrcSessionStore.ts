@@ -378,6 +378,8 @@ interface RrcSessionStoreState {
   consumeWhoTranscriptSlot: (room: string, hubHash?: string) => boolean;
   /** Next `/who` NOTICE for this room should appear in chat (Refresh / composer). */
   reserveWhoTranscriptForce: (room: string, hubHash?: string) => void;
+  /** True while a forced `/who` is still waiting for the hub NOTICE that fills it. */
+  hasWhoTranscriptForce: (room: string, hubHash?: string) => boolean;
   /** Drop a forced transcript reservation after a failed `/who` send. */
   releaseWhoTranscriptForce: (room: string, hubHash?: string) => void;
   /** Sum of live unread across every session, plus stashed unread for removed hubs. */
@@ -705,10 +707,14 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       }
       const isNewSession = !s.sessionsByHub.has(targetHub);
       const existing = s.sessionsByHub.get(targetHub) ?? emptyHubSession();
+      // A reconnect re-JOINs every room, and rrcd JOINED rosters carry no nicks.
+      // Re-arm auto `/who` so the nicklist resolves hashes to names again.
+      const reHandshake = status === 'connecting' || status === 'awaiting_welcome';
       const nextSession: RrcHubSessionState = {
         ...existing,
         status,
         hubName: hubName !== undefined ? hubName : existing.hubName,
+        whoRequestedRooms: reHandshake ? new Set() : existing.whoRequestedRooms,
       };
       const sessionsByHub = new Map(s.sessionsByHub);
       sessionsByHub.set(targetHub, nextSession);
@@ -1088,6 +1094,15 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const mirror = hub === s.focusedHubHash ? mirrorFromSession(hub, nextSession) : {};
       return { sessionsByHub, ...mirror };
     });
+  },
+
+  hasWhoTranscriptForce: (room, hubHash) => {
+    const s = get();
+    const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
+    if (!hub) return false;
+    const forceRooms = s.sessionsByHub.get(hub)?.whoTranscriptForceRooms;
+    if (!forceRooms) return false;
+    return [...forceRooms].some((k) => rrcRoomsMatch(k, room));
   },
 
   releaseWhoTranscriptForce: (room, hubHash) => {

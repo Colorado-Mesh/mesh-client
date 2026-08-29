@@ -25,6 +25,10 @@ import { setRrcHubDisconnectSuppressed } from '@/renderer/lib/rrcHubDisconnectSu
 import { isRrcHubAutoJoin, toggleRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { isRrcHubLinked } from '@/renderer/lib/rrcHubSession';
 import { migrateLegacyWhispersForHub } from '@/renderer/lib/rrcLegacyWhispersMigrate';
+import {
+  applyRrcHistoryNicksToMembers,
+  collectRrcNicksForHub,
+} from '@/renderer/lib/rrcMemberNicksFromHistory';
 import { buildRrcWhisperCompleteMembers } from '@/renderer/lib/rrcNickComplete';
 import { loadRrcOpenDms } from '@/renderer/lib/rrcOpenDms';
 import { loadRrcRecentRooms, pushRrcRecentRoom } from '@/renderer/lib/rrcRecentRooms';
@@ -49,6 +53,7 @@ import {
   resolveRrcMsgTarget,
   RRC_HELP_I18N_KEYS,
 } from '@/renderer/lib/rrcSlashCommands';
+import { RRC_WHO_REPLY_TIMEOUT_MS } from '@/renderer/lib/timeConstants';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import {
   MAX_RRC_HUB_SESSIONS,
@@ -252,6 +257,44 @@ export default function RrcPanel({
     clearUnread(activeRoom, hubDestHash);
   }, [isActive, activeRoom, hubDestHash, clearUnread]);
 
+  /**
+   * Stock rrcd `/who` uses emit_notice → a single Packet.send (no chunk/resource),
+   * so busy rooms exceed the Link MDU (~431) and the hub drops the reply silently.
+   * Leave one system line instead of letting the command look ignored.
+   */
+  const scheduleWhoReplyWatchdog = useCallback(
+    (room: string, opts: { forced: boolean }) => {
+      if (!hubDestHash) return;
+      const hub = hubDestHash.toLowerCase();
+      window.setTimeout(() => {
+        const s = useRrcSessionStore.getState();
+        if (s.status !== 'active' || s.hubDestHash?.toLowerCase() !== hub) return;
+        if (opts.forced) {
+          // A displayed reply consumes the reservation; still pending means nothing arrived.
+          if (!s.hasWhoTranscriptForce(room, hub)) return;
+        } else {
+          const session = s.sessionsByHub.get(hub);
+          const info = session
+            ? [...session.rooms.values()].find((r) => rrcRoomsMatch(r.name, room))
+            : undefined;
+          if (!info) return;
+          if ((info.members?.length ?? 0) > 0) return;
+        }
+        s.addMessage(
+          {
+            id: `who-miss-${hub.slice(0, 8)}-${rrcRoomMatchKey(room)}-${Date.now()}`,
+            room,
+            kind: 'system',
+            body: t('rrc.whoReplyMissing', { room }),
+            timestamp: Date.now(),
+          },
+          { hubDestHash: hub },
+        );
+      }, RRC_WHO_REPLY_TIMEOUT_MS);
+    },
+    [hubDestHash, t],
+  );
+
   const sendHubCommand = useCallback(
     async (body: string) => {
       if (status !== 'active' || !hubDestHash) return;
@@ -282,6 +325,8 @@ export default function RrcPanel({
         });
         if (!res.ok && whoForceRoom) {
           useRrcSessionStore.getState().releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
+        } else if (res.ok && whoForceRoom) {
+          scheduleWhoReplyWatchdog(whoForceRoom, { forced: true });
         }
       } catch (e: unknown) {
         if (whoForceRoom) {
@@ -292,7 +337,7 @@ export default function RrcPanel({
         setError(formatRrcErrorMessage(msg, t), hubDestHash);
       }
     },
-    [activeRoom, hubDestHash, rooms, setError, status, t],
+    [activeRoom, hubDestHash, rooms, scheduleWhoReplyWatchdog, setError, status, t],
   );
 
   const requestRoomWho = useCallback(
@@ -328,31 +373,8 @@ export default function RrcPanel({
             const next = useRrcSessionStore.getState();
             next.releaseWhoRequested(room, hubDestHash);
             if (force) next.releaseWhoTranscriptForce(room, hubDestHash);
-          } else if (!force) {
-            // Stock rrcd `/who` uses emit_notice → single Packet.send (no chunk/resource).
-            // Busy rooms exceed Link MDU (~431); hub drops silently — one system line.
-            window.setTimeout(() => {
-              const s = useRrcSessionStore.getState();
-              const hub = hubDestHash.toLowerCase();
-              const session = s.sessionsByHub.get(hub);
-              const info = session
-                ? [...session.rooms.values()].find((r) => rrcRoomsMatch(r.name, room))
-                : undefined;
-              if (!info) return;
-              const count = info.members?.length ?? 0;
-              if (count > 0) return;
-              if (s.status !== 'active' || s.hubDestHash?.toLowerCase() !== hub) return;
-              s.addMessage(
-                {
-                  id: `who-miss-${hub.slice(0, 8)}-${rrcRoomMatchKey(room)}-${Date.now()}`,
-                  room,
-                  kind: 'system',
-                  body: t('rrc.whoReplyMissing', { room }),
-                  timestamp: Date.now(),
-                },
-                { hubDestHash },
-              );
-            }, 12_000);
+          } else {
+            scheduleWhoReplyWatchdog(room, { forced: force });
           }
         } catch (e: unknown) {
           const next = useRrcSessionStore.getState();
@@ -362,7 +384,7 @@ export default function RrcPanel({
         }
       })();
     },
-    [status, hubDestHash, listedRooms, rooms, t],
+    [status, hubDestHash, listedRooms, rooms, scheduleWhoReplyWatchdog],
   );
 
   // rrcd JOINED member lists are optional (off by default) — request `/who` once per join.
@@ -434,6 +456,8 @@ export default function RrcPanel({
   );
 
   const activeMessages = useRrcSessionStore(selectRrcActiveRoomMessages);
+  /** All transcripts for this hub — the fallback source for hash-only nicklist rows. */
+  const hubMessages = useRrcSessionStore((s) => s.messages);
   const activeRoomInfo = activeRoom ? rooms.get(activeRoom) : undefined;
   const muteKey = hubDestHash && activeRoom ? `rrc:${hubDestHash}:${activeRoom}` : null;
   const isMuted = muteKey ? mutedViews.has(muteKey) : false;
@@ -465,8 +489,15 @@ export default function RrcPanel({
     !activeRoom?.startsWith('[') &&
     !isRrcDmRoom(activeRoom);
 
+  const historyNicks = useMemo(
+    () => collectRrcNicksForHub(hubMessages, hubDestHash),
+    [hubMessages, hubDestHash],
+  );
+
   const nicklistMembers = useMemo(() => {
-    let members = dedupeRrcMembers([...(activeRoomInfo?.members ?? [])]);
+    let members = dedupeRrcMembers(
+      applyRrcHistoryNicksToMembers(activeRoomInfo?.members ?? [], historyNicks),
+    );
     if (localIdentityHash || nickname) {
       const selfIdx = members.findIndex((m) => {
         if (localIdentityHash && rrcIdentityHashesMatch(m.identity_hash, localIdentityHash)) {
@@ -501,7 +532,7 @@ export default function RrcPanel({
       members = dedupeRrcMembers(members);
     }
     return members;
-  }, [activeRoomInfo?.members, localIdentityHash, nickname]);
+  }, [activeRoomInfo?.members, historyNicks, localIdentityHash, nickname]);
 
   const chatCompleteMembers = useMemo(() => {
     if (!isRrcDmRoom(activeRoom)) return nicklistMembers;
@@ -912,6 +943,7 @@ export default function RrcPanel({
             useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
             return;
           }
+          if (whoForceRoom) scheduleWhoReplyWatchdog(whoForceRoom, { forced: true });
           appendSystemLines([t('rrc.slash.commandSent', { cmd: expanded })]);
           setDraft('');
           return;
@@ -989,6 +1021,7 @@ export default function RrcPanel({
       nickname,
       openDm,
       rooms,
+      scheduleWhoReplyWatchdog,
       sendHubCommand,
       setNickname,
       status,
