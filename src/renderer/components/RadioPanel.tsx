@@ -760,9 +760,20 @@ export default function RadioPanel({
   const [longName, setLongName] = useState('');
   const [shortName, setShortName] = useState('');
   const [isLicensed, setIsLicensed] = useState(false);
+  /** Last device-reported owner applied to the form (skip redundant overwrites while editing). */
+  const syncedDeviceOwnerRef = useRef<string | null>(null);
+  /** Last device-reported MeshCore LoRa params applied to the form. */
+  const syncedMeshcoreLoraRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (deviceOwner) {
+      const signature = JSON.stringify([
+        deviceOwner.longName,
+        deviceOwner.shortName,
+        deviceOwner.isLicensed,
+      ]);
+      if (syncedDeviceOwnerRef.current === signature) return;
+      syncedDeviceOwnerRef.current = signature;
       setLongName(deviceOwner.longName);
       setShortName(truncateMeshtasticShortName(deviceOwner.shortName));
       setIsLicensed(deviceOwner.isLicensed);
@@ -807,6 +818,18 @@ export default function RadioPanel({
   // Sync LoRa state from loraConfig prop (MeshCore device info)
   useEffect(() => {
     if (!loraConfig) return;
+    // Only apply when the device-reported values actually changed, so a repeated sync does not
+    // overwrite edits the user is still typing.
+    const signature = JSON.stringify([
+      loraConfig.freq,
+      loraConfig.bw,
+      loraConfig.sf,
+      loraConfig.cr,
+      loraConfig.txPower,
+      meshcoreTxPowerMax,
+    ]);
+    if (syncedMeshcoreLoraRef.current === signature) return;
+    syncedMeshcoreLoraRef.current = signature;
     if (loraConfig.freq != null) setRadioFreqHz(meshcoreSelfInfoFreqToDisplayHz(loraConfig.freq));
     if (loraConfig.bw != null) setBandwidth(meshcoreSelfInfoBwToDisplayKhz(loraConfig.bw));
     if (loraConfig.sf != null) setSpreadFactor(loraConfig.sf);

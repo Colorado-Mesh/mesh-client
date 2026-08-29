@@ -1800,6 +1800,35 @@ function AppContent() {
   const effectiveChannelConfigs = isRemoteConfigureTarget
     ? (meshtasticRuntime.remoteConfigSnapshot?.channelConfigs ?? [])
     : meshtasticRuntime.channelConfigs;
+  // Stable identity: RadioPanel syncs MeshCore LoRa form fields from this object, so a fresh
+  // object per render would overwrite in-progress user edits.
+  const meshcoreRadioFreq = meshcoreRuntime.selfInfo?.radioFreq;
+  const meshcoreRadioBw = meshcoreRuntime.selfInfo?.radioBw;
+  const meshcoreRadioSf = meshcoreRuntime.selfInfo?.radioSf;
+  const meshcoreRadioCr = meshcoreRuntime.selfInfo?.radioCr;
+  const meshcoreTxPower = meshcoreRuntime.selfInfo?.txPower;
+  const hasMeshcoreSelfInfo = meshcoreRuntime.selfInfo != null;
+  const meshcoreLoraConfig = useMemo(
+    () =>
+      capabilities.hasCompanionContactManagementConfig && hasMeshcoreSelfInfo
+        ? {
+            freq: meshcoreRadioFreq,
+            bw: meshcoreRadioBw,
+            sf: meshcoreRadioSf,
+            cr: meshcoreRadioCr,
+            txPower: meshcoreTxPower,
+          }
+        : undefined,
+    [
+      capabilities.hasCompanionContactManagementConfig,
+      hasMeshcoreSelfInfo,
+      meshcoreRadioFreq,
+      meshcoreRadioBw,
+      meshcoreRadioSf,
+      meshcoreRadioCr,
+      meshcoreTxPower,
+    ],
+  );
   const effectiveLoraConfig = isRemoteConfigureTarget
     ? (meshtasticRuntime.remoteConfigSnapshot?.loraConfig ?? null)
     : meshtasticRuntime.loraConfig;
@@ -3848,18 +3877,7 @@ function AppContent() {
                                       ? meshcorePanelActions.setRadioParams
                                       : undefined
                                   }
-                                  loraConfig={
-                                    capabilities.hasCompanionContactManagementConfig &&
-                                    meshcoreRuntime.selfInfo
-                                      ? {
-                                          freq: meshcoreRuntime.selfInfo.radioFreq,
-                                          bw: meshcoreRuntime.selfInfo.radioBw,
-                                          sf: meshcoreRuntime.selfInfo.radioSf,
-                                          cr: meshcoreRuntime.selfInfo.radioCr,
-                                          txPower: meshcoreRuntime.selfInfo.txPower,
-                                        }
-                                      : undefined
-                                  }
+                                  loraConfig={meshcoreLoraConfig}
                                   meshcoreSelfInfo={
                                     capabilities.hasCompanionContactManagementConfig
                                       ? meshcoreRuntime.selfInfo
