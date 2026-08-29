@@ -975,7 +975,7 @@
       "pinAcceptedNext": "PIN akzeptiert. Kopplung abgeschlossen. Drücken Sie auf „Verbinden“ und wählen Sie Ihr Gerät aus, um die Verbindung abzuschließen.",
       "connectionFailed": "Verbindung fehlgeschlagen"
     },
-    "cancelMqttConnect": "Stornieren",
+    "cancelMqttConnect": "Abbrechen",
     "ripplePresetConfirm": "Die Ripple-Voreinstellung verwendet gemeinsam genutzte Community-Anmeldeinformationen und deaktiviert die TLS-Zertifikatüberprüfung. Nur in einem vertrauenswürdigen Netzwerk verwenden. Fortfahren?",
     "meshcorePort": "Port",
     "channelPsksHelp": "AES-128 (16 Byte) oder AES-256 (32 Byte) Base64-Schlüssel, einer pro Zeile. Optionaler ChannelName=base64 nur für MQTT. LongFast-Standard wird immer versucht. Die Tasten auf der Registerkarte Radio werden automatisch synchronisiert, wenn das Radio angeschlossen ist.",

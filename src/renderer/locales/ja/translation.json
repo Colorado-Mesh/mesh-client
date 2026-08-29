@@ -1307,7 +1307,7 @@
       "fieldInvalidOption": "サポートされていない値です。"
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "ホップ",
       "actions": "アクション",
       "path": "パス",
       "probe": "プローブ"

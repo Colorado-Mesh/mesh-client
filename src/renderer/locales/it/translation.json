@@ -1305,7 +1305,7 @@
       "fieldInvalidOption": "Valore non supportato."
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Salti",
       "actions": "Azioni",
       "path": "Percorso",
       "probe": "Sonda"
@@ -4599,7 +4599,7 @@
     "rssiTitle": "Distribuzione RSSI",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Distribuzione conteggio hop",
-    "hopAxis": "Hop"
+    "hopAxis": "Salti"
   },
   "roleInfo": {
     "placeholderDash": "-",

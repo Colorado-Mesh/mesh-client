@@ -1307,7 +1307,7 @@
       "fieldInvalidOption": "지원되지 않는 값입니다."
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "홉",
       "actions": "작업",
       "path": "경로",
       "probe": "프로브"

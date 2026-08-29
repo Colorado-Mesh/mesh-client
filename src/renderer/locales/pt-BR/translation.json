@@ -1307,7 +1307,7 @@
       "fieldInvalidOption": "Valor não suportado."
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Saltos",
       "actions": "Ações",
       "path": "Caminho",
       "probe": "Sonda"

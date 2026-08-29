@@ -1306,7 +1306,7 @@
       "fieldInvalidOption": "Niet-ondersteund waardetype"
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Hop",
       "actions": "Acties",
       "path": "Pad",
       "probe": "Sonde"

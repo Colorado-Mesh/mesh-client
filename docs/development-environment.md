@@ -87,7 +87,7 @@ Reticulum/LXMF runs in a separate Rust binary (`mesh-client-reticulum`) spawned 
 
 #### Installing Rust
 
-**Recommended: [rustup](https://rustup.rs/)** — matches [CI](.github/workflows/reticulum-sidecar.yaml) and `pnpm run update`:
+**Recommended: [rustup](https://rustup.rs/)** — matches [CI](../.github/workflows/reticulum-sidecar.yaml) and `pnpm run update`:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh

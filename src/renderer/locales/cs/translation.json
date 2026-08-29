@@ -1308,7 +1308,7 @@
       "fieldInvalidOption": "Nepodporovaná hodnota."
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Skoky",
       "actions": "Akce",
       "path": "Cesta",
       "probe": "Sonda"

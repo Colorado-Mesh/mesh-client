@@ -761,7 +761,7 @@
   "common": {
     "close": "Закрывать",
     "cancel": "Отмена",
-    "save": "Сохранять",
+    "save": "Сохранить",
     "yes": "Да",
     "no": "Нет",
     "clear": "Прозрачный",
@@ -771,7 +771,7 @@
     "error": "Ошибка",
     "warning": "Предупреждение",
     "disabled": "Неполноценный",
-    "unknown": "Неизвестный",
+    "unknown": "Неизвестно",
     "never": "Никогда",
     "dismiss": "Увольнять",
     "channel": "Канал",
@@ -1309,7 +1309,7 @@
       "fieldInvalidOption": "Неподдерживаемое значение."
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Хопы",
       "actions": "Действия",
       "path": "Маршрут",
       "probe": "Зонд"
@@ -1877,7 +1877,7 @@
     "runOnce": "Пинг один раз",
     "colSeq": "№ п/п",
     "colRtt": "*Ова",
-    "colHops": "Хопи",
+    "colHops": "Хопы",
     "colStatus": "Статус",
     "rttMs": "{{ms}} мс",
     "statusOk": "OK",
@@ -4601,7 +4601,7 @@
     "rssiTitle": "Распределение RSSI",
     "rssiAxis": "RSSI (дБм)",
     "hopTitle": "Распределение количества прыжков",
-    "hopAxis": "Прыжки"
+    "hopAxis": "Хопы"
   },
   "roleInfo": {
     "placeholderDash": "-",

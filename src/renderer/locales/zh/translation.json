@@ -1307,7 +1307,7 @@
       "fieldInvalidOption": "不支持的V值。"
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "跳数",
       "actions": "动作",
       "path": "路径",
       "probe": "探头"
@@ -4599,7 +4599,7 @@
     "rssiTitle": "RSSI分发",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "跳数分布",
-    "hopAxis": "链路数目"
+    "hopAxis": "跳数"
   },
   "roleInfo": {
     "placeholderDash": "-",

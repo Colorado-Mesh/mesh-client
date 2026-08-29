@@ -1245,7 +1245,7 @@ export function useMeshtasticRuntime() {
         myNodeNumRef.current = mqttOnlyId;
         setState((prev) => ({ ...prev, myNodeNum: mqttOnlyId }));
         console.debug(
-          `[useMeshtasticRuntime] MQTT-only identity: from=!${mqttOnlyId.toString(16).padStart(8, '0')} source=${mqttOnlyIdentitySource(lastRfSelfNodeIdRef.current)}`,
+          `[useMeshtasticRuntime] MQTT-only identity: from=${formatMeshtasticNodeId(mqttOnlyId)} source=${mqttOnlyIdentitySource(lastRfSelfNodeIdRef.current)}`,
         );
         let mqttSelfNodeToPersist: MeshNode | undefined;
         updateNodes((prev) => {

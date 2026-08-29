@@ -1309,7 +1309,7 @@
       "fieldInvalidOption": "Непідтримуване значення."
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Хопи",
       "actions": "Дії",
       "path": "Шлях",
       "probe": "Зонд"

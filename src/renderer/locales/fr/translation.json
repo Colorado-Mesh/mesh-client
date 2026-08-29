@@ -1306,7 +1306,7 @@
       "fieldInvalidOption": "Valeur enum non prise en charge"
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Sauts",
       "actions": "Opérations",
       "path": "Chemin",
       "probe": "Sonde"

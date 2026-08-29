@@ -2186,7 +2186,11 @@ let _cachedBadgeIcon: ReturnType<typeof nativeImage.createFromBuffer> | null = n
 let _cachedTrayIconUnread: Electron.NativeImage | null = null;
 let _cachedTrayIconRead: Electron.NativeImage | null = null;
 let _lastTrayUnreadVariant: boolean | null = null;
-ipcMain.on('set-tray-unread', (_event, count: unknown) => {
+ipcMain.on('set-tray-unread', (event, count: unknown) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] set-tray-unread: unauthorized sender');
+    return;
+  }
   try {
     const n = Math.max(0, Math.min(Math.floor(Number(count)) || 0, 99999));
     lastTrayUnreadCount = n;
@@ -2258,7 +2262,11 @@ function stopPowerSaveBlocker(): void {
 }
 
 // ─── IPC: Serial port selected by user ──────────────────────────────
-ipcMain.on('serial-port-selected', (_event, portId: unknown) => {
+ipcMain.on('serial-port-selected', (event, portId: unknown) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] serial-port-selected: unauthorized sender');
+    return;
+  }
   if (!pendingSerialCallback) return;
   const id = typeof portId === 'string' ? portId : '';
   if (id !== '' && !lastSerialPortIds.has(id)) {
@@ -2273,7 +2281,11 @@ ipcMain.on('serial-port-selected', (_event, portId: unknown) => {
 });
 
 // ─── IPC: Cancel Serial selection ───────────────────────────────────
-ipcMain.on('serial-port-cancelled', () => {
+ipcMain.on('serial-port-cancelled', (event) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] serial-port-cancelled: unauthorized sender');
+    return;
+  }
   clearPendingSerialSelectionTimer();
   if (pendingSerialCallback) {
     pendingSerialCallback(''); // Empty string cancels the request
@@ -2283,7 +2295,11 @@ ipcMain.on('serial-port-cancelled', () => {
 });
 
 // ─── IPC: Bluetooth device selected by user (Linux Web Bluetooth) ────
-ipcMain.on('bluetooth-device-selected', (_event, deviceId: unknown) => {
+ipcMain.on('bluetooth-device-selected', (event, deviceId: unknown) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] bluetooth-device-selected: unauthorized sender');
+    return;
+  }
   if (!linuxWebBluetoothDeviceSelection.hasPendingSelection()) {
     console.warn(
       '[IPC] bluetooth-device-selected: no pending selection (ignored — may have timed out or already resolved)',
@@ -2779,7 +2795,11 @@ ipcMain.on('bluetooth-provide-pin', (event, pin: unknown) => {
 });
 
 // ─── IPC: Cancel Bluetooth pairing (Linux) ────────────────────────────
-ipcMain.on('bluetooth-cancel-pairing', () => {
+ipcMain.on('bluetooth-cancel-pairing', (event) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] bluetooth-cancel-pairing: unauthorized sender');
+    return;
+  }
   if (pendingPairingCallback) {
     console.debug('[IPC] bluetooth-cancel-pairing: cancelling');
     pendingPairingCallback({ pin: '', confirmed: false }); // confirmed: false cancels
@@ -2791,7 +2811,11 @@ ipcMain.on('bluetooth-cancel-pairing', () => {
 
 // ─── IPC: Reset BLE pairing retry count (Linux) ───────────────────────────
 // Called when starting a new BLE connection so the first pairing attempt uses the default PIN
-ipcMain.on('ble-reset-pairing-retry-count', (_event, sessionKind?: unknown) => {
+ipcMain.on('ble-reset-pairing-retry-count', (event, sessionKind?: unknown) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] ble-reset-pairing-retry-count: unauthorized sender');
+    return;
+  }
   pendingPairingRetryCount = 0;
   blePairingSessionKind = sessionKind === 'meshcore' ? 'meshcore' : 'meshtastic';
 });

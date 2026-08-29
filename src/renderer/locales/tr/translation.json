@@ -1307,7 +1307,7 @@
       "fieldInvalidOption": "Desteklenmeyen değer."
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Hop",
       "actions": "Eylemler",
       "path": "Yol",
       "probe": "Sonda"
@@ -1875,7 +1875,7 @@
     "runOnce": "Bir kez ping yap",
     "colSeq": "#",
     "colRtt": "RTT",
-    "colHops": "Atlama",
+    "colHops": "Hop",
     "colStatus": "Durum",
     "rttMs": "{{ms}} ms",
     "statusOk": "Tamam",
@@ -4599,7 +4599,7 @@
     "rssiTitle": "RSSI Dağılımı",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Hop Sayısı Dağılımı",
-    "hopAxis": "Atlama"
+    "hopAxis": "Hop"
   },
   "roleInfo": {
     "placeholderDash": "-",

@@ -1309,7 +1309,7 @@
       "fieldInvalidOption": "Nieobsługiwane"
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Skoki",
       "actions": "Działania",
       "path": "Ścieżka",
       "probe": "Sonda"
@@ -4603,7 +4603,7 @@
     "rssiTitle": "Dystrybucja RSSI",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Dystrybucja liczby przeskoków",
-    "hopAxis": "Przeskoków"
+    "hopAxis": "Skoki"
   },
   "roleInfo": {
     "placeholderDash": "-",

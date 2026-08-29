@@ -1307,7 +1307,7 @@
       "fieldInvalidOption": "Nilai tidak didukung."
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Hop",
       "actions": "Aksi",
       "path": "Jalur",
       "probe": "Sonda"
