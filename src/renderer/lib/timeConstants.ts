@@ -345,5 +345,11 @@ export const RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS = 75 * MS_PER_SECOND;
  */
 export const RETICULUM_IPC_SEND_TIMEOUT_MS = 15 * MS_PER_SECOND;
 
+/**
+ * How long to wait for an rrcd `/who` NOTICE before telling the user the member
+ * list never came back (single-packet reply, dropped when it exceeds Link MDU).
+ */
+export const RRC_WHO_REPLY_TIMEOUT_MS = 12 * MS_PER_SECOND;
+
 /** BLE picker: keep live dBm, but wait this long before re-ordering by RSSI so rows do not jump. */
 export const PICKER_RSSI_REORDER_DEBOUNCE_MS = MS_PER_SECOND;

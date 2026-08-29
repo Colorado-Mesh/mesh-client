@@ -13,6 +13,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import MentionAutocomplete from '@/renderer/components/MentionAutocomplete';
 import { useAppWindowActivity } from '@/renderer/lib/appWindowActivity';
 import { isSafeChatUrl } from '@/renderer/lib/chatMentionSegments';
@@ -24,6 +25,11 @@ import {
   VIRTUALIZER_SCROLL_END_THRESHOLD,
 } from '@/renderer/lib/chatScrollUtils';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
+import { openNomadPageFromLink } from '@/renderer/lib/nomad/openNomadPageFromLink';
+import {
+  findReticulumChatLinks,
+  type ReticulumChatLink,
+} from '@/renderer/lib/nomad/reticulumLinkText';
 import {
   bodyMentionsRrcNick,
   findNextRrcNickMention,
@@ -64,49 +70,123 @@ const RRC_MENTION_LISTBOX_ID = 'rrc-mention-listbox';
 const URL_PATTERN = /https?:\/\/[^\s<>"{}|\\^`[\]]+/gu;
 const TRAILING_PUNCT = /[.,!?;:'"()]+$/;
 
-/** Inline URL + plain text segments (no block wrappers — keeps IRC one-liners). */
-function renderRrcInlineText(text: string, keyPrefix: string): ReactNode[] {
-  const nodes: ReactNode[] = [];
-  let last = 0;
+const RRC_LINK_CLASS = 'break-all text-cyan-400 underline hover:text-cyan-300 align-baseline';
+
+interface RrcHttpSegment {
+  kind: 'http';
+  start: number;
+  end: number;
+  url: string;
+  trailing: string;
+}
+
+type RrcLinkSegment = RrcHttpSegment | ReticulumChatLink;
+
+function findRrcHttpLinks(text: string): RrcHttpSegment[] {
+  const found: RrcHttpSegment[] = [];
   URL_PATTERN.lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = URL_PATTERN.exec(text)) !== null) {
-    if (m.index > last) {
+    const raw = m[0];
+    const url = raw.replace(TRAILING_PUNCT, '');
+    found.push({
+      kind: 'http',
+      start: m.index,
+      end: m.index + raw.length,
+      url,
+      trailing: raw.slice(url.length),
+    });
+  }
+  return found;
+}
+
+/** Merge http and Reticulum matches by position; http wins on any overlap. */
+function findRrcLinkSegments(text: string): RrcLinkSegment[] {
+  const http = findRrcHttpLinks(text);
+  const reticulum = findReticulumChatLinks(text).filter(
+    (link) => !http.some((h) => link.start < h.end && h.start < link.end),
+  );
+  return [...http, ...reticulum].sort((a, b) => a.start - b.start);
+}
+
+interface RrcInlineOpts {
+  /** Localized aria-label lookup (passed in; these are module functions, not hooks). */
+  t: (key: string, opts?: Record<string, unknown>) => string;
+  /** Non-http Reticulum address click; the component decides page vs DM vs prompt. */
+  onAddressClick?: (link: ReticulumChatLink) => void;
+  /** Whether DM targets are actionable at all (no handler wired ⇒ render as text). */
+  canOpenDm: boolean;
+}
+
+function reticulumAddressLabelKey(link: ReticulumChatLink): string {
+  if (link.kind === 'nomadPage') return 'rrc.openNomadPage';
+  return link.ambiguous ? 'rrc.openReticulumAddress' : 'rrc.openDm';
+}
+
+/** Inline URL + plain text segments (no block wrappers — keeps IRC one-liners). */
+function renderRrcInlineText(text: string, keyPrefix: string, opts: RrcInlineOpts): ReactNode[] {
+  const { t, onAddressClick, canOpenDm } = opts;
+  const nodes: ReactNode[] = [];
+  let last = 0;
+  for (const segment of findRrcLinkSegments(text)) {
+    if (segment.start > last) {
       nodes.push(
         <span key={`${keyPrefix}-t-${last}`} className="whitespace-pre-wrap">
-          {text.slice(last, m.index)}
+          {text.slice(last, segment.start)}
         </span>,
       );
     }
-    const raw = m[0];
-    const url = raw.replace(TRAILING_PUNCT, '');
-    if (isSafeChatUrl(url)) {
+    const key = `${keyPrefix}-u-${segment.start}`;
+    if (segment.kind === 'http') {
+      if (isSafeChatUrl(segment.url)) {
+        nodes.push(
+          <a
+            key={key}
+            href={segment.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="break-all text-cyan-400 underline hover:text-cyan-300"
+          >
+            {segment.url}
+          </a>,
+        );
+      } else {
+        nodes.push(
+          <span key={key} className="whitespace-pre-wrap">
+            {segment.url}
+          </span>,
+        );
+      }
+      if (segment.trailing) {
+        nodes.push(
+          <span key={`${keyPrefix}-p-${segment.start}`} className="whitespace-pre-wrap">
+            {segment.trailing}
+          </span>,
+        );
+      }
+    } else if (onAddressClick && (segment.kind === 'nomadPage' || canOpenDm)) {
+      const link = segment;
       nodes.push(
-        <a
-          key={`${keyPrefix}-u-${m.index}`}
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="break-all text-cyan-400 underline hover:text-cyan-300"
+        <button
+          key={key}
+          type="button"
+          className={RRC_LINK_CLASS}
+          aria-label={t(reticulumAddressLabelKey(link), { address: link.url })}
+          onClick={() => {
+            onAddressClick(link);
+          }}
         >
-          {url}
-        </a>,
+          {link.url}
+        </button>,
       );
     } else {
       nodes.push(
-        <span key={`${keyPrefix}-u-${m.index}`} className="whitespace-pre-wrap">
-          {url}
+        <span key={key} className="whitespace-pre-wrap">
+          {segment.url}
         </span>,
       );
     }
-    if (raw.length > url.length) {
-      nodes.push(
-        <span key={`${keyPrefix}-p-${m.index}`} className="whitespace-pre-wrap">
-          {raw.slice(url.length)}
-        </span>,
-      );
-    }
-    last = m.index + raw.length;
+    last = segment.end;
   }
   if (last < text.length) {
     nodes.push(
@@ -119,10 +199,10 @@ function renderRrcInlineText(text: string, keyPrefix: string): ReactNode[] {
 }
 
 /** Highlight IRC-style @nick tokens that match the local nickname (inline only). */
-function highlightRrcSelfMentions(text: string, nickname: string): ReactNode {
+function highlightRrcSelfMentions(text: string, nickname: string, opts: RrcInlineOpts): ReactNode {
   const nick = nickname.trim();
   if (!nick || !bodyMentionsRrcNick(text, nick)) {
-    return <>{renderRrcInlineText(text, 'b')}</>;
+    return <>{renderRrcInlineText(text, 'b', opts)}</>;
   }
   const nodes: ReactNode[] = [];
   let last = 0;
@@ -130,7 +210,7 @@ function highlightRrcSelfMentions(text: string, nickname: string): ReactNode {
   let match = findNextRrcNickMention(text, nick, cursor);
   while (match) {
     if (match.start > last) {
-      nodes.push(...renderRrcInlineText(text.slice(last, match.start), `t${last}`));
+      nodes.push(...renderRrcInlineText(text.slice(last, match.start), `t${last}`, opts));
     }
     nodes.push(
       <span key={`m-${match.start}`} className="font-bold text-red-500">
@@ -142,7 +222,7 @@ function highlightRrcSelfMentions(text: string, nickname: string): ReactNode {
     match = findNextRrcNickMention(text, nick, cursor);
   }
   if (last < text.length) {
-    nodes.push(...renderRrcInlineText(text.slice(last), `t${last}`));
+    nodes.push(...renderRrcInlineText(text.slice(last), `t${last}`, opts));
   }
   return nodes.length > 0 ? <>{nodes}</> : null;
 }
@@ -176,6 +256,8 @@ export interface RrcChatViewProps {
   isActive?: boolean;
   /** Called when the user has scrolled to (or restored) the latest messages. */
   onCaughtUp?: () => void;
+  /** Open a Chat DM for an LXMF destination hash posted in a message. */
+  onOpenDm?: (destinationHash: string) => void;
 }
 
 export function RrcChatView({
@@ -195,11 +277,37 @@ export function RrcChatView({
   placeholder,
   isActive = true,
   onCaughtUp,
+  onOpenDm,
 }: RrcChatViewProps) {
   const { t } = useTranslation();
   const { inactive: appWindowInactive } = useAppWindowActivity();
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const composerPlaceholder = placeholder ?? t('rrc.messagePlaceholder');
+  /** Bare hash awaiting a Nomad-page-vs-DM choice from the user. */
+  const [pendingAddress, setPendingAddress] = useState<{
+    url: string;
+    destinationHash: string;
+  } | null>(null);
+
+  const handleAddressClick = useCallback(
+    (link: ReticulumChatLink) => {
+      if (link.kind === 'nomadPage') {
+        openNomadPageFromLink(link.url);
+        return;
+      }
+      if (link.ambiguous) {
+        setPendingAddress({ url: link.url, destinationHash: link.destinationHash });
+        return;
+      }
+      onOpenDm?.(link.destinationHash);
+    },
+    [onOpenDm],
+  );
+
+  const inlineOpts = useMemo<RrcInlineOpts>(
+    () => ({ t, onAddressClick: handleAddressClick, canOpenDm: onOpenDm != null }),
+    [t, handleAddressClick, onOpenDm],
+  );
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -620,6 +728,7 @@ export function RrcChatView({
                 const body = highlightRrcSelfMentions(
                   whisperEcho ? whisperEcho.text : msg.body,
                   nickname,
+                  inlineOpts,
                 );
 
                 return (
@@ -758,6 +867,25 @@ export function RrcChatView({
           {t('rrc.send')}
         </button>
       </div>
+      {pendingAddress && (
+        <ConfirmModal
+          title={t('rrc.addressChoiceTitle')}
+          message={t('rrc.addressChoiceMessage', { address: pendingAddress.url })}
+          confirmLabel={t('rrc.addressChoiceNomad')}
+          altActionLabel={t('rrc.addressChoiceDm')}
+          onConfirm={() => {
+            openNomadPageFromLink(pendingAddress.url);
+            setPendingAddress(null);
+          }}
+          onAltAction={() => {
+            onOpenDm?.(pendingAddress.destinationHash);
+            setPendingAddress(null);
+          }}
+          onCancel={() => {
+            setPendingAddress(null);
+          }}
+        />
+      )}
     </div>
   );
 }

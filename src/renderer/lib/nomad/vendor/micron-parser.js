@@ -9,8 +9,32 @@
  * https://raw.githubusercontent.com/markqvist/NomadNet/refs/heads/master/nomadnet/ui/textui/Guide.py
  *
  * ESM adaptation: import DOMPurify instead of expecting a browser global.
+ * Local delta: markup-building innerHTML writes go through setSanitizedHtml() so page text is
+ * sanitized at the sink, not only in the whole-document pass at the end of convertMicronToHtml.
  */
 import DOMPurify from 'dompurify';
+
+const MICRON_PURIFY_CONFIG = { USE_PROFILES: { html: true } };
+
+/**
+ * Assign parser-generated markup (Mu-mws/Mu-mnt spans wrapping raw page text) as HTML.
+ * The wrappers interpolate `<`, `>` and `&` from the page unescaped, so anything a page or the
+ * in-app editor supplies is sanitized here before it becomes DOM.
+ */
+function setSanitizedHtml(element, markup, append = false) {
+  let safe;
+  try {
+    safe = DOMPurify.sanitize(markup, MICRON_PURIFY_CONFIG);
+  } catch (error) {
+    console.warn('[micron-parser] DOMPurify.sanitize failed; dropping markup', error);
+    safe = '';
+  }
+  if (append) {
+    element.innerHTML += safe;
+  } else {
+    element.innerHTML = safe;
+  }
+}
 
 class MicronParser {
   constructor(darkTheme = true, enableForceMonospace = true) {
@@ -550,7 +574,7 @@ class MicronParser {
     for (let p of parts) {
       if (typeof p === 'string') {
         let span = document.createElement('span');
-        span.innerHTML = p;
+        setSanitizedHtml(span, p);
         container.appendChild(span);
       } else if (Array.isArray(p) && p.length === 2) {
         // tuple: [styleSpec, text]
@@ -562,7 +586,7 @@ class MicronParser {
           this.applyStyleToElement(currentSpan, styleSpec, state.default_bg);
           currentStyle = styleSpec;
         }
-        currentSpan.innerHTML += text;
+        setSanitizedHtml(currentSpan, text, true);
       } else if (p && typeof p === 'object') {
         // field, checkbox, radio, link, anchor
         flushSpan();
@@ -657,7 +681,7 @@ class MicronParser {
           }
           a.classList.add('Mu-nl');
           a.setAttribute('data-action', 'openNode');
-          a.innerHTML = p.label;
+          setSanitizedHtml(a, p.label);
           this.applyStyleToElement(a, this.styleFromState(p.style), state.default_bg);
           container.appendChild(a);
         }

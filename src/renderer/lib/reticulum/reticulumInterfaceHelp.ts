@@ -1,3 +1,4 @@
+import { reticulumCatalogEntry } from '@/renderer/lib/reticulum/reticulumInterfaceCatalog';
 import { isReticulumBleRnodeSerialPort } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { isReticulumTcpRnodeSerialPort } from '@/renderer/lib/reticulum/reticulumRnodeTransport';
 import {
@@ -47,20 +48,6 @@ export function getReticulumInterfaceHelp(
       isSystemManaged: false,
     };
   }
-  if (iface.type === 'tcp') {
-    return {
-      purposeKey: 'connectionPanel.reticulumInterfaces.purpose.tcp',
-      isRuntimeOnly: false,
-      isSystemManaged: false,
-    };
-  }
-  if (iface.type === 'i2p') {
-    return {
-      purposeKey: 'connectionPanel.reticulumInterfaces.purpose.i2p',
-      isRuntimeOnly: false,
-      isSystemManaged: false,
-    };
-  }
   if (iface.type === 'rnode') {
     const port = iface.serial_port ?? '';
     if (isReticulumBleRnodeSerialPort(port)) {
@@ -83,15 +70,11 @@ export function getReticulumInterfaceHelp(
       isSystemManaged: false,
     };
   }
-  if (iface.type === 'ble_peer') {
-    return {
-      purposeKey: 'connectionPanel.reticulumInterfaces.purpose.blePeer',
-      isRuntimeOnly: false,
-      isSystemManaged: false,
-    };
-  }
+  // Remaining types take their purpose key straight from the shared catalog;
+  // uncatalogued rows (third-party config blocks) fall back to generic.
+  const purpose = reticulumCatalogEntry(iface.type)?.purposeKey ?? 'generic';
   return {
-    purposeKey: 'connectionPanel.reticulumInterfaces.purpose.generic',
+    purposeKey: `connectionPanel.reticulumInterfaces.purpose.${purpose}`,
     isRuntimeOnly: false,
     isSystemManaged: false,
   };

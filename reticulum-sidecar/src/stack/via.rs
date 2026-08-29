@@ -40,6 +40,17 @@ pub fn classify_interface_row(
             return "ble";
         }
     }
+    // Catalogued UI types classify explicitly: substring matching cannot tell a
+    // plain `SerialInterface` (rf) from a `LocalInterface` (tcp), and both would
+    // otherwise fall through to `network`.
+    if let Some(entry) = super::interface_catalog::INTERFACE_CATALOG.get(iface_type) {
+        return match entry.classify.as_str() {
+            "rf" => "rf",
+            "ble" => "ble",
+            "tcp" => "tcp",
+            _ => classify_interface(name),
+        };
+    }
     let from_type = classify_interface(iface_type);
     if from_type != "network" {
         return from_type;

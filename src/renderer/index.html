@@ -5,9 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- connect-src: no blanket http://* — user MQTT uses wss://*/https://*; dev uses localhost -->
     <!-- img-src https: — chat link preview thumbnails (fetch is gated in main; img is display-only) -->
+    <!-- object-src/base-uri/form-action: deny plugin embeds, <base> hijacking, and form posts.
+         Remote Micron/Nomad content is rendered in this document, so these close the usual
+         markup-injection escalation paths. frame-ancestors is intentionally absent: the spec
+         ignores it in <meta>, and the renderer is never framed. -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* wss://* https://* https://*.tile.openstreetmap.org https://api.github.com https://github.com; img-src 'self' data: https: https://*.tile.openstreetmap.org;"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* wss://* https://* https://*.tile.openstreetmap.org https://api.github.com https://github.com; img-src 'self' data: https: https://*.tile.openstreetmap.org; object-src 'none'; base-uri 'self'; form-action 'none';"
     />
     <title>Mesh Client</title>
   </head>

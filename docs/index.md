@@ -91,6 +91,10 @@ Also useful:
   - [License](license.md)
   - [Credits](credits.md)
   - [Third-party licenses](third-party-licenses.md)
+  - [CI/CD](ci-cd.md) — workflows, local `act` runs, packaging
+  - [Release process](release-process.md)
+  - [Reticulum Games parity](reticulum-games-parity.md) — Ratspeak Games tab checklist
+  - [Nomad hosting interop](nomad-hosting-interop.md)
 
 ---
 

@@ -650,6 +650,19 @@ describe('privileged IPC sender validation (source contract)', () => {
     },
   );
 
+  it('every ipcMain.on channel in index.ts validates the IPC sender', () => {
+    const channels = [...INDEX_SOURCE.matchAll(/ipcMain\.on\('([^']+)'/g)].map((m) => m[1]);
+    expect(channels.length).toBeGreaterThan(0);
+    const unguarded = channels.filter((channel) => {
+      const idx = INDEX_SOURCE.indexOf(`ipcMain.on('${channel}'`);
+      const body = INDEX_SOURCE.slice(idx, idx + 300);
+      return !body.includes('validateIpcSender(event)') && !body.includes('assertIpcSender(event');
+    });
+    // `ipcMain.on` is fire-and-forget, so an unguarded handler lets any frame drive main
+    // state (cancel pairing, resolve a device-selection callback) with no reply to inspect.
+    expect(unguarded).toEqual([]);
+  });
+
   it.each(['update:check', 'update:download', 'update:install', 'update:open-releases'] as const)(
     '%s calls assertIpcSender',
     (channel) => {

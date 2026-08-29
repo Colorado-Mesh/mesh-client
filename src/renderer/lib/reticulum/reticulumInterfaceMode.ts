@@ -1,7 +1,10 @@
+import { reticulumCatalogEntry } from '@/renderer/lib/reticulum/reticulumInterfaceCatalog';
+
 /**
  * Canonical rnsd interface modes (Reticulum / rsReticulum `InterfaceMode`).
- * Keep in sync with `INTERFACE_MODES` / `normalize_interface_mode` /
- * `default_mode_for_iface_type` in `reticulum-sidecar/src/stack/config.rs`.
+ * Keep in sync with `INTERFACE_MODES` / `normalize_interface_mode` in
+ * `reticulum-sidecar/src/stack/config.rs`. Per-type defaults are no longer
+ * duplicated: both sides read `src/shared/reticulumInterfaceCatalog.json`.
  */
 export const RETICULUM_INTERFACE_MODES = [
   'full',
@@ -75,19 +78,15 @@ export function reticulumInterfaceModesDiverge(
   return configured !== runtime;
 }
 
-/** Recommended default when adding an interface with no explicit mode. */
+/**
+ * Recommended default when adding an interface with no explicit mode.
+ * Sourced from the shared catalog, which the sidecar's
+ * `default_mode_for_iface_type` also reads, so the two cannot disagree.
+ */
 export function defaultModeForIfaceType(ifaceType: string): ReticulumInterfaceMode | null {
-  switch (ifaceType) {
-    case 'tcp':
-    case 'i2p':
-    case 'udp':
-      return 'boundary';
-    case 'rnode':
-    case 'rnode_multi':
-      return 'access_point';
-    default:
-      return null;
-  }
+  const configured = reticulumCatalogEntry(ifaceType)?.defaultMode ?? null;
+  if (configured == null) return null;
+  return MODE_SET.has(configured) ? configured : null;
 }
 
 /** i18n key for a mode option label (`connectionPanel.reticulumInterfaces.modeOption.*`). */

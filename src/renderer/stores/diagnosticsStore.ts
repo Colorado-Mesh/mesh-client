@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
 import { getAppSettingsRaw, mergeAppSetting, setAppSettingsRaw } from '../lib/appSettingsStorage';
 import {
@@ -1224,7 +1225,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
 
     if (packetClass === 'meshtastic') {
       condition = 'Meshtastic Traffic Detected';
-      const senderHex = senderId ? `!${senderId.toString(16).padStart(8, '0')}` : 'unknown';
+      const senderHex = senderId ? formatMeshtasticNodeId(senderId) : 'unknown';
       const senderNode = senderId ? nodes?.get(senderId) : undefined;
       const senderName = senderNode?.long_name || senderNode?.short_name;
       const senderLabel = senderName ? `${senderHex} (${senderName})` : senderHex;

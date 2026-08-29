@@ -6,7 +6,6 @@
 RS_RETICULUM_APPLY_SCRIPTS=(
   apply-rsReticulum-packet-tap.sh
   apply-rsReticulum-auto-beacon-utun.sh
-  apply-rsReticulum-link-client-nomad.sh
   apply-rsReticulum-link-client-proof-budget.sh
   apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
   apply-rsReticulum-ble-rnode-bond-desync.sh

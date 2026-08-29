@@ -7,6 +7,7 @@ import {
   rncpReceiveDestShareSavedToastMessage,
 } from '@/renderer/lib/applyRncpReceiveDestShare';
 import {
+  isReticulumAutoResendOnAnnounceEnabled,
   isReticulumAutostartEnabled,
   isRrcUnreadAllRoomMessagesEnabled,
 } from '@/renderer/lib/appSettingsStorage';
@@ -28,6 +29,7 @@ import {
   MAX_RAW_PACKET_LOG_ENTRIES,
   type ReticulumRawPacketEntry,
 } from '@/renderer/lib/rawPacketLogConstants';
+import { announceDestinationHashes } from '@/renderer/lib/reticulum/announceDestinationHashes';
 import {
   applyReticulumOutboundDeliveryStatus,
   flushPendingReticulumOutboundDeliveryStatus,
@@ -48,6 +50,7 @@ import {
   markStaleReticulumOutboundMessages,
   RETICULUM_STALE_OUTBOUND_MS,
 } from '@/renderer/lib/reticulum/markStaleReticulumOutbound';
+import { resendFailedReticulumForDestination } from '@/renderer/lib/reticulum/resendFailedReticulumForDestination';
 import {
   getHotReticulumPeerInterface,
   recordReticulumPeerInterfaceSamplesFromPeersUpdated,
@@ -294,6 +297,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const unsubVoiceAudioRef = useRef<(() => void) | null>(null);
   const connectRef = useRef<((opts?: { reuseIfRunning?: boolean }) => Promise<void>) | null>(null);
   const restartStackRef = useRef<(() => Promise<void>) | null>(null);
+  /** sendMessage is defined below the event handler; announce auto-resend calls it via ref. */
+  const sendMessageRef = useRef<
+    ((text: string, to: number | string, replyToHash?: string, pendingId?: string) => void) | null
+  >(null);
   const connectInFlightRef = useRef(false);
   const connectInFlightDoneRef = useRef<Promise<void> | null>(null);
   const suppressReconnectRef = useRef(false);
@@ -1564,6 +1571,20 @@ export function useReticulumRuntime(): ProtocolRuntime {
         applyReticulumAnnounceReceivedOptimistic(evt.payload);
         recordAnnounceActivity(evt.payload);
         requestChatOutboxDrain('reticulum');
+        // Opt-in: a fresh announce means failed sends to that peer are worth one retry.
+        const autoResendEnabled = isReticulumAutoResendOnAnnounceEnabled();
+        if (autoResendEnabled) {
+          for (const destinationHash of announceDestinationHashes(evt.payload)) {
+            resendFailedReticulumForDestination({
+              identityId,
+              destinationHash,
+              enabled: autoResendEnabled,
+              send: (text, destination, retryOfStoreId) => {
+                sendMessageRef.current?.(text, destination, undefined, retryOfStoreId);
+              },
+            });
+          }
+        }
       }
       if (evt.type === 'peers_updated' && refreshActions.peerPatches) {
         recordReticulumPeerInterfaceSamplesFromPeersUpdated(evt.payload);
@@ -2310,6 +2331,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
     },
     [identityId, selfLxmfHash],
   );
+
+  useEffect(() => {
+    sendMessageRef.current = (text, to, replyToHash, pendingId) => {
+      void sendMessage(text, to, replyToHash, pendingId).catch((e: unknown) => {
+        console.warn('[useReticulumRuntime] auto-resend send failed ' + errLikeToLogString(e));
+      });
+    };
+  }, [sendMessage]);
 
   const sendReaction = useCallback(
     async (glyph: string, replyId: number, channel: number) => {

@@ -230,6 +230,14 @@ export const CANONICAL_TABLES_DDL = `
         UNIQUE(hub_hash, room, message_id)
       );
 
+      CREATE TABLE IF NOT EXISTS rrc_nicks (
+        hub_hash        TEXT NOT NULL,
+        identity_hash   TEXT NOT NULL,
+        nickname        TEXT NOT NULL,
+        last_seen       INTEGER NOT NULL,
+        PRIMARY KEY (hub_hash, identity_hash)
+      );
+
       CREATE TABLE IF NOT EXISTS blocked_contacts (
         protocol      TEXT NOT NULL,
         identity_id   TEXT NOT NULL,

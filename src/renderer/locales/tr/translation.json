@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "Açık olduğunda, herhangi bir yeni RRC odası mesajı okunmadı olarak işaretlenir ve bir kanal sesi çalabilir. IRC tarzı uyarılar için kapatın: yalnızca doğrudan mesajlar ve @bahsetmeler.",
     "shareMyLocation": "Bulunduğum yeri paylaş",
     "shareMyLocationOffInfo": "Konum paylaşımı kapalı — ana bilgisayar GPS yenileme ve mesh gönderme devre dışı. Otomatik yenilemeyi kullanmak veya konumunuzu göndermek için yukarıdaki Konumumu paylaş'ı etkinleştirin.",
-    "shareMyLocationHint": "Etkinleştirildiğinde, bu uygulama bu bilgisayardaki konumunuzu arayabilir ve Meshtastic, MeshCore veya Reticulum (sohbet paylaşımı, radyo iletisi, RMAP) üzerinden gönderebilir. Devre dışı bırakıldığında, ev sahibi GPS aramaları ve uygulama gönderme kapalıdır; statik koordinatlar yalnızca yerel haritanız için çalışmaya devam eder. Kendi GPS'ine sahip bir radyo yine de konumunuzu yerel olarak gösterebilir. Radyo veya Modül ayarlarını yapana kadar cihaz bellenimi yayınlanmaya devam edebilir."
+    "shareMyLocationHint": "Etkinleştirildiğinde, bu uygulama bu bilgisayardaki konumunuzu arayabilir ve Meshtastic, MeshCore veya Reticulum (sohbet paylaşımı, radyo iletisi, RMAP) üzerinden gönderebilir. Devre dışı bırakıldığında, ev sahibi GPS aramaları ve uygulama gönderme kapalıdır; statik koordinatlar yalnızca yerel haritanız için çalışmaya devam eder. Kendi GPS'ine sahip bir radyo yine de konumunuzu yerel olarak gösterebilir. Radyo veya Modül ayarlarını yapana kadar cihaz bellenimi yayınlanmaya devam edebilir.",
+    "reticulumBlocklist": {
+      "description": "Engellenen gönderenler, LXMF mesajları gelen kutunuza ulaşmadan önce bırakılır. Başka bir yüklemeye taşımak için listeyi dışa aktarın veya aynı anda birçok göndereni engellemek için bir listeyi içe aktarın.",
+      "exportButton": "Engel listesini dışa aktar",
+      "exportAria": "Engellenen kişileri dışa aktar",
+      "importButton": "Engel listesini içe aktar",
+      "importAria": "Engellenen kişileri içe aktar",
+      "exportOk": "Dışa aktarılan {{count}} engellenen kişi",
+      "exportEmpty": "Dışa aktarılacak engellenmiş kişi yok.",
+      "exportFailed": "Engel listesi dışa aktarılamadı.",
+      "importOk": "İçe aktarılan {{imported}} engellenen kişiler ({{skipped}} atlandı)",
+      "importFailed": "Engel listesi içe aktarılamadı.",
+      "unblockAria": "{{hash}} engelini kaldır",
+      "unblockFailed": "Bu kişinin engeli kaldırılamadı.",
+      "empty": "Engellenmiş Kişiler",
+      "title": "Engellenen kişiler"
+    }
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -1134,7 +1150,10 @@
         "blePeer": "Çekirdek eş adreslerini kullanan BLE eş ağı.",
         "generic": "Reticulum ağ arayüzü.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "Bu makinedeki bir yönlendirici aracılığıyla I2P omurgası. HTTP/https I2PTunnel proxy'leri (4444/4445) değil, SAM uygulama köprüsünü (127.0.0.1:7656) etkinleştirin. Köprünün dinlemesi için SAM'İ etkinleştirdikten sonra I2P'yi yeniden başlatın, ardından bu arayüz kapalı kalırsa Reticulum yığınını yeniden başlatın."
+        "i2p": "Bu makinedeki bir yönlendirici aracılığıyla I2P omurgası. HTTP/https I2PTunnel proxy'leri (4444/4445) değil, SAM uygulama köprüsünü (127.0.0.1:7656) etkinleştirin. Köprünün dinlemesi için SAM'İ etkinleştirdikten sonra I2P'yi yeniden başlatın, ardından bu arayüz kapalı kalırsa Reticulum yığınını yeniden başlatın.",
+        "serial": "Bir tel üzerinden bir TNC, modem veya başka bir ana bilgisayara genel seri bağlantı. Hat parametrelerini uzak uca uyacak şekilde ayarlayın.",
+        "ax25kiss": "KİSS TNC aracılığıyla AX.25 paket radyo. Çağrı işaretinizi ve bu istasyonu tanımlayan bir SSID (0 -15) gerektirir.",
+        "local": "Bu makinede paylaşılan örnek soketi. Diğer yerel araçlar (rnsd, Nomad Network, rnsh) bu yığına onun üzerinden bağlanabilir. Soket yolu bu arabirimin adından türetilmiştir, bu nedenle yeniden adlandırılması diğer araçların kullanması gereken adresi değiştirir."
       },
       "rfProfile": {
         "coordinated": "Koordineli bölgesel",
@@ -1258,10 +1277,37 @@
       "effectiveModeBadge": "Yürürlük Tarihi: {{mode}}",
       "effectiveModeAria": "Etkin çalışma zamanı modu {{mode}}. Yapılandırılmış mod, Reticulum'un çalıştığından farklıdır.",
       "effectiveModeTooltip": "Reticulum, bu keşfedilebilir arayüzü Erişim Noktasına (veya izin verilen başka bir moda) yeniden yazdı, çünkü keşfedilebilir, ignore_config_warnings ayarlanmadığı sürece Ağ Geçidi, Dahili veya Erişim Noktası gerektirir. Tam (veya yapılandırılmış modunuzun) etkili olması için devre dışı bırakılan mesh-client damgalarından sonra yığını yeniden başlatın.",
-      "flowControlBleHint": "Bluetooth'ta, radyo genellikle CMD_READY göndermez. Mesh-Client hala TX'i hızlandırır (READY için kısa bir süre bekler, sonra devam eder), böylece akış kontrolü kuyruğu dondurmadan aşırı yükü azaltır."
+      "flowControlBleHint": "Bluetooth'ta, radyo genellikle CMD_READY göndermez. Mesh-Client hala TX'i hızlandırır (READY için kısa bir süre bekler, sonra devam eder), böylece akış kontrolü kuyruğu dondurmadan aşırı yükü azaltır.",
+      "advancedFields": "Gelişmiş ayarlar",
+      "field": {
+        "port": "Liman",
+        "speed": "Hız (baud)",
+        "databits": "Veri bitleri",
+        "parity": "Parite",
+        "stopbits": "Bitleri Durdur:",
+        "callsign": "Çağrı kodu",
+        "ssid": "SSID",
+        "flow_control": "Akış kontrolü",
+        "preamble": "Giriş (msn)",
+        "txtail": "TX kuyruk (msn)",
+        "persistence": "Kararlılık",
+        "slottime": "Slot süresi (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "Yok",
+          "E": "Şu koku bile,",
+          "O": "Garip"
+        }
+      },
+      "fieldRequired": "Bu alan gereklidir.",
+      "fieldNotANumber": "Bir tam sayı girin (yalnızca rakam).",
+      "fieldOutOfRange": "Değer izin verilen aralığın dışında.",
+      "fieldTooLong": "Değer fazla uzun.",
+      "fieldInvalidOption": "Desteklenmeyen değer."
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Hop",
       "actions": "Eylemler",
       "path": "Yol",
       "probe": "Sonda"
@@ -1451,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
-    "bluetoothId": "Bluetooth Kimliği"
+    "bluetoothId": "Bluetooth Kimliği",
+    "reticulumAutoResendOnAnnounce": "Bir akran duyuru yaptığında başarısız mesajları yeniden dene"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -1828,7 +1875,7 @@
     "runOnce": "Bir kez ping yap",
     "colSeq": "#",
     "colRtt": "RTT",
-    "colHops": "Atlama",
+    "colHops": "Hop",
     "colStatus": "Durum",
     "rttMs": "{{ms}} ms",
     "statusOk": "Tamam",
@@ -2787,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "Tara / içe aktar",
       "hint": "Kişiler, Columba lxma:// kartları veya şifreli LXMF kağıt mesajları için bir QR tarayın veya yapıştırın."
+    },
+    "reticulumPathTable": {
+      "title": "Yol tablosu",
+      "description": "Yol tablosunun temizlenmesi, önbelleğe alınan her rotayı bırakır. Güzergâhlar, yeni duyurular geldikçe yeniden öğrenilir, bu nedenle bir iş arkadaşına gönderilecek ilk mesaj daha uzun sürebilir.",
+      "clear": "Yol tablosunu temizle",
+      "clearing": "Clearing",
+      "confirmTitle": "Yol tablosu temizlensin mi?",
+      "confirmBody": "Önbelleğe alınan her yol bırakılır. Güzergâhlar yeni duyurulardan yeniden oluşturulur.",
+      "clearOk": "Yol tablosu temizlendi ({{count}} güzergah bırakıldı)",
+      "clearFailed": "Yol tablosu temizlenemedi.",
+      "clearAria": "Yol tablosunu temizle",
+      "confirmAction": "Temizle"
     }
   },
   "nodeDetailModal": {
@@ -3225,7 +3284,50 @@
       "noPages": "Henüz sayfa yok. Seçilen klasöre .mu dosyaları ekleyin (örneğin index.mu).",
       "contentSourceNotFromPicker": "Uygulamadan önce Klasör seç ile klasörü seçin.",
       "contentSourceNone": "Klasör seçilmedi",
-      "contentSourceRequired": "Nomad ev sahipliğine başlamadan önce bir sayfa klasörü seçin."
+      "contentSourceRequired": "Nomad ev sahipliğine başlamadan önce bir sayfa klasörü seçin.",
+      "newPage": "Yeni sayfa",
+      "newPageName": "Sayfa dosya adı (.mu ile bitmelidir)",
+      "invalidPageName": ".mu ile biten,.. veya mutlak yollar içermeyen bir dosya adı girin.",
+      "edit": "Düzenle",
+      "editPage": "Düzenle {{path}}",
+      "delete": "Sil",
+      "deletePage": "{{path}} silin",
+      "deleteConfirm": "Bu sayfa silinsin mi? Bu işlem, dosyayı sunulan klasörden kaldırır.",
+      "deleteConfirmAria": "Bu sayfayı silmeyi onayla",
+      "deleteError": "Dosya silinemedi.",
+      "openError": "Sayfa düzenlenmek üzere açılamadı.",
+      "editorTitle": "Micron sayfasını düzenle",
+      "editorAria": "Micron sayfa kaynağı",
+      "editorPreview": "Önizleme",
+      "toolbarAria": "Micron biçimlendirme eylemleri",
+      "toolbar": {
+        "bold": "Kalın",
+        "italic": "Eğik",
+        "underline": "Altı Çizili",
+        "h1": "Başlık 1",
+        "h2": "Başlık 2",
+        "h3": "Başlık 3",
+        "alignLeft": "Sola hizala",
+        "alignCenter": "Merkez",
+        "alignRight": "Sağa Hizala",
+        "divider": "Ayraç",
+        "link": "Link"
+      },
+      "linkTargetPrompt": "Bağlantı hedefi (sayfa yolu veya hedef karma)",
+      "save": "Kaydet",
+      "saveError": "Sayfa kaydedilemedi.",
+      "unsaved": "Kaydedilmeyen değişiklikler",
+      "discard": "Değişiklikleri iptal et",
+      "discardConfirm": "Bu sayfada kaydedilmemiş değişiklikler var.",
+      "discardConfirmAria": "Kaydedilmemiş değişiklikleri at ve kapat",
+      "close": "Editörü kapat",
+      "closeBackdropAria": "Micron sayfa düzenleyiciyi kapatın",
+      "pageTooLarge": "Bu sayfa barındırmak için çok büyük (sınır 512 KB).",
+      "pageNotFound": "Bu sayfa artık hizmet verilen klasörde mevcut değil.",
+      "invalidPagePath": "Bu sayfa yoluna izin verilmiyor.",
+      "pageIoError": "Diskteki sayfa okunamadı veya yazılamadı.",
+      "pageNotUtf8": "Bu sayfa geçerli bir UTF -8 metni değil.",
+      "pageWriteFailed": "Sayfaya yazılamadı."
     },
     "sortLastHeard": "Son Duyma",
     "sortHops": "Hop",
@@ -4497,7 +4599,7 @@
     "rssiTitle": "RSSI Dağılımı",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Hop Sayısı Dağılımı",
-    "hopAxis": "Atlama"
+    "hopAxis": "Hop"
   },
   "roleInfo": {
     "placeholderDash": "-",
@@ -5042,7 +5144,14 @@
     "jumpToLatest": "En Yeniye Atla",
     "stackNotReady": "Reticulum yığını henüz hazır değil. Bağlanana kadar bekleyin, ardından tekrar deneyin.",
     "sidecarNotRunning": "Reticulum sidecar çalışmıyor. Bağlantı bölümünde yığını başlatın, sonra tekrar deneyin.",
-    "whoReplyMissing": "{{room}} için merkezden üye listesi yok (yanıt bağlantı boyutunu aşabilir). Kişiler katılırken veya sohbet ederken adlar görünecektir."
+    "whoReplyMissing": "{{room}} için merkezden üye listesi yok (yanıt bağlantı boyutunu aşabilir). Kişiler katılırken veya sohbet ederken adlar görünecektir.",
+    "openNomadPage": "Nomad sayfasını aç {{address}}",
+    "openDm": "{{address}} ile doğrudan mesajı açın",
+    "openReticulumAddress": "Reticulum adresini aç: {{address}}",
+    "addressChoiceTitle": "Reticulum adresini aç",
+    "addressChoiceMessage": "{{address}} bir Nomad sayfası veya eş olabilir. Hangisini açmak istersiniz?",
+    "addressChoiceNomad": "Nomad sayfası",
+    "addressChoiceDm": "Doğrudan mesaj"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5387,7 +5496,8 @@
     "sessionRowAria": "{{app}} ile {{peer}} oyunu",
     "apps": {
       "ttt": "Tic Tac Toe",
-      "chess": "Satranç"
+      "chess": "Satranç",
+      "four_in_a_row": "Dört Taş"
     },
     "status": {
       "pending": "Bekleyen",
@@ -5439,6 +5549,19 @@
       "boardAria": "Tic - Tac - Toe tahtası",
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "fourInARow": {
+      "youWon": "Sen kazandın!",
+      "opponentWon": "Rakip kazandı.",
+      "draw": "Berabere.",
+      "yourTurn": "Sıra sende.",
+      "opponentTurn": "Rakibin Sırası",
+      "yourMarker": "Siz {{marker}}",
+      "moveCount": "{{count}} hamle",
+      "boardAria": "Dört Taş tahtası",
+      "columnAria": "Sütun {{column}}, aşağıdan yukarıya: {{contents}}. Buraya bırak",
+      "columnFullAria": "Sütun {{column}}, aşağıdan yukarıya: {{contents}}. Dolu",
+      "columnEmptyContents": "boş"
     },
     "chess": {
       "youWon": "Sen kazandın!",

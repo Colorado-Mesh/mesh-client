@@ -389,6 +389,26 @@ export interface ElectronAPI {
       body: string;
       timestamp: number;
     }) => Promise<{ changes: number }>;
+    /**
+     * Nick cache for one hub. Survives transcript clears / retention pruning, so
+     * the RRC nicklist can still name a peer that only ever spoke once.
+     */
+    listRrcNicks: (
+      hubHash: string,
+      limit?: number,
+    ) => Promise<
+      {
+        identity_hash: string;
+        nickname: string;
+        last_seen: number;
+      }[]
+    >;
+    upsertRrcNick: (nick: {
+      hub_hash: string;
+      identity_hash: string;
+      nickname: string;
+      last_seen: number;
+    }) => Promise<{ changes: number }>;
     deleteRrcMessagesByRoom: (hubHash: string, room: string) => Promise<{ changes: number }>;
     pruneRrcMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneRrcMessagesByAge: (maxAgeDays: number) => Promise<DbPruneResult>;
@@ -496,6 +516,14 @@ export interface ElectronAPI {
       identityId: string,
       blockedHash: string,
     ) => Promise<{ changes: number }>;
+    /** All blocked hashes for bulk export (newest first). */
+    exportBlockedContacts: (protocol: string, identityId: string) => Promise<string[]>;
+    /** Bulk upsert; malformed, duplicate and already-blocked entries count as skipped. */
+    importBlockedContacts: (
+      protocol: string,
+      identityId: string,
+      hashes: string[],
+    ) => Promise<{ imported: number; skipped: number }>;
     getReticulumIdentityActivity: (destinationHash: string) => Promise<
       {
         destination_hash: string;
@@ -1171,6 +1199,19 @@ export interface ElectronAPI {
       defaultPath: string;
       contentBase64: string;
     }) => Promise<ReticulumIdentityExportSaveResult>;
+    /** Save dialog + write of the blocked-contact list. `path` is null when cancelled. */
+    saveBlocklistDialog: (
+      hashes: string[],
+    ) => Promise<{ path: string | null; error: string | null }>;
+    /**
+     * Open dialog + bounded read + parse of a blocklist file. `hashes` is null when
+     * cancelled or unreadable; `skipped` counts entries rejected while parsing.
+     */
+    openBlocklistDialog: () => Promise<{
+      hashes: string[] | null;
+      skipped: number;
+      error: string | null;
+    }>;
     /** Pick a Nomad site root or pages directory for watched hosting. */
     showNomadContentSourceDialog: () => Promise<{ canceled: boolean; path: string | null }>;
     /**

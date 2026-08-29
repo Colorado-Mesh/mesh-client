@@ -87,7 +87,7 @@ Reticulum/LXMF runs in a separate Rust binary (`mesh-client-reticulum`) spawned 
 
 #### Installing Rust
 
-**Recommended: [rustup](https://rustup.rs/)** — matches [CI](.github/workflows/reticulum-sidecar.yaml) and `pnpm run update`:
+**Recommended: [rustup](https://rustup.rs/)** — matches [CI](../.github/workflows/reticulum-sidecar.yaml) and `pnpm run update`:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -404,30 +404,31 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### Quality checks
 
-| Script                                | Description                                                            |
-| ------------------------------------- | ---------------------------------------------------------------------- |
-| `check:codeql-extensions`             | Verify CodeQL extension allowlist for custom queries                   |
-| `check:console-log`                   | Fail on bare `console.log` in production paths                         |
-| `check:db-migrations`                 | Verify SQLite migrations are valid                                     |
-| `check:electron-security`             | Verify Electron security settings (CSP, sandbox, etc.)                 |
-| `check:environment`                   | Verify local dev prerequisites (run after clone)                       |
-| `check:flatpak`                       | Lint Flatpak manifest and wrapper scripts                              |
-| `check:flatpak-offline-pnpm`          | PR/release offline Flatpak pnpm store vN + lockfile coverage           |
-| `check:i18n`                          | Verify English keys, unused keys, and locale quality rules             |
-| `check:i18n:branch`                   | Run i18n quality checks on keys new/changed vs `HEAD` only             |
-| `check:insecure-temp-files`           | Predictable `os.tmpdir()` writes (CodeQL `js/insecure-temporary-file`) |
-| `check:ipc-contract`                  | Verify IPC channel contracts between main/preload/renderer             |
-| `check:licenses`                      | Allowlist dependency licenses (`pnpm licenses list` + SPDX policy)     |
-| `check:log-injection`                 | Detect unsanitized user data in log calls                              |
-| `check:log-panel-filter`              | Verify log panel filter wiring                                         |
-| `check:log-service-sinks`             | Verify log service sink configuration                                  |
-| `check:protocol-string-gates`         | Enforce protocol capability gates over string compares                 |
-| `check:reticulum-decommissioned-hubs` | Keep TS/Rust decommissioned hub lists aligned                          |
-| `check:reticulum-interface-modes`     | Keep TS/Rust Reticulum interface-mode catalogs aligned                 |
-| `check:reticulum-sidecar`             | Full-feature `cargo fmt` + Clippy + test (skips when `cargo` missing)  |
-| `check:silent-catches`                | Detect empty or unlogged catch blocks                                  |
-| `check:url-hostname-sanitization`     | Verify URL hostname sanitization helpers                               |
-| `check:xss-patterns`                  | Detect risky DOM/HTML sink patterns                                    |
+| Script                                | Description                                                             |
+| ------------------------------------- | ----------------------------------------------------------------------- |
+| `check:codeql-extensions`             | Verify CodeQL extension allowlist for custom queries                    |
+| `check:console-log`                   | Fail on bare `console.log` in production paths                          |
+| `check:db-migrations`                 | Verify SQLite migrations are valid                                      |
+| `check:electron-security`             | Verify Electron security settings (CSP, sandbox, etc.)                  |
+| `check:environment`                   | Verify local dev prerequisites (run after clone)                        |
+| `check:flatpak`                       | Lint Flatpak manifest and wrapper scripts                               |
+| `check:flatpak-offline-pnpm`          | PR/release offline Flatpak pnpm store vN + lockfile coverage            |
+| `check:i18n`                          | Verify English keys, unused keys, and locale quality rules              |
+| `check:i18n:branch`                   | Run i18n quality checks on keys new/changed vs `HEAD` only              |
+| `check:insecure-temp-files`           | Predictable `os.tmpdir()` writes (CodeQL `js/insecure-temporary-file`)  |
+| `check:ipc-contract`                  | Verify IPC channel contracts between main/preload/renderer              |
+| `check:licenses`                      | Allowlist dependency licenses (`pnpm licenses list` + SPDX policy)      |
+| `check:log-injection`                 | Detect unsanitized user data in log calls                               |
+| `check:log-panel-filter`              | Verify log panel filter wiring                                          |
+| `check:log-service-sinks`             | Verify log service sink configuration                                   |
+| `check:pinned-majors`                 | Warn when a pinned override is behind a newer npm major (needs network) |
+| `check:protocol-string-gates`         | Enforce protocol capability gates over string compares                  |
+| `check:reticulum-decommissioned-hubs` | Keep TS/Rust decommissioned hub lists aligned                           |
+| `check:reticulum-interface-modes`     | Keep TS/Rust Reticulum interface-mode catalogs aligned                  |
+| `check:reticulum-sidecar`             | Full-feature `cargo fmt` + Clippy + test (skips when `cargo` missing)   |
+| `check:silent-catches`                | Detect empty or unlogged catch blocks                                   |
+| `check:url-hostname-sanitization`     | Verify URL hostname sanitization helpers                                |
+| `check:xss-patterns`                  | Detect risky DOM/HTML sink patterns                                     |
 
 #### Documentation
 
@@ -492,6 +493,8 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `predist`     | Run `dedupe:dist` before `dist` packaging                             |
 
 `postinstall` runs `scripts/rebuild-native.mjs` for Electron native addons and applies `patchedDependencies` from `pnpm-workspace.yaml` (Meshtastic JSR transports, MeshCore, `readable-stream`, `usb`, etc.). When bumping patched packages, update hashes under `patches/` and keep `WATCH_ENTRIES` in `scripts/update.sh` in sync — see [AGENTS.md](../AGENTS.md#6-commands--ci-checks).
+
+`pnpm run update` also runs `check_pinned_majors` (`scripts/check-pinned-majors.mjs`), which warns when an `overrides` pin in `pnpm-workspace.yaml` has fallen behind a newer npm major — a stale `undici: ^7.29.0` floor once withheld an upstream main-process crash fix. Caps that are correct because the consuming package forbids the newer major (or because the pin is a platform target, e.g. `electron`) are recorded with a reason in `PINNED_MAJOR_EXCEPTIONS`; add an entry there instead of silencing the warning. The check needs network access, so it is warn-only and is not part of pre-commit or `check:pr`.
 
 ### Dependabot dependency updates
 

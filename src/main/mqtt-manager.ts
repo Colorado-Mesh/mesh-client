@@ -638,7 +638,17 @@ export class MQTTManager extends EventEmitter {
       this.client = mqtt.connect(connectOpts);
     }
 
-    this.client.on('error', (err: Error & { code?: string | number }) => {
+    // mqtt.js can emit close/error/offline after end(true), so a replaced client's handlers
+    // may still fire once `this.client` points at its successor. Every handler below is
+    // gated on client identity: without it a stale `close` clears the new client's connack
+    // timer, inflates its retry count, and schedules a reconnect that tears down a healthy
+    // connection. Listeners are not removed at teardown because forceEndMqttClient relies
+    // on an error sink surviving end(true).
+    const client = this.client;
+    const isCurrentClient = () => this.client === client;
+
+    client.on('error', (err: Error & { code?: string | number }) => {
+      if (!isCurrentClient()) return;
       // Transient network errors will trigger 'close' → our backoff handler; don't
       // flip status to "error" for them — that would hide the "connecting" state.
       const isTransient = isTransientNetworkError(err);
@@ -667,6 +677,7 @@ export class MQTTManager extends EventEmitter {
 
     this.connectAckTimer = setTimeout(() => {
       this.connectAckTimer = null;
+      if (!isCurrentClient()) return;
       if (this.status !== 'connecting' || !this.client) return;
       const msg = `Meshtastic MQTT: timed out before MQTT session (no CONNACK within ${MESHTASTIC_MQTT_CONNECT_ACK_MS / 1000}s). Check host, port, WebSocket path /mqtt, TLS, and network (firewall, VPN, DNS).`;
       console.error('[Meshtastic MQTT]', sanitizeLogMessage(msg)); // log-filter-ok Meshtastic MQTT logs → App log panel
@@ -677,7 +688,8 @@ export class MQTTManager extends EventEmitter {
       }
     }, MESHTASTIC_MQTT_CONNECT_ACK_MS);
 
-    this.client.on('connect', () => {
+    client.on('connect', () => {
+      if (!isCurrentClient()) return;
       this.clearConnectAckTimer();
       console.debug(
         '[Meshtastic MQTT] CONNACK received',
@@ -706,11 +718,13 @@ export class MQTTManager extends EventEmitter {
       }
     });
 
-    this.client.on('message', (topic: string, payload: Buffer | string, packet) => {
+    client.on('message', (topic: string, payload: Buffer | string, packet) => {
+      if (!isCurrentClient()) return;
       this.onMessage(topic, payload, packet);
     });
 
-    this.client.on('close', () => {
+    client.on('close', () => {
+      if (!isCurrentClient()) return;
       this.clearConnectAckTimer();
       this.clearWssPing();
       this.clearKeepaliveReschedule();
@@ -757,7 +771,8 @@ export class MQTTManager extends EventEmitter {
       }, delay);
     });
 
-    this.client.on('offline', () => {
+    client.on('offline', () => {
+      if (!isCurrentClient()) return;
       if (this.status === 'disconnected' || this.status === 'error') return;
       if (this.client) {
         this.setStatus('connecting');
@@ -835,7 +850,7 @@ export class MQTTManager extends EventEmitter {
       hopLimit: 3,
       payloadVariant: { case: 'encrypted', value: encrypted },
     });
-    const gatewayId = `!${fromId.toString(16).padStart(8, '0')}`;
+    const gatewayId = formatMeshtasticNodeId(fromId);
     const envelope = create(ServiceEnvelopeSchema, {
       packet,
       channelId: channelName,
@@ -1040,7 +1055,7 @@ export class MQTTManager extends EventEmitter {
   ): number {
     const explicitPsk = pskBase64 ? parsePsk(pskBase64) : undefined;
     const user = create(UserSchema, {
-      id: `!${from.toString(16).padStart(8, '0')}`,
+      id: formatMeshtasticNodeId(from),
       longName,
       shortName,
       ...(hwModel !== undefined ? { hwModel } : {}),

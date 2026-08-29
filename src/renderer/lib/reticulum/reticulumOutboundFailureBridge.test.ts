@@ -16,6 +16,7 @@ import {
 } from '@/renderer/lib/reticulum/destHash';
 import {
   failReticulumSendingOutboundToDestHash,
+  findFailedReticulumOutboundForDest,
   shouldApplyLinkDeliveryTimeoutFailureBridge,
 } from '@/renderer/lib/reticulum/reticulumOutboundFailureBridge';
 import { useMessageStore } from '@/renderer/stores/messageStore';
@@ -281,5 +282,109 @@ describe('shouldApplyLinkDeliveryTimeoutFailureBridge', () => {
     expect(shouldApplyLinkDeliveryTimeoutFailureBridge([], null, 'auto', discovered)).toBe(false);
     // Manual never uses a node the user did not add, so the timeout is terminal there.
     expect(shouldApplyLinkDeliveryTimeoutFailureBridge([], null, 'manual', discovered)).toBe(true);
+  });
+});
+
+describe('findFailedReticulumOutboundForDest', () => {
+  const OTHER = '17c4e90b8236df4159a0b7c3ed218a64';
+
+  beforeEach(() => {
+    useMessageStore.setState({ messages: {} });
+    window.electronAPI = createElectronAPIMock();
+  });
+
+  function seed(
+    rows: { id: string; status: string; dest?: string; timestamp?: number; payload?: string }[],
+  ) {
+    const bucket: Record<string, unknown> = {};
+    for (const row of rows) {
+      const toNodeId = row.dest ? reticulumHashToNodeId(row.dest) : undefined;
+      if (row.dest && toNodeId != null) registerReticulumDestinationHash(toNodeId, row.dest);
+      bucket[row.id] = {
+        id: row.id,
+        from: 1,
+        senderName: 'self',
+        payload: row.payload ?? 'hello',
+        channelIndex: 0,
+        timestamp: row.timestamp ?? 1000,
+        status: row.status,
+        to: toNodeId,
+        reticulumSenderHash: SELF,
+      };
+    }
+    useMessageStore.setState({ messages: { [identityId]: bucket as never } });
+  }
+
+  it('returns failed messages addressed to the destination', () => {
+    seed([{ id: 'm1', status: 'failed', dest: DEST }]);
+
+    const rows = findFailedReticulumOutboundForDest(identityId, DEST);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0].id).toBe('m1');
+    expect(rows[0].payload).toBe('hello');
+  });
+
+  it('ignores messages in every non-failed status', () => {
+    seed([
+      { id: 'sending', status: 'sending', dest: DEST },
+      { id: 'delivered', status: 'delivered', dest: DEST },
+      { id: 'queued', status: 'queued', dest: DEST },
+      { id: 'sent', status: 'sent', dest: DEST },
+    ]);
+
+    expect(findFailedReticulumOutboundForDest(identityId, DEST)).toEqual([]);
+  });
+
+  it('ignores failed messages addressed to a different peer', () => {
+    seed([
+      { id: 'mine', status: 'failed', dest: DEST },
+      { id: 'theirs', status: 'failed', dest: OTHER },
+    ]);
+
+    const rows = findFailedReticulumOutboundForDest(identityId, DEST);
+
+    expect(rows.map((r) => r.id)).toEqual(['mine']);
+  });
+
+  it('ignores inbound rows with no destination', () => {
+    seed([{ id: 'inbound', status: 'failed' }]);
+
+    expect(findFailedReticulumOutboundForDest(identityId, DEST)).toEqual([]);
+  });
+
+  it('returns oldest first so resend order matches send order', () => {
+    seed([
+      { id: 'new', status: 'failed', dest: DEST, timestamp: 3000 },
+      { id: 'old', status: 'failed', dest: DEST, timestamp: 1000 },
+      { id: 'mid', status: 'failed', dest: DEST, timestamp: 2000 },
+    ]);
+
+    expect(findFailedReticulumOutboundForDest(identityId, DEST).map((r) => r.id)).toEqual([
+      'old',
+      'mid',
+      'new',
+    ]);
+  });
+
+  it('accepts separated and uppercase destination hashes', () => {
+    seed([{ id: 'm1', status: 'failed', dest: DEST }]);
+
+    expect(findFailedReticulumOutboundForDest(identityId, DEST.toUpperCase())).toHaveLength(1);
+  });
+
+  it('returns an empty list for a malformed or empty destination hash', () => {
+    seed([{ id: 'm1', status: 'failed', dest: DEST }]);
+
+    expect(findFailedReticulumOutboundForDest(identityId, '')).toEqual([]);
+    expect(findFailedReticulumOutboundForDest(identityId, 'zzzz')).toEqual([]);
+    // Partial hashes must not match (full 32-hex equality required).
+    expect(findFailedReticulumOutboundForDest(identityId, DEST.slice(0, 16))).toEqual([]);
+  });
+
+  it('returns an empty list for an unknown identity', () => {
+    seed([{ id: 'm1', status: 'failed', dest: DEST }]);
+
+    expect(findFailedReticulumOutboundForDest('other-identity', DEST)).toEqual([]);
   });
 });

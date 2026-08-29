@@ -3,6 +3,10 @@ import { useTranslation } from 'react-i18next';
 
 import { useReticulumTcpInterfaceRecovery } from '@/renderer/hooks/useReticulumTcpInterfaceRecovery';
 import { useReticulumTcpLinkQualityMap } from '@/renderer/hooks/useReticulumTcpLinkQualityMap';
+import {
+  isReticulumAutoResendOnAnnounceEnabled,
+  setReticulumAutoResendOnAnnounceEnabled,
+} from '@/renderer/lib/appSettingsStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
 import {
@@ -73,6 +77,10 @@ export function ReticulumStackPanel({
       sidecarEventRef.current(evt);
     },
   });
+
+  const [autoResendOnAnnounce, setAutoResendOnAnnounce] = useState(
+    isReticulumAutoResendOnAnnounceEnabled,
+  );
 
   const {
     interfaces,
@@ -372,6 +380,18 @@ export function ReticulumStackPanel({
             aria-label={t('connectionPanel.reticulumAutostart')}
           />
           {t('connectionPanel.reticulumAutostart')}
+        </label>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
+          <input
+            type="checkbox"
+            checked={autoResendOnAnnounce}
+            onChange={(e) => {
+              setAutoResendOnAnnounce(e.target.checked);
+              setReticulumAutoResendOnAnnounceEnabled(e.target.checked);
+            }}
+            aria-label={t('connectionPanel.reticulumAutoResendOnAnnounce')}
+          />
+          {t('connectionPanel.reticulumAutoResendOnAnnounce')}
         </label>
       </div>
     </div>

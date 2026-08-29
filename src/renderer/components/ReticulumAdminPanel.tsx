@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import { isReticulumUsbSerialRnodeInterface } from '@/renderer/lib/reticulum/reticulumRnodeTransport';
 import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
@@ -96,12 +97,15 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
       ) : null}
 
       {capabilities.hasRNodeFlasher ? (
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-orange-400">{t('flasher.title')}</h3>
-          <div className="space-y-2 rounded-lg border border-orange-900 p-4">
+        <details className="group rounded-lg border border-orange-900">
+          <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-orange-400 transition-colors hover:bg-gray-800">
+            <span>{t('flasher.title')}</span>
+            <DetailsChevron />
+          </summary>
+          <div className="space-y-2 px-4 pb-4">
             <RNodeFlasherSection portBlocked={flasherPortBlocked} />
           </div>
-        </div>
+        </details>
       ) : null}
 
       <div className="space-y-3">

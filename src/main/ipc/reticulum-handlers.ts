@@ -26,6 +26,8 @@ import { MS_PER_MINUTE } from '../../shared/timeConstants';
 import { parseVoiceAudioRequest, VOICE_AUDIO_API_PATH } from '../../shared/voice-types';
 import { createIpcRateLimiter } from '../ipcRateLimit';
 import { sanitizeLogMessage } from '../log-service';
+import type { BlocklistExportResult, BlocklistImportFileResult } from '../reticulum-blocklist-file';
+import { readBlocklistFromFile, saveBlocklistToFile } from '../reticulum-blocklist-file';
 import {
   isAllowedNomadContentSourcePath,
   isNomadContentSourceApiPath,
@@ -88,6 +90,13 @@ const reticulumGamesIpcRateLimit = createIpcRateLimiter({
   max: 600,
   windowMs: MS_PER_MINUTE,
   label: 'reticulum:games',
+});
+
+/** Blocklist import/export file dialogs — same ceiling as other export dialogs. */
+const reticulumBlocklistFileIpcRateLimit = createIpcRateLimiter({
+  max: 5,
+  windowMs: MS_PER_MINUTE,
+  label: 'reticulum:blocklistFile',
 });
 
 function isVoiceAudioApiPath(apiPath: string): boolean {
@@ -603,6 +612,43 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       } catch (err) {
         console.error(
           '[ReticulumIPC] saveIdentityExportDialog failed:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+        throw err;
+      }
+    },
+  );
+
+  ipcMain.handle(
+    'reticulum:saveBlocklistDialog',
+    async (event, hashes: unknown): Promise<BlocklistExportResult> => {
+      assertIpcSender(event, 'reticulum:saveBlocklistDialog');
+      reticulumBlocklistFileIpcRateLimit.checkOrThrow();
+      if (!Array.isArray(hashes)) {
+        return { path: null, error: 'invalid_opts' };
+      }
+      try {
+        return await saveBlocklistToFile(hashes.filter((h): h is string => typeof h === 'string'));
+      } catch (err) {
+        console.error(
+          '[ReticulumIPC] saveBlocklistDialog failed:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+        throw err;
+      }
+    },
+  );
+
+  ipcMain.handle(
+    'reticulum:openBlocklistDialog',
+    async (event): Promise<BlocklistImportFileResult> => {
+      assertIpcSender(event, 'reticulum:openBlocklistDialog');
+      reticulumBlocklistFileIpcRateLimit.checkOrThrow();
+      try {
+        return await readBlocklistFromFile();
+      } catch (err) {
+        console.error(
+          '[ReticulumIPC] openBlocklistDialog failed:',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
         throw err;

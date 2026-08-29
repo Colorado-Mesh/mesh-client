@@ -172,6 +172,37 @@ describe('GamesPanel', () => {
     });
   });
 
+  it('offers every board-backed game in the challenge picker', () => {
+    render(<GamesPanel isActive />);
+
+    // The board dispatch is only reachable via a challenge, so a game missing from this
+    // picker can never render its board from this client.
+    const select = screen.getByLabelText('Select game');
+    expect(
+      within(select)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual(['Tic-Tac-Toe', 'Chess', 'Four in a Row']);
+  });
+
+  it('sends a four_in_a_row challenge when Four in a Row is selected', async () => {
+    render(<GamesPanel isActive />);
+
+    await userEvent.type(screen.getByLabelText('Peer destination hash'), peerHash);
+    await userEvent.selectOptions(screen.getByLabelText('Select game'), 'four_in_a_row');
+    await userEvent.click(screen.getByRole('button', { name: 'Send challenge' }));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dest_hash: peerHash,
+          app_id: 'four_in_a_row',
+          command: 'challenge',
+        }),
+      );
+    });
+  });
+
   it('sends a move via the tic-tac-toe board when clicking a cell', async () => {
     await renderAndSelectSession(makeSession());
 

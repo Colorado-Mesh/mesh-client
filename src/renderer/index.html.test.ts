@@ -26,4 +26,11 @@ describe('index.html CSP', () => {
     const csp = readCspContent();
     expect(csp).toMatch(/worker-src[^;]*\bblob:/);
   });
+
+  it('denies plugin embeds, base hijacking, and form posts', () => {
+    const csp = readCspContent();
+    expect(csp).toMatch(/object-src\s+'none'/);
+    expect(csp).toMatch(/base-uri\s+'self'/);
+    expect(csp).toMatch(/form-action\s+'none'/);
+  });
 });

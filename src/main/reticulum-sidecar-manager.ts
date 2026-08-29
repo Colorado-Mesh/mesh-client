@@ -425,6 +425,9 @@ export class ReticulumSidecarManager extends EventEmitter {
     proc.on('exit', (code, signal) => {
       console.debug(`[ReticulumSidecar] exited code=${code ?? 'null'} signal=${signal ?? 'null'}`);
       this.teardownWs();
+      // The watchdog no-ops once proc is null, but leaving it armed leaks its interval
+      // across the next spawn.
+      this.stopWatchdog();
       this.proc = null;
       this.stackSessionTracker.recordStop();
       this.clearSidecarTrackers();
@@ -444,6 +447,15 @@ export class ReticulumSidecarManager extends EventEmitter {
       await this.stopProc();
       this._status = { running: false, port: 0, pid: null, lastError: msg };
       throw new Error(msg);
+    }
+
+    // stop() kills the child during the health poll ("Process already spawned (e.g. health
+    // poll): kill via stopProc"), so a health response landing just before the kill would
+    // otherwise report a dead PID as running, connect a WS to a dead port, and arm a
+    // watchdog for a process that is already gone.
+    this.throwIfStartAborted();
+    if (this.proc !== proc) {
+      throw new Error('RETICULUM_SIDECAR_START_ABORTED: process replaced during start');
     }
 
     this._status = {

@@ -10,6 +10,7 @@ mod identity_apply;
 mod identity_backup;
 mod identity_import;
 mod identity_slots;
+pub mod interface_catalog;
 mod local_rnode_primary;
 mod lxmf_inbound_log;
 mod nomad_content_source;
@@ -1187,6 +1188,19 @@ impl StackHandle {
         }
         let _ = (hash, force);
         Ok(())
+    }
+
+    /// Clear the whole RNS path table; returns the number of routes dropped.
+    pub async fn drop_path_table(&self) -> Result<i64, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live.get() {
+            let res = live.drop_path_table().await;
+            if res.is_ok() {
+                self.emit_event("peers_updated", serde_json::json!({}));
+            }
+            return res;
+        }
+        Ok(0)
     }
 
     pub async fn probe_peer(&self, hash: &str) -> Result<serde_json::Value, String> {
