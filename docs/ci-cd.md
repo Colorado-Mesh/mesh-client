@@ -8,8 +8,9 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 | Workflow                    | Trigger                                      | Purpose                                                                         |
 | --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`    | Parallel lint, typecheck, build, and path-gated Flatpak validation              |
-| `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`    | Affected PR tests; full protected-event coverage; path-gated sidecar `llvm-cov` |
+| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`    | Lint, typecheck, build, Flatpak manifest validation                             |
+| `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`    | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
+| `buttonmash.yaml`           | PR/`merge_group`/`workflow_dispatch`         | Browser-based chaos testing of the Vite renderer                                |
 | `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS; not a PR gate)                 |
 | `build.yaml`                | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build (+ schema compare vs last official)           |
 | `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                       |
@@ -31,6 +32,22 @@ Runs on every push, pull request, and merge-queue `merge_group` for `main` (and 
 - **Flatpak checks:** only when Flatpak inputs change; runs `check:flatpak`, `check:flatpak-offline-pnpm`, `desktop-file-validate`, and `appstreamcli validate`
 
 Each Node lane uses the same pinned Node 22/pnpm setup action and frozen install. The final `Build & Test` job aggregates every lane so the existing required check name remains stable. Superseded runs for the same pull request or ref are cancelled.
+
+---
+
+## Buttonmash (`buttonmash.yaml`)
+
+Runs a bounded, deterministic Buttonmash crawl on pull requests, merge-queue refs, and manual
+dispatches. The job starts the Vite renderer in plain-browser development mode, which installs the
+repository's no-op `electronAPI` stub. This exercises the UI shell and browser-safe panel behavior
+without accessing radios, native dialogs, SQLite, MQTT, or other Electron-only services.
+
+The workflow pins Buttonmash's action commit and npm version, refuses live billing, fails on `high`
+or `critical` findings, and uploads both the Buttonmash report and the Vite server log when a run
+fails. The detector config ignores the browser stub's expected no-peripheral BLE rejection and two
+exact third-party teardown races from `lucide-react-motion` and Leaflet. Native BLE behavior remains
+covered outside this stubbed lane, while all other high-severity browser errors remain blocking. The
+action and time budgets live in [`buttonmash.config.json`](../buttonmash.config.json).
 
 ---
 
