@@ -29,9 +29,20 @@ export function persistFontScale(scale: number): void {
   localStorage.setItem(FONT_SCALE_STORAGE_KEY, String(scale));
 }
 
+/** Notifies px-based layout consumers (virtualizer row estimates) to re-measure. */
+export const FONT_SCALE_CHANGED_EVENT = 'mesh-client:fontScaleChanged';
+
 /** Percentage rather than px so any OS/Chromium base font size is preserved. */
 export function applyFontScale(scale: number): void {
   document.documentElement.style.fontSize = `${scale * 100}%`;
+  window.dispatchEvent(new CustomEvent(FONT_SCALE_CHANGED_EVENT));
+}
+
+export function subscribeAppliedFontScale(listener: () => void): () => void {
+  window.addEventListener(FONT_SCALE_CHANGED_EVENT, listener);
+  return () => {
+    window.removeEventListener(FONT_SCALE_CHANGED_EVENT, listener);
+  };
 }
 
 /**

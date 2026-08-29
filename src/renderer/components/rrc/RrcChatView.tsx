@@ -24,7 +24,7 @@ import {
   getDistFromChatBottom,
   VIRTUALIZER_SCROLL_END_THRESHOLD,
 } from '@/renderer/lib/chatScrollUtils';
-import { readAppliedFontScale } from '@/renderer/lib/fontScale';
+import { readAppliedFontScale, subscribeAppliedFontScale } from '@/renderer/lib/fontScale';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { openNomadPageFromLink } from '@/renderer/lib/nomad/openNomadPageFromLink';
 import {
@@ -566,6 +566,19 @@ export function RrcChatView({
       }
     }
   }, [applyNearBottomCaughtUp, isActive, updateScrollButtonVisibility]);
+
+  // Row estimates are px, calibrated to the current root scale. Cached measurements
+  // for off-screen rows survive a scale change, so drop them and re-anchor.
+  useEffect(
+    () =>
+      subscribeAppliedFontScale(() => {
+        messageVirtualizerRef.current.measure();
+        if (isPinnedToBottomRef.current) {
+          messageVirtualizerRef.current.scrollToEnd();
+        }
+      }),
+    [],
+  );
 
   useEffect(() => {
     if (!isActive) return;

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   applyFontScale,
@@ -11,6 +11,7 @@ import {
   persistFontScale,
   readAppliedFontScale,
   resetFontScale,
+  subscribeAppliedFontScale,
 } from './fontScale';
 
 describe('fontScale', () => {
@@ -86,6 +87,33 @@ describe('fontScale', () => {
 
       document.documentElement.style.fontSize = '0%';
       expect(readAppliedFontScale()).toBe(DEFAULT_FONT_SCALE);
+    });
+  });
+
+  describe('subscribeAppliedFontScale', () => {
+    it('notifies subscribers on every apply and stops after unsubscribe', () => {
+      const listener = vi.fn();
+      const unsubscribe = subscribeAppliedFontScale(listener);
+
+      applyFontScale(1.2);
+      applyFontScale(1.3);
+      expect(listener).toHaveBeenCalledTimes(2);
+
+      unsubscribe();
+      applyFontScale(1.4);
+      expect(listener).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports the newly applied scale to the listener', () => {
+      const seen: number[] = [];
+      const unsubscribe = subscribeAppliedFontScale(() => {
+        seen.push(readAppliedFontScale());
+      });
+
+      applyFontScale(1.45);
+      unsubscribe();
+
+      expect(seen).toEqual([1.45]);
     });
   });
 
