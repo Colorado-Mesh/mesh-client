@@ -25,7 +25,17 @@ describe('devElectronApiStub', () => {
   it('returns no-op IPC surface with expected namespaces', async () => {
     const api = createDevElectronApiStub();
     await expect(api.db.getMessages()).resolves.toEqual([]);
+    await expect(api.db.getBlockedContacts('reticulum', 'identity')).resolves.toEqual([]);
+    await expect(api.db.blockContact('reticulum', 'identity', 'hash')).resolves.toEqual({
+      changes: 1,
+    });
+    await expect(api.db.unblockContact('reticulum', 'identity', 'hash')).resolves.toEqual({
+      changes: 1,
+    });
+    await expect(api.db.listReticulumRemoteAddresses()).resolves.toEqual([]);
+    await expect(api.db.listReticulumInboundPolicy()).resolves.toEqual([]);
     await expect(api.mqtt.getClientId()).resolves.toBe('');
+    await expect(api.mqtt.getChannelNameToIndex()).resolves.toEqual({});
     expect(api.getPlatform()).toBe('linux');
     expect(typeof api.onNobleBleDisconnected(() => {})).toBe('function');
   });
