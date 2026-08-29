@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * PR-parity local gate: full lint, typecheck, strict-shared, full Vitest,
+ * Comprehensive local gate: full lint, typecheck, strict-shared, full Vitest,
  * and full-feature sidecar check when the branch touches sidecar paths.
  *
  * Usage: pnpm run check:pr

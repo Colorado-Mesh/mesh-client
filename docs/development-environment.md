@@ -396,11 +396,11 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### Typecheck
 
-| Script                    | Description                                                                                               |
-| ------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `typecheck`               | TypeScript check: renderer + main process                                                                 |
-| `typecheck:strict-shared` | Strict TypeScript (`noUncheckedIndexedAccess` + `exactOptionalPropertyTypes`) for `src/shared`            |
-| `check:pr`                | PR-parity local gate: lint + typecheck + strict-shared + full `test:run` (+ sidecar if branch touches it) |
+| Script                    | Description                                                                                         |
+| ------------------------- | --------------------------------------------------------------------------------------------------- |
+| `typecheck`               | TypeScript check: renderer + main process                                                           |
+| `typecheck:strict-shared` | Strict TypeScript (`noUncheckedIndexedAccess` + `exactOptionalPropertyTypes`) for `src/shared`      |
+| `check:pr`                | Comprehensive local gate: lint + typecheck + strict-shared + full `test:run` (+ path-aware sidecar) |
 
 #### Quality checks
 
@@ -551,7 +551,7 @@ Worker counts are derived in [`vitest.harness.mts`](../vitest.harness.mts) via `
 
 By default all three Vitest projects run in **parallel** (`groupOrder: 0`). On memory-constrained hosts, set `VITEST_SEQUENTIAL_PROJECTS=1` to run `renderer-ui` first, then `renderer-logic` + `main` together (legacy behavior).
 
-CI runs coverage in three parallel jobs (`renderer-ui`, `renderer-logic`, `main`) and merges blob reports via `pnpm run test:coverage:merge` (see [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml)).
+Pull-request CI selects merge-base-related tests across these project jobs. Merge-queue, `main`, manual, and unsafe-to-scope changes run all three with coverage and merge blob reports via `pnpm run test:coverage:merge` (see [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml)).
 
 #### Playwright Electron E2E
 
@@ -654,7 +654,7 @@ After `pnpm install`, repo hooks are enabled via `core.hooksPath` (see the `prep
 
 ESLint: production `src/**` enforces `no-unsafe-*`; test files keep those off. `no-unnecessary-condition` is enforced for `src/shared/**` and `src/renderer/lib/**` only.
 
-Green pre-commit does **not** replace PR CI: [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml) always runs the full Vitest suite with coverage. Use `pnpm run check:pr` before opening a PR.
+Green pre-commit does **not** replace PR CI: [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml) runs merge-base-related tests on pull requests and fails closed to full Vitest when scoping is unsafe. The merge queue always reruns full Vitest with coverage. Use `pnpm run check:pr` for a comprehensive local gate before opening a PR.
 
 Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-commit)):
 
@@ -670,7 +670,7 @@ Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-comm
 10. `pnpm audit --audit-level=high` only when dependency manifests staged; `actionlint` when `.github/workflows/*` staged; `yamllint` when any `*.yaml` / `*.yml` staged
 11. `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
 
-**Release / CI full suite:** `pnpm run release` (`scripts/release.sh`) and PR [`tests.yaml`](../.github/workflows/tests.yaml) always run `pnpm run test:run` (full Vitest) — never `test:staged`. Release also runs the ungated `check:*` set and requires actionlint + yamllint. Use `pnpm run check:pr` for the same Vitest/lint/typecheck surface locally before a PR.
+**Release / protected CI full suite:** `pnpm run release` (`scripts/release.sh`), merge-queue `merge_group`, `main` push, and manual [`tests.yaml`](../.github/workflows/tests.yaml) runs always execute full Vitest. Pull requests use merge-base-related tests unless a safe fallback requires the full suite. Release also runs the ungated `check:*` set and requires actionlint + yamllint. Use `pnpm run check:pr` for the comprehensive Vitest/lint/typecheck surface locally before a PR.
 
 Install hook dependencies via [Helper scripts](#8-helper-scripts-auto-install-where-possible) (`setup:actionlint`, yamllint via pip/brew/apt).
 
