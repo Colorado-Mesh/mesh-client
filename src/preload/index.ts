@@ -95,6 +95,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       body: string;
       timestamp: number;
     }) => ipcRenderer.invoke('db:insertRrcMessage', message),
+    listRrcNicks: (hubHash: string, limit?: number) =>
+      ipcRenderer.invoke('db:listRrcNicks', hubHash, limit),
+    upsertRrcNick: (nick: {
+      hub_hash: string;
+      identity_hash: string;
+      nickname: string;
+      last_seen: number;
+    }) => ipcRenderer.invoke('db:upsertRrcNick', nick),
     deleteRrcMessagesByRoom: (hubHash: string, room: string) =>
       ipcRenderer.invoke('db:deleteRrcMessagesByRoom', hubHash, room),
     pruneRrcMessagesByCount: (maxCount: number) =>

@@ -29,6 +29,7 @@ import {
   applyRrcHistoryNicksToMembers,
   collectRrcNicksForHub,
 } from '@/renderer/lib/rrcMemberNicksFromHistory';
+import { hydrateRrcHubNicks } from '@/renderer/lib/rrcNickCacheHydrate';
 import { buildRrcWhisperCompleteMembers } from '@/renderer/lib/rrcNickComplete';
 import { loadRrcOpenDms } from '@/renderer/lib/rrcOpenDms';
 import { loadRrcRecentRooms, pushRrcRecentRoom } from '@/renderer/lib/rrcRecentRooms';
@@ -60,6 +61,7 @@ import {
   RRC_HUB_STREAM_ROOM,
   RRC_NICKNAME_STORAGE_KEY,
   selectRrcActiveRoomMessages,
+  selectRrcFocusedHubNicks,
   useRrcSessionStore,
 } from '@/renderer/stores/rrcSessionStore';
 import type { RrcHubInfo, RrcRoomMember } from '@/shared/rrc-types';
@@ -188,6 +190,11 @@ export default function RrcPanel({
     if (!hubDestHash || !activeRoom) return;
     void hydrateRrcRoomMessages(hubDestHash, activeRoom);
   }, [hubDestHash, activeRoom]);
+
+  useEffect(() => {
+    if (!hubDestHash) return;
+    void hydrateRrcHubNicks(hubDestHash);
+  }, [hubDestHash]);
 
   // Restore open DMs + migrate legacy [whispers] after hub is live.
   useEffect(() => {
@@ -458,6 +465,7 @@ export default function RrcPanel({
   const activeMessages = useRrcSessionStore(selectRrcActiveRoomMessages);
   /** All transcripts for this hub — the fallback source for hash-only nicklist rows. */
   const hubMessages = useRrcSessionStore((s) => s.messages);
+  const cachedHubNicks = useRrcSessionStore(selectRrcFocusedHubNicks);
   const activeRoomInfo = activeRoom ? rooms.get(activeRoom) : undefined;
   const muteKey = hubDestHash && activeRoom ? `rrc:${hubDestHash}:${activeRoom}` : null;
   const isMuted = muteKey ? mutedViews.has(muteKey) : false;
@@ -490,8 +498,10 @@ export default function RrcPanel({
     !isRrcDmRoom(activeRoom);
 
   const historyNicks = useMemo(
-    () => collectRrcNicksForHub(hubMessages, hubDestHash),
-    [hubMessages, hubDestHash],
+    // Transcript sightings first — `applyRrcHistoryNicksToMembers` takes the first
+    // match, and a loaded transcript is fresher than the SQLite cache row.
+    () => [...collectRrcNicksForHub(hubMessages, hubDestHash), ...cachedHubNicks],
+    [cachedHubNicks, hubMessages, hubDestHash],
   );
 
   const nicklistMembers = useMemo(() => {

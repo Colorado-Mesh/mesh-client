@@ -51,6 +51,8 @@ describe('rrc-db-handlers validation', () => {
     expect(handlers.has('db:deleteRrcMessagesByRoom')).toBe(true);
     expect(handlers.has('db:pruneRrcMessagesByCount')).toBe(true);
     expect(handlers.has('db:pruneRrcMessagesByAge')).toBe(true);
+    expect(handlers.has('db:listRrcNicks')).toBe(true);
+    expect(handlers.has('db:upsertRrcNick')).toBe(true);
   });
 
   it('db:insertRrcMessage rejects invalid kind', () => {
@@ -169,6 +171,69 @@ describe('rrc-db-handlers with real DB', () => {
     expect(del(event, HUB, 'lobby')).toEqual({ changes: 1 });
     expect(list(event, HUB, 'lobby')).toHaveLength(0);
     expect(list(event, HUB, 'ops')).toHaveLength(1);
+  });
+
+  it('nick cache upserts newest sighting per identity and scopes by hub', () => {
+    const upsert = handlers.get('db:upsertRrcNick')!;
+    const list = handlers.get('db:listRrcNicks')!;
+    const otherHub = 'b'.repeat(32);
+    const now = Date.now();
+    const peer = 'c'.repeat(32);
+
+    expect(
+      upsert(event, { hub_hash: HUB, identity_hash: peer, nickname: 'Alice', last_seen: now }),
+    ).toEqual({ changes: 1 });
+    expect(
+      upsert(event, {
+        hub_hash: HUB,
+        identity_hash: peer.toUpperCase(),
+        nickname: 'AliceRenamed',
+        last_seen: now + 10,
+      }),
+    ).toEqual({ changes: 1 });
+    // Older replay must not clobber the rename.
+    upsert(event, { hub_hash: HUB, identity_hash: peer, nickname: 'Stale', last_seen: now - 10 });
+    upsert(event, {
+      hub_hash: otherHub,
+      identity_hash: peer,
+      nickname: 'OtherHubName',
+      last_seen: now,
+    });
+
+    const rows = list(event, HUB) as { identity_hash: string; nickname: string }[];
+    expect(rows).toEqual([{ identity_hash: peer, nickname: 'AliceRenamed', last_seen: now + 10 }]);
+    expect(list(event, otherHub)).toHaveLength(1);
+  });
+
+  it('nick cache rejects malformed identities and blank nicks', () => {
+    const upsert = handlers.get('db:upsertRrcNick')!;
+    const list = handlers.get('db:listRrcNicks')!;
+    const now = Date.now();
+    expect(
+      upsert(event, {
+        hub_hash: HUB,
+        identity_hash: 'nick:alice',
+        nickname: 'Alice',
+        last_seen: now,
+      }),
+    ).toEqual({ changes: 0 });
+    expect(
+      upsert(event, {
+        hub_hash: HUB,
+        identity_hash: 'c'.repeat(32),
+        nickname: '  ',
+        last_seen: now,
+      }),
+    ).toEqual({ changes: 0 });
+    expect(
+      upsert(event, {
+        hub_hash: 'not-a-hash',
+        identity_hash: 'c'.repeat(32),
+        nickname: 'x',
+        last_seen: now,
+      }),
+    ).toEqual({ changes: 0 });
+    expect(list(event, HUB)).toHaveLength(0);
   });
 
   it('pruneByCount keeps newest N', () => {

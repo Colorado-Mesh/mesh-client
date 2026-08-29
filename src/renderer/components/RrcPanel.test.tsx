@@ -22,6 +22,7 @@ import {
   resetRrcHubDisconnectSuppressForTests,
 } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { saveRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
+import { resetRrcNickCacheHydrationForTests } from '@/renderer/lib/rrcNickCacheHydrate';
 import { clearRrcOpenDms, loadRrcOpenDms, upsertRrcOpenDm } from '@/renderer/lib/rrcOpenDms';
 import { hydrateRrcRoomMessages, resetRrcRoomHistoryForTests } from '@/renderer/lib/rrcRoomHistory';
 import { RRC_WHO_REPLY_TIMEOUT_MS } from '@/renderer/lib/timeConstants';
@@ -57,6 +58,12 @@ describe('RrcPanel', () => {
     resetRrcHubDisconnectSuppressForTests();
     resetRrcHubAutoJoinBackoffForTests();
     resetRrcRoomHistoryForTests();
+    resetRrcNickCacheHydrationForTests();
+    useRrcSessionStore.setState({ nicksByHub: new Map() });
+    vi.mocked(window.electronAPI.db.listRrcNicks).mockReset();
+    vi.mocked(window.electronAPI.db.listRrcNicks).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.upsertRrcNick).mockReset();
+    vi.mocked(window.electronAPI.db.upsertRrcNick).mockResolvedValue({ changes: 1 });
     hydrateAxeThemeColors(document.documentElement);
     vi.mocked(isReticulumSidecarRunning).mockResolvedValue(false);
     vi.spyOn(transportReady, 'probeReticulumRrcTransportReady').mockResolvedValue({ ready: true });
@@ -615,6 +622,21 @@ describe('RrcPanel', () => {
       },
       { hubDestHash: hubA },
     );
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: null },
+    ]);
+    store.setActiveRoom('general');
+
+    render(<RrcPanel isActive />);
+    expect(await screen.findByRole('button', { name: /Alice/ })).toBeInTheDocument();
+  });
+
+  it('labels a roster member from the SQLite nick cache with no transcript', async () => {
+    vi.mocked(window.electronAPI.db.listRrcNicks).mockResolvedValue([
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: 'Alice', last_seen: 1 },
+    ]);
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
     store.roomJoined('general', [
       { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: null },
     ]);

@@ -46,6 +46,8 @@ export function createElectronAPIMock(): ElectronAPI {
       pruneReticulumMessagesByCount: vi.fn().mockResolvedValue({ changes: 0 }),
       listRrcMessages: vi.fn().mockResolvedValue([]),
       insertRrcMessage: vi.fn().mockResolvedValue({ changes: 1 }),
+      listRrcNicks: vi.fn().mockResolvedValue([]),
+      upsertRrcNick: vi.fn().mockResolvedValue({ changes: 1 }),
       deleteRrcMessagesByRoom: vi.fn().mockResolvedValue({ changes: 0 }),
       pruneRrcMessagesByCount: vi.fn().mockResolvedValue({ changes: 0 }),
       pruneRrcMessagesByAge: vi.fn().mockResolvedValue({ changes: 0 }),

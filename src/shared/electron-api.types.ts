@@ -389,6 +389,26 @@ export interface ElectronAPI {
       body: string;
       timestamp: number;
     }) => Promise<{ changes: number }>;
+    /**
+     * Nick cache for one hub. Survives transcript clears / retention pruning, so
+     * the RRC nicklist can still name a peer that only ever spoke once.
+     */
+    listRrcNicks: (
+      hubHash: string,
+      limit?: number,
+    ) => Promise<
+      {
+        identity_hash: string;
+        nickname: string;
+        last_seen: number;
+      }[]
+    >;
+    upsertRrcNick: (nick: {
+      hub_hash: string;
+      identity_hash: string;
+      nickname: string;
+      last_seen: number;
+    }) => Promise<{ changes: number }>;
     deleteRrcMessagesByRoom: (hubHash: string, room: string) => Promise<{ changes: number }>;
     pruneRrcMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneRrcMessagesByAge: (maxAgeDays: number) => Promise<DbPruneResult>;

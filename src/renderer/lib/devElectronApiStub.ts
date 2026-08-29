@@ -40,6 +40,8 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       pruneReticulumMessagesByCount: async () => ({ changes: 0 }),
       listRrcMessages: async () => [],
       insertRrcMessage: async () => ({ changes: 0 }),
+      listRrcNicks: async () => [],
+      upsertRrcNick: async () => ({ changes: 0 }),
       deleteRrcMessagesByRoom: async () => ({ changes: 0 }),
       pruneRrcMessagesByCount: async () => ({ changes: 0 }),
       pruneRrcMessagesByAge: async () => ({ changes: 0 }),
