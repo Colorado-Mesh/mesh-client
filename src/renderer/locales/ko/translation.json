@@ -409,7 +409,13 @@
       "unblockFailed": "해당 문의의 차단을 해제할 수 없습니다.",
       "empty": "차단된 연락처가 없습니다.",
       "title": "차단된 연락처"
-    }
+    },
+    "fontSize": "폰트 크기",
+    "fontSizeDesc": "앱에서 텍스트 크기를 조정하세요. 지도, 차트 및 터미널은 영향을 받지 않습니다.",
+    "decreaseFontSize": "글꼴 작게",
+    "increaseFontSize": "글꼴 크기 증가",
+    "resetFontSize": "초기화",
+    "resetFontSizeAria": "편지함 선택"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

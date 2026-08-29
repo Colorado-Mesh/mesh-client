@@ -425,7 +425,13 @@
     "pruneOfflineNodesConfirm_few": "Spowoduje to trwałe usunięcie {{count}} węzłów, których nie słychać od {{days}} {{daysLabel}}. Tego nie można cofnąć.",
     "pruneOfflineNodesConfirm_many": "Spowoduje to trwałe usunięcie {{count}} węzłów, których nie słychać od {{days}} {{daysLabel}}. Tego nie można cofnąć.",
     "reticulumDestinationsUnit_few": "miejsca docelowe",
-    "reticulumDestinationsUnit_many": "miejsc docelowych"
+    "reticulumDestinationsUnit_many": "miejsc docelowych",
+    "fontSize": "Rozmiar czcionki",
+    "fontSizeDesc": "Dostosuj rozmiar tekstu w aplikacji. Nie ma to wpływu na mapy, wykresy i terminal.",
+    "decreaseFontSize": "Zmniejsz rozmiar czcionki",
+    "increaseFontSize": "Zwiększ rozmiar czcionki",
+    "resetFontSize": "Zresetuj",
+    "resetFontSizeAria": "resetuj wielkość czcionek"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

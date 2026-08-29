@@ -1,0 +1,82 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import {
+  applyFontScale,
+  clampFontScale,
+  DEFAULT_FONT_SCALE,
+  FONT_SCALE_MAX,
+  FONT_SCALE_MIN,
+  FONT_SCALE_STORAGE_KEY,
+  loadFontScale,
+  persistFontScale,
+  resetFontScale,
+} from './fontScale';
+
+describe('fontScale', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    document.documentElement.style.fontSize = '';
+  });
+
+  describe('clampFontScale', () => {
+    it('clamps above the max and below the min', () => {
+      expect(clampFontScale(3)).toBe(FONT_SCALE_MAX);
+      expect(clampFontScale(0.1)).toBe(FONT_SCALE_MIN);
+    });
+
+    it('snaps to the nearest step without float drift', () => {
+      expect(clampFontScale(1.13)).toBe(1.15);
+      expect(clampFontScale(1.11)).toBe(1.1);
+      expect(clampFontScale(0.9)).toBe(0.9);
+    });
+
+    it('falls back to the default for non-finite input', () => {
+      expect(clampFontScale(Number.NaN)).toBe(DEFAULT_FONT_SCALE);
+      expect(clampFontScale(Number.POSITIVE_INFINITY)).toBe(DEFAULT_FONT_SCALE);
+    });
+  });
+
+  describe('loadFontScale', () => {
+    it('returns the default when nothing is stored', () => {
+      expect(loadFontScale()).toBe(DEFAULT_FONT_SCALE);
+    });
+
+    it('parses a stored value', () => {
+      localStorage.setItem(FONT_SCALE_STORAGE_KEY, '1.25');
+      expect(loadFontScale()).toBe(1.25);
+    });
+
+    it('clamps garbage and out-of-range stored values', () => {
+      localStorage.setItem(FONT_SCALE_STORAGE_KEY, 'not-a-number');
+      expect(loadFontScale()).toBe(DEFAULT_FONT_SCALE);
+
+      localStorage.setItem(FONT_SCALE_STORAGE_KEY, '99');
+      expect(loadFontScale()).toBe(FONT_SCALE_MAX);
+    });
+  });
+
+  it('round-trips through localStorage', () => {
+    persistFontScale(1.2);
+    expect(localStorage.getItem(FONT_SCALE_STORAGE_KEY)).toBe('1.2');
+    expect(loadFontScale()).toBe(1.2);
+  });
+
+  it('applies the scale as a root font-size percentage', () => {
+    applyFontScale(1.25);
+    expect(document.documentElement.style.fontSize).toBe('125%');
+
+    applyFontScale(DEFAULT_FONT_SCALE);
+    expect(document.documentElement.style.fontSize).toBe('100%');
+  });
+
+  it('reset clears storage and restores the default root font-size', () => {
+    persistFontScale(1.5);
+    applyFontScale(1.5);
+
+    resetFontScale();
+
+    expect(localStorage.getItem(FONT_SCALE_STORAGE_KEY)).toBeNull();
+    expect(document.documentElement.style.fontSize).toBe('100%');
+    expect(loadFontScale()).toBe(DEFAULT_FONT_SCALE);
+  });
+});

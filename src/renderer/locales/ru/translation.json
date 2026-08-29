@@ -425,7 +425,13 @@
     "pruneOfflineNodesConfirm_few": "Это приведет к безвозвратному удалению {{count}} узла, которые не прослушивались более {{days}} {{daysLabel}}. Это невозможно отменить.",
     "pruneOfflineNodesConfirm_many": "Это приведет к безвозвратному удалению {{count}} узлов, которые не прослушивались более {{days}} {{daysLabel}}. Это невозможно отменить.",
     "reticulumDestinationsUnit_few": "пункта назначения",
-    "reticulumDestinationsUnit_many": "пунктов назначения"
+    "reticulumDestinationsUnit_many": "пунктов назначения",
+    "fontSize": "Размер шрифта",
+    "fontSizeDesc": "Настройте размер текста в приложении. Карты, графики и терминал не затрагиваются.",
+    "decreaseFontSize": "Уменьшить размер шрифта",
+    "increaseFontSize": "Увеличить размер шрифта",
+    "resetFontSize": "Reset (сброс - уст 0)",
+    "resetFontSizeAria": "Восстановить стандартные параметры шрифта"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",

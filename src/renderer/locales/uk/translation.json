@@ -425,7 +425,13 @@
     "pruneOfflineNodesConfirm_few": "Це назавжди видалить {{count}} вузли, які не було чутно протягом {{days}} {{daysLabel}}. Це неможливо скасувати.",
     "pruneOfflineNodesConfirm_many": "Це назавжди видалить {{count}} вузлів, які не було чутно протягом {{days}} {{daysLabel}}. Це неможливо скасувати.",
     "reticulumDestinationsUnit_few": "пункти призначення",
-    "reticulumDestinationsUnit_many": "пунктів призначення"
+    "reticulumDestinationsUnit_many": "пунктів призначення",
+    "fontSize": "Розмір шрифту",
+    "fontSizeDesc": "Налаштуйте розмір тексту в додатку. Карти, діаграми та термінал не постраждали.",
+    "decreaseFontSize": "Зменшити розмір шрифту",
+    "increaseFontSize": "Збільшити розмір шрифту",
+    "resetFontSize": "Reset (Скид)",
+    "resetFontSizeAria": "Відновити шрифт"
   },
   "aria": {
     "closeDialog": "Закрити діалог",

@@ -18,6 +18,17 @@ import {
 } from '../lib/appSettingsStorage';
 import { formatCoordPair } from '../lib/coordUtils';
 import { DEFAULT_APP_SETTINGS_SHARED } from '../lib/defaultAppSettings';
+import {
+  applyFontScale,
+  clampFontScale,
+  DEFAULT_FONT_SCALE,
+  FONT_SCALE_MAX,
+  FONT_SCALE_MIN,
+  FONT_SCALE_STEP,
+  loadFontScale,
+  persistFontScale,
+  resetFontScale,
+} from '../lib/fontScale';
 import type { OurPosition } from '../lib/gpsSource';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { appPanelSettingsPersistPayload } from '../lib/meshcorePathHashMode';
@@ -309,6 +320,19 @@ export default function AppPanel({
     isMessageActionsBarBgVisible(),
   );
   const [deleteAgeDays, setDeleteAgeDays] = useState(90);
+  const [fontScale, setFontScale] = useState<number>(loadFontScale);
+
+  const updateFontScale = useCallback((next: number) => {
+    const clamped = clampFontScale(next);
+    setFontScale(clamped);
+    applyFontScale(clamped);
+    persistFontScale(clamped);
+  }, []);
+
+  const handleResetFontScale = useCallback(() => {
+    resetFontScale();
+    setFontScale(DEFAULT_FONT_SCALE);
+  }, []);
 
   const commitThemeColor = useCallback((key: ThemeColorKey, hex: string) => {
     setThemeColors((prev) => {
@@ -1920,6 +1944,62 @@ export default function AppPanel({
             {t('appPanel.use24HourTime')}
           </label>
           <HelpTooltip text={t('appPanel.use24HourTimeDesc')} />
+        </div>
+        <div className="bg-secondary-dark flex flex-col gap-2 rounded-lg border border-gray-700 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <label htmlFor="fontScale" className="cursor-pointer text-sm text-gray-300">
+              {t('appPanel.fontSize')}
+            </label>
+            <HelpTooltip text={t('appPanel.fontSizeDesc')} />
+            <span className="text-muted ml-auto text-xs" aria-live="polite">
+              {Math.round(fontScale * 100)}%
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              aria-label={t('appPanel.decreaseFontSize')}
+              onClick={() => {
+                updateFontScale(fontScale - FONT_SCALE_STEP);
+              }}
+              disabled={fontScale <= FONT_SCALE_MIN}
+              className="rounded border border-gray-600 px-2 py-1 text-sm text-gray-300 transition-colors hover:bg-gray-600 disabled:opacity-40"
+            >
+              −
+            </button>
+            <input
+              id="fontScale"
+              type="range"
+              min={FONT_SCALE_MIN}
+              max={FONT_SCALE_MAX}
+              step={FONT_SCALE_STEP}
+              value={fontScale}
+              aria-label={t('appPanel.fontSize')}
+              onChange={(e) => {
+                updateFontScale(Number.parseFloat(e.target.value));
+              }}
+              className="accent-brand-green flex-1"
+            />
+            <button
+              type="button"
+              aria-label={t('appPanel.increaseFontSize')}
+              onClick={() => {
+                updateFontScale(fontScale + FONT_SCALE_STEP);
+              }}
+              disabled={fontScale >= FONT_SCALE_MAX}
+              className="rounded border border-gray-600 px-2 py-1 text-sm text-gray-300 transition-colors hover:bg-gray-600 disabled:opacity-40"
+            >
+              +
+            </button>
+            <button
+              type="button"
+              aria-label={t('appPanel.resetFontSizeAria')}
+              onClick={handleResetFontScale}
+              className="text-muted text-xs underline transition-colors hover:text-gray-300"
+            >
+              {t('appPanel.resetFontSize')}
+            </button>
+          </div>
         </div>
         <details className="group bg-secondary-dark rounded-lg border border-gray-700">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium text-gray-200 hover:bg-gray-800/40 [&::-webkit-details-marker]:hidden">

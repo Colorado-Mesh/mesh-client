@@ -417,7 +417,13 @@
     "pruneNoFixNodesConfirm_few": "Tím trvale smažete {{count}} uzly s nulovými nebo téměř nulovými souřadnicemi (žádná GPS fix nebo Zero Island). Toto nelze vrátit zpět.",
     "pruneOfflineDeleteConfirm_few": "Smazat {{count}} uzly",
     "pruneOfflineNodesConfirm_few": "Tím trvale smažete {{count}} uzly, které nebyly slyšet za více než {{days}} {{daysLabel}}. Toto nelze vrátit zpět.",
-    "reticulumDestinationsUnit_few": "cíle"
+    "reticulumDestinationsUnit_few": "cíle",
+    "fontSize": "Velikost písma",
+    "fontSizeDesc": "Uprav velikost textu v aplikaci. Mapy, grafy a terminál nejsou ovlivněny.",
+    "decreaseFontSize": "Zmenšit velikost písma",
+    "increaseFontSize": "Zvětšit velikost písma",
+    "resetFontSize": "Obnovit",
+    "resetFontSizeAria": "Obnovit velikost písma"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

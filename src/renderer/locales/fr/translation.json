@@ -409,7 +409,13 @@
       "unblockFailed": "Impossible de débloquer ce contact.",
       "empty": "Pas de contacts bloqués",
       "title": "Contacts bloqués"
-    }
+    },
+    "fontSize": "Taille de police",
+    "fontSizeDesc": "Ajustez la taille du texte dans l'application. Les cartes, les graphiques et le terminal ne sont pas affectés.",
+    "decreaseFontSize": "Réduire la taille de la police",
+    "increaseFontSize": "Augmenter la taille de la police",
+    "resetFontSize": "Réinitialiser",
+    "resetFontSizeAria": "Réinitialiser la police"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

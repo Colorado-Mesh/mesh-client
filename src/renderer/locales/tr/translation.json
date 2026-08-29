@@ -409,7 +409,13 @@
       "unblockFailed": "Bu kişinin engeli kaldırılamadı.",
       "empty": "Engellenmiş Kişiler",
       "title": "Engellenen kişiler"
-    }
+    },
+    "fontSize": "Yazı boyutu",
+    "fontSizeDesc": "Uygulama genelinde metin boyutunu ayarlayın. Haritalar, çizelgeler ve terminal etkilenmez.",
+    "decreaseFontSize": "Yazı tipi boyutunu küçült",
+    "increaseFontSize": "Yazı tipi boyutunu büyüt",
+    "resetFontSize": "Sıfırlayın",
+    "resetFontSizeAria": "Yazı tipi boyutunu sıfırla"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

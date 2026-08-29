@@ -409,7 +409,13 @@
       "unblockFailed": "Tidak dapat membuka blokir kontak itu.",
       "empty": "Tidak ada kontak yang diblokir.",
       "title": "Kontak yang diblokir"
-    }
+    },
+    "fontSize": "Ukuran fonta",
+    "fontSizeDesc": "Sesuaikan ukuran teks di seluruh aplikasi. Peta, grafik, dan terminal tidak terpengaruh.",
+    "decreaseFontSize": "Perkecil Ukuran Font",
+    "increaseFontSize": "Perbesarl Ukuran Font",
+    "resetFontSize": "Atur ulang",
+    "resetFontSizeAria": "Atur ulang ukuran font"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
