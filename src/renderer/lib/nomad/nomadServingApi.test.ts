@@ -4,10 +4,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  deleteServingPage,
+  getServingPageRaw,
   getServingStatus,
   listServingFiles,
   listServingPages,
   pickServingContentSource,
+  putServingPage,
   setServing,
   setServingContentSource,
 } from '@/renderer/lib/nomad/nomadServingApi';
@@ -128,6 +131,125 @@ describe('nomadServingApi', () => {
       files: [{ path: 'readme.txt', size: 4 }],
     });
     expect(proxyGet).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/files');
+  });
+
+  describe('page authoring', () => {
+    it('reads a page and encodes the content-relative path', async () => {
+      const proxyGet = window.electronAPI.reticulum.proxyGet as ReturnType<typeof vi.fn>;
+      proxyGet.mockResolvedValueOnce({ ok: true, path: 'page/foo bar.mu', content: '> hi' });
+
+      await expect(getServingPageRaw('page/foo bar.mu')).resolves.toEqual({
+        ok: true,
+        path: 'page/foo bar.mu',
+        content: '> hi',
+      });
+      expect(proxyGet).toHaveBeenCalledWith(
+        '/api/v1/nomadnetwork/serving/page?path=page%2Ffoo%20bar.mu',
+      );
+    });
+
+    it('treats an empty page body as valid content', async () => {
+      const proxyGet = window.electronAPI.reticulum.proxyGet as ReturnType<typeof vi.fn>;
+      proxyGet.mockResolvedValueOnce({ ok: true, path: 'index.mu', content: '' });
+      await expect(getServingPageRaw('index.mu')).resolves.toEqual({
+        ok: true,
+        path: 'index.mu',
+        content: '',
+      });
+    });
+
+    it('rejects a page response with no usable content', async () => {
+      const proxyGet = window.electronAPI.reticulum.proxyGet as ReturnType<typeof vi.fn>;
+      proxyGet.mockResolvedValueOnce({ ok: true, path: 'index.mu' });
+      await expect(getServingPageRaw('index.mu')).resolves.toEqual({
+        ok: false,
+        error: 'serving_page_unavailable',
+      });
+    });
+
+    // The sidecar answers HTTP 200 on failure, so `ok:false` is the only signal.
+    it('surfaces read failure codes without throwing', async () => {
+      const proxyGet = window.electronAPI.reticulum.proxyGet as ReturnType<typeof vi.fn>;
+      proxyGet.mockResolvedValueOnce({ ok: false, error: 'page_not_found' });
+      await expect(getServingPageRaw('missing.mu')).resolves.toEqual({
+        ok: false,
+        error: 'page_not_found',
+      });
+    });
+
+    it('writes a page body', async () => {
+      const proxyPut = window.electronAPI.reticulum.proxyPut as ReturnType<typeof vi.fn>;
+      proxyPut.mockResolvedValueOnce({ ok: true });
+
+      await expect(putServingPage('index.mu', '> hello')).resolves.toEqual({ ok: true });
+      expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/pages', {
+        path: 'index.mu',
+        content: '> hello',
+      });
+    });
+
+    it('surfaces the size-cap rejection from a write', async () => {
+      const proxyPut = window.electronAPI.reticulum.proxyPut as ReturnType<typeof vi.fn>;
+      proxyPut.mockResolvedValueOnce({ ok: false, error: 'page_too_large' });
+      await expect(putServingPage('big.mu', 'x')).resolves.toEqual({
+        ok: false,
+        error: 'page_too_large',
+      });
+    });
+
+    it('deletes a page with an encoded path', async () => {
+      const proxyDelete = window.electronAPI.reticulum.proxyDelete as ReturnType<typeof vi.fn>;
+      proxyDelete.mockResolvedValueOnce({ ok: true });
+
+      await expect(deleteServingPage('page/foo.mu')).resolves.toEqual({ ok: true });
+      expect(proxyDelete).toHaveBeenCalledWith(
+        '/api/v1/nomadnetwork/serving/pages?path=page%2Ffoo.mu',
+      );
+    });
+
+    it('surfaces delete failure codes', async () => {
+      const proxyDelete = window.electronAPI.reticulum.proxyDelete as ReturnType<typeof vi.fn>;
+      proxyDelete.mockResolvedValueOnce({ ok: false, error: 'invalid_page_path' });
+      await expect(deleteServingPage('../x.mu')).resolves.toEqual({
+        ok: false,
+        error: 'invalid_page_path',
+      });
+    });
+
+    it('bails without calling the proxy when the sidecar is down', async () => {
+      vi.mocked(isReticulumSidecarRunning).mockResolvedValue(false);
+      const expected = { ok: false, error: 'sidecar_not_running' };
+
+      await expect(getServingPageRaw('index.mu')).resolves.toEqual(expected);
+      await expect(putServingPage('index.mu', 'x')).resolves.toEqual(expected);
+      await expect(deleteServingPage('index.mu')).resolves.toEqual(expected);
+
+      expect(window.electronAPI.reticulum.proxyGet).not.toHaveBeenCalled();
+      expect(window.electronAPI.reticulum.proxyPut).not.toHaveBeenCalled();
+      expect(window.electronAPI.reticulum.proxyDelete).not.toHaveBeenCalled();
+    });
+
+    it('normalizes thrown proxy errors for each page operation', async () => {
+      const proxyGet = window.electronAPI.reticulum.proxyGet as ReturnType<typeof vi.fn>;
+      const proxyPut = window.electronAPI.reticulum.proxyPut as ReturnType<typeof vi.fn>;
+      const proxyDelete = window.electronAPI.reticulum.proxyDelete as ReturnType<typeof vi.fn>;
+      proxyGet.mockRejectedValueOnce(new Error('read boom'));
+      proxyPut.mockRejectedValueOnce(new Error('write boom'));
+      proxyDelete.mockRejectedValueOnce(new Error('delete boom'));
+
+      await expect(getServingPageRaw('index.mu')).resolves.toEqual({
+        ok: false,
+        error: 'read boom',
+      });
+      await expect(putServingPage('index.mu', 'x')).resolves.toEqual({
+        ok: false,
+        error: 'write boom',
+      });
+      await expect(deleteServingPage('index.mu')).resolves.toEqual({
+        ok: false,
+        error: 'delete boom',
+      });
+    });
   });
 
   it('normalizes thrown proxy errors', async () => {

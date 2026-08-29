@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "オンにすると、新しいRRCルームメッセージは未読になり、チャンネルサウンドを再生できます。IRCスタイルのアラートをオフにする：ダイレクトメッセージと@メンションのみ。",
     "shareMyLocation": "現在位置を共有",
     "shareMyLocationOffInfo": "位置情報の共有がオフになっています。ホストのGPSリフレッシュとメッシュ送信は無効になっています。自動更新を使用するか、ポジションを送信するには、上の「現在地を共有」を有効にします。",
-    "shareMyLocationHint": "有効にすると、このアプリはこのコンピューター上の現在地を検索し、Meshtastic、MeshCore、またはReticulum （チャット共有、ラジオプッシュ、RMAP ）を介して送信する場合があります。無効にすると、ホストのGPSルックアップとアプリの送信がオフになります。静的座標はローカルマップでのみ機能します。独自のGPSを備えたラジオは、依然としてあなたの位置をローカルに表示している可能性があります。ラジオまたはモジュールの設定を調整するまで、デバイスファームウェアがブロードキャストされることがあります。"
+    "shareMyLocationHint": "有効にすると、このアプリはこのコンピューター上の現在地を検索し、Meshtastic、MeshCore、またはReticulum （チャット共有、ラジオプッシュ、RMAP ）を介して送信する場合があります。無効にすると、ホストのGPSルックアップとアプリの送信がオフになります。静的座標はローカルマップでのみ機能します。独自のGPSを備えたラジオは、依然としてあなたの位置をローカルに表示している可能性があります。ラジオまたはモジュールの設定を調整するまで、デバイスファームウェアがブロードキャストされることがあります。",
+    "reticulumBlocklist": {
+      "description": "ブロックされた送信者は、LXMFメッセージが受信トレイに届く前にドロップされます。リストをエクスポートして別のインストールに移動するか、リストをインポートして一度に多くの送信者をブロックします。",
+      "exportButton": "ブロックリストをエクスポート",
+      "exportAria": "ブロックされた連絡先をエクスポート",
+      "importButton": "ブロックリストをインポート",
+      "importAria": "ブロックされた連絡先をインポート",
+      "exportOk": "エクスポートされた{{count}}ブロックされた連絡先",
+      "exportEmpty": "エクスポートするブロックされた連絡先はありません。",
+      "exportFailed": "ブロックリストをエクスポートできませんでした。",
+      "importOk": "インポートされた{{imported}}ブロックされた連絡先（ {{skipped}}はスキップされました）",
+      "importFailed": "ブロックリストをインポートできませんでした。",
+      "unblockAria": "{{hash}}のブロックを解除",
+      "unblockFailed": "その連絡先のブロックを解除できませんでした。",
+      "empty": "ブロックされた連絡先",
+      "title": "ブロックした連絡先"
+    }
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -1134,7 +1150,10 @@
         "blePeer": "シード ピア アドレスを使用する BLE ピア メッシュ。",
         "generic": "Reticulumネットワークインターフェース。",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "このマシン上のルーター経由の I2P バックボーン。SAM アプリケーションブリッジ（127.0.0.1:7656）を有効にしてください — HTTP/HTTPS の I2PTunnel プロキシ（4444/4445）ではありません。SAM を有効にしたあと I2P を再起動してブリッジが待ち受けるようにし、このインターフェースがダウンのままなら Reticulum スタックも再起動してください。"
+        "i2p": "このマシン上のルーター経由の I2P バックボーン。SAM アプリケーションブリッジ（127.0.0.1:7656）を有効にしてください — HTTP/HTTPS の I2PTunnel プロキシ（4444/4445）ではありません。SAM を有効にしたあと I2P を再起動してブリッジが待ち受けるようにし、このインターフェースがダウンのままなら Reticulum スタックも再起動してください。",
+        "serial": "TNC、モデム、または他のホストへの一般的なシリアルリンク。遠端に一致するようにラインパラメータを設定します。",
+        "ax25kiss": "KISS TNCを介したAX.25パケットラジオ。このステーションを識別するコールサインとSSID （ 0 -15 ）が必要です。",
+        "local": "このマシン上の共有インスタンスソケット。他のローカルツール（ rnsd、Nomad Network、rnsh ）は、このスタックを介してこのスタックに接続できます。ソケットパスはこのインターフェイスの名前から派生しているため、名前を変更すると、他のツールが使用しなければならないアドレスが変更されます。"
       },
       "rfProfile": {
         "coordinated": "地域連携",
@@ -1258,10 +1277,37 @@
       "effectiveModeBadge": "有効期限： {{mode}}",
       "effectiveModeAria": "有効なランタイムモード{{mode}}。設定モードは、Reticulumが実行しているモードとは異なります。",
       "effectiveModeTooltip": "Reticulumは、ignore_config_warningsが設定されていない限り、DISCOVERABLEにはゲートウェイ、内部、またはアクセスポイントが必要なため、この検出可能なインターフェイスをアクセスポイント（または別の許可されたモード）に書き換えました。フル（または設定モード）が有効になるようにオプトアウトするmesh-clientスタンプの後、スタックを再起動します。",
-      "flowControlBleHint": "Bluetoothでは、ラジオはCMD_READYを送信しないことがよくあります。Mesh-Clientは依然としてTXをペーシングします（READYを短時間待ってから続行します）。そのため、フロー制御はキューをフリーズさせることなく過負荷を軽減します。"
+      "flowControlBleHint": "Bluetoothでは、ラジオはCMD_READYを送信しないことがよくあります。Mesh-Clientは依然としてTXをペーシングします（READYを短時間待ってから続行します）。そのため、フロー制御はキューをフリーズさせることなく過負荷を軽減します。",
+      "advancedFields": "詳細設定",
+      "field": {
+        "port": "ポート",
+        "speed": "速度（ボー）",
+        "databits": "データビット",
+        "parity": "パリティ",
+        "stopbits": "ストップビット",
+        "callsign": "識別信号",
+        "ssid": "SSID",
+        "flow_control": "フロー制御",
+        "preamble": "プリアンブル（ミリ秒）",
+        "txtail": "TXテール（ミリ秒）",
+        "persistence": "永続 化",
+        "slottime": "スロットタイム（ミリ秒）"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "0",
+          "E": "Even",
+          "O": "奇数"
+        }
+      },
+      "fieldRequired": "これは必須欄です.",
+      "fieldNotANumber": "整数（数字のみ）を入力してください。",
+      "fieldOutOfRange": "値が許容範囲外です。",
+      "fieldTooLong": "値が長すぎます。",
+      "fieldInvalidOption": "サポートされていない値です。"
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "ホップ",
       "actions": "アクション",
       "path": "パス",
       "probe": "プローブ"
@@ -1451,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}、{{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
-    "bluetoothId": "Bluetooth ID"
+    "bluetoothId": "Bluetooth ID",
+    "reticulumAutoResendOnAnnounce": "ピアがアナウンスしたときに失敗したメッセージを再試行する"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -2787,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "スキャン/インポート",
       "hint": "連絡先、Columba lxma:// カード、または暗号化された LXMF 紙メッセージの QR をスキャンまたは貼り付けます。"
+    },
+    "reticulumPathTable": {
+      "title": "パステーブル",
+      "description": "パステーブルをクリアすると、キャッシュされたすべてのルートが廃棄されます。ルートは新しいアナウンスが到着すると再学習されるため、ピアへの最初のメッセージに時間がかかる場合があります。",
+      "clear": "パステーブルをクリア",
+      "clearing": "消去中...",
+      "confirmTitle": "パステーブルをクリアしますか？",
+      "confirmBody": "キャッシュされたルートはすべて廃棄されます。ルートは新しいアナウンスから再構築されます。",
+      "clearOk": "パステーブルがクリアされました（ {{count}}ルートが削除されました）",
+      "clearFailed": "パステーブルをクリアできませんでした。",
+      "clearAria": "パステーブルをクリア",
+      "confirmAction": "クリア"
     }
   },
   "nodeDetailModal": {
@@ -3225,7 +3284,50 @@
       "noPages": "ページはまだありません。選択したフォルダー（ index.muなど）に.muファイルを追加します。",
       "contentSourceNotFromPicker": "適用する前に、[フォルダーの選択]でフォルダーを選択します。",
       "contentSourceNone": "フォルダーが選択されていません",
-      "contentSourceRequired": "Nomadホスティングを開始する前に、ページフォルダを選択します。"
+      "contentSourceRequired": "Nomadホスティングを開始する前に、ページフォルダを選択します。",
+      "newPage": "新規固定ページ",
+      "newPageName": "ページファイル名（.muで終わる必要があります）",
+      "invalidPageName": "..または絶対パスなしで、.muで終わるファイル名を入力します。",
+      "edit": "編集",
+      "editPage": "{{path}}を編集",
+      "delete": "削除",
+      "deletePage": "{{path}}を削除",
+      "deleteConfirm": "このページを削除しますか？これにより、提供されたフォルダからファイルが削除されます。",
+      "deleteConfirmAria": "このページの削除を確認する",
+      "deleteError": "ページを削除できませんでした。",
+      "openError": "編集用のページを開けませんでした。",
+      "editorTitle": "Micronページの編集",
+      "editorAria": "Micronページソース",
+      "editorPreview": "プレビュー",
+      "toolbarAria": "Micron書式設定アクション",
+      "toolbar": {
+        "bold": "太字",
+        "italic": "イタリック",
+        "underline": "アンダーライン",
+        "h1": "見出し1",
+        "h2": "見出し2",
+        "h3": "見出し3",
+        "alignLeft": "左寄せ",
+        "alignCenter": "センター",
+        "alignRight": "右寄せ",
+        "divider": "分割機",
+        "link": "リンク"
+      },
+      "linkTargetPrompt": "リンクターゲット（ページパスまたは宛先ハッシュ）",
+      "save": "保存",
+      "saveError": "ページを保存できませんでした。",
+      "unsaved": "未保存の変更",
+      "discard": "変更を破棄",
+      "discardConfirm": "このページには保存されていない変更があります。",
+      "discardConfirmAria": "保存されていない変更を破棄して閉じる",
+      "close": "エディターを閉じる",
+      "closeBackdropAria": "Micronページエディターを閉じる",
+      "pageTooLarge": "そのページは大きすぎてホストできません（ 512 KBまで）。",
+      "pageNotFound": "そのページは、提供されたフォルダにはもう存在しません。",
+      "invalidPagePath": "そのページパスは許可されていません。",
+      "pageIoError": "ディスク上のページを読み書きできませんでした。",
+      "pageNotUtf8": "そのページは有効なUTF -8テキストではありません。",
+      "pageWriteFailed": "ページを書き込めませんでした。"
     },
     "sortLastHeard": "最後に聞いた",
     "sortHops": "ホップ",
@@ -5042,7 +5144,14 @@
     "jumpToLatest": "最新へジャンプ",
     "stackNotReady": "Reticulum スタックはまだ準備ができていません。接続されるまで待ってから再試行してください。",
     "sidecarNotRunning": "Reticulum サイドカーが実行されていません。接続でスタックを開始してから、もう一度お試しください。",
-    "whoReplyMissing": "{{room}}のハブからのメンバーリストがありません（返信はリンクサイズを超える場合があります）。名前は、参加者またはチャットとして表示されます。"
+    "whoReplyMissing": "{{room}}のハブからのメンバーリストがありません（返信はリンクサイズを超える場合があります）。名前は、参加者またはチャットとして表示されます。",
+    "openNomadPage": "Nomad ページ {{address}} を開く",
+    "openDm": "{{address}}とのダイレクトメッセージを開く",
+    "openReticulumAddress": "Reticulum アドレス {{address}} を開く",
+    "addressChoiceTitle": "Reticulum アドレスを開く",
+    "addressChoiceMessage": "{{address}} は Nomad ページかピアの可能性があります。どちらを開きますか？",
+    "addressChoiceNomad": "Nomad ページ",
+    "addressChoiceDm": "ダイレクトメッセージ"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5387,7 +5496,8 @@
     "sessionRowAria": "{{peer}}との{{app}}ゲーム",
     "apps": {
       "ttt": "三目並べ",
-      "chess": "チェス"
+      "chess": "チェス",
+      "four_in_a_row": "四目並べ"
     },
     "status": {
       "pending": "保留",
@@ -5439,6 +5549,19 @@
       "boardAria": "Tic - Tac - Toeボード",
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "fourInARow": {
+      "youWon": "勝ったぁ！",
+      "opponentWon": "対戦相手が勝利した。",
+      "draw": "引け",
+      "yourTurn": "あなたのターン",
+      "opponentTurn": "相手のターン！",
+      "yourMarker": "あなたは{{marker}}です",
+      "moveCount": "{{count}}ムーブ",
+      "boardAria": "四目並べのボード",
+      "columnAria": "列 {{column}}、下から上: {{contents}}。ここに落とす",
+      "columnFullAria": "列 {{column}}、下から上: {{contents}}。満杯",
+      "columnEmptyContents": "空"
     },
     "chess": {
       "youWon": "勝ったぁ！",

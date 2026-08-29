@@ -41,6 +41,35 @@ function destHashMatchesPeer(storedHash: string, targetNorm: string): boolean {
   return storedNorm.length === 32 && targetNorm.length === 32 && storedNorm === targetNorm;
 }
 
+/**
+ * Failed outbound LXMF messages addressed to a destination hash, oldest first.
+ *
+ * Used by announce-triggered auto-resend: an announce means a path may exist again,
+ * so previously failed sends to that peer are worth one more attempt.
+ */
+export function findFailedReticulumOutboundForDest(
+  identityId: IdentityId,
+  destinationHash: string,
+): { id: string; to: number; payload: string; timestamp: number }[] {
+  const targetNorm = normalizeDestHash(destinationHash);
+  if (!targetNorm) return [];
+  const bucket = useMessageStore.getState().messages[identityId] ?? {};
+  const matches: { id: string; to: number; payload: string; timestamp: number }[] = [];
+  for (const msg of Object.values(bucket)) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
+    if (msg.status !== 'failed' || msg.to == null) continue;
+    const destHash = resolveReticulumOutboundDestHash(msg.to);
+    if (!destHash || !destHashMatchesPeer(destHash, targetNorm)) continue;
+    matches.push({
+      id: msg.id,
+      to: msg.to,
+      payload: msg.payload,
+      timestamp: msg.timestamp,
+    });
+  }
+  return matches.sort((a, b) => a.timestamp - b.timestamp);
+}
+
 /** Mark outbound LXMF rows failed (store + SQLite) when direct link delivery times out. */
 export function failReticulumSendingOutboundToDestHash(
   identityId: IdentityId,

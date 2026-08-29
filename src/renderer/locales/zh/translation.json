@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "开启时，任何新的RRC房间消息都会标记为未读，并且可以播放频道声音。关闭IRC样式警报：仅限直接消息和@提及。",
     "shareMyLocation": "分享我的位置",
     "shareMyLocationOffInfo": "位置共享已关闭—主机GPS刷新和网格发送已禁用。启用在上方分享我的位置，以使用自动刷新或发送您的位置。",
-    "shareMyLocationHint": "启用后，此应用可能会在此计算机上查找您的位置，并通过Meshtastic、MeshCore或Reticulum （聊天共享、无线电推送、RMAP ）发送。禁用后，主机GPS查找和应用程序发送将关闭；静态坐标仍然仅适用于您的本地地图。带有GPS的收音机可能仍会在本地显示您的位置。在您调整收音机或模块设置之前，设备固件仍可能进行广播。"
+    "shareMyLocationHint": "启用后，此应用可能会在此计算机上查找您的位置，并通过Meshtastic、MeshCore或Reticulum （聊天共享、无线电推送、RMAP ）发送。禁用后，主机GPS查找和应用程序发送将关闭；静态坐标仍然仅适用于您的本地地图。带有GPS的收音机可能仍会在本地显示您的位置。在您调整收音机或模块设置之前，设备固件仍可能进行广播。",
+    "reticulumBlocklist": {
+      "description": "被阻止的发件人将在其LXMF消息到达您的收件箱之前被删除。导出列表以将其移动到另一个安装，或导入列表以一次阻止多个发件人。",
+      "exportButton": "导出阻止列表",
+      "exportAria": "导出被阻止的联系人",
+      "importButton": "导入阻止列表",
+      "importAria": "导入被阻止的联系人",
+      "exportOk": "已导出{{count}}个被阻止的联系人",
+      "exportEmpty": "没有要导出的被阻止的联系人。",
+      "exportFailed": "无法导出阻止列表。",
+      "importOk": "已导入{{imported}}封锁的联系人（已跳过{{skipped}} ）",
+      "importFailed": "无法导入阻止列表。",
+      "unblockAria": "取消屏蔽{{hash}}",
+      "unblockFailed": "无法取消阻止该联系人。",
+      "empty": "已阻止的联系人",
+      "title": "已屏蔽的联系人"
+    }
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -1134,7 +1150,10 @@
         "blePeer": "使用种子对等地址的 BLE 对等网格。",
         "generic": "Reticulum 网络接口。",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "通过此机器上的路由器的I2P骨干网。启用SAM应用程序桥(127.0.0.1: 7656) —而不是HTTP/HTTPS I2P隧道代理(4444/4445)。在启用SAM后重新启动I2P ，以便桥接器侦听，然后如果此接口保持关闭状态，则重新启动Reticulum堆栈。"
+        "i2p": "通过此机器上的路由器的I2P骨干网。启用SAM应用程序桥(127.0.0.1: 7656) —而不是HTTP/HTTPS I2P隧道代理(4444/4445)。在启用SAM后重新启动I2P ，以便桥接器侦听，然后如果此接口保持关闭状态，则重新启动Reticulum堆栈。",
+        "serial": "通过有线连接到TNC、调制解调器或其他主机的通用串行链路。设置线路参数以匹配远端。",
+        "ax25kiss": "通过KISS TNC的AX.25分组无线电。需要您的呼号以及标识此电台的SSID (0-15)。",
+        "local": "此机器上的共享实例套接字。其他本地工具（ rnsd、Nomad Network、rnsh ）可以通过它连接到此堆栈。套接字路径派生自此接口的名称，因此重命名它会更改其他工具必须使用的地址。"
       },
       "rfProfile": {
         "coordinated": "区域协调",
@@ -1258,10 +1277,37 @@
       "effectiveModeBadge": "有效期： {{mode}}",
       "effectiveModeAria": "有效运行时模式{{mode}}。配置的模式与Reticulum正在运行的模式不同。",
       "effectiveModeTooltip": "Reticulum将此可发现接口重写到接入点（或其他允许的模式） ，因为除非设置了ignore_config_warnings ，否则DISCOVERABLE需要网关、内部或接入点。在选择退出的mesh-client戳后重新启动堆栈，以便完整（或您配置的模式）生效。",
-      "flowControlBleHint": "在蓝牙上，收音机通常不会发送CMD_READY。Mesh-Client仍然步进TX （短暂等待就绪，然后继续） ，因此流量控制可以在不冻结队列的情况下减少过载。"
+      "flowControlBleHint": "在蓝牙上，收音机通常不会发送CMD_READY。Mesh-Client仍然步进TX （短暂等待就绪，然后继续） ，因此流量控制可以在不冻结队列的情况下减少过载。",
+      "advancedFields": "高级设置",
+      "field": {
+        "port": "端口",
+        "speed": "速度（波特率）",
+        "databits": "数据位",
+        "parity": "奇偶性",
+        "stopbits": "停止位",
+        "callsign": "呼号",
+        "ssid": "SSID",
+        "flow_control": "流量控制",
+        "preamble": "前言（毫秒）",
+        "txtail": "TX尾部(ms)",
+        "persistence": "一致性",
+        "slottime": "时隙时间（毫秒）"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "无",
+          "E": "偶數",
+          "O": "奇数"
+        }
+      },
+      "fieldRequired": "此字段为必填项。",
+      "fieldNotANumber": "输入整数（仅限数字）。",
+      "fieldOutOfRange": "值超出允许的范围。",
+      "fieldTooLong": "此值太长。",
+      "fieldInvalidOption": "不支持的V值。"
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "跳数",
       "actions": "动作",
       "path": "路径",
       "probe": "探头"
@@ -1451,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}} ， {{rssi}} dBm",
     "bluetoothMac": "蓝牙MAC",
-    "bluetoothId": "蓝牙编号："
+    "bluetoothId": "蓝牙编号：",
+    "reticulumAutoResendOnAnnounce": "当对等体宣布时重试失败的消息"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -2787,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "扫描/导入",
       "hint": "扫描或粘贴 QR 码以查找联系人、Columba lxma:// 卡或加密的 LXMF 纸质消息。"
+    },
+    "reticulumPathTable": {
+      "title": "路径表",
+      "description": "清除路径表将丢弃每个缓存路由。路由会在新公告到达时重新学习，因此发送给同行的第一条消息可能需要更长时间。",
+      "clear": "清除路径表",
+      "clearing": "清理中...",
+      "confirmTitle": "清除路径表？",
+      "confirmBody": "每个缓存的路由都会被丢弃。根据新公告重建路由。",
+      "clearOk": "路径表已清除（ {{count}}路由已丢弃）",
+      "clearFailed": "无法清除路径表。",
+      "clearAria": "清除路径表",
+      "confirmAction": "清除"
     }
   },
   "nodeDetailModal": {
@@ -3225,7 +3284,50 @@
       "noPages": "还没有页面。将.mu文件添加到所选文件夹（例如index.mu ）。",
       "contentSourceNotFromPicker": "在应用文件夹之前，选择带有“选择文件夹”的文件夹。",
       "contentSourceNone": "没有选择文件夹",
-      "contentSourceRequired": "在开始Nomad托管之前，请选择一个页面文件夹。"
+      "contentSourceRequired": "在开始Nomad托管之前，请选择一个页面文件夹。",
+      "newPage": "新页",
+      "newPageName": "页面文件名（必须以.mu结尾）",
+      "invalidPageName": "输入以.mu结尾的文件名，不带..或绝对路径。",
+      "edit": "编辑",
+      "editPage": "编辑{{path}}",
+      "delete": "删除",
+      "deletePage": "删除{{path}}",
+      "deleteConfirm": "删除此页面？这将从提供的文件夹中删除文件。",
+      "deleteConfirmAria": "确认删除此页面",
+      "deleteError": "无法删除页面。",
+      "openError": "无法打开页面进行编辑。",
+      "editorTitle": "编辑Micron页面",
+      "editorAria": "Micron页面来源",
+      "editorPreview": "制作预览",
+      "toolbarAria": "Micron格式化操作",
+      "toolbar": {
+        "bold": "加粗",
+        "italic": "斜体",
+        "underline": "下划线",
+        "h1": "标题 1",
+        "h2": "标题 2",
+        "h3": "标题 3",
+        "alignLeft": "左对齐",
+        "alignCenter": "居中",
+        "alignRight": "右对齐",
+        "divider": "分隔线",
+        "link": "链接"
+      },
+      "linkTargetPrompt": "链接目标（页面路径或目标哈希）",
+      "save": "保存",
+      "saveError": "无法保存页面。",
+      "unsaved": "未保存的更改",
+      "discard": "放弃更改",
+      "discardConfirm": "此页面有未保存的更改。",
+      "discardConfirmAria": "丢弃修改并关闭",
+      "close": "关闭编辑器",
+      "closeBackdropAria": "关闭 Micron 页面编辑器",
+      "pageTooLarge": "该页面太大，无法出租（限制为512 KiB ）。",
+      "pageNotFound": "该页面不再存在于提供的文件夹中。",
+      "invalidPagePath": "不允许使用该页面路径。",
+      "pageIoError": "无法读取或写入磁盘上的页面。",
+      "pageNotUtf8": "该页面不是有效的UTF-8文本。",
+      "pageWriteFailed": "无法写入页面。"
     },
     "sortLastHeard": "上次听到",
     "sortHops": "跳数",
@@ -4497,7 +4599,7 @@
     "rssiTitle": "RSSI分发",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "跳数分布",
-    "hopAxis": "链路数目"
+    "hopAxis": "跳数"
   },
   "roleInfo": {
     "placeholderDash": "-",
@@ -5042,7 +5144,14 @@
     "jumpToLatest": "跳到最新",
     "stackNotReady": "Reticulum 堆栈尚未就绪。请等到已连接后再重试。",
     "sidecarNotRunning": "Reticulum sidecar 未运行。请在 Connection 启动协议栈，然后重试。",
-    "whoReplyMissing": "中心没有{{room}}的成员列表（回复可能超过链接大小）。姓名将显示为人员加入或聊天。"
+    "whoReplyMissing": "中心没有{{room}}的成员列表（回复可能超过链接大小）。姓名将显示为人员加入或聊天。",
+    "openNomadPage": "打开 Nomad 页面 {{address}}",
+    "openDm": "打开与{{address}}的直接消息",
+    "openReticulumAddress": "打开 Reticulum 地址 {{address}}",
+    "addressChoiceTitle": "打开 Reticulum 地址",
+    "addressChoiceMessage": "{{address}} 可能是 Nomad 页面，也可能是一个节点。要打开哪一个？",
+    "addressChoiceNomad": "Nomad 页面",
+    "addressChoiceDm": "私信"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5387,7 +5496,8 @@
     "sessionRowAria": "{{app}}游戏与{{peer}}",
     "apps": {
       "ttt": "井字游戏",
-      "chess": "棋格"
+      "chess": "棋格",
+      "four_in_a_row": "四子棋"
     },
     "status": {
       "pending": "待定",
@@ -5439,6 +5549,19 @@
       "boardAria": "Tic-Tac-Toe板",
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "fourInARow": {
+      "youWon": "您赢了 ！",
+      "opponentWon": "对手获胜。",
+      "draw": "单次抽奖",
+      "yourTurn": "轮到你了",
+      "opponentTurn": "对手的回合",
+      "yourMarker": "您是{{marker}}",
+      "moveCount": "{{count}}步",
+      "boardAria": "四子棋棋盘",
+      "columnAria": "第 {{column}} 列，从下到上：{{contents}}。落子于此",
+      "columnFullAria": "第 {{column}} 列，从下到上：{{contents}}。已满",
+      "columnEmptyContents": "空"
     },
     "chess": {
       "youWon": "您赢了 ！",

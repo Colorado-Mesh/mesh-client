@@ -784,6 +784,217 @@ describe('ReticulumInterfacesPanel', () => {
     });
   });
 
+  describe('catalog-driven interface types', () => {
+    const serialPorts: ReticulumSerialPortOption[] = [
+      { path: '/dev/ttyUSB0', label: 'USB Serial' },
+    ];
+
+    async function selectAddType(user: ReturnType<typeof userEvent.setup>, type: string) {
+      await user.selectOptions(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.type'),
+        type,
+      );
+    }
+
+    const clickAdd = (user: ReturnType<typeof userEvent.setup>) =>
+      user.click(screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.add' }));
+
+    it('offers the three new types in the type select', () => {
+      render(<ReticulumInterfacesPanel {...defaultProps} />);
+      const select = screen.getByLabelText('connectionPanel.reticulumInterfaces.type');
+      const values = within(select)
+        .getAllByRole('option')
+        .map((option) => (option as HTMLOptionElement).value);
+      expect(values).toEqual(expect.arrayContaining(['serial', 'ax25kiss', 'local']));
+    });
+
+    it('posts a serial interface with its device path and line params', async () => {
+      const user = userEvent.setup();
+      render(<ReticulumInterfacesPanel {...defaultProps} serialPorts={serialPorts} />);
+
+      await selectAddType(user, 'serial');
+      await user.selectOptions(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.port'),
+        '/dev/ttyUSB0',
+      );
+      await clickAdd(user);
+
+      await waitFor(() => {
+        expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith(
+          '/api/v1/interfaces',
+          expect.objectContaining({
+            type: 'serial',
+            serial_port: '/dev/ttyUSB0',
+            // Unbound catalog fields ride in extra_config, defaults included.
+            extra_config: expect.objectContaining({ speed: '9600', parity: 'N' }),
+          }),
+        );
+      });
+    });
+
+    it('posts an ax25kiss interface with callsign and ssid', async () => {
+      const user = userEvent.setup();
+      render(<ReticulumInterfacesPanel {...defaultProps} serialPorts={serialPorts} />);
+
+      await selectAddType(user, 'ax25kiss');
+      await user.selectOptions(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.port'),
+        '/dev/ttyUSB0',
+      );
+      await user.type(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.callsign'),
+        'KD5IHC',
+      );
+      await user.type(screen.getByLabelText('connectionPanel.reticulumInterfaces.field.ssid'), '7');
+      await clickAdd(user);
+
+      await waitFor(() => {
+        expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith(
+          '/api/v1/interfaces',
+          expect.objectContaining({
+            type: 'ax25kiss',
+            serial_port: '/dev/ttyUSB0',
+            callsign: 'KD5IHC',
+            extra_config: expect.objectContaining({ ssid: '7' }),
+          }),
+        );
+      });
+    });
+
+    it('blocks an ax25kiss add when ssid is out of range', async () => {
+      const user = userEvent.setup();
+      render(<ReticulumInterfacesPanel {...defaultProps} serialPorts={serialPorts} />);
+
+      await selectAddType(user, 'ax25kiss');
+      await user.selectOptions(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.port'),
+        '/dev/ttyUSB0',
+      );
+      await user.type(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.callsign'),
+        'KD5IHC',
+      );
+      await user.type(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.ssid'),
+        '16',
+      );
+      await clickAdd(user);
+
+      expect(window.electronAPI.reticulum.proxyPost).not.toHaveBeenCalledWith(
+        '/api/v1/interfaces',
+        expect.objectContaining({ type: 'ax25kiss' }),
+      );
+    });
+
+    it('blocks an ax25kiss add when the callsign is missing', async () => {
+      const user = userEvent.setup();
+      render(<ReticulumInterfacesPanel {...defaultProps} serialPorts={serialPorts} />);
+
+      await selectAddType(user, 'ax25kiss');
+      await user.selectOptions(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.port'),
+        '/dev/ttyUSB0',
+      );
+      await user.type(screen.getByLabelText('connectionPanel.reticulumInterfaces.field.ssid'), '0');
+      await clickAdd(user);
+
+      expect(window.electronAPI.reticulum.proxyPost).not.toHaveBeenCalledWith(
+        '/api/v1/interfaces',
+        expect.objectContaining({ type: 'ax25kiss' }),
+      );
+    });
+
+    it('posts a local interface with a numeric port rather than a device path', async () => {
+      const user = userEvent.setup();
+      render(<ReticulumInterfacesPanel {...defaultProps} />);
+
+      await selectAddType(user, 'local');
+      await clickAdd(user);
+
+      await waitFor(() => {
+        expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith(
+          '/api/v1/interfaces',
+          expect.objectContaining({ type: 'local', port: 37428 }),
+        );
+      });
+      const [, body] = (window.electronAPI.reticulum.proxyPost as ReturnType<typeof vi.fn>).mock
+        .calls[0] as [string, Record<string, unknown>];
+      expect(body.serial_port).toBeUndefined();
+    });
+
+    it('hides advanced line params behind a disclosure', async () => {
+      const user = userEvent.setup();
+      render(<ReticulumInterfacesPanel {...defaultProps} serialPorts={serialPorts} />);
+
+      await selectAddType(user, 'serial');
+      expect(
+        screen.getByText('connectionPanel.reticulumInterfaces.advancedFields'),
+      ).toBeInTheDocument();
+      // Speed stays visible; the timing/line params collapse.
+      expect(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.speed'),
+      ).toBeInTheDocument();
+    });
+
+    it('seeds and saves the edit patch for an ax25kiss row', async () => {
+      const user = userEvent.setup();
+      const proxyPut = vi.fn().mockResolvedValue({ ok: true });
+      window.electronAPI.reticulum.proxyPut = proxyPut;
+
+      render(
+        <ReticulumInterfacesPanel
+          {...defaultProps}
+          serialPorts={serialPorts}
+          interfaces={[
+            {
+              id: 'tnc',
+              name: 'Packet TNC',
+              type: 'ax25kiss',
+              enabled: true,
+              status: 'up',
+              serial_port: '/dev/ttyUSB0',
+              callsign: 'KD5IHC',
+              extra_config: { ssid: '3' },
+            },
+          ]}
+        />,
+      );
+
+      await user.click(
+        screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.edit' }),
+      );
+
+      const ssid = document.getElementById('edit-iface-tnc-ssid') as HTMLInputElement | null;
+      expect(ssid?.value).toBe('3');
+      await user.clear(ssid!);
+      await user.type(ssid!, '9');
+
+      await user.click(
+        screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.saveEdit' }),
+      );
+
+      await waitFor(() => {
+        expect(proxyPut).toHaveBeenCalledWith(
+          '/api/v1/interfaces/tnc',
+          expect.objectContaining({
+            type: 'ax25kiss',
+            callsign: 'KD5IHC',
+            extra_config: expect.objectContaining({ ssid: '9' }),
+          }),
+        );
+      });
+    });
+
+    it('has no axe violations on the serial field set', async () => {
+      const user = userEvent.setup();
+      const { container } = render(
+        <ReticulumInterfacesPanel {...defaultProps} serialPorts={serialPorts} />,
+      );
+      await selectAddType(user, 'ax25kiss');
+      expect(await axe(container)).toHaveNoViolations();
+    });
+  });
+
   it('resets recommended mode when switching add interface type', async () => {
     const user = userEvent.setup();
     render(<ReticulumInterfacesPanel {...defaultProps} />);

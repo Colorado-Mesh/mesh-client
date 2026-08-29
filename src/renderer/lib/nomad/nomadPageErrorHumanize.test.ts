@@ -39,6 +39,48 @@ describe('nomadPageErrorHumanize', () => {
     );
   });
 
+  describe('local page authoring codes', () => {
+    it('maps every code emitted by page_error_code in the sidecar', () => {
+      expect(nomadPageErrorI18nKey('page_too_large')).toBe('nomadNetwork.serving.pageTooLarge');
+      expect(nomadPageErrorI18nKey('page_not_found')).toBe('nomadNetwork.serving.pageNotFound');
+      expect(nomadPageErrorI18nKey('invalid_page_path')).toBe(
+        'nomadNetwork.serving.invalidPagePath',
+      );
+      expect(nomadPageErrorI18nKey('page_io_error')).toBe('nomadNetwork.serving.pageIoError');
+      expect(nomadPageErrorI18nKey('page_not_utf8')).toBe('nomadNetwork.serving.pageNotUtf8');
+      expect(nomadPageErrorI18nKey('page_write_failed')).toBe(
+        'nomadNetwork.serving.pageWriteFailed',
+      );
+    });
+
+    it('humanizes authoring failures rather than echoing the code', () => {
+      expect(humanizeNomadPageError('page_too_large', t)).toBe(
+        't:nomadNetwork.serving.pageTooLarge',
+      );
+      expect(humanizeNomadPageError('invalid_page_path', t)).toBe(
+        't:nomadNetwork.serving.invalidPagePath',
+      );
+    });
+
+    /**
+     * Guards the sidecar mapping in `nomad_server.rs::page_error_code`. If it is
+     * reverted, raw `NomadError` Display prose reaches the UI untranslated and
+     * these strings start appearing verbatim.
+     */
+    it('cannot translate raw NomadError prose, so the sidecar must send codes', () => {
+      for (const prose of [
+        'response too large (600000 > 524288)',
+        'not found: index.mu',
+        'path traversal rejected',
+        'invalid path: path too long',
+        'io error: permission denied',
+      ]) {
+        expect(nomadPageErrorI18nKey(prose)).toBeNull();
+        expect(humanizeNomadPageError(prose, t)).toBe(prose);
+      }
+    });
+  });
+
   it('humanizes known codes and passes through unknown', () => {
     expect(humanizeNomadPageError('path_timeout', t)).toBe('t:nomadNetwork.errors.pathTimeout');
     expect(humanizeNomadPageError('content_source_unavailable', t)).toBe(

@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "Wenn eingeschaltet, markiert jede neue RRC-Raumnachricht ungelesen und kann einen Kanalton wiedergeben. Deaktivieren Sie für Warnungen im IRC-Stil: nur Direktnachrichten und @Erwähnungen.",
     "shareMyLocation": "Meinen Standort teilen",
     "shareMyLocationOffInfo": "Die Standortfreigabe ist deaktiviert — Host-GPS-Aktualisierung und Mesh-Versand sind deaktiviert. Aktivieren Sie Meinen Standort oben teilen, um die automatische Aktualisierung zu verwenden oder Ihre Position zu senden.",
-    "shareMyLocationHint": "Wenn diese App aktiviert ist, kann sie Ihren Standort auf diesem Computer nachschlagen und ihn über Meshtastic, MeshCore oder Reticulum (Chatfreigabe, Radio-Push, RMAP) senden. Wenn diese Option deaktiviert ist, sind Host-GPS-Suchvorgänge und das Senden von Apps deaktiviert. Statische Koordinaten funktionieren immer noch nur für deine lokale Karte. Ein Radio mit eigenem GPS kann immer noch Ihre Position vor Ort anzeigen. Die Geräte-Firmware kann weiterhin senden, bis Sie die Radio- oder Moduleinstellungen anpassen."
+    "shareMyLocationHint": "Wenn diese App aktiviert ist, kann sie Ihren Standort auf diesem Computer nachschlagen und ihn über Meshtastic, MeshCore oder Reticulum (Chatfreigabe, Radio-Push, RMAP) senden. Wenn diese Option deaktiviert ist, sind Host-GPS-Suchvorgänge und das Senden von Apps deaktiviert. Statische Koordinaten funktionieren immer noch nur für deine lokale Karte. Ein Radio mit eigenem GPS kann immer noch Ihre Position vor Ort anzeigen. Die Geräte-Firmware kann weiterhin senden, bis Sie die Radio- oder Moduleinstellungen anpassen.",
+    "reticulumBlocklist": {
+      "description": "Blockierte Absender werden gelöscht, bevor ihre LXMF-Nachrichten Ihren Posteingang erreichen. Exportieren Sie die Liste, um sie in eine andere Installation zu verschieben, oder importieren Sie eine Liste, um viele Absender gleichzeitig zu blockieren.",
+      "exportButton": "Sperrliste exportieren",
+      "exportAria": "Gesperrte Kontakte exportieren",
+      "importButton": "Sperrliste importieren",
+      "importAria": "Blockierte Kontakte importieren",
+      "exportOk": "{{count}} gesperrte Kontakte exportiert",
+      "exportEmpty": "Es gibt keine gesperrten Kontakte zum Exportieren.",
+      "exportFailed": "Die Sperrliste konnte nicht exportiert werden.",
+      "importOk": "{{imported}} gesperrte Kontakte importiert ({{skipped}} übersprungen)",
+      "importFailed": "Die Sperrliste konnte nicht importiert werden.",
+      "unblockAria": "Entsperren {{hash}}",
+      "unblockFailed": "Dieser Kontakt konnte nicht entsperrt werden.",
+      "empty": "Blockierte Kontakte",
+      "title": "Blockierte Kontakte"
+    }
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -959,7 +975,7 @@
       "pinAcceptedNext": "PIN akzeptiert. Kopplung abgeschlossen. Drücken Sie auf „Verbinden“ und wählen Sie Ihr Gerät aus, um die Verbindung abzuschließen.",
       "connectionFailed": "Verbindung fehlgeschlagen"
     },
-    "cancelMqttConnect": "Stornieren",
+    "cancelMqttConnect": "Abbrechen",
     "ripplePresetConfirm": "Die Ripple-Voreinstellung verwendet gemeinsam genutzte Community-Anmeldeinformationen und deaktiviert die TLS-Zertifikatüberprüfung. Nur in einem vertrauenswürdigen Netzwerk verwenden. Fortfahren?",
     "meshcorePort": "Port",
     "channelPsksHelp": "AES-128 (16 Byte) oder AES-256 (32 Byte) Base64-Schlüssel, einer pro Zeile. Optionaler ChannelName=base64 nur für MQTT. LongFast-Standard wird immer versucht. Die Tasten auf der Registerkarte Radio werden automatisch synchronisiert, wenn das Radio angeschlossen ist.",
@@ -1132,7 +1148,10 @@
         "blePeer": "BLE-Peer-Mesh unter Verwendung von Seed-Peer-Adressen.",
         "generic": "Reticulum-Netzwerkschnittstelle.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "I2P-Backbone über einen Router auf dieser Maschine. Aktivieren SIE die SAM-Anwendungsbrücke (127.0.0.1:7656) — nicht HTTP/HTTPS-I2PTunnel-Proxys (4444/4445). Starten Sie I2P neu, nachdem Sie SAM aktiviert haben, damit die Brücke zuhört, und starten Sie dann den Reticulum-Stack neu, wenn diese Schnittstelle ausgeschaltet bleibt."
+        "i2p": "I2P-Backbone über einen Router auf dieser Maschine. Aktivieren SIE die SAM-Anwendungsbrücke (127.0.0.1:7656) — nicht HTTP/HTTPS-I2PTunnel-Proxys (4444/4445). Starten Sie I2P neu, nachdem Sie SAM aktiviert haben, damit die Brücke zuhört, und starten Sie dann den Reticulum-Stack neu, wenn diese Schnittstelle ausgeschaltet bleibt.",
+        "serial": "Generische serielle Verbindung zu einem TNC, Modem oder einem anderen Host über eine Leitung. Stellen Sie die Linienparameter so ein, dass sie mit dem fernen Ende übereinstimmen.",
+        "ax25kiss": "AX.25 Paketradio durch einen KISS TNC. Erfordert Ihr Rufzeichen und eine SSID (0-15), die diese Station identifiziert.",
+        "local": "Shared-Instance-Buchse auf dieser Maschine. Andere lokale Tools (rnsd, Nomad Network, rnsh) können über diesen Stack angeschlossen werden. Der Socket-Pfad leitet sich vom Namen dieser Schnittstelle ab, sodass die Umbenennung die Adresse ändert, die andere Tools verwenden müssen."
       },
       "rfProfile": {
         "coordinated": "Regional koordiniert",
@@ -1256,7 +1275,34 @@
       "effectiveModeBadge": "Gültig ab: {{mode}}",
       "effectiveModeAria": "Effektiver Laufzeitmodus {{mode}}. Der konfigurierte Modus unterscheidet sich von dem, was Reticulum ausführt.",
       "effectiveModeTooltip": "Reticulum hat diese auffindbare Schnittstelle zum Access Point (oder einem anderen zulässigen Modus) neu geschrieben, da auffindbar Gateway, Intern oder Access Point erfordert, es sei denn, ignore_config_warnings ist eingestellt. Starten Sie den Stack neu, nachdem der mesh-client abgestempelt hat, dass die Abmeldung wirksam wird, damit Full (oder Ihr konfigurierter Modus) wirksam wird.",
-      "flowControlBleHint": "Bei Bluetooth sendet das Funkgerät oft nie cmd_READY. Der Mesh-Client beschleunigt TX immer noch (wartet kurz auf READY und fährt dann fort), sodass die Flusssteuerung die Überlastung reduziert, ohne die Warteschlange einzufrieren."
+      "flowControlBleHint": "Bei Bluetooth sendet das Funkgerät oft nie cmd_READY. Der Mesh-Client beschleunigt TX immer noch (wartet kurz auf READY und fährt dann fort), sodass die Flusssteuerung die Überlastung reduziert, ohne die Warteschlange einzufrieren.",
+      "advancedFields": "Erweiterte Einstellungen",
+      "field": {
+        "port": "Port",
+        "speed": "Geschwindigkeit (Baud)",
+        "databits": "Datenbits",
+        "parity": "Parität",
+        "stopbits": "Stoppbits",
+        "callsign": "Rufzeichen",
+        "ssid": "SSID",
+        "flow_control": "Durchflusskontrolle",
+        "preamble": "Präambel (ms)",
+        "txtail": "TX Tail (ms)",
+        "persistence": "Beharrlichkeit sagt",
+        "slottime": "Zeit (ms):"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "None",
+          "E": "gerade",
+          "O": "Ungerade"
+        }
+      },
+      "fieldRequired": "Dieses Feld ist ein Pflichtfeld.",
+      "fieldNotANumber": "Geben Sie eine ganze Zahl ein (nur Ziffern).",
+      "fieldOutOfRange": "Der Wert liegt außerhalb des zulässigen Bereichs.",
+      "fieldTooLong": "Wert ist zu lang",
+      "fieldInvalidOption": "Wert ungültig"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1451,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
-    "bluetoothId": "Bluetooth-ID"
+    "bluetoothId": "Bluetooth-ID",
+    "reticulumAutoResendOnAnnounce": "Wiederholen Sie fehlgeschlagene Nachrichten, wenn ein Peer dies ankündigt"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",
@@ -2787,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "Scannen und Importieren",
       "hint": "Scannen oder fügen Sie einen QR für Kontakte, Columba lxma://-Karten oder verschlüsselte LXMF-Papiernachrichten ein."
+    },
+    "reticulumPathTable": {
+      "title": "Pfad-Tabelle",
+      "description": "Beim Löschen der Pfadtabelle werden alle zwischengespeicherten Routen gelöscht. Routen werden neu erlernt, wenn neue Ankündigungen eintreffen, sodass die erste Nachricht an einen Kollegen länger dauern kann.",
+      "clear": "Pfad-Tabelle löschen",
+      "clearing": "Reinigen…",
+      "confirmTitle": "Pfad-Tabelle löschen?",
+      "confirmBody": "Jede zwischengespeicherte Route wird gelöscht. Routen werden aus neuen Ansagen neu aufgebaut.",
+      "clearOk": "Pfad-Tabelle gelöscht ({{count}} Routen abgelegt)",
+      "clearFailed": "Die Pfad-Tabelle konnte nicht gelöscht werden.",
+      "clearAria": "Pfadtabelle löschen",
+      "confirmAction": "Löschen"
     }
   },
   "nodeDetailModal": {
@@ -3225,7 +3284,50 @@
       "noPages": "Noch keine Seiten. Fügen Sie dem ausgewählten Ordner .mu-Dateien hinzu (z. B. index.mu).",
       "contentSourceNotFromPicker": "Wählen Sie den Ordner mit Ordner auswählen aus, bevor Sie ihn anwenden.",
       "contentSourceNone": "Kein Ordner ausgewählt",
-      "contentSourceRequired": "Wählen Sie einen Seitenordner aus, bevor Sie mit dem Nomad-Hosting beginnen."
+      "contentSourceRequired": "Wählen Sie einen Seitenordner aus, bevor Sie mit dem Nomad-Hosting beginnen.",
+      "newPage": "Neue Seite",
+      "newPageName": "Seitendateiname (muss auf .mu enden)",
+      "invalidPageName": "Geben Sie einen Dateinamen ein, der auf .mu endet, ohne .. oder absolute Pfade.",
+      "edit": "Bearbeiten",
+      "editPage": "{{path}} bearbeiten",
+      "delete": "Löschen",
+      "deletePage": "{{path}} löschen",
+      "deleteConfirm": "Diese Seite löschen? Dadurch wird die Datei aus dem bedienten Ordner entfernt.",
+      "deleteConfirmAria": "Bestätigen Sie das Löschen dieser Seite",
+      "deleteError": "Seite:%1 konnte nicht gelöscht werden",
+      "openError": "Die Seite konnte nicht zum Bearbeiten geöffnet werden.",
+      "editorTitle": "Micron-Seite bearbeiten",
+      "editorAria": "Micron Seitenquelle",
+      "editorPreview": "Vorschau",
+      "toolbarAria": "Micron-Formatierungsaktionen",
+      "toolbar": {
+        "bold": "Mutig",
+        "italic": "Italic",
+        "underline": "Text unterstreichen",
+        "h1": "Überschrift 1",
+        "h2": "Überschrift 2",
+        "h3": "Überschrift 3",
+        "alignLeft": "Ausrichtung nach links",
+        "alignCenter": "Centrum",
+        "alignRight": "Ausrichtung nach rechts",
+        "divider": "Divider",
+        "link": "Link"
+      },
+      "linkTargetPrompt": "Linkziel (Seitenpfad oder Ziel-Hash)",
+      "save": "Speichern",
+      "saveError": "Seite: %1 konnte nicht gespeichert werden&#x0D;",
+      "unsaved": "Nicht gespeicherte Änderungen",
+      "discard": "Änderungen verwerfen",
+      "discardConfirm": "Diese Seite enthält nicht gespeicherte Änderungen.",
+      "discardConfirmAria": "Änderungen verwerfen und schließen",
+      "close": "Editmodus beenden",
+      "closeBackdropAria": "Schließen Sie den Micron-Seiteneditor",
+      "pageTooLarge": "Diese Seite ist zu groß, um Gastgeber zu sein (maximal 512 KiB).",
+      "pageNotFound": "Diese Seite existiert nicht mehr im bedienten Ordner.",
+      "invalidPagePath": "Dieser Seitenpfad ist nicht zulässig.",
+      "pageIoError": "Die Seite konnte nicht gelesen oder auf die Festplatte geschrieben werden.",
+      "pageNotUtf8": "Diese Seite ist kein gültiger UTF-8-Text.",
+      "pageWriteFailed": "Die Seite konnte nicht geschrieben werden."
     },
     "sortLastHeard": "Zuletzt gehört:",
     "sortHops": "Hops",
@@ -5042,7 +5144,14 @@
     "jumpToLatest": "Zum neuesten Stand springen",
     "stackNotReady": "Der Reticulum-Stack ist noch nicht bereit. Warten Sie, bis die Verbindung hergestellt ist, und versuchen Sie es erneut.",
     "sidecarNotRunning": "Reticulum-Sidecar läuft nicht. Starten Sie den Stack unter Verbindung und versuchen Sie es erneut.",
-    "whoReplyMissing": "Keine Mitgliederliste vom Hub für {{room}} (die Antwort darf die Linkgröße überschreiten). Namen werden angezeigt, wenn Personen beitreten oder chatten."
+    "whoReplyMissing": "Keine Mitgliederliste vom Hub für {{room}} (die Antwort darf die Linkgröße überschreiten). Namen werden angezeigt, wenn Personen beitreten oder chatten.",
+    "openNomadPage": "Öffnen Sie Nomad Seite {{address}}",
+    "openDm": "Direktnachricht mit {{address}} öffnen",
+    "openReticulumAddress": "Reticulum-Adresse {{address}} öffnen",
+    "addressChoiceTitle": "Reticulum-Adresse öffnen",
+    "addressChoiceMessage": "{{address}} könnte eine Nomad-Seite oder ein Peer sein. Was möchten Sie öffnen?",
+    "addressChoiceNomad": "Nomad-Seite",
+    "addressChoiceDm": "Direktnachricht"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5387,7 +5496,8 @@
     "sessionRowAria": "{{app}} Spiel mit {{peer}}",
     "apps": {
       "ttt": "Drei gewinnt",
-      "chess": "Schach"
+      "chess": "Schach",
+      "four_in_a_row": "Vier gewinnt"
     },
     "status": {
       "pending": "Ausstehend",
@@ -5439,6 +5549,19 @@
       "boardAria": "Tic-Tac-Toe-Brett",
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "fourInARow": {
+      "youWon": "Sie haben gewonnen!",
+      "opponentWon": "Gegner hat gewonnen.",
+      "draw": "Einzeichnen",
+      "yourTurn": "Du bist dran",
+      "opponentTurn": "GEGNERISCHER ZUG",
+      "yourMarker": "Du bist {{marker}}",
+      "moveCount": "{{count}} Züge",
+      "boardAria": "Vier-gewinnt-Brett",
+      "columnAria": "Spalte {{column}}, von unten nach oben: {{contents}}. Hier einwerfen",
+      "columnFullAria": "Spalte {{column}}, von unten nach oben: {{contents}}. Voll",
+      "columnEmptyContents": "leer"
     },
     "chess": {
       "youWon": "Sie haben gewonnen!",

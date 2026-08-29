@@ -87,6 +87,12 @@ impl PathRequestGate {
         self.last_warn_at.remove(&dest);
     }
 
+    fn clear_all(&mut self) {
+        self.backoff_until.clear();
+        self.fail_count.clear();
+        self.last_warn_at.clear();
+    }
+
     fn decide(&self, dest: [u8; 16], now: f64) -> PathRequestDecision {
         if self.fail_count.get(&dest).copied().unwrap_or(0) >= PATH_REQUEST_MAX_ATTEMPTS {
             return PathRequestDecision::MaxAttempts;
@@ -392,6 +398,16 @@ impl LxmfOutboundDriver {
             self.path_vias.remove(&dest);
             self.path_request_gate.clear_destination(dest);
         }
+    }
+
+    /// Drop the whole local path cache (after transport `DropPathTable`). Leaves the
+    /// cache empty rather than refreshing, so routes reappear only via new announces.
+    pub fn clear_all_paths(&mut self) {
+        self.route_hops.clear();
+        self.path_table_hashes.clear();
+        self.path_interfaces.clear();
+        self.path_vias.clear();
+        self.path_request_gate.clear_all();
     }
 
     pub fn has_path_to(&self, destination_hex: &str) -> bool {
@@ -2281,6 +2297,109 @@ mod tests {
             driver.path_vias.get(&dest_hash).map(String::as_str),
             Some("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
         );
+    }
+
+    /// Route fixture for a destination byte, wired so every path map gets populated.
+    fn seeded_route(byte: u8) -> PathTableRoute {
+        let hash = dest(byte);
+        PathTableRoute {
+            hash,
+            hops: 3,
+            hex_key: hex::encode(hash),
+            interface: Some("TTP_TCP".into()),
+            via: Some(hex::encode(dest(0xee))),
+        }
+    }
+
+    #[test]
+    fn clear_all_paths_empties_every_path_map() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let routes = [seeded_route(0xa1), seeded_route(0xa2), seeded_route(0xa3)];
+        driver.update_path_table(&routes);
+        for route in &routes {
+            assert!(driver.has_path_to(&route.hex_key));
+        }
+
+        driver.clear_all_paths();
+
+        for route in &routes {
+            assert!(
+                !driver.has_path_to(&route.hex_key),
+                "path must be gone after bulk clear"
+            );
+        }
+        assert!(driver.path_table_hashes.is_empty());
+        assert!(driver.route_hops.is_empty());
+        assert!(driver.path_interfaces.is_empty());
+        assert!(driver.path_vias.is_empty());
+    }
+
+    #[test]
+    fn clear_all_paths_on_empty_driver_is_noop() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        driver.clear_all_paths();
+        driver.clear_all_paths();
+        assert!(driver.path_table_hashes.is_empty());
+        assert!(!driver.has_path_to(&hex::encode(dest(0xa1))));
+    }
+
+    #[test]
+    fn clear_all_paths_leaves_driver_able_to_reinstall_routes() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let dest_hash = dest(0xb7);
+        let dest_hex = hex::encode(dest_hash);
+        driver.update_path_table(&[PathTableRoute {
+            hash: dest_hash,
+            hops: 5,
+            hex_key: dest_hex.clone(),
+            interface: Some("TTP_TCP".into()),
+            via: None,
+        }]);
+
+        driver.clear_all_paths();
+        assert!(!driver.has_path_to(&dest_hex));
+
+        // Announces repopulate the table after a bulk clear.
+        driver.update_path_table(&[PathTableRoute {
+            hash: dest_hash,
+            hops: 2,
+            hex_key: dest_hex.clone(),
+            interface: Some("Local Transport Pi".into()),
+            via: None,
+        }]);
+        assert!(driver.has_path_to(&dest_hex));
+        assert_eq!(driver.route_hops.get(&dest_hash).copied(), Some(2));
+    }
+
+    #[test]
+    fn clear_all_paths_resets_path_request_backoff() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let dest_hash = dest(0xc4);
+        // Exhaust the gate so decide() would refuse further path requests.
+        for _ in 0..PATH_REQUEST_MAX_ATTEMPTS {
+            driver
+                .path_request_gate
+                .record_queue_failure(dest_hash, 0.0);
+        }
+        assert!(matches!(
+            driver.path_request_gate.decide(dest_hash, 1.0),
+            PathRequestDecision::MaxAttempts
+        ));
+
+        driver.clear_all_paths();
+
+        assert!(matches!(
+            driver.path_request_gate.decide(dest_hash, 1.0),
+            PathRequestDecision::Send
+        ));
     }
 
     #[test]

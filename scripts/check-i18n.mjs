@@ -390,6 +390,26 @@ const localeDirs = readLocalesDirEntries().filter((d) => {
   return statSync(full).isDirectory() && d !== 'en';
 });
 
+const EN_PLURAL_FAMILIES = [...enKeys].filter((k) => k.endsWith('_one')).map((k) => k.slice(0, -4));
+
+/**
+ * Plural categories a locale actually selects for the small integer counts this app shows.
+ * Deliberately not `resolvedOptions().pluralCategories`: that also lists categories no such
+ * count can reach (Romance `many` starts at 1,000,000; Czech `many` is fractions-only), and
+ * requiring those would add dead keys.
+ */
+function reachablePluralCategories(locale) {
+  let pr;
+  try {
+    pr = new Intl.PluralRules(locale);
+  } catch {
+    return ['one', 'other'];
+  }
+  const cats = new Set();
+  for (let n = 0; n <= 200; n += 1) cats.add(pr.select(n));
+  return [...cats];
+}
+
 let warnings = 0;
 for (const dir of localeDirs) {
   const path = join(LOCALES_DIR, dir, 'translation.json');
@@ -413,6 +433,27 @@ for (const dir of localeDirs) {
   const extra = [...existing].filter((k) => !enKeys.has(k) && !isLocaleSpecificPluralKey(k));
   if (extra.length > 0) {
     console.error(`Orphan key(s) in "${dir}": ${extra.join(', ')}`);
+    errors++;
+  }
+
+  // A missing plural category is not a cosmetic gap: i18next finds no match in this locale
+  // and falls back through to English, so e.g. Russian at count=3 rendered "3 nodes".
+  // Only families the locale has already started are required, so a wholly untranslated
+  // locale still reports as the "missing key(s)" warning above rather than erroring here.
+  const requiredCategories = reachablePluralCategories(dir);
+  const missingPlural = [];
+  for (const family of EN_PLURAL_FAMILIES) {
+    if (!existing.has(`${family}_one`) && !existing.has(`${family}_other`)) continue;
+    for (const category of requiredCategories) {
+      if (!existing.has(`${family}_${category}`)) missingPlural.push(`${family}_${category}`);
+    }
+  }
+  if (missingPlural.length > 0) {
+    console.error(
+      `Missing plural form(s) in "${dir}" (${requiredCategories.join('/')} required; ` +
+        `absent forms fall back to English): ${missingPlural.slice(0, 10).join(', ')}` +
+        (missingPlural.length > 10 ? ` … +${missingPlural.length - 10} more` : ''),
+    );
     errors++;
   }
 }

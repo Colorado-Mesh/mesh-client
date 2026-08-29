@@ -38,7 +38,8 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | react-leaflet-cluster      | SEE LICENSE IN LICENSE        | ^4.1.3          | 4.1.3             | git+https://github.com/akursat/react-leaflet-cluster.git                       |
 | readable-stream            | MIT                           | ^4.7.0          | 4.7.0             | git://github.com/nodejs/readable-stream.git                                    |
 | semver                     | ISC                           | ^7.8.5          | 7.8.5             | git+https://github.com/npm/node-semver.git                                     |
-| systeminformation          | MIT                           | ^5.33.4         | 5.33.4            | git+https://github.com/sebhildebrandt/systeminformation.git                    |
+| systeminformation          | MIT                           | ^5.33.5         | 5.33.5            | git+https://github.com/sebhildebrandt/systeminformation.git                    |
+| undici                     | MIT                           | ^8.10.0         | 8.10.0            | git+https://github.com/nodejs/undici.git                                       |
 
 ## Development dependencies
 
@@ -54,8 +55,8 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @playwright/test                      | Apache-2.0      | ^1.62.1         | 1.62.1            | git+https://github.com/microsoft/playwright.git                                      |
 | @tailwindcss/vite                     | MIT             | ^4.3.3          | 4.3.3             | https://github.com/tailwindlabs/tailwindcss.git                                      |
 | @tanstack/react-virtual               | MIT             | ^3.14.10        | 3.14.10           | git+https://github.com/TanStack/virtual.git                                          |
-| @testing-library/jest-dom             | MIT             | ^6.10.0         | 6.10.0            | git+https://github.com/testing-library/jest-dom.git                                  |
-| @testing-library/react                | MIT             | ^16.3.2         | 16.3.2            | git+https://github.com/testing-library/react-testing-library.git                     |
+| @testing-library/jest-dom             | MIT             | ^7.0.1          | 7.0.1             | git+https://github.com/testing-library/jest-dom.git                                  |
+| @testing-library/react                | MIT             | ^16.3.3         | 16.3.3            | git+https://github.com/testing-library/react-testing-library.git                     |
 | @testing-library/user-event           | MIT             | ^14.6.6         | 14.6.6            | git+https://github.com/testing-library/user-event.git                                |
 | @types/js-md5                         | MIT             | ^0.8.0          | 0.8.0             | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/leaflet                        | MIT             | ^1.9.22         | 1.9.22            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
@@ -66,7 +67,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @types/react-dom                      | MIT             | ^19.2.5         | 19.2.5            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @typescript-eslint/eslint-plugin      | MIT             | ^8.68.0         | 8.68.0            | https://github.com/typescript-eslint/typescript-eslint.git                           |
 | @typescript-eslint/parser             | MIT             | ^8.68.0         | 8.68.0            | https://github.com/typescript-eslint/typescript-eslint.git                           |
-| @vitejs/plugin-react                  | MIT             | ^6.1.0          | 6.1.0             | git+https://github.com/vitejs/vite-plugin-react.git                                  |
+| @vitejs/plugin-react                  | MIT             | ^6.1.1          | 6.1.1             | git+https://github.com/vitejs/vite-plugin-react.git                                  |
 | @vitest/coverage-v8                   | MIT             | ^4.1.11         | 4.1.11            | git+https://github.com/vitest-dev/vitest.git                                         |
 | concurrently                          | MIT             | ^9.2.4          | 9.2.4             | git+https://github.com/open-cli-tools/concurrently.git                               |
 | electron                              | MIT             | ^41.10.7        | 41.10.7           | git+https://github.com/electron/electron.git                                         |

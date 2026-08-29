@@ -393,7 +393,39 @@
     "rrcUnreadAllRoomMessagesHint": "Коли ввімкнено, будь-яке нове повідомлення про приміщення RRC позначається як непрочитане і може відтворювати звук каналу. Вимкніть для сповіщень у стилі IRC: лише прямі повідомлення та @згадки.",
     "shareMyLocation": "Оприлюднити адресу",
     "shareMyLocationHint": "Якщо ввімкнено, ця програма може шукати ваше місцезнаходження на цьому комп'ютері та надсилати його за допомогою Meshtastic, MeshCore або Reticulum (спільний чат, радіо push, RMAP). Якщо вимкнено, функції GPS-пошуку для господарів і надсилання додатків вимкнені; статичні координати все ще працюють лише для вашої місцевої карти. Радіоприймач із власним GPS все ще може показувати ваше місцезнаходження. Вбудоване програмне забезпечення пристрою може транслюватися до тих пір, поки ви не налаштуєте радіо або модулі.",
-    "shareMyLocationOffInfo": "Надсилання даних про місцезнаходження вимкнено — оновлення GPS хоста та надсилання даних мережею вимкнено. Увімкніть \"Поділитися своїм місцезнаходженням\" вище, щоб скористатися автоматичним оновленням або надіслати свою позицію."
+    "shareMyLocationOffInfo": "Надсилання даних про місцезнаходження вимкнено — оновлення GPS хоста та надсилання даних мережею вимкнено. Увімкніть \"Поділитися своїм місцезнаходженням\" вище, щоб скористатися автоматичним оновленням або надіслати свою позицію.",
+    "reticulumBlocklist": {
+      "description": "Заблоковані відправники видаляються до того, як їхні повідомлення LXMF надходять у вашу поштову скриньку. Експортуйте список, щоб перемістити його в іншу установку, або імпортуйте список, щоб заблокувати одночасно кілька відправників.",
+      "exportButton": "Експортувати список блокування",
+      "exportAria": "Експортувати заблоковані конта",
+      "importButton": "Імпортувати список блокування",
+      "importAria": "Імпортувати заблоковані контакти",
+      "exportOk": "Експортовано {{count}} заблокованих контактів",
+      "exportEmpty": "Немає заблокованих контактів для експорту.",
+      "exportFailed": "Не вдалося експортувати список блокування.",
+      "importOk": "Імпортовано {{imported}} заблоковані контакти ({{skipped}} пропущено)",
+      "importFailed": "Не вдалося імпортувати список блокування.",
+      "unblockAria": "Розблокувати {{hash}}",
+      "unblockFailed": "Не вдалося розблокувати цей контакт.",
+      "empty": "Немає заблокованих контактів.",
+      "title": "Заблоковані контакти"
+    },
+    "deleteOldNodesConfirm_few": "Це назавжди видалить усі вузли, які не були прослухані протягом останніх {{days}} днів. Вони будуть знову відкриті під час повторної трансляції.",
+    "deleteOldNodesConfirm_many": "Це назавжди видалить усі вузли, які не були прослухані протягом останніх {{days}} днів. Вони будуть знову відкриті під час повторної трансляції.",
+    "pruneDistantDeleteConfirm_few": "Видалити {{count}} вузли",
+    "pruneDistantDeleteConfirm_many": "Видалити {{count}} вузлів",
+    "pruneDistantNodesConfirm_few": "Це назавжди видалить {{count}} вузли за межами {{distance}} {{unit}} з вашого пристрою. Це неможливо скасувати.",
+    "pruneDistantNodesConfirm_many": "Це назавжди видалить {{count}} вузлів за межами {{distance}} {{unit}} з вашого пристрою. Це неможливо скасувати.",
+    "pruneNoFixDeleteConfirm_few": "Видалити {{count}} вузли",
+    "pruneNoFixDeleteConfirm_many": "Видалити {{count}} вузлів",
+    "pruneNoFixNodesConfirm_few": "Це назавжди видалить {{count}} вузли з нульовими або близькими до нуля координатами (без фіксації GPS або Zero Island). Це неможливо скасувати.",
+    "pruneNoFixNodesConfirm_many": "Це назавжди видалить {{count}} вузлів з нульовими або близькими до нуля координатами (без фіксації GPS або Zero Island). Це неможливо скасувати.",
+    "pruneOfflineDeleteConfirm_few": "Видалити {{count}} вузли",
+    "pruneOfflineDeleteConfirm_many": "Видалити {{count}} вузлів",
+    "pruneOfflineNodesConfirm_few": "Це назавжди видалить {{count}} вузли, які не було чутно протягом {{days}} {{daysLabel}}. Це неможливо скасувати.",
+    "pruneOfflineNodesConfirm_many": "Це назавжди видалить {{count}} вузлів, які не було чутно протягом {{days}} {{daysLabel}}. Це неможливо скасувати.",
+    "reticulumDestinationsUnit_few": "пункти призначення",
+    "reticulumDestinationsUnit_many": "пунктів призначення"
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -441,7 +473,13 @@
     "transportSerial": "Серійний",
     "transportHttp": "HTTP",
     "transportRadio": "Радіо",
-    "radioInterfaceFallback": "радіоінтерфейс"
+    "radioInterfaceFallback": "радіоінтерфейс",
+    "contacts_few": "Контакти: завантажено {{count}} контакти",
+    "contacts_many": "Контакти: завантажено {{count}} контактів",
+    "databaseNodes_few": "База даних: синхронізовано {{count}} вузли",
+    "databaseNodes_many": "База даних: синхронізовано {{count}} вузлів",
+    "routes_few": "Маршрути: {{count}} вузли у сітці",
+    "routes_many": "Маршрути: {{count}} вузлів у сітці"
   },
   "channelUtilization": {
     "title": "Використання каналів",
@@ -523,7 +561,9 @@
         "title": "Повідомлення задовге для MeshCore",
         "body": "MeshCore надсилає кожне повідомлення як один радіопакет (до {{limit}} символів). Більш довгі повідомлення потрібно розділити на пронумеровані частини, але на зайнятій сіті повторювачі зазвичай скидають деякі з цих частин — тому людина, якій ви надсилаєте повідомлення, отримає неповне повідомлення без можливості розповісти. Щоб повідомлення були надійними, вони не розділяються автоматично. Скоротіть це повідомлення або надішліть його у вигляді кількох окремих коротких повідомлень.",
         "hint": "MeshCore надсилає один пакет на повідомлення; розділені частини часто скидаються зайнятими ретрансляторами, тому довші повідомлення не можна надсилати."
-      }
+      },
+      "sendParts_few": "Надіслати {{count}} частини",
+      "sendParts_many": "Надіслати {{count}} частин"
     },
     "sendFailed": "Не вдалося надіслати",
     "outboxStatusQueued": "В черзі",
@@ -646,7 +686,11 @@
       "forgotAddressToast": "Забув збережений пункт призначення rncp для цього вузла.",
       "filledFromChatToast": "Заповнене місце призначення з чату (не збережено — перевірте, щоб зберегти його).",
       "offerBannerTitle": "Пропозиції щодо вхідних файлів",
-      "offerBannerTitleAria": "Пропозиції щодо вхідних файлів, що очікують на розгляд, від цього партнера"
+      "offerBannerTitleAria": "Пропозиції щодо вхідних файлів, що очікують на розгляд, від цього партнера",
+      "activeTransfersBadgeAria_few": "{{count}} активні передачі файлів за допомогою цього вузла",
+      "activeTransfersBadgeAria_many": "{{count}} активних передач файлів за допомогою цього вузла",
+      "pendingOffersBadgeAria_few": "{{count}} очікувані пропозиції щодо вхідних файлів від цього вузла",
+      "pendingOffersBadgeAria_many": "{{count}} очікуваних пропозицій щодо вхідних файлів від цього вузла"
     },
     "shareLocation": "Поділіться місцем розташування",
     "shareLocationLabel": "📍 Спільне розташування",
@@ -728,7 +772,15 @@
     "heardByRepeatersDetail_other": "Почули {{count}}: {{names}}",
     "heardByRepeaterNodeFallback": "Вузол {{nodeId}}",
     "heardByRepeatersAdditional_one": "{{count}} додатковий невстановлений експедитор (хеші: {{hashes}})",
-    "heardByRepeatersAdditional_other": "{{count}} додаткових невстановлених експедиторів (хеші: {{hashes}})"
+    "heardByRepeatersAdditional_other": "{{count}} додаткових невстановлених експедиторів (хеші: {{hashes}})",
+    "heardByRepeaters_few": "Почули {{count}}",
+    "heardByRepeaters_many": "Почули {{count}}",
+    "heardByRepeatersAdditional_few": "{{count}} додаткові невстановлені експедитори (хеші: {{hashes}})",
+    "heardByRepeatersAdditional_many": "{{count}} додаткових невстановлених експедиторів (хеші: {{hashes}})",
+    "heardByRepeatersDetail_few": "Почули {{count}}: {{names}}",
+    "heardByRepeatersDetail_many": "Почули {{count}}: {{names}}",
+    "searchResults_few": "{{count}} результати",
+    "searchResults_many": "{{count}} результатів"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -1136,7 +1188,10 @@
         "blePeer": "Однорангова сітка BLE з використанням початкових однорангових адрес.",
         "generic": "Мережевий інтерфейс Reticulum.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "Магістраль I2P через маршрутизатор на цьому комп'ютері. Увімкніть міст додатків SAM (127.0.0.1:7656), а не проксі-сервери HTTP/HTTPS I2PTunnel (4444/4445). Перезапустіть I2P після ввімкнення SAM, щоб міст прослуховував, а потім перезапустіть стек Reticulum, якщо цей інтерфейс не працює."
+        "i2p": "Магістраль I2P через маршрутизатор на цьому комп'ютері. Увімкніть міст додатків SAM (127.0.0.1:7656), а не проксі-сервери HTTP/HTTPS I2PTunnel (4444/4445). Перезапустіть I2P після ввімкнення SAM, щоб міст прослуховував, а потім перезапустіть стек Reticulum, якщо цей інтерфейс не працює.",
+        "serial": "Загальне послідовне посилання на TNC, модем або інший хост по дроту. Встановіть параметри лінії відповідно до дальнього кінця.",
+        "ax25kiss": "Пакетне радіо AX.25 через KISS TNC. Потрібен ваш позивний і ідентифікатор SSID (0-15), що ідентифікує цю станцію.",
+        "local": "Роз'єм зі спільним екземпляром на цьому комп'ютері. Інші локальні інструменти (rnsd, Nomad Network, rnsh) можуть підключатися до цього стека через нього. Шлях до сокета походить від імені цього інтерфейсу, тому перейменування його змінює адресу, яку повинні використовувати інші інструменти."
       },
       "rfProfile": {
         "coordinated": "Узгоджена обл",
@@ -1260,10 +1315,37 @@
       "effectiveModeBadge": "Вступає в силу: {{mode}}",
       "effectiveModeAria": "Ефективний режим роботи {{mode}}. Налаштований режим відрізняється від того, що працює Reticulum.",
       "effectiveModeTooltip": "Reticulum переписав цей інтерфейс виявлення до точки доступу (або іншого дозволеного режиму), оскільки для виявлення потрібен шлюз, внутрішній або точка доступу, якщо не встановлено ignore_config_warnings. Перезапустіть стек після того, як почнуть діяти штампи mesh-client, які відмовляються від повноцінного (або налаштованого вами режиму).",
-      "flowControlBleHint": "На Bluetooth радіо часто ніколи не надсилає CMD_READY. Mesh-Client все ще крокує TX (ненадовго чекає ГОТОВНОСТІ, а потім продовжує), тому контроль потоку зменшує перевантаження, не заморожуючи чергу."
+      "flowControlBleHint": "На Bluetooth радіо часто ніколи не надсилає CMD_READY. Mesh-Client все ще крокує TX (ненадовго чекає ГОТОВНОСТІ, а потім продовжує), тому контроль потоку зменшує перевантаження, не заморожуючи чергу.",
+      "advancedFields": "Розширені налаштування",
+      "field": {
+        "port": "Порт",
+        "speed": "Швидкість (бод)",
+        "databits": "Біти даних",
+        "parity": "Парність",
+        "stopbits": "Stop bits (Стоповий розряд (Стоп-біти)",
+        "callsign": "{}ПОЗИВНИЙ{}",
+        "ssid": "SSID",
+        "flow_control": "Управління потоком",
+        "preamble": "Преамбула (мс)",
+        "txtail": "TX Tail (мс)",
+        "persistence": "Наполегливість.",
+        "slottime": "Час слота (мс)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "не було",
+          "E": "Рівний",
+          "O": "Без пари"
+        }
+      },
+      "fieldRequired": "Це поле обов'язкове.",
+      "fieldNotANumber": "Введіть ціле число (лише цифри).",
+      "fieldOutOfRange": "Значення виходить за межі дозволеного діапазону.",
+      "fieldTooLong": "Цей рядок занадто довгий.",
+      "fieldInvalidOption": "Непідтримуване значення."
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Хопи",
       "actions": "Дії",
       "path": "Шлях",
       "probe": "Зонд"
@@ -1453,7 +1535,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} дБм",
     "bluetoothMac": "Bluetooth MAC",
-    "bluetoothId": "Ідентифікатор Bluetooth"
+    "bluetoothId": "Ідентифікатор Bluetooth",
+    "reticulumAutoResendOnAnnounce": "Повторіть невдалі повідомлення, коли вузол оголошує"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",
@@ -1476,7 +1559,9 @@
     "confirmDeleteButton": "Видалити?",
     "manageMembersOf": "Керування учасниками {{name}}",
     "renameGroupNamed": "Перейменувати {{name}}",
-    "deleteGroupNamed": "Видалити {{name}}"
+    "deleteGroupNamed": "Видалити {{name}}",
+    "memberCount_few": "{{count}} учасники",
+    "memberCount_many": "{{count}} учасників"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Відкиньте рядки маршрутизації, старші за {{hours}} год (1–168)",
@@ -1815,7 +1900,19 @@
     "km": "км",
     "distanceOffsetHelp": "Додає рівні кілометри до порогових значень дистанції стрибка-гобліна та поганого маршруту (0–50).",
     "ignoreMqttToggle": "Ігнорувати MQTT",
-    "ignoreMqttHelp": "Засікайте вузли лише MQTT та виключайте їх з діагностики"
+    "ignoreMqttHelp": "Засікайте вузли лише MQTT та виключайте їх з діагностики",
+    "errorCount_few": "{{count}} помилки",
+    "errorCount_many": "{{count}} помилок",
+    "nodesWithTelemetry_few": "{{count}} вузли з телеметрією",
+    "nodesWithTelemetry_many": "{{count}} вузлів з телеметрією",
+    "severityErrors_few": "Помилки ({{count}})",
+    "severityErrors_many": "Помилки ({{count}})",
+    "severityNotes_few": "Примітки ({{count}})",
+    "severityNotes_many": "Примітки ({{count}})",
+    "severityWarnings_few": "Попередження ({{count}})",
+    "severityWarnings_many": "Попередження ({{count}})",
+    "warningCount_few": "{{count}} попередження",
+    "warningCount_many": "{{count}} попереджень"
   },
   "diagnosticsPing": {
     "title": "Безперервний пінг",
@@ -2274,7 +2371,9 @@
     "applying": "Застосування…",
     "applyButton": "Застосувати конфіденційність телеметрії",
     "contactCount_one": "{{count}} контакт",
-    "contactCount_other": "{{count}} контакти"
+    "contactCount_other": "{{count}} контакти",
+    "contactCount_few": "{{count}} контакти",
+    "contactCount_many": "{{count}} контактів"
   },
   "messageStatusBadge": {
     "queuedTooltip": "Поставлено в чергу — надсилатиметься після підключення",
@@ -2693,7 +2792,9 @@
       "8": {
         "label": "K9"
       }
-    }
+    },
+    "statusLine_few": "{{label}}: {{total}} пакетів від {{count}} вузлів (останній {{lastSeen}})",
+    "statusLine_many": "{{label}}: {{total}} пакетів від {{count}} вузлів (останній {{lastSeen}})"
   },
   "networkPanel": {
     "reticulumStackSettings": {
@@ -2733,11 +2834,13 @@
       "running": "Checking…",
       "ok": "Config looks good — no audit issues.",
       "failed": "Config check failed: {{message}}",
-      "issuesHeading_one": "{{count}} config issue",
-      "issuesHeading_other": "{{count}} config issues",
+      "issuesHeading_one": "{{count}} проблема конфігурації",
+      "issuesHeading_other": "{{count}} проблем конфігурації",
       "severityError": "error",
       "severityWarning": "warning",
-      "severityInfo": "info"
+      "severityInfo": "info",
+      "issuesHeading_few": "{{count}} проблеми конфігурації",
+      "issuesHeading_many": "{{count}} проблем конфігурації"
     },
     "reticulumPnHosting": {
       "title": "Розширений PN-хостинг (небезпечна зона)",
@@ -2789,6 +2892,18 @@
     "reticulumScanImport": {
       "title": "Сканувати / імпортувати",
       "hint": "Відскануйте або вставте QR-код для контактів, карт Columba lxma:// або зашифрованих паперових повідомлень LXMF."
+    },
+    "reticulumPathTable": {
+      "title": "Таблиця шляхів",
+      "description": "Очищення таблиці шляхів призводить до скидання кожного кешованого маршруту. Маршрути повторно вивчаються, коли надходять нові оголошення, тому перше повідомлення однолітку може зайняти більше часу.",
+      "clear": "Очистити таблицю шляхів",
+      "clearing": "Clearing…",
+      "confirmTitle": "Очистити таблицю шляхів?",
+      "confirmBody": "Кожен кешований маршрут скидається. Маршрути відновлюються з нових оголошень.",
+      "clearOk": "Таблицю шляхів очищено ({{count}} маршрути скинуто)",
+      "clearFailed": "Не вдалося очистити таблицю шляхів.",
+      "clearAria": "Очистити таблицю шляхів",
+      "confirmAction": "Очистити"
     }
   },
   "nodeDetailModal": {
@@ -2970,7 +3085,9 @@
     "shareContactQrAria": "Показати контактний QR-код MeshCore для офіційного імпорту додатка",
     "publicKeyCopied": "Відкритий ключ скопійовано в буфер обміну.",
     "hasPublicKeyNoDm": "Має відкритий ключ (немає прямих повідомлень)",
-    "copyPublicKey": "Копіювати відкритий ключ"
+    "copyPublicKey": "Копіювати відкритий ключ",
+    "hopLabel_few": "{{count}} хопи",
+    "hopLabel_many": "{{count}} хопів"
   },
   "nodeInfoBody": {
     "longName": "Довге ім'я",
@@ -3045,7 +3162,11 @@
     "hybridMqttPathTooltip": "Отримано через RF; деякі пакети використовують шлях ретрансляції MQTT",
     "hybridMqttPathAria": "Шлях RF та MQTT",
     "connectedViaRfAndMqttTooltip": "Підключено через RF та MQTT",
-    "connectedViaRfAndMqttAria": "Підключено через RF та MQTT"
+    "connectedViaRfAndMqttAria": "Підключено через RF та MQTT",
+    "changes_few": "{{count}} зміни",
+    "changes_many": "{{count}} змін",
+    "echoes_few": "{{count}} луни",
+    "echoes_many": "{{count}} лун"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Контакти оновлено.",
@@ -3141,7 +3262,19 @@
     "meshcoreTypeNone": "None (Немає)",
     "meshcoreTypeUnknown": "Невідомо",
     "columnHealth": "Здоров'я вузла",
-    "hasPublicKeyTitle": "Відкритий ключ"
+    "hasPublicKeyTitle": "Відкритий ключ",
+    "distanceFilterActiveBanner_few": "Дистанційний фільтр активний — {{count}} вузли приховані за {{maxDistance}} {{unit}}.",
+    "distanceFilterActiveBanner_many": "Дистанційний фільтр активний — {{count}} вузлів приховано за {{maxDistance}} {{unit}}.",
+    "importResultSuccess_few": "Імпортовано {{count}} контакти.",
+    "importResultSuccess_many": "Імпортовано {{count}} контактів.",
+    "importResultSuccessWithSkipped_few": "Імпортовано {{count}} контакти, пропущено {{skipped}}.",
+    "importResultSuccessWithSkipped_many": "Імпортовано {{count}} контактів, пропущено {{skipped}}.",
+    "summaryOffline_few": "{{count}} в автономному режимі",
+    "summaryOffline_many": "{{count}} в автономному режимі",
+    "summaryOnline_few": "{{count}} онлайн",
+    "summaryOnline_many": "{{count}} онлайн",
+    "summaryStale_few": "{{count}} застарілі",
+    "summaryStale_many": "{{count}} застарілих"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3227,7 +3360,50 @@
       "noPages": "Сторінок ще немає. Додайте файли .mu до вибраної папки (наприклад, index.mu).",
       "contentSourceNotFromPicker": "Перш ніж застосувати папку, виберіть її за допомогою пункту Вибрати.",
       "contentSourceNone": "Не вибрано жодної папки",
-      "contentSourceRequired": "Виберіть папку сторінок, перш ніж розпочати прийом гостей Nomad."
+      "contentSourceRequired": "Виберіть папку сторінок, перш ніж розпочати прийом гостей Nomad.",
+      "newPage": "Нова сторінка",
+      "newPageName": "Ім'я файлу сторінки (має закінчуватися на .mu)",
+      "invalidPageName": "Введіть ім'я файлу, що закінчується на .mu, без .. або абсолютних шляхів.",
+      "edit": "Редагувати",
+      "editPage": "Редагувати {{path}}",
+      "delete": "Видалити",
+      "deletePage": "Видалити {{path}}",
+      "deleteConfirm": "Видалити цю сторінку? Файл буде видалено з папки, що обслуговується.",
+      "deleteConfirmAria": "Підтвердьте видалення цієї сторінки",
+      "deleteError": "Не вдалося видалити сторінку.",
+      "openError": "Не вдалося відкрити сторінку для редагування.",
+      "editorTitle": "Редагувати сторінку Micron",
+      "editorAria": "Джерело Micron сторінки",
+      "editorPreview": "Перегляд",
+      "toolbarAria": "Дії форматування Micron",
+      "toolbar": {
+        "bold": "Жирний",
+        "italic": "Курсив",
+        "underline": "Підкреслення",
+        "h1": "Заголовок 1",
+        "h2": "Заголовок 2",
+        "h3": "Заголовок 3",
+        "alignLeft": "Вирівняти ліворучverb, to align text from center",
+        "alignCenter": "По центру",
+        "alignRight": "Вирівняти праворучverb, to justify text",
+        "divider": "Роздільник",
+        "link": "Покликання"
+      },
+      "linkTargetPrompt": "Цільове посилання (шлях до сторінки або хеш призначення)",
+      "save": "Зберегти",
+      "saveError": "Не вдалося зберегти сторінку.",
+      "unsaved": "Незбережені зміни",
+      "discard": "Скинути зміни",
+      "discardConfirm": "На цій сторінці є незбережені зміни.",
+      "discardConfirmAria": "Скасувати зміни і закрити",
+      "close": "Закрити редактор",
+      "closeBackdropAria": "Закрити редактор сторінок Micron",
+      "pageTooLarge": "Ця сторінка завелика для розміщення (ліміт 512 КБ).",
+      "pageNotFound": "Ця сторінка більше не існує в папці, що обслуговується.",
+      "invalidPagePath": "Цей шлях до сторінки не дозволений.",
+      "pageIoError": "Не вдалося прочитати або записати сторінку на диск.",
+      "pageNotUtf8": "Ця сторінка не є дійсним текстом UTF-8.",
+      "pageWriteFailed": "Не вдалося записати сторінку."
     },
     "sortLastHeard": "Останнє прослуховування",
     "sortHops": "Хопи",
@@ -3259,7 +3435,9 @@
     "pageProgressFailover": "Спробувати інший маршрут через {{iface}} ({{hops}} HOPS)…",
     "pageProgressFailoverIface": "Спробувати інший маршрут через {{iface}}…",
     "pageProgressFailoverGeneric": "Спробувати інший маршрут...",
-    "pageProgressNoAlternate": "Немає інших доступних маршрутів — завершення цієї спроби..."
+    "pageProgressNoAlternate": "Немає інших доступних маршрутів — завершення цієї спроби...",
+    "hopsAway_few": "за {{count}} хопи",
+    "hopsAway_many": "за {{count}} хопів"
   },
   "packetDistribution": {
     "overallDistribution": "Загальний розподіл",
@@ -3278,7 +3456,9 @@
     "packets_one": "{{count}} пакет",
     "packets_other": "{{count}} пакетів",
     "other": "інше",
-    "noSenderId": "Немає ідентифікатора відправника в необробленому кадрі"
+    "noSenderId": "Немає ідентифікатора відправника в необробленому кадрі",
+    "packets_few": "{{count}} пакети",
+    "packets_many": "{{count}} пакетів"
   },
   "peerDetailModal": {
     "networkSection": "Засоби зв'язку",
@@ -4808,7 +4988,9 @@
     "regenerateWarning": "Повторне створення робить існуючі пакети даних ATAK недійсними — вам потрібно буде повторно імпортувати.",
     "durationSec": "{{s}}s",
     "durationMin": "{{m}}м",
-    "durationHourMin": "{{h}}год {{m}}хв"
+    "durationHourMin": "{{h}}год {{m}}хв",
+    "packets_few": "{{count}} пакети",
+    "packets_many": "{{count}} пакетів"
   },
   "telemetryPanel": {
     "title": "Телеметрія",
@@ -4855,7 +5037,9 @@
     "firmwareAvailable": "Доступне оновлення прошивки: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} нове повідомлення",
     "newMessages_other": "{{protocol}}: {{count}} нові повідомлення",
-    "meshcoreDistanceFilterHint": "На карті {{count}} контактів із GPS. Увімкніть фільтр відстані в Додаток → Зовнішній вигляд, щоб зосередитися на сусідніх вузлах."
+    "meshcoreDistanceFilterHint": "На карті {{count}} контактів із GPS. Увімкніть фільтр відстані в Додаток → Зовнішній вигляд, щоб зосередитися на сусідніх вузлах.",
+    "newMessages_few": "{{protocol}}: {{count}} нові повідомлення",
+    "newMessages_many": "{{protocol}}: {{count}} нових повідомлень"
   },
   "updateStatus": {
     "checking": "Перевірка",
@@ -5044,7 +5228,20 @@
     "jumpToLatest": "Перейти до останнього",
     "stackNotReady": "Стек Reticulum ще не готовий. Зачекайте, доки буде підключено, а потім повторіть спробу.",
     "sidecarNotRunning": "Sidecar Reticulum не працює. Запустіть стек на Підключенні, а потім спробуйте ще раз.",
-    "whoReplyMissing": "Немає списку учасників з концентратора для {{room}} (розмір відповіді може перевищувати розмір посилання). Імена відображатимуться, коли люди приєднуються або спілкуються."
+    "whoReplyMissing": "Немає списку учасників з концентратора для {{room}} (розмір відповіді може перевищувати розмір посилання). Імена відображатимуться, коли люди приєднуються або спілкуються.",
+    "openNomadPage": "Open Nomad page {{address}}",
+    "openDm": "Відкрити пряме повідомлення за допомогою {{address}}",
+    "openReticulumAddress": "Відкрити адресу Reticulum {{address}}",
+    "addressChoiceTitle": "Відкрити адресу Reticulum",
+    "addressChoiceMessage": "{{address}} може бути сторінкою Nomad або вузлом. Що ви хочете відкрити?",
+    "addressChoiceNomad": "Сторінка Nomad",
+    "addressChoiceDm": "Пряме повідомлення",
+    "hopsAway_few": "за {{count}} хопи",
+    "hopsAway_many": "за {{count}} хопів",
+    "memberCount_few": "{{count}} учасники",
+    "memberCount_many": "{{count}} учасників",
+    "userCount_few": "{{count}} користувачі",
+    "userCount_many": "{{count}} користувачів"
   },
   "signalMeter": {
     "rssi": "RSSI (індикатор потужності прийнятого сигналу)",
@@ -5130,14 +5327,16 @@
     },
     "pathCapability": {
       "checking": "Перевірка шляху…",
-      "hops_one": "{{count}} Hop",
+      "hops_one": "{{count}} хоп",
       "hops_other": "{{count}} хопів",
       "speed": {
         "high": "Швидкий шлях",
         "constrained": "Обмежений шлях",
         "mixed": "Змішаний шлях",
         "unknown": "Невідомий шлях"
-      }
+      },
+      "hops_few": "{{count}} хопи",
+      "hops_many": "{{count}} хопів"
     },
     "shell": {
       "addressPlaceholder": "Хеш призначення (32 шістнадцяткові символи)",
@@ -5245,7 +5444,9 @@
       "listenerLikelyOffConfirm": "Надіслати запит на ввімкнення",
       "pendingOffersBadgeAriaCapped": "99+ пропозицій щодо вхідних файлів, що очікують на розгляд",
       "listenerLikelyOffBody": "Немає шляху до пункту призначення файлу, але вони шукають онлайн-чат. Попросіть їх увімкнути отримання файлів rncp і надіслати свій хеш отримання rncp, а потім повторіть спробу.",
-      "listenerLikelyOffToast": "Немає шляху до місця призначення файлу; отримання файлів може бути вимкнено. Попросіть їх увімкнути rncp отримувати та надсилати свій хеш, а потім повторіть спробу."
+      "listenerLikelyOffToast": "Немає шляху до місця призначення файлу; отримання файлів може бути вимкнено. Попросіть їх увімкнути rncp отримувати та надсилати свій хеш, а потім повторіть спробу.",
+      "pendingOffersBadgeAria_few": "{{count}} очікувані пропозиції щодо вхідних файлів",
+      "pendingOffersBadgeAria_many": "{{count}} очікуваних пропозицій щодо вхідних файлів"
     },
     "enableRequest": {
       "title": "Увімкнути прийом файлів?",
@@ -5389,7 +5590,8 @@
     "sessionRowAria": "{{app}} гра з {{peer}}",
     "apps": {
       "ttt": "Хрестики-нулики",
-      "chess": "Шахи"
+      "chess": "Шахи",
+      "four_in_a_row": "Чотири в ряд"
     },
     "status": {
       "pending": "Очікується",
@@ -5441,6 +5643,19 @@
       "boardAria": "Дошка Tic-Tac-Toe",
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "fourInARow": {
+      "youWon": "Ви виграли!",
+      "opponentWon": "Противник переміг.",
+      "draw": "Балка",
+      "yourTurn": "Ваш хід.",
+      "opponentTurn": "Хід опонента",
+      "yourMarker": "Вас звати {{marker}}",
+      "moveCount": "{{count}} ходів",
+      "boardAria": "Дошка «Чотири в ряд»",
+      "columnAria": "Стовпець {{column}}, знизу вгору: {{contents}}. Кинути сюди",
+      "columnFullAria": "Стовпець {{column}}, знизу вгору: {{contents}}. Заповнений",
+      "columnEmptyContents": "порожньо"
     },
     "chess": {
       "youWon": "Ви виграли!",

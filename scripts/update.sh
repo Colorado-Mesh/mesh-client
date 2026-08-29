@@ -219,6 +219,34 @@ process.stdin.on("end", () => {
 ' 2> /dev/null || echo 'unknown'
 }
 
+# Warn when a pinned override in pnpm-workspace.yaml is behind a newer major.
+# Network-dependent and warn-only: exit 10 means unexplained drift, anything else
+# (including offline) is treated as clean. See scripts/check-pinned-majors.mjs.
+check_pinned_majors() {
+  if ! command -v node > /dev/null 2>&1; then
+    echo ''
+    echo 'Checking pinned overrides for newer major versions... node missing — skip.'
+    return 0
+  fi
+
+  local status=0
+  node scripts/check-pinned-majors.mjs || status=$?
+  if [ "${status}" -eq 10 ]; then
+    HAS_WARNING=1
+  elif [ "${status}" -ne 0 ]; then
+    echo -e "  ${YELLOW}check-pinned-majors exited ${status} — treating as inconclusive.${NC}"
+  fi
+  return 0
+}
+
+# Test hook: exercise check_pinned_majors without running the rest of the update.
+if [ "${UPDATE_SH_TEST_HOOK:-}" = 'pinned-majors-only' ]; then
+  HAS_WARNING=0
+  check_pinned_majors
+  printf 'HAS_WARNING=%s\n' "${HAS_WARNING}"
+  exit 0
+fi
+
 # Warn when local Ratspeak overlays may be obsolete after upstream merges.
 # Keep patch basenames in sync with scripts/lib/ratspeak-overlay-apply-list.sh
 # and reticulum-sidecar/patches/*.patch / patches/README.md.
@@ -228,7 +256,6 @@ check_ratspeak_patches() {
     'rsReticulum-packet-tap.patch|ratspeak/rsReticulum|10|rsReticulum packet-tap|https://github.com/ratspeak/rsReticulum/pull/10'
     'rsReticulum-path-medium-slots.patch|ratspeak/rsReticulum||rsReticulum path-medium slots|'
     'rsReticulum-auto-beacon-utun.patch|ratspeak/rsReticulum|11|rsReticulum auto-beacon utun|https://github.com/ratspeak/rsReticulum/pull/11'
-    'rsReticulum-link-client-nomad.patch|ratspeak/rsReticulum|14|rsReticulum LinkClient Nomad|https://github.com/ratspeak/rsReticulum/pull/14'
     'rsReticulum-link-client-proof-budget.patch|ratspeak/rsReticulum||rsReticulum LinkClient proof-budget remaining-deadline|'
     'rsReticulum-ble-rnode-pairing-transition-debounce.patch|ratspeak/rsReticulum|20|rsReticulum BLE RNode pairing-transition debounce|https://github.com/ratspeak/rsReticulum/pull/20'
     'rsReticulum-ble-rnode-bond-desync.patch|ratspeak/rsReticulum|21|rsReticulum BLE RNode bond-desync halt + bond-aware reconnect|https://github.com/ratspeak/rsReticulum/pull/21'
@@ -531,7 +558,7 @@ process.exit(a === b || a.startsWith(b) || b.startsWith(a) ? 0 : 1);
 RATSPEAK_RELEASE_WATCH_ENTRIES=(
   'ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.2.0'
   'ratspeak/lrgp-rs||lrgp-rs games (LRGP)|v0.4.1'
-  'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.30'
+  'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.31'
   'ratspeak/LXMFace||LXMFace identicons (vendored in renderer)|file:js/lxmface.js@308a729d5bf951880633e5e174b3b7628203106b'
   'ratspeak/Ratspeak||Ratspeak identity vault (vendored in sidecar)|file:crates/ratspeak-runtime/src/vault.rs@19e2a0d19202d4c7562adba79ac706ec352fdb86'
 )
@@ -802,6 +829,7 @@ for i in "${!KEYS[@]}"; do
   fi
 done
 
+check_pinned_majors
 check_ratspeak_patches
 check_ratspeak_upstream
 

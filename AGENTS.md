@@ -31,13 +31,13 @@ Electron: `src/main/` (Node, SQLite, BLE, MQTT), `src/preload/` (bridge), `src/r
 
 Path alias `@/*` → `src/*` (see `tsconfig.json`).
 
-| Boundary     | Path                | Role                                                                                                                                                                                                                                                                                                |
-| ------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Main         | `src/main/`         | SQLite (`database.ts`, `db-compat.ts`), BLE (`noble-ble-manager.ts`), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers (`index.ts` plus namespaced modules in `src/main/ipc/` — Reticulum, TAK, GPS), window, GPS, updater |
-| Preload      | `src/preload/`      | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                                                                                                  |
-| Renderer     | `src/renderer/`     | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/`, `stores/`, `lib/` (includes `lib/diagnostics/`, `lib/meshcore/`, `lib/radio/`, `lib/transport/`), `workers/`                                                                                                                        |
-| Shared       | `src/shared/`       | IPC contracts (`electron-api.types.ts`), protocol-neutral helpers                                                                                                                                                                                                                                   |
-| Architecture | `src/architecture/` | Vitest source-policy registry (file-local invariants; prefer over new `check-*.mjs`)                                                                                                                                                                                                                |
+| Boundary     | Path                | Role                                                                                                                                                                                                                                                                                                                                          |
+| ------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Main         | `src/main/`         | SQLite (`database.ts`, `db-compat.ts`), BLE (`noble-ble-manager.ts`), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers (`index.ts` plus namespaced modules in `src/main/ipc/` — Reticulum, Reticulum DB, Reticulum identity, RRC DB, TAK, GPS), window, GPS, updater |
+| Preload      | `src/preload/`      | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                                                                                                                                            |
+| Renderer     | `src/renderer/`     | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/`, `stores/`, `lib/` (includes `lib/diagnostics/`, `lib/meshcore/`, `lib/radio/`, `lib/transport/`), `workers/`                                                                                                                                                                  |
+| Shared       | `src/shared/`       | IPC contracts (`electron-api.types.ts`), protocol-neutral helpers                                                                                                                                                                                                                                                                             |
+| Architecture | `src/architecture/` | Vitest source-policy registry (file-local invariants; prefer over new `check-*.mjs`)                                                                                                                                                                                                                                                          |
 
 Entry points: `src/main/index.ts`, `src/preload/index.ts`, `src/renderer/main.tsx`, `src/renderer/App.tsx`.
 
@@ -49,7 +49,7 @@ Entry points: `src/main/index.ts`, `src/preload/index.ts`, `src/renderer/main.ts
 | **hooks/**   | `src/renderer/hooks/`   | React composition: `useProtocolFacade`, store selectors (`useMessages`, `useConnectionView`), panel action bundles, feature hooks (`useChatOutbox`). No large protocol logic.                                                                |
 | **lib/**     | `src/renderer/lib/`     | Pure logic, drivers (`ConnectionDriver`), sessions, ingest, protocol types (e.g. `lib/meshcore/meshcoreHookTypes.ts`).                                                                                                                       |
 
-**App wiring:** Prefer `useProtocolFacade(protocol)` for connection state, panel actions, nodes, and messages. Use `useProtocolConnectionActions('meshtastic' | 'meshcore' | 'reticulum')` when ConnectionPanel props differ per tab. Mount once from `App.tsx`: **`usePowerRecovery`** (sleep/wake IPC, MQTT `powerSuspend`/`powerResume`, runtime `onPowerResume` — Meshtastic ~4s after wake, MeshCore ~8s stagger, Reticulum sidecar resume, up to 30s dual-Noble BLE settle), **`useRendererHeartbeat`** (renderer pings main every 30s; `rendererHeartbeatWatchdog.ts` warns if no heartbeat within 30s after `powerMonitor` resume **while the window is visible**, and polls for a **90s visible-window stall**; sticky `rendererUnresponsiveSeen` + `getRendererLiveness()` feed support snapshot `mainLiveness`), **`useLongSessionMaintenance`** (after **4 days** main-process uptime, one-time restart nudge toast; sessionStorage gate). Do not grow monolithic runtime return objects without grouping related fields into sub-objects.
+**App wiring:** Prefer `useProtocolFacade(protocol)` for connection state, panel actions, nodes, and messages. Use `useProtocolConnectionActions('meshtastic' | 'meshcore' | 'reticulum')` when ConnectionPanel props differ per tab. Mount once from `App.tsx`: **`usePowerRecovery`** (sleep/wake IPC, MQTT `powerSuspend`/`powerResume`, runtime `onPowerResume` — Meshtastic ~4s after wake, MeshCore ~8s stagger, Reticulum sidecar resume, up to 30s dual-Noble BLE settle), **`useRendererHeartbeat`** (renderer pings main every 30s; `rendererHeartbeatWatchdog.ts` warns if no heartbeat within 30s after `powerMonitor` resume **while the window is visible**, and polls for a **90s visible-window stall**; sticky `rendererUnresponsiveSeen` + `getRendererLiveness()` feed support snapshot `mainLiveness`), **`useLongSessionMaintenance`** (after **4 days** main-process uptime **and only while Noble BLE is active on Meshtastic or MeshCore**, one-time restart nudge toast; sessionStorage gate — a Reticulum-only session never nudges). Do not grow monolithic runtime return objects without grouping related fields into sub-objects.
 
 ### Multi-protocol
 
@@ -63,7 +63,7 @@ const capabilities = useRadioProvider(protocol);
 Adding a cross-boundary feature:
 
 1. Types in `src/shared/electron-api.types.ts`.
-2. `ipcMain.handle('namespace:action', ...)` in `src/main/index.ts` — or in a namespaced module under `src/main/ipc/` (e.g. `reticulum-handlers.ts`, `tak-handlers.ts`, `gps-handlers.ts`) registered from `index.ts` when the handler set is large enough to warrant its own file.
+2. `ipcMain.handle('namespace:action', ...)` in `src/main/index.ts` — or in a namespaced module under `src/main/ipc/` (e.g. `reticulum-handlers.ts`, `reticulum-db-handlers.ts`, `reticulum-identity-handlers.ts`, `rrc-db-handlers.ts`, `tak-handlers.ts`, `gps-handlers.ts`) registered from `index.ts` when the handler set is large enough to warrant its own file.
 3. Expose on `electronAPI` in `src/preload/index.ts` via `ipcRenderer.invoke`.
 4. Call from renderer: `window.electronAPI...`
 
@@ -128,7 +128,7 @@ Adding a cross-boundary feature:
 4. When dependency manifests staged: `pnpm dedupe`, re-stage lockfile and originally staged paths
 5. When `en/translation.json` is staged: `pnpm run i18n:auto-translate` and re-stage `src/renderer/locales/`
 6. ESLint on **staged** JS/TS with `--cache` (CI still runs full `pnpm run lint`); full `typecheck`; path-gated `typecheck:strict-shared` when `src/shared/` or `tsconfig.strict.json` staged
-7. Always-on cheap `check:*` scanners; path-gated checks for flatpak / DB migrations / IPC / reticulum interface modes / decommissioned hubs / `check:reticulum-sidecar` (when `cargo` on `PATH` and sidecar paths staged); `check:i18n` when English locale staged else `check:i18n:branch`; `check:licenses`
+7. `check:electron-security` runs first (right after `typecheck`), then the always-on cheap `check:*` scanners; path-gated checks for flatpak / DB migrations / IPC / reticulum interface modes / decommissioned hubs / `check:pn-hosting-policy` (when `pn_hosting_policy.rs`, `pnHostingPolicy.ts`, or its scanner is staged) / `check:reticulum-sidecar` (when `cargo` on `PATH` and sidecar paths staged); `check:i18n` when English locale staged else `check:i18n:branch`; `check:licenses`
 8. `pnpm audit` only when dependency manifests staged; `actionlint` / `yamllint` when workflows / YAML staged
 9. `pnpm run test:staged` → `scripts/precommit-tests.mjs` (staged-only `vitest related`; full suite for vitest config/setup/deps; skip when no source/test staged)
 
@@ -169,7 +169,7 @@ Deep, file-level subsystem detail now lives in [`docs/agents/`](docs/agents/READ
 
 ## 9. Cursor / Claude indexing
 
-Optional local ignore files [`.cursorignore`](.cursorignore) and [`.claudeignore`](.claudeignore) (both listed in `.gitignore`) exclude noisy paths when present (build output, dependencies, Cursor debug logs under `.cursor/`). Ignored paths may still be read when you open the file, paste an excerpt, or reference an explicit path in chat.
+Optional local ignore files (e.g. `.cursorignore`, `.geminiignore`, `.claudeignore` — all listed in `.gitignore`, and any given one may not exist in a working tree) exclude noisy paths when present (build output, dependencies, Cursor debug logs under `.cursor/`). Ignored paths may still be read when you open the file, paste an excerpt, or reference an explicit path in chat.
 
 ## 10. Context Management
 

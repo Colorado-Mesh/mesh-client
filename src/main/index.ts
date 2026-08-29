@@ -111,6 +111,7 @@ import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from './db-ip
 import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fatal-startup-dialog';
 import { fetchLinkPreview } from './fetchLinkPreview';
 import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
+import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
@@ -629,6 +630,13 @@ const OSM_HTTP_REFERRER = 'https://meshtastic-client.app/';
 
 // ─── Global error handlers (prevent silent crashes in packaged app) ──
 process.on('uncaughtException', (error) => {
+  if (isHarmlessSocketOptionError(error)) {
+    console.warn(
+      '[main] Ignoring best-effort socket QoS failure:',
+      sanitizeLogMessage(error.message),
+    );
+    return;
+  }
   console.error(
     '[main] Uncaught exception:',
     sanitizeLogMessage(error?.stack ?? error?.message ?? String(error)),
@@ -649,6 +657,13 @@ let lastUnhandledRejectionDialogAt = 0;
 const UNHANDLED_REJECTION_DIALOG_COOLDOWN_MS = 60_000;
 
 process.on('unhandledRejection', (reason) => {
+  if (isHarmlessSocketOptionError(reason)) {
+    console.warn(
+      '[main] Ignoring best-effort socket QoS failure:',
+      sanitizeLogMessage(reason instanceof Error ? reason.message : String(reason)),
+    );
+    return;
+  }
   console.error(
     '[main] Unhandled rejection:',
     sanitizeLogMessage(reason instanceof Error ? (reason.stack ?? reason.message) : String(reason)),
@@ -2171,7 +2186,11 @@ let _cachedBadgeIcon: ReturnType<typeof nativeImage.createFromBuffer> | null = n
 let _cachedTrayIconUnread: Electron.NativeImage | null = null;
 let _cachedTrayIconRead: Electron.NativeImage | null = null;
 let _lastTrayUnreadVariant: boolean | null = null;
-ipcMain.on('set-tray-unread', (_event, count: unknown) => {
+ipcMain.on('set-tray-unread', (event, count: unknown) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] set-tray-unread: unauthorized sender');
+    return;
+  }
   try {
     const n = Math.max(0, Math.min(Math.floor(Number(count)) || 0, 99999));
     lastTrayUnreadCount = n;
@@ -2243,7 +2262,11 @@ function stopPowerSaveBlocker(): void {
 }
 
 // ─── IPC: Serial port selected by user ──────────────────────────────
-ipcMain.on('serial-port-selected', (_event, portId: unknown) => {
+ipcMain.on('serial-port-selected', (event, portId: unknown) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] serial-port-selected: unauthorized sender');
+    return;
+  }
   if (!pendingSerialCallback) return;
   const id = typeof portId === 'string' ? portId : '';
   if (id !== '' && !lastSerialPortIds.has(id)) {
@@ -2258,7 +2281,11 @@ ipcMain.on('serial-port-selected', (_event, portId: unknown) => {
 });
 
 // ─── IPC: Cancel Serial selection ───────────────────────────────────
-ipcMain.on('serial-port-cancelled', () => {
+ipcMain.on('serial-port-cancelled', (event) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] serial-port-cancelled: unauthorized sender');
+    return;
+  }
   clearPendingSerialSelectionTimer();
   if (pendingSerialCallback) {
     pendingSerialCallback(''); // Empty string cancels the request
@@ -2268,7 +2295,11 @@ ipcMain.on('serial-port-cancelled', () => {
 });
 
 // ─── IPC: Bluetooth device selected by user (Linux Web Bluetooth) ────
-ipcMain.on('bluetooth-device-selected', (_event, deviceId: unknown) => {
+ipcMain.on('bluetooth-device-selected', (event, deviceId: unknown) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] bluetooth-device-selected: unauthorized sender');
+    return;
+  }
   if (!linuxWebBluetoothDeviceSelection.hasPendingSelection()) {
     console.warn(
       '[IPC] bluetooth-device-selected: no pending selection (ignored — may have timed out or already resolved)',
@@ -2764,7 +2795,11 @@ ipcMain.on('bluetooth-provide-pin', (event, pin: unknown) => {
 });
 
 // ─── IPC: Cancel Bluetooth pairing (Linux) ────────────────────────────
-ipcMain.on('bluetooth-cancel-pairing', () => {
+ipcMain.on('bluetooth-cancel-pairing', (event) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] bluetooth-cancel-pairing: unauthorized sender');
+    return;
+  }
   if (pendingPairingCallback) {
     console.debug('[IPC] bluetooth-cancel-pairing: cancelling');
     pendingPairingCallback({ pin: '', confirmed: false }); // confirmed: false cancels
@@ -2776,7 +2811,11 @@ ipcMain.on('bluetooth-cancel-pairing', () => {
 
 // ─── IPC: Reset BLE pairing retry count (Linux) ───────────────────────────
 // Called when starting a new BLE connection so the first pairing attempt uses the default PIN
-ipcMain.on('ble-reset-pairing-retry-count', (_event, sessionKind?: unknown) => {
+ipcMain.on('ble-reset-pairing-retry-count', (event, sessionKind?: unknown) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] ble-reset-pairing-retry-count: unauthorized sender');
+    return;
+  }
   pendingPairingRetryCount = 0;
   blePairingSessionKind = sessionKind === 'meshcore' ? 'meshcore' : 'meshtastic';
 });
@@ -3753,6 +3792,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'use24HourTime',
   'alwaysShowMessageActions',
   'reticulumAutostart',
+  'reticulumAutoResendOnAnnounce',
   'reticulumLastSelfLxmfHash',
   'reticulumRmapAnnounceIntervalMin',
   'reticulumRmapReachableOn',
@@ -7058,7 +7098,16 @@ app.on('before-quit', (event) => {
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
       } finally {
-        await shutdownAppResources();
+        // quit() must run even if shutdown throws: before-quit was prevented, so an
+        // escaping rejection here would leave the app running with no path to exit.
+        try {
+          await shutdownAppResources();
+        } catch (err) {
+          console.error(
+            '[main] shutdownAppResources failed before quit:',
+            sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+          );
+        }
         app.quit();
       }
     })();

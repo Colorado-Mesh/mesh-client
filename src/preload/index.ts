@@ -95,6 +95,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       body: string;
       timestamp: number;
     }) => ipcRenderer.invoke('db:insertRrcMessage', message),
+    listRrcNicks: (hubHash: string, limit?: number) =>
+      ipcRenderer.invoke('db:listRrcNicks', hubHash, limit),
+    upsertRrcNick: (nick: {
+      hub_hash: string;
+      identity_hash: string;
+      nickname: string;
+      last_seen: number;
+    }) => ipcRenderer.invoke('db:upsertRrcNick', nick),
     deleteRrcMessagesByRoom: (hubHash: string, room: string) =>
       ipcRenderer.invoke('db:deleteRrcMessagesByRoom', hubHash, room),
     pruneRrcMessagesByCount: (maxCount: number) =>
@@ -212,6 +220,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:blockContact', protocol, identityId, blockedHash),
     unblockContact: (protocol: string, identityId: string, blockedHash: string) =>
       ipcRenderer.invoke('db:unblockContact', protocol, identityId, blockedHash),
+    exportBlockedContacts: (protocol: string, identityId: string) =>
+      ipcRenderer.invoke('db:exportBlockedContacts', protocol, identityId),
+    importBlockedContacts: (protocol: string, identityId: string, hashes: string[]) =>
+      ipcRenderer.invoke('db:importBlockedContacts', protocol, identityId, hashes),
     getReticulumIdentityActivity: (destinationHash: string) =>
       ipcRenderer.invoke('db:getReticulumIdentityActivity', destinationHash),
     upsertReticulumIdentityActivity: (row: {
@@ -1128,6 +1140,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       contentBase64: string;
     }): Promise<ReticulumIdentityExportSaveResult> =>
       ipcRenderer.invoke('reticulum:saveIdentityExportDialog', opts),
+    saveBlocklistDialog: (
+      hashes: string[],
+    ): Promise<{ path: string | null; error: string | null }> =>
+      ipcRenderer.invoke('reticulum:saveBlocklistDialog', hashes),
+    openBlocklistDialog: (): Promise<{
+      hashes: string[] | null;
+      skipped: number;
+      error: string | null;
+    }> => ipcRenderer.invoke('reticulum:openBlocklistDialog'),
     showNomadContentSourceDialog: (): Promise<{ canceled: boolean; path: string | null }> =>
       ipcRenderer.invoke('reticulum:showNomadContentSourceDialog'),
     setNomadContentSource: (path: string): Promise<unknown> =>

@@ -223,6 +223,14 @@ pub struct PeerPathBody {
     pub force: Option<bool>,
 }
 
+/// Maintenance action: drop every cached route from the RNS path table.
+pub async fn clear_path_table(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
+    match stack.drop_path_table().await {
+        Ok(cleared) => Json(serde_json::json!({ "ok": true, "cleared": cleared })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
 pub async fn peer_probe(
     State(stack): State<Arc<StackHandle>>,
     Path(hash): Path<String>,

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { ProtocolCapabilities } from '@/renderer/lib/radio/BaseRadioProvider';
 import { MS_PER_MINUTE } from '@/renderer/lib/timeConstants';
+import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import type { TAKSettings } from '@/shared/tak-types';
 
 import { useTakServer } from '../hooks/useTakServer';
@@ -267,7 +268,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
             <ul className="space-y-1.5">
               {Array.from(atakMessages.entries()).map(([nodeId, messages]) => (
                 <li key={nodeId} className="flex items-center gap-2 text-xs text-gray-300">
-                  <span className="font-mono">!{nodeId.toString(16).padStart(8, '0')}</span>
+                  <span className="font-mono">{formatMeshtasticNodeId(nodeId)}</span>
                   <span className="text-gray-500">
                     {t('takServerPanel.packets', { count: messages.length })} ·{' '}
                     {t('takServerPanel.lastText')}{' '}

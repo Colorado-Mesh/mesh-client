@@ -38,6 +38,10 @@ import {
   isRetryableNomadPageError,
   shouldForceNomadPathRefreshRetry,
 } from '@/renderer/lib/nomad/nomadPageErrorHumanize';
+import {
+  readNomadPageFitWidth,
+  writeNomadPageFitWidth,
+} from '@/renderer/lib/nomad/nomadPageFitWidth';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { NomadNodeRow, NomadPageRequestData } from '@/shared/nomad-types';
 
@@ -60,7 +64,6 @@ interface NomadHistoryEntry {
 }
 
 const NOMAD_NODE_LIST_COLLAPSED_STORAGE_KEY = 'mesh-client:nomadNodeListCollapsed';
-const NOMAD_PAGE_FIT_WIDTH_STORAGE_KEY = 'mesh-client:nomadPageFitWidth';
 
 const NOMAD_SORT_KEYS: readonly NomadNodeSortKey[] = ['lastSeen', 'hops', 'name'];
 
@@ -282,10 +285,7 @@ export default function NomadNetworkPanel({
   const [nodeListCollapsed, setNodeListCollapsed] = useState(
     () => localStorage.getItem(NOMAD_NODE_LIST_COLLAPSED_STORAGE_KEY) === 'true',
   );
-  /** Missing key defaults to fit-width (wrap) for prose pages; open width is opt-in. */
-  const [pageFitWidth, setPageFitWidth] = useState(
-    () => localStorage.getItem(NOMAD_PAGE_FIT_WIDTH_STORAGE_KEY) !== 'false',
-  );
+  const [pageFitWidth, setPageFitWidth] = useState(readNomadPageFitWidth);
   const [sortPref, setSortPref] = useState(readNomadNodeSortPreference);
   const sortKey = sortPref.key;
   const sortDir = sortPref.dir;
@@ -1006,7 +1006,7 @@ export default function NomadNetworkPanel({
                       onClick={() => {
                         setPageFitWidth((prev) => {
                           const next = !prev;
-                          localStorage.setItem(NOMAD_PAGE_FIT_WIDTH_STORAGE_KEY, String(next));
+                          writeNomadPageFitWidth(next);
                           return next;
                         });
                       }}

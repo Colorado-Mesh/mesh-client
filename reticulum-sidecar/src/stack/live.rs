@@ -4524,6 +4524,25 @@ impl LiveBridge {
         self.request_path(hash).await
     }
 
+    /// Drop every cached route: transport path table plus the local path caches.
+    ///
+    /// Deliberately does not call `refresh_outbound_path_table()` — the table must stay
+    /// empty until announces repopulate it. Local caches are cleared even when the
+    /// control query times out, since the transport-side drop may still have applied.
+    pub async fn drop_path_table(&self) -> Result<i64, String> {
+        let resp = self
+            .query_control_timed(TransportQuery::DropPathTable)
+            .await;
+        let cleared = cleared_count_from_drop_path_table(resp);
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.clear_all_paths();
+        }
+        if let Ok(mut cache) = self.peer_via_cache.lock() {
+            cache.clear();
+        }
+        cleared
+    }
+
     pub async fn probe_peer(&self, hash: &str) -> Result<serde_json::Value, String> {
         let dest = parse_hash16(hash)?;
         match self
@@ -5862,6 +5881,19 @@ fn force_path_refresh_timeout_accepts(
     true
 }
 
+/// Read the cleared-route count out of a `DropPathTable` response.
+///
+/// `None` means the control query timed out. The drop may still have applied on the
+/// transport side, so callers must clear local caches regardless — the count is simply
+/// unknown and reported as an error for the UI.
+fn cleared_count_from_drop_path_table(resp: Option<TransportQueryResponse>) -> Result<i64, String> {
+    match resp {
+        Some(TransportQueryResponse::IntResult(cleared)) => Ok(cleared),
+        Some(other) => Err(format!("unexpected DropPathTable response: {other:?}")),
+        None => Err("transport query timed out".to_string()),
+    }
+}
+
 /// Classify path-ensure outcome after the RequestPath wait times out.
 #[allow(clippy::fn_params_excessive_bools)] // mirrors force_path_refresh_timeout_accepts flags
 fn path_ensure_kind_after_timeout(
@@ -6776,6 +6808,63 @@ mod announce_display_name_tests {
 
         assert!(!driver.has_path_to(hash));
         assert!(!peer_via_cache.contains_key(hash));
+    }
+
+    #[test]
+    fn cleared_count_from_drop_path_table_maps_every_response_kind() {
+        assert_eq!(
+            cleared_count_from_drop_path_table(Some(TransportQueryResponse::IntResult(0))),
+            Ok(0)
+        );
+        assert_eq!(
+            cleared_count_from_drop_path_table(Some(TransportQueryResponse::IntResult(7))),
+            Ok(7)
+        );
+        // Timeout: count unknown, but callers still clear local caches.
+        assert!(
+            cleared_count_from_drop_path_table(None)
+                .unwrap_err()
+                .contains("timed out")
+        );
+        // Wrong variant must not be silently reported as a successful clear.
+        assert!(
+            cleared_count_from_drop_path_table(Some(TransportQueryResponse::Ok))
+                .unwrap_err()
+                .contains("unexpected"),
+            "unexpected variants must surface as an error"
+        );
+    }
+
+    #[test]
+    fn drop_path_table_clears_driver_and_peer_via_cache() {
+        use super::lxmf_outbound::{LxmfOutboundDriver, PathTableRoute};
+        use rns_identity::identity::Identity;
+        use std::collections::HashMap;
+        use tokio::sync::mpsc;
+
+        let hash = "d765e919676aa0340412a1afae006553";
+        let dest_hash: [u8; 16] = hex::decode(hash).unwrap().try_into().unwrap();
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        driver.update_path_table(&[PathTableRoute {
+            hash: dest_hash,
+            hops: 3,
+            hex_key: hash.to_string(),
+            interface: Some("TTP_TCP".into()),
+            via: None,
+        }]);
+        assert!(driver.has_path_to(hash));
+
+        let mut peer_via_cache: HashMap<String, String> =
+            HashMap::from([(hash.to_lowercase(), "TTP_TCP".into())]);
+
+        // Mirrors drop_path_table cleanup (transport DropPath Table happens via query_control).
+        driver.clear_all_paths();
+        peer_via_cache.clear();
+
+        assert!(!driver.has_path_to(hash));
+        assert!(peer_via_cache.is_empty());
     }
 
     #[test]

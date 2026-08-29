@@ -1135,7 +1135,7 @@ Quit mesh-client fully, reopen, and click **Start stack** again.
    ./scripts/clone-ratspeak-stack.sh
    pnpm run reticulum:sidecar:build
    ```
-   Or apply individual overlays (`./scripts/apply-rsReticulum-packet-tap.sh`, `./scripts/apply-rsReticulum-auto-beacon-utun.sh`, `./scripts/apply-rsReticulum-link-client-nomad.sh`, …) then `pnpm run reticulum:sidecar:build`.
+   Or apply individual overlays (`./scripts/apply-rsReticulum-packet-tap.sh`, `./scripts/apply-rsReticulum-auto-beacon-utun.sh`, `./scripts/apply-rsReticulum-link-client-proof-budget.sh`, …) then `pnpm run reticulum:sidecar:build`.
 3. **Workaround on old builds**: disable **AutoInterface** under Connection → Interfaces if LAN discovery is not needed (TCP/RNode paths still work).
 4. **Physical NIC failures** (`en0`, `wlan0`, …): restart the stack; check firewall/multicast permissions — that indicates real LAN discovery failure, not VPN noise.
 5. **Local DMs hang with Auto + LAN TCP hub** — see [Reticulum local DMs hang with AutoInterface + private TCP hub](#reticulum-local-dms-hang-with-autointerface--private-tcp-hub).
@@ -1257,7 +1257,7 @@ TCP/network Nomad Links use path-scaled initiator hops (`link_hops = clamp(path_
 
 **Fix**:
 
-1. Ensure rsReticulum overlay is applied: `./scripts/apply-rsReticulum-link-client-nomad.sh` (see [patches/README.md](../reticulum-sidecar/patches/README.md); upstream [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14)).
+1. Ensure `.rsstack/rsReticulum` is on floated `origin/main` — handler-free `resolve_destination_on_transport` in `crates/rns-runtime/src/link_client.rs` supersedes the retired `rsReticulum-link-client-nomad` overlay (see [patches/README.md](../reticulum-sidecar/patches/README.md)).
 2. Rebuild sidecar: `pnpm run reticulum:sidecar:build`, restart stack.
 3. Prefer low-hop nodes while testing; hop count is shown in the Nomad list.
 4. Match the humanized message to the table above — `path_timeout` / high hops often mean RF reachability limits, not a mesh-client bug.

@@ -115,6 +115,33 @@ export function setReticulumAutostartEnabled(enabled: boolean): void {
     });
 }
 
+/** Whether an announce from a peer should retry that peer's failed LXMF messages. */
+export function isReticulumAutoResendOnAnnounceEnabled(): boolean {
+  const parsed = parseStoredJson<{ reticulumAutoResendOnAnnounce?: boolean }>(
+    getAppSettingsRaw(),
+    'isReticulumAutoResendOnAnnounceEnabled',
+  );
+  return typeof parsed?.reticulumAutoResendOnAnnounce === 'boolean'
+    ? parsed.reticulumAutoResendOnAnnounce
+    : DEFAULT_APP_SETTINGS_SHARED.reticulumAutoResendOnAnnounce;
+}
+
+export function setReticulumAutoResendOnAnnounceEnabled(enabled: boolean): void {
+  mergeAppSetting(
+    'reticulumAutoResendOnAnnounce',
+    enabled,
+    'setReticulumAutoResendOnAnnounceEnabled',
+  );
+  void window.electronAPI.appSettings
+    .set('reticulumAutoResendOnAnnounce', enabled ? '1' : '0')
+    .catch((e: unknown) => {
+      console.warn(
+        '[appSettingsStorage] persist reticulumAutoResendOnAnnounce failed ' +
+          errLikeToLogString(e),
+      );
+    });
+}
+
 /** Merge keys into existing app settings without dropping unrelated persisted fields. */
 export function mergeAppSettingsPartial(
   partial: Record<string, unknown>,

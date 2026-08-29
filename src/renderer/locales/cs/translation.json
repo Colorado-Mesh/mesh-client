@@ -393,7 +393,31 @@
     "rrcUnreadAllRoomMessagesHint": "Když je zapnuto, jakákoli nová zpráva RRC místnosti označí nepřečtené a může přehrát zvuk kanálu. Vypnout pro upozornění ve stylu IRC: pouze přímé zprávy a @zmínky.",
     "shareMyLocation": "Sdílet mé umístění",
     "shareMyLocationOffInfo": "Sdílení polohy je vypnuto — aktualizace GPS hostitele a odesílání sítě jsou zakázány. Povolte možnost Sdílet moji polohu výše a použijte automatické obnovení nebo odešlete svou pozici.",
-    "shareMyLocationHint": "Pokud je tato aplikace povolena, může vyhledat vaši polohu v tomto počítači a odeslat ji přes Meshtastic, MeshCore nebo Reticulum (sdílení chatu, rádio push, RMAP). Po vypnutí jsou vyhledávání GPS hostitele a odesílání aplikací vypnuté; statické souřadnice stále fungují pouze pro vaši místní mapu. Rádio s vlastní GPS může stále zobrazovat vaši polohu lokálně. Firmware zařízení se může vysílat, dokud neupravíte nastavení rádia nebo modulů."
+    "shareMyLocationHint": "Pokud je tato aplikace povolena, může vyhledat vaši polohu v tomto počítači a odeslat ji přes Meshtastic, MeshCore nebo Reticulum (sdílení chatu, rádio push, RMAP). Po vypnutí jsou vyhledávání GPS hostitele a odesílání aplikací vypnuté; statické souřadnice stále fungují pouze pro vaši místní mapu. Rádio s vlastní GPS může stále zobrazovat vaši polohu lokálně. Firmware zařízení se může vysílat, dokud neupravíte nastavení rádia nebo modulů.",
+    "reticulumBlocklist": {
+      "description": "Blokovaní odesílatelé jsou vysazeni dříve, než se jejich zprávy LXMF dostanou do vaší doručené pošty. Exportujte seznam a přesuňte jej do jiné instalace nebo importujte seznam a zablokujte více odesílatelů najednou.",
+      "exportButton": "Exportovat seznam blokovaných položek",
+      "exportAria": "Exportovat blokované kontakty",
+      "importButton": "Importovat seznam blokovaných položek",
+      "importAria": "Importovat blokované kontakty",
+      "exportOk": "Exportované {{count}} blokované kontakty",
+      "exportEmpty": "Neexistují žádné blokované kontakty pro export.",
+      "exportFailed": "Nelze exportovat seznam blokovaných položek.",
+      "importOk": "Importované {{imported}} blokované kontakty ({{skipped}} přeskočeno)",
+      "importFailed": "Nelze importovat seznam blokovaných položek.",
+      "unblockAria": "Odblokovat {{hash}}",
+      "unblockFailed": "Tento kontakt se nepodařilo odblokovat.",
+      "empty": "Blokované kontakty",
+      "title": "Blokované kontakty"
+    },
+    "deleteOldNodesConfirm_few": "Tímto trvale smažete všechny uzly, které nebyly za poslední {{days}} dny slyšet. Budou znovu objeveny, až budou znovu vysílat.",
+    "pruneDistantDeleteConfirm_few": "Smazat {{count}} uzly",
+    "pruneDistantNodesConfirm_few": "Touto akcí trvale smažete ze zařízení {{count}} uzly za {{distance}} {{unit}}. Toto nelze vrátit zpět.",
+    "pruneNoFixDeleteConfirm_few": "Smazat {{count}} uzly",
+    "pruneNoFixNodesConfirm_few": "Tím trvale smažete {{count}} uzly s nulovými nebo téměř nulovými souřadnicemi (žádná GPS fix nebo Zero Island). Toto nelze vrátit zpět.",
+    "pruneOfflineDeleteConfirm_few": "Smazat {{count}} uzly",
+    "pruneOfflineNodesConfirm_few": "Tím trvale smažete {{count}} uzly, které nebyly slyšet za více než {{days}} {{daysLabel}}. Toto nelze vrátit zpět.",
+    "reticulumDestinationsUnit_few": "cíle"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -441,7 +465,10 @@
     "transportSerial": "Sériový",
     "transportHttp": "HTTP",
     "transportRadio": "Rádio",
-    "radioInterfaceFallback": "rádiové rozhraní"
+    "radioInterfaceFallback": "rádiové rozhraní",
+    "contacts_few": "Kontakty: {{count}} kontakty načteny",
+    "databaseNodes_few": "Databáze: {{count}} uzly synchronizovány",
+    "routes_few": "Trasy: {{count}} uzly v síti"
   },
   "channelUtilization": {
     "title": "Využití kanálu",
@@ -522,7 +549,8 @@
         "title": "Zpráva je pro MeshCore příliš dlouhá",
         "body": "MeshCore odešle každou zprávu jako jeden rádiový paket (až {{limit}} znaků). Delší zprávy musí být rozděleny na číslované části, ale na zaneprázdněných síťových opakovačích některé z těchto částí běžně upouštějí — takže osoba, které posíláte zprávu, by obdržela neúplnou zprávu, aniž by to mohla říct. Aby byly zprávy spolehlivé, nejsou rozdělovány automaticky. Zkraťte tuto zprávu nebo ji odešlete jako několik samostatných kratších zpráv.",
         "hint": "MeshCore odešle jeden paket na zprávu; rozdělené části jsou často upuštěny zaneprázdněnými opakovači, takže delší zprávy nelze odeslat."
-      }
+      },
+      "sendParts_few": "Odeslat {{count}} díly"
     },
     "sendFailed": "Odeslání se nezdařilo",
     "outboxStatusQueued": "Ve frontě",
@@ -644,7 +672,9 @@
       "forgotAddressToast": "Zapomněli jste uložený cíl rncp pro tohoto kolegu.",
       "filledFromChatToast": "Vyplněný cíl z chatu (neuloženo — zaškrtněte Nezapomeňte jej ponechat).",
       "offerBannerTitle": "Nabídky příchozích souborů",
-      "offerBannerTitleAria": "Nevyřízené nabídky příchozích souborů od tohoto partnera"
+      "offerBannerTitleAria": "Nevyřízené nabídky příchozích souborů od tohoto partnera",
+      "activeTransfersBadgeAria_few": "{{count}} aktivní přenosy souborů s tímto kolegou",
+      "pendingOffersBadgeAria_few": "{{count}} čekající nabídky příchozích souborů od tohoto kolegy"
     },
     "shareLocation": "Sdílejte polohu",
     "shareLocationLabel": "📍 Sdílená poloha",
@@ -728,7 +758,11 @@
     "heardByRepeatersDetail_other": "Slyšeno {{count}}: {{names}}",
     "heardByRepeaterNodeFallback": "Uzel {{nodeId}}",
     "heardByRepeatersAdditional_one": "{{count}} další neidentifikovaný odesílatel (hash: {{hashes}})",
-    "heardByRepeatersAdditional_other": "{{count}} další neidentifikovaní přeposílatelé (hash: {{hashes}})"
+    "heardByRepeatersAdditional_other": "{{count}} další neidentifikovaní přeposílatelé (hash: {{hashes}})",
+    "heardByRepeaters_few": "Slyšeno {{count}}",
+    "heardByRepeatersAdditional_few": "{{count}} další neidentifikovaní přeposílatelé (hash: {{hashes}})",
+    "heardByRepeatersDetail_few": "Slyšeno {{count}}: {{names}}",
+    "searchResults_few": "{{count}} výsledky"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -1135,7 +1169,10 @@
         "blePeer": "BLE peer mesh pomocí seed peer adres.",
         "generic": "Síťové rozhraní Reticulum.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "I2P páteř přes router na tomto stroji. Povolte most aplikace SAM (127.0.0.1:7656) — ne http/HTTPS I2PTunnel proxy (4444/4445). Restartujte I2P po povolení SAM, aby most poslouchal, a poté restartujte zásobník Reticulum, pokud toto rozhraní zůstane mimo provoz."
+        "i2p": "I2P páteř přes router na tomto stroji. Povolte most aplikace SAM (127.0.0.1:7656) — ne http/HTTPS I2PTunnel proxy (4444/4445). Restartujte I2P po povolení SAM, aby most poslouchal, a poté restartujte zásobník Reticulum, pokud toto rozhraní zůstane mimo provoz.",
+        "serial": "Generický sériový odkaz na TNC, modem nebo jiného hostitele přes drát. Nastavte parametry linky tak, aby odpovídaly vzdálenému konci.",
+        "ax25kiss": "Paketové rádio AX.25 prostřednictvím KISS TNC. Vyžaduje vaši volací značku a SSID (0-15) identifikující tuto stanici.",
+        "local": "Zásuvka sdílené instance na tomto stroji. K tomuto zásobníku se mohou připojit další místní nástroje (rnsd, Nomad Network, rnsh). Cesta soketu je odvozena od názvu tohoto rozhraní, takže přejmenováním změníte adresu, kterou musí ostatní nástroje použít."
       },
       "rfProfile": {
         "coordinated": "Koordinované regionální",
@@ -1259,10 +1296,37 @@
       "effectiveModeBadge": "Účinnost: {{mode}}",
       "effectiveModeAria": "Efektivní režim běhu {{mode}}. Konfigurovaný režim se liší od toho, co běží Reticulum.",
       "effectiveModeTooltip": "Reticulum přepsalo toto zjistitelné rozhraní na přístupový bod (nebo jiný povolený režim), protože zjistitelný vyžaduje bránu, interní nebo přístupový bod, pokud není nastaveno ignore_config_warnings. Restartujte zásobník po razítkách mesh-klienta, které se odhlásí, takže se projeví Full (nebo váš nakonfigurovaný režim) (mesh-client).",
-      "flowControlBleHint": "Na Bluetooth rádio často nikdy neodesílá cmd_READY. Mesh-Client stále přechází TX (krátce čeká na PŘIPRAVENOST, pak pokračuje), takže kontrola průtoku snižuje přetížení bez zmrazení fronty."
+      "flowControlBleHint": "Na Bluetooth rádio často nikdy neodesílá cmd_READY. Mesh-Client stále přechází TX (krátce čeká na PŘIPRAVENOST, pak pokračuje), takže kontrola průtoku snižuje přetížení bez zmrazení fronty.",
+      "advancedFields": "Pokročilá nastavení",
+      "field": {
+        "port": "Port",
+        "speed": "Rychlost (baud)",
+        "databits": "Datové bity",
+        "parity": "Para",
+        "stopbits": "Zastavovací bity",
+        "callsign": "Volací značka",
+        "ssid": "SSID",
+        "flow_control": "regulace průtoku",
+        "preamble": "Preambule (ms)",
+        "txtail": "TX tail (ms)",
+        "persistence": "Perzistence:",
+        "slottime": "Čas otvoru (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "neuvedeny",
+          "E": "Sudá",
+          "O": "Lichá"
+        }
+      },
+      "fieldRequired": "Tato položka msí být vyplněna.",
+      "fieldNotANumber": "Zadejte celé číslo (pouze číslice).",
+      "fieldOutOfRange": "Hodnota je mimo povolený rozsah.",
+      "fieldTooLong": "Hodnota je příliš dlouhá.",
+      "fieldInvalidOption": "Nepodporovaná hodnota."
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Skoky",
       "actions": "Akce",
       "path": "Cesta",
       "probe": "Sonda"
@@ -1453,7 +1517,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
-    "bluetoothId": "Bluetooth ID"
+    "bluetoothId": "Bluetooth ID",
+    "reticulumAutoResendOnAnnounce": "Opakujte neúspěšné zprávy, když kolega oznámí"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -1476,7 +1541,8 @@
     "confirmDeleteButton": "Vymazat?",
     "manageMembersOf": "Spravovat členy {{name}}",
     "renameGroupNamed": "Přejmenovat {{name}}",
-    "deleteGroupNamed": "Smazat {{name}}"
+    "deleteGroupNamed": "Smazat {{name}}",
+    "memberCount_few": "{{count}} členové"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Vypustit řádky směrování starší než {{hours}} hodin (1–168)",
@@ -1815,7 +1881,13 @@
     "km": "km",
     "distanceOffsetHelp": "Přidá rovnou podlahu km k prahovým hodnotám vzdálenosti hop-goblin a špatným trasám (0–50).",
     "ignoreMqttToggle": "Ignorovat MQTT",
-    "ignoreMqttHelp": "Zobrazit uzly pouze přes MQTT šedě a vyloučit je z diagnostiky"
+    "ignoreMqttHelp": "Zobrazit uzly pouze přes MQTT šedě a vyloučit je z diagnostiky",
+    "errorCount_few": "{{count}} chyby",
+    "nodesWithTelemetry_few": "{{count}} uzly s telemetrií",
+    "severityErrors_few": "Chyby ({{count}})",
+    "severityNotes_few": "Poznámky ({{count}})",
+    "severityWarnings_few": "Upozornění ({{count}})",
+    "warningCount_few": "{{count}} varování"
   },
   "diagnosticsPing": {
     "title": "Kontinuální ping",
@@ -2274,7 +2346,8 @@
     "applying": "Aplikace…",
     "applyButton": "Použít soukromí telemetrie",
     "contactCount_one": "{{count}} kontakt",
-    "contactCount_other": "{{count}} kontaktů"
+    "contactCount_other": "{{count}} kontaktů",
+    "contactCount_few": "{{count}} kontakty"
   },
   "messageStatusBadge": {
     "queuedTooltip": "Ve frontě — bude odesláno po připojení",
@@ -2693,7 +2766,8 @@
       "8": {
         "label": "K9"
       }
-    }
+    },
+    "statusLine_few": "{{label}}: {{total}} paketů z {{count}} uzlů (poslední {{lastSeen}})"
   },
   "networkPanel": {
     "reticulumStackSettings": {
@@ -2733,11 +2807,12 @@
       "running": "Checking…",
       "ok": "Config looks good — no audit issues.",
       "failed": "Config check failed: {{message}}",
-      "issuesHeading_one": "{{count}} config issue",
-      "issuesHeading_other": "{{count}} config issues",
+      "issuesHeading_one": "{{count}} problém s konfigurací",
+      "issuesHeading_other": "{{count}} problémů s konfigurací",
       "severityError": "error",
       "severityWarning": "warning",
-      "severityInfo": "info"
+      "severityInfo": "info",
+      "issuesHeading_few": "{{count}} problémy s konfigurací"
     },
     "reticulumPnHosting": {
       "title": "Pokročilý hosting PN (nebezpečná zóna)",
@@ -2789,6 +2864,18 @@
     "reticulumScanImport": {
       "title": "Skenovat / importovat",
       "hint": "Naskenujte nebo vložte QR pro kontakty, karty Columba lxma:// nebo šifrované papírové zprávy LXMF."
+    },
+    "reticulumPathTable": {
+      "title": "Tabulka cest",
+      "description": "Vymazání tabulky cest přeruší každou trasu uloženou v mezipaměti. Trasy se znovu naučí, jakmile dorazí nová oznámení, takže první zpráva pro kolegu může trvat déle.",
+      "clear": "Vymazat tabulku cest",
+      "clearing": "Čištění",
+      "confirmTitle": "Vymazat tabulku cest?",
+      "confirmBody": "Každá cesta uložená v mezipaměti je vynechána. Trasy jsou přestavěny z nových oznámení.",
+      "clearOk": "Tabulka tras vymazána ({{count}} vynechaných tras)",
+      "clearFailed": "Nelze vymazat tabulku cesty.",
+      "clearAria": "Vymazat tabulku cest",
+      "confirmAction": "Vymazat"
     }
   },
   "nodeDetailModal": {
@@ -2970,7 +3057,8 @@
     "shareContactQrAria": "Zobrazit QR kód kontaktu MeshCore pro oficiální import aplikace",
     "publicKeyCopied": "Veřejný klíč zkopírován do schránky.",
     "hasPublicKeyNoDm": "Má veřejný klíč (žádné přímé zprávy)",
-    "copyPublicKey": "Kopírovat veřejný klíč"
+    "copyPublicKey": "Kopírovat veřejný klíč",
+    "hopLabel_few": "{{count}} skoky"
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",
@@ -3045,7 +3133,9 @@
     "hybridMqttPathTooltip": "Přijato prostřednictvím RF; některé pakety používají reléovou cestu MQTT",
     "hybridMqttPathAria": "Cesta RF a MQTT",
     "connectedViaRfAndMqttTooltip": "Připojeno přes RF a MQTT",
-    "connectedViaRfAndMqttAria": "Připojeno přes RF a MQTT"
+    "connectedViaRfAndMqttAria": "Připojeno přes RF a MQTT",
+    "changes_few": "{{count}} změny",
+    "echoes_few": "{{count}} ozvěny"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontakty byly obnoveny.",
@@ -3141,7 +3231,13 @@
     "meshcoreTypeNone": "neuvedeny",
     "meshcoreTypeUnknown": "Neznámo",
     "columnHealth": "Stav uzlu",
-    "hasPublicKeyTitle": "Má veřejný klíč"
+    "hasPublicKeyTitle": "Má veřejný klíč",
+    "distanceFilterActiveBanner_few": "Filtr vzdálenosti je aktivní – {{count}} uzly jsou skryté za {{maxDistance}} {{unit}}.",
+    "importResultSuccess_few": "Importovány {{count}} kontakty.",
+    "importResultSuccessWithSkipped_few": "Importovány {{count}} kontakty, přeskočeno {{skipped}}.",
+    "summaryOffline_few": "{{count}} offline",
+    "summaryOnline_few": "{{count}} online",
+    "summaryStale_few": "{{count}} zastaralé"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3227,7 +3323,50 @@
       "noPages": "Zatím žádné stránky. Přidejte soubory .mu do zvolené složky (například index.mu).",
       "contentSourceNotFromPicker": "Před použitím vyberte složku pomocí tlačítka Vybrat složku.",
       "contentSourceNone": "Nebyla vybrána žádná složka",
-      "contentSourceRequired": "Před zahájením hostování Nomad vyberte složku stránek."
+      "contentSourceRequired": "Před zahájením hostování Nomad vyberte složku stránek.",
+      "newPage": "Nová stránka",
+      "newPageName": "Název souboru stránky (musí končit na .mu)",
+      "invalidPageName": "Zadejte název souboru končící na .mu, bez .. nebo absolutních cest.",
+      "edit": "Upravit",
+      "editPage": "Upravit {{path}}",
+      "delete": "Odstranit",
+      "deletePage": "Smazat {{path}}",
+      "deleteConfirm": "Smazat tuto stránku? Tím se soubor odstraní ze zobrazené složky.",
+      "deleteConfirmAria": "Potvrďte odstranění této stránky",
+      "deleteError": "Stránku se nepodařilo odstranit.",
+      "openError": "Nelze otevřít stránku pro úpravy.",
+      "editorTitle": "Upravit stránku Micron",
+      "editorAria": "Zdroj Micron stránky",
+      "editorPreview": "Náhled",
+      "toolbarAria": "Akce formátování Micron",
+      "toolbar": {
+        "bold": "Odvážné",
+        "italic": "Kurzíva",
+        "underline": "Podtržené",
+        "h1": "Nadpis 1",
+        "h2": "Nadpis 2",
+        "h3": "Nadpis 3",
+        "alignLeft": "Zarovnat vlevo",
+        "alignCenter": "Uprostřed",
+        "alignRight": "Zarovnat vpravo",
+        "divider": "Rozdělovač",
+        "link": "Odkaz"
+      },
+      "linkTargetPrompt": "Cíl odkazu (cesta ke stránce nebo cílový hash)",
+      "save": "Uložit",
+      "saveError": "Stránku nelze uložit.",
+      "unsaved": "Neuložené změny",
+      "discard": "Zrušit úpravy",
+      "discardConfirm": "Tato stránka obsahuje neuložené změny.",
+      "discardConfirmAria": "Zahodit změny a zavřít.",
+      "close": "Zavřít editor",
+      "closeBackdropAria": "Zavřít editor stránky Micron",
+      "pageTooLarge": "Tato stránka je pro hostitele příliš velká (limit 512 KiB).",
+      "pageNotFound": "Tato stránka již v doručené složce neexistuje.",
+      "invalidPagePath": "Tato cesta ke stránce není povolena.",
+      "pageIoError": "Nelze číst nebo zapisovat stránku na disk.",
+      "pageNotUtf8": "Tato stránka není platný text UTF-8.",
+      "pageWriteFailed": "Stránku nelze zapsat."
     },
     "sortLastHeard": "Poslední slyšení",
     "sortHops": "Skoky",
@@ -3259,7 +3398,8 @@
     "pageProgressFailover": "Zkouším jinou trasu přes {{iface}} ({{hops}} hops)…",
     "pageProgressFailoverIface": "Zkusit jinou trasu přes {{iface}}…",
     "pageProgressFailoverGeneric": "Zkouším jinou trasu...",
-    "pageProgressNoAlternate": "Žádné jiné trasy nejsou k dispozici — dokončení tohoto pokusu..."
+    "pageProgressNoAlternate": "Žádné jiné trasy nejsou k dispozici — dokončení tohoto pokusu...",
+    "hopsAway_few": "{{count}} skoky daleko"
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",
@@ -3278,7 +3418,8 @@
     "packets_one": "{{count}} paket",
     "packets_other": "{{count}} pakety",
     "other": "Ostatní",
-    "noSenderId": "Žádné ID odesílatele v nezpracovaném rámci"
+    "noSenderId": "Žádné ID odesílatele v nezpracovaném rámci",
+    "packets_few": "{{count}} pakety"
   },
   "peerDetailModal": {
     "networkSection": "Síť",
@@ -4808,7 +4949,8 @@
     "regenerateWarning": "Regenerace zneplatní stávající datové balíčky ATAK – budete je muset znovu importovat.",
     "durationSec": "{{s}}s",
     "durationMin": "{{m}}m",
-    "durationHourMin": "{{h}}h {{m}}m"
+    "durationHourMin": "{{h}}h {{m}}m",
+    "packets_few": "{{count}} pakety"
   },
   "telemetryPanel": {
     "title": "Telemetrie",
@@ -4855,7 +4997,8 @@
     "firmwareAvailable": "Dostupná aktualizace firmwaru: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} nová zpráva",
     "newMessages_other": "{{protocol}}: {{count}} nových zpráv",
-    "meshcoreDistanceFilterHint": "Na mapě máš {{count}} kontaktů s GPS. Povol filtr vzdálenosti v App → Vzhled a zaměř se na blízké uzly."
+    "meshcoreDistanceFilterHint": "Na mapě máš {{count}} kontaktů s GPS. Povol filtr vzdálenosti v App → Vzhled a zaměř se na blízké uzly.",
+    "newMessages_few": "{{protocol}}: {{count}} nové zprávy"
   },
   "updateStatus": {
     "checking": "Kontrola…",
@@ -5044,7 +5187,17 @@
     "jumpToLatest": "Přejít na nejnovější",
     "stackNotReady": "Zásobník Reticulum ještě není připraven. Počkejte, až bude připojen, a zkuste to znovu.",
     "sidecarNotRunning": "Reticulum sidecar neběží. Spusťte zásobník na Připojení a zkuste to znovu.",
-    "whoReplyMissing": "Žádný seznam členů z centra pro {{room}} (odpověď může přesáhnout velikost odkazu). Jména se zobrazí, když se lidé připojí nebo chatují."
+    "whoReplyMissing": "Žádný seznam členů z centra pro {{room}} (odpověď může přesáhnout velikost odkazu). Jména se zobrazí, když se lidé připojí nebo chatují.",
+    "openNomadPage": "Otevřít stránku Nomad {{address}}",
+    "openDm": "Otevřít přímou zprávu s {{address}}",
+    "openReticulumAddress": "Otevřít adresu Reticulum {{address}}",
+    "addressChoiceTitle": "Otevřít adresu Reticulum",
+    "addressChoiceMessage": "{{address}} může být stránka Nomad nebo uzel. Co chcete otevřít?",
+    "addressChoiceNomad": "Stránka Nomad",
+    "addressChoiceDm": "Přímá zpráva",
+    "hopsAway_few": "{{count}} skoky daleko",
+    "memberCount_few": "{{count}} členové",
+    "userCount_few": "{{count}} uživatelé"
   },
   "signalMeter": {
     "rssi": "\"RSSI\"",
@@ -5130,14 +5283,15 @@
     },
     "pathCapability": {
       "checking": "Kontroluje se cesta...",
-      "hops_one": "{{count}} hop",
-      "hops_other": "{{count}} hops",
+      "hops_one": "{{count}} skok",
+      "hops_other": "{{count}} skoků",
       "speed": {
         "high": "Rychlá cesta",
         "constrained": "Omezená cesta",
         "mixed": "Smíšená cesta",
         "unknown": "Neznámá cesta"
-      }
+      },
+      "hops_few": "{{count}} skoky"
     },
     "shell": {
       "addressPlaceholder": "Cílový hash (32 hexadecimálních znaků)",
@@ -5245,7 +5399,8 @@
       "listenerLikelyOffConfirm": "Odeslat požadavek na povolení",
       "pendingOffersBadgeAriaCapped": "99+ čekajících nabídek příchozích souborů",
       "listenerLikelyOffBody": "Žádná cesta k cílovému umístění jejich souboru, ale hledají online chat. Požádejte je, aby povolili příjem souborů rncp a odeslali svůj hash pro příjem rncp, pak to zkuste znovu.",
-      "listenerLikelyOffToast": "Žádná cesta k cíli příjmu jejich souboru; příjem souborů může být vypnutý. Požádejte je, aby povolili rncp přijímat a odesílat svůj hash, a zkuste to znovu."
+      "listenerLikelyOffToast": "Žádná cesta k cíli příjmu jejich souboru; příjem souborů může být vypnutý. Požádejte je, aby povolili rncp přijímat a odesílat svůj hash, a zkuste to znovu.",
+      "pendingOffersBadgeAria_few": "{{count}} čekající nabídky příchozích souborů"
     },
     "enableRequest": {
       "title": "Povolit příjem souborů?",
@@ -5389,7 +5544,8 @@
     "sessionRowAria": "{{app}} hra s {{peer}}",
     "apps": {
       "ttt": "Piškvorky",
-      "chess": "Šachy"
+      "chess": "Šachy",
+      "four_in_a_row": "Čtyři v řadě"
     },
     "status": {
       "pending": "Čekající",
@@ -5441,6 +5597,19 @@
       "boardAria": "Tic-Tac-Toe deska",
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "fourInARow": {
+      "youWon": "Vyhráli jste!",
+      "opponentWon": "Soupeř vyhrál.",
+      "draw": "Nákres.",
+      "yourTurn": "Váš tah",
+      "opponentTurn": "Soupeřovo kolo",
+      "yourMarker": "Jsi {{marker}}",
+      "moveCount": "{{count}} se pohybuje",
+      "boardAria": "Deska hry Čtyři v řadě",
+      "columnAria": "Sloupec {{column}}, zdola nahoru: {{contents}}. Zahrát sem",
+      "columnFullAria": "Sloupec {{column}}, zdola nahoru: {{contents}}. Plný",
+      "columnEmptyContents": "prázdný"
     },
     "chess": {
       "youWon": "Vyhráli jste!",
