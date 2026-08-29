@@ -470,6 +470,240 @@ describe('RadioPanel MeshCore advert position synchronization', () => {
   });
 });
 
+describe('RadioPanel apply status placement', () => {
+  it('reports the apply result inside the applied section, not at the panel bottom', async () => {
+    const user = userEvent.setup();
+    const onSetOwner = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          onSetOwner={onSetOwner}
+          deviceOwner={{ longName: 'Node', shortName: '', isLicensed: false }}
+        />
+      </ToastProvider>,
+    );
+
+    const userDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Device User / Identity';
+    });
+    expect(userDetails).toBeDefined();
+    await user.click(userDetails!.querySelector('summary')!);
+
+    await user.click(screen.getByRole('button', { name: 'Apply Device User / Identity' }));
+
+    const statusEl = await screen.findByRole('status');
+    expect(userDetails!.contains(statusEl)).toBe(true);
+  });
+
+  it('reports a Meshtastic applyConfig result inside its own section', async () => {
+    const user = userEvent.setup();
+    const onSetConfig = vi.fn().mockResolvedValue(undefined);
+    const onCommit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          onSetConfig={onSetConfig}
+          onCommit={onCommit}
+          meshtasticConfigSlices={{
+            device: { role: 0 },
+            bluetooth: { enabled: true, mode: 1, fixedPin: 123456 },
+          }}
+        />
+      </ToastProvider>,
+    );
+
+    const findSection = (title: string) =>
+      [...document.querySelectorAll('details')].find((d) => {
+        const span = d.querySelector(':scope > summary > span');
+        return span?.textContent?.trim() === title;
+      });
+    const deviceDetails = findSection('Device Role');
+    const bluetoothDetails = findSection('Bluetooth');
+    expect(deviceDetails).toBeDefined();
+    expect(bluetoothDetails).toBeDefined();
+    await user.click(deviceDetails!.querySelector('summary')!);
+    await user.click(bluetoothDetails!.querySelector('summary')!);
+
+    await user.click(screen.getByRole('button', { name: 'Apply Device Role' }));
+
+    await waitFor(() => {
+      expect(onCommit).toHaveBeenCalled();
+    });
+    const statusEl = await screen.findByRole('status');
+    expect(deviceDetails!.contains(statusEl)).toBe(true);
+    expect(bluetoothDetails!.contains(statusEl)).toBe(false);
+    // Styling comes from the reported outcome, not from matching English message text.
+    await waitFor(() => {
+      expect(statusEl.className).toContain('bg-brand-green/10');
+    });
+  });
+
+  it('keeps a section status out of other sections', async () => {
+    const user = userEvent.setup();
+    const onSetOwner = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          onApplyLoraParams={vi.fn().mockResolvedValue(undefined)}
+          loraConfig={{ freq: 915_000_000, bw: 125_000, sf: 12, cr: 5, txPower: 20 }}
+          onSetOwner={onSetOwner}
+          deviceOwner={{ longName: 'Node', shortName: '', isLicensed: false }}
+        />
+      </ToastProvider>,
+    );
+
+    const findSection = (title: string) =>
+      [...document.querySelectorAll('details')].find((d) => {
+        const span = d.querySelector(':scope > summary > span');
+        return span?.textContent?.trim() === title;
+      });
+    const userDetails = findSection('Device User / Identity');
+    const loraDetails = findSection('LoRa / Radio');
+    expect(userDetails).toBeDefined();
+    expect(loraDetails).toBeDefined();
+    await user.click(userDetails!.querySelector('summary')!);
+    await user.click(loraDetails!.querySelector('summary')!);
+
+    await user.click(screen.getByRole('button', { name: 'Apply Device User / Identity' }));
+
+    const statusEl = await screen.findByRole('status');
+    expect(userDetails!.contains(statusEl)).toBe(true);
+    expect(loraDetails!.contains(statusEl)).toBe(false);
+  });
+});
+
+describe('RadioPanel Meshtastic LoRa form synchronization', () => {
+  it('keeps in-progress edits when the device re-pushes an unchanged config slice', async () => {
+    const user = userEvent.setup();
+    const renderPanel = (lora: Record<string, unknown>) => (
+      <ToastProvider>
+        <RadioPanel {...defaultProps} isConnected meshtasticConfigSlices={{ lora }} />
+      </ToastProvider>
+    );
+    const deviceLora = { region: 1, modemPreset: 0, channelNum: 20, hopLimit: 3 };
+    const { rerender } = render(renderPanel(deviceLora));
+    const loraDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'LoRa / Radio';
+    });
+    expect(loraDetails).toBeDefined();
+    await user.click(loraDetails!.querySelector('summary')!);
+
+    // ConfigNumber renders its label as plain text beside the input.
+    const channelNumberField = screen.getByText('Channel Number').closest('div')!.parentElement!;
+    const frequencySlot = channelNumberField.querySelector('input')!;
+    await waitFor(() => {
+      expect(frequencySlot).toHaveValue(20);
+    });
+
+    fireEvent.change(frequencySlot, { target: { value: '5' } });
+    expect(frequencySlot).toHaveValue(5);
+
+    // Radio re-sends the same config (new object, identical content).
+    rerender(renderPanel({ ...deviceLora }));
+    expect(frequencySlot).toHaveValue(5);
+
+    // A genuine device change still hydrates the form.
+    rerender(renderPanel({ ...deviceLora, channelNum: 31 }));
+    await waitFor(() => {
+      expect(frequencySlot).toHaveValue(31);
+    });
+  });
+});
+
+describe('RadioPanel MeshCore LoRa form synchronization', () => {
+  it('keeps in-progress edits when an unchanged loraConfig object is re-supplied', async () => {
+    const user = userEvent.setup();
+    const renderPanel = (loraConfig: {
+      freq: number;
+      bw: number;
+      sf: number;
+      cr: number;
+      txPower: number;
+    }) => (
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          onApplyLoraParams={vi.fn().mockResolvedValue(undefined)}
+          loraConfig={loraConfig}
+        />
+      </ToastProvider>
+    );
+    const deviceParams = { freq: 869_618_000, bw: 62_500, sf: 8, cr: 5, txPower: 10 };
+    const { rerender } = render(renderPanel(deviceParams));
+    const loraDetails = [...document.querySelectorAll('details')].find((details) =>
+      details.textContent?.includes('LoRa / Radio'),
+    );
+    expect(loraDetails).toBeDefined();
+    await user.click(loraDetails!.querySelector('summary')!);
+
+    const frequency = screen.getByLabelText('Frequency (MHz)');
+    await waitFor(() => {
+      expect(frequency).toHaveValue(869.618);
+    });
+
+    fireEvent.change(frequency, { target: { value: '910.525' } });
+    expect(frequency).toHaveValue(910.525);
+
+    // New object identity, identical device values (e.g. an unrelated parent re-render).
+    rerender(renderPanel({ ...deviceParams }));
+    expect(frequency).toHaveValue(910.525);
+
+    // A genuine device change still hydrates the form.
+    rerender(renderPanel({ ...deviceParams, freq: 906_875_000 }));
+    await waitFor(() => {
+      expect(frequency).toHaveValue(906.875);
+    });
+  });
+
+  it('keeps an in-progress name edit when an unchanged deviceOwner object is re-supplied', async () => {
+    const user = userEvent.setup();
+    const renderPanel = (deviceOwner: {
+      longName: string;
+      shortName: string;
+      isLicensed: boolean;
+    }) => (
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          deviceOwner={deviceOwner}
+        />
+      </ToastProvider>
+    );
+    const owner = { longName: 'Device Name', shortName: '', isLicensed: false };
+    const { rerender } = render(renderPanel(owner));
+
+    const nameInput = screen.getByLabelText('Name');
+    await waitFor(() => {
+      expect(nameInput).toHaveValue('Device Name');
+    });
+
+    await user.clear(nameInput);
+    await user.type(nameInput, 'My New Name');
+
+    rerender(renderPanel({ ...owner }));
+    expect(nameInput).toHaveValue('My New Name');
+
+    rerender(renderPanel({ ...owner, longName: 'Renamed On Device' }));
+    await waitFor(() => {
+      expect(nameInput).toHaveValue('Renamed On Device');
+    });
+  });
+});
+
 describe('RadioPanel Bluetooth fixed PIN display', () => {
   it('shows leading zeros when syncing fixedPin from device config', async () => {
     const user = userEvent.setup();
