@@ -121,6 +121,65 @@ describe('chatUnreadCounts', () => {
     expect(dmCounts.size).toBe(0);
   });
 
+  it('excludes Reticulum tapbacks (hash parent, no numeric replyId) from DM unread', () => {
+    const dmCounts = computeDmUnreadCounts(
+      [
+        msg({
+          channel: 0,
+          to: 1,
+          timestamp: 2000,
+          emoji: 0x1f44d,
+          payload: '\u{1F44D}',
+          reticulum_reply_to_hash: 'aabbccddeeff00112233445566778899',
+        }),
+      ],
+      {},
+      ownNodes,
+      'reticulum',
+    );
+    expect(dmCounts.size).toBe(0);
+  });
+
+  it('clears Reticulum DM unread once the watermark reaches the newest regular message', () => {
+    const messages = [
+      msg({ channel: 0, to: 1, timestamp: 2000 }),
+      msg({
+        channel: 0,
+        to: 1,
+        timestamp: 3000,
+        emoji: 0x2764,
+        payload: '\u2764',
+        reticulum_reply_to_hash: 'aabbccddeeff00112233445566778899',
+      }),
+    ];
+    // The read watermark can only advance to the newest *visible* message (2000).
+    const dmCounts = computeDmUnreadCounts(messages, { 'dm:2': 2000 }, ownNodes, 'reticulum');
+    expect(dmCounts.size).toBe(0);
+    expect(totalUnreadCount(messages, { 'dm:2': 2000 }, ownNodes, 'reticulum')).toBe(0);
+  });
+
+  it('still excludes Meshtastic and MeshCore tapbacks keyed by numeric replyId', () => {
+    for (const protocol of ['meshtastic', 'meshcore'] as const) {
+      const dmCounts = computeDmUnreadCounts(
+        [msg({ channel: 0, to: 1, timestamp: 2000, emoji: 0x1f44d, replyId: 42 })],
+        {},
+        ownNodes,
+        protocol,
+      );
+      expect(dmCounts.size).toBe(0);
+    }
+  });
+
+  it('counts a plain Reticulum emoji message that is not a tapback', () => {
+    const dmCounts = computeDmUnreadCounts(
+      [msg({ channel: 0, to: 1, timestamp: 2000, emoji: 0x1f44d, payload: '\u{1F44D}' })],
+      {},
+      ownNodes,
+      'reticulum',
+    );
+    expect(dmCounts.get(2)).toBe(1);
+  });
+
   it('totalUnreadCount sums channel and DM unreads', () => {
     const total = totalUnreadCount(
       [msg({ channel: 0, timestamp: 2000 }), msg({ channel: 1, to: 1, timestamp: 2000 })],
