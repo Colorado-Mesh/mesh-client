@@ -7074,7 +7074,16 @@ app.on('before-quit', (event) => {
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
       } finally {
-        await shutdownAppResources();
+        // quit() must run even if shutdown throws: before-quit was prevented, so an
+        // escaping rejection here would leave the app running with no path to exit.
+        try {
+          await shutdownAppResources();
+        } catch (err) {
+          console.error(
+            '[main] shutdownAppResources failed before quit:',
+            sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+          );
+        }
         app.quit();
       }
     })();

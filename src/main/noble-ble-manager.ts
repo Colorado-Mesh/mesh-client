@@ -1213,7 +1213,15 @@ export class NobleBleManager extends EventEmitter {
     this.connectQueue = new Promise<void>((r) => {
       releaseQueue = r;
     });
-    await withTimeout(prevQueue, BLE_CONNECT_QUEUE_WAIT_MS, 'BLE connect queue wait');
+    try {
+      await withTimeout(prevQueue, BLE_CONNECT_QUEUE_WAIT_MS, 'BLE connect queue wait');
+    } catch (err) {
+      // The queue slot installed above is released only by the finally below, which this
+      // throw skips. Release it here or every later connect() awaits a promise that can
+      // never settle, wedging BLE connect for the rest of the process lifetime.
+      releaseQueue();
+      throw err;
+    }
 
     const session = this.getSession(sessionId);
     let peripheral: NoblePeripheral | null = null;

@@ -457,4 +457,38 @@ describe('NobleBleManager behavior (notify-first + fallback)', () => {
     expect(disconnectSpy).not.toHaveBeenCalled();
     expect(manager.isConnected('meshtastic')).toBe(true);
   });
+
+  it('releases the connect queue when the queue wait times out', async () => {
+    const mod = await import('./noble-ble-manager');
+    const manager = new mod.NobleBleManager();
+    (manager as any).sessions.set('meshtastic', (manager as any).createSessionState());
+    (manager as any).sessions.set('meshcore', (manager as any).createSessionState());
+    (manager as any).adapterReady = true;
+    (manager as any).lastAdapterState = 'poweredOn';
+
+    const toRadio = new FakeCharacteristic(MESHCORE_RX_UUID, { properties: ['write'] });
+    const fromRadio = new FakeCharacteristic(MESHCORE_TX_UUID, { properties: ['notify'] });
+    const peripheral = new FakePeripheral('meshcore-peripheral', [toRadio, fromRadio]);
+    (manager as any).knownPeripherals.set(peripheral.id, peripheral);
+
+    // Wedge the queue behind a holder that never releases, so the wait must time out.
+    (manager as any).connectQueue = new Promise<void>(() => {
+      /* never settles */
+    });
+
+    vi.useFakeTimers();
+    const wedged = manager.connect('meshcore', peripheral.id);
+    const wedgedAssertion = expect(wedged).rejects.toThrow(/BLE connect queue wait/);
+    // Longer than BLE_CONNECT_QUEUE_WAIT_MS on every platform (60s darwin / 90s others).
+    await vi.advanceTimersByTimeAsync(95_000);
+    await wedgedAssertion;
+    vi.useRealTimers();
+
+    // Regression: the timed-out attempt must release the queue slot it installed.
+    // Otherwise this second connect awaits a promise that can never settle and BLE
+    // connect stays wedged for the rest of the process lifetime.
+    await manager.connect('meshcore', peripheral.id);
+    expect(manager.isConnected('meshcore')).toBe(true);
+    expect(fromRadio.subscribeCalls).toBe(1);
+  });
 });
