@@ -34,6 +34,19 @@ export function applyFontScale(scale: number): void {
   document.documentElement.style.fontSize = `${scale * 100}%`;
 }
 
+/**
+ * The scale currently applied to the document, for px-based layout math
+ * (e.g. virtualizer row estimates) that cannot be expressed in rem.
+ * Returns the default when no scale has been applied yet.
+ */
+export function readAppliedFontScale(): number {
+  const raw = document.documentElement.style.fontSize;
+  if (!raw.endsWith('%')) return DEFAULT_FONT_SCALE;
+  const percent = Number.parseFloat(raw);
+  if (!Number.isFinite(percent) || percent <= 0) return DEFAULT_FONT_SCALE;
+  return percent / 100;
+}
+
 export function resetFontScale(): void {
   localStorage.removeItem(FONT_SCALE_STORAGE_KEY);
   applyFontScale(DEFAULT_FONT_SCALE);

@@ -9,6 +9,7 @@ import {
   FONT_SCALE_STORAGE_KEY,
   loadFontScale,
   persistFontScale,
+  readAppliedFontScale,
   resetFontScale,
 } from './fontScale';
 
@@ -67,6 +68,25 @@ describe('fontScale', () => {
 
     applyFontScale(DEFAULT_FONT_SCALE);
     expect(document.documentElement.style.fontSize).toBe('100%');
+  });
+
+  describe('readAppliedFontScale', () => {
+    it('returns the default when no scale has been applied', () => {
+      expect(readAppliedFontScale()).toBe(DEFAULT_FONT_SCALE);
+    });
+
+    it('reads back the applied scale', () => {
+      applyFontScale(1.35);
+      expect(readAppliedFontScale()).toBe(1.35);
+    });
+
+    it('falls back to the default for a non-percentage or invalid value', () => {
+      document.documentElement.style.fontSize = '18px';
+      expect(readAppliedFontScale()).toBe(DEFAULT_FONT_SCALE);
+
+      document.documentElement.style.fontSize = '0%';
+      expect(readAppliedFontScale()).toBe(DEFAULT_FONT_SCALE);
+    });
   });
 
   it('reset clears storage and restores the default root font-size', () => {

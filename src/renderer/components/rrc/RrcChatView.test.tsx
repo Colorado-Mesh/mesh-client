@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
@@ -67,10 +67,23 @@ const baseProps = {
 };
 
 describe('estimateRrcRowHeight', () => {
+  afterEach(() => {
+    document.documentElement.style.fontSize = '';
+  });
+
   it('scales with wrapped body length', () => {
     expect(estimateRrcRowHeight(makeMsg({ id: '1', body: 'hi' }))).toBe(22);
     expect(estimateRrcRowHeight(makeMsg({ id: '2', body: 'x'.repeat(160) }))).toBe(42);
     expect(estimateRrcRowHeight(undefined)).toBe(22);
+  });
+
+  it('grows rows and wraps sooner at a larger root font scale', () => {
+    document.documentElement.style.fontSize = '150%';
+
+    // 20px line * 1.5 + 2px gap
+    expect(estimateRrcRowHeight(makeMsg({ id: '1', body: 'hi' }))).toBe(32);
+    // 160 chars over ~53 chars/line rounds up to 4 lines: 4 * 30 + 2
+    expect(estimateRrcRowHeight(makeMsg({ id: '2', body: 'x'.repeat(160) }))).toBe(122);
   });
 });
 

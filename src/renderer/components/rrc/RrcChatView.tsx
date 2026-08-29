@@ -24,6 +24,7 @@ import {
   getDistFromChatBottom,
   VIRTUALIZER_SCROLL_END_THRESHOLD,
 } from '@/renderer/lib/chatScrollUtils';
+import { readAppliedFontScale } from '@/renderer/lib/fontScale';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { openNomadPageFromLink } from '@/renderer/lib/nomad/openNomadPageFromLink';
 import {
@@ -51,12 +52,23 @@ function formatHash(hash: string): string {
   return hash.slice(0, 8);
 }
 
-/** Compact IRC line height for virtualization (not ChatMessage card estimates). */
+/** Compact IRC line height at 100% font scale: ~20px leading-snug + 2px row gap. */
+const RRC_ROW_LINE_PX = 20;
+const RRC_ROW_GAP_PX = 2;
+/** Characters per wrapped line at 100% font scale. */
+const RRC_ROW_CHARS_PER_LINE = 80;
+
+/**
+ * Compact IRC line height for virtualization (not ChatMessage card estimates).
+ * Scales with the user's font size: taller lines that fit fewer characters.
+ * Only an estimate — the virtualizer measures real rows once they render.
+ */
 export function estimateRrcRowHeight(msg: RrcChatMessage | null | undefined): number {
+  const scale = readAppliedFontScale();
   const bodyLen = msg?.body.length ?? 0;
-  const lines = Math.max(1, Math.ceil(bodyLen / 80));
-  // ~20px leading-snug + 2px row gap
-  return lines * 20 + 2;
+  const charsPerLine = Math.max(1, Math.round(RRC_ROW_CHARS_PER_LINE / scale));
+  const lines = Math.max(1, Math.ceil(bodyLen / charsPerLine));
+  return Math.round(lines * RRC_ROW_LINE_PX * scale + RRC_ROW_GAP_PX);
 }
 
 function rrcMessageVirtualizerKey(msg: RrcChatMessage | null | undefined, index: number): string {
@@ -675,7 +687,7 @@ export function RrcChatView({
   }
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col font-mono text-[13px]">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col font-mono text-[0.8125rem]">
       <div className="relative min-h-0 flex-1">
         <div
           ref={scrollContainerRef}
@@ -741,7 +753,9 @@ export function RrcChatView({
                     style={{ transform: `translateY(${vi.start}px)` }}
                   >
                     <div className="group flex items-start gap-1 leading-snug">
-                      {time && <span className="text-muted shrink-0 text-[10px]">[{time}]</span>}
+                      {time && (
+                        <span className="text-muted shrink-0 text-[0.625rem]">[{time}]</span>
+                      )}
                       <div className="min-w-0 flex-1 break-words whitespace-pre-wrap">
                         {msg.kind === 'action' ? (
                           <>
