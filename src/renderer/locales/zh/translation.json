@@ -409,7 +409,13 @@
       "unblockFailed": "无法取消阻止该联系人。",
       "empty": "已阻止的联系人",
       "title": "已屏蔽的联系人"
-    }
+    },
+    "fontSize": "字体大小",
+    "fontSizeDesc": "在应用中调整文字大小。地图、海图和航站楼不受影响。",
+    "decreaseFontSize": "减小字体大小",
+    "increaseFontSize": "增加字体大小",
+    "resetFontSize": "一键复原",
+    "resetFontSizeAria": "重置字体大小"
   },
   "aria": {
     "closeDialog": "关闭对话框",

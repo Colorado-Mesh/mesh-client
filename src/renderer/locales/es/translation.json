@@ -409,7 +409,13 @@
       "unblockFailed": "No se ha podido desbloquear ese contacto.",
       "empty": "Contactos bloqueados",
       "title": "Contactos bloqueados"
-    }
+    },
+    "fontSize": "Tamaño de letra",
+    "fontSizeDesc": "Ajusta el tamaño del texto en la app. Los mapas, gráficos y la terminal no se ven afectados.",
+    "decreaseFontSize": "Reducir el tamaño de letra",
+    "increaseFontSize": "Aumentar el tamaño de letra",
+    "resetFontSize": "Restablecimiento",
+    "resetFontSizeAria": "Restablecer tamaño de fuente"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

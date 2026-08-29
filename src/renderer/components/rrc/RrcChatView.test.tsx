@@ -1,22 +1,31 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { applyFontScale } from '@/renderer/lib/fontScale';
 import { rrcNickColorClass } from '@/renderer/lib/rrcNickColor';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
 import { estimateRrcRowHeight, RrcChatView } from './RrcChatView';
 
 const mockScrollToEnd = vi.fn();
+const mockMeasure = vi.fn();
 let mockIsAtEnd = true;
+/** Last options handed to the virtualizer, for row-estimate assertions. */
+let lastVirtualizerOpts: { count: number; estimateSize: (index: number) => number } | null = null;
 
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: (opts: Record<string, unknown> & { count: number }) => {
     const count = opts.count;
+    lastVirtualizerOpts = opts as unknown as {
+      count: number;
+      estimateSize: (index: number) => number;
+    };
     return {
+      measure: mockMeasure,
       getVirtualItems: () =>
         Array.from({ length: count }, (_, index) => ({
           index,
@@ -67,10 +76,90 @@ const baseProps = {
 };
 
 describe('estimateRrcRowHeight', () => {
+  afterEach(() => {
+    document.documentElement.style.fontSize = '';
+  });
+
   it('scales with wrapped body length', () => {
     expect(estimateRrcRowHeight(makeMsg({ id: '1', body: 'hi' }))).toBe(22);
     expect(estimateRrcRowHeight(makeMsg({ id: '2', body: 'x'.repeat(160) }))).toBe(42);
     expect(estimateRrcRowHeight(undefined)).toBe(22);
+  });
+
+  it('grows rows and wraps sooner at a larger root font scale', () => {
+    document.documentElement.style.fontSize = '150%';
+
+    // 20px line * 1.5 + 2px gap
+    expect(estimateRrcRowHeight(makeMsg({ id: '1', body: 'hi' }))).toBe(32);
+    // 160 chars over ~53 chars/line rounds up to 4 lines: 4 * 30 + 2
+    expect(estimateRrcRowHeight(makeMsg({ id: '2', body: 'x'.repeat(160) }))).toBe(122);
+  });
+});
+
+describe('RrcChatView font scale re-measure', () => {
+  const longHistory = Array.from({ length: 600 }, (_, i) =>
+    makeMsg({ id: `m${i}`, body: 'x'.repeat(120 + (i % 40)) }),
+  );
+
+  /** Total size and per-row offsets the virtualizer derives from the estimates. */
+  function readEstimatedLayout(): { total: number; offsets: number[] } {
+    const opts = lastVirtualizerOpts;
+    if (!opts) throw new Error('virtualizer was not mounted');
+    const offsets: number[] = [];
+    let total = 0;
+    for (let i = 0; i < opts.count; i += 1) {
+      offsets.push(total);
+      total += opts.estimateSize(i);
+    }
+    return { total, offsets };
+  }
+
+  beforeEach(() => {
+    mockIsAtEnd = true;
+    mockScrollToEnd.mockClear();
+    mockMeasure.mockClear();
+    lastVirtualizerOpts = null;
+  });
+
+  afterEach(() => {
+    document.documentElement.style.fontSize = '';
+  });
+
+  it('invalidates cached row measurements and re-anchors when the font scale changes', () => {
+    render(<RrcChatView {...baseProps} messages={longHistory} />);
+
+    const before = readEstimatedLayout();
+    expect(before.offsets).toHaveLength(600);
+    mockScrollToEnd.mockClear();
+
+    act(() => {
+      applyFontScale(1.5);
+    });
+
+    expect(mockMeasure).toHaveBeenCalledTimes(1);
+    expect(mockScrollToEnd).toHaveBeenCalled();
+
+    const after = readEstimatedLayout();
+    expect(after.total).toBeGreaterThan(before.total);
+    // Every row past the first shifts down, so off-screen offsets cannot stay stale.
+    for (let i = 1; i < after.offsets.length; i += 1) {
+      expect(after.offsets[i]).toBeGreaterThan(before.offsets[i] ?? 0);
+    }
+  });
+
+  it('does not re-anchor to the end when the user has scrolled up', () => {
+    mockIsAtEnd = false;
+    render(<RrcChatView {...baseProps} messages={longHistory} />);
+
+    fireEvent.scroll(screen.getByTestId('rrc-message-stream'));
+    mockScrollToEnd.mockClear();
+
+    act(() => {
+      applyFontScale(1.25);
+    });
+
+    expect(mockMeasure).toHaveBeenCalledTimes(1);
+    expect(mockScrollToEnd).not.toHaveBeenCalled();
   });
 });
 

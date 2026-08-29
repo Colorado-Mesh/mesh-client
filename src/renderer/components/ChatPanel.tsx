@@ -2395,7 +2395,7 @@ function ChatPanel({
       {/* Row 2 — DM tabs (Meshtastic/MeshCore; Reticulum promotes DMs into Row 1) */}
       {!dmOnlyChat ? (
         <div
-          className={`mb-2 flex min-h-[28px] min-w-0 items-center gap-2 whitespace-nowrap ${viewMode === 'channels' ? 'opacity-50' : ''}`}
+          className={`mb-2 flex min-h-[1.75rem] min-w-0 items-center gap-2 whitespace-nowrap ${viewMode === 'channels' ? 'opacity-50' : ''}`}
         >
           {dmTabPills}
         </div>

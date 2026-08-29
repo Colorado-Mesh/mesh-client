@@ -409,7 +409,13 @@
       "unblockFailed": "Kon dat contact niet deblokkeren.",
       "empty": "Geblokkeerde contactpersonen",
       "title": "Geblokkeerde contacten"
-    }
+    },
+    "fontSize": "Lettertypegrootte",
+    "fontSizeDesc": "Pas de tekstgrootte in de app aan. Kaarten, grafieken en de terminal worden niet beïnvloed.",
+    "decreaseFontSize": "Lettertype verkleinen",
+    "increaseFontSize": "Lettertype vergroten",
+    "resetFontSize": "Resetten",
+    "resetFontSizeAria": "Lettertype herstellen"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

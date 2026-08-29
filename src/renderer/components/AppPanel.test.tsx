@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
+import { FONT_SCALE_STORAGE_KEY } from '../lib/fontScale';
 import { MESSAGE_RETENTION_KEYS } from '../lib/messageRetention';
 import AppPanel from './AppPanel';
 import { ToastProvider } from './Toast';
@@ -415,5 +416,101 @@ describe('AppPanel: Reticulum clear contacts danger zone', () => {
 
     fireEvent.click(screen.getByText('Destructive actions'));
     expect(await screen.findByRole('button', { name: /Clear All Contacts \(0\)/i })).toBeDisabled();
+  });
+});
+
+describe('AppPanel: font size control', () => {
+  const defaultProps = {
+    protocol: 'meshtastic' as const,
+    nodeCount: 0,
+    messageCount: 0,
+    channels: [] as { index: number; name: string }[],
+    myNodeNum: null as number | null,
+    onLocationFilterChange: vi.fn(),
+  };
+
+  beforeEach(() => {
+    localStorage.removeItem(FONT_SCALE_STORAGE_KEY);
+    document.documentElement.style.fontSize = '';
+  });
+
+  it('hydrates the slider and percentage label from the stored scale', async () => {
+    localStorage.setItem(FONT_SCALE_STORAGE_KEY, '1.2');
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+
+    const slider = await screen.findByRole('slider', { name: /font size/i });
+    expect(slider).toHaveValue('1.2');
+    expect(screen.getByText('120%')).toBeInTheDocument();
+  });
+
+  it('dragging the slider applies and persists the scale', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+
+    const slider = await screen.findByRole('slider', { name: /font size/i });
+    act(() => {
+      fireEvent.change(slider, { target: { value: '1.25' } });
+    });
+
+    expect(document.documentElement.style.fontSize).toBe('125%');
+    expect(localStorage.getItem(FONT_SCALE_STORAGE_KEY)).toBe('1.25');
+    expect(screen.getByText('125%')).toBeInTheDocument();
+  });
+
+  it('increase and decrease buttons step by FONT_SCALE_STEP', () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /increase font size/i }));
+    });
+    expect(localStorage.getItem(FONT_SCALE_STORAGE_KEY)).toBe('1.05');
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /decrease font size/i }));
+    });
+    expect(localStorage.getItem(FONT_SCALE_STORAGE_KEY)).toBe('1');
+  });
+
+  it('reset clears storage and returns the label to 100%', async () => {
+    localStorage.setItem(FONT_SCALE_STORAGE_KEY, '1.5');
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+
+    expect(await screen.findByText('150%')).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /reset font size/i }));
+    });
+
+    expect(localStorage.getItem(FONT_SCALE_STORAGE_KEY)).toBeNull();
+    expect(document.documentElement.style.fontSize).toBe('100%');
+    expect(screen.getByText('100%')).toBeInTheDocument();
+  });
+
+  it('has no axe violations at the maximum scale', async () => {
+    localStorage.setItem(FONT_SCALE_STORAGE_KEY, '1.5');
+    const { container } = render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    await act(async () => {});
+    hydrateAxeThemeColors(container);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
   });
 });

@@ -409,7 +409,13 @@
       "unblockFailed": "Impossibile sbloccare il contatto.",
       "empty": "Contatti bloccati",
       "title": "Contatti bloccati"
-    }
+    },
+    "fontSize": "Dimensioni font",
+    "fontSizeDesc": "Regola le dimensioni del testo nell'app. Le mappe, i grafici e il terminale non sono interessati.",
+    "decreaseFontSize": "Diminuisci dimensioni carattere",
+    "increaseFontSize": "Aumenta dimensioni carattere",
+    "resetFontSize": "Reimposta",
+    "resetFontSizeAria": "Organizzazione:"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

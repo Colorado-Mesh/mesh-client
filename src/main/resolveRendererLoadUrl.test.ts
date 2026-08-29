@@ -48,6 +48,41 @@ describe('resolveRendererLoadUrl', () => {
     expect(resolved.openDevTools).toBe(false);
   });
 
+  it('warns about the dist fallback without claiming the bundle is stale', async () => {
+    // `pnpm start` runs a full build and never sets VITE_DEV_SERVER_URL, so it always takes this
+    // path with a freshly built bundle — the warning must not report it as stale.
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await resolveRendererLoadUrl({
+        packaged: false,
+        distIndexPath: '/tmp/dist/renderer/index.html',
+        isDevServerReachable: vi.fn().mockResolvedValue(false),
+      });
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      const message = String(warnSpy.mock.calls[0]?.[0]);
+      expect(message).toContain('[Startup]');
+      expect(message).toContain('dist/renderer');
+      expect(message).toContain('pnpm run dev');
+      expect(message).not.toMatch(/stale/i);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('does not warn about the dist fallback when packaged', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await resolveRendererLoadUrl({
+        packaged: true,
+        distIndexPath: '/tmp/dist/renderer/index.html',
+        isDevServerReachable: vi.fn().mockResolvedValue(false),
+      });
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
   it('uses dist when packaged even if Vite is reachable', async () => {
     const probe = vi.fn().mockResolvedValue(true);
     const resolved = await resolveRendererLoadUrl({

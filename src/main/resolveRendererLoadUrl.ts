@@ -105,8 +105,10 @@ export async function resolveRendererLoadUrl(
         source: 'vite-probe',
       };
     }
+    // Not necessarily stale: `pnpm start` runs a full build before launching, and never sets
+    // VITE_DEV_SERVER_URL, so it always lands here with a freshly built bundle.
     console.warn(
-      '[Startup] VITE_DEV_SERVER_URL unset and Vite not reachable — loading dist/renderer (stale hashed bundle). Run pnpm run dev for live source.',
+      '[Startup] No Vite dev server reachable — loading the built renderer from dist/renderer. Expected for pnpm start (which rebuilds first); run pnpm run dev for live source with HMR.',
     );
   }
 

@@ -213,6 +213,7 @@ import {
   MESHCORE_FIRMWARE_RELEASES_URL,
   MESHTASTIC_FIRMWARE_RELEASES_URL,
 } from './lib/firmwareCheck';
+import { applyFontScale, loadFontScale } from './lib/fontScale';
 import { loadLastConnection } from './lib/lastConnectionStorage';
 import { generateLetsMeshAuthToken, readMeshcoreIdentityAsync } from './lib/letsMeshJwt';
 import { meshcoreChatMessagesForDisplay } from './lib/meshcoreChannelText';
@@ -786,6 +787,7 @@ function AppContent() {
   // ─── Theme colors (localStorage overrides for @theme tokens) ─────
   useLayoutEffect(() => {
     applyThemeColors(loadThemeColors());
+    applyFontScale(loadFontScale());
   }, []);
 
   useEffect(() => {

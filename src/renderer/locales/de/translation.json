@@ -409,7 +409,13 @@
       "unblockFailed": "Dieser Kontakt konnte nicht entsperrt werden.",
       "empty": "Blockierte Kontakte",
       "title": "Blockierte Kontakte"
-    }
+    },
+    "fontSize": "Schriftgrösse",
+    "fontSizeDesc": "Passen Sie die Textgröße in der App an. Karten, Diagramme und das Terminal sind nicht betroffen.",
+    "decreaseFontSize": "Schrift verkleinern",
+    "increaseFontSize": "Schrift vergrössern",
+    "resetFontSize": "Zurücksetzen",
+    "resetFontSizeAria": "Schriftgröße wiederherstellen"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

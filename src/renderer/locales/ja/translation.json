@@ -409,7 +409,13 @@
       "unblockFailed": "その連絡先のブロックを解除できませんでした。",
       "empty": "ブロックされた連絡先",
       "title": "ブロックした連絡先"
-    }
+    },
+    "fontSize": "フォントサイズ",
+    "fontSizeDesc": "アプリ全体でテキストのサイズを調整します。地図、チャート、ターミナルは影響を受けません。",
+    "decreaseFontSize": "フォントサイズを小さく",
+    "increaseFontSize": "フォントサイズを大きく",
+    "resetFontSize": "リセット",
+    "resetFontSizeAria": "フォントサイズをリセット"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
