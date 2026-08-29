@@ -680,7 +680,8 @@ if ! yamllint -f github -s .; then
 fi
 
 # Full Vitest suite — never use the pre-commit staged subset or --changed filters here.
-# Pre-commit may run a staged subset; release must match PR CI coverage of all tests.
+# Pre-commit and pull-request CI may run affected subsets; release must match
+# protected merge-queue CI coverage of all tests.
 echo "Verifying Vitest CLI before full suite..."
 if ! assert_release_clis; then
   exit 1

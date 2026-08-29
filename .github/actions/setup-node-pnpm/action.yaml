@@ -1,0 +1,25 @@
+name: Setup Node and pnpm
+description: Install the repository's pinned Node, pnpm, and frozen dependencies
+
+inputs:
+  node-version:
+    description: Node.js version used by CI
+    required: false
+    default: '22.23.2'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
+
+    - name: Setup Node
+      # actions/setup-node v6.5.0
+      uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

@@ -14,7 +14,7 @@ contributor guide lives in the repository at
 
 ## Quality Checks
 
-Prefer **`pnpm run check:pr`** before opening a PR (lint + typecheck + `typecheck:strict-shared` + full `test:run`, plus path-aware sidecar checks when relevant):
+For the comprehensive local gate, run **`pnpm run check:pr`** before opening a PR (lint + typecheck + `typecheck:strict-shared` + full `test:run`, plus path-aware sidecar checks when relevant):
 
 ```bash
 pnpm run check:pr

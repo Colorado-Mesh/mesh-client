@@ -12,22 +12,29 @@ on:
   merge_group:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   changes:
-    name: Detect sidecar changes
+    name: Detect test changes
     permissions:
       contents: read
       pull-requests: read
     runs-on: ubuntu-latest
     outputs:
       reticulum-sidecar: ${{ steps.filter.outputs.reticulum-sidecar }}
+      vitest_mode: ${{ steps.vitest.outputs.vitest_mode }}
+      vitest_paths: ${{ steps.vitest.outputs.vitest_paths }}
+      vitest_projects: ${{ steps.vitest.outputs.vitest_projects }}
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
+          persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          # Full history: paths-filter on push fetches github.event.before then
-          # the base ref with --depth=1; concurrent shallow fetches fail with
-          # "shallow file has changed since we read it" (CI run 30406976369).
+          # Full history is required for merge-base change detection and paths-filter on push.
           fetch-depth: 0
       # dorny/paths-filter v4.0.0
       - uses: dorny/paths-filter@9d7afb8d214ad99e78fbd4247752c4caed2b6e4c
@@ -43,8 +50,16 @@ jobs:
               - 'scripts/check-reticulum-sidecar.sh'
               - '.github/workflows/tests.yaml'
 
+      - name: Resolve Vitest scope
+        id: vitest
+        env:
+          CI_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-test-scope.mjs
+
   tests:
     name: Coverage (${{ matrix.project }})
+    needs: changes
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -55,31 +70,25 @@ jobs:
     env:
       VITEST_COVERAGE_SHARD: '1'
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        if: contains(fromJSON(needs.changes.outputs.vitest_projects), matrix.project)
         with:
+          persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: ./.github/actions/setup-node-pnpm
+        if: contains(fromJSON(needs.changes.outputs.vitest_projects), matrix.project)
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run coverage (${{ matrix.project }})
-        run: >-
-          pnpm exec vitest run --coverage
-          --project ${{ matrix.project }}
-          --reporter=blob
-          --outputFile.blob=.vitest-reports/blob-${{ matrix.project }}.json
-          --coverage.clean=false
+      - name: Run selected tests (${{ matrix.project }})
+        if: contains(fromJSON(needs.changes.outputs.vitest_projects), matrix.project)
+        env:
+          VITEST_MODE: ${{ needs.changes.outputs.vitest_mode }}
+          VITEST_PATHS_JSON: ${{ needs.changes.outputs.vitest_paths }}
+          VITEST_PROJECT: ${{ matrix.project }}
+        run: node scripts/ci-run-vitest.mjs
 
       - name: Upload blob report
-        if: always()
+        if: always() && contains(fromJSON(needs.changes.outputs.vitest_projects), matrix.project)
         uses: actions/upload-artifact@v7
         with:
           name: vitest-blob-${{ matrix.project }}
@@ -87,6 +96,10 @@ jobs:
           include-hidden-files: true
           retention-days: 1
           if-no-files-found: error
+
+      - name: Record skipped project
+        if: ${{ !contains(fromJSON(needs.changes.outputs.vitest_projects), matrix.project) }}
+        run: echo 'No tests selected for ${{ matrix.project }}.' >> "$GITHUB_STEP_SUMMARY"
 
   reticulum-sidecar-coverage:
     name: Reticulum sidecar coverage
@@ -96,8 +109,10 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
+          persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
         shell: bash
@@ -131,30 +146,45 @@ jobs:
 
   merge-reports:
     name: Merge coverage
-    needs: [tests, reticulum-sidecar-coverage]
-    if: always() && !cancelled() && needs.tests.result != 'cancelled'
+    needs: [changes, tests, reticulum-sidecar-coverage]
+    if: always() && !cancelled()
     permissions:
       contents: read
       pull-requests: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - name: Verify selected test jobs
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          SIDECAR_SELECTED: ${{ needs.changes.outputs.reticulum-sidecar }}
+          SIDECAR_RESULT: ${{ needs.reticulum-sidecar-coverage.result }}
+          TESTS_RESULT: ${{ needs.tests.result }}
+          VITEST_MODE: ${{ needs.changes.outputs.vitest_mode }}
+        run: |
+          if [[ "$CHANGES_RESULT" != 'success' ]]; then
+            echo "Test change detection finished with: $CHANGES_RESULT" >&2
+            exit 1
+          fi
+          if [[ "$VITEST_MODE" != 'skip' && "$TESTS_RESULT" != 'success' ]]; then
+            echo "Selected Vitest jobs finished with: $TESTS_RESULT" >&2
+            exit 1
+          fi
+          if [[ "$SIDECAR_SELECTED" == 'true' && "$SIDECAR_RESULT" != 'success' ]]; then
+            echo "Reticulum sidecar coverage finished with: $SIDECAR_RESULT" >&2
+            exit 1
+          fi
+
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        if: needs.changes.outputs.vitest_mode != 'skip'
         with:
+          persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 0
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-node-pnpm
+        if: needs.changes.outputs.vitest_mode != 'skip'
 
       - name: Download blob reports
+        if: needs.changes.outputs.vitest_mode != 'skip'
         uses: actions/download-artifact@v7
         with:
           path: .vitest-reports
@@ -162,13 +192,24 @@ jobs:
           merge-multiple: true
 
       - name: Merge coverage reports
+        if: needs.changes.outputs.vitest_mode == 'full'
         run: pnpm run test:coverage:merge
+
+      - name: Merge scoped test reports
+        if: needs.changes.outputs.vitest_mode == 'related'
+        run: pnpm exec vitest run --merge-reports
+
+      - name: Record skipped test scope
+        if: needs.changes.outputs.vitest_mode == 'skip'
+        run: echo 'No Vitest-relevant files changed; test matrix skipped.' >> "$GITHUB_STEP_SUMMARY"
 
       # Skip actions/upload-code-coverage: GitHub Code Quality (Team/Enterprise)
       # is not available on the free org plan — uploads return HTTP 403.
 
       - name: Upload test results
-        if: always() && github.actor != 'nektos/act'
+        if: >-
+          always() && needs.changes.outputs.vitest_mode != 'skip' &&
+          github.actor != 'nektos/act'
         uses: actions/upload-artifact@v7
         with:
           name: vitest-report
