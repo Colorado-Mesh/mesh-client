@@ -27,9 +27,12 @@ describe('Buttonmash CI', () => {
     expect(config.budget).toMatchObject({
       maxActions: 350,
       maxDurationMs: 300_000,
+      maxDepth: 8,
       maxPages: 2,
       saturationLimit: 50,
+      actionTimeoutMs: 10_000,
       interactionTimeoutMs: 1_500,
+      readyTimeoutMs: 5_000,
     });
     expect(config.explore).toMatchObject({
       crawl: false,

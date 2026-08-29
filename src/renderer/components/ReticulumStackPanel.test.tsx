@@ -1,5 +1,8 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
+
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -99,7 +102,7 @@ describe('ReticulumStackPanel', () => {
       interfaceIssueAlert: null,
     });
 
-    render(
+    const { container } = render(
       <ReticulumStackPanel
         connecting={false}
         onStartStack={async () => {}}
@@ -114,6 +117,8 @@ describe('ReticulumStackPanel', () => {
 
     expect(status).toHaveClass('text-gray-300');
     expect(startButton).toHaveClass('bg-amber-700', 'text-white', 'hover:bg-amber-800');
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('shows local interface alert when serial port is stale', async () => {
