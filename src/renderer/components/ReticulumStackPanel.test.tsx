@@ -91,6 +91,31 @@ describe('ReticulumStackPanel', () => {
     vi.useRealTimers();
   });
 
+  it('uses accessible colors for the disconnected status and start action', async () => {
+    vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
+      running: false,
+      port: 0,
+      pid: null,
+      interfaceIssueAlert: null,
+    });
+
+    render(
+      <ReticulumStackPanel
+        connecting={false}
+        onStartStack={async () => {}}
+        onStopStack={async () => {}}
+      />,
+    );
+
+    const status = await screen.findByText('● connectionPanel.disconnected');
+    const startButton = screen.getByRole('button', {
+      name: 'connectionPanel.reticulumStartStack',
+    });
+
+    expect(status).toHaveClass('text-gray-300');
+    expect(startButton).toHaveClass('bg-amber-700', 'text-white', 'hover:bg-amber-800');
+  });
+
   it('shows local interface alert when serial port is stale', async () => {
     render(
       <ReticulumStackPanel
