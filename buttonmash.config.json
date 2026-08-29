@@ -1,13 +1,25 @@
 {
   "seed": "ci",
   "budget": {
-    "maxActions": 800,
-    "maxDurationMs": 600000,
-    "maxDepth": 12,
-    "maxPages": 10
+    "maxActions": 350,
+    "maxDurationMs": 300000,
+    "maxDepth": 8,
+    "saturationLimit": 50,
+    "maxPages": 2,
+    "actionTimeoutMs": 10000,
+    "interactionTimeoutMs": 1500,
+    "readyTimeoutMs": 5000
   },
   "explore": {
-    "crawl": true
+    "crawl": false,
+    "weights": {
+      "dblclick": 0,
+      "back": 0,
+      "forward": 0
+    },
+    "forms": {
+      "enabled": false
+    }
   },
   "guardrails": {
     "billing": {

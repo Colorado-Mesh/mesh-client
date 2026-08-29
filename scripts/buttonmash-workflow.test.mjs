@@ -24,7 +24,21 @@ describe('Buttonmash CI', () => {
     );
     expect(workflow).toContain("version: '0.2.0'");
     expect(config.seed).toBe('ci');
-    expect(config.budget).toMatchObject({ maxActions: 800, maxDurationMs: 600_000 });
+    expect(config.budget).toMatchObject({
+      maxActions: 350,
+      maxDurationMs: 300_000,
+      maxDepth: 8,
+      maxPages: 2,
+      saturationLimit: 50,
+      actionTimeoutMs: 10_000,
+      interactionTimeoutMs: 1_500,
+      readyTimeoutMs: 5_000,
+    });
+    expect(config.explore).toMatchObject({
+      crawl: false,
+      weights: { dblclick: 0, back: 0, forward: 0 },
+      forms: { enabled: false },
+    });
     expect(config.guardrails.billing.mode).toBe('refuse');
     expect(config.detectors.ignorePatterns).toContain(
       '\\[useMeshtasticRuntime\\] Connection failed: BLE peripheral ID required on Mac/Windows',
