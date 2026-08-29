@@ -123,6 +123,10 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             put(path_medium::put_peer_medium_pin),
         )
         .route(
+            "/api/v1/maintenance/path-table",
+            post(lxmf::clear_path_table),
+        )
+        .route(
             "/api/v1/settings/path-medium-preference",
             get(path_medium::get_path_medium_preference)
                 .put(path_medium::put_path_medium_preference),

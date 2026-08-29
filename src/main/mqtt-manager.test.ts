@@ -3347,3 +3347,75 @@ describe('enforceBadEnvelopeSignatureCap', () => {
     expect(map.has(`sig-${BAD_ENVELOPE_SIGNATURE_MAX + 4}`)).toBe(true);
   });
 });
+
+describe('MQTTManager stale client isolation', () => {
+  const settings: MQTTSettings = {
+    server: 'localhost',
+    port: 1883,
+    username: '',
+    password: '',
+    topicPrefix: 'msh/US/',
+    autoLaunch: false,
+    maxRetries: 3,
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.mocked(mqtt.connect).mockClear();
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  /** Distinct client object per connect() so handler identity can be distinguished. */
+  function trackDistinctClients() {
+    const made: { on: ReturnType<typeof vi.fn>; end: ReturnType<typeof vi.fn> }[] = [];
+    vi.mocked(mqtt.connect).mockImplementation((() => {
+      const client = {
+        on: vi.fn(),
+        end: vi.fn(),
+        removeAllListeners: vi.fn(),
+        connected: false,
+        publish: vi.fn(),
+        subscribe: vi.fn(),
+      };
+      made.push(client);
+      return client;
+    }) as unknown as typeof mqtt.connect);
+    return made;
+  }
+
+  it('ignores close from a replaced client instead of reconnecting over the live one', () => {
+    const made = trackDistinctClients();
+    const manager = new MQTTManager();
+    manager.on('error', () => {});
+
+    manager.connect(settings);
+    manager.connect(settings);
+    expect(made).toHaveLength(2);
+
+    // mqtt.js may emit close for the first client after end(true); it must not schedule a
+    // reconnect that tears down the second, live client.
+    lastHandler(made[0], 'close')();
+    vi.advanceTimersByTime(300_000);
+
+    expect(mqtt.connect).toHaveBeenCalledTimes(2);
+  });
+
+  it('still reconnects when the live client closes', () => {
+    const made = trackDistinctClients();
+    const manager = new MQTTManager();
+    manager.on('error', () => {});
+
+    manager.connect(settings);
+    expect(made).toHaveLength(1);
+
+    lastHandler(made[0], 'close')();
+    vi.advanceTimersByTime(300_000);
+
+    expect(vi.mocked(mqtt.connect).mock.calls.length).toBeGreaterThan(1);
+  });
+});

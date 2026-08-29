@@ -1272,7 +1272,7 @@ export default function NodeDetailModal({
                               <>
                                 <div className="text-muted">{t('nodeDetailModal.senderLabel')}</div>
                                 <div className="font-mono text-gray-200">
-                                  !{detection.lastSenderId.toString(16).padStart(8, '0')}
+                                  {formatMeshtasticNodeId(detection.lastSenderId)}
                                   {senderName ? ` (${senderName})` : ''}
                                 </div>
                               </>

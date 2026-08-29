@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "Wanneer ingeschakeld, markeert elk nieuw RRC-kamerbericht ongelezen en kan een kanaalgeluid worden afgespeeld. Schakel uit voor waarschuwingen in IRC-stijl: alleen directe berichten en @vermeldingen.",
     "shareMyLocation": "Deel mijn locatie",
     "shareMyLocationOffInfo": "Locatie delen is uitgeschakeld — host GPS verversen en mesh verzenden zijn uitgeschakeld. Schakel Mijn locatie hierboven delen in om automatisch vernieuwen te gebruiken of uw positie te verzenden.",
-    "shareMyLocationHint": "Indien ingeschakeld, kan deze app uw locatie op deze computer opzoeken en deze via Meshtastic, MeshCore of Reticulum verzenden (chat share, radio push, RMAP). Wanneer uitgeschakeld, zijn de GPS-zoekopdrachten van de host en het verzenden van de app uitgeschakeld; statische coördinaten werken nog steeds alleen voor je lokale kaart. Een radio met een eigen GPS kan uw positie nog steeds lokaal weergeven. Apparaatfirmware kan nog steeds uitzenden totdat u de radio- of module-instellingen aanpast."
+    "shareMyLocationHint": "Indien ingeschakeld, kan deze app uw locatie op deze computer opzoeken en deze via Meshtastic, MeshCore of Reticulum verzenden (chat share, radio push, RMAP). Wanneer uitgeschakeld, zijn de GPS-zoekopdrachten van de host en het verzenden van de app uitgeschakeld; statische coördinaten werken nog steeds alleen voor je lokale kaart. Een radio met een eigen GPS kan uw positie nog steeds lokaal weergeven. Apparaatfirmware kan nog steeds uitzenden totdat u de radio- of module-instellingen aanpast.",
+    "reticulumBlocklist": {
+      "description": "Geblokkeerde afzenders worden verwijderd voordat hun LXMF-berichten je inbox bereiken. Exporteer de lijst om deze naar een andere installatie te verplaatsen, of importeer een lijst om veel afzenders tegelijk te blokkeren.",
+      "exportButton": "Blokkeerlijst exporteren",
+      "exportAria": "Geblokkeerde contacten exporteren",
+      "importButton": "Blokkeerlijst importeren",
+      "importAria": "Geblokkeerde contacten importeren",
+      "exportOk": "{{count}} geblokkeerde contacten geëxporteerd",
+      "exportEmpty": "Er zijn geen geblokkeerde contacten om te exporteren.",
+      "exportFailed": "Kon de blokkeerlijst niet exporteren.",
+      "importOk": "Geïmporteerde {{imported}} geblokkeerde contacten ({{skipped}} overgeslagen)",
+      "importFailed": "Kon de blokkeerlijst niet importeren.",
+      "unblockAria": "Deblokkeer {{hash}}",
+      "unblockFailed": "Kon dat contact niet deblokkeren.",
+      "empty": "Geblokkeerde contactpersonen",
+      "title": "Geblokkeerde contacten"
+    }
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -1133,7 +1149,10 @@
         "blePeer": "BLE-peer mesh met behulp van zaad-peer-adressen.",
         "generic": "Reticulum-netwerkinterface.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "I2P-backbone via een router op deze machine. Schakel de SAM-toepassingsbrug (127.0.0.1:7656) in — niet HTTP/HTTPS I2PTunnel-proxy's (4444/4445). Start I2P opnieuw op nadat SAM is ingeschakeld, zodat de brug luistert, en start vervolgens de Reticulum-stack opnieuw als deze interface niet werkt."
+        "i2p": "I2P-backbone via een router op deze machine. Schakel de SAM-toepassingsbrug (127.0.0.1:7656) in — niet HTTP/HTTPS I2PTunnel-proxy's (4444/4445). Start I2P opnieuw op nadat SAM is ingeschakeld, zodat de brug luistert, en start vervolgens de Reticulum-stack opnieuw als deze interface niet werkt.",
+        "serial": "Generieke seriële link naar een TNC, modem of andere host via een kabel. Stel de lijnparameters zo in dat ze overeenkomen met het uiteinde.",
+        "ax25kiss": "AX.25 pakketradio via een KUS TNC. Vereist uw roepnaam en een SSID (0-15) die dit station identificeren.",
+        "local": "Socket met gedeelde instantie op deze machine. Andere lokale tools (rnsd, Nomad Network, rnsh) kunnen via deze stack aan deze stack worden gekoppeld. Het socketpad is afgeleid van de naam van deze interface, dus het hernoemen ervan verandert het adres dat andere tools moeten gebruiken."
       },
       "rfProfile": {
         "coordinated": "Regionaal gecoördineerd",
@@ -1257,10 +1276,37 @@
       "effectiveModeBadge": "Met ingang van: {{mode}}",
       "effectiveModeAria": "Effectieve runtime-modus {{mode}}. Geconfigureerde modus verschilt van wat Reticulum draait.",
       "effectiveModeTooltip": "Reticulum herschreef deze detecteerbare interface naar Access Point (of een andere toegestane modus) omdat detecteerbaar Gateway, Intern of Access Point vereist, tenzij ignore_config_warnings is ingesteld. Herstart de stack na mesh-client stempels die zich afmelden zodat Full (of uw geconfigureerde modus) van kracht wordt.",
-      "flowControlBleHint": "Op Bluetooth stuurt de radio vaak nooit CMD_READY. Mesh-Client beweegt nog steeds TX (wacht kort tot het KLAAR is en gaat dan verder), zodat de stroomregeling overbelasting vermindert zonder de wachtrij te bevriezen."
+      "flowControlBleHint": "Op Bluetooth stuurt de radio vaak nooit CMD_READY. Mesh-Client beweegt nog steeds TX (wacht kort tot het KLAAR is en gaat dan verder), zodat de stroomregeling overbelasting vermindert zonder de wachtrij te bevriezen.",
+      "advancedFields": "Geavanceerde instellingen",
+      "field": {
+        "port": "Poort",
+        "speed": "Snelheid (baud)",
+        "databits": "Data-bits",
+        "parity": "Parity",
+        "stopbits": "Stop bits",
+        "callsign": "Roepletters",
+        "ssid": "SSID",
+        "flow_control": "Stroomregeling",
+        "preamble": "Preambule (ms)",
+        "txtail": "TX staart (ms)",
+        "persistence": "Persistentie",
+        "slottime": "Slottijd (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "Geen",
+          "E": "Even",
+          "O": "Oneven"
+        }
+      },
+      "fieldRequired": "Dit veld is verplicht.",
+      "fieldNotANumber": "Voer een geheel getal in (alleen cijfers).",
+      "fieldOutOfRange": "Waarde valt buiten het toegestane bereik.",
+      "fieldTooLong": "Waarde is te lang",
+      "fieldInvalidOption": "Niet-ondersteund waardetype"
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Hop",
       "actions": "Acties",
       "path": "Pad",
       "probe": "Sonde"
@@ -1451,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
-    "bluetoothId": "Bluetooth-ID"
+    "bluetoothId": "Bluetooth-ID",
+    "reticulumAutoResendOnAnnounce": "Probeer mislukte berichten opnieuw wanneer een collega aankondigt"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -2787,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "Scannen / importeren",
       "hint": "Scan of plak een QR voor contacten, Columba lxma://-kaarten of gecodeerde LXMF-papieren berichten."
+    },
+    "reticulumPathTable": {
+      "title": "Padtabel",
+      "description": "Het wissen van de padtabel laat elke gecachete route vallen. Routes worden opnieuw geleerd als er nieuwe aankondigingen binnenkomen, dus het eerste bericht aan een collega kan langer duren.",
+      "clear": "Padtabel wissen",
+      "clearing": "Aan het wissen….",
+      "confirmTitle": "Padtabel wissen?",
+      "confirmBody": "Elke gecachete route wordt gedropt. Routes worden herbouwd op basis van nieuwe aankondigingen.",
+      "clearOk": "Padtabel gewist ({{count}} routes verwijderd)",
+      "clearFailed": "Kan de padtabel niet wissen.",
+      "clearAria": "Padtabel wissen",
+      "confirmAction": "Wissen"
     }
   },
   "nodeDetailModal": {
@@ -3225,7 +3284,50 @@
       "noPages": "Nog geen pagina's. Voeg .mu-bestanden toe aan de gekozen map (bijvoorbeeld index.mu).",
       "contentSourceNotFromPicker": "Kies de map met Map kiezen voordat u deze toepast.",
       "contentSourceNone": "Geen map gekozen",
-      "contentSourceRequired": "Kies een paginamap voordat je Nomad-hosting start."
+      "contentSourceRequired": "Kies een paginamap voordat je Nomad-hosting start.",
+      "newPage": "Nieuwe pagina",
+      "newPageName": "Paginabestandsnaam (moet eindigen op .mu)",
+      "invalidPageName": "Voer een bestandsnaam in die eindigt op .mu, zonder .. of absolute paden.",
+      "edit": "Bewerken",
+      "editPage": "{{path}} bewerken",
+      "delete": "Verwijderen",
+      "deletePage": "{{path}} verwijderen",
+      "deleteConfirm": "Deze pagina verwijderen? Dit verwijdert het bestand uit de weergegeven map.",
+      "deleteConfirmAria": "Bevestig het verwijderen van deze pagina",
+      "deleteError": "Kan het bestand niet verwijderen.",
+      "openError": "Kan de pagina niet openen om te bewerken.",
+      "editorTitle": "Micron-pagina bewerken",
+      "editorAria": "Micron-paginabron",
+      "editorPreview": "Voorbeeld",
+      "toolbarAria": "Acties voor Micron",
+      "toolbar": {
+        "bold": "Vetgedrukt",
+        "italic": "Cursief",
+        "underline": "Onderstreept",
+        "h1": "Heading 1",
+        "h2": "Titel (H2)",
+        "h3": "Titel (H3)",
+        "alignLeft": "Links uitlijnen",
+        "alignCenter": "Midden",
+        "alignRight": "Rechts uitlijnen",
+        "divider": "Divider",
+        "link": "Link"
+      },
+      "linkTargetPrompt": "Linkdoel (paginapad of bestemmingshash)",
+      "save": "Opslaan",
+      "saveError": "Kon de pagina niet opslaan.",
+      "unsaved": "Niet-opgeslagen wijzigingen",
+      "discard": "Wijzigingen ongedaan maken",
+      "discardConfirm": "Deze notitie heeft aanpassingen die niet zijn opgeslagen.",
+      "discardConfirmAria": "Niet-opgeslagen wijzigingen negeren en sluiten",
+      "close": "Editor Sluiten",
+      "closeBackdropAria": "Sluit de Micron pagina-editor",
+      "pageTooLarge": "Die pagina is te groot om te hosten (limiet 512 KiB).",
+      "pageNotFound": "Die pagina bestaat niet meer in de weergegeven map.",
+      "invalidPagePath": "Dat paginapad is niet toegestaan.",
+      "pageIoError": "Kan de pagina niet lezen of schrijven op schijf.",
+      "pageNotUtf8": "Die pagina is geen geldige UTF-8-tekst.",
+      "pageWriteFailed": "Kon de pagina niet schrijven."
     },
     "sortLastHeard": "Laatst gehoord",
     "sortHops": "Hop",
@@ -5042,7 +5144,14 @@
     "jumpToLatest": "Spring naar de laatste",
     "stackNotReady": "De Reticulum-stack is nog niet klaar. Wacht tot deze verbonden is en probeer het opnieuw.",
     "sidecarNotRunning": "Reticulum-sidecar draait niet. Start de stack op Verbinding en probeer het opnieuw.",
-    "whoReplyMissing": "Geen ledenlijst van de hub voor {{room}} (het antwoord mag groter zijn dan de linkgrootte). Namen worden weergegeven als mensen deelnemen of chatten."
+    "whoReplyMissing": "Geen ledenlijst van de hub voor {{room}} (het antwoord mag groter zijn dan de linkgrootte). Namen worden weergegeven als mensen deelnemen of chatten.",
+    "openNomadPage": "Open Nomad-pagina {{address}}",
+    "openDm": "Direct bericht openen met {{address}}",
+    "openReticulumAddress": "Reticulum-adres {{address}} openen",
+    "addressChoiceTitle": "Reticulum-adres openen",
+    "addressChoiceMessage": "{{address}} kan een Nomad-pagina of een peer zijn. Wat wil je openen?",
+    "addressChoiceNomad": "Nomad-pagina",
+    "addressChoiceDm": "Direct bericht"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5387,7 +5496,8 @@
     "sessionRowAria": "{{app}} game met {{peer}}",
     "apps": {
       "ttt": "Boter-kaas-eierenmahjongg map name",
-      "chess": "Chess"
+      "chess": "Chess",
+      "four_in_a_row": "Vier op een rij"
     },
     "status": {
       "pending": "Openstaand",
@@ -5439,6 +5549,19 @@
       "boardAria": "Tic-Tac-Toe-bord",
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "fourInARow": {
+      "youWon": "Je hebt gewonnen!",
+      "opponentWon": "Tegenstander heeft gewonnen.",
+      "draw": "Rapen",
+      "yourTurn": "Jouw beurt",
+      "opponentTurn": "De beurt van de tegenstander",
+      "yourMarker": "Jij bent {{marker}}",
+      "moveCount": "{{count}} verhuist",
+      "boardAria": "Vier op een rij-bord",
+      "columnAria": "Kolom {{column}}, van onder naar boven: {{contents}}. Hier plaatsen",
+      "columnFullAria": "Kolom {{column}}, van onder naar boven: {{contents}}. Vol",
+      "columnEmptyContents": "leeg"
     },
     "chess": {
       "youWon": "Je hebt gewonnen!",

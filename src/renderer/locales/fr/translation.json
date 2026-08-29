@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "Lorsque cette option est activée, tout nouveau message de la salle RRC est non lu et peut lire un son de chaîne. Désactiver pour les alertes de type IRC : uniquement les messages directs et les @mentions.",
     "shareMyLocation": "Partager mon emplacement",
     "shareMyLocationOffInfo": "Le partage de localisation est désactivé — l'actualisation du GPS de l'hôte et l'envoi de maillage sont désactivés. Activez Partager ma position ci-dessus pour utiliser l'actualisation automatique ou envoyer votre position.",
-    "shareMyLocationHint": "Lorsqu'elle est activée, cette application peut rechercher votre position sur cet ordinateur et l'envoyer via Meshtastic, MeshCore ou Reticulum (partage de chat, push radio, RMAP). Lorsqu'elles sont désactivées, les recherches GPS de l'hôte et l'envoi d'applications sont désactivés ; les coordonnées statiques ne fonctionnent toujours que pour votre carte locale. Une radio avec son propre GPS peut toujours afficher votre position localement. Le micrologiciel de l'appareil peut continuer à diffuser jusqu'à ce que vous régliez les paramètres Radio ou Modules."
+    "shareMyLocationHint": "Lorsqu'elle est activée, cette application peut rechercher votre position sur cet ordinateur et l'envoyer via Meshtastic, MeshCore ou Reticulum (partage de chat, push radio, RMAP). Lorsqu'elles sont désactivées, les recherches GPS de l'hôte et l'envoi d'applications sont désactivés ; les coordonnées statiques ne fonctionnent toujours que pour votre carte locale. Une radio avec son propre GPS peut toujours afficher votre position localement. Le micrologiciel de l'appareil peut continuer à diffuser jusqu'à ce que vous régliez les paramètres Radio ou Modules.",
+    "reticulumBlocklist": {
+      "description": "Les expéditeurs bloqués sont déposés avant que leurs messages LXMF n'atteignent votre boîte de réception. Exportez la liste pour la déplacer vers une autre installation, ou importez une liste pour bloquer plusieurs expéditeurs à la fois.",
+      "exportButton": "Exporter la blocklist",
+      "exportAria": "Exporter les contacts bloqués",
+      "importButton": "Importer une liste de blocage",
+      "importAria": "Importer les contacts bloqués",
+      "exportOk": "Contacts bloqués {{count}} exportés",
+      "exportEmpty": "Il n'y a pas de contacts bloqués à exporter.",
+      "exportFailed": "Impossible d'exporter la liste de blocage.",
+      "importOk": "Contacts bloqués {{imported}} importés ({{skipped}} ignorés)",
+      "importFailed": "Impossible d'importer la liste de blocage.",
+      "unblockAria": "Débloquer {{hash}}",
+      "unblockFailed": "Impossible de débloquer ce contact.",
+      "empty": "Pas de contacts bloqués",
+      "title": "Contacts bloqués"
+    }
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -1133,7 +1149,10 @@
         "blePeer": "Maillage d’homologues BLE utilisant des adresses d’homologues de départ.",
         "generic": "Interface réseau Reticulum.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "Backbone I2P via un routeur sur cette machine. Activez le pont d'application SAM (127.0.0.1:7656) — pas les proxys HTTP/HTTPS I2PTunnel (4444/4445). Redémarrez I2P après avoir activé SAM pour que le pont écoute, puis redémarrez la pile Reticulum si cette interface reste en panne."
+        "i2p": "Backbone I2P via un routeur sur cette machine. Activez le pont d'application SAM (127.0.0.1:7656) — pas les proxys HTTP/HTTPS I2PTunnel (4444/4445). Redémarrez I2P après avoir activé SAM pour que le pont écoute, puis redémarrez la pile Reticulum si cette interface reste en panne.",
+        "serial": "Lien série générique vers un TNC, un modem ou un autre hôte via un fil. Définissez les paramètres de ligne pour qu'ils correspondent à l'extrémité éloignée.",
+        "ax25kiss": "Radio par paquets AX.25 via un TNC KISS. Nécessite votre indicatif d'appel et un SSID (0-15) identifiant cette station.",
+        "local": "Prise en instance partagée sur cette machine. D'autres outils locaux (rnsd, Nomad Network, rnsh) peuvent s'attacher à cette pile à travers elle. Le chemin du socket est dérivé du nom de cette interface, donc le renommer change l'adresse que les autres outils doivent utiliser."
       },
       "rfProfile": {
         "coordinated": "Coordination régionale",
@@ -1257,10 +1276,37 @@
       "effectiveModeBadge": "En vigueur le : {{mode}}",
       "effectiveModeAria": "Mode d'exécution effectif {{mode}}. Le mode configuré diffère de ce que Reticulum exécute.",
       "effectiveModeTooltip": "Reticulum a réécrit cette interface découvrable au point d'accès (ou à un autre mode autorisé) car découvrable nécessite Gateway, Internal ou Access Point sauf si ignore_config_warnings est défini. Redémarrez la pile après que les tampons maillés-clients qui se désengagent de sorte que Full (ou votre mode configuré) prennent effet (mesh-client).",
-      "flowControlBleHint": "Sur Bluetooth, la radio n'envoie souvent jamais CMD_READY. Mesh-Client suit toujours TX (attend brièvement d'ÊTRE PRÊT, puis continue) afin que le contrôle de flux réduise la surcharge sans geler la file d'attente."
+      "flowControlBleHint": "Sur Bluetooth, la radio n'envoie souvent jamais CMD_READY. Mesh-Client suit toujours TX (attend brièvement d'ÊTRE PRÊT, puis continue) afin que le contrôle de flux réduise la surcharge sans geler la file d'attente.",
+      "advancedFields": "Paramètres avancé",
+      "field": {
+        "port": "Port",
+        "speed": "Vitesse [Bauds]",
+        "databits": "Bits de donnÃ©es",
+        "parity": "Parité",
+        "stopbits": "Bits d'arrêt",
+        "callsign": "Indicatif d’appel",
+        "ssid": "SSID",
+        "flow_control": "Régulation du débit",
+        "preamble": "Préambule (ms)",
+        "txtail": "TX queue (ms)",
+        "persistence": "Persistance",
+        "slottime": "Temps de créneau (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "Aucune",
+          "E": "Normale",
+          "O": "Impair"
+        }
+      },
+      "fieldRequired": "Ce champ est obligatoire.",
+      "fieldNotANumber": "Entrez un nombre entier (chiffres seulement).",
+      "fieldOutOfRange": "La valeur est hors de la plage autorisée.",
+      "fieldTooLong": "La valeur est trop longue",
+      "fieldInvalidOption": "Valeur enum non prise en charge"
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Sauts",
       "actions": "Opérations",
       "path": "Chemin",
       "probe": "Sonde"
@@ -1451,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
-    "bluetoothId": "Bluetooth ID"
+    "bluetoothId": "Bluetooth ID",
+    "reticulumAutoResendOnAnnounce": "Réessayer les messages ayant échoué lorsqu'un pair annonce"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",
@@ -2787,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "Numériser/importer",
       "hint": "Numérisez ou collez un QR pour les contacts, les cartes Columba lxma:// ou les messages papier chiffrés LXMF."
+    },
+    "reticulumPathTable": {
+      "title": "Tableau des chemins",
+      "description": "L'effacement de la table Path supprime chaque itinéraire mis en cache. Les itinéraires sont réappris à mesure que de nouvelles annonces arrivent, de sorte que le premier message à un pair peut prendre plus de temps.",
+      "clear": "Effacer la table des chemins",
+      "clearing": "Suppression…",
+      "confirmTitle": "Effacer la table des chemins ?",
+      "confirmBody": "Chaque itinéraire mis en cache est supprimé. Les itinéraires sont reconstruits à partir de nouvelles annonces.",
+      "clearOk": "Chemin d'accès effacé ({{count}} itinéraires abandonnés)",
+      "clearFailed": "Impossible d'effacer la table des chemins.",
+      "clearAria": "Effacer la table de routage",
+      "confirmAction": "Effacer"
     }
   },
   "nodeDetailModal": {
@@ -3225,7 +3284,50 @@
       "noPages": "Pas encore de pages. Ajoutez des fichiers .mu au dossier choisi (par exemple index.mu).",
       "contentSourceNotFromPicker": "Choisissez le dossier avec Choisir un dossier avant de l'appliquer.",
       "contentSourceNone": "Aucun dossier choisi",
-      "contentSourceRequired": "Choisissez un dossier de pages avant de commencer l'hébergement Nomad."
+      "contentSourceRequired": "Choisissez un dossier de pages avant de commencer l'hébergement Nomad.",
+      "newPage": "Nouvelle page",
+      "newPageName": "Nom de fichier de la page (doit se terminer par .mu)",
+      "invalidPageName": "Entrez un nom de fichier se terminant par .mu, sans .. ou chemins absolus.",
+      "edit": "editer",
+      "editPage": "Modifier {{path}}",
+      "delete": "Effacer",
+      "deletePage": "Supprimer {{path}}",
+      "deleteConfirm": "Supprimer cette page ? Cela supprime le fichier du dossier servi.",
+      "deleteConfirmAria": "Confirmez la suppression de cette page",
+      "deleteError": "Impossible de supprimer le fichier.",
+      "openError": "Impossible d'ouvrir la page pour modification.",
+      "editorTitle": "Modifier la page Micron",
+      "editorAria": "Source de la page Micron",
+      "editorPreview": "Aperçu",
+      "toolbarAria": "Actions de formatage des Micron",
+      "toolbar": {
+        "bold": "Gras",
+        "italic": "Italique",
+        "underline": "Souligner",
+        "h1": "Titre 1",
+        "h2": "Entête n°2",
+        "h3": "Entête n°3",
+        "alignLeft": "Aligner à gauche",
+        "alignCenter": "Centre",
+        "alignRight": "Aligner à droite",
+        "divider": "Divider",
+        "link": "Lien"
+      },
+      "linkTargetPrompt": "Cible du lien (chemin de la page ou hachage de destination)",
+      "save": "Sauvegarder",
+      "saveError": "Impossible d'enregistrer la page.",
+      "unsaved": "Modifications non enregistrées",
+      "discard": "Annuler les modifications",
+      "discardConfirm": "Cette page contient des modifications non enregistrées.",
+      "discardConfirmAria": "Abandonner les modifications non enregistrées et fermer",
+      "close": "Fermer l'éditeur",
+      "closeBackdropAria": "Fermer l'éditeur de page Micron",
+      "pageTooLarge": "Cette page est trop grande pour être hébergée (limite de 512 Ko).",
+      "pageNotFound": "Cette page n'existe plus dans le dossier servi.",
+      "invalidPagePath": "Ce chemin de page n'est pas autorisé.",
+      "pageIoError": "Impossible de lire ou d'écrire la page sur le disque.",
+      "pageNotUtf8": "Cette page n'est pas un texte UTF-8 valide.",
+      "pageWriteFailed": "Impossible d'écrire la page."
     },
     "sortLastHeard": "Dernière écoute",
     "sortHops": "Sauts",
@@ -5042,7 +5144,14 @@
     "jumpToLatest": "Aller au dernier",
     "stackNotReady": "La pile Reticulum n'est pas encore prête. Attendez d'être connecté, puis réessayez.",
     "sidecarNotRunning": "Le sidecar Reticulum n'est pas en cours d'exécution. Démarrez la pile sur Connexion, puis réessayez.",
-    "whoReplyMissing": "Aucune liste de membres du hub pour {{room}} (la réponse peut dépasser la taille du lien). Les noms apparaîtront lorsque les gens rejoindront ou discuteront."
+    "whoReplyMissing": "Aucune liste de membres du hub pour {{room}} (la réponse peut dépasser la taille du lien). Les noms apparaîtront lorsque les gens rejoindront ou discuteront.",
+    "openNomadPage": "Ouvrir la page Nomad {{address}}",
+    "openDm": "Ouvrir un message direct avec {{address}}",
+    "openReticulumAddress": "Ouvrir l'adresse Reticulum {{address}}",
+    "addressChoiceTitle": "Ouvrir l'adresse Reticulum",
+    "addressChoiceMessage": "{{address}} peut être une page Nomad ou un pair. Que voulez-vous ouvrir ?",
+    "addressChoiceNomad": "Page Nomad",
+    "addressChoiceDm": "Message direct"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5387,7 +5496,8 @@
     "sessionRowAria": "{{app}} jeu avec {{peer}}",
     "apps": {
       "ttt": "Tictacto",
-      "chess": "Échecs"
+      "chess": "Échecs",
+      "four_in_a_row": "Puissance 4"
     },
     "status": {
       "pending": "En attente",
@@ -5439,6 +5549,19 @@
       "boardAria": "Carte Tic-Tac-Toe",
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "fourInARow": {
+      "youWon": "Vous avez gagné !",
+      "opponentWon": "L'adversaire a gagné.",
+      "draw": "Dessin.",
+      "yourTurn": "À votre tour",
+      "opponentTurn": "Au tour de l'adversaire",
+      "yourMarker": "Vous êtes {{marker}}",
+      "moveCount": "{{count}} se déplace",
+      "boardAria": "Plateau de Puissance 4",
+      "columnAria": "Colonne {{column}}, de bas en haut : {{contents}}. Jouer ici",
+      "columnFullAria": "Colonne {{column}}, de bas en haut : {{contents}}. Pleine",
+      "columnEmptyContents": "vide"
     },
     "chess": {
       "youWon": "Vous avez gagné !",

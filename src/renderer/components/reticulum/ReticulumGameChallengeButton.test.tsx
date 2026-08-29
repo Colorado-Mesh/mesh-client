@@ -16,14 +16,32 @@ describe('ReticulumGameChallengeButton', () => {
     vi.mocked(window.electronAPI.reticulum.games.sendAction).mockResolvedValue({ ok: true });
   });
 
-  it('opens a menu with Tic-Tac-Toe and Chess and has no axe violations', async () => {
+  it('opens a menu with every challengeable game and has no axe violations', async () => {
     const user = userEvent.setup();
     const { container } = render(<ReticulumGameChallengeButton lxmfPeerHash={peerHash} />);
     hydrateAxeThemeColors(container);
     await user.click(screen.getByRole('button', { name: 'Challenge to a game' }));
     expect(screen.getByRole('button', { name: 'Challenge to Tic-Tac-Toe' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Challenge to Chess' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Challenge to Four in a Row' })).toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('sends a four_in_a_row challenge action when Four in a Row is picked', async () => {
+    const user = userEvent.setup();
+    render(<ReticulumGameChallengeButton lxmfPeerHash={peerHash} />);
+    await user.click(screen.getByRole('button', { name: 'Challenge to a game' }));
+    await user.click(screen.getByRole('button', { name: 'Challenge to Four in a Row' }));
+
+    // Without this the FourInARowBoard is unreachable: a challenge is the only way to
+    // create a session, so the board dispatch would never see app_id four_in_a_row.
+    expect(window.electronAPI.reticulum.games.sendAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dest_hash: peerHash,
+        app_id: 'four_in_a_row',
+        command: 'challenge',
+      }),
+    );
   });
 
   it('sends a chess challenge action when Chess is picked', async () => {

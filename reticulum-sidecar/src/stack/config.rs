@@ -7,28 +7,46 @@ use std::path::{Path, PathBuf};
 
 use uuid::Uuid;
 
+use super::interface_catalog::{CatalogField, INTERFACE_CATALOG};
 use super::types::{AddInterfaceRequest, InterfaceRow};
 
 pub const CONFIG_FILENAME: &str = "config";
 
-const SUPPORTED_TYPES: &[&str] = &[
-    "AutoInterface",
-    "TCPClientInterface",
-    "RNodeInterface",
-    "UDPInterface",
-    "KISSInterface",
-    "PipeInterface",
-    "I2PInterface",
-    "RNodeMultiInterface",
-    "BlePeerInterface",
-];
+/// RNS `type =` values we parse out of a config file. Sourced from the shared
+/// catalog (`src/shared/reticulumInterfaceCatalog.json`) so the renderer cannot drift.
+fn is_supported_config_type(raw: &str) -> bool {
+    INTERFACE_CATALOG.supported_config_types().contains(&raw)
+}
 
-const SERIAL_PORT_IFACE_TYPES: &[&str] = &["rnode", "rnode_multi", "kiss"];
+/// UI types whose INI `port` key is a serial device path rather than a number.
+fn iface_type_uses_serial_port(iface_type: &str) -> bool {
+    INTERFACE_CATALOG
+        .get(iface_type)
+        .is_some_and(|e| e.uses_serial_port)
+}
+
+/// UI types whose INI `port` key is a numeric port bound to `InterfaceRow::port`.
+fn iface_type_uses_numeric_port(iface_type: &str) -> bool {
+    catalog_field(iface_type, "port").is_some_and(|f| f.bind.as_deref() == Some("port"))
+}
+
+fn catalog_fields(iface_type: &str) -> &'static [CatalogField] {
+    INTERFACE_CATALOG
+        .get(iface_type)
+        .map_or(&[], |e| e.fields.as_slice())
+}
+
+fn catalog_field(iface_type: &str, key: &str) -> Option<&'static CatalogField> {
+    catalog_fields(iface_type).iter().find(|f| f.key == key)
+}
 
 /// INI keys modeled on `InterfaceRow` / typed CRUD. Unknown keys go into
 /// `extra_config` so enable/edit/repair do not silently drop them.
 /// Do not list pipe `command` here unless it is also a typed field — leaving it
-/// unknown lets it survive via `extra_config`.
+/// unknown lets it survive via `extra_config`. The same rule covers catalog
+/// fields without a `bind` (serial `speed`, AX.25 `ssid`, …); adding one here
+/// would strip it on the next round trip. Asserted by
+/// `unbound_catalog_fields_stay_in_extra_config`.
 const KNOWN_IFACE_CONFIG_KEYS: &[&str] = &[
     "type",
     "enabled",
@@ -70,23 +88,25 @@ fn is_known_iface_config_key(key: &str) -> bool {
         .any(|k| k.eq_ignore_ascii_case(key))
 }
 
-/// RF interface types whose RNode driver honors the `flow_control` TX ready-gate.
-/// Matches `SERIAL_PORT_IFACE_TYPES` (rnode / rnode_multi / kiss), covering USB,
-/// `ble://`, and `tcp://` RNode ports.
+/// Interface types whose driver honors the `flow_control` TX ready-gate
+/// (rnode / rnode_multi / kiss / ax25kiss), covering USB, `ble://`, and
+/// `tcp://` RNode ports. Plain `SerialInterface` has no flow-control key
+/// upstream, so it is serial-port-based but not flow-control capable.
 fn iface_type_supports_flow_control(iface_type: &str) -> bool {
-    SERIAL_PORT_IFACE_TYPES.contains(&iface_type)
+    INTERFACE_CATALOG
+        .get(iface_type)
+        .is_some_and(|e| e.supports_flow_control)
 }
 
 /// Default `flow_control` when adding/repairing an interface with the key absent.
-/// RF interfaces default on (USB / BLE / Wi‑Fi). BLE NUS may not deliver
+/// RNode-family interfaces default on (USB / BLE / Wi‑Fi). BLE NUS may not deliver
 /// `CMD_READY`; rsReticulum releases the one-packet permit after a short wait
-/// so FC paces bursts without freezing the host TX queue.
+/// so FC paces bursts without freezing the host TX queue. AX.25 TNCs default off
+/// to match the upstream `AX25KISSInterface` default.
 pub(crate) fn default_flow_control_for_iface_type(iface_type: &str) -> Option<bool> {
-    if iface_type_supports_flow_control(iface_type) {
-        Some(true)
-    } else {
-        None
-    }
+    INTERFACE_CATALOG
+        .get(iface_type)
+        .and_then(|e| e.default_flow_control)
 }
 
 /// Normalize optional IFAC / free-text fields: whitespace-only → None.
@@ -131,12 +151,14 @@ pub fn normalize_interface_mode(raw: &str) -> Result<Option<String>, String> {
 }
 
 /// Recommended default `mode` when adding an interface with no explicit mode.
+/// Sourced from the shared catalog so `defaultModeForIfaceType` in
+/// `src/renderer/lib/reticulum/reticulumInterfaceCatalog.ts` cannot disagree.
 pub fn default_mode_for_iface_type(iface_type: &str) -> Option<&'static str> {
-    match iface_type {
-        "tcp" | "i2p" | "udp" => Some("boundary"),
-        "rnode" | "rnode_multi" => Some("access_point"),
-        _ => None,
-    }
+    let configured = INTERFACE_CATALOG.get(iface_type)?.default_mode.as_deref()?;
+    INTERFACE_MODES
+        .iter()
+        .copied()
+        .find(|mode| *mode == configured)
 }
 
 fn resolve_interface_mode(
@@ -325,7 +347,7 @@ fn collect_unsupported_warnings(parsed: &ParsedConfig) -> Vec<String> {
     let mut warnings = Vec::new();
     for block in &parsed.interfaces {
         if let Some(t) = block.get("type") {
-            if !SUPPORTED_TYPES.contains(&t) {
+            if !is_supported_config_type(t) {
                 warnings.push(format!(
                     "interface \"{}\" has unsupported type \"{t}\" (kept in config)",
                     block.name
@@ -366,7 +388,7 @@ fn interfaces_from_parsed(parsed: &ParsedConfig) -> Vec<InterfaceRow> {
 
 fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
     let raw_type = block.get("type")?;
-    if !SUPPORTED_TYPES.contains(&raw_type) {
+    if !is_supported_config_type(raw_type) {
         return None;
     }
     let iface_type = config_type_to_ui(raw_type)?;
@@ -389,11 +411,14 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
                 .map(str::to_string),
             None,
         )
+    } else if iface_type_uses_numeric_port(iface_type) {
+        // Catalog types binding INI `port` to `InterfaceRow::port` (e.g. local).
+        (None, block.get("port").and_then(|p| p.parse::<u16>().ok()))
     } else {
         (None, None)
     };
 
-    let serial_port = if SERIAL_PORT_IFACE_TYPES.contains(&iface_type) {
+    let serial_port = if iface_type_uses_serial_port(iface_type) {
         block.get("port").map(str::to_string)
     } else {
         None
@@ -504,7 +529,20 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
         values: HashMap::new(),
         order: Vec::new(),
     };
-    block.set("type", &ui_type_to_config(&row.iface_type));
+    // Unreachable in practice: add/update validate against the catalog, and rows
+    // parsed from disk come from `interface_block_to_row`, which rejects unknown
+    // types. Echo the raw type rather than corrupting the block, but log loudly.
+    let config_type = ui_type_to_config(&row.iface_type).map_or_else(
+        || {
+            tracing::error!(
+                iface_type = %row.iface_type,
+                "writing interface block with uncatalogued type"
+            );
+            row.iface_type.clone()
+        },
+        str::to_string,
+    );
+    block.set("type", &config_type);
     if row.iface_type == "tcp" || row.iface_type == "udp" {
         block.set("interface_enabled", &bool_to_ini(row.enabled));
         block.set("name", &row.name);
@@ -531,9 +569,32 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
         write_rnode_radio_fields(&mut block, row);
     }
 
-    if SERIAL_PORT_IFACE_TYPES.contains(&row.iface_type.as_str()) && row.iface_type != "rnode" {
+    if iface_type_uses_serial_port(&row.iface_type) && row.iface_type != "rnode" {
         if let Some(port) = &row.serial_port {
             block.set("port", port);
+        }
+    }
+
+    if iface_type_uses_numeric_port(&row.iface_type) {
+        if let Some(port) = row.port {
+            block.set("port", &port.to_string());
+        }
+    }
+
+    // Generic catalog fields, in declaration order. Covers bound fields the
+    // legacy branches only write for their own type (`callsign` was RNode-only)
+    // and unbound fields carried in `extra_config`, so a new interface type
+    // needs no new write branch here.
+    for field in catalog_fields(&row.iface_type) {
+        if block.values.contains_key(&field.key) {
+            continue;
+        }
+        if let Some(value) = catalog_field_value(row, field) {
+            if ini_scalar_has_control_chars(&value) {
+                tracing::warn!(key = %field.key, "skipping catalog field with control characters");
+                continue;
+            }
+            block.set(&field.key, &value);
         }
     }
 
@@ -651,6 +712,63 @@ fn write_rnode_radio_fields(block: &mut IniBlock, row: &InterfaceRow) {
 
 const I2P_PEERS_MAX_LEN: usize = 512;
 const REACHABLE_ON_MAX_LEN: usize = 256;
+
+/// Resolve a catalog field's value on a row: bound fields read their typed
+/// `InterfaceRow` slot, unbound fields read `extra_config`.
+fn catalog_field_value(row: &InterfaceRow, field: &CatalogField) -> Option<String> {
+    match field.bind.as_deref() {
+        Some("serial_port") => row.serial_port.clone(),
+        Some("port") => row.port.map(|v| v.to_string()),
+        Some("host") => row.host.clone(),
+        Some("callsign") => row.callsign.clone(),
+        Some("flow_control") => row.flow_control.map(bool_to_ini),
+        _ => row.extra_config.get(&field.key).cloned(),
+    }
+    .map(|v| v.trim().to_string())
+    .filter(|v| !v.is_empty())
+}
+
+/// Enforce the shared catalog's `required` / `min` / `max` / `maxLength` /
+/// `options` constraints before writing. Mirrors
+/// `validateReticulumCatalogField` in the renderer so a bad value is rejected
+/// on both sides rather than failing later inside the RNS factory.
+fn validate_catalog_fields(row: &InterfaceRow) -> Result<(), String> {
+    for field in catalog_fields(&row.iface_type) {
+        let Some(value) = catalog_field_value(row, field) else {
+            if field.required {
+                return Err(format!("{} required", field.key));
+            }
+            continue;
+        };
+
+        if field.kind == "number" {
+            let parsed: i64 = value
+                .parse()
+                .map_err(|_| format!("{} must be a number", field.key))?;
+            if let Some(min) = field.min {
+                if parsed < min {
+                    return Err(format!("{} is below minimum {min}", field.key));
+                }
+            }
+            if let Some(max) = field.max {
+                if parsed > max {
+                    return Err(format!("{} is above maximum {max}", field.key));
+                }
+            }
+        }
+
+        if let Some(max_length) = field.max_length {
+            if value.chars().count() > max_length {
+                return Err(format!("{} exceeds {max_length} characters", field.key));
+            }
+        }
+
+        if field.kind == "select" && !field.options.is_empty() && !field.options.contains(&value) {
+            return Err(format!("{} has an unsupported value", field.key));
+        }
+    }
+    Ok(())
+}
 
 pub fn validate_lat_lon(lat: f64, lon: f64) -> Result<(), String> {
     if !lat.is_finite() || !(-90.0..=90.0).contains(&lat) {
@@ -843,6 +961,9 @@ pub fn add_interface_to_config(
     config_dir: &Path,
     req: &AddInterfaceRequest,
 ) -> Result<InterfaceRow, String> {
+    if ui_type_to_config(&req.iface_type).is_none() {
+        return Err(format!("unsupported interface type: {}", req.iface_type));
+    }
     if req.iface_type == "i2p" {
         if let Some(ref host) = req.host {
             validate_i2p_peers(host)?;
@@ -915,6 +1036,7 @@ pub fn add_interface_to_config(
 
     apply_preset_defaults(&mut row);
     reconcile_ignore_config_warnings(&mut row);
+    validate_catalog_fields(&row)?;
 
     let content = read_config(config_dir)?;
     let mut parsed = parse_config(&content)?;
@@ -952,6 +1074,9 @@ pub fn update_interface_in_config(
         row.name = v.clone();
     }
     if let Some(v) = &patch.iface_type {
+        if ui_type_to_config(v).is_none() {
+            return Err(format!("unsupported interface type: {v}"));
+        }
         row.iface_type = v.clone();
     }
     if let Some(v) = patch.enabled {
@@ -1036,6 +1161,7 @@ pub fn update_interface_in_config(
     if row.iface_type == "i2p" {
         validate_i2p_peers(row.host.as_deref().unwrap_or(""))?;
     }
+    validate_catalog_fields(&row)?;
 
     parsed.interfaces[idx] = interface_row_to_block(&row);
     write_config(config_dir, &serialize_config(&parsed))?;
@@ -1390,33 +1516,15 @@ pub fn interface_id_from_name(name: &str) -> String {
 }
 
 fn config_type_to_ui(raw: &str) -> Option<&'static str> {
-    match raw {
-        "AutoInterface" => Some("auto"),
-        "TCPClientInterface" => Some("tcp"),
-        "RNodeInterface" => Some("rnode"),
-        "UDPInterface" => Some("udp"),
-        "KISSInterface" => Some("kiss"),
-        "PipeInterface" => Some("pipe"),
-        "I2PInterface" => Some("i2p"),
-        "RNodeMultiInterface" => Some("rnode_multi"),
-        "BlePeerInterface" => Some("ble_peer"),
-        _ => None,
-    }
+    INTERFACE_CATALOG.ui_type_for_config_type(raw)
 }
 
-fn ui_type_to_config(ui: &str) -> String {
-    match ui {
-        "auto" => "AutoInterface".into(),
-        "tcp" => "TCPClientInterface".into(),
-        "rnode" => "RNodeInterface".into(),
-        "udp" => "UDPInterface".into(),
-        "kiss" => "KISSInterface".into(),
-        "pipe" => "PipeInterface".into(),
-        "i2p" => "I2PInterface".into(),
-        "rnode_multi" => "RNodeMultiInterface".into(),
-        "ble_peer" => "BlePeerInterface".into(),
-        other => other.to_string(),
-    }
+/// UI type → RNS `type =` value. Returns `None` for an unknown type rather than
+/// echoing it back: a verbatim write would be silently dropped on the next parse
+/// (`interface_block_to_row` rejects types outside the catalog), leaving a config
+/// block the user can see on disk but never edit or delete from the UI.
+fn ui_type_to_config(ui: &str) -> Option<&'static str> {
+    INTERFACE_CATALOG.config_type_for_ui_type(ui)
 }
 
 fn bool_to_ini(v: bool) -> String {
@@ -1731,6 +1839,30 @@ fn default_config_content() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Unique temp config dir seeded with an empty `[interfaces]` section.
+    fn test_config_dir(label: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "mesh-client-reticulum-{label}-{}",
+            uuid::Uuid::new_v4()
+        ));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"
+[reticulum]
+enable_transport = Yes
+share_instance = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+"#,
+        )
+        .unwrap();
+        dir
+    }
 
     const SAMPLE: &str = r#"[reticulum]
 enable_transport = No
@@ -2359,6 +2491,256 @@ loglevel = 4
         assert_eq!(row.iface_type, "i2p");
         assert_eq!(row.host.as_deref(), Some(peer));
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    /// Catalog fields without a `bind` ride in `extra_config`. Adding one of
+    /// their keys to `KNOWN_IFACE_CONFIG_KEYS` would strip it on the next
+    /// round trip, so the two lists must stay disjoint.
+    #[test]
+    fn unbound_catalog_fields_stay_in_extra_config() {
+        for ui in INTERFACE_CATALOG.ui_types() {
+            for field in catalog_fields(ui) {
+                if field.bind.is_none() {
+                    assert!(
+                        !is_known_iface_config_key(&field.key),
+                        "{ui}.{} is unbound but listed in KNOWN_IFACE_CONFIG_KEYS",
+                        field.key
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn rejects_uncatalogued_interface_type_on_add() {
+        let dir = test_config_dir("uncatalogued");
+        let err = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "definitely_not_real".into(),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(err.contains("unsupported interface type"), "{err}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn add_serial_interface_round_trips_port_and_line_params() {
+        let dir = test_config_dir("serial-add");
+        let mut extra = HashMap::new();
+        extra.insert("speed".to_string(), "115200".to_string());
+        extra.insert("parity".to_string(), "E".to_string());
+
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "serial".into(),
+                name: Some("Wire Link".into()),
+                serial_port: Some("/dev/ttyUSB1".into()),
+                extra_config: extra,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(row.iface_type, "serial");
+        assert_eq!(row.serial_port.as_deref(), Some("/dev/ttyUSB1"));
+        // SerialInterface has no upstream flow_control key.
+        assert_eq!(row.flow_control, None);
+
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("type = SerialInterface"), "{content}");
+        assert!(content.contains("port = /dev/ttyUSB1"), "{content}");
+        assert!(content.contains("speed = 115200"), "{content}");
+        assert!(content.contains("parity = E"), "{content}");
+        assert!(!content.contains("flow_control"), "{content}");
+
+        let reparsed = interfaces_from_config_dir(&dir).unwrap();
+        let parsed = reparsed.iter().find(|i| i.name == "Wire Link").unwrap();
+        assert_eq!(parsed.iface_type, "serial");
+        assert_eq!(parsed.serial_port.as_deref(), Some("/dev/ttyUSB1"));
+        assert_eq!(
+            parsed.extra_config.get("speed").map(String::as_str),
+            Some("115200")
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn add_ax25kiss_interface_writes_callsign_and_ssid() {
+        let dir = test_config_dir("ax25-add");
+        let mut extra = HashMap::new();
+        extra.insert("ssid".to_string(), "7".to_string());
+
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "ax25kiss".into(),
+                name: Some("Packet TNC".into()),
+                serial_port: Some("/dev/ttyACM0".into()),
+                callsign: Some("KD5IHC".into()),
+                extra_config: extra,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(row.iface_type, "ax25kiss");
+        assert_eq!(row.callsign.as_deref(), Some("KD5IHC"));
+        // Upstream AX25KISSInterface defaults flow control off, unlike RNode.
+        assert_eq!(row.flow_control, Some(false));
+
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("type = AX25KISSInterface"), "{content}");
+        assert!(content.contains("port = /dev/ttyACM0"), "{content}");
+        assert!(content.contains("callsign = KD5IHC"), "{content}");
+        assert!(content.contains("ssid = 7"), "{content}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ax25kiss_requires_callsign_and_ssid() {
+        let dir = test_config_dir("ax25-required");
+        let err = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "ax25kiss".into(),
+                name: Some("No Call".into()),
+                serial_port: Some("/dev/ttyACM0".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(err.contains("callsign"), "{err}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ax25kiss_rejects_ssid_outside_0_15() {
+        for bad in ["16", "-1", "99"] {
+            let dir = test_config_dir("ax25-ssid");
+            let mut extra = HashMap::new();
+            extra.insert("ssid".to_string(), bad.to_string());
+            let err = add_interface_to_config(
+                &dir,
+                &AddInterfaceRequest {
+                    iface_type: "ax25kiss".into(),
+                    name: Some("Bad SSID".into()),
+                    serial_port: Some("/dev/ttyACM0".into()),
+                    callsign: Some("KD5IHC".into()),
+                    extra_config: extra,
+                    ..Default::default()
+                },
+            )
+            .unwrap_err();
+            assert!(err.contains("ssid"), "ssid {bad} accepted: {err}");
+            let _ = fs::remove_dir_all(&dir);
+        }
+    }
+
+    #[test]
+    fn ax25kiss_accepts_ssid_bounds() {
+        for good in ["0", "15"] {
+            let dir = test_config_dir("ax25-ssid-ok");
+            let mut extra = HashMap::new();
+            extra.insert("ssid".to_string(), good.to_string());
+            let row = add_interface_to_config(
+                &dir,
+                &AddInterfaceRequest {
+                    iface_type: "ax25kiss".into(),
+                    name: Some("Edge SSID".into()),
+                    serial_port: Some("/dev/ttyACM0".into()),
+                    callsign: Some("KD5IHC".into()),
+                    extra_config: extra,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+            assert_eq!(row.iface_type, "ax25kiss");
+            let _ = fs::remove_dir_all(&dir);
+        }
+    }
+
+    #[test]
+    fn ax25kiss_rejects_overlong_callsign() {
+        let dir = test_config_dir("ax25-callsign");
+        let mut extra = HashMap::new();
+        extra.insert("ssid".to_string(), "0".to_string());
+        let err = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "ax25kiss".into(),
+                name: Some("Long Call".into()),
+                serial_port: Some("/dev/ttyACM0".into()),
+                callsign: Some("TOOLONGCALL".into()),
+                extra_config: extra,
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(err.contains("callsign"), "{err}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    /// `local` binds INI `port` to the numeric `InterfaceRow::port`, unlike the
+    /// serial types where `port` is a device path.
+    #[test]
+    fn add_local_interface_round_trips_numeric_port() {
+        let dir = test_config_dir("local-add");
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "local".into(),
+                name: Some("Shared Socket".into()),
+                port: Some(37429),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(row.iface_type, "local");
+        assert_eq!(row.port, Some(37429));
+        assert_eq!(row.serial_port, None);
+
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("type = LocalInterface"), "{content}");
+        assert!(content.contains("port = 37429"), "{content}");
+
+        let reparsed = interfaces_from_config_dir(&dir).unwrap();
+        let parsed = reparsed.iter().find(|i| i.name == "Shared Socket").unwrap();
+        assert_eq!(parsed.port, Some(37429));
+        assert_eq!(parsed.serial_port, None);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn local_interface_port_accepts_omission() {
+        let dir = test_config_dir("local-default");
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "local".into(),
+                name: Some("Default Socket".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        // Port is optional; RNS falls back to LOCAL_INTERFACE_PORT (37428).
+        assert_eq!(row.port, None);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn new_types_classify_for_egress_badges() {
+        use crate::stack::via::classify_interface_row;
+        assert_eq!(classify_interface_row("serial", "Wire Link", None), "rf");
+        assert_eq!(classify_interface_row("ax25kiss", "Packet TNC", None), "rf");
+        assert_eq!(
+            classify_interface_row("local", "Shared Socket", None),
+            "tcp"
+        );
     }
 
     #[test]

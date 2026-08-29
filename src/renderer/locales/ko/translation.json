@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "켜져 있으면 새로운 RRC 룸 메시지가 읽지 않음으로 표시되어 채널 사운드를 재생할 수 있습니다. IRC 스타일 알림의 경우: 다이렉트 메시지 및 @ 멘션만 꺼주세요.",
     "shareMyLocation": "내 위치 공유",
     "shareMyLocationOffInfo": "위치 공유가 꺼져 있음 — 호스트 GPS 새로 고침 및 메시 전송이 비활성화되었습니다. 자동 새로 고침을 사용하거나 위치를 보내려면 위의 내 위치 공유를 활성화하십시오.",
-    "shareMyLocationHint": "활성화되면 이 앱이 이 컴퓨터에서 사용자의 위치를 검색하여 Meshtastic, MeshCore 또는 Reticulum (채팅 공유, 라디오 푸시, RMAP) 을 통해 전송할 수 있습니다. 비활성화되면 호스트 GPS 조회 및 앱 전송이 꺼집니다. 정적 좌표는 현지 지도에서만 작동합니다. 자체 GPS가 있는 라디오는 여전히 로컬에서 위치를 표시할 수 있습니다. 라디오 또는 모듈 설정을 조정할 때까지 장치 펌웨어가 계속 브로드캐스트될 수 있습니다."
+    "shareMyLocationHint": "활성화되면 이 앱이 이 컴퓨터에서 사용자의 위치를 검색하여 Meshtastic, MeshCore 또는 Reticulum (채팅 공유, 라디오 푸시, RMAP) 을 통해 전송할 수 있습니다. 비활성화되면 호스트 GPS 조회 및 앱 전송이 꺼집니다. 정적 좌표는 현지 지도에서만 작동합니다. 자체 GPS가 있는 라디오는 여전히 로컬에서 위치를 표시할 수 있습니다. 라디오 또는 모듈 설정을 조정할 때까지 장치 펌웨어가 계속 브로드캐스트될 수 있습니다.",
+    "reticulumBlocklist": {
+      "description": "차단된 발신자는 LXMF 메시지가 수신함에 도착하기 전에 삭제됩니다. 목록을 내보내 다른 설치로 이동하거나 목록을 가져와 한 번에 많은 발신자를 차단합니다.",
+      "exportButton": "차단 목록 내보내기",
+      "exportAria": "차단된 연락처 내보내기",
+      "importButton": "차단 목록 가져오기",
+      "importAria": "차단된 연락처 가져오기",
+      "exportOk": "{{count}} 차단된 연락처 내보내기 완료",
+      "exportEmpty": "내보낼 차단된 연락처가 없습니다.",
+      "exportFailed": "차단 목록을 내보낼 수 없습니다.",
+      "importOk": "가져온 {{imported}} 차단된 연락처 ({{skipped}} 건너뜀)",
+      "importFailed": "차단 목록을 가져올 수 없습니다.",
+      "unblockAria": "{{hash}} 차단 해제",
+      "unblockFailed": "해당 문의의 차단을 해제할 수 없습니다.",
+      "empty": "차단된 연락처가 없습니다.",
+      "title": "차단된 연락처"
+    }
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -1134,7 +1150,10 @@
         "blePeer": "시드 피어 주소를 사용하는 BLE 피어 메시.",
         "generic": "Reticulum 네트워크 인터페이스.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "이 기계의 라우터를 통해 I2P 백본. HTTP/HTTPS I2PTunnel 프록시 (4444/4445) 가 아닌 SAM 응용 프로그램 브리지 (127.0.0.1: 7656) 를 활성화합니다. 브리지가 수신 대기하도록 SAM을 활성화한 후 I2P를 다시 시작한 다음 이 인터페이스가 다운된 경우 Reticulum 스택을 다시 시작하십시오."
+        "i2p": "이 기계의 라우터를 통해 I2P 백본. HTTP/HTTPS I2PTunnel 프록시 (4444/4445) 가 아닌 SAM 응용 프로그램 브리지 (127.0.0.1: 7656) 를 활성화합니다. 브리지가 수신 대기하도록 SAM을 활성화한 후 I2P를 다시 시작한 다음 이 인터페이스가 다운된 경우 Reticulum 스택을 다시 시작하십시오.",
+        "serial": "와이어를 통해 TNC, 모뎀 또는 다른 호스트에 대한 일반 직렬 링크. 원단과 일치하도록 라인 매개 변수를 설정하십시오.",
+        "ax25kiss": "KISS TNC를 통한 AX.25 패킷 라디오. 콜사인과 이 스테이션을 식별하는 SSID (0-15) 가 필요합니다.",
+        "local": "이 기기의 공유 인스턴스 소켓. 다른 로컬 도구 (rnsd, Nomad Network, rnsh) 를 통해 이 스택에 연결할 수 있습니다. 소켓 경로는 이 인터페이스의 이름에서 파생되었으므로 이름을 바꾸면 다른 도구가 사용해야 하는 주소가 변경됩니다."
       },
       "rfProfile": {
         "coordinated": "지역별 조정",
@@ -1258,10 +1277,37 @@
       "effectiveModeBadge": "유효: {{mode}}",
       "effectiveModeAria": "유효 런타임 모드 {{mode}}. 설정된 모드는 Reticulum이 실행 중인 모드와 다릅니다.",
       "effectiveModeTooltip": "Reticulum은 ignore_config_warnings가 설정되지 않는 한 검색 가능한 인터페이스를 게이트웨이, 내부 또는 액세스 포인트가 필요하기 때문에 이 검색 가능한 인터페이스를 액세스 포인트 (또는 다른 허용 모드) 에 다시 작성했습니다. mesh-client 스탬프 후 스택을 다시 시작하여 Full (또는 구성된 모드) 이 적용되도록 옵트아웃합니다.",
-      "flowControlBleHint": "블루투스에서는 라디오가 CMD_READY를 전송하지 않는 경우가 많습니다. Mesh-Client는 여전히 TX를 페이싱하므로 (잠시 기다렸다가 계속) 흐름 제어는 대기열을 멈추지 않고 과부하를 줄입니다."
+      "flowControlBleHint": "블루투스에서는 라디오가 CMD_READY를 전송하지 않는 경우가 많습니다. Mesh-Client는 여전히 TX를 페이싱하므로 (잠시 기다렸다가 계속) 흐름 제어는 대기열을 멈추지 않고 과부하를 줄입니다.",
+      "advancedFields": "고급 설정",
+      "field": {
+        "port": "포팅하기",
+        "speed": "속도 (baud)",
+        "databits": "비트",
+        "parity": "출산 횟수",
+        "stopbits": "중지 비트",
+        "callsign": "콜사인",
+        "ssid": "SSID",
+        "flow_control": "플로우 스테이트",
+        "preamble": "Preamble (ms)",
+        "txtail": "TX tail (ms)",
+        "persistence": "굳게 지킴",
+        "slottime": "슬롯 시간 (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "없음",
+          "E": "Even",
+          "O": "홀수"
+        }
+      },
+      "fieldRequired": "필수입력 항목입니다",
+      "fieldNotANumber": "정수 (숫자만) 를 입력하세요.",
+      "fieldOutOfRange": "값이 허용된 범위를 벗어났습니다.",
+      "fieldTooLong": "값이 너무 깁니다.",
+      "fieldInvalidOption": "지원되지 않는 값입니다."
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "홉",
       "actions": "작업",
       "path": "경로",
       "probe": "프로브"
@@ -1451,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "블루투스 맥",
-    "bluetoothId": "블루투스 ID"
+    "bluetoothId": "블루투스 ID",
+    "reticulumAutoResendOnAnnounce": "동료가 알릴 때 실패한 메시지 재시도"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -2787,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "스캔/get",
       "hint": "연락처, Columba lxma:// 카드 또는 암호화된 LXMF 종이 메시지를 QR에서 스캔하거나 붙여넣습니다."
+    },
+    "reticulumPathTable": {
+      "title": "경로 테이블",
+      "description": "경로 테이블을 지우면 캐시된 모든 경로가 삭제됩니다. 새로운 공지가 도착하면 경로가 다시 학습되므로 동료에게 보내는 첫 번째 메시지가 더 오래 걸릴 수 있습니다.",
+      "clear": "경로 테이블 지우기",
+      "clearing": "초기화",
+      "confirmTitle": "경로 테이블을 지우시겠습니까?",
+      "confirmBody": "캐시된 모든 경로가 삭제됩니다. 노선은 새로운 공지를 통해 재구축됩니다.",
+      "clearOk": "경로 테이블 지워짐 ({{count}} 경로 삭제됨)",
+      "clearFailed": "경로 테이블을 지울 수 없습니다.",
+      "clearAria": "경로 테이블 지우기",
+      "confirmAction": "지우기"
     }
   },
   "nodeDetailModal": {
@@ -3225,7 +3284,50 @@
       "noPages": "아직 페이지가 없습니다. 선택한 폴더에 .mu 파일을 추가하십시오 (예: index.mu).",
       "contentSourceNotFromPicker": "적용하기 전에 Choose 폴더가 있는 폴더를 선택하십시오.",
       "contentSourceNone": "선택된 폴더 없음",
-      "contentSourceRequired": "Nomad 호스팅을 시작하기 전에 페이지 폴더를 선택하세요."
+      "contentSourceRequired": "Nomad 호스팅을 시작하기 전에 페이지 폴더를 선택하세요.",
+      "newPage": "새 페이지",
+      "newPageName": "페이지 파일 이름 (.mu로 끝나야 함)",
+      "invalidPageName": ".. 또는 절대 경로 없이 .mu로 끝나는 파일 이름을 입력합니다.",
+      "edit": "편집",
+      "editPage": "{{path}} 편집",
+      "delete": "삭제",
+      "deletePage": "{{path}} 삭제",
+      "deleteConfirm": "이 페이지를 삭제하시겠습니까? 이렇게 하면 제공된 폴더에서 파일이 제거됩니다.",
+      "deleteConfirmAria": "이 페이지 삭제 확인",
+      "deleteError": "페이지를 삭제할 수 없습니다.",
+      "openError": "편집할 페이지를 열 수 없습니다.",
+      "editorTitle": "Micron 페이지 편집",
+      "editorAria": "Micron 페이지 소스",
+      "editorPreview": "미리보기",
+      "toolbarAria": "Micron 서식 작업",
+      "toolbar": {
+        "bold": "볼드",
+        "italic": "이탤릭체",
+        "underline": "밑줄",
+        "h1": "제목 1",
+        "h2": "제목 2",
+        "h3": "제목 3",
+        "alignLeft": "왼쪽으로 정렬",
+        "alignCenter": "본부, 센터",
+        "alignRight": "우측 정렬",
+        "divider": "구분자",
+        "link": "링크"
+      },
+      "linkTargetPrompt": "링크 대상 (페이지 경로 또는 대상 해시)",
+      "save": "저장",
+      "saveError": "페이지를 저장할 수 없습니다.",
+      "unsaved": "저장되지 않은 변경 사항",
+      "discard": "변경 사항을 취소",
+      "discardConfirm": "이 페이지에는 저장되지 않은 변경 사항이 있습니다.",
+      "discardConfirmAria": "저장되지 않은 변경 사항을 취소하고 닫습니다.",
+      "close": "편집기 닫기",
+      "closeBackdropAria": "Micron 페이지 편집기 닫기",
+      "pageTooLarge": "페이지가 너무 커서 호스팅할 수 없습니다 (512 KiB 제한).",
+      "pageNotFound": "해당 페이지는 더 이상 제공된 폴더에 존재하지 않습니다.",
+      "invalidPagePath": "해당 페이지 경로는 허용되지 않습니다.",
+      "pageIoError": "디스크에 있는 페이지를 읽거나 쓸 수 없습니다.",
+      "pageNotUtf8": "해당 페이지는 유효한 UTF-8 텍스트가 아닙니다.",
+      "pageWriteFailed": "페이지를 쓸 수 없습니다."
     },
     "sortLastHeard": "마지막으로 들은 시간",
     "sortHops": "홉",
@@ -5042,7 +5144,14 @@
     "jumpToLatest": "최신으로 이동",
     "stackNotReady": "Reticulum 스택이 아직 준비되지 않았습니다. 연결될 때까지 기다린 다음 다시 시도하세요.",
     "sidecarNotRunning": "Reticulum 사이드카가 실행되고 있지 않습니다. Connection에서 스택을 시작한 다음 다시 시도하십시오.",
-    "whoReplyMissing": "{{room}} 에 대한 허브의 회원 목록이 없습니다 (답글은 링크 크기를 초과할 수 있음). 사람들이 참여하거나 채팅할 때 이름이 표시됩니다."
+    "whoReplyMissing": "{{room}} 에 대한 허브의 회원 목록이 없습니다 (답글은 링크 크기를 초과할 수 있음). 사람들이 참여하거나 채팅할 때 이름이 표시됩니다.",
+    "openNomadPage": "Nomad 페이지 열기 {{address}}",
+    "openDm": "{{address}} (으) 로 다이렉트 메시지 열기",
+    "openReticulumAddress": "Reticulum 주소 {{address}} 열기",
+    "addressChoiceTitle": "Reticulum 주소 열기",
+    "addressChoiceMessage": "{{address}}는 Nomad 페이지이거나 피어일 수 있습니다. 무엇을 열까요?",
+    "addressChoiceNomad": "Nomad 페이지",
+    "addressChoiceDm": "다이렉트 메시지"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5387,7 +5496,8 @@
     "sessionRowAria": "{{peer}} 과 (와) 의 {{app}} 게임",
     "apps": {
       "ttt": "Tic Tac Toe",
-      "chess": "체스"
+      "chess": "체스",
+      "four_in_a_row": "사목"
     },
     "status": {
       "pending": "대기",
@@ -5439,6 +5549,19 @@
       "boardAria": "Tic-Tac-Toe 보드",
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "fourInARow": {
+      "youWon": "당신의 승리입니다!",
+      "opponentWon": "상대가 이겼습니다.",
+      "draw": "그리기",
+      "yourTurn": "당신의 차례입니다.",
+      "opponentTurn": "상대방 턴!",
+      "yourMarker": "당신은 {{marker}} 입니다",
+      "moveCount": "{{count}} 이동",
+      "boardAria": "사목 게임 보드",
+      "columnAria": "{{column}}번 열, 아래에서 위로: {{contents}}. 여기에 놓기",
+      "columnFullAria": "{{column}}번 열, 아래에서 위로: {{contents}}. 가득 참",
+      "columnEmptyContents": "비어 있음"
     },
     "chess": {
       "youWon": "당신의 승리입니다!",

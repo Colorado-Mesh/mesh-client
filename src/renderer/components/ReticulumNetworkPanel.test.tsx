@@ -47,6 +47,7 @@ vi.mock('../stores/reticulumPeerStore', () => ({
     selector({ peers: new Map([['a', {}]]) }),
 }));
 
+import { useBlockStore } from '@/renderer/stores/blockStore';
 import { buildLxmaContactUri } from '@/shared/meshClientDeepLink';
 
 import { ReticulumNetworkPanel } from './ReticulumNetworkPanel';
@@ -71,6 +72,13 @@ describe('ReticulumNetworkPanel', () => {
     });
     window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.reticulum.proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    useBlockStore.setState({
+      protocol: null,
+      identityId: null,
+      blockedHashes: new Set(),
+      blockedEntries: [],
+      loaded: false,
+    });
   });
 
   it('does not render flasher or factory reset sections', () => {
@@ -78,6 +86,24 @@ describe('ReticulumNetworkPanel', () => {
 
     expect(screen.queryByText('flasher.title')).not.toBeInTheDocument();
     expect(screen.queryByText('adminPanel.reticulumFactoryReset.title')).not.toBeInTheDocument();
+  });
+
+  it('renders the blocked contacts section for a hydrated Reticulum identity', () => {
+    useBlockStore.setState({ protocol: 'reticulum', identityId: 'id-1', loaded: true });
+
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    expect(screen.getByText('appPanel.reticulumBlocklist.title')).toBeInTheDocument();
+    expect(screen.getByText('appPanel.reticulumBlocklist.exportButton')).toBeInTheDocument();
+    expect(screen.getByText('appPanel.reticulumBlocklist.importButton')).toBeInTheDocument();
+  });
+
+  it('hides the blocked contacts section when the hydrated identity is not Reticulum', () => {
+    useBlockStore.setState({ protocol: 'meshtastic', identityId: 'id-1', loaded: true });
+
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    expect(screen.queryByText('appPanel.reticulumBlocklist.title')).not.toBeInTheDocument();
   });
 
   it('renders RMAP discovery section when sidecar is ready', async () => {

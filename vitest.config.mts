@@ -94,6 +94,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/letsMeshJwt.test.ts',
   'src/renderer/lib/messageRetention.test.ts',
   'src/renderer/lib/rrcMessagePersist.test.ts',
+  'src/renderer/lib/rrcNickCacheHydrate.test.ts',
   'src/renderer/lib/rrcRoomHistory.test.ts',
   'src/renderer/lib/rrcLegacyWhispersMigrate.test.ts',
   'src/renderer/lib/nomad/micronParser.test.ts',

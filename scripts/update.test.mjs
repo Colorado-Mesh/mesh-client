@@ -1,5 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -100,7 +108,7 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.stdout).toContain('ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.2.0');
     expect(result.stdout).toContain('ratspeak/lrgp-rs||lrgp-rs games (LRGP)|v0.4.1');
     expect(result.stdout).toContain(
-      'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.30',
+      'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.31',
     );
     expect(result.stdout).toContain('ratspeak/LXMFace||');
     expect(result.stdout).toContain('file:js/lxmface.js@308a729d5bf951880633e5e174b3b7628203106b');
@@ -125,6 +133,50 @@ describe('update.sh Reticulum stack functionality check', () => {
     const upstreamCall = updateScript.lastIndexOf('\ncheck_ratspeak_upstream\n');
     expect(patchesCall).toBeGreaterThanOrEqual(0);
     expect(upstreamCall).toBeGreaterThan(patchesCall);
+  });
+
+  it('wires check_pinned_majors into the warn summary', () => {
+    expect(updateScript).toContain('check_pinned_majors()');
+    expect(updateScript).toContain('node scripts/check-pinned-majors.mjs');
+    const pinnedCall = updateScript.lastIndexOf('\ncheck_pinned_majors\n');
+    const patchesCall = updateScript.lastIndexOf('\ncheck_ratspeak_patches\n');
+    expect(pinnedCall).toBeGreaterThanOrEqual(0);
+    expect(patchesCall).toBeGreaterThan(pinnedCall);
+  });
+
+  it.each([
+    { exit: 10, expected: '1', label: 'drift' },
+    { exit: 0, expected: '0', label: 'clean' },
+    { exit: 1, expected: '0', label: 'inconclusive' },
+  ])('maps check-pinned-majors $label exit to HAS_WARNING=$expected', ({ exit, expected }) => {
+    const fixture = prepareStubNodeFixture(exit);
+    const result = runUpdate([], {
+      UPDATE_SH_TEST_HOOK: 'pinned-majors-only',
+      PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
+    });
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain(`HAS_WARNING=${expected}`);
+  });
+
+  it('skips the pinned-majors check when node is unavailable', () => {
+    // PATH with the shell utilities update.sh needs, but deliberately no `node`.
+    const binDir = mkdtempSync(path.join(os.tmpdir(), 'mesh-update-nonode-'));
+    tempDirs.push(binDir);
+    for (const tool of ['bash', 'printf', 'echo']) {
+      const resolved = spawnSync('/bin/sh', ['-c', `command -v ${tool}`], { encoding: 'utf8' })
+        .stdout?.trim()
+        .split('\n')[0];
+      if (resolved && resolved.startsWith('/')) {
+        symlinkSync(resolved, path.join(binDir, tool));
+      }
+    }
+    const result = runUpdate([], {
+      UPDATE_SH_TEST_HOOK: 'pinned-majors-only',
+      PATH: binDir,
+    });
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain('node missing — skip.');
+    expect(result.stdout).toContain('HAS_WARNING=0');
   });
 
   it('syncs Flatpak Electron archives after pnpm prune', () => {
@@ -256,9 +308,9 @@ exit 0
           body: 'lrgp-rs v0.4.1',
         },
         'ratspeak/Ratspeak': {
-          tag_name: 'v1.0.30',
-          published_at: '2026-08-24T09:26:44Z',
-          body: 'Fixed message reactions, replies, copying, and text selection.',
+          tag_name: 'v1.0.31',
+          published_at: '2026-08-27T09:26:44Z',
+          body: 'Improved voice message reliability and usage.',
         },
       },
       commits: {
@@ -319,7 +371,7 @@ exit 0
       PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
-    expect(result.stdout).toContain('v1.0.30');
+    expect(result.stdout).toContain('v1.0.31');
     expect(result.stdout).toContain('reviewed; current');
     expect(result.stdout).toContain('js/lxmface.js @ 308a729d5bf9 (reviewed; current)');
     expect(result.stdout).toContain('v0.4.1');
@@ -349,7 +401,7 @@ exit 0
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toContain('WARNING:');
-    expect(result.stdout).toContain('v1.0.30');
+    expect(result.stdout).toContain('v1.0.31');
     expect(result.stdout).toContain('v9.9.9');
     expect(result.stdout).toContain('docs/reticulum-games-parity.md');
     expect(result.stdout).not.toContain('Four in a Row');
@@ -481,6 +533,16 @@ exit 0
     expect(log).not.toContain('clean');
   });
 });
+
+/** Stub `node` on PATH that exits with a fixed code, standing in for check-pinned-majors.mjs. */
+function prepareStubNodeFixture(exitCode) {
+  const binDir = mkdtempSync(path.join(os.tmpdir(), 'mesh-update-node-'));
+  tempDirs.push(binDir);
+  const nodePath = path.join(binDir, 'node');
+  writeFileSync(nodePath, `#!/usr/bin/env bash\nexit ${exitCode}\n`);
+  chmodSync(nodePath, 0o755);
+  return { binDir };
+}
 
 /**
  * Temp layout matching the repo-local .rsstack workspace: mesh-client/reticulum-sidecar +

@@ -63,6 +63,8 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   meshcorePathHashMode: 0 as 0 | 1 | 2,
   /** Start Reticulum sidecar automatically when opening the Reticulum tab. */
   reticulumAutostart: false,
+  /** Retry failed LXMF messages to a peer when that peer announces. */
+  reticulumAutoResendOnAnnounce: false,
   /**
    * RRC unread + sound: any new room msg/action (default). Off = IRC-style
    * DMs + @mentions only.

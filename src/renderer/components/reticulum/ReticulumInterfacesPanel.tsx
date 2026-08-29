@@ -4,6 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ReticulumDefaultHubsPickerModal } from '@/renderer/components/reticulum/ReticulumDefaultHubsPickerModal';
+import {
+  applyReticulumCatalogFieldsToBody,
+  firstReticulumCatalogFieldError,
+  ReticulumInterfaceFieldSet,
+} from '@/renderer/components/reticulum/ReticulumInterfaceFieldSet';
 import { useToast } from '@/renderer/components/Toast';
 import {
   rssiForReticulumBleRnodeRow,
@@ -41,6 +46,14 @@ import {
   validateReticulumI2pPeers,
 } from '@/renderer/lib/reticulum/reticulumI2pPeerValidation';
 import { humanizeReticulumInterfaceApiError } from '@/renderer/lib/reticulum/reticulumInterfaceApiError';
+import type {
+  ReticulumCatalogField,
+  ReticulumIfaceUiType as ReticulumCatalogUiType,
+} from '@/renderer/lib/reticulum/reticulumInterfaceCatalog';
+import {
+  RETICULUM_IFACE_UI_TYPES,
+  reticulumCatalogFields,
+} from '@/renderer/lib/reticulum/reticulumInterfaceCatalog';
 import {
   formatInterfaceExtraConfig,
   parseInterfaceExtraConfig,
@@ -157,8 +170,8 @@ function reticulumConnectHostIsInvalid(host: string): boolean {
   return trimmed.length === 0 || !isValidConnectHost(trimmed);
 }
 
-type ReticulumIfaceUiType =
-  'tcp' | 'auto' | 'rnode' | 'udp' | 'kiss' | 'pipe' | 'i2p' | 'rnode_multi' | 'ble_peer';
+/** UI type keys declared in `src/shared/reticulumInterfaceCatalog.json`. */
+type ReticulumIfaceUiType = ReticulumCatalogUiType;
 
 export interface ReticulumInterfacesPanelProps {
   sidecarApiReady: boolean;
@@ -229,6 +242,8 @@ export function ReticulumInterfacesPanel({
   const [rnodeWifiHost, setRnodeWifiHost] = useState('');
   const [rnodeWifiPort, setRnodeWifiPort] = useState(String(RNODE_DEFAULT_TCP_PORT));
   const [seedAddresses, setSeedAddresses] = useState('');
+  /** Values for catalog-declared fields (serial / ax25kiss / local), keyed by field key. */
+  const [catalogFieldValues, setCatalogFieldValues] = useState<Record<string, string>>({});
   const devicePicker = useReticulumInterfaceDevicePicker();
   const [interfaceError, setInterfaceError] = useState<string | null>(null);
 
@@ -370,6 +385,14 @@ export function ReticulumInterfacesPanel({
   const handleIfaceTypeChange = useCallback((next: ReticulumIfaceUiType) => {
     setIfaceType(next);
     setIfaceMode(defaultModeForIfaceType(next) ?? '');
+    // Field sets differ per type; carrying values across would post a key the
+    // new type does not declare.
+    setCatalogFieldValues({});
+    setInterfaceError(null);
+  }, []);
+
+  const handleCatalogFieldChange = useCallback((key: string, value: string) => {
+    setCatalogFieldValues((prev) => ({ ...prev, [key]: value }));
   }, []);
 
   const runInterfaceAuditRepair = useCallback(
@@ -403,6 +426,20 @@ export function ReticulumInterfacesPanel({
     setInterfaceError(null);
     try {
       const body: Record<string, unknown> = { type: ifaceType };
+      // Catalog-declared types (serial / ax25kiss / local) validate and serialize
+      // generically; the bespoke branches below cover the legacy types.
+      const catalogFields = reticulumCatalogFields(ifaceType);
+      if (catalogFields.length > 0) {
+        const invalid = firstReticulumCatalogFieldError(catalogFields, catalogFieldValues);
+        if (invalid) {
+          const label = t(`connectionPanel.reticulumInterfaces.field.${invalid.field.key}`, {
+            defaultValue: invalid.field.key,
+          });
+          setInterfaceError(`${label}: ${t(invalid.errorKey)}`);
+          return;
+        }
+        applyReticulumCatalogFieldsToBody(body, catalogFields, catalogFieldValues);
+      }
       if (ifaceType === 'tcp' || ifaceType === 'udp' || ifaceType === 'i2p') {
         if (ifaceType === 'tcp' || ifaceType === 'udp') {
           if (reticulumConnectHostIsInvalid(ifaceHost)) {
@@ -483,7 +520,8 @@ export function ReticulumInterfacesPanel({
                 rnodeWifiHost,
                 clampTcpPort(rnodeWifiPort, RNODE_DEFAULT_TCP_PORT),
               )
-            : serialPort,
+            : // Catalog types keep their device path in the generic field map.
+              (catalogFieldValues.port ?? serialPort),
         serialPorts,
       });
       if (derivedName) {
@@ -963,6 +1001,8 @@ export function ReticulumInterfacesPanel({
         rnodeWifiHost={rnodeWifiHost}
         rnodeWifiPort={rnodeWifiPort}
         seedAddresses={seedAddresses}
+        catalogFieldValues={catalogFieldValues}
+        onCatalogFieldChange={handleCatalogFieldChange}
         addFlowControl={addFlowControl}
         onAddFlowControlChange={setAddFlowControl}
         onIfaceTypeChange={handleIfaceTypeChange}
@@ -1130,14 +1170,24 @@ export function ReticulumInterfacesPanel({
   );
 }
 
+/**
+ * Normalize a UI type or RNS class name onto a catalog key.
+ *
+ * Order matters: this is substring matching, so narrower names must be tested
+ * before the `kiss` / `tcp` / `rnode` catch-alls (`ax25kiss` contains "kiss",
+ * and `LocalInterface` must not fall through to `auto` silently).
+ */
 function uiTypeFromRow(type: string): ReticulumIfaceUiType {
   const normalized = type.toLowerCase();
   if (normalized === 'udp' || normalized.includes('udpinterface')) return 'udp';
+  if (normalized === 'ax25kiss' || normalized.includes('ax25')) return 'ax25kiss';
   if (normalized === 'kiss' || normalized.includes('kiss')) return 'kiss';
   if (normalized === 'pipe' || normalized.includes('pipe')) return 'pipe';
   if (normalized === 'i2p' || normalized.includes('i2p')) return 'i2p';
   if (normalized === 'rnode_multi' || normalized.includes('rnodemulti')) return 'rnode_multi';
   if (normalized === 'ble_peer' || normalized.includes('blepeer')) return 'ble_peer';
+  if (normalized === 'local' || normalized.includes('localinterface')) return 'local';
+  if (normalized === 'serial' || normalized.includes('serialinterface')) return 'serial';
   if (normalized.includes('tcp') || normalized === 'tcpclient') return 'tcp';
   if (normalized.includes('rnode')) return 'rnode';
   return 'auto';
@@ -1183,6 +1233,38 @@ function defaultAddRnodeRfFields(): RnodeRfFieldValues {
   };
 }
 
+/** Prefill catalog field values from a stored interface row for the edit dialog. */
+function seedCatalogFieldValues(
+  iface: ReticulumInterfaceRow,
+  fields: readonly ReticulumCatalogField[],
+): Record<string, string> {
+  const values: Record<string, string> = {};
+  const extra = iface.extra_config ?? {};
+  for (const field of fields) {
+    switch (field.bind) {
+      case 'serial_port':
+        values[field.key] = iface.serial_port ?? '';
+        break;
+      case 'port':
+        values[field.key] = iface.port == null ? '' : String(iface.port);
+        break;
+      case 'host':
+        values[field.key] = iface.host ?? '';
+        break;
+      case 'callsign':
+        values[field.key] = iface.callsign ?? '';
+        break;
+      case 'flow_control':
+        values[field.key] = iface.flow_control ? 'true' : 'false';
+        break;
+      default:
+        values[field.key] = extra[field.key] ?? '';
+        break;
+    }
+  }
+  return values;
+}
+
 function buildInterfaceEditPatch(draft: {
   name: string;
   type: ReticulumIfaceUiType;
@@ -1198,9 +1280,18 @@ function buildInterfaceEditPatch(draft: {
   passphrase: string;
   flowControl: boolean;
   extraConfig: Record<string, string>;
+  catalogFieldValues: Readonly<Record<string, string>>;
   rf: RnodeRfFieldValues;
 }): Record<string, unknown> | null {
   const body: Record<string, unknown> = { name: draft.name.trim(), type: draft.type };
+  const catalogFields = reticulumCatalogFields(draft.type);
+  if (catalogFields.length > 0) {
+    if (firstReticulumCatalogFieldError(catalogFields, draft.catalogFieldValues)) {
+      // Caller blocks Save on null, same as an unparseable mode.
+      return null;
+    }
+    applyReticulumCatalogFieldsToBody(body, catalogFields, draft.catalogFieldValues);
+  }
   if (draft.type === 'tcp' || draft.type === 'udp' || draft.type === 'i2p') {
     if (draft.type === 'tcp' || draft.type === 'udp') {
       body.host = normalizeReticulumConnectHost(draft.host);
@@ -1233,7 +1324,12 @@ function buildInterfaceEditPatch(draft: {
   }
   body.network_name = draft.networkName.trim() || null;
   body.passphrase = draft.passphrase.trim() || null;
-  body.extra_config = draft.extraConfig;
+  // Catalog-declared keys win over the raw extra_config editor for the same key,
+  // otherwise editing e.g. `ssid` in the form would be silently reverted.
+  body.extra_config = {
+    ...draft.extraConfig,
+    ...(body.extra_config ?? {}),
+  };
   const trimmedMode = draft.mode.trim();
   if (!trimmedMode) {
     // Empty selection clears mode (sidecar accepts empty → None).
@@ -1553,6 +1649,15 @@ function InterfaceEditPanel({
   const [advancedText, setAdvancedText] = useState(() =>
     formatInterfaceExtraConfig(iface.extra_config ?? undefined),
   );
+  const editCatalogFields = reticulumCatalogFields(uiType);
+  // Seed the generic field set from the stored row: bound fields from their
+  // typed slot, unbound ones from extra_config.
+  const [catalogFieldValues, setCatalogFieldValues] = useState<Record<string, string>>(() =>
+    seedCatalogFieldValues(iface, editCatalogFields),
+  );
+  const handleEditCatalogFieldChange = useCallback((key: string, value: string) => {
+    setCatalogFieldValues((prev) => ({ ...prev, [key]: value }));
+  }, []);
   const editUsesBleRnode = uiType === 'rnode' && isReticulumBleRnodeSerialPort(serialPort);
   const editUsesWifiRnode = uiType === 'rnode' && isReticulumTcpRnodeSerialPort(serialPort);
   const osSerialPaths = serialPorts.map((p) => p.path);
@@ -1590,6 +1695,13 @@ function InterfaceEditPanel({
           showDescription={false}
         />
         <ReticulumEffectiveModeBadge iface={iface} idSuffix="edit" />
+        <ReticulumInterfaceFieldSet
+          idPrefix={`edit-iface-${iface.id}`}
+          fields={editCatalogFields}
+          values={catalogFieldValues}
+          onChange={handleEditCatalogFieldChange}
+          serialPorts={serialPorts}
+        />
         {uiType === 'tcp' || uiType === 'udp' ? (
           <>
             <label className="text-xs text-gray-400">
@@ -1863,10 +1975,22 @@ function InterfaceEditPanel({
               passphrase,
               flowControl,
               extraConfig: parsedExtra.extraConfig,
+              catalogFieldValues,
               rf: rfFields,
             });
             if (!patch) {
-              addToast(t('connectionPanel.reticulumInterfaces.invalidMode'), 'error');
+              const fieldError = firstReticulumCatalogFieldError(
+                editCatalogFields,
+                catalogFieldValues,
+              );
+              addToast(
+                fieldError
+                  ? `${t(`connectionPanel.reticulumInterfaces.field.${fieldError.field.key}`, {
+                      defaultValue: fieldError.field.key,
+                    })}: ${t(fieldError.errorKey)}`
+                  : t('connectionPanel.reticulumInterfaces.invalidMode'),
+                'error',
+              );
               return;
             }
             onSave(patch);
@@ -1961,6 +2085,8 @@ function InterfacesSection({
   onAddDefaultHubs,
   rmapToggleBusyId,
   onToggleRmapDiscoverable,
+  catalogFieldValues,
+  onCatalogFieldChange,
 }: {
   interfaces: ReticulumInterfaceRow[];
   osSerialPortPaths: string[];
@@ -1987,6 +2113,8 @@ function InterfacesSection({
   rnodeWifiHost: string;
   rnodeWifiPort: string;
   seedAddresses: string;
+  catalogFieldValues: Readonly<Record<string, string>>;
+  onCatalogFieldChange: (key: string, value: string) => void;
   addFlowControl: boolean;
   onAddFlowControlChange: (v: boolean) => void;
   onIfaceTypeChange: (v: ReticulumIfaceUiType) => void;
@@ -2061,8 +2189,13 @@ function InterfacesSection({
   const showBlePeer = ifaceType === 'ble_peer';
   const showRnodeBle = ifaceType === 'rnode' && rnodeTransport === 'ble';
   const showRnodeWifi = ifaceType === 'rnode' && rnodeTransport === 'wifi';
+  const catalogFields = reticulumCatalogFields(ifaceType);
+  const catalogUsesSerialPort = catalogFields.some((f) => f.kind === 'serialPort');
   const needsDevicePicker =
-    (showSerial && !showRnodeBle && !showRnodeWifi) || showBlePeer || showRnodeBle;
+    (showSerial && !showRnodeBle && !showRnodeWifi) ||
+    showBlePeer ||
+    showRnodeBle ||
+    catalogUsesSerialPort;
   const pickerMode =
     ifaceType === 'ble_peer'
       ? ('ble-peer' as const)
@@ -2158,19 +2291,16 @@ function InterfacesSection({
               className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
               aria-label={t('connectionPanel.reticulumInterfaces.type')}
             >
-              <option value="tcp">{RETICULUM_IFACE_TYPE_LABELS.tcp}</option>
-              <option value="udp">{RETICULUM_IFACE_TYPE_LABELS.udp}</option>
-              <option value="auto">{RETICULUM_IFACE_TYPE_LABELS.auto}</option>
-              <option value="rnode">{RETICULUM_IFACE_TYPE_LABELS.rnode}</option>
-              <option value="rnode_multi">{RETICULUM_IFACE_TYPE_LABELS.rnode_multi}</option>
-              <option value="kiss">{RETICULUM_IFACE_TYPE_LABELS.kiss}</option>
-              <option value="pipe">{RETICULUM_IFACE_TYPE_LABELS.pipe}</option>
-              <option value="i2p">{RETICULUM_IFACE_TYPE_LABELS.i2p}</option>
-              {bleAvailable ? (
-                <option value="ble_peer">
-                  {t('connectionPanel.reticulumInterfaces.blePeerType')}
+              {RETICULUM_IFACE_UI_TYPES.filter(
+                // BLE Peer only makes sense when the host has a BLE adapter.
+                (type) => type !== 'ble_peer' || bleAvailable,
+              ).map((type) => (
+                <option key={type} value={type}>
+                  {type === 'ble_peer'
+                    ? t('connectionPanel.reticulumInterfaces.blePeerType')
+                    : RETICULUM_IFACE_TYPE_LABELS[type]}
                 </option>
-              ) : null}
+              ))}
             </select>
           </label>
           <ReticulumInterfaceModeSelect
@@ -2383,6 +2513,14 @@ function InterfacesSection({
               />
             </label>
           ) : null}
+          <ReticulumInterfaceFieldSet
+            idPrefix="reticulum-add-iface"
+            fields={catalogFields}
+            values={catalogFieldValues}
+            onChange={onCatalogFieldChange}
+            disabled={actionsDisabled}
+            serialPorts={serialPorts}
+          />
           {needsDevicePicker ? (
             <button
               type="button"
@@ -2395,6 +2533,11 @@ function InterfacesSection({
                         ? `${seedAddresses},${selection.value}`
                         : selection.value,
                     );
+                    return;
+                  }
+                  if (catalogUsesSerialPort) {
+                    onCatalogFieldChange('port', selection.value);
+                    onRnodeDeviceNameChange(selection.deviceName?.trim() || selection.value);
                     return;
                   }
                   onSerialPortChange(selection.value);

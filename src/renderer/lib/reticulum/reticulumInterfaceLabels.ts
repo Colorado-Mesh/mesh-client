@@ -1,22 +1,19 @@
 import type { TFunction } from 'i18next';
 
+import { RETICULUM_INTERFACE_CATALOG } from '@/renderer/lib/reticulum/reticulumInterfaceCatalog';
 import {
   normalizeReticulumInterfaceMode,
   reticulumInterfaceModeLabelKey,
 } from '@/renderer/lib/reticulum/reticulumInterfaceMode';
 
-/** Display acronyms for Reticulum interface wire types — not passed through auto-translate. */
-export const RETICULUM_IFACE_TYPE_LABELS: Record<string, string> = {
-  tcp: 'TCP',
-  udp: 'UDP',
-  auto: 'Auto',
-  rnode: 'RNode',
-  rnode_multi: 'RNode Multi',
-  kiss: 'KISS',
-  pipe: 'Pipe',
-  i2p: 'I2P',
-  ble_peer: 'BLE Peer',
-};
+/**
+ * Display acronyms for Reticulum interface wire types — not passed through
+ * auto-translate. Sourced from the shared catalog so adding a type in one place
+ * is enough.
+ */
+export const RETICULUM_IFACE_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(RETICULUM_INTERFACE_CATALOG).map(([type, entry]) => [type, entry.label]),
+);
 
 export function reticulumIfaceTypeLabel(type: string): string {
   return RETICULUM_IFACE_TYPE_LABELS[type] ?? type;

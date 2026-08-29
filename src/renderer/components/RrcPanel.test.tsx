@@ -22,8 +22,10 @@ import {
   resetRrcHubDisconnectSuppressForTests,
 } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { saveRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
+import { resetRrcNickCacheHydrationForTests } from '@/renderer/lib/rrcNickCacheHydrate';
 import { clearRrcOpenDms, loadRrcOpenDms, upsertRrcOpenDm } from '@/renderer/lib/rrcOpenDms';
 import { hydrateRrcRoomMessages, resetRrcRoomHistoryForTests } from '@/renderer/lib/rrcRoomHistory';
+import { RRC_WHO_REPLY_TIMEOUT_MS } from '@/renderer/lib/timeConstants';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import { selectRrcActiveRoomMessages, useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 
@@ -56,6 +58,12 @@ describe('RrcPanel', () => {
     resetRrcHubDisconnectSuppressForTests();
     resetRrcHubAutoJoinBackoffForTests();
     resetRrcRoomHistoryForTests();
+    resetRrcNickCacheHydrationForTests();
+    useRrcSessionStore.setState({ nicksByHub: new Map() });
+    vi.mocked(window.electronAPI.db.listRrcNicks).mockReset();
+    vi.mocked(window.electronAPI.db.listRrcNicks).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.upsertRrcNick).mockReset();
+    vi.mocked(window.electronAPI.db.upsertRrcNick).mockResolvedValue({ changes: 1 });
     hydrateAxeThemeColors(document.documentElement);
     vi.mocked(isReticulumSidecarRunning).mockResolvedValue(false);
     vi.spyOn(transportReady, 'probeReticulumRrcTransportReady').mockResolvedValue({ ready: true });
@@ -571,6 +579,102 @@ describe('RrcPanel', () => {
         return room === 'general' || room === '#general';
       }),
     ).toBe(true);
+  });
+
+  it('labels hash-only roster members with nicks seen in the transcript', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: null },
+    ]);
+    store.setActiveRoom('general');
+    store.addMessage(
+      {
+        id: 'm1',
+        room: 'general',
+        kind: 'msg',
+        body: 'hi',
+        sender_hash: 'cccccccccccccccccccccccccccccccc',
+        nickname: 'Alice',
+        timestamp: Date.now(),
+      },
+      { hubDestHash: hubA },
+    );
+
+    render(<RrcPanel isActive />);
+    expect(await screen.findByRole('button', { name: /Alice/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /cccccccc/ })).toBeNull();
+  });
+
+  it('labels a roster member from a nick learned in another room of the same hub', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('lobby');
+    store.addMessage(
+      {
+        id: 'm1',
+        room: 'lobby',
+        kind: 'msg',
+        body: 'hi',
+        sender_hash: 'cccccccccccccccccccccccccccccccc',
+        nickname: 'Alice',
+        timestamp: Date.now(),
+      },
+      { hubDestHash: hubA },
+    );
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: null },
+    ]);
+    store.setActiveRoom('general');
+
+    render(<RrcPanel isActive />);
+    expect(await screen.findByRole('button', { name: /Alice/ })).toBeInTheDocument();
+  });
+
+  it('labels a roster member from the SQLite nick cache with no transcript', async () => {
+    vi.mocked(window.electronAPI.db.listRrcNicks).mockResolvedValue([
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: 'Alice', last_seen: 1 },
+    ]);
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: null },
+    ]);
+    store.setActiveRoom('general');
+
+    render(<RrcPanel isActive />);
+    expect(await screen.findByRole('button', { name: /Alice/ })).toBeInTheDocument();
+  });
+
+  it('notes a dropped hub reply when a forced /who never answers', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hubA, 'Hub A');
+      store.roomJoined('general', [
+        { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: 'Alice' },
+      ]);
+      store.setActiveRoom('general');
+
+      render(<RrcPanel isActive />);
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      await user.click(screen.getByRole('button', { name: 'Refresh members (/who)' }));
+      await waitFor(() => {
+        expect(
+          whoSendCalls().some((args) => (args[0] as { body?: string }).body === '/who general'),
+        ).toBe(true);
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(RRC_WHO_REPLY_TIMEOUT_MS + 100);
+      });
+      await waitFor(() => {
+        const messages = selectRrcActiveRoomMessages(useRrcSessionStore.getState());
+        expect(messages.some((m) => m.body.startsWith('No member list from the hub'))).toBe(true);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('does not re-send /who or reconnect when remounting a populated roster', async () => {

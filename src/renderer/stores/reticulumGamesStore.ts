@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import {
   applyOptimisticChessMove,
+  applyOptimisticFourInARowMove,
   applyOptimisticTttMove,
   restoreOptimisticBackup,
   snapshotSessionForOptimistic,
@@ -76,7 +77,11 @@ interface ReticulumGamesStoreState {
   removeSession: (sessionId: string) => void;
   applyGamesUpdate: (payload: unknown) => void;
   applyActionResult: (payload: unknown) => void;
-  beginOptimisticMove: (sessionId: string, kind: 'ttt' | 'chess', move: number | string) => boolean;
+  beginOptimisticMove: (
+    sessionId: string,
+    kind: 'ttt' | 'chess' | 'four_in_a_row',
+    move: number | string,
+  ) => boolean;
   clearOptimistic: (sessionId: string) => void;
   rollbackOptimistic: (sessionId: string) => void;
   setApps: (apps: unknown) => void;
@@ -185,9 +190,11 @@ export const useReticulumGamesStore = create<ReticulumGamesStoreState>((set, get
     const patched =
       kind === 'ttt' && typeof move === 'number'
         ? applyOptimisticTttMove(session, move)
-        : kind === 'chess' && typeof move === 'string'
-          ? applyOptimisticChessMove(session, move)
-          : null;
+        : kind === 'four_in_a_row' && typeof move === 'number'
+          ? applyOptimisticFourInARowMove(session, move)
+          : kind === 'chess' && typeof move === 'string'
+            ? applyOptimisticChessMove(session, move)
+            : null;
     if (!patched) return false;
     set((s) => ({
       sessions: replaceSession(s.sessions, patched),

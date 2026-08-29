@@ -1,3 +1,4 @@
+import { reticulumCatalogEntry } from '@/renderer/lib/reticulum/reticulumInterfaceCatalog';
 import { reticulumIfaceTypeLabel } from '@/renderer/lib/reticulum/reticulumInterfaceLabels';
 
 export interface DeriveReticulumInterfaceNameInput {
@@ -20,8 +21,8 @@ export function isReticulumRnodeCallsignType(ifaceType: string): boolean {
 
 /** Derive a display/config name from the RNode device label or interface type. */
 export function deriveReticulumInterfaceName(input: DeriveReticulumInterfaceNameInput): string {
-  const isRnodeLike =
-    input.ifaceType === 'rnode' || input.ifaceType === 'rnode_multi' || input.ifaceType === 'kiss';
+  // Any serial-port-backed type names itself after the device when we know it.
+  const isRnodeLike = reticulumCatalogEntry(input.ifaceType)?.usesSerialPort ?? false;
 
   if (isRnodeLike) {
     const fromDevice = input.rnodeDeviceName?.trim();

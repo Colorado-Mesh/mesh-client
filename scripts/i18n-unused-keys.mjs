@@ -39,6 +39,17 @@ export const DYNAMIC_T_PREFIXES = [
   { prefix: 'connectionPanel.reticulumInterfaces.modeOption.', leafKeys: true },
   { prefix: 'connectionPanel.reticulumInterfaces.modeDescriptions.', leafKeys: true },
   { prefix: 'connectionPanel.reticulumInterfaces.defaultHubRegion.', leafKeys: true },
+  // Purpose text and generic form fields are keyed off the shared interface
+  // catalog (src/shared/reticulumInterfaceCatalog.json), so no literal appears in src/.
+  // `purpose.` is alwaysActive: the key is composed in reticulumInterfaceHelp.ts and
+  // handed to callers as a value, so there is no `t(...)` template site to detect.
+  {
+    prefix: 'connectionPanel.reticulumInterfaces.purpose.',
+    leafKeys: true,
+    alwaysActive: true,
+  },
+  { prefix: 'connectionPanel.reticulumInterfaces.field.', leafKeys: true },
+  { prefix: 'connectionPanel.reticulumInterfaces.fieldOption.', leafKeys: true },
   { prefix: 'reticulumPropagation.nodeStatus.', leafKeys: true },
   { prefix: 'connectionPanel.bleOwner.', leafKeys: true },
   { prefix: 'reticulumMap.filter.', leafKeys: true },
@@ -165,7 +176,7 @@ export function collectUsedI18nKeys(
 
   const usedDynamic = new Set();
   for (const entry of DYNAMIC_T_PREFIXES) {
-    if (!activeDynamicPrefixes.has(entry.prefix)) continue;
+    if (!entry.alwaysActive && !activeDynamicPrefixes.has(entry.prefix)) continue;
     for (const key of enKeys) {
       if (!key.startsWith(entry.prefix)) continue;
       if (entry.leafKeys) {

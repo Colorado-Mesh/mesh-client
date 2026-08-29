@@ -6,22 +6,27 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+// `t` must keep a stable identity across renders, as real i18next does: the panel's
+// refresh callback depends on it, and a fresh identity would re-run the refresh
+// effect on every render and wipe action errors.
+const translate = (key: string, opts?: Record<string, string | number>) => {
+  if (opts && 'path' in opts) return `${key}:${String(opts.path)}`;
+  if (opts && 'pages' in opts) {
+    return `${key}:${String(opts.pages)}/${String(opts.files)}/${String(opts.requests)}`;
+  }
+  return key;
+};
+const translation = { t: translate };
+
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, opts?: Record<string, string | number>) => {
-      if (opts && 'path' in opts) return `${key}:${String(opts.path)}`;
-      if (opts && 'pages' in opts) {
-        return `${key}:${String(opts.pages)}/${String(opts.files)}/${String(opts.requests)}`;
-      }
-      return key;
-    },
-  }),
+  useTranslation: () => translation,
 }));
 
 const isReticulumSidecarRunning = vi.fn();
 const onReticulumStatus = vi.fn();
 const proxyGet = vi.fn();
 const proxyPut = vi.fn();
+const proxyDelete = vi.fn();
 const showNomadContentSourceDialog = vi.fn();
 const setNomadContentSource = vi.fn();
 
@@ -61,8 +66,11 @@ describe('NomadPageServerPanel', () => {
     onReticulumStatus.mockReturnValue(() => {});
     proxyGet.mockReset();
     proxyPut.mockReset();
+    proxyDelete.mockReset();
+    proxyDelete.mockResolvedValue({ ok: true });
     showNomadContentSourceDialog.mockReset();
     setNomadContentSource.mockReset();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
       value: {
@@ -70,6 +78,7 @@ describe('NomadPageServerPanel', () => {
           onStatus: onReticulumStatus,
           proxyGet,
           proxyPut,
+          proxyDelete,
           showNomadContentSourceDialog,
           setNomadContentSource,
         },
@@ -105,22 +114,222 @@ describe('NomadPageServerPanel', () => {
     expect(screen.getByText('/tmp/nomad-page')).toBeInTheDocument();
   });
 
-  it('does not expose create, edit, upload, delete, or local-files list UI', async () => {
+  it('exposes page authoring controls but no upload or local-files list UI', async () => {
     render(<NomadPageServerPanel isActive />);
     await waitFor(() => {
       expect(screen.getByText('index.mu')).toBeInTheDocument();
     });
-    expect(screen.queryByRole('button', { name: 'nomadNetwork.serving.createPage' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'nomadNetwork.serving.savePage' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'nomadNetwork.serving.newPage' })).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'nomadNetwork.serving.editPage:about.mu' }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'nomadNetwork.serving.deletePage:about.mu' }),
+    ).toBeEnabled();
+
+    // Folder-only rule still stands: no file uploads and no local-files list.
     expect(
       screen.queryByRole('button', { name: 'nomadNetwork.serving.uploadFileAria' }),
     ).toBeNull();
-    expect(
-      screen.queryByRole('button', { name: 'nomadNetwork.serving.deletePage:about.mu' }),
-    ).toBeNull();
     expect(screen.queryByText('nomadNetwork.serving.myFiles')).toBeNull();
     expect(screen.queryByText('nomadNetwork.serving.noFiles')).toBeNull();
+    // The editor is a modal, so no source field until a page is opened.
     expect(screen.queryByRole('textbox', { name: /nomadNetwork.serving.editorAria/ })).toBeNull();
+  });
+
+  it('opens the editor for an existing page using the listed path verbatim', async () => {
+    const user = userEvent.setup();
+    proxyGet.mockImplementation((path: string) => {
+      if (path === '/api/v1/nomadnetwork/serving') {
+        return Promise.resolve({ ok: true, serving: servingStatus });
+      }
+      if (path === '/api/v1/nomadnetwork/serving/pages') {
+        return Promise.resolve({ ok: true, pages: [{ path: 'page/about.mu', size: 8 }] });
+      }
+      if (path === '/api/v1/nomadnetwork/serving/page?path=page%2Fabout.mu') {
+        return Promise.resolve({ ok: true, path: 'page/about.mu', content: '>About us' });
+      }
+      return Promise.resolve({ ok: false, error: 'unexpected' });
+    });
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByText('page/about.mu')).toBeInTheDocument();
+    });
+
+    await user.click(
+      screen.getByRole('button', { name: 'nomadNetwork.serving.editPage:page/about.mu' }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('textbox', { name: 'nomadNetwork.serving.editorAria' })).toHaveValue(
+        '>About us',
+      );
+    });
+    expect(proxyGet).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/page?path=page%2Fabout.mu');
+  });
+
+  it('surfaces a read failure instead of opening an empty editor', async () => {
+    const user = userEvent.setup();
+    proxyGet.mockImplementation((path: string) => {
+      if (path === '/api/v1/nomadnetwork/serving') {
+        return Promise.resolve({ ok: true, serving: servingStatus });
+      }
+      if (path === '/api/v1/nomadnetwork/serving/pages') {
+        return Promise.resolve({ ok: true, pages: [{ path: 'about.mu', size: 8 }] });
+      }
+      return Promise.resolve({ ok: false, error: 'page_not_found' });
+    });
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByText('about.mu')).toBeInTheDocument();
+    });
+
+    await user.click(
+      screen.getByRole('button', { name: 'nomadNetwork.serving.editPage:about.mu' }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('nomadNetwork.serving.pageNotFound')).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('textbox', { name: /nomadNetwork.serving.editorAria/ })).toBeNull();
+  });
+
+  it('opens a new page editor after validating the filename', async () => {
+    const user = userEvent.setup();
+    const prompt = vi.spyOn(window, 'prompt');
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByText('index.mu')).toBeInTheDocument();
+    });
+    const newPage = screen.getByRole('button', { name: 'nomadNetwork.serving.newPage' });
+
+    prompt.mockReturnValueOnce('notes.txt');
+    await user.click(newPage);
+    expect(screen.getByText('nomadNetwork.serving.invalidPageName')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /nomadNetwork.serving.editorAria/ })).toBeNull();
+
+    prompt.mockReturnValueOnce('../escape.mu');
+    await user.click(newPage);
+    expect(screen.queryByRole('textbox', { name: /nomadNetwork.serving.editorAria/ })).toBeNull();
+
+    prompt.mockReturnValueOnce('');
+    await user.click(newPage);
+    expect(screen.queryByRole('textbox', { name: /nomadNetwork.serving.editorAria/ })).toBeNull();
+
+    prompt.mockReturnValueOnce('notes.mu');
+    await user.click(newPage);
+    await waitFor(() => {
+      expect(
+        screen.getByRole('textbox', { name: 'nomadNetwork.serving.editorAria' }),
+      ).toBeInTheDocument();
+    });
+    // A brand-new page cannot be deleted before it exists on disk.
+    expect(
+      screen.queryByRole('button', { name: 'nomadNetwork.serving.deletePage:notes.mu' }),
+    ).toBeNull();
+    prompt.mockRestore();
+  });
+
+  it('deletes a page after confirmation and refreshes the list', async () => {
+    const user = userEvent.setup();
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByText('about.mu')).toBeInTheDocument();
+    });
+
+    await user.click(
+      screen.getByRole('button', { name: 'nomadNetwork.serving.deletePage:about.mu' }),
+    );
+    expect(proxyDelete).not.toHaveBeenCalled();
+
+    const pageListCallsBefore = proxyGet.mock.calls.filter(
+      (c) => c[0] === '/api/v1/nomadnetwork/serving/pages',
+    ).length;
+    await user.click(
+      screen.getByRole('button', { name: 'nomadNetwork.serving.deleteConfirmAria' }),
+    );
+
+    await waitFor(() => {
+      expect(proxyDelete).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/pages?path=about.mu');
+    });
+    await waitFor(() => {
+      const after = proxyGet.mock.calls.filter(
+        (c) => c[0] === '/api/v1/nomadnetwork/serving/pages',
+      ).length;
+      expect(after).toBeGreaterThan(pageListCallsBefore);
+    });
+  });
+
+  it('surfaces a delete failure as translated copy', async () => {
+    const user = userEvent.setup();
+    proxyDelete.mockResolvedValue({ ok: false, error: 'page_too_large' });
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByText('about.mu')).toBeInTheDocument();
+    });
+
+    await user.click(
+      screen.getByRole('button', { name: 'nomadNetwork.serving.deletePage:about.mu' }),
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'nomadNetwork.serving.deleteConfirmAria' }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('nomadNetwork.serving.pageTooLarge')).toBeInTheDocument();
+    });
+  });
+
+  it('gates authoring controls on a content source, not on active serving', async () => {
+    proxyGet.mockImplementation((path: string) => {
+      if (path === '/api/v1/nomadnetwork/serving') {
+        return Promise.resolve({
+          ok: true,
+          // Serving stopped but a folder is configured: mutations still work.
+          serving: { ...servingStatus, running: false },
+        });
+      }
+      if (path === '/api/v1/nomadnetwork/serving/pages') {
+        return Promise.resolve({ ok: true, pages: [{ path: 'index.mu', size: 12 }] });
+      }
+      return Promise.resolve({ ok: false, error: 'unexpected' });
+    });
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByText('index.mu')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: 'nomadNetwork.serving.newPage' })).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'nomadNetwork.serving.editPage:index.mu' }),
+    ).toBeEnabled();
+  });
+
+  it('disables authoring controls when no content source is set', async () => {
+    proxyGet.mockImplementation((path: string) => {
+      if (path === '/api/v1/nomadnetwork/serving') {
+        return Promise.resolve({
+          ok: true,
+          serving: {
+            ...servingStatus,
+            running: false,
+            content_source: null,
+            content_layout: null,
+          },
+        });
+      }
+      if (path === '/api/v1/nomadnetwork/serving/pages') {
+        return Promise.resolve({ ok: true, pages: [{ path: 'index.mu', size: 12 }] });
+      }
+      return Promise.resolve({ ok: false, error: 'unexpected' });
+    });
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByText('nomadNetwork.serving.contentSourceNone')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: 'nomadNetwork.serving.newPage' })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'nomadNetwork.serving.editPage:index.mu' }),
+    ).toBeDisabled();
   });
 
   it('chooses a content folder via the dialog', async () => {

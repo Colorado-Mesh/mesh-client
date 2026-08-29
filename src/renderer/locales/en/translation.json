@@ -142,6 +142,22 @@
     "mapFilterDesc": "Hides nodes beyond a set distance from your device. Filtering is display-only — nodes remain in the database.",
     "noGpsFix": "Your device has no GPS fix — filter is enabled but all nodes are shown.",
     "requiresGpsFix": "Note: Requires your device to have a valid GPS fix.",
+    "reticulumBlocklist": {
+      "title": "Blocked contacts",
+      "description": "Blocked senders are dropped before their LXMF messages reach your inbox. Export the list to move it to another install, or import a list to block many senders at once.",
+      "exportButton": "Export blocklist",
+      "exportAria": "Export blocked contacts",
+      "importButton": "Import blocklist",
+      "importAria": "Import blocked contacts",
+      "exportOk": "Exported {{count}} blocked contacts",
+      "exportEmpty": "There are no blocked contacts to export.",
+      "exportFailed": "Could not export the blocklist.",
+      "importOk": "Imported {{imported}} blocked contacts ({{skipped}} skipped)",
+      "importFailed": "Could not import the blocklist.",
+      "unblockAria": "Unblock {{hash}}",
+      "unblockFailed": "Could not unblock that contact.",
+      "empty": "No blocked contacts."
+    },
     "dataManagementSection": "Data Management",
     "dataManagementDesc": "Export your local database (messages & nodes) as a .db file, or import/merge another user's database into yours.",
     "supportSection": "Support / Bug reports",
@@ -920,6 +936,7 @@
     "reticulumStackHint": "Start the local Reticulum/LXMF sidecar before creating an identity on the Network tab.",
     "reticulumStartStack": "Start stack",
     "reticulumStopStack": "Stop stack",
+    "reticulumAutoResendOnAnnounce": "Retry failed messages when a peer announces",
     "reticulumAutostart": "Auto-start stack when opening Connection",
     "reticulumStackRunning": "Stack running",
     "reticulumStackRunningAs": "Running — {{name}}",
@@ -1263,12 +1280,42 @@
         "rnodeBle": "LoRa mesh via Bluetooth RNode.",
         "rnodeWifi": "LoRa mesh via RNode Wi-Fi (tcp:// host).",
         "blePeer": "BLE peer mesh using seed peer addresses.",
-        "generic": "Reticulum network interface."
+        "generic": "Reticulum network interface.",
+        "serial": "Generic serial link to a TNC, modem, or another host over a wire. Set the line parameters to match the far end.",
+        "ax25kiss": "AX.25 packet radio through a KISS TNC. Requires your callsign and an SSID (0-15) identifying this station.",
+        "local": "Shared-instance socket on this machine. Other local tools (rnsd, Nomad Network, rnsh) can attach to this stack through it. The socket path is derived from this interface's name, so renaming it changes the address other tools must use."
       },
       "rfProfile": {
         "coordinated": "Coordinated regional",
         "fallback": "Global fallback",
         "legacy": "Legacy presets"
+      },
+      "advancedFields": "Advanced settings",
+      "fieldRequired": "This field is required.",
+      "fieldNotANumber": "Enter a whole number (digits only).",
+      "fieldOutOfRange": "Value is out of the allowed range.",
+      "fieldTooLong": "Value is too long.",
+      "fieldInvalidOption": "Unsupported value.",
+      "field": {
+        "port": "Port",
+        "speed": "Speed (baud)",
+        "databits": "Data bits",
+        "parity": "Parity",
+        "stopbits": "Stop bits",
+        "callsign": "Callsign",
+        "ssid": "SSID",
+        "flow_control": "Flow control",
+        "preamble": "Preamble (ms)",
+        "txtail": "TX tail (ms)",
+        "persistence": "Persistence",
+        "slottime": "Slot time (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "None",
+          "E": "Even",
+          "O": "Odd"
+        }
       }
     },
     "reticulumRmap": {
@@ -1981,7 +2028,8 @@
     "sessionRowAria": "{{app}} game with {{peer}}",
     "apps": {
       "ttt": "Tic-Tac-Toe",
-      "chess": "Chess"
+      "chess": "Chess",
+      "four_in_a_row": "Four in a Row"
     },
     "status": {
       "pending": "Pending",
@@ -2047,6 +2095,19 @@
       "boardAria": "Tic-Tac-Toe board",
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "fourInARow": {
+      "youWon": "You won!",
+      "opponentWon": "Opponent won.",
+      "draw": "Draw.",
+      "yourTurn": "Your turn",
+      "opponentTurn": "Opponent's turn",
+      "yourMarker": "You are {{marker}}",
+      "moveCount": "{{count}} moves",
+      "boardAria": "Four in a Row board",
+      "columnAria": "Column {{column}}, bottom to top: {{contents}}. Drop here",
+      "columnFullAria": "Column {{column}}, bottom to top: {{contents}}. Full",
+      "columnEmptyContents": "empty"
     },
     "chess": {
       "youWon": "You won!",
@@ -2854,6 +2915,18 @@
       "save": "Save stack settings",
       "saveFailed": "Failed to save stack settings."
     },
+    "reticulumPathTable": {
+      "title": "Path table",
+      "description": "Clearing the path table drops every cached route. Routes are relearned as new announces arrive, so the first message to a peer may take longer.",
+      "clear": "Clear path table",
+      "clearAria": "Clear the path table",
+      "clearing": "Clearing...",
+      "confirmTitle": "Clear path table?",
+      "confirmBody": "Every cached route is dropped. Routes are rebuilt from new announces.",
+      "confirmAction": "Clear",
+      "clearOk": "Path table cleared ({{count}} routes dropped)",
+      "clearFailed": "Could not clear the path table."
+    },
     "reticulumPnHosting": {
       "title": "Advanced PN hosting (danger zone)",
       "warning": "These settings control local propagation-node hosting, autopeer, PoW costs, and Sync refusal for high-cost remotes. Misconfiguration can burn CPU, fill disk, or accept many peers.",
@@ -3403,7 +3476,50 @@
       "noPages": "No pages yet. Add .mu files to the chosen folder (for example index.mu).",
       "failed": "Could not update Nomad serving.",
       "previewSite": "Open in browser",
-      "previewSiteAria": "Preview this hosted Nomad site in the browser"
+      "previewSiteAria": "Preview this hosted Nomad site in the browser",
+      "newPage": "New page",
+      "newPageName": "Page filename (must end in .mu)",
+      "invalidPageName": "Enter a filename ending in .mu, without .. or absolute paths.",
+      "edit": "Edit",
+      "editPage": "Edit {{path}}",
+      "delete": "Delete",
+      "deletePage": "Delete {{path}}",
+      "deleteConfirm": "Delete this page? This removes the file from the served folder.",
+      "deleteConfirmAria": "Confirm deleting this page",
+      "deleteError": "Could not delete the page.",
+      "openError": "Could not open the page for editing.",
+      "editorTitle": "Edit Micron page",
+      "editorAria": "Micron page source",
+      "editorPreview": "Preview",
+      "toolbarAria": "Micron formatting actions",
+      "toolbar": {
+        "bold": "Bold",
+        "italic": "Italic",
+        "underline": "Underline",
+        "h1": "Heading 1",
+        "h2": "Heading 2",
+        "h3": "Heading 3",
+        "alignLeft": "Align left",
+        "alignCenter": "Center",
+        "alignRight": "Align right",
+        "divider": "Divider",
+        "link": "Link"
+      },
+      "linkTargetPrompt": "Link target (page path or destination hash)",
+      "save": "Save",
+      "saveError": "Could not save the page.",
+      "unsaved": "Unsaved changes",
+      "discard": "Discard changes",
+      "discardConfirm": "This page has unsaved changes.",
+      "discardConfirmAria": "Discard unsaved changes and close",
+      "close": "Close editor",
+      "closeBackdropAria": "Close the Micron page editor",
+      "pageTooLarge": "That page is too large to host (limit 512 KiB).",
+      "pageNotFound": "That page no longer exists in the served folder.",
+      "invalidPagePath": "That page path is not allowed.",
+      "pageIoError": "Could not read or write the page on disk.",
+      "pageNotUtf8": "That page is not valid UTF-8 text.",
+      "pageWriteFailed": "Could not write the page."
     }
   },
   "packetDistribution": {
@@ -5117,6 +5233,13 @@
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",
+    "openNomadPage": "Open Nomad page {{address}}",
+    "openDm": "Open direct message with {{address}}",
+    "openReticulumAddress": "Open Reticulum address {{address}}",
+    "addressChoiceTitle": "Open Reticulum address",
+    "addressChoiceMessage": "{{address}} could be a Nomad page or a peer. Which would you like to open?",
+    "addressChoiceNomad": "Nomad page",
+    "addressChoiceDm": "Direct message",
     "hubs": {
       "favourites": "Favourites",
       "discovered": "Discovered"

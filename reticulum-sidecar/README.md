@@ -40,7 +40,6 @@ Prefer `./scripts/clone-ratspeak-stack.sh` (or `./scripts/ensure-rsReticulum-pat
 ```bash
 ./scripts/apply-rsReticulum-packet-tap.sh
 ./scripts/apply-rsReticulum-auto-beacon-utun.sh
-./scripts/apply-rsReticulum-link-client-nomad.sh
 ./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
 ./scripts/apply-rsReticulum-discovery-announce-egress.sh
 ./scripts/apply-rsLXMF-propagation-sync-peering.sh

@@ -393,7 +393,23 @@
     "rrcUnreadAllRoomMessagesHint": "Saat aktif, setiap pesan ruang RRC baru menandai belum dibaca dan dapat memutar suara saluran. Nonaktifkan untuk peringatan bergaya IRC: hanya pesan langsung dan @mention.",
     "shareMyLocation": "Bagikan lokasi saya",
     "shareMyLocationOffInfo": "Berbagi lokasi tidak aktif — penyegaran GPS host dan pengiriman jala dinonaktifkan. Aktifkan Bagikan lokasi saya di atas untuk menggunakan penyegaran otomatis atau kirim posisi Anda.",
-    "shareMyLocationHint": "Saat diaktifkan, aplikasi ini dapat mencari lokasi Anda di komputer ini dan mengirimkannya melalui Meshtastic, MeshCore, atau Reticulum (berbagi obrolan, push radio, RMAP). Saat dinonaktifkan, pencarian GPS tuan rumah dan pengiriman aplikasi tidak aktif; koordinat statis masih berfungsi untuk peta lokal Anda saja. Radio dengan GPS sendiri mungkin masih menunjukkan posisi Anda secara lokal. Firmware perangkat mungkin masih disiarkan sampai Anda menyesuaikan pengaturan Radio atau Modul."
+    "shareMyLocationHint": "Saat diaktifkan, aplikasi ini dapat mencari lokasi Anda di komputer ini dan mengirimkannya melalui Meshtastic, MeshCore, atau Reticulum (berbagi obrolan, push radio, RMAP). Saat dinonaktifkan, pencarian GPS tuan rumah dan pengiriman aplikasi tidak aktif; koordinat statis masih berfungsi untuk peta lokal Anda saja. Radio dengan GPS sendiri mungkin masih menunjukkan posisi Anda secara lokal. Firmware perangkat mungkin masih disiarkan sampai Anda menyesuaikan pengaturan Radio atau Modul.",
+    "reticulumBlocklist": {
+      "description": "Pengirim yang diblokir dijatuhkan sebelum pesan LXMF mereka mencapai kotak masuk Anda. Ekspor daftar untuk memindahkannya ke instalasi lain, atau impor daftar untuk memblokir banyak pengirim sekaligus.",
+      "exportButton": "Ekspor daftar blokir",
+      "exportAria": "Ekspor kontak yang diblokir",
+      "importButton": "Impor daftar blokir",
+      "importAria": "Impor kontak yang diblokir",
+      "exportOk": "Mengekspor {{count}} kontak yang diblokir",
+      "exportEmpty": "Tidak ada kontak yang diblokir untuk diekspor.",
+      "exportFailed": "Tidak dapat mengekspor daftar blokir.",
+      "importOk": "Mengimpor {{imported}} kontak yang diblokir ({{skipped}} dilewati)",
+      "importFailed": "Tidak dapat mengimpor daftar blokir.",
+      "unblockAria": "Buka blokiran {{hash}}",
+      "unblockFailed": "Tidak dapat membuka blokir kontak itu.",
+      "empty": "Tidak ada kontak yang diblokir.",
+      "title": "Kontak yang diblokir"
+    }
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -1134,7 +1150,10 @@
         "blePeer": "Mesh rekan BLE menggunakan alamat rekan benih.",
         "generic": "Antarmuka jaringan Reticulum.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "Backbone I2P melalui router pada mesin ini. Aktifkan jembatan aplikasi SAM (127.0.0.1:7656) — bukan proxy HTTP/https I2PTunnel (4444/4445). Mulai ulang I2P setelah mengaktifkan SAM sehingga bridge mendengarkan, lalu mulai ulang tumpukan Reticulum jika antarmuka ini tetap down."
+        "i2p": "Backbone I2P melalui router pada mesin ini. Aktifkan jembatan aplikasi SAM (127.0.0.1:7656) — bukan proxy HTTP/https I2PTunnel (4444/4445). Mulai ulang I2P setelah mengaktifkan SAM sehingga bridge mendengarkan, lalu mulai ulang tumpukan Reticulum jika antarmuka ini tetap down.",
+        "serial": "Tautan serial umum ke TNC, modem, atau host lain melalui kabel. Atur parameter garis agar sesuai dengan ujung.",
+        "ax25kiss": "Radio paket AX.25 melalui TNC KISS. Memerlukan tanda panggil Anda dan SSID (0 -15) yang mengidentifikasi stasiun ini.",
+        "local": "Soket instansi bersama pada mesin ini. Alat lokal lainnya (rnsd, Nomad Network, rnsh) dapat dilampirkan ke tumpukan ini melaluinya. Jalur soket berasal dari nama antarmuka ini, jadi mengganti namanya mengubah alamat yang harus digunakan alat lain."
       },
       "rfProfile": {
         "coordinated": "Daerah yang terkoordinasi",
@@ -1258,10 +1277,37 @@
       "effectiveModeBadge": "Berlaku: {{mode}}",
       "effectiveModeAria": "Mode runtime efektif {{mode}}. Mode yang dikonfigurasi berbeda dari yang dijalankan Reticulum.",
       "effectiveModeTooltip": "Reticulum menulis ulang antarmuka yang dapat ditemukan ini ke Access Point (atau mode lain yang diizinkan) karena dapat ditemukan memerlukan Gateway, Internal, atau Access Point kecuali jika ignore_config_warnings ditetapkan. Mulai ulang tumpukan setelah stempel mesh-client yang menyisih sehingga Full (atau mode terkonfigurasi Anda) berlaku.",
-      "flowControlBleHint": "Di Bluetooth, radio sering tidak pernah mengirimkan CMD_READY. Mesh-Client masih melangkah TX (menunggu sebentar untuk READY, lalu melanjutkan) sehingga kontrol aliran mengurangi kelebihan beban tanpa membekukan antrian."
+      "flowControlBleHint": "Di Bluetooth, radio sering tidak pernah mengirimkan CMD_READY. Mesh-Client masih melangkah TX (menunggu sebentar untuk READY, lalu melanjutkan) sehingga kontrol aliran mengurangi kelebihan beban tanpa membekukan antrian.",
+      "advancedFields": "Pengaturan tingkat lanjut",
+      "field": {
+        "port": "Port",
+        "speed": "Kecepatan (baud)",
+        "databits": "Data Bit",
+        "parity": "Paritas",
+        "stopbits": "Bit penghenti",
+        "callsign": "Callsign",
+        "ssid": "SSID",
+        "flow_control": "Kontrol Aliran",
+        "preamble": "Pembukaan",
+        "txtail": "TX tail (ms)",
+        "persistence": "Pantang menyerah",
+        "slottime": "Waktu slot (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "Tidak Ada",
+          "E": "Even",
+          "O": "Ganjil"
+        }
+      },
+      "fieldRequired": "Bidang ini wajib diisi.",
+      "fieldNotANumber": "Masukkan bilangan bulat (digit saja).",
+      "fieldOutOfRange": "Nilai berada di luar rentang yang diizinkan.",
+      "fieldTooLong": "Nilai terlalu panjang.",
+      "fieldInvalidOption": "Nilai tidak didukung."
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "Hop",
       "actions": "Aksi",
       "path": "Jalur",
       "probe": "Sonda"
@@ -1451,7 +1497,8 @@
     "pickerDeviceAria": "{{name}} {{address}}",
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
-    "bluetoothId": "ID Bluetooth"
+    "bluetoothId": "ID Bluetooth",
+    "reticulumAutoResendOnAnnounce": "Coba lagi pesan yang gagal saat rekan mengumumkan"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -2787,6 +2834,18 @@
     "reticulumScanImport": {
       "title": "Pindai / impor",
       "hint": "Pindai atau tempel QR untuk kontak, kartu Columba lxma://, atau pesan kertas LXMF terenkripsi."
+    },
+    "reticulumPathTable": {
+      "title": "Tabel jalur",
+      "description": "Menghapus tabel jalur akan menghapus setiap rute yang di-cache. Rute dipelajari kembali saat pengumuman baru tiba, sehingga pesan pertama ke rekan mungkin memerlukan waktu lebih lama.",
+      "clear": "Hapus tabel jalur",
+      "clearing": "Membersihkan...",
+      "confirmTitle": "Hapus tabel jalur?",
+      "confirmBody": "Setiap rute yang di-cache akan dihapus. Rute dibangun kembali dari pengumuman baru.",
+      "clearOk": "Tabel jalur dibersihkan (rute {{count}} dibatalkan)",
+      "clearFailed": "Tidak dapat menghapus tabel jalur.",
+      "clearAria": "Hapus tabel jalur",
+      "confirmAction": "Hapus"
     }
   },
   "nodeDetailModal": {
@@ -3225,7 +3284,50 @@
       "noPages": "Belum ada halaman. Tambahkan file .mu ke folder yang dipilih (misalnya index.mu).",
       "contentSourceNotFromPicker": "Pilih folder dengan Pilih folder sebelum menerapkannya.",
       "contentSourceNone": "Tidak ada folder yang dipilih",
-      "contentSourceRequired": "Pilih folder halaman sebelum memulai Nomad hosting."
+      "contentSourceRequired": "Pilih folder halaman sebelum memulai Nomad hosting.",
+      "newPage": "New page",
+      "newPageName": "Nama file halaman (harus diakhiri dengan .mu)",
+      "invalidPageName": "Masukkan nama file yang berakhiran .mu, tanpa .. atau jalur absolut.",
+      "edit": "Edit",
+      "editPage": "Edit {{path}}",
+      "delete": "Hapus",
+      "deletePage": "Hapus {{path}}",
+      "deleteConfirm": "Hapus halaman ini? Ini menghapus file dari folder yang disajikan.",
+      "deleteConfirmAria": "Konfirmasikan penghapusan halaman ini",
+      "deleteError": "Tidak dapat menghapus file.",
+      "openError": "Tidak dapat membuka halaman untuk diedit.",
+      "editorTitle": "Edit halaman Micron",
+      "editorAria": "Sumber halaman Micron",
+      "editorPreview": "Lihat preview",
+      "toolbarAria": "Micron formatting actions",
+      "toolbar": {
+        "bold": "Tebal",
+        "italic": "Miring",
+        "underline": "Garis Bawah",
+        "h1": "[Heading 1]",
+        "h2": "Judul 2",
+        "h3": "Judul 3",
+        "alignLeft": "Rata kiri",
+        "alignCenter": "Tengah",
+        "alignRight": "Rata kanan",
+        "divider": "Divider",
+        "link": "Link"
+      },
+      "linkTargetPrompt": "Target tautan (jalur halaman atau hash tujuan)",
+      "save": "Simpan",
+      "saveError": "Tidak dapat menyimpan halaman.",
+      "unsaved": "Perubahan Belum Tersimpan",
+      "discard": "Buang perubahan",
+      "discardConfirm": "Halaman ini memiliki perubahan yang belum disimpan.",
+      "discardConfirmAria": "Buang perubahan yang belum disimpan dan tutup",
+      "close": "Editor",
+      "closeBackdropAria": "Tutup editor halaman Micron",
+      "pageTooLarge": "Halaman itu terlalu besar untuk dihosting (batas 512 KiB).",
+      "pageNotFound": "Halaman itu tidak ada lagi di folder yang dilayani.",
+      "invalidPagePath": "Jalur halaman itu tidak diizinkan.",
+      "pageIoError": "Tidak dapat membaca atau menulis halaman pada disk.",
+      "pageNotUtf8": "Halaman tersebut bukan teks UTF -8 yang valid.",
+      "pageWriteFailed": "Tidak dapat menulis halaman."
     },
     "sortLastHeard": "Terakhir Didengar",
     "sortHops": "Hop",
@@ -5042,7 +5144,14 @@
     "jumpToLatest": "Langsung ke Terbaru",
     "stackNotReady": "Stack Reticulum belum siap. Tunggu hingga terhubung, lalu coba lagi.",
     "sidecarNotRunning": "Sidecar Reticulum tidak berjalan. Mulai stack di Connection, lalu coba lagi.",
-    "whoReplyMissing": "Tidak ada daftar anggota dari hub untuk {{room}} (balasan dapat melebihi ukuran tautan). Nama akan muncul saat orang bergabung atau mengobrol."
+    "whoReplyMissing": "Tidak ada daftar anggota dari hub untuk {{room}} (balasan dapat melebihi ukuran tautan). Nama akan muncul saat orang bergabung atau mengobrol.",
+    "openNomadPage": "Buka halaman Nomad {{address}}",
+    "openDm": "Buka pesan langsung dengan {{address}}",
+    "openReticulumAddress": "Buka alamat Reticulum {{address}}",
+    "addressChoiceTitle": "Buka alamat Reticulum",
+    "addressChoiceMessage": "{{address}} bisa berupa halaman Nomad atau sebuah peer. Mana yang ingin dibuka?",
+    "addressChoiceNomad": "Halaman Nomad",
+    "addressChoiceDm": "Pesan langsung"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5387,7 +5496,8 @@
     "sessionRowAria": "{{app}} permainan dengan {{peer}}",
     "apps": {
       "ttt": "Tic Tac Toe",
-      "chess": "Catur"
+      "chess": "Catur",
+      "four_in_a_row": "Empat Berderet"
     },
     "status": {
       "pending": "Tertunda",
@@ -5439,6 +5549,19 @@
       "boardAria": "Papan Tic - Tac - Toe",
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "fourInARow": {
+      "youWon": "Kamu menang!",
+      "opponentWon": "Lawan menang.",
+      "draw": "Draw",
+      "yourTurn": "Giliran Anda",
+      "opponentTurn": "Giliran Lawan",
+      "yourMarker": "Anda {{marker}}",
+      "moveCount": "{{count}} bergerak",
+      "boardAria": "Papan Empat Sederet",
+      "columnAria": "Kolom {{column}}, dari bawah ke atas: {{contents}}. Jatuhkan di sini",
+      "columnFullAria": "Kolom {{column}}, dari bawah ke atas: {{contents}}. Penuh",
+      "columnEmptyContents": "kosong"
     },
     "chess": {
       "youWon": "Kamu menang!",
