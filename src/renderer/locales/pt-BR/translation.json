@@ -5549,6 +5549,19 @@
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
+    "fourInARow": {
+      "youWon": "Ganhaste!",
+      "opponentWon": "O oponente venceu.",
+      "draw": "Desenho",
+      "yourTurn": "Sua vez",
+      "opponentTurn": "Turno do(a) oponente",
+      "yourMarker": "Você é {{marker}}",
+      "moveCount": "{{count}} movimentos",
+      "boardAria": "Tabuleiro de Quatro em Linha",
+      "columnAria": "Coluna {{column}}, de baixo para cima: {{contents}}. Soltar aqui",
+      "columnFullAria": "Coluna {{column}}, de baixo para cima: {{contents}}. Cheia",
+      "columnEmptyContents": "vazia"
+    },
     "chess": {
       "youWon": "Ganhaste!",
       "opponentWon": "O oponente venceu.",

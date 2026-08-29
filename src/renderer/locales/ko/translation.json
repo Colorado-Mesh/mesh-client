@@ -5549,6 +5549,19 @@
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
+    "fourInARow": {
+      "youWon": "당신의 승리입니다!",
+      "opponentWon": "상대가 이겼습니다.",
+      "draw": "그리기",
+      "yourTurn": "당신의 차례입니다.",
+      "opponentTurn": "상대방 턴!",
+      "yourMarker": "당신은 {{marker}} 입니다",
+      "moveCount": "{{count}} 이동",
+      "boardAria": "사목 게임 보드",
+      "columnAria": "{{column}}번 열, 아래에서 위로: {{contents}}. 여기에 놓기",
+      "columnFullAria": "{{column}}번 열, 아래에서 위로: {{contents}}. 가득 참",
+      "columnEmptyContents": "비어 있음"
+    },
     "chess": {
       "youWon": "당신의 승리입니다!",
       "opponentWon": "상대가 이겼습니다.",

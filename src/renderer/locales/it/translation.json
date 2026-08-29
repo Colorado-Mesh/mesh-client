@@ -5549,6 +5549,19 @@
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
+    "fourInARow": {
+      "youWon": "Hai vinto!",
+      "opponentWon": "L'avversario ha vinto.",
+      "draw": "Patta.",
+      "yourTurn": "Tocca a te.",
+      "opponentTurn": "Tocca al tuo avversario",
+      "yourMarker": "Lei è {{marker}}",
+      "moveCount": "{{count}} mosse",
+      "boardAria": "Tabellone di Forza 4",
+      "columnAria": "Colonna {{column}}, dal basso verso l'alto: {{contents}}. Inserisci qui",
+      "columnFullAria": "Colonna {{column}}, dal basso verso l'alto: {{contents}}. Piena",
+      "columnEmptyContents": "vuota"
+    },
     "chess": {
       "youWon": "Hai vinto!",
       "opponentWon": "L'avversario ha vinto.",

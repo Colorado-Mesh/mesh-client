@@ -5549,6 +5549,19 @@
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
+    "fourInARow": {
+      "youWon": "Je hebt gewonnen!",
+      "opponentWon": "Tegenstander heeft gewonnen.",
+      "draw": "Rapen",
+      "yourTurn": "Jouw beurt",
+      "opponentTurn": "De beurt van de tegenstander",
+      "yourMarker": "Jij bent {{marker}}",
+      "moveCount": "{{count}} verhuist",
+      "boardAria": "Vier op een rij-bord",
+      "columnAria": "Kolom {{column}}, van onder naar boven: {{contents}}. Hier plaatsen",
+      "columnFullAria": "Kolom {{column}}, van onder naar boven: {{contents}}. Vol",
+      "columnEmptyContents": "leeg"
+    },
     "chess": {
       "youWon": "Je hebt gewonnen!",
       "opponentWon": "Tegenstander heeft gewonnen.",

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import { DeliveryStatusBadgeFrame } from '@/renderer/components/DeliveryStatusBadgeFrame';
 import { ChessBoard } from '@/renderer/components/games/ChessBoard';
+import { FourInARowBoard } from '@/renderer/components/games/FourInARowBoard';
 import { TicTacToeBoard } from '@/renderer/components/games/TicTacToeBoard';
 import {
   burstConfetti,
@@ -182,7 +183,9 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
         ? { kind: 'chess' as const, uci: payload.m }
         : selectedSession.app_id === 'ttt' && typeof payload.i === 'number'
           ? { kind: 'ttt' as const, cellIndex: payload.i }
-          : undefined;
+          : selectedSession.app_id === 'four_in_a_row' && typeof payload.c === 'number'
+            ? { kind: 'four_in_a_row' as const, column: payload.c }
+            : undefined;
     void sendGamesAction({
       destHash: selectedSession.contact_hash,
       appId: selectedSession.app_id,
@@ -385,6 +388,14 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                   disabled={boardDisabled}
                   onMove={(m) => {
                     handleMove({ m });
+                  }}
+                />
+              ) : selectedSession.app_id === 'four_in_a_row' ? (
+                <FourInARowBoard
+                  session={selectedSession}
+                  disabled={boardDisabled}
+                  onMove={(c) => {
+                    handleMove({ c });
                   }}
                 />
               ) : (

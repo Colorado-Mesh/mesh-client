@@ -2095,6 +2095,19 @@
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
+    "fourInARow": {
+      "youWon": "You won!",
+      "opponentWon": "Opponent won.",
+      "draw": "Draw.",
+      "yourTurn": "Your turn",
+      "opponentTurn": "Opponent's turn",
+      "yourMarker": "You are {{marker}}",
+      "moveCount": "{{count}} moves",
+      "boardAria": "Four in a Row board",
+      "columnAria": "Column {{column}}, bottom to top: {{contents}}. Drop here",
+      "columnFullAria": "Column {{column}}, bottom to top: {{contents}}. Full",
+      "columnEmptyContents": "empty"
+    },
     "chess": {
       "youWon": "You won!",
       "opponentWon": "Opponent won.",

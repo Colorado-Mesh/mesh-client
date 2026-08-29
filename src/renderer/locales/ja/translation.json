@@ -5549,6 +5549,19 @@
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
+    "fourInARow": {
+      "youWon": "勝ったぁ！",
+      "opponentWon": "対戦相手が勝利した。",
+      "draw": "引け",
+      "yourTurn": "あなたのターン",
+      "opponentTurn": "相手のターン！",
+      "yourMarker": "あなたは{{marker}}です",
+      "moveCount": "{{count}}ムーブ",
+      "boardAria": "四目並べのボード",
+      "columnAria": "列 {{column}}、下から上: {{contents}}。ここに落とす",
+      "columnFullAria": "列 {{column}}、下から上: {{contents}}。満杯",
+      "columnEmptyContents": "空"
+    },
     "chess": {
       "youWon": "勝ったぁ！",
       "opponentWon": "対戦相手が勝利した。",

@@ -11,6 +11,12 @@ const EMPTY_CELL = '_';
 const STARTING_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const FILES = 'abcdefgh';
 
+/** LRGP `four_in_a_row.1`: 7×6 gravity board, 42 cells row-major (`row * 7 + column`). */
+export const FOUR_IN_A_ROW_COLUMNS = 7;
+export const FOUR_IN_A_ROW_ROWS = 6;
+export const FOUR_IN_A_ROW_CELL_COUNT = FOUR_IN_A_ROW_COLUMNS * FOUR_IN_A_ROW_ROWS;
+export const FOUR_IN_A_ROW_EMPTY_BOARD = EMPTY_CELL.repeat(FOUR_IN_A_ROW_CELL_COUNT);
+
 export function snapshotSessionForOptimistic(session: GameSession): GameSession {
   return {
     ...session,
@@ -95,6 +101,92 @@ export function applyOptimisticTttMove(session: GameSession, cellIndex: number):
     delivery_state: 'pending',
     metadata,
   };
+}
+
+/** Normalize a stored board to exactly 42 cells. */
+export function fourInARowCells(board: string): string[] {
+  return board
+    .padEnd(FOUR_IN_A_ROW_CELL_COUNT, EMPTY_CELL)
+    .slice(0, FOUR_IN_A_ROW_CELL_COUNT)
+    .split('');
+}
+
+/** Lowest empty row in `column`, or null when the column is full or out of range. */
+export function fourInARowDropRow(cells: string[], column: number): number | null {
+  if (!Number.isInteger(column) || column < 0 || column >= FOUR_IN_A_ROW_COLUMNS) return null;
+  for (let row = FOUR_IN_A_ROW_ROWS - 1; row >= 0; row -= 1) {
+    if (cells[row * FOUR_IN_A_ROW_COLUMNS + column] === EMPTY_CELL) return row;
+  }
+  return null;
+}
+
+const FOUR_IN_A_ROW_DIRECTIONS: readonly (readonly [number, number])[] = [
+  [0, 1],
+  [1, 0],
+  [1, 1],
+  [1, -1],
+];
+
+/** Cell indices of the first four-in-a-line, or null when there is no winner. */
+export function fourInARowWinCells(cells: string[]): number[] | null {
+  for (let row = 0; row < FOUR_IN_A_ROW_ROWS; row += 1) {
+    for (let column = 0; column < FOUR_IN_A_ROW_COLUMNS; column += 1) {
+      const marker = cells[row * FOUR_IN_A_ROW_COLUMNS + column];
+      if (!marker || marker === EMPTY_CELL) continue;
+      for (const [dRow, dColumn] of FOUR_IN_A_ROW_DIRECTIONS) {
+        const line: number[] = [];
+        for (let step = 0; step < 4; step += 1) {
+          const r = row + dRow * step;
+          const c = column + dColumn * step;
+          if (r < 0 || r >= FOUR_IN_A_ROW_ROWS || c < 0 || c >= FOUR_IN_A_ROW_COLUMNS) break;
+          if (cells[r * FOUR_IN_A_ROW_COLUMNS + c] !== marker) break;
+          line.push(r * FOUR_IN_A_ROW_COLUMNS + c);
+        }
+        if (line.length === 4) return line;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Apply a Four in a Row column drop locally before the sidecar confirms.
+ * Mirrors `applyOptimisticTttMove`; the wire payload is `{ c }`.
+ */
+export function applyOptimisticFourInARowMove(session: GameSession, column: number): GameSession {
+  const metadata = { ...session.metadata };
+  const cells = fourInARowCells(gamesMetaStr(metadata, 'board', FOUR_IN_A_ROW_EMPTY_BOARD));
+  const row = fourInARowDropRow(cells, column);
+  if (row === null) {
+    return { ...session, delivery_state: 'pending', metadata };
+  }
+  let myMarker = gamesMetaStr(metadata, 'my_marker');
+  if (!myMarker) {
+    myMarker = gamesMetaStr(metadata, 'first_turn') === session.identity_id ? 'A' : 'B';
+  }
+  const cell = row * FOUR_IN_A_ROW_COLUMNS + column;
+  cells[cell] = myMarker;
+  metadata.board = cells.join('');
+  metadata.move_count = gamesMetaNum(metadata, 'move_count') + 1;
+  metadata.last_column = column;
+  metadata.last_row = row;
+  metadata.last_cell = cell;
+
+  const win = fourInARowWinCells(cells);
+  if (win) {
+    metadata.terminal = 'win';
+    metadata.winner = session.identity_id;
+    metadata.turn = '';
+    return { ...session, status: 'completed', delivery_state: 'pending', metadata };
+  }
+  if (!cells.includes(EMPTY_CELL)) {
+    metadata.terminal = 'draw';
+    metadata.winner = '';
+    metadata.turn = '';
+    return { ...session, status: 'completed', delivery_state: 'pending', metadata };
+  }
+  metadata.turn = session.contact_hash;
+  return { ...session, delivery_state: 'pending', metadata };
 }
 
 function parseFenPlacement(fen: string): string[][] {

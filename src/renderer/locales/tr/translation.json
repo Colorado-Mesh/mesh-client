@@ -5549,6 +5549,19 @@
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
+    "fourInARow": {
+      "youWon": "Sen kazandın!",
+      "opponentWon": "Rakip kazandı.",
+      "draw": "Berabere.",
+      "yourTurn": "Sıra sende.",
+      "opponentTurn": "Rakibin Sırası",
+      "yourMarker": "Siz {{marker}}",
+      "moveCount": "{{count}} hamle",
+      "boardAria": "Dört Taş tahtası",
+      "columnAria": "Sütun {{column}}, aşağıdan yukarıya: {{contents}}. Buraya bırak",
+      "columnFullAria": "Sütun {{column}}, aşağıdan yukarıya: {{contents}}. Dolu",
+      "columnEmptyContents": "boş"
+    },
     "chess": {
       "youWon": "Sen kazandın!",
       "opponentWon": "Rakip kazandı.",

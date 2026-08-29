@@ -5551,6 +5551,19 @@
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
     },
+    "fourInARow": {
+      "youWon": "Ви виграли!",
+      "opponentWon": "Противник переміг.",
+      "draw": "Балка",
+      "yourTurn": "Ваш хід.",
+      "opponentTurn": "Хід опонента",
+      "yourMarker": "Вас звати {{marker}}",
+      "moveCount": "{{count}} ходів",
+      "boardAria": "Дошка «Чотири в ряд»",
+      "columnAria": "Стовпець {{column}}, знизу вгору: {{contents}}. Кинути сюди",
+      "columnFullAria": "Стовпець {{column}}, знизу вгору: {{contents}}. Заповнений",
+      "columnEmptyContents": "порожньо"
+    },
     "chess": {
       "youWon": "Ви виграли!",
       "opponentWon": "Противник переміг.",
