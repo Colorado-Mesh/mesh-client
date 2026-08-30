@@ -49,6 +49,12 @@ describe('Buttonmash CI', () => {
     expect(config.detectors.ignorePatterns).toContain(
       "Cannot read properties of undefined \\(reading '_leaflet_pos'\\)",
     );
+    // Headless CI Chromium exposes no Web Bluetooth; the MeshCore/Meshtastic connect
+    // attempts log console.error, which is environmental rather than a renderer defect.
+    expect(config.detectors.ignorePatterns).toContain(
+      '\\[WebBluetooth\\] navigator\\.bluetooth is UNDEFINED!',
+    );
+    expect(config.detectors.ignorePatterns).toContain('Web Bluetooth is not available');
     expect(config.failOn).toBe('high');
   });
 });

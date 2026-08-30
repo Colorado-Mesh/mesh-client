@@ -32,7 +32,9 @@
       "ResizeObserver loop",
       "controls\\.start\\(\\) should only be called after a component has mounted",
       "Cannot read properties of undefined \\(reading '_leaflet_pos'\\)",
-      "\\[useMeshtasticRuntime\\] Connection failed: BLE peripheral ID required on Mac/Windows"
+      "\\[useMeshtasticRuntime\\] Connection failed: BLE peripheral ID required on Mac/Windows",
+      "\\[WebBluetooth\\] navigator\\.bluetooth is UNDEFINED!",
+      "Web Bluetooth is not available"
     ]
   },
   "failOn": "high"

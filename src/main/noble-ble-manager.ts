@@ -1092,6 +1092,9 @@ export class NobleBleManager extends EventEmitter {
    * Last-chance teardown for app exit. Must call noble._bindings.stop() to release the native
    * BLEManager (CFRelease), which frees the CBCentralManager and its CBqueue GCD dispatch queue.
    * Without this, the active GCD thread keeps the macOS process alive indefinitely.
+   *
+   * These native lifetime hazards are cited in https://github.com/stoprocent/noble/issues/140
+   * (multi-day sessions abort the main process); the day-4 restart nudge is the mitigation.
    */
   releaseNobleProcessHandles(): void {
     this.releaseHandlesCallCount += 1; // Mark all sessions closing FIRST so any in-flight readAsync loop exits without issuing

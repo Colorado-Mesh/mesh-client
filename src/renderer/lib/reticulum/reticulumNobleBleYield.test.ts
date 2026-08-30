@@ -300,6 +300,90 @@ describe('syncReticulumNobleBleYield', () => {
     expect(prepareReticulumBleRnodeConnect).not.toHaveBeenCalled();
   });
 
+  it('never announces a yield release while the sidecar keeps the adapter after grace', async () => {
+    vi.mocked(window.electronAPI.bleCoexistence.getState).mockResolvedValue({
+      connections: [],
+      scanOwner: 'reticulum',
+    });
+    const state: ReticulumNobleBleYieldMutableState = { yieldActive: false };
+    const now = Date.now();
+    for (let tick = 0; tick < 5; tick += 1) {
+      await syncReticulumNobleBleYield(
+        {
+          sidecarActive: true,
+          interfaces: [BLE_ROW],
+          nowMs: now + tick * 5_000,
+          bleConnectGraceExpiresAt: now - 1_000,
+        },
+        state,
+      );
+    }
+    expect(prepareReticulumBleRnodeConnect).not.toHaveBeenCalled();
+    expect(state.yieldActive).toBe(false);
+    // Each tick must still hand the scan lease back so Noble can scan — silently.
+    expect(releaseReticulumBleRnodeConnect).toHaveBeenCalledTimes(5);
+    for (const call of vi.mocked(releaseReticulumBleRnodeConnect).mock.calls) {
+      expect(call[0]).toEqual({ notify: false });
+    }
+  });
+
+  it('announces a genuine yield release exactly once when the RNode comes online', async () => {
+    vi.mocked(prepareReticulumBleRnodeConnect).mockResolvedValue(true);
+    const state: ReticulumNobleBleYieldMutableState = { yieldActive: false };
+    const now = Date.now();
+    await syncReticulumNobleBleYield(
+      {
+        sidecarActive: true,
+        interfaces: [BLE_ROW],
+        nowMs: now,
+        bleConnectGraceExpiresAt: now + 30_000,
+      },
+      state,
+    );
+    expect(state.yieldActive).toBe(true);
+    expect(releaseReticulumBleRnodeConnect).not.toHaveBeenCalled();
+
+    vi.mocked(window.electronAPI.bleCoexistence.getState).mockResolvedValue({
+      connections: [],
+      scanOwner: 'reticulum',
+    });
+    for (let tick = 1; tick <= 3; tick += 1) {
+      await syncReticulumNobleBleYield(
+        {
+          sidecarActive: true,
+          interfaces: [{ ...BLE_ROW, status: 'up' }],
+          nowMs: now + tick * 5_000,
+          bleConnectGraceExpiresAt: now + 30_000,
+        },
+        state,
+      );
+    }
+    const notifyingCalls = vi
+      .mocked(releaseReticulumBleRnodeConnect)
+      .mock.calls.filter((call) => call[0]?.notify ?? true);
+    expect(notifyingCalls).toHaveLength(1);
+    expect(state.yieldActive).toBe(false);
+  });
+
+  it('releases a bond-desync scan lock silently when no yield was held', async () => {
+    vi.mocked(window.electronAPI.bleCoexistence.getState).mockResolvedValue({
+      connections: [],
+      scanOwner: 'reticulum',
+    });
+    const state: ReticulumNobleBleYieldMutableState = { yieldActive: false };
+    await syncReticulumNobleBleYield(
+      {
+        sidecarActive: true,
+        interfaces: [BLE_ROW],
+        nowMs: Date.now(),
+        bleConnectGraceExpiresAt: Date.now() + 60_000,
+        bondDesyncActive: true,
+      },
+      state,
+    );
+    expect(releaseReticulumBleRnodeConnect).toHaveBeenCalledWith({ notify: false });
+  });
+
   it('does not reacquire lease when a stale prepare resolves after abort (bond-desync race)', async () => {
     let resolvePrepare: ((value: boolean) => void) | undefined;
     vi.mocked(prepareReticulumBleRnodeConnect).mockImplementation(

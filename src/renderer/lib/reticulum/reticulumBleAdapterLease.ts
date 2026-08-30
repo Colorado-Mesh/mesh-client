@@ -49,9 +49,21 @@ export async function prepareReticulumBleRnodeConnect(): Promise<boolean> {
   }
 }
 
-export async function releaseReticulumBleRnodeConnect(): Promise<void> {
+export interface ReleaseReticulumBleRnodeConnectOptions {
+  /**
+   * Announce the release so Meshtastic/MeshCore retry. Pass false for steady-state cleanup
+   * where no yield was actually held — repeat announcements reset their reconnect latches.
+   */
+  notify?: boolean;
+}
+
+export async function releaseReticulumBleRnodeConnect(
+  options?: ReleaseReticulumBleRnodeConnectOptions,
+): Promise<void> {
   await releaseReticulumBleScan();
-  dispatchNobleBleYieldReleased();
+  if (options?.notify ?? true) {
+    dispatchNobleBleYieldReleased();
+  }
 }
 
 export async function registerReticulumBleMac(mac: string): Promise<boolean> {
