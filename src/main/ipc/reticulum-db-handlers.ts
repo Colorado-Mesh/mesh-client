@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import type { IpcMain } from 'electron';
 
+import { isValidBlockedContactHash, normalizeBlockedHash } from '../../shared/blockedContactHash';
 import { clampQueryLimit } from '../../shared/clampQueryLimit';
 import { isMeshProtocol } from '../../shared/meshProtocol';
 import type {
@@ -24,6 +25,8 @@ export { isAllowedReticulumReceivedVia };
 const REMOTE_ADDRESS_SERVICES = new Set<RemoteAddressService>(['rnsh', 'rncp']);
 const REMOTE_INBOUND_DECISIONS = new Set<RemoteInboundDecision>(['allow', 'block']);
 const ALLOWED_DELIVERY_METHOD = new Set<string>(RETICULUM_DELIVERY_METHODS);
+/** Upper bound on a single blocklist import so a huge file cannot stall the DB. */
+export const BLOCKED_CONTACTS_IMPORT_MAX = 10_000;
 
 /**
  * Prior-row delete key for optimistic LXMF rekey: pending ids or hex message hashes only.
@@ -175,6 +178,14 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       const attachmentPath = sanitizeReticulumAttachmentPathForDb(
         typeof m.attachment_path === 'string' ? m.attachment_path : null,
       );
+      const audioMode =
+        m.audio_mode != null && Number.isFinite(Number(m.audio_mode))
+          ? Math.trunc(Number(m.audio_mode))
+          : null;
+      const audioDurationSec =
+        m.audio_duration_sec != null && Number.isFinite(Number(m.audio_duration_sec))
+          ? Number(m.audio_duration_sec)
+          : null;
       const deliveryAttempts =
         m.delivery_attempts != null && Number.isFinite(Number(m.delivery_attempts))
           ? Math.trunc(Number(m.delivery_attempts))
@@ -211,7 +222,10 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
                    END,
                    received_via = COALESCE(?, received_via),
                    sender_name = COALESCE(?, sender_name),
-                   delivery_method = COALESCE(?, delivery_method)
+                   delivery_method = COALESCE(?, delivery_method),
+                   attachment_path = COALESCE(?, attachment_path),
+                   audio_mode = COALESCE(?, audio_mode),
+                   audio_duration_sec = COALESCE(?, audio_duration_sec)
                WHERE id = ?`,
             ).run(
               deliveryStatus,
@@ -219,6 +233,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
               receivedVia,
               senderName,
               deliveryMethod,
+              attachmentPath,
+              audioMode,
+              audioDurationSec,
               existing.id,
             );
             return { changes: 1 };
@@ -226,8 +243,8 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         }
 
         db.prepareOnce(
-          `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path, delivery_method)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path, delivery_method, audio_mode, audio_duration_sec)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         ).run(
           identityId,
           senderId,
@@ -243,6 +260,8 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
           nextDeliveryAttemptAt,
           attachmentPath,
           deliveryMethod,
+          audioMode,
+          audioDurationSec,
         );
         return { changes: 1 };
       });
@@ -695,6 +714,83 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         return { changes: result.changes ?? 0 };
       } catch (err) {
         finishDbIpcHandler('db:unblockContact', err);
+      }
+    },
+  );
+
+  ipcMain.handle('db:exportBlockedContacts', (event, protocol: string, identityId: string) => {
+    try {
+      assertIpcSender(event, 'db:exportBlockedContacts');
+      if (!isMeshProtocol(protocol)) return [];
+      if (typeof identityId !== 'string' || identityId.length > 128) return [];
+      const db = getDbForIpc('db:exportBlockedContacts');
+      if (!db) return [];
+      const rows = db
+        .prepareOnce(
+          'SELECT blocked_hash FROM blocked_contacts WHERE protocol = ? AND identity_id = ? ORDER BY created_at DESC',
+        )
+        .all(protocol, identityId) as { blocked_hash: string }[];
+      return rows.map((r) => r.blocked_hash);
+    } catch (err) {
+      finishDbIpcHandler('db:exportBlockedContacts', err);
+    }
+  });
+
+  ipcMain.handle(
+    'db:importBlockedContacts',
+    (event, protocol: string, identityId: string, hashes: unknown) => {
+      try {
+        assertIpcSender(event, 'db:importBlockedContacts');
+        if (!isMeshProtocol(protocol)) return { imported: 0, skipped: 0 };
+        if (typeof identityId !== 'string' || identityId.length > 128) {
+          return { imported: 0, skipped: 0 };
+        }
+        if (!Array.isArray(hashes)) return { imported: 0, skipped: 0 };
+        if (hashes.length > BLOCKED_CONTACTS_IMPORT_MAX) {
+          throw new Error(
+            `db:importBlockedContacts: too many entries (max ${BLOCKED_CONTACTS_IMPORT_MAX})`,
+          );
+        }
+        const db = getDbForIpc('db:importBlockedContacts');
+        if (!db) return { imported: 0, skipped: 0 };
+
+        // Strict validation: the lenient normalizer would otherwise persist junk.
+        const valid: string[] = [];
+        let skipped = 0;
+        const seen = new Set<string>();
+        for (const entry of hashes) {
+          if (!isValidBlockedContactHash(entry)) {
+            skipped += 1;
+            continue;
+          }
+          const normalized = normalizeBlockedHash(entry as string);
+          if (seen.has(normalized)) {
+            skipped += 1;
+            continue;
+          }
+          seen.add(normalized);
+          valid.push(normalized);
+        }
+
+        // Real per-row `changes` gives accurate imported-vs-skipped counts, which
+        // db:blockContact cannot report (it always returns 1).
+        let imported = 0;
+        db.transaction(() => {
+          const stmt = db.prepareOnce(
+            `INSERT INTO blocked_contacts (protocol, identity_id, blocked_hash, created_at)
+             VALUES (?, ?, ?, ?)
+             ON CONFLICT(protocol, identity_id, blocked_hash) DO NOTHING`,
+          );
+          const now = Date.now();
+          for (const hash of valid) {
+            const result = stmt.run(protocol, identityId, hash, now);
+            if ((result.changes ?? 0) > 0) imported += 1;
+            else skipped += 1;
+          }
+        })();
+        return { imported, skipped };
+      } catch (err) {
+        finishDbIpcHandler('db:importBlockedContacts', err);
       }
     },
   );

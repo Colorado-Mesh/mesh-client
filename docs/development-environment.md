@@ -87,7 +87,7 @@ Reticulum/LXMF runs in a separate Rust binary (`mesh-client-reticulum`) spawned 
 
 #### Installing Rust
 
-**Recommended: [rustup](https://rustup.rs/)** — matches [CI](.github/workflows/reticulum-sidecar.yaml) and `pnpm run update`:
+**Recommended: [rustup](https://rustup.rs/)** — matches [CI](../.github/workflows/reticulum-sidecar.yaml) and `pnpm run update`:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -140,10 +140,10 @@ In Electron dev: open the **Reticulum** protocol pill (amber) → **Connection**
 
 #### Keep Rust and the sidecar current
 
-`pnpm run update` updates Node dependencies **and**, when `cargo` is available:
+`pnpm run update` updates Node dependencies and:
 
-1. Runs `rustup update` (or `brew upgrade rust` if you use Homebrew rust without rustup)
-2. Rebuilds the sidecar with `cargo build` in `reticulum-sidecar/`
+1. Syncs Flatpak vendored Electron archives to match `package.json` (`scripts/sync-flatpak-electron.mjs`)
+2. When `cargo` is available: runs `rustup update` (or `brew upgrade rust` if you use Homebrew rust without rustup) and rebuilds the sidecar with `cargo build` in `reticulum-sidecar/`
 
 **Scope:** `pnpm update` / `pnpm-lock.yaml` changes are **repo-local** (commit the lockfile on your branch). The sidecar rebuild writes only to gitignored `reticulum-sidecar/target/`. **Rust toolchain updates are not repo-scoped** — `rustup update` refreshes the toolchain in your user profile (`~/.rustup`, `~/.cargo/bin`), shared by any Rust project on the machine. The committed [`rust-toolchain.toml`](../reticulum-sidecar/rust-toolchain.toml) selects `stable` and required components for this crate; rustup applies it when you build or lint inside `reticulum-sidecar/`.
 
@@ -259,15 +259,15 @@ Complete reference of all pnpm scripts in [`package.json`](../package.json), org
 
 #### Package (distributables)
 
-| Script               | Description                                                                  |
-| -------------------- | ---------------------------------------------------------------------------- |
-| `dist`               | Build for current platform → `release/`                                      |
-| `dist:mac`           | Build macOS .dmg + .zip + verify packaging (`verify-mac-packaging.mjs`)      |
-| `dist:mac:publish`   | Build macOS and upload to release server                                     |
-| `dist:linux`         | Build Linux x64 + arm64 (.AppImage, .deb, .rpm) + verify packaging           |
-| `dist:linux:publish` | Build Linux and upload to release server                                     |
-| `dist:win`           | Build Windows .exe installer (hoisted install workaround) + verify packaging |
-| `dist:win:publish`   | Build Windows and upload to release server                                   |
+| Script               | Description                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------------- |
+| `dist`               | Build for current platform → `release/`                                                           |
+| `dist:mac`           | Build macOS .dmg + .zip + verify packaging (`verify-mac-packaging.mjs` stages ZIP install notice) |
+| `dist:mac:publish`   | Build macOS and upload to release server                                                          |
+| `dist:linux`         | Build Linux x64 + arm64 (.AppImage, .deb, .rpm) + verify packaging                                |
+| `dist:linux:publish` | Build Linux and upload to release server                                                          |
+| `dist:win`           | Build Windows .exe installer (hoisted install workaround) + verify packaging                      |
+| `dist:win:publish`   | Build Windows and upload to release server                                                        |
 
 `dist:mac`, `dist:linux`, and `predist` run `dedupe:dist` (`scripts/dedupe-dist.mjs`) before packaging; that helper retries on transient `@jsr/_tmp_*` rename races. `dist:win` uses `scripts/dist-win-hoisted-install.mjs` and restores `node_modules` afterward.
 
@@ -304,6 +304,8 @@ flatpak install --user -y flathub org.electronjs.Electron2.BaseApp//24.08
 # See scripts/flatpakPnpmStoreVersion.mjs FLATPAK_NODE_GENERATOR_GIT.
 pip install --force-reinstall --no-cache-dir \
   "git+https://github.com/flatpak/flatpak-builder-tools@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node"
+# Skip Playwright browser vendoring (GitHub /raw/ 404s; Electron E2E skips downloads).
+node scripts/patch-flatpak-node-generator-playwright.mjs
 # Must match package.json packageManager major (pnpm 11 → v11). Generator defaults to v10.
 PNPM_MAJOR="$(node -p "require('./package.json').packageManager.match(/^pnpm@(\\d+)/)[1]")"
 STORE_VERSION="v${PNPM_MAJOR}"
@@ -394,38 +396,39 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### Typecheck
 
-| Script                    | Description                                                                                               |
-| ------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `typecheck`               | TypeScript check: renderer + main process                                                                 |
-| `typecheck:strict-shared` | Strict TypeScript (`noUncheckedIndexedAccess` + `exactOptionalPropertyTypes`) for `src/shared`            |
-| `check:pr`                | PR-parity local gate: lint + typecheck + strict-shared + full `test:run` (+ sidecar if branch touches it) |
+| Script                    | Description                                                                                         |
+| ------------------------- | --------------------------------------------------------------------------------------------------- |
+| `typecheck`               | TypeScript check: renderer + main process                                                           |
+| `typecheck:strict-shared` | Strict TypeScript (`noUncheckedIndexedAccess` + `exactOptionalPropertyTypes`) for `src/shared`      |
+| `check:pr`                | Comprehensive local gate: lint + typecheck + strict-shared + full `test:run` (+ path-aware sidecar) |
 
 #### Quality checks
 
-| Script                                | Description                                                            |
-| ------------------------------------- | ---------------------------------------------------------------------- |
-| `check:codeql-extensions`             | Verify CodeQL extension allowlist for custom queries                   |
-| `check:console-log`                   | Fail on bare `console.log` in production paths                         |
-| `check:db-migrations`                 | Verify SQLite migrations are valid                                     |
-| `check:electron-security`             | Verify Electron security settings (CSP, sandbox, etc.)                 |
-| `check:environment`                   | Verify local dev prerequisites (run after clone)                       |
-| `check:flatpak`                       | Lint Flatpak manifest and wrapper scripts                              |
-| `check:flatpak-offline-pnpm`          | PR/release offline Flatpak pnpm store vN + lockfile coverage           |
-| `check:i18n`                          | Verify English keys, unused keys, and locale quality rules             |
-| `check:i18n:branch`                   | Run i18n quality checks on keys new/changed vs `HEAD` only             |
-| `check:insecure-temp-files`           | Predictable `os.tmpdir()` writes (CodeQL `js/insecure-temporary-file`) |
-| `check:ipc-contract`                  | Verify IPC channel contracts between main/preload/renderer             |
-| `check:licenses`                      | Allowlist dependency licenses (`pnpm licenses list` + SPDX policy)     |
-| `check:log-injection`                 | Detect unsanitized user data in log calls                              |
-| `check:log-panel-filter`              | Verify log panel filter wiring                                         |
-| `check:log-service-sinks`             | Verify log service sink configuration                                  |
-| `check:protocol-string-gates`         | Enforce protocol capability gates over string compares                 |
-| `check:reticulum-decommissioned-hubs` | Keep TS/Rust decommissioned hub lists aligned                          |
-| `check:reticulum-interface-modes`     | Keep TS/Rust Reticulum interface-mode catalogs aligned                 |
-| `check:reticulum-sidecar`             | Full-feature `cargo fmt` + Clippy + test (skips when `cargo` missing)  |
-| `check:silent-catches`                | Detect empty or unlogged catch blocks                                  |
-| `check:url-hostname-sanitization`     | Verify URL hostname sanitization helpers                               |
-| `check:xss-patterns`                  | Detect risky DOM/HTML sink patterns                                    |
+| Script                                | Description                                                             |
+| ------------------------------------- | ----------------------------------------------------------------------- |
+| `check:codeql-extensions`             | Verify CodeQL extension allowlist for custom queries                    |
+| `check:console-log`                   | Fail on bare `console.log` in production paths                          |
+| `check:db-migrations`                 | Verify SQLite migrations are valid                                      |
+| `check:electron-security`             | Verify Electron security settings (CSP, sandbox, etc.)                  |
+| `check:environment`                   | Verify local dev prerequisites (run after clone)                        |
+| `check:flatpak`                       | Lint Flatpak manifest and wrapper scripts                               |
+| `check:flatpak-offline-pnpm`          | PR/release offline Flatpak pnpm store vN + lockfile coverage            |
+| `check:i18n`                          | Verify English keys, unused keys, and locale quality rules              |
+| `check:i18n:branch`                   | Run i18n quality checks on keys new/changed vs `HEAD` only              |
+| `check:insecure-temp-files`           | Predictable `os.tmpdir()` writes (CodeQL `js/insecure-temporary-file`)  |
+| `check:ipc-contract`                  | Verify IPC channel contracts between main/preload/renderer              |
+| `check:licenses`                      | Allowlist dependency licenses (`pnpm licenses list` + SPDX policy)      |
+| `check:log-injection`                 | Detect unsanitized user data in log calls                               |
+| `check:log-panel-filter`              | Verify log panel filter wiring                                          |
+| `check:log-service-sinks`             | Verify log service sink configuration                                   |
+| `check:pinned-majors`                 | Warn when a pinned override is behind a newer npm major (needs network) |
+| `check:protocol-string-gates`         | Enforce protocol capability gates over string compares                  |
+| `check:reticulum-decommissioned-hubs` | Keep TS/Rust decommissioned hub lists aligned                           |
+| `check:reticulum-interface-modes`     | Keep TS/Rust Reticulum interface-mode catalogs aligned                  |
+| `check:reticulum-sidecar`             | Full-feature `cargo fmt` + Clippy + test (skips when `cargo` missing)   |
+| `check:silent-catches`                | Detect empty or unlogged catch blocks                                   |
+| `check:url-hostname-sanitization`     | Verify URL hostname sanitization helpers                                |
+| `check:xss-patterns`                  | Detect risky DOM/HTML sink patterns                                     |
 
 #### Documentation
 
@@ -491,6 +494,8 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 `postinstall` runs `scripts/rebuild-native.mjs` for Electron native addons and applies `patchedDependencies` from `pnpm-workspace.yaml` (Meshtastic JSR transports, MeshCore, `readable-stream`, `usb`, etc.). When bumping patched packages, update hashes under `patches/` and keep `WATCH_ENTRIES` in `scripts/update.sh` in sync — see [AGENTS.md](../AGENTS.md#6-commands--ci-checks).
 
+`pnpm run update` also runs `check_pinned_majors` (`scripts/check-pinned-majors.mjs`), which warns when an `overrides` pin in `pnpm-workspace.yaml` has fallen behind a newer npm major — a stale `undici: ^7.29.0` floor once withheld an upstream main-process crash fix. Caps that are correct because the consuming package forbids the newer major (or because the pin is a platform target, e.g. `electron`) are recorded with a reason in `PINNED_MAJOR_EXCEPTIONS`; add an entry there instead of silencing the warning. The check needs network access, so it is warn-only and is not part of pre-commit or `check:pr`.
+
 ### Dependabot dependency updates
 
 Automated dependency updates are configured in `.github/dependabot.yml`:
@@ -546,7 +551,7 @@ Worker counts are derived in [`vitest.harness.mts`](../vitest.harness.mts) via `
 
 By default all three Vitest projects run in **parallel** (`groupOrder: 0`). On memory-constrained hosts, set `VITEST_SEQUENTIAL_PROJECTS=1` to run `renderer-ui` first, then `renderer-logic` + `main` together (legacy behavior).
 
-CI runs coverage in three parallel jobs (`renderer-ui`, `renderer-logic`, `main`) and merges blob reports via `pnpm run test:coverage:merge` (see [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml)).
+Pull-request CI selects merge-base-related tests across these project jobs. Merge-queue, `main`, manual, and unsafe-to-scope changes run all three with coverage and merge blob reports via `pnpm run test:coverage:merge` (see [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml)).
 
 #### Playwright Electron E2E
 
@@ -615,7 +620,7 @@ pnpm run dist:win   # Windows -> .exe installer in release/
 
 Output goes to the `release/` directory.
 
-**macOS (`dist:mac`)** runs `electron-builder --mac --publish never`, then **`node scripts/verify-mac-packaging.mjs`**. The verify step asserts `.dmg` + `.zip` artifacts, symlink-preserving ZIP extract (`ditto -xk`), DMG mount, launcher/framework sizes, and bundled Reticulum sidecar — same checks CI `packaging-smoke` uses on downloaded artifacts. It does **not** require signing secrets; unsigned local builds are expected to pass verify.
+**macOS (`dist:mac`)** runs `electron-builder --mac --publish never`, then **`node scripts/verify-mac-packaging.mjs`**. Verify stages **`00-READ-ME-BEFORE-EXTRACTING-macOS-ZIP.txt`** for GitHub Releases, asserts `.dmg` + `.zip` artifacts, symlink-preserving ZIP extract (`ditto -xk`), DMG mount (including **IMPORTANT-Read-Me.txt**), launcher/framework sizes, Squirrel/Mantle/ReactiveObjC framework symlinks, and bundled Reticulum sidecar — same checks CI `packaging-smoke` uses on downloaded artifacts. It does **not** require signing secrets; unsigned local builds are expected to pass verify.
 
 **Optional macOS signing (release parity):** export the same env vars CI uses before `pnpm run dist:mac` or `dist:mac:publish`:
 
@@ -651,7 +656,7 @@ After `pnpm install`, repo hooks are enabled via `core.hooksPath` (see the `prep
 
 ESLint: production `src/**` enforces `no-unsafe-*`; test files keep those off. `no-unnecessary-condition` is enforced for `src/shared/**` and `src/renderer/lib/**` only.
 
-Green pre-commit does **not** replace PR CI: [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml) always runs the full Vitest suite with coverage. Use `pnpm run check:pr` before opening a PR.
+Green pre-commit does **not** replace PR CI: [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml) runs merge-base-related tests on pull requests and fails closed to full Vitest when scoping is unsafe. The merge queue always reruns full Vitest with coverage. Use `pnpm run check:pr` for a comprehensive local gate before opening a PR.
 
 Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-commit)):
 
@@ -667,7 +672,7 @@ Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-comm
 10. `pnpm audit --audit-level=high` only when dependency manifests staged; `actionlint` when `.github/workflows/*` staged; `yamllint` when any `*.yaml` / `*.yml` staged
 11. `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
 
-**Release / CI full suite:** `pnpm run release` (`scripts/release.sh`) and PR [`tests.yaml`](../.github/workflows/tests.yaml) always run `pnpm run test:run` (full Vitest) — never `test:staged`. Release also runs the ungated `check:*` set and requires actionlint + yamllint. Use `pnpm run check:pr` for the same Vitest/lint/typecheck surface locally before a PR.
+**Release / protected CI full suite:** `pnpm run release` (`scripts/release.sh`), merge-queue `merge_group`, `main` push, and manual [`tests.yaml`](../.github/workflows/tests.yaml) runs always execute full Vitest. Pull requests use merge-base-related tests unless a safe fallback requires the full suite. Release also runs the ungated `check:*` set and requires actionlint + yamllint. Use `pnpm run check:pr` for the comprehensive Vitest/lint/typecheck surface locally before a PR.
 
 Install hook dependencies via [Helper scripts](#8-helper-scripts-auto-install-where-possible) (`setup:actionlint`, yamllint via pip/brew/apt).
 
@@ -801,7 +806,7 @@ If you work on the Reticulum protocol tab, install Rust and build the sidecar �
 
 ### macOS release-download note (not required for source development)
 
-If a downloaded app reports "Mesh-client is damaged and can't be opened", see [macOS: File is damaged and cannot be opened](troubleshooting.md#macos-file-is-damaged-and-cannot-be-opened).
+If a downloaded app reports "Mesh-client is damaged and can't be opened", see [macOS: File is damaged and cannot be opened](troubleshooting.md#macos-file-is-damaged-and-cannot-be-opened). If launch fails with `Library not loaded: Squirrel.framework` after extracting the macOS **ZIP with 7-Zip**, see [macOS: Squirrel.framework after ZIP extract](troubleshooting.md#macos-library-not-loaded-squirrelframework-after-zip-extract).
 
 ## Windows
 

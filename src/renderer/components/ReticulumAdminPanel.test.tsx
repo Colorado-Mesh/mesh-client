@@ -61,6 +61,36 @@ describe('ReticulumAdminPanel', () => {
     expect(screen.getByText('adminPanel.reticulumFactoryReset.button')).toBeInTheDocument();
   });
 
+  it('collapses the flasher section by default and expands on click', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ReticulumAdminPanel connecting={false} onStartStack={async () => {}} />
+      </ToastProvider>,
+    );
+
+    const summary = screen.getByText('flasher.title');
+    const details = summary.closest('details');
+    expect(details).not.toBeNull();
+    expect(details).not.toHaveAttribute('open');
+    // Closed <details> still mounts children, so the flasher keeps its session state.
+    expect(screen.getByTestId('flasher-mock')).toBeInTheDocument();
+
+    await user.click(summary);
+    expect(details).toHaveAttribute('open');
+  });
+
+  it('leaves the factory reset danger zone expanded', () => {
+    render(
+      <ToastProvider>
+        <ReticulumAdminPanel connecting={false} onStartStack={async () => {}} />
+      </ToastProvider>,
+    );
+
+    expect(screen.getByText('radioPanel.dangerZone').closest('details')).toBeNull();
+    expect(screen.getByText('adminPanel.reticulumFactoryReset.button')).toBeVisible();
+  });
+
   it('blocks flasher when enabled USB serial RNode interface is active', async () => {
     window.electronAPI.reticulum.proxyGet = vi.fn().mockResolvedValue({
       interfaces: [

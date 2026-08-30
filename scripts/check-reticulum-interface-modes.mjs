@@ -2,9 +2,12 @@
 /**
  * Pre-commit / CI check: TS interface modes stay aligned with sidecar Rust.
  *
- * Extracts:
- *   - INTERFACE_MODES + default_mode_for_iface_type from reticulum-sidecar/src/stack/config.rs
- *   - RETICULUM_INTERFACE_MODES + defaultModeForIfaceType from reticulumInterfaceMode.ts
+ * Per-type default modes are no longer duplicated — both sides read
+ * src/shared/reticulumInterfaceCatalog.json — so this now checks:
+ *   - INTERFACE_MODES (config.rs) === RETICULUM_INTERFACE_MODES (TS), same order
+ *   - the ap/gw alias contract is documented in both files
+ *   - every catalog `defaultMode` is one of those canonical modes
+ *   - both the Rust and TS loaders still point at the shared catalog file
  */
 import fs from 'fs';
 import path from 'path';
@@ -15,6 +18,16 @@ const ROOT = path.resolve(__dirname, '..');
 
 const RUST_FILE = path.join(ROOT, 'reticulum-sidecar', 'src', 'stack', 'config.rs');
 const TS_FILE = path.join(ROOT, 'src', 'renderer', 'lib', 'reticulum', 'reticulumInterfaceMode.ts');
+const CATALOG_FILE = path.join(ROOT, 'src', 'shared', 'reticulumInterfaceCatalog.json');
+const RUST_LOADER = path.join(ROOT, 'reticulum-sidecar', 'src', 'stack', 'interface_catalog.rs');
+const TS_LOADER = path.join(
+  ROOT,
+  'src',
+  'renderer',
+  'lib',
+  'reticulum',
+  'reticulumInterfaceCatalog.ts',
+);
 
 function read(filePath) {
   if (!fs.existsSync(filePath)) {
@@ -40,76 +53,11 @@ function extractTsModes(src) {
   return [...block[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
 }
 
-/** Map iface_type → default mode from default_mode_for_iface_type match arms. */
-function extractRustDefaults(src) {
-  const start = src.indexOf('pub fn default_mode_for_iface_type');
-  if (start < 0) {
-    throw new Error('default_mode_for_iface_type not found in config.rs');
-  }
-  const brace = src.indexOf('{', start);
-  const end = src.indexOf('\n}', brace);
-  if (brace < 0 || end < 0) {
-    throw new Error('default_mode_for_iface_type body not found in config.rs');
-  }
-  const body = src.slice(brace, end);
-  const defaults = {};
-  for (const line of body.split('\n')) {
-    if (!line.includes('=> Some(')) continue;
-    const modeMatch = line.match(/Some\("([^"]+)"\)/);
-    if (!modeMatch) continue;
-    const types = [...line.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-    // Last quoted string is the mode in Some("…"); earlier ones are iface types.
-    types.pop();
-    for (const t of types) {
-      defaults[t] = modeMatch[1];
-    }
-  }
-  return defaults;
-}
-
-function extractTsDefaults(src) {
-  const start = src.indexOf('export function defaultModeForIfaceType');
-  if (start < 0) {
-    throw new Error('defaultModeForIfaceType not found in reticulumInterfaceMode.ts');
-  }
-  const brace = src.indexOf('{', start);
-  const end = src.indexOf('\n}', brace);
-  if (brace < 0 || end < 0) {
-    throw new Error('defaultModeForIfaceType body not found in reticulumInterfaceMode.ts');
-  }
-  const body = src.slice(brace, end);
-  const defaults = {};
-  let pending = [];
-  for (const line of body.split('\n')) {
-    const caseMatch = line.match(/case\s+'([^']+)':/);
-    if (caseMatch) {
-      pending.push(caseMatch[1]);
-      continue;
-    }
-    const ret = line.match(/return\s+'([^']+)'/);
-    if (ret && pending.length) {
-      for (const t of pending) {
-        defaults[t] = ret[1];
-      }
-      pending = [];
-    }
-    if (line.includes('return null')) {
-      pending = [];
-    }
-  }
-  return defaults;
-}
-
-function sameMap(a, b) {
-  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
-  for (const k of keys) {
-    if (a[k] !== b[k]) return false;
-  }
-  return true;
-}
-
 const rustSrc = read(RUST_FILE);
 const tsSrc = read(TS_FILE);
+const catalogSrc = read(CATALOG_FILE);
+const rustLoaderSrc = read(RUST_LOADER);
+const tsLoaderSrc = read(TS_LOADER);
 
 let failed = false;
 
@@ -123,15 +71,6 @@ try {
     failed = true;
   }
 
-  const rustDefaults = extractRustDefaults(rustSrc);
-  const tsDefaults = extractTsDefaults(tsSrc);
-  if (!sameMap(rustDefaults, tsDefaults)) {
-    console.error('check-reticulum-interface-modes: per-type defaults diverge');
-    console.error('  rust:', JSON.stringify(rustDefaults));
-    console.error('  ts:  ', JSON.stringify(tsDefaults));
-    failed = true;
-  }
-
   // Alias contract documented in both files
   if (!tsSrc.includes("'ap'") || !tsSrc.includes("'gw'")) {
     console.error('check-reticulum-interface-modes: TS missing ap/gw aliases');
@@ -139,6 +78,59 @@ try {
   }
   if (!rustSrc.includes('"ap"') || !rustSrc.includes('"gw"')) {
     console.error('check-reticulum-interface-modes: Rust missing ap/gw aliases');
+    failed = true;
+  }
+
+  let catalog;
+  try {
+    catalog = JSON.parse(catalogSrc);
+  } catch (e) {
+    console.error(
+      `check-reticulum-interface-modes: catalog is not valid JSON: ${
+        e instanceof Error ? e.message : e
+      }`,
+    );
+    process.exit(1);
+  }
+
+  const types = catalog.types ?? {};
+  if (Object.keys(types).length === 0) {
+    console.error('check-reticulum-interface-modes: catalog has no types');
+    failed = true;
+  }
+  for (const [type, entry] of Object.entries(types)) {
+    const mode = entry.defaultMode;
+    if (mode != null && !rustModes.includes(mode)) {
+      console.error(
+        `check-reticulum-interface-modes: ${type} defaultMode "${mode}" is not a canonical mode`,
+      );
+      failed = true;
+    }
+    if (!entry.configType) {
+      console.error(`check-reticulum-interface-modes: ${type} is missing configType`);
+      failed = true;
+    }
+  }
+
+  // Both sides must still read the shared catalog rather than re-hardcoding.
+  if (!rustLoaderSrc.includes('src/shared/reticulumInterfaceCatalog.json')) {
+    console.error(
+      'check-reticulum-interface-modes: Rust loader no longer reads the shared catalog',
+    );
+    failed = true;
+  }
+  if (!tsLoaderSrc.includes('@/shared/reticulumInterfaceCatalog.json')) {
+    console.error('check-reticulum-interface-modes: TS loader no longer reads the shared catalog');
+    failed = true;
+  }
+  if (!rustSrc.includes('INTERFACE_CATALOG')) {
+    console.error('check-reticulum-interface-modes: config.rs no longer consults the catalog');
+    failed = true;
+  }
+  if (!tsSrc.includes('reticulumInterfaceCatalog')) {
+    console.error(
+      'check-reticulum-interface-modes: reticulumInterfaceMode.ts no longer consults the catalog',
+    );
     failed = true;
   }
 } catch (e) {

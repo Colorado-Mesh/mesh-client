@@ -121,6 +121,64 @@ export function saveActiveDm(protocol: MeshProtocol, nodeId: number | null): voi
   }
 }
 
+/**
+ * Scoped by the connected device's own node number (not just protocol) so that
+ * switching to a genuinely different physical node — which can reuse the same
+ * internal identity slot as the node just disconnected from — doesn't restore a
+ * channel selection that belonged to the previous device. A same-node
+ * disconnect/reconnect keeps the same node number, so the prior selection is
+ * still found and restored; a different node simply misses and falls back to
+ * the default channel.
+ */
+export function activeChannelStorageKey(protocol: MeshProtocol, nodeNum: number): string {
+  return `mesh-client:activeChannel:${protocol}:${nodeNum}`;
+}
+
+/**
+ * ChatPanel uses channel index -1 as the "primary" sentinel (MeshCore); every
+ * other valid index is >= 0. Reject anything else, including other negatives.
+ */
+function isValidChannelIndex(value: number): boolean {
+  return Number.isFinite(value) && Number.isInteger(value) && value >= -1;
+}
+
+/** Node numbers are always positive integers; reject fractional/infinite input. */
+function isValidNodeNum(value: number): boolean {
+  return Number.isSafeInteger(value) && value > 0;
+}
+
+/** Last-selected channel index for this protocol + node (null if missing/invalid). */
+export function loadActiveChannelInitial(protocol: MeshProtocol, nodeNum: number): number | null {
+  if (!isValidNodeNum(nodeNum)) return null;
+  try {
+    const raw = localStorage.getItem(activeChannelStorageKey(protocol, nodeNum));
+    if (raw == null || raw.trim() === '') return null;
+    const parsed = Number(raw);
+    if (!isValidChannelIndex(parsed)) return null;
+    return parsed;
+  } catch (e) {
+    console.debug(
+      '[chatPanelProtocolStorage] loadActiveChannelInitial failed ' + errLikeToLogString(e),
+    );
+    return null;
+  }
+}
+
+/** Persist last-selected channel index for this protocol + node. No-op without a node number. */
+export function saveActiveChannel(
+  protocol: MeshProtocol,
+  nodeNum: number,
+  channelIndex: number,
+): void {
+  if (!isValidNodeNum(nodeNum)) return;
+  if (!isValidChannelIndex(channelIndex)) return;
+  try {
+    localStorage.setItem(activeChannelStorageKey(protocol, nodeNum), String(channelIndex));
+  } catch (e) {
+    console.debug('[chatPanelProtocolStorage] saveActiveChannel failed ' + errLikeToLogString(e));
+  }
+}
+
 export function draftsStorageKey(protocol: MeshProtocol): string {
   return `mesh-client:drafts:${protocol}`;
 }

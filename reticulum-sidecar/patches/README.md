@@ -36,7 +36,7 @@ Wire packet tap API for the Reticulum Stats/Sniffer panel (`wire_packet` WebSock
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `9928abed269a83ec5a7ef165ff1142d938cad706` |
+| **Base commit** | `47dbbf1febc0a9d3259f179a0512d9b56bb2320d` (`ratspeak/rsReticulum` `origin/main`) |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/10 |
 
 **Adds (4 files):**
@@ -125,65 +125,19 @@ git -C /tmp/rsReticulum-patch-test apply --check ../../reticulum-sidecar/patches
 
 When [ratspeak/rsReticulum#11](https://github.com/ratspeak/rsReticulum/pull/11) merges and floated `origin/main` includes it, remove this patch and drop the apply step (same as packet-tap).
 
-## rsReticulum-link-client-nomad.patch
+## Removed: rsReticulum-link-client-nomad.patch
 
-Recall cached destination public keys in `LinkClient` before waiting on path-response announces; GC temporary announce handlers without wiping long-lived Nomad directory listeners. Fixes Nomad page loads hanging until overall timeout.
-
-Upstream `a945ba0` landed HasPath-gated `RecallDestination`, but still waits on a fresh announce when the path table is cold and still Deregisters handlers by `aspect_filter`. This overlay uses `RecallDestination` without the HasPath gate, then `await_path`, and GCs closed handlers only.
-
-| Field | Value |
-| ----- | ----- |
-| **Base commit** | `70b7399` (`ratspeak/rsReticulum` `origin/main`) |
-| **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/14 |
-
-**Modifies (1 file):**
-
-- `crates/rns-runtime/src/link_client.rs` — `discover_remote_public_key` + `await_path`; safe announce-handler GC
-
-### Apply locally
-
-From mesh-client repo root (`.rsstack/rsReticulum` required):
-
-```bash
-./scripts/apply-rsReticulum-link-client-nomad.sh
-```
-
-Apply after packet-tap + auto-beacon when rebuilding against floated `origin/main`:
-
-```bash
-./scripts/apply-rsReticulum-packet-tap.sh
-./scripts/apply-rsReticulum-auto-beacon-utun.sh
-./scripts/apply-rsReticulum-link-client-nomad.sh
-```
-
-### Regenerate
-
-Regenerate against floated `origin/main` (record the short SHA in the PR):
-
-```bash
-# From a clean tip with the other overlays applied, then the LinkClient edits:
-git -C /tmp/rsReticulum-patch-test fetch origin
-git -C /tmp/rsReticulum-patch-test checkout --detach origin/main
-git -C /tmp/rsReticulum-patch-test apply reticulum-sidecar/patches/rsReticulum-packet-tap.patch
-git -C /tmp/rsReticulum-patch-test apply reticulum-sidecar/patches/rsReticulum-auto-beacon-utun.patch
-git -C /tmp/rsReticulum-linkclient-nomad format-patch -1 --stdout \
-  | git -C /tmp/rsReticulum-patch-test apply
-git -C /tmp/rsReticulum-patch-test diff \
-  > reticulum-sidecar/patches/rsReticulum-link-client-nomad.patch
-```
-
-### Sunset
-
-When [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14) merges and floated `origin/main` includes it, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
+Sunset when floated `origin/main` moved `LinkClient::query` to handler-free `resolve_destination_on_transport` (no HasPath gate, no temporary announce handlers) — the overlay's `discover_remote_public_key` + `await_path` + announce-handler GC is fully superseded. [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14) was closed as superseded; mesh-client no longer carries the overlay or `scripts/apply-rsReticulum-link-client-nomad.sh`. Tracked entry removed from `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` after sunset confirmation.
 
 ## rsReticulum-link-client-proof-budget.patch
 
-Keep `LinkClient::query` proof wait on the **remaining overall deadline** (v5.25.0 / release parity). Earlier overlays capped at `establishment_timeout` (hops×6) or `max(establishment, 30s)` and false-failed multi-hop TCP hub Nomad pages (e.g. Northern Ireland) that need the rest of the MeshChat 45s window. Apply **after** the LinkClient Nomad overlay; the apply script migrates those older caps to remaining-deadline.
+Keep `LinkClient::query` proof wait on the **remaining overall deadline** (v5.25.0 / release parity). Earlier overlays capped at `establishment_timeout` (hops×6) or `max(establishment, 30s)` and false-failed multi-hop TCP hub Nomad pages (e.g. Northern Ireland) that need the rest of the MeshChat 45s window. The apply script migrates those older caps to remaining-deadline.
+
+On current floated `origin/main`, proof wait is `timeout(time_remaining(deadline)?, wait_for_valid_proof(...))`. The apply script is a **no-op** in that case; keep the patch for older pins.
 
 | Field | Value |
 | ----- | ----- |
-| **Depends on** | `rsReticulum-link-client-nomad.patch` |
-| **Upstream PR** | (mesh-client local; fold into #14 follow-up when possible) |
+| **Upstream PR** | (mesh-client local) |
 
 ### Apply locally
 
@@ -221,7 +175,6 @@ Apply after the other rsReticulum overlays when rebuilding against floated `orig
 ```bash
 ./scripts/apply-rsReticulum-packet-tap.sh
 ./scripts/apply-rsReticulum-auto-beacon-utun.sh
-./scripts/apply-rsReticulum-link-client-nomad.sh
 ./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
 ./scripts/apply-rsReticulum-discovery-announce-egress.sh
 ```
@@ -248,10 +201,10 @@ Halt BLE RNode reconnect when CoreBluetooth reports **Peer removed pairing infor
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | tip after `rsReticulum-ble-rnode-pairing-transition-debounce.patch` |
+| **Base commit** | `199eeb4` (`ratspeak/rsReticulum` `origin/main`) + `rsReticulum-ble-rnode-pairing-transition-debounce.patch` |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/21 |
 
-The upstream PR is **standalone off `main`** (independent of [#20](https://github.com/ratspeak/rsReticulum/pull/20) — the bond-desync code does not touch `PAIRING_TRANSITION_RETRY_WAIT`). The local overlay is still regenerated on top of the pairing-transition debounce overlay, so apply it **after** that overlay here.
+The upstream PR is **standalone off `main`** (independent of [#20](https://github.com/ratspeak/rsReticulum/pull/20) — the bond-desync code does not touch `PAIRING_TRANSITION_RETRY_WAIT`). The local overlay is regenerated on top of the pairing-transition debounce overlay against the generation-owner BLE connect path (`DesktopPairingTrigger` / `run_generation_operation`), so apply it **after** that overlay here.
 
 **Modifies (1 file):**
 
@@ -292,7 +245,6 @@ Apply **after** the other rsReticulum overlays (packet-tap also touches `reticul
 ```bash
 ./scripts/apply-rsReticulum-packet-tap.sh
 ./scripts/apply-rsReticulum-auto-beacon-utun.sh
-./scripts/apply-rsReticulum-link-client-nomad.sh
 ./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
 ./scripts/apply-rsReticulum-discovery-announce-egress.sh
 ```
@@ -460,7 +412,7 @@ Ranked multi-path slots (up to 3 per destination) plus global / per-peer RF-vs-n
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `70b7399` (+ prior mesh-client overlays) |
+| **Base commit** | `199eeb4` (`ratspeak/rsReticulum` `origin/main`) + prior mesh-client overlays through discovery-announce-egress |
 | **Upstream PR** | none yet (mesh-client-local) |
 
 **Touches:** `constants.rs`, `path_table.rs`, `messages.rs`, `actor/{inbound,mod,rpc,outbound,persistence}.rs`
@@ -519,6 +471,33 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 
 When ratspeak/rsReticulum exposes equivalent live TX queue depth on interface stats, remove this patch and the apply step.
 
+## Removed: rsReticulum-pathless-link-exclude-rf.patch
+
+Sunset when [ratspeak/rsReticulum#22](https://github.com/ratspeak/rsReticulum/issues/22) landed `921eac4` (*transport: bind established Links to exact interfaces*). Established Link TX uses `SendLinkEndpoint` on the establishment interface; generic unattached Link packets are dropped (`dropping unattached locally-originated Link packet`) instead of broadcasting onto every OUT iface. Tracked entry removed from `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` after sunset confirmation.
+
+## rsReticulum-announce-rebroadcast-exclude-rf.patch
+
+With `enable_transport`, rsReticulum enqueues rebroadcasted mesh announces onto every eligible OUT iface, including flow-controlled BLE RNodes. Host TX mpsc fills while FC drains slowly (overnight / busy TCP mesh). Skip RF sinks (`iface_is_rf_sink`: RNode name or bitrate under 100 kbps) in `broadcast_announce_on_interfaces` only. Local discovery announces still use `broadcast_local_announce_on_interfaces` (RNode included).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | `47dbbf1febc0a9d3259f179a0512d9b56bb2320d` (`ratspeak/rsReticulum` `origin/main`) |
+| **Upstream issue** | https://github.com/ratspeak/rsReticulum/issues/24 |
+
+**Touches:** `crates/rns-transport/src/actor/mod.rs`
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-announce-rebroadcast-exclude-rf.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`.
+
+### Sunset
+
+When ratspeak/rsReticulum rate-limits or excludes RF for announce rebroadcast equivalently on floated `origin/main` ([issue #24](https://github.com/ratspeak/rsReticulum/issues/24)), remove this patch and the apply step.
+
 ## rsLXMF-propagation-client-abort-transfer.patch
 
 Adds `PropagationClient::abort_transfer` so Cancel / mid-transfer abort leaves the client **Idle**. Without it, a cancelled Sync can leave `/get` stuck busy and the next Sync returns `PROPAGATION_RETRIEVE_BUSY` forever (or Auto falsely concludes there are no PNs).
@@ -541,3 +520,53 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 ### Sunset
 
 When upstream rsLXMF exposes equivalent abort / cancel mid-transfer cleanup, remove this patch and the apply step.
+
+## rsLXMF-propagation-client-lrproof-diagnostics.patch
+
+Adds sticky `last_establish_error` on `PropagationClient` so client `/get` Sync surfaces `LrproofIdentityMissing`, `LrproofInvalid`, and `LrproofInvalidKey` instead of a generic `NoLinkProof` (parity with peer `/offer` via `rsLXMF-propagation-sync-peering.patch`).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | floated rsLXMF `origin/main` at apply time |
+| **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsLXMF) |
+
+**Touches:** rsLXMF `PropagationClient` (`drain_events` / `handle_link_proof` establish diagnostics)
+
+### Apply locally
+
+```bash
+./scripts/apply-rsLXMF-propagation-client-lrproof-diagnostics.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`. Sidecar `PropagationBridge::poll_client_download` reads `client.last_establish_error()`.
+
+### Sunset
+
+When upstream rsLXMF exposes equivalent PropagationClient LRPROOF diagnostics, remove this patch and the apply step.
+
+## rsReticulum-ble-rnode-flow-control-ready-timeout.patch
+
+When BLE RNode `flow_control` is on, wait up to 2s for `CMD_READY`, then release the one-packet permit so NUS links that never deliver READY cannot freeze the host 256-slot TX queue after the first frame. Still paces bursts when READY works.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | floated rsReticulum `origin/main` @ `5b6b5eb` after other rsReticulum overlays |
+| **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsReticulum) |
+
+**Touches:** `crates/rns-interface/src/ble_rnode.rs` (main + native bridge TX loops)
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-ble-rnode-flow-control-ready-timeout.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`.
+
+### Sunset
+
+When upstream rsReticulum lands equivalent BLE READY timeout / non-blocking FC, remove this patch and the apply step.
+
+## Removed: rsLXMF-propagation-client-link-attached-tx.patch
+
+Sunset when floated rsLXMF `origin/main` pinned PropagationClient link-scoped TX with `SendLinkEndpoint` plus `attached_interface` (interface-pinned link TX). That superseded the local `OutboundAttached` / `queue_link_outbound` overlay for the same pathless-Link flood as [ratspeak/rsReticulum#22](https://github.com/ratspeak/rsReticulum/issues/22). Tracked entry removed from `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` after sunset confirmation.

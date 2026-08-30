@@ -40,7 +40,11 @@ describe('reticulumStartupAutostartGate', () => {
     Object.assign(window, {
       electronAPI: {
         bleCoexistence: {
-          getState: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
+          getState: vi.fn().mockResolvedValue({
+            connections: [],
+            scanOwner: null,
+            nobleYieldDecisionPending: false,
+          }),
         },
       },
     });
@@ -51,9 +55,51 @@ describe('reticulumStartupAutostartGate', () => {
   it('awaitReticulumBleCoexistenceClear waits while scanOwner is reticulum', async () => {
     const getState = vi
       .fn()
-      .mockResolvedValueOnce({ connections: [], scanOwner: 'reticulum' })
-      .mockResolvedValueOnce({ connections: [], scanOwner: 'reticulum' })
-      .mockResolvedValue({ connections: [], scanOwner: null });
+      .mockResolvedValueOnce({
+        connections: [],
+        scanOwner: 'reticulum',
+        nobleYieldDecisionPending: false,
+      })
+      .mockResolvedValueOnce({
+        connections: [],
+        scanOwner: 'reticulum',
+        nobleYieldDecisionPending: false,
+      })
+      .mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      });
+    Object.assign(window, {
+      electronAPI: {
+        bleCoexistence: { getState },
+      },
+    });
+    skipReticulumStartupAutostartGate();
+    const wait = awaitReticulumBleCoexistenceClear(5_000);
+    await vi.advanceTimersByTimeAsync(600);
+    await expect(wait).resolves.toBeUndefined();
+    expect(getState.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('does not resolve while nobleYieldDecisionPending even if scanOwner is null', async () => {
+    const getState = vi
+      .fn()
+      .mockResolvedValueOnce({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: true,
+      })
+      .mockResolvedValueOnce({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: true,
+      })
+      .mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      });
     Object.assign(window, {
       electronAPI: {
         bleCoexistence: { getState },

@@ -1,22 +1,31 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { applyFontScale } from '@/renderer/lib/fontScale';
 import { rrcNickColorClass } from '@/renderer/lib/rrcNickColor';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
 import { estimateRrcRowHeight, RrcChatView } from './RrcChatView';
 
 const mockScrollToEnd = vi.fn();
+const mockMeasure = vi.fn();
 let mockIsAtEnd = true;
+/** Last options handed to the virtualizer, for row-estimate assertions. */
+let lastVirtualizerOpts: { count: number; estimateSize: (index: number) => number } | null = null;
 
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: (opts: Record<string, unknown> & { count: number }) => {
     const count = opts.count;
+    lastVirtualizerOpts = opts as unknown as {
+      count: number;
+      estimateSize: (index: number) => number;
+    };
     return {
+      measure: mockMeasure,
       getVirtualItems: () =>
         Array.from({ length: count }, (_, index) => ({
           index,
@@ -67,10 +76,90 @@ const baseProps = {
 };
 
 describe('estimateRrcRowHeight', () => {
+  afterEach(() => {
+    document.documentElement.style.fontSize = '';
+  });
+
   it('scales with wrapped body length', () => {
     expect(estimateRrcRowHeight(makeMsg({ id: '1', body: 'hi' }))).toBe(22);
     expect(estimateRrcRowHeight(makeMsg({ id: '2', body: 'x'.repeat(160) }))).toBe(42);
     expect(estimateRrcRowHeight(undefined)).toBe(22);
+  });
+
+  it('grows rows and wraps sooner at a larger root font scale', () => {
+    document.documentElement.style.fontSize = '150%';
+
+    // 20px line * 1.5 + 2px gap
+    expect(estimateRrcRowHeight(makeMsg({ id: '1', body: 'hi' }))).toBe(32);
+    // 160 chars over ~53 chars/line rounds up to 4 lines: 4 * 30 + 2
+    expect(estimateRrcRowHeight(makeMsg({ id: '2', body: 'x'.repeat(160) }))).toBe(122);
+  });
+});
+
+describe('RrcChatView font scale re-measure', () => {
+  const longHistory = Array.from({ length: 600 }, (_, i) =>
+    makeMsg({ id: `m${i}`, body: 'x'.repeat(120 + (i % 40)) }),
+  );
+
+  /** Total size and per-row offsets the virtualizer derives from the estimates. */
+  function readEstimatedLayout(): { total: number; offsets: number[] } {
+    const opts = lastVirtualizerOpts;
+    if (!opts) throw new Error('virtualizer was not mounted');
+    const offsets: number[] = [];
+    let total = 0;
+    for (let i = 0; i < opts.count; i += 1) {
+      offsets.push(total);
+      total += opts.estimateSize(i);
+    }
+    return { total, offsets };
+  }
+
+  beforeEach(() => {
+    mockIsAtEnd = true;
+    mockScrollToEnd.mockClear();
+    mockMeasure.mockClear();
+    lastVirtualizerOpts = null;
+  });
+
+  afterEach(() => {
+    document.documentElement.style.fontSize = '';
+  });
+
+  it('invalidates cached row measurements and re-anchors when the font scale changes', () => {
+    render(<RrcChatView {...baseProps} messages={longHistory} />);
+
+    const before = readEstimatedLayout();
+    expect(before.offsets).toHaveLength(600);
+    mockScrollToEnd.mockClear();
+
+    act(() => {
+      applyFontScale(1.5);
+    });
+
+    expect(mockMeasure).toHaveBeenCalledTimes(1);
+    expect(mockScrollToEnd).toHaveBeenCalled();
+
+    const after = readEstimatedLayout();
+    expect(after.total).toBeGreaterThan(before.total);
+    // Every row past the first shifts down, so off-screen offsets cannot stay stale.
+    for (let i = 1; i < after.offsets.length; i += 1) {
+      expect(after.offsets[i]).toBeGreaterThan(before.offsets[i] ?? 0);
+    }
+  });
+
+  it('does not re-anchor to the end when the user has scrolled up', () => {
+    mockIsAtEnd = false;
+    render(<RrcChatView {...baseProps} messages={longHistory} />);
+
+    fireEvent.scroll(screen.getByTestId('rrc-message-stream'));
+    mockScrollToEnd.mockClear();
+
+    act(() => {
+      applyFontScale(1.25);
+    });
+
+    expect(mockMeasure).toHaveBeenCalledTimes(1);
+    expect(mockScrollToEnd).not.toHaveBeenCalled();
   });
 });
 
@@ -128,7 +217,7 @@ describe('RrcChatView IRC layout', () => {
     expect(line.textContent).toMatch(/<Zeva>\s*psst/);
     expect(line.textContent).not.toMatch(/-Zeva-/);
     expect(line.innerHTML).toContain(rrcNickColorClass('Zeva'));
-    expect(line.className).toContain('text-amber-50/90');
+    expect(line.className).toContain('text-gray-100');
   });
 
   it('hides empty system/notice rows', () => {
@@ -166,7 +255,7 @@ describe('RrcChatView IRC layout', () => {
     const line = screen.getByTestId('rrc-chat-line');
     expect(line.textContent).toMatch(/<nv0n>\s*hi there/);
     expect(line.textContent).not.toContain('→');
-    expect(line.className).toContain('text-amber-50/90');
+    expect(line.className).toContain('text-gray-100');
     expect(line.innerHTML).toContain(rrcNickColorClass('nv0n'));
   });
 
@@ -203,6 +292,148 @@ describe('RrcChatView IRC layout', () => {
     const line = screen.getByTestId('rrc-chat-line');
     expect(line.textContent).toMatch(/\*\s*Zeva\s+waves/);
     expect(line.innerHTML).toContain(rrcNickColorClass('Zeva'));
+  });
+});
+
+describe('RrcChatView Reticulum links', () => {
+  const HASH = '3b5bc6888356193f1ac1bfb716c1beef';
+  const PAGE = `${HASH}:/page/index.mu`;
+
+  beforeEach(() => {
+    mockIsAtEnd = true;
+    mockScrollToEnd.mockClear();
+  });
+
+  it('renders a nomad page address as a button that requests navigation', () => {
+    const events: CustomEvent[] = [];
+    const listener = (e: Event) => events.push(e as CustomEvent);
+    window.addEventListener('mesh-client:openNomadPage', listener);
+    try {
+      render(
+        <RrcChatView {...baseProps} messages={[makeMsg({ id: '1', body: `see ${PAGE} now` })]} />,
+      );
+      const button = screen.getByRole('button', { name: /nomad/i });
+      expect(button.textContent).toBe(PAGE);
+      fireEvent.click(button);
+      expect(events).toHaveLength(1);
+      expect(events[0].detail).toEqual({
+        destinationHash: HASH,
+        path: '/page/index.mu',
+      });
+      expect(screen.getByTestId('rrc-chat-line').textContent).toContain('see');
+      expect(screen.getByTestId('rrc-chat-line').textContent).toContain('now');
+    } finally {
+      window.removeEventListener('mesh-client:openNomadPage', listener);
+    }
+  });
+
+  function renderBareHash(onOpenDm: () => void) {
+    return render(
+      <RrcChatView
+        {...baseProps}
+        onOpenDm={onOpenDm}
+        messages={[makeMsg({ id: '1', body: `ping ${HASH.toUpperCase()}` })]}
+      />,
+    );
+  }
+
+  it('prompts instead of acting when a bare hash is clicked', () => {
+    const events: CustomEvent[] = [];
+    const listener = (e: Event) => events.push(e as CustomEvent);
+    window.addEventListener('mesh-client:openNomadPage', listener);
+    const onOpenDm = vi.fn();
+    try {
+      renderBareHash(onOpenDm);
+      fireEvent.click(screen.getByRole('button', { name: 'rrc.openReticulumAddress' }));
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+      expect(onOpenDm).not.toHaveBeenCalled();
+      expect(events).toHaveLength(0);
+    } finally {
+      window.removeEventListener('mesh-client:openNomadPage', listener);
+    }
+  });
+
+  it('opens the Nomad page when that choice is picked', () => {
+    const events: CustomEvent[] = [];
+    const listener = (e: Event) => events.push(e as CustomEvent);
+    window.addEventListener('mesh-client:openNomadPage', listener);
+    const onOpenDm = vi.fn();
+    try {
+      renderBareHash(onOpenDm);
+      fireEvent.click(screen.getByRole('button', { name: 'rrc.openReticulumAddress' }));
+      fireEvent.click(screen.getByRole('button', { name: 'rrc.addressChoiceNomad' }));
+      expect(events).toHaveLength(1);
+      expect(events[0].detail).toEqual({ destinationHash: HASH, path: '/page/index.mu' });
+      expect(onOpenDm).not.toHaveBeenCalled();
+      expect(screen.queryByRole('alertdialog')).toBeNull();
+    } finally {
+      window.removeEventListener('mesh-client:openNomadPage', listener);
+    }
+  });
+
+  it('opens a DM when that choice is picked', () => {
+    const onOpenDm = vi.fn();
+    renderBareHash(onOpenDm);
+    fireEvent.click(screen.getByRole('button', { name: 'rrc.openReticulumAddress' }));
+    fireEvent.click(screen.getByRole('button', { name: 'rrc.addressChoiceDm' }));
+    expect(onOpenDm).toHaveBeenCalledWith(HASH);
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('does nothing when the choice dialog is dismissed with Escape', () => {
+    const events: CustomEvent[] = [];
+    const listener = (e: Event) => events.push(e as CustomEvent);
+    window.addEventListener('mesh-client:openNomadPage', listener);
+    const onOpenDm = vi.fn();
+    try {
+      renderBareHash(onOpenDm);
+      fireEvent.click(screen.getByRole('button', { name: 'rrc.openReticulumAddress' }));
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(onOpenDm).not.toHaveBeenCalled();
+      expect(events).toHaveLength(0);
+      expect(screen.queryByRole('alertdialog')).toBeNull();
+    } finally {
+      window.removeEventListener('mesh-client:openNomadPage', listener);
+    }
+  });
+
+  it('has no axe violations with the choice dialog open', async () => {
+    const { container } = renderBareHash(vi.fn());
+    fireEvent.click(screen.getByRole('button', { name: 'rrc.openReticulumAddress' }));
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('renders an lxmf:// address as a DM button', () => {
+    const onOpenDm = vi.fn();
+    render(
+      <RrcChatView
+        {...baseProps}
+        onOpenDm={onOpenDm}
+        messages={[makeMsg({ id: '1', body: `lxmf://${HASH}` })]}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'rrc.openDm' }));
+    expect(onOpenDm).toHaveBeenCalledWith(HASH);
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('leaves a destination hash as plain text when no DM handler is provided', () => {
+    render(<RrcChatView {...baseProps} messages={[makeMsg({ id: '1', body: HASH })]} />);
+    expect(screen.queryByRole('button', { name: /openDm|openReticulumAddress/i })).toBeNull();
+    expect(screen.getByTestId('rrc-chat-line').textContent).toContain(HASH);
+  });
+
+  it('keeps self-mention highlighting alongside a page link', () => {
+    render(
+      <RrcChatView
+        {...baseProps}
+        nickname="nv0n"
+        messages={[makeMsg({ id: '1', body: `@nv0n look at ${PAGE}`, nickname: 'Zeva' })]}
+      />,
+    );
+    expect(screen.getByText('@nv0n').className).toContain('text-red-500');
+    expect(screen.getByRole('button', { name: /nomad/i }).textContent).toBe(PAGE);
   });
 });
 
@@ -341,6 +572,18 @@ describe('RrcChatView stick-to-bottom', () => {
     mockScrollToEnd.mockClear();
   });
 
+  it('keeps Chat/Rooms flex + overflow-anchor stream classes', () => {
+    render(<RrcChatView {...baseProps} messages={[makeMsg({ id: '1', body: 'one' })]} />);
+    const stream = screen.getByTestId('rrc-message-stream');
+    expect(stream).toHaveClass(
+      'overflow-y-auto',
+      'overscroll-contain',
+      'min-h-0',
+      '[overflow-anchor:none]',
+    );
+    expect(stream.parentElement).toHaveClass('min-h-0', 'flex-1');
+  });
+
   it('scrolls to end when a message appends while pinned', async () => {
     const { rerender } = render(
       <RrcChatView {...baseProps} messages={[makeMsg({ id: '1', body: 'one' })]} />,
@@ -361,6 +604,35 @@ describe('RrcChatView stick-to-bottom', () => {
     });
   });
 
+  it('follows when the latest id changes at a fixed list length (history cap)', async () => {
+    const firstBatch = [
+      makeMsg({ id: '1', body: 'old' }),
+      makeMsg({ id: '2', body: 'mid' }),
+      makeMsg({ id: '3', body: 'newer' }),
+    ];
+    const { rerender } = render(<RrcChatView {...baseProps} isActive messages={firstBatch} />);
+    await waitFor(() => {
+      expect(mockScrollToEnd).toHaveBeenCalled();
+    });
+    mockScrollToEnd.mockClear();
+
+    // Same length, new tail id — mirrors MAX_MESSAGES_PER_ROOM slice on busy rooms.
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        isActive
+        messages={[
+          makeMsg({ id: '2', body: 'mid' }),
+          makeMsg({ id: '3', body: 'newer' }),
+          makeMsg({ id: '4', body: 'newest' }),
+        ]}
+      />,
+    );
+    await waitFor(() => {
+      expect(mockScrollToEnd).toHaveBeenCalled();
+    });
+  });
+
   it('does not follow appends while the window is visible but unfocused', async () => {
     const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
     try {
@@ -373,6 +645,7 @@ describe('RrcChatView stick-to-bottom', () => {
       mockScrollToEnd.mockClear();
 
       hasFocusSpy.mockReturnValue(false);
+      fireEvent(window, new Event('blur'));
       rerender(
         <RrcChatView
           {...baseProps}
@@ -405,6 +678,32 @@ describe('RrcChatView stick-to-bottom', () => {
           messages={[makeMsg({ id: '1', body: 'one' }), makeMsg({ id: '2', body: 'two' })]}
         />,
       );
+      await waitFor(() => {
+        expect(mockScrollToEnd).toHaveBeenCalled();
+      });
+    } finally {
+      hasFocusSpy.mockRestore();
+    }
+  });
+
+  it('re-follows when focus returns while pinned', async () => {
+    const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    try {
+      render(
+        <RrcChatView {...baseProps} isActive messages={[makeMsg({ id: '1', body: 'one' })]} />,
+      );
+      await waitFor(() => {
+        expect(mockScrollToEnd).toHaveBeenCalled();
+      });
+      mockScrollToEnd.mockClear();
+
+      hasFocusSpy.mockReturnValue(false);
+      fireEvent(window, new Event('blur'));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(mockScrollToEnd).not.toHaveBeenCalled();
+
+      hasFocusSpy.mockReturnValue(true);
+      fireEvent(window, new Event('focus'));
       await waitFor(() => {
         expect(mockScrollToEnd).toHaveBeenCalled();
       });
@@ -461,6 +760,40 @@ describe('RrcChatView stick-to-bottom', () => {
     await waitFor(() => {
       expect(mockScrollToEnd).toHaveBeenCalled();
     });
+  });
+
+  it('scrolls to end when hub changes with the same room name', async () => {
+    const hubA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const hubB = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const { rerender } = render(
+      <RrcChatView
+        {...baseProps}
+        hubDestHash={hubA}
+        activeRoom="#general"
+        messages={[makeMsg({ id: '1', body: 'a', room: '#general' })]}
+      />,
+    );
+    await waitFor(() => {
+      expect(mockScrollToEnd).toHaveBeenCalled();
+    });
+
+    mockIsAtEnd = false;
+    fireEvent.scroll(screen.getByTestId('rrc-message-stream'));
+    expect(screen.getByLabelText('rrc.jumpToLatest')).toBeInTheDocument();
+    mockScrollToEnd.mockClear();
+
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        hubDestHash={hubB}
+        activeRoom="#general"
+        messages={[makeMsg({ id: '2', body: 'b', room: '#general' })]}
+      />,
+    );
+    await waitFor(() => {
+      expect(mockScrollToEnd).toHaveBeenCalled();
+    });
+    expect(screen.queryByLabelText('rrc.jumpToLatest')).not.toBeInTheDocument();
   });
 
   it('restores scrollTop on tab re-entry when not pinned', () => {
@@ -523,5 +856,50 @@ describe('RrcChatView stick-to-bottom', () => {
 
     expect(mockScrollToEnd).toHaveBeenCalled();
     expect((stream as HTMLDivElement).scrollTop).toBe(900);
+  });
+
+  it('calls onCaughtUp after pinned tab re-entry when near bottom', async () => {
+    const onCaughtUp = vi.fn();
+    const { rerender } = render(
+      <RrcChatView
+        {...baseProps}
+        isActive
+        onCaughtUp={onCaughtUp}
+        messages={[makeMsg({ id: '1', body: 'one' })]}
+      />,
+    );
+    const stream = screen.getByTestId('rrc-message-stream');
+    Object.defineProperty(stream, 'scrollHeight', { value: 400, configurable: true });
+    Object.defineProperty(stream, 'clientHeight', { value: 400, configurable: true });
+    Object.defineProperty(stream, 'scrollTop', {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        isActive={false}
+        onCaughtUp={onCaughtUp}
+        messages={[makeMsg({ id: '1', body: 'one' })]}
+      />,
+    );
+
+    mockScrollToEnd.mockClear();
+    onCaughtUp.mockClear();
+
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        isActive
+        onCaughtUp={onCaughtUp}
+        messages={[makeMsg({ id: '1', body: 'one' }), makeMsg({ id: '2', body: 'two' })]}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(onCaughtUp).toHaveBeenCalled();
+    });
   });
 });

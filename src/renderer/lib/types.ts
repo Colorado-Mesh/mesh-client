@@ -382,6 +382,12 @@ export interface ChatMessage {
   reticulum_reply_to_hash?: string;
   /** Local path when a Reticulum attachment was saved to disk. */
   reticulumAttachmentPath?: string;
+  /** Kind of attachment saved at reticulumAttachmentPath. */
+  reticulumAttachmentKind?: 'image' | 'audio';
+  /** LXMF FIELD_AUDIO mode (16 = AM_OPUS_OGG). */
+  reticulumAudioMode?: number;
+  /** Estimated audio duration in seconds. */
+  reticulumAudioDurationSec?: number;
   /** Reticulum LXMF delivery method for outbound status badge (direct / propagated / opportunistic / paper). */
   reticulumDeliveryMethod?: ReticulumDeliveryMethod;
   sender_name: string;
@@ -487,6 +493,11 @@ export interface NobleBleDevice {
   deviceName: string;
   /** Advertised / last-seen BLE RSSI in dBm; null/undefined when unknown. */
   rssi?: number | null;
+  /**
+   * Hardware BLE MAC when the OS exposes one (Noble `peripheral.address`).
+   * On macOS this is typically empty until after a prior GATT connect (CoreBluetoothCache).
+   */
+  address?: string | null;
 }
 export type NobleBleSessionId = MeshProtocol;
 export type NobleBleConnectResult = { ok: true } | { ok: false; error: string };

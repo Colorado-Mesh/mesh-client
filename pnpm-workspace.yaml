@@ -50,7 +50,13 @@ overrides:
   # (only >=5.0.9 counts as patched). CI audit is blocking.
   # fast-uri: GHSA-7p8r-x3mc-p8w7 (host confusion via backslash authority);
   # electron-builder → app-builder-lib → ajv still pulls 3.1.4.
-  # undici: GHSA-4cwx-7wf7-3272 (+ sibling undici GHSAs) — floor >=7.29.0.
+  # undici: GHSA-4cwx-7wf7-3272 (+ sibling undici GHSAs) — floor >=7.29.0, kept as
+  # a scoped `undici@<7.29.0` override so transitive consumers (jsdom ^7.25.0,
+  # node-gyp ^6.25.0) land on 7.29.0. package.json depends on undici ^8.10.0
+  # directly: main-process link previews need nodejs/undici#5547 (setTypeOfService
+  # EINVAL crash fix), which is 8.x-only, and a global ^8 override would force an
+  # unsupported major on those consumers.
+  # undici-types stays on 7.x to match @types/node.
   # postcss: GHSA-fxqj-rqcc-2cmp — floor >=8.5.23.
   # ip-address: GHSA-mwp4-54f8-5fhr (mqtt → socks) — floor >=10.3.1.
   # electron: Dependabot #91–#96 (GHSA-9f4c-93c8-jc8g needs >=41.10.3 on the
@@ -68,13 +74,13 @@ overrides:
   shell-quote: ^1.9.0
   tar: ^7.5.18
   tmp: ^0.2.6
-  undici: ^7.29.0
+  undici@<7.29.0: ^7.29.0
   undici-types: ^7.29.0
   ws: ^8.21.0
 patchedDependencies:
   '@jsr/meshtastic__core@2.6.6': patches/@jsr__meshtastic__core@2.6.6.patch
   '@jsr/meshtastic__transport-web-serial@0.2.5': patches/@jsr__meshtastic__transport-web-serial@0.2.5.patch
-  '@liamcottle/meshcore.js@1.14.0': patches/@liamcottle__meshcore.js@1.14.0.patch
+  '@liamcottle/meshcore.js@1.15.0': patches/@liamcottle__meshcore.js@1.15.0.patch
   debug@4.4.3: patches/debug@4.4.3.patch
   readable-stream@4.7.0: patches/readable-stream@4.7.0.patch
   usb@2.18.0: patches/usb@2.18.0.patch

@@ -7,11 +7,16 @@ import { isMeshcoreOpenWireCompatEnabled } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import {
+  clearHeardRepeatWindowIfMessage,
+  openHeardRepeatWindow,
+} from '../lib/meshcore/heardRepeatTracker';
+import {
   isMeshcoreTcpOpenHopDeadAccepted,
   trackMeshcoreTcpUserTxSend,
 } from '../lib/meshcore/meshcoreTcpInitBurst';
 import { resolveMeshcoreOutboundWireText } from '../lib/meshcoreChannelText';
 import { listChatMessagesFromStore } from '../lib/meshcoreStoreDedup';
+import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import { sendReticulumChatMessage } from '../lib/reticulum/sendReticulumChatMessage';
 import { tryGetMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from '../lib/sessions/meshtasticSession';
@@ -191,6 +196,19 @@ export function useSendMessage(
       };
       addMessage(identityId, record);
 
+      // MeshCore channel floods: Chat sends via this hook (not useMeshcoreRuntime).
+      // Open the heard-repeat listen window on the provisional bubble id (renameMessageId
+      // re-keys coverage if packetId later replaces it).
+      if (isMeshcore && !isMeshcoreDm) {
+        openHeardRepeatWindow(identityId, provisionalId);
+      }
+
+      const abandonMeshcoreHeardRepeat = (): void => {
+        if (!(isMeshcore && !isMeshcoreDm)) return;
+        clearHeardRepeatWindowIfMessage(identityId, provisionalId);
+        useRelayCoverageStore.getState().remove(identityId, provisionalId);
+      };
+
       if (isMeshtastic) {
         void window.electronAPI.db
           .saveMessage(messageRecordToChatMessage(record))
@@ -263,6 +281,7 @@ export function useSendMessage(
             console.warn('[useSendMessage] OpenHop live reopen failed ' + errMsg);
             updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
             persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
+            abandonMeshcoreHeardRepeat();
           }
         })();
         return;
@@ -270,6 +289,7 @@ export function useSendMessage(
 
       if (!handle) {
         console.warn('[useSendMessage] no handle for', identityId);
+        abandonMeshcoreHeardRepeat();
         return;
       }
 
@@ -336,6 +356,7 @@ export function useSendMessage(
             if (identity.protocol.type === 'meshcore') {
               persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
             }
+            abandonMeshcoreHeardRepeat();
             if (isMeshtastic && meshtasticTempPacketId != null) {
               void window.electronAPI.db
                 .updateMessageStatus(meshtasticTempPacketId, 'failed', errMsg)

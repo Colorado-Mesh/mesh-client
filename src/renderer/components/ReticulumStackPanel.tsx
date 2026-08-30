@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useReticulumTcpInterfaceRecovery } from '@/renderer/hooks/useReticulumTcpInterfaceRecovery';
+import { useReticulumTcpLinkQualityMap } from '@/renderer/hooks/useReticulumTcpLinkQualityMap';
+import {
+  isReticulumAutoResendOnAnnounceEnabled,
+  setReticulumAutoResendOnAnnounceEnabled,
+} from '@/renderer/lib/appSettingsStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
 import {
@@ -71,6 +77,10 @@ export function ReticulumStackPanel({
       sidecarEventRef.current(evt);
     },
   });
+
+  const [autoResendOnAnnounce, setAutoResendOnAnnounce] = useState(
+    isReticulumAutoResendOnAnnounceEnabled,
+  );
 
   const {
     interfaces,
@@ -183,8 +193,11 @@ export function ReticulumStackPanel({
   );
   const localAlerts = useMemo(
     (): ReticulumLocalInterfaceAlert[] =>
-      collectReticulumInterfaceAlerts(interfaces, serialPortPaths, healthOptions),
-    [interfaces, serialPortPaths, healthOptions],
+      collectReticulumInterfaceAlerts(interfaces, serialPortPaths, {
+        ...healthOptions,
+        stackFastFlapSuspected: sidecarStatus.stackFastFlapSuspected === true,
+      }),
+    [interfaces, serialPortPaths, healthOptions, sidecarStatus.stackFastFlapSuspected],
   );
   const connectingInterfaces = useMemo(
     () => collectReticulumLocalInterfaceConnecting(interfaces, serialPortPaths, healthOptions),
@@ -211,12 +224,23 @@ export function ReticulumStackPanel({
     }
   }, [beginBleConnectGrace, refresh, t]);
 
+  const tcpRttById = useReticulumTcpLinkQualityMap(interfaces, sidecarApiReady);
+  useReticulumTcpInterfaceRecovery({
+    interfaces,
+    rttById: tcpRttById,
+    sidecarReady: sidecarApiReady,
+    connecting,
+    interfaceIssueAlert: sidecarStatus.interfaceIssueAlert,
+    stackFastFlapSuspected: sidecarStatus.stackFastFlapSuspected === true,
+    onRecover: handleRestartStack,
+  });
+
   const stackStatusIdentityLabel = resolveReticulumSelfHeaderLabel({
     identityDisplayName: identity?.display_name,
     lxmfHash: identity?.lxmf_hash ?? null,
   });
 
-  let stackStatusClass = 'text-gray-400';
+  let stackStatusClass = 'text-gray-300';
   if (sidecarUiRunning) {
     stackStatusClass = 'text-brand-green';
   } else if (connecting) {
@@ -339,7 +363,7 @@ export function ReticulumStackPanel({
               notifyManualStackStart();
               void onStartStack();
             }}
-            className="w-full rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-500 disabled:opacity-40"
+            className="w-full rounded-lg bg-amber-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-800 disabled:opacity-40"
           >
             {connecting
               ? t('connectionPanel.connecting')
@@ -356,6 +380,18 @@ export function ReticulumStackPanel({
             aria-label={t('connectionPanel.reticulumAutostart')}
           />
           {t('connectionPanel.reticulumAutostart')}
+        </label>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
+          <input
+            type="checkbox"
+            checked={autoResendOnAnnounce}
+            onChange={(e) => {
+              setAutoResendOnAnnounce(e.target.checked);
+              setReticulumAutoResendOnAnnounceEnabled(e.target.checked);
+            }}
+            aria-label={t('connectionPanel.reticulumAutoResendOnAnnounce')}
+          />
+          {t('connectionPanel.reticulumAutoResendOnAnnounce')}
         </label>
       </div>
     </div>

@@ -65,8 +65,8 @@ export const RETICULUM_BLE_COEXISTENCE_CLEAR_MAX_MS =
   RETICULUM_BLE_CONNECT_GRACE_MS + 5 * MS_PER_SECOND;
 
 /**
- * After stack autostart, wait until Reticulum releases the Noble scan yield (RNode online or
- * grace expired) so RF GATT connect does not fight CoreBluetooth.
+ * After stack autostart, wait until Reticulum's Noble yield decision has settled and the scan
+ * yield is not held (RNode online or grace expired) so RF GATT connect does not fight CoreBluetooth.
  */
 export async function awaitReticulumBleCoexistenceClear(
   maxWaitMs = RETICULUM_BLE_COEXISTENCE_CLEAR_MAX_MS,
@@ -83,7 +83,8 @@ export async function awaitReticulumBleCoexistenceClear(
   while (Date.now() < deadline) {
     try {
       const state = await window.electronAPI.bleCoexistence.getState();
-      if (state.scanOwner !== 'reticulum') {
+      const yieldPending = state.nobleYieldDecisionPending === true;
+      if (!yieldPending && state.scanOwner !== 'reticulum') {
         return;
       }
     } catch {

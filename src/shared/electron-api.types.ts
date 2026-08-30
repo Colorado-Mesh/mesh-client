@@ -41,6 +41,12 @@ import type {
   ReticulumSidecarStatus,
 } from './reticulum-types';
 import type {
+  VoiceMemoAudioRequest,
+  VoiceMemoOkResponse,
+  VoiceMemoSessionRequest,
+  VoiceMemoStartResponse,
+} from './reticulum-voice-memo-types';
+import type {
   RrcConnectRequest,
   RrcDisconnectRequest,
   RrcHubInfo,
@@ -168,11 +174,24 @@ export interface UpdateCheckingPayload {
   notifyOnSettled?: boolean;
 }
 
+/** Renderer → main long-session restart OS notification (Noble BLE day-4 nudge). */
+export interface LongSessionRestartPayload {
+  title: string;
+  body: string;
+  restartLabel: string;
+  laterLabel: string;
+}
+
 export interface NobleBleDevice {
   deviceId: string;
   deviceName: string;
   /** Advertised / last-seen BLE RSSI in dBm; null when unknown (e.g. Linux Web Bluetooth). */
   rssi?: number | null;
+  /**
+   * Hardware BLE MAC when the OS exposes one (Noble `peripheral.address`).
+   * On macOS this is typically empty until after a prior GATT connect (CoreBluetoothCache).
+   */
+  address?: string | null;
 }
 
 export type NobleBleSessionId = MeshProtocol;
@@ -223,6 +242,15 @@ export interface ReadReticulumAttachmentAsDataUrlOpts {
 /** IPC response for `chat:readReticulumAttachmentAsDataUrl`. */
 export interface ReadReticulumAttachmentAsDataUrlResult {
   dataUrl: string | null;
+}
+
+/**
+ * IPC response for `chat:readReticulumAttachmentBytes`.
+ * Used to read a jailed OggS audio file (≤256 KiB).
+ */
+export interface ReadReticulumAttachmentBytesResult {
+  /** Base64-encoded file contents, or null on failure / out-of-jail / rate-limit. */
+  dataBase64: string | null;
 }
 
 export type OutboxStatus = 'queued' | 'sending' | 'blocked' | 'failed';
@@ -281,6 +309,12 @@ export interface BleRegisteredConnection {
 export interface BleCoexistenceState {
   connections: BleRegisteredConnection[];
   scanOwner: BleScanOwner | null;
+  /**
+   * True while main has decided a Reticulum BLE RNode Noble yield is required but has not yet
+   * finished acquire/skip. RF auto-connect must wait so it does not race fire-and-forget yield.
+   * Optional on older IPC shapes; treat missing as false.
+   */
+  nobleYieldDecisionPending?: boolean;
 }
 
 export interface ElectronAPI {
@@ -355,6 +389,26 @@ export interface ElectronAPI {
       body: string;
       timestamp: number;
     }) => Promise<{ changes: number }>;
+    /**
+     * Nick cache for one hub. Survives transcript clears / retention pruning, so
+     * the RRC nicklist can still name a peer that only ever spoke once.
+     */
+    listRrcNicks: (
+      hubHash: string,
+      limit?: number,
+    ) => Promise<
+      {
+        identity_hash: string;
+        nickname: string;
+        last_seen: number;
+      }[]
+    >;
+    upsertRrcNick: (nick: {
+      hub_hash: string;
+      identity_hash: string;
+      nickname: string;
+      last_seen: number;
+    }) => Promise<{ changes: number }>;
     deleteRrcMessagesByRoom: (hubHash: string, room: string) => Promise<{ changes: number }>;
     pruneRrcMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneRrcMessagesByAge: (maxAgeDays: number) => Promise<DbPruneResult>;
@@ -423,6 +477,8 @@ export interface ElectronAPI {
       delivery_attempts?: number | null;
       next_delivery_attempt_at?: number | null;
       attachment_path?: string | null;
+      audio_mode?: number | null;
+      audio_duration_sec?: number | null;
     }) => Promise<void>;
     markStaleReticulumOutbound: (
       identityId: string,
@@ -460,6 +516,14 @@ export interface ElectronAPI {
       identityId: string,
       blockedHash: string,
     ) => Promise<{ changes: number }>;
+    /** All blocked hashes for bulk export (newest first). */
+    exportBlockedContacts: (protocol: string, identityId: string) => Promise<string[]>;
+    /** Bulk upsert; malformed, duplicate and already-blocked entries count as skipped. */
+    importBlockedContacts: (
+      protocol: string,
+      identityId: string,
+      hashes: string[],
+    ) => Promise<{ imported: number; skipped: number }>;
     getReticulumIdentityActivity: (destinationHash: string) => Promise<
       {
         destination_hash: string;
@@ -940,10 +1004,14 @@ export interface ElectronAPI {
   notifyDeviceDisconnected: () => void;
   setTrayUnread: (count: number) => void;
   quitApp: () => Promise<void>;
+  /** Full process relaunch (Noble BLE long-session restart). */
+  restartApp: () => Promise<void>;
 
   // ─── Native OS notifications ─────────────────────────────────────────────────
   notify: {
     show: (title: string, body: string) => Promise<void>;
+    longSessionRestart: (opts: LongSessionRestartPayload) => Promise<void>;
+    clearLongSessionNudge: () => Promise<void>;
   };
 
   // ─── Safe storage ────────────────────────────────────────────────────────────
@@ -1072,6 +1140,8 @@ export interface ElectronAPI {
     readReticulumAttachmentAsDataUrl: (
       opts: ReadReticulumAttachmentAsDataUrlOpts,
     ) => Promise<ReadReticulumAttachmentAsDataUrlResult>;
+    /** Read a jailed OggS audio attachment (≤256 KiB) as base64. */
+    readReticulumAttachmentBytes: (filePath: string) => Promise<ReadReticulumAttachmentBytesResult>;
     linkPreview: {
       fetch: (url: string) => Promise<{
         title: string;
@@ -1129,6 +1199,19 @@ export interface ElectronAPI {
       defaultPath: string;
       contentBase64: string;
     }) => Promise<ReticulumIdentityExportSaveResult>;
+    /** Save dialog + write of the blocked-contact list. `path` is null when cancelled. */
+    saveBlocklistDialog: (
+      hashes: string[],
+    ) => Promise<{ path: string | null; error: string | null }>;
+    /**
+     * Open dialog + bounded read + parse of a blocklist file. `hashes` is null when
+     * cancelled or unreadable; `skipped` counts entries rejected while parsing.
+     */
+    openBlocklistDialog: () => Promise<{
+      hashes: string[] | null;
+      skipped: number;
+      error: string | null;
+    }>;
     /** Pick a Nomad site root or pages directory for watched hosting. */
     showNomadContentSourceDialog: () => Promise<{ canceled: boolean; path: string | null }>;
     /**
@@ -1180,6 +1263,16 @@ export interface ElectronAPI {
       hangup: () => Promise<VoiceOkResponse>;
       mute: (opts: VoiceMuteRequest) => Promise<VoiceOkResponse>;
       sendAudio: (opts: VoiceAudioRequest) => Promise<VoiceOkResponse>;
+    };
+    /**
+     * LXMF voice memos (FIELD_AUDIO Ogg Opus). Dedicated IPC — generic proxyPost
+     * rejects `/api/v1/voice/memo/*` paths so memo PCM does not share the proxy bucket.
+     */
+    voiceMemo: {
+      start: () => Promise<VoiceMemoStartResponse>;
+      sendAudio: (opts: VoiceMemoAudioRequest) => Promise<VoiceMemoOkResponse>;
+      stop: (opts: VoiceMemoSessionRequest) => Promise<VoiceMemoOkResponse>;
+      cancel: (opts: VoiceMemoSessionRequest) => Promise<VoiceMemoOkResponse>;
     };
     /**
      * LRGP games (lrgp-rs). Dedicated IPC channels — generic `proxyGet`/`proxyPost`

@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/refs */
 import 'emoji-picker-element';
 
-import { ChevronDown, ChevronUp, CornerUpLeft, MapPin } from 'lucide-react-motion';
+import { ChevronDown, ChevronUp, CornerUpLeft, MapPin, Mic } from 'lucide-react-motion';
 import {
   type ReactNode,
   type RefObject,
@@ -19,6 +19,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import type { ChatMessage, MeshNode, MeshProtocol } from '@/renderer/lib/types';
+import { useReticulumVoiceMemoStore } from '@/renderer/stores/reticulumVoiceMemoStore';
 import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
 
 import {
@@ -191,6 +192,8 @@ export interface ChatComposerProps {
    */
   onSendLocationWaypoint?: (lat: number, lon: number) => Promise<void>;
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
+  /** When set, renders a mic button that triggers voice memo recording. */
+  onVoiceMemo?: () => void;
   className?: string;
 }
 
@@ -224,6 +227,7 @@ export function ChatComposer({
   resolveShareLocation,
   onSendLocationWaypoint,
   textareaRef,
+  onVoiceMemo,
   className,
 }: ChatComposerProps) {
   const { t } = useTranslation();
@@ -236,6 +240,12 @@ export function ChatComposer({
   const counterLiveId = useId();
   const floodScopeListboxId = useId();
   const floodScopeCustomInputId = useId();
+  const memoPhase = useReticulumVoiceMemoStore((s) => s.phase);
+  const memoRecordingActive =
+    memoPhase === 'recording' ||
+    memoPhase === 'starting' ||
+    memoPhase === 'stopping' ||
+    memoPhase === 'ready';
 
   const [input, setInput] = useState('');
   const [floodScopeOverride, setFloodScopeOverride] = useState('');
@@ -1006,8 +1016,8 @@ export function ChatComposer({
 
   const textareaClass =
     variant === 'room'
-      ? 'max-h-32 min-h-[42px] w-full resize-none overflow-y-auto rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-gray-200 transition-colors focus:outline-none focus:border-brand-green/50 focus:ring-1 focus:ring-brand-green/30'
-      : `max-h-32 min-h-[42px] w-full resize-none overflow-y-auto rounded-xl border px-4 py-2.5 text-gray-200 transition-colors focus:outline-none ${
+      ? 'max-h-32 min-h-[2.625rem] w-full resize-none overflow-y-auto rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-gray-200 transition-colors focus:outline-none focus:border-brand-green/50 focus:ring-1 focus:ring-brand-green/30'
+      : `max-h-32 min-h-[2.625rem] w-full resize-none overflow-y-auto rounded-xl border px-4 py-2.5 text-gray-200 transition-colors focus:outline-none ${
           isDmMode
             ? 'border-purple-600/50 bg-purple-900/20 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30'
             : 'bg-secondary-dark/80 focus:border-brand-green/50 focus:ring-brand-green/30 border-gray-600/50 focus:ring-1'
@@ -1519,20 +1529,29 @@ export function ChatComposer({
               : null}
           </div>
         ) : (
-          <button
-            type="button"
-            onMouseDown={(e) => {
-              e.preventDefault();
-            }}
-            onClick={() => {
-              void handleSend();
-            }}
-            disabled={!input.trim() || sending || inputChunks === null || disabled}
-            aria-label={sendLabel}
-            className={sendButtonClass}
-          >
-            {sendLabel}
-          </button>
+          <div className="flex items-center gap-1">
+            {onVoiceMemo != null && !sending && (memoRecordingActive || !input.trim()) && (
+              <VoiceMemoComposerButton
+                onVoiceMemo={onVoiceMemo}
+                disabled={disabled}
+                idleClassName={emojiButtonClass}
+              />
+            )}
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+              }}
+              onClick={() => {
+                void handleSend();
+              }}
+              disabled={!input.trim() || sending || inputChunks === null || disabled}
+              aria-label={sendLabel}
+              className={sendButtonClass}
+            >
+              {sendLabel}
+            </button>
+          </div>
         )}
       </div>
 
@@ -1587,5 +1606,59 @@ export function ChatComposer({
         </ComposerAmberCallout>
       )}
     </div>
+  );
+}
+
+function VoiceMemoComposerButton({
+  onVoiceMemo,
+  disabled,
+  idleClassName,
+}: {
+  onVoiceMemo: () => void;
+  disabled?: boolean;
+  /** Same chrome as emoji / location / GIF composer controls. */
+  idleClassName: string;
+}) {
+  const { t } = useTranslation();
+  const phase = useReticulumVoiceMemoStore((s) => s.phase);
+  const elapsedSec = useReticulumVoiceMemoStore((s) => s.elapsedSec);
+  const recording = phase === 'recording' || phase === 'starting';
+  const sendMode = recording || phase === 'ready';
+  const busy = phase === 'starting' || phase === 'stopping' || phase === 'sending';
+  return (
+    <HelpTooltip
+      text={
+        sendMode ? t('chatPanel.voiceMemo.sendTooltip') : t('chatPanel.voiceMemo.recordTooltip')
+      }
+      className="shrink-0"
+      nonFocusableWrapper
+    >
+      <button
+        type="button"
+        aria-label={
+          recording && elapsedSec > 0
+            ? t('chatPanel.voiceMemo.sendAriaWithElapsed', { seconds: elapsedSec })
+            : sendMode
+              ? t('chatPanel.voiceMemo.sendAria')
+              : t('chatPanel.voiceMemo.recordAria')
+        }
+        onClick={onVoiceMemo}
+        disabled={disabled || busy}
+        className={
+          recording
+            ? 'rounded-xl border border-red-500/60 bg-red-600/80 px-2.5 py-2.5 text-white transition-colors hover:bg-red-500 disabled:opacity-50'
+            : idleClassName
+        }
+      >
+        <span className="flex items-center gap-1">
+          <Mic aria-hidden className="h-4 w-4" size={16} />
+          {recording && elapsedSec > 0 ? (
+            <span className="text-xs tabular-nums" aria-hidden>
+              {elapsedSec}s
+            </span>
+          ) : null}
+        </span>
+      </button>
+    </HelpTooltip>
   );
 }

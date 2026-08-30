@@ -29,6 +29,40 @@ describe('shouldForwardReticulumSidecarStdout', () => {
       shouldForwardReticulumSidecarStdout('INFO parser received WARN and ERROR payload tokens'),
     ).toBe(false);
   });
+
+  it('forwards INFO lines for PN triage targets', () => {
+    expect(
+      shouldForwardReticulumSidecarStdout(
+        '2026-08-20T15:35:19Z INFO propagation-sync: settling after LXMF announce',
+      ),
+    ).toBe(true);
+    expect(
+      shouldForwardReticulumSidecarStdout(
+        'INFO target=propagation-deposit message accepted stamped blob',
+      ),
+    ).toBe(true);
+    expect(
+      shouldForwardReticulumSidecarStdout('INFO target=lxmf-outbound LXMF advancing PN cascade'),
+    ).toBe(true);
+    expect(
+      shouldForwardReticulumSidecarStdout(
+        'INFO target=propagation-retrieve pn_hash=abc client /get stalled while establishing',
+      ),
+    ).toBe(true);
+  });
+
+  it('does not forward INFO when PN markers appear only in message text', () => {
+    expect(
+      shouldForwardReticulumSidecarStdout(
+        'INFO reticulum_sidecar::stack::other: user said propagation-sync failed',
+      ),
+    ).toBe(false);
+    expect(
+      shouldForwardReticulumSidecarStdout(
+        'INFO reticulum_sidecar::stack::lxmf_delivery: Propagation sync: announce settle',
+      ),
+    ).toBe(false);
+  });
 });
 
 describe('resolveSidecarRustLog', () => {

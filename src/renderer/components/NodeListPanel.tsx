@@ -75,7 +75,12 @@ import {
 } from '../lib/meshtasticSourceIcons';
 import { nodeHealthScore, nodeHealthTier } from '../lib/nodeHealthScore';
 import { getNodeTypeIcon } from '../lib/nodeIcons';
-import { getNodeStatus, haversineDistanceKm, normalizeLastHeardMs } from '../lib/nodeStatus';
+import {
+  getNodeStatus,
+  haversineDistanceKm,
+  lastHeardToUnixSeconds,
+  normalizeLastHeardMs,
+} from '../lib/nodeStatus';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { RoleDisplay } from '../lib/roleInfo';
@@ -816,7 +821,8 @@ export default function NodeListPanel({
                 rssi: n.rssi,
                 battery: n.battery,
                 voltage: n.voltage,
-                last_heard: n.last_heard,
+                last_heard: lastHeardToUnixSeconds(n.last_heard),
+                last_heard_unit: 'unix_sec',
                 latitude: n.latitude,
                 longitude: n.longitude,
                 altitude: n.altitude,
@@ -1424,7 +1430,11 @@ export default function NodeListPanel({
                       >
                         <div className="flex min-w-0 flex-col gap-0.5">
                           <span className="inline-flex min-w-0 items-center gap-1">
-                            <span className="truncate">
+                            <span
+                              className={
+                                mode === 'meshcore' ? 'break-words whitespace-normal' : 'truncate'
+                              }
+                            >
                               {mode === 'meshcore'
                                 ? meshcoreContactDisplayName(node.node_id, node.long_name)
                                 : node.long_name || '-'}

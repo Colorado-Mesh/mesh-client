@@ -153,11 +153,11 @@ function createLossAwareWritableStream(
 }
 
 /**
- * Detect serial unplug (`disconnect` event) and immediate write failures such as
- * `NetworkError: The device has been lost` after a firmware reboot. Also serializes
- * concurrent SDK `getWriter()` calls (queue, NODEINFO/GetMetadata retries, heartbeat)
- * on serial, BLE, HTTP, and TCP transports so overlapping writes do not throw
- * `WritableStream is locked` and get silently dropped.
+ * Detect serial unplug (`disconnect` event), immediate write failures, and read-pipe
+ * failures such as `NetworkError: The device has been lost` after a firmware reboot /
+ * wedged CDC. Also serializes concurrent SDK `getWriter()` calls (queue, NODEINFO/
+ * GetMetadata retries, heartbeat) on serial, BLE, HTTP, and TCP transports so
+ * overlapping writes do not throw `WritableStream is locked` and get silently dropped.
  */
 export function attachMeshtasticTransportLossWatch(
   device: MeshDevice,
@@ -181,6 +181,26 @@ export function attachMeshtasticTransportLossWatch(
     );
     onConnectionLost();
   };
+
+  // Patched @meshtastic/core MeshDevice invokes this from _fromDevicePipe.catch (#895 follow-up).
+  type DeviceWithPipeHook = MeshDevice & {
+    onFromDevicePipeError?: (err: unknown) => void;
+  };
+  const deviceWithHook = device as DeviceWithPipeHook;
+  const previousPipeHook = deviceWithHook.onFromDevicePipeError;
+  deviceWithHook.onFromDevicePipeError = (err: unknown) => {
+    previousPipeHook?.(err);
+    if (isMeshtasticTransportLostError(err)) {
+      notify('read-pipe-failure', err);
+    }
+  };
+  cleanups.push(() => {
+    if (previousPipeHook) {
+      deviceWithHook.onFromDevicePipeError = previousPipeHook;
+    } else {
+      delete deviceWithHook.onFromDevicePipeError;
+    }
+  });
 
   if (type === 'serial') {
     const port = getSerialPortFromMeshTransport(device.transport);

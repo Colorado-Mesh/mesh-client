@@ -24,6 +24,7 @@ import {
   formatReticulumPeerPathToast,
   formatReticulumPeerProbeToast,
   invalidateReticulumInterfacesCache,
+  isReticulumRnsLiveReady,
   isReticulumSidecar404Error,
   isReticulumSidecarExpectedProxyError,
   isReticulumSidecarNotRunningError,
@@ -51,6 +52,22 @@ describe('reticulumSidecarReads', () => {
   it('isReticulumSidecarRunning returns false when sidecar is down', async () => {
     getStatus.mockResolvedValue({ running: false, port: 0, pid: null });
     await expect(isReticulumSidecarRunning()).resolves.toBe(false);
+  });
+
+  it('isReticulumRnsLiveReady requires running sidecar and rns_ready', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 19437, pid: 1 });
+    proxyGet.mockResolvedValue({ rns_ready: true });
+    await expect(isReticulumRnsLiveReady()).resolves.toBe(true);
+    proxyGet.mockResolvedValue({ rns_ready: false });
+    await expect(isReticulumRnsLiveReady()).resolves.toBe(false);
+    getStatus.mockResolvedValue({ running: false, port: 0, pid: null });
+    await expect(isReticulumRnsLiveReady()).resolves.toBe(false);
+  });
+
+  it('isReticulumRnsLiveReady is false when proxyGet rejects while sidecar is running', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 19437, pid: 1 });
+    proxyGet.mockRejectedValue(new Error('Reticulum sidecar is not running'));
+    await expect(isReticulumRnsLiveReady()).resolves.toBe(false);
   });
 
   it('classifies not-running, 404, and rate-limit proxy errors', () => {
@@ -91,6 +108,18 @@ describe('reticulumSidecarReads', () => {
       'rate limit exceeded',
     );
     expect(proxyGet).toHaveBeenCalledTimes(3);
+  });
+
+  it('fetchReticulumInterfaces rethrows bypassCache failures instead of returning cache', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyGet.mockResolvedValueOnce({
+      interfaces: [{ id: '1', name: 'tcp', type: 'tcp', enabled: true, status: 'up' }],
+    });
+    await expect(fetchReticulumInterfaces()).resolves.toHaveLength(1);
+
+    proxyGet.mockRejectedValue(new Error('sidecar GET /api/v1/interfaces failed: 503'));
+    await expect(fetchReticulumInterfaces({ bypassCache: true })).rejects.toThrow('failed: 503');
+    await expect(fetchReticulumInterfaces()).resolves.toHaveLength(1);
   });
 
   it('fetchReticulumSerialPortOptions shares cache and rate-limit fallback with path helper', async () => {

@@ -128,6 +128,11 @@ export interface ProtocolCapabilities {
   dedupeQueueBadgeForLocalSending: boolean;
   /** Header self-node label prefers deviceOwner.longName over picker label */
   prefersDeviceOwnerLongNameInHeader: boolean;
+  /**
+   * Chat: when an own message has both device `status` and `mqttStatus`, show only the
+   * device badge (MeshCore — MQTT ✓ was masking RF heard-by). Meshtastic keeps dual badges.
+   */
+  prefersDeviceDeliveryStatusOverMqtt: boolean;
   /** Meshtastic-centric routing/RF diagnostics (Hop Goblins, CU, foreign LoRa). */
   hasDiagnosticsPanel: boolean;
   /** Reticulum: Connection panel interface editor (TCP, Auto, serial) */
@@ -159,6 +164,8 @@ export interface ProtocolCapabilities {
   hasRncpTransfer: boolean;
   /** Reticulum: LXST voice calls (Peers / Chat DM) */
   hasLxstVoice: boolean;
+  /** Reticulum: LXMF voice memo recording + playback in DM composer / chat */
+  hasReticulumVoiceMemo: boolean;
   /** Reticulum: LRGP games (Games tab, Peers / Chat DM Challenge) */
   hasLrgpGames: boolean;
   /** Whether Cancel/disconnect should stop Noble BLE scanning (Meshtastic/MeshCore on macOS/Windows). */
@@ -227,6 +234,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasFirmwareUpdateCheck: true,
   dedupeQueueBadgeForLocalSending: true,
   prefersDeviceOwnerLongNameInHeader: false,
+  prefersDeviceDeliveryStatusOverMqtt: false,
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
@@ -243,6 +251,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumRemotePanel: false,
   hasRncpTransfer: false,
   hasLxstVoice: false,
+  hasReticulumVoiceMemo: false,
   hasLrgpGames: false,
   hasNobleBleScanning: true,
   hasLxmfPaper: false,
@@ -307,6 +316,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasFirmwareUpdateCheck: true,
   dedupeQueueBadgeForLocalSending: false,
   prefersDeviceOwnerLongNameInHeader: true,
+  prefersDeviceDeliveryStatusOverMqtt: true,
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
@@ -323,6 +333,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumRemotePanel: false,
   hasRncpTransfer: false,
   hasLxstVoice: false,
+  hasReticulumVoiceMemo: false,
   hasLrgpGames: false,
   hasNobleBleScanning: true,
   hasLxmfPaper: false,
@@ -386,6 +397,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasFirmwareUpdateCheck: false,
   dedupeQueueBadgeForLocalSending: false,
   prefersDeviceOwnerLongNameInHeader: false,
+  prefersDeviceDeliveryStatusOverMqtt: false,
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: true,
   hasReticulumNetworkPanel: true,
@@ -402,6 +414,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumRemotePanel: true,
   hasRncpTransfer: true,
   hasLxstVoice: true,
+  hasReticulumVoiceMemo: true,
   hasLrgpGames: true,
   hasNobleBleScanning: false,
   hasLxmfPaper: true,

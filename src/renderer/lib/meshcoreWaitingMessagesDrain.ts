@@ -2,10 +2,14 @@ import { isMeshcoreTcpTransportDeadError } from '@/renderer/lib/bleConnectErrors
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import { isMeshcoreFloodScopeOverrideActive } from './meshcoreFloodScopeSend';
-import { meshcoreCompanionRepeaterRfBusy } from './meshcoreRepeaterRpcInFlight';
+import {
+  meshcoreCliReplyHoldActive,
+  meshcoreCompanionRepeaterRfBusy,
+} from './meshcoreRepeaterRpcInFlight';
 import { meshcoreTraceResponsesInFlightCount } from './meshcoreTracePathMultiplex';
 import {
   MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS,
+  MESHCORE_WAITING_MESSAGES_CIRCUIT_OPEN_BACKOFF_FACTOR,
   MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS,
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
   MESHCORE_WAITING_MESSAGES_POLL_MS,
@@ -24,6 +28,11 @@ let silentBulkAttemptId = 0;
 let silentBulkTimeoutStreak = 0;
 /** Once tripped, skip bulk and go straight to syncNextMessage until reconnect/success. */
 let silentBulkSkipped = false;
+/**
+ * CLI reply path: skip bulk while awaiting CLI_DATA (cleared when CLI hold ends).
+ * Distinct from {@link silentBulkSkipped} so a healthy bulk path resumes after CLI.
+ */
+let silentBulkCliPreempt = false;
 
 /** Record outbound companion RF TX so auto-drains can defer until the radio settles. */
 export function markMeshcoreCompanionTx(): void {
@@ -124,9 +133,42 @@ export function resetMeshcoreWaitingMessagesDrainSchedule(): void {
   resetMeshcoreSilentBulkBreaker();
 }
 
-/** Skip silent bulk getWaitingMessages after consecutive timeouts on this connection. */
+/** Skip silent bulk getWaitingMessages after consecutive timeouts or CLI preempt. */
 export function shouldSkipMeshcoreSilentBulkGetWaitingMessages(): boolean {
-  return silentBulkSkipped;
+  return silentBulkSkipped || silentBulkCliPreempt;
+}
+
+/** Poll interval for the 5-minute safety-net (stretched while silent-bulk circuit is open). */
+export function meshcoreWaitingMessagesPeriodicPollIntervalMs(): number {
+  return shouldSkipMeshcoreSilentBulkGetWaitingMessages()
+    ? MESHCORE_WAITING_MESSAGES_POLL_MS * MESHCORE_WAITING_MESSAGES_CIRCUIT_OPEN_BACKOFF_FACTOR
+    : MESHCORE_WAITING_MESSAGES_POLL_MS;
+}
+
+/** True when the periodic safety-net poll may run (respects circuit-open stretch). */
+export function meshcoreWaitingMessagesPeriodicPollDue(
+  lastRunAtMs: number,
+  nowMs: number,
+): boolean {
+  return nowMs - lastRunAtMs >= meshcoreWaitingMessagesPeriodicPollIntervalMs();
+}
+
+/** Congested-retry delay while companion TX is deferred (stretched when circuit is open). */
+export function meshcoreWaitingMessagesCongestedRetryMs(): number {
+  return shouldSkipMeshcoreSilentBulkGetWaitingMessages()
+    ? MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS *
+        MESHCORE_WAITING_MESSAGES_CIRCUIT_OPEN_BACKOFF_FACTOR
+    : MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS;
+}
+
+/**
+ * Silent auto-drain path: pyMC/OpenHop TCP often never answers bulk getWaitingMessages, so
+ * prefer syncNextMessage immediately instead of paying a silent bulk timeout every connect.
+ */
+export function shouldPreferMeshcoreSilentIncrementalDrain(
+  connectionType?: MeshcoreCompanionTransport,
+): boolean {
+  return connectionType === 'tcp' || shouldSkipMeshcoreSilentBulkGetWaitingMessages();
 }
 
 /** Record a successful silent bulk drain (including empty queue). */
@@ -153,6 +195,18 @@ export function noteMeshcoreSilentBulkTimeout(): boolean {
 export function resetMeshcoreSilentBulkBreaker(): void {
   silentBulkTimeoutStreak = 0;
   silentBulkSkipped = false;
+  silentBulkCliPreempt = false;
+}
+
+/** Test / support-bundle snapshot of silent-bulk circuit state. */
+export function getMeshcoreSilentBulkDrainSnapshot(): {
+  silentBulkSkipped: boolean;
+  silentBulkTimeoutStreak: number;
+} {
+  return {
+    silentBulkSkipped: silentBulkSkipped,
+    silentBulkTimeoutStreak: silentBulkTimeoutStreak,
+  };
 }
 
 export type MeshcoreCompanionTransport = 'ble' | 'serial' | 'tcp' | null | undefined;
@@ -164,7 +218,8 @@ export function waitingMessagesDrainTimeoutMs(
   if (showSyncBanner) {
     return MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS;
   }
-  if (connectionType === 'serial') {
+  // BLE, USB serial, and TCP/pyMC starve companion TX when bulk hangs — keep silent bulk short.
+  if (connectionType === 'serial' || connectionType === 'ble' || connectionType === 'tcp') {
     return MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS;
   }
   return MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS;
@@ -179,11 +234,49 @@ export function shouldActivateWaitingMessagesBanner(
 
 /** True when companion admin/trace work will likely stall getWaitingMessages / syncNextMessage. */
 export function isMeshcoreCompanionDrainDeferred(): boolean {
+  // While CLI awaits a reply, defer *automatic* drains so bulk getWaitingMessages cannot
+  // monopolize the companion link. CLI force-kicks bypass this via processWaitingMessages({ force: true }).
+  if (meshcoreCliReplyHoldActive()) {
+    return true;
+  }
   return (
     meshcoreTraceResponsesInFlightCount() > 0 ||
     meshcoreCompanionRepeaterRfBusy() ||
     isMeshcoreFloodScopeOverrideActive()
   );
+}
+
+/**
+ * CLI path: abandon in-flight silent bulk ownership and temporarily skip bulk
+ * getWaitingMessages so companion RF is free for CLI send + syncNextMessage reply polls.
+ * Call {@link endMeshcoreSilentBulkCliPreempt} when the CLI reply hold ends.
+ */
+export function preemptMeshcoreSilentBulkForCli(): void {
+  silentBulkAttemptId += 1;
+  silentBulkCliPreempt = true;
+}
+
+/** Clear the temporary CLI bulk-preempt flag (does not reopen a tripped timeout circuit). */
+export function endMeshcoreSilentBulkCliPreempt(): void {
+  silentBulkCliPreempt = false;
+}
+
+const DRAIN_IDLE_POLL_MS = 250;
+
+/** Wait until silent/manual waiting-message drain is idle, or until timeout. */
+export async function awaitMeshcoreWaitingMessagesDrainIdle(
+  isBusy: () => boolean,
+  timeoutMs: number = MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
+): Promise<boolean> {
+  if (!isBusy()) return true;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, DRAIN_IDLE_POLL_MS);
+    });
+    if (!isBusy()) return true;
+  }
+  return !isBusy();
 }
 
 /** Silent auto-drain timeouts during BLE congestion are expected — log at debug, not warn. */
@@ -238,7 +331,7 @@ export function scheduleMeshcoreWaitingMessagesDrain(
         debounceTimer = setTimeout(() => {
           debounceTimer = null;
           scheduleMeshcoreWaitingMessagesDrain(drain, options);
-        }, MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS);
+        }, meshcoreWaitingMessagesCongestedRetryMs());
         return;
       }
       options?.onDeferredChange?.(false);

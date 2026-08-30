@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { APP_SETTINGS_STORAGE_KEY } from '@/renderer/lib/appSettingsStorage';
 import { GPS_SETTINGS_STORAGE_KEY } from '@/renderer/lib/gpsSource';
 
 import { ReticulumRmapDiscoveryControls } from './ReticulumRmapDiscoveryControls';
@@ -223,6 +224,64 @@ describe('ReticulumRmapDiscoveryControls', () => {
       expect(checkbox).not.toBeChecked();
       expect(checkbox).toHaveProperty('indeterminate', true);
     });
+  });
+
+  it('disables publish controls when shareMyLocation is off', async () => {
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ shareMyLocation: false }));
+    const { container } = renderControls();
+    const checkbox = await screen.findByLabelText('reticulumRmapDiscovery.publishToggle');
+    expect(checkbox).toBeDisabled();
+    expect(screen.getByText('reticulumRmapDiscovery.disabledShareOff')).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('disables an active publisher when shareMyLocation turns off', async () => {
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ shareMyLocation: true }));
+    localStorage.setItem(
+      GPS_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ lat: 39.7392, lon: -104.9903, source: 'static' }),
+    );
+    let discoverable = true;
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/interfaces') {
+        return Promise.resolve({
+          interfaces: [
+            {
+              id: 'rnode-1',
+              name: 'LoRa',
+              type: 'rnode',
+              enabled: true,
+              status: 'up',
+              serial_port: '/dev/ttyUSB0',
+              discoverable,
+            },
+          ],
+        });
+      }
+      return Promise.resolve({});
+    });
+    window.electronAPI.reticulum.proxyPut = vi.fn().mockImplementation(() => {
+      discoverable = false;
+      return Promise.resolve({});
+    });
+    renderControls();
+    const checkbox = await screen.findByLabelText('reticulumRmapDiscovery.publishToggle');
+    await waitFor(() => {
+      expect(checkbox).toBeChecked();
+    });
+
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ shareMyLocation: false }));
+    window.dispatchEvent(new CustomEvent('mesh-client:appSettings'));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(screen.getByLabelText('reticulumRmapDiscovery.publishToggle')).not.toBeChecked();
+    });
+    expect(screen.getByText('reticulumRmapDiscovery.restartTitle')).toBeInTheDocument();
   });
 
   it('has no serious axe violations on GPS warning state', async () => {

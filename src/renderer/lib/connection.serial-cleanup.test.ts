@@ -123,7 +123,7 @@ describe('connection serial cleanup', () => {
     const device = {
       disconnect: vi.fn().mockResolvedValue(undefined),
       complete: vi.fn(),
-      transport: { port, fromDevice },
+      transport: { port, fromDevice, toDevice: new WritableStream() },
     } as unknown as MeshDevice;
 
     await safeDisconnect(device);
@@ -134,12 +134,49 @@ describe('connection serial cleanup', () => {
     expect(device.complete).toHaveBeenCalledTimes(1);
   });
 
+  it('safeDisconnect sends ToRadio.disconnect before device.disconnect for serial', async () => {
+    const port = makeMockSerialPort();
+    const callOrder: string[] = [];
+    const toDevice = new WritableStream<Uint8Array>({
+      write() {
+        callOrder.push('toRadioDisconnect');
+      },
+    });
+    const device = {
+      disconnect: vi.fn().mockImplementation(() => {
+        callOrder.push('device.disconnect');
+        return Promise.resolve();
+      }),
+      complete: vi.fn(),
+      transport: { port, fromDevice: new ReadableStream(), toDevice },
+    } as unknown as MeshDevice;
+
+    await safeDisconnect(device);
+
+    expect(callOrder).toEqual(['toRadioDisconnect', 'device.disconnect']);
+  });
+
+  it('safeDisconnect skips ToRadio.disconnect when transport is not serial', async () => {
+    const write = vi.fn();
+    const toDevice = new WritableStream<Uint8Array>({ write });
+    const device = {
+      disconnect: vi.fn().mockResolvedValue(undefined),
+      complete: vi.fn(),
+      transport: { toDevice, fromDevice: new ReadableStream() },
+    } as unknown as MeshDevice;
+
+    await safeDisconnect(device);
+
+    expect(write).not.toHaveBeenCalled();
+    expect(device.disconnect).toHaveBeenCalledTimes(1);
+  });
+
   it('safeDisconnect closes TransportWebSerial connection field', async () => {
     const port = makeMockSerialPort();
     const device = {
       disconnect: vi.fn().mockResolvedValue(undefined),
       complete: vi.fn(),
-      transport: { connection: port },
+      transport: { connection: port, toDevice: new WritableStream() },
     } as unknown as MeshDevice;
 
     await safeDisconnect(device);

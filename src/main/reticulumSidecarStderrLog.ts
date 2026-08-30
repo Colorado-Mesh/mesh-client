@@ -8,15 +8,23 @@ const BEACON_FAIL_WARN_INTERVAL_MS = 60 * MS_PER_SECOND;
 
 /** Default tracing filter for sidecar child processes (overridable via env). */
 // PN connect triage: keep global warn; surface sync/deposit/outbound INFO. Keep
-// propagation-retrieve at warn by default (inbound peer/message metadata); opt in
-// via MESH_CLIENT_RUST_LOG (e.g. add propagation-retrieve=info).
+// propagation-retrieve at info for pn_hash / establish / failover lines; per-message
+// inbound delivery records stay debug-only with redacted from_prefix in live.rs.
 export const SIDECAR_DEFAULT_RUST_LOG =
-  'warn,propagation-sync=info,propagation-deposit=info,lxmf-outbound=info';
+  'warn,propagation-sync=info,propagation-retrieve=info,propagation-deposit=info,lxmf-outbound=info';
 
 /**
  * Whether a sidecar stdout line should be written to the app log.
- * Tracing INFO/DEBUG packet routing floods the rotating log; keep WARN/ERROR only.
+ * Tracing INFO/DEBUG packet routing floods the rotating log; keep WARN/ERROR, plus
+ * PN triage targets that RUST_LOG elevates to INFO (`propagation-sync`, etc.).
  */
+const SIDECAR_STDOUT_INFO_FORWARD_MARKERS = [
+  'propagation-sync',
+  'propagation-retrieve',
+  'propagation-deposit',
+  'lxmf-outbound',
+] as const;
+
 export function shouldForwardReticulumSidecarStdout(text: string): boolean {
   const fields = text.trimStart().split(/\s+/);
   let index = fields[0] && Number.isFinite(Date.parse(fields[0])) ? 1 : 0;
@@ -30,12 +38,30 @@ export function shouldForwardReticulumSidecarStdout(text: string): boolean {
       severity = fields[index] ?? '';
     }
   }
-  return (
+  if (
     severity === 'WARN' ||
     severity.startsWith('WARN\u001b[') ||
     severity === 'ERROR' ||
     severity.startsWith('ERROR\u001b[')
-  );
+  ) {
+    return true;
+  }
+  // INFO for PN connect triage only (matches SIDECAR_DEFAULT_RUST_LOG targets).
+  const isInfo = severity === 'INFO' || severity.startsWith('INFO\u001b[');
+  if (!isInfo) return false;
+  // Match markers against the tracing target token only — not message text / other fields.
+  let target = fields[index + 1] ?? '';
+  while (target.startsWith('\u001b[')) {
+    const end = target.indexOf('m', 2);
+    if (end < 0) return false;
+    target = target.slice(end + 1);
+  }
+  target = target.replace(/:$/, '').toLowerCase();
+  if (target.startsWith('target=')) {
+    target = target.slice('target='.length);
+  }
+  if (!target) return false;
+  return SIDECAR_STDOUT_INFO_FORWARD_MARKERS.some((marker) => target.includes(marker));
 }
 
 /**

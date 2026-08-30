@@ -157,6 +157,17 @@ describe('getNodeStatus', () => {
     expect(getNodeStatus(oneSecondOver7d, meshtasticStale, meshtasticOffline)).toBe('offline');
   });
 
+  it('collapses Date×1000 overshoot so stale wall-time is not stuck online', () => {
+    const meshtasticStale = 2 * 60 * 60 * 1000;
+    const meshtasticOffline = 7 * 24 * 60 * 60 * 1000;
+    const threeHoursAgoMs = Date.now() - 3 * 60 * 60 * 1000;
+    const doubleConverted = threeHoursAgoMs * 1000;
+    // Without normalize collapse, effectiveLastHeardMs would clamp far-future to now → online.
+    expect(getNodeStatus(doubleConverted, meshtasticStale, meshtasticOffline)).toBe('stale');
+    expect(normalizeLastHeardMs(doubleConverted)).toBe(threeHoursAgoMs);
+    expect(effectiveLastHeardMs(doubleConverted)).toBe(threeHoursAgoMs);
+  });
+
   it('effectiveLastHeardMs clamps far-future timestamps to now', () => {
     const nowMs = 1_700_000_000_000;
     const farFutureSec = 1_700_000_000 + 86_400;

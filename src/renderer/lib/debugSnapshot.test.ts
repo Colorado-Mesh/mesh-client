@@ -501,6 +501,25 @@ describe('analyzeDebugSnapshot', () => {
     expect(snap.warnings.map((w) => w.code)).toContain('staleResolvedBucket');
   });
 
+  it('includes meshcore drain congestion fields from ui context', () => {
+    setDebugSnapshotUiContext({
+      meshcoreDrain: {
+        meshcoreCompanionRepeaterRfBusy: true,
+        meshcoreCliReplyHoldCount: 1,
+        meshcoreAdminRpcInFlightCount: 2,
+        meshcoreTraceRpcInFlightCount: 0,
+        meshcoreTraceResponsesInFlightCount: 0,
+        meshcoreSilentBulkSkipped: true,
+        meshcoreSilentBulkTimeoutStreak: 2,
+      },
+    });
+    expect(getDebugSnapshotUiContext().meshcoreDrain).toMatchObject({
+      meshcoreCompanionRepeaterRfBusy: true,
+      meshcoreSilentBulkSkipped: true,
+      meshcoreSilentBulkTimeoutStreak: 2,
+    });
+  });
+
   it('flags chatPanelFrozen when frozen count lags live store', () => {
     const snap = makeSyntheticSnapshot({
       ui: {

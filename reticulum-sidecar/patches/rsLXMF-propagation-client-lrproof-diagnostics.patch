@@ -1,0 +1,108 @@
+diff --git a/crates/lxmf-core/src/propagation_client.rs b/crates/lxmf-core/src/propagation_client.rs
+index 8335336..6075e5a 100644
+--- a/crates/lxmf-core/src/propagation_client.rs
++++ b/crates/lxmf-core/src/propagation_client.rs
+@@ -145,6 +145,8 @@ pub struct PropagationClient {
+     started_at: Option<Instant>,
+     timeout: Duration,
+     identified: bool,
++    /// Sticky Establishing failure (LRPROOF identity miss / invalid proof).
++    last_establish_error: Option<&'static str>,
+ }
+ 
+ impl PropagationClient {
+@@ -187,9 +189,15 @@ impl PropagationClient {
+             started_at: None,
+             timeout: Duration::from_secs(120),
+             identified: false,
++            last_establish_error: None,
+         }
+     }
+ 
++    /// Sticky establish failure from the last LinkProof attempt (identity miss / invalid proof).
++    pub const fn last_establish_error(&self) -> Option<&'static str> {
++        self.last_establish_error
++    }
++
+     pub fn set_propagation_node(&mut self, dest_hash: [u8; 16]) {
+         self.outbound_propagation_node = Some(dest_hash);
+     }
+@@ -264,6 +272,7 @@ impl PropagationClient {
+         self.status = PropagationTransferStatus::default();
+         self.identified = false;
+         self.started_at = None;
++        self.last_establish_error = None;
+     }
+ 
+     pub fn start_download(&mut self) -> bool {
+@@ -295,6 +304,7 @@ impl PropagationClient {
+         if !self.pending_transport.is_empty() {
+             return false;
+         }
++        self.last_establish_error = None;
+ 
+         let (link, request_data) = Link::new_initiator(node_hash, 1);
+         let link_id = link.link_id;
+@@ -640,9 +650,18 @@ impl PropagationClient {
+                             let node_hex = self.outbound_propagation_node.map(|h| hex_encode(&h));
+                             if let Some(node_hex) = node_hex {
+                                 if let Some(pub_key) = known_identities.get(&node_hex) {
+-                                    let ed25519_bytes: [u8; 32] = pub_key[32..64]
+-                                        .try_into()
+-                                        .expect("known_identities values are [u8; 64]; slice [32..64] is always 32 bytes");
++                                    let ed25519_bytes: [u8; 32] = match pub_key[32..64].try_into() {
++                                        Ok(bytes) => bytes,
++                                        Err(_) => {
++                                            tracing::warn!(
++                                                node = %node_hex,
++                                                "propagation client LRPROOF: invalid ed25519 key bytes"
++                                            );
++                                            self.last_establish_error = Some("LrproofInvalidKey");
++                                            self.status.state = PropagationClientState::Failed;
++                                            continue;
++                                        }
++                                    };
+                                     if let Ok(verify_key) =
+                                         Ed25519PublicKey::from_bytes(&ed25519_bytes)
+                                     {
+@@ -652,7 +671,21 @@ impl PropagationClient {
+                                             &ed25519_bytes,
+                                             interface_id,
+                                         );
++                                    } else {
++                                        tracing::warn!(
++                                            node = %node_hex,
++                                            "propagation client LRPROOF: invalid ed25519 key bytes"
++                                        );
++                                        self.last_establish_error = Some("LrproofInvalidKey");
++                                        self.status.state = PropagationClientState::Failed;
+                                     }
++                                } else {
++                                    tracing::warn!(
++                                        node = %node_hex,
++                                        "propagation client LRPROOF ignored: destination identity unknown"
++                                    );
++                                    self.last_establish_error = Some("LrproofIdentityMissing");
++                                    // Stay LinkEstablishing so a later tick with identity can succeed.
+                                 }
+                             }
+                         }
+@@ -728,6 +761,7 @@ impl PropagationClient {
+         };
+ 
+         if let Ok(rtt_data) = link.validate_proof(proof_data, verify_key, ed25519_pub) {
++            self.last_establish_error = None;
+             if let Some(link_id) = self.link_id {
+                 let rtt_header = rns_wire::header::PacketHeader {
+                     flags: rns_wire::flags::PacketFlags {
+@@ -768,6 +802,10 @@ impl PropagationClient {
+                     result_rx,
+                 });
+             }
++        } else {
++            tracing::warn!("propagation client LRPROOF validate_proof failed");
++            self.last_establish_error = Some("LrproofInvalid");
++            self.status.state = PropagationClientState::Failed;
+         }
+     }
+ 

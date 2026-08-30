@@ -1,3 +1,4 @@
+import { isShareMyLocationEnabled } from '@/renderer/lib/appSettingsStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
 
@@ -21,8 +22,9 @@ function readStoredGpsSettings(): StoredGpsSettings {
   );
 }
 
-/** Host GPS poll interval in seconds (0 = disabled). */
+/** Host GPS poll interval in seconds (0 = disabled). Respects share-my-location privacy. */
 export function readGpsRefreshIntervalSecs(): number {
+  if (!isShareMyLocationEnabled()) return 0;
   const interval = readStoredGpsSettings().refreshInterval;
   return typeof interval === 'number' && Number.isFinite(interval) && interval > 0 ? interval : 0;
 }
@@ -113,6 +115,11 @@ export async function resolveOurPosition(
     Number.isFinite(staticLon)
   ) {
     return { lat: staticLat, lon: staticLon, source: 'static' };
+  }
+
+  // 3–4. Host GPS — skipped when user disabled share-my-location (privacy)
+  if (!isShareMyLocationEnabled()) {
+    return null;
   }
 
   // 3. Native OS geolocation via main process (bypasses Chromium permission issues)

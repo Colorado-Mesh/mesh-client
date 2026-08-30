@@ -19,6 +19,11 @@ export interface ReticulumSidecarStatus {
   unhealthySince?: number;
   autoBeaconAlert?: ReticulumAutoBeaconAlert | null;
   interfaceIssueAlert?: ReticulumInterfaceIssueAlert | null;
+  /**
+   * True when this client started the stack five or more times within 12 hours.
+   * Matches Reticulum 1.4.0+ BackboneInterface fast-flap IP block (not sidecar log parsing).
+   */
+  stackFastFlapSuspected?: boolean;
 }
 
 export type ReticulumAutoBeaconAlertKind = 'tunnel_only' | 'physical_failures';
@@ -44,6 +49,10 @@ export interface ReticulumLinkDeliveryTimeout {
 /** Parsed from sidecar stdout when TCP peers are unreachable or TX queues overflow. */
 export interface ReticulumInterfaceIssueAlert {
   tcpConnectFailed: string[];
+  /** Hub sent TCP RST after RNS session started (named via reconnect line). */
+  tcpResetByPeer?: string[];
+  /** Hub closed TCP cleanly — INFO-level `TCP read: EOF` (named when possible). */
+  tcpReadEof?: string[];
   txQueueDrops: ReticulumInterfaceTxQueueDrop[];
   linkDeliveryTimeouts: ReticulumLinkDeliveryTimeout[];
   /**

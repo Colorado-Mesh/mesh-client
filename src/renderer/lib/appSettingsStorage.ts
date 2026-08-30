@@ -66,6 +66,15 @@ export function getStoreForwardHistoryProfile(): StoreForwardHistoryProfile {
   return DEFAULT_APP_SETTINGS_SHARED.storeForwardHistoryProfile;
 }
 
+/** Whether mesh-client may look up host GPS and send the user's location on any protocol. */
+export function isShareMyLocationEnabled(): boolean {
+  const parsed = parseStoredJson<{ shareMyLocation?: boolean }>(
+    getAppSettingsRaw(),
+    'isShareMyLocationEnabled',
+  );
+  return parsed?.shareMyLocation ?? DEFAULT_APP_SETTINGS_SHARED.shareMyLocation;
+}
+
 /** Whether chat location share also sends a Meshtastic Waypoint packet. */
 export function isShareLocationSendWaypointEnabled(): boolean {
   const parsed = parseStoredJson<{ shareLocationSendWaypoint?: boolean }>(
@@ -106,6 +115,33 @@ export function setReticulumAutostartEnabled(enabled: boolean): void {
     });
 }
 
+/** Whether an announce from a peer should retry that peer's failed LXMF messages. */
+export function isReticulumAutoResendOnAnnounceEnabled(): boolean {
+  const parsed = parseStoredJson<{ reticulumAutoResendOnAnnounce?: boolean }>(
+    getAppSettingsRaw(),
+    'isReticulumAutoResendOnAnnounceEnabled',
+  );
+  return typeof parsed?.reticulumAutoResendOnAnnounce === 'boolean'
+    ? parsed.reticulumAutoResendOnAnnounce
+    : DEFAULT_APP_SETTINGS_SHARED.reticulumAutoResendOnAnnounce;
+}
+
+export function setReticulumAutoResendOnAnnounceEnabled(enabled: boolean): void {
+  mergeAppSetting(
+    'reticulumAutoResendOnAnnounce',
+    enabled,
+    'setReticulumAutoResendOnAnnounceEnabled',
+  );
+  void window.electronAPI.appSettings
+    .set('reticulumAutoResendOnAnnounce', enabled ? '1' : '0')
+    .catch((e: unknown) => {
+      console.warn(
+        '[appSettingsStorage] persist reticulumAutoResendOnAnnounce failed ' +
+          errLikeToLogString(e),
+      );
+    });
+}
+
 /** Merge keys into existing app settings without dropping unrelated persisted fields. */
 export function mergeAppSettingsPartial(
   partial: Record<string, unknown>,
@@ -116,6 +152,9 @@ export function mergeAppSettingsPartial(
     const raw = localStorage.getItem(APP_SETTINGS_STORAGE_KEY);
     const existing = parseStoredJson<Record<string, unknown>>(raw, parseContext) ?? {};
     localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ ...existing, ...partial }));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('mesh-client:appSettings'));
+    }
   } catch (e) {
     console.warn('[appSettingsStorage] mergeAppSettingsPartial failed ' + errLikeToLogString(e));
   }

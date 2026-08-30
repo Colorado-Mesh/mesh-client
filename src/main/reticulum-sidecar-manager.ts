@@ -36,6 +36,7 @@ import {
   shouldForwardReticulumSidecarStdout,
 } from './reticulumSidecarStderrLog';
 import { startSidecarWatchdog } from './reticulumSidecarWatchdog';
+import { ReticulumStackSessionTracker } from './reticulumStackSessionTracker';
 
 const HEALTH_POLL_INTERVAL_MS = 250;
 const HEALTH_POLL_TIMEOUT_MS = 30 * MS_PER_SECOND;
@@ -198,6 +199,9 @@ export class ReticulumSidecarManager extends EventEmitter {
   private readonly stderrDedupe = new ReticulumSidecarStderrDedupe();
   private readonly autoBeaconTracker = new ReticulumSidecarAutoBeaconTracker();
   private readonly interfaceIssueTracker = new ReticulumSidecarInterfaceIssueTracker();
+  private readonly stackSessionTracker = new ReticulumStackSessionTracker(
+    path.join(app.getPath('userData'), 'reticulum', 'stack-sessions.json'),
+  );
   private lastIssueStatusEmitAt = 0;
   private watchdogStop: (() => void) | null = null;
   private _status: ReticulumSidecarStatus = {
@@ -216,6 +220,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       ...this._status,
       autoBeaconAlert: this.autoBeaconTracker.getAlert(),
       interfaceIssueAlert: this.interfaceIssueTracker.getAlert(),
+      stackFastFlapSuspected: this.stackSessionTracker.isFastFlapSuspected(),
     };
   }
 
@@ -266,6 +271,7 @@ export class ReticulumSidecarManager extends EventEmitter {
 
   private finalizeStopped(): void {
     this.stopWatchdog();
+    this.stackSessionTracker.recordStop();
     this.clearSidecarTrackers();
     this._status = { running: false, port: 0, pid: null, healthy: true, unhealthySince: undefined };
     this.emit('status', this.getStatus());
@@ -386,7 +392,8 @@ export class ReticulumSidecarManager extends EventEmitter {
       if (!text) return;
       this.recordSidecarOutputLine(text);
       if (!shouldForwardReticulumSidecarStdout(text)) return;
-      console.debug('[ReticulumSidecar]', text);
+      // WARN/ERROR and PN-triage INFO must reach mesh-client.log (debug is filtered in packaged).
+      console.warn('[ReticulumSidecar]', text);
     };
     proc.stdout?.on('data', (chunk: Buffer) => {
       stdoutBuffer += chunk.toString('utf8');
@@ -418,7 +425,11 @@ export class ReticulumSidecarManager extends EventEmitter {
     proc.on('exit', (code, signal) => {
       console.debug(`[ReticulumSidecar] exited code=${code ?? 'null'} signal=${signal ?? 'null'}`);
       this.teardownWs();
+      // The watchdog no-ops once proc is null, but leaving it armed leaks its interval
+      // across the next spawn.
+      this.stopWatchdog();
       this.proc = null;
+      this.stackSessionTracker.recordStop();
       this.clearSidecarTrackers();
       this._status = {
         running: false,
@@ -438,6 +449,15 @@ export class ReticulumSidecarManager extends EventEmitter {
       throw new Error(msg);
     }
 
+    // stop() kills the child during the health poll ("Process already spawned (e.g. health
+    // poll): kill via stopProc"), so a health response landing just before the kill would
+    // otherwise report a dead PID as running, connect a WS to a dead port, and arm a
+    // watchdog for a process that is already gone.
+    this.throwIfStartAborted();
+    if (this.proc !== proc) {
+      throw new Error('RETICULUM_SIDECAR_START_ABORTED: process replaced during start');
+    }
+
     this._status = {
       running: true,
       port,
@@ -445,18 +465,33 @@ export class ReticulumSidecarManager extends EventEmitter {
       healthy: true,
       unhealthySince: undefined,
     };
+    this.stackSessionTracker.recordStart();
     this.connectWs(port);
     this.startWatchdog();
+    // Mark yield pending before status emit so RF auto-connect does not race fire-and-forget yield.
+    if (needsBleYieldAfterHealth) {
+      bleCoexistenceCoordinator.setNobleYieldDecisionPending(true);
+    } else {
+      bleCoexistenceCoordinator.setNobleYieldDecisionPending(false);
+    }
     this.emit('status', this.getStatus());
     // Do not await BLE yield — TCP/LXMF/RRC/Nomad are already usable. Start yield only
     // after health so Cancel during cargo never yanks Meshtastic/MeshCore.
     if (needsBleYieldAfterHealth) {
-      void this.yieldNobleForEnabledBleRnode().catch((e: unknown) => {
-        console.warn(
-          '[ReticulumSidecar] background Noble yield for BLE RNode failed:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-      });
+      const yieldGeneration = this.startAttemptGeneration;
+      void this.yieldNobleForEnabledBleRnode()
+        .catch((e: unknown) => {
+          console.warn(
+            '[ReticulumSidecar] background Noble yield for BLE RNode failed:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+        })
+        .finally(() => {
+          // Overlapping start/stop: only the current attempt may clear pending.
+          if (yieldGeneration === this.startAttemptGeneration) {
+            bleCoexistenceCoordinator.setNobleYieldDecisionPending(false);
+          }
+        });
     }
     return this.getStatus();
   }
@@ -518,6 +553,8 @@ export class ReticulumSidecarManager extends EventEmitter {
     // Abort in-flight start at checkpoints (cargo/BLE) so Cancel does not wait on build.
     this.startAbortRequested = true;
     this.startAttemptGeneration += 1;
+    // Invalidate any in-flight yield's finally before a subsequent start can latch pending again.
+    bleCoexistenceCoordinator.setNobleYieldDecisionPending(false);
     if (this.startPromise && !this.proc) {
       // Pre-spawn: do not await cargo — startOnce throws at next checkpoint.
       void this.startPromise.catch(() => {

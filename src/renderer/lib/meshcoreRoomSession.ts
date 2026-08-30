@@ -1,8 +1,10 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
+import { resolveRoomAdminPassword } from './meshcoreInfraAdminSecrets';
 import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
 import { meshcoreLoginErrorIsAuthFailure } from './meshcoreRepeaterRpcCommon';
+import type { MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
 import type { MeshcoreRepeaterLoginConn } from './meshcoreRepeaterSession';
 import { assertMeshcoreRepeaterLoginOk, meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
 import {
@@ -40,6 +42,7 @@ export type MeshcoreRoomLoginConn = MeshcoreRadioConnection;
 
 /** Firmware PERM_ACL_ROLE_MASK values (CommonCLI / room server ACL). */
 export const MESHCORE_ROOM_PERM_GUEST = 0;
+export const MESHCORE_ROOM_PERM_READ_ONLY = 1;
 export const MESHCORE_ROOM_PERM_READ_WRITE = 2;
 export const MESHCORE_ROOM_PERM_ADMIN = 3;
 
@@ -65,17 +68,72 @@ export function subscribeMeshcoreRoomSessionChanges(cb: RoomSessionChangeListene
 /** Per-room login abort controllers (replaced on each new login for the same node). */
 const roomLoginAbortControllers = new Map<number, AbortController>();
 
+/**
+ * Outer abort for the full loginRoom op (path resolve + SendLogin). Registered before
+ * queue/RPC so Cancel works during route prime — not only after SendLogin starts.
+ */
+const roomLoginOuterAbortControllers = new Map<number, AbortController>();
+
 export function meshcoreIsRoomLoginAbortError(err: unknown): boolean {
   return err instanceof DOMException && err.message === MESHCORE_ROOM_LOGIN_ABORT_MESSAGE;
 }
 
+export function meshcoreThrowIfRoomLoginAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted) {
+    throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
+  }
+}
+
+/** Reject as soon as `signal` aborts, even if `promise` is still pending. */
+export function meshcoreAbortablePromise<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  meshcoreThrowIfRoomLoginAborted(signal);
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = (): void => {
+      reject(new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError'));
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+    promise.then(
+      (value) => {
+        signal.removeEventListener('abort', onAbort);
+        resolve(value);
+      },
+      (err: unknown) => {
+        signal.removeEventListener('abort', onAbort);
+        reject(err instanceof Error ? err : new Error(String(err)));
+      },
+    );
+  });
+}
+
+/**
+ * Start (or replace) the outer abort controller for a room login operation.
+ * Call from loginRoom before path resolve; pair with {@link meshcoreEndRoomLoginOperation}.
+ */
+export function meshcoreBeginRoomLoginOperation(nodeId: number): AbortSignal {
+  roomLoginOuterAbortControllers.get(nodeId)?.abort();
+  const controller = new AbortController();
+  roomLoginOuterAbortControllers.set(nodeId, controller);
+  return controller.signal;
+}
+
+export function meshcoreEndRoomLoginOperation(nodeId: number, signal: AbortSignal): void {
+  if (roomLoginOuterAbortControllers.get(nodeId)?.signal === signal) {
+    roomLoginOuterAbortControllers.delete(nodeId);
+  }
+}
+
 export function meshcoreCancelRoomLogin(nodeId: number): void {
+  roomLoginOuterAbortControllers.get(nodeId)?.abort();
   roomLoginAbortControllers.get(nodeId)?.abort();
   dequeueMeshcoreRoomLogin(nodeId);
 }
 
 /** Abort the active login and drop all queued room logins. */
 export function meshcoreCancelAllRoomLogins(): void {
+  for (const controller of roomLoginOuterAbortControllers.values()) {
+    controller.abort();
+  }
+  roomLoginOuterAbortControllers.clear();
   for (const controller of roomLoginAbortControllers.values()) {
     controller.abort();
   }
@@ -83,9 +141,7 @@ export function meshcoreCancelAllRoomLogins(): void {
 }
 
 function throwIfRoomLoginAborted(signal: AbortSignal | undefined): void {
-  if (signal?.aborted) {
-    throw new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError');
-  }
+  meshcoreThrowIfRoomLoginAborted(signal);
 }
 
 function beginRoomLoginAbortSignal(nodeId: number, externalSignal?: AbortSignal): AbortSignal {
@@ -125,7 +181,18 @@ export function meshcoreRoomCanAdmin(nodeId: number): boolean {
   return sessions.get(nodeId)?.role === 'admin';
 }
 
+/** Room ops CLI tokens that require an admin BBS session (guest/readwrite gets no reply). */
+export function meshcoreRoomCliRequiresAdmin(command: string): boolean {
+  const c = command.trim().toLowerCase();
+  if (!c) return false;
+  return c.startsWith('allow.read.only') || c.startsWith('setperm');
+}
+
 export function meshcoreClearAllRoomSessions(): void {
+  for (const controller of roomLoginOuterAbortControllers.values()) {
+    controller.abort();
+  }
+  roomLoginOuterAbortControllers.clear();
   for (const controller of roomLoginAbortControllers.values()) {
     controller.abort();
   }
@@ -143,10 +210,26 @@ export function meshcoreClearRoomSession(nodeId: number): void {
 
 function roleFromPermissionsByte(permissions: number): MeshcoreRoomRole {
   const roleBits = permissions & 0x03;
-  if (roleBits === MESHCORE_ROOM_PERM_ADMIN) return 'admin';
-  if (roleBits === MESHCORE_ROOM_PERM_READ_WRITE) return 'readwrite';
-  if (roleBits === MESHCORE_ROOM_PERM_GUEST) return 'readonly';
-  return 'readonly';
+  switch (roleBits) {
+    case MESHCORE_ROOM_PERM_ADMIN:
+      return 'admin';
+    case MESHCORE_ROOM_PERM_READ_WRITE:
+      return 'readwrite';
+    case MESHCORE_ROOM_PERM_GUEST:
+    case MESHCORE_ROOM_PERM_READ_ONLY:
+    default:
+      return 'readonly';
+  }
+}
+
+/**
+ * Companion `LoginSuccess.reserved` is the legacy data[6] flag from room/repeater login OK —
+ * NOT PERM_ACL_*. Firmware: admin→1, guest(perm==0)→2, otherwise→0 (includes read-write).
+ */
+function roleFromLegacyLoginFlag(legacyFlag: number): MeshcoreRoomRole {
+  if (legacyFlag === 1) return 'admin';
+  if (legacyFlag === 2) return 'readonly';
+  return 'readwrite';
 }
 
 function roleFromPasswordHint(
@@ -161,13 +244,36 @@ function roleFromPasswordHint(
   return 'readwrite';
 }
 
-function parseLoginResponsePermissions(response: unknown): number | null {
+/**
+ * Prefer v7+ `permissions` (PERM_ACL_*). Do not treat `reserved` as ACL — that byte is the
+ * legacy admin/guest hint (0=RW, 1=admin, 2=guest) and inverts read-write vs guest.
+ */
+export function parseLoginResponsePermissions(response: unknown): number | null {
   if (!response || typeof response !== 'object') return null;
   const r = response as Record<string, unknown>;
   if (typeof r.permissions === 'number' && Number.isFinite(r.permissions)) {
     return r.permissions & 0xff;
   }
   return null;
+}
+
+export function resolveMeshcoreRoomLoginRole(
+  response: unknown,
+  password: string,
+  adminPassword: string,
+  guestPassword: string,
+): MeshcoreRoomRole {
+  const permByte = parseLoginResponsePermissions(response);
+  if (permByte != null) {
+    return roleFromPermissionsByte(permByte);
+  }
+  if (response && typeof response === 'object') {
+    const reserved = (response as Record<string, unknown>).reserved;
+    if (typeof reserved === 'number' && Number.isFinite(reserved)) {
+      return roleFromLegacyLoginFlag(reserved & 0xff);
+    }
+  }
+  return roleFromPasswordHint(password, adminPassword, guestPassword);
 }
 
 export function meshcoreApplyRoomSession(
@@ -189,7 +295,10 @@ export function meshcoreApplyRoomSession(
   notifyRoomSessionChanged();
 }
 
-/** Default room guest password when firmware uses factory defaults (see MeshCore ROOM_PASSWORD). */
+/**
+ * Older factory default guest password (MeshCore ROOM_PASSWORD). Prefer empty first;
+ * users may still type this on servers that never cleared the legacy default.
+ */
 export const MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD = 'hello';
 
 /** Thrown when multi-hop login has no route bytes after resolve/trace. */
@@ -199,11 +308,12 @@ export const MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE = 'meshcore.errors.roomLogin.n
 export const MESHCORE_ROOM_LOGIN_PATH_SYNC_FAILED_MESSAGE =
   'meshcore.errors.roomLogin.pathSyncFailed';
 
+/** Trim guest password for SendLogin; empty stays empty (zero-byte password field). */
 export function meshcoreRoomEffectiveGuestPassword(password: string): string {
-  return password.trim() || MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD;
+  return password.trim();
 }
 
-/** True when Login sent the factory default guest password (empty field → hello). */
+/** True when Login sent the older factory default guest password `"hello"`. */
 export function meshcoreRoomUsedDefaultGuestPassword(password: string): boolean {
   return password === MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD;
 }
@@ -279,17 +389,21 @@ export async function meshcoreRoomLogin(
       for (let attempt = 1; attempt <= MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS; attempt++) {
         throwIfRoomLoginAborted(signal);
         try {
-          const response = await runMeshcoreRoomLogin(conn, pubKey, password, {
-            hopsAway: opts?.hopsAway,
-            companionTransport: opts?.companionTransport,
+          const response = await meshcoreAbortablePromise(
+            runMeshcoreRoomLogin(conn, pubKey, password, {
+              hopsAway: opts?.hopsAway,
+              companionTransport: opts?.companionTransport,
+              signal,
+            }),
             signal,
-          });
+          );
           throwIfRoomLoginAborted(signal);
-          const permByte = parseLoginResponsePermissions(response);
-          const role =
-            permByte != null
-              ? roleFromPermissionsByte(permByte)
-              : roleFromPasswordHint(password, adminPassword, guestPassword);
+          const role = resolveMeshcoreRoomLoginRole(
+            response,
+            password,
+            adminPassword,
+            guestPassword,
+          );
           const lastPostMs = getMeshcoreRoomLastPostAt(nodeId);
           meshcoreApplyRoomSession(nodeId, {
             guestPassword,
@@ -308,7 +422,7 @@ export async function meshcoreRoomLogin(
               `[meshcoreRoomSession] room login attempt ${attempt}/${MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS} failed ${errMsg}`,
             );
             throwIfRoomLoginAborted(signal);
-            await sleepMs(MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS);
+            await meshcoreAbortablePromise(sleepMs(MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS), signal);
           } else {
             console.warn('[meshcoreRoomSession] room login failed ' + errMsg);
           }
@@ -368,20 +482,30 @@ export async function meshcoreRoomTryRelogin(
 ): Promise<boolean> {
   const session = sessions.get(nodeId);
   if (!session) return false;
-  const password =
-    mode === 'admin' && session.adminPassword.length > 0
-      ? session.adminPassword
-      : session.guestPassword;
-  return meshcoreRoomLogin(conn, nodeId, pubKey, password, {
-    adminPassword: session.adminPassword,
-    guestPassword: session.guestPassword,
-    hopsAway: opts?.hopsAway,
-    companionTransport: opts?.companionTransport,
-    forceRelogin: true,
-  }).then(
-    () => true,
-    () => false,
-  );
+  // Admin mode must use the ops/session admin password — never fall back to guest.
+  // A guest-only "success" would skip meshcoreRoomTryAdminLogin and block CLI.
+  const adminPassword =
+    mode === 'admin'
+      ? resolveRoomAdminPassword(nodeId, session.adminPassword)
+      : session.adminPassword;
+  const password = mode === 'admin' ? adminPassword : session.guestPassword;
+  // Admin must have a non-empty password. Blank guest is a valid read-only / RW
+  // recovery SendLogin after reconnect (explicit remembered empty guest).
+  if (mode === 'admin' && !password.trim()) return false;
+  try {
+    await meshcoreRoomLogin(conn, nodeId, pubKey, password, {
+      adminPassword: adminPassword || session.adminPassword,
+      guestPassword: session.guestPassword,
+      hopsAway: opts?.hopsAway,
+      companionTransport: opts?.companionTransport,
+      forceRelogin: true,
+    });
+  } catch (e: unknown) {
+    if (meshcoreIsRoomLoginAbortError(e)) throw e;
+    return false;
+  }
+  const roleOk = mode === 'admin' ? meshcoreRoomCanAdmin(nodeId) : meshcoreRoomCanPost(nodeId);
+  return roleOk;
 }
 
 export function meshcoreRoomEnsureLoggedIn(nodeId: number, mode: 'post' | 'admin'): boolean {
@@ -390,23 +514,29 @@ export function meshcoreRoomEnsureLoggedIn(nodeId: number, mode: 'post' | 'admin
   return meshcoreRoomCanPost(nodeId);
 }
 
-/** Best-effort admin login before room server status/telemetry/CLI (uses session admin password). */
+/** Best-effort admin login before room server status/telemetry/CLI. */
 export async function meshcoreRoomTryAdminLogin(
   conn: MeshcoreRoomLoginConn,
   nodeId: number,
   pubKey: Uint8Array,
+  opts?: {
+    hopsAway?: number;
+    companionTransport?: MeshcoreCompanionTransport;
+  },
 ): Promise<void> {
   const session = sessions.get(nodeId);
-  if (!session) return;
-  const password = session.adminPassword.trim() || session.guestPassword.trim();
+  const adminPassword = resolveRoomAdminPassword(nodeId, session?.adminPassword);
+  const guestPassword = session?.guestPassword.trim() ?? '';
+  const password = adminPassword || guestPassword;
   if (!password) return;
   await meshcoreRoomLogin(conn, nodeId, pubKey, password, {
-    adminPassword: session.adminPassword,
-    guestPassword: session.guestPassword,
+    adminPassword: adminPassword || session?.adminPassword || '',
+    guestPassword: guestPassword || session?.guestPassword || '',
+    forceRelogin: session != null && session.role !== 'admin',
+    hopsAway: opts?.hopsAway,
+    companionTransport: opts?.companionTransport,
   });
 }
-
-import type { MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
 
 /** Repeater admin login or room server admin login depending on contact type. */
 export type MeshcoreRemoteServerLoginConn = MeshcoreRepeaterLoginConn;
@@ -419,6 +549,10 @@ export async function meshcoreTryRemoteServerLogin(
   runSerialized?: MeshcoreRepeaterRunSerialized,
 ): Promise<void> {
   if (hwModel === 'Room') {
+    // Status/Neighbors do not require login. Telemetry may try a best-effort admin login when
+    // there is no BBS session yet. Do not forceRelogin over an existing guest/readwrite session —
+    // that often times out on firmwares that omit LoginFail (CLI uses ACL SendLogin separately).
+    if (meshcoreIsRoomLoggedIn(nodeId)) return;
     await meshcoreRoomTryAdminLogin(conn, nodeId, pubKey);
     return;
   }

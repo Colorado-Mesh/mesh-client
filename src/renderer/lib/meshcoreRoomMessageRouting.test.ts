@@ -33,6 +33,16 @@ describe('shouldStripRoomPostAuthorPrefix', () => {
     const wire = `${authorPrefix}Test from og app`;
     expect(shouldStripRoomPostAuthorPrefix(wire, MESHCORE_TXT_TYPE_PLAIN, false)).toBe(false);
   });
+  it('does not treat emoji tapback bodies as SignedPlain binary prefixes', () => {
+    const tapback = '@[🛜 NV0N 01] 👋';
+    expect(looksLikeSignedPlainWirePrefix(tapback)).toBe(false);
+    expect(shouldStripRoomPostAuthorPrefix(tapback, MESHCORE_TXT_TYPE_PLAIN, true)).toBe(false);
+    const parsed = meshcoreRoomPostBodyFromWire(tapback, MESHCORE_TXT_TYPE_PLAIN, new Map(), {
+      isKnownRoomNode: true,
+    });
+    expect(parsed.payload).toBe(tapback);
+    expect(parsed.authorId).toBe(0);
+  });
 });
 
 describe('meshcoreRoomPostBodyFromWire', () => {

@@ -1,3 +1,4 @@
+import { useRelayCoverageStore } from '@/renderer/lib/relayCoverage/relayCoverageStore';
 import { releaseReticulumBleRnodeConnect } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
 import { stopReticulumVoiceMedia } from '@/renderer/lib/reticulumVoiceSession';
 import { useReticulumDiscoveryMapStore } from '@/renderer/stores/reticulumDiscoveryMapStore';
@@ -20,6 +21,12 @@ export function clearReticulumSessionStores(): void {
   useRnshSessionStore.getState().clearAll();
   useRncpTransferStore.getState().clearAll();
   useReticulumGamesStore.getState().clear();
+  const coverage = useRelayCoverageStore.getState().coverage;
+  const next: typeof coverage = {};
+  for (const [k, v] of Object.entries(coverage)) {
+    if (v.protocol !== 'reticulum') next[k] = v;
+  }
+  useRelayCoverageStore.setState({ coverage: next });
   const voiceState = useReticulumVoiceStore.getState();
   if (isReticulumVoiceSessionBusy(voiceState.activeCall ?? voiceState.incomingCall)) {
     // Best-effort sidecar hangup before local clear (stack may already be dead).

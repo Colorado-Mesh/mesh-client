@@ -8,6 +8,7 @@ import {
   type ReticulumVia,
 } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import type { MessageRecord, MessageTransport } from '@/renderer/stores/messageStore';
+import { RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION } from '@/shared/reticulum-voice-memo-types';
 import { isPnCascadeDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 export interface ReticulumMessageStatusBadgeProps {
@@ -21,6 +22,13 @@ type OutboundStatus = ReticulumMessageStatusBadgeProps['status'];
 
 /** House mark for local-prop (own PN) offline storage — not a peer-delivery check. */
 const LOCAL_PN_HOUSE_ICON = '\u{1F3E0}';
+/** Info mark — Direct-only / too large for PN (notice, not a send failure). */
+const DIRECT_ONLY_NOTICE_ICON = '\u2139';
+
+/** Sidecar code when packed size exceeds PN deposit; UI must not look like a PN outage. */
+export function isReticulumTooLargeForPropagationError(error: string | undefined): boolean {
+  return error === RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION;
+}
 
 function tooltipKeyForVia(via: ReticulumVia | undefined): string {
   switch (via) {
@@ -40,7 +48,12 @@ function tooltipKeyForVia(via: ReticulumVia | undefined): string {
 function statusIcon(
   status: OutboundStatus,
   deliveryMethod: MessageRecord['reticulumDeliveryMethod'] | undefined,
+  error: string | undefined,
 ): string {
+  // Notice-only: Direct already tried; offline PN store impossible — not a generic ✗ failure.
+  if (isReticulumTooLargeForPropagationError(error)) {
+    return DIRECT_ONLY_NOTICE_ICON;
+  }
   // Local-prop cascade last resort: show house instead of green check / red X.
   if (deliveryMethod === 'stored_locally' && status !== 'failed') {
     return LOCAL_PN_HOUSE_ICON;
@@ -58,7 +71,11 @@ function statusIcon(
 function statusColorClass(
   status: OutboundStatus,
   deliveryMethod: MessageRecord['reticulumDeliveryMethod'] | undefined,
+  error?: string,
 ): string {
+  if (isReticulumTooLargeForPropagationError(error)) {
+    return 'text-amber-400';
+  }
   if (deliveryMethod === 'stored_locally' && status !== 'failed') {
     return 'text-amber-400';
   }
@@ -78,6 +95,9 @@ function statusLabelText(
   deliveryMethod: MessageRecord['reticulumDeliveryMethod'] | undefined,
   error: string | undefined,
 ): string {
+  if (isReticulumTooLargeForPropagationError(error)) {
+    return t('chatPanel.voiceMemo.directOnlyBadge');
+  }
   switch (status) {
     case 'sending':
       if (deliveryMethod === 'stored_locally') {
@@ -140,14 +160,17 @@ export function ReticulumMessageStatusBadge({
       : viasLabel;
   const statusLabel = statusLabelText(t, status, deliveryMethod, error);
   const viaPrefix = viaPrefixText(t, deliveryMethod, atoms, viasLabel);
-  // Completed paper: paper-only prefix. Failed/sending paper keep status suffix (incl. error text).
-  const tooltip =
-    deliveryMethod === 'paper' && status === 'acked' ? viaPrefix : `${viaPrefix}: ${statusLabel}`;
+  // Completed paper: paper-only prefix. Direct-only oversize: full notice (not "PN: failed").
+  const tooltip = isReticulumTooLargeForPropagationError(error)
+    ? t('chatPanel.voiceMemo.tooLargeForPropagation')
+    : deliveryMethod === 'paper' && status === 'acked'
+      ? viaPrefix
+      : `${viaPrefix}: ${statusLabel}`;
   return (
     <DeliveryStatusBadgeFrame
       label={label}
-      icon={statusIcon(status, deliveryMethod)}
-      colorClass={statusColorClass(status, deliveryMethod)}
+      icon={statusIcon(status, deliveryMethod, error)}
+      colorClass={statusColorClass(status, deliveryMethod, error)}
       tooltip={tooltip}
     />
   );

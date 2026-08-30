@@ -92,25 +92,25 @@ modules:
         path: .
       - flatpak/generated-sources.json
       - type: archive
-        url: https://github.com/pnpm/pnpm/releases/download/v11.21.0/pnpm-linux-x64.tar.gz
-        sha256: aadc489ce4473c2af0fec06a5c19e113b5793d404eac49853c8153bf4b0d8263
+        url: https://github.com/pnpm/pnpm/releases/download/v11.22.0/pnpm-linux-x64.tar.gz
+        sha256: 4c592fa410eb23b69691a9efb9bf21c87c15b3e9d88c6ec8acdd354a0eb8de71
         dest: pnpm-vendor
         # pnpm tarball has root-level `pnpm` + `dist/`; default strip-components:1 drops the binary.
         strip-components: 0
         only-arches: [x86_64]
       - type: archive
-        url: https://github.com/pnpm/pnpm/releases/download/v11.21.0/pnpm-linux-arm64.tar.gz
-        sha256: 64eb219b008f7a4c176d81fbce919c20b0b7e093e815cbb669d46e681451f43b
+        url: https://github.com/pnpm/pnpm/releases/download/v11.22.0/pnpm-linux-arm64.tar.gz
+        sha256: f1426231f365bdfd46c15fa3d1211c3936ee2c4e557afd304f6c66dbf1b2a8bf
         dest: pnpm-vendor
         strip-components: 0
         only-arches: [aarch64]
       - type: archive
-        url: https://github.com/electron/electron/releases/download/v41.10.5/electron-v41.10.5-linux-x64.zip
-        sha256: 87834dc7d02557c325d190743b158fa93ed76abb4f61ddb3c041db21875f1bbc
+        url: https://github.com/electron/electron/releases/download/v41.10.7/electron-v41.10.7-linux-x64.zip
+        sha256: 21bf93906685c77f350f618d034f33202f0764aabbfc204e6b724f82196537f9
         dest: electron-prebuilt
         only-arches: [x86_64]
       - type: archive
-        url: https://github.com/electron/electron/releases/download/v41.10.5/electron-v41.10.5-linux-arm64.zip
-        sha256: 427886215b33aebde0416da85b0b3397f6d1bd6fde72b8d1b69444f686133f0f
+        url: https://github.com/electron/electron/releases/download/v41.10.7/electron-v41.10.7-linux-arm64.zip
+        sha256: b2b6528212e1e832889ea1493050ff5be04525cc2b8cb10161dfce83dd502c1f
         dest: electron-prebuilt
         only-arches: [aarch64]

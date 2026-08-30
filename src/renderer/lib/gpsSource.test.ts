@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import * as appSettingsStorage from './appSettingsStorage';
 import {
   GPS_SETTINGS_STORAGE_KEY,
   hasStoredStaticGps,
@@ -34,6 +35,7 @@ describe('readStoredStaticGps', () => {
 describe('readGpsRefreshIntervalSecs / persistStoredStaticGps', () => {
   afterEach(() => {
     localStorage.removeItem(GPS_SETTINGS_STORAGE_KEY);
+    vi.restoreAllMocks();
   });
 
   it('returns 0 when refreshInterval is missing or non-positive', () => {
@@ -47,6 +49,12 @@ describe('readGpsRefreshIntervalSecs / persistStoredStaticGps', () => {
   it('returns a positive refresh interval when configured', () => {
     localStorage.setItem(GPS_SETTINGS_STORAGE_KEY, JSON.stringify({ refreshInterval: 30 }));
     expect(readGpsRefreshIntervalSecs()).toBe(30);
+  });
+
+  it('returns 0 refresh interval when shareMyLocation is disabled', () => {
+    localStorage.setItem(GPS_SETTINGS_STORAGE_KEY, JSON.stringify({ refreshInterval: 900 }));
+    vi.spyOn(appSettingsStorage, 'isShareMyLocationEnabled').mockReturnValue(false);
+    expect(readGpsRefreshIntervalSecs()).toBe(0);
   });
 
   it('persists static coords while preserving refreshInterval', () => {
@@ -86,6 +94,11 @@ describe('shouldPreserveStaticGpsForSelfNode', () => {
 });
 
 describe('resolveOurPosition', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   it('includes altitudeMeters on device branch when finite', async () => {
     const p = await resolveOurPosition(40.1, -105.1, undefined, undefined, 1600);
     expect(p).toEqual({
@@ -115,5 +128,20 @@ describe('resolveOurPosition', () => {
   it('uses static when device coords are omitted', async () => {
     const p = await resolveOurPosition(undefined, undefined, 39.7392, -104.9903);
     expect(p).toEqual({ lat: 39.7392, lon: -104.9903, source: 'static' });
+  });
+
+  it('skips host GPS lookups when shareMyLocation is disabled', async () => {
+    vi.spyOn(appSettingsStorage, 'isShareMyLocationEnabled').mockReturnValue(false);
+    const getGpsFix = vi.fn();
+    vi.stubGlobal('window', {
+      electronAPI: { getGpsFix },
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const p = await resolveOurPosition(undefined, undefined, undefined, undefined);
+    expect(p).toBeNull();
+    expect(getGpsFix).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

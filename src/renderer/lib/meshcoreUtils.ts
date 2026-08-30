@@ -562,25 +562,30 @@ export function meshcoreInferHopsFromOutPath(contact: {
 }
 
 /**
- * Hop count for room login timeout scaling when UI `hops_away` is 0/unknown but a route exists.
- * Failure point: firmware reports direct (0 hops) while `outPath` still holds multi-hop bytes.
+ * Hop count for room login path/timeout decisions.
+ * Prefer route bytes when UI reports 0 but `outPath` still holds multi-hop path.
+ * Do not trust sticky UI `hops_away > 0` alone with an empty path — that blocks 0-hop
+ * SendLogin (noRoute) for rooms that are actually direct (contact merge keeps old hops).
  */
 export function resolveMeshcoreRoomLoginHopsAway(
   node: Pick<MeshNode, 'hops_away'> | undefined,
   outPathBytes?: Uint8Array,
 ): number {
   const hops = node?.hops_away;
-  if (typeof hops === 'number' && Number.isFinite(hops) && hops > 0) {
+  const inferred =
+    outPathBytes && outPathBytes.length > 0
+      ? meshcoreInferHopsFromOutPath({ outPath: outPathBytes, outPathLen: -1 })
+      : undefined;
+  const hasMultiHopPath = inferred != null && inferred > 0;
+  if (typeof hops === 'number' && Number.isFinite(hops) && hops > 0 && hasMultiHopPath) {
     return Math.trunc(hops);
   }
-  if (outPathBytes && outPathBytes.length > 0) {
-    const inferred = meshcoreInferHopsFromOutPath({ outPath: outPathBytes, outPathLen: -1 });
-    if (inferred != null && inferred > 0) {
-      return inferred;
-    }
-    if (outPathBytes.length > 1) {
-      return Math.max(1, outPathBytes.length - 1);
-    }
+  if (inferred != null && inferred > 0) {
+    return inferred;
+  }
+  // Sticky multi-hop with no (trimmed) route bytes → treat as direct for login.
+  if (typeof hops === 'number' && Number.isFinite(hops) && hops >= 0 && !hasMultiHopPath) {
+    return 0;
   }
   if (typeof hops === 'number' && Number.isFinite(hops) && hops >= 0) {
     return Math.trunc(hops);
@@ -610,6 +615,61 @@ export function meshcoreMergeContactHopsAwayFromPrevious(
     return prev;
   }
   return inferred;
+}
+
+export interface MeshcoreMergeContactAdvNameOpts {
+  prevLastHeard?: number;
+  radioLastAdvert?: number;
+}
+
+/**
+ * Advert name to merge against a `getContacts` dump. UI `long_name` is often the nickname overlay,
+ * so prefer a real previous advert name and fall back to the stored SQLite/live advert name.
+ */
+export function meshcorePreviousAdvertNameForRebuild(
+  prevLongName: string | undefined,
+  nickname: string | undefined,
+  storedAdvertName: string | undefined,
+  nodeId: number,
+): string | undefined {
+  const prev = (prevLongName ?? '').trim();
+  const nick = (nickname ?? '').trim();
+  const stored = (storedAdvertName ?? '').trim();
+  const prevIsNick = nick.length > 0 && prev === nick;
+  if (prev && !prevIsNick && !meshcoreIsPlaceholderNodeLongName(prev, nodeId)) {
+    return prev;
+  }
+  if (stored && !meshcoreIsPlaceholderNodeLongName(stored, nodeId)) {
+    return stored;
+  }
+  return undefined;
+}
+
+/**
+ * When rebuilding from `getContacts`, companion firmware often keeps the name from when the
+ * contact was first stored and may bump `lastAdvert` without renaming. Prefer a live advert
+ * name already in the UI whenever both names are real and differ; on-air adverts / local
+ * setAdvertName are the authoritative rename paths (`opts` kept for call-site compat).
+ */
+export function meshcoreMergeContactAdvNameFromPrevious(
+  radioAdvName: string | undefined,
+  prevLongName: string | undefined,
+  nodeId: number,
+  _opts?: MeshcoreMergeContactAdvNameOpts,
+): string {
+  void _opts;
+  const radioTrim = (radioAdvName ?? '').trim();
+  const prevTrim = (prevLongName ?? '').trim();
+  const radioReal = radioTrim.length > 0 && !meshcoreIsPlaceholderNodeLongName(radioTrim, nodeId);
+  const prevReal = prevTrim.length > 0 && !meshcoreIsPlaceholderNodeLongName(prevTrim, nodeId);
+  const hexFallback = `Node-${nodeId.toString(16).toUpperCase()}`;
+
+  if (!radioReal && prevReal) return prevTrim;
+  if (!prevReal) return radioTrim || prevTrim || hexFallback;
+  if (radioTrim === prevTrim) return radioTrim;
+  // Companion dump disagrees with a real live/previous name — keep the live name. lastAdvert
+  // is not a reliable name version (path hears often bump time without updating advName).
+  return prevTrim;
 }
 
 /** Result of mapping a heard RF advert (push 0x80) into UI + DB when the node is not yet a contact. */

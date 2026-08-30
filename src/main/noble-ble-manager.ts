@@ -3,6 +3,10 @@ import { EventEmitter } from 'events';
 import { attMtuOrDefault, maxWriteRequestPayloadBytes } from '../shared/bleAttWriteLimit';
 import { withTimeout } from '../shared/withTimeout';
 import { bleCoexistenceCoordinator, type BlePeripheralOwner } from './ble-coexistence-coordinator';
+import {
+  loadDarwinBluetoothNameAddressMap,
+  resolveDarwinScanAddress,
+} from './darwinBluetoothNameAddressMap';
 import { logDeviceConnection, sanitizeLogMessage } from './log-service';
 
 interface NobleAdvertisement {
@@ -165,6 +169,13 @@ function meshcorePickBestChar(
   return candidates.reduce((best, c) => (score(c) > score(best) ? c : best), candidates[0]);
 }
 
+function isMeshcoreMissingServicesDiscoveryError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /could not find all requested services|failed to find required ble characteristics/i.test(
+    message,
+  );
+}
+
 function formatBleDisconnectReason(reason: unknown): string {
   if (reason instanceof Error) return reason.message;
   if (reason == null) return 'none';
@@ -183,9 +194,30 @@ export interface NobleBleDevice {
   deviceName: string;
   /** Advertised / last-seen BLE RSSI in dBm; null when unknown. */
   rssi: number | null;
+  /**
+   * Hardware BLE MAC when the OS exposes one (Noble `peripheral.address`, or on
+   * macOS a unique GAP-name lookup from system_profiler when CoreBluetooth omits the MAC).
+   */
+  address?: string | null;
 }
 
 import type { MeshProtocol } from '../shared/meshProtocol';
+
+function noblePeripheralAddress(address: string | undefined): string | undefined {
+  const trimmed = address?.trim();
+  if (!trimmed || trimmed.toLowerCase() === 'unknown') return undefined;
+  return trimmed;
+}
+
+function toNobleDiscoveredDevice(
+  deviceId: string,
+  deviceName: string,
+  rssi: number | null,
+  address?: string,
+): NobleBleDevice {
+  const mac = noblePeripheralAddress(address);
+  return mac ? { deviceId, deviceName, rssi, address: mac } : { deviceId, deviceName, rssi };
+}
 
 export type NobleSessionId = MeshProtocol;
 
@@ -277,6 +309,11 @@ export class NobleBleManager extends EventEmitter {
   private scanStartInFlight: Promise<void> | null = null;
   private lastAdapterState = noble?.state ?? 'unknown';
   private releaseHandlesCallCount = 0;
+  /**
+   * macOS: unique GAP name → sticker MAC from system_profiler (Noble `peripheral.address` is
+   * empty — CoreBluetoothCache is no longer in the readable Bluetooth plist).
+   */
+  private darwinNameToMac = new Map<string, string>();
 
   constructor() {
     super();
@@ -322,14 +359,9 @@ export class NobleBleManager extends EventEmitter {
         }
       }
       const id: string = peripheral.id;
-      const name: string = peripheral.advertisement?.localName || peripheral.address || id;
-      const rssi =
-        typeof peripheral.rssi === 'number' && Number.isFinite(peripheral.rssi)
-          ? peripheral.rssi
-          : null;
       this.knownPeripherals.set(id, peripheral);
       // Re-emit on rediscover so Connection pickers can refresh RSSI (not first-seen only).
-      this.emit('deviceDiscovered', { deviceId: id, deviceName: name, rssi });
+      this.emit('deviceDiscovered', this.toDiscoveredDevice(peripheral));
     });
   }
 
@@ -365,6 +397,45 @@ export class NobleBleManager extends EventEmitter {
       sessionEstablishedAtMs: null,
       lastConnectedPeripheralId: null,
     };
+  }
+
+  /**
+   * macOS: load unique Bluetooth GAP name → MAC from system_profiler before scanning.
+   * Noble's `peripheral.address` is empty because CoreBluetoothCache is no longer in the
+   * readable Bluetooth plist. Duplicate names are omitted (ambiguous).
+   * OS-specific: darwin only — linux/win32 already get MACs from Noble.
+   */
+  private async refreshDarwinNameAddressMap(): Promise<void> {
+    if (process.platform !== 'darwin') return;
+    try {
+      this.darwinNameToMac = await loadDarwinBluetoothNameAddressMap();
+      console.debug(
+        `[NobleBleManager] darwin Bluetooth name→MAC map: ${this.darwinNameToMac.size} unique names`,
+      );
+    } catch (error) {
+      console.debug(
+        `[NobleBleManager] darwin Bluetooth name→MAC map unavailable: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /** Noble MAC when present (linux/win32); else unique GAP-name lookup from system_profiler. */
+  private resolvePeripheralMac(peripheral: NoblePeripheral): string | undefined {
+    return resolveDarwinScanAddress(
+      peripheral.address,
+      peripheral.advertisement?.localName,
+      this.darwinNameToMac,
+    );
+  }
+
+  private toDiscoveredDevice(peripheral: NoblePeripheral): NobleBleDevice {
+    const id = peripheral.id;
+    const name = peripheral.advertisement?.localName || peripheral.address || id;
+    const rssi =
+      typeof peripheral.rssi === 'number' && Number.isFinite(peripheral.rssi)
+        ? peripheral.rssi
+        : null;
+    return toNobleDiscoveredDevice(id, name, rssi, this.resolvePeripheralMac(peripheral));
   }
 
   private stopLinkRssiPolling(session: NobleBleSession): void {
@@ -760,6 +831,9 @@ export class NobleBleManager extends EventEmitter {
 
   async startScanning(sessionId: NobleSessionId): Promise<void> {
     await bleCoexistenceCoordinator.acquireScan('noble');
+    // Load darwin GAP name→MAC before adding scan requesters so a concurrent stateChange
+    // doStartScanning cannot emit picker rows before the map is ready.
+    await this.refreshDarwinNameAddressMap();
     // Clear known peripherals so every device is re-emitted as discovered on each new scan.
     // Without this, devices found in a previous scan are never re-emitted (isNew = false),
     // so the picker stays empty on second and subsequent scan attempts.
@@ -772,12 +846,7 @@ export class NobleBleManager extends EventEmitter {
     this.knownPeripherals.clear();
     for (const [id, peripheral] of stillConnected) {
       this.knownPeripherals.set(id, peripheral);
-      const name: string = peripheral.advertisement?.localName || peripheral.address || id;
-      const rssi =
-        typeof peripheral.rssi === 'number' && Number.isFinite(peripheral.rssi)
-          ? peripheral.rssi
-          : null;
-      this.emit('deviceDiscovered', { deviceId: id, deviceName: name, rssi });
+      this.emit('deviceDiscovered', this.toDiscoveredDevice(peripheral));
     }
     this.scanRequesters.add(sessionId);
     if (!this.adapterReady) {
@@ -1023,6 +1092,9 @@ export class NobleBleManager extends EventEmitter {
    * Last-chance teardown for app exit. Must call noble._bindings.stop() to release the native
    * BLEManager (CFRelease), which frees the CBCentralManager and its CBqueue GCD dispatch queue.
    * Without this, the active GCD thread keeps the macOS process alive indefinitely.
+   *
+   * These native lifetime hazards are cited in https://github.com/stoprocent/noble/issues/140
+   * (multi-day sessions abort the main process); the day-4 restart nudge is the mitigation.
    */
   releaseNobleProcessHandles(): void {
     this.releaseHandlesCallCount += 1; // Mark all sessions closing FIRST so any in-flight readAsync loop exits without issuing
@@ -1144,7 +1216,15 @@ export class NobleBleManager extends EventEmitter {
     this.connectQueue = new Promise<void>((r) => {
       releaseQueue = r;
     });
-    await withTimeout(prevQueue, BLE_CONNECT_QUEUE_WAIT_MS, 'BLE connect queue wait');
+    try {
+      await withTimeout(prevQueue, BLE_CONNECT_QUEUE_WAIT_MS, 'BLE connect queue wait');
+    } catch (err) {
+      // The queue slot installed above is released only by the finally below, which this
+      // throw skips. Release it here or every later connect() awaits a promise that can
+      // never settle, wedging BLE connect for the rest of the process lifetime.
+      releaseQueue();
+      throw err;
+    }
 
     const session = this.getSession(sessionId);
     let peripheral: NoblePeripheral | null = null;
@@ -1191,14 +1271,10 @@ export class NobleBleManager extends EventEmitter {
           ? peripheral.rssi
           : null;
       console.debug(
-        `[BLE:${sessionId}] peripheral info — address=${peripheral.address ?? 'unknown'} addressType=${peripheral.addressType ?? 'unknown'} rssi=${connectRssi ?? 'unknown'} state=${peripheral.state} platform=${process.platform}`,
+        `[BLE:${sessionId}] peripheral info — address=${peripheral.address ?? 'unknown'} resolvedMac=${this.resolvePeripheralMac(peripheral) ?? 'none'} addressType=${peripheral.addressType ?? 'unknown'} rssi=${connectRssi ?? 'unknown'} state=${peripheral.state} platform=${process.platform}`,
       );
       // Refresh picker / connecting banner with connect-time RSSI (scan may have been empty).
-      this.emit('deviceDiscovered', {
-        deviceId: peripheralId,
-        deviceName: peripheral.advertisement?.localName || peripheral.address || peripheralId,
-        rssi: connectRssi,
-      });
+      this.emit('deviceDiscovered', this.toDiscoveredDevice(peripheral));
       bleCoexistenceCoordinator.assertCanConnect(
         peripheralOwner,
         peripheral.address ?? peripheralId,
@@ -1377,15 +1453,35 @@ export class NobleBleManager extends EventEmitter {
         );
         characteristics = all.characteristics;
       } else {
-        const discovered = await withTimeout<NobleDiscoveryResult>(
-          peripheral.discoverSomeServicesAndCharacteristicsAsync(
-            discoverServiceUuids,
-            discoverCharUuids,
-          ),
-          BLE_DISCOVERY_TIMEOUT_MS,
-          'BLE characteristic discovery',
-        );
-        characteristics = discovered.characteristics;
+        try {
+          const discovered = await withTimeout<NobleDiscoveryResult>(
+            peripheral.discoverSomeServicesAndCharacteristicsAsync(
+              discoverServiceUuids,
+              discoverCharUuids,
+            ),
+            BLE_DISCOVERY_TIMEOUT_MS,
+            'BLE characteristic discovery',
+          );
+          characteristics = discovered.characteristics;
+        } catch (err) {
+          const shouldRetryFullDiscovery =
+            isMeshcore && !IS_WIN32 && isMeshcoreMissingServicesDiscoveryError(err);
+          if (!shouldRetryFullDiscovery) {
+            throw err;
+          }
+          console.debug(
+            `[BLE:${sessionId}] targeted characteristic discovery failed for MeshCore; retrying once with full discovery`,
+          );
+          const discoveredAll = await withTimeout<NobleDiscoveryResult>(
+            peripheral.discoverAllServicesAndCharacteristicsAsync(),
+            BLE_DISCOVERY_TIMEOUT_MS,
+            'BLE full GATT discovery (meshcore fallback)',
+          );
+          characteristics = discoveredAll.characteristics;
+          console.debug(
+            `[BLE:${sessionId}] fallback full discovery succeeded for MeshCore after targeted discovery failure`,
+          );
+        }
       }
       if (isMeshcore) {
         const rxCandidates: NobleCharacteristic[] = [];

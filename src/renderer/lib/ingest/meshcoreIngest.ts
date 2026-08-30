@@ -20,7 +20,10 @@ import {
   persistMeshcoreNodeInfoAfterAdvert,
   persistMeshcorePathUpdatedNewContact,
 } from '../meshcore/meshcoreLiveContactPersist';
-import { registerMeshcorePubKey } from '../meshcore/meshcorePubKeyRegistry';
+import {
+  registerMeshcorePubKey,
+  seedMeshcoreFourBytePrefixLookupMap,
+} from '../meshcore/meshcorePubKeyRegistry';
 import {
   buildMeshcoreRoomIncomingMessage,
   parseMeshcoreChannelIncomingFromThread,
@@ -102,14 +105,25 @@ function listChatMessages(identityId: IdentityId): ChatMessage[] {
 
 function buildPrefixToNodeIdMap(identityId: IdentityId): Map<string, number> {
   const map = new Map<string, number>();
+  seedMeshcoreFourBytePrefixLookupMap(map);
   const nodes = useNodeStore.getState().nodes[identityId] ?? {};
   for (const node of Object.values(nodes)) {
-    if (node.publicKey instanceof Uint8Array && node.publicKey.length >= 4) {
-      const prefix = Array.from(node.publicKey.slice(0, 4))
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
-      map.set(prefix, node.nodeId);
+    let key: Uint8Array | undefined =
+      node.publicKey instanceof Uint8Array && node.publicKey.length >= 4
+        ? node.publicKey
+        : undefined;
+    if (!key && typeof node.publicKeyHex === 'string') {
+      const hex = node.publicKeyHex.replace(/\s/g, '').toLowerCase();
+      if (/^[0-9a-f]{8,}$/.test(hex)) {
+        const pairs = hex.slice(0, 8).match(/.{2}/g);
+        if (pairs) key = new Uint8Array(pairs.map((b) => parseInt(b, 16)));
+      }
     }
+    if (!key || key.length < 4 || node.nodeId === 0) continue;
+    const prefix = Array.from(key.slice(0, 4))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    if (!map.has(prefix)) map.set(prefix, node.nodeId);
   }
   return map;
 }
@@ -220,10 +234,11 @@ function handleTextMessage(
     const authorName =
       authorNode?.longName?.trim() ||
       (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
+    // Keep unresolved authors as sender_id 0 — never attribute them to self (myNodeNum).
     const merged = buildMeshcoreRoomIncomingMessage({
       rawText: payload,
       roomServerId,
-      authorId: authorId !== 0 ? authorId : myNodeNum || 0,
+      authorId,
       authorName,
       timestamp: wireTimestampMs,
       receivedVia: record.receivedVia ?? 'rf',

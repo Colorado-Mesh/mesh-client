@@ -73,11 +73,25 @@ mod rns {
     }
 
     pub fn load_identity_from_file(config_dir: &Path) -> Result<Identity, String> {
-        let path = identity_file_path(config_dir);
+        load_identity_from_path(&identity_file_path(config_dir))
+    }
+
+    /// Load a Reticulum identity from disk.
+    ///
+    /// Prefer raw 64-byte private keys (`Identity::to_file` / Python-compatible).
+    /// Upstream `Identity::from_file` tries msgpack first; random key material can
+    /// rarely deserialize as `IdentityPersisted` with an empty/short `private_key`
+    /// (`invalid private key length: expected 64, got 0`), which flakes sidecar
+    /// identity tests and can break stack start.
+    pub fn load_identity_from_path(path: &Path) -> Result<Identity, String> {
         if !path.exists() {
             return Err("identity file missing; re-import or generate identity".into());
         }
-        Identity::from_file(&path).map_err(|e| format!("load identity: {e}"))
+        let data = std::fs::read(path).map_err(|e| format!("load identity: {e}"))?;
+        if data.len() == 64 {
+            return Identity::from_private_key(&data).map_err(|e| format!("load identity: {e}"));
+        }
+        Identity::from_file(path).map_err(|e| format!("load identity: {e}"))
     }
 
     pub fn apply_unified_identity(
@@ -192,8 +206,8 @@ pub use rns::*;
 
 #[cfg(all(test, feature = "rns-stack"))]
 mod tests {
-    use super::rns::*;
     use super::*;
+    use rns_identity::identity::Identity;
     use std::fs;
 
     fn temp_dirs() -> (tempfile::TempDir, PathBuf, PathBuf) {
@@ -297,6 +311,36 @@ mod tests {
                 .expect("should reconcile");
         assert_ne!(updated.identity_hash, "deadbeef".repeat(4));
         assert_eq!(updated.identity_hash.len(), 32);
+    }
+
+    #[test]
+    fn load_identity_survives_msgpack_ambiguous_raw_keys() {
+        // Upstream Identity::from_file tries msgpack before raw 64-byte keys. This
+        // key is a real Identity::new() private key whose bytes also msgpack-parse
+        // as IdentityPersisted with a short private_key (len 2) — from_file fails
+        // with "expected 64, got 2"; our loader must still succeed.
+        const AMBIGUOUS_RAW_KEY_HEX: &str = concat!(
+            "9192285928323d5f44c0bd990f5b37ea33810e40a892759861e944d89d940fdba4",
+            "aa4abf6b1533f8335bdf23167be18ba1aa129f8992b0995d78ead5f8a0a04b",
+        );
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(IDENTITY_FILE_NAME);
+        let key = hex::decode(AMBIGUOUS_RAW_KEY_HEX).unwrap();
+        assert_eq!(key.len(), 64);
+        fs::write(&path, &key).unwrap();
+
+        let upstream_err = match Identity::from_file(&path) {
+            Ok(_) => panic!("expected upstream msgpack false-positive for fixture key"),
+            Err(e) => e.to_string(),
+        };
+        assert!(
+            upstream_err.contains("expected 64") || upstream_err.contains("invalid private key"),
+            "expected upstream msgpack false-positive, got: {upstream_err}"
+        );
+
+        let loaded = load_identity_from_path(&path).expect("raw-64 loader must accept key");
+        let expected = Identity::from_private_key(&key).unwrap();
+        assert_eq!(loaded.hash, expected.hash);
     }
 
     #[test]

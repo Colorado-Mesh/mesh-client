@@ -1,9 +1,27 @@
 // @vitest-environment node
 import type { IpcMain, IpcMainInvokeEvent } from 'electron';
-import { mkdtempSync, rmSync } from 'fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
-import { join } from 'path';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { join, resolve } from 'path';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { testUserDataDir } = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- vi.hoisted runs before ESM imports for electron mock
+  const fs = require('node:fs') as {
+    mkdtempSync: (prefix: string) => string;
+  };
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- see above
+  const os = require('node:os') as { tmpdir: () => string };
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- see above
+  const path = require('node:path') as { join: (...parts: string[]) => string };
+  return { testUserDataDir: fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-rns-db-')) };
+});
+
+vi.mock('electron', () => ({
+  app: {
+    getPath: () => testUserDataDir,
+  },
+}));
 
 vi.mock('../db-ipc-lifecycle', () => ({
   getDbForIpc: vi.fn(() => null),
@@ -19,11 +37,19 @@ vi.mock('../validate-ipc-sender', () => ({
 import { NodeSqliteDB } from '../db-compat';
 import { getDbForIpc } from '../db-ipc-lifecycle';
 import { runSchemaUpgrade } from '../db-schema-sync';
-import { registerReticulumDbIpcHandlers } from './reticulum-db-handlers';
+import { getReticulumAttachmentsDir } from '../reticulum-attachment-path';
+import {
+  BLOCKED_CONTACTS_IMPORT_MAX,
+  registerReticulumDbIpcHandlers,
+} from './reticulum-db-handlers';
 
 type IpcHandler = (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown;
 
 const getDbForIpcMock = vi.mocked(getDbForIpc);
+
+afterAll(() => {
+  rmSync(testUserDataDir, { recursive: true, force: true });
+});
 
 describe('reticulum-db-handlers validation', () => {
   const handlers = new Map<string, IpcHandler>();
@@ -58,6 +84,11 @@ describe('reticulum-db-handlers validation', () => {
     expect(handlers.has('db:listReticulumInboundPolicy')).toBe(true);
     expect(handlers.has('db:upsertReticulumInboundPolicy')).toBe(true);
     expect(handlers.has('db:deleteReticulumInboundPolicy')).toBe(true);
+    expect(handlers.has('db:getBlockedContacts')).toBe(true);
+    expect(handlers.has('db:blockContact')).toBe(true);
+    expect(handlers.has('db:unblockContact')).toBe(true);
+    expect(handlers.has('db:exportBlockedContacts')).toBe(true);
+    expect(handlers.has('db:importBlockedContacts')).toBe(true);
   });
 
   it('db:getReticulumMessages rejects oversized identityId', () => {
@@ -276,28 +307,72 @@ describe('reticulum destination / activity prune IPC', () => {
     expect(row.delivery_status).toBe('sending');
   });
 
-  it('saveReticulumMessage persists paper received_via and delivery_method', () => {
-    const identityId = 'id-rt-paper';
-    const messageHash = 'ef'.repeat(32);
+  it('saveReticulumMessage coalesces attachment_path onto an existing Completes row', () => {
+    const identityId = 'id-rt-attach-coalesce';
+    const messageHash = 'a1'.repeat(32);
     const save = handlers.get('db:saveReticulumMessage');
     save?.(event, {
       identity_id: identityId,
       sender_id: 'cc'.repeat(16),
       sender_name: 'Me',
-      payload: 'paper hello',
+      payload: '[voice:600]',
       timestamp: 1_700_000_000_000,
       message_hash: messageHash,
       delivery_status: 'delivered',
-      delivery_method: 'paper',
-      received_via: 'paper',
+    });
+    const attachmentPath = join(getReticulumAttachmentsDir(), 'voice-memo-out.ogg');
+    mkdirSync(getReticulumAttachmentsDir(), { recursive: true });
+    writeFileSync(attachmentPath, Buffer.from('OggS'));
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: 'cc'.repeat(16),
+      sender_name: 'Me',
+      payload: '[voice:600]',
+      timestamp: 1_700_000_000_000,
+      message_hash: messageHash,
+      delivery_status: 'sending',
+      attachment_path: attachmentPath,
     });
     const row = db!
       .prepareOnce(
-        'SELECT received_via, delivery_method FROM reticulum_messages WHERE identity_id = ? AND message_hash = ?',
+        'SELECT delivery_status, attachment_path FROM reticulum_messages WHERE identity_id = ? AND message_hash = ?',
       )
-      .get(identityId, messageHash) as { received_via: string; delivery_method: string };
-    expect(row.received_via).toBe('paper');
-    expect(row.delivery_method).toBe('paper');
+      .get(identityId, messageHash) as { delivery_status: string; attachment_path: string | null };
+    expect(row.delivery_status).toBe('delivered');
+    expect(row.attachment_path).toBe(resolve(attachmentPath));
+  });
+
+  it('saveReticulumMessage persists audio_mode and audio_duration_sec', () => {
+    const identityId = 'id-rt-audio-meta';
+    const messageHash = 'b2'.repeat(32);
+    const save = handlers.get('db:saveReticulumMessage');
+    const attachmentPath = join(getReticulumAttachmentsDir(), 'voice-memo-meta.ogg');
+    mkdirSync(getReticulumAttachmentsDir(), { recursive: true });
+    writeFileSync(attachmentPath, Buffer.from('OggS'));
+    save?.(event, {
+      identity_id: identityId,
+      sender_id: 'cc'.repeat(16),
+      sender_name: 'Me',
+      payload: '[voice:600]',
+      timestamp: 1_700_000_000_000,
+      message_hash: messageHash,
+      delivery_status: 'sending',
+      attachment_path: attachmentPath,
+      audio_mode: 16,
+      audio_duration_sec: 1.25,
+    });
+    const row = db!
+      .prepareOnce(
+        'SELECT attachment_path, audio_mode, audio_duration_sec FROM reticulum_messages WHERE identity_id = ? AND message_hash = ?',
+      )
+      .get(identityId, messageHash) as {
+      attachment_path: string | null;
+      audio_mode: number | null;
+      audio_duration_sec: number | null;
+    };
+    expect(row.attachment_path).toBe(resolve(attachmentPath));
+    expect(row.audio_mode).toBe(16);
+    expect(row.audio_duration_sec).toBe(1.25);
   });
 
   it('saveReticulumMessage replaces exact pending hash while still sending', () => {
@@ -847,5 +922,158 @@ describe('reticulum remote address book + inbound policy IPC', () => {
     expect(result.changes).toBe(1);
     const rows = handlers.get('db:listReticulumInboundPolicy')?.(event) as unknown[];
     expect(rows).toHaveLength(0);
+  });
+});
+
+describe('blocked contacts IPC', () => {
+  const handlers = new Map<string, IpcHandler>();
+  const event = {} as IpcMainInvokeEvent;
+  let dir: string | undefined;
+  let db: NodeSqliteDB | undefined;
+
+  beforeAll(() => {
+    registerReticulumDbIpcHandlers({
+      ipcMain: {
+        handle(channel: string, fn: IpcHandler) {
+          handlers.set(channel, fn);
+        },
+      } as unknown as IpcMain,
+    });
+  });
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-rns-blocked-'));
+    db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+    getDbForIpcMock.mockReturnValue(db);
+  });
+
+  afterEach(() => {
+    db?.close();
+    db = undefined;
+    if (dir) {
+      rmSync(dir, { recursive: true, force: true });
+      dir = undefined;
+    }
+    getDbForIpcMock.mockReturnValue(null);
+  });
+
+  const ID = 'identity-1';
+  const OTHER_ID = 'identity-2';
+  const HASH_1 = 'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+  const HASH_2 = 'b1b2c3d4e5f60718293a4b5c6d7e8f90';
+  const HASH_3 = 'c1b2c3d4e5f60718293a4b5c6d7e8f90';
+
+  const block = (hash: string, identityId = ID) =>
+    handlers.get('db:blockContact')?.(event, 'reticulum', identityId, hash);
+  const exportBlocked = (identityId = ID, protocol = 'reticulum') =>
+    handlers.get('db:exportBlockedContacts')?.(event, protocol, identityId) as string[];
+  const importBlocked = (hashes: unknown, identityId = ID, protocol = 'reticulum') =>
+    handlers.get('db:importBlockedContacts')?.(event, protocol, identityId, hashes) as {
+      imported: number;
+      skipped: number;
+    };
+
+  it('exports every stored hash after block', () => {
+    block(HASH_1);
+    block(HASH_2);
+    expect(exportBlocked().sort()).toEqual([HASH_1, HASH_2].sort());
+  });
+
+  it('unblock removes a hash from the export', () => {
+    block(HASH_1);
+    block(HASH_2);
+    handlers.get('db:unblockContact')?.(event, 'reticulum', ID, HASH_1);
+    expect(exportBlocked()).toEqual([HASH_2]);
+  });
+
+  it('exports an empty array when nothing is blocked', () => {
+    expect(exportBlocked()).toEqual([]);
+  });
+
+  it('imports a fresh set and makes rows readable via getBlockedContacts', () => {
+    expect(importBlocked([HASH_1, HASH_2, HASH_3])).toEqual({ imported: 3, skipped: 0 });
+    const rows = handlers.get('db:getBlockedContacts')?.(event, 'reticulum', ID) as {
+      blocked_hash: string;
+      created_at: number;
+    }[];
+    expect(rows.map((r) => r.blocked_hash).sort()).toEqual([HASH_1, HASH_2, HASH_3].sort());
+    expect(rows.every((r) => typeof r.created_at === 'number')).toBe(true);
+  });
+
+  it('re-importing the same set reports every entry as skipped', () => {
+    importBlocked([HASH_1, HASH_2]);
+    expect(importBlocked([HASH_1, HASH_2])).toEqual({ imported: 0, skipped: 2 });
+    expect(exportBlocked()).toHaveLength(2);
+  });
+
+  it('counts already-blocked hashes as skipped on a mixed import', () => {
+    block(HASH_1);
+    expect(importBlocked([HASH_1, HASH_2])).toEqual({ imported: 1, skipped: 1 });
+  });
+
+  it('skips malformed entries while importing the valid ones', () => {
+    expect(importBlocked([HASH_1, 'nope', '', 42, null, undefined, HASH_2])).toEqual({
+      imported: 2,
+      skipped: 5,
+    });
+    expect(exportBlocked().sort()).toEqual([HASH_1, HASH_2].sort());
+  });
+
+  it('collapses duplicates within one import payload', () => {
+    expect(importBlocked([HASH_1, HASH_1.toUpperCase(), HASH_1])).toEqual({
+      imported: 1,
+      skipped: 2,
+    });
+  });
+
+  it('normalizes case and separators to a single row', () => {
+    importBlocked(['A1:B2:C3:D4:E5:F6:07:18:29:3A:4B:5C:6D:7E:8F:90']);
+    expect(exportBlocked()).toEqual([HASH_1]);
+  });
+
+  it('scopes rows per identity', () => {
+    importBlocked([HASH_1], ID);
+    importBlocked([HASH_2], OTHER_ID);
+    expect(exportBlocked(ID)).toEqual([HASH_1]);
+    expect(exportBlocked(OTHER_ID)).toEqual([HASH_2]);
+  });
+
+  it('scopes rows per protocol', () => {
+    importBlocked([HASH_1], ID, 'reticulum');
+    expect(exportBlocked(ID, 'meshtastic')).toEqual([]);
+  });
+
+  it('returns no-op values for an invalid protocol', () => {
+    expect(importBlocked([HASH_1], ID, 'bogus')).toEqual({ imported: 0, skipped: 0 });
+    expect(exportBlocked(ID, 'bogus')).toEqual([]);
+  });
+
+  it('returns no-op values for an oversized identityId', () => {
+    expect(importBlocked([HASH_1], 'x'.repeat(200))).toEqual({ imported: 0, skipped: 0 });
+    expect(exportBlocked('x'.repeat(200))).toEqual([]);
+  });
+
+  it('returns a no-op when hashes is not an array', () => {
+    expect(importBlocked('not-an-array')).toEqual({ imported: 0, skipped: 0 });
+    expect(importBlocked(null)).toEqual({ imported: 0, skipped: 0 });
+  });
+
+  it('rejects an oversized import without inserting anything', () => {
+    const tooMany = Array.from({ length: BLOCKED_CONTACTS_IMPORT_MAX + 1 }, () => HASH_1);
+    expect(() => importBlocked(tooMany)).toThrow(/too many entries/);
+    expect(exportBlocked()).toEqual([]);
+  });
+
+  it('imports the maximum allowed number of entries', () => {
+    const atLimit = Array.from({ length: BLOCKED_CONTACTS_IMPORT_MAX }, (_, i) =>
+      (i + 1).toString(16).padStart(32, '0'),
+    );
+    expect(importBlocked(atLimit).imported).toBe(BLOCKED_CONTACTS_IMPORT_MAX);
+  });
+
+  it('imports an empty array as a no-op', () => {
+    expect(importBlocked([])).toEqual({ imported: 0, skipped: 0 });
   });
 });

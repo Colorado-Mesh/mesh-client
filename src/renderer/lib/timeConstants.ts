@@ -177,13 +177,15 @@ export const MESHCORE_STATS_POLL_MS = 30_000;
 
 /** Safety-net poll for queued waiting messages when event 131 may have been missed. */
 export const MESHCORE_WAITING_MESSAGES_POLL_MS = 5 * MS_PER_MINUTE;
+/** When silent-bulk circuit is open, stretch scheduled drain / poll intervals by this factor. */
+export const MESHCORE_WAITING_MESSAGES_CIRCUIT_OPEN_BACKOFF_FACTOR = 4;
 /** Max wait for manual Chat Sync now when a MsgWaiting backlog is confirmed. */
 export const MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS = 60_000;
 /** Fail-fast timeout for silent auto-drains (event 131, connect, poll). */
 export const MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS = 45 * MS_PER_SECOND;
 /** Consecutive silent-bulk getWaitingMessages timeouts before skipping bulk until reconnect. */
 export const MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP = 2;
-/** Shorter silent timeout on USB serial (single companion RPC lane). */
+/** Shorter silent bulk timeout on USB serial, BLE, and TCP/pyMC (single companion RPC lane). */
 export const MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS = 15 * MS_PER_SECOND;
 /** Per-item timeout for silent syncNextMessage incremental drain. */
 export const MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS = 12 * MS_PER_SECOND;
@@ -209,17 +211,29 @@ export const RF_SERIAL_OPEN_RETRY_DELAY_MS = 2_000;
 /** Minimum spacing between mesh TX operations used by room sync (login counts as TX). */
 export const MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS = 60_000;
 
+/** Poll while waiting for mesh TX spacing so Cancel can skip the remainder. */
+export const MESHCORE_ROOM_LOGIN_QUEUE_SKIP_POLL_MS = 50;
+
 /** Minimum auto-sync interval per room (minutes). */
 export const MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES = 60;
 
 /** Max wait for scheduler background route resolve (contacts only, no trace). */
 export const MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS = 15_000;
 
-/** Delay before one retry of getMetadata after configure (NodeDB flood can starve BLE). */
-export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS = 8_000;
+/** Optional post-connect self telemetry on TCP — altitude only; must not block MsgWaiting drain. */
+export const MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS = 15 * MS_PER_SECOND;
 
-/** BLE configure stall watchdog — force disconnect if DeviceConfigured never arrives. */
-export const MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS = 30 * MS_PER_SECOND;
+/** Max wait for proactive MsgWaiting drain before post-connect self telemetry runs. */
+export const MESHCORE_POST_CONNECT_SELF_TELEMETRY_DRAIN_WAIT_MS = 30 * MS_PER_SECOND;
+
+/** Defer first getMetadata after configure (NodeDB flood can starve the admin packet). */
+export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_DEFER_MS = 12 * MS_PER_SECOND;
+
+/** Delay before one retry of getMetadata after the deferred first attempt fails. */
+export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS = 30 * MS_PER_SECOND;
+
+/** BLE/serial configure stall watchdog — force disconnect if FromRadio progress stalls. */
+export const MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS = 60 * MS_PER_SECOND;
 
 /**
  * Hard ceiling for one LoRa reconnect open+configure/attach attempt (Meshtastic + MeshCore),
@@ -330,3 +344,12 @@ export const RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS = 75 * MS_PER_SECOND;
  * Stack TCP features should already be up; this is a safety net during connect races.
  */
 export const RETICULUM_IPC_SEND_TIMEOUT_MS = 15 * MS_PER_SECOND;
+
+/**
+ * How long to wait for an rrcd `/who` NOTICE before telling the user the member
+ * list never came back (single-packet reply, dropped when it exceeds Link MDU).
+ */
+export const RRC_WHO_REPLY_TIMEOUT_MS = 12 * MS_PER_SECOND;
+
+/** BLE picker: keep live dBm, but wait this long before re-ordering by RSSI so rows do not jump. */
+export const PICKER_RSSI_REORDER_DEBOUNCE_MS = MS_PER_SECOND;

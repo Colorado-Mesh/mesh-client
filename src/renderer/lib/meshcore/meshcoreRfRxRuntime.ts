@@ -9,10 +9,13 @@ import type { Dispatch, RefObject, SetStateAction } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
-import { parseMeshCoreRfPacket } from '../../../shared/meshcoreRfPacketParse';
+import {
+  meshCorePathInvariantPayloadId,
+  parseMeshCoreRfPacket,
+} from '../../../shared/meshcoreRfPacketParse';
 import { MAX_DEVICE_LOGS, MAX_TELEMETRY_POINTS } from '../../hooks/meshcore/meshcoreHookPreamble';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
-import { upsertNodeRecord } from '../../stores/nodeStore';
+import { upsertNode, upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import {
   classifyPayload,
   classifyProximity,
@@ -21,6 +24,7 @@ import {
   type PacketClass,
 } from '../foreignLoraDetection';
 import { applyMeshcoreLateRfHopEnrichment } from '../meshcoreLateRfHopEnrichment';
+import { buildMeshcorePathResolutionFromNodes } from '../meshcorePathChainDisplay';
 import {
   meshcoreRawPacketLogFromBytesFallback,
   meshcoreRawPacketResolveFromParsed,
@@ -29,7 +33,12 @@ import {
   meshcoreRfResolvePathSender,
 } from '../meshcoreRawPacketSender';
 import { shouldCoalesceSelfFloodAdvert } from '../meshcoreRawSelfFloodAdvertCoalesce';
-import { meshcoreMergeContactHopsAwayFromPrevious, pubkeyToNodeId } from '../meshcoreUtils';
+import {
+  CONTACT_TYPE_LABELS,
+  mergeHwModelOnContactUpdate,
+  meshcoreMergeContactHopsAwayFromPrevious,
+  pubkeyToNodeId,
+} from '../meshcoreUtils';
 import { getMeshtasticConnectedMyNodeNum } from '../meshtasticConnectedNodeRef';
 import type { DomainEvent } from '../protocols/Protocol';
 import { MAX_RAW_PACKET_LOG_ENTRIES } from '../rawPacketLogConstants';
@@ -37,7 +46,13 @@ import { getStoredMeshProtocol } from '../storedMeshProtocol';
 import { meshNodeToNodeRecord } from '../storeRecordAdapters';
 import { MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS } from '../timeConstants';
 import type { MeshNode, MQTTStatus, TelemetryPoint } from '../types';
+import {
+  hasOpenHeardRepeatWindow,
+  recordMeshcoreRfRx,
+  resolveMeshcoreHeardRepeaterFromNode,
+} from './heardRepeatTracker';
 import type { DeviceLogEntry, MeshCoreSelfInfo, RxPacketEntry } from './meshcoreHookTypes';
+import { persistMeshcoreNodeInfoAfterAdvert } from './meshcoreLiveContactPersist';
 import {
   type MeshcoreMqttPacketLogBucket,
   tryTakeMeshcoreMqttPacketLogToken,
@@ -319,6 +334,67 @@ export function applyMeshcoreRfHopsAwayUpdate(
   upsertNodeRecord(storeId, meshNodeToNodeRecord(updated));
   persistMeshcoreContactLastRf(fromNodeId, snr, rssi, mergedHopsAway ?? hopCount, nowSec);
   persistMeshcoreRfHopHistory(fromNodeId, now, mergedHopsAway ?? hopCount, snr, rssi);
+}
+
+/**
+ * Companion push 128 is pubkey-only. Apply the on-air ADVERT name + device role so the contact
+ * list / Rooms tab show the advertised identity instead of `Node-XXXXXXXX`.
+ */
+function applyMeshcoreRfAdvertToStore(
+  ctx: MeshcoreRfParseContext,
+  now: number,
+  snr: number,
+  rssi: number,
+  deps: MeshcoreRfRxDeps,
+): void {
+  if (!ctx.parsed.ok || ctx.parsed.advert == null) return;
+  const advert = ctx.parsed.advert;
+  const identityId = deps.meshcoreIdentityIdRef.current;
+  if (!identityId) return;
+  const publicKey = advert.publicKey;
+  if (publicKey.length !== 32) return;
+  const nodeId = pubkeyToNodeId(publicKey);
+  if (nodeId === 0 || nodeId === deps.myNodeNumRef.current) return;
+
+  const name = advert.name.trim();
+  const incomingHw = CONTACT_TYPE_LABELS[advert.deviceRole] ?? 'Unknown';
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+  const existing = useNodeStore.getState().nodes[identityId]?.[nodeId];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.
+  const hwModel = mergeHwModelOnContactUpdate(existing?.hwModel, incomingHw);
+  const lastHeardAt = advert.timestampSec > 0 ? advert.timestampSec : Math.floor(now / 1000);
+
+  persistMeshcoreNodeInfoAfterAdvert(
+    identityId,
+    {
+      nodeId,
+      longName: name || undefined,
+      lastHeardAt,
+      publicKey,
+      hwModel,
+    },
+    { contactType: advert.deviceRole },
+  );
+
+  upsertNode(identityId, {
+    nodeId,
+    ...(name ? { longName: name } : {}),
+    hwModel,
+    lastHeardAt,
+    publicKey,
+  });
+
+  const after = useNodeStore.getState().nodes[identityId][nodeId];
+  const mergedHops = meshcoreMergeContactHopsAwayFromPrevious(ctx.hopCount, after.hopsAway, 0);
+  upsertNodeRecord(identityId, {
+    ...after,
+    hopsAway: mergedHops ?? ctx.hopCount,
+    snr,
+    rssi,
+    source: 'rf',
+    heardViaMqttOnly: false,
+    viaMqtt: false,
+  });
 }
 
 function buildMeshcoreRfRawPacketEntry(
@@ -606,6 +682,87 @@ function publishMeshcoreRfMqttPacketLog(
 }
 
 /**
+ * Credit Repeater/Room path hashes on self-originated channel TX overhear (relay coverage).
+ * Additive only — does not alter hops-away, Foreign LoRa bridge, or repeater-admin flows.
+ */
+function applyMeshcoreHeardRepeatFromRfRx(
+  ctx: MeshcoreRfParseContext,
+  effectiveFromNodeId: number | null,
+  rawU8: Uint8Array,
+  snr: number,
+  rssi: number,
+  now: number,
+  deps: MeshcoreRfRxDeps,
+): void {
+  const identityId = deps.meshcoreIdentityIdRef.current;
+  if (!identityId) return;
+  const myNodeNum = deps.myNodeNumRef.current;
+  if (myNodeNum === 0) return;
+
+  const selfPubKey =
+    deps.pubKeyMapRef.current.get(myNodeNum) ?? deps.selfInfoRef.current?.publicKey;
+  const isSelfRf = meshcoreRfIsSelfOriginated(rawU8, selfPubKey, myNodeNum);
+  const isOwnMeshcoreTx =
+    isSelfRf || (effectiveFromNodeId != null && effectiveFromNodeId === myNodeNum);
+  // GRP_TXT has no cleartext originator — still credit path hashes while a TX window is open.
+  const treatAsOwnChannelFlood = ctx.payloadTypeString === 'GRP_TXT';
+  const payloadIdentity =
+    ctx.parseOk && ctx.parsed.ok
+      ? meshCorePathInvariantPayloadId(ctx.parsed.payloadTypeNibble, ctx.parsed.innerPayload)
+      : null;
+  if (!isOwnMeshcoreTx && !treatAsOwnChannelFlood) return;
+  if (!hasOpenHeardRepeatWindow(identityId, now)) return;
+
+  // Empty-path channel flood: bind payload identity only (no path segments to credit).
+  if (ctx.pathBytes.length === 0) {
+    if (treatAsOwnChannelFlood || isOwnMeshcoreTx) {
+      recordMeshcoreRfRx({
+        identityId,
+        isOwnMeshcoreTx,
+        treatAsOwnChannelFlood,
+        pathBytes: [],
+        pathHashSizeBytes: ctx.pathHashSizeBytes,
+        myNodeNum,
+        myPubKey: selfPubKey,
+        payloadIdentity,
+        snr,
+        rssi,
+        now,
+        candidates: [],
+        resolveRepeater: () => null,
+      });
+    }
+    return;
+  }
+
+  const nodes = deps.readNodes();
+  const resolution = buildMeshcorePathResolutionFromNodes(nodes);
+  // MeshCore contacts store pubkeys in pubKeyMapRef; MeshNode often omits public_key_hex.
+  // 2/3-byte path matching requires the live map or resolution stays empty (Heard by stays 0).
+  const pubKeyByNodeId = new Map(resolution.pubKeyByNodeId);
+  for (const [nodeId, key] of deps.pubKeyMapRef.current) {
+    pubKeyByNodeId.set(nodeId, key);
+  }
+  recordMeshcoreRfRx({
+    identityId,
+    isOwnMeshcoreTx,
+    treatAsOwnChannelFlood,
+    pathBytes: ctx.pathBytes,
+    pathHashSizeBytes: ctx.pathHashSizeBytes,
+    myNodeNum,
+    myPubKey: selfPubKey,
+    payloadIdentity,
+    snr,
+    rssi,
+    now,
+    candidates: resolution.candidates,
+    pubKeyByNodeId,
+    resolveRepeater: (nodeId) =>
+      resolveMeshcoreHeardRepeaterFromNode(nodeId, nodes.get(nodeId) ?? null),
+  });
+}
+
+/**
  * Full RF RX (event 136) handling: device log + signal telemetry, raw packet log with hop/foreign
  * LoRa bridging, and throttled MQTT packet-log publish. Mirrors the original inline
  * `handleRfRx` — including its early return once the foreign-LoRa proximity gate fails, which
@@ -637,11 +794,13 @@ export function handleMeshcoreRfRx(payload: MeshcoreRfRxPayload, deps: MeshcoreR
   if (rawU8) {
     const ctx = buildMeshcoreRfParseContext(rawU8, deps.pubKeyPrefixMapRef.current);
     applyMeshcoreRfHopsAwayUpdate(ctx.fromNodeId, ctx.hopCount, now, snr, rssi, cachedDeps);
+    applyMeshcoreRfAdvertToStore(ctx, now, snr, rssi, deps);
 
     const effectiveFromNodeId =
       ctx.fromNodeId ?? meshtasticSenderIdForRawLogFallback(ctx.parseOk, rawU8);
     const rxEntry = buildMeshcoreRfRawPacketEntry(ctx, effectiveFromNodeId, now, snr, rssi, rawU8);
     pushMeshcoreRfRawPacketLog(deps, rxEntry);
+    applyMeshcoreHeardRepeatFromRfRx(ctx, effectiveFromNodeId, rawU8, snr, rssi, now, cachedDeps);
 
     if (
       ctx.parseOk &&

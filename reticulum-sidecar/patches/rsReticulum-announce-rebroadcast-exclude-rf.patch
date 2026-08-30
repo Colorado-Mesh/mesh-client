@@ -1,0 +1,57 @@
+diff --git a/crates/rns-transport/src/actor/mod.rs b/crates/rns-transport/src/actor/mod.rs
+index e8f1d61..6bfa911 100644
+--- a/crates/rns-transport/src/actor/mod.rs
++++ b/crates/rns-transport/src/actor/mod.rs
+@@ -40,6 +40,16 @@ mod rpc;
+ const LOCAL_LINK_INITIATOR_INTERFACE: InterfaceId = InterfaceId::MAX;
+ const LOCAL_LINK_RESPONDER_INTERFACE: InterfaceId = InterfaceId::MAX - 1;
+ 
++/// LoRa / KISS-class sinks must not receive transport-mode announce rebroadcast
++/// enqueue. Bitrate ceiling ~100 kbps; also match common RNode names.
++fn iface_is_rf_sink(entry: &InterfaceEntry) -> bool {
++    const RF_BITRATE_CEILING_BPS: u64 = 100_000;
++    if entry.name.to_ascii_lowercase().contains("rnode") {
++        return true;
++    }
++    entry.bitrate > 0 && entry.bitrate < RF_BITRATE_CEILING_BPS
++}
++
+ #[derive(Clone)]
+ struct LocalLinkRoute {
+     initiator_tx: mpsc::Sender<crate::link_messages::DestinationEvent>,
+@@ -1833,6 +1843,11 @@ impl TransportActor {
+     /// gates. Enqueueing lets `process_announce_queues` apply ANNOUNCE_CAP
+     /// spacing and hop priority. Python retains at most one queued entry per
+     /// destination, replacing it only when a newer announce is emitted.
++    ///
++    /// Flow-controlled RF sinks (RNode / low-bitrate) are skipped for
++    /// *rebroadcast* — transport-enabled leaves otherwise enqueue every mesh
++    /// announce onto BLE RNodes and fill the host TX queue while FC drains
++    /// slowly. Local announces still use [`broadcast_local_announce_on_interfaces`].
+     fn broadcast_announce_on_interfaces(&mut self, raw: &[u8], except: Option<InterfaceId>) {
+         let destination_hash = rns_wire::header::PacketHeader::unpack(raw)
+             .ok()
+@@ -1845,10 +1860,20 @@ impl TransportActor {
+         // shared Arc for free.
+         let shared = Bytes::copy_from_slice(raw);
+ 
+-        let ids: Vec<InterfaceId> = self
++        // Collect candidates before interface_allows_announce borrows self.
++        let candidate_ids: Vec<InterfaceId> = self
+             .interfaces
+-            .keys()
+-            .copied()
++            .iter()
++            .filter_map(|(&id, entry)| {
++                if except == Some(id) || iface_is_rf_sink(entry) {
++                    None
++                } else {
++                    Some(id)
++                }
++            })
++            .collect();
++        let ids: Vec<InterfaceId> = candidate_ids
++            .into_iter()
+             .filter(|id| self.interface_allows_announce(*id, &destination_hash, except))
+             .collect();
+ 

@@ -6,7 +6,6 @@
 RS_RETICULUM_APPLY_SCRIPTS=(
   apply-rsReticulum-packet-tap.sh
   apply-rsReticulum-auto-beacon-utun.sh
-  apply-rsReticulum-link-client-nomad.sh
   apply-rsReticulum-link-client-proof-budget.sh
   apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
   apply-rsReticulum-ble-rnode-bond-desync.sh
@@ -14,6 +13,8 @@ RS_RETICULUM_APPLY_SCRIPTS=(
   apply-rsReticulum-path-medium-slots.sh
   apply-rsReticulum-inbound-raw-saturation-log.sh
   apply-rsReticulum-interface-tx-queue-stats.sh
+  apply-rsReticulum-announce-rebroadcast-exclude-rf.sh
+  apply-rsReticulum-ble-rnode-flow-control-ready-timeout.sh
 )
 
 RS_LXMF_APPLY_SCRIPTS=(
@@ -22,6 +23,7 @@ RS_LXMF_APPLY_SCRIPTS=(
   apply-rsLXMF-propagation-node-deferred-messagestore-load.sh
   apply-rsLXMF-link-delivery-has-pending-to.sh
   apply-rsLXMF-propagation-client-abort-transfer.sh
+  apply-rsLXMF-propagation-client-lrproof-diagnostics.sh
 )
 
 apply_ratspeak_rns_overlays() {

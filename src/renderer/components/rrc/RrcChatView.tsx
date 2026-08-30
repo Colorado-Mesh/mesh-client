@@ -13,8 +13,9 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import MentionAutocomplete from '@/renderer/components/MentionAutocomplete';
-import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
+import { useAppWindowActivity } from '@/renderer/lib/appWindowActivity';
 import { isSafeChatUrl } from '@/renderer/lib/chatMentionSegments';
 import {
   CHAT_SCROLL_END_THRESHOLD,
@@ -23,7 +24,13 @@ import {
   getDistFromChatBottom,
   VIRTUALIZER_SCROLL_END_THRESHOLD,
 } from '@/renderer/lib/chatScrollUtils';
+import { readAppliedFontScale, subscribeAppliedFontScale } from '@/renderer/lib/fontScale';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
+import { openNomadPageFromLink } from '@/renderer/lib/nomad/openNomadPageFromLink';
+import {
+  findReticulumChatLinks,
+  type ReticulumChatLink,
+} from '@/renderer/lib/nomad/reticulumLinkText';
 import {
   bodyMentionsRrcNick,
   findNextRrcNickMention,
@@ -45,12 +52,23 @@ function formatHash(hash: string): string {
   return hash.slice(0, 8);
 }
 
-/** Compact IRC line height for virtualization (not ChatMessage card estimates). */
+/** Compact IRC line height at 100% font scale: ~20px leading-snug + 2px row gap. */
+const RRC_ROW_LINE_PX = 20;
+const RRC_ROW_GAP_PX = 2;
+/** Characters per wrapped line at 100% font scale. */
+const RRC_ROW_CHARS_PER_LINE = 80;
+
+/**
+ * Compact IRC line height for virtualization (not ChatMessage card estimates).
+ * Scales with the user's font size: taller lines that fit fewer characters.
+ * Only an estimate — the virtualizer measures real rows once they render.
+ */
 export function estimateRrcRowHeight(msg: RrcChatMessage | null | undefined): number {
+  const scale = readAppliedFontScale();
   const bodyLen = msg?.body.length ?? 0;
-  const lines = Math.max(1, Math.ceil(bodyLen / 80));
-  // ~20px leading-snug + 2px row gap
-  return lines * 20 + 2;
+  const charsPerLine = Math.max(1, Math.round(RRC_ROW_CHARS_PER_LINE / scale));
+  const lines = Math.max(1, Math.ceil(bodyLen / charsPerLine));
+  return Math.round(lines * RRC_ROW_LINE_PX * scale + RRC_ROW_GAP_PX);
 }
 
 function rrcMessageVirtualizerKey(msg: RrcChatMessage | null | undefined, index: number): string {
@@ -64,49 +82,123 @@ const RRC_MENTION_LISTBOX_ID = 'rrc-mention-listbox';
 const URL_PATTERN = /https?:\/\/[^\s<>"{}|\\^`[\]]+/gu;
 const TRAILING_PUNCT = /[.,!?;:'"()]+$/;
 
-/** Inline URL + plain text segments (no block wrappers — keeps IRC one-liners). */
-function renderRrcInlineText(text: string, keyPrefix: string): ReactNode[] {
-  const nodes: ReactNode[] = [];
-  let last = 0;
+const RRC_LINK_CLASS = 'break-all text-cyan-400 underline hover:text-cyan-300 align-baseline';
+
+interface RrcHttpSegment {
+  kind: 'http';
+  start: number;
+  end: number;
+  url: string;
+  trailing: string;
+}
+
+type RrcLinkSegment = RrcHttpSegment | ReticulumChatLink;
+
+function findRrcHttpLinks(text: string): RrcHttpSegment[] {
+  const found: RrcHttpSegment[] = [];
   URL_PATTERN.lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = URL_PATTERN.exec(text)) !== null) {
-    if (m.index > last) {
+    const raw = m[0];
+    const url = raw.replace(TRAILING_PUNCT, '');
+    found.push({
+      kind: 'http',
+      start: m.index,
+      end: m.index + raw.length,
+      url,
+      trailing: raw.slice(url.length),
+    });
+  }
+  return found;
+}
+
+/** Merge http and Reticulum matches by position; http wins on any overlap. */
+function findRrcLinkSegments(text: string): RrcLinkSegment[] {
+  const http = findRrcHttpLinks(text);
+  const reticulum = findReticulumChatLinks(text).filter(
+    (link) => !http.some((h) => link.start < h.end && h.start < link.end),
+  );
+  return [...http, ...reticulum].sort((a, b) => a.start - b.start);
+}
+
+interface RrcInlineOpts {
+  /** Localized aria-label lookup (passed in; these are module functions, not hooks). */
+  t: (key: string, opts?: Record<string, unknown>) => string;
+  /** Non-http Reticulum address click; the component decides page vs DM vs prompt. */
+  onAddressClick?: (link: ReticulumChatLink) => void;
+  /** Whether DM targets are actionable at all (no handler wired ⇒ render as text). */
+  canOpenDm: boolean;
+}
+
+function reticulumAddressLabelKey(link: ReticulumChatLink): string {
+  if (link.kind === 'nomadPage') return 'rrc.openNomadPage';
+  return link.ambiguous ? 'rrc.openReticulumAddress' : 'rrc.openDm';
+}
+
+/** Inline URL + plain text segments (no block wrappers — keeps IRC one-liners). */
+function renderRrcInlineText(text: string, keyPrefix: string, opts: RrcInlineOpts): ReactNode[] {
+  const { t, onAddressClick, canOpenDm } = opts;
+  const nodes: ReactNode[] = [];
+  let last = 0;
+  for (const segment of findRrcLinkSegments(text)) {
+    if (segment.start > last) {
       nodes.push(
         <span key={`${keyPrefix}-t-${last}`} className="whitespace-pre-wrap">
-          {text.slice(last, m.index)}
+          {text.slice(last, segment.start)}
         </span>,
       );
     }
-    const raw = m[0];
-    const url = raw.replace(TRAILING_PUNCT, '');
-    if (isSafeChatUrl(url)) {
+    const key = `${keyPrefix}-u-${segment.start}`;
+    if (segment.kind === 'http') {
+      if (isSafeChatUrl(segment.url)) {
+        nodes.push(
+          <a
+            key={key}
+            href={segment.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="break-all text-cyan-400 underline hover:text-cyan-300"
+          >
+            {segment.url}
+          </a>,
+        );
+      } else {
+        nodes.push(
+          <span key={key} className="whitespace-pre-wrap">
+            {segment.url}
+          </span>,
+        );
+      }
+      if (segment.trailing) {
+        nodes.push(
+          <span key={`${keyPrefix}-p-${segment.start}`} className="whitespace-pre-wrap">
+            {segment.trailing}
+          </span>,
+        );
+      }
+    } else if (onAddressClick && (segment.kind === 'nomadPage' || canOpenDm)) {
+      const link = segment;
       nodes.push(
-        <a
-          key={`${keyPrefix}-u-${m.index}`}
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="break-all text-cyan-400 underline hover:text-cyan-300"
+        <button
+          key={key}
+          type="button"
+          className={RRC_LINK_CLASS}
+          aria-label={t(reticulumAddressLabelKey(link), { address: link.url })}
+          onClick={() => {
+            onAddressClick(link);
+          }}
         >
-          {url}
-        </a>,
+          {link.url}
+        </button>,
       );
     } else {
       nodes.push(
-        <span key={`${keyPrefix}-u-${m.index}`} className="whitespace-pre-wrap">
-          {url}
+        <span key={key} className="whitespace-pre-wrap">
+          {segment.url}
         </span>,
       );
     }
-    if (raw.length > url.length) {
-      nodes.push(
-        <span key={`${keyPrefix}-p-${m.index}`} className="whitespace-pre-wrap">
-          {raw.slice(url.length)}
-        </span>,
-      );
-    }
-    last = m.index + raw.length;
+    last = segment.end;
   }
   if (last < text.length) {
     nodes.push(
@@ -119,10 +211,10 @@ function renderRrcInlineText(text: string, keyPrefix: string): ReactNode[] {
 }
 
 /** Highlight IRC-style @nick tokens that match the local nickname (inline only). */
-function highlightRrcSelfMentions(text: string, nickname: string): ReactNode {
+function highlightRrcSelfMentions(text: string, nickname: string, opts: RrcInlineOpts): ReactNode {
   const nick = nickname.trim();
   if (!nick || !bodyMentionsRrcNick(text, nick)) {
-    return <>{renderRrcInlineText(text, 'b')}</>;
+    return <>{renderRrcInlineText(text, 'b', opts)}</>;
   }
   const nodes: ReactNode[] = [];
   let last = 0;
@@ -130,7 +222,7 @@ function highlightRrcSelfMentions(text: string, nickname: string): ReactNode {
   let match = findNextRrcNickMention(text, nick, cursor);
   while (match) {
     if (match.start > last) {
-      nodes.push(...renderRrcInlineText(text.slice(last, match.start), `t${last}`));
+      nodes.push(...renderRrcInlineText(text.slice(last, match.start), `t${last}`, opts));
     }
     nodes.push(
       <span key={`m-${match.start}`} className="font-bold text-red-500">
@@ -142,7 +234,7 @@ function highlightRrcSelfMentions(text: string, nickname: string): ReactNode {
     match = findNextRrcNickMention(text, nick, cursor);
   }
   if (last < text.length) {
-    nodes.push(...renderRrcInlineText(text.slice(last), `t${last}`));
+    nodes.push(...renderRrcInlineText(text.slice(last), `t${last}`, opts));
   }
   return nodes.length > 0 ? <>{nodes}</> : null;
 }
@@ -154,6 +246,8 @@ function NickSpan({ nick }: { nick: string }) {
 
 export interface RrcChatViewProps {
   connected: boolean;
+  /** Focused hub hash — stream identity with activeRoom (hub switch must re-pin). */
+  hubDestHash?: string | null;
   activeRoom: string | null;
   messages: RrcChatMessage[];
   showTimestamps: boolean;
@@ -172,10 +266,15 @@ export interface RrcChatViewProps {
   placeholder?: string;
   /** When false, skip follow-on-append and snapshot scroll for tab restore. */
   isActive?: boolean;
+  /** Called when the user has scrolled to (or restored) the latest messages. */
+  onCaughtUp?: () => void;
+  /** Open a Chat DM for an LXMF destination hash posted in a message. */
+  onOpenDm?: (destinationHash: string) => void;
 }
 
 export function RrcChatView({
   connected,
+  hubDestHash = null,
   activeRoom,
   messages,
   showTimestamps,
@@ -189,10 +288,38 @@ export function RrcChatView({
   alwaysShowMessageActions = false,
   placeholder,
   isActive = true,
+  onCaughtUp,
+  onOpenDm,
 }: RrcChatViewProps) {
   const { t } = useTranslation();
+  const { inactive: appWindowInactive } = useAppWindowActivity();
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const composerPlaceholder = placeholder ?? t('rrc.messagePlaceholder');
+  /** Bare hash awaiting a Nomad-page-vs-DM choice from the user. */
+  const [pendingAddress, setPendingAddress] = useState<{
+    url: string;
+    destinationHash: string;
+  } | null>(null);
+
+  const handleAddressClick = useCallback(
+    (link: ReticulumChatLink) => {
+      if (link.kind === 'nomadPage') {
+        openNomadPageFromLink(link.url);
+        return;
+      }
+      if (link.ambiguous) {
+        setPendingAddress({ url: link.url, destinationHash: link.destinationHash });
+        return;
+      }
+      onOpenDm?.(link.destinationHash);
+    },
+    [onOpenDm],
+  );
+
+  const inlineOpts = useMemo<RrcInlineOpts>(
+    () => ({ t, onAddressClick: handleAddressClick, canOpenDm: onOpenDm != null }),
+    [t, handleAddressClick, onOpenDm],
+  );
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -201,11 +328,13 @@ export function RrcChatView({
   const skipMentionSyncRef = useRef(false);
   /** Sticky intent: user is reading latest messages and wants auto-follow on new traffic. */
   const isPinnedToBottomRef = useRef(true);
+  /** Hub/room stream switch — trust pin until the user scrolls (virtualizer can lag). */
+  const streamPinRef = useRef(false);
   const unreadStartIndexRef = useRef(-1);
   const savedScrollTopRef = useRef<number | null>(null);
   const savedWasPinnedToBottomRef = useRef(false);
   const wasActiveRef = useRef(isActive);
-  const prevActiveRoomRef = useRef(activeRoom);
+  const prevStreamKeyRef = useRef<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -310,49 +439,100 @@ export function RrcChatView({
   messageVirtualizerRef.current = messageVirtualizer;
 
   const computeIsAtChatEnd = useCallback(() => {
-    if (!scrollContainerRef.current) return false;
+    const el = scrollContainerRef.current;
+    if (!el) return false;
+    // When the stream actually overflows, trust DOM distance. Virtualizer isAtEnd can
+    // lag estimate→measure on large rooms and falsely clear the pin while scrollTop is maxed.
+    const hasOverflow = el.scrollHeight > el.clientHeight + 1;
+    if (hasOverflow) {
+      const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+      return dist <= CHAT_SCROLL_END_THRESHOLD;
+    }
     return messageVirtualizerRef.current.isAtEnd(CHAT_SCROLL_END_THRESHOLD);
   }, []);
 
   const updateScrollButtonVisibility = useCallback(() => {
+    if (streamPinRef.current) {
+      isPinnedToBottomRef.current = true;
+      setShowScrollButton(false);
+      return getDistFromChatBottom(scrollContainerRef.current, messagesEndRef.current, null);
+    }
     const atEnd = computeIsAtChatEnd();
     isPinnedToBottomRef.current = atEnd;
     setShowScrollButton(!atEnd);
     return getDistFromChatBottom(scrollContainerRef.current, messagesEndRef.current, null);
   }, [computeIsAtChatEnd]);
 
-  const handleStreamScroll = useCallback(() => {
-    updateScrollButtonVisibility();
-  }, [updateScrollButtonVisibility]);
+  const applyNearBottomCaughtUp = useCallback(
+    (distFromBottom: number) => {
+      if (!isActive || appWindowInactive || distFromBottom >= 50) return;
+      onCaughtUp?.();
+    },
+    [appWindowInactive, isActive, onCaughtUp],
+  );
 
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
-    messageVirtualizerRef.current.scrollToEnd({ behavior });
-    isPinnedToBottomRef.current = true;
-    setShowScrollButton(false);
-  }, []);
+  const handleStreamScroll = useCallback(() => {
+    streamPinRef.current = false;
+    const distFromBottom = updateScrollButtonVisibility();
+    if (distFromBottom != null) applyNearBottomCaughtUp(distFromBottom);
+  }, [applyNearBottomCaughtUp, updateScrollButtonVisibility]);
+
+  const scrollToBottom = useCallback(
+    (behavior: ScrollBehavior = 'auto') => {
+      messageVirtualizerRef.current.scrollToEnd({ behavior });
+      isPinnedToBottomRef.current = true;
+      setShowScrollButton(false);
+      requestAnimationFrame(() => {
+        const dist = updateScrollButtonVisibility();
+        if (dist != null) applyNearBottomCaughtUp(dist);
+      });
+    },
+    [applyNearBottomCaughtUp, updateScrollButtonVisibility],
+  );
+
+  /** Last visible id — rooms at the 500-message cap grow without length change. */
+  const latestVisibleMessageId =
+    visibleMessages.length > 0 ? (visibleMessages[visibleMessages.length - 1]?.id ?? null) : null;
 
   // Follow new messages when pinned (Rooms/Chat contract).
   useEffect(() => {
-    if (!isActive || isAppWindowInactive() || !activeRoom) return;
+    if (!isActive || appWindowInactive || !activeRoom) return;
     if (isPinnedToBottomRef.current) {
       messageVirtualizerRef.current.scrollToEnd();
     }
     requestAnimationFrame(() => {
-      updateScrollButtonVisibility();
+      const dist = updateScrollButtonVisibility();
+      if (dist != null) applyNearBottomCaughtUp(dist);
     });
-  }, [visibleMessages.length, isActive, activeRoom, updateScrollButtonVisibility]);
+  }, [
+    visibleMessages.length,
+    latestVisibleMessageId,
+    isActive,
+    activeRoom,
+    appWindowInactive,
+    updateScrollButtonVisibility,
+    applyNearBottomCaughtUp,
+  ]);
 
-  // Room switch while active → pin + scroll to end.
+  // Hub and/or room switch while active → pin + scroll to end.
+  // Same room name on another hub (e.g. general) must still re-pin; room-only key missed that.
   useLayoutEffect(() => {
-    const prevRoom = prevActiveRoomRef.current;
-    prevActiveRoomRef.current = activeRoom;
+    const streamKey =
+      activeRoom && hubDestHash
+        ? `${hubDestHash.toLowerCase()}::${activeRoom}`
+        : activeRoom
+          ? `::${activeRoom}`
+          : null;
+    const prevKey = prevStreamKeyRef.current;
+    prevStreamKeyRef.current = streamKey;
     if (!isActive) return;
-    if (prevRoom === activeRoom) return;
-    if (!activeRoom) return;
+    if (!streamKey) return;
+    if (prevKey === streamKey) return;
+    streamPinRef.current = true;
     isPinnedToBottomRef.current = true;
     messageVirtualizerRef.current.scrollToEnd();
     setShowScrollButton(false);
-  }, [activeRoom, isActive]);
+  }, [activeRoom, hubDestHash, isActive]);
 
   // Tab exit snapshot / tab return restore (Rooms contract).
   useLayoutEffect(() => {
@@ -374,6 +554,10 @@ export function RrcChatView({
           messageVirtualizerRef.current.scrollToEnd();
           isPinnedToBottomRef.current = true;
           setShowScrollButton(false);
+          requestAnimationFrame(() => {
+            const dist = updateScrollButtonVisibility();
+            if (dist != null) applyNearBottomCaughtUp(dist);
+          });
         } else if (el) {
           el.scrollTop = savedScrollTopRef.current;
         }
@@ -381,7 +565,34 @@ export function RrcChatView({
         savedWasPinnedToBottomRef.current = false;
       }
     }
-  }, [isActive]);
+  }, [applyNearBottomCaughtUp, isActive, updateScrollButtonVisibility]);
+
+  // Row estimates are px, calibrated to the current root scale. Cached measurements
+  // for off-screen rows survive a scale change, so drop them and re-anchor.
+  useEffect(
+    () =>
+      subscribeAppliedFontScale(() => {
+        messageVirtualizerRef.current.measure();
+        if (isPinnedToBottomRef.current) {
+          messageVirtualizerRef.current.scrollToEnd();
+        }
+      }),
+    [],
+  );
+
+  useEffect(() => {
+    if (!isActive) return;
+    const onFocus = () => {
+      requestAnimationFrame(() => {
+        const dist = updateScrollButtonVisibility();
+        if (dist != null) applyNearBottomCaughtUp(dist);
+      });
+    };
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [applyNearBottomCaughtUp, isActive, updateScrollButtonVisibility]);
 
   useLayoutEffect(() => {
     requestAnimationFrame(() => {
@@ -482,25 +693,25 @@ export function RrcChatView({
 
   if (!connected) {
     return (
-      <div className="flex flex-1 items-center justify-center p-6 text-sm text-amber-200/50">
+      <div className="flex flex-1 items-center justify-center p-6 text-sm text-gray-400">
         {t('rrc.selectHubPrompt')}
       </div>
     );
   }
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col font-mono text-[13px]">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col font-mono text-[0.8125rem]">
       <div className="relative min-h-0 flex-1">
         <div
           ref={scrollContainerRef}
           data-testid="rrc-message-stream"
           onScroll={handleStreamScroll}
-          className="h-full overflow-y-auto px-3 py-2"
+          className="h-full min-h-0 overflow-y-auto overscroll-contain px-3 py-2 [overflow-anchor:none]"
         >
           {!activeRoom && (
-            <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-amber-200/50">
+            <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-gray-400">
               <p>{t('rrc.joinRoomPrompt')}</p>
-              <p className="max-w-md text-xs text-amber-200/40">{t('rrc.joinRoomHelp')}</p>
+              <p className="text-muted max-w-md text-xs">{t('rrc.joinRoomHelp')}</p>
             </div>
           )}
           {activeRoom && (
@@ -531,17 +742,18 @@ export function RrcChatView({
                     (msg.kind === 'notice' || msg.kind === 'msg') &&
                     Boolean(nick));
                 const lineClass = whisperAsRoomMsg
-                  ? 'text-amber-50/90'
+                  ? 'text-gray-100'
                   : msg.kind === 'notice' || msg.kind === 'system'
-                    ? 'text-amber-300/90'
+                    ? 'text-gray-400'
                     : msg.kind === 'action'
                       ? 'text-cyan-200/90 italic'
                       : msg.kind === 'error'
                         ? 'text-red-300'
-                        : 'text-amber-50/90';
+                        : 'text-gray-100';
                 const body = highlightRrcSelfMentions(
                   whisperEcho ? whisperEcho.text : msg.body,
                   nickname,
+                  inlineOpts,
                 );
 
                 return (
@@ -555,7 +767,7 @@ export function RrcChatView({
                   >
                     <div className="group flex items-start gap-1 leading-snug">
                       {time && (
-                        <span className="shrink-0 text-[10px] text-amber-200/35">[{time}]</span>
+                        <span className="text-muted shrink-0 text-[0.625rem]">[{time}]</span>
                       )}
                       <div className="min-w-0 flex-1 break-words whitespace-pre-wrap">
                         {msg.kind === 'action' ? (
@@ -576,7 +788,7 @@ export function RrcChatView({
                             {msg.kind === 'notice' && nick ? (
                               <span className={rrcNickColorClass(nick)}>-{nick}- </span>
                             ) : (
-                              <span className="text-amber-500/70">* </span>
+                              <span className="text-gray-500">* </span>
                             )}
                             {body}
                           </>
@@ -584,7 +796,7 @@ export function RrcChatView({
                       </div>
                       <button
                         type="button"
-                        className={`shrink-0 p-0.5 text-amber-200/20 hover:text-amber-100 ${
+                        className={`message-action shrink-0 rounded p-0.5 text-xs text-gray-600 ${
                           alwaysShowMessageActions
                             ? 'opacity-100'
                             : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
@@ -613,7 +825,7 @@ export function RrcChatView({
             onClick={() => {
               scrollToBottom('smooth');
             }}
-            className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-amber-800/60 bg-slate-900/95 px-3 py-1.5 text-xs font-medium text-amber-100 shadow-lg transition-all hover:bg-slate-800"
+            className="bg-deep-black/95 absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-100 shadow-lg transition-all hover:bg-gray-800"
             aria-label={t('rrc.jumpToLatest')}
           >
             <ArrowDown aria-hidden className="h-3.5 w-3.5" size={14} />
@@ -621,7 +833,7 @@ export function RrcChatView({
           </button>
         )}
       </div>
-      <div className="relative flex gap-2 border-t border-amber-800/40 p-2">
+      <div className="relative flex gap-2 border-t border-gray-700 p-2">
         {mentionQuery != null && mentionCandidates.length > 0 && (
           <MentionAutocomplete
             listboxId={RRC_MENTION_LISTBOX_ID}
@@ -667,12 +879,12 @@ export function RrcChatView({
             aria-label={composerPlaceholder}
             aria-autocomplete="list"
             rows={2}
-            className="w-full resize-none rounded border border-amber-800/50 bg-slate-900/80 px-2 py-1.5 font-sans text-sm text-amber-50 disabled:opacity-50"
+            className="bg-deep-black w-full resize-none rounded border border-gray-600 px-2 py-1.5 font-sans text-sm text-gray-100 disabled:opacity-50"
           />
         </div>
         <button
           type="button"
-          className="self-end rounded bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+          className="bg-readable-green self-end rounded px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
           aria-label={t('rrc.send')}
           disabled={!canSend || isMuted || !draft.trim()}
           onClick={() => {
@@ -682,6 +894,25 @@ export function RrcChatView({
           {t('rrc.send')}
         </button>
       </div>
+      {pendingAddress && (
+        <ConfirmModal
+          title={t('rrc.addressChoiceTitle')}
+          message={t('rrc.addressChoiceMessage', { address: pendingAddress.url })}
+          confirmLabel={t('rrc.addressChoiceNomad')}
+          altActionLabel={t('rrc.addressChoiceDm')}
+          onConfirm={() => {
+            openNomadPageFromLink(pendingAddress.url);
+            setPendingAddress(null);
+          }}
+          onAltAction={() => {
+            onOpenDm?.(pendingAddress.destinationHash);
+            setPendingAddress(null);
+          }}
+          onCancel={() => {
+            setPendingAddress(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -61,6 +61,7 @@ import {
   openReticulumDmFromHash,
   parseReticulumDestinationInput,
 } from '@/renderer/lib/reticulum/reticulumDestinationInput';
+import { cancelReticulumVoiceMemo } from '@/renderer/lib/reticulum/reticulumVoiceMemo';
 import {
   RETICULUM_DM_HEADER_ACTION_CLASS,
   RETICULUM_DM_HEADER_STATUS_CLASS,
@@ -86,6 +87,7 @@ import { playMessageNotification } from '../lib/chatNotifications';
 import {
   dismissedDmTabsStorageKey,
   lastReadStorageKey,
+  loadActiveChannelInitial,
   loadActiveDmInitial,
   loadMutedViews,
   loadOpenDmTabsInitial,
@@ -93,6 +95,7 @@ import {
   loadStarred,
   notifyPersistedLastReadChanged,
   openDmTabsStorageKey,
+  saveActiveChannel,
   saveActiveDm,
   saveMutedViews,
   saveStarred,
@@ -132,6 +135,7 @@ import {
 } from '../lib/meshcoreConfiguredChatChannels';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { useRadioProvider } from '../lib/radio/providerFactory';
 import {
   emojiDisplayLabel,
   isReactionPickerEmojiGlyph,
@@ -147,7 +151,7 @@ import {
   groupChatReactionsByParentKey,
   reactionLookupKeysForParentMessage,
 } from '../lib/storeRecordAdapters';
-import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
+import type { ChatMessage, IdentityId, MeshNode, MeshProtocol } from '../lib/types';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
@@ -157,6 +161,7 @@ import { ChatPayloadText } from './ChatPayloadText';
 import { ChatRfHopLabel } from './ChatRfHopLabel';
 import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
+import { RelayCoverageLine, relayCoverageMessageKey } from './RelayCoverageLine';
 import { ChatDmRncpControl } from './remote/ChatDmRncpControl';
 import { ChatDmRncpOfferBanner } from './remote/ChatDmRncpOfferBanner';
 import { ReticulumGameChallengeButton } from './reticulum/ReticulumGameChallengeButton';
@@ -166,9 +171,13 @@ import {
   ReticulumDmPathActions,
   ReticulumDmPathReachabilityBadge,
 } from './ReticulumDmPathReachabilityBadge';
-import { ReticulumMessageStatusBadge } from './ReticulumMessageStatusBadge';
+import {
+  isReticulumTooLargeForPropagationError,
+  ReticulumMessageStatusBadge,
+} from './ReticulumMessageStatusBadge';
 import { ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { ReticulumPropagationNotice } from './ReticulumPropagationNotice';
+import { ReticulumVoiceMemoLine } from './ReticulumVoiceMemoLine';
 import { useToast } from './Toast';
 
 function chatPanelIsLinux(): boolean {
@@ -498,6 +507,8 @@ export interface ChatPanelProps {
   isActive?: boolean;
   /** When `meshcore`, show full names, hide redundant RF-only transport badge. */
   protocol?: MeshProtocol;
+  /** Identity bucket used for in-memory relay coverage lookup (matches runtime writers). */
+  identityId?: IdentityId | null;
   /** Ref for scroll-to-top (Chat has its own Top button positioned inside the message list). */
   scrollToTopRef?: React.RefObject<(() => void) | null>;
   /**
@@ -529,6 +540,10 @@ export interface ChatPanelProps {
   hasRncpTransfer?: boolean;
   /** Reticulum: LXST voice Call control in the DM header. */
   hasLxstVoice?: boolean;
+  /** Reticulum: LXMF voice memo mic button in composer + playback line in chat. */
+  hasReticulumVoiceMemo?: boolean;
+  /** Called when the user presses the mic button (destination = active DM node). */
+  onVoiceMemo?: (destination: number) => void;
   /** Reticulum: LRGP games Challenge control in the DM header. */
   hasLrgpGames?: boolean;
   /** Reticulum: LXMF paper Share as paper / Scan paper controls. */
@@ -570,6 +585,7 @@ function ChatPanel({
   onDmTargetConsumed,
   isActive = true,
   protocol = 'meshtastic',
+  identityId = null,
   scrollToTopRef,
   outerScrollMetricsRootRef,
   compactMode = false,
@@ -588,12 +604,15 @@ function ChatPanel({
   reticulumStackLive = false,
   hasRncpTransfer = false,
   hasLxstVoice = false,
+  hasReticulumVoiceMemo = false,
+  onVoiceMemo,
   hasLrgpGames = false,
   hasLxmfPaper = false,
   resolveShareLocation,
   onSendLocationWaypoint,
 }: ChatPanelProps) {
   const { t } = useTranslation();
+  const capabilities = useRadioProvider(protocol);
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const parentIconTrigger = useParentIconTrigger();
   const { addToast } = useToast();
@@ -644,12 +663,215 @@ function ChatPanel({
   }, []);
 
   useImperativeHandle(scrollToTopRef, () => scrollToTop, [scrollToTop]);
-  const [channel, setChannel] = useState(() => (channels.length > 0 ? channels[0].index : 0));
+  const defaultChannelIndex = channels.length > 0 ? channels[0].index : 0;
+  const [channel, setChannel] = useState(() => {
+    const persisted = myNodeNum > 0 ? loadActiveChannelInitial(protocol, myNodeNum) : null;
+    if (persisted != null && channels.some((c) => c.index === persisted)) return persisted;
+    return defaultChannelIndex;
+  });
   useEffect(() => {
     if (channels.length > 0 && !channels.some((c) => c.index === channel)) {
-      setChannel(channels[0].index);
+      setChannel(defaultChannelIndex);
     }
-  }, [channels, channel]);
+  }, [channels, channel, defaultChannelIndex]);
+  /**
+   * ChatPanel mounts once per protocol tab and often before the radio finishes
+   * connecting, so `myNodeNum` can still be 0 (no restore attempted) at the lazy
+   * initializer above. Re-attempt the restore once a real node number is known —
+   * covers both "connected after mount" and "switched to a different node while
+   * this panel stayed mounted". Scoped by protocol + node (not node alone): a
+   * protocol switch remounts ChatPanel (App.tsx keys it on protocol) so this is
+   * belt-and-suspenders, but costs nothing.
+   */
+  const channelRestoreScopeKey = myNodeNum > 0 ? `${protocol}:${myNodeNum}` : null;
+  interface ChannelRestoreState {
+    scope: string | null;
+    resolved: boolean;
+    indexSignature: string | null;
+    /**
+     * Whether this scope was ever entered from a genuinely *different* prior
+     * scope — captured once when a scope is first seen and carried forward
+     * unchanged through every later re-check of that same scope (recomputing
+     * "did the scope just change" fresh on each pending retry reads false
+     * once we've already been pending on it for a tick, which is exactly
+     * when the leak-prevention reset below is needed most: the moment
+     * restoration gives up on a stale value, `channel` can still be the
+     * *previous* scope's leftover selection).
+     */
+    arrivedFromDifferentScope: boolean;
+  }
+  /**
+   * `resolved: false` means restoration for `scope` hasn't been settled yet —
+   * either a saved value exists for it but the current `channels` list hasn't
+   * confirmed it (e.g. still showing a *previous* node's stale, carried-forward
+   * list — see useMeshtasticRuntime's lastKnownChannelsRef), or `myNodeNum` is
+   * still 0. Saving is suppressed the whole time a scope is unresolved: a saved
+   * value not yet found in a stale list is NOT the same as "no saved value" —
+   * treating them the same let a real save get clobbered by the default the
+   * moment a different node's carried-forward list didn't happen to contain it.
+   * `indexSignature` is the set of indices `channels` had on the last pending
+   * check for this scope, used only to detect the list has *stopped* changing
+   * (see below) — never to decide whether the saved value matches.
+   *
+   * The initial value mirrors the `channel` lazy initializer above rather than
+   * assuming "resolved" outright: if `myNodeNum` is already known at mount but
+   * `channels` hasn't arrived yet (a normal race — they come from separate
+   * packets), a saved value can't be found on that first render either, and
+   * marking it resolved unconditionally would permanently skip ever retrying
+   * once the real list arrives with the match.
+   *
+   * Computed via an "initialized" guard rather than directly as `useRef`'s
+   * argument — that argument is evaluated on every render even though only
+   * the first one is ever used, and ChatPanel re-renders often (every
+   * message, every scroll update), which would repeat the localStorage read
+   * below on every one of those renders for no reason.
+   */
+  const channelRestoreInitializedRef = useRef(false);
+  const channelRestoreRef = useRef<ChannelRestoreState>({
+    scope: null,
+    resolved: true,
+    indexSignature: null,
+    arrivedFromDifferentScope: false,
+  });
+  if (!channelRestoreInitializedRef.current) {
+    channelRestoreInitializedRef.current = true;
+    if (channelRestoreScopeKey != null) {
+      const persisted = loadActiveChannelInitial(protocol, myNodeNum);
+      channelRestoreRef.current =
+        persisted == null || channels.some((c) => c.index === persisted)
+          ? {
+              scope: channelRestoreScopeKey,
+              resolved: true,
+              indexSignature: null,
+              arrivedFromDifferentScope: false,
+            }
+          : // `indexSignature: null` (not the real, computed signature) —
+            // otherwise the very first restore-effect run right after mount
+            // would compare against this same unchanged snapshot, see a
+            // "match" on indexSignature alone, and give up immediately
+            // before `channels` ever gets a chance to actually update.
+            // Stability can only be concluded by comparing two *effect*
+            // observations, never the initializer's own snapshot against
+            // itself.
+            {
+              scope: channelRestoreScopeKey,
+              resolved: false,
+              indexSignature: null,
+              arrivedFromDifferentScope: false,
+            };
+    }
+  }
+  /** True for the one save-effect run right after a restore/reset-triggered setChannel,
+   * so that run doesn't persist the pre-transition value it hasn't caught up to yet. */
+  const skipNextChannelSaveRef = useRef(false);
+  useEffect(() => {
+    if (channelRestoreScopeKey == null) return;
+    const prior = channelRestoreRef.current;
+    if (prior.scope === channelRestoreScopeKey && prior.resolved) return; // already settled
+    const arrivedFromDifferentScope =
+      prior.scope === channelRestoreScopeKey
+        ? prior.arrivedFromDifferentScope
+        : prior.scope !== null;
+
+    const persisted = loadActiveChannelInitial(protocol, myNodeNum);
+    if (persisted != null && channels.some((c) => c.index === persisted)) {
+      channelRestoreRef.current = {
+        scope: channelRestoreScopeKey,
+        resolved: true,
+        indexSignature: null,
+        arrivedFromDifferentScope,
+      };
+      if (persisted !== channel) {
+        skipNextChannelSaveRef.current = true;
+        setChannel(persisted);
+      }
+      return;
+    }
+    if (persisted != null) {
+      // A value IS saved for this scope, but `channels` doesn't contain it.
+      // Could mean the list hasn't finished arriving yet (stay pending, keep
+      // saving suppressed, re-check next `channels` change) — OR the channel
+      // was genuinely removed from this node's config since it was saved, in
+      // which case the list will stop changing and we must NOT wait forever:
+      // that would silently disable saving *any* future selection for this
+      // node for the rest of the session. Give up once the set of available
+      // indices is identical to the last pending check (content-stable, not
+      // just a new array reference).
+      const indexSignature = channels.map((c) => c.index).join(',');
+      if (prior.scope === channelRestoreScopeKey && prior.indexSignature === indexSignature) {
+        channelRestoreRef.current = {
+          scope: channelRestoreScopeKey,
+          resolved: true,
+          indexSignature: null,
+          arrivedFromDifferentScope,
+        };
+        // Fall through to the "nothing to restore" handling below — same
+        // outcome as if nothing had ever been saved for this scope.
+      } else {
+        channelRestoreRef.current = {
+          scope: channelRestoreScopeKey,
+          resolved: false,
+          indexSignature,
+          arrivedFromDifferentScope,
+        };
+        return;
+      }
+    } else {
+      channelRestoreRef.current = {
+        scope: channelRestoreScopeKey,
+        resolved: true,
+        indexSignature: null,
+        arrivedFromDifferentScope,
+      };
+    }
+    // Nothing to restore (never saved, or saved but genuinely gone). If this
+    // scope was ever arrived at from a *different* scope, `channel` may still
+    // hold that other scope's index and `channels` may still be showing its
+    // stale, carried-forward list — don't let that leak into this scope's
+    // saved preference. Force back to the default explicitly; the
+    // pre-existing clamp effect above can't catch this because the stale
+    // index is still "valid" against the stale list.
+    if (arrivedFromDifferentScope && defaultChannelIndex !== channel) {
+      skipNextChannelSaveRef.current = true;
+      setChannel(defaultChannelIndex);
+    }
+  }, [protocol, myNodeNum, channelRestoreScopeKey, channels, channel, defaultChannelIndex]);
+  useEffect(() => {
+    if (channelRestoreScopeKey == null) return;
+    const status = channelRestoreRef.current;
+    if (status.scope !== channelRestoreScopeKey || !status.resolved) return; // still pending
+    if (skipNextChannelSaveRef.current) {
+      skipNextChannelSaveRef.current = false;
+      return;
+    }
+    // Only persist a selection the current channel list actually has — never a
+    // momentarily-invalid index from a channel list that just shrank (the clamp
+    // effect above will correct `channel` next render; this run simply skips).
+    if (!channels.some((c) => c.index === channel)) return;
+    saveActiveChannel(protocol, myNodeNum, channel);
+  }, [protocol, myNodeNum, channelRestoreScopeKey, channel, channels]);
+  /**
+   * Deliberate, user-initiated channel selection. Immediately marks this
+   * scope's restore as resolved — a race otherwise exists where a restore is
+   * still pending (waiting for a saved value to show up in `channels`) when
+   * the user manually picks a *different* channel; if the saved value later
+   * matches, the pending restore would fire and silently overwrite the user's
+   * manual pick. A deliberate selection always wins and unblocks saving.
+   */
+  const selectChannel = useCallback(
+    (index: number) => {
+      if (channelRestoreScopeKey != null) {
+        channelRestoreRef.current = {
+          scope: channelRestoreScopeKey,
+          resolved: true,
+          indexSignature: null,
+          arrivedFromDifferentScope: false,
+        };
+      }
+      setChannel(index);
+    },
+    [channelRestoreScopeKey],
+  );
   const [chatActionError, setChatActionError] = useState<{
     message: string;
     viewKey: string;
@@ -776,6 +998,13 @@ function ChatPanel({
   useEffect(() => {
     saveActiveDm(protocol, activeDmNode);
   }, [activeDmNode, protocol]);
+
+  // Drop in-progress memo capture when switching DMs so the mic does not stay open.
+  useEffect(() => {
+    return () => {
+      void cancelReticulumVoiceMemo();
+    };
+  }, [activeDmNode]);
 
   useEffect(() => {
     try {
@@ -1997,7 +2226,7 @@ function ChatPanel({
                     key={`ch-${ch.index}-${chIdx}-${ch.name}`}
                     aria-label={`${ch.name}${channelUnreadSuffix}`}
                     onClick={() => {
-                      setChannel(ch.index);
+                      selectChannel(ch.index);
                       setViewMode('channels');
                     }}
                     className={`relative shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
@@ -2166,7 +2395,7 @@ function ChatPanel({
       {/* Row 2 — DM tabs (Meshtastic/MeshCore; Reticulum promotes DMs into Row 1) */}
       {!dmOnlyChat ? (
         <div
-          className={`mb-2 flex min-h-[28px] min-w-0 items-center gap-2 whitespace-nowrap ${viewMode === 'channels' ? 'opacity-50' : ''}`}
+          className={`mb-2 flex min-h-[1.75rem] min-w-0 items-center gap-2 whitespace-nowrap ${viewMode === 'channels' ? 'opacity-50' : ''}`}
         >
           {dmTabPills}
         </div>
@@ -2473,7 +2702,7 @@ function ChatPanel({
                             if (type === 'dm' && raw) {
                               openDmTo(Number(raw));
                             } else {
-                              if (raw !== undefined) setChannel(Number(raw));
+                              if (raw !== undefined) selectChannel(Number(raw));
                               setViewMode('channels');
                             }
                           }}
@@ -2859,8 +3088,23 @@ function ChatPanel({
 
                             {/* Message text with optional search highlight (div: ChatPayloadText may render block link previews) */}
                             <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
-                              {showLxmfAttachmentLine &&
-                              parseReticulumAttachmentPayload(msg.payload) ? (
+                              {/^\[voice:/i.test(msg.payload) &&
+                              !(hasReticulumVoiceMemo && msg.reticulumAttachmentPath) ? (
+                                <span className="text-gray-400 italic">
+                                  {t('chatPanel.voiceMemo.unavailable')}
+                                </span>
+                              ) : hasReticulumVoiceMemo &&
+                                msg.reticulumAttachmentPath &&
+                                (msg.reticulumAttachmentKind === 'audio' ||
+                                  msg.reticulumAttachmentPath.toLowerCase().endsWith('.ogg') ||
+                                  /^\[voice:/i.test(msg.payload)) ? (
+                                <ReticulumVoiceMemoLine
+                                  attachmentPath={msg.reticulumAttachmentPath}
+                                  durationSec={msg.reticulumAudioDurationSec}
+                                  audioMode={msg.reticulumAudioMode}
+                                />
+                              ) : showLxmfAttachmentLine &&
+                                parseReticulumAttachmentPayload(msg.payload) ? (
                                 <ReticulumAttachmentLine
                                   payload={msg.payload}
                                   attachmentPath={msg.reticulumAttachmentPath}
@@ -2900,25 +3144,27 @@ function ChatPanel({
                             {/* Delivery status for own messages */}
                             {isOwn && (msg.status || msg.mqttStatus) && (
                               <div className="mt-0.5 flex items-center justify-end gap-1">
-                                {isOwn && msg.status === 'failed' && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onResend(msg);
-                                    }}
-                                    {...{ [PARENT_HOVER_ATTR]: '' }}
-                                    className="text-gray-500 transition-colors hover:text-gray-300"
-                                    title={t('chatPanel.resendMessage')}
-                                  >
-                                    <RotateCcw
-                                      aria-hidden
-                                      className="h-3.5 w-3.5"
-                                      trigger={parentIconTrigger}
-                                      size={14}
-                                    />
-                                  </button>
-                                )}
+                                {isOwn &&
+                                  msg.status === 'failed' &&
+                                  !isReticulumTooLargeForPropagationError(msg.error) && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onResend(msg);
+                                      }}
+                                      {...{ [PARENT_HOVER_ATTR]: '' }}
+                                      className="text-gray-500 transition-colors hover:text-gray-300"
+                                      title={t('chatPanel.resendMessage')}
+                                    >
+                                      <RotateCcw
+                                        aria-hidden
+                                        className="h-3.5 w-3.5"
+                                        trigger={parentIconTrigger}
+                                        size={14}
+                                      />
+                                    </button>
+                                  )}
                                 {showLxmfDeliveryStatus && msg.status ? (
                                   <ReticulumMessageStatusBadge
                                     status={
@@ -2930,6 +3176,16 @@ function ChatPanel({
                                     }
                                     via={msg.receivedVia}
                                     deliveryMethod={msg.reticulumDeliveryMethod}
+                                    error={msg.error}
+                                  />
+                                ) : capabilities.prefersDeviceDeliveryStatusOverMqtt &&
+                                  msg.status ? (
+                                  // Prefer RF/device delivery status over MQTT ✓ on MeshCore
+                                  // (coverage line carries heard-by; MQTT badge was masking it).
+                                  <MessageStatusBadge
+                                    status={msg.status}
+                                    transport="device"
+                                    connectionType={connectionType}
                                     error={msg.error}
                                   />
                                 ) : msg.mqttStatus ? (
@@ -2952,6 +3208,22 @@ function ChatPanel({
                                     error={msg.error}
                                   />
                                 ) : null}
+                                <RelayCoverageLine
+                                  protocol={protocol}
+                                  messageId={relayCoverageMessageKey(msg)}
+                                  isOwn={isOwn}
+                                  identityId={identityId}
+                                />
+                              </div>
+                            )}
+                            {isOwn && !(msg.status || msg.mqttStatus) && (
+                              <div className="mt-0.5 flex items-center justify-end gap-1">
+                                <RelayCoverageLine
+                                  protocol={protocol}
+                                  messageId={relayCoverageMessageKey(msg)}
+                                  isOwn={isOwn}
+                                  identityId={identityId}
+                                />
                               </div>
                             )}
                           </div>
@@ -3256,6 +3528,14 @@ function ChatPanel({
           setUnreadDividerTimestamp(0);
         }}
         textareaRef={composerInputRef}
+        onVoiceMemo={
+          protocol === 'reticulum' && hasReticulumVoiceMemo && isDmMode && onVoiceMemo != null
+            ? () => {
+                if (activeDmNode == null) return;
+                onVoiceMemo(activeDmNode);
+              }
+            : undefined
+        }
       />
 
       {chatActionError?.viewKey === viewKey && (

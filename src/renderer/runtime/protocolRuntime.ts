@@ -16,6 +16,8 @@ export interface ProtocolRuntimeQueueStatus {
   res: number;
   /** Optional interface label (Reticulum worst local-RF TX queue). */
   interfaceName?: string;
+  /** Reticulum: true when host TX fill exceeds idle-baseline thresholds. */
+  buffering?: boolean;
 }
 
 export interface ProtocolRuntimeDeviceOwner {

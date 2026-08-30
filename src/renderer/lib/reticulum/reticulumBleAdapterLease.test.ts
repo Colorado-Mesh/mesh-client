@@ -20,4 +20,16 @@ describe('reticulumBleAdapterLease', () => {
       window.removeEventListener(NOBLE_BLE_YIELD_RELEASED_EVENT, listener);
     }
   });
+
+  it('releases the scan lease without dispatching when notify is false', async () => {
+    const listener = vi.fn();
+    window.addEventListener(NOBLE_BLE_YIELD_RELEASED_EVENT, listener);
+    try {
+      await releaseReticulumBleRnodeConnect({ notify: false });
+      expect(window.electronAPI.bleCoexistence.releaseScan).toHaveBeenCalledWith('reticulum');
+      expect(listener).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener(NOBLE_BLE_YIELD_RELEASED_EVENT, listener);
+    }
+  });
 });

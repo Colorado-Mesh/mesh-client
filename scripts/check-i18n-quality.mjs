@@ -64,6 +64,11 @@ export const MESHCORE_ROOM_UI_KEYS = new Set([
   'meshcoreContactSettings.typeRoomServers',
   'nodesPanel.meshcoreTypeRoom',
   'appPanel.roomMessages',
+  'repeatersPanel.title',
+  'repeatersPanel.openRoom',
+  'repeatersPanel.filterRooms',
+  'repeatersPanel.savedPasswordOrphanRoomLabel',
+  'repeatersPanel.roomCliNeedsAdminPassword',
 ]);
 
 /** modulePanel MQTT proxy toggle + error (must not use legal/delegation false friends). */
@@ -3059,6 +3064,16 @@ function checkFlasherIssues(ctx) {
   if (locale !== 'en' && flatKey === LONG_SESSION_RESTART_NUDGE_KEY && /\bBLE\b/.test(enVal)) {
     if (!/\bBLE\b/.test(val)) {
       issues.push('longSessionRestartNudge must preserve protocol token "BLE"');
+    }
+    issues.push(...protectedBrandIssues(enVal, val, ['mesh-client']));
+  }
+
+  if (locale !== 'en' && flatKey === 'longSession.body' && /\bBLE\b/.test(enVal)) {
+    if (!/\bBLE\b/.test(val)) {
+      issues.push('longSession.body must preserve protocol token "BLE"');
+    }
+    if (/\bNoble\b/.test(enVal) && !/\bNoble\b/.test(val)) {
+      issues.push('longSession.body must preserve protocol token "Noble"');
     }
     issues.push(...protectedBrandIssues(enVal, val, ['mesh-client']));
   }

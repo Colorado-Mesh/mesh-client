@@ -220,3 +220,12 @@ jobs:
               fi
               ;;
           esac
+          {
+            echo "## Next steps"
+            echo ""
+            echo "1. Wait for **Build/Release Electron App** (\`release.yaml\`) to finish,"
+            echo "   including **Verify draft release tag_name**."
+            echo "2. Open the draft on GitHub Releases and confirm the tag is"
+            echo "   \`v${{ steps.preview.outputs.next }}\` — **not** \`untagged-*\`."
+            echo "3. Only then click **Publish release**."
+          } >> "$GITHUB_STEP_SUMMARY"

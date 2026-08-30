@@ -11,6 +11,7 @@ import {
 } from '@/renderer/lib/replyPreview';
 import { normalizeReticulumNodeId, reticulumHashToNodeId } from '@/renderer/lib/reticulum/destHash';
 import { reticulumUnsetDmTo } from '@/renderer/lib/reticulum/reticulumChatDmFilter';
+import { reactionParentKeyFromChatMessage } from '@/renderer/lib/storeRecordAdapters';
 import type { ChatMessage, MeshProtocol } from '@/renderer/lib/types';
 import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 
@@ -22,7 +23,7 @@ export function filterRegularChatMessages(
   const regular: ChatMessage[] = [];
   for (const msg of messages) {
     if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) continue;
-    if (msg.emoji && msg.replyId) continue;
+    if (reactionParentKeyFromChatMessage(msg) !== undefined) continue;
     regular.push(msg);
   }
   return regular;

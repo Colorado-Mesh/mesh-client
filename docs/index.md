@@ -47,6 +47,8 @@ Key outcomes:
 
 Pre-built binaries are available in [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases).
 
+**macOS:** prefer the **`.dmg`**. If you use the **`.zip`**, extract with **[Keka](https://www.keka.io/en/)** or `ditto -xk` — not **7-Zip** (can break framework symlinks and crash at launch). See [Troubleshooting — Squirrel.framework](troubleshooting.md#macos-library-not-loaded-squirrelframework-after-zip-extract).
+
 Arch Linux users may also find a **third-party** AUR package ([`mesh-client`](https://aur.archlinux.org/packages/mesh-client)) — not maintained by Colorado Mesh; prefer GitHub Releases for official builds.
 
 For development setup, scripts, test harness, and git hooks, see [Development Guide](development-environment.md).
@@ -91,6 +93,10 @@ Also useful:
   - [License](license.md)
   - [Credits](credits.md)
   - [Third-party licenses](third-party-licenses.md)
+  - [CI/CD](ci-cd.md) — workflows, local `act` runs, packaging
+  - [Release process](release-process.md)
+  - [Reticulum Games parity](reticulum-games-parity.md) — Ratspeak Games tab checklist
+  - [Nomad hosting interop](nomad-hosting-interop.md)
 
 ---
 

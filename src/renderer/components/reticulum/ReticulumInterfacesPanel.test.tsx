@@ -374,7 +374,13 @@ describe('ReticulumInterfacesPanel', () => {
   });
 
   it('shows Link quality on enabled TCP Client rows', async () => {
-    render(<ReticulumInterfacesPanel {...defaultProps} interfaces={[rmapWorldHub]} />);
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        sidecarApiReady={false}
+        interfaces={[rmapWorldHub]}
+      />,
+    );
 
     const meter = screen.getByTestId('reticulum-tcp-link-rmap-world');
     expect(meter).toBeInTheDocument();
@@ -427,7 +433,13 @@ describe('ReticulumInterfacesPanel', () => {
 
   it('shows Link quality unavailable when TCP probe fails', async () => {
     window.electronAPI.hostLink.probeTcpRtt = vi.fn().mockResolvedValue(null);
-    render(<ReticulumInterfacesPanel {...defaultProps} interfaces={[rmapWorldHub]} />);
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        sidecarApiReady={false}
+        interfaces={[rmapWorldHub]}
+      />,
+    );
     const meter = screen.getByTestId('reticulum-tcp-link-rmap-world');
     await waitFor(() => {
       expect(within(meter).getByText('connectionPanel.linkQualityUnavailable')).toBeInTheDocument();
@@ -448,6 +460,7 @@ describe('ReticulumInterfacesPanel', () => {
     render(
       <ReticulumInterfacesPanel
         {...defaultProps}
+        sidecarApiReady={false}
         interfaces={[
           {
             id: 'rnode-ble',
@@ -768,6 +781,217 @@ describe('ReticulumInterfacesPanel', () => {
         '/api/v1/interfaces/hub',
         expect.objectContaining({ mode: 'gateway' }),
       );
+    });
+  });
+
+  describe('catalog-driven interface types', () => {
+    const serialPorts: ReticulumSerialPortOption[] = [
+      { path: '/dev/ttyUSB0', label: 'USB Serial' },
+    ];
+
+    async function selectAddType(user: ReturnType<typeof userEvent.setup>, type: string) {
+      await user.selectOptions(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.type'),
+        type,
+      );
+    }
+
+    const clickAdd = (user: ReturnType<typeof userEvent.setup>) =>
+      user.click(screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.add' }));
+
+    it('offers the three new types in the type select', () => {
+      render(<ReticulumInterfacesPanel {...defaultProps} />);
+      const select = screen.getByLabelText('connectionPanel.reticulumInterfaces.type');
+      const values = within(select)
+        .getAllByRole('option')
+        .map((option) => (option as HTMLOptionElement).value);
+      expect(values).toEqual(expect.arrayContaining(['serial', 'ax25kiss', 'local']));
+    });
+
+    it('posts a serial interface with its device path and line params', async () => {
+      const user = userEvent.setup();
+      render(<ReticulumInterfacesPanel {...defaultProps} serialPorts={serialPorts} />);
+
+      await selectAddType(user, 'serial');
+      await user.selectOptions(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.port'),
+        '/dev/ttyUSB0',
+      );
+      await clickAdd(user);
+
+      await waitFor(() => {
+        expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith(
+          '/api/v1/interfaces',
+          expect.objectContaining({
+            type: 'serial',
+            serial_port: '/dev/ttyUSB0',
+            // Unbound catalog fields ride in extra_config, defaults included.
+            extra_config: expect.objectContaining({ speed: '9600', parity: 'N' }),
+          }),
+        );
+      });
+    });
+
+    it('posts an ax25kiss interface with callsign and ssid', async () => {
+      const user = userEvent.setup();
+      render(<ReticulumInterfacesPanel {...defaultProps} serialPorts={serialPorts} />);
+
+      await selectAddType(user, 'ax25kiss');
+      await user.selectOptions(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.port'),
+        '/dev/ttyUSB0',
+      );
+      await user.type(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.callsign'),
+        'KD5IHC',
+      );
+      await user.type(screen.getByLabelText('connectionPanel.reticulumInterfaces.field.ssid'), '7');
+      await clickAdd(user);
+
+      await waitFor(() => {
+        expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith(
+          '/api/v1/interfaces',
+          expect.objectContaining({
+            type: 'ax25kiss',
+            serial_port: '/dev/ttyUSB0',
+            callsign: 'KD5IHC',
+            extra_config: expect.objectContaining({ ssid: '7' }),
+          }),
+        );
+      });
+    });
+
+    it('blocks an ax25kiss add when ssid is out of range', async () => {
+      const user = userEvent.setup();
+      render(<ReticulumInterfacesPanel {...defaultProps} serialPorts={serialPorts} />);
+
+      await selectAddType(user, 'ax25kiss');
+      await user.selectOptions(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.port'),
+        '/dev/ttyUSB0',
+      );
+      await user.type(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.callsign'),
+        'KD5IHC',
+      );
+      await user.type(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.ssid'),
+        '16',
+      );
+      await clickAdd(user);
+
+      expect(window.electronAPI.reticulum.proxyPost).not.toHaveBeenCalledWith(
+        '/api/v1/interfaces',
+        expect.objectContaining({ type: 'ax25kiss' }),
+      );
+    });
+
+    it('blocks an ax25kiss add when the callsign is missing', async () => {
+      const user = userEvent.setup();
+      render(<ReticulumInterfacesPanel {...defaultProps} serialPorts={serialPorts} />);
+
+      await selectAddType(user, 'ax25kiss');
+      await user.selectOptions(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.port'),
+        '/dev/ttyUSB0',
+      );
+      await user.type(screen.getByLabelText('connectionPanel.reticulumInterfaces.field.ssid'), '0');
+      await clickAdd(user);
+
+      expect(window.electronAPI.reticulum.proxyPost).not.toHaveBeenCalledWith(
+        '/api/v1/interfaces',
+        expect.objectContaining({ type: 'ax25kiss' }),
+      );
+    });
+
+    it('posts a local interface with a numeric port rather than a device path', async () => {
+      const user = userEvent.setup();
+      render(<ReticulumInterfacesPanel {...defaultProps} />);
+
+      await selectAddType(user, 'local');
+      await clickAdd(user);
+
+      await waitFor(() => {
+        expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith(
+          '/api/v1/interfaces',
+          expect.objectContaining({ type: 'local', port: 37428 }),
+        );
+      });
+      const [, body] = (window.electronAPI.reticulum.proxyPost as ReturnType<typeof vi.fn>).mock
+        .calls[0] as [string, Record<string, unknown>];
+      expect(body.serial_port).toBeUndefined();
+    });
+
+    it('hides advanced line params behind a disclosure', async () => {
+      const user = userEvent.setup();
+      render(<ReticulumInterfacesPanel {...defaultProps} serialPorts={serialPorts} />);
+
+      await selectAddType(user, 'serial');
+      expect(
+        screen.getByText('connectionPanel.reticulumInterfaces.advancedFields'),
+      ).toBeInTheDocument();
+      // Speed stays visible; the timing/line params collapse.
+      expect(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.field.speed'),
+      ).toBeInTheDocument();
+    });
+
+    it('seeds and saves the edit patch for an ax25kiss row', async () => {
+      const user = userEvent.setup();
+      const proxyPut = vi.fn().mockResolvedValue({ ok: true });
+      window.electronAPI.reticulum.proxyPut = proxyPut;
+
+      render(
+        <ReticulumInterfacesPanel
+          {...defaultProps}
+          serialPorts={serialPorts}
+          interfaces={[
+            {
+              id: 'tnc',
+              name: 'Packet TNC',
+              type: 'ax25kiss',
+              enabled: true,
+              status: 'up',
+              serial_port: '/dev/ttyUSB0',
+              callsign: 'KD5IHC',
+              extra_config: { ssid: '3' },
+            },
+          ]}
+        />,
+      );
+
+      await user.click(
+        screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.edit' }),
+      );
+
+      const ssid = document.getElementById('edit-iface-tnc-ssid') as HTMLInputElement | null;
+      expect(ssid?.value).toBe('3');
+      await user.clear(ssid!);
+      await user.type(ssid!, '9');
+
+      await user.click(
+        screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.saveEdit' }),
+      );
+
+      await waitFor(() => {
+        expect(proxyPut).toHaveBeenCalledWith(
+          '/api/v1/interfaces/tnc',
+          expect.objectContaining({
+            type: 'ax25kiss',
+            callsign: 'KD5IHC',
+            extra_config: expect.objectContaining({ ssid: '9' }),
+          }),
+        );
+      });
+    });
+
+    it('has no axe violations on the serial field set', async () => {
+      const user = userEvent.setup();
+      const { container } = render(
+        <ReticulumInterfacesPanel {...defaultProps} serialPorts={serialPorts} />,
+      );
+      await selectAddType(user, 'ax25kiss');
+      expect(await axe(container)).toHaveNoViolations();
     });
   });
 
@@ -2023,6 +2247,50 @@ describe('ReticulumInterfacesPanel', () => {
       });
     });
 
+    it('shows the BLE flow-control hint when the add form is on Bluetooth transport', async () => {
+      const user = userEvent.setup();
+      window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+        if (path === '/api/v1/ble/availability') {
+          return Promise.resolve({ available: true });
+        }
+        if (path === '/api/v1/rnode/presets') {
+          return Promise.resolve({ presets: [] });
+        }
+        if (path === '/api/v1/config/audit') {
+          return Promise.resolve({ issues: [] });
+        }
+        if (path === '/api/v1/serial/ports') {
+          return Promise.resolve({ ports: [] });
+        }
+        return Promise.resolve({});
+      });
+      const { container } = render(<ReticulumInterfacesPanel {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalledWith(
+          '/api/v1/ble/availability',
+        );
+      });
+      await user.selectOptions(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.type'),
+        'rnode',
+      );
+      await user.selectOptions(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.rnodeTransport'),
+        'ble',
+      );
+      expect(
+        screen.getByRole('checkbox', {
+          name: 'connectionPanel.reticulumInterfaces.flowControl',
+        }),
+      ).toBeChecked();
+      expect(
+        screen.getByText('connectionPanel.reticulumInterfaces.flowControlBleHint'),
+      ).toBeInTheDocument();
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
+    });
+
     it('does not show a flow-control checkbox for TCP add', () => {
       render(<ReticulumInterfacesPanel {...defaultProps} />);
       expect(
@@ -2139,6 +2407,60 @@ describe('ReticulumInterfacesPanel', () => {
           name: 'connectionPanel.reticulumInterfaces.flowControl',
         }),
       ).not.toBeInTheDocument();
+    });
+  });
+
+  describe('effective runtime mode badge', () => {
+    const divergedRnode: ReticulumInterfaceRow = {
+      ...rmapCapableRnode,
+      mode: 'full',
+      runtime_mode: 'access_point',
+      discoverable: true,
+    };
+
+    it('shows effective-mode badge when configured and runtime modes diverge', async () => {
+      const { container } = render(
+        <ReticulumInterfacesPanel {...defaultProps} interfaces={[divergedRnode, rmapWorldHub]} />,
+      );
+      expect(screen.getByTestId('reticulum-runtime-mode-rnode-41f4')).toBeInTheDocument();
+      expect(
+        screen.getAllByLabelText('connectionPanel.reticulumInterfaces.effectiveModeAria').length,
+      ).toBeGreaterThanOrEqual(2);
+      expect(
+        screen.getByRole('checkbox', {
+          name: 'connectionPanel.reticulumInterfaces.rmapDiscoverableAria',
+        }),
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('reticulum-runtime-mode-rnode-41f4-rmap')).toBeInTheDocument();
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
+    });
+
+    it('hides badge when modes match or runtime_mode is omitted', () => {
+      const { rerender } = render(
+        <ReticulumInterfacesPanel
+          {...defaultProps}
+          interfaces={[{ ...rmapCapableRnode, mode: 'full', runtime_mode: 'full' }, rmapWorldHub]}
+        />,
+      );
+      expect(screen.queryByTestId('reticulum-runtime-mode-rnode-41f4')).not.toBeInTheDocument();
+
+      rerender(
+        <ReticulumInterfacesPanel
+          {...defaultProps}
+          interfaces={[{ ...rmapCapableRnode, mode: 'full' }, rmapWorldHub]}
+        />,
+      );
+      expect(screen.queryByTestId('reticulum-runtime-mode-rnode-41f4')).not.toBeInTheDocument();
+    });
+
+    it('shows effective-mode badge next to mode select while editing', async () => {
+      const user = userEvent.setup();
+      render(<ReticulumInterfacesPanel {...defaultProps} interfaces={[divergedRnode]} />);
+      await user.click(
+        screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.edit' }),
+      );
+      expect(screen.getByTestId('reticulum-runtime-mode-rnode-41f4-edit')).toBeInTheDocument();
     });
   });
 });

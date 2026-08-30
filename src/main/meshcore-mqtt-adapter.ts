@@ -320,7 +320,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     // — mqtt.js can still emit after end() — cannot touch lastPacketReceivedAt or consume
     // the new session's first-ping logs.
     const sessionClient = this.client;
-    this.client.on('error', (err) => {
+    sessionClient.on('error', (err) => {
+      if (this.client !== sessionClient) return;
       this.clearConnectTimers();
       console.error(
         '[MeshCore MQTT] client error',
@@ -334,6 +335,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     });
     this.connectAckTimer = setTimeout(() => {
       this.connectAckTimer = null;
+      if (this.client !== sessionClient) return;
       if (this.status !== 'connecting' || !this.client) return;
       this.connectAbortByWatchdog = true;
       const msg = `MeshCore MQTT: timed out before MQTT session (no CONNACK within ${MESHCORE_MQTT_CONNECT_ACK_MS / 1000}s). Check host, port, WebSocket path /mqtt, TLS, and network (firewall, VPN, DNS).`;
@@ -344,7 +346,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       forceEndMqttClient(stale);
       this.setStatus('disconnected');
     }, MESHCORE_MQTT_CONNECT_ACK_MS);
-    this.client.on('connect', () => {
+    sessionClient.on('connect', () => {
+      if (this.client !== sessionClient) return;
       if (this.connectAckTimer) {
         clearTimeout(this.connectAckTimer);
         this.connectAckTimer = null;
@@ -431,7 +434,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         );
       }
     });
-    this.client.on('message', (topic, payload) => {
+    sessionClient.on('message', (topic, payload) => {
+      if (this.client !== sessionClient) return;
       if (!this.firstMessageLogged) {
         this.firstMessageLogged = true;
         console.debug('[MeshCore MQTT] first message received on topic', sanitizeLogMessage(topic));
@@ -451,7 +455,11 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       }
       this.emit('chatMessage', { topic, ...env });
     });
-    this.client.on('close', () => {
+    sessionClient.on('close', () => {
+      // A stale client's close must not clear the successor's timers or schedule a
+      // reconnect over it: connect() reassigns lastSettings right after disconnect(),
+      // so the skipReconnect guard below would not catch it.
+      if (this.client !== sessionClient) return;
       this.clearWssPing();
       this.clearConnectionWatchdog();
       this.clearConnectTimers();
@@ -547,7 +555,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         }
       }, delay);
     });
-    this.client.on('offline', () => {
+    sessionClient.on('offline', () => {
+      if (this.client !== sessionClient) return;
       console.warn('[MeshCore MQTT] client offline');
       if (this.status === 'connected' || this.status === 'connecting') {
         this.setStatus('disconnected');

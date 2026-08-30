@@ -13,7 +13,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use lxmf_core::constants::{
-    DeliveryMethod, FIELD_FILE_ATTACHMENTS, FIELD_ICON_APPEARANCE, FIELD_REACTION,
+    AM_OPUS_OGG, DeliveryMethod, FIELD_FILE_ATTACHMENTS, FIELD_ICON_APPEARANCE, FIELD_REACTION,
     REACTION_CONTENT, REACTION_TO,
 };
 use lxmf_core::message::LxMessage;
@@ -24,6 +24,8 @@ const FIELD_REPLY_TO: u8 = 0x30;
 const FIELD_REPLY_QUOTE: u8 = 0x31;
 /// Cap wire quote length (matches renderer `REPLY_PREVIEW_MAX_LEN` without ellipsis).
 const REPLY_QUOTE_MAX_CHARS: usize = 50;
+/// lxmf-core per-field unpack limit — audio above this cannot be received by peers.
+const MAX_LXMF_AUDIO_FIELD_BYTES: usize = 256 * 1024;
 use lxmf_core::peer::OutboundOfferPolicy;
 use lxmf_core::router::LxmRouter;
 use rns_identity::destination::Destination;
@@ -59,7 +61,7 @@ use super::packet_log::{
 use super::path_failover::{
     self, PathSlotCandidate, active_via_hash_from_slots, live_interface_names,
     record_path_failover_attempt, remaining_live_ifaces, select_unblocked_slot,
-    should_attempt_nomad_via_failover, via_prefix,
+    should_attempt_nomad_via_failover, should_attempt_propagation_via_failover, via_prefix,
 };
 use super::path_medium::{self, PathMediumPreferenceSetting, PathMediumSetting};
 use super::path_speed;
@@ -114,6 +116,15 @@ pub(crate) fn live_interface_tx_queue_fields(
         (None, None)
     } else {
         (Some(tx_queue_used), Some(tx_queue_max))
+    }
+}
+
+/// Live `GetInterfaceStats.mode` is only meaningful while the interface is online.
+pub(crate) fn live_interface_runtime_mode_if_online(online: bool, mode: &str) -> Option<String> {
+    if online {
+        config::live_interface_runtime_mode(mode)
+    } else {
+        None
     }
 }
 
@@ -303,8 +314,7 @@ impl LiveBridge {
         let identity_path = crate::stack::identity_apply::identity_file_path(&config_dir);
         let identity_configured = inner.read().await.identity.configured;
         let identity = if identity_path.exists() {
-            rns_identity::identity::Identity::from_file(&identity_path)
-                .map_err(|e| format!("load identity: {e}"))?
+            crate::stack::identity_apply::load_identity_from_path(&identity_path)?
         } else if identity_configured {
             return Err("identity file missing; re-import or generate identity".into());
         } else {
@@ -409,11 +419,12 @@ impl LiveBridge {
                 .map(hex::encode)
                 .unwrap_or_default();
             if msg.method == DeliveryMethod::Propagated {
-                tracing::info!(
+                let from_prefix = sender_hex.get(..12).unwrap_or(&sender_hex);
+                tracing::debug!(
                     target: "propagation-retrieve",
                     message_hash = %message_hash,
                     transient_id = %transient_id_hex,
-                    from = %sender_hex,
+                    from_prefix = %from_prefix,
                     "inbound LXMF delivered via propagation"
                 );
             }
@@ -469,6 +480,9 @@ impl LiveBridge {
             lxmf_dest_hash,
             router.clone(),
         ));
+        outbound_driver.set_propagation_max_message_size(
+            pn_hosting_policy.propagation_limit_kb.saturating_mul(1024),
+        );
         let outbound = Arc::new(Mutex::new(outbound_driver));
 
         let bridge = Self {
@@ -912,7 +926,7 @@ impl LiveBridge {
     /// destination on our side.
     /// Returns page/file bytes plus the egress atom and overall timeout used for the Link.
     /// Remote errors after egress is known include that atom so the UI countdown can update.
-    #[allow(clippy::too_many_arguments)] // path ensure + progress correlation travel with Link args
+    #[allow(clippy::too_many_arguments, clippy::result_large_err)] // path ensure + Nomad Link Err diagnostics
     async fn query_nomad_node(
         &self,
         hash_hex: &str,
@@ -1301,7 +1315,7 @@ impl LiveBridge {
     ///
     /// `my_gen` is owned by the outer page request (see [`Self::query_nomad_node`]) so
     /// via-failover retries do not bump generation or cancel a newer page load.
-    #[allow(clippy::too_many_arguments)] // hops / budgets / path-ensure diagnostics travel together
+    #[allow(clippy::too_many_arguments, clippy::result_large_err)] // hops / budgets / Nomad Link Err diagnostics
     async fn nomad_link_client_query(
         &self,
         remote_hash: [u8; 16],
@@ -1783,15 +1797,22 @@ impl LiveBridge {
     }
 
     async fn query_control_timed(&self, query: TransportQuery) -> Option<TransportQueryResponse> {
-        if let Ok(resp) =
-            tokio::time::timeout(TRANSPORT_QUERY_TIMEOUT, self.handle.query_control(query)).await
-        {
+        self.query_control_timed_for(query, TRANSPORT_QUERY_TIMEOUT)
+            .await
+    }
+
+    async fn query_control_timed_for(
+        &self,
+        query: TransportQuery,
+        timeout: Duration,
+    ) -> Option<TransportQueryResponse> {
+        if timeout.is_zero() {
+            return None;
+        }
+        if let Ok(resp) = tokio::time::timeout(timeout, self.handle.query_control(query)).await {
             resp
         } else {
-            tracing::debug!(
-                "transport control query timed out after {:?}",
-                TRANSPORT_QUERY_TIMEOUT
-            );
+            tracing::debug!("transport control query timed out after {:?}", timeout);
             None
         }
     }
@@ -1806,8 +1827,59 @@ impl LiveBridge {
         let key = hash_hex.to_lowercase();
         entries
             .iter()
-            .find(|e| hex::encode(e.hash).to_lowercase() == key)
+            .filter(|e| hex::encode(e.hash).to_lowercase() == key)
             .map(|e| e.hops)
+            .min()
+    }
+
+    /// Lowest-hop live path slot within RRC link limits (default 8).
+    async fn best_rrc_path_route(&self, hash_hex: &str) -> Option<(u8, Option<String>)> {
+        self.best_rrc_path_route_within(hash_hex, TRANSPORT_QUERY_TIMEOUT)
+            .await
+    }
+
+    async fn best_rrc_path_route_within(
+        &self,
+        hash_hex: &str,
+        query_timeout: Duration,
+    ) -> Option<(u8, Option<String>)> {
+        const RRC_MAX_CONNECT_HOPS: u8 = 8;
+
+        let Ok(dest) = parse_hash16(hash_hex) else {
+            return None;
+        };
+        let deadline = tokio::time::Instant::now() + query_timeout;
+        let slots_budget = rrc_rediscovery_remaining(deadline)?;
+        let slots_resp = self
+            .query_control_timed_for(TransportQuery::GetPathSlots { dest }, slots_budget)
+            .await;
+        if let Some(TransportQueryResponse::PathSlots(entry)) = slots_resp {
+            let best = entry
+                .slots
+                .iter()
+                .filter(|s| !s.expired && s.hops <= RRC_MAX_CONNECT_HOPS)
+                .min_by_key(|s| s.hops);
+            if let Some(slot) = best {
+                let iface = (!slot.interface.is_empty()).then(|| slot.interface.clone());
+                return Some((slot.hops, iface));
+            }
+        }
+        // Path-table hops fallback shares the same overall budget.
+        let rem = rrc_rediscovery_remaining(deadline)?;
+        let resp = self
+            .query_control_timed_for(TransportQuery::GetPathTable, rem)
+            .await?;
+        let TransportQueryResponse::PathTable(entries) = resp else {
+            return None;
+        };
+        let key = hash_hex.to_lowercase();
+        entries
+            .iter()
+            .filter(|e| hex::encode(e.hash).to_lowercase() == key)
+            .map(|e| e.hops)
+            .min()
+            .filter(|&h| h <= RRC_MAX_CONNECT_HOPS)
+            .map(|h| (h, None))
     }
 
     /// Register handler for Nomad Network node announces (`nomadnetwork.node`).
@@ -2112,12 +2184,60 @@ impl LiveBridge {
         hops: u8,
         nickname: String,
     ) -> serde_json::Value {
+        let _ = self.refresh_outbound_path_table().await;
+        let mut route = self.best_rrc_path_route(&dest_hash_hex).await;
+        if route.is_none() {
+            // Hubs often show announce hops in the peer list while live path
+            // slots are empty until RequestPath completes (especially after
+            // overnight idle). Discover before rejecting — the full eight-second
+            // budget covers ensure + path-table refresh + second route select so
+            // a stalled transport cannot delay "path not ready" beyond that.
+            route = self
+                .rediscover_rrc_path_route(&dest_hash_hex, RRC_CONNECT_PATH_REDISCOVERY_BUDGET)
+                .await;
+        }
+        let Some((path_hops, path_iface)) = route else {
+            tracing::debug!(
+                target: "rrc",
+                hub = %dest_hash_hex,
+                stored_hops = hops,
+                "rrc connect rejected — no viable network path (≤8 hops)"
+            );
+            return rrc_path_not_ready_response();
+        };
+        let ifaces = self.fetch_interfaces().await.unwrap_or_default();
+        let egress = resolve_lxmf_sent_via(path_iface.as_deref(), &ifaces, None);
+        let egress_atom = match egress.as_str() {
+            "ble" => "ble",
+            "rf" => "rf",
+            "tcp" => "tcp",
+            _ => "network",
+        };
+        let link_hops = nomad_timeouts::nomad_link_initiator_hops(egress_atom, path_hops);
+        if path_hops != hops || link_hops != path_hops {
+            tracing::debug!(
+                target: "rrc",
+                hub = %dest_hash_hex,
+                stored_hops = hops,
+                path_hops,
+                link_hops,
+                egress = %egress,
+                path_iface = ?path_iface,
+                "rrc connect using scaled link hops"
+            );
+        }
         match self
             .rrc_session
-            .connect(dest_hash, dest_hash_hex, hops, nickname)
+            .connect(dest_hash, dest_hash_hex, link_hops, nickname)
             .await
         {
-            Ok(()) => serde_json::json!({ "ok": true }),
+            Ok(()) => serde_json::json!({
+                "ok": true,
+                "hops": path_hops,
+                "link_hops": link_hops,
+                "path_iface": path_iface,
+                "egress": egress,
+            }),
             Err(e) => serde_json::json!({ "ok": false, "error": e }),
         }
     }
@@ -2274,32 +2394,32 @@ impl LiveBridge {
             .await
     }
 
-    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // sync GamesSessionManager call awaited by StackHandle API
     pub async fn games_status(&self) -> serde_json::Value {
         self.games_session.status()
     }
 
-    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // sync GamesSessionManager call awaited by StackHandle API
     pub async fn games_apps(&self) -> serde_json::Value {
         self.games_session.list_apps()
     }
 
-    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // sync GamesSessionManager call awaited by StackHandle API
     pub async fn games_sessions(&self, peer: Option<&str>) -> serde_json::Value {
         self.games_session.list_sessions(peer)
     }
 
-    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // sync GamesSessionManager call awaited by StackHandle API
     pub async fn games_session_detail(&self, session_id: &str) -> serde_json::Value {
         self.games_session.session_detail(session_id)
     }
 
-    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // sync GamesSessionManager call awaited by StackHandle API
     pub async fn games_mark_read(&self, session_id: &str) -> Result<(), String> {
         self.games_session.mark_read(session_id)
     }
 
-    #[allow(clippy::unused_async)] // sync GamesSessionManager call awaited by StackHandle API
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // sync GamesSessionManager call awaited by StackHandle API
     pub async fn games_delete_session(&self, session_id: &str) -> Result<(), String> {
         self.games_session.delete_session(session_id)
     }
@@ -2413,6 +2533,24 @@ impl LiveBridge {
         hex::encode(self.identity.hash)
     }
 
+    /// Live path-table hops + interface name for a destination (propagation list enrichment).
+    pub fn live_path_fields_for_destination(
+        &self,
+        destination_hash_hex: &str,
+    ) -> (Option<u8>, Option<String>) {
+        let clean = destination_hash_hex.trim().to_lowercase();
+        self.path_peer_cache
+            .lock()
+            .ok()
+            .and_then(|cache| {
+                cache
+                    .iter()
+                    .find(|p| p.destination_hash == clean)
+                    .map(|p| (p.hops, p.interface.clone().filter(|name| !name.is_empty())))
+            })
+            .unwrap_or((None, None))
+    }
+
     /// rnsh/rncp gating decision for `destination_hash_hex`: resolves the
     /// path-table egress interface (if known) to a transport atom via
     /// [`super::via::classify_path_interface_name`] and buckets it with
@@ -2502,6 +2640,9 @@ impl LiveBridge {
                                     callsign: None,
                                     id_interval: None,
                                     mode: None,
+                                    runtime_mode: live_interface_runtime_mode_if_online(
+                                        s.online, &s.mode,
+                                    ),
                                     seed_addresses: Vec::new(),
                                     discoverable: None,
                                     latitude: None,
@@ -2514,6 +2655,7 @@ impl LiveBridge {
                                     network_name: None,
                                     passphrase: None,
                                     flow_control: None,
+                                    ignore_config_warnings: None,
                                     tx_queue_used,
                                     tx_queue_max,
                                     extra_config: std::collections::HashMap::new(),
@@ -2785,6 +2927,7 @@ impl LiveBridge {
                     // cancel_client_download()s so this poll loop exits on Idle/Failed.
                     let cancel = Arc::new(AtomicBool::new(false));
                     let started = spawn_client_download_driver_task(
+                        None,
                         Arc::clone(&propagation),
                         Arc::clone(&router),
                         Arc::clone(&outbound),
@@ -2946,8 +3089,14 @@ impl LiveBridge {
 
     /// Refresh outbound path table from transport when GetPathTable succeeds.
     async fn refresh_outbound_path_table(&self) -> bool {
-        let Some(TransportQueryResponse::PathTable(entries)) =
-            self.query_control_timed(TransportQuery::GetPathTable).await
+        self.refresh_outbound_path_table_within(TRANSPORT_QUERY_TIMEOUT)
+            .await
+    }
+
+    async fn refresh_outbound_path_table_within(&self, query_timeout: Duration) -> bool {
+        let Some(TransportQueryResponse::PathTable(entries)) = self
+            .query_control_timed_for(TransportQuery::GetPathTable, query_timeout)
+            .await
         else {
             return false;
         };
@@ -2965,6 +3114,25 @@ impl LiveBridge {
         true
     }
 
+    /// Empty-slot RRC rediscovery under a shared wall-clock budget (ensure +
+    /// refresh + second route selection).
+    async fn rediscover_rrc_path_route(
+        &self,
+        dest_hash_hex: &str,
+        budget: Duration,
+    ) -> Option<(u8, Option<String>)> {
+        let deadline = tokio::time::Instant::now() + budget;
+        let ensure_budget = rrc_rediscovery_remaining(deadline)?;
+        let _ = self
+            .ensure_path_for_direct_with_opts(dest_hash_hex, true, ensure_budget, true)
+            .await;
+        if let Some(rem) = rrc_rediscovery_remaining(deadline) {
+            let _ = self.refresh_outbound_path_table_within(rem).await;
+        }
+        let rem = rrc_rediscovery_remaining(deadline)?;
+        self.best_rrc_path_route_within(dest_hash_hex, rem).await
+    }
+
     /// Discover a path to the destination before falling back to the propagation node.
     /// When `force` is true, drop any cached path and RequestPath so we wait for a
     /// fresh route response instead of returning on the stale `has_path_to` entry.
@@ -2975,8 +3143,12 @@ impl LiveBridge {
     }
 
     /// Shared path gate for offer probe + Sync (`PROPAGATION_PATH_UNKNOWN`).
-    async fn ensure_propagation_path_or_unknown(&self, dest_hex: &str) -> Result<(), String> {
-        if self.ensure_path_for_direct(dest_hex, true).await {
+    async fn ensure_propagation_path_or_unknown(
+        &self,
+        dest_hex: &str,
+        force: bool,
+    ) -> Result<(), String> {
+        if self.ensure_path_for_direct(dest_hex, force).await {
             Ok(())
         } else {
             Err("PROPAGATION_PATH_UNKNOWN".into())
@@ -3215,6 +3387,30 @@ impl LiveBridge {
         reply_to: Option<[u8; 32]>,
         reply_quote: Option<&str>,
     ) -> Result<(LxMessage, String), String> {
+        self.prepare_signed_outbound_lxmf_with_audio(
+            dest,
+            title,
+            content,
+            method,
+            reply_to,
+            reply_quote,
+            None,
+        )
+    }
+
+    /// Like [`prepare_signed_outbound_lxmf`], optionally stamping native
+    /// `FIELD_AUDIO` (voice memo) before `sign()` so it is covered by the hash.
+    #[allow(clippy::too_many_arguments)] // mirrors prepare_signed_outbound_lxmf + optional audio bytes
+    fn prepare_signed_outbound_lxmf_with_audio(
+        &self,
+        dest: [u8; 16],
+        title: &str,
+        content: &str,
+        method: DeliveryMethod,
+        reply_to: Option<[u8; 32]>,
+        reply_quote: Option<&str>,
+        audio: Option<&[u8]>,
+    ) -> Result<(LxMessage, String), String> {
         let mut msg = LxMessage::new(
             dest,
             parse_hash16(&self.lxmf_hash_hex)?,
@@ -3223,6 +3419,17 @@ impl LiveBridge {
             method,
         );
         apply_reply_fields(&mut msg, reply_to, reply_quote);
+        if let Some(bytes) = audio {
+            if bytes.len() > MAX_LXMF_AUDIO_FIELD_BYTES {
+                return Err(format!(
+                    "audio_too_large: {} > {}",
+                    bytes.len(),
+                    MAX_LXMF_AUDIO_FIELD_BYTES
+                ));
+            }
+            msg.set_audio_field(AM_OPUS_OGG, bytes)
+                .map_err(|e| format!("lxmf set_audio_field: {e:?}"))?;
+        }
         let signing_key = self
             .identity
             .get_signing_key()
@@ -3599,6 +3806,10 @@ impl LiveBridge {
         if let Ok(mut node) = self.propagation.local_node().lock() {
             apply_pn_hosting_policy_to_node(&mut node, policy);
         }
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver
+                .set_propagation_max_message_size(policy.propagation_limit_kb.saturating_mul(1024));
+        }
         // Restart announce loop with updated interval / name when serving.
         if self.propagation.is_local_serving() {
             self.prop_announce.start(
@@ -3624,7 +3835,8 @@ impl LiveBridge {
         self.cancel_propagation_sync().await;
         self.rehydrate_propagation_identities_from_persisted();
         let identity_ok = self.ensure_identity_for_direct(&dest_hex).await;
-        self.ensure_propagation_path_or_unknown(&dest_hex).await?;
+        self.ensure_propagation_path_or_unknown(&dest_hex, true)
+            .await?;
         let identity_known_after = self
             .outbound
             .lock()
@@ -3728,7 +3940,10 @@ impl LiveBridge {
         )
     }
 
-    pub async fn start_propagation_sync(&self, destination_hash: &str) -> Result<(), String> {
+    pub async fn start_propagation_sync(
+        self: Arc<Self>,
+        destination_hash: &str,
+    ) -> Result<(), String> {
         let hash = parse_hash16(destination_hash)?;
         let dest_hex = destination_hash.to_lowercase();
         // Cancel any in-flight sync/emitter before starting a new one.
@@ -3804,7 +4019,10 @@ impl LiveBridge {
         // Do this before peering PoW — nonzero peering_cost stamps are expensive and useless
         // when there is no path (would previously burn CPU then stall into syncTimedOut).
         let hops = self.hops_to_destination(&dest_hex).await;
-        if let Err(err) = self.ensure_propagation_path_or_unknown(&dest_hex).await {
+        if let Err(err) = self
+            .ensure_propagation_path_or_unknown(&dest_hex, false)
+            .await
+        {
             // Path gate awaits; only clear if we still own this attempt's latch.
             if let Ok(mut driver) = self.outbound.lock() {
                 if driver.propagation_sync_target() == Some(hash) {
@@ -3879,6 +4097,7 @@ impl LiveBridge {
             }
         });
         if !self.spawn_client_download_driver(
+            Some(Arc::clone(&self)),
             hash,
             dest_hex.clone(),
             Arc::clone(&cancel),
@@ -3917,6 +4136,7 @@ impl LiveBridge {
     #[allow(clippy::too_many_arguments)] // shared /get driver args mirror spawn_client_download_driver_task
     fn spawn_client_download_driver(
         &self,
+        live: Option<Arc<LiveBridge>>,
         pn_hash: [u8; 16],
         pn_hex: String,
         cancel: Arc<AtomicBool>,
@@ -3926,6 +4146,7 @@ impl LiveBridge {
         emit_ui: bool,
     ) -> bool {
         spawn_client_download_driver_task(
+            live,
             Arc::clone(&self.propagation),
             Arc::clone(&self.router),
             Arc::clone(&self.outbound),
@@ -4072,7 +4293,7 @@ impl LiveBridge {
         self.propagation.messagestore_load_pending()
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle propagation cancel API
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle propagation cancel API
     pub async fn cancel_propagation_sync(&self) {
         // Invalidate in-flight emitters before flipping cancel / clearing pins.
         // Hold lifecycle so emitter check+effect cannot race this generation bump.
@@ -4150,6 +4371,7 @@ impl LiveBridge {
                     callsign: None,
                     id_interval: None,
                     mode: None,
+                    runtime_mode: live_interface_runtime_mode_if_online(s.online, &s.mode),
                     seed_addresses: Vec::new(),
                     discoverable: None,
                     latitude: None,
@@ -4162,6 +4384,7 @@ impl LiveBridge {
                     network_name: None,
                     passphrase: None,
                     flow_control: None,
+                    ignore_config_warnings: None,
                     tx_queue_used,
                     tx_queue_max,
                     extra_config: std::collections::HashMap::new(),
@@ -4283,6 +4506,41 @@ impl LiveBridge {
             })
             .await
             .map_err(|e| e.to_string())
+    }
+
+    /// Drop any cached route, then RequestPath so path ranking can move off stale TCP slots.
+    pub async fn request_path_force(&self, hash: &str) -> Result<(), String> {
+        let dest = parse_hash16(hash)?;
+        let _ = self
+            .query_control_timed(TransportQuery::DropPath { dest })
+            .await;
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.clear_path_to(hash);
+        }
+        if let Ok(mut cache) = self.peer_via_cache.lock() {
+            cache.remove(&hash.to_lowercase());
+        }
+        let _ = self.refresh_outbound_path_table().await;
+        self.request_path(hash).await
+    }
+
+    /// Drop every cached route: transport path table plus the local path caches.
+    ///
+    /// Deliberately does not call `refresh_outbound_path_table()` — the table must stay
+    /// empty until announces repopulate it. Local caches are cleared even when the
+    /// control query times out, since the transport-side drop may still have applied.
+    pub async fn drop_path_table(&self) -> Result<i64, String> {
+        let resp = self
+            .query_control_timed(TransportQuery::DropPathTable)
+            .await;
+        let cleared = cleared_count_from_drop_path_table(resp);
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.clear_all_paths();
+        }
+        if let Ok(mut cache) = self.peer_via_cache.lock() {
+            cache.clear();
+        }
+        cleared
     }
 
     pub async fn probe_peer(&self, hash: &str) -> Result<serde_json::Value, String> {
@@ -4442,13 +4700,20 @@ impl LiveBridge {
             .as_deref()
             .map(str::trim)
             .filter(|q| !q.is_empty());
-        let (msg, message_hash_hex) = self.prepare_signed_outbound_lxmf(
+        let audio_bytes = decode_lxmf_audio_request(req.audio.as_ref())?;
+        let content = if req.text.trim().is_empty() && audio_bytes.is_some() {
+            "[voice:0]".to_string()
+        } else {
+            req.text.clone()
+        };
+        let (msg, message_hash_hex) = self.prepare_signed_outbound_lxmf_with_audio(
             dest,
             "",
-            &req.text,
+            &content,
             delivery_method,
             reply_to,
             reply_quote,
+            audio_bytes.as_deref(),
         )?;
         let mut router = self.router.lock().await;
         router
@@ -4466,7 +4731,7 @@ impl LiveBridge {
         let mut payload = serde_json::json!({
             "sender_hash": self.lxmf_hash_hex,
             "sender_name": self.display_name,
-            "text": req.text,
+            "text": content,
             "timestamp": ts_ms,
             "to_hash": req.destination_hash,
             "reply_to_hash": reply_to_hash_echo,
@@ -4486,6 +4751,11 @@ impl LiveBridge {
                 );
             }
         }
+        if let Some(ref bytes) = audio_bytes {
+            if let Some(obj) = payload.as_object_mut() {
+                obj.insert("audio".into(), audio_json_from_bytes(AM_OPUS_OGG, bytes));
+            }
+        }
 
         if let Ok(mut driver) = self.outbound.lock() {
             driver.process_tick(&mut router, &self.event_tx);
@@ -4503,7 +4773,7 @@ impl LiveBridge {
         Ok(serde_json::json!({
             "ok": true,
             "destination_hash": req.destination_hash,
-            "text": req.text,
+            "text": content,
             "delivery_method": delivery_method_str,
             "sent_via": egress_via,
             "delivery_status": "queued",
@@ -4908,6 +5178,18 @@ pub(super) fn lxmf_payload_from_message(
             obj.insert("attachment".into(), attachment);
         }
     }
+    if let Some(audio) = audio_json_from_message(msg) {
+        if let Some(obj) = payload.as_object_mut() {
+            let text_empty = obj
+                .get("text")
+                .and_then(|t| t.as_str())
+                .is_none_or(|t| t.trim().is_empty());
+            if text_empty {
+                obj.insert("text".into(), serde_json::Value::String("[voice:0]".into()));
+            }
+            obj.insert("audio".into(), audio);
+        }
+    }
     if let Some(icon) = icon_appearance_json_from_message(msg) {
         if let Some(obj) = payload.as_object_mut() {
             obj.insert("icon_appearance".into(), icon);
@@ -5160,6 +5442,51 @@ fn attachment_json_from_message(msg: &LxMessage) -> Option<serde_json::Value> {
         "size_bytes": bytes.len(),
         "data_base64": base64::engine::general_purpose::STANDARD.encode(bytes),
     }))
+}
+
+fn audio_json_from_bytes(mode: u8, bytes: &[u8]) -> serde_json::Value {
+    use base64::Engine as _;
+    serde_json::json!({
+        "mode": mode,
+        "size_bytes": bytes.len(),
+        "data_base64": base64::engine::general_purpose::STANDARD.encode(bytes),
+    })
+}
+
+/// Decode native `FIELD_AUDIO` for WS/HTTP payloads. Malformed audio fails open
+/// (returns `None`) without poisoning the rest of the message.
+fn audio_json_from_message(msg: &LxMessage) -> Option<serde_json::Value> {
+    let audio = msg.audio_field().ok()??;
+    Some(audio_json_from_bytes(audio.mode, audio.bytes))
+}
+
+fn decode_lxmf_audio_request(
+    audio: Option<&super::types::LxmfAudioRequest>,
+) -> Result<Option<Vec<u8>>, String> {
+    use base64::Engine as _;
+    let Some(audio) = audio else {
+        return Ok(None);
+    };
+    if audio.mode != AM_OPUS_OGG {
+        return Err(format!(
+            "unsupported_audio_mode: {} (expected {AM_OPUS_OGG})",
+            audio.mode
+        ));
+    }
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(audio.data_base64.as_bytes())
+        .map_err(|e| format!("audio_base64_decode: {e}"))?;
+    if bytes.len() > MAX_LXMF_AUDIO_FIELD_BYTES {
+        return Err(format!(
+            "audio_too_large: {} > {}",
+            bytes.len(),
+            MAX_LXMF_AUDIO_FIELD_BYTES
+        ));
+    }
+    if bytes.is_empty() {
+        return Err("audio_empty".into());
+    }
+    Ok(Some(bytes))
 }
 
 #[allow(clippy::needless_pass_by_value)] // payload is moved into the broadcast frame
@@ -5489,6 +5816,46 @@ fn force_path_refresh_accepts_current_path(
     saw_path_absent
 }
 
+/// Shared wall-clock budget for RRC empty-slot rediscovery (ensure + refresh + reselect).
+const RRC_CONNECT_PATH_REDISCOVERY_BUDGET: Duration = Duration::from_secs(8);
+
+fn rrc_rediscovery_remaining(deadline: tokio::time::Instant) -> Option<Duration> {
+    let rem = deadline.saturating_duration_since(tokio::time::Instant::now());
+    (!rem.is_zero()).then_some(rem)
+}
+
+fn rrc_path_not_ready_response() -> serde_json::Value {
+    serde_json::json!({ "ok": false, "error": "path not ready" })
+}
+
+/// Sync stand-in for [`LiveBridge::rediscover_rrc_path_route`] so tests can
+/// assert forced RequestPath → path-table refresh → second route selection
+/// without a live transport.
+#[cfg(test)]
+fn rrc_empty_slot_rediscovery_sync<E, R, S>(
+    budget: Duration,
+    mut ensure_forced_request_path: E,
+    mut refresh_outbound: R,
+    mut second_route_select: S,
+) -> Option<(u8, Option<String>)>
+where
+    E: FnMut(Duration),
+    R: FnMut(Duration),
+    S: FnMut(Duration) -> Option<(u8, Option<String>)>,
+{
+    let deadline = std::time::Instant::now() + budget;
+    let remaining = |deadline: std::time::Instant| {
+        let rem = deadline.saturating_duration_since(std::time::Instant::now());
+        (!rem.is_zero()).then_some(rem)
+    };
+    let ensure_budget = remaining(deadline)?;
+    ensure_forced_request_path(ensure_budget);
+    if let Some(rem) = remaining(deadline) {
+        refresh_outbound(rem);
+    }
+    remaining(deadline).and_then(&mut second_route_select)
+}
+
 /// Timeout decision for [`LiveStack::ensure_path_for_direct_with_opts`].
 ///
 /// `accept_existing_on_timeout` is only for forced refresh of a path that was
@@ -5512,6 +5879,19 @@ fn force_path_refresh_timeout_accepts(
     }
     // Non-force probe (or force with no path at start): accept a path that appeared.
     true
+}
+
+/// Read the cleared-route count out of a `DropPathTable` response.
+///
+/// `None` means the control query timed out. The drop may still have applied on the
+/// transport side, so callers must clear local caches regardless — the count is simply
+/// unknown and reported as an error for the UI.
+fn cleared_count_from_drop_path_table(resp: Option<TransportQueryResponse>) -> Result<i64, String> {
+    match resp {
+        Some(TransportQueryResponse::IntResult(cleared)) => Ok(cleared),
+        Some(other) => Err(format!("unexpected DropPathTable response: {other:?}")),
+        None => Err("transport query timed out".to_string()),
+    }
 }
 
 /// Classify path-ensure outcome after the RequestPath wait times out.
@@ -5846,10 +6226,61 @@ fn peer_route_fields_equal(a: &PeerRow, b: &PeerRow) -> bool {
         && a.public_key == b.public_key
 }
 
+/// After establish failure, suppress dead iface/via and retry client `/get` on another hub.
+#[allow(clippy::too_many_arguments)] // mirrors Nomad path failover state threaded through driver loop
+async fn propagation_download_attempt_failover(
+    live: Option<&Arc<LiveBridge>>,
+    bridge: &PropagationBridge,
+    pn_hash: [u8; 16],
+    pn_hex: &str,
+    failover_round: &mut u8,
+    tried_interfaces: &mut Vec<String>,
+    blocked_ifaces: &mut Vec<String>,
+    blocked_vias: &mut Vec<String>,
+    live_ifaces: &[String],
+    current_iface: &mut Option<String>,
+    current_via: &mut Option<String>,
+) -> bool {
+    if live.is_none() || !should_attempt_propagation_via_failover(*failover_round) {
+        return false;
+    }
+    bridge.cancel_client_download();
+    *failover_round = failover_round.saturating_add(1);
+    record_path_failover_attempt(
+        tried_interfaces,
+        blocked_ifaces,
+        blocked_vias,
+        current_iface.as_deref(),
+        current_via.as_deref(),
+    );
+    let Some(live_ref) = live else {
+        return false;
+    };
+    if let Some(found) = live_ref
+        .suppress_via_and_rediscover(pn_hex, blocked_ifaces, blocked_vias, live_ifaces)
+        .await
+    {
+        *current_iface = found.iface.clone();
+        *current_via = found.via.clone();
+    }
+    tracing::info!(
+        target: "propagation-sync",
+        pn_hash = %pn_hex,
+        failover_round = *failover_round,
+        iface = ?current_iface,
+        via_prefix = via_prefix(current_via.as_deref()),
+        establish_error = ?bridge.last_establish_error(),
+        tried_interfaces = ?tried_interfaces,
+        "propagation client /get establish failover"
+    );
+    bridge.start_client_download(pn_hash)
+}
+
 /// Shared client `/get` driver used by user Sync (`emit_ui: true`) and post-peer
 /// silent retrieve (`emit_ui: false`).
 #[allow(clippy::too_many_arguments)] // bridge + router + outbound + UI/callback wiring
 fn spawn_client_download_driver_task(
+    live: Option<Arc<LiveBridge>>,
     bridge: Arc<PropagationBridge>,
     router: Arc<tokio::sync::Mutex<LxmRouter>>,
     outbound: Arc<std::sync::Mutex<LxmfOutboundDriver>>,
@@ -5872,13 +6303,45 @@ fn spawn_client_download_driver_task(
         return false;
     }
     tokio::spawn(async move {
-        // Client tick cadence; the client's own 120s timeout bounds a stuck link.
         const POLL_INTERVAL: Duration = Duration::from_millis(500);
         const DOWNLOAD_WATCHDOG: Duration = Duration::from_secs(180);
         const ESTABLISH_STALL: Duration = Duration::from_secs(45);
         let mut interval = tokio::time::interval(POLL_INTERVAL);
-        let started = Instant::now();
-        let mut last_logged_progress = -1.0_f64;
+        let attempt_started = Instant::now();
+        let mut failover_round: u8 = 0;
+        let mut tried_interfaces: Vec<String> = Vec::new();
+        let mut blocked_ifaces: Vec<String> = Vec::new();
+        let mut blocked_vias: Vec<String> = Vec::new();
+        let mut live_ifaces: Vec<String> = Vec::new();
+        let mut current_iface: Option<String> = None;
+        let mut current_via: Option<String> = None;
+        if let Some(ref live_ref) = live {
+            if let Ok(ifaces) = live_ref.fetch_interfaces().await {
+                live_ifaces = super::auto_path_policy::order_live_ifaces_private_first(
+                    &live_interface_names(&ifaces),
+                    &ifaces,
+                );
+            }
+            if let Ok((slots, _)) = live_ref.path_slots(&pn_hex).await {
+                current_via = active_via_hash_from_slots(&slots);
+                current_iface = slots
+                    .iter()
+                    .find(|s| {
+                        s.get("active")
+                            .and_then(serde_json::Value::as_bool)
+                            .unwrap_or(false)
+                    })
+                    .and_then(|s| s.get("interface").and_then(|v| v.as_str()))
+                    .map(str::to_string);
+            }
+            record_path_failover_attempt(
+                &mut tried_interfaces,
+                &mut blocked_ifaces,
+                &mut blocked_vias,
+                current_iface.as_deref(),
+                current_via.as_deref(),
+            );
+        }
         let emit_progress = |active: bool, progress: f64, message: Option<&str>| {
             if !emit_ui {
                 return;
@@ -5918,122 +6381,178 @@ fn spawn_client_download_driver_task(
                 f();
             }
         };
-        // Immediate Establishing frame so the renderer stall watchdog sees progress.
-        run_guarded(&|| {
-            emit_progress(true, 10.0, None);
-        });
-        loop {
-            interval.tick().await;
-            // Superseded by a newer sync run: that run now owns the client,
-            // so exit without touching shared client state.
-            if !still_current() {
-                break;
-            }
-            // This run was cancelled: cancel the client only while we are
-            // still the active run (lifecycle-lock guarded via run_if_current).
-            if cancel.load(Ordering::SeqCst) {
-                run_guarded(&|| {
-                    bridge.cancel_client_download();
-                });
-                break;
-            }
-            let progress = bridge.client_download_progress();
-            if progress <= 10.0
-                && bridge.client_download_active()
-                && started.elapsed() > ESTABLISH_STALL
-            {
+        let terminal_establish_failure =
+            |bridge: &PropagationBridge, round: u8, tried: &[String]| {
+                let message = bridge.propagation_establish_fail_message();
                 tracing::info!(
-                    target: "propagation-retrieve",
+                    target: "propagation-sync",
                     pn_hash = %pn_hex,
-                    "client /get stalled while establishing"
+                    failover_round = round,
+                    message = %message,
+                    tried_interfaces = ?tried,
+                    "propagation client /get establish failed"
                 );
-                run_guarded(&|| {
-                    bridge.cancel_client_download();
-                    emit_progress(
-                        false,
-                        0.0,
-                        Some("propagation establish failed: NoLinkProof"),
-                    );
-                });
-                break;
-            }
-            if started.elapsed() > DOWNLOAD_WATCHDOG {
-                tracing::info!(
-                    target: "propagation-retrieve",
-                    pn_hash = %pn_hex,
-                    "client /get download watchdog timeout"
-                );
-                run_guarded(&|| {
-                    bridge.cancel_client_download();
-                    emit_progress(
-                        false,
-                        0.0,
-                        Some("propagation establish failed: NoLinkProof"),
-                    );
-                });
-                break;
-            }
-            if (progress - last_logged_progress).abs() >= 0.5 {
-                last_logged_progress = progress;
-                run_guarded(&|| {
-                    emit_progress(true, progress, None);
-                });
-            }
-            let known = outbound
-                .lock()
-                .ok()
-                .map(|d| d.known_identities_for_propagation())
-                .unwrap_or_default();
-            match bridge.poll_client_download(&known) {
-                ClientDownloadPoll::Idle => break,
-                // Keep polling on the next interval tick.
-                ClientDownloadPoll::InProgress => {}
-                ClientDownloadPoll::Failed => {
-                    tracing::info!(
-                        target: "propagation-retrieve",
-                        pn_hash = %pn_hex,
-                        "client /get download failed"
-                    );
-                    // Consume the terminal failed state → Idle so a later
-                    // sync can start a fresh retrieval.
+                message
+            };
+        'attempt: loop {
+            let round_started = Instant::now();
+            let mut last_logged_progress = -1.0_f64;
+            run_guarded(&|| {
+                emit_progress(true, 10.0, None);
+            });
+            loop {
+                interval.tick().await;
+                if !still_current() {
+                    break 'attempt;
+                }
+                if cancel.load(Ordering::SeqCst) {
                     run_guarded(&|| {
                         bridge.cancel_client_download();
-                        emit_progress(
-                            false,
-                            0.0,
-                            Some("propagation establish failed: NoLinkProof"),
-                        );
                     });
-                    break;
+                    break 'attempt;
                 }
-                ClientDownloadPoll::Complete {
-                    messages,
-                    listed,
-                    downloaded,
-                } => {
-                    let delivered = messages.len();
-                    {
-                        let router = router.lock().await;
-                        if let Some(ref cb) = router.delivery_callback {
-                            for msg in &messages {
-                                cb(msg);
-                            }
-                        }
-                    }
-                    // Empty list is success (result=0), not failure.
+                let progress = bridge.client_download_progress();
+                if progress <= 10.0
+                    && bridge.client_download_active()
+                    && round_started.elapsed() > ESTABLISH_STALL
+                {
                     tracing::info!(
                         target: "propagation-retrieve",
                         pn_hash = %pn_hex,
+                        failover_round,
+                        establish_error = ?bridge.last_establish_error(),
+                        "client /get stalled while establishing"
+                    );
+                    if propagation_download_attempt_failover(
+                        live.as_ref(),
+                        &bridge,
+                        pn_hash,
+                        &pn_hex,
+                        &mut failover_round,
+                        &mut tried_interfaces,
+                        &mut blocked_ifaces,
+                        &mut blocked_vias,
+                        &live_ifaces,
+                        &mut current_iface,
+                        &mut current_via,
+                    )
+                    .await
+                    {
+                        continue 'attempt;
+                    }
+                    let message =
+                        terminal_establish_failure(&bridge, failover_round, &tried_interfaces);
+                    run_guarded(&|| {
+                        emit_progress(false, 0.0, Some(&message));
+                    });
+                    break 'attempt;
+                }
+                if attempt_started.elapsed() > DOWNLOAD_WATCHDOG {
+                    tracing::info!(
+                        target: "propagation-retrieve",
+                        pn_hash = %pn_hex,
+                        "client /get download watchdog timeout"
+                    );
+                    if propagation_download_attempt_failover(
+                        live.as_ref(),
+                        &bridge,
+                        pn_hash,
+                        &pn_hex,
+                        &mut failover_round,
+                        &mut tried_interfaces,
+                        &mut blocked_ifaces,
+                        &mut blocked_vias,
+                        &live_ifaces,
+                        &mut current_iface,
+                        &mut current_via,
+                    )
+                    .await
+                    {
+                        continue 'attempt;
+                    }
+                    let message =
+                        terminal_establish_failure(&bridge, failover_round, &tried_interfaces);
+                    run_guarded(&|| {
+                        emit_progress(false, 0.0, Some(&message));
+                    });
+                    break 'attempt;
+                }
+                if (progress - last_logged_progress).abs() >= 0.5 {
+                    last_logged_progress = progress;
+                    run_guarded(&|| {
+                        emit_progress(true, progress, None);
+                    });
+                }
+                let known = outbound
+                    .lock()
+                    .ok()
+                    .map(|d| d.known_identities_for_propagation())
+                    .unwrap_or_default();
+                match bridge.poll_client_download(&known) {
+                    ClientDownloadPoll::Idle => break 'attempt,
+                    ClientDownloadPoll::InProgress => {}
+                    ClientDownloadPoll::Failed => {
+                        tracing::info!(
+                            target: "propagation-retrieve",
+                            pn_hash = %pn_hex,
+                            progress,
+                            establish_error = ?bridge.last_establish_error(),
+                            "client /get download failed"
+                        );
+                        if progress <= 10.0
+                            && propagation_download_attempt_failover(
+                                live.as_ref(),
+                                &bridge,
+                                pn_hash,
+                                &pn_hex,
+                                &mut failover_round,
+                                &mut tried_interfaces,
+                                &mut blocked_ifaces,
+                                &mut blocked_vias,
+                                &live_ifaces,
+                                &mut current_iface,
+                                &mut current_via,
+                            )
+                            .await
+                        {
+                            continue 'attempt;
+                        }
+                        let message =
+                            terminal_establish_failure(&bridge, failover_round, &tried_interfaces);
+                        run_guarded(&|| {
+                            bridge.cancel_client_download();
+                            emit_progress(false, 0.0, Some(&message));
+                        });
+                        break 'attempt;
+                    }
+                    ClientDownloadPoll::Complete {
+                        messages,
                         listed,
                         downloaded,
-                        delivered,
-                        retrieve_mode,
-                        "client /get download Completes"
-                    );
-                    run_guarded(&|| {
-                        emit_progress(false, 100.0, None);
-                    });
-                    break;
+                    } => {
+                        let delivered = messages.len();
+                        {
+                            let router = router.lock().await;
+                            if let Some(ref cb) = router.delivery_callback {
+                                for msg in &messages {
+                                    cb(msg);
+                                }
+                            }
+                        }
+                        tracing::info!(
+                            target: "propagation-retrieve",
+                            pn_hash = %pn_hex,
+                            listed,
+                            downloaded,
+                            delivered,
+                            retrieve_mode,
+                            "client /get download Completes"
+                        );
+                        run_guarded(&|| {
+                            emit_progress(false, 100.0, None);
+                        });
+                        break 'attempt;
+                    }
                 }
             }
         }
@@ -6268,6 +6787,87 @@ mod announce_display_name_tests {
     }
 
     #[test]
+    fn request_path_force_clears_peer_via_without_outbound_cache() {
+        use super::lxmf_outbound::LxmfOutboundDriver;
+        use rns_identity::identity::Identity;
+        use std::collections::HashMap;
+        use tokio::sync::mpsc;
+
+        let hash = "d765e919676aa0340412a1afae006553";
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        assert!(!driver.has_path_to(hash));
+
+        let mut peer_via_cache: HashMap<String, String> =
+            HashMap::from([(hash.to_lowercase(), "TTP_TCP".into())]);
+
+        // Mirrors request_path_force cleanup (must run even when has_path_to is false).
+        driver.clear_path_to(hash);
+        peer_via_cache.remove(&hash.to_lowercase());
+
+        assert!(!driver.has_path_to(hash));
+        assert!(!peer_via_cache.contains_key(hash));
+    }
+
+    #[test]
+    fn cleared_count_from_drop_path_table_maps_every_response_kind() {
+        assert_eq!(
+            cleared_count_from_drop_path_table(Some(TransportQueryResponse::IntResult(0))),
+            Ok(0)
+        );
+        assert_eq!(
+            cleared_count_from_drop_path_table(Some(TransportQueryResponse::IntResult(7))),
+            Ok(7)
+        );
+        // Timeout: count unknown, but callers still clear local caches.
+        assert!(
+            cleared_count_from_drop_path_table(None)
+                .unwrap_err()
+                .contains("timed out")
+        );
+        // Wrong variant must not be silently reported as a successful clear.
+        assert!(
+            cleared_count_from_drop_path_table(Some(TransportQueryResponse::Ok))
+                .unwrap_err()
+                .contains("unexpected"),
+            "unexpected variants must surface as an error"
+        );
+    }
+
+    #[test]
+    fn drop_path_table_clears_driver_and_peer_via_cache() {
+        use super::lxmf_outbound::{LxmfOutboundDriver, PathTableRoute};
+        use rns_identity::identity::Identity;
+        use std::collections::HashMap;
+        use tokio::sync::mpsc;
+
+        let hash = "d765e919676aa0340412a1afae006553";
+        let dest_hash: [u8; 16] = hex::decode(hash).unwrap().try_into().unwrap();
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        driver.update_path_table(&[PathTableRoute {
+            hash: dest_hash,
+            hops: 3,
+            hex_key: hash.to_string(),
+            interface: Some("TTP_TCP".into()),
+            via: None,
+        }]);
+        assert!(driver.has_path_to(hash));
+
+        let mut peer_via_cache: HashMap<String, String> =
+            HashMap::from([(hash.to_lowercase(), "TTP_TCP".into())]);
+
+        // Mirrors drop_path_table cleanup (transport DropPath Table happens via query_control).
+        driver.clear_all_paths();
+        peer_via_cache.clear();
+
+        assert!(!driver.has_path_to(hash));
+        assert!(peer_via_cache.is_empty());
+    }
+
+    #[test]
     fn force_path_refresh_simulates_stale_then_refreshed_route() {
         // Simulate ensure_path_for_direct force wait: start with stale path present.
         let had_path_at_start = true;
@@ -6303,6 +6903,82 @@ mod announce_display_name_tests {
         ));
         assert!(has_path);
         assert_eq!(hops_after, Some(2));
+    }
+
+    #[test]
+    fn rrc_connect_empty_slots_rediscovery_requests_path_then_rejects() {
+        // Mirrors LiveBridge::rrc_connect when the first best_rrc_path_route is
+        // empty: forced RequestPath + outbound refresh + second select, then
+        // "path not ready" when rediscovery still yields no route.
+        use std::cell::RefCell;
+
+        let steps: RefCell<Vec<&'static str>> = RefCell::new(Vec::new());
+        let ensure_budgets: RefCell<Vec<Duration>> = RefCell::new(Vec::new());
+        let refresh_budgets: RefCell<Vec<Duration>> = RefCell::new(Vec::new());
+        let select_budgets: RefCell<Vec<Duration>> = RefCell::new(Vec::new());
+
+        let first_route: Option<(u8, Option<String>)> = None;
+        assert!(first_route.is_none());
+
+        let second = rrc_empty_slot_rediscovery_sync(
+            RRC_CONNECT_PATH_REDISCOVERY_BUDGET,
+            |budget| {
+                steps.borrow_mut().push("forced_request_path");
+                ensure_budgets.borrow_mut().push(budget);
+            },
+            |budget| {
+                steps.borrow_mut().push("refresh_outbound_path_table");
+                refresh_budgets.borrow_mut().push(budget);
+            },
+            |budget| {
+                steps.borrow_mut().push("second_route_selection");
+                select_budgets.borrow_mut().push(budget);
+                None
+            },
+        );
+
+        assert_eq!(
+            steps.into_inner(),
+            [
+                "forced_request_path",
+                "refresh_outbound_path_table",
+                "second_route_selection"
+            ]
+        );
+        let ensure_budgets = ensure_budgets.into_inner();
+        let refresh_budgets = refresh_budgets.into_inner();
+        let select_budgets = select_budgets.into_inner();
+        assert_eq!(ensure_budgets.len(), 1);
+        assert!(ensure_budgets[0] <= RRC_CONNECT_PATH_REDISCOVERY_BUDGET);
+        assert_eq!(refresh_budgets.len(), 1);
+        assert!(refresh_budgets[0] <= ensure_budgets[0]);
+        assert_eq!(select_budgets.len(), 1);
+        assert!(select_budgets[0] <= refresh_budgets[0]);
+        assert!(second.is_none());
+        let rejected = rrc_path_not_ready_response();
+        assert_eq!(rejected["ok"], false);
+        assert_eq!(rejected["error"], "path not ready");
+    }
+
+    #[test]
+    fn rrc_connect_empty_slots_rediscovery_accepts_second_route() {
+        let second = rrc_empty_slot_rediscovery_sync(
+            RRC_CONNECT_PATH_REDISCOVERY_BUDGET,
+            |_| {},
+            |_| {},
+            |_| Some((2, Some("TCP Client Interface".into()))),
+        );
+        assert_eq!(second, Some((2, Some("TCP Client Interface".into()))));
+    }
+
+    #[test]
+    fn rrc_rediscovery_remaining_is_none_when_deadline_elapsed() {
+        let past = tokio::time::Instant::now() - Duration::from_secs(1);
+        assert!(rrc_rediscovery_remaining(past).is_none());
+        let future = tokio::time::Instant::now() + Duration::from_secs(2);
+        let rem = rrc_rediscovery_remaining(future).expect("future deadline");
+        assert!(rem <= Duration::from_secs(2));
+        assert!(!rem.is_zero());
     }
 
     #[test]
@@ -6715,6 +7391,7 @@ mod nomad_private_first_failover_tests {
             callsign: None,
             id_interval: None,
             mode: None,
+            runtime_mode: None,
             seed_addresses: vec![],
             discoverable,
             latitude,
@@ -6727,6 +7404,7 @@ mod nomad_private_first_failover_tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: std::collections::HashMap::default(),
@@ -6796,6 +7474,101 @@ mod icon_appearance_tests {
         assert_eq!(json["icon_name"], "hiking");
         assert_eq!(json["foreground_rgb"], serde_json::json!([255, 255, 0]));
         assert_eq!(json["background_rgb"], serde_json::json!([0, 0, 255]));
+    }
+}
+
+#[cfg(test)]
+mod audio_field_tests {
+    use super::*;
+    use base64::Engine as _;
+    use lxmf_core::constants::AM_OPUS_OGG;
+    use lxmf_core::message::LxMessage;
+
+    #[test]
+    fn audio_json_from_message_round_trips_opus_ogg() {
+        let ogg = b"OggS\0fake-opus-bytes";
+        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
+        msg.set_audio_field(AM_OPUS_OGG, ogg).expect("set audio");
+        let json = audio_json_from_message(&msg).expect("audio json");
+        assert_eq!(json["mode"], AM_OPUS_OGG);
+        assert_eq!(json["size_bytes"], ogg.len());
+        let decoded = base64::engine::general_purpose::STANDARD
+            .decode(json["data_base64"].as_str().expect("b64"))
+            .expect("decode");
+        assert_eq!(decoded, ogg);
+    }
+
+    #[test]
+    fn audio_json_from_message_malformed_fail_open() {
+        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "hi", DeliveryMethod::Direct);
+        // Intentionally malformed: array of 3 elements instead of [mode, bytes].
+        msg.set_msgpack_field(
+            lxmf_core::constants::FIELD_AUDIO,
+            vec![0x93, AM_OPUS_OGG, 0xc4, 0x00, 0xc0],
+        )
+        .expect("set malformed");
+        assert!(audio_json_from_message(&msg).is_none());
+        let payload = lxmf_payload_from_message(
+            &msg,
+            "aa".repeat(16).as_str(),
+            "Self",
+            None,
+            None,
+            "inbound",
+            None,
+        );
+        assert_eq!(payload["text"], "hi");
+        assert!(payload.get("audio").is_none());
+    }
+
+    #[test]
+    fn lxmf_payload_sets_voice_marker_when_text_empty() {
+        let ogg = b"OggS\0memo";
+        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "", DeliveryMethod::Direct);
+        msg.set_audio_field(AM_OPUS_OGG, ogg).expect("set audio");
+        let payload = lxmf_payload_from_message(
+            &msg,
+            "aa".repeat(16).as_str(),
+            "Self",
+            None,
+            None,
+            "inbound",
+            None,
+        );
+        assert_eq!(payload["text"], "[voice:0]");
+        assert!(payload.get("audio").is_some());
+        assert!(payload.get("attachment").is_none());
+    }
+
+    #[test]
+    fn decode_lxmf_audio_request_rejects_oversize() {
+        let oversized = vec![0u8; MAX_LXMF_AUDIO_FIELD_BYTES + 1];
+        let req = super::super::types::LxmfAudioRequest {
+            mode: AM_OPUS_OGG,
+            data_base64: base64::engine::general_purpose::STANDARD.encode(&oversized),
+        };
+        let err = decode_lxmf_audio_request(Some(&req)).expect_err("oversize");
+        assert!(err.starts_with("audio_too_large"), "{err}");
+    }
+
+    #[test]
+    fn set_audio_field_changes_message_hash_after_sign() {
+        use rns_identity::identity::Identity;
+        let identity = Identity::new();
+        let signing = identity.get_signing_key().expect("signing key");
+        let source = identity.hash;
+
+        let mut without =
+            LxMessage::new([0u8; 16], source, "", "[voice:0]", DeliveryMethod::Direct);
+        without.sign(&signing).expect("sign");
+        let hash_without = without.hash.expect("hash");
+
+        let mut with = LxMessage::new([0u8; 16], source, "", "[voice:0]", DeliveryMethod::Direct);
+        with.set_audio_field(AM_OPUS_OGG, b"OggS\0x")
+            .expect("set audio");
+        with.sign(&signing).expect("sign");
+        let hash_with = with.hash.expect("hash");
+        assert_ne!(hash_without, hash_with);
     }
 }
 
@@ -7082,7 +7855,7 @@ mod reply_field_tests {
 
 #[cfg(test)]
 mod live_tx_queue_fields_tests {
-    use super::live_interface_tx_queue_fields;
+    use super::{live_interface_runtime_mode_if_online, live_interface_tx_queue_fields};
 
     #[test]
     fn online_stats_populate_used_and_max() {
@@ -7103,5 +7876,17 @@ mod live_tx_queue_fields_tests {
         // Zero-capacity must stay unavailable rather than Some(0).
         assert_eq!(live_interface_tx_queue_fields(true, 0, 0), (None, None));
         assert_eq!(live_interface_tx_queue_fields(true, 10, 0), (None, None));
+    }
+
+    #[test]
+    fn offline_exposes_no_runtime_mode() {
+        assert_eq!(
+            live_interface_runtime_mode_if_online(false, "AccessPoint"),
+            None
+        );
+        assert_eq!(
+            live_interface_runtime_mode_if_online(true, "AccessPoint").as_deref(),
+            Some("access_point")
+        );
     }
 }

@@ -160,6 +160,9 @@ describe('Persistent app settings IPC (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(/key not allowed/);
     expect(INDEX_SOURCE).toContain("'meshtasticLastRfSelfNodeId'");
     expect(INDEX_SOURCE).toContain("'meshcoreLastSelfNodeId'");
+    // Missing allowlist entries fail silently, so pin the Reticulum keys explicitly.
+    expect(INDEX_SOURCE).toContain("'reticulumAutostart'");
+    expect(INDEX_SOURCE).toContain("'reticulumAutoResendOnAnnounce'");
     expect(INDEX_SOURCE).toContain("'reticulumLastSelfLxmfHash'");
     expect(INDEX_SOURCE).toContain("'use24HourTime'");
     expect(INDEX_SOURCE).toContain('MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX');
@@ -349,6 +352,8 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
       "ipcMain.handle('reticulum:showIdentityBackupImportDialog'",
     );
     expect(RETICULUM_HANDLERS_SOURCE).toContain("'reticulum:saveIdentityExportDialog'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("'reticulum:saveBlocklistDialog'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("'reticulum:openBlocklistDialog'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain(
       "ipcMain.handle('reticulum:showNomadContentSourceDialog'",
     );
@@ -365,6 +370,10 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
       "ipcMain.handle('db:clearReticulumContactDestinations'",
     );
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:getBlockedContacts'");
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:blockContact'");
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:unblockContact'");
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:exportBlockedContacts'");
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:importBlockedContacts'");
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:getReticulumIdentityActivity'");
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain(
       "ipcMain.handle('db:upsertReticulumIdentityActivityBatch'",
@@ -468,6 +477,24 @@ describe('Native crash observability (source contract)', () => {
 describe('Long-session maintenance (source contract)', () => {
   it('exposes process uptime IPC for restart nudge', () => {
     expect(INDEX_SOURCE).toContain("'app:getProcessUptimeSec'");
+  });
+
+  it('registers app:relaunch via shared quitMainProcess', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('app:relaunch'");
+    expect(INDEX_SOURCE).toContain("assertIpcSender(event, 'app:relaunch')");
+    expect(INDEX_SOURCE).toContain('async function quitMainProcess');
+    expect(INDEX_SOURCE).toContain('quitMainProcess({ relaunch: true })');
+    expect(INDEX_SOURCE).toContain('quitMainProcess({ relaunch: false })');
+    expect(INDEX_SOURCE).toMatch(/if \(opts\.relaunch\) \{\s*app\.relaunch\(\);/);
+    expect(INDEX_SOURCE).toContain('app.exit(0)');
+  });
+
+  it('registers long-session OS notify IPC with sender checks', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('notify:longSessionRestart'");
+    expect(INDEX_SOURCE).toContain("assertIpcSender(event, 'notify:longSessionRestart')");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('notify:clearLongSessionNudge'");
+    expect(INDEX_SOURCE).toContain("assertIpcSender(event, 'notify:clearLongSessionNudge')");
+    expect(INDEX_SOURCE).toContain('createLongSessionNudgeController');
   });
 });
 

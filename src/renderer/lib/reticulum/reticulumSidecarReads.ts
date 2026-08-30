@@ -48,6 +48,23 @@ export async function isReticulumSidecarRunning(): Promise<boolean> {
   }
 }
 
+/**
+ * True when live RNS is attached (`rns_ready`). HTTP can be up earlier (listen-first);
+ * RRC/LXMF need this before connect/send.
+ */
+export async function isReticulumRnsLiveReady(): Promise<boolean> {
+  if (!(await isReticulumSidecarRunning())) return false;
+  try {
+    const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/status')) as {
+      rns_ready?: boolean;
+    };
+    return body.rns_ready === true;
+  } catch {
+    // catch-no-log-ok status probe — treat as not live yet
+    return false;
+  }
+}
+
 export function isReticulumSidecarNotRunningError(err: unknown): boolean {
   return errLikeToLogString(err).toLowerCase().includes('not running');
 }
@@ -89,6 +106,7 @@ export interface ReticulumSidecarInterfaceRow {
   callsign?: string | null;
   preset?: string | null;
   mode?: string | null;
+  runtime_mode?: string | null;
   seed_addresses?: string[];
   discoverable?: boolean | null;
   latitude?: number | null;
@@ -101,6 +119,7 @@ export interface ReticulumSidecarInterfaceRow {
   network_name?: string | null;
   passphrase?: string | null;
   flow_control?: boolean | null;
+  ignore_config_warnings?: boolean | null;
   tx_queue_used?: number | null;
   tx_queue_max?: number | null;
   extra_config?: Record<string, string> | null;
@@ -133,6 +152,8 @@ export interface FetchReticulumSidecarReadOpts {
    * Default false: return cached rows (or []) so unguarded callers keep working.
    */
   propagateRateLimit?: boolean;
+  /** Skip the 5s interfaces cache (TCP recovery uses this for live sidecar status). */
+  bypassCache?: boolean;
 }
 
 /** Fetch OS serial port options from the sidecar (shared cache with path-only helper). */
@@ -193,6 +214,7 @@ export async function fetchReticulumInterfaces(
   }
   const now = Date.now();
   if (
+    !opts?.bypassCache &&
     cachedReticulumInterfaces.length > 0 &&
     now - cachedReticulumInterfacesAt < RETICULUM_INTERFACES_CACHE_MS
   ) {
@@ -215,6 +237,9 @@ export async function fetchReticulumInterfaces(
     }
     if (!isReticulumSidecarExpectedProxyError(e)) {
       console.debug('[reticulumSidecarReads] interfaces ' + errLikeToLogString(e));
+    }
+    if (opts?.bypassCache) {
+      throw e instanceof Error ? e : new Error(String(e));
     }
     if (cachedReticulumInterfaces.length > 0) {
       return cachedReticulumInterfaces;
@@ -321,14 +346,17 @@ export async function registerReticulumKnownIdentity(
   }
 }
 
-export async function requestReticulumPeerPath(hash: string): Promise<ReticulumPeerPathResult> {
+export async function requestReticulumPeerPath(
+  hash: string,
+  opts?: { force?: boolean },
+): Promise<ReticulumPeerPathResult> {
   if (!(await isReticulumSidecarRunning())) {
     return { ok: false, error: 'sidecar_not_running' };
   }
   try {
     const res = (await window.electronAPI.reticulum.proxyPost(
       `/api/v1/peers/${hash}/path`,
-      {},
+      opts?.force ? { force: true } : {},
     )) as { ok?: boolean; error?: string };
     return { ok: Boolean(res.ok), error: res.error };
   } catch (e) {

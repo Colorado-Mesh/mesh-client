@@ -7,8 +7,8 @@ use std::time::{Duration, Instant};
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use nomad_core::{
-    NomadContentRoots, NomadContentStore, NomadNode, NomadNodeConfig, normalize_file_route,
-    normalize_page_route,
+    NomadContentRoots, NomadContentStore, NomadError, NomadNode, NomadNodeConfig,
+    normalize_file_route, normalize_page_route,
 };
 use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use rns_identity::identity::Identity;
@@ -28,6 +28,29 @@ const WATCHER_WARN_INTERVAL: Duration = Duration::from_secs(60);
 struct WatcherState {
     _watcher: RecommendedWatcher,
     cancel: tokio::sync::watch::Sender<bool>,
+}
+
+/// Stable snake_case code for a page storage error, for renderer translation.
+///
+/// `NomadError`'s `Display` is free-form English and interpolates paths and byte
+/// counts (`not found: index.mu`), so it is neither translatable nor safe to
+/// pattern-match downstream. Callers log the original error for diagnostics.
+fn page_error_code(err: &NomadError) -> &'static str {
+    match err {
+        NomadError::TooLarge { .. } => "page_too_large",
+        NomadError::NotFound(_) => "page_not_found",
+        // Symlink rejection also surfaces as PathTraversal and is not separable.
+        NomadError::PathTraversal | NomadError::InvalidPath(_) => "invalid_page_path",
+        NomadError::Io(_) => "page_io_error",
+        NomadError::Message(_) | NomadError::TransportClosed => "page_write_failed",
+    }
+}
+
+/// Log the underlying storage failure and return its translatable code.
+fn page_error(op: &str, rel: &str, err: &NomadError) -> String {
+    let code = page_error_code(err);
+    tracing::warn!("[nomad-serving] {op} page {rel} failed ({code}): {err}");
+    code.to_string()
 }
 
 pub struct NomadServerHandle {
@@ -295,8 +318,13 @@ impl NomadServerHandle {
 
     pub async fn read_page(&self, rel: &str) -> Result<String, String> {
         self.with_store(|store| {
-            let bytes = store.read_page_rel(rel).map_err(|e| e.to_string())?;
-            String::from_utf8(bytes).map_err(|e| e.to_string())
+            let bytes = store
+                .read_page_rel(rel)
+                .map_err(|e| page_error("read", rel, &e))?;
+            String::from_utf8(bytes).map_err(|e| {
+                tracing::warn!("[nomad-serving] read page {rel} failed (page_not_utf8): {e}");
+                "page_not_utf8".to_string()
+            })
         })
         .await
     }
@@ -305,14 +333,18 @@ impl NomadServerHandle {
         self.mutate_store(|store| {
             store
                 .write_page_rel(rel, content.as_bytes())
-                .map_err(|e| e.to_string())
+                .map_err(|e| page_error("write", rel, &e))
         })
         .await
     }
 
     pub async fn delete_page(&self, rel: &str) -> Result<(), String> {
-        self.mutate_store(|store| store.delete_page_rel(rel).map_err(|e| e.to_string()))
-            .await
+        self.mutate_store(|store| {
+            store
+                .delete_page_rel(rel)
+                .map_err(|e| page_error("delete", rel, &e))
+        })
+        .await
     }
 
     pub async fn write_file_base64(&self, rel: &str, content_base64: &str) -> Result<(), String> {
@@ -736,6 +768,67 @@ mod tests {
         handle.delete_file("note.txt").await.expect("delete file");
         let status = handle.status(false, "N").await;
         assert_eq!(status.page_count, 0);
+    }
+
+    #[test]
+    fn page_error_codes_are_stable_snake_case() {
+        assert_eq!(
+            page_error_code(&NomadError::TooLarge {
+                size: 600_000,
+                max: 524_288
+            }),
+            "page_too_large"
+        );
+        assert_eq!(
+            page_error_code(&NomadError::NotFound("index.mu".into())),
+            "page_not_found"
+        );
+        // Symlink rejection collapses into PathTraversal upstream.
+        assert_eq!(
+            page_error_code(&NomadError::PathTraversal),
+            "invalid_page_path"
+        );
+        assert_eq!(
+            page_error_code(&NomadError::InvalidPath("path too long".into())),
+            "invalid_page_path"
+        );
+        assert_eq!(
+            page_error_code(&NomadError::Io(std::io::Error::other("disk"))),
+            "page_io_error"
+        );
+        assert_eq!(
+            page_error_code(&NomadError::message("lock poisoned")),
+            "page_write_failed"
+        );
+        assert_eq!(
+            page_error_code(&NomadError::TransportClosed),
+            "page_write_failed"
+        );
+    }
+
+    #[tokio::test]
+    async fn page_mutations_return_codes_not_english_prose() {
+        let (_dir, handle, _) = handle_with_site().await;
+
+        let err = handle
+            .read_page("missing.mu")
+            .await
+            .expect_err("missing page");
+        assert_eq!(err, "page_not_found");
+
+        let err = handle
+            .delete_page("../escape.mu")
+            .await
+            .expect_err("traversal");
+        assert_eq!(err, "invalid_page_path");
+
+        // 512 KiB max_page_bytes cap, enforced upstream on write.
+        let oversized = "x".repeat(512 * 1024 + 1);
+        let err = handle
+            .write_page("big.mu", &oversized)
+            .await
+            .expect_err("size cap");
+        assert_eq!(err, "page_too_large");
     }
 
     #[tokio::test]

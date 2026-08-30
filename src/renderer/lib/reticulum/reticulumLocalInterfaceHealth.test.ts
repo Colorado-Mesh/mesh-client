@@ -145,6 +145,25 @@ describe('reticulumLocalInterfaceHealth', () => {
     expect(alerts[0]?.reason).toBe('tcp_unreachable');
   });
 
+  it('flags down TCP hubs as tcp_fast_flap when stack restarts exceeded the hub window', () => {
+    const alerts = collectReticulumRemoteInterfaceAlerts(
+      [
+        {
+          id: 'ratspeak',
+          name: 'Ratspeak',
+          type: 'tcp',
+          enabled: true,
+          status: 'down',
+          host: 'rns.ratspeak.org',
+          port: 4242,
+        },
+      ],
+      { stackFastFlapSuspected: true },
+    );
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]?.reason).toBe('tcp_fast_flap');
+  });
+
   it('suppresses tcp_unreachable when SharedInstanceClient is up', () => {
     const alerts = collectReticulumRemoteInterfaceAlerts([
       {

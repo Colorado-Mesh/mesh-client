@@ -110,9 +110,10 @@ print_release_usage() {
   echo "       pnpm run release minor          # Force minor release"
   echo "       pnpm run release 2.0.0          # Force specific version"
   echo "       pnpm run release --finish       # Complete mid-release (no re-bump)"
-  echo "       pnpm run release -- --yes       # Skip confirmation prompts ( -- so pnpm keeps -y )"
-  echo "       pnpm run release -- --skip-dep-update  # Skip pnpm update/dedupe"
+  echo "       pnpm run release --yes          # Skip confirmation prompts"
+  echo "       pnpm run release --skip-dep-update  # Skip pnpm update/dedupe"
   echo "       MESH_CLIENT_RELEASE_YES=1 pnpm run release   # Same as --yes"
+  echo "       (Bare -- from \`pnpm run release -- …\` is ignored; pnpm 11 forwards it.)"
 }
 
 commit_tag_and_push_release() {
@@ -230,6 +231,12 @@ EOF
   fi
 
   echo ""
+  echo "### macOS install"
+  echo "- **Recommended:** open the **\`.dmg\`** and drag **Mesh-client** to **Applications**."
+  echo "- If you use the **\`.zip\`**: extract with **[Keka](https://www.keka.io/en/)** or \`ditto -xk\` — **do not use 7-Zip** (or Finder Archive Utility); they break framework symlinks and can crash at launch with \`Library not loaded: Squirrel.framework\`."
+  echo "- See docs/troubleshooting.md (macOS Squirrel.framework) if the app will not open after a ZIP extract."
+
+  echo ""
   echo "### Breaking Changes"
   # Supported type!: / type(scope)!: subjects (via detectReleaseBump.mjs) plus
   # line-anchored BREAKING CHANGE / BREAKING-CHANGE footers.
@@ -290,6 +297,9 @@ fi
 POSITIONAL_COUNT=0
 for arg in "$@"; do
   case "$arg" in
+    # pnpm 11+ forwards the run-script separator: `pnpm run release -- minor`
+    # becomes argv `-- minor`. Treat bare `--` as a no-op so CI/docs stay valid.
+    --) ;;
     --yes | -y)
       RELEASE_YES=true
       ;;
@@ -670,7 +680,8 @@ if ! yamllint -f github -s .; then
 fi
 
 # Full Vitest suite — never use the pre-commit staged subset or --changed filters here.
-# Pre-commit may run a staged subset; release must match PR CI coverage of all tests.
+# Pre-commit and pull-request CI may run affected subsets; release must match
+# protected merge-queue CI coverage of all tests.
 echo "Verifying Vitest CLI before full suite..."
 if ! assert_release_clis; then
   exit 1

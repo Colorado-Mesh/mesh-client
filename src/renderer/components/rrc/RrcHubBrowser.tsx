@@ -73,7 +73,7 @@ function HubRow({
     <li>
       <div
         className={`flex items-center gap-1 rounded px-2 py-1.5 text-sm ${
-          selected ? 'border-l-2 border-amber-400 bg-amber-950/40' : 'hover:bg-amber-950/25'
+          selected ? 'border-bright-green bg-sidebar-active-bg border-l-2' : 'hover:bg-gray-800/60'
         }`}
       >
         <span className={`shrink-0 text-xs ${marker.colorClass}`} title={markerTitle} aria-hidden>
@@ -98,28 +98,28 @@ function HubRow({
           disabled={!sidecarRunning && marker.kind !== 'connected' && marker.kind !== 'connecting'}
         >
           <div className="flex items-center justify-between gap-1">
-            <div className="truncate font-medium text-amber-50">{label}</div>
+            <div className="truncate font-medium text-gray-100">{label}</div>
             {unread > 0 && (
               <span className="shrink-0 rounded-full bg-red-600 px-1.5 text-[10px] text-white">
                 {unread > 99 ? '99+' : unread}
               </span>
             )}
           </div>
-          <div className="truncate text-xs text-amber-200/50">
+          <div className="truncate text-xs text-gray-400">
             {secondary ?? formatHash(hub.destination_hash)}
             {hub.hops != null ? ` · ${t('rrc.hopsAway', { count: hub.hops })}` : ''}
             {hub.user_count != null ? ` · ${t('rrc.userCount', { count: hub.user_count })}` : ''}
           </div>
           {hub.description ? (
-            <div className="truncate text-[10px] text-amber-200/40">{hub.description}</div>
+            <div className="text-muted truncate text-[10px]">{hub.description}</div>
           ) : null}
         </button>
         <button
           type="button"
           className={
             autoJoin
-              ? 'shrink-0 rounded border border-amber-400 bg-amber-800/80 px-1.5 py-0.5 text-[10px] font-bold text-amber-50'
-              : 'shrink-0 rounded border border-dashed border-amber-700/60 px-1.5 py-0.5 text-[10px] font-semibold text-amber-200/45 hover:border-amber-500 hover:text-amber-200'
+              ? 'border-bright-green bg-readable-green shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold text-white'
+              : 'text-muted shrink-0 rounded border border-dashed border-gray-600 px-1.5 py-0.5 text-[10px] font-semibold hover:border-gray-500 hover:text-gray-300'
           }
           aria-label={autoJoin ? t('rrc.disableHubAutoJoin') : t('rrc.enableHubAutoJoin')}
           aria-pressed={autoJoin}
@@ -132,7 +132,7 @@ function HubRow({
         </button>
         <button
           type="button"
-          className="shrink-0 p-1 text-amber-400"
+          className={`shrink-0 p-1 ${hub.favorited ? 'text-bright-green' : 'text-gray-500'}`}
           aria-label={hub.favorited ? t('rrc.unfavoriteHub') : t('rrc.favoriteHub')}
           title={hub.favorited ? t('rrc.unfavoriteHub') : t('rrc.favoriteHub')}
           onClick={() => {
@@ -223,20 +223,20 @@ export function RrcHubBrowser({
 
   return (
     <aside
-      className={`bg-secondary-dark flex shrink-0 flex-col border-r border-amber-800/40 ${
+      className={`bg-secondary-dark flex shrink-0 flex-col border-r border-gray-700 ${
         collapsed ? 'w-16' : 'w-64'
       }`}
     >
-      <div className="flex items-center justify-between gap-1 border-b border-amber-800/40 p-2">
+      <div className="flex items-center justify-between gap-1 border-b border-gray-700 p-2">
         {!collapsed && (
-          <span className="text-xs font-semibold tracking-wide text-amber-400/80 uppercase">
+          <span className="text-xs font-semibold tracking-wide text-gray-200 uppercase">
             {t('rrc.hubsTitle')}
           </span>
         )}
         <div className="flex items-center gap-1">
           <button
             type="button"
-            className="rounded p-1 text-amber-200/80 hover:bg-amber-950/50"
+            className="rounded p-1 text-gray-400 hover:bg-gray-800/60"
             aria-label={t('rrc.refreshHubs')}
             title={t('rrc.refreshHubs')}
             disabled={!sidecarRunning}
@@ -246,7 +246,7 @@ export function RrcHubBrowser({
           </button>
           <button
             type="button"
-            className="rounded p-1 text-amber-200/80 hover:bg-amber-950/50"
+            className="rounded p-1 text-gray-400 hover:bg-gray-800/60"
             aria-label={collapsed ? t('rrc.expandSidebar') : t('rrc.collapseSidebar')}
             title={collapsed ? t('rrc.expandSidebar') : t('rrc.collapseSidebar')}
             onClick={onToggleCollapsed}
@@ -258,18 +258,18 @@ export function RrcHubBrowser({
       {!collapsed && (
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2">
           {!sidecarRunning && (
-            <div className="rounded border border-amber-600/50 bg-amber-900/30 p-2 text-xs text-amber-200">
+            <div className="rounded-lg border border-amber-600/40 bg-amber-950/20 p-2 text-xs text-amber-200">
               {t('connectionPanel.reticulumIdentity.startStackFirst')}
             </div>
           )}
-          <p className="px-1 text-[10px] leading-snug text-amber-200/45">{t('rrc.hubLegend')}</p>
-          <div className="flex gap-1 rounded border border-amber-800/40 p-0.5 text-[10px]">
+          <p className="text-muted px-1 text-[10px] leading-snug">{t('rrc.hubLegend')}</p>
+          <div className="flex gap-1 rounded border border-gray-700 p-0.5 text-[10px]">
             <button
               type="button"
               className={`flex-1 rounded px-1 py-1 ${
                 hubTab === 'favourites'
-                  ? 'bg-amber-800/60 text-amber-50'
-                  : 'text-amber-200/60 hover:bg-amber-950/40'
+                  ? 'bg-readable-green text-white'
+                  : 'border border-gray-600 text-gray-300 hover:bg-gray-800/60'
               }`}
               aria-label={t('rrc.hubs.favourites')}
               onClick={() => {
@@ -282,8 +282,8 @@ export function RrcHubBrowser({
               type="button"
               className={`flex-1 rounded px-1 py-1 ${
                 hubTab === 'discovered'
-                  ? 'bg-amber-800/60 text-amber-50'
-                  : 'text-amber-200/60 hover:bg-amber-950/40'
+                  ? 'bg-readable-green text-white'
+                  : 'border border-gray-600 text-gray-300 hover:bg-gray-800/60'
               }`}
               aria-label={t('rrc.hubs.discovered')}
               onClick={() => {
@@ -301,9 +301,9 @@ export function RrcHubBrowser({
             }}
             placeholder={t('rrc.searchHubs')}
             aria-label={t('rrc.searchHubs')}
-            className="w-full rounded border border-amber-800/50 bg-slate-900/80 px-2 py-1 text-xs text-amber-50"
+            className="bg-deep-black w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
           />
-          <label className="block text-xs text-amber-200/60">
+          <label className="block text-xs text-gray-400">
             {t('rrc.nickname')}
             <input
               type="text"
@@ -312,7 +312,7 @@ export function RrcHubBrowser({
                 onNicknameChange(e.target.value);
               }}
               aria-label={t('rrc.nickname')}
-              className="mt-0.5 w-full rounded border border-amber-800/50 bg-slate-900/80 px-2 py-1 text-xs text-amber-50"
+              className="bg-deep-black mt-0.5 w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
             />
           </label>
           {rows.length > 0 ? (
@@ -328,11 +328,11 @@ export function RrcHubBrowser({
               onToggleAutoJoin={onToggleAutoJoin}
             />
           ) : (
-            <p className="px-2 text-xs text-amber-200/40">
+            <p className="text-muted px-2 text-xs">
               {hubTab === 'favourites' ? t('rrc.noFavouriteHubs') : t('rrc.noDiscoveredHubs')}
             </p>
           )}
-          <div className="mt-auto space-y-1 border-t border-amber-800/40 pt-2">
+          <div className="mt-auto space-y-1 border-t border-gray-700 pt-2">
             <input
               type="text"
               value={manualHash}
@@ -341,11 +341,11 @@ export function RrcHubBrowser({
               }}
               placeholder={t('rrc.manualHashPlaceholder')}
               aria-label={t('rrc.manualHashPlaceholder')}
-              className="w-full rounded border border-amber-800/50 bg-slate-900/80 px-2 py-1 font-mono text-xs text-amber-50"
+              className="bg-deep-black w-full rounded border border-gray-600 px-2 py-1 font-mono text-xs text-gray-100"
             />
             <button
               type="button"
-              className="w-full rounded bg-amber-700 px-2 py-1 text-xs font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+              className="bg-readable-green w-full rounded px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
               aria-label={t('rrc.connectManual')}
               disabled={!sidecarRunning || !manualHash.trim()}
               onClick={onManualConnect}

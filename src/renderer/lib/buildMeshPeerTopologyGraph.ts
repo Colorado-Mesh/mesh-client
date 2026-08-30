@@ -1,5 +1,6 @@
 import type { ForceEdge } from './forceDirectedGraphLayout';
 import { nodeHealthScore, type NodeHealthTier, nodeHealthTier } from './nodeHealthScore';
+import { effectiveLastHeardMs } from './nodeStatus';
 import { MS_PER_HOUR } from './timeConstants';
 import {
   MESH_TOPOLOGY_NEARBY_MAX_HOPS,
@@ -75,7 +76,9 @@ export function isMeshPeerOnline(node: MeshNode, nowMs: number = Date.now()): bo
   if (hops != null && hops >= 0) return true;
   const lastHeard = node.last_heard;
   if (lastHeard <= 0) return false;
-  return nowMs - lastHeard < MS_PER_HOUR;
+  const effectiveMs = effectiveLastHeardMs(lastHeard, nowMs);
+  if (!effectiveMs) return false;
+  return nowMs - effectiveMs < MS_PER_HOUR;
 }
 
 function nodeLabel(node: MeshNode): string {

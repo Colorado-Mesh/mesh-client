@@ -13,7 +13,13 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
+  createBleReconnectExhaustLatch,
+  prepareNobleYieldReleasedReconnectNudge,
+  shouldSkipBleReconnectAfterExhaustion,
+} from '../lib/bleReconnectExhaustLatch';
+import {
   assertPowerResumeSkipsOnExplicitDisconnect,
+  extractBalancedBlock,
   extractUseCallbackBody,
   loadRendererLibSource,
   loadRuntimeSource,
@@ -65,11 +71,48 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).toContain('captureSerialIdentityForRediscovery');
   });
 
+  it('latches BLE reconnect exhausted; late lost skips; yield release clears for one nudge', () => {
+    const latch = createBleReconnectExhaustLatch();
+    latch.markExhausted();
+    expect(
+      shouldSkipBleReconnectAfterExhaustion({
+        bleExhausted: latch.isExhausted(),
+        isReconnecting: false,
+      }),
+    ).toBe(true);
+    expect(
+      prepareNobleYieldReleasedReconnectNudge({
+        latch,
+        isReconnecting: false,
+        bleConnectInProgress: false,
+      }),
+    ).toBe('nudge');
+    expect(latch.isExhausted()).toBe(false);
+    expect(SOURCE).toContain('prepareNobleYieldReleasedReconnectNudge');
+    expect(SOURCE).toMatch(
+      /onExhausted:[\s\S]*?params\.type === 'ble'[\s\S]*?meshtasticBleReconnectExhaustedRef\.current\.markExhausted\(\)/,
+    );
+    expect(SOURCE).toMatch(/skip reconnect \(BLE budget exhausted\)/);
+    expect(SOURCE).toMatch(/Noble BLE disconnected — skip reconnect \(BLE budget exhausted\)/);
+    expect(SOURCE).not.toMatch(/Noble BLE yield released — skip nudge \(BLE budget exhausted\)/);
+  });
+
   it('clears reconnect refs in handleRfConnectFailure', () => {
     const failureBlock = extractUseCallbackBody(SOURCE, 'handleRfConnectFailure');
     expect(failureBlock.length).toBeGreaterThan(0);
     expect(failureBlock).toContain('isReconnectingRef.current = false');
     expect(failureBlock).toContain('reconnectGenerationRef.current += 1');
+    expect(failureBlock).toContain('clearMeshtasticConfigureState()');
+  });
+
+  it('clears configure phase on reconnect attempt error', () => {
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toMatch(/onAttemptError:[\s\S]*?clearMeshtasticConfigureState\(\)/);
+  });
+
+  it('clears configure phase in requestRefresh finally', () => {
+    const refreshBody = extractUseCallbackBody(SOURCE, 'requestRefresh');
+    expect(refreshBody).toMatch(/finally[\s\S]*?clearMeshtasticConfigureState\(\)/);
   });
 
   it('exports power suspend/resume handlers for usePowerRecovery', () => {
@@ -102,7 +145,10 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
 
   it('skips Noble yield nudge when reconnect is already in progress', () => {
     expect(SOURCE).toMatch(
-      /onNobleYieldReleased[\s\S]*?isReconnectingRef\.current \|\| bleConnectInProgressRef\.current[\s\S]*?skip nudge \(reconnect in progress\)/,
+      /prepareNobleYieldReleasedReconnectNudge\(\{[\s\S]*?isReconnecting: isReconnectingRef\.current[\s\S]*?bleConnectInProgress: bleConnectInProgressRef\.current/,
+    );
+    expect(SOURCE).toMatch(
+      /nudge === 'skip-in-progress'[\s\S]*?skip nudge \(reconnect in progress\)/,
     );
   });
 
@@ -290,13 +336,50 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     );
     expect(wireSource).toContain('!isBleReconnectAttemptActive()');
     expect(wireSource).toMatch(
-      /configure timeout \(BLE 30s\)[\s\S]*?handleConnectionLostRef\.current\(\)/,
+      /configure stall timeout \(\$\{type\} [\s\S]*?handleConnectionLostRef\.current\(\)/,
+    );
+    expect(wireSource).toMatch(
+      /status === DeviceStatusEnum\.DeviceConfiguring &&\s*\(type === 'ble' \|\| type === 'serial'\)/,
     );
   });
 
   it('guards attachRfSession configure against reconnect generation supersession', () => {
     expect(SOURCE).toMatch(
       /attachRfSession[\s\S]{0,3500}reconnectGenerationRef\.current !== generation[\s\S]{0,200}Attach superseded during configure/,
+    );
+  });
+
+  it('attachRfSession configures outside the node-hydrate IIFE (#895)', () => {
+    const attachBody = extractUseCallbackBody(SOURCE, 'attachRfSession');
+    const voidMarker = 'void (async () => {';
+    let hydrateIifeEnd = -1;
+    for (let searchFrom = 0; searchFrom < attachBody.length;) {
+      const voidIdx = attachBody.indexOf(voidMarker, searchFrom);
+      if (voidIdx === -1) break;
+      const braceIdx = attachBody.indexOf('{', voidIdx);
+      expect(braceIdx).toBeGreaterThan(voidIdx);
+      const body = extractBalancedBlock(attachBody, braceIdx);
+      if (body.includes('loadMeshtasticNodeMapFromDb')) {
+        // Closing `}` of the IIFE body, then `)();`
+        const afterBrace = braceIdx + 1 + body.length;
+        expect(attachBody.slice(afterBrace, afterBrace + 5)).toMatch(/^\}\)\(\);/);
+        hydrateIifeEnd = attachBody.indexOf(';', afterBrace) + 1;
+        break;
+      }
+      searchFrom = voidIdx + 1;
+    }
+    expect(hydrateIifeEnd).toBeGreaterThan(0);
+    const configureIdx = attachBody.indexOf(
+      'await configureMeshtasticDeviceWithRetry',
+      hydrateIifeEnd,
+    );
+    expect(configureIdx).toBeGreaterThan(hydrateIifeEnd);
+  });
+
+  it('attachRfSession drops delayed node hydrate after reconnect generation bump (#895)', () => {
+    const attachBody = extractUseCallbackBody(SOURCE, 'attachRfSession');
+    expect(attachBody).toMatch(
+      /loadMeshtasticNodeMapFromDb\(\)[\s\S]*?reconnectGenerationRef\.current !== generation[\s\S]*?applyMeshtasticNodesToUi/,
     );
   });
 
@@ -394,6 +477,43 @@ describe('useMeshtasticRuntime Linux BLE reconnect peripheral id backfill', () =
     // Hook-state channelConfigs alone must not be the only push trigger (stays empty on RF path).
     expect(SOURCE).not.toMatch(
       /pushMqttChannelKeys\(\);\s*\}, \[channelConfigs, mqttStatus, pushMqttChannelKeys\]/,
+    );
+  });
+
+  it('resolves channels via the pure resolveMeshtasticChannels selector, caching post-commit only', () => {
+    // meshtasticIdentityId is nulled on every disconnect (cleanupSubscriptions) and only
+    // restored once wire subscriptions rebind, briefly making the resolved channel list
+    // fall through to the single-channel `channels` placeholder default — which used to
+    // clobber ChatPanel's channel selection on every reconnect. resolveMeshtasticChannels
+    // (behavior covered directly in resolveMeshtasticChannels.test.ts, no mocking needed)
+    // bridges that gap via a cache; the cache write must stay out of the useMemo that
+    // calls it (React may replay/discard a render, leaking uncommitted channels) and live
+    // in an effect instead.
+    expect(SOURCE).toContain('resolveMeshtasticChannels(');
+    expect(SOURCE).toContain('lastKnownChannelsRef');
+    const resolvedChannelsIdx = SOURCE.indexOf('const resolvedChannels = useMemo(');
+    expect(resolvedChannelsIdx).toBeGreaterThan(-1);
+    const resolvedChannelsBody = SOURCE.slice(resolvedChannelsIdx, resolvedChannelsIdx + 400);
+    expect(resolvedChannelsBody).not.toContain('lastKnownChannelsRef.current =');
+    expect(resolvedChannelsBody).toContain('lastKnownChannels: lastKnownChannelsRef.current');
+
+    const cacheEffectIdx = SOURCE.indexOf(
+      'useEffect(() => {\n    if (meshtasticDeviceRecord?.channels.length) {\n      lastKnownChannelsRef.current = meshtasticDeviceRecord.channels;',
+    );
+    expect(cacheEffectIdx).toBeGreaterThan(resolvedChannelsIdx);
+  });
+
+  it('clears the carried-forward channel list on explicit (user-initiated) disconnect only', () => {
+    // Bridging the reconnect gap is only correct while an auto-reconnect is actually
+    // in flight for the *same* device. A user-initiated disconnect (no reconnect
+    // planned) must not leave the disconnected device's channel list lingering
+    // indefinitely — cleanupSubscriptions() also runs mid-reconnect, where the flag
+    // is still false and the ref must be left alone.
+    const cleanupIdx = SOURCE.indexOf('const cleanupSubscriptions = useCallback(');
+    expect(cleanupIdx).toBeGreaterThan(-1);
+    const cleanupBody = SOURCE.slice(cleanupIdx, cleanupIdx + 1200);
+    expect(cleanupBody).toMatch(
+      /meshtasticExplicitDisconnectRef\.current[\s\S]*?lastKnownChannelsRef\.current = \[\]/,
     );
   });
 });

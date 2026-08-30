@@ -296,4 +296,60 @@ describe('ReticulumSidecarIssueAlertsBlock', () => {
       screen.getByText('connectionPanel.reticulumSidecarIssues.txQueueDropsHintNeutral'),
     ).toBeInTheDocument();
   });
+
+  it('renders hub RST with the unreachable/blocking hint', async () => {
+    const { container } = render(
+      <ReticulumSidecarIssueAlertsBlock
+        alert={baseAlert({
+          tcpResetByPeer: ['Ratspeak'],
+        })}
+      />,
+    );
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.heading:1'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.tcpResetByPeer:Ratspeak'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumLocalInterfaces.tcpUnreachableHint'),
+    ).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('renders hub EOF with the unreachable/blocking hint', async () => {
+    const { container } = render(
+      <ReticulumSidecarIssueAlertsBlock
+        alert={baseAlert({
+          tcpReadEof: ['Ratspeak'],
+        })}
+      />,
+    );
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.heading:1'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.tcpReadEof:Ratspeak'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumLocalInterfaces.tcpUnreachableHint'),
+    ).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('shows share-instance hint when the hub resets the TCP session', () => {
+    render(
+      <ReticulumSidecarIssueAlertsBlock
+        alert={baseAlert({
+          tcpResetByPeer: ['Ratspeak'],
+        })}
+        shareInstanceEnabled
+      />,
+    );
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.shareInstanceHint'),
+    ).toBeInTheDocument();
+  });
 });

@@ -12,10 +12,13 @@ describe('meshcorePathHashMode', () => {
     expect(Array.from(buildSetPathHashModeFrame(1))).toEqual([61, 0, 1]);
   });
 
-  it('omits meshcorePathHashMode from AppPanel persist unless user changed it', () => {
-    const settings = { chatCompactMode: true, meshcorePathHashMode: 0 };
-    expect(appPanelSettingsPersistPayload(settings, false)).toEqual({ chatCompactMode: true });
-    expect(appPanelSettingsPersistPayload(settings, true)).toEqual(settings);
+  it('omits meshcorePathHashMode and Open-wire from AppPanel persist', () => {
+    const settings = {
+      chatCompactMode: true,
+      meshcorePathHashMode: 0,
+      meshcoreOpenWireCompatEnabled: true,
+    };
+    expect(appPanelSettingsPersistPayload(settings)).toEqual({ chatCompactMode: true });
   });
 
   it('parses pathHashMode from deviceQuery payload', () => {

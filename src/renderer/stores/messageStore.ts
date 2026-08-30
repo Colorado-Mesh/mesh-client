@@ -2,6 +2,11 @@ import { create } from 'zustand';
 
 import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
+import {
+  clearHeardRepeatWindowIfMessage,
+  renameHeardRepeatWindowMessageId,
+} from '../lib/meshcore/heardRepeatTracker';
+import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import type { IdentityId } from '../lib/types';
 import { omitRecordKey } from './storeUtils';
 
@@ -57,6 +62,12 @@ export interface MessageRecord {
   reticulumDeliveryAttempts?: number;
   /** Saved attachment path on disk (local saves). */
   reticulumAttachmentPath?: string;
+  /** Kind of inbound attachment saved at reticulumAttachmentPath. */
+  reticulumAttachmentKind?: 'image' | 'audio';
+  /** LXMF FIELD_AUDIO mode (16 = AM_OPUS_OGG). */
+  reticulumAudioMode?: number;
+  /** Estimated audio duration in seconds (decoded client-side; optional). */
+  reticulumAudioDurationSec?: number;
   /** Message was replayed from a Store & Forward server (Meshtastic only). */
   viaStoreForward?: boolean;
 }
@@ -99,6 +110,9 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'reticulumDeliveryMethod',
   'reticulumDeliveryAttempts',
   'reticulumAttachmentPath',
+  'reticulumAttachmentKind',
+  'reticulumAudioMode',
+  'reticulumAudioDurationSec',
   'viaStoreForward',
 ];
 
@@ -275,6 +289,11 @@ export function pruneMessageRecordsForIdentityByChannel(
  * delivered bubble into ⏳ via hash collision / rename races.
  */
 export function renameMessageId(identityId: IdentityId, fromId: string, toId: string): void {
+  const before = useMessageStore.getState().messages[identityId];
+  const fromExisting = before?.[fromId];
+  const dropOntoAckedCompletes =
+    fromId !== toId && fromExisting != null && before?.[toId]?.status === 'acked';
+
   useMessageStore.setState((s) => {
     const byIdentity = s.messages[identityId];
     const existing = byIdentity?.[fromId];
@@ -287,10 +306,43 @@ export function renameMessageId(identityId: IdentityId, fromId: string, toId: st
     const rest = omitRecordKey(byIdentity, fromId);
     const target = byIdentity[toId];
     if (target?.status === 'acked') {
-      return mergeIdentityMessages(s, identityId, rest);
+      // Keep Completes text/status, but carry forward local attachment metadata from the
+      // optimistic row (voice memos cache Ogg before the LXMF hash is known).
+      const merged: MessageRecord = {
+        ...target,
+        ...(existing.reticulumAttachmentPath && !target.reticulumAttachmentPath
+          ? {
+              reticulumAttachmentPath: existing.reticulumAttachmentPath,
+              reticulumAttachmentKind:
+                existing.reticulumAttachmentKind ?? target.reticulumAttachmentKind,
+            }
+          : {}),
+        ...(existing.reticulumAudioMode != null && target.reticulumAudioMode == null
+          ? { reticulumAudioMode: existing.reticulumAudioMode }
+          : {}),
+        ...(existing.reticulumAudioDurationSec != null && target.reticulumAudioDurationSec == null
+          ? { reticulumAudioDurationSec: existing.reticulumAudioDurationSec }
+          : {}),
+      };
+      if (messageRecordFieldsEqual(target, merged)) {
+        return mergeIdentityMessages(s, identityId, rest);
+      }
+      return mergeIdentityMessages(s, identityId, { ...rest, [toId]: merged });
     }
     return mergeIdentityMessages(s, identityId, { ...rest, [toId]: { ...existing, id: toId } });
   });
+
+  // Keep in-memory relay coverage keyed to the same bubble id ChatPanel looks up.
+  // When dropping onto an already-acked Completes target, discard `fromId` coverage only —
+  // do not merge/rename onto the delivered bubble (hash-collision retries).
+  if (fromId === toId || fromExisting == null) return;
+  if (dropOntoAckedCompletes) {
+    useRelayCoverageStore.getState().remove(identityId, fromId);
+    clearHeardRepeatWindowIfMessage(identityId, fromId);
+    return;
+  }
+  useRelayCoverageStore.getState().renameMessage(identityId, fromId, toId);
+  renameHeardRepeatWindowMessageId(identityId, fromId, toId);
 }
 
 export function updateMessageStatus(

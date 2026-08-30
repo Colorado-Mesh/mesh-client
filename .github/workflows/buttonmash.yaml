@@ -1,0 +1,87 @@
+name: Buttonmash
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  buttonmash:
+    name: Renderer chaos test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
+
+      - name: Setup Node
+        # actions/setup-node v6.5.0
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '22.23.2'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Plain-browser Vite development installs the repository's no-op electronAPI
+      # bridge. Buttonmash can exercise the renderer without hardware, native
+      # dialogs, a persistent database, or an Electron process.
+      - name: Start renderer dev server
+        run: |
+          nohup pnpm exec vite --host 127.0.0.1 --port 4173 --strictPort \
+            > "$RUNNER_TEMP/mesh-client-vite.log" 2>&1 &
+          echo "VITE_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Wait for renderer
+        run: |
+          for _ in $(seq 1 60); do
+            if curl --fail --silent --show-error --output /dev/null http://127.0.0.1:4173; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'Renderer dev server did not become ready in time.' >&2
+          tail -n 100 "$RUNNER_TEMP/mesh-client-vite.log" >&2 || true
+          exit 1
+
+      - name: Run Buttonmash
+        # Buttonmash v0.2.0
+        uses: cj-vana/buttonmash@3dfe5aa15e824accfd5f72c176ac64b2f63450db
+        with:
+          target: http://127.0.0.1:4173
+          args: --config buttonmash.config.json
+          browser: chromium
+          fail-on: high
+          node-version: '22.23.2'
+          version: '0.2.0'
+
+      - name: Upload renderer log
+        if: failure()
+        # actions/upload-artifact v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: buttonmash-renderer-log
+          path: ${{ runner.temp }}/mesh-client-vite.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Stop renderer dev server
+        if: ${{ always() && env.VITE_PID != '' }}
+        run: kill "$VITE_PID" 2>/dev/null || true

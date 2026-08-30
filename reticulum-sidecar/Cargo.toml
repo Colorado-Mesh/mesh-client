@@ -53,12 +53,14 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1", features = ["v4"] }
 hex = "0.4"
+sha2 = "0.10"
 tempfile = { version = "3", optional = true }
 rmpv = { version = "1", optional = true }
 
 base64 = "0.22"
 bytes = "1"
 ciborium = "0.2"
+ogg = "0.9"
 rand = "0.8"
 thiserror = "2"
 notify = { version = "6.1", optional = true, default-features = true }

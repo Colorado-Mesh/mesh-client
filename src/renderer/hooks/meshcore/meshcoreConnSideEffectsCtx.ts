@@ -19,6 +19,16 @@ import type { PendingDmAckEntry } from './meshcoreHookPreamble';
 export interface ProcessWaitingMessagesOptions {
   /** When false, drain the radio queue without the ChatPanel sync spinner (proactive/periodic). */
   showSyncBanner?: boolean;
+  /**
+   * When true, run the drain even if companion RF/trace would normally defer silent drains.
+   * Used while awaiting a 0-hop CLI_DATA reply that arrives as a waiting message.
+   */
+  force?: boolean;
+  /**
+   * When true, skip bulk `getWaitingMessages` and only use `syncNextMessage`.
+   * Required for CLI reply polling — bulk often hangs 45s while CLI times out at 30s.
+   */
+  incrementalOnly?: boolean;
 }
 
 /**

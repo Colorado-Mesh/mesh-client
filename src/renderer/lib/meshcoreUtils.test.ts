@@ -24,9 +24,11 @@ import {
   meshcoreIsPlaceholderNodeLongName,
   meshcoreManufacturerModelFromDeviceQuery,
   meshcoreMergeChannelDisplayNameOntoNode,
+  meshcoreMergeContactAdvNameFromPrevious,
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreMinimalNodeFromAdvertEvent,
+  meshcorePreviousAdvertNameForRebuild,
   meshcorePubkeyShortId,
   meshcoreRemoveContactErrorMessage,
   meshcoreResolvedTxPowerMax,
@@ -498,7 +500,7 @@ describe('meshcoreInferHopsFromOutPath', () => {
 });
 
 describe('resolveMeshcoreRoomLoginHopsAway', () => {
-  it('prefers positive hops_away on the node', () => {
+  it('prefers positive hops_away when a multi-hop path exists', () => {
     expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 4 }, new Uint8Array([1, 2]))).toBe(4);
   });
 
@@ -509,6 +511,17 @@ describe('resolveMeshcoreRoomLoginHopsAway', () => {
 
   it('returns 0 for direct room with no path', () => {
     expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 0 }, undefined)).toBe(0);
+  });
+
+  it('ignores sticky UI hops when outPath is empty (0-hop SendLogin)', () => {
+    expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 1 }, undefined)).toBe(0);
+    expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 3 }, new Uint8Array())).toBe(0);
+  });
+
+  it('treats a padded direct route as 0-hop during room login', () => {
+    expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 3 }, new Uint8Array([0x42, 0, 0]))).toBe(
+      0,
+    );
   });
 });
 
@@ -536,6 +549,170 @@ describe('meshcoreMergeContactHopsAwayFromPrevious', () => {
 
   it('fills from previous when inferred is undefined and prev is direct', () => {
     expect(meshcoreMergeContactHopsAwayFromPrevious(undefined, 0, 1)).toBe(0);
+  });
+});
+
+describe('meshcoreMergeContactAdvNameFromPrevious', () => {
+  const nodeId = 0xabcd1234;
+
+  it('keeps a real previous name when radio reports a placeholder', () => {
+    expect(
+      meshcoreMergeContactAdvNameFromPrevious(
+        `Node-${nodeId.toString(16).toUpperCase()}`,
+        'Room',
+        nodeId,
+      ),
+    ).toBe('Room');
+  });
+
+  it('uses radio name when previous is empty or placeholder', () => {
+    expect(meshcoreMergeContactAdvNameFromPrevious('NewRoom', '', nodeId)).toBe('NewRoom');
+    expect(
+      meshcoreMergeContactAdvNameFromPrevious(
+        'NewRoom',
+        `Node-${nodeId.toString(16).toUpperCase()}`,
+        nodeId,
+      ),
+    ).toBe('NewRoom');
+  });
+
+  it('keeps a live advert rename when radio lastAdvert is not newer', () => {
+    expect(
+      meshcoreMergeContactAdvNameFromPrevious('OldRoom', 'NewRoom', nodeId, {
+        prevLastHeard: 1_700_000_100,
+        radioLastAdvert: 1_700_000_100,
+      }),
+    ).toBe('NewRoom');
+  });
+
+  it('keeps previous on a lastAdvert tie (companion updated time without renaming)', () => {
+    expect(
+      meshcoreMergeContactAdvNameFromPrevious('Alice', 'Bob', nodeId, {
+        prevLastHeard: 50,
+        radioLastAdvert: 50,
+      }),
+    ).toBe('Bob');
+  });
+
+  it('keeps live advert rename when radio lastAdvert is newer but advName is still old', () => {
+    expect(
+      meshcoreMergeContactAdvNameFromPrevious('OldRoom', 'NewRoom', nodeId, {
+        prevLastHeard: 1_700_000_000,
+        radioLastAdvert: 1_700_000_500,
+      }),
+    ).toBe('NewRoom');
+  });
+
+  it('keeps previous when radio lastAdvert is 0', () => {
+    expect(
+      meshcoreMergeContactAdvNameFromPrevious('OldRoom', 'NewRoom', nodeId, {
+        prevLastHeard: 1_700_000_100,
+        radioLastAdvert: 0,
+      }),
+    ).toBe('NewRoom');
+  });
+});
+
+describe('meshcorePreviousAdvertNameForRebuild', () => {
+  const nodeId = 0xabcd1234;
+
+  it('uses prev long name when it is not the nickname overlay', () => {
+    expect(meshcorePreviousAdvertNameForRebuild('NewRoom', 'MyNick', 'OldRoom', nodeId)).toBe(
+      'NewRoom',
+    );
+  });
+
+  it('uses stored advert name when UI long name is the nickname', () => {
+    expect(meshcorePreviousAdvertNameForRebuild('MyNick', 'MyNick', 'NewRoom', nodeId)).toBe(
+      'NewRoom',
+    );
+  });
+
+  it('ignores placeholder stored names', () => {
+    expect(
+      meshcorePreviousAdvertNameForRebuild(
+        'MyNick',
+        'MyNick',
+        `Node-${nodeId.toString(16).toUpperCase()}`,
+        nodeId,
+      ),
+    ).toBeUndefined();
+  });
+});
+
+describe('buildNodesFromContacts advert-name merge (path-updated rebuild)', () => {
+  const key32 = new Uint8Array(32);
+  for (let i = 0; i < 32; i++) key32[i] = (i * 13 + 5) & 0xff;
+
+  it('keeps a live advert rename when getContacts still has the old advName', () => {
+    const contact = {
+      publicKey: key32,
+      type: 3,
+      advName: 'OldRoom',
+      lastAdvert: 1_700_000_100,
+      advLat: 0,
+      advLon: 0,
+    };
+    const radio = meshcoreContactToMeshNode(contact);
+    const merged = meshcoreMergeContactAdvNameFromPrevious(
+      radio.long_name,
+      'NewRoom',
+      radio.node_id,
+      { prevLastHeard: 1_700_000_100, radioLastAdvert: contact.lastAdvert },
+    );
+    expect(merged).toBe('NewRoom');
+  });
+
+  it('keeps live rename when getContacts bumps lastAdvert without updating advName', () => {
+    const contact = {
+      publicKey: key32,
+      type: 3,
+      advName: 'OldRoom',
+      lastAdvert: 1_700_000_500,
+      advLat: 0,
+      advLon: 0,
+    };
+    const radio = meshcoreContactToMeshNode(contact);
+    const merged = meshcoreMergeContactAdvNameFromPrevious(
+      radio.long_name,
+      'NewRoom',
+      radio.node_id,
+      { prevLastHeard: 1_700_000_100, radioLastAdvert: contact.lastAdvert },
+    );
+    expect(merged).toBe('NewRoom');
+  });
+
+  it('keeps stored advert name when nickname overlays long name and radio is stale or placeholder', () => {
+    const contact = {
+      publicKey: key32,
+      type: 3,
+      advName: 'OldRoom',
+      lastAdvert: 1_700_000_100,
+      advLat: 0,
+      advLon: 0,
+    };
+    const radio = meshcoreContactToMeshNode(contact);
+    const nick = 'MyNick';
+    const storedAdvName = 'NewRoom';
+    const prevAdvertName = meshcorePreviousAdvertNameForRebuild(
+      nick,
+      nick,
+      storedAdvName,
+      radio.node_id,
+    );
+    expect(
+      meshcoreMergeContactAdvNameFromPrevious(radio.long_name, prevAdvertName, radio.node_id, {
+        prevLastHeard: 1_700_000_100,
+        radioLastAdvert: contact.lastAdvert,
+      }),
+    ).toBe('NewRoom');
+    expect(
+      meshcoreMergeContactAdvNameFromPrevious(
+        `Node-${radio.node_id.toString(16).toUpperCase()}`,
+        prevAdvertName,
+        radio.node_id,
+      ),
+    ).toBe('NewRoom');
   });
 });
 

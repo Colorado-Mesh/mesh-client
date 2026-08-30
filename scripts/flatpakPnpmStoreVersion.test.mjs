@@ -16,6 +16,11 @@ import {
   pnpmMajorFromPackageManager,
   probePnpmWorkspaceAfterStoreDirAppend,
   resolveFlatpakNodeGeneratorBin,
+  resolveGeneratorSpecialPyPath,
+  rewriteGeneratorSkipPlaywrightSpecialSources,
+  PLAYWRIGHT_SPECIAL_SKIP_MARKER,
+  PLAYWRIGHT_SPECIAL_SOURCE_CALL,
+  applyGeneratorSkipPlaywrightSpecialSources,
   storeVersionFromPackageManager,
   stripNpmrcStoreDirLines,
   stripPnpmWorkspaceStoreDirLines,
@@ -149,25 +154,50 @@ describe('flatpakPnpmStoreVersion', () => {
 
   it('requires --pnpm-store-version matching packageManager', () => {
     const bad = `
+      node scripts/patch-flatpak-node-generator-playwright.mjs
       flatpak-node-generator pnpm pnpm-lock.yaml -o flatpak/generated-sources.json
     `;
     expect(flatpakWorkflowStoreVersionViolations(bad, 'v11').length).toBe(1);
 
     const good = `
+      node scripts/patch-flatpak-node-generator-playwright.mjs
       flatpak-node-generator pnpm pnpm-lock.yaml --pnpm-store-version v11 -o flatpak/generated-sources.json
     `;
     expect(flatpakWorkflowStoreVersionViolations(good, 'v11')).toEqual([]);
 
     const wrong = `
+      node scripts/patch-flatpak-node-generator-playwright.mjs
       flatpak-node-generator pnpm pnpm-lock.yaml --pnpm-store-version v10 -o out.json
     `;
     expect(flatpakWorkflowStoreVersionViolations(wrong, 'v11')[0].message).toMatch(/v10/);
+  });
+
+  it('requires Playwright special-source skip before the generator', () => {
+    const missingPatch = `
+      flatpak-node-generator pnpm pnpm-lock.yaml --pnpm-store-version v11 -o out.json
+    `;
+    expect(
+      flatpakWorkflowStoreVersionViolations(missingPatch, 'v11').some((v) =>
+        /patch-flatpak-node-generator-playwright/.test(v.message),
+      ),
+    ).toBe(true);
+
+    const afterGenerator = `
+      flatpak-node-generator pnpm pnpm-lock.yaml --pnpm-store-version v11 -o out.json
+      node scripts/patch-flatpak-node-generator-playwright.mjs
+    `;
+    expect(
+      flatpakWorkflowStoreVersionViolations(afterGenerator, 'v11').some((v) =>
+        /patch-flatpak-node-generator-playwright/.test(v.message),
+      ),
+    ).toBe(true);
   });
 
   it('accepts store version derived from packageManager via shell var', () => {
     const yaml = `
       PNPM_MAJOR="$(node -p "require('./package.json').packageManager.match(/^pnpm@(\\\\d+)/)[1]")"
       STORE_VERSION="v\${PNPM_MAJOR}"
+      node scripts/patch-flatpak-node-generator-playwright.mjs
       flatpak-node-generator pnpm pnpm-lock.yaml \\
         --pnpm-store-version "$STORE_VERSION" \\
         -o flatpak/generated-sources.json
@@ -243,6 +273,7 @@ packages:
       FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
       pip3 install --force-reinstall --no-cache-dir \\
         "\${FBTOOLS}@${pin}#subdirectory=node"
+      node scripts/patch-flatpak-node-generator-playwright.mjs
       flatpak-node-generator pnpm pnpm-lock.yaml --pnpm-store-version v11 -o out.json
     `;
     expect(flatpakWorkflowGeneratorInstallViolations(good)).toEqual([]);
@@ -363,5 +394,64 @@ storeDir: /__w/mesh-client/also-bad
     const { text, removed } = stripNpmrcStoreDirLines(npmrc);
     expect(removed).toBe(1);
     expect(text).toBe('shamefully-hoist=true\n');
+  });
+
+  it('rewrites playwright special-source dispatch to a no-op', () => {
+    const upstream = `${PLAYWRIGHT_SPECIAL_SOURCE_CALL}\n        elif package.name == 'esbuild':\n`;
+    const first = rewriteGeneratorSkipPlaywrightSpecialSources(upstream);
+    expect(first.changed).toBe(true);
+    expect(first.missing).toBe(false);
+    expect(first.source).toContain(PLAYWRIGHT_SPECIAL_SKIP_MARKER);
+    expect(first.source).toContain('pass');
+    expect(first.source).not.toContain('await self._handle_playwright(package)');
+
+    const second = rewriteGeneratorSkipPlaywrightSpecialSources(first.source);
+    expect(second.changed).toBe(false);
+    expect(second.already).toBe(true);
+
+    const missing = rewriteGeneratorSkipPlaywrightSpecialSources(
+      'elif package.name == "esbuild":\n',
+    );
+    expect(missing.missing).toBe(true);
+    expect(missing.changed).toBe(false);
+  });
+
+  it('resolves special.py from a venv-style generator bin', () => {
+    const specialRel = 'lib/python3.12/site-packages/flatpak_node_generator/providers/special.py';
+    const specialAbs = path.join('/venv', specialRel);
+    expect(
+      resolveGeneratorSpecialPyPath('/venv/bin/flatpak-node-generator', {
+        existsSync: (p) => p === specialAbs,
+        globSync: (pattern, opts) => {
+          expect(opts.cwd).toBe('/venv');
+          expect(pattern).toContain('special.py');
+          return [specialRel];
+        },
+      }),
+    ).toBe(specialAbs);
+  });
+
+  it('applies skip rewrite to a special.py fixture', () => {
+    // In-memory map only — use a site-packages path, not os.tmpdir()/`/tmp/`
+    // (CodeQL js/insecure-temporary-file taints /tmp strings into writeFileSync).
+    const specialPy =
+      '/venv/lib/python3.12/site-packages/flatpak_node_generator/providers/special.py';
+    const files = new Map([[specialPy, PLAYWRIGHT_SPECIAL_SOURCE_CALL]]);
+    const first = applyGeneratorSkipPlaywrightSpecialSources(specialPy, {
+      readFileSync: (p) => files.get(p) ?? '',
+      writeFileSync: (p, data) => {
+        files.set(p, data);
+      },
+    });
+    expect(first).toEqual({ ok: true, already: false });
+    expect(files.get(specialPy)).toContain(PLAYWRIGHT_SPECIAL_SKIP_MARKER);
+
+    const second = applyGeneratorSkipPlaywrightSpecialSources(specialPy, {
+      readFileSync: (p) => files.get(p) ?? '',
+      writeFileSync: () => {
+        throw new Error('should not rewrite when already applied');
+      },
+    });
+    expect(second).toEqual({ ok: true, already: true });
   });
 });

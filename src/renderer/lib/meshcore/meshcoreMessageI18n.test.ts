@@ -12,6 +12,7 @@ import {
   meshcoreRepeaterRpcErrorMessage,
   meshcoreStoredUserMessage,
   meshcoreUserMessageKey,
+  translateRepeaterCliHistoryText,
 } from './meshcoreMessageI18n';
 
 describe('meshcoreMessageI18n', () => {
@@ -74,5 +75,27 @@ describe('meshcoreMessageI18n', () => {
       message: MESHCORE_ERR_AUTH_FAILED,
       hintKey: MESHCORE_REPEATER_AUTH_HINT_KEY,
     });
+  });
+
+  it('translateRepeaterCliHistoryText translates serialized error lines', () => {
+    const t = ((key: string, params?: { seconds?: number; detail?: string }) => {
+      if (key === 'meshcore.errors.requestTimedOutApprox') {
+        return `Request timed out (~${params?.seconds ?? '?'}s)`;
+      }
+      if (key === 'repeatersPanel.cliHistoryError') {
+        return `[Error: ${params?.detail ?? ''}]`;
+      }
+      return key;
+    }) as TFunction;
+    const stored = meshcoreStoredUserMessage(
+      meshcoreRepeaterRpcErrorMessage('CLI command timed out after 30000ms', 30_000),
+    );
+    expect(translateRepeaterCliHistoryText(t, 'received', `[Error: ${stored}]`)).toBe(
+      '[Error: Request timed out (~30s)]',
+    );
+    expect(translateRepeaterCliHistoryText(t, 'sent', 'clock')).toBe('clock');
+    expect(translateRepeaterCliHistoryText(t, 'received', '01:46 - 17/8/2026 UTC')).toBe(
+      '01:46 - 17/8/2026 UTC',
+    );
   });
 });

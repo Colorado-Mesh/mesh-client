@@ -7,6 +7,7 @@ import {
   rncpReceiveDestShareSavedToastMessage,
 } from '@/renderer/lib/applyRncpReceiveDestShare';
 import {
+  isReticulumAutoResendOnAnnounceEnabled,
   isReticulumAutostartEnabled,
   isRrcUnreadAllRoomMessagesEnabled,
 } from '@/renderer/lib/appSettingsStorage';
@@ -28,6 +29,7 @@ import {
   MAX_RAW_PACKET_LOG_ENTRIES,
   type ReticulumRawPacketEntry,
 } from '@/renderer/lib/rawPacketLogConstants';
+import { announceDestinationHashes } from '@/renderer/lib/reticulum/announceDestinationHashes';
 import {
   applyReticulumOutboundDeliveryStatus,
   flushPendingReticulumOutboundDeliveryStatus,
@@ -48,11 +50,13 @@ import {
   markStaleReticulumOutboundMessages,
   RETICULUM_STALE_OUTBOUND_MS,
 } from '@/renderer/lib/reticulum/markStaleReticulumOutbound';
+import { resendFailedReticulumForDestination } from '@/renderer/lib/reticulum/resendFailedReticulumForDestination';
 import {
   getHotReticulumPeerInterface,
   recordReticulumPeerInterfaceSamplesFromPeersUpdated,
 } from '@/renderer/lib/reticulum/reticulumAnnounceIfaceAttribution';
 import { cacheReticulumInboundAttachment } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
+import { cacheReticulumInboundAudio } from '@/renderer/lib/reticulum/reticulumAudioAttachmentCache';
 import { isReticulumBleRnodeInterfaceRow } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
 import { releaseReticulumBleRnodeConnect } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
 import { setReticulumBleBondDesyncActive } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
@@ -132,8 +136,14 @@ import {
 } from '@/renderer/lib/rncpLxmfControlSideEffectDedup';
 import { consumeRncpReceiveDestSharePending } from '@/renderer/lib/rncpReceiveDestSharePending';
 import { applyRrcDirectMessageRoom } from '@/renderer/lib/rrcDirectMessageRoute';
+import {
+  clearRrcHubAutoJoinBackoff,
+  isRrcAutoJoinBackoffWorthyReason,
+  recordRrcHubAutoJoinFailure,
+} from '@/renderer/lib/rrcHubAutoJoinBackoff';
 import { isRrcRoomMuted, resolveRrcAlertType } from '@/renderer/lib/rrcMention';
 import {
+  resolveRrcHubScopedNoticeRoom,
   resolveRrcInboundChatRoom,
   shouldDropEmptyRrcInbound,
 } from '@/renderer/lib/rrcMessageDisplay';
@@ -287,6 +297,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const unsubVoiceAudioRef = useRef<(() => void) | null>(null);
   const connectRef = useRef<((opts?: { reuseIfRunning?: boolean }) => Promise<void>) | null>(null);
   const restartStackRef = useRef<(() => Promise<void>) | null>(null);
+  /** sendMessage is defined below the event handler; announce auto-resend calls it via ref. */
+  const sendMessageRef = useRef<
+    ((text: string, to: number | string, replyToHash?: string, pendingId?: string) => void) | null
+  >(null);
   const connectInFlightRef = useRef(false);
   const connectInFlightDoneRef = useRef<Promise<void> | null>(null);
   const suppressReconnectRef = useRef(false);
@@ -532,6 +546,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
           auditIssues,
           autoBeaconAlert: sidecarStatus.autoBeaconAlert ?? null,
           interfaceIssueAlert: sidecarStatus.interfaceIssueAlert ?? null,
+          stackFastFlapSuspected: sidecarStatus.stackFastFlapSuspected === true,
           shareInstanceEnabled,
           sidecarRunning: sidecarStatus.running,
           sidecarHealthy: sidecarStatus.healthy,
@@ -658,8 +673,24 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (!identityId) return;
       void (async () => {
         let attachmentPath: string | null = null;
+        let attachmentKind: 'image' | 'audio' | undefined;
+        let audioMode: number | null = null;
         if (p.attachment?.data_base64 && p.direction !== 'outbound') {
           attachmentPath = await cacheReticulumInboundAttachment(p.attachment);
+          if (attachmentPath) attachmentKind = 'image';
+        } else if (p.audio?.data_base64) {
+          // Cache inbound always. For outbound echoes, fill a path when the optimistic
+          // row lost the race with an early Completes (rename used to drop pending path).
+          const known = p.message_hash
+            ? useMessageStore.getState().messages[identityId]?.[p.message_hash]
+            : undefined;
+          if (!known?.reticulumAttachmentPath) {
+            attachmentPath = await cacheReticulumInboundAudio(p.audio);
+            if (attachmentPath) {
+              attachmentKind = 'audio';
+              audioMode = p.audio.mode;
+            }
+          }
         }
         // Already-known rows (DB hydrate / prior session) must not re-fire RNCP
         // control side effects after a cold start clears the in-memory dedup map.
@@ -672,6 +703,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
         ingestReticulumLxmfPayloadWithSideEffects(identityId, p, {
           selfLxmfHash: selfLxmfHash ?? undefined,
           attachmentPath,
+          ...(attachmentKind ? { attachmentKind } : {}),
+          ...(audioMode != null ? { audioMode } : {}),
         });
         // Keep periodic catch-up cursor ahead of live traffic so older ring rows do not loop.
         if (
@@ -881,12 +914,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
           sent_via?: string;
           delivery_method?: string;
           delivery_attempts?: number;
+          error?: string;
         };
         if (identityId && p.message_hash && p.status) {
           applyReticulumOutboundDeliveryStatus(identityId, p.message_hash, p.status, {
             sentVia: p.sent_via,
             deliveryMethod: p.delivery_method,
             deliveryAttempts: p.delivery_attempts,
+            error: p.error,
           });
         }
       }
@@ -1006,6 +1041,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         useRrcSessionStore.getState().applyStatus(st, hubDestHash ?? null, p.hub_name ?? null);
         if (st === 'active') {
           useRrcSessionStore.getState().setError(null, hubDestHash);
+          if (hubDestHash) clearRrcHubAutoJoinBackoff(hubDestHash);
         }
         if (p.capabilities) {
           useRrcSessionStore.getState().setCapabilities(
@@ -1073,6 +1109,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
             disconnectIntentForHub ||
             p.will_reconnect === false
           ) {
+            if (
+              p.will_reconnect === false &&
+              !disconnectIntentForHub &&
+              isRrcAutoJoinBackoffWorthyReason(p.reason)
+            ) {
+              // Initial handshake failed — back off hub auto-join so we do not thrash every ~21s.
+              recordRrcHubAutoJoinFailure(hubDestHash);
+            }
             session.clearHubSession(hubDestHash);
           } else if (willReconnect || p.will_reconnect === undefined) {
             // Sidecar auto-reconnects unintended drops; keep volatile rooms until reconnect settles.
@@ -1093,6 +1137,32 @@ export function useReticulumRuntime(): ProtocolRuntime {
         };
         if (typeof p.room === 'string') {
           useRrcSessionStore.getState().roomJoined(p.room, p.members, p.hub_dest_hash ?? undefined);
+        }
+      }
+      if (evt.type === 'rrc.room.peer_parted' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          room?: string;
+          members?: { identity_hash: string; nickname?: string | null }[];
+          hub_dest_hash?: string | null;
+        };
+        if (typeof p.room === 'string' && Array.isArray(p.members)) {
+          const validMembers = p.members.flatMap((m) => {
+            if (m == null || typeof m !== 'object') return [];
+            const identity_hash = (m as { identity_hash?: unknown }).identity_hash;
+            if (typeof identity_hash !== 'string' || identity_hash.length === 0) return [];
+            const nickname = (m as { nickname?: unknown }).nickname;
+            return [
+              {
+                identity_hash,
+                nickname: typeof nickname === 'string' ? nickname : null,
+              },
+            ];
+          });
+          if (validMembers.length > 0) {
+            useRrcSessionStore
+              .getState()
+              .removeRoomMembers(p.room, validMembers, p.hub_dest_hash ?? undefined);
+          }
         }
       }
       if (evt.type === 'rrc.room.parted' && evt.payload && typeof evt.payload === 'object') {
@@ -1177,18 +1247,18 @@ export function useReticulumRuntime(): ProtocolRuntime {
             if (listed) session.setListedRooms(listed, hubDestHash);
             const hubKey = hubDestHash?.toLowerCase();
             const hubSession = hubKey ? session.sessionsByHub.get(hubKey) : undefined;
-            const whoResult = applyRrcWhoInboundNotice(
-              p.body,
-              hubDestHash ? (hubSession?.rooms.keys() ?? []) : session.rooms.keys(),
-              {
-                hubDestHash,
-                mergeRoomMembers: (whoRoom, members, mode, hub) => {
-                  session.mergeRoomMembers(whoRoom, members, mode, hub);
-                },
-                consumeWhoTranscriptSlot: (whoRoom, hub) =>
-                  session.consumeWhoTranscriptSlot(whoRoom, hub),
+            // Materialize Map.keys() — one-shot iterators must not be re-walked.
+            const joinedRooms = hubDestHash
+              ? [...(hubSession?.rooms.keys() ?? [])]
+              : [...session.rooms.keys()];
+            const whoResult = applyRrcWhoInboundNotice(p.body, joinedRooms, {
+              hubDestHash,
+              mergeRoomMembers: (whoRoom, members, mode, hub) => {
+                session.mergeRoomMembers(whoRoom, members, mode, hub);
               },
-            );
+              consumeWhoTranscriptSlot: (whoRoom, hub) =>
+                session.consumeWhoTranscriptSlot(whoRoom, hub),
+            });
             const topic = parseRrcTopicNotice(p.body);
             if (topic) session.setRoomTopic(topic.room, topic.topic || null, hubDestHash);
             // rrcd may emit join-info NOTICE without a usable JOINED member list —
@@ -1201,6 +1271,17 @@ export function useReticulumRuntime(): ProtocolRuntime {
               !topic.room.startsWith('@')
             ) {
               session.roomJoined(topic.room, undefined, hubDestHash);
+              // When actor JOINED with full roster is dropped (oversize MDU), join-info
+              // still means we are in-room — seed ourselves so the nicklist is not blank.
+              const selfHash = session.localIdentityHash;
+              if (selfHash && selfHash.length >= 8) {
+                session.mergeRoomMembers(
+                  topic.room,
+                  [{ identity_hash: selfHash, nickname: session.nickname || null }],
+                  'merge',
+                  hubDestHash,
+                );
+              }
             }
             if (isRrcModerationLanguage(p.body)) {
               // Reserve kick/ban banner copy for moderation notices; transcript keeps hub text.
@@ -1212,7 +1293,18 @@ export function useReticulumRuntime(): ProtocolRuntime {
             }
             if (whoResult.action === 'transcript') {
               room = whoResult.room;
+            } else if (!isDirect) {
+              // Hub-global slash replies (/list, usage, not authorized) use empty K_ROOM.
+              room = resolveRrcHubScopedNoticeRoom(
+                typeof p.room === 'string' ? p.room : undefined,
+                view.activeRoom,
+              );
             }
+          } else if ((kind === 'error' || kind === 'system') && !isDirect) {
+            room = resolveRrcHubScopedNoticeRoom(
+              typeof p.room === 'string' ? p.room : undefined,
+              view.activeRoom,
+            );
           }
 
           // Opportunistic nicklist: room chat reveals senders even before `/who`.
@@ -1283,7 +1375,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
             session.addMessage(
               {
                 id: `err-${Date.now()}`,
-                room: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
+                room: resolveRrcHubScopedNoticeRoom(undefined, view.activeRoom),
                 kind: 'error',
                 body: p.message,
                 timestamp: Date.now(),
@@ -1479,6 +1571,20 @@ export function useReticulumRuntime(): ProtocolRuntime {
         applyReticulumAnnounceReceivedOptimistic(evt.payload);
         recordAnnounceActivity(evt.payload);
         requestChatOutboxDrain('reticulum');
+        // Opt-in: a fresh announce means failed sends to that peer are worth one retry.
+        const autoResendEnabled = isReticulumAutoResendOnAnnounceEnabled();
+        if (autoResendEnabled) {
+          for (const destinationHash of announceDestinationHashes(evt.payload)) {
+            resendFailedReticulumForDestination({
+              identityId,
+              destinationHash,
+              enabled: autoResendEnabled,
+              send: (text, destination, retryOfStoreId) => {
+                sendMessageRef.current?.(text, destination, undefined, retryOfStoreId);
+              },
+            });
+          }
+        }
       }
       if (evt.type === 'peers_updated' && refreshActions.peerPatches) {
         recordReticulumPeerInterfaceSamplesFromPeersUpdated(evt.payload);
@@ -2072,7 +2178,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
         }
         localInterfacesRef.current = interfaces;
         logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
-        setQueueStatus(aggregateReticulumLocalRfTxQueue(interfaces));
+        const queueAgg = aggregateReticulumLocalRfTxQueue(interfaces);
+        setQueueStatus(queueAgg);
         const health = { interfaces, osSerialPorts };
         const peerCount = useReticulumPeerStore.getState().peers.size;
         // Large meshes: rely on WS-debounced diagnostics; avoid pairing a heavy
@@ -2224,6 +2331,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
     },
     [identityId, selfLxmfHash],
   );
+
+  useEffect(() => {
+    sendMessageRef.current = (text, to, replyToHash, pendingId) => {
+      void sendMessage(text, to, replyToHash, pendingId).catch((e: unknown) => {
+        console.warn('[useReticulumRuntime] auto-resend send failed ' + errLikeToLogString(e));
+      });
+    };
+  }, [sendMessage]);
 
   const sendReaction = useCallback(
     async (glyph: string, replyId: number, channel: number) => {

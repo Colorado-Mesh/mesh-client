@@ -1,8 +1,9 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'path';
 
-import { defineConfig } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 /** Emscripten glue fetches `orlp-ed25519.wasm` relative to the page; it is not inlined by Vite. */
 const ORLP_WASM_NAME = 'orlp-ed25519.wasm';
@@ -44,7 +45,7 @@ function meshcoreOrlpWasmPlugin(): import('vite').Plugin {
   };
 }
 export default defineConfig({
-  plugins: [react(), meshcoreOrlpWasmPlugin()],
+  plugins: [tailwindcss(), react(), meshcoreOrlpWasmPlugin()],
   worker: {
     format: 'es',
   },
@@ -118,13 +119,13 @@ export default defineConfig({
       path: path.resolve(import.meta.dirname, 'src/renderer/shims/node-path-stub.ts'),
       util: path.resolve(import.meta.dirname, 'src/renderer/shims/node-util-stub.ts'),
       stream: path.resolve(import.meta.dirname, 'src/renderer/shims/node-stream-stub.ts'),
-      child_process: path.resolve(import.meta.dirname, 'src/renderer/shims/node-child-process-stub.ts'),
+      child_process: path.resolve(
+        import.meta.dirname,
+        'src/renderer/shims/node-child-process-stub.ts',
+      ),
       net: path.resolve(import.meta.dirname, 'src/renderer/shims/node-net-stub.ts'),
       events: path.resolve(import.meta.dirname, 'src/renderer/shims/node-events-stub.ts'),
     },
-  },
-  css: {
-    postcss: path.resolve(import.meta.dirname, 'postcss.config.cjs'),
   },
   server: {
     port: 5173,

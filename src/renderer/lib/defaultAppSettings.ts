@@ -52,12 +52,19 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   storeForwardHistoryProfile: 'conservative' as 'conservative' | 'aggressive',
   /** When sharing location in chat, also send a Meshtastic Waypoint packet (map pin). */
   shareLocationSendWaypoint: true,
+  /**
+   * When false, mesh-client skips host GPS lookups and blocks all app-initiated location
+   * transmission (Meshtastic, MeshCore, Reticulum). Static coords remain for local map only.
+   */
+  shareMyLocation: true,
   /** MeshCore Open wire: keyed replies, r: reactions, g: GIF send (experimental). */
   meshcoreOpenWireCompatEnabled: false,
   /** MeshCore companion path hash mode: 0 = 1-byte, 1 = 2-byte, 2 = 3-byte (firmware v1.14+). */
   meshcorePathHashMode: 0 as 0 | 1 | 2,
   /** Start Reticulum sidecar automatically when opening the Reticulum tab. */
   reticulumAutostart: false,
+  /** Retry failed LXMF messages to a peer when that peer announces. */
+  reticulumAutoResendOnAnnounce: false,
   /**
    * RRC unread + sound: any new room msg/action (default). Off = IRC-style
    * DMs + @mentions only.

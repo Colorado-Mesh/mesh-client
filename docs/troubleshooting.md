@@ -343,6 +343,43 @@ After running `xattr`, check Privacy & Security again (scroll to the bottom); th
 - This may also be a native module signing issue; try rebuilding: `pnpm run dist:mac`
 - If building from source: make sure `pnpm install` completed without errors
 
+### macOS: Library not loaded: Squirrel.framework after ZIP extract
+
+**Symptom:** Mesh-client crashes immediately on launch (often on macOS 26 / Tahoe). Crash Reporter or Console shows:
+
+```text
+Termination Reason: Namespace DYLD, Code 1, Library missing
+Library not loaded: @rpath/Squirrel.framework/Squirrel
+Referenced from: .../Electron Framework.framework/Versions/A/Electron Framework
+```
+
+Similar errors may mention `Mantle.framework` or `ReactiveObjC.framework`. Electron Framework may load; the sibling auto-update frameworks fail first.
+
+**Cause:** The **macOS `.zip`** from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) was extracted with a tool that **does not preserve macOS framework symlinks** — especially **7-Zip**, and sometimes Finder Archive Utility. That flattens entries such as `Squirrel.framework/Squirrel` into tiny invalid files, so dyld aborts at launch. The release artifact itself is fine; the installed `.app` bundle is broken.
+
+**Fix:**
+
+1. Delete the broken copy (for example `/Applications/Mesh-client.app`).
+2. Reinstall using one of these (preferred first):
+   - **`.dmg` (recommended):** open the arm64 DMG, drag **Mesh-client** to **Applications**, launch from there.
+   - **`.zip` with [Keka](https://www.keka.io/en/)** or Terminal:
+     ```bash
+     ditto -xk Mesh-client-*-arm64-mac.zip ~/Desktop/mesh-extract
+     ```
+     Then move `Mesh-client.app` to `/Applications`.
+3. **Do not** re-extract the macOS ZIP with **7-Zip**.
+
+**Optional check** after a good install:
+
+```bash
+ls -la /Applications/Mesh-client.app/Contents/Frameworks/Squirrel.framework
+file /Applications/Mesh-client.app/Contents/Frameworks/Squirrel.framework/Versions/A/Squirrel
+```
+
+Expect `Squirrel` and `Versions/Current` to be **symlinks**; `Versions/A/Squirrel` should report a Mach-O dylib (not a tiny text file).
+
+Official releases also ship `00-READ-ME-BEFORE-EXTRACTING-macOS-ZIP.txt` on the release page, and the DMG includes **IMPORTANT-Read-Me.txt** with the same guidance.
+
 ### Flatpak: `vmwgfx: driver missing` (VMware on macOS)
 
 **Symptom**: `flatpak run org.coloradomesh.MeshClient` fails or exits after Mesa logs `vmwgfx: driver missing` (use `flatpak -v run ...` to see it). Common on **Linux guests in VMware Fusion or Workstation with a macOS host**, including **aarch64** Ubuntu/ARM VMs.
@@ -608,7 +645,7 @@ IPv6 addresses work for Meshtastic Wi‑Fi, MeshCore TCP, and Reticulum RNode Wi
 
 ### Connection panel Link quality (TCP) shows "—" or unexpected latency
 
-**Cause:** For **Meshtastic WiFi/TCP** and **MeshCore TCP/IP OpenHop**, the Connection panel signal bars reflect **live-session responsiveness** — an EWMA of write→first-data delay on the already-open TCP socket — not a separate connect probe. Bars may show **"—"** until traffic has produced a sample, or after ~2 minutes without a completed sample (covers idle heartbeat gaps). Meshtastic **WiFi/HTTP** still uses a `/json/report` RTT probe (separate from the TCP session). Reticulum hub/RMAP rows still use a short-lived TCP connect probe (different risk profile).
+**Cause:** For **Meshtastic WiFi/TCP** and **MeshCore TCP/IP OpenHop**, the Connection panel signal bars reflect **live-session responsiveness** — an EWMA of write→first-data delay on the already-open TCP socket — not a separate connect probe. Bars may show **"—"** until traffic has produced a sample, or after ~2 minutes without a completed sample (covers idle heartbeat gaps). Meshtastic **WiFi/HTTP** still uses a `/json/report` RTT probe (separate from the TCP session). **Reticulum** hub rows use a short-lived TCP connect probe **only while the sidecar is starting** (before RNS owns the session); once the stack is ready, probes stop so a second raw connect cannot collide with the sidecar link.
 
 **Why not a second TCP connect?** Probing the same `host:port` as the live session every few seconds can RST ESP32/lwIP-class devices (see PR discussion around competing connections).
 
@@ -656,7 +693,8 @@ After sleep or hibernate, mesh-client uses the same resume path as macOS: reconn
 If mesh-client stays open for **days** on a busy mesh (especially **MeshCore BLE-only** with hundreds of repeaters):
 
 - **Restart the app every 1–2 days** to limit main-process uptime (reduces risk of native BLE / V8 edge cases after ~72h).
-- After **4 days**, mesh-client shows a one-time toast suggesting a restart.
+- After **4 days** with **Noble BLE connected** on **macOS or Windows**, mesh-client shows a **persistent restart banner** plus an OS notification (Dock badge on macOS, taskbar flash on Windows). Restart relaunches the process; Dismiss hides the nudge for 12 hours. Linux uses Web Bluetooth (different stack) and does not show this prompt. Serial/TCP-only sessions are not prompted.
+- Mid-session `EXC_BREAKPOINT` / SIGTRAP after multi-day Noble BLE is **confirmed on macOS**; the same failure class on Windows is **unconfirmed**, so the day-4 prompt there is precautionary. The mechanism is **suspected** to be a native Noble / Electron main-process teardown race (working hypothesis: a timer tick intersecting V8 GC firing into freed CoreBluetooth state) — not established. What is certain is that it is **outside mesh-client’s JavaScript control** — not a corrupt database and not catchable with `try/catch`. Mitigation is process recycle (restart) and preferring Serial/TCP for always-on desks. Tracked upstream as [stoprocent/noble#140](https://github.com/stoprocent/noble/issues/140) — attach your `.ips` crash report there if you can reproduce it.
 - **MeshCore:** default contact cap is **10,000** (App settings); enable **auto-prune by age** if you want SQLite trimmed below that. Avoid bulk repeater status/neighbors refresh when not needed — thousands of `syncNextMessage timed out` lines in the log usually mean the companion radio is overloaded.
 - **Meshtastic:** default node cap is **10,000**; enable **auto-prune** in App settings as needed.
 - **Reticulum:** restart the sidecar/stack periodically on always-on nodes; message retention prunes run at startup and every 6 hours while the app is open.
@@ -803,6 +841,18 @@ When the Meshtastic SDK logs a routing / queue failure, mesh-client intercepts m
 
 **Reconnect ownership:** TCP disconnect/reconnect is owned by `useMeshcoreRuntime` + `rfReconnectController` (single-owner scheduler). Conn side effects **skip** `handleConnectionLost` when `connectType === 'tcp'` so the runtime `meshcore:tcp-disconnected` listener does not double-enter the reconnect scheduler.
 
+### MeshCore TCP / pyMC: initial connect MsgWaiting drain slow or paused
+
+**Symptoms**: After TCP connect to pyMC/OpenHop, the header shows **Fetching queued messages…** or **Message sync paused while the radio is busy…** for one to two minutes; Chat backlog arrives slowly; developer bundle may show `ui.waitingMessagesDrainDeferred: true` and log lines like `requestTelemetry error timeout` ~120s after connect.
+
+**Cause**: Post-connect self telemetry (optional altitude fetch) used to run before proactive MsgWaiting drain and could hold the companion RF lane for up to **120s**. Silent bulk `getWaitingMessages` on TCP also used a **45s** timeout before falling back to one-at-a-time `syncNextMessage`. On busy meshes the companion queue can keep growing during init RPCs (contacts/channels dump, autoadd, MQTT export) before drain starts.
+
+**Fix**:
+
+1. Upgrade to a build that starts MsgWaiting drain right after the contacts/channels dump (not after all post-init side effects), runs post-connect telemetry only after drain, and uses **syncNextMessage-only** silent drain on TCP (pyMC/OpenHop often never answers bulk `getWaitingMessages`).
+2. On MeshCore tab, use **Sync now** if the header still shows a backlog after connect.
+3. In support bundles, check `ui.meshcoreDrain` for `meshcoreCompanionRepeaterRfBusy`, `meshcoreAdminRpcInFlightCount`, and `meshcoreSilentBulkTimeoutStreak` when triaging repeat reports.
+
 ### MeshCore contact delete and sticky Rooms badge
 
 - Deleting a contact from Chat/Contacts removes the SQLite contact row **and** room BBS messages for that `room_server_id` (so Rooms unread cannot outlive the room server).
@@ -844,7 +894,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Reactions on other clients:** By default mesh-client sends tapbacks and text replies as keyless `@[Display Name] …` (official companion wire). Inbound keyed `@[Name#key]` and emoji-only replies render locally as tapback badges via [`meshcorePromoteEmojiOnlyReplyToTapback`](../src/renderer/lib/meshcoreChannelText.ts). Inbound MeshCore Open wire (`r:HASH:INDEX`, `g:GIFID`) is always parsed for display.
 
-**MeshCore Open compatibility (optional):** In **App → MeshCore Open wire (experimental)**, enable **MeshCore Open compatibility** to send keyed text replies (`@[Name#key] body`), compact `r:` reactions (fallback to keyless tapback when the emoji is not in the Open index), and `g:` Giphy GIFs (paste URL/ID or use the **GIF** button in Chat). Default off — use only when other nodes on your mesh run MeshCore Open-aware clients. Details: [meshcore-meshtastic-parity.md — MeshCore emoji reactions](meshcore-meshtastic-parity.md#meshcore-emoji-reactions-tapbacks) and [GIF wire](meshcore-meshtastic-parity.md#meshcore-open-gif-wire-ggifid).
+**MeshCore Open compatibility (optional):** In **Radio → MeshCore Open wire (experimental)**, enable **MeshCore Open compatibility** to send keyed text replies (`@[Name#key] body`), compact `r:` reactions (fallback to keyless tapback when the emoji is not in the Open index), and `g:` Giphy GIFs (paste URL/ID or use the **GIF** button in Chat). Default off — use only when other nodes on your mesh run MeshCore Open-aware clients. Details: [meshcore-meshtastic-parity.md — MeshCore emoji reactions](meshcore-meshtastic-parity.md#meshcore-emoji-reactions-tapbacks) and [GIF wire](meshcore-meshtastic-parity.md#meshcore-open-gif-wire-ggifid).
 
 ### MeshCore: "Get Telemetry" returns timeout
 
@@ -893,9 +943,9 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Guest / read-only login fails with timeout or "rejected"**:
 
-- When the room server **guest password is empty**, use **Continue read-only** on the Rooms login overlay. That sends **zero password bytes** (same as the official Android app). **Login** with an empty guest field is disabled; it would send the default **`hello`** password instead.
-- When the server **does** configure a guest password, enter that value in the guest field and click **Login** (some communities use **`hello`**).
-- **Room admin CLI** (Rooms → admin overlay): many stock room servers use **`hello`** as the default admin password when none was configured. The guest field placeholder shows `hello`; admin login uses the same MeshCore default when you type it explicitly — do not confuse that with **Continue read-only**, which sends zero bytes for blank guest servers.
+- Try **blank** Login (or **Continue read-only**) for **read-only** when the room has `allow.read.only` on. That sends **zero password bytes**.
+- For **read/write** (post), try the default guest password **`hello`**, or the room’s configured guest password. MeshCore has no passwordless write mode.
+- **Room admin CLI** (**Repeaters** tab → room row CLI; needs the room **admin** password via SendLogin ACL, not guest BBS login): many stock room servers use **`hello`** as the default admin password when none was configured. Save the admin password under Repeaters → password for that room.
 - Logs showing push **`0x86`** (frame 134) mean **LoginFail** (wrong password or ACL denied). **Room login** rejects immediately on a prefix-matched LoginFail. **Repeater admin login** keeps waiting for a possible LoginSuccess (meshcore.js behavior on congested links); timeout after LoginFail alone is reported as timeout, not wrong password.
 - **Admin password** working while guest/read-only fails usually means the guest password on the server does not match what the client sent, or ACL denies read-only login.
 - If the room **changed its password** and mesh-client keeps trying to log in, open the **Rooms** tab: expand **Saved passwords** in the sidebar (or use the login overlay for the selected room). Use **Stop auto-login** to stop connect-time retries while keeping the old password stored, or **Forget saved password** to clear the stored guest/admin password and turn off auto-login and auto-sync. After a wrong-password failure, auto-login is turned off automatically until you log in again with **Remember password** or re-enable it.
@@ -921,12 +971,13 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **No room history after login**:
 
-- Firmware only **pushes new posts** after a successful login; it does not backfill old BBS messages. Enable **Auto-sync** on the Rooms tab to periodic re-login while connected.
+- Room servers keep a **short ring buffer** of recent posts and push anything newer than your companion’s `sync_since` watermark after LoginSuccess. mesh-client resets that watermark (remove+re-add contact) when this device has **no local last-post watermark** yet, then drains waiting messages after login.
+- Posts older than the ring (or already past `sync_since`) will not appear. Enable **Auto-sync** on the Rooms tab to periodically re-login while connected so you stay current.
 - mesh-client stores posts received while you are logged in on **this device**. Quitting the app or staying logged out for days means posts from that period will not appear later unless they were persisted locally. See the **Rooms** tab history note under Auto-sync.
 
 **pyMC / server console shows posts but Rooms tab does not (cross-client)**:
 
-- The room **server log** (e.g. pyMC) lists everything the BBS stored. mesh-client and the official app only show posts **pushed to your radio while you are logged in** to that room (see above). Posts made before your login, or while you were logged out, will not appear until someone posts again after you re-login (or use **Auto-sync** to periodic re-login).
+- The room **server log** (e.g. pyMC) lists everything the BBS stored. mesh-client and the official app only show posts **pushed to your radio while you are logged in** to that room (see above). Posts made before your login, or while you were logged out, will not appear until someone posts again after you re-login (or use **Auto-sync** to periodically re-login).
 - For a fair test: keep **both** clients logged into the **same room** while connected, then post from one side and confirm the other receives it within ~30 seconds on RF.
 - mesh-client sends outbound room posts as **`TXT_TYPE_PLAIN`**; inbound BBS pushes use **`TXT_TYPE_SIGNED_PLAIN`** (author prefix stripped in the Rooms UI).
 
@@ -936,7 +987,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Read-only → write upgrade does nothing**:
 
-- After **Continue read-only**, use **Upgrade access** (or **Login** with the guest password) so the client sends a fresh **SendLogin** with `forceRelogin`. Enter the real guest password (often **`hello`**); empty field Login is disabled on the main overlay to avoid sending `hello` when the server expects blank read-only login.
+- After **Continue read-only**, use **Upgrade access** and enter the guest password (often **`hello`**) so the client sends a fresh **SendLogin** with `forceRelogin`. An empty field cannot upgrade write access.
 
 **Long room posts show as `[1/2]`, `[2/2]`…**:
 
@@ -945,7 +996,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 **Queue badge stuck at `Q: 255/256`**:
 
 - Usually means the companion radio outbound queue is nearly full. Enable debug logging and export logs if the badge stays red for minutes with no traffic; look for `[useMeshcoreRuntime] high queue depth=`.
-- Some **HTTP/TCP** companions pad the legacy 7-byte STATS CORE frame to 9 bytes with `raw[7]=0` and `raw[8]=0xff` (padding sentinel). mesh-client treats that signature as 7-byte layout (`queue_len` at byte 6). If chat send/receive works but the badge is red with `rawHex` ending in `0000ff`, upgrade to a build that includes this fix ([#600](https://github.com/Colorado-Mesh/mesh-client/issues/600)).
+- Some **HTTP/TCP** companions pad the legacy 7-byte STATS CORE frame to 9 bytes with `raw[7]=0` and `raw[8]=0xff` (padding sentinel) or `raw[8]=0x18` (`RESP_CODE_STATS` framing leak). mesh-client treats those signatures as 7-byte layout (`queue_len` at byte 6). If chat send/receive works but the badge shows a stuck non-zero depth (e.g. `Q: 24/256` with `rawHex` ending in `000018`), upgrade to a build that includes this fix ([#600](https://github.com/Colorado-Mesh/mesh-client/issues/600)).
 - On older builds, CORE stats could also be mis-parsed (false `Q: 255/256` with normal traffic).
 
 **Windows packaged updater: `Cannot find module 'semver'`**:
@@ -955,7 +1006,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 **Retest checklist (after upgrading from a known-good build)**:
 
 1. Connect MeshCore over TCP or BLE; confirm nodes load.
-2. Open **Rooms** → with **empty guest password** on the server, click **Continue read-only** (not **Login** with an empty field). With a configured guest password, enter it and click **Login**.
+2. Open **Rooms** → try **blank** Login for read-only (or **Continue read-only**). For posting, try **`hello`** (default read/write guest password) or the room’s guest password.
 3. Post as admin; confirm the post appears in the **official Android app** on the same room (SignedPlain BBS path).
 4. Confirm room posts appear in **Rooms** with unread badges (not Chat channel pills).
 5. On **Connection** tab, receive a **channel** message on a channel you are not viewing → sidebar **Chat** badge and red pill on that channel when you open Chat.
@@ -1085,7 +1136,7 @@ Quit mesh-client fully, reopen, and click **Start stack** again.
    ./scripts/clone-ratspeak-stack.sh
    pnpm run reticulum:sidecar:build
    ```
-   Or apply individual overlays (`./scripts/apply-rsReticulum-packet-tap.sh`, `./scripts/apply-rsReticulum-auto-beacon-utun.sh`, `./scripts/apply-rsReticulum-link-client-nomad.sh`, …) then `pnpm run reticulum:sidecar:build`.
+   Or apply individual overlays (`./scripts/apply-rsReticulum-packet-tap.sh`, `./scripts/apply-rsReticulum-auto-beacon-utun.sh`, `./scripts/apply-rsReticulum-link-client-proof-budget.sh`, …) then `pnpm run reticulum:sidecar:build`.
 3. **Workaround on old builds**: disable **AutoInterface** under Connection → Interfaces if LAN discovery is not needed (TCP/RNode paths still work).
 4. **Physical NIC failures** (`en0`, `wlan0`, …): restart the stack; check firewall/multicast permissions — that indicates real LAN discovery failure, not VPN noise.
 5. **Local DMs hang with Auto + LAN TCP hub** — see [Reticulum local DMs hang with AutoInterface + private TCP hub](#reticulum-local-dms-hang-with-autointerface--private-tcp-hub).
@@ -1106,6 +1157,26 @@ Log path: `~/Library/Application Support/mesh-client/mesh-client.log` (macOS).
 Healthy Auto is left preferred (RNS default). Public hubs are never chosen by the health preempt.
 
 **Manual workaround**: Connection → Interfaces → disable **Auto** → restart stack if prompted. Keep the private hub up; confirm it is not `ECONNREFUSED` in the log (`hostLink` TCP probe).
+
+### Reticulum public hub TCP blocked (fast-flapping client)
+
+**Symptoms**: A public TCP hub (e.g. **Ratspeak**, **RMAP World**) shows **down** in Connection → Interfaces. The amber Connection banner says **TCP hub unreachable** (the remote instance may be offline **or blocking connections**, including after frequent app/stack restarts) or, after five stack starts in 12 hours, **hub likely blocked your IP after frequent stack restarts**. Sidecar logs may show `TCP read: EOF`, `Connection reset by peer`, and `reconnecting in 5s name = …` in a loop. A host TCP probe can still succeed while the RNS session is rejected.
+
+**Cause**: Reticulum **1.4.0+** `BackboneInterface` listeners block client IPs that **fast-flap** — by default, **five TCP sessions shorter than ~20 seconds within 12 hours** triggers a **12-hour IP block** ([Interfaces manual](https://reticulum.network/manual/interfaces.html)). Hubs upgraded to 1.4.0 (RMAP World mid-2025; Ratspeak more recently) enforce this policy. Common mesh-client triggers:
+
+- **Quick mesh-client or stack restarts** — each restart drops the RNS TCP session; if the hub saw a short session, it counts as one flap.
+- **Share instance / duplicate Reticulum apps** — competing sessions connect and drop.
+- **Reconnect or auto-recovery loops** — repeated stack restarts while the hub is already rejecting make it worse.
+
+mesh-client counts **stack starts** (persisted across app restarts), not sidecar log timestamps and not whether each run lasted under 20 seconds. Testers who restart the client often still hit the notice. After five stack starts in 12 hours it shows the lockout banner, hides **Restart stack** on that alert, and skips auto stack restart. Host TCP probes run only before the sidecar is ready.
+
+**What to do**:
+
+1. **Stop restarting** the app or stack — more restarts add flaps and extend the block.
+2. Connection → Interfaces → **disable** the affected hub temporarily.
+3. Fully quit mesh-client and any other Reticulum apps (MeshChatX, Ratspeak, standalone `rnsd`) if **Share instance** is enabled.
+4. **Wait up to 12 hours** before re-enabling the hub (matches default hub `fast_flapping_block_time`).
+5. If you need connectivity sooner, use a different network path (another hub, LAN transport, or RF) — the block is per **source IP**, not identity.
 
 ### Reticulum DM shows "Stored at propagation node" but the reply never arrives (PN island / preferred mismatch)
 
@@ -1187,7 +1258,7 @@ TCP/network Nomad Links use path-scaled initiator hops (`link_hops = clamp(path_
 
 **Fix**:
 
-1. Ensure rsReticulum overlay is applied: `./scripts/apply-rsReticulum-link-client-nomad.sh` (see [patches/README.md](../reticulum-sidecar/patches/README.md); upstream [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14)).
+1. Ensure `.rsstack/rsReticulum` is on floated `origin/main` — handler-free `resolve_destination_on_transport` in `crates/rns-runtime/src/link_client.rs` supersedes the retired `rsReticulum-link-client-nomad` overlay (see [patches/README.md](../reticulum-sidecar/patches/README.md)).
 2. Rebuild sidecar: `pnpm run reticulum:sidecar:build`, restart stack.
 3. Prefer low-hop nodes while testing; hop count is shown in the Nomad list.
 4. Match the humanized message to the table above — `path_timeout` / high hops often mean RF reachability limits, not a mesh-client bug.
@@ -1329,7 +1400,7 @@ Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the
 - **No path yet** → `PROPAGATION_PATH_UNKNOWN` (hard-fail after announce settle; UI `syncPathUnknown`) — not a 45s Establishing stall. Wait for a path / **Announce now**, retry.
 - Remote sync needs a known identity. Missing identity → `PROPAGATION_IDENTITY_UNKNOWN`.
 - Destinations that announce as delivery/other (including TCP hubs) → `PROPAGATION_TARGET_NOT_PN`. Add a destination that announces `lxmf.propagation`.
-- Establishing with **no LRPROOF** often means the PN lacks a reverse path to your LXMF identity. Sync always sends an LXMF delivery announce and waits briefly before Linking; if that still stalls, use Network → **Announce now** and retry.
+- Establishing with **no LRPROOF** often means the PN lacks a reverse path to your LXMF identity. Sync always sends an LXMF delivery announce and waits ~10s before Linking; if that still stalls, use the Propagation recovery callout (**Announce now**, wait, **Retry Sync**), or Network → **Announce now** and retry. Auto stops cascading other remotes after this class of establish failure (client reverse-path). Dual enabled TCP backbones can cause announce/Link asymmetry — try one backbone.
 - Soft-defer `PROPAGATION_RETRIEVE_BUSY` means Host silent `/get` or another retrieve owns the client — wait or Cancel; Cancel must call rsLXMF `abort_transfer` or the next Sync stays busy.
 - Auto keeps picking a bad Discovered PN → **Ignore for Auto** on that row (Manual Prefer/Sync still works).
 - HaveAll / Complete is success (not failure). Cancel or Establishing stall (~45s) must not advance “last synced”.
@@ -1860,6 +1931,8 @@ Product headless/Docker remote control is documented in [headless-server.md](hea
 ### Update check fails / footer update status
 
 The app functions fully offline; this is not a critical error. If "Update check failed" appears in the console, verify network connectivity. Update checks are rate-limited by the GitHub API and may silently skip when the limit is reached. The footer shows **Update error** when a check fails; use **Check for updates** in the app menu or retry from the footer when applicable.
+
+**Footer shows vX.Y.Z then Update error after Cut release:** The GitHub release may have been published with an `untagged-*` tag instead of `vX.Y.Z` (draft-fork race). On GitHub → Releases, confirm the latest release tag is `vX.Y.Z`. Repair with `GH_TOKEN=YOUR_ADMIN_PAT node scripts/repair-published-release-tag.mjs --tag vX.Y.Z`, or edit the release in the GitHub UI. Future releases are blocked at CI verify when the draft tag is wrong.
 
 ### Language and Translations
 

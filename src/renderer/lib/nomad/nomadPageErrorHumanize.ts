@@ -33,6 +33,13 @@ const NOMAD_ERROR_I18N_KEYS: Record<string, string> = {
   watcher_init_failed: 'nomadNetwork.serving.watcherDegraded',
   content_source_update_failed: 'nomadNetwork.serving.contentSourceFailed',
   content_source_not_from_picker: 'nomadNetwork.serving.contentSourceNotFromPicker',
+  // Local page authoring (My Pages editor) — codes from nomad_server.rs page_error_code.
+  page_too_large: 'nomadNetwork.serving.pageTooLarge',
+  page_not_found: 'nomadNetwork.serving.pageNotFound',
+  invalid_page_path: 'nomadNetwork.serving.invalidPagePath',
+  page_io_error: 'nomadNetwork.serving.pageIoError',
+  page_not_utf8: 'nomadNetwork.serving.pageNotUtf8',
+  page_write_failed: 'nomadNetwork.serving.pageWriteFailed',
 };
 
 /**

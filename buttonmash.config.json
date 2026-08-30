@@ -1,0 +1,41 @@
+{
+  "seed": "ci",
+  "budget": {
+    "maxActions": 350,
+    "maxDurationMs": 300000,
+    "maxDepth": 8,
+    "saturationLimit": 50,
+    "maxPages": 2,
+    "actionTimeoutMs": 10000,
+    "interactionTimeoutMs": 1500,
+    "readyTimeoutMs": 5000
+  },
+  "explore": {
+    "crawl": false,
+    "weights": {
+      "dblclick": 0,
+      "back": 0,
+      "forward": 0
+    },
+    "forms": {
+      "enabled": false
+    }
+  },
+  "guardrails": {
+    "billing": {
+      "mode": "refuse"
+    }
+  },
+  "detectors": {
+    "ignoreHttpStatuses": [401, 403],
+    "ignorePatterns": [
+      "ResizeObserver loop",
+      "controls\\.start\\(\\) should only be called after a component has mounted",
+      "Cannot read properties of undefined \\(reading '_leaflet_pos'\\)",
+      "\\[useMeshtasticRuntime\\] Connection failed: BLE peripheral ID required on Mac/Windows",
+      "\\[WebBluetooth\\] navigator\\.bluetooth is UNDEFINED!",
+      "Web Bluetooth is not available"
+    ]
+  },
+  "failOn": "high"
+}

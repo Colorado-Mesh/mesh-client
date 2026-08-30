@@ -6,7 +6,7 @@ import {
 } from '@/renderer/lib/rrcLegacyWhispersMigrate';
 import { clearRrcOpenDms, loadRrcOpenDms, saveRrcOpenDms } from '@/renderer/lib/rrcOpenDms';
 
-import { useRrcSessionStore } from './rrcSessionStore';
+import { selectRrcActiveRoomMessages, useRrcSessionStore } from './rrcSessionStore';
 
 describe('rrcSessionStore', () => {
   beforeEach(() => {
@@ -205,6 +205,71 @@ describe('rrcSessionStore', () => {
     expect(useRrcSessionStore.getState().unreadByRoom.size).toBe(0);
     expect(useRrcSessionStore.getState().unreadForHub(hub)).toBe(1);
     expect(useRrcSessionStore.getState().totalUnread()).toBe(1);
+  });
+
+  it('clearUnread drops live room counts and stashed unreadByHub for the hub', () => {
+    const store = useRrcSessionStore.getState();
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    store.setRrcPanelFocused(false);
+    store.addMessage(
+      {
+        id: '1',
+        room: '#lobby',
+        kind: 'msg',
+        body: 'hi',
+        sender_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        timestamp: 1,
+      },
+      { bumpUnread: true },
+    );
+    useRrcSessionStore.setState({
+      unreadByHub: new Map([[hub, 17]]),
+    });
+    expect(useRrcSessionStore.getState().totalUnread()).toBe(18);
+
+    store.clearUnread('#lobby', hub);
+
+    expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBeUndefined();
+    expect(useRrcSessionStore.getState().unreadByHub.get(hub)).toBeUndefined();
+    expect(useRrcSessionStore.getState().unreadForHub(hub)).toBe(0);
+    expect(useRrcSessionStore.getState().totalUnread()).toBe(0);
+  });
+
+  it('selectRrcActiveRoomMessages tracks the focused hub active room bucket', () => {
+    const store = useRrcSessionStore.getState();
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    expect(selectRrcActiveRoomMessages(useRrcSessionStore.getState())).toEqual([]);
+
+    store.addMessage({
+      id: '1',
+      room: '#lobby',
+      kind: 'msg',
+      body: 'live',
+      timestamp: 1,
+    });
+    expect(selectRrcActiveRoomMessages(useRrcSessionStore.getState()).map((m) => m.id)).toEqual([
+      '1',
+    ]);
+
+    store.mergeHistoryMessages(hub, '#lobby', [
+      {
+        id: 'hist',
+        room: 'lobby',
+        kind: 'msg',
+        body: 'sqlite',
+        timestamp: 0,
+      },
+    ]);
+    expect(selectRrcActiveRoomMessages(useRrcSessionStore.getState()).map((m) => m.id)).toEqual([
+      'hist',
+      '1',
+    ]);
   });
 
   it('does not bump unread for self echo', () => {
@@ -414,6 +479,21 @@ describe('rrcSessionStore', () => {
     const members = useRrcSessionStore.getState().rooms.get('lobby')?.members ?? [];
     expect(members).toHaveLength(2);
     expect(members.map((m) => m.nickname).sort()).toEqual(['Alice', 'Bob']);
+  });
+
+  it('removes peer PARTED members from nicklist (EX1 fanout)', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
+    store.roomJoined('lobby', [
+      { identity_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', nickname: 'Alice' },
+      { identity_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', nickname: 'Bob' },
+    ]);
+    store.removeRoomMembers('lobby', [
+      { identity_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', nickname: 'Bob' },
+    ]);
+    const members = useRrcSessionStore.getState().rooms.get('lobby')?.members ?? [];
+    expect(members).toHaveLength(1);
+    expect(members[0]?.nickname).toBe('Alice');
   });
 
   it('coalesces #general and general into one joined room', () => {
@@ -648,6 +728,23 @@ describe('rrcSessionStore', () => {
     expect(session?.whoRequestedRooms.has('general')).toBe(true);
     expect(session?.whoTranscriptShownRooms.has('general')).toBe(true);
     expect(useRrcSessionStore.getState().markWhoRequested('general')).toBe(false);
+    expect(useRrcSessionStore.getState().consumeWhoTranscriptSlot('general')).toBe(false);
+  });
+
+  it('re-arms auto /who when a reconnect re-runs the handshake', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('general');
+    expect(store.markWhoRequested('general')).toBe(true);
+    expect(store.consumeWhoTranscriptSlot('general')).toBe(true);
+    store.applyStatus('reconnecting', hub);
+    store.applyStatus('awaiting_welcome', hub);
+    store.applyStatus('active', hub, 'Community');
+    const session = useRrcSessionStore.getState().sessionsByHub.get(hub);
+    expect(session?.rooms.has('general')).toBe(true);
+    // Roster refresh is re-armed, but the NOTICE stays out of the transcript.
+    expect(useRrcSessionStore.getState().markWhoRequested('general')).toBe(true);
     expect(useRrcSessionStore.getState().consumeWhoTranscriptSlot('general')).toBe(false);
   });
 

@@ -1,0 +1,262 @@
+{
+  "$comment": [
+    "Single source of truth for Reticulum interface types, read by BOTH the Rust",
+    "sidecar (reticulum-sidecar/src/stack/interface_catalog.rs) and the renderer",
+    "(src/renderer/lib/reticulum/reticulumInterfaceCatalog.ts).",
+    "",
+    "configType MUST be one of the type names accepted by the upstream factory",
+    "`synthesize_interface` in .rsstack/rsReticulum/crates/rns-runtime/src/interface_factory.rs,",
+    "except `BlePeerInterface`, which mesh-client spawns itself from live.rs",
+    "(`sync_ble_peer_interfaces`) because upstream has no config type name for it.",
+    "",
+    "`fields` drives generic form rendering and generic add/edit validation. Types",
+    "with bespoke UI (RNode transport selector, presets, BLE picker, host/port) keep",
+    "an empty list and their existing hand-written branches; the point of the catalog",
+    "is that a NEW type needs no new branch, not that every old one is rewritten.",
+    "",
+    "A field with no `bind` round-trips through `extra_config`, so it must NOT be",
+    "added to KNOWN_IFACE_CONFIG_KEYS in config.rs (same rule as pipe `command`)."
+  ],
+  "types": {
+    "auto": {
+      "configType": "AutoInterface",
+      "label": "Auto",
+      "defaultMode": null,
+      "classify": "network",
+      "requiresStackRestart": true,
+      "usesSerialPort": false,
+      "supportsFlowControl": false,
+      "defaultFlowControl": null,
+      "purposeKey": "auto",
+      "fields": []
+    },
+    "tcp": {
+      "configType": "TCPClientInterface",
+      "label": "TCP",
+      "defaultMode": "boundary",
+      "classify": "tcp",
+      "requiresStackRestart": true,
+      "usesSerialPort": false,
+      "supportsFlowControl": false,
+      "defaultFlowControl": null,
+      "purposeKey": "tcp",
+      "fields": []
+    },
+    "udp": {
+      "configType": "UDPInterface",
+      "label": "UDP",
+      "defaultMode": "boundary",
+      "classify": "network",
+      "requiresStackRestart": true,
+      "usesSerialPort": false,
+      "supportsFlowControl": false,
+      "defaultFlowControl": null,
+      "purposeKey": "generic",
+      "fields": []
+    },
+    "i2p": {
+      "configType": "I2PInterface",
+      "label": "I2P",
+      "defaultMode": "boundary",
+      "classify": "network",
+      "requiresStackRestart": true,
+      "usesSerialPort": false,
+      "supportsFlowControl": false,
+      "defaultFlowControl": null,
+      "purposeKey": "i2p",
+      "fields": []
+    },
+    "rnode": {
+      "configType": "RNodeInterface",
+      "label": "RNode",
+      "defaultMode": "access_point",
+      "classify": "rf",
+      "requiresStackRestart": true,
+      "usesSerialPort": true,
+      "supportsFlowControl": true,
+      "defaultFlowControl": true,
+      "purposeKey": "rnodeUsb",
+      "fields": []
+    },
+    "rnode_multi": {
+      "configType": "RNodeMultiInterface",
+      "label": "RNode Multi",
+      "defaultMode": "access_point",
+      "classify": "rf",
+      "requiresStackRestart": true,
+      "usesSerialPort": true,
+      "supportsFlowControl": true,
+      "defaultFlowControl": true,
+      "purposeKey": "generic",
+      "fields": []
+    },
+    "kiss": {
+      "configType": "KISSInterface",
+      "label": "KISS",
+      "defaultMode": null,
+      "classify": "rf",
+      "requiresStackRestart": true,
+      "usesSerialPort": true,
+      "supportsFlowControl": true,
+      "defaultFlowControl": true,
+      "purposeKey": "generic",
+      "fields": []
+    },
+    "pipe": {
+      "configType": "PipeInterface",
+      "label": "Pipe",
+      "defaultMode": null,
+      "classify": "network",
+      "requiresStackRestart": true,
+      "usesSerialPort": false,
+      "supportsFlowControl": false,
+      "defaultFlowControl": null,
+      "purposeKey": "generic",
+      "fields": []
+    },
+    "ble_peer": {
+      "configType": "BlePeerInterface",
+      "label": "BLE Peer",
+      "defaultMode": null,
+      "classify": "ble",
+      "requiresStackRestart": true,
+      "usesSerialPort": false,
+      "supportsFlowControl": false,
+      "defaultFlowControl": null,
+      "purposeKey": "blePeer",
+      "fields": []
+    },
+    "serial": {
+      "configType": "SerialInterface",
+      "label": "Serial",
+      "defaultMode": null,
+      "classify": "rf",
+      "requiresStackRestart": true,
+      "usesSerialPort": true,
+      "supportsFlowControl": false,
+      "defaultFlowControl": null,
+      "purposeKey": "serial",
+      "fields": [
+        { "key": "port", "kind": "serialPort", "bind": "serial_port", "required": true },
+        { "key": "speed", "kind": "number", "default": 9600, "min": 50, "max": 4000000 },
+        {
+          "key": "databits",
+          "kind": "number",
+          "default": 8,
+          "min": 5,
+          "max": 8,
+          "advanced": true
+        },
+        {
+          "key": "parity",
+          "kind": "select",
+          "options": ["N", "E", "O"],
+          "default": "N",
+          "advanced": true
+        },
+        {
+          "key": "stopbits",
+          "kind": "number",
+          "default": 1,
+          "min": 1,
+          "max": 2,
+          "advanced": true
+        }
+      ]
+    },
+    "ax25kiss": {
+      "configType": "AX25KISSInterface",
+      "label": "AX.25 KISS",
+      "defaultMode": null,
+      "classify": "rf",
+      "requiresStackRestart": true,
+      "usesSerialPort": true,
+      "supportsFlowControl": true,
+      "defaultFlowControl": false,
+      "purposeKey": "ax25kiss",
+      "fields": [
+        { "key": "port", "kind": "serialPort", "bind": "serial_port", "required": true },
+        { "key": "callsign", "kind": "text", "bind": "callsign", "required": true, "maxLength": 6 },
+        { "key": "ssid", "kind": "number", "required": true, "min": 0, "max": 15 },
+        { "key": "speed", "kind": "number", "default": 9600, "min": 50, "max": 4000000 },
+        { "key": "flow_control", "kind": "bool", "bind": "flow_control", "default": false },
+        {
+          "key": "preamble",
+          "kind": "number",
+          "default": 350,
+          "min": 0,
+          "max": 65535,
+          "advanced": true
+        },
+        {
+          "key": "txtail",
+          "kind": "number",
+          "default": 20,
+          "min": 0,
+          "max": 65535,
+          "advanced": true
+        },
+        {
+          "key": "persistence",
+          "kind": "number",
+          "default": 64,
+          "min": 0,
+          "max": 255,
+          "advanced": true
+        },
+        {
+          "key": "slottime",
+          "kind": "number",
+          "default": 20,
+          "min": 0,
+          "max": 65535,
+          "advanced": true
+        },
+        {
+          "key": "databits",
+          "kind": "number",
+          "default": 8,
+          "min": 5,
+          "max": 8,
+          "advanced": true
+        },
+        {
+          "key": "parity",
+          "kind": "select",
+          "options": ["N", "E", "O"],
+          "default": "N",
+          "advanced": true
+        },
+        {
+          "key": "stopbits",
+          "kind": "number",
+          "default": 1,
+          "min": 1,
+          "max": 2,
+          "advanced": true
+        }
+      ]
+    },
+    "local": {
+      "configType": "LocalInterface",
+      "label": "Local",
+      "defaultMode": null,
+      "classify": "tcp",
+      "requiresStackRestart": true,
+      "usesSerialPort": false,
+      "supportsFlowControl": false,
+      "defaultFlowControl": null,
+      "purposeKey": "local",
+      "fields": [
+        {
+          "key": "port",
+          "kind": "number",
+          "bind": "port",
+          "default": 37428,
+          "min": 1,
+          "max": 65535
+        }
+      ]
+    }
+  }
+}

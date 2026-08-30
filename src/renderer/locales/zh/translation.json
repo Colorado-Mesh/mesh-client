@@ -390,7 +390,32 @@
     "themeResetFailed": "无法重置颜色。",
     "messageActionsBarBgVisible": "显示背景",
     "rrcUnreadAllRoomMessages": "所有房间消息的RRC未读",
-    "rrcUnreadAllRoomMessagesHint": "开启时，任何新的RRC房间消息都会标记为未读，并且可以播放频道声音。关闭IRC样式警报：仅限直接消息和@提及。"
+    "rrcUnreadAllRoomMessagesHint": "开启时，任何新的RRC房间消息都会标记为未读，并且可以播放频道声音。关闭IRC样式警报：仅限直接消息和@提及。",
+    "shareMyLocation": "分享我的位置",
+    "shareMyLocationOffInfo": "位置共享已关闭—主机GPS刷新和网格发送已禁用。启用在上方分享我的位置，以使用自动刷新或发送您的位置。",
+    "shareMyLocationHint": "启用后，此应用可能会在此计算机上查找您的位置，并通过Meshtastic、MeshCore或Reticulum （聊天共享、无线电推送、RMAP ）发送。禁用后，主机GPS查找和应用程序发送将关闭；静态坐标仍然仅适用于您的本地地图。带有GPS的收音机可能仍会在本地显示您的位置。在您调整收音机或模块设置之前，设备固件仍可能进行广播。",
+    "reticulumBlocklist": {
+      "description": "被阻止的发件人将在其LXMF消息到达您的收件箱之前被删除。导出列表以将其移动到另一个安装，或导入列表以一次阻止多个发件人。",
+      "exportButton": "导出阻止列表",
+      "exportAria": "导出被阻止的联系人",
+      "importButton": "导入阻止列表",
+      "importAria": "导入被阻止的联系人",
+      "exportOk": "已导出{{count}}个被阻止的联系人",
+      "exportEmpty": "没有要导出的被阻止的联系人。",
+      "exportFailed": "无法导出阻止列表。",
+      "importOk": "已导入{{imported}}封锁的联系人（已跳过{{skipped}} ）",
+      "importFailed": "无法导入阻止列表。",
+      "unblockAria": "取消屏蔽{{hash}}",
+      "unblockFailed": "无法取消阻止该联系人。",
+      "empty": "已阻止的联系人",
+      "title": "已屏蔽的联系人"
+    },
+    "fontSize": "字体大小",
+    "fontSizeDesc": "在应用中调整文字大小。地图、海图和航站楼不受影响。",
+    "decreaseFontSize": "减小字体大小",
+    "increaseFontSize": "增加字体大小",
+    "resetFontSize": "一键复原",
+    "resetFontSizeAria": "重置字体大小"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -693,7 +718,37 @@
     "meshcoreFastSend": {
       "warning": "您发送的速度超过了网格可以中继的速度。在繁忙的网格上，中继器可能会丢弃一起发送的消息—在消息之间留几秒钟。"
     },
-    "outboxLegacyMultipartBlocked": "该排队消息使用了多部分MeshCore分裂，不再发送。取消它并发送一条较短的消息（或多个单独的较短消息）。"
+    "outboxLegacyMultipartBlocked": "该排队消息使用了多部分MeshCore分裂，不再发送。取消它并发送一条较短的消息（或多个单独的较短消息）。",
+    "voiceMemo": {
+      "recordAria": "录制语音",
+      "playAria": "播放语音备忘录",
+      "pauseAria": "暂停语音备忘录",
+      "seekAria": "查找语音备忘录播放位置",
+      "containerAria": "语音备忘录",
+      "sendAria": "发送语音备忘录",
+      "callBusy": "录制备忘录之前，请挂断语音通话。",
+      "micDenied": "录制语音备忘录需要麦克风访问权限。",
+      "tooLargeForWire": "语音备忘录太大，无法发送。录制一个较短的剪辑。",
+      "tooLargeForPropagation": "语音消息大于传播节点限制。只有当收件人在线时，它才会派送。缩短存储时间，以便线下派送。",
+      "directOnlyBadge": "仅限直接存储—对于离线存储来说太大",
+      "recordTooltip": "LXMF语音备忘录—为此直接消息录制一个简短的Opus剪辑。支持mesh-client、Ratspeak和Sideband (FIELD_AUDIO)。与LXST呼叫不同。",
+      "sendTooltip": "发送录制的LXMF语音备忘录",
+      "startFailed": "无法开始语音备忘录录制。请重试。",
+      "sendAriaWithElapsed": "发送语音备忘录（记录{{seconds}}秒）",
+      "unavailable": "语音备忘录不可用—附件未缓存在此设备上。"
+    },
+    "heardByRepeaters_one": "{{count}}个节点听到",
+    "heardByRepeaters_other": "{{count}}个节点听到",
+    "heardByNetwork": "被网络听到",
+    "notHeardTimeout": "未听到（超时）",
+    "routeRelaysPredicted": "路线： ~ {{count}}通过{{hop}}继电器",
+    "routeViaPredicted": "路线：通过{{hop}}",
+    "routeRelaysPredictedHopsOnly": "路线： ~ {{count}}个继电器",
+    "heardByRepeatersDetail_one": "{{count}}个节点听到：{{names}}",
+    "heardByRepeatersDetail_other": "{{count}}个节点听到：{{names}}",
+    "heardByRepeaterNodeFallback": "节点{{nodeId}}",
+    "heardByRepeatersAdditional_one": "{{count}}其他身份不明的货运代理（哈希值： {{hashes}} ）",
+    "heardByRepeatersAdditional_other": "{{count}}其他身份不明的转发商（哈希： {{hashes}} ）"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -1018,7 +1073,9 @@
       "importBackupAria": "从粘贴的JSON导入Ratspeak .rsi备份",
       "importBackupFromFileAria": "选择要导入的Ratspeak .rsi备份文件",
       "exportAria": "导出PIN加密的Ratspeak .rsi身份备份",
-      "exportRawAria": "导出未加密的原始 Reticulum 身份文件"
+      "exportRawAria": "导出未加密的原始 Reticulum 身份文件",
+      "identityHashLabel": "标识哈希：",
+      "copyIdentityHash": "复制标识哈希"
     },
     "reticulumInterfaces": {
       "title": "接口",
@@ -1099,7 +1156,10 @@
         "blePeer": "使用种子对等地址的 BLE 对等网格。",
         "generic": "Reticulum 网络接口。",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "通过此机器上的路由器的I2P骨干网。启用SAM应用程序桥(127.0.0.1: 7656) —而不是HTTP/HTTPS I2P隧道代理(4444/4445)。在启用SAM后重新启动I2P ，以便桥接器侦听，然后如果此接口保持关闭状态，则重新启动Reticulum堆栈。"
+        "i2p": "通过此机器上的路由器的I2P骨干网。启用SAM应用程序桥(127.0.0.1: 7656) —而不是HTTP/HTTPS I2P隧道代理(4444/4445)。在启用SAM后重新启动I2P ，以便桥接器侦听，然后如果此接口保持关闭状态，则重新启动Reticulum堆栈。",
+        "serial": "通过有线连接到TNC、调制解调器或其他主机的通用串行链路。设置线路参数以匹配远端。",
+        "ax25kiss": "通过KISS TNC的AX.25分组无线电。需要您的呼号以及标识此电台的SSID (0-15)。",
+        "local": "此机器上的共享实例套接字。其他本地工具（ rnsd、Nomad Network、rnsh ）可以通过它连接到此堆栈。套接字路径派生自此接口的名称，因此重命名它会更改其他工具必须使用的地址。"
       },
       "rfProfile": {
         "coordinated": "区域协调",
@@ -1218,10 +1278,42 @@
       "backboneEnableGuidanceBody": "—2是冗余的最佳选择，不会造成不必要的带宽膨胀。瞄准1个全球集线器和1个区域网关，并严格根据需要启用专业接口（如I2P或Yggdrasil ）。本地连接的RNode和本地LAN接口不计入此骨干限制。",
       "defaultHubsPickerHint": "从“主要和全球骨干网”加上您的区域开始。最多启用 1 到 3 个骨干网关（2 个较理想）。本地 RNode 和局域网接口不计入。新条目默认禁用，便于您审阅后再启用。同步还会禁用剩余已停用的官方测试网枢纽（阿姆斯特丹）。",
       "rnodeTransportBleHint": "BLE绑定可以与macOS取消同步（忘记+重新配对）。当收音机在附近时，首选USB串行或Wi-Fi （ tcp://）。",
-      "flowControl": "流量控制（TX 就绪门）"
+      "flowControl": "流量控制（TX 就绪门）",
+      "rmapFullModeHint": "RMAP发布的完整模式通过IGNORE_CONFIG_WARNINGS保持完整。LXMF传递公告将在堆栈公告间隔（默认为1小时）上退出此无线电。",
+      "effectiveModeBadge": "有效期： {{mode}}",
+      "effectiveModeAria": "有效运行时模式{{mode}}。配置的模式与Reticulum正在运行的模式不同。",
+      "effectiveModeTooltip": "Reticulum将此可发现接口重写到接入点（或其他允许的模式） ，因为除非设置了ignore_config_warnings ，否则DISCOVERABLE需要网关、内部或接入点。在选择退出的mesh-client戳后重新启动堆栈，以便完整（或您配置的模式）生效。",
+      "flowControlBleHint": "在蓝牙上，收音机通常不会发送CMD_READY。Mesh-Client仍然步进TX （短暂等待就绪，然后继续） ，因此流量控制可以在不冻结队列的情况下减少过载。",
+      "advancedFields": "高级设置",
+      "field": {
+        "port": "端口",
+        "speed": "速度（波特率）",
+        "databits": "数据位",
+        "parity": "奇偶性",
+        "stopbits": "停止位",
+        "callsign": "呼号",
+        "ssid": "SSID",
+        "flow_control": "流量控制",
+        "preamble": "前言（毫秒）",
+        "txtail": "TX尾部(ms)",
+        "persistence": "一致性",
+        "slottime": "时隙时间（毫秒）"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "无",
+          "E": "偶數",
+          "O": "奇数"
+        }
+      },
+      "fieldRequired": "此字段为必填项。",
+      "fieldNotANumber": "输入整数（仅限数字）。",
+      "fieldOutOfRange": "值超出允许的范围。",
+      "fieldTooLong": "此值太长。",
+      "fieldInvalidOption": "不支持的V值。"
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "跳数",
       "actions": "动作",
       "path": "路径",
       "probe": "探头"
@@ -1245,10 +1337,12 @@
       "connectingRow": "{{name}}：通过蓝牙连接",
       "offlineHintWifi": "检查RNode是否在您的LAN上，已通电，并且可以在配置的IP上访问（默认TCP端口7633 ，而不是4242 ）。如果DHCP分配了新地址，请在下方更新主机，或在Reticulum → Admin中重新配置Wi-Fi。",
       "tcpUnreachable": "{{name}} ：无法访问TCP集线器（ {{host}} ： {{port}} ）",
-      "tcpUnreachableHint": "远程Reticulum实例可能处于离线状态或阻塞连接。禁用此接口或验证主机和端口。",
+      "tcpUnreachableHint": "远程 Reticulum 实例可能处于离线状态或正在阻止连接。请禁用此接口或验证主机和端口。频繁重启 mesh-client 或协议栈可能导致 Reticulum 1.4.0+ 枢纽将您的 IP 封锁 12 小时 — 请等待，不要再次重启。",
       "connectingHintBle": "堆栈启动后，BLE RNode 链接可能需要长达 60 秒的时间（操作系统密钥窗口）。如果出现提示，请输入当前的 RNode PIN — 切勿输入 123456。这是正常现象，不是错误。成功绑定后，该设备可能不会出现在系统设置中。",
       "offlineHintBle": "要清除此错误，您可能需要删除此接口并重新添加（选择设备），以刷新已保存的蓝牙 ID，然后重新启动堆栈。操作系统可能会提示输入 6 位蓝牙 PIN（macOS、Windows 或 Linux）。RNode 每次配对都会生成新代码——切勿使用 123456（那是 Meshtastic 的默认值，不是 RNode）。在此应用连接之前，RNode 不必出现在系统设置 → 蓝牙中；堆栈配对时会出现操作系统对话框。无显示屏的电台：连接 USB → Reticulum Admin → 蓝牙 → 开始配对 → 将管理面板中显示的 PIN（不是电台屏幕上的）输入到操作系统对话框。有显示屏的电台：在 Heltec 设备上按住按钮约 7 秒（时间因机型而异；许多板上约 10 秒会启用 Wi‑Fi AP），读取屏幕上的 PIN，然后输入到操作系统对话框。重试前请在操作系统蓝牙设置中清除失败的绑定。",
-      "offlineHintBleBondStale": "macOS 仍将此 RNode 显示为已配对，但蓝牙密钥不再匹配（对等方已删除配对信息）。在系统设置 → 蓝牙中忘记该设备，将 RNode 置于配对模式（管理 → 蓝牙 → 开始配对，或按住按钮约 7 秒），然后删除并重新添加此接口（选择设备），重新启动堆栈，并在提示时输入新的 6 位 PIN。"
+      "offlineHintBleBondStale": "macOS 仍将此 RNode 显示为已配对，但蓝牙密钥不再匹配（对等方已删除配对信息）。在系统设置 → 蓝牙中忘记该设备，将 RNode 置于配对模式（管理 → 蓝牙 → 开始配对，或按住按钮约 7 秒），然后删除并重新添加此接口（选择设备），重新启动堆栈，并在提示时输入新的 6 位 PIN。",
+      "tcpFastFlap": "{{name}} ： HUB可能在频繁重启堆栈后阻止了您的IP （ {{host}}: {{port}} ）",
+      "tcpFastFlapHint": "Reticulum 1.4.0+ 公共枢纽会在 12 小时内五次短 TCP 会话后封锁 IP。快速重启 mesh-client 或协议栈会计入。请禁用此枢纽并等待最多 12 小时 — 再次重启会延长封锁。"
     },
     "autoConnectingTo": "正在自动连接到 {{deviceName}}…",
     "autoReconnectInProgress": "正在自动重新连接…",
@@ -1335,7 +1429,9 @@
       "txQueueDropsHintBle": "此BLE RNode无法排出其TX队列（链接卡住或抖动）。首选USB串行或Wi-Fi (tcp://) ，或在忘记系统设置→蓝牙后停止堆栈并重新配对。",
       "txQueueDropsHintBleBondStale": "TX队列已满，因为BLE绑定已过时。在系统设置→蓝牙中忘记此RNode ，然后使用管理→蓝牙（清除配对/开始配对）或切换到USB。",
       "txQueueDropsHintNeutral": "此接口TX通道已满。检查该接口的链接健康状况（或禁用它）以停止丢弃。",
-      "txQueueDropsHintBleFlowControl": "无线电忙时主机TX队列背压（流量控制开启）。在射频拥塞下预期—不是卡住的链路。减少出站负载或等待通话时间。"
+      "txQueueDropsHintBleFlowControl": "无线电忙时主机TX队列背压（流量控制开启）。在射频拥塞下预期—不是卡住的链路。减少出站负载或等待通话时间。",
+      "tcpResetByPeer": "{{name}} ：集线器重置TCP会话（对等体重置连接）",
+      "tcpReadEof": "{{name}} ：集线器已干净关闭TCP （信息： TCP读取： EOF ）"
     },
     "reticulumSidecarBundledMissing": "此安装缺少捆绑的 Reticulum sidecar。升级到较新的版本或报告问题 - 在打包安装中无法从源代码构建。",
     "radioMqttRootDivergesWarning": "无线电MQTT根主题为{{radioRoot}} ，但此面板订阅了{{appPrefix}}。匹配无线电以限制全国节点流量—更新主题前缀并重新连接MQTT。",
@@ -1396,7 +1492,19 @@
     "letsMeshRegionEu": "EU",
     "letsMeshRequiresWebSocket": "此Broker预设需要WebSocket传输(wss)。",
     "letsMeshRequiresPort": "此代理预设需要端口{{port}} （ WebSocket TLS ）。",
-    "letsMeshKnownBrokersOnly": "此预设仅支持已知的公共MeshCore MQTT代理。对于其他经纪商，请切换到自定义。"
+    "letsMeshKnownBrokersOnly": "此预设仅支持已知的公共MeshCore MQTT代理。对于其他经纪商，请切换到自定义。",
+    "sortName": "姓名",
+    "sortRssi": "RSSI",
+    "sortToolbar": "设备列表",
+    "sortByNameAsc": "按名称排序 - A 到 Z",
+    "sortByNameDesc": "按名称排序 - Z 到 A",
+    "sortByRssiAsc": "按RSSI排序，最弱者优先",
+    "sortByRssiDesc": "按RSSI排序，最强优先",
+    "pickerDeviceAria": "{{name}} {{address}}",
+    "pickerDeviceAriaWithRssi": "{{name}} {{address}} ， {{rssi}} dBm",
+    "bluetoothMac": "蓝牙MAC",
+    "bluetoothId": "蓝牙编号：",
+    "reticulumAutoResendOnAnnounce": "当对等体宣布时重试失败的消息"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -1695,7 +1803,8 @@
         "rmap_no_tcp_hub": "可发现的本地RNode没有启用TCP客户端集线器以实现互联网可访问性。",
         "rmap_transport_disabled": "已配置可发现的接口，但传输模式已关闭。",
         "rmap_i2p_not_connectable": "I2P接口“{{name}}”是可发现的，但不是可连接的。",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "接口“{{name}}”可通过非AP/网关模式发现—除非设置ignore_config_warnings ，否则Reticulum将作为接入点运行。编辑界面或重新启动堆栈，以便mesh-client可以标记选择退出。"
       },
       "runtime": {
         "rnsNotReady": "RNS 堆栈尚未准备好",
@@ -1732,7 +1841,8 @@
         "txQueueDropsBle": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满） — BLE RNode链接卡住；首选USB或重新配对",
         "txQueueDropsBleBondStale": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满） — BLE绑定已过期；忘记操作系统蓝牙并重新配对",
         "txQueueDropsNeutral": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满） —检查该接口的链路",
-        "txQueueDropsBleFlowControl": "接口“{{name}}”丢弃了{{count}}个出站数据包（主机TX队列已满） —流量控制已打开；预计在射频拥塞下，而不是卡住链路"
+        "txQueueDropsBleFlowControl": "接口“{{name}}”丢弃了{{count}}个出站数据包（主机TX队列已满） —流量控制已打开；预计在射频拥塞下，而不是卡住链路",
+        "tcpFastFlap": "TCP集线器“{{name}}”可能在频繁重启堆栈后阻止了此IP （ {{host}}: {{port}} ）"
       }
     },
     "routingPort": {
@@ -2730,6 +2840,18 @@
     "reticulumScanImport": {
       "title": "扫描/导入",
       "hint": "扫描或粘贴 QR 码以查找联系人、Columba lxma:// 卡或加密的 LXMF 纸质消息。"
+    },
+    "reticulumPathTable": {
+      "title": "路径表",
+      "description": "清除路径表将丢弃每个缓存路由。路由会在新公告到达时重新学习，因此发送给同行的第一条消息可能需要更长时间。",
+      "clear": "清除路径表",
+      "clearing": "清理中...",
+      "confirmTitle": "清除路径表？",
+      "confirmBody": "每个缓存的路由都会被丢弃。根据新公告重建路由。",
+      "clearOk": "路径表已清除（ {{count}}路由已丢弃）",
+      "clearFailed": "无法清除路径表。",
+      "clearAria": "清除路径表",
+      "confirmAction": "清除"
     }
   },
   "nodeDetailModal": {
@@ -3168,7 +3290,50 @@
       "noPages": "还没有页面。将.mu文件添加到所选文件夹（例如index.mu ）。",
       "contentSourceNotFromPicker": "在应用文件夹之前，选择带有“选择文件夹”的文件夹。",
       "contentSourceNone": "没有选择文件夹",
-      "contentSourceRequired": "在开始Nomad托管之前，请选择一个页面文件夹。"
+      "contentSourceRequired": "在开始Nomad托管之前，请选择一个页面文件夹。",
+      "newPage": "新页",
+      "newPageName": "页面文件名（必须以.mu结尾）",
+      "invalidPageName": "输入以.mu结尾的文件名，不带..或绝对路径。",
+      "edit": "编辑",
+      "editPage": "编辑{{path}}",
+      "delete": "删除",
+      "deletePage": "删除{{path}}",
+      "deleteConfirm": "删除此页面？这将从提供的文件夹中删除文件。",
+      "deleteConfirmAria": "确认删除此页面",
+      "deleteError": "无法删除页面。",
+      "openError": "无法打开页面进行编辑。",
+      "editorTitle": "编辑Micron页面",
+      "editorAria": "Micron页面来源",
+      "editorPreview": "制作预览",
+      "toolbarAria": "Micron格式化操作",
+      "toolbar": {
+        "bold": "加粗",
+        "italic": "斜体",
+        "underline": "下划线",
+        "h1": "标题 1",
+        "h2": "标题 2",
+        "h3": "标题 3",
+        "alignLeft": "左对齐",
+        "alignCenter": "居中",
+        "alignRight": "右对齐",
+        "divider": "分隔线",
+        "link": "链接"
+      },
+      "linkTargetPrompt": "链接目标（页面路径或目标哈希）",
+      "save": "保存",
+      "saveError": "无法保存页面。",
+      "unsaved": "未保存的更改",
+      "discard": "放弃更改",
+      "discardConfirm": "此页面有未保存的更改。",
+      "discardConfirmAria": "丢弃修改并关闭",
+      "close": "关闭编辑器",
+      "closeBackdropAria": "关闭 Micron 页面编辑器",
+      "pageTooLarge": "该页面太大，无法出租（限制为512 KiB ）。",
+      "pageNotFound": "该页面不再存在于提供的文件夹中。",
+      "invalidPagePath": "不允许使用该页面路径。",
+      "pageIoError": "无法读取或写入磁盘上的页面。",
+      "pageNotUtf8": "该页面不是有效的UTF-8文本。",
+      "pageWriteFailed": "无法写入页面。"
     },
     "sortLastHeard": "上次听到",
     "sortHops": "跳数",
@@ -3401,8 +3566,8 @@
         "label": "客户端"
       },
       "1": {
-        "description": "不传输的客户端",
-        "label": "客户端静音"
+        "label": "客户端静音",
+        "description": "不转发数据包的客户端。应用此角色还会禁用设备上的GPS广播和地图报告。"
       },
       "2": {
         "description": "专用路由器/中继器",
@@ -3902,7 +4067,11 @@
     "floodScopeSavedEmpty": "尚未保存范围。应用自定义主题标签或使用聊天中的自定义范围来添加标签。",
     "floodScopeRemoveSaved": "从保存的范围中删除",
     "floodScopeRemoveSavedAria": "从保存的范围中删除 {{hashtag}}",
-    "floodScopeInvalidHashtag": "输入有效的区域标签（例如#myregion）。"
+    "floodScopeInvalidHashtag": "输入有效的区域标签（例如#myregion）。",
+    "sendPositionDisabledShareOff": "启用在应用程序→GPS/位置中共享我的位置，以便将您的位置发送到设备。",
+    "clientMuteGpsSuppressed": "已应用客户端静音—在设备上禁用GPS广播和MQTT地图报告。",
+    "validationShortNameTooLong": "短名称必须在4个UTF-8字节以内",
+    "validationShortNameEmojiTooLarge": "此字符对于短名称太大（每个名称最多4个UTF-8字节）"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",
@@ -4039,7 +4208,7 @@
     }
   },
   "repeatersPanel": {
-    "searchRepeaters": "搜索中继器",
+    "searchRepeaters": "搜索中继器和房间",
     "favorite": "我的最愛",
     "unfavorite": "取消",
     "pingError": "Ping错误： {{error}}",
@@ -4051,12 +4220,12 @@
     "cliInput": "CLI命令输入",
     "cliInterface": "CLI接口",
     "sensorTelemetryLpp": "传感器遥测LPP",
-    "noRepeatersYet": "尚未发现中继器。",
-    "noRepeatersHintPre": "当类型为“中继器”的联系人发布广告时，中继器就会出现。使用",
+    "noRepeatersYet": "尚未发现中继器或房间。",
+    "noRepeatersHintPre": "当这些类型的联系人进行通告时，中继器和房间服务器会出现。使用 ",
     "importContacts": "导入联系人",
     "noRepeatersHintMid": "于",
     "noRepeatersHintSuffix": "选项卡预加载昵称。",
-    "noRepeatersMatch": "没有重复者与您的搜索相匹配。",
+    "noRepeatersMatch": "没有匹配搜索的中继器或房间。",
     "snrDbTooltip": "dB — 来自请求状态（如果可用），否则联系人列表",
     "rssiDbmTooltip": "dBm — 来自请求状态（如果可用），否则来自联系人列表",
     "hopCountTooltip": "上次 Ping 跟踪的跳数（您和此节点之间的中继器）",
@@ -4064,7 +4233,7 @@
     "heardPrefix": "听到：",
     "noLppData": "此响应中没有 LPP 传感器数据。",
     "enterCommand": "输入命令...",
-    "searchRepeatersPlaceholder": "搜索中继器...",
+    "searchRepeatersPlaceholder": "搜索中继器和房间…",
     "openCliInterface": "打开CLI界面",
     "sensorLppButton": "传感器（LPP）",
     "noTelemetryResponse": "尚未有遥测响应。再次尝试传感器 (LPP)。",
@@ -4079,7 +4248,7 @@
     "columnReliability": "可靠性",
     "columnActions": "动作",
     "nodesTabName": "节点",
-    "title": "中继器",
+    "title": "中继器与房间",
     "columnsDataHint": "SNR、RSSI、正常运行时间和通话时间来自状态操作（或在此面板打开时自动获取）。跃点和路径历史记录需要 Ping。 MeshCore 不会仅通过广告来填充这些列。",
     "remoteAuthLabel": "中继器管理员密码（可选）",
     "remoteAuthPlaceholder": "如果中继器没有管理员密码，则留空",
@@ -4164,7 +4333,34 @@
     "currentRouteLabel": "当前路线：",
     "neighborsLoadMore": "加载更多（{{loaded}}/{{total}}）",
     "neighborsLoadMoreAria": "加载更多邻居（已加载{{loaded}}/{{total}}）",
-    "neighborsLoadingMore": "加载中…"
+    "neighborsLoadingMore": "加载中…",
+    "cliClockCannotGoBackwards": "此节点的时钟快于此计算机（{{utc}}）。MeshCore 固件不会将时钟往回调。确认后，运行 clkreboot，然后 clock sync。",
+    "typeFilterAria": "按类型过滤",
+    "filterAll": "全部",
+    "filterRepeaters": "中继器",
+    "filterRooms": "房间",
+    "openRoom": "打开房间",
+    "savedPasswordOrphanRoomLabel": "房间 {{nodeId}}",
+    "roomCliNeedsAdminPassword": "远程房间 CLI 需要房间管理员密码（SendLogin ACL）。请在 Repeaters → 此房间的密码下保存，然后重试。访客 BBS 登录不够。",
+    "cliHistoryError": "[错误： {{detail}}]",
+    "sortByStatusAsc": "按状态排序，脱机优先",
+    "sortByStatusDesc": "按状态排序，在线优先",
+    "sortByNameAsc": "按名称排序 - A 到 Z",
+    "sortByNameDesc": "按名称排序 - Z 到 A",
+    "sortByLastHeardAsc": "按上次听到排序，最早在前",
+    "sortByLastHeardDesc": "按上次听到排序，最新在前",
+    "sortBySnrAsc": "按信噪比排序，从低到高",
+    "sortBySnrDesc": "按信噪比排序，最高优先",
+    "sortByRssiAsc": "按RSSI排序，最弱者优先",
+    "sortByRssiDesc": "按RSSI排序，最强优先",
+    "sortByHopsAsc": "按跃点排序，最近的在前",
+    "sortByHopsDesc": "按跃点排序，最远的在前",
+    "sortByUptimeAsc": "按正常运行时间排序，最短在前",
+    "sortByUptimeDesc": "按正常运行时间排序，最长在前",
+    "sortByAirPctAsc": "按空气百分比排序，从低到低",
+    "sortByAirPctDesc": "按空气百分比排序，最高优先",
+    "sortByReliabilityAsc": "按可靠性排序，从低到高",
+    "sortByReliabilityDesc": "按可靠性排序，最高优先"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",
@@ -4323,7 +4519,17 @@
     "ignoredForAutoTitle": "已对 Auto 忽略",
     "ignoredForAutoHint": "自动模式不会通过这些节点同步或存储和转发。手动首选项/同步仍然有效。",
     "modeHelpAuto": "自动：一次性同步最佳发现传播节点（不添加或更改首选） ，然后配置远程节点，然后本地传播节点。忽略的节点将被跳过。没有网络接口，仅在本地设置。",
-    "modeHelpManual": "手动：同步首选节点，或在没有首选节点时为该同步选择最近添加的节点。如果失败，则尝试其他添加的节点，然后尝试本地传播节点。"
+    "modeHelpManual": "手动：同步首选节点，或在没有首选节点时为该同步选择最近添加的节点。如果失败，则尝试其他添加的节点，然后尝试本地传播节点。",
+    "establishRecoveryTitle": "缺少链接证明—已停止尝试其他节点",
+    "establishRecoveryBody": "此客户端上可能缺少指向您的标识的反向路径（不是坏的传播节点）。在修复此问题之前，同步不会级联到其他远程设备。",
+    "establishRecoveryAnnounce": "立即公告",
+    "establishRecoveryAnnounceAria": "立即发送LXMF派送公告",
+    "establishRecoveryRetry": "重试同步",
+    "establishRecoveryRetryWaiting": "重试同步（ {{seconds}}秒）",
+    "establishRecoveryRetryAria": "等待公告结算，然后在首选或最后一个目标上重试同步",
+    "establishRecoveryDualTcpTip": "启用了两个或多个TCP接口。公告和同步链接可以保留在不同的路径上—在连接→接口下禁用一个主干，然后公告并重试。",
+    "establishRecoveryOpenInterfaces": "打开接口",
+    "establishRecoveryOpenInterfacesAria": "打开连接接口以调整TCP骨干网"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4发现",
@@ -4354,7 +4560,8 @@
     "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图",
     "applyPartialSuccess": "RMAP设置已应用于{{applied}}/{{total}}接口。",
     "disablePartialSuccess": "在{{applied}}/{{total}}接口上禁用RMAP发布。",
-    "hint": "在所有启用的支持 RMAP 的接口（RNode/Multi、KISS、BLE 对等、I2P、UDP、管道）上启用 RMAP 发布和应用程序 GPS 坐标。仅当每个符合条件的接口都在发布时，该复选框才会打开；部分状态是不确定的——再次检查以同步其余部分。使用连接上的每个接口 RMAP 切换进行精细控制。 LoRa 路径还支持传输和 rmap.world 中心。"
+    "hint": "在所有启用的支持 RMAP 的接口（RNode/Multi、KISS、BLE 对等、I2P、UDP、管道）上启用 RMAP 发布和应用程序 GPS 坐标。仅当每个符合条件的接口都在发布时，该复选框才会打开；部分状态是不确定的——再次检查以同步其余部分。使用连接上的每个接口 RMAP 切换进行精细控制。 LoRa 路径还支持传输和 rmap.world 中心。",
+    "disabledShareOff": "启用在应用程序→GPS/位置中共享我的位置以在RMAP上发布。"
   },
   "reticulumTopology": {
     "title": "网络拓扑图",
@@ -4398,7 +4605,7 @@
     "rssiTitle": "RSSI分发",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "跳数分布",
-    "hopAxis": "链路数目"
+    "hopAxis": "跳数"
   },
   "roleInfo": {
     "placeholderDash": "-",
@@ -4444,12 +4651,7 @@
     "postPlaceholder": "发布到房间…",
     "postButton": "发布",
     "posting": "发布中…",
-    "manageRoom": "管理",
-    "manageHeading": "房间管理",
-    "cliPlaceholder": "管理员CLI命令…",
-    "cliSend": "发送",
-    "clearCli": "清除CLI",
-    "cliEmpty": "尚无 CLI 输出。",
+    "manageRoom": "在 Repeaters 中管理",
     "aclPubkeyLabel": "公钥（64 hex）",
     "aclLevelLabel": "权限等级",
     "aclLevelRemove": "删除访问",
@@ -4457,7 +4659,6 @@
     "aclLevelReadWrite": "读/写（可发布）",
     "aclLevelAdmin": "管理员",
     "aclApply": "应用ACL",
-    "adminPasswordRequired": "管理此房间需要管理员密码。",
     "postFailed": "发布到聊天室失败",
     "leaveRoom": "離開聊天室",
     "rememberPassword": "記憶密碼",
@@ -4473,7 +4674,6 @@
     "cancelLoginHint": "另一个房间登录可能首先在收音机上完成。取消可停止对此房间的进一步尝试。",
     "emptyGuestLoginHint": "访客密码为空：对无密码服务器使用「继续只读」。登录需要密码，字段为空时会发送「hello」。",
     "unreadPosts": "新消息 {{count}} 条",
-    "closeManage": "关闭",
     "upgradeAccess": "提升访问权限",
     "leavingRoom": "正在离开…",
     "leaveRoomInProgress": "正在离开房间……",
@@ -4530,16 +4730,14 @@
     "legendNotSavedTooltip": "空圆—此房间未存储密码",
     "legendSavedTooltip": "天空半圆—密码已存储；登录以打开会话",
     "legendLoggedInTooltip": "绿点—活动客户端会话（服务器离线时请离开房间）",
-    "historyLocalHint": "仅当您在此设备上登录此聊天室时，帖子才会显示。启用自动同步以保持订阅状态；历史记录不会从聊天室服务器回填。",
+    "historyLocalHint": "登录时，若此设备尚无本地水印，mesh-client 会请求聊天室服务器环形缓冲区中仍保留的最近帖子。启用自动同步以在连接期间保持订阅。",
     "loginAllSavedDisabledNoSavedPasswords": "首先保存房间密码以使用全部登录",
     "membersHeadingWithCount": "成员({{count}})",
     "collapseRoomList": "折叠房间列表",
     "expandRoomList": "展开房间列表",
-    "pathHashCliGet": "获取路径哈希模式",
-    "pathHashCliSet0": "设置路径哈希模式1字节",
-    "pathHashCliSet1": "设置路径哈希模式2字节",
-    "pathHashCliSet2": "设置路径哈希模式3字节",
-    "collapsedRoomWithUnread": "{{label}}, {{count}}未读"
+    "collapsedRoomWithUnread": "{{label}}, {{count}}未读",
+    "manageJumpHint": "基础设施控制（ping、status、CLI、ACL setperm）位于 Repeaters 选项卡。",
+    "aclPubkeyPlaceholder": "0123456789abcdef…"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",
@@ -4763,8 +4961,7 @@
     "firmwareAvailable": "固件更新可用： v {{version}}",
     "newMessages_one": "{{protocol}} ： {{count}}条新消息",
     "newMessages_other": "{{protocol}} ： {{count}}条新消息",
-    "meshcoreDistanceFilterHint": "地图上有 {{count}} 个带 GPS 的联系人。在应用 → 外貌中启用距离过滤器，以关注附近的节点。",
-    "longSessionRestartNudge": "Mesh-client已经运行了四天。重新启动应用程序，以降低长时间MeshCore BLE会话崩溃的风险。"
+    "meshcoreDistanceFilterHint": "地图上有 {{count}} 个带 GPS 的联系人。在应用 → 外貌中启用距离过滤器，以关注附近的节点。"
   },
   "updateStatus": {
     "checking": "正在检查...",
@@ -4952,7 +5149,15 @@
     "whisperReplyPlaceholder": "回复{{name}}或/msg…",
     "jumpToLatest": "跳到最新",
     "stackNotReady": "Reticulum 堆栈尚未就绪。请等到已连接后再重试。",
-    "sidecarNotRunning": "Reticulum sidecar 未运行。请在 Connection 启动协议栈，然后重试。"
+    "sidecarNotRunning": "Reticulum sidecar 未运行。请在 Connection 启动协议栈，然后重试。",
+    "whoReplyMissing": "中心没有{{room}}的成员列表（回复可能超过链接大小）。姓名将显示为人员加入或聊天。",
+    "openNomadPage": "打开 Nomad 页面 {{address}}",
+    "openDm": "打开与{{address}}的直接消息",
+    "openReticulumAddress": "打开 Reticulum 地址 {{address}}",
+    "addressChoiceTitle": "打开 Reticulum 地址",
+    "addressChoiceMessage": "{{address}} 可能是 Nomad 页面，也可能是一个节点。要打开哪一个？",
+    "addressChoiceNomad": "Nomad 页面",
+    "addressChoiceDm": "私信"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5297,7 +5502,8 @@
     "sessionRowAria": "{{app}}游戏与{{peer}}",
     "apps": {
       "ttt": "井字游戏",
-      "chess": "棋格"
+      "chess": "棋格",
+      "four_in_a_row": "四子棋"
     },
     "status": {
       "pending": "待定",
@@ -5349,6 +5555,19 @@
       "boardAria": "Tic-Tac-Toe板",
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "fourInARow": {
+      "youWon": "您赢了 ！",
+      "opponentWon": "对手获胜。",
+      "draw": "单次抽奖",
+      "yourTurn": "轮到你了",
+      "opponentTurn": "对手的回合",
+      "yourMarker": "您是{{marker}}",
+      "moveCount": "{{count}}步",
+      "boardAria": "四子棋棋盘",
+      "columnAria": "第 {{column}} 列，从下到上：{{contents}}。落子于此",
+      "columnFullAria": "第 {{column}} 列，从下到上：{{contents}}。已满",
+      "columnEmptyContents": "空"
     },
     "chess": {
       "youWon": "您赢了 ！",
@@ -5405,5 +5624,11 @@
     },
     "drawOfferWaitingBanner": "抽奖活动已发送。正在等待对手……",
     "idleExpiryNotice": "游戏在不活动后过期，然后只能删除。未回答的挑战： 24小时（所有游戏）。活跃游戏： 24小时后抽搐， 7天后下棋和一排四棋。"
+  },
+  "longSession": {
+    "title": "建议重新启动",
+    "body": "在蓝牙无线电连接的情况下，mesh-client 已经运行了四天。重新启动应用程序，以降低长时间 Noble BLE 会话中崩溃的风险。",
+    "restart": "重启",
+    "dismiss": "解散"
   }
 }

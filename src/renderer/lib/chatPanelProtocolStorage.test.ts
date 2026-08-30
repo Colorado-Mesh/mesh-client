@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  activeChannelStorageKey,
   activeDmStorageKey,
   clearDraft,
   clearFloodScopeOverride,
@@ -11,6 +12,7 @@ import {
   floodScopeOverridesStorageKey,
   getSanitizedMeshtasticChatLastRead,
   lastReadStorageKey,
+  loadActiveChannelInitial,
   loadActiveDmInitial,
   loadDraftsInitial,
   loadFloodScopeOverridesInitial,
@@ -26,6 +28,7 @@ import {
   sanitizeMeshcoreRoomsLastRead,
   sanitizeMeshtasticChatLastRead,
   sanitizeReticulumChatLastRead,
+  saveActiveChannel,
   saveActiveDm,
   saveDraft,
   saveFloodScopeOverride,
@@ -68,6 +71,54 @@ describe('chatPanelProtocolStorage', () => {
     saveActiveDm('reticulum', null);
     expect(localStorage.getItem(activeDmStorageKey('reticulum'))).toBeNull();
     expect(loadActiveDmInitial('reticulum')).toBeNull();
+  });
+
+  it('persists and loads last-selected channel per protocol + node number', () => {
+    expect(loadActiveChannelInitial('meshtastic', 0x12345678)).toBeNull();
+    saveActiveChannel('meshtastic', 0x12345678, 3);
+    expect(localStorage.getItem(activeChannelStorageKey('meshtastic', 0x12345678))).toBe('3');
+    expect(loadActiveChannelInitial('meshtastic', 0x12345678)).toBe(3);
+
+    // Different node number (e.g. connected to a different physical device that
+    // happens to reuse the same internal identity slot) must not see it.
+    expect(loadActiveChannelInitial('meshtastic', 0x87654321)).toBeNull();
+    // Different protocol must not see it either.
+    expect(loadActiveChannelInitial('meshcore', 0x12345678)).toBeNull();
+  });
+
+  it('ignores invalid inputs for active-channel persistence', () => {
+    saveActiveChannel('meshtastic', 0, 3); // no node number yet — no-op
+    expect(loadActiveChannelInitial('meshtastic', 0)).toBeNull();
+
+    localStorage.setItem(activeChannelStorageKey('meshtastic', 5), 'not-a-number');
+    expect(loadActiveChannelInitial('meshtastic', 5)).toBeNull();
+
+    saveActiveChannel('meshtastic', 5, NaN);
+    expect(loadActiveChannelInitial('meshtastic', 5)).toBeNull();
+    saveActiveChannel('meshtastic', 5, 1.5);
+    expect(loadActiveChannelInitial('meshtastic', 5)).toBeNull();
+    saveActiveChannel('meshtastic', 5, -2); // below the -1 sentinel floor
+    expect(loadActiveChannelInitial('meshtastic', 5)).toBeNull();
+  });
+
+  it('rejects malformed node numbers and whitespace-only stored values', () => {
+    // Fractional/infinite node numbers must not read or write a key at all.
+    saveActiveChannel('meshtastic', 1.5, 3);
+    expect(loadActiveChannelInitial('meshtastic', 1.5)).toBeNull();
+    saveActiveChannel('meshtastic', Infinity, 3);
+    expect(loadActiveChannelInitial('meshtastic', Infinity)).toBeNull();
+    expect(loadActiveChannelInitial('meshtastic', NaN)).toBeNull();
+
+    // A whitespace-only stored value must not silently parse as channel 0
+    // (Number(' ') === 0 in JS).
+    localStorage.setItem(activeChannelStorageKey('meshtastic', 9), '   ');
+    expect(loadActiveChannelInitial('meshtastic', 9)).toBeNull();
+  });
+
+  it('persists and loads the MeshCore primary-channel sentinel (-1)', () => {
+    saveActiveChannel('meshcore', 7, -1);
+    expect(localStorage.getItem(activeChannelStorageKey('meshcore', 7))).toBe('-1');
+    expect(loadActiveChannelInitial('meshcore', 7)).toBe(-1);
   });
 
   it('migrates legacy lastRead only into meshtastic key', () => {

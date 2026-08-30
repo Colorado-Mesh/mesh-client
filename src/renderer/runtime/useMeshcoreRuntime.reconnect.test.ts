@@ -5,6 +5,11 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
+  createBleReconnectExhaustLatch,
+  prepareNobleYieldReleasedReconnectNudge,
+  shouldSkipBleReconnectAfterExhaustion,
+} from '../lib/bleReconnectExhaustLatch';
+import {
   assertPowerResumeSkipsOnExplicitDisconnect,
   extractUseCallbackBody,
   loadRendererLibSource,
@@ -84,7 +89,10 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
 
   it('skips Noble yield nudge when reconnect is already in progress', () => {
     expect(RUNTIME_SOURCE).toMatch(
-      /onNobleYieldReleased[\s\S]*?meshcoreIsReconnectingRef\.current \|\| bleConnectInProgressRef\.current[\s\S]*?skip nudge \(reconnect in progress\)/,
+      /prepareNobleYieldReleasedReconnectNudge\(\{[\s\S]*?isReconnecting: meshcoreIsReconnectingRef\.current[\s\S]*?bleConnectInProgress: bleConnectInProgressRef\.current/,
+    );
+    expect(RUNTIME_SOURCE).toMatch(
+      /nudge === 'skip-in-progress'[\s\S]*?skip nudge \(reconnect in progress\)/,
     );
   });
 
@@ -255,6 +263,37 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(reconnectBody).toContain('bleConnectInProgress:');
     expect(reconnectBody).toMatch(
       /onExhausted:[\s\S]*?rfType === 'ble'[\s\S]*?bleConnectInProgressRef\.current = false/,
+    );
+  });
+
+  it('latches BLE reconnect exhausted; late lost skips; yield release clears for one nudge', () => {
+    // Behavioral lifecycle (same policy as onNobleYieldReleased / connection-lost guards).
+    const latch = createBleReconnectExhaustLatch();
+    latch.markExhausted();
+    expect(
+      shouldSkipBleReconnectAfterExhaustion({
+        bleExhausted: latch.isExhausted(),
+        isReconnecting: false,
+      }),
+    ).toBe(true);
+    expect(
+      prepareNobleYieldReleasedReconnectNudge({
+        latch,
+        isReconnecting: false,
+        bleConnectInProgress: false,
+      }),
+    ).toBe('nudge');
+    expect(latch.isExhausted()).toBe(false);
+    expect(RUNTIME_SOURCE).toContain('prepareNobleYieldReleasedReconnectNudge');
+    expect(RUNTIME_SOURCE).toMatch(
+      /onExhausted:[\s\S]*?rfType === 'ble'[\s\S]*?meshcoreBleReconnectExhaustedRef\.current\.markExhausted\(\)/,
+    );
+    expect(RUNTIME_SOURCE).toMatch(/skip reconnect \(BLE budget exhausted\)/);
+    expect(RUNTIME_SOURCE).toMatch(
+      /Noble BLE disconnected — skip reconnect \(BLE budget exhausted\)/,
+    );
+    expect(RUNTIME_SOURCE).not.toMatch(
+      /Noble BLE yield released — skip nudge \(BLE budget exhausted\)/,
     );
   });
 
@@ -637,19 +676,48 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     );
   });
 
-  it('defers post-connect self telemetry once when waiting-message drain is busy', () => {
-    expect(RUNTIME_SOURCE).toContain('schedulePostConnectSelfTelemetry');
-    expect(RUNTIME_SOURCE).toContain(
-      'post-connect self telemetry deferred (waiting-message drain busy)',
+  it('awaits proactive MsgWaiting drain before post-init side effects and telemetry', () => {
+    const initConnBody = extractUseCallbackBody(RUNTIME_SOURCE, 'initConn');
+    expect(initConnBody).toContain('runPostConnectSelfTelemetryIfReady');
+    expect(initConnBody).toMatch(
+      /await processWaitingMessagesRef\.current\?\.\(\{ showSyncBanner: false \}\)[\s\S]*?void runPostConnectSelfTelemetryIfReady\(\)/,
     );
+    const drainIdx = initConnBody.indexOf(
+      'await processWaitingMessagesRef.current?.({ showSyncBanner: false })',
+    );
+    const sideEffectsIdx = initConnBody.indexOf('conn.syncDeviceTime()');
+    expect(drainIdx).toBeGreaterThan(-1);
+    expect(sideEffectsIdx).toBeGreaterThan(-1);
+    expect(drainIdx).toBeLessThan(sideEffectsIdx);
+    const telemetryIdx = initConnBody.indexOf('void runPostConnectSelfTelemetryIfReady()');
+    expect(telemetryIdx).toBeGreaterThan(drainIdx);
+    expect(telemetryIdx).toBeLessThan(sideEffectsIdx);
+    const followUpIdx = initConnBody.indexOf('post-init follow-up getWaitingMessages failed');
+    expect(followUpIdx).toBeGreaterThan(sideEffectsIdx);
+  });
+
+  it('does not schedule post-connect self telemetry from initConn requestAnimationFrame', () => {
+    expect(RUNTIME_SOURCE).not.toMatch(
+      /requestAnimationFrame\(\(\) => \{[\s\S]{0,1500}runPostConnectSelfTelemetryIfReady/,
+    );
+  });
+
+  it('gates post-connect self telemetry on waiting-message drain idle', () => {
+    expect(RUNTIME_SOURCE).toContain('runPostConnectSelfTelemetryIfReady');
     expect(RUNTIME_SOURCE).toContain(
       'post-connect self telemetry skipped (waiting-message drain still busy)',
     );
     expect(RUNTIME_SOURCE).toMatch(
-      /schedulePostConnectSelfTelemetry = \(allowReschedule: boolean\)[\s\S]*?waitingMessagesDrainBusyRef\.current[\s\S]*?schedulePostConnectSelfTelemetry\(false\)/,
+      /runPostConnectSelfTelemetryIfReady[\s\S]*?awaitMeshcoreWaitingMessagesDrainIdle[\s\S]*?waitingMessagesDrainBusyRef\.current/,
     );
+  });
+
+  it('uses short TCP timeout for post-connect self telemetry', () => {
     expect(RUNTIME_SOURCE).toMatch(
-      /if \(waitingMessagesDrainBusyRef\.current\) \{[\s\S]*?schedulePostConnectSelfTelemetry\(false\);[\s\S]*?\} else \{[\s\S]*?schedulePostConnectSelfTelemetry\(true\);/,
+      /transportType === 'tcp'[\s\S]*?MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS/,
+    );
+    expect(RUNTIME_SOURCE).not.toMatch(
+      /runPostConnectSelfTelemetryIfReady[\s\S]{0,800}MESHCORE_TELEMETRY_TIMEOUT_MS/,
     );
   });
 

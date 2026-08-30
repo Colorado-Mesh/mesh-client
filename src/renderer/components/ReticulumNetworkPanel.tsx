@@ -34,12 +34,15 @@ import type {
   ReticulumSidecarEvent,
 } from '@/shared/reticulum-types';
 
+import { useReticulumBlocklistIdentityId } from '../stores/blockStore';
 import { refreshReticulumPeersFromSidecar } from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
 import { IdentityVaultPanel } from './IdentityVaultPanel';
 import QrCodeImage from './QrCodeImage';
 import QrIngestControl from './QrIngestControl';
 import { ReticulumAnnounceControls } from './ReticulumAnnounceControls';
+import { ReticulumBlockedContactsSection } from './ReticulumBlockedContactsSection';
+import { ReticulumPathTableMaintenance } from './ReticulumPathTableMaintenance';
 import ReticulumPnHostingDangerZone from './ReticulumPnHostingDangerZone';
 import ReticulumPropagationSection from './ReticulumPropagationSection';
 import { ReticulumRmapDiscoveryControls } from './ReticulumRmapDiscoveryControls';
@@ -107,6 +110,8 @@ export interface ReticulumNetworkPanelProps {
   onOpenAppGpsSettings?: () => void;
   /** When incremented, opens the propagation collapsible section. */
   propagationSectionOpenKey?: number;
+  /** Open Connection → Interfaces (PN establish dual-TCP recovery). */
+  onOpenInterfaces?: () => void;
 }
 
 function reticulumExportPinError(
@@ -131,6 +136,7 @@ export function ReticulumNetworkPanel({
   onStartStack,
   onOpenAppGpsSettings,
   propagationSectionOpenKey = 0,
+  onOpenInterfaces,
 }: ReticulumNetworkPanelProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
@@ -162,6 +168,7 @@ export function ReticulumNetworkPanel({
   const [pendingReplaceAction, setPendingReplaceAction] = useState<IdentityReplaceAction | null>(
     null,
   );
+  const reticulumBlocklistIdentityId = useReticulumBlocklistIdentityId();
   const [configPaste, setConfigPaste] = useState('');
   const [importWarnings, setImportWarnings] = useState<string[]>([]);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
@@ -863,6 +870,13 @@ export function ReticulumNetworkPanel({
         </ReticulumCollapsibleSection>
       ) : null}
 
+      {/* Not gated on sidecarApiReady — the blocklist is local DB state, editable with the stack stopped. */}
+      {reticulumBlocklistIdentityId ? (
+        <ReticulumCollapsibleSection title={t('appPanel.reticulumBlocklist.title')}>
+          <ReticulumBlockedContactsSection identityId={reticulumBlocklistIdentityId} />
+        </ReticulumCollapsibleSection>
+      ) : null}
+
       {sidecarApiReady ? (
         <>
           <ReticulumCollapsibleSection title={t('networkPanel.reticulumConfigImport.title')}>
@@ -989,10 +1003,12 @@ export function ReticulumNetworkPanel({
             title={t('connectionPanel.reticulumPropagation.title')}
             defaultOpen={propagationSectionOpenKey > 0}
           >
-            <ReticulumPropagationSection embedded />
+            <ReticulumPropagationSection embedded onOpenInterfaces={onOpenInterfaces} />
           </ReticulumCollapsibleSection>
 
           <ReticulumPnHostingDangerZone disabled={!sidecarApiReady} />
+
+          <ReticulumPathTableMaintenance disabled={!sidecarApiReady} />
         </>
       ) : null}
 
@@ -1413,6 +1429,7 @@ function IdentityConfiguredView({
     setNameDraft(identity?.display_name?.trim() ?? '');
   }, [identity?.display_name]);
 
+  const identityHash = identity?.identity_hash?.trim() ?? '';
   const lxmfHash = identity?.lxmf_hash?.trim() ?? '';
   const [showIdentityQr, setShowIdentityQr] = useState(false);
   const identityQrUri = useMemo(() => {
@@ -1438,6 +1455,15 @@ function IdentityConfiguredView({
     }
   }, [identity, lxmfHash]);
 
+  const copyIdentityHash = useCallback(async () => {
+    if (!identityHash) return;
+    try {
+      await writeClipboardText(identityHash);
+    } catch (e) {
+      console.warn('[ReticulumNetworkPanel] copy identity hash ' + errLikeToLogString(e));
+    }
+  }, [identityHash]);
+
   const copyLxmfHash = useCallback(async () => {
     if (!lxmfHash) return;
     try {
@@ -1462,6 +1488,26 @@ function IdentityConfiguredView({
 
   return (
     <div className="mt-3 space-y-1 text-sm text-gray-300">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-muted">
+          {t('connectionPanel.reticulumIdentity.identityHashLabel')}
+        </span>
+        <code className="text-gray-200" title={identityHash || undefined}>
+          {identityHash ? `${identityHash.slice(0, 24)}…` : '—'}
+        </code>
+        {identityHash ? (
+          <button
+            type="button"
+            className="shrink-0 text-gray-400 hover:text-gray-300"
+            aria-label={t('connectionPanel.reticulumIdentity.copyIdentityHash')}
+            onClick={() => {
+              void copyIdentityHash();
+            }}
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-muted">{t('connectionPanel.reticulumIdentity.hashLabel')}</span>
         <code className="text-amber-300" title={lxmfHash || undefined}>

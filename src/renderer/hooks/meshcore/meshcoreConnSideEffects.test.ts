@@ -7,6 +7,8 @@ import type {
   MeshCoreConnection,
   RxPacketEntry,
 } from '@/renderer/lib/meshcore/meshcoreHookTypes';
+import * as meshcoreRepeaterRpcInFlight from '@/renderer/lib/meshcoreRepeaterRpcInFlight';
+import { meshcoreChatStubNodeIdFromDisplayName } from '@/renderer/lib/meshcoreUtils';
 import {
   beginMeshcoreSilentBulkAttempt,
   resetMeshcoreWaitingMessagesDrainState,
@@ -16,7 +18,6 @@ import {
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
   MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP,
-  MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
 } from '@/renderer/lib/timeConstants';
 import type { ChatMessage, DeviceState, TelemetryPoint } from '@/renderer/lib/types';
 import { useMessageStore } from '@/renderer/stores/messageStore';
@@ -94,13 +95,19 @@ function makeHarness(overrides?: { handleResponseResult?: boolean }): Harness {
     readNodes: () => getIdentityNodeMap(ID),
     pendingAcksRef: ref(pendingAcks),
     processWaitingMessagesRef: ref<
-      ((options?: { showSyncBanner?: boolean }) => Promise<void>) | null
+      | ((options?: {
+          showSyncBanner?: boolean;
+          force?: boolean;
+          incrementalOnly?: boolean;
+        }) => Promise<void>)
+      | null
     >(null),
     pubKeyMapRef: ref(new Map<number, Uint8Array>()),
     pubKeyPrefixMapRef: ref(new Map<string, number>()),
     rawPacketsRef: ref(rawPackets),
     repeaterCommandServiceRef: ref({
       handleResponse,
+      clear: vi.fn(),
       parseResponseToken: (text: string) => ({ token: null, body: text }),
     } as never),
     selfInfoRef: ref(null),
@@ -353,7 +360,7 @@ describe('attachMeshcoreConnSideEffects', () => {
     expect(publish.mock.calls.length).toBeGreaterThan(0);
   });
 
-  it.each(['ble', 'serial', 'tcp'] as const)(
+  it.each(['ble', 'serial'] as const)(
     'silent drain prefers bulk getWaitingMessages on %s',
     async (connectionType) => {
       vi.useFakeTimers();
@@ -384,7 +391,32 @@ describe('attachMeshcoreConnSideEffects', () => {
     },
   );
 
-  it.each(['ble', 'serial', 'tcp'] as const)(
+  it('silent drain on tcp uses syncNextMessage without bulk getWaitingMessages', async () => {
+    vi.useFakeTimers();
+    const h = makeHarness();
+    h.ctx.meshcoreConnectTypeRef.current = 'tcp';
+    h.syncNextMessage
+      .mockResolvedValueOnce({
+        channelMessage: {
+          channelIdx: 0,
+          text: 'TcpPeer: queued',
+          senderTimestamp: 1_700_000_000,
+        },
+      })
+      .mockResolvedValueOnce(null);
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    dispatch({ type: 'meshcore_waiting_messages', payload: {} });
+    await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS + 50);
+    await vi.runAllTimersAsync();
+
+    expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
+    expect(h.syncNextMessage).toHaveBeenCalled();
+    expect(h.ctx.addMessagesBatch).toHaveBeenCalled();
+    expect(h.handleConnectionLost).not.toHaveBeenCalled();
+  });
+
+  it.each(['ble', 'serial'] as const)(
     'silent bulk timeout falls back to syncNextMessage on %s without disconnect',
     async (connectionType) => {
       vi.useFakeTimers();
@@ -405,11 +437,7 @@ describe('attachMeshcoreConnSideEffects', () => {
       detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
 
       const drainPromise = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
-      await vi.advanceTimersByTimeAsync(
-        connectionType === 'serial'
-          ? MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS
-          : MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
-      );
+      await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS);
       await vi.runAllTimersAsync();
       await drainPromise;
 
@@ -422,6 +450,22 @@ describe('attachMeshcoreConnSideEffects', () => {
     },
   );
 
+  it('TCP silent drain starts syncNextMessage immediately without bulk timeout wait', async () => {
+    vi.useFakeTimers();
+    const h = makeHarness();
+    h.ctx.meshcoreConnectTypeRef.current = 'tcp';
+    vi.mocked(h.conn.getWaitingMessages).mockImplementation(() => new Promise(() => undefined));
+    h.syncNextMessage.mockResolvedValueOnce(null);
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    const drainPromise = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
+    await vi.runAllTimersAsync();
+    await drainPromise;
+
+    expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
+    expect(h.syncNextMessage).toHaveBeenCalled();
+  });
+
   it('skips silent bulk after consecutive timeouts and drains incrementally', async () => {
     vi.useFakeTimers();
     const h = makeHarness();
@@ -433,7 +477,7 @@ describe('attachMeshcoreConnSideEffects', () => {
 
     for (let i = 0; i < MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP; i += 1) {
       const drainPromise = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
-      await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS);
+      await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS);
       await vi.runAllTimersAsync();
       await drainPromise;
     }
@@ -550,7 +594,7 @@ describe('attachMeshcoreConnSideEffects', () => {
     const drainPromise = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
     await Promise.resolve();
     resetMeshcoreWaitingMessagesDrainState(0);
-    await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS);
+    await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS);
     await vi.runAllTimersAsync();
     await drainPromise;
 
@@ -618,6 +662,103 @@ describe('attachMeshcoreConnSideEffects', () => {
     await vi.runAllTimersAsync();
     await Promise.all([first, second]);
     expect(h.handleConnectionLost).not.toHaveBeenCalled();
+  });
+
+  it('force drain runs while CLI reply hold would defer silent drain', async () => {
+    const holdSpy = vi
+      .spyOn(meshcoreRepeaterRpcInFlight, 'meshcoreCliReplyHoldActive')
+      .mockReturnValue(true);
+    const h = makeHarness();
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    await h.ctx.processWaitingMessagesRef.current?.({
+      showSyncBanner: false,
+      force: true,
+      incrementalOnly: true,
+    });
+
+    expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
+    expect(h.syncNextMessage).toHaveBeenCalled();
+    holdSpy.mockRestore();
+  });
+
+  it('non-force silent drain still defers during CLI reply hold', async () => {
+    vi.useFakeTimers();
+    const holdSpy = vi
+      .spyOn(meshcoreRepeaterRpcInFlight, 'meshcoreCliReplyHoldActive')
+      .mockReturnValue(true);
+    const h = makeHarness();
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    const pending = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
+    await Promise.resolve();
+    expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
+    expect(h.syncNextMessage).not.toHaveBeenCalled();
+
+    holdSpy.mockReturnValue(false);
+    await vi.runAllTimersAsync();
+    await pending;
+    expect(h.conn.getWaitingMessages).toHaveBeenCalledTimes(1);
+    holdSpy.mockRestore();
+  });
+
+  it('incrementalOnly skips bulk getWaitingMessages', async () => {
+    const h = makeHarness();
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    await h.ctx.processWaitingMessagesRef.current?.({
+      showSyncBanner: false,
+      force: true,
+      incrementalOnly: true,
+    });
+
+    expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
+    expect(h.syncNextMessage).toHaveBeenCalled();
+  });
+
+  it('TCP silent auto-drain skips bulk getWaitingMessages', async () => {
+    const h = makeHarness();
+    h.ctx.meshcoreConnectTypeRef.current = 'tcp';
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    await h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false, force: true });
+
+    expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
+    expect(h.syncNextMessage).toHaveBeenCalled();
+  });
+
+  it('force follow-up after in-flight drain starts another force incremental drain', async () => {
+    vi.useFakeTimers();
+    const h = makeHarness();
+    let releaseBulk: () => void = () => undefined;
+    vi.mocked(h.conn.getWaitingMessages).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releaseBulk = () => {
+            resolve([]);
+          };
+        }),
+    );
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    const first = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
+    await Promise.resolve();
+    expect(h.conn.getWaitingMessages).toHaveBeenCalledTimes(1);
+
+    void h.ctx.processWaitingMessagesRef.current?.({
+      showSyncBanner: false,
+      force: true,
+      incrementalOnly: true,
+    });
+    // Still coalesced onto the in-flight bulk (no second getWaitingMessages yet).
+    expect(h.conn.getWaitingMessages).toHaveBeenCalledTimes(1);
+
+    releaseBulk();
+    await first;
+    await vi.runAllTimersAsync();
+    // Follow-up force drain uses incrementalOnly — syncNext, not a second bulk.
+    expect(h.syncNextMessage).toHaveBeenCalled();
+    expect(h.conn.getWaitingMessages).toHaveBeenCalledTimes(1);
   });
 
   it('flushes waiting-message node changes to nodeStore without updating the runtime node mirror', async () => {
@@ -689,6 +830,100 @@ describe('attachMeshcoreConnSideEffects', () => {
       snr: 9,
       rssi: -40,
       lastHeardAt: 1_700_000_100,
+    });
+  });
+
+  it('preserves concurrent advert longName when flushing waiting-drain last_heard', async () => {
+    const prefix = new Uint8Array([0xaa, 0xbb]);
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          42: {
+            nodeId: 42,
+            longName: 'OldPeer',
+            shortName: 'P',
+            snr: 5,
+            rssi: -80,
+            lastHeardAt: 100,
+            source: 'rf',
+          },
+        },
+      },
+    });
+    const h = makeHarness();
+    h.ctx.pubKeyPrefixMapRef.current.set('aabb', 42);
+    vi.mocked(h.conn.getWaitingMessages).mockImplementation(() => {
+      // Concurrent on-air advert rename while drain still holds OldPeer in workingNodes.
+      useNodeStore.setState((s) => ({
+        nodes: {
+          ...s.nodes,
+          [ID]: {
+            ...s.nodes[ID],
+            42: {
+              ...s.nodes[ID]?.[42],
+              nodeId: 42,
+              longName: 'NewPeer',
+              snr: 9,
+              rssi: -40,
+            },
+          },
+        },
+      }));
+      return Promise.resolve([
+        {
+          contactMessage: {
+            pubKeyPrefix: prefix,
+            text: 'hello from queue',
+            senderTimestamp: 1_700_000_100,
+          },
+        },
+      ]);
+    });
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    await h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: true });
+
+    expect(useNodeStore.getState().nodes[ID]?.[42]).toMatchObject({
+      longName: 'NewPeer',
+      snr: 9,
+      rssi: -40,
+      lastHeardAt: 1_700_000_100,
+    });
+  });
+
+  it('applies waiting-drain longName when live name is placeholder', async () => {
+    const nodeId = meshcoreChatStubNodeIdFromDisplayName('RealPeer');
+    const placeholder = `Node-${nodeId.toString(16).toUpperCase()}`;
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          [nodeId]: {
+            nodeId,
+            longName: placeholder,
+            shortName: '',
+            lastHeardAt: 100,
+            source: 'rf',
+          },
+        },
+      },
+    });
+    const h = makeHarness();
+    vi.mocked(h.conn.getWaitingMessages).mockResolvedValue([
+      {
+        channelMessage: {
+          channelIdx: 0,
+          text: 'RealPeer: queued channel message',
+          senderTimestamp: 1_700_000_200,
+        },
+      },
+    ]);
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    await h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: true });
+
+    expect(useNodeStore.getState().nodes[ID]?.[nodeId]).toMatchObject({
+      longName: 'RealPeer',
+      lastHeardAt: 1_700_000_200,
     });
   });
 

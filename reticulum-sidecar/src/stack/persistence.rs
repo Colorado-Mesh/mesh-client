@@ -284,6 +284,7 @@ impl PersistedState {
             callsign: req.callsign,
             id_interval: req.id_interval,
             mode: req.mode,
+            runtime_mode: None,
             seed_addresses: req.seed_addresses,
             discoverable: req.discoverable,
             latitude: req.latitude,
@@ -298,6 +299,7 @@ impl PersistedState {
             flow_control: req
                 .flow_control
                 .or_else(|| super::config::default_flow_control_for_iface_type(&req.iface_type)),
+            ignore_config_warnings: req.ignore_config_warnings,
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: req.extra_config,
@@ -1058,6 +1060,7 @@ mod tests {
                 reply_to_hash: None,
                 reply_to_id: None,
                 reply_preview_text: None,
+                audio: None,
             })
             .expect("send");
         assert_eq!(payload["to_hash"], dest);

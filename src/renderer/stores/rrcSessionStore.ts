@@ -8,6 +8,7 @@ import {
 } from '@/renderer/lib/rrcDmRoom';
 import { shouldShowRrcWhoTranscript } from '@/renderer/lib/rrcMessageDisplay';
 import { persistRrcMessage } from '@/renderer/lib/rrcMessagePersist';
+import { isCacheableRrcIdentityHash, persistRrcNick } from '@/renderer/lib/rrcNickPersist';
 import { removeRrcOpenDm, upsertRrcOpenDm } from '@/renderer/lib/rrcOpenDms';
 import { clearHydratedRrcRoomKeysForHub } from '@/renderer/lib/rrcRoomHistoryHydration';
 import {
@@ -33,6 +34,8 @@ import type {
 const MAX_MESSAGES_PER_ROOM = RRC_ROOM_HISTORY_LOAD_COUNT;
 const MAX_ROOMS_PER_HUB = MAX_RRC_ROOMS_PER_HUB;
 const MAX_MEMBERS_PER_ROOM = MAX_RRC_MEMBERS_PER_ROOM;
+/** Cache enough names for a large hub without unbounded renderer growth. */
+const MAX_NICKS_PER_HUB = 2000;
 
 export { RRC_HUB_STREAM_ROOM };
 
@@ -266,9 +269,43 @@ function removeHubSession(s: RrcSessionStoreState, hub: string): Partial<RrcSess
   };
 }
 
+export interface RrcCachedNick {
+  hash: string;
+  nickname: string;
+}
+
+const EMPTY_HUB_NICKS: RrcCachedNick[] = [];
+
+/**
+ * Nicks known for the focused hub (SQLite cache + this session's sightings).
+ * Names hash-only roster rows that `/who` never described.
+ */
+export function selectRrcFocusedHubNicks(s: RrcSessionStoreState): RrcCachedNick[] {
+  const hub = s.focusedHubHash;
+  if (!hub) return EMPTY_HUB_NICKS;
+  return s.nicksByHub.get(hub) ?? EMPTY_HUB_NICKS;
+}
+
+/** Cache any nick a roster snapshot (`/who`, JOINED advisory) revealed. */
+function learnNicksFromMembers(
+  get: () => RrcSessionStoreState,
+  hubHash: string | undefined,
+  members: readonly RrcRoomMember[],
+): void {
+  const nicks: RrcCachedNick[] = [];
+  for (const m of members) {
+    const nickname = m.nickname?.trim();
+    if (nickname) nicks.push({ hash: m.identity_hash, nickname });
+  }
+  if (nicks.length === 0) return;
+  get().learnHubNicks(hubHash ?? get().focusedHubHash, nicks);
+}
+
 interface RrcSessionStoreState {
   /** All tracked hub sessions, keyed by lowercase hub destination hash. */
   sessionsByHub: Map<string, RrcHubSessionState>;
+  /** Per-hub nick cache (hash → nick), hydrated from SQLite and grown as peers speak. */
+  nicksByHub: Map<string, RrcCachedNick[]>;
   /** Hub currently shown in the main pane; drives the mirror fields below. */
   focusedHubHash: string | null;
   nickname: string;
@@ -317,6 +354,8 @@ interface RrcSessionStoreState {
     mode: 'replace' | 'merge',
     hubHash?: string,
   ) => void;
+  /** EX1 peer PARTED fanout — drop hashes (and optional nick-only matches) from nicklist. */
+  removeRoomMembers: (room: string, members: RrcRoomMember[], hubHash?: string) => void;
   markPartIntent: (room: string, hubHash?: string) => void;
   clearPartIntent: (room: string, hubHash?: string) => void;
   setDisconnectIntent: (intent: boolean, hubHash?: string) => void;
@@ -376,8 +415,17 @@ interface RrcSessionStoreState {
   consumeWhoTranscriptSlot: (room: string, hubHash?: string) => boolean;
   /** Next `/who` NOTICE for this room should appear in chat (Refresh / composer). */
   reserveWhoTranscriptForce: (room: string, hubHash?: string) => void;
+  /** True while a forced `/who` is still waiting for the hub NOTICE that fills it. */
+  hasWhoTranscriptForce: (room: string, hubHash?: string) => boolean;
   /** Drop a forced transcript reservation after a failed `/who` send. */
   releaseWhoTranscriptForce: (room: string, hubHash?: string) => void;
+  /**
+   * Record nick sightings for a hub (chat sender, `/who` row, JOINED advisory).
+   * Persists new/changed entries so names survive transcript clears and restarts.
+   */
+  learnHubNicks: (hubHash: string | null | undefined, nicks: RrcCachedNick[]) => void;
+  /** Seed the cache from SQLite (`db:listRrcNicks`) without re-persisting. */
+  hydrateHubNicks: (hubHash: string, nicks: RrcCachedNick[]) => void;
   /** Sum of live unread across every session, plus stashed unread for removed hubs. */
   totalUnread: () => number;
   unreadForHub: (hubHash: string) => number;
@@ -397,8 +445,23 @@ function loadInitialRrcNickname(): string {
   return 'mesh-client';
 }
 
+const EMPTY_ACTIVE_ROOM_MESSAGES: RrcChatMessage[] = [];
+
+/**
+ * Zustand selector for the focused hub's active-room transcript. Reads one Map
+ * bucket so components re-render when that room's array changes, not when
+ * subscribing to the stable `messagesForActiveRoom` action reference.
+ */
+export function selectRrcActiveRoomMessages(s: RrcSessionStoreState): RrcChatMessage[] {
+  const hub = s.focusedHubHash;
+  const room = s.activeRoom;
+  if (!hub || !room) return EMPTY_ACTIVE_ROOM_MESSAGES;
+  return s.messages.get(msgKey(hub, room)) ?? EMPTY_ACTIVE_ROOM_MESSAGES;
+}
+
 export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   sessionsByHub: new Map(),
+  nicksByHub: new Map(),
   focusedHubHash: null,
   nickname: loadInitialRrcNickname(),
   localIdentityHash: null,
@@ -489,6 +552,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   mergeRoomMembers: (room, members, mode, hubHash) => {
+    learnNicksFromMembers(get, hubHash, members);
     set((s) =>
       mutateHubSession(s, hubHash, (session) => {
         const { key, existing, rooms } = coalesceRoomAliases(session.rooms, room);
@@ -538,6 +602,36 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
           topic: existing?.topic,
           members: nextMembers.slice(0, MAX_MEMBERS_PER_ROOM),
           member_count: Math.min(nextMembers.length, MAX_MEMBERS_PER_ROOM),
+        });
+        return { ...session, rooms: trimRoomMap(rooms) };
+      }),
+    );
+  },
+
+  removeRoomMembers: (room, members, hubHash) => {
+    if (members.length === 0) return;
+    set((s) =>
+      mutateHubSession(s, hubHash, (session) => {
+        const { key, existing, rooms } = coalesceRoomAliases(session.rooms, room);
+        if (!existing?.members?.length) return session;
+        const removeHashes = members
+          .map((m) => m.identity_hash.trim().toLowerCase())
+          .filter((h) => h.length >= 8);
+        const removeNicks = members
+          .map((m) => m.nickname?.trim().toLowerCase())
+          .filter((n): n is string => Boolean(n));
+        const nextMembers = existing.members.filter((m) => {
+          const h = m.identity_hash.toLowerCase();
+          if (removeHashes.some((rh) => rrcIdentityHashesMatch(h, rh))) return false;
+          const nick = m.nickname?.trim().toLowerCase();
+          if (nick && removeNicks.includes(nick)) return false;
+          return true;
+        });
+        rooms.set(key, {
+          ...existing,
+          name: existing.name ?? room,
+          members: nextMembers,
+          member_count: nextMembers.length,
         });
         return { ...session, rooms: trimRoomMap(rooms) };
       }),
@@ -659,10 +753,14 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       }
       const isNewSession = !s.sessionsByHub.has(targetHub);
       const existing = s.sessionsByHub.get(targetHub) ?? emptyHubSession();
+      // A reconnect re-JOINs every room, and rrcd JOINED rosters carry no nicks.
+      // Re-arm auto `/who` so the nicklist resolves hashes to names again.
+      const reHandshake = status === 'connecting' || status === 'awaiting_welcome';
       const nextSession: RrcHubSessionState = {
         ...existing,
         status,
         hubName: hubName !== undefined ? hubName : existing.hubName,
+        whoRequestedRooms: reHandshake ? new Set() : existing.whoRequestedRooms,
       };
       const sessionsByHub = new Map(s.sessionsByHub);
       sessionsByHub.set(targetHub, nextSession);
@@ -685,6 +783,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   roomJoined: (room, members, hubHash) => {
+    learnNicksFromMembers(get, hubHash, members ?? []);
     set((s) =>
       mutateHubSession(s, hubHash, (session) => {
         const { key, existing, rooms } = coalesceRoomAliases(session.rooms, room);
@@ -844,6 +943,9 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     });
     for (const item of toPersist) {
       persistRrcMessage(item.hub, item.msg);
+      const hash = item.msg.sender_hash?.trim();
+      const nick = item.msg.nickname?.trim();
+      if (hash && nick) get().learnHubNicks(item.hub, [{ hash, nickname: nick }]);
     }
   },
 
@@ -879,15 +981,21 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   clearUnread: (room, hubHash) => {
-    set((s) =>
-      mutateHubSession(s, hubHash, (session) => {
+    set((s) => {
+      const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
+      if (!hub) return {};
+      const sessionMut = mutateHubSession(s, hub, (session) => {
         const unreadByRoom = new Map(session.unreadByRoom);
         for (const [rk] of session.unreadByRoom) {
           if (rrcRoomsMatch(rk, room)) unreadByRoom.delete(rk);
         }
         return { ...session, unreadByRoom };
-      }),
-    );
+      });
+      if (Object.keys(sessionMut).length === 0) return {};
+      const unreadByHub = new Map(s.unreadByHub);
+      unreadByHub.delete(hub);
+      return { ...sessionMut, unreadByHub };
+    });
   },
 
   clearActiveRoomMessages: (hubHash) => {
@@ -917,6 +1025,46 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       if (!hub) return {};
       clearHydratedRrcRoomKeysForHub(hub);
       return removeHubSession(s, hub);
+    });
+  },
+
+  learnHubNicks: (hubHash, nicks) => {
+    const hub = normHub(hubHash);
+    if (!hub || nicks.length === 0) return;
+    const toPersist: RrcCachedNick[] = [];
+    set((s) => {
+      const current = s.nicksByHub.get(hub) ?? [];
+      const byHash = new Map(current.map((n) => [n.hash, n]));
+      for (const raw of nicks) {
+        const hash = raw.hash.trim().toLowerCase();
+        const nickname = raw.nickname.trim();
+        if (!nickname || /^anonymous$/i.test(nickname)) continue;
+        if (!isCacheableRrcIdentityHash(hash)) continue;
+        if (byHash.get(hash)?.nickname === nickname) continue;
+        byHash.set(hash, { hash, nickname });
+        toPersist.push({ hash, nickname });
+      }
+      if (toPersist.length === 0) return {};
+      const nicksByHub = new Map(s.nicksByHub);
+      nicksByHub.set(hub, [...byHash.values()].slice(-MAX_NICKS_PER_HUB));
+      return { nicksByHub };
+    });
+    for (const n of toPersist) {
+      persistRrcNick(hub, n.hash, n.nickname);
+    }
+  },
+
+  hydrateHubNicks: (hubHash, nicks) => {
+    const hub = normHub(hubHash);
+    if (!hub || nicks.length === 0) return;
+    set((s) => {
+      const current = s.nicksByHub.get(hub) ?? [];
+      // Live sightings win: they are newer than anything the DB had at load time.
+      const byHash = new Map(nicks.map((n) => [n.hash.trim().toLowerCase(), n]));
+      for (const n of current) byHash.set(n.hash, n);
+      const nicksByHub = new Map(s.nicksByHub);
+      nicksByHub.set(hub, [...byHash.values()].slice(-MAX_NICKS_PER_HUB));
+      return { nicksByHub };
     });
   },
 
@@ -1036,6 +1184,15 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const mirror = hub === s.focusedHubHash ? mirrorFromSession(hub, nextSession) : {};
       return { sessionsByHub, ...mirror };
     });
+  },
+
+  hasWhoTranscriptForce: (room, hubHash) => {
+    const s = get();
+    const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
+    if (!hub) return false;
+    const forceRooms = s.sessionsByHub.get(hub)?.whoTranscriptForceRooms;
+    if (!forceRooms) return false;
+    return [...forceRooms].some((k) => rrcRoomsMatch(k, room));
   },
 
   releaseWhoTranscriptForce: (room, hubHash) => {

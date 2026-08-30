@@ -22,6 +22,10 @@ import {
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
+import {
+  MACOS_DMG_NOTICE_NAME,
+  stageMacosInstallNoticeReleaseAsset,
+} from './macos-install-notice.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -40,6 +44,13 @@ const ELECTRON_FRAMEWORK_BINARY = path.join(
 const ELECTRON_FRAMEWORK_ROOT = path.join('Contents', 'Frameworks', 'Electron Framework.framework');
 const VERIFY_ZIP_EXTRACT_DIR = path.join(releaseDir, '.verify-mac-extract');
 const VERIFY_DMG_MOUNT_DIR = path.join(releaseDir, '.verify-mac-dmg-mount');
+
+/** Electron sibling frameworks required at launch (auto-update stack). */
+const SIBLING_FRAMEWORKS = [
+  { dir: 'Squirrel.framework', binary: 'Squirrel', minBytes: 1024 },
+  { dir: 'Mantle.framework', binary: 'Mantle', minBytes: 1024 },
+  { dir: 'ReactiveObjC.framework', binary: 'ReactiveObjC', minBytes: 1024 },
+];
 
 /** Thin Mach-O launcher in Contents/MacOS (Electron 30+); real runtime is in the framework. */
 const MIN_LAUNCHER_BYTES = 1024;
@@ -154,6 +165,31 @@ function assertFrameworkSymlinks(bundleRoot, label) {
 }
 
 /**
+ * @param {string} bundleRoot
+ * @param {string} label
+ * @param {{ dir: string, binary: string, minBytes: number }} framework
+ */
+function assertSiblingFrameworkSymlinks(bundleRoot, label, framework) {
+  const frameworkRoot = path.join(bundleRoot, 'Contents', 'Frameworks', framework.dir);
+  const currentLink = path.join(frameworkRoot, 'Versions', 'Current');
+  const rootBinaryLink = path.join(frameworkRoot, framework.binary);
+  const versionBinary = path.join(frameworkRoot, 'Versions', 'A', framework.binary);
+
+  for (const linkPath of [currentLink, rootBinaryLink]) {
+    if (!existsSync(linkPath)) {
+      fail(`Missing ${label} ${framework.dir} entry: ${linkPath}`);
+    }
+    if (!lstatSync(linkPath).isSymbolicLink()) {
+      fail(
+        `${label} ${framework.dir} must be a symlink (ZIP tools like 7-Zip flatten these): ${linkPath}`,
+      );
+    }
+  }
+
+  assertMinSize(`${label} ${framework.dir} binary`, versionBinary, framework.minBytes);
+}
+
+/**
  * Drag-to-install affordance: DMG root must include Applications → /Applications.
  * Uses lstat (not existsSync) so the symlink is detected even if the target is absent
  * (e.g. unit tests on non-macOS hosts where /Applications does not exist).
@@ -176,6 +212,18 @@ function assertApplicationsSymlink(mountRoot) {
   }
 }
 
+/** @param {string} mountRoot */
+function assertDmgInstallNotice(mountRoot) {
+  const noticePath = path.join(mountRoot, MACOS_DMG_NOTICE_NAME);
+  if (!existsSync(noticePath) || !statSync(noticePath).isFile()) {
+    fail(`Missing DMG install notice: ${noticePath}`);
+  }
+  const size = statSync(noticePath).size;
+  if (size < 64) {
+    fail(`DMG install notice too small (${size} bytes): ${noticePath}`);
+  }
+}
+
 /** @param {string} bundleRoot @param {string} sourceLabel */
 function validateAppBundle(bundleRoot, sourceLabel) {
   const bundleName = path.basename(bundleRoot);
@@ -188,6 +236,9 @@ function validateAppBundle(bundleRoot, sourceLabel) {
   }
 
   assertFrameworkSymlinks(bundleRoot, label);
+  for (const framework of SIBLING_FRAMEWORKS) {
+    assertSiblingFrameworkSymlinks(bundleRoot, label, framework);
+  }
   assertMinSize(`macOS launcher in ${label}`, launcherPath, MIN_LAUNCHER_BYTES);
   assertMinSize(`Electron Framework in ${label}`, frameworkPath, MIN_FRAMEWORK_BYTES);
   assertBundledReticulumSidecarInBundle({
@@ -253,6 +304,7 @@ function mountDmgAndValidate(dmgPath, validate) {
 
   try {
     assertApplicationsSymlink(VERIFY_DMG_MOUNT_DIR);
+    assertDmgInstallNotice(VERIFY_DMG_MOUNT_DIR);
     const bundle = findCompleteAppBundle(VERIFY_DMG_MOUNT_DIR);
     if (!bundle) {
       fail(`No complete ${APP_NAME}.app found inside dmg: ${dmgPath}`);
@@ -289,6 +341,7 @@ function detachDmgMount() {
 }
 
 function main() {
+  stageMacosInstallNoticeReleaseAsset(releaseDir);
   try {
     if (!existsSync(releaseDir)) {
       fail(`Missing release directory: ${releaseDir}`);
@@ -374,12 +427,15 @@ try {
 
 export {
   assertApplicationsSymlink,
+  assertDmgInstallNotice,
   assertFrameworkSymlinks,
+  assertSiblingFrameworkSymlinks,
   collectAppBundles,
   collectArchives,
   detachDmgMount,
   fail,
   isCompleteAppBundle,
   pickPrimaryArchive,
+  SIBLING_FRAMEWORKS,
   VerificationFailure,
 };

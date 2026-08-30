@@ -103,6 +103,12 @@ vi.mock('./Toast', () => ({
   }),
 }));
 
+vi.mock('../lib/downloadBlob', () => ({
+  downloadBlob: vi.fn(),
+}));
+
+import { downloadBlob } from '../lib/downloadBlob';
+
 const defaultFilter = {
   enabled: false,
   maxDistance: 500,
@@ -665,6 +671,34 @@ describe('NodeListPanel import contacts', () => {
     },
   );
 
+  it('shows full MeshCore room long names without forcing truncate', async () => {
+    const nodeId = 0xfaceb00c;
+    const longName = 'Richmond upon Thames Chat';
+    const nodes = new Map<number, MeshNode>([
+      [nodeId, makeNode({ node_id: nodeId, long_name: longName, hw_model: 'Room' })],
+    ]);
+    const { container } = render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshcore"
+        meshcorePublicKeyHexByNodeId={new Map([[nodeId, 'aa'.repeat(32)]])}
+      />,
+    );
+
+    const longNameNode = screen.getByText(longName);
+    expect(longNameNode).toBeInTheDocument();
+    expect(screen.getByLabelText('Has public key')).toBeInTheDocument();
+    expect(longNameNode.className).not.toContain('truncate');
+    expect(longNameNode.className).toContain('whitespace-normal');
+
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it('hides the key icon when the MeshCore contact has no known public key', () => {
     const nodeId = 0xdeadbeef;
     const nodes = new Map<number, MeshNode>([
@@ -827,6 +861,67 @@ describe('NodeListPanel meshtastic node id display', () => {
       />,
     );
     expect(screen.getByText('!0bcd5737')).toBeInTheDocument();
+  });
+});
+
+describe('NodeListPanel JSON export', () => {
+  beforeEach(() => {
+    vi.mocked(downloadBlob).mockClear();
+  });
+
+  it('exports millisecond last_heard as unix seconds with last_heard_unit', async () => {
+    const user = userEvent.setup();
+    const lastHeardMs = 1_700_000_000_000;
+    const nodes = new Map<number, MeshNode>([
+      [42, makeNode({ node_id: 42, long_name: 'Export Node', last_heard: lastHeardMs })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Export JSON' }));
+    expect(downloadBlob).toHaveBeenCalledTimes(1);
+    const [blob] = vi.mocked(downloadBlob).mock.calls[0];
+    const text = await blob.text();
+    const parsed = JSON.parse(text) as {
+      nodes: { last_heard: number; last_heard_unit: string }[];
+    };
+    expect(parsed.nodes[0]?.last_heard).toBe(1_700_000_000);
+    expect(parsed.nodes[0]?.last_heard_unit).toBe('unix_sec');
+  });
+
+  it('exports Date×1000 overshoot last_heard as unix seconds (no 13-digit values)', async () => {
+    const user = userEvent.setup();
+    const radioSec = 1_787_340_581;
+    const doubleConverted = radioSec * 1_000_000;
+    const nodes = new Map<number, MeshNode>([
+      [42, makeNode({ node_id: 42, long_name: 'Poisoned', last_heard: doubleConverted })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Export JSON' }));
+    const [blob] = vi.mocked(downloadBlob).mock.calls[0];
+    const text = await blob.text();
+    const parsed = JSON.parse(text) as {
+      nodes: { last_heard: number; last_heard_unit: string }[];
+    };
+    expect(parsed.nodes[0]?.last_heard).toBe(radioSec);
+    expect(parsed.nodes[0]?.last_heard_unit).toBe('unix_sec');
+    expect(parsed.nodes[0]?.last_heard).toBeLessThan(1_000_000_000_000);
   });
 });
 

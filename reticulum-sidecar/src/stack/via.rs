@@ -40,6 +40,17 @@ pub fn classify_interface_row(
             return "ble";
         }
     }
+    // Catalogued UI types classify explicitly: substring matching cannot tell a
+    // plain `SerialInterface` (rf) from a `LocalInterface` (tcp), and both would
+    // otherwise fall through to `network`.
+    if let Some(entry) = super::interface_catalog::INTERFACE_CATALOG.get(iface_type) {
+        return match entry.classify.as_str() {
+            "rf" => "rf",
+            "ble" => "ble",
+            "tcp" => "tcp",
+            _ => classify_interface(name),
+        };
+    }
     let from_type = classify_interface(iface_type);
     if from_type != "network" {
         return from_type;
@@ -219,6 +230,7 @@ pub fn merge_live_interfaces_with_config(
             live_row.callsign = cfg.callsign.clone();
             live_row.id_interval = cfg.id_interval;
             live_row.mode = cfg.mode.clone();
+            // Keep live `runtime_mode` (effective RNS mode); do not clobber with config.
             live_row.discoverable = cfg.discoverable;
             live_row.latitude = cfg.latitude;
             live_row.longitude = cfg.longitude;
@@ -230,6 +242,8 @@ pub fn merge_live_interfaces_with_config(
             // Config is source of truth for IFAC / extras / BLE seeds (live stats omit them).
             live_row.network_name = cfg.network_name.clone();
             live_row.passphrase = cfg.passphrase.clone();
+            live_row.flow_control = cfg.flow_control;
+            live_row.ignore_config_warnings = cfg.ignore_config_warnings;
             live_row.extra_config = cfg.extra_config.clone();
             live_row.seed_addresses = cfg.seed_addresses.clone();
             // Config INI is the source of truth for user enable/disable; live stats only
@@ -284,6 +298,7 @@ mod tests {
             callsign: None,
             id_interval: None,
             mode: None,
+            runtime_mode: None,
             seed_addresses: Vec::new(),
             discoverable: None,
             latitude: None,
@@ -296,6 +311,7 @@ mod tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: std::collections::HashMap::new(),
@@ -412,6 +428,7 @@ mod tests {
             callsign: None,
             id_interval: None,
             mode: None,
+            runtime_mode: None,
             seed_addresses: Vec::new(),
             discoverable: None,
             latitude: None,
@@ -424,6 +441,7 @@ mod tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: std::collections::HashMap::new(),
@@ -452,6 +470,7 @@ mod tests {
             callsign: None,
             id_interval: None,
             mode: None,
+            runtime_mode: None,
             seed_addresses: Vec::new(),
             discoverable: None,
             latitude: None,
@@ -464,6 +483,7 @@ mod tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: std::collections::HashMap::new(),
@@ -486,6 +506,7 @@ mod tests {
             callsign: None,
             id_interval: None,
             mode: None,
+            runtime_mode: None,
             seed_addresses: Vec::new(),
             discoverable: None,
             latitude: None,
@@ -498,6 +519,7 @@ mod tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: std::collections::HashMap::new(),
@@ -533,6 +555,7 @@ mod tests {
                 callsign: None,
                 id_interval: None,
                 mode: None,
+                runtime_mode: None,
                 seed_addresses: Vec::new(),
                 discoverable: None,
                 latitude: None,
@@ -545,6 +568,7 @@ mod tests {
                 network_name: None,
                 passphrase: None,
                 flow_control: None,
+                ignore_config_warnings: None,
                 tx_queue_used: None,
                 tx_queue_max: None,
                 extra_config: std::collections::HashMap::new(),
@@ -567,6 +591,7 @@ mod tests {
                 callsign: None,
                 id_interval: None,
                 mode: None,
+                runtime_mode: None,
                 seed_addresses: Vec::new(),
                 discoverable: None,
                 latitude: None,
@@ -579,6 +604,7 @@ mod tests {
                 network_name: None,
                 passphrase: None,
                 flow_control: None,
+                ignore_config_warnings: None,
                 tx_queue_used: None,
                 tx_queue_max: None,
                 extra_config: std::collections::HashMap::new(),
@@ -612,6 +638,7 @@ mod tests {
             callsign: None,
             id_interval: None,
             mode: None,
+            runtime_mode: None,
             seed_addresses: Vec::new(),
             discoverable: None,
             latitude: None,
@@ -624,6 +651,7 @@ mod tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: std::collections::HashMap::new(),
@@ -657,6 +685,7 @@ mod tests {
             callsign: None,
             id_interval: None,
             mode: Some("boundary".into()),
+            runtime_mode: None,
             seed_addresses: vec!["AA:BB:CC:DD:EE:FF".into()],
             discoverable: None,
             latitude: None,
@@ -669,6 +698,7 @@ mod tests {
             network_name: Some("ttp_internal".into()),
             passphrase: Some("resistance202606".into()),
             flow_control: None,
+            ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: extra.clone(),
@@ -691,6 +721,7 @@ mod tests {
             callsign: None,
             id_interval: None,
             mode: None,
+            runtime_mode: None,
             seed_addresses: Vec::new(),
             discoverable: None,
             latitude: None,
@@ -703,6 +734,7 @@ mod tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: std::collections::HashMap::new(),
@@ -748,5 +780,49 @@ mod tests {
         assert_eq!(merged[0].status, "down");
         assert_eq!(merged[0].tx_queue_used, None);
         assert_eq!(merged[0].tx_queue_max, None);
+    }
+
+    #[test]
+    fn merge_preserves_runtime_mode_while_config_mode_wins() {
+        // Silent-lie case: UI config says full; live RNS rewrote to Access Point.
+        let mut config = sample_iface("cfg-1", "RNode USB", "rnode", true, "down");
+        config.mode = Some("full".into());
+        config.discoverable = Some(true);
+        config.ignore_config_warnings = Some(true);
+        config.flow_control = Some(true);
+
+        let mut live = sample_iface("rns-0", "RNode USB", "AccessPoint", true, "up");
+        live.runtime_mode = Some("access_point".into());
+
+        let merged = merge_live_interfaces_with_config(&[config], vec![live]);
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged[0].iface_type, "rnode");
+        assert_eq!(merged[0].mode.as_deref(), Some("full"));
+        assert_eq!(merged[0].runtime_mode.as_deref(), Some("access_point"));
+        assert_eq!(merged[0].ignore_config_warnings, Some(true));
+        assert_eq!(merged[0].flow_control, Some(true));
+        assert_eq!(merged[0].discoverable, Some(true));
+    }
+
+    #[test]
+    fn merge_preserves_matching_runtime_mode() {
+        let mut config = sample_iface("cfg-1", "RNode USB", "rnode", true, "down");
+        config.mode = Some("full".into());
+        let mut live = sample_iface("rns-0", "RNode USB", "Full", true, "up");
+        live.runtime_mode = Some("full".into());
+        let merged = merge_live_interfaces_with_config(&[config], vec![live]);
+        assert_eq!(merged[0].mode.as_deref(), Some("full"));
+        assert_eq!(merged[0].runtime_mode.as_deref(), Some("full"));
+    }
+
+    #[test]
+    fn merge_offline_runtime_mode_stays_unset() {
+        let mut config = sample_iface("cfg-1", "RNode USB", "rnode", true, "up");
+        config.mode = Some("full".into());
+        let mut live = sample_iface("rns-0", "RNode USB", "AccessPoint", true, "down");
+        live.runtime_mode = None;
+        let merged = merge_live_interfaces_with_config(&[config], vec![live]);
+        assert_eq!(merged[0].runtime_mode, None);
+        assert_eq!(merged[0].mode.as_deref(), Some("full"));
     }
 }

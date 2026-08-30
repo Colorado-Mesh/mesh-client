@@ -7,6 +7,7 @@ import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemo
 import { meshtasticHwModelName } from './hardwareModels';
 import { meshcoreHwModelIsContactTypeLabel } from './meshcoreUtils';
 import { getMeshtasticMessageLoadLimit } from './meshtasticMessageLoadLimit';
+import { normalizeLastHeardMs } from './nodeStatus';
 import type { ChatMessage, MeshNode } from './types';
 
 const LEGACY_ROLE_STRINGS: Record<string, number> = {
@@ -76,7 +77,7 @@ export function buildMeshtasticNodeMapFromDbRows(
       snr: n.snr ?? 0,
       rssi: n.rssi ?? undefined,
       battery: n.battery ?? 0,
-      last_heard: n.last_heard ?? 0,
+      last_heard: normalizeLastHeardMs(n.last_heard ?? 0),
       latitude: n.latitude,
       longitude: n.longitude,
       role: parseNodeRole(n.role),

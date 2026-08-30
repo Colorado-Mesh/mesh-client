@@ -3,8 +3,13 @@ import { create } from 'zustand';
 import { preferNonEmptyTrimmedString } from '@/shared/nodeNameUtils';
 
 import {
+  getMeshtasticConfigurePhase,
+  touchMeshtasticConfigureProgress,
+} from '../lib/meshtastic/meshtasticConfigurePhase';
+import {
   computeNodeInfoLastHeardMs,
   mergeMeshtasticLivePacketLastHeard,
+  mergeMeshtasticUserPacketLastHeard,
 } from '../lib/meshtasticLastHeard';
 import { mergeMeshcoreLastHeardFromAdvert } from '../lib/nodeStatus';
 import type {
@@ -196,11 +201,22 @@ export function upsertNode(identityId: IdentityId, event: NodeInfoEvent): void {
     } else if (protocolType === 'meshtastic') {
       const selfNum = getConnection(identityId)?.myNodeNum ?? 0;
       const isSelf = selfNum > 0 && nodeId === selfNum;
-      lastHeardAt = computeNodeInfoLastHeardMs(
-        eventLastHeardAt,
-        existing?.lastHeardAt ?? 0,
-        isSelf,
-      );
+      if (event.fromUserPacket) {
+        lastHeardAt = mergeMeshtasticUserPacketLastHeard(
+          existing?.lastHeardAt ?? 0,
+          eventLastHeardAt ?? 0,
+          getMeshtasticConfigurePhase(),
+        );
+      } else {
+        lastHeardAt = computeNodeInfoLastHeardMs(
+          eventLastHeardAt,
+          existing?.lastHeardAt ?? 0,
+          isSelf,
+        );
+      }
+      if (getMeshtasticConfigurePhase() && !event.fromUserPacket) {
+        touchMeshtasticConfigureProgress();
+      }
     }
     const identityFields = nodeIdentityPatch(
       existing,
@@ -272,9 +288,16 @@ function meshtasticLastHeardPatch(
   const merged = mergeMeshtasticLivePacketLastHeard(
     existingLastHeardAt ?? 0,
     packetTimestampMs,
-    false,
+    getMeshtasticConfigurePhase(),
   );
   return merged > 0 ? merged : undefined;
+}
+
+function maybeTouchMeshtasticNodeDbConfigureProgress(identityId: IdentityId): void {
+  if (getIdentity(identityId)?.protocol.type !== 'meshtastic') return;
+  if (getMeshtasticConfigurePhase()) {
+    touchMeshtasticConfigureProgress();
+  }
 }
 
 /** Toggle favorite flag on a node in the identity-scoped store (UI reads this bucket). */
@@ -362,6 +385,7 @@ export function updatePosition(identityId: IdentityId, event: PositionEvent): vo
     const { nodeId, latitude, longitude, altitude, timestamp, groundSpeed, groundTrack } = event;
     const existing = byId[nodeId];
     const lastHeardAt = meshtasticLastHeardPatch(identityId, timestamp, existing?.lastHeardAt);
+    maybeTouchMeshtasticNodeDbConfigureProgress(identityId);
     return {
       nodes: {
         ...s.nodes,
@@ -400,6 +424,7 @@ export function updateTelemetry(identityId: IdentityId, event: TelemetryEvent): 
     } = event;
     const existing = byId[nodeId];
     const lastHeardAt = meshtasticLastHeardPatch(identityId, timestamp, existing?.lastHeardAt);
+    maybeTouchMeshtasticNodeDbConfigureProgress(identityId);
     return {
       nodes: {
         ...s.nodes,

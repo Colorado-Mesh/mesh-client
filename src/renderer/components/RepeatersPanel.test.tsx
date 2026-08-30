@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
+import type { MeshCoreRepeaterStatus } from '../lib/meshcore/meshcoreHookTypes';
 import { meshcoreStoredUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import type { MeshNode } from '../lib/types';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
@@ -121,6 +122,17 @@ describe('RepeatersPanel', () => {
     expect(results).toHaveNoViolations();
   });
 
+  it('fills leftover height with the table scroller instead of a 70vh cap', async () => {
+    const { container } = render(<RepeatersPanel {...makeBaseProps()} />);
+    const table = screen.getByRole('table');
+    const scroller = table.parentElement;
+    expect(scroller).toHaveClass('flex-1', 'min-h-0');
+    expect(scroller?.className).not.toContain('70vh');
+    hydrateAxeThemeColors(container);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
   it('shows error toast when requestRepeaterStatus fails', async () => {
     const props = makeBaseProps();
     props.onRequestRepeaterStatus = vi.fn().mockRejectedValue(new Error('radio timeout'));
@@ -137,7 +149,7 @@ describe('RepeatersPanel', () => {
     props.onRequestNeighbors = vi.fn().mockRejectedValue(new Error('neighbors timeout'));
 
     render(<RepeatersPanel {...props} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Repeater neighbors' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Neighbors' }));
 
     expect(warnSpy).toHaveBeenCalled();
     expect(mockAddToast).toHaveBeenCalledWith(
@@ -173,7 +185,7 @@ describe('RepeatersPanel', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'Repeater neighbors' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Neighbors' }));
     expect(onRequestNeighbors).toHaveBeenCalledWith(repeater.node_id);
 
     const loadMore = await screen.findByRole('button', {
@@ -210,7 +222,7 @@ describe('RepeatersPanel', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'Repeater neighbors' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Neighbors' }));
     expect(screen.queryByRole('button', { name: /Load more neighbors/i })).not.toBeInTheDocument();
   });
 
@@ -244,7 +256,7 @@ describe('RepeatersPanel', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'Repeater neighbors' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Neighbors' }));
     const loadMore = await screen.findByRole('button', {
       name: 'Load more neighbors (50 of 60 loaded)',
     });
@@ -283,7 +295,7 @@ describe('RepeatersPanel', () => {
 
     const { rerender } = render(<RepeatersPanel {...base} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Repeater neighbors' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Neighbors' }));
     expect(
       await screen.findByRole('button', {
         name: 'Load more neighbors (50 of 60 loaded)',
@@ -329,7 +341,7 @@ describe('RepeatersPanel', () => {
 
     const { rerender } = render(<RepeatersPanel {...base} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Repeater neighbors' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Neighbors' }));
     const loadMore = await screen.findByRole('button', {
       name: 'Load more neighbors (50 of 60 loaded)',
     });
@@ -455,6 +467,23 @@ describe('RepeatersPanel', () => {
     expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name', undefined);
   });
 
+  it('shows translated CLI error in the expanded CLI panel', async () => {
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        onSendCliCommand={vi.fn().mockResolvedValue('ok')}
+        meshcoreCliErrors={
+          new Map([[repeater.node_id, meshcoreStoredUserMessage('meshcore.errors.nodeNotFound')]])
+        }
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /CLI: Node not found \(no encryption key\)/i }),
+    );
+    expect(screen.getByText('Node not found (no encryption key)')).toBeInTheDocument();
+  });
+
   it('calls onSendCliCommand when a quick command button is clicked', async () => {
     const onSendCliCommand = vi.fn().mockResolvedValue('ok');
     render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
@@ -493,6 +522,21 @@ describe('RepeatersPanel', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'clock sync' }));
     expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'clock sync', undefined);
+  });
+
+  it('toasts when clock sync is refused because the repeater clock cannot go backwards', async () => {
+    const onSendCliCommand = vi.fn().mockResolvedValue('02|ERR: clock cannot go backwards');
+    render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await userEvent.click(screen.getByRole('button', { name: 'clock sync' }));
+
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith(
+        expect.stringMatching(/clock is ahead of this computer/i),
+        'info',
+      );
+    });
   });
 
   it('requires confirmation before sending destructive CLI commands', async () => {
@@ -618,7 +662,7 @@ describe('RepeatersPanel', () => {
     await waitFor(() => {
       expect(onPing).toHaveBeenCalledWith(multiHop.node_id);
       expect(mockAddToast).toHaveBeenCalledWith(
-        'Ping failed; run Ping manually before retrying CLI on multi-hop repeaters.',
+        'Ping failed; run Ping manually before retrying CLI on multi-hop nodes.',
         'error',
       );
     });
@@ -644,7 +688,7 @@ describe('RepeatersPanel', () => {
     await waitFor(() => {
       expect(onPing).toHaveBeenCalledWith(multiHop.node_id);
       expect(mockAddToast).toHaveBeenCalledWith(
-        'Ping failed; run Ping manually before retrying CLI on multi-hop repeaters.',
+        'Ping failed; run Ping manually before retrying CLI on multi-hop nodes.',
         'error',
       );
     });
@@ -744,6 +788,34 @@ describe('RepeatersPanel', () => {
 
     expect(screen.getByText('100%')).toBeInTheDocument();
     expect(dbOutcomeSpy).toHaveBeenCalledWith(repeater.node_id, pathHash, true, undefined);
+  });
+
+  it('shows 0% airtime when uptime is positive and airtime is zero', () => {
+    const status: MeshCoreRepeaterStatus = {
+      battMilliVolts: 0,
+      noiseFloor: 0,
+      lastRssi: 0,
+      lastSnr: 0,
+      nPacketsRecv: 0,
+      nPacketsSent: 0,
+      totalAirTimeSecs: 0,
+      totalUpTimeSecs: 120,
+      nSentFlood: 0,
+      nSentDirect: 0,
+      nRecvFlood: 0,
+      nRecvDirect: 0,
+      errEvents: 0,
+      nDirectDups: 0,
+      nFloodDups: 0,
+      currTxQueueLen: 0,
+    };
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        meshcoreNodeStatus={new Map([[repeater.node_id, status]])}
+      />,
+    );
+    expect(screen.getByText('0.0%')).toBeInTheDocument();
   });
 
   it('loads getMeshcoreContacts only once on mount when nodes grow', async () => {
@@ -865,6 +937,360 @@ describe('RepeatersPanel', () => {
         onRequestNeighbors={vi.fn()}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Repeater neighbors' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Neighbors' })).toBeDisabled();
+  });
+
+  function mockRoomNode(id: number): MeshNode {
+    return {
+      node_id: id,
+      long_name: 'Test Room',
+      short_name: 'TR',
+      hw_model: 'Room',
+      snr: 2,
+      battery: 100,
+      last_heard: Math.floor(Date.now() / 1000),
+      latitude: null,
+      longitude: null,
+    };
+  }
+
+  it('lists room nodes alongside repeaters with type badges', () => {
+    const room = mockRoomNode(0xdef);
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={
+          new Map([
+            [repeater.node_id, repeater],
+            [room.node_id, room],
+          ])
+        }
+      />,
+    );
+    expect(screen.getByText('Test Repeater')).toBeInTheDocument();
+    expect(screen.getByText('Test Room')).toBeInTheDocument();
+    expect(screen.getAllByText('Repeater').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Room').length).toBeGreaterThan(0);
+  });
+
+  it('filters by All / Repeaters / Rooms chips', async () => {
+    const user = userEvent.setup();
+    const room = mockRoomNode(0xdef);
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={
+          new Map([
+            [repeater.node_id, repeater],
+            [room.node_id, room],
+          ])
+        }
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Repeaters' }));
+    expect(screen.getByText('Test Repeater')).toBeInTheDocument();
+    expect(screen.queryByText('Test Room')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Rooms' }));
+    expect(screen.queryByText('Test Repeater')).not.toBeInTheDocument();
+    expect(screen.getByText('Test Room')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'All' }));
+    expect(screen.getByText('Test Repeater')).toBeInTheDocument();
+    expect(screen.getByText('Test Room')).toBeInTheDocument();
+  });
+
+  it('calls onOpenRoom for room rows', async () => {
+    const user = userEvent.setup();
+    const room = mockRoomNode(0xdef);
+    const onOpenRoom = vi.fn();
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[room.node_id, room]])}
+        onOpenRoom={onOpenRoom}
+        isConnected
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Open room' }));
+    expect(onOpenRoom).toHaveBeenCalledWith(room.node_id);
+  });
+
+  it('shows room-only CLI pills and ACL form for Room rows', async () => {
+    const user = userEvent.setup();
+    const room = mockRoomNode(0xdef);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[room.node_id, room]])}
+        onSendCliCommand={onSendCliCommand}
+        isConnected
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    expect(screen.getByRole('button', { name: 'get acl' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'allow.read.only on' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Public key (64 hex)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'advert.zerohop' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'stats-core' })).toBeInTheDocument();
+  });
+
+  it('room get acl pill sends get acl', async () => {
+    const user = userEvent.setup();
+    const room = mockRoomNode(0xdef);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[room.node_id, room]])}
+        onSendCliCommand={onSendCliCommand}
+        isConnected
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await user.click(screen.getByRole('button', { name: 'get acl' }));
+    expect(onSendCliCommand).toHaveBeenCalledWith(room.node_id, 'get acl', undefined);
+  });
+
+  it('expanded room ACL form has no axe violations', async () => {
+    const user = userEvent.setup();
+    const room = mockRoomNode(0xdef);
+    const { container } = render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[room.node_id, room]])}
+        onSendCliCommand={vi.fn().mockResolvedValue('ok')}
+        isConnected
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    expect(screen.getByLabelText('Public key (64 hex)')).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('ACL form submits setperm with normalized 64-hex and level', async () => {
+    const user = userEvent.setup();
+    const room = mockRoomNode(0xdef);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    const hex = 'a'.repeat(64);
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[room.node_id, room]])}
+        onSendCliCommand={onSendCliCommand}
+        isConnected
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await user.type(screen.getByLabelText('Public key (64 hex)'), hex.toUpperCase());
+    await user.click(screen.getByRole('button', { name: 'Apply ACL' }));
+    expect(onSendCliCommand).toHaveBeenCalledWith(room.node_id, `setperm ${hex} 1`, undefined);
+  });
+
+  it('ACL form ignores invalid pubkey', async () => {
+    const user = userEvent.setup();
+    const room = mockRoomNode(0xdef);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[room.node_id, room]])}
+        onSendCliCommand={onSendCliCommand}
+        isConnected
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await user.type(screen.getByLabelText('Public key (64 hex)'), 'not-a-key');
+    expect(screen.getByRole('button', { name: 'Apply ACL' })).toBeDisabled();
+    expect(onSendCliCommand).not.toHaveBeenCalled();
+  });
+
+  it('does not show room-only ACL pills on Repeater rows', async () => {
+    const user = userEvent.setup();
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        onSendCliCommand={vi.fn().mockResolvedValue('ok')}
+        isConnected
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    expect(screen.queryByRole('button', { name: 'get acl' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Public key (64 hex)')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'advert.zerohop' })).toBeInTheDocument();
+  });
+
+  it('requires confirmation before shutdown on a Room row', async () => {
+    const user = userEvent.setup();
+    const room = mockRoomNode(0xdef);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[room.node_id, room]])}
+        onSendCliCommand={onSendCliCommand}
+        isConnected
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    const input = screen.getByRole('textbox', { name: 'CLI command input' });
+    await user.type(input, 'shutdown');
+    await user.click(screen.getByRole('button', { name: /Send/i }));
+    expect(onSendCliCommand).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Run command' }));
+    expect(onSendCliCommand).toHaveBeenCalledWith(room.node_id, 'shutdown', {
+      confirmedDanger: true,
+    });
+  });
+
+  it('expands CLI for pendingFocusNodeId room', async () => {
+    const room = mockRoomNode(0xdef);
+    const onPendingFocusConsumed = vi.fn();
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[room.node_id, room]])}
+        onSendCliCommand={vi.fn().mockResolvedValue('ok')}
+        pendingFocusNodeId={room.node_id}
+        onPendingFocusConsumed={onPendingFocusConsumed}
+        isConnected
+      />,
+    );
+    expect(await screen.findByRole('textbox', { name: 'CLI command input' })).toBeInTheDocument();
+    expect(onPendingFocusConsumed).toHaveBeenCalled();
+  });
+
+  it('pins favorited rows first when sorting by name', async () => {
+    const user = userEvent.setup();
+    const now = Math.floor(Date.now() / 1000);
+    const alpha = mockRepeaterNodeWithFavorited(0x100, false);
+    alpha.long_name = 'Alpha';
+    alpha.last_heard = now;
+    const zulu = mockRepeaterNodeWithFavorited(0x200, false);
+    zulu.long_name = 'Zulu';
+    zulu.last_heard = now - 10;
+    const favMid = mockRepeaterNodeWithFavorited(0x300, true);
+    favMid.long_name = 'Mid Fav';
+    favMid.last_heard = now - 5;
+
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={
+          new Map([
+            [alpha.node_id, alpha],
+            [zulu.node_id, zulu],
+            [favMid.node_id, favMid],
+          ])
+        }
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Sort by Name, A to Z' }));
+    const names = screen
+      .getAllByRole('button', { name: /Alpha|Zulu|Mid Fav/ })
+      .filter((b) => b.className.includes('underline'))
+      .map((b) => b.textContent);
+    expect(names).toEqual(['Mid Fav', 'Alpha', 'Zulu']);
+
+    await user.click(screen.getByRole('button', { name: 'Sort by Name, A to Z' }));
+    const reversed = screen
+      .getAllByRole('button', { name: /Alpha|Zulu|Mid Fav/ })
+      .filter((b) => b.className.includes('underline'))
+      .map((b) => b.textContent);
+    expect(reversed).toEqual(['Mid Fav', 'Zulu', 'Alpha']);
+  });
+
+  it('sorts by RSSI and Last Heard from column headings', async () => {
+    const user = userEvent.setup();
+    const now = Math.floor(Date.now() / 1000);
+    const weak = mockRepeaterNodeWithFavorited(0x10, false);
+    weak.long_name = 'Weak';
+    weak.last_heard = now;
+    weak.rssi = -90;
+    const strong = mockRepeaterNodeWithFavorited(0x20, false);
+    strong.long_name = 'Strong';
+    strong.last_heard = now - 500;
+    strong.rssi = -40;
+
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={
+          new Map([
+            [weak.node_id, weak],
+            [strong.node_id, strong],
+          ])
+        }
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Sort by RSSI, strongest first' }));
+    let names = screen
+      .getAllByRole('button', { name: /Weak|Strong/ })
+      .filter((b) => b.className.includes('underline'))
+      .map((b) => b.textContent);
+    expect(names).toEqual(['Strong', 'Weak']);
+
+    await user.click(screen.getByRole('button', { name: 'Sort by Last Heard, newest first' }));
+    names = screen
+      .getAllByRole('button', { name: /Weak|Strong/ })
+      .filter((b) => b.className.includes('underline'))
+      .map((b) => b.textContent);
+    expect(names).toEqual(['Weak', 'Strong']);
+  });
+
+  it('sets aria-sort on the active column and does not sort Actions', async () => {
+    const user = userEvent.setup();
+    render(<RepeatersPanel {...makeBaseProps()} />);
+
+    const nameBtn = screen.getByRole('button', { name: 'Sort by Name, A to Z' });
+    const lastHeardBtn = screen.getByRole('button', { name: 'Sort by Last Heard, newest first' });
+    expect(nameBtn.closest('th')).toHaveAttribute('aria-sort', 'none');
+    expect(lastHeardBtn.closest('th')).toHaveAttribute('aria-sort', 'descending');
+
+    await user.click(nameBtn);
+    expect(
+      screen.getByRole('button', { name: 'Sort by Name, A to Z' }).closest('th'),
+    ).toHaveAttribute('aria-sort', 'ascending');
+    expect(
+      screen.getByRole('button', { name: 'Sort by Last Heard, newest first' }).closest('th'),
+    ).toHaveAttribute('aria-sort', 'none');
+    expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
+    expect(screen.getByText('Actions')).toBeInTheDocument();
+    const table = screen.getByRole('table');
+    hydrateAxeThemeColors(table);
+    expect(await axe(table)).toHaveNoViolations();
+  });
+
+  it('applies type filter before sort', async () => {
+    const user = userEvent.setup();
+    const repeater = mockRepeaterNodeWithFavorited(0x10, false);
+    repeater.long_name = 'Zulu Repeater';
+    const room = {
+      ...mockRepeaterNodeWithFavorited(0x20, false),
+      hw_model: 'Room',
+      long_name: 'Alpha Room',
+    };
+
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={
+          new Map([
+            [repeater.node_id, repeater],
+            [room.node_id, room],
+          ])
+        }
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Rooms' }));
+    await user.click(screen.getByRole('button', { name: 'Sort by Name, A to Z' }));
+    const names = screen
+      .getAllByRole('button')
+      .filter((b) => b.className.includes('underline'))
+      .map((b) => b.textContent);
+    expect(names).toEqual(['Alpha Room']);
   });
 });

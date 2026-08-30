@@ -226,6 +226,36 @@ describe('renderNomadMicronPage XSS', () => {
     expect(container.querySelector('script')).toBeNull();
     expect(container.textContent).toContain('Hello');
   });
+
+  it('keeps tag-like page text inert instead of building an element', () => {
+    const html = renderNomadMicronPage('before <img src=x onerror="alert(1)"> after');
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+
+    expect(container.querySelector('img')).toBeNull();
+    // The handler survives only as literal text, which is what the page author typed.
+    expect(container.textContent).toContain('<img src=x onerror="alert(1)">');
+    expect(container.textContent).toContain('before');
+    expect(container.textContent).toContain('after');
+  });
+
+  it('renders literal angle brackets and ampersands as text', () => {
+    const html = renderNomadMicronPage('a < b & c > d');
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    expect(container.textContent).toContain('a < b & c > d');
+  });
+
+  it('keeps tag-like link labels inert', () => {
+    const html = renderNomadMicronPage('`[<img src=x onerror="alert(1)">label`:/page/index.mu]`');
+    expect(html).not.toContain('<img');
+
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    const link = container.querySelector('[data-action="openNode"]');
+    expect(link).not.toBeNull();
+    expect(link?.textContent).toContain('label');
+  });
 });
 
 describe('parseNomadNetworkLinkUrl', () => {

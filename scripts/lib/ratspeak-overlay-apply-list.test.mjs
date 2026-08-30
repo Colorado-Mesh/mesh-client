@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -30,7 +30,48 @@ describe('ratspeak overlay apply list', () => {
     expect(list).toContain('RS_LXMF_APPLY_SCRIPTS');
     expect(list).toContain('apply_ratspeak_rns_overlays');
     expect(list).toContain('apply-rsReticulum-path-medium-slots.sh');
+    expect(list).toContain('apply-rsReticulum-announce-rebroadcast-exclude-rf.sh');
+    expect(list).toContain('apply-rsReticulum-ble-rnode-flow-control-ready-timeout.sh');
     expect(list).toContain('apply-rsLXMF-link-delivery-has-pending-to.sh');
+  });
+
+  it('does not ship sunset pathless-link or lxmf link-attached-tx overlays', () => {
+    const list = readFileSync(listPath, 'utf8');
+    const update = readFileSync(updatePath, 'utf8');
+    const announceApply = fileURLToPath(
+      new URL('../apply-rsReticulum-announce-rebroadcast-exclude-rf.sh', import.meta.url),
+    );
+    const repoRoot = path.resolve(path.dirname(listPath), '../..');
+    const patchesDir = path.join(repoRoot, 'reticulum-sidecar/patches');
+    const scriptsDir = path.join(repoRoot, 'scripts');
+    expect(list).not.toContain('pathless-link-exclude-rf');
+    expect(list).not.toContain('propagation-client-link-attached-tx');
+    expect(update).not.toContain('rsReticulum-pathless-link-exclude-rf.patch');
+    expect(update).not.toContain('rsLXMF-propagation-client-link-attached-tx.patch');
+    expect(update).toContain('rsReticulum-announce-rebroadcast-exclude-rf.patch');
+    expect(update).toContain('rsReticulum-ble-rnode-flow-control-ready-timeout.patch');
+    expect(update).toContain('ratspeak/rsReticulum/issues/24');
+    expect(existsSync(path.join(patchesDir, 'rsReticulum-pathless-link-exclude-rf.patch'))).toBe(
+      false,
+    );
+    expect(existsSync(path.join(scriptsDir, 'apply-rsReticulum-pathless-link-exclude-rf.sh'))).toBe(
+      false,
+    );
+    expect(
+      existsSync(path.join(patchesDir, 'rsLXMF-propagation-client-link-attached-tx.patch')),
+    ).toBe(false);
+    expect(
+      existsSync(path.join(scriptsDir, 'apply-rsLXMF-propagation-client-link-attached-tx.sh')),
+    ).toBe(false);
+    expect(
+      existsSync(
+        path.join(scriptsDir, 'apply-rsLXMF-propagation-client-link-attached-tx.test.mjs'),
+      ),
+    ).toBe(false);
+    const announceScript = readFileSync(announceApply, 'utf8');
+    expect(announceScript).not.toContain('pathless-link');
+    expect(announceScript).not.toContain('iface_is_pathless_link_rf_sink');
+    expect(announceScript).toContain('fn iface_is_rf_sink');
   });
 
   it('keeps apply helper fail-loud with stderr capture', () => {

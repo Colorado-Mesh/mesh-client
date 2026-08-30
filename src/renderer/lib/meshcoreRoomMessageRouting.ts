@@ -2,7 +2,7 @@
  * Room BBS wire routing (RF-only SendTxtMsg path).
  *
  * **Wire vs Chat:** Channel/DM chat uses companion text with optional `Sender:` prefix,
- * keyless `@[Name]` replies/tapbacks, and (App toggle) MeshCore Open keyed/`r:`/`g:` wire
+ * keyless `@[Name]` replies/tapbacks, and (Radio toggle) MeshCore Open keyed/`r:`/`g:` wire
  * — see `meshcoreChannelText.ts` + `meshcoreOpenReaction.ts`. Room BBS is a separate stack:
  * outbound `TXT_TYPE_PLAIN` (raw UTF-8, optional mesh-client `[i/N]` chunks); inbound user
  * posts are `SignedPlain` (4-byte author pubkey prefix + body, stripped here). System/bot
@@ -45,11 +45,17 @@ export function looksLikeRoomPlainSystemLine(wireText: string): boolean {
   return true;
 }
 
-/** SignedPlain author prefixes are raw pubkey bytes — often non-printable or U+FFFD. */
+/**
+ * SignedPlain author prefixes are raw pubkey bytes — often non-printable or U+FFFD.
+ * Do not treat UTF-16 surrogates (emoji in already-decoded bodies like `@[🛜 …]`) as binary:
+ * those are valid chat text and must not be stripped on hydration.
+ */
 export function looksLikeSignedPlainWirePrefix(wireText: string): boolean {
   if (wireText.length <= 4) return false;
   for (let i = 0; i < 4; i++) {
     const code = wireText.charCodeAt(i);
+    // UTF-16 surrogates are non-BMP text (emoji), not raw pubkey byte values 0x00–0xFF.
+    if (code >= 0xd800 && code <= 0xdfff) continue;
     if (code === REPLACEMENT_CHAR || code < PRINTABLE_ASCII_MIN || code > PRINTABLE_ASCII_MAX) {
       return true;
     }

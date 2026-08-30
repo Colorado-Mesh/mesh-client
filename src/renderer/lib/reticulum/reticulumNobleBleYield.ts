@@ -58,7 +58,7 @@ export async function syncReticulumNobleBleYield(
       return;
     }
     if (coexist.scanOwner === 'reticulum') {
-      await releaseReticulumBleRnodeConnect();
+      await releaseReticulumBleRnodeConnect({ notify: false });
     }
     return;
   }
@@ -103,6 +103,13 @@ export async function syncReticulumNobleBleYield(
   }
   const scanHeldByReticulum = coexist.scanOwner === 'reticulum';
 
+  // Empty interface lists are common on the first post-start fetch. Treating that as
+  // "no BLE RNode" released the sidecar-start Noble yield, Meshtastic began discovery,
+  // then the next tick re-yielded for an offline RNode and killed the scan →
+  // "BLE peripheral not found".
+  const confirmedNoEnabledBleRnode = !hasEnabledBleRnode && interfaces.length > 0;
+  const releasable = bleRnodeOnline || graceExpired || confirmedNoEnabledBleRnode;
+
   // After connect grace, never re-contend for the adapter: an offline BLE RNode would
   // otherwise loop suspendNoble ↔ yield-released forever and starve Meshtastic/MeshCore.
   if (graceExpired && !scanHeldByReticulum) {
@@ -117,7 +124,10 @@ export async function syncReticulumNobleBleYield(
     return;
   }
 
-  if ((scanHeldByReticulum || hasOfflineBleRnode) && !state.yieldActive) {
+  // Acquiring a yield the same tick would release oscillates forever while the sidecar keeps
+  // the adapter (scanOwner=reticulum) and announces a yield release on every poll, which
+  // resets the Meshtastic/MeshCore reconnect latches.
+  if ((scanHeldByReticulum || hasOfflineBleRnode) && !state.yieldActive && !releasable) {
     if (!scanHeldByReticulum && hasOfflineBleRnode) {
       const lastFail = state.lastPrepareFailedAtMs ?? 0;
       if (nowMs - lastFail < RETICULUM_NOBLE_YIELD_PREPARE_BACKOFF_MS) {
@@ -142,17 +152,22 @@ export async function syncReticulumNobleBleYield(
     state.yieldActive = true;
   }
 
-  // Empty interface lists are common on the first post-start fetch. Treating that as
-  // "no BLE RNode" released the sidecar-start Noble yield, Meshtastic began discovery,
-  // then the next tick re-yielded for an offline RNode and killed the scan →
-  // "BLE peripheral not found".
-  const confirmedNoEnabledBleRnode = !hasEnabledBleRnode && interfaces.length > 0;
-  if (state.yieldActive && (bleRnodeOnline || graceExpired || confirmedNoEnabledBleRnode)) {
+  if (state.yieldActive && releasable) {
     if (signal?.aborted) {
       return;
     }
     state.yieldActive = false;
     state.lastPrepareFailedAtMs = undefined;
     await releaseReticulumBleRnodeConnect();
+    return;
+  }
+
+  // Steady state: the sidecar owns the adapter for its own BLE RNode link. Hand main-side scan
+  // ownership back so Noble can scan, but do not re-announce a yield release we never held.
+  if (!state.yieldActive && scanHeldByReticulum && releasable) {
+    if (signal?.aborted) {
+      return;
+    }
+    await releaseReticulumBleRnodeConnect({ notify: false });
   }
 }

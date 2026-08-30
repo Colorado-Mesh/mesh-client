@@ -57,7 +57,10 @@ export interface SendGamesActionOpts {
   sessionId?: string;
   payload?: Record<string, unknown>;
   /** When set, apply client optimistic board patch before IPC. */
-  optimistic?: { kind: 'ttt'; cellIndex: number } | { kind: 'chess'; uci: string };
+  optimistic?:
+    | { kind: 'ttt'; cellIndex: number }
+    | { kind: 'four_in_a_row'; column: number }
+    | { kind: 'chess'; uci: string };
 }
 
 /** Send an LRGP action over LXMF. Resolves `true` on success (`{ ok: true }`). */
@@ -74,7 +77,9 @@ export async function sendGamesAction(opts: SendGamesActionOpts): Promise<boolea
     beganOptimistic =
       opts.optimistic.kind === 'ttt'
         ? store.beginOptimisticMove(sessionId, 'ttt', opts.optimistic.cellIndex)
-        : store.beginOptimisticMove(sessionId, 'chess', opts.optimistic.uci);
+        : opts.optimistic.kind === 'four_in_a_row'
+          ? store.beginOptimisticMove(sessionId, 'four_in_a_row', opts.optimistic.column)
+          : store.beginOptimisticMove(sessionId, 'chess', opts.optimistic.uci);
   }
   store.setActionBusy(true);
   try {

@@ -25,7 +25,6 @@ import type { MeshtasticRawPacketEntry } from '../rawPacketLogConstants';
 import { getStoredMeshProtocol } from '../storedMeshProtocol';
 import {
   MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS,
-  MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS,
   MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS,
 } from '../timeConstants';
 import type {
@@ -41,7 +40,16 @@ import type {
   TelemetryPoint,
 } from '../types';
 import { recordMeshtasticClientNotification } from './meshtasticClientNotification';
+import {
+  getMeshtasticConfigurePhase,
+  setMeshtasticConfigurePhase,
+  setMeshtasticConfigureProgressHandler,
+} from './meshtasticConfigurePhase';
 import { meshtasticDeviceStatusForCode } from './meshtasticDeviceStatus';
+import {
+  cancelMeshtasticGetMetadataAfterConfigure,
+  scheduleMeshtasticGetMetadataAfterConfigure,
+} from './meshtasticGetMetadataAfterConfigure';
 import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
 import type { ModulePortEvent, PaxCounterPoint } from './meshtasticModuleEvents';
 import { attachMeshtasticModulePortSideEffects } from './meshtasticModulePortSideEffects';
@@ -63,29 +71,6 @@ import { pushMeshtasticTransportSideEffectUnsubs } from './meshtasticTransportSi
 
 const REQUEST_NODEINFO_MIN_INTERVAL_MS = 120_000;
 const { DeviceStatusEnum } = Types;
-
-/** After configure, request NodeDB metadata once; retry once if the first call fails. */
-function requestMetadataAfterConfigure(
-  device: MeshDevice,
-  myNode: number,
-  attempt: 1 | 2,
-  retryTimerRef: { current: ReturnType<typeof setTimeout> | null },
-): void {
-  void device.getMetadata(myNode).catch((e: unknown) => {
-    console.debug(
-      '[useMeshtasticRuntime] getMetadata after configure failed ' +
-        errLikeToLogString(e) +
-        (attempt === 2 ? ' (retry)' : ''),
-    );
-    if (attempt === 1) {
-      if (retryTimerRef.current != null) clearTimeout(retryTimerRef.current);
-      retryTimerRef.current = setTimeout(() => {
-        retryTimerRef.current = null;
-        requestMetadataAfterConfigure(device, myNode, 2, retryTimerRef);
-      }, MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS);
-    }
-  });
-}
 
 export type RequestStoreForwardHistoryResult =
   | { ok: true }
@@ -263,10 +248,31 @@ export function attachMeshtasticRuntimeWireEffects(
     current: null,
   };
   deps.unsubscribesRef.current.push(() => {
-    if (metadataRetryTimerRef.current != null) {
-      clearTimeout(metadataRetryTimerRef.current);
-      metadataRetryTimerRef.current = null;
+    cancelMeshtasticGetMetadataAfterConfigure(metadataRetryTimerRef);
+    setMeshtasticConfigureProgressHandler(null);
+  });
+
+  const armConfigureStallTimeout = (): void => {
+    if ((type !== 'ble' && type !== 'serial') || isBleReconnectAttemptActive()) return;
+    clearConfigureTimeout();
+    configureTimeoutRef.current = setTimeout(() => {
+      console.warn(
+        `[useMeshtasticRuntime] configure stall timeout (${type} ${MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS / 1000}s) — forcing disconnect`,
+      );
+      clearConfigureTimeout();
+      handleConnectionLostRef.current();
+    }, MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS);
+  };
+
+  setMeshtasticConfigureProgressHandler(() => {
+    if (
+      !getMeshtasticConfigurePhase() ||
+      (type !== 'ble' && type !== 'serial') ||
+      isBleReconnectAttemptActive()
+    ) {
+      return;
     }
+    armConfigureStallTimeout();
   });
 
   const {
@@ -391,7 +397,7 @@ export function attachMeshtasticRuntimeWireEffects(
   }
   if (identityId) {
     meshtasticIngestSessionRef.current = attachMeshtasticIngest(identityId, {
-      getIsConfiguring: () => isConfiguringRef.current,
+      getIsConfiguring: getMeshtasticConfigurePhase,
       getMyNodeNum: () => myNodeNumRef.current,
     });
   }
@@ -411,6 +417,7 @@ export function attachMeshtasticRuntimeWireEffects(
     if (status === DeviceStatusEnum.DeviceRestarting) {
       deviceConfiguredRef.current = false;
       isConfiguringRef.current = true;
+      setMeshtasticConfigurePhase(true);
       meshtasticIngestSessionRef.current?.setConfiguring(true);
       schedulePostCommitRebootRecoveryRef.current('DeviceRestarting');
     }
@@ -422,19 +429,16 @@ export function attachMeshtasticRuntimeWireEffects(
       status === DeviceStatusEnum.DeviceConfiguring
     ) {
       isConfiguringRef.current = true;
+      setMeshtasticConfigurePhase(true);
       meshtasticIngestSessionRef.current?.setConfiguring(true);
-      // Initial BLE connect only — during reconnect the 90s attempt budget owns stall detection.
+      // Initial BLE/serial connect only — during reconnect the attempt budget owns stall detection.
       if (
         status === DeviceStatusEnum.DeviceConfiguring &&
-        type === 'ble' &&
+        (type === 'ble' || type === 'serial') &&
         !configureTimeoutRef.current &&
         !isBleReconnectAttemptActive()
       ) {
-        configureTimeoutRef.current = setTimeout(() => {
-          console.warn('[useMeshtasticRuntime] configure timeout (BLE 30s) — forcing disconnect');
-          clearConfigureTimeout();
-          handleConnectionLostRef.current();
-        }, MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS);
+        armConfigureStallTimeout();
       }
     }
 
@@ -443,6 +447,7 @@ export function attachMeshtasticRuntimeWireEffects(
       clearPostCommitRebootRecoveryRef.current();
       clearConfigureTimeout();
       isConfiguringRef.current = false;
+      setMeshtasticConfigurePhase(false);
       meshtasticIngestSessionRef.current?.setConfiguring(false);
       lastDataReceivedRef.current = Date.now();
       startWatchdog();
@@ -458,7 +463,7 @@ export function attachMeshtasticRuntimeWireEffects(
       mqttClientProxyBridgeRef.current?.flushPendingToDevice();
       const myNode = myNodeNumRef.current;
       if (myNode > 0) {
-        requestMetadataAfterConfigure(device, myNode, 1, metadataRetryTimerRef);
+        scheduleMeshtasticGetMetadataAfterConfigure(device, myNode, metadataRetryTimerRef);
       }
       if (localLoraConfigTimerRef.current != null) {
         clearTimeout(localLoraConfigTimerRef.current);
@@ -487,6 +492,7 @@ export function attachMeshtasticRuntimeWireEffects(
 
     // Always clean up on disconnect, even if we never reached configured
     if (status === DeviceStatusEnum.DeviceDisconnected) {
+      cancelMeshtasticGetMetadataAfterConfigure(metadataRetryTimerRef);
       if (localLoraConfigTimerRef.current != null) {
         clearTimeout(localLoraConfigTimerRef.current);
         localLoraConfigTimerRef.current = undefined;
@@ -497,6 +503,8 @@ export function attachMeshtasticRuntimeWireEffects(
       lastNodeInfoRequestAtRef.current.clear();
       clearConfigureTimeout();
       isConfiguringRef.current = false;
+      setMeshtasticConfigurePhase(false);
+      meshtasticIngestSessionRef.current?.setConfiguring(false);
       stopWatchdog();
       stopGpsInterval();
       cleanupSubscriptions();
@@ -627,7 +635,7 @@ export function attachMeshtasticRuntimeWireEffects(
     opts?: { ignoreDisplayIdentity?: boolean },
   ): void => {
     if (from === 0 || from === myNodeNumRef.current) return;
-    if (isConfiguringRef.current) return;
+    if (getMeshtasticConfigurePhase()) return;
     // Missing-recipient-key recovery must refresh even nodes that already have a
     // display name (we know who they are, we just lack a usable public key), so it
     // opts out of the display-identity short-circuit while keeping the rate limit.
@@ -679,7 +687,7 @@ export function attachMeshtasticRuntimeWireEffects(
       }),
       attachMeshtasticRawPacketSideEffects(identityId, {
         getMyNodeNum: () => myNodeNumRef.current,
-        getIsConfiguring: () => isConfiguringRef.current,
+        getIsConfiguring: getMeshtasticConfigurePhase,
         setRawPackets,
         setSignalTelemetry,
         touchLastData,
@@ -722,7 +730,7 @@ export function attachMeshtasticRuntimeWireEffects(
       attachMeshtasticNodeSideEffects(identityId, {
         connectionType: type,
         getMyNodeNum: () => myNodeNumRef.current,
-        getIsConfiguring: () => isConfiguringRef.current,
+        getIsConfiguring: getMeshtasticConfigurePhase,
         getBluetoothDeviceId: () =>
           (device.transport as { __bluetoothDevice?: { id?: string } }).__bluetoothDevice?.id,
         touchLastData,

@@ -5,7 +5,13 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import * as chatNotifications from '../lib/chatNotifications';
-import { draftsStorageKey, lastReadStorageKey, saveDraft } from '../lib/chatPanelProtocolStorage';
+import {
+  draftsStorageKey,
+  lastReadStorageKey,
+  loadActiveChannelInitial,
+  saveActiveChannel,
+  saveDraft,
+} from '../lib/chatPanelProtocolStorage';
 import { getDistFromChatBottom, VIRTUALIZER_SCROLL_END_THRESHOLD } from '../lib/chatScrollUtils';
 import i18n from '../lib/i18n';
 import { ensureLocaleLoaded } from '../lib/localeResources';
@@ -3702,6 +3708,408 @@ describe('ChatPanel — draft restored on initial mount', () => {
     expect(textarea).toHaveValue('persisted draft');
 
     localStorage.setItem(draftsStorageKey('meshtastic'), '{}');
+  });
+});
+
+describe('ChatPanel — channel selection restored across reconnect', () => {
+  it('restores the previously selected channel for this node on mount', async () => {
+    localStorage.clear();
+    saveActiveChannel('meshtastic', 1, 1); // baseProps.myNodeNum is 1; select channel index 1
+    saveDraft('meshtastic', 'ch:1', 'admin draft'); // distinguishes which channel is active
+
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshtastic"
+          channels={[
+            { index: 0, name: 'General' },
+            { index: 1, name: 'Admin' },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    const textarea = await waitForComposer();
+    expect(textarea).toHaveValue('admin draft');
+
+    localStorage.setItem(draftsStorageKey('meshtastic'), '{}');
+  });
+
+  it('falls back to the default channel when the persisted selection belongs to a different node', async () => {
+    localStorage.clear();
+    saveActiveChannel('meshtastic', 999, 1); // a different node's saved selection
+    saveDraft('meshtastic', 'ch:0', 'general draft');
+
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshtastic"
+          channels={[
+            { index: 0, name: 'General' },
+            { index: 1, name: 'Admin' },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    const textarea = await waitForComposer();
+    expect(textarea).toHaveValue('general draft');
+
+    localStorage.setItem(draftsStorageKey('meshtastic'), '{}');
+  });
+
+  it('restores a saved channel once myNodeNum becomes known after mount, without clobbering it', async () => {
+    // ChatPanel mounts once per protocol tab and can do so before the radio finishes
+    // connecting (myNodeNum still 0) — the restore must re-run once myNodeNum arrives,
+    // and must not immediately overwrite the just-restored value with the pre-restore
+    // default (regression: both the restore and the save effect fire on the same
+    // myNodeNum-changing commit).
+    localStorage.clear();
+    saveActiveChannel('meshtastic', 1, 1); // saved from a prior session for node 1
+    saveDraft('meshtastic', 'ch:1', 'admin draft');
+
+    const channels = [
+      { index: 0, name: 'General' },
+      { index: 1, name: 'Admin' },
+    ];
+
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} protocol="meshtastic" myNodeNum={0} channels={channels} />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} protocol="meshtastic" myNodeNum={1} channels={channels} />
+      </ToastProvider>,
+    );
+
+    const textarea = await waitForComposer();
+    await waitFor(() => {
+      expect(textarea).toHaveValue('admin draft');
+    });
+    // The saved value must survive the restore — not get clobbered back to the default.
+    expect(loadActiveChannelInitial('meshtastic', 1)).toBe(1);
+
+    localStorage.setItem(draftsStorageKey('meshtastic'), '{}');
+  });
+
+  it("does not leak the previous node's channel into a different node's saved key on a live switch", async () => {
+    // Regression (CodeRabbit, PR #858): switching from node A (has a saved
+    // selection) to node B (no saved value yet) while ChatPanel stays mounted
+    // must not persist A's channel under B's key — even though `channels` can
+    // transiently still show A's stale, carried-forward list right after the
+    // switch (see useMeshtasticRuntime's lastKnownChannelsRef).
+    localStorage.clear();
+    saveActiveChannel('meshtastic', 1, 1); // node 1 (A) previously selected Admin (index 1)
+
+    const channels = [
+      { index: 0, name: 'General' },
+      { index: 1, name: 'Admin' },
+    ];
+
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} protocol="meshtastic" myNodeNum={1} channels={channels} />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+
+    // Switch to node 2 (B) while the panel stays mounted; channels prop still
+    // shows A's list, as it would transiently during a live node switch.
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} protocol="meshtastic" myNodeNum={2} channels={channels} />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+
+    await waitFor(() => {
+      expect(loadActiveChannelInitial('meshtastic', 2)).not.toBeNull();
+    });
+    expect(loadActiveChannelInitial('meshtastic', 2)).not.toBe(1); // A's index must not leak
+    expect(loadActiveChannelInitial('meshtastic', 1)).toBe(1); // A's own saved value untouched
+  });
+
+  it("keeps node B's saved channel pending (not overwritten) while the list still belongs to node A, then restores it once B's real channels arrive", async () => {
+    // Regression (CodeRabbit, PR #858 second pass): a saved value for the new
+    // node/scope must not be treated as "nothing saved" just because the
+    // current (stale, carried-forward) channels list doesn't contain it yet —
+    // that previously forced a default selection and then persisted it,
+    // clobbering the real saved value the moment it became visible.
+    localStorage.clear();
+    saveActiveChannel('meshtastic', 2, 2); // node B (2) previously selected channel index 2
+    saveDraft('meshtastic', 'ch:2', 'node b draft');
+
+    const staleChannelsFromNodeA = [
+      { index: 0, name: 'General' },
+      { index: 1, name: 'Admin' },
+    ];
+
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshtastic"
+          myNodeNum={1}
+          channels={staleChannelsFromNodeA}
+        />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+
+    // Switch to node B; channels prop still shows A's stale list (no index 2).
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshtastic"
+          myNodeNum={2}
+          channels={staleChannelsFromNodeA}
+        />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+
+    // While pending: must NOT have clobbered node B's saved value with a default.
+    expect(loadActiveChannelInitial('meshtastic', 2)).toBe(2);
+
+    // Node B's real channel list arrives.
+    const realChannelsFromNodeB = [
+      { index: 0, name: 'General' },
+      { index: 2, name: 'Ops' },
+    ];
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshtastic"
+          myNodeNum={2}
+          channels={realChannelsFromNodeB}
+        />
+      </ToastProvider>,
+    );
+
+    const textarea = await waitForComposer();
+    await waitFor(() => {
+      expect(textarea).toHaveValue('node b draft');
+    });
+    expect(loadActiveChannelInitial('meshtastic', 2)).toBe(2);
+  });
+
+  it('stops waiting for a saved channel that no longer exists once the list stabilizes, so a later selection still saves', async () => {
+    // Self-caught regression: without a bound on "pending", a saved channel
+    // that's genuinely gone from this node's config (removed since the last
+    // session) would leave restoration pending forever — and since saving is
+    // suppressed while pending, that would silently disable persisting *any*
+    // future selection for this node, not just fail to restore the old one.
+    localStorage.clear();
+    saveActiveChannel('meshtastic', 3, 99); // node 3 previously had channel 99 — no longer present
+
+    const channelsAttempt1 = [
+      { index: 0, name: 'General' },
+      { index: 1, name: 'Admin' },
+    ];
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} protocol="meshtastic" myNodeNum={3} channels={channelsAttempt1} />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+
+    // Channel list re-renders with the same content (new array reference, same
+    // indices) — simulates the list having settled without ever containing 99.
+    const channelsAttempt2 = [
+      { index: 0, name: 'General' },
+      { index: 1, name: 'Admin' },
+    ];
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} protocol="meshtastic" myNodeNum={3} channels={channelsAttempt2} />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+
+    // A later, deliberate channel pick must still get persisted — proves
+    // saving isn't stuck suppressed forever.
+    const user = userEvent.setup();
+    const adminButton = screen
+      .getAllByRole('button')
+      .find((b) => /Admin/i.test(b.textContent ?? ''));
+    expect(adminButton).toBeTruthy();
+    if (adminButton) await user.click(adminButton);
+
+    await waitFor(() => {
+      expect(loadActiveChannelInitial('meshtastic', 3)).toBe(1); // Admin's index
+    });
+  });
+
+  it('lets a manual channel click win over a still-pending restore, instead of being silently overwritten once it resolves', async () => {
+    // Self-caught regression: if a restore is still pending (waiting for a
+    // saved value to show up in `channels`) when the user manually picks a
+    // *different* channel, the restore effect must not later fire and
+    // silently override that manual pick once the saved value's channel
+    // finally appears in the list.
+    localStorage.clear();
+    saveActiveChannel('meshtastic', 4, 2); // node 4 previously selected channel index 2
+
+    const staleChannels = [
+      { index: 0, name: 'General' },
+      { index: 1, name: 'Admin' },
+    ];
+    // Mount on a different node first, then switch to node 4 while `channels`
+    // still shows the stale list — the lazy initializer only runs at true
+    // first mount, so this is what actually exercises the pending-restore
+    // effect (mounting directly at myNodeNum=4 would resolve immediately via
+    // the initializer instead, never engaging "pending" at all).
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} protocol="meshtastic" myNodeNum={1} channels={staleChannels} />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} protocol="meshtastic" myNodeNum={4} channels={staleChannels} />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+    // Still pending: saved value (2) isn't in the current list yet.
+    expect(loadActiveChannelInitial('meshtastic', 4)).toBe(2);
+
+    // User manually picks Admin (1) while restoration is still pending.
+    const user = userEvent.setup();
+    const adminButton = screen
+      .getAllByRole('button')
+      .find((b) => /Admin/i.test(b.textContent ?? ''));
+    expect(adminButton).toBeTruthy();
+    if (adminButton) await user.click(adminButton);
+    await waitFor(() => {
+      expect(loadActiveChannelInitial('meshtastic', 4)).toBe(1);
+    });
+
+    // The saved value's channel (2) now shows up in the list — must NOT
+    // silently override the user's manual pick.
+    const realChannels = [
+      { index: 0, name: 'General' },
+      { index: 1, name: 'Admin' },
+      { index: 2, name: 'Ops' },
+    ];
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} protocol="meshtastic" myNodeNum={4} channels={realChannels} />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+
+    expect(loadActiveChannelInitial('meshtastic', 4)).toBe(1);
+  });
+
+  it('retries the restore once channels arrive, even when myNodeNum was already known at the very first mount', async () => {
+    // Self-caught regression: myNodeNum and channels come from separate
+    // packets, so channels can easily still be empty on the very first
+    // render even though the node is already known. The restore-state ref's
+    // initializer must not unconditionally mark that "resolved" — it has to
+    // mirror whatever the lazy `channel` initializer actually found, or a
+    // saved value that arrives moments later would never get retried.
+    localStorage.clear();
+    saveActiveChannel('meshtastic', 5, 3);
+    saveDraft('meshtastic', 'ch:3', 'ops draft');
+
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} protocol="meshtastic" myNodeNum={5} channels={[]} />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+
+    const realChannels = [
+      { index: 0, name: 'General' },
+      { index: 3, name: 'Ops' },
+    ];
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} protocol="meshtastic" myNodeNum={5} channels={realChannels} />
+      </ToastProvider>,
+    );
+
+    const textarea = await waitForComposer();
+    await waitFor(() => {
+      expect(textarea).toHaveValue('ops draft');
+    });
+    expect(loadActiveChannelInitial('meshtastic', 5)).toBe(3);
+  });
+
+  it("does not leak a different node's leftover channel selection when giving up on a saved channel that no longer exists", async () => {
+    // Self-caught regression: giving up on a saved-but-never-found channel
+    // for a *different* scope must still reset away from the previous
+    // scope's leftover selection — even when that leftover index happens to
+    // also be "valid" in the new (now-stable) list, which is exactly what
+    // the pre-existing clamp effect can't catch on its own.
+    localStorage.clear();
+    saveActiveChannel('meshtastic', 1, 1); // node 1 (A): selected Admin (index 1)
+    saveActiveChannel('meshtastic', 2, 99); // node 2 (B): saved channel 99 — no longer exists
+
+    const channelsWithAdmin = [
+      { index: 0, name: 'General' },
+      { index: 1, name: 'Admin' },
+    ];
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshtastic"
+          myNodeNum={1}
+          channels={channelsWithAdmin}
+        />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+
+    // Switch to node B; its real list happens to also contain index 1
+    // (Admin) — A's leftover selection — but never contains 99.
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshtastic"
+          myNodeNum={2}
+          channels={[
+            { index: 0, name: 'General' },
+            { index: 1, name: 'Admin' },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+    expect(loadActiveChannelInitial('meshtastic', 2)).toBe(99); // still pending, untouched
+
+    // List "stabilizes" (same content, new array reference) without ever
+    // containing 99 — give up.
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshtastic"
+          myNodeNum={2}
+          channels={[
+            { index: 0, name: 'General' },
+            { index: 1, name: 'Admin' },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await waitForComposer();
+
+    await waitFor(() => {
+      expect(loadActiveChannelInitial('meshtastic', 2)).not.toBe(1); // must not leak A's index
+    });
+    expect(loadActiveChannelInitial('meshtastic', 2)).toBe(0); // reset to default (General)
+    expect(loadActiveChannelInitial('meshtastic', 1)).toBe(1); // A's own saved value untouched
   });
 });
 

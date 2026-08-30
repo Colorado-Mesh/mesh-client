@@ -43,7 +43,15 @@ export interface GamesOkResponse {
 }
 
 /** Known LRGP built-in app ids. */
-export type GamesAppId = 'ttt' | 'chess';
+export type GamesAppId = 'ttt' | 'chess' | 'four_in_a_row';
+
+/**
+ * Apps this client can render a board for, in challenge-menu order. Deliberately curated
+ * rather than derived from the sidecar app manifest: manifest `app_id` is an open string and
+ * the GamesPanel board dispatch falls through to Tic-Tac-Toe for anything it does not know,
+ * so a manifest-driven menu could offer a game that renders the wrong board.
+ */
+export const GAMES_CHALLENGE_APPS: readonly GamesAppId[] = ['ttt', 'chess', 'four_in_a_row'];
 
 /** Standard LRGP commands (mirrors `lrgp-rs` `constants.rs`). */
 export const GAMES_CMD = {

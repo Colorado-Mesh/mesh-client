@@ -46,6 +46,8 @@ export function createElectronAPIMock(): ElectronAPI {
       pruneReticulumMessagesByCount: vi.fn().mockResolvedValue({ changes: 0 }),
       listRrcMessages: vi.fn().mockResolvedValue([]),
       insertRrcMessage: vi.fn().mockResolvedValue({ changes: 1 }),
+      listRrcNicks: vi.fn().mockResolvedValue([]),
+      upsertRrcNick: vi.fn().mockResolvedValue({ changes: 1 }),
       deleteRrcMessagesByRoom: vi.fn().mockResolvedValue({ changes: 0 }),
       pruneRrcMessagesByCount: vi.fn().mockResolvedValue({ changes: 0 }),
       pruneRrcMessagesByAge: vi.fn().mockResolvedValue({ changes: 0 }),
@@ -83,6 +85,8 @@ export function createElectronAPIMock(): ElectronAPI {
       getBlockedContacts: vi.fn().mockResolvedValue([]),
       blockContact: vi.fn().mockResolvedValue({ changes: 1 }),
       unblockContact: vi.fn().mockResolvedValue({ changes: 1 }),
+      exportBlockedContacts: vi.fn().mockResolvedValue([]),
+      importBlockedContacts: vi.fn().mockResolvedValue({ imported: 0, skipped: 0 }),
       getReticulumIdentityActivity: vi.fn().mockResolvedValue([]),
       upsertReticulumIdentityActivity: vi.fn().mockResolvedValue({ changes: 1 }),
       upsertReticulumIdentityActivityBatch: vi.fn().mockResolvedValue({ changes: 1 }),
@@ -224,6 +228,12 @@ export function createElectronAPIMock(): ElectronAPI {
     notifyDeviceDisconnected: vi.fn(),
     setTrayUnread: vi.fn(),
     quitApp: vi.fn().mockResolvedValue(undefined),
+    restartApp: vi.fn().mockResolvedValue(undefined),
+    notify: {
+      show: vi.fn().mockResolvedValue(undefined),
+      longSessionRestart: vi.fn().mockResolvedValue(undefined),
+      clearLongSessionNudge: vi.fn().mockResolvedValue(undefined),
+    },
     getPlatform: vi.fn().mockReturnValue('linux'),
     showEmojiPanel: vi.fn().mockResolvedValue(undefined),
     media: {
@@ -232,9 +242,6 @@ export function createElectronAPIMock(): ElectronAPI {
     },
     clipboard: {
       writeText: vi.fn().mockResolvedValue(undefined),
-    },
-    notify: {
-      show: vi.fn().mockResolvedValue(undefined),
     },
     safeStorage: {
       encrypt: vi.fn().mockResolvedValue(null),
@@ -297,6 +304,7 @@ export function createElectronAPIMock(): ElectronAPI {
       saveReticulumAttachment: vi.fn().mockResolvedValue({ success: false }),
       showItemInFolder: vi.fn().mockResolvedValue({ ok: true }),
       readReticulumAttachmentAsDataUrl: vi.fn().mockResolvedValue({ dataUrl: null }),
+      readReticulumAttachmentBytes: vi.fn().mockResolvedValue({ dataBase64: null }),
       linkPreview: {
         fetch: vi.fn().mockResolvedValue(null),
       },
@@ -367,16 +375,46 @@ export function createElectronAPIMock(): ElectronAPI {
       onClientDisconnected: vi.fn().mockReturnValue(() => {}),
     },
     bleCoexistence: {
-      register: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
-      unregister: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
-      assertCanConnect: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
-      getState: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
-      acquireScan: vi.fn().mockResolvedValue({ connections: [], scanOwner: 'reticulum' }),
-      releaseScan: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
-      pauseNobleScan: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
-      suspendNobleForReticulumBleConnect: vi
-        .fn()
-        .mockResolvedValue({ connections: [], scanOwner: null }),
+      register: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      unregister: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      assertCanConnect: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      getState: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      acquireScan: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: 'reticulum',
+        nobleYieldDecisionPending: false,
+      }),
+      releaseScan: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      pauseNobleScan: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
+      suspendNobleForReticulumBleConnect: vi.fn().mockResolvedValue({
+        connections: [],
+        scanOwner: null,
+        nobleYieldDecisionPending: false,
+      }),
     },
     reticulum: {
       start: vi.fn().mockResolvedValue({ running: true, port: 19437, pid: 1 }),
@@ -397,6 +435,8 @@ export function createElectronAPIMock(): ElectronAPI {
         .fn()
         .mockResolvedValue({ path: null, contentText: null, error: null }),
       saveIdentityExportDialog: vi.fn().mockResolvedValue({ path: null, error: null }),
+      saveBlocklistDialog: vi.fn().mockResolvedValue({ path: null, error: null }),
+      openBlocklistDialog: vi.fn().mockResolvedValue({ hashes: null, skipped: 0, error: null }),
       showNomadContentSourceDialog: vi.fn().mockResolvedValue({ canceled: true, path: null }),
       setNomadContentSource: vi.fn().mockResolvedValue({ ok: true }),
       validateConfig: vi.fn().mockResolvedValue({ ok: true, issues: [] }),
@@ -441,6 +481,18 @@ export function createElectronAPIMock(): ElectronAPI {
         hangup: vi.fn().mockResolvedValue({ ok: true }),
         mute: vi.fn().mockResolvedValue({ ok: true, microphone_muted: false }),
         sendAudio: vi.fn().mockResolvedValue({ ok: true }),
+      },
+      voiceMemo: {
+        start: vi.fn().mockResolvedValue({ ok: true, session_id: 'test-memo-session' }),
+        sendAudio: vi.fn().mockResolvedValue({ ok: true }),
+        stop: vi.fn().mockResolvedValue({
+          ok: true,
+          ogg_base64: '',
+          duration_ms: 0,
+          size_bytes: 0,
+          mode: 16,
+        }),
+        cancel: vi.fn().mockResolvedValue({ ok: true }),
       },
       rncp: {
         send: vi.fn().mockResolvedValue({ ok: true }),

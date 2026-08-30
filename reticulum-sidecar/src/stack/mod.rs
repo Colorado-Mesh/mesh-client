@@ -10,6 +10,7 @@ mod identity_apply;
 mod identity_backup;
 mod identity_import;
 mod identity_slots;
+pub mod interface_catalog;
 mod local_rnode_primary;
 mod lxmf_inbound_log;
 mod nomad_content_source;
@@ -70,6 +71,8 @@ mod rnsh_session;
 mod rrc_link;
 #[cfg(feature = "rns-stack")]
 mod rrc_session;
+#[cfg(feature = "rns-stack")]
+mod voice_memo;
 #[cfg(feature = "rns-stack")]
 mod voice_session;
 
@@ -190,6 +193,9 @@ pub struct StackHandle {
     /// Serializes attach_live so concurrent callers cannot spawn duplicate live bridges.
     #[cfg(feature = "rns-stack")]
     attach_live_lock: Mutex<()>,
+    /// Opus/Ogg voice-memo encoder sessions (independent of live LXST calls).
+    #[cfg(feature = "rns-stack")]
+    voice_memo: Arc<voice_memo::VoiceMemoManager>,
     /// Test-only: next preference/pin apply returns this error after persist (exercises rollback).
     #[cfg(test)]
     test_path_medium_apply_error: Mutex<Option<String>>,
@@ -243,6 +249,18 @@ impl StackHandle {
             Ok(false) => {}
             Err(e) => {
                 tracing::warn!("failed to apply flow_control defaults in config: {e}");
+            }
+        }
+
+        match config::repair_ignore_config_warnings_in_config(&config_dir) {
+            Ok(true) => {
+                tracing::info!(
+                    "reconciled ignore_config_warnings for discoverable interfaces with non-AP/Gateway mode"
+                );
+            }
+            Ok(false) => {}
+            Err(e) => {
+                tracing::warn!("failed to reconcile ignore_config_warnings in config: {e}");
             }
         }
 
@@ -302,6 +320,7 @@ impl StackHandle {
             path_medium_op_lock: Mutex::new(()),
             live: std::sync::OnceLock::new(),
             attach_live_lock: Mutex::new(()),
+            voice_memo: Arc::new(voice_memo::VoiceMemoManager::new()),
             #[cfg(test)]
             test_path_medium_apply_error: Mutex::new(None),
         };
@@ -1057,7 +1076,7 @@ impl StackHandle {
         Ok(result)
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle settings API awaited by HTTP handlers
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle settings API awaited by HTTP handlers
     pub async fn set_stack_settings(&self, settings: &StackSettings) -> Result<(), String> {
         config::set_stack_settings(&self.config_dir, settings)
     }
@@ -1151,16 +1170,37 @@ impl StackHandle {
     }
 
     pub async fn request_peer_path(&self, hash: &str) -> Result<(), String> {
+        self.request_peer_path_with_opts(hash, false).await
+    }
+
+    pub async fn request_peer_path_with_opts(&self, hash: &str, force: bool) -> Result<(), String> {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live.get() {
-            let res = live.request_path(hash).await;
+            let res = if force {
+                live.request_path_force(hash).await
+            } else {
+                live.request_path(hash).await
+            };
             if res.is_ok() {
                 self.emit_event("peers_updated", serde_json::json!({ "hash": hash }));
             }
             return res;
         }
-        let _ = hash;
+        let _ = (hash, force);
         Ok(())
+    }
+
+    /// Clear the whole RNS path table; returns the number of routes dropped.
+    pub async fn drop_path_table(&self) -> Result<i64, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live.get() {
+            let res = live.drop_path_table().await;
+            if res.is_ok() {
+                self.emit_event("peers_updated", serde_json::json!({}));
+            }
+            return res;
+        }
+        Ok(0)
     }
 
     pub async fn probe_peer(&self, hash: &str) -> Result<serde_json::Value, String> {
@@ -1353,15 +1393,35 @@ impl StackHandle {
             .iter()
             .map(|p| {
                 let preferred = preferred_id.as_deref() == Some(p.id.as_str());
+                let mut hops = p.hops;
+                let mut path_interface: Option<String> = None;
+                #[cfg(feature = "rns-stack")]
+                if p.id != "local-prop" {
+                    if let Some(live) = self.live.get() {
+                        if let Some(dest) = p.destination_hash.as_deref() {
+                            let (live_hops, live_iface) =
+                                live.live_path_fields_for_destination(dest);
+                            if hops.is_none() {
+                                hops = live_hops;
+                            }
+                            path_interface = live_iface;
+                        }
+                    }
+                }
                 let mut row = serde_json::json!({
                     "id": p.id,
                     "name": p.name,
-                    "hops": p.hops,
+                    "hops": hops,
                     "enabled": p.enabled,
                     "status": p.status,
                     "preferred": preferred,
                     "destination_hash": p.destination_hash,
                 });
+                if let Some(iface) = path_interface {
+                    if let Some(obj) = row.as_object_mut() {
+                        obj.insert("interface".into(), serde_json::Value::String(iface));
+                    }
+                }
                 #[cfg(feature = "rns-stack")]
                 if p.id == "local-prop" {
                     if let Some(stats) = &local_stats {
@@ -1610,7 +1670,7 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         {
             if let Some(live) = self.live.get() {
-                live.start_propagation_sync(&prop_hash).await?;
+                live.clone().start_propagation_sync(&prop_hash).await?;
                 return Ok(());
             }
             // Never fall through to the persistence stub: it marks sync active at
@@ -1661,7 +1721,7 @@ impl StackHandle {
         }
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live.get() {
-            live.start_propagation_sync(&prop_hash).await?;
+            live.clone().start_propagation_sync(&prop_hash).await?;
             return Ok(());
         }
         Err("PROPAGATION_STACK_NOT_LIVE".into())
@@ -2829,12 +2889,12 @@ impl StackHandle {
         }
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle admin API awaited by HTTP handlers
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle admin API awaited by HTTP handlers
     pub async fn rnode_presets(&self) -> serde_json::Value {
         rf_profiles::presets_wire_json()
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle admin API awaited by HTTP handlers
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle admin API awaited by HTTP handlers
     pub async fn serial_ports(&self) -> serde_json::Value {
         serde_json::json!({ "ports": enumerate_serial_ports() })
     }
@@ -2858,7 +2918,7 @@ impl StackHandle {
         Ok(removed)
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle lifecycle API awaited by HTTP handlers
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle lifecycle API awaited by HTTP handlers
     pub async fn request_stack_restart(&self) -> Result<(), String> {
         self.emit_event("stack_restart_requested", serde_json::json!({ "ok": true }));
         Ok(())
@@ -2929,7 +2989,7 @@ impl StackHandle {
         config_audit::audit_config(&self.config_dir, &live, &settings, stack_running)
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle config API awaited by HTTP handlers
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle config API awaited by HTTP handlers
     pub async fn config_repair(
         &self,
         request: config_audit::ConfigRepairRequest,
@@ -3011,6 +3071,71 @@ impl StackHandle {
         }
         let _ = (profile, channels, samples_b64);
         serde_json::json!({ "ok": false, "error": "voice requires live rns-stack sidecar" })
+    }
+
+    pub fn voice_memo_start(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        {
+            match self.voice_memo.start() {
+                Ok(v) => v,
+                Err(e) => serde_json::json!({ "ok": false, "error": e }),
+            }
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        serde_json::json!({ "ok": false, "error": "voice_memo requires rns-stack sidecar" })
+    }
+
+    pub fn voice_memo_audio(
+        &self,
+        session_id: &str,
+        channels: u8,
+        samples_b64: &str,
+    ) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        {
+            match self
+                .voice_memo
+                .push_audio(session_id, channels, samples_b64)
+            {
+                Ok(v) => v,
+                Err(e) => serde_json::json!({ "ok": false, "error": e }),
+            }
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = (session_id, channels, samples_b64);
+            serde_json::json!({ "ok": false, "error": "voice_memo requires rns-stack sidecar" })
+        }
+    }
+
+    pub fn voice_memo_stop(&self, session_id: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        {
+            match self.voice_memo.stop(session_id) {
+                Ok(v) => v,
+                Err(e) => serde_json::json!({ "ok": false, "error": e }),
+            }
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = session_id;
+            serde_json::json!({ "ok": false, "error": "voice_memo requires rns-stack sidecar" })
+        }
+    }
+
+    pub fn voice_memo_cancel(&self, session_id: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        {
+            match self.voice_memo.cancel(session_id) {
+                Ok(v) => v,
+                Err(e) => serde_json::json!({ "ok": false, "error": e }),
+            }
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = session_id;
+            serde_json::json!({ "ok": false, "error": "voice_memo requires rns-stack sidecar" })
+        }
     }
 
     pub async fn games_status(&self) -> serde_json::Value {
@@ -3268,7 +3393,7 @@ impl StackHandle {
         }
     }
 
-    #[allow(clippy::unused_async)] // async matches StackHandle identity API awaited by HTTP handlers
+    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle identity API awaited by HTTP handlers
     pub async fn delete_identity_slot(&self, identity_id: &str) -> Result<(), String> {
         let _op = self.identity_op_lock.lock().await;
         identity_slots::delete_slot(&self.config_dir, identity_id)

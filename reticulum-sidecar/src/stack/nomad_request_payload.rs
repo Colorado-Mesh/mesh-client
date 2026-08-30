@@ -1,9 +1,13 @@
 //! Encode NomadNet link request data (`field_*` / `var_*` map) for RNS link REQUEST payloads.
+//!
+//! Wire MessagePack encoding lives in `nomad-core` (`encode_request_fields`).
+//! This module only translates the mesh-client HTTP `data` (base64 JSON) shape.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
+use nomad_core::encode_request_fields;
 
 /// Decode base64 JSON object into msgpack map bytes for `LinkClient::query` payload.
 pub fn nomad_page_request_payload(data_b64: Option<&str>) -> Vec<u8> {
@@ -13,31 +17,16 @@ pub fn nomad_page_request_payload(data_b64: Option<&str>) -> Vec<u8> {
     let Ok(json_bytes) = BASE64.decode(b64) else {
         return Vec::new();
     };
-    let Ok(fields) = serde_json::from_slice::<HashMap<String, String>>(&json_bytes) else {
+    let Ok(fields) = serde_json::from_slice::<BTreeMap<String, String>>(&json_bytes) else {
         return Vec::new();
     };
-    if fields.is_empty() {
-        return Vec::new();
-    }
-
-    let mut map = Vec::with_capacity(fields.len());
-    for (key, value) in fields {
-        map.push((
-            rmpv::Value::String(key.into()),
-            rmpv::Value::String(value.into()),
-        ));
-    }
-
-    let mut buf = Vec::new();
-    if rmpv::encode::write_value(&mut buf, &rmpv::Value::Map(map)).is_err() {
-        return Vec::new();
-    }
-    buf
+    encode_request_fields(&fields)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use nomad_core::decode_request_fields;
 
     #[test]
     fn encodes_request_data_as_msgpack_map() {
@@ -51,6 +40,22 @@ mod tests {
             panic!("expected map");
         };
         assert_eq!(map.len(), 2);
+    }
+
+    #[test]
+    fn encode_round_trips_through_nomad_core_decode() {
+        let json = br#"{"field_q":"hello","var_mode":"search"}"#;
+        let b64 = BASE64.encode(json);
+        let payload = nomad_page_request_payload(Some(&b64));
+        let parsed = decode_request_fields(&payload).unwrap();
+        assert_eq!(
+            parsed.fields.get("field_q").map(String::as_str),
+            Some("hello")
+        );
+        assert_eq!(
+            parsed.fields.get("var_mode").map(String::as_str),
+            Some("search")
+        );
     }
 
     #[test]

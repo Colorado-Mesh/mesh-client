@@ -87,6 +87,12 @@ impl PathRequestGate {
         self.last_warn_at.remove(&dest);
     }
 
+    fn clear_all(&mut self) {
+        self.backoff_until.clear();
+        self.fail_count.clear();
+        self.last_warn_at.clear();
+    }
+
     fn decide(&self, dest: [u8; 16], now: f64) -> PathRequestDecision {
         if self.fail_count.get(&dest).copied().unwrap_or(0) >= PATH_REQUEST_MAX_ATTEMPTS {
             return PathRequestDecision::MaxAttempts;
@@ -193,6 +199,8 @@ pub struct LxmfOutboundDriver {
     pending_pn_targets: HashMap<[u8; 32], [u8; 16]>,
     /// When local-prop is serving, cascade deposits go in-process (no self-Link).
     local_prop_node: Option<Arc<Mutex<PropagationNode>>>,
+    /// Effective PN deposit size limit (from `propagation_limit_kb`).
+    propagation_max_message_size: usize,
     /// Local LXMF identity (retained for driver construction / future failed-detail payloads).
     #[allow(dead_code)]
     self_lxmf_hash: String,
@@ -234,6 +242,8 @@ impl LxmfOutboundDriver {
             pending_pn_deposits: HashMap::new(),
             pending_pn_targets: HashMap::new(),
             local_prop_node: None,
+            propagation_max_message_size:
+                crate::stack::pn_hosting_policy::DEFAULT_PROPAGATION_LIMIT_KB.saturating_mul(1024),
             self_lxmf_hash: self_lxmf_hash.clone(),
             self_display_name,
         };
@@ -304,6 +314,11 @@ impl LxmfOutboundDriver {
     /// instead of opening a self-Link (official PN parity: host store, not loopback Link).
     pub fn set_local_prop_node(&mut self, node: Option<Arc<Mutex<PropagationNode>>>) {
         self.local_prop_node = node;
+    }
+
+    /// Update the PN deposit size ceiling used for oversize preflight.
+    pub fn set_propagation_max_message_size(&mut self, max_bytes: usize) {
+        self.propagation_max_message_size = max_bytes.max(1);
     }
 
     pub fn known_identities_for_propagation(&self) -> HashMap<String, [u8; 64]> {
@@ -383,6 +398,16 @@ impl LxmfOutboundDriver {
             self.path_vias.remove(&dest);
             self.path_request_gate.clear_destination(dest);
         }
+    }
+
+    /// Drop the whole local path cache (after transport `DropPathTable`). Leaves the
+    /// cache empty rather than refreshing, so routes reappear only via new announces.
+    pub fn clear_all_paths(&mut self) {
+        self.route_hops.clear();
+        self.path_table_hashes.clear();
+        self.path_interfaces.clear();
+        self.path_vias.clear();
+        self.path_request_gate.clear_all();
     }
 
     pub fn has_path_to(&self, destination_hex: &str) -> bool {
@@ -701,6 +726,27 @@ impl LxmfOutboundDriver {
                 }
             }
         };
+        // Preflight vs PN max_message_size — rsLXMF rejects oversized deposits silently;
+        // surface a distinct terminal error so the UI never treats this as a PN outage.
+        let limit = self.propagation_max_message_size;
+        if packed.len() > limit {
+            tracing::warn!(
+                target: "lxmf-outbound",
+                prop = %prop_hex,
+                dest = %hex::encode(message.destination_hash),
+                size_bytes = packed.len(),
+                limit_bytes = limit,
+                "DeliverPropagated: message too large for propagation — terminal (no cascade)"
+            );
+            self.emit_outbound_failed_too_large_for_propagation(
+                router,
+                event_tx,
+                message,
+                limit,
+                packed.len(),
+            );
+            return;
+        }
         let hops = route_hops_for(&self.route_hops, prop_hash);
         let message_hash_hex = message.hash.as_ref().map(hex::encode);
         let transient_id_hex = message.transient_id.as_ref().map(hex::encode);
@@ -1161,6 +1207,58 @@ impl LxmfOutboundDriver {
                 None,
                 None,
                 Some(attempts),
+                None,
+                None,
+                None,
+            );
+        }
+    }
+
+    /// Terminal failure when packed size exceeds the PN deposit limit.
+    /// Does **not** advance the cascade — Direct was already tried; offline store is impossible.
+    fn emit_outbound_failed_too_large_for_propagation(
+        &mut self,
+        router: &mut LxmRouter,
+        event_tx: &broadcast::Sender<String>,
+        mut message: LxMessage,
+        limit_bytes: usize,
+        size_bytes: usize,
+    ) {
+        message.mark_failed();
+        let method = message
+            .hash
+            .or(message.message_id)
+            .map(|h| self.cascade_wire_delivery_method(h))
+            .unwrap_or("propagated");
+        tracing::warn!(
+            target: "lxmf-outbound",
+            dest = %hex::encode(message.destination_hash),
+            method,
+            limit_bytes,
+            size_bytes,
+            "LXMF outbound failed: message_too_large_for_propagation"
+        );
+        if let Some(hash) = message.hash.or(message.message_id) {
+            let attempts = message.delivery_attempts;
+            self.clear_pn_cascade_state(hash);
+            self.direct_path_failovers.remove(&hash);
+            self.pending_pn_deposits.remove(&hash);
+            let _ = router.mark_outbound_failed(&hash);
+            emit_outbound_status_detailed_with_attempts(
+                event_tx,
+                Some(serde_json::Value::String(hex::encode(hash))),
+                Some(serde_json::Value::String(hex::encode(
+                    message.destination_hash,
+                ))),
+                "failed",
+                Some(method),
+                None,
+                None,
+                None,
+                Some(attempts),
+                Some("message_too_large_for_propagation"),
+                Some(limit_bytes),
+                Some(size_bytes),
             );
         }
     }
@@ -1762,6 +1860,9 @@ fn emit_outbound_status_detailed(
         tried_interfaces,
         failover_rounds,
         None,
+        None,
+        None,
+        None,
     );
 }
 
@@ -1776,6 +1877,9 @@ fn emit_outbound_status_detailed_with_attempts(
     tried_interfaces: Option<Vec<String>>,
     failover_rounds: Option<u8>,
     delivery_attempts: Option<u32>,
+    error: Option<&str>,
+    limit_bytes: Option<usize>,
+    size_bytes: Option<usize>,
 ) {
     let mut payload = serde_json::Map::new();
     if let Some(h) = message_hash {
@@ -1802,6 +1906,15 @@ fn emit_outbound_status_detailed_with_attempts(
     }
     if let Some(attempts) = delivery_attempts {
         payload.insert("delivery_attempts".into(), serde_json::json!(attempts));
+    }
+    if let Some(err) = error {
+        payload.insert("error".into(), serde_json::Value::String(err.into()));
+    }
+    if let Some(limit) = limit_bytes {
+        payload.insert("limit_bytes".into(), serde_json::json!(limit));
+    }
+    if let Some(size) = size_bytes {
+        payload.insert("size_bytes".into(), serde_json::json!(size));
     }
     let frame = serde_json::json!({
         "type": "lxmf_outbound_status",
@@ -2186,6 +2299,109 @@ mod tests {
         );
     }
 
+    /// Route fixture for a destination byte, wired so every path map gets populated.
+    fn seeded_route(byte: u8) -> PathTableRoute {
+        let hash = dest(byte);
+        PathTableRoute {
+            hash,
+            hops: 3,
+            hex_key: hex::encode(hash),
+            interface: Some("TTP_TCP".into()),
+            via: Some(hex::encode(dest(0xee))),
+        }
+    }
+
+    #[test]
+    fn clear_all_paths_empties_every_path_map() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let routes = [seeded_route(0xa1), seeded_route(0xa2), seeded_route(0xa3)];
+        driver.update_path_table(&routes);
+        for route in &routes {
+            assert!(driver.has_path_to(&route.hex_key));
+        }
+
+        driver.clear_all_paths();
+
+        for route in &routes {
+            assert!(
+                !driver.has_path_to(&route.hex_key),
+                "path must be gone after bulk clear"
+            );
+        }
+        assert!(driver.path_table_hashes.is_empty());
+        assert!(driver.route_hops.is_empty());
+        assert!(driver.path_interfaces.is_empty());
+        assert!(driver.path_vias.is_empty());
+    }
+
+    #[test]
+    fn clear_all_paths_on_empty_driver_is_noop() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        driver.clear_all_paths();
+        driver.clear_all_paths();
+        assert!(driver.path_table_hashes.is_empty());
+        assert!(!driver.has_path_to(&hex::encode(dest(0xa1))));
+    }
+
+    #[test]
+    fn clear_all_paths_leaves_driver_able_to_reinstall_routes() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let dest_hash = dest(0xb7);
+        let dest_hex = hex::encode(dest_hash);
+        driver.update_path_table(&[PathTableRoute {
+            hash: dest_hash,
+            hops: 5,
+            hex_key: dest_hex.clone(),
+            interface: Some("TTP_TCP".into()),
+            via: None,
+        }]);
+
+        driver.clear_all_paths();
+        assert!(!driver.has_path_to(&dest_hex));
+
+        // Announces repopulate the table after a bulk clear.
+        driver.update_path_table(&[PathTableRoute {
+            hash: dest_hash,
+            hops: 2,
+            hex_key: dest_hex.clone(),
+            interface: Some("Local Transport Pi".into()),
+            via: None,
+        }]);
+        assert!(driver.has_path_to(&dest_hex));
+        assert_eq!(driver.route_hops.get(&dest_hash).copied(), Some(2));
+    }
+
+    #[test]
+    fn clear_all_paths_resets_path_request_backoff() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let dest_hash = dest(0xc4);
+        // Exhaust the gate so decide() would refuse further path requests.
+        for _ in 0..PATH_REQUEST_MAX_ATTEMPTS {
+            driver
+                .path_request_gate
+                .record_queue_failure(dest_hash, 0.0);
+        }
+        assert!(matches!(
+            driver.path_request_gate.decide(dest_hash, 1.0),
+            PathRequestDecision::MaxAttempts
+        ));
+
+        driver.clear_all_paths();
+
+        assert!(matches!(
+            driver.path_request_gate.decide(dest_hash, 1.0),
+            PathRequestDecision::Send
+        ));
+    }
+
     #[test]
     fn requeue_direct_after_path_failover_exhausts_then_clears_state() {
         use crate::stack::path_failover::MAX_VIA_FAILOVERS;
@@ -2294,6 +2510,7 @@ mod tests {
             callsign: None,
             id_interval: None,
             mode: None,
+            runtime_mode: None,
             seed_addresses: vec![],
             discoverable,
             latitude,
@@ -2306,6 +2523,7 @@ mod tests {
             network_name: None,
             passphrase: None,
             flow_control: None,
+            ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: std::collections::HashMap::default(),

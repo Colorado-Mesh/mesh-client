@@ -353,6 +353,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
 
 [[package]]
+name = "byteorder"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
+
+[[package]]
 name = "bytes"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1428,7 +1434,7 @@ checksum = "0ceec5bc11778974d1bcb055b18002eba7f4b3518b6a0081b3af5f21666da9ad"
 
 [[package]]
 name = "lrgp"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "cozy-chess",
  "hex",
@@ -1444,7 +1450,7 @@ dependencies = [
 
 [[package]]
 name = "lxmf-core"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "base64",
  "bytes",
@@ -1469,7 +1475,7 @@ dependencies = [
 
 [[package]]
 name = "lxst-core"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "half",
  "opus-rs",
@@ -1479,7 +1485,7 @@ dependencies = [
 
 [[package]]
 name = "lxst-rns"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "bytes",
  "lxst-core",
@@ -1492,7 +1498,7 @@ dependencies = [
 
 [[package]]
 name = "lxst-telephony"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "bytes",
  "lxst-core",
@@ -1572,6 +1578,7 @@ dependencies = [
  "lxst-telephony",
  "nomad-core",
  "notify",
+ "ogg",
  "rand 0.8.6",
  "rmpv",
  "rns-crypto",
@@ -1586,6 +1593,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_urlencoded",
+ "sha2",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
@@ -1797,6 +1805,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ogg"
+version = "0.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fdab8dcd8d4052eaacaf8fb07a3ccd9a6e26efadb42878a413c68fc4af1dee2b"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1810,7 +1827,9 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "opus-rs"
-version = "0.1.19"
+version = "0.1.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eadaf84d53a021172447a8771d74f805ac3719a61041dafa95720ef86b8e271d"
 
 [[package]]
 name = "parking_lot"
@@ -2070,7 +2089,7 @@ dependencies = [
 
 [[package]]
 name = "rns-crypto"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "aes",
  "cbc",
@@ -2088,7 +2107,7 @@ dependencies = [
 
 [[package]]
 name = "rns-identity"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "hex",
  "rand 0.8.6",
@@ -2106,7 +2125,7 @@ dependencies = [
 
 [[package]]
 name = "rns-interface"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "bluer",
  "btleplug",
@@ -2138,7 +2157,7 @@ dependencies = [
 
 [[package]]
 name = "rns-link"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "hex",
  "rand 0.8.6",
@@ -2153,7 +2172,7 @@ dependencies = [
 
 [[package]]
 name = "rns-protocol"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "bzip2",
  "hex",
@@ -2169,7 +2188,7 @@ dependencies = [
 
 [[package]]
 name = "rns-ratkey"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "aes",
  "bip39",
@@ -2192,7 +2211,7 @@ dependencies = [
 
 [[package]]
 name = "rns-runtime"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "bytes",
  "hex",
@@ -2218,7 +2237,7 @@ dependencies = [
 
 [[package]]
 name = "rns-transport"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "bytes",
  "hex",
@@ -2237,7 +2256,7 @@ dependencies = [
 
 [[package]]
 name = "rns-wire"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "rns-crypto",
  "sha2",

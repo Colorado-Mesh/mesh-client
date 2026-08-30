@@ -7,28 +7,46 @@ use std::path::{Path, PathBuf};
 
 use uuid::Uuid;
 
+use super::interface_catalog::{CatalogField, INTERFACE_CATALOG};
 use super::types::{AddInterfaceRequest, InterfaceRow};
 
 pub const CONFIG_FILENAME: &str = "config";
 
-const SUPPORTED_TYPES: &[&str] = &[
-    "AutoInterface",
-    "TCPClientInterface",
-    "RNodeInterface",
-    "UDPInterface",
-    "KISSInterface",
-    "PipeInterface",
-    "I2PInterface",
-    "RNodeMultiInterface",
-    "BlePeerInterface",
-];
+/// RNS `type =` values we parse out of a config file. Sourced from the shared
+/// catalog (`src/shared/reticulumInterfaceCatalog.json`) so the renderer cannot drift.
+fn is_supported_config_type(raw: &str) -> bool {
+    INTERFACE_CATALOG.supported_config_types().contains(&raw)
+}
 
-const SERIAL_PORT_IFACE_TYPES: &[&str] = &["rnode", "rnode_multi", "kiss"];
+/// UI types whose INI `port` key is a serial device path rather than a number.
+fn iface_type_uses_serial_port(iface_type: &str) -> bool {
+    INTERFACE_CATALOG
+        .get(iface_type)
+        .is_some_and(|e| e.uses_serial_port)
+}
+
+/// UI types whose INI `port` key is a numeric port bound to `InterfaceRow::port`.
+fn iface_type_uses_numeric_port(iface_type: &str) -> bool {
+    catalog_field(iface_type, "port").is_some_and(|f| f.bind.as_deref() == Some("port"))
+}
+
+fn catalog_fields(iface_type: &str) -> &'static [CatalogField] {
+    INTERFACE_CATALOG
+        .get(iface_type)
+        .map_or(&[], |e| e.fields.as_slice())
+}
+
+fn catalog_field(iface_type: &str, key: &str) -> Option<&'static CatalogField> {
+    catalog_fields(iface_type).iter().find(|f| f.key == key)
+}
 
 /// INI keys modeled on `InterfaceRow` / typed CRUD. Unknown keys go into
 /// `extra_config` so enable/edit/repair do not silently drop them.
 /// Do not list pipe `command` here unless it is also a typed field — leaving it
-/// unknown lets it survive via `extra_config`.
+/// unknown lets it survive via `extra_config`. The same rule covers catalog
+/// fields without a `bind` (serial `speed`, AX.25 `ssid`, …); adding one here
+/// would strip it on the next round trip. Asserted by
+/// `unbound_catalog_fields_stay_in_extra_config`.
 const KNOWN_IFACE_CONFIG_KEYS: &[&str] = &[
     "type",
     "enabled",
@@ -61,6 +79,7 @@ const KNOWN_IFACE_CONFIG_KEYS: &[&str] = &[
     "network_name",
     "passphrase",
     "flow_control",
+    "ignore_config_warnings",
 ];
 
 fn is_known_iface_config_key(key: &str) -> bool {
@@ -69,21 +88,25 @@ fn is_known_iface_config_key(key: &str) -> bool {
         .any(|k| k.eq_ignore_ascii_case(key))
 }
 
-/// RF interface types whose RNode driver honors the `flow_control` TX ready-gate.
-/// Matches `SERIAL_PORT_IFACE_TYPES` (rnode / rnode_multi / kiss), covering USB,
-/// `ble://`, and `tcp://` RNode ports.
+/// Interface types whose driver honors the `flow_control` TX ready-gate
+/// (rnode / rnode_multi / kiss / ax25kiss), covering USB, `ble://`, and
+/// `tcp://` RNode ports. Plain `SerialInterface` has no flow-control key
+/// upstream, so it is serial-port-based but not flow-control capable.
 fn iface_type_supports_flow_control(iface_type: &str) -> bool {
-    SERIAL_PORT_IFACE_TYPES.contains(&iface_type)
+    INTERFACE_CATALOG
+        .get(iface_type)
+        .is_some_and(|e| e.supports_flow_control)
 }
 
 /// Default `flow_control` when adding/repairing an interface with the key absent.
-/// RF interfaces default on; all other types leave it unset.
+/// RNode-family interfaces default on (USB / BLE / Wi‑Fi). BLE NUS may not deliver
+/// `CMD_READY`; rsReticulum releases the one-packet permit after a short wait
+/// so FC paces bursts without freezing the host TX queue. AX.25 TNCs default off
+/// to match the upstream `AX25KISSInterface` default.
 pub(crate) fn default_flow_control_for_iface_type(iface_type: &str) -> Option<bool> {
-    if iface_type_supports_flow_control(iface_type) {
-        Some(true)
-    } else {
-        None
-    }
+    INTERFACE_CATALOG
+        .get(iface_type)
+        .and_then(|e| e.default_flow_control)
 }
 
 /// Normalize optional IFAC / free-text fields: whitespace-only → None.
@@ -128,12 +151,14 @@ pub fn normalize_interface_mode(raw: &str) -> Result<Option<String>, String> {
 }
 
 /// Recommended default `mode` when adding an interface with no explicit mode.
+/// Sourced from the shared catalog so `defaultModeForIfaceType` in
+/// `src/renderer/lib/reticulum/reticulumInterfaceCatalog.ts` cannot disagree.
 pub fn default_mode_for_iface_type(iface_type: &str) -> Option<&'static str> {
-    match iface_type {
-        "tcp" | "i2p" | "udp" => Some("boundary"),
-        "rnode" | "rnode_multi" => Some("access_point"),
-        _ => None,
-    }
+    let configured = INTERFACE_CATALOG.get(iface_type)?.default_mode.as_deref()?;
+    INTERFACE_MODES
+        .iter()
+        .copied()
+        .find(|mode| *mode == configured)
 }
 
 fn resolve_interface_mode(
@@ -322,7 +347,7 @@ fn collect_unsupported_warnings(parsed: &ParsedConfig) -> Vec<String> {
     let mut warnings = Vec::new();
     for block in &parsed.interfaces {
         if let Some(t) = block.get("type") {
-            if !SUPPORTED_TYPES.contains(&t) {
+            if !is_supported_config_type(t) {
                 warnings.push(format!(
                     "interface \"{}\" has unsupported type \"{t}\" (kept in config)",
                     block.name
@@ -363,7 +388,7 @@ fn interfaces_from_parsed(parsed: &ParsedConfig) -> Vec<InterfaceRow> {
 
 fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
     let raw_type = block.get("type")?;
-    if !SUPPORTED_TYPES.contains(&raw_type) {
+    if !is_supported_config_type(raw_type) {
         return None;
     }
     let iface_type = config_type_to_ui(raw_type)?;
@@ -386,11 +411,14 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
                 .map(str::to_string),
             None,
         )
+    } else if iface_type_uses_numeric_port(iface_type) {
+        // Catalog types binding INI `port` to `InterfaceRow::port` (e.g. local).
+        (None, block.get("port").and_then(|p| p.parse::<u16>().ok()))
     } else {
         (None, None)
     };
 
-    let serial_port = if SERIAL_PORT_IFACE_TYPES.contains(&iface_type) {
+    let serial_port = if iface_type_uses_serial_port(iface_type) {
         block.get("port").map(str::to_string)
     } else {
         None
@@ -452,6 +480,7 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
                 }
             }
         }),
+        runtime_mode: None,
         seed_addresses,
         discoverable: block.get_bool("discoverable"),
         latitude: block.get("latitude").and_then(|v| v.parse().ok()),
@@ -470,6 +499,7 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         } else {
             None
         },
+        ignore_config_warnings: block.get_bool("ignore_config_warnings"),
         tx_queue_used: None,
         tx_queue_max: None,
         extra_config: {
@@ -499,7 +529,20 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
         values: HashMap::new(),
         order: Vec::new(),
     };
-    block.set("type", &ui_type_to_config(&row.iface_type));
+    // Unreachable in practice: add/update validate against the catalog, and rows
+    // parsed from disk come from `interface_block_to_row`, which rejects unknown
+    // types. Echo the raw type rather than corrupting the block, but log loudly.
+    let config_type = ui_type_to_config(&row.iface_type).map_or_else(
+        || {
+            tracing::error!(
+                iface_type = %row.iface_type,
+                "writing interface block with uncatalogued type"
+            );
+            row.iface_type.clone()
+        },
+        str::to_string,
+    );
+    block.set("type", &config_type);
     if row.iface_type == "tcp" || row.iface_type == "udp" {
         block.set("interface_enabled", &bool_to_ini(row.enabled));
         block.set("name", &row.name);
@@ -526,9 +569,32 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
         write_rnode_radio_fields(&mut block, row);
     }
 
-    if SERIAL_PORT_IFACE_TYPES.contains(&row.iface_type.as_str()) && row.iface_type != "rnode" {
+    if iface_type_uses_serial_port(&row.iface_type) && row.iface_type != "rnode" {
         if let Some(port) = &row.serial_port {
             block.set("port", port);
+        }
+    }
+
+    if iface_type_uses_numeric_port(&row.iface_type) {
+        if let Some(port) = row.port {
+            block.set("port", &port.to_string());
+        }
+    }
+
+    // Generic catalog fields, in declaration order. Covers bound fields the
+    // legacy branches only write for their own type (`callsign` was RNode-only)
+    // and unbound fields carried in `extra_config`, so a new interface type
+    // needs no new write branch here.
+    for field in catalog_fields(&row.iface_type) {
+        if block.values.contains_key(&field.key) {
+            continue;
+        }
+        if let Some(value) = catalog_field_value(row, field) {
+            if ini_scalar_has_control_chars(&value) {
+                tracing::warn!(key = %field.key, "skipping catalog field with control characters");
+                continue;
+            }
+            block.set(&field.key, &value);
         }
     }
 
@@ -559,6 +625,9 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
         if let Some(v) = row.flow_control {
             block.set("flow_control", &bool_to_ini(v));
         }
+    }
+    if let Some(v) = row.ignore_config_warnings {
+        block.set("ignore_config_warnings", &bool_to_ini(v));
     }
 
     // Preserve unknown keys; typed fields take priority on key collision.
@@ -643,6 +712,63 @@ fn write_rnode_radio_fields(block: &mut IniBlock, row: &InterfaceRow) {
 
 const I2P_PEERS_MAX_LEN: usize = 512;
 const REACHABLE_ON_MAX_LEN: usize = 256;
+
+/// Resolve a catalog field's value on a row: bound fields read their typed
+/// `InterfaceRow` slot, unbound fields read `extra_config`.
+fn catalog_field_value(row: &InterfaceRow, field: &CatalogField) -> Option<String> {
+    match field.bind.as_deref() {
+        Some("serial_port") => row.serial_port.clone(),
+        Some("port") => row.port.map(|v| v.to_string()),
+        Some("host") => row.host.clone(),
+        Some("callsign") => row.callsign.clone(),
+        Some("flow_control") => row.flow_control.map(bool_to_ini),
+        _ => row.extra_config.get(&field.key).cloned(),
+    }
+    .map(|v| v.trim().to_string())
+    .filter(|v| !v.is_empty())
+}
+
+/// Enforce the shared catalog's `required` / `min` / `max` / `maxLength` /
+/// `options` constraints before writing. Mirrors
+/// `validateReticulumCatalogField` in the renderer so a bad value is rejected
+/// on both sides rather than failing later inside the RNS factory.
+fn validate_catalog_fields(row: &InterfaceRow) -> Result<(), String> {
+    for field in catalog_fields(&row.iface_type) {
+        let Some(value) = catalog_field_value(row, field) else {
+            if field.required {
+                return Err(format!("{} required", field.key));
+            }
+            continue;
+        };
+
+        if field.kind == "number" {
+            let parsed: i64 = value
+                .parse()
+                .map_err(|_| format!("{} must be a number", field.key))?;
+            if let Some(min) = field.min {
+                if parsed < min {
+                    return Err(format!("{} is below minimum {min}", field.key));
+                }
+            }
+            if let Some(max) = field.max {
+                if parsed > max {
+                    return Err(format!("{} is above maximum {max}", field.key));
+                }
+            }
+        }
+
+        if let Some(max_length) = field.max_length {
+            if value.chars().count() > max_length {
+                return Err(format!("{} exceeds {max_length} characters", field.key));
+            }
+        }
+
+        if field.kind == "select" && !field.options.is_empty() && !field.options.contains(&value) {
+            return Err(format!("{} has an unsupported value", field.key));
+        }
+    }
+    Ok(())
+}
 
 pub fn validate_lat_lon(lat: f64, lon: f64) -> Result<(), String> {
     if !lat.is_finite() || !(-90.0..=90.0).contains(&lat) {
@@ -744,7 +870,65 @@ fn apply_discovery_patch(
             validate_lat_lon(lat, lon)?;
         }
     }
+    reconcile_ignore_config_warnings(row);
     Ok(())
+}
+
+/// Map live `GetInterfaceStats.mode` Debug names (`AccessPoint`, `Full`, …)
+/// to canonical rnsd mode strings. Naive `to_lowercase()` is wrong
+/// (`AccessPoint` → `accesspoint`). Unknown / empty → `None`.
+pub(crate) fn live_interface_runtime_mode(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let canonical = match trimmed {
+        "Full" | "full" => "full",
+        "AccessPoint" | "access_point" | "ap" | "AP" => "access_point",
+        "PointToPoint" | "point_to_point" => "point_to_point",
+        "Roaming" | "roaming" => "roaming",
+        "Boundary" | "boundary" => "boundary",
+        "Gateway" | "gateway" | "gw" | "GW" => "gateway",
+        "Internal" | "internal" => "internal",
+        other => {
+            // Accept already-canonical values; reject Debug leftovers.
+            let lower = other.to_ascii_lowercase();
+            match lower.as_str() {
+                "full" | "access_point" | "point_to_point" | "roaming" | "boundary" | "gateway"
+                | "internal" => return Some(lower),
+                _ => return None,
+            }
+        }
+    };
+    Some(canonical.to_string())
+}
+
+/// Modes RNS allows for discoverable interfaces without `ignore_config_warnings`.
+fn mode_allows_discovery_without_opt_out(mode: &str) -> bool {
+    matches!(mode, "access_point" | "gateway")
+}
+
+/// Stamp or clear `ignore_config_warnings` so discoverable + Full/Roaming/Boundary
+/// keeps the configured mode (upstream RNS opt-out). Omitted mode does not write
+/// the flag (RNode type default is AP). Clear when discoverable is off or mode is
+/// already AP/Gateway. Unrecognized non-empty mode is left untouched.
+pub(crate) fn reconcile_ignore_config_warnings(row: &mut InterfaceRow) {
+    let discoverable = row.discoverable == Some(true);
+    let raw_mode = row.mode.as_deref().map(str::trim).filter(|m| !m.is_empty());
+    let Some(raw_mode) = raw_mode else {
+        row.ignore_config_warnings = None;
+        return;
+    };
+    let Ok(Some(canonical)) = normalize_interface_mode(raw_mode) else {
+        return;
+    };
+
+    let should_opt_out = discoverable && !mode_allows_discovery_without_opt_out(&canonical);
+    if should_opt_out {
+        row.ignore_config_warnings = Some(true);
+    } else {
+        row.ignore_config_warnings = None;
+    }
 }
 
 const I2P_B32_SUFFIX: &str = ".b32.i2p";
@@ -777,6 +961,9 @@ pub fn add_interface_to_config(
     config_dir: &Path,
     req: &AddInterfaceRequest,
 ) -> Result<InterfaceRow, String> {
+    if ui_type_to_config(&req.iface_type).is_none() {
+        return Err(format!("unsupported interface type: {}", req.iface_type));
+    }
     if req.iface_type == "i2p" {
         if let Some(ref host) = req.host {
             validate_i2p_peers(host)?;
@@ -825,6 +1012,7 @@ pub fn add_interface_to_config(
         callsign: req.callsign.clone(),
         id_interval: req.id_interval,
         mode,
+        runtime_mode: None,
         seed_addresses: req.seed_addresses.clone(),
         discoverable: req.discoverable,
         latitude: req.latitude,
@@ -840,12 +1028,15 @@ pub fn add_interface_to_config(
         flow_control: req
             .flow_control
             .or_else(|| default_flow_control_for_iface_type(&req.iface_type)),
+        ignore_config_warnings: req.ignore_config_warnings,
         tx_queue_used: None,
         tx_queue_max: None,
         extra_config: req.extra_config.clone(),
     };
 
     apply_preset_defaults(&mut row);
+    reconcile_ignore_config_warnings(&mut row);
+    validate_catalog_fields(&row)?;
 
     let content = read_config(config_dir)?;
     let mut parsed = parse_config(&content)?;
@@ -883,6 +1074,9 @@ pub fn update_interface_in_config(
         row.name = v.clone();
     }
     if let Some(v) = &patch.iface_type {
+        if ui_type_to_config(v).is_none() {
+            return Err(format!("unsupported interface type: {v}"));
+        }
         row.iface_type = v.clone();
     }
     if let Some(v) = patch.enabled {
@@ -960,9 +1154,14 @@ pub fn update_interface_in_config(
         apply_preset_defaults(&mut row);
     }
 
+    // Mode / discoverable may have changed outside apply_discovery_patch (mode
+    // patch, or discovery fields omitted). Always reconcile before write.
+    reconcile_ignore_config_warnings(&mut row);
+
     if row.iface_type == "i2p" {
         validate_i2p_peers(row.host.as_deref().unwrap_or(""))?;
     }
+    validate_catalog_fields(&row)?;
 
     parsed.interfaces[idx] = interface_row_to_block(&row);
     write_config(config_dir, &serialize_config(&parsed))?;
@@ -1080,6 +1279,32 @@ pub fn repair_rnode_radio_fields_in_config(config_dir: &Path) -> Result<bool, St
         apply_preset_defaults(&mut row);
         *block = interface_row_to_block(&row);
         changed = true;
+    }
+    if changed {
+        write_config(config_dir, &serialize_config(&parsed))?;
+    }
+    Ok(changed)
+}
+
+/// Stamp `ignore_config_warnings` on discoverable interfaces whose configured
+/// mode would be silently rewritten to Access Point / Gateway by RNS. Also
+/// clears a stale opt-out when mode is already AP/Gateway or publish is off.
+/// Runs at stack start so existing Full+publish configs get the key before RNS
+/// reads the INI. Explicit `No` on Full+discoverable is overwritten (B1 honor).
+pub fn repair_ignore_config_warnings_in_config(config_dir: &Path) -> Result<bool, String> {
+    let content = read_config(config_dir)?;
+    let mut parsed = parse_config(&content)?;
+    let mut changed = false;
+    for block in &mut parsed.interfaces {
+        let Some(mut row) = interface_block_to_row(block) else {
+            continue;
+        };
+        let before = row.ignore_config_warnings;
+        reconcile_ignore_config_warnings(&mut row);
+        if row.ignore_config_warnings != before {
+            *block = interface_row_to_block(&row);
+            changed = true;
+        }
     }
     if changed {
         write_config(config_dir, &serialize_config(&parsed))?;
@@ -1291,33 +1516,15 @@ pub fn interface_id_from_name(name: &str) -> String {
 }
 
 fn config_type_to_ui(raw: &str) -> Option<&'static str> {
-    match raw {
-        "AutoInterface" => Some("auto"),
-        "TCPClientInterface" => Some("tcp"),
-        "RNodeInterface" => Some("rnode"),
-        "UDPInterface" => Some("udp"),
-        "KISSInterface" => Some("kiss"),
-        "PipeInterface" => Some("pipe"),
-        "I2PInterface" => Some("i2p"),
-        "RNodeMultiInterface" => Some("rnode_multi"),
-        "BlePeerInterface" => Some("ble_peer"),
-        _ => None,
-    }
+    INTERFACE_CATALOG.ui_type_for_config_type(raw)
 }
 
-fn ui_type_to_config(ui: &str) -> String {
-    match ui {
-        "auto" => "AutoInterface".into(),
-        "tcp" => "TCPClientInterface".into(),
-        "rnode" => "RNodeInterface".into(),
-        "udp" => "UDPInterface".into(),
-        "kiss" => "KISSInterface".into(),
-        "pipe" => "PipeInterface".into(),
-        "i2p" => "I2PInterface".into(),
-        "rnode_multi" => "RNodeMultiInterface".into(),
-        "ble_peer" => "BlePeerInterface".into(),
-        other => other.to_string(),
-    }
+/// UI type → RNS `type =` value. Returns `None` for an unknown type rather than
+/// echoing it back: a verbatim write would be silently dropped on the next parse
+/// (`interface_block_to_row` rejects types outside the catalog), leaving a config
+/// block the user can see on disk but never edit or delete from the UI.
+fn ui_type_to_config(ui: &str) -> Option<&'static str> {
+    INTERFACE_CATALOG.config_type_for_ui_type(ui)
 }
 
 fn bool_to_ini(v: bool) -> String {
@@ -1632,6 +1839,30 @@ fn default_config_content() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Unique temp config dir seeded with an empty `[interfaces]` section.
+    fn test_config_dir(label: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "mesh-client-reticulum-{label}-{}",
+            uuid::Uuid::new_v4()
+        ));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"
+[reticulum]
+enable_transport = Yes
+share_instance = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+"#,
+        )
+        .unwrap();
+        dir
+    }
 
     const SAMPLE: &str = r#"[reticulum]
 enable_transport = No
@@ -2262,6 +2493,256 @@ loglevel = 4
         let _ = fs::remove_dir_all(&dir);
     }
 
+    /// Catalog fields without a `bind` ride in `extra_config`. Adding one of
+    /// their keys to `KNOWN_IFACE_CONFIG_KEYS` would strip it on the next
+    /// round trip, so the two lists must stay disjoint.
+    #[test]
+    fn unbound_catalog_fields_stay_in_extra_config() {
+        for ui in INTERFACE_CATALOG.ui_types() {
+            for field in catalog_fields(ui) {
+                if field.bind.is_none() {
+                    assert!(
+                        !is_known_iface_config_key(&field.key),
+                        "{ui}.{} is unbound but listed in KNOWN_IFACE_CONFIG_KEYS",
+                        field.key
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn rejects_uncatalogued_interface_type_on_add() {
+        let dir = test_config_dir("uncatalogued");
+        let err = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "definitely_not_real".into(),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(err.contains("unsupported interface type"), "{err}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn add_serial_interface_round_trips_port_and_line_params() {
+        let dir = test_config_dir("serial-add");
+        let mut extra = HashMap::new();
+        extra.insert("speed".to_string(), "115200".to_string());
+        extra.insert("parity".to_string(), "E".to_string());
+
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "serial".into(),
+                name: Some("Wire Link".into()),
+                serial_port: Some("/dev/ttyUSB1".into()),
+                extra_config: extra,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(row.iface_type, "serial");
+        assert_eq!(row.serial_port.as_deref(), Some("/dev/ttyUSB1"));
+        // SerialInterface has no upstream flow_control key.
+        assert_eq!(row.flow_control, None);
+
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("type = SerialInterface"), "{content}");
+        assert!(content.contains("port = /dev/ttyUSB1"), "{content}");
+        assert!(content.contains("speed = 115200"), "{content}");
+        assert!(content.contains("parity = E"), "{content}");
+        assert!(!content.contains("flow_control"), "{content}");
+
+        let reparsed = interfaces_from_config_dir(&dir).unwrap();
+        let parsed = reparsed.iter().find(|i| i.name == "Wire Link").unwrap();
+        assert_eq!(parsed.iface_type, "serial");
+        assert_eq!(parsed.serial_port.as_deref(), Some("/dev/ttyUSB1"));
+        assert_eq!(
+            parsed.extra_config.get("speed").map(String::as_str),
+            Some("115200")
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn add_ax25kiss_interface_writes_callsign_and_ssid() {
+        let dir = test_config_dir("ax25-add");
+        let mut extra = HashMap::new();
+        extra.insert("ssid".to_string(), "7".to_string());
+
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "ax25kiss".into(),
+                name: Some("Packet TNC".into()),
+                serial_port: Some("/dev/ttyACM0".into()),
+                callsign: Some("KD5IHC".into()),
+                extra_config: extra,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(row.iface_type, "ax25kiss");
+        assert_eq!(row.callsign.as_deref(), Some("KD5IHC"));
+        // Upstream AX25KISSInterface defaults flow control off, unlike RNode.
+        assert_eq!(row.flow_control, Some(false));
+
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("type = AX25KISSInterface"), "{content}");
+        assert!(content.contains("port = /dev/ttyACM0"), "{content}");
+        assert!(content.contains("callsign = KD5IHC"), "{content}");
+        assert!(content.contains("ssid = 7"), "{content}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ax25kiss_requires_callsign_and_ssid() {
+        let dir = test_config_dir("ax25-required");
+        let err = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "ax25kiss".into(),
+                name: Some("No Call".into()),
+                serial_port: Some("/dev/ttyACM0".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(err.contains("callsign"), "{err}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ax25kiss_rejects_ssid_outside_0_15() {
+        for bad in ["16", "-1", "99"] {
+            let dir = test_config_dir("ax25-ssid");
+            let mut extra = HashMap::new();
+            extra.insert("ssid".to_string(), bad.to_string());
+            let err = add_interface_to_config(
+                &dir,
+                &AddInterfaceRequest {
+                    iface_type: "ax25kiss".into(),
+                    name: Some("Bad SSID".into()),
+                    serial_port: Some("/dev/ttyACM0".into()),
+                    callsign: Some("KD5IHC".into()),
+                    extra_config: extra,
+                    ..Default::default()
+                },
+            )
+            .unwrap_err();
+            assert!(err.contains("ssid"), "ssid {bad} accepted: {err}");
+            let _ = fs::remove_dir_all(&dir);
+        }
+    }
+
+    #[test]
+    fn ax25kiss_accepts_ssid_bounds() {
+        for good in ["0", "15"] {
+            let dir = test_config_dir("ax25-ssid-ok");
+            let mut extra = HashMap::new();
+            extra.insert("ssid".to_string(), good.to_string());
+            let row = add_interface_to_config(
+                &dir,
+                &AddInterfaceRequest {
+                    iface_type: "ax25kiss".into(),
+                    name: Some("Edge SSID".into()),
+                    serial_port: Some("/dev/ttyACM0".into()),
+                    callsign: Some("KD5IHC".into()),
+                    extra_config: extra,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+            assert_eq!(row.iface_type, "ax25kiss");
+            let _ = fs::remove_dir_all(&dir);
+        }
+    }
+
+    #[test]
+    fn ax25kiss_rejects_overlong_callsign() {
+        let dir = test_config_dir("ax25-callsign");
+        let mut extra = HashMap::new();
+        extra.insert("ssid".to_string(), "0".to_string());
+        let err = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "ax25kiss".into(),
+                name: Some("Long Call".into()),
+                serial_port: Some("/dev/ttyACM0".into()),
+                callsign: Some("TOOLONGCALL".into()),
+                extra_config: extra,
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(err.contains("callsign"), "{err}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    /// `local` binds INI `port` to the numeric `InterfaceRow::port`, unlike the
+    /// serial types where `port` is a device path.
+    #[test]
+    fn add_local_interface_round_trips_numeric_port() {
+        let dir = test_config_dir("local-add");
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "local".into(),
+                name: Some("Shared Socket".into()),
+                port: Some(37429),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(row.iface_type, "local");
+        assert_eq!(row.port, Some(37429));
+        assert_eq!(row.serial_port, None);
+
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("type = LocalInterface"), "{content}");
+        assert!(content.contains("port = 37429"), "{content}");
+
+        let reparsed = interfaces_from_config_dir(&dir).unwrap();
+        let parsed = reparsed.iter().find(|i| i.name == "Shared Socket").unwrap();
+        assert_eq!(parsed.port, Some(37429));
+        assert_eq!(parsed.serial_port, None);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn local_interface_port_accepts_omission() {
+        let dir = test_config_dir("local-default");
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "local".into(),
+                name: Some("Default Socket".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        // Port is optional; RNS falls back to LOCAL_INTERFACE_PORT (37428).
+        assert_eq!(row.port, None);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn new_types_classify_for_egress_badges() {
+        use crate::stack::via::classify_interface_row;
+        assert_eq!(classify_interface_row("serial", "Wire Link", None), "rf");
+        assert_eq!(classify_interface_row("ax25kiss", "Packet TNC", None), "rf");
+        assert_eq!(
+            classify_interface_row("local", "Shared Socket", None),
+            "tcp"
+        );
+    }
+
     #[test]
     fn discovery_fields_round_trip_rnode_and_i2p() {
         let content = r#"
@@ -2589,6 +3070,7 @@ target_port = 4242
             callsign: None,
             id_interval: None,
             mode: None,
+            runtime_mode: None,
             seed_addresses: Vec::new(),
             discoverable: None,
             latitude: None,
@@ -2601,6 +3083,7 @@ target_port = 4242
             network_name: None,
             passphrase: None,
             flow_control: None,
+            ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
             extra_config: {
@@ -3203,5 +3686,474 @@ target_port = 4242
         let disk = read_config(&dir).unwrap();
         assert!(!disk.contains("flow_control"), "{disk}");
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ignore_config_warnings_key_is_known() {
+        assert!(is_known_iface_config_key("ignore_config_warnings"));
+        assert!(is_known_iface_config_key("Ignore_Config_Warnings"));
+    }
+
+    #[test]
+    fn live_interface_runtime_mode_maps_debug_names() {
+        let cases = [
+            ("Full", Some("full")),
+            ("AccessPoint", Some("access_point")),
+            ("PointToPoint", Some("point_to_point")),
+            ("Roaming", Some("roaming")),
+            ("Boundary", Some("boundary")),
+            ("Gateway", Some("gateway")),
+            ("Internal", Some("internal")),
+            ("full", Some("full")),
+            ("access_point", Some("access_point")),
+            ("ap", Some("access_point")),
+            ("", None),
+            ("   ", None),
+            ("NotAMode", None),
+            // Naive to_lowercase would produce "accesspoint" — must not match.
+            ("accesspoint", None),
+        ];
+        for (raw, expected) in cases {
+            assert_eq!(
+                live_interface_runtime_mode(raw).as_deref(),
+                expected,
+                "raw={raw:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn ignore_config_warnings_parsed_as_typed_not_extra_config() {
+        let content = r#"
+[interfaces]
+[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+mode = full
+discoverable = Yes
+ignore_config_warnings = Yes
+"#;
+        let rows = interfaces_from_parsed(&parse_config(content).unwrap());
+        let rnode = rows.iter().find(|r| r.iface_type == "rnode").unwrap();
+        assert_eq!(rnode.ignore_config_warnings, Some(true));
+        assert!(!rnode.extra_config.contains_key("ignore_config_warnings"));
+    }
+
+    #[test]
+    fn ignore_config_warnings_round_trips() {
+        for (value, expected_ini) in [
+            (true, "ignore_config_warnings = Yes"),
+            (false, "ignore_config_warnings = No"),
+        ] {
+            let dir = fresh_config_dir();
+            let added = add_interface_to_config(
+                &dir,
+                &AddInterfaceRequest {
+                    iface_type: "rnode".into(),
+                    name: Some("RNode".into()),
+                    serial_port: Some("/dev/ttyUSB0".into()),
+                    callsign: Some("N0CALL".into()),
+                    mode: Some("full".into()),
+                    discoverable: Some(true),
+                    latitude: Some(40.0),
+                    longitude: Some(-105.0),
+                    ignore_config_warnings: Some(value),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+            // add_interface reconciles to Some(true) for Full+discoverable regardless
+            // of the request's false — B1 always stamps Yes when needed.
+            let disk = read_config(&dir).unwrap();
+            if value {
+                assert!(disk.contains(expected_ini), "{disk}");
+            } else {
+                // reconcile overwrites explicit No on Full+discoverable.
+                assert!(disk.contains("ignore_config_warnings = Yes"), "{disk}");
+            }
+            let rows = interfaces_from_config_dir(&dir).unwrap();
+            let row = rows.iter().find(|r| r.id == added.id).unwrap();
+            assert_eq!(row.ignore_config_warnings, Some(true));
+            assert!(!row.extra_config.contains_key("ignore_config_warnings"));
+            let _ = fs::remove_dir_all(&dir);
+        }
+    }
+
+    #[test]
+    fn reconcile_stamps_for_full_discoverable_clears_for_ap() {
+        let mut row = InterfaceRow {
+            id: "x".into(),
+            name: "RNode".into(),
+            iface_type: "rnode".into(),
+            enabled: true,
+            status: "up".into(),
+            host: None,
+            port: None,
+            preset: None,
+            serial_port: Some("/dev/ttyUSB0".into()),
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: Some("full".into()),
+            runtime_mode: None,
+            seed_addresses: Vec::new(),
+            discoverable: Some(true),
+            latitude: Some(40.0),
+            longitude: Some(-105.0),
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            flow_control: Some(true),
+            ignore_config_warnings: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
+            extra_config: HashMap::new(),
+        };
+        reconcile_ignore_config_warnings(&mut row);
+        assert_eq!(row.ignore_config_warnings, Some(true));
+
+        for mode in ["roaming", "boundary", "point_to_point"] {
+            row.mode = Some(mode.into());
+            row.ignore_config_warnings = None;
+            reconcile_ignore_config_warnings(&mut row);
+            assert_eq!(
+                row.ignore_config_warnings,
+                Some(true),
+                "mode={mode} should stamp opt-out"
+            );
+        }
+
+        row.mode = Some("access_point".into());
+        reconcile_ignore_config_warnings(&mut row);
+        assert_eq!(row.ignore_config_warnings, None);
+
+        row.mode = Some("gateway".into());
+        row.ignore_config_warnings = Some(true);
+        reconcile_ignore_config_warnings(&mut row);
+        assert_eq!(row.ignore_config_warnings, None);
+
+        row.mode = Some("full".into());
+        row.discoverable = Some(false);
+        row.ignore_config_warnings = Some(true);
+        reconcile_ignore_config_warnings(&mut row);
+        assert_eq!(row.ignore_config_warnings, None);
+
+        // Omitted mode (RNode default AP) must not stamp.
+        row.mode = None;
+        row.discoverable = Some(true);
+        row.ignore_config_warnings = Some(true);
+        reconcile_ignore_config_warnings(&mut row);
+        assert_eq!(row.ignore_config_warnings, None);
+    }
+
+    #[test]
+    fn update_discovery_stamps_and_clears_ignore_config_warnings() {
+        let dir = fresh_config_dir();
+        let added = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "rnode".into(),
+                name: Some("RNode".into()),
+                serial_port: Some("/dev/ttyUSB0".into()),
+                callsign: Some("N0CALL".into()),
+                mode: Some("full".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(added.ignore_config_warnings, None);
+
+        let updated = update_interface_in_config(
+            &dir,
+            &added.id,
+            &UpdateInterfacePatch {
+                discoverable: Some(true),
+                latitude: Some(40.0),
+                longitude: Some(-105.0),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(updated.ignore_config_warnings, Some(true));
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("ignore_config_warnings = Yes"), "{disk}");
+
+        let cleared = update_interface_in_config(
+            &dir,
+            &added.id,
+            &UpdateInterfacePatch {
+                discoverable: Some(false),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(cleared.ignore_config_warnings, None);
+        let disk = read_config(&dir).unwrap();
+        assert!(!disk.contains("ignore_config_warnings"), "{disk}");
+
+        // Gateway + discoverable does not need the opt-out.
+        let gw = update_interface_in_config(
+            &dir,
+            &added.id,
+            &UpdateInterfacePatch {
+                mode: Some("gateway".into()),
+                discoverable: Some(true),
+                latitude: Some(40.0),
+                longitude: Some(-105.0),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(gw.ignore_config_warnings, None);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn update_preserves_extra_config_when_stamping_ignore_warnings() {
+        let dir = fresh_config_dir();
+        write_config(
+            &dir,
+            r#"[interfaces]
+[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+mode = full
+forward_interval = 300
+"#,
+        )
+        .unwrap();
+        let id = interface_id_from_name("LoRa");
+        update_interface_in_config(
+            &dir,
+            &id,
+            &UpdateInterfacePatch {
+                discoverable: Some(true),
+                latitude: Some(40.0),
+                longitude: Some(-105.0),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("ignore_config_warnings = Yes"), "{disk}");
+        assert!(disk.contains("forward_interval = 300"), "{disk}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_ignore_config_warnings_stamps_full_discoverable() {
+        let dir = fresh_config_dir();
+        write_config(
+            &dir,
+            r#"[interfaces]
+[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+mode = full
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+"#,
+        )
+        .unwrap();
+        assert!(repair_ignore_config_warnings_in_config(&dir).unwrap());
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("ignore_config_warnings = Yes"), "{disk}");
+        assert!(!repair_ignore_config_warnings_in_config(&dir).unwrap());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_ignore_config_warnings_skips_ap_discoverable() {
+        let dir = fresh_config_dir();
+        write_config(
+            &dir,
+            r#"[interfaces]
+[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+mode = access_point
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+"#,
+        )
+        .unwrap();
+        assert!(!repair_ignore_config_warnings_in_config(&dir).unwrap());
+        let disk = read_config(&dir).unwrap();
+        assert!(!disk.contains("ignore_config_warnings"), "{disk}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_ignore_config_warnings_clears_stale_yes_on_ap() {
+        let dir = fresh_config_dir();
+        write_config(
+            &dir,
+            r#"[interfaces]
+[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+mode = access_point
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+ignore_config_warnings = Yes
+"#,
+        )
+        .unwrap();
+        assert!(repair_ignore_config_warnings_in_config(&dir).unwrap());
+        let disk = read_config(&dir).unwrap();
+        assert!(!disk.contains("ignore_config_warnings"), "{disk}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_ignore_config_warnings_overwrites_explicit_no_on_full_discoverable() {
+        let dir = fresh_config_dir();
+        write_config(
+            &dir,
+            r#"[interfaces]
+[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+mode = full
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+ignore_config_warnings = No
+"#,
+        )
+        .unwrap();
+        assert!(repair_ignore_config_warnings_in_config(&dir).unwrap());
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("ignore_config_warnings = Yes"), "{disk}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_ignore_config_warnings_leaves_tcp_untouched() {
+        let dir = fresh_config_dir();
+        write_config(
+            &dir,
+            r#"[interfaces]
+[[Hub]]
+type = TCPClientInterface
+interface_enabled = Yes
+name = Hub
+target_host = example.org
+target_port = 4242
+mode = boundary
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+"#,
+        )
+        .unwrap();
+        // Boundary + discoverable would stamp on any type; TCP is allowed to stamp too
+        // per reconcile (not RF-gated). Assert it does stamp so behavior is documented.
+        assert!(repair_ignore_config_warnings_in_config(&dir).unwrap());
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("ignore_config_warnings = Yes"), "{disk}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn tcp_discoverable_boundary_stamps_opt_out() {
+        // Non-RF types still get the opt-out when mode would be autocorrected.
+        let mut row = InterfaceRow {
+            id: "tcp".into(),
+            name: "Hub".into(),
+            iface_type: "tcp".into(),
+            enabled: true,
+            status: "up".into(),
+            host: Some("example.org".into()),
+            port: Some(4242),
+            preset: None,
+            serial_port: None,
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: Some("boundary".into()),
+            runtime_mode: None,
+            seed_addresses: Vec::new(),
+            discoverable: Some(true),
+            latitude: Some(1.0),
+            longitude: Some(2.0),
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            flow_control: None,
+            ignore_config_warnings: None,
+            tx_queue_used: None,
+            tx_queue_max: None,
+            extra_config: HashMap::new(),
+        };
+        reconcile_ignore_config_warnings(&mut row);
+        assert_eq!(row.ignore_config_warnings, Some(true));
+    }
+
+    #[test]
+    fn reconcile_unrecognized_mode_preserves_existing_opt_out() {
+        let mut row = InterfaceRow {
+            id: "rnode".into(),
+            name: "LoRa".into(),
+            iface_type: "rnode".into(),
+            enabled: true,
+            status: "up".into(),
+            host: None,
+            port: None,
+            preset: None,
+            serial_port: Some("/dev/ttyUSB0".into()),
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: Some("not_a_real_mode".into()),
+            runtime_mode: None,
+            seed_addresses: Vec::new(),
+            discoverable: Some(true),
+            latitude: Some(40.0),
+            longitude: Some(-105.0),
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            flow_control: None,
+            ignore_config_warnings: Some(true),
+            tx_queue_used: None,
+            tx_queue_max: None,
+            extra_config: HashMap::new(),
+        };
+        reconcile_ignore_config_warnings(&mut row);
+        assert_eq!(row.ignore_config_warnings, Some(true));
     }
 }

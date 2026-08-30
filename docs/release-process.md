@@ -47,7 +47,7 @@ Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) ru
 1. (Optional) Run once with **dry_run** checked to confirm the computed version in the job summary (`feat(scope):` → minor, etc.).
 2. Re-run with dry_run unchecked. Default bump is **auto**; override with `patch` / `minor` / `major` / exact `X.Y.Z` when needed.
 3. **skip_dep_update** defaults to **true** — bump dependencies in a normal PR via `pnpm run update` before cutting.
-4. The workflow sets `MESH_CLIENT_RELEASE_YES=1` (non-interactive). Locally use `pnpm run release -- --yes` or the same env var.
+4. The workflow sets `MESH_CLIENT_RELEASE_YES=1` (non-interactive). Locally use `pnpm run release --yes` or the same env var.
 5. Wait for `release.yaml` + `flatpak.yaml` to attach draft artifacts, then **Publish** on GitHub.
 
 **Secret:** `RELEASE_PUSH_TOKEN` — fine-grained PAT (or GitHub App installation token) owned by a repo **admin** (so the merge-queue ruleset bypass applies), with **contents: write**, **workflows: write**, and **pull requests: write** (also used by `third-party-licenses.yaml` so bot PRs run required checks). Plain `GITHUB_TOKEN` cannot trigger tag workflows, cannot push past the ruleset, and cannot open check-running license PRs.
@@ -73,20 +73,21 @@ Local `scripts/release.sh` remains for emergencies when Actions is unavailable. 
 ```bash
 git checkout main
 git pull origin main
-pnpm run release                                  # auto-detect bump from commits since last tag
-pnpm run release minor                            # force minor
-pnpm run release 5.21.0                           # force exact version
-pnpm run release --auto                           # explicit auto-detect
-pnpm run release --finish                         # complete a mid-release after package.json was already bumped
-pnpm run release -- --yes                         # non-interactive (skip both confirmation prompts)
-pnpm run release -- --yes --skip-dep-update patch # CI-style: no pnpm update
-MESH_CLIENT_RELEASE_YES=1 pnpm run release        # same as --yes (avoids pnpm's own -y)
+pnpm run release                               # auto-detect bump from commits since last tag
+pnpm run release minor                         # force minor
+pnpm run release 5.21.0                        # force exact version
+pnpm run release --auto                        # explicit auto-detect
+pnpm run release --finish                      # complete a mid-release after package.json was already bumped
+pnpm run release --yes                         # non-interactive (skip both confirmation prompts)
+pnpm run release --yes --skip-dep-update patch # CI-style: no pnpm update
+MESH_CLIENT_RELEASE_YES=1 pnpm run release     # same as --yes (avoids pnpm's own -y)
 # Invalid: --auto cannot be combined with patch|minor|major|x.x.x
+# Note: `pnpm run release -- minor` is fine — pnpm 11 forwards bare `--`; release.sh ignores it.
 ```
 
-The script prompts twice by default (start pre-flight, then confirm after checks pass). Pass **`-- --yes`** after `pnpm run release` (or set `MESH_CLIENT_RELEASE_YES=1`) to skip those prompts — useful for automation. Use `--` so pnpm does not swallow `-y`/`--yes`. **`--auto` plus an explicit bump is rejected.** **Expect several minutes** for the full validation chain.
+The script prompts twice by default (start pre-flight, then confirm after checks pass). Pass **`--yes`** after `pnpm run release` (or set `MESH_CLIENT_RELEASE_YES=1`) to skip those prompts — useful for automation. **`--auto` plus an explicit bump is rejected.** **Expect several minutes** for the full validation chain.
 
-**Full suite only:** Release must never use `test:staged`, `test:changed`, or `vitest related`. Pre-commit may run a staged subset for speed; release matches PR CI by running the unrestricted `pnpm run test:run` (`vitest run`) and does not soft-skip actionlint/yamllint when those tools are missing.
+**Full suite only:** Release must never use `test:staged`, `test:changed`, or `vitest related`. Pre-commit and pull-request CI may run affected subsets for speed; release matches protected merge-queue CI by running the unrestricted `pnpm run test:run` (`vitest run`) and does not soft-skip actionlint/yamllint when those tools are missing.
 
 If pre-flight fails, fix the issue on `main` and cut again — do not tag manually until checks pass.
 
@@ -182,7 +183,7 @@ After builds finish, **`packaging-smoke`** runs on:
 - macOS — `verify-mac-packaging.mjs` (includes bundled Reticulum sidecar in `.app`)
 - Linux — `verify-linux-packaging.mjs` plus `test-linux-appimage-reticulum-sidecar.mjs` (extracts x64/arm64 AppImages and asserts sidecar). **`verify-linux-packaging.mjs`** also asserts each `.deb` **Description** field is ASCII-only (no mojibake `??`) via `dpkg-deb -f` — non-ASCII control metadata breaks some package managers and mirrors.
 - Windows x64 — NSIS install smoke test (`test-win-nsis-install.mjs`, asserts sidecar after install)
-- **`windows-11-arm`** — arm64 NSIS install smoke test with 7z probe (asserts sidecar inside installer payload and after install)
+- **`windows-11-vs2026-arm`** — arm64 NSIS install smoke test with 7z probe (asserts sidecar inside installer payload and after install). Uses GitHub's advance-testing WoA runner ahead of the Sept 2026 VS 2026 rollout on `windows-11-arm`.
 
 Build jobs also run `verify-reticulum-sidecar-staged.mjs` after staging sidecars and before `electron-builder`.
 
@@ -208,7 +209,8 @@ Both tag-triggered workflows must complete before the release is fully populated
 
 1. Go to GitHub → **Releases**
 2. Open the new **draft** for the version tag
-3. Confirm artifacts:
+3. Confirm the release **tag** is `vX.Y.Z` (not `untagged-*` — a wrong tag breaks the in-app updater footer)
+4. Confirm artifacts:
 
 | Platform      | Artifacts                                                                                   |
 | ------------- | ------------------------------------------------------------------------------------------- |
@@ -275,7 +277,8 @@ Release notes “Breaking Changes” use the same subject bang + footer rules (n
 ### Duplicate draft releases for one tag
 
 - Historically caused when parallel `dist:*:publish` / softprops jobs each `POST`ed a draft after a List Releases miss. Current CI: only `prepare-github-release` may create (`MESH_CLIENT_ALLOW_DRAFT_CREATE=1`); builds/Flatpak upload by id; Flatpak waits with `ci-wait-github-draft-release.mjs`.
-- **Finalize PATCH 403 (`Resource not accessible by integration`):** Actions `GITHUB_TOKEN` cannot PATCH `target_commitish` when the tagged commit differs in `.github/workflows/` from the default branch. Consolidation skips that field. After assets are merged, only metadata PATCH **HTTP 403** is non-fatal; any other status should fail the job and be investigated.
+- **`finalize-github-release`** runs consolidation then **`ci-verify-github-draft-release.mjs`**, which **fails the workflow** if the draft `tag_name` is still `untagged-*`. Do not publish until that job is green and the draft tag shows `vX.Y.Z`.
+- **Finalize PATCH 403 (`Resource not accessible by integration`):** Actions `GITHUB_TOKEN` cannot PATCH `target_commitish` when the tagged commit differs in `.github/workflows/` from the default branch. Consolidation retries tag repair with `RELEASE_PUSH_TOKEN` when set; tag repair must succeed or the verify step fails.
 - **Assets still split (external fork):** `finalize-github-release` merges via `ci-ensure-github-draft-release.mjs`; outside CI run `node scripts/consolidate-github-release-duplicates.mjs --tag vX.Y.Z` (requires `GH_TOKEN`).
 - **Do not force-move the `v*` tag while a release workflow is in progress.** Retagging starts another run and (with workflow concurrency) cancels the in-flight build; smoke jobs also assume a stable workflow `github.sha`.
 - **Smoke tests fail with “ref does not point to the expected commit”:** the tag was moved after the workflow started. Re-run failed jobs only after the tag matches the run’s `headSha`, or merge the checkout `ref: ${{ github.sha }}` fix and trigger a fresh tag run.

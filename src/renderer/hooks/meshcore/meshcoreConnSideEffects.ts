@@ -22,7 +22,10 @@ import type { DeviceLogEntry, MeshCoreConnection } from '../../lib/meshcore/mesh
 import { createMeshcoreMqttPacketLogBucket } from '../../lib/meshcore/meshcoreMqttPacketLogThrottle';
 import { handleMeshcoreRfRx, type MeshcoreRfRxDeps } from '../../lib/meshcore/meshcoreRfRxRuntime';
 import { processMeshcoreWaitingMessageItem } from '../../lib/meshcoreProcessWaitingMessageItem';
+import { resetMeshcoreRepeaterRpcInFlightOnDisconnect } from '../../lib/meshcoreRepeaterRpcInFlight';
 import { meshcoreSortedStorePrior } from '../../lib/meshcoreStoreDedup';
+import { resetMeshcoreTracePathMultiplexOnDisconnect } from '../../lib/meshcoreTracePathMultiplex';
+import { meshcoreIsPlaceholderNodeLongName } from '../../lib/meshcoreUtils';
 import {
   normalizeMeshcoreWaitingMessageBatch,
   normalizeMeshcoreWaitingMessageItem,
@@ -43,7 +46,7 @@ import {
   resetMeshcoreWaitingMessagesDrainSchedule,
   scheduleMeshcoreWaitingMessagesDrain,
   shouldActivateWaitingMessagesBanner,
-  shouldSkipMeshcoreSilentBulkGetWaitingMessages,
+  shouldPreferMeshcoreSilentIncrementalDrain,
   waitingMessagesDrainTimeoutMs,
 } from '../../lib/meshcoreWaitingMessagesDrain';
 import type { DomainEvent } from '../../lib/protocols/Protocol';
@@ -65,11 +68,13 @@ import { MAX_DEVICE_LOGS, meshcoreDmAckKeyU32 } from './meshcoreHookPreamble';
 import {
   getMeshcoreProcessWaitingMessagesInFlight,
   requestMeshcoreWaitingMessagesFollowUp,
+  requestMeshcoreWaitingMessagesForceFollowUp,
   requestMeshcoreWaitingMessagesManualFollowUp,
   resetMeshcoreProcessWaitingMessagesSync,
   resetMeshcoreWaitingMessagesSilentFollowUpChain,
   setMeshcoreProcessWaitingMessagesInFlight,
   takeMeshcoreWaitingMessagesFollowUp,
+  takeMeshcoreWaitingMessagesForceFollowUp,
   takeMeshcoreWaitingMessagesManualFollowUp,
 } from './meshcoreWaitingMessagesSyncState';
 
@@ -114,8 +119,9 @@ interface MeshcoreWaitingMessagesDrainState {
 
 /**
  * Waiting-drain mutations are last_heard (+ optional channel display-name). Rebuild patches
- * against the live store row so concurrent RF SNR/RSSI writes aren't overwritten by the
- * start-of-drain `workingNodes` snapshot.
+ * against the live store row so concurrent RF SNR/RSSI / advert-name writes aren't overwritten
+ * by the start-of-drain `workingNodes` snapshot. Only apply snapshot names when live is empty
+ * or a Node-HEX placeholder (channel enrichment upgrades placeholders only).
  */
 function collectDirtyWaitingNodeRecords(
   identityId: string,
@@ -136,10 +142,20 @@ function collectDirtyWaitingNodeRecords(
     const patch: NodeRecord = { nodeId, lastHeardAt: nextLastHeard };
     const workingLong = working.long_name?.trim();
     const workingShort = working.short_name?.trim();
-    if (workingLong && workingLong !== (live.longName ?? '').trim()) {
+    const liveLong = (live.longName ?? '').trim();
+    const liveShort = (live.shortName ?? '').trim();
+    if (
+      workingLong &&
+      workingLong !== liveLong &&
+      (!liveLong || meshcoreIsPlaceholderNodeLongName(liveLong, nodeId))
+    ) {
       patch.longName = workingLong;
     }
-    if (workingShort && workingShort !== (live.shortName ?? '').trim()) {
+    if (
+      workingShort &&
+      workingShort !== liveShort &&
+      (!liveShort || meshcoreIsPlaceholderNodeLongName(liveShort, nodeId))
+    ) {
       patch.shortName = workingShort;
     }
     if (
@@ -266,6 +282,7 @@ async function drainWaitingMessagesIncremental(
   conn: MeshCoreConnection,
   state: MeshcoreWaitingMessagesDrainState,
   deps: MeshcoreWaitingMessagesDrainDeps,
+  syncNextTimeoutMs: number = MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS,
 ): Promise<boolean> {
   let silentDrainExhaustedCap = false;
   for (let i = 0; i < MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN; i += 1) {
@@ -274,7 +291,7 @@ async function drainWaitingMessagesIncremental(
     try {
       raw = await withTimeout(
         conn.syncNextMessage(),
-        MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS,
+        syncNextTimeoutMs,
         'MeshCore syncNextMessage',
       );
     } catch (e: unknown) {
@@ -309,9 +326,13 @@ async function drainWaitingMessagesSilent(
   conn: MeshCoreConnection,
   state: MeshcoreWaitingMessagesDrainState,
   deps: MeshcoreWaitingMessagesDrainDeps,
+  opts?: { incrementalOnly?: boolean; syncNextTimeoutMs?: number },
 ): Promise<void> {
-  if (shouldSkipMeshcoreSilentBulkGetWaitingMessages()) {
-    const retrieved = await drainWaitingMessagesIncremental(conn, state, deps);
+  const syncNextTimeoutMs = opts?.syncNextTimeoutMs ?? MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS;
+  const preferIncremental =
+    opts?.incrementalOnly || shouldPreferMeshcoreSilentIncrementalDrain(deps.connectionType);
+  if (preferIncremental) {
+    const retrieved = await drainWaitingMessagesIncremental(conn, state, deps, syncNextTimeoutMs);
     if (retrieved) noteMeshcoreSilentBulkSuccess();
     return;
   }
@@ -383,7 +404,7 @@ async function drainWaitingMessagesSilent(
       state.progressActive = true;
       deps.setWaitingMessagesSyncProgress({ processed: 0, total: 0 });
       if (!deps.meshcoreHookMountedRef.current) return;
-      await drainWaitingMessagesIncremental(conn, state, deps);
+      await drainWaitingMessagesIncremental(conn, state, deps, syncNextTimeoutMs);
       return;
     }
     throw e;
@@ -397,7 +418,7 @@ async function drainWaitingMessagesSilent(
  */
 async function runMeshcoreWaitingMessagesDrain(
   conn: MeshCoreConnection,
-  options: { showSyncBanner: boolean },
+  options: { showSyncBanner: boolean; incrementalOnly?: boolean; syncNextTimeoutMs?: number },
   deps: MeshcoreWaitingMessagesDrainDeps,
 ): Promise<void> {
   const state: MeshcoreWaitingMessagesDrainState = {
@@ -418,7 +439,10 @@ async function runMeshcoreWaitingMessagesDrain(
     if (options.showSyncBanner) {
       await drainWaitingMessagesManual(conn, state, deps);
     } else {
-      await drainWaitingMessagesSilent(conn, state, deps);
+      await drainWaitingMessagesSilent(conn, state, deps, {
+        incrementalOnly: options.incrementalOnly,
+        syncNextTimeoutMs: options.syncNextTimeoutMs,
+      });
     }
   } finally {
     if (silentDrainUiActive) {
@@ -589,6 +613,19 @@ export function attachMeshcoreConnSideEffects(
 
   const maybeChainWaitingMessageFollowUp = () => {
     if (!meshcoreHookMountedRef.current) return;
+    // Force follow-up (CLI reply kicks) must run immediately — scheduleMeshcoreWaitingMessagesDrain
+    // defers while meshcoreCliReplyHoldActive(), which deadlocks reply delivery.
+    const forceFollow = takeMeshcoreWaitingMessagesForceFollowUp();
+    if (forceFollow) {
+      void processWaitingMessages({
+        showSyncBanner: false,
+        force: true,
+        incrementalOnly: forceFollow.incrementalOnly,
+      }).catch((e: unknown) => {
+        logMeshcoreWaitingMessagesDrainError('getWaitingMessages error', e, false);
+      });
+      return;
+    }
     const manual = takeMeshcoreWaitingMessagesManualFollowUp();
     const silent = takeMeshcoreWaitingMessagesFollowUp();
     if (!manual && !silent) {
@@ -616,7 +653,9 @@ export function attachMeshcoreConnSideEffects(
 
   const processWaitingMessages = async (options?: ProcessWaitingMessagesOptions): Promise<void> => {
     if (getMeshcoreProcessWaitingMessagesInFlight()) {
-      if (options?.showSyncBanner !== false) {
+      if (options?.force) {
+        requestMeshcoreWaitingMessagesForceFollowUp(options.incrementalOnly === true);
+      } else if (options?.showSyncBanner !== false) {
         requestMeshcoreWaitingMessagesManualFollowUp();
       } else {
         requestMeshcoreWaitingMessagesFollowUp();
@@ -624,7 +663,7 @@ export function attachMeshcoreConnSideEffects(
       return getMeshcoreProcessWaitingMessagesInFlight()!;
     }
     const showSyncBanner = options?.showSyncBanner !== false;
-    if (!showSyncBanner && isMeshcoreCompanionDrainDeferred()) {
+    if (!showSyncBanner && !options?.force && isMeshcoreCompanionDrainDeferred()) {
       scheduleSilentWaitingMessageDrain(() =>
         processWaitingMessages(options).catch((e: unknown) => {
           logMeshcoreWaitingMessagesDrainError('getWaitingMessages error', e, false);
@@ -644,12 +683,19 @@ export function attachMeshcoreConnSideEffects(
       setWaitingMessagesCount,
       setWaitingMessagesSilentDrainActive,
     };
-    const inFlight = runMeshcoreWaitingMessagesDrain(conn, { showSyncBanner }, drainDeps).finally(
-      () => {
-        setMeshcoreProcessWaitingMessagesInFlight(null);
-        maybeChainWaitingMessageFollowUp();
+    const inFlight = runMeshcoreWaitingMessagesDrain(
+      conn,
+      {
+        showSyncBanner,
+        incrementalOnly: options?.incrementalOnly === true,
+        // CLI reply polls need a short empty-queue timeout so kicks stay inside the CLI window.
+        syncNextTimeoutMs: options?.incrementalOnly === true ? 3_000 : undefined,
       },
-    );
+      drainDeps,
+    ).finally(() => {
+      setMeshcoreProcessWaitingMessagesInFlight(null);
+      maybeChainWaitingMessageFollowUp();
+    });
     setMeshcoreProcessWaitingMessagesInFlight(inFlight);
     return inFlight;
   };
@@ -695,8 +741,9 @@ export function attachMeshcoreConnSideEffects(
   ) => {
     const senderId = payload.senderNodeId;
     const service = repeaterCommandServiceRef.current;
+    const handled = service ? service.handleResponse(payload.text, senderId) : false;
     if (service) {
-      if (service.handleResponse(payload.text, senderId)) return;
+      if (handled) return;
     } else {
       console.warn(
         '[meshcoreConnSideEffects] CLI response received but no command service active (sender:',
@@ -783,6 +830,11 @@ export function attachMeshcoreConnSideEffects(
         setWaitingMessagesDrainDeferred,
       );
       resetMeshcoreWaitingMessagesDrainSchedule();
+      resetMeshcoreRepeaterRpcInFlightOnDisconnect();
+      if (staleConn) {
+        resetMeshcoreTracePathMultiplexOnDisconnect(staleConn);
+      }
+      repeaterCommandServiceRef.current?.clear();
       if (staleConn && !usedDriverConnect) {
         void staleConn.close().catch((e: unknown) => {
           console.debug('[meshcoreConnSideEffects] stale conn close ' + errLikeToLogString(e));

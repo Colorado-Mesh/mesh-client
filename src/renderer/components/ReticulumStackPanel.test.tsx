@@ -1,5 +1,8 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
+
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -21,6 +24,10 @@ vi.mock('react-i18next', () => ({
       return key;
     },
   }),
+}));
+
+vi.mock('@/renderer/lib/reticulum/reticulumGamesSession', () => ({
+  refreshGamesSessions: vi.fn(async () => {}),
 }));
 
 vi.mock('@/renderer/lib/sessions/reticulumSession', () => ({
@@ -85,6 +92,33 @@ describe('ReticulumStackPanel', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('uses accessible colors for the disconnected status and start action', async () => {
+    vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
+      running: false,
+      port: 0,
+      pid: null,
+      interfaceIssueAlert: null,
+    });
+
+    const { container } = render(
+      <ReticulumStackPanel
+        connecting={false}
+        onStartStack={async () => {}}
+        onStopStack={async () => {}}
+      />,
+    );
+
+    const status = await screen.findByText('● connectionPanel.disconnected');
+    const startButton = screen.getByRole('button', {
+      name: 'connectionPanel.reticulumStartStack',
+    });
+
+    expect(status).toHaveClass('text-gray-300');
+    expect(startButton).toHaveClass('bg-amber-700', 'text-white', 'hover:bg-amber-800');
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('shows local interface alert when serial port is stale', async () => {

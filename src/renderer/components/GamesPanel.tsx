@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import { DeliveryStatusBadgeFrame } from '@/renderer/components/DeliveryStatusBadgeFrame';
 import { ChessBoard } from '@/renderer/components/games/ChessBoard';
+import { FourInARowBoard } from '@/renderer/components/games/FourInARowBoard';
 import { TicTacToeBoard } from '@/renderer/components/games/TicTacToeBoard';
 import {
   burstConfetti,
@@ -31,6 +32,7 @@ import { resolveReticulumRemoteHashLabel } from '@/renderer/lib/reticulumVoiceRe
 import { useReticulumGamesStore } from '@/renderer/stores/reticulumGamesStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 import {
+  GAMES_CHALLENGE_APPS,
   GAMES_CMD,
   GAMES_DRAW_CLAIM,
   type GamesAppId,
@@ -46,7 +48,6 @@ type GamesFilter = 'all' | 'active' | 'pending' | 'completed';
 
 const GAMES_FILTERS: GamesFilter[] = ['all', 'active', 'pending', 'completed'];
 const COMPLETED_STATUSES = new Set(['completed', 'expired', 'declined']);
-const CHALLENGE_APPS: GamesAppId[] = ['ttt', 'chess'];
 /** Delay before retrying a win celebration that was skipped because a burst was already animating. */
 export const CELEBRATION_RETRY_MS = 400;
 
@@ -182,7 +183,9 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
         ? { kind: 'chess' as const, uci: payload.m }
         : selectedSession.app_id === 'ttt' && typeof payload.i === 'number'
           ? { kind: 'ttt' as const, cellIndex: payload.i }
-          : undefined;
+          : selectedSession.app_id === 'four_in_a_row' && typeof payload.c === 'number'
+            ? { kind: 'four_in_a_row' as const, column: payload.c }
+            : undefined;
     void sendGamesAction({
       destHash: selectedSession.contact_hash,
       appId: selectedSession.app_id,
@@ -240,17 +243,19 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
   }
 
   return (
-    <div className="bg-primary-dark flex h-full w-full min-w-0 text-amber-50">
-      <aside className="flex w-72 shrink-0 flex-col border-r border-amber-800/40">
-        <div className="border-b border-amber-800/40 p-3">
-          <h2 className="text-sm font-semibold text-amber-100">{t('gamesPanel.title')}</h2>
+    <div className="flex h-full min-h-0 w-full min-w-0 text-gray-100">
+      <aside className="bg-secondary-dark flex w-72 shrink-0 flex-col border-r border-gray-700">
+        <div className="border-b border-gray-700 p-3">
+          <h2 className="text-sm font-semibold text-gray-100">{t('gamesPanel.title')}</h2>
           <div className="mt-2 flex flex-wrap gap-1">
             {GAMES_FILTERS.map((f) => (
               <button
                 key={f}
                 type="button"
                 className={`rounded px-2 py-1 text-xs ${
-                  filter === f ? 'bg-amber-800 text-amber-50' : 'bg-amber-950/40 text-amber-200/70'
+                  filter === f
+                    ? 'bg-readable-green text-white'
+                    : 'border border-gray-600 text-gray-300 hover:bg-gray-800/60'
                 }`}
                 aria-label={t(`gamesPanel.filters.${f}`)}
                 onClick={() => {
@@ -264,15 +269,17 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
           {filteredSessions.length === 0 ? (
-            <div className="p-3 text-xs text-amber-200/50">{t('gamesPanel.noSessions')}</div>
+            <div className="p-3 text-xs text-gray-400">{t('gamesPanel.noSessions')}</div>
           ) : (
             <ul>
               {filteredSessions.map((session) => (
                 <li key={session.session_id}>
                   <button
                     type="button"
-                    className={`flex w-full items-center gap-2 border-b border-amber-900/30 px-3 py-2 text-left text-xs hover:bg-amber-950/40 ${
-                      selectedSessionId === session.session_id ? 'bg-amber-950/60' : ''
+                    className={`flex w-full items-center gap-2 border-b border-gray-800 px-3 py-2 text-left text-xs hover:bg-gray-800/60 ${
+                      selectedSessionId === session.session_id
+                        ? 'border-bright-green bg-sidebar-active-bg border-l-2'
+                        : ''
                     }`}
                     aria-label={t('gamesPanel.sessionRowAria', {
                       app: t(`gamesPanel.apps.${session.app_id}`, {
@@ -285,14 +292,14 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                     }}
                   >
                     <span className="min-w-0 flex-1 truncate">
-                      <span className="font-medium text-amber-100">
+                      <span className="font-medium text-gray-100">
                         {t(`gamesPanel.apps.${session.app_id}`, {
                           defaultValue: session.app_id,
                         })}
                       </span>
-                      <span className="ml-1 text-amber-200/50">{sessionPeerLabel(session)}</span>
+                      <span className="ml-1 text-gray-400">{sessionPeerLabel(session)}</span>
                     </span>
-                    <span className="text-amber-200/50">
+                    <span className="text-gray-400">
                       {t(`gamesPanel.status.${session.status}`, {
                         defaultValue: session.status,
                       })}
@@ -311,13 +318,13 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
             </ul>
           )}
         </div>
-        <div className="border-t border-amber-800/40 p-3">
-          <h3 className="mb-1 text-xs font-semibold text-amber-200">
+        <div className="border-t border-gray-700 p-3">
+          <h3 className="mb-1 text-xs font-semibold text-gray-200">
             {t('gamesPanel.newChallenge')}
           </h3>
           <input
             type="text"
-            className="w-full rounded border border-amber-800/50 bg-amber-950/40 px-2 py-1 text-xs text-amber-100"
+            className="bg-deep-black w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
             placeholder={t('gamesPanel.peerHashPlaceholder')}
             aria-label={t('gamesPanel.peerHashAria')}
             value={challengeHash}
@@ -327,14 +334,14 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
           />
           <div className="mt-2 flex items-center gap-2">
             <select
-              className="rounded border border-amber-800/50 bg-amber-950/40 px-2 py-1 text-xs text-amber-100"
+              className="bg-deep-black rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
               aria-label={t('gamesPanel.selectAppAria')}
               value={challengeApp}
               onChange={(e) => {
                 setChallengeApp(e.target.value as GamesAppId);
               }}
             >
-              {CHALLENGE_APPS.map((appId) => (
+              {GAMES_CHALLENGE_APPS.map((appId) => (
                 <option key={appId} value={appId}>
                   {t(`gamesPanel.apps.${appId}`)}
                 </option>
@@ -342,7 +349,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
             </select>
             <button
               type="button"
-              className="flex-1 rounded bg-amber-800 px-2 py-1 text-xs font-medium text-amber-50 disabled:opacity-50"
+              className="bg-readable-green flex-1 rounded px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
               aria-label={t('gamesPanel.sendChallengeAria')}
               disabled={actionBusy || !challengeHash.trim()}
               onClick={() => void handleSendChallenge()}
@@ -350,17 +357,17 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
               {t('gamesPanel.sendChallenge')}
             </button>
           </div>
-          <p className="mt-2 text-[11px] leading-snug text-amber-200/60">
+          <p className="mt-2 text-[11px] leading-snug text-gray-400">
             {t('gamesPanel.idleExpiryNotice')}
           </p>
         </div>
       </aside>
       <main className="flex min-w-0 flex-1 flex-col items-center justify-center gap-4 overflow-y-auto p-6">
         {!selectedSession ? (
-          <div className="text-sm text-amber-200/50">{t('gamesPanel.selectSessionPrompt')}</div>
+          <div className="text-sm text-gray-400">{t('gamesPanel.selectSessionPrompt')}</div>
         ) : (
           <>
-            <div className="text-xs text-amber-200/60">
+            <div className="text-xs text-gray-400">
               {t('gamesPanel.opponentLabel', { peer: sessionPeerLabel(selectedSession) })}
             </div>
             {(() => {
@@ -381,6 +388,14 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                   disabled={boardDisabled}
                   onMove={(m) => {
                     handleMove({ m });
+                  }}
+                />
+              ) : selectedSession.app_id === 'four_in_a_row' ? (
+                <FourInARowBoard
+                  session={selectedSession}
+                  disabled={boardDisabled}
+                  onMove={(c) => {
+                    handleMove({ c });
                   }}
                 />
               ) : (
@@ -438,7 +453,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                     <>
                       <button
                         type="button"
-                        className="rounded bg-amber-800 px-3 py-1 text-xs font-medium text-amber-50 disabled:opacity-50"
+                        className="bg-readable-green rounded px-3 py-1 text-xs font-medium text-white disabled:opacity-50"
                         aria-label={t('gamesPanel.acceptDrawAria')}
                         disabled={actionBusy}
                         onClick={() => {
@@ -449,7 +464,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                       </button>
                       <button
                         type="button"
-                        className="rounded bg-amber-950/60 px-3 py-1 text-xs font-medium text-amber-200 disabled:opacity-50"
+                        className="rounded border border-gray-600 px-3 py-1 text-xs font-medium text-gray-300 hover:bg-gray-800/60 disabled:opacity-50"
                         aria-label={t('gamesPanel.declineDrawAria')}
                         disabled={actionBusy}
                         onClick={() => {
@@ -462,7 +477,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                   ) : drawPending ? null : drawClaimReason === GAMES_DRAW_CLAIM.THREEFOLD ? (
                     <button
                       type="button"
-                      className="rounded bg-amber-950/60 px-3 py-1 text-xs font-medium text-amber-200 disabled:opacity-50"
+                      className="rounded border border-gray-600 px-3 py-1 text-xs font-medium text-gray-300 hover:bg-gray-800/60 disabled:opacity-50"
                       aria-label={t('gamesPanel.claimThreefoldAria')}
                       disabled={actionBusy}
                       onClick={() => {
@@ -474,7 +489,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                   ) : drawClaimReason === GAMES_DRAW_CLAIM.FIFTY_MOVE ? (
                     <button
                       type="button"
-                      className="rounded bg-amber-950/60 px-3 py-1 text-xs font-medium text-amber-200 disabled:opacity-50"
+                      className="rounded border border-gray-600 px-3 py-1 text-xs font-medium text-gray-300 hover:bg-gray-800/60 disabled:opacity-50"
                       aria-label={t('gamesPanel.claimFiftyMoveAria')}
                       disabled={actionBusy}
                       onClick={() => {
@@ -486,7 +501,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                   ) : (
                     <button
                       type="button"
-                      className="rounded bg-amber-950/60 px-3 py-1 text-xs font-medium text-amber-200 disabled:opacity-50"
+                      className="rounded border border-gray-600 px-3 py-1 text-xs font-medium text-gray-300 hover:bg-gray-800/60 disabled:opacity-50"
                       aria-label={t('gamesPanel.offerDrawAria')}
                       disabled={actionBusy}
                       onClick={() => {
@@ -511,7 +526,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
               )}
               <button
                 type="button"
-                className="rounded bg-amber-950/60 px-3 py-1 text-xs font-medium text-amber-200/70 disabled:opacity-50"
+                className="rounded border border-gray-600 px-3 py-1 text-xs font-medium text-gray-400 hover:bg-gray-800/60 disabled:opacity-50"
                 aria-label={t('gamesPanel.deleteSessionAria')}
                 disabled={actionBusy}
                 onClick={() => {

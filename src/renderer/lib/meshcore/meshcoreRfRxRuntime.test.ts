@@ -1,10 +1,18 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
+import {
+  markMeshcoreLocallyDeletedContact,
+  resetMeshcoreLocallyDeletedContactsForTests,
+} from '../meshcoreLocallyDeletedContacts';
+import * as meshcorePathChainDisplay from '../meshcorePathChainDisplay';
+import { pubkeyToNodeId } from '../meshcoreUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../meshtasticConnectedNodeRef';
+import { useRelayCoverageStore } from '../relayCoverage/relayCoverageStore';
 import { meshNodeToNodeRecord } from '../storeRecordAdapters';
 import type { MeshNode, TelemetryPoint } from '../types';
+import { openHeardRepeatWindow, resetHeardRepeatWindowsForTests } from './heardRepeatTracker';
 import type { DeviceLogEntry, MeshCoreSelfInfo, RxPacketEntry } from './meshcoreHookTypes';
 import { createMeshcoreMqttPacketLogBucket } from './meshcoreMqttPacketLogThrottle';
 import {
@@ -77,6 +85,7 @@ describe('handleMeshcoreRfRx', () => {
   afterEach(() => {
     useNodeStore.setState({ nodes: {} });
     setMeshtasticConnectedMyNodeNum(0);
+    resetMeshcoreLocallyDeletedContactsForTests();
     vi.restoreAllMocks();
   });
 
@@ -231,5 +240,331 @@ describe('handleMeshcoreRfRx', () => {
     handleMeshcoreRfRx({ lastSnr: 5.5, lastRssi: -55, raw }, deps);
 
     expect(setStateSpy).not.toHaveBeenCalled();
+  });
+});
+
+function buildFloodAdvertPacket(opts: {
+  publicKey: Uint8Array;
+  name: string;
+  deviceRole: number;
+}): Uint8Array {
+  const nameBytes = new TextEncoder().encode(opts.name);
+  const raw = new Uint8Array(2 + 32 + 4 + 64 + 1 + nameBytes.length);
+  raw[0] = (4 << 2) | 1; // ADVERT + FLOOD
+  raw[1] = 0; // 0 hops
+  raw.set(opts.publicKey, 2);
+  new DataView(raw.buffer).setUint32(34, 1_700_000_000, true);
+  raw[102] = 0x80 | (opts.deviceRole & 0x0f);
+  raw.set(nameBytes, 103);
+  return raw;
+}
+
+describe('handleMeshcoreRfRx advert identity', () => {
+  afterEach(() => {
+    useNodeStore.setState({ nodes: {} });
+    resetMeshcoreLocallyDeletedContactsForTests();
+    vi.restoreAllMocks();
+  });
+
+  it('upserts advert name and Room hw_model from an on-air ADVERT packet', () => {
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => (i + 3) & 0xff);
+    const nodeId = pubkeyToNodeId(publicKey);
+    const name = '🛜 NV0N PW=hello';
+    const { deps } = makeDeps({ myNodeNumRef: ref(1) });
+    vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockResolvedValue(undefined);
+
+    handleMeshcoreRfRx(
+      {
+        lastSnr: 12,
+        lastRssi: -22,
+        raw: buildFloodAdvertPacket({ publicKey, name, deviceRole: 3 }),
+      },
+      deps,
+    );
+
+    expect(useNodeStore.getState().nodes[ID][nodeId]).toMatchObject({
+      longName: name,
+      hwModel: 'Room',
+    });
+    expect(window.electronAPI.db.saveMeshcoreContact).toHaveBeenCalledWith(
+      expect.objectContaining({ adv_name: name, contact_type: 3 }),
+    );
+  });
+
+  it('persists a fresh non-tombstoned RF advert via saveMeshcoreContact', () => {
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => (i + 7) & 0xff);
+    const nodeId = pubkeyToNodeId(publicKey);
+    const { deps } = makeDeps({ myNodeNumRef: ref(1) });
+    vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.db.updateMeshcoreContactAdvert).mockResolvedValue(undefined);
+
+    handleMeshcoreRfRx(
+      {
+        lastSnr: 8,
+        lastRssi: -30,
+        raw: buildFloodAdvertPacket({ publicKey, name: 'Alice', deviceRole: 1 }),
+      },
+      deps,
+    );
+
+    expect(useNodeStore.getState().nodes[ID][nodeId].longName).toBe('Alice');
+    expect(window.electronAPI.db.saveMeshcoreContact).toHaveBeenCalledWith(
+      expect.objectContaining({ adv_name: 'Alice', contact_type: 1, on_radio: 1 }),
+    );
+    expect(window.electronAPI.db.updateMeshcoreContactAdvert).not.toHaveBeenCalled();
+  });
+
+  it('persists an on-air rename for an existing contact via updateMeshcoreContactAdvert', () => {
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => (i + 9) & 0xff);
+    const nodeId = pubkeyToNodeId(publicKey);
+    upsertNodeRecord(ID, {
+      nodeId,
+      longName: 'Alice',
+      hwModel: 'Companion',
+      lastHeardAt: 1_699_000_000,
+      publicKey,
+    });
+    const { deps } = makeDeps({ myNodeNumRef: ref(1) });
+    vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockClear();
+    vi.mocked(window.electronAPI.db.updateMeshcoreContactAdvert).mockClear();
+    vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.db.updateMeshcoreContactAdvert).mockResolvedValue(undefined);
+
+    handleMeshcoreRfRx(
+      {
+        lastSnr: 7,
+        lastRssi: -28,
+        raw: buildFloodAdvertPacket({ publicKey, name: 'Bob', deviceRole: 1 }),
+      },
+      deps,
+    );
+
+    expect(useNodeStore.getState().nodes[ID][nodeId].longName).toBe('Bob');
+    expect(window.electronAPI.db.updateMeshcoreContactAdvert).toHaveBeenCalledWith(
+      nodeId,
+      1_700_000_000,
+      null,
+      null,
+      'Bob',
+    );
+    expect(window.electronAPI.db.saveMeshcoreContact).not.toHaveBeenCalled();
+  });
+
+  it('revives a locally deleted contact when a live RF advert is heard', () => {
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => (i + 5) & 0xff);
+    const nodeId = pubkeyToNodeId(publicKey);
+    markMeshcoreLocallyDeletedContact(nodeId);
+    const { deps } = makeDeps({ myNodeNumRef: ref(1) });
+    vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockResolvedValue(undefined);
+
+    handleMeshcoreRfRx(
+      {
+        lastSnr: 12,
+        lastRssi: -22,
+        raw: buildFloodAdvertPacket({ publicKey, name: 'NV0N Room', deviceRole: 3 }),
+      },
+      deps,
+    );
+
+    expect(useNodeStore.getState().nodes[ID][nodeId].longName).toBe('NV0N Room');
+    expect(window.electronAPI.db.saveMeshcoreContact).toHaveBeenCalledWith(
+      expect.objectContaining({ adv_name: 'NV0N Room', contact_type: 3 }),
+    );
+  });
+});
+
+/** FLOOD + GRP_TXT: path hashes 0x88, 0x07 (see meshcoreRfPacketParse.test.ts). */
+const FLOOD_GRP_TXT_HEX =
+  '15028807111337a709eb7f50a1a94d8ee7e5ded8672cef2660e88c976c9782bf520ae1bf08b564ccd2c1afb5960e211a671a1282587e5836d0e80d46879a9069f08465733f5c79';
+/** Same flood with path_len=0 so heard-repeat skips path resolution. */
+const FLOOD_GRP_TXT_EMPTY_PATH_HEX = `1500${FLOOD_GRP_TXT_HEX.slice(8)}`;
+
+function hexToU8(hex: string): Uint8Array {
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i++) {
+    out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return out;
+}
+
+describe('handleMeshcoreRfRx heard-repeat coverage', () => {
+  const MSG = 'ch:0:heard-repeat';
+  /** Node ids whose 1-byte meshcoreNodeHash matches path bytes 0x88 / 0x07. */
+  const REPEATER_88 = 0x88;
+  const CHAT_07 = 0x07;
+
+  beforeEach(() => {
+    useRelayCoverageStore.setState({ coverage: {} });
+    resetHeardRepeatWindowsForTests();
+  });
+
+  afterEach(() => {
+    useNodeStore.setState({ nodes: {} });
+    setMeshtasticConnectedMyNodeNum(0);
+    resetHeardRepeatWindowsForTests();
+    useRelayCoverageStore.setState({ coverage: {} });
+    vi.restoreAllMocks();
+  });
+
+  it('credits Repeater path hashes on GRP_TXT flood overhear without cleartext originator', () => {
+    const nodes = new Map<number, MeshNode>([
+      [REPEATER_88, makeNode(REPEATER_88, { hw_model: 'Repeater', long_name: 'Hill 88' })],
+      [CHAT_07, makeNode(CHAT_07, { hw_model: 'Chat', long_name: 'Chat 07' })],
+    ]);
+    const { deps } = makeDeps({
+      myNodeNumRef: ref(1),
+      readNodes: () => nodes,
+      selfInfoRef: ref({ name: 'Me', publicKey: new Uint8Array(32).fill(9) } as MeshCoreSelfInfo),
+    });
+    openHeardRepeatWindow(ID, MSG);
+
+    // Realistic flood path: forwarders only (0x88 repeater, 0x07 chat) — originator is never in path.
+    handleMeshcoreRfRx({ lastSnr: 6, lastRssi: -50, raw: hexToU8(FLOOD_GRP_TXT_HEX) }, deps);
+
+    expect(useRelayCoverageStore.getState().coverageFor(ID, MSG)?.heardRepeaters).toEqual([
+      { nodeId: REPEATER_88, name: 'Hill 88', snr: 6, rssi: -50 },
+    ]);
+  });
+
+  it('does not credit Chat path hops; unresolved forwarder hashes still count', () => {
+    const nodes = new Map<number, MeshNode>([
+      [CHAT_07, makeNode(CHAT_07, { hw_model: 'Chat', long_name: 'Chat 07' })],
+    ]);
+    const { deps } = makeDeps({
+      myNodeNumRef: ref(1),
+      readNodes: () => nodes,
+      selfInfoRef: ref({ name: 'Me', publicKey: new Uint8Array(32).fill(9) } as MeshCoreSelfInfo),
+    });
+    openHeardRepeatWindow(ID, MSG);
+
+    handleMeshcoreRfRx({ lastSnr: 6, lastRssi: -50, raw: hexToU8(FLOOD_GRP_TXT_HEX) }, deps);
+
+    const heard = useRelayCoverageStore.getState().coverageFor(ID, MSG)?.heardRepeaters ?? [];
+    // Path 0x88 (unknown forwarder) → hex credit; 0x07 (Chat) → ignored.
+    expect(heard).toHaveLength(1);
+    expect(heard[0]?.name).toBe('88');
+    expect(heard.some((r) => r.nodeId === CHAT_07)).toBe(false);
+  });
+
+  it('does not credit GRP_TXT path hashes when no listen window is open', () => {
+    const pathSpy = vi.spyOn(meshcorePathChainDisplay, 'buildMeshcorePathResolutionFromNodes');
+    const nodes = new Map<number, MeshNode>([
+      [REPEATER_88, makeNode(REPEATER_88, { hw_model: 'Repeater', long_name: 'Hill 88' })],
+    ]);
+    const { deps } = makeDeps({
+      myNodeNumRef: ref(1),
+      readNodes: () => nodes,
+    });
+
+    handleMeshcoreRfRx({ lastSnr: 6, lastRssi: -50, raw: hexToU8(FLOOD_GRP_TXT_HEX) }, deps);
+
+    expect(useRelayCoverageStore.getState().coverageFor(ID, MSG)).toBeUndefined();
+    expect(pathSpy).not.toHaveBeenCalled();
+  });
+
+  it('binds empty-path GRP_TXT and rejects a later foreign payload path credit', () => {
+    const pathSpy = vi.spyOn(meshcorePathChainDisplay, 'buildMeshcorePathResolutionFromNodes');
+    const nodes = new Map<number, MeshNode>([
+      [REPEATER_88, makeNode(REPEATER_88, { hw_model: 'Repeater', long_name: 'Hill 88' })],
+    ]);
+    const { deps } = makeDeps({
+      myNodeNumRef: ref(1),
+      readNodes: () => nodes,
+    });
+    openHeardRepeatWindow(ID, MSG);
+
+    handleMeshcoreRfRx(
+      { lastSnr: 6, lastRssi: -50, raw: hexToU8(FLOOD_GRP_TXT_EMPTY_PATH_HEX) },
+      deps,
+    );
+
+    expect(useRelayCoverageStore.getState().coverageFor(ID, MSG)?.heardRepeaters).toEqual([]);
+    expect(pathSpy).not.toHaveBeenCalled();
+
+    // Different inner payload (flip last byte), same forwarder path — must not credit.
+    const foreignHex = `${FLOOD_GRP_TXT_HEX.slice(0, -2)}${(
+      (parseInt(FLOOD_GRP_TXT_HEX.slice(-2), 16) ^ 0xff) &
+      0xff
+    )
+      .toString(16)
+      .padStart(2, '0')}`;
+    handleMeshcoreRfRx({ lastSnr: 7, lastRssi: -48, raw: hexToU8(foreignHex) }, deps);
+
+    expect(useRelayCoverageStore.getState().coverageFor(ID, MSG)?.heardRepeaters).toEqual([]);
+  });
+
+  it('skips path resolution when GRP_TXT path is empty even with an open window', () => {
+    const pathSpy = vi.spyOn(meshcorePathChainDisplay, 'buildMeshcorePathResolutionFromNodes');
+    const nodes = new Map<number, MeshNode>([
+      [REPEATER_88, makeNode(REPEATER_88, { hw_model: 'Repeater', long_name: 'Hill 88' })],
+    ]);
+    const { deps } = makeDeps({
+      myNodeNumRef: ref(1),
+      readNodes: () => nodes,
+    });
+    openHeardRepeatWindow(ID, MSG);
+
+    handleMeshcoreRfRx(
+      { lastSnr: 6, lastRssi: -50, raw: hexToU8(FLOOD_GRP_TXT_EMPTY_PATH_HEX) },
+      deps,
+    );
+
+    expect(useRelayCoverageStore.getState().coverageFor(ID, MSG)?.heardRepeaters).toEqual([]);
+    expect(pathSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not treat FLOOD ADVERT as channel-flood credit without self-origin', () => {
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => (i + 11) & 0xff);
+    const advertId = pubkeyToNodeId(publicKey);
+    const nodes = new Map<number, MeshNode>([
+      [advertId, makeNode(advertId, { hw_model: 'Repeater', long_name: 'AdvertRep' })],
+    ]);
+    const { deps } = makeDeps({
+      myNodeNumRef: ref(1),
+      readNodes: () => nodes,
+      selfInfoRef: ref({
+        name: 'Me',
+        publicKey: new Uint8Array(32).fill(0xaa),
+      } as MeshCoreSelfInfo),
+    });
+    openHeardRepeatWindow(ID, MSG);
+
+    handleMeshcoreRfRx(
+      {
+        lastSnr: 4,
+        lastRssi: -40,
+        raw: buildFloodAdvertPacket({ publicKey, name: 'Other', deviceRole: 2 }),
+      },
+      deps,
+    );
+
+    expect(useRelayCoverageStore.getState().coverageFor(ID, MSG)?.heardRepeaters).toEqual([]);
+  });
+
+  it('credits 2-byte path hashes via pubKeyMapRef when MeshNode omits public_key_hex', () => {
+    // Mirrors production: contacts live in pubKeyMapRef; MeshNode often has no public_key_hex.
+    const repPub = new Uint8Array(32);
+    repPub[0] = 0x06;
+    repPub[1] = 0x47;
+    const repId = 0x0647abcd;
+    const nodes = new Map<number, MeshNode>([
+      [repId, makeNode(repId, { hw_model: 'Repeater', long_name: 'FNL-0647' })],
+    ]);
+    const pubKeyMap = new Map<number, Uint8Array>([[repId, repPub]]);
+    // FLOOD GRP_TXT, path_len=0x41 → 1 hop × 2-byte hash, path=06 47
+    const raw = hexToU8(`15410647${FLOOD_GRP_TXT_HEX.slice(8)}`);
+    const { deps } = makeDeps({
+      myNodeNumRef: ref(1),
+      readNodes: () => nodes,
+      pubKeyMapRef: ref(pubKeyMap),
+      selfInfoRef: ref({ name: 'Me', publicKey: new Uint8Array(32).fill(9) } as MeshCoreSelfInfo),
+    });
+    openHeardRepeatWindow(ID, MSG);
+
+    handleMeshcoreRfRx({ lastSnr: 7, lastRssi: -60, raw }, deps);
+
+    expect(useRelayCoverageStore.getState().coverageFor(ID, MSG)?.heardRepeaters).toEqual([
+      { nodeId: repId, name: 'FNL-0647', snr: 7, rssi: -60 },
+    ]);
   });
 });

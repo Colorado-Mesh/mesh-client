@@ -203,9 +203,30 @@ pub async fn ping(
 pub async fn peer_path(
     State(stack): State<Arc<StackHandle>>,
     Path(hash): Path<String>,
+    body: Option<Json<PeerPathBody>>,
 ) -> Json<serde_json::Value> {
-    match stack.request_peer_path(&hash).await {
-        Ok(()) => Json(serde_json::json!({ "ok": true })),
+    let force = body.as_ref().and_then(|Json(b)| b.force).unwrap_or(false);
+    let result = if force {
+        stack.request_peer_path_with_opts(&hash, true).await
+    } else {
+        stack.request_peer_path(&hash).await
+    };
+    match result {
+        Ok(()) => Json(serde_json::json!({ "ok": true, "force": force })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+#[derive(Debug, Deserialize, Default)]
+pub struct PeerPathBody {
+    #[serde(default)]
+    pub force: Option<bool>,
+}
+
+/// Maintenance action: drop every cached route from the RNS path table.
+pub async fn clear_path_table(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
+    match stack.drop_path_table().await {
+        Ok(cleared) => Json(serde_json::json!({ "ok": true, "cleared": cleared })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
 }

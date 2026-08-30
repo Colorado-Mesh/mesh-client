@@ -1,24 +1,44 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
-import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import * as pathReady from '@/renderer/lib/reticulum/reticulumRrcPathReady';
+import * as transportReady from '@/renderer/lib/reticulum/reticulumRrcTransportReady';
+import {
+  isReticulumRnsLiveReady,
+  isReticulumSidecarRunning,
+} from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import {
+  clearRrcHubAutoJoinBackoff,
+  isRrcHubAutoJoinBlocked,
+  recordRrcHubAutoJoinFailure,
+  resetRrcHubAutoJoinBackoffForTests,
+  RRC_AUTO_JOIN_GIVE_UP_AFTER,
+} from '@/renderer/lib/rrcHubAutoJoinBackoff';
 import {
   isRrcHubDisconnectSuppressed,
   resetRrcHubDisconnectSuppressForTests,
 } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { saveRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
+import { resetRrcNickCacheHydrationForTests } from '@/renderer/lib/rrcNickCacheHydrate';
 import { clearRrcOpenDms, loadRrcOpenDms, upsertRrcOpenDm } from '@/renderer/lib/rrcOpenDms';
-import { resetRrcRoomHistoryForTests } from '@/renderer/lib/rrcRoomHistory';
+import { hydrateRrcRoomMessages, resetRrcRoomHistoryForTests } from '@/renderer/lib/rrcRoomHistory';
+import { RRC_WHO_REPLY_TIMEOUT_MS } from '@/renderer/lib/timeConstants';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
-import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
+import { selectRrcActiveRoomMessages, useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 
 import RrcPanel from './RrcPanel';
 
+function ActiveRoomMessageCountProbe() {
+  const count = useRrcSessionStore((s) => selectRrcActiveRoomMessages(s).length);
+  return <div data-testid="active-room-message-count">{count}</div>;
+}
+
 vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
   isReticulumSidecarRunning: vi.fn(() => Promise.resolve(false)),
+  isReticulumRnsLiveReady: vi.fn(() => Promise.resolve(true)),
 }));
 
 const hubA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -36,9 +56,23 @@ describe('RrcPanel', () => {
     useRrcSessionStore.getState().clearSession();
     useRrcHubStore.setState({ hubs: new Map() });
     resetRrcHubDisconnectSuppressForTests();
+    resetRrcHubAutoJoinBackoffForTests();
     resetRrcRoomHistoryForTests();
+    resetRrcNickCacheHydrationForTests();
+    useRrcSessionStore.setState({ nicksByHub: new Map() });
+    vi.mocked(window.electronAPI.db.listRrcNicks).mockReset();
+    vi.mocked(window.electronAPI.db.listRrcNicks).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.upsertRrcNick).mockReset();
+    vi.mocked(window.electronAPI.db.upsertRrcNick).mockResolvedValue({ changes: 1 });
     hydrateAxeThemeColors(document.documentElement);
     vi.mocked(isReticulumSidecarRunning).mockResolvedValue(false);
+    vi.spyOn(transportReady, 'probeReticulumRrcTransportReady').mockResolvedValue({ ready: true });
+    vi.spyOn(pathReady, 'probeReticulumRrcPathReady').mockResolvedValue({
+      ready: true,
+      hops: 2,
+      iface: 'Ratspeak',
+      source: 'passive',
+    });
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({ ok: true });
     vi.mocked(window.electronAPI.reticulum.rrc.disconnect).mockReset();
@@ -57,10 +91,44 @@ describe('RrcPanel', () => {
     vi.mocked(window.electronAPI.db.listRrcMessages).mockResolvedValue([]);
   });
 
-  it('renders amber hub chrome and select-hub prompt', async () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('clears auto-join backoff on explicit Connect', async () => {
+    for (let i = 0; i < RRC_AUTO_JOIN_GIVE_UP_AFTER; i++) {
+      recordRrcHubAutoJoinFailure(hubA, i * 60_000);
+    }
+    expect(isRrcHubAutoJoinBlocked(hubA)).toBe(true);
+    vi.mocked(isReticulumSidecarRunning).mockResolvedValue(true);
+    vi.mocked(window.electronAPI.reticulum.rrc.upsertHub).mockResolvedValue({
+      ok: true,
+      hub: {
+        destination_hash: hubA,
+        display_name: 'Hub A',
+        source: 'manual',
+        recommended: false,
+      },
+    });
+    render(<RrcPanel isActive />);
+    const hashInput = await screen.findByLabelText(/Hub destination hash/i);
+    await userEvent.clear(hashInput);
+    await userEvent.type(hashInput, hubA);
+    await userEvent.click(screen.getByRole('button', { name: /Connect to hash/i }));
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalledWith({
+        dest_hash: hubA,
+        nickname: expect.any(String),
+      });
+    });
+    expect(isRrcHubAutoJoinBlocked(hubA)).toBe(false);
+    clearRrcHubAutoJoinBackoff(hubA);
+  });
+
+  it('renders standard hub chrome and select-hub prompt', async () => {
     const { container } = render(<RrcPanel isActive />);
     expect(screen.getAllByText(/Select an RRC hub/i).length).toBeGreaterThan(0);
-    expect(container.querySelector('[class*="border-amber"]')).toBeTruthy();
+    expect(container.querySelector('[class*="border-gray-700"]')).toBeTruthy();
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -88,6 +156,7 @@ describe('RrcPanel', () => {
 
   it('batch-connects auto-join hubs when the sidecar becomes ready', async () => {
     vi.mocked(isReticulumSidecarRunning).mockResolvedValue(true);
+    vi.mocked(isReticulumRnsLiveReady).mockResolvedValue(true);
     saveRrcHubAutoJoin([hubA, hubB]);
 
     render(<RrcPanel isActive />);
@@ -100,6 +169,20 @@ describe('RrcPanel', () => {
       .mock.calls.map((c) => (c[0] as { dest_hash: string }).dest_hash)
       .sort();
     expect(hashes).toEqual([hubA, hubB]);
+  });
+
+  it('does not auto-connect from panel mount while RNS live is not ready', async () => {
+    vi.mocked(isReticulumSidecarRunning).mockResolvedValue(true);
+    vi.mocked(isReticulumRnsLiveReady).mockResolvedValue(false);
+    saveRrcHubAutoJoin([hubA]);
+
+    render(<RrcPanel isActive />);
+
+    await waitFor(() => {
+      expect(isReticulumSidecarRunning).toHaveBeenCalled();
+    });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
   });
 
   it('skips auto-join connect for hubs already active', async () => {
@@ -193,6 +276,53 @@ describe('RrcPanel', () => {
       expect(window.electronAPI.db.deleteRrcMessagesByRoom).toHaveBeenCalledWith(hubA, 'lobby');
     });
     expect(useRrcSessionStore.getState().messages.get(`${hubA}::lobby`)).toBeUndefined();
+  });
+
+  it('shows SQLite history merged by hydrateRrcRoomMessages after mount', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    store.addMessage({
+      id: 'live-1',
+      room: '#lobby',
+      kind: 'msg',
+      body: 'live only',
+      sender_hash: 'cccccccccccccccccccccccccccccccc',
+      timestamp: 200,
+    });
+
+    render(
+      <>
+        <ActiveRoomMessageCountProbe />
+        <RrcPanel isActive />
+      </>,
+    );
+    await waitFor(() => {
+      expect(screen.getByRole('textbox', { name: /Message or \/command/i })).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('active-room-message-count')).toHaveTextContent('1');
+
+    vi.mocked(window.electronAPI.db.listRrcMessages).mockResolvedValueOnce([
+      {
+        message_id: 'hist-1',
+        hub_hash: hubA,
+        room: 'lobby',
+        sender_hash: null,
+        nickname: 'alice',
+        kind: 'msg',
+        body: 'from sqlite',
+        timestamp: 100,
+      },
+    ]);
+
+    await act(async () => {
+      await hydrateRrcRoomMessages(hubA, '#lobby', { force: true });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('active-room-message-count')).toHaveTextContent('2');
+    });
   });
 
   it('Disconnect with hub auto-join does not reconnect via rrc.connect', async () => {
@@ -443,7 +573,108 @@ describe('RrcPanel', () => {
     expect(whoCalls.some((args) => (args[0] as { body?: string }).body === '/who general')).toBe(
       true,
     );
-    expect(whoCalls.every((args) => (args[0] as { room?: string }).room == null)).toBe(true);
+    expect(
+      whoCalls.every((args) => {
+        const room = (args[0] as { room?: string }).room;
+        return room === 'general' || room === '#general';
+      }),
+    ).toBe(true);
+  });
+
+  it('labels hash-only roster members with nicks seen in the transcript', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: null },
+    ]);
+    store.setActiveRoom('general');
+    store.addMessage(
+      {
+        id: 'm1',
+        room: 'general',
+        kind: 'msg',
+        body: 'hi',
+        sender_hash: 'cccccccccccccccccccccccccccccccc',
+        nickname: 'Alice',
+        timestamp: Date.now(),
+      },
+      { hubDestHash: hubA },
+    );
+
+    render(<RrcPanel isActive />);
+    expect(await screen.findByRole('button', { name: /Alice/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /cccccccc/ })).toBeNull();
+  });
+
+  it('labels a roster member from a nick learned in another room of the same hub', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('lobby');
+    store.addMessage(
+      {
+        id: 'm1',
+        room: 'lobby',
+        kind: 'msg',
+        body: 'hi',
+        sender_hash: 'cccccccccccccccccccccccccccccccc',
+        nickname: 'Alice',
+        timestamp: Date.now(),
+      },
+      { hubDestHash: hubA },
+    );
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: null },
+    ]);
+    store.setActiveRoom('general');
+
+    render(<RrcPanel isActive />);
+    expect(await screen.findByRole('button', { name: /Alice/ })).toBeInTheDocument();
+  });
+
+  it('labels a roster member from the SQLite nick cache with no transcript', async () => {
+    vi.mocked(window.electronAPI.db.listRrcNicks).mockResolvedValue([
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: 'Alice', last_seen: 1 },
+    ]);
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: null },
+    ]);
+    store.setActiveRoom('general');
+
+    render(<RrcPanel isActive />);
+    expect(await screen.findByRole('button', { name: /Alice/ })).toBeInTheDocument();
+  });
+
+  it('notes a dropped hub reply when a forced /who never answers', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hubA, 'Hub A');
+      store.roomJoined('general', [
+        { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: 'Alice' },
+      ]);
+      store.setActiveRoom('general');
+
+      render(<RrcPanel isActive />);
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      await user.click(screen.getByRole('button', { name: 'Refresh members (/who)' }));
+      await waitFor(() => {
+        expect(
+          whoSendCalls().some((args) => (args[0] as { body?: string }).body === '/who general'),
+        ).toBe(true);
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(RRC_WHO_REPLY_TIMEOUT_MS + 100);
+      });
+      await waitFor(() => {
+        const messages = selectRrcActiveRoomMessages(useRrcSessionStore.getState());
+        expect(messages.some((m) => m.body.startsWith('No member list from the hub'))).toBe(true);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('does not re-send /who or reconnect when remounting a populated roster', async () => {
@@ -499,6 +730,60 @@ describe('RrcPanel', () => {
     expect(window.electronAPI.reticulum.rrc.disconnect).not.toHaveBeenCalled();
   });
 
+  it('clears unread when returning to pinned active room after traffic while away', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    store.addMessage(
+      {
+        id: 'seed',
+        room: '#lobby',
+        kind: 'msg',
+        body: 'seed',
+        sender_hash: 'cccccccccccccccccccccccccccccccc',
+        timestamp: 1,
+      },
+      { bumpUnread: false },
+    );
+
+    const { rerender } = render(<RrcPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByTestId('rrc-message-stream')).toBeInTheDocument();
+    });
+
+    const stream = screen.getByTestId('rrc-message-stream');
+    Object.defineProperty(stream, 'scrollHeight', { value: 400, configurable: true });
+    Object.defineProperty(stream, 'clientHeight', { value: 400, configurable: true });
+    Object.defineProperty(stream, 'scrollTop', {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+
+    rerender(<RrcPanel isActive={false} />);
+
+    useRrcSessionStore.getState().setRrcPanelFocused(false);
+    useRrcSessionStore.getState().addMessage(
+      {
+        id: 'away-1',
+        room: '#lobby',
+        kind: 'msg',
+        body: 'while away',
+        sender_hash: 'dddddddddddddddddddddddddddddddd',
+        timestamp: 2,
+      },
+      { bumpUnread: true },
+    );
+    expect(useRrcSessionStore.getState().totalUnread()).toBe(1);
+
+    rerender(<RrcPanel isActive />);
+
+    await waitFor(() => {
+      expect(useRrcSessionStore.getState().totalUnread()).toBe(0);
+    });
+  });
+
   it('sends one hub-global /who for an empty joined roster', async () => {
     const store = useRrcSessionStore.getState();
     store.applyStatus('active', hubA, 'Hub A');
@@ -512,6 +797,7 @@ describe('RrcPanel', () => {
     });
     expect(whoSendCalls()[0]?.[0]).toEqual({
       hub_dest_hash: hubA,
+      room: 'general',
       body: '/who general',
       type: 'msg',
     });
@@ -592,6 +878,7 @@ describe('RrcPanel', () => {
     });
     expect(whoSendCalls()[0]?.[0]).toEqual({
       hub_dest_hash: hubA,
+      room: 'general',
       body: '/who general',
       type: 'msg',
     });
@@ -617,9 +904,9 @@ describe('RrcPanel', () => {
       expect(window.electronAPI.reticulum.rrc.setNickname).toHaveBeenCalled();
     });
     await waitFor(() => {
-      expect(whoSendCalls().some((args) => (args[0] as { body?: string }).body === '/who')).toBe(
-        true,
-      );
+      expect(
+        whoSendCalls().some((args) => (args[0] as { body?: string }).body === '/who general'),
+      ).toBe(true);
     });
   });
 
@@ -643,9 +930,35 @@ describe('RrcPanel', () => {
     });
     expect(whoSendCalls()[0]?.[0]).toEqual({
       hub_dest_hash: hubA,
+      room: 'general',
       body: '/who general',
       type: 'msg',
     });
+  });
+
+  it('does not add whoReplyMissing after part before /who timeout', async () => {
+    vi.useFakeTimers();
+    try {
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hubA, 'Hub A');
+      store.roomJoined('general');
+      store.setActiveRoom('general');
+      vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+      render(<RrcPanel isActive />);
+      await vi.waitFor(() => {
+        expect(whoSendCalls()).toHaveLength(1);
+      });
+
+      store.roomParted('general');
+      await vi.advanceTimersByTimeAsync(12_000);
+
+      const key = store.roomMessageKey('general', hubA);
+      const bodies = (store.messages.get(key ?? '') ?? []).map((m) => m.body);
+      expect(bodies.some((b) => b.includes('rrc.whoReplyMissing'))).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('retries auto /who after a failed send', async () => {
@@ -747,6 +1060,74 @@ describe('RrcPanel', () => {
     expect(
       useRrcSessionStore.getState().sessionsByHub.get(hubA)?.whoTranscriptForceRooms.has('general'),
     ).toBe(false);
+  });
+
+  it('expands IRC-style /op into rrcd room-first body before send', async () => {
+    const user = userEvent.setup();
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: 'Alice' },
+    ]);
+    store.setActiveRoom('general');
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValue({ ok: true });
+
+    render(<RrcPanel isActive />);
+    await waitFor(() => {
+      expect(whoSendCalls().length).toBeGreaterThan(0);
+    });
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+    const composer = screen.getByRole('textbox', { name: /Message or \/command/i });
+    await user.clear(composer);
+    await user.type(composer, '/op alice');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => {
+      expect(vi.mocked(window.electronAPI.reticulum.rrc.send)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          hub_dest_hash: hubA,
+          room: 'general',
+          body: '/op general alice',
+          type: 'msg',
+        }),
+      );
+    });
+  });
+
+  it('expands bare /who to include the focused room and sets K_ROOM', async () => {
+    const user = userEvent.setup();
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: 'Alice' },
+    ]);
+    store.setActiveRoom('general');
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValue({ ok: true });
+
+    render(<RrcPanel isActive />);
+    await waitFor(() => {
+      expect(whoSendCalls().length).toBeGreaterThan(0);
+    });
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+    const composer = screen.getByRole('textbox', { name: /Message or \/command/i });
+    await user.clear(composer);
+    await user.type(composer, '/who');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => {
+      expect(vi.mocked(window.electronAPI.reticulum.rrc.send)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          hub_dest_hash: hubA,
+          room: 'general',
+          body: '/who general',
+          type: 'msg',
+        }),
+      );
+    });
   });
 
   it('sends one /who per hub when switching focus', async () => {

@@ -252,16 +252,16 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 - Channel messaging and **direct messages (DMs)** with delivery ACK tracking (`expectedAckCrc`) and failure timeout; **DM threads can be closed** from the chat UI
 - **Transport badges** on received messages; **RF**, **MQTT**, or **both** (persisted as `received_via` in `meshcore_messages`); MQTT JSON chat can be used when RF is down
 - **Inbound dedup** (`meshcoreStoreDedup.ts`): merges duplicate RF/MQTT echoes, companion TX echoes, and tapback self-echoes so chat and Rooms stay readable
-- **MeshCore Open GIFs**: inbound `g:GIFID` (and Giphy URLs) render inline in chat; outbound send via App **MeshCore Open compatibility** toggle (paste URL/ID or **GIF** composer button) — see [parity doc](docs/meshcore-meshtastic-parity.md#meshcore-open-gif-wire-ggifid)
+- **MeshCore Open GIFs**: inbound `g:GIFID` (and Giphy URLs) render inline in chat; outbound send via Radio **MeshCore Open compatibility** toggle (paste URL/ID or **GIF** composer button) — see [parity doc](docs/meshcore-meshtastic-parity.md#meshcore-open-gif-wire-ggifid)
 - Incoming push events: periodic advert (0x80), path update (0x81), send confirmed (0x82), message waiting (0x83), new contact (0x8A), incoming DM (7), incoming channel message (8)
 - All messages and contacts persisted to SQLite (`meshcore_messages`, `meshcore_contacts` tables)
 
 **Room servers (BBS)** — **Rooms** tab (RF only; not MQTT)
 
-- Login to room-server contacts (guest read-only or admin post); **Continue read-only** when the server guest password is empty (zero-byte password, matching the official Android client)
+- Login to room-server contacts; **blank** guest password for read-only when allowed; **`"hello"`** as the default read/write guest password; **Continue read-only** also sends blank
 - Post plain UTF-8 after login; inbound **SignedPlain** pushes show author prefix stripped in the UI
 - **Remember password**, **Auto-sync** (periodic re-login while connected, minimum 60 minutes per room), per-room unread badges (sidebar **Rooms** tab; separate from **Chat** badges)
-- Room admin CLI in the Rooms panel; session/login queue and path sync in `meshcoreRoom*.ts` — see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#meshcore-room-servers) and [Troubleshooting](docs/troubleshooting.md#meshcore-room-server-login-posts-and-windows-10)
+- Room admin CLI / ACL setperm on the **Repeaters** tab (room rows); Rooms Members still call `get acl` via the same CLI path. Session/login queue and path sync in `meshcoreRoom*.ts` — see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#meshcore-room-servers) and [Troubleshooting](docs/troubleshooting.md#meshcore-room-server-login-posts-and-windows-10)
 
 **Diagnostics & Remote Queries**
 
@@ -272,8 +272,8 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 
 **Repeaters**
 
-- **Repeaters panel** (MeshCore-only tab): list repeaters with on-demand status (noise floor, RSSI/SNR, packet counts, air time, uptime, TX queue); **Path** column shows a per-hop SNR sparkline from the last trace (last trace/path hop data is also stored in local SQLite so sparklines can survive app restarts); per-row **Neighbors** expands an inline neighbor list (same query as node detail, including **Load more**)
-- **Per-repeater admin passwords**: optional **Remember** saves credentials per repeater in SQLite `app_settings` (`meshcoreRepeaterCredential:<nodeId>`); collapsible **Saved repeater passwords** sidebar section with per-repeater Forget
+- **Repeaters panel** (MeshCore-only tab): list **repeaters and room servers** (All / Repeaters / Rooms filter) with on-demand status (noise floor, RSSI/SNR, packet counts, air time, uptime, TX queue); **Path** column shows a per-hop SNR sparkline from the last trace (last trace/path hop data is also stored in local SQLite so sparklines can survive app restarts); per-row **Neighbors** expands an inline neighbor list (same query as node detail, including **Load more**); room rows add **Open room** (jump to Rooms) plus room CLI pills (`get acl`, `allow.read.only`, ACL setperm)
+- **Per-node admin passwords**: optional **Remember** saves credentials per repeater/room in SQLite `app_settings` (`meshcoreRepeaterCredential:<nodeId>` / room admin password); collapsible **Saved passwords** sidebar section with per-node Forget
 - **Waiting-message drain**: header status indicator (queued backlog and active sync on any protocol tab; **paused/deferred** state only on the MeshCore tab) during serial companion backlog drain; **Sync now** for manual catch-up
 - **Repeater CLI**: per-repeater expandable **CLI** interface; command input with Enter to send, scrollable command/response history, Up/Down arrow history navigation, quick-command bar (get name, get radio, neighbors, version, clock, clock sync, clear stats, advert, board, …), flood vs. auto (saved path) routing toggle; responses are correlated to commands via 2-character hex prefix tokens; configurable retries with dynamic timeout; **auto Ping** before the first multi-hop CLI command when no trace exists this session (info toast while establishing route); **destructive-command confirm** modal for reboot/erase/factory-reset patterns
 - **Remote session authentication (optional)**: Password may be required for **CLI** and some **telemetry** paths when firmware ACL demands it. **Status** and **Neighbors** use pubkey-framed companion commands and typically work without login on direct (0-hop) repeaters; the auth modal offers “Continue without password.” Saved passwords persist when **Remember** is checked. Admin RPCs share a serialized companion queue — expect up to ~2 minutes blocked while a ping or multi-hop request runs. Status/Telemetry/Neighbors toast when the radio is disconnected.
@@ -397,6 +397,7 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 - **Reticulum — no LoRa companion parity**: Reticulum does not use Meshtastic/MeshCore `ConnectionDriver`, MQTT hybrid, channel pills, Rooms BBS, or Hop Goblins diagnostics. The **Chat** tab is **DM-only**; hub room chat lives on the **RRC** tab. Interface add/edit/delete updates config on disk — **restart the stack** after changes under `rns-stack`.
 - **Reticulum — sidecar license**: The spawned `mesh-client-reticulum` binary is **AGPL-3.0** (separate process from the MIT Electron shell). See [docs/reticulum.md](docs/reticulum.md) and [docs/credits.md](docs/credits.md#bundled-binaries).
 - **Graph / Topology visible-node cap**: Meshtastic and MeshCore **Graph** and Reticulum **Topology** render at most **400** nodes after hop filters (force-layout budget). Numeric **Max hops** is applied even when Show distant is off. Unknown hops are omitted unless Max hops is **All hops** and Show distant is on (they are not 1-hop neighbors). The nearby hop ceiling (Mesh hops > 1, Reticulum hops > 2) applies only when Max hops is **All hops**. Reticulum Topology can also filter **RF only** (RNode / KISS / BLE; hides TCP/I2P/Auto). Reticulum path-table ingest is a separate layer (renderer feed **800**, sidecar **2,000**).
+- **Noble BLE long sessions (macOS observed; Windows precautionary):** The Noble BLE driver can hard-crash the app (`EXC_BREAKPOINT` / native abort) if a LoRa BLE session stays up for ~**5+ days** without a full app restart. This is **confirmed on macOS**; Windows is nudged as a precaution because the same failure class there is **unconfirmed**. The crash is outside JavaScript control (not catchable with `try/catch`); the mechanism is **suspected** to be a native teardown race and is tracked upstream as [stoprocent/noble#140](https://github.com/stoprocent/noble/issues/140). mesh-client **prompts on day 4 while Noble BLE is connected** (in-app banner + OS notification / Dock badge / taskbar flash + Restart). Prefer Serial/TCP for always-on desks. Linux uses Web Bluetooth (a different stack; this prompt is not shown).
 - **Reticulum — propagation required for offline peers**: LXMF send fails with `no_propagation_node` when the destination is not in the path table and no cascade candidates exist (enabled remotes or local-prop). Local inbox Completes (`stored_locally`) ≠ peer delivery at a remote PN. When a path exists, Direct is tried first; on Direct fail the sidecar cascades preferred remote → other enabled remotes (hop-sorted) → local-prop last.
 
 ---
@@ -425,6 +426,8 @@ yay -S mesh-client # or: paru -S mesh-client
 
 **macOS (release download):**
 
+- **Recommended:** download the **arm64 `.dmg`**, open it, and drag **Mesh-client** to **Applications**.
+- If you use the **`.zip`** instead: extract with **[Keka](https://www.keka.io/en/)** or `ditto -xk` — **do not use 7-Zip** (or Finder Archive Utility). Those tools flatten macOS framework symlinks and can cause a launch crash: `Library not loaded: Squirrel.framework`.
 - **Official [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) (v5.22.0+):** macOS builds are **Developer ID signed and notarized**. Drag to **Applications** and open normally — you should **not** need `xattr` or Right-click → Open.
 - **Unsigned local or fork builds** (`pnpm run dist:mac` without signing secrets, CI artifacts from forks): Gatekeeper may show **"Mesh-client" is damaged and can't be opened** (or **File is damaged and cannot be opened**), especially on **Apple silicon**. That is quarantine on unsigned downloads, not a corrupt file.
 
@@ -439,7 +442,7 @@ xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
 
 After running `xattr`, check Privacy & Security again (scroll to the bottom); the entry should now appear with an **Allow** button.
 
-See [Troubleshooting; macOS: File is damaged…](docs/troubleshooting.md#macos-file-is-damaged-and-cannot-be-opened) and [this explanation for a similar Electron app](https://github.com/jeffvli/feishin/issues/104#issuecomment-1553914730).
+See [Troubleshooting; macOS: File is damaged…](docs/troubleshooting.md#macos-file-is-damaged-and-cannot-be-opened), [macOS: Library not loaded: Squirrel.framework…](docs/troubleshooting.md#macos-library-not-loaded-squirrelframework-after-zip-extract), and [this explanation for a similar Electron app](https://github.com/jeffvli/feishin/issues/104#issuecomment-1553914730).
 
 **Building from source / development setup:** see [docs/development-environment.md](docs/development-environment.md) for complete shared requirements, clone/install steps, test harness setup, and detailed macOS/Windows/Linux instructions.
 

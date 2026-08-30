@@ -1,9 +1,9 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { ExternalLink } from 'lucide-react-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { getAppSettingsRaw } from '@/renderer/lib/appSettingsStorage';
+import { getAppSettingsRaw, isShareMyLocationEnabled } from '@/renderer/lib/appSettingsStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
 import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
@@ -113,7 +113,77 @@ export function ReticulumRmapDiscoveryControls({
     setCoords(resolveRmapCoordinates());
   }, [publishOn, interfaces.length]);
 
-  const controlsDisabled = disabled || busy || !sidecarApiReady;
+  const [shareSettingsTick, setShareSettingsTick] = useState(0);
+
+  useEffect(() => {
+    const syncShare = (): void => {
+      setShareSettingsTick((n) => n + 1);
+    };
+    window.addEventListener('mesh-client:appSettings', syncShare);
+    return () => {
+      window.removeEventListener('mesh-client:appSettings', syncShare);
+    };
+  }, []);
+
+  const shareMyLocationLive = useMemo(
+    () => isShareMyLocationEnabled(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tick forces re-read after appSettings event
+    [shareSettingsTick],
+  );
+
+  const controlsDisabled = disabled || busy || !sidecarApiReady || !shareMyLocationLive;
+  const prevShareMyLocationRef = useRef(shareMyLocationLive);
+  const shareOffDisableInFlightRef = useRef(false);
+
+  const disableRmapPublish = useCallback(async () => {
+    setBusy(true);
+    setReachableOnError(null);
+    try {
+      const result = await disableReticulumRmapDiscovery(interfaces);
+      if (result.errors.length > 0) {
+        if (result.applied === 0) {
+          addToast(t('reticulumRmapDiscovery.applyFailed', { error: result.errors[0] }), 'error');
+          return false;
+        }
+        addToast(
+          t('reticulumRmapDiscovery.disablePartialSuccess', {
+            applied: result.applied,
+            total: result.total,
+          }),
+          'warning',
+        );
+      } else {
+        addToast(t('reticulumRmapDiscovery.disableSuccess'), 'success');
+      }
+      setPublishOn(false);
+      setShowRestartConfirm(true);
+      await refreshInterfaces();
+      return true;
+    } catch (e) {
+      addToast(t('reticulumRmapDiscovery.applyFailed', { error: errLikeToLogString(e) }), 'error');
+      console.warn('[ReticulumRmapDiscoveryControls] disable ' + errLikeToLogString(e));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }, [addToast, interfaces, refreshInterfaces, t]);
+
+  useEffect(() => {
+    const prev = prevShareMyLocationRef.current;
+    prevShareMyLocationRef.current = shareMyLocationLive;
+    if (
+      prev &&
+      !shareMyLocationLive &&
+      publishOn &&
+      sidecarApiReady &&
+      !shareOffDisableInFlightRef.current
+    ) {
+      shareOffDisableInFlightRef.current = true;
+      void disableRmapPublish().finally(() => {
+        shareOffDisableInFlightRef.current = false;
+      });
+    }
+  }, [shareMyLocationLive, publishOn, sidecarApiReady, disableRmapPublish]);
 
   const persistAndApply = async (enable: boolean) => {
     setBusy(true);
@@ -170,24 +240,7 @@ export function ReticulumRmapDiscoveryControls({
         setPublishOn(true);
         setShowRestartConfirm(true);
       } else {
-        const result = await disableReticulumRmapDiscovery(interfaces);
-        if (result.errors.length > 0) {
-          if (result.applied === 0) {
-            addToast(t('reticulumRmapDiscovery.applyFailed', { error: result.errors[0] }), 'error');
-            return;
-          }
-          addToast(
-            t('reticulumRmapDiscovery.disablePartialSuccess', {
-              applied: result.applied,
-              total: result.total,
-            }),
-            'warning',
-          );
-        } else {
-          addToast(t('reticulumRmapDiscovery.disableSuccess'), 'success');
-        }
-        setPublishOn(false);
-        setShowRestartConfirm(true);
+        await disableRmapPublish();
       }
       await refreshInterfaces();
     } catch (e) {
@@ -212,6 +265,7 @@ export function ReticulumRmapDiscoveryControls({
 
   const handleToggle = () => {
     if (controlsDisabled) return;
+    if (!shareMyLocationLive) return;
     const next = !publishOn;
     if (next && !resolveRmapCoordinates()) {
       setShowGpsPrompt(true);
@@ -260,6 +314,9 @@ export function ReticulumRmapDiscoveryControls({
           </div>
         </div>
         <p className="text-muted text-xs">{t('reticulumRmapDiscovery.hint')}</p>
+        {!shareMyLocationLive && (
+          <p className="text-xs text-amber-300">{t('reticulumRmapDiscovery.disabledShareOff')}</p>
+        )}
         {coords ? (
           <p className="text-xs text-gray-300" role="status">
             {t('reticulumRmapDiscovery.coordsStatus', {

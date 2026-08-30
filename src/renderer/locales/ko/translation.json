@@ -390,7 +390,32 @@
     "themeResetFailed": "색상을 재설정하지 못했습니다.",
     "messageActionsBarBgVisible": "배경 표시",
     "rrcUnreadAllRoomMessages": "모든 객실 메시지에 대해 읽지 않은 RRC",
-    "rrcUnreadAllRoomMessagesHint": "켜져 있으면 새로운 RRC 룸 메시지가 읽지 않음으로 표시되어 채널 사운드를 재생할 수 있습니다. IRC 스타일 알림의 경우: 다이렉트 메시지 및 @ 멘션만 꺼주세요."
+    "rrcUnreadAllRoomMessagesHint": "켜져 있으면 새로운 RRC 룸 메시지가 읽지 않음으로 표시되어 채널 사운드를 재생할 수 있습니다. IRC 스타일 알림의 경우: 다이렉트 메시지 및 @ 멘션만 꺼주세요.",
+    "shareMyLocation": "내 위치 공유",
+    "shareMyLocationOffInfo": "위치 공유가 꺼져 있음 — 호스트 GPS 새로 고침 및 메시 전송이 비활성화되었습니다. 자동 새로 고침을 사용하거나 위치를 보내려면 위의 내 위치 공유를 활성화하십시오.",
+    "shareMyLocationHint": "활성화되면 이 앱이 이 컴퓨터에서 사용자의 위치를 검색하여 Meshtastic, MeshCore 또는 Reticulum (채팅 공유, 라디오 푸시, RMAP) 을 통해 전송할 수 있습니다. 비활성화되면 호스트 GPS 조회 및 앱 전송이 꺼집니다. 정적 좌표는 현지 지도에서만 작동합니다. 자체 GPS가 있는 라디오는 여전히 로컬에서 위치를 표시할 수 있습니다. 라디오 또는 모듈 설정을 조정할 때까지 장치 펌웨어가 계속 브로드캐스트될 수 있습니다.",
+    "reticulumBlocklist": {
+      "description": "차단된 발신자는 LXMF 메시지가 수신함에 도착하기 전에 삭제됩니다. 목록을 내보내 다른 설치로 이동하거나 목록을 가져와 한 번에 많은 발신자를 차단합니다.",
+      "exportButton": "차단 목록 내보내기",
+      "exportAria": "차단된 연락처 내보내기",
+      "importButton": "차단 목록 가져오기",
+      "importAria": "차단된 연락처 가져오기",
+      "exportOk": "{{count}} 차단된 연락처 내보내기 완료",
+      "exportEmpty": "내보낼 차단된 연락처가 없습니다.",
+      "exportFailed": "차단 목록을 내보낼 수 없습니다.",
+      "importOk": "가져온 {{imported}} 차단된 연락처 ({{skipped}} 건너뜀)",
+      "importFailed": "차단 목록을 가져올 수 없습니다.",
+      "unblockAria": "{{hash}} 차단 해제",
+      "unblockFailed": "해당 문의의 차단을 해제할 수 없습니다.",
+      "empty": "차단된 연락처가 없습니다.",
+      "title": "차단된 연락처"
+    },
+    "fontSize": "폰트 크기",
+    "fontSizeDesc": "앱에서 텍스트 크기를 조정하세요. 지도, 차트 및 터미널은 영향을 받지 않습니다.",
+    "decreaseFontSize": "글꼴 작게",
+    "increaseFontSize": "글꼴 크기 증가",
+    "resetFontSize": "초기화",
+    "resetFontSizeAria": "편지함 선택"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -693,7 +718,37 @@
     "meshcoreFastSend": {
       "warning": "메시가 릴레이할 수 있는 속도보다 빠르게 전송하고 있습니다. 바쁜 메시에서는 반복자가 서로 가깝게 보낸 메시지를 드롭할 수 있습니다. 메시지 사이에 몇 초를 남겨두세요."
     },
-    "outboxLegacyMultipartBlocked": "대기 중인 이 메시지는 더 이상 전송되지 않는 다중 부분 MeshCore 분할을 사용했습니다. 취소하고 더 ​​짧은 메시지(또는 여러 개의 개별 짧은 메시지)를 보내십시오."
+    "outboxLegacyMultipartBlocked": "대기 중인 이 메시지는 더 이상 전송되지 않는 다중 부분 MeshCore 분할을 사용했습니다. 취소하고 더 ​​짧은 메시지(또는 여러 개의 개별 짧은 메시지)를 보내십시오.",
+    "voiceMemo": {
+      "recordAria": "음성 메모 녹음",
+      "playAria": "음성 메모 재생",
+      "pauseAria": "음성 메모 일시 중지",
+      "seekAria": "음성 메모 재생 위치 찾기",
+      "containerAria": "음성 메모",
+      "sendAria": "음성 메모 보내기",
+      "callBusy": "메모를 녹음하기 전에 음성 통화를 끊으세요.",
+      "micDenied": "음성 메모를 녹음하려면 마이크 접근 권한이 필요합니다.",
+      "tooLargeForWire": "음성 메모가 너무 커서 보낼 수 없습니다. 더 짧은 클립을 녹화합니다.",
+      "tooLargeForPropagation": "음성 메시지가 전파 노드 제한보다 큽니다. 수령인이 온라인 상태일 때만 배달됩니다. 오프라인 배달을 위해 보관하려면 길이를 줄이세요.",
+      "directOnlyBadge": "다이렉트 전용 — 오프라인 스토리지에 너무 큼",
+      "recordTooltip": "LXMF 음성 메모 — 이 다이렉트 메시지에 대한 짧은 Opus 클립을 기록합니다. mesh-client, Ratspeak, Sideband (FIELD_AUDIO)가 지원합니다. LXST Call과 동일하지 않습니다.",
+      "sendTooltip": "녹음된 LXMF 음성 메모 보내기",
+      "startFailed": "음성 메모 녹음을 시작할 수 없습니다. 다시 시도하십시오.",
+      "sendAriaWithElapsed": "음성 메모 전송 ({{seconds}} 초 녹음)",
+      "unavailable": "음성 메모를 사용할 수 없음 — 이 장치에 첨부 파일이 캐시되지 않음."
+    },
+    "heardByRepeaters_one": "{{count}}개 수신",
+    "heardByRepeaters_other": "{{count}}개 수신",
+    "heardByNetwork": "네트워크에서 수신됨",
+    "notHeardTimeout": "들리지 않음 (시간 초과)",
+    "routeRelaysPredicted": "경로: ~{{count}} 릴레이 경유 {{hop}}",
+    "routeViaPredicted": "경로: {{hop}} 경유",
+    "routeRelaysPredictedHopsOnly": "경로: ~{{count}} 릴레이",
+    "heardByRepeatersDetail_one": "{{count}}개 수신: {{names}}",
+    "heardByRepeatersDetail_other": "{{count}}개 수신: {{names}}",
+    "heardByRepeaterNodeFallback": "노드 {{nodeId}}",
+    "heardByRepeatersAdditional_one": "{{count}} 추가 미확인 전달자 (해시: {{hashes}})",
+    "heardByRepeatersAdditional_other": "{{count}} 추가 미확인 전달자 (해시: {{hashes}})"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -1018,7 +1073,9 @@
       "importBackupAria": "붙여넣은 JSON에서 Ratspeak .rsi 백업 가져오기",
       "importBackupFromFileAria": "가져올 Ratspeak .rsi 백업 파일 선택",
       "exportAria": "PIN 암호화 Ratspeak .rsi ID 백업 내보내기",
-      "exportRawAria": "암호화되지 않은 원시 Reticulum ID 파일 내보내기"
+      "exportRawAria": "암호화되지 않은 원시 Reticulum ID 파일 내보내기",
+      "identityHashLabel": "ID 해시:",
+      "copyIdentityHash": "ID 해시 복사"
     },
     "reticulumInterfaces": {
       "title": "연계 문서",
@@ -1099,7 +1156,10 @@
         "blePeer": "시드 피어 주소를 사용하는 BLE 피어 메시.",
         "generic": "Reticulum 네트워크 인터페이스.",
         "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
-        "i2p": "이 기계의 라우터를 통해 I2P 백본. HTTP/HTTPS I2PTunnel 프록시 (4444/4445) 가 아닌 SAM 응용 프로그램 브리지 (127.0.0.1: 7656) 를 활성화합니다. 브리지가 수신 대기하도록 SAM을 활성화한 후 I2P를 다시 시작한 다음 이 인터페이스가 다운된 경우 Reticulum 스택을 다시 시작하십시오."
+        "i2p": "이 기계의 라우터를 통해 I2P 백본. HTTP/HTTPS I2PTunnel 프록시 (4444/4445) 가 아닌 SAM 응용 프로그램 브리지 (127.0.0.1: 7656) 를 활성화합니다. 브리지가 수신 대기하도록 SAM을 활성화한 후 I2P를 다시 시작한 다음 이 인터페이스가 다운된 경우 Reticulum 스택을 다시 시작하십시오.",
+        "serial": "와이어를 통해 TNC, 모뎀 또는 다른 호스트에 대한 일반 직렬 링크. 원단과 일치하도록 라인 매개 변수를 설정하십시오.",
+        "ax25kiss": "KISS TNC를 통한 AX.25 패킷 라디오. 콜사인과 이 스테이션을 식별하는 SSID (0-15) 가 필요합니다.",
+        "local": "이 기기의 공유 인스턴스 소켓. 다른 로컬 도구 (rnsd, Nomad Network, rnsh) 를 통해 이 스택에 연결할 수 있습니다. 소켓 경로는 이 인터페이스의 이름에서 파생되었으므로 이름을 바꾸면 다른 도구가 사용해야 하는 주소가 변경됩니다."
       },
       "rfProfile": {
         "coordinated": "지역별 조정",
@@ -1218,10 +1278,42 @@
       "backboneEnableGuidanceBody": "-2는 불필요한 대역폭 부풀림이 없는 이중화를 위한 스윗 스팟입니다. 글로벌 허브 1개와 지역 게이트웨이 1개를 목표로 하고 필요에 따라 특수 인터페이스 (예: I2P 또는 Yggdrasil) 를 엄격하게 활성화합니다. 로컬로 연결된 RNode 및 로컬 LAN 인터페이스는 이 백본 제한에 포함되지 않습니다.",
       "defaultHubsPickerHint": "기본 및 글로벌 백본에 지역을 더해 시작하세요. 백본 게이트웨이는 최대 1~3개(이상적은 2개)만 사용하세요. 로컬 RNode와 LAN 인터페이스는 포함되지 않습니다. 새 항목은 검토할 수 있도록 비활성으로 추가됩니다. Sync는 남은 폐기된 공식 테스트넷 허브(암스테르담)도 비활성화합니다.",
       "rnodeTransportBleHint": "BLE 본드는 macOS와 비동기화할 수 있습니다 (Forget + re-pair). 라디오가 근처에 있을 때는 USB 직렬 또는 Wi-Fi (tcp://) 를 선호합니다.",
-      "flowControl": "흐름 제어(TX Ready-Gate)"
+      "flowControl": "흐름 제어(TX Ready-Gate)",
+      "rmapFullModeHint": "RMAP 게시의 전체 모드는 IGNORE_CONFIG_WARNINGS를 통해 전체 모드를 유지합니다. LXMF 배달 알림은 스택 알림 간격 (기본 1시간) 에서 이 라디오를 내보냅니다.",
+      "effectiveModeBadge": "유효: {{mode}}",
+      "effectiveModeAria": "유효 런타임 모드 {{mode}}. 설정된 모드는 Reticulum이 실행 중인 모드와 다릅니다.",
+      "effectiveModeTooltip": "Reticulum은 ignore_config_warnings가 설정되지 않는 한 검색 가능한 인터페이스를 게이트웨이, 내부 또는 액세스 포인트가 필요하기 때문에 이 검색 가능한 인터페이스를 액세스 포인트 (또는 다른 허용 모드) 에 다시 작성했습니다. mesh-client 스탬프 후 스택을 다시 시작하여 Full (또는 구성된 모드) 이 적용되도록 옵트아웃합니다.",
+      "flowControlBleHint": "블루투스에서는 라디오가 CMD_READY를 전송하지 않는 경우가 많습니다. Mesh-Client는 여전히 TX를 페이싱하므로 (잠시 기다렸다가 계속) 흐름 제어는 대기열을 멈추지 않고 과부하를 줄입니다.",
+      "advancedFields": "고급 설정",
+      "field": {
+        "port": "포팅하기",
+        "speed": "속도 (baud)",
+        "databits": "비트",
+        "parity": "출산 횟수",
+        "stopbits": "중지 비트",
+        "callsign": "콜사인",
+        "ssid": "SSID",
+        "flow_control": "플로우 스테이트",
+        "preamble": "Preamble (ms)",
+        "txtail": "TX tail (ms)",
+        "persistence": "굳게 지킴",
+        "slottime": "슬롯 시간 (ms)"
+      },
+      "fieldOption": {
+        "parity": {
+          "N": "없음",
+          "E": "Even",
+          "O": "홀수"
+        }
+      },
+      "fieldRequired": "필수입력 항목입니다",
+      "fieldNotANumber": "정수 (숫자만) 를 입력하세요.",
+      "fieldOutOfRange": "값이 허용된 범위를 벗어났습니다.",
+      "fieldTooLong": "값이 너무 깁니다.",
+      "fieldInvalidOption": "지원되지 않는 값입니다."
     },
     "reticulumPeers": {
-      "hops": "Hops",
+      "hops": "홉",
       "actions": "작업",
       "path": "경로",
       "probe": "프로브"
@@ -1245,10 +1337,12 @@
       "connectingRow": "{{name}}: 블루투스를 통해 연결 중",
       "offlineHintWifi": "RNode가 LAN에 있고 전원이 켜져 있으며 구성된 IP (기본 TCP 포트 7633, 4242 아님) 에서 연결 가능한지 확인하십시오. DHCP가 새 주소를 지정한 경우 아래 호스트를 업데이트하거나 Reticulum → Admin에서 Wi-Fi를 다시 프로비저닝합니다.",
       "tcpUnreachable": "{{name}}: TCP 허브에 연결할 수 없음 ({{host}}: {{port}})",
-      "tcpUnreachableHint": "원격 Reticulum 인스턴스는 오프라인 또는 차단 연결일 수 있습니다. 이 인터페이스를 비활성화하거나 호스트와 포트를 확인하십시오.",
+      "tcpUnreachableHint": "원격 Reticulum 인스턴스는 오프라인이거나 연결을 차단 중일 수 있습니다. 이 인터페이스를 비활성화하거나 호스트와 포트를 확인하십시오. mesh-client 또는 스택을 자주 재시작하면 Reticulum 1.4.0+ 허브가 IP를 12시간 동안 차단할 수 있습니다. 다시 시작하지 말고 기다리십시오.",
       "connectingHintBle": "BLE RNode 링크는 스택이 시작된 후 최대 60초가 걸릴 수 있습니다(OS 암호 키 창). 메시지가 나타나면 현재 RNode PIN을 입력하세요. 123456은 입력하지 마세요. 이는 오류가 아닌 정상입니다. 장치는 성공적으로 결합될 때까지 시스템 설정에 나타나지 않을 수 있습니다.",
       "offlineHintBle": "이 오류를 지우려면 이 인터페이스를 제거하고 다시 추가(장치 선택)하여 저장된 Bluetooth ID를 새로 고친 다음 스택을 다시 시작해야 할 수 있습니다. OS에서 6자리 Bluetooth PIN을 요청할 수 있습니다(macOS, Windows 또는 Linux). RNode는 페어링할 때마다 새 코드를 생성합니다. 123456을 사용하지 마세요(Meshtastic 기본값이며 RNode가 아닙니다). 이 앱이 연결되기 전에 RNode가 시스템 설정 → Bluetooth에 나타날 필요는 없습니다. 스택이 페어링할 때 OS 대화 상자가 나타납니다. 디스플레이가 없는 라디오: USB 연결 → Reticulum Admin → Bluetooth → 페어링 시작 → 관리자 패널에 표시된 PIN(라디오 디스플레이가 아님)을 OS 대화 상자에 입력하세요. 디스플레이가 있는 라디오: Heltec 장치에서 버튼을 약 7초 동안 길게 누르고(타이밍은 다를 수 있으며, 많은 보드에서는 약 10초에 Wi‑Fi AP가 활성화됨), 화면의 PIN을 읽은 다음 OS 대화 상자에 입력하세요. 다시 시도하기 전에 OS Bluetooth 설정에서 실패한 연결을 지우세요.",
-      "offlineHintBleBondStale": "macOS는 여전히 이 RNode를 페어링됨으로 표시하지만 블루투스 키가 더 이상 일치하지 않습니다 (피어 제거 페어링 정보). 시스템 설정 → 블루투스에서 장치를 잊어 버리고 RNode를 페어링 모드 (관리자 → 블루투스 페어링 → 시작 또는 ~ 7 초) 에 놓은 다음이 인터페이스 (장치 선택) 를 제거하고 다시 추가하고 스택을 다시 시작한 다음 메시지가 나타나면 새 6 자리 PIN을 입력하십시오."
+      "offlineHintBleBondStale": "macOS는 여전히 이 RNode를 페어링됨으로 표시하지만 블루투스 키가 더 이상 일치하지 않습니다 (피어 제거 페어링 정보). 시스템 설정 → 블루투스에서 장치를 잊어 버리고 RNode를 페어링 모드 (관리자 → 블루투스 페어링 → 시작 또는 ~ 7 초) 에 놓은 다음이 인터페이스 (장치 선택) 를 제거하고 다시 추가하고 스택을 다시 시작한 다음 메시지가 나타나면 새 6 자리 PIN을 입력하십시오.",
+      "tcpFastFlap": "{{name}}: 잦은 스택 재시작 후 허브가 IP를 차단했을 수 있음 ({{host}}: {{port}})",
+      "tcpFastFlapHint": "Reticulum 1.4.0+ 퍼블릭 허브는 12시간 이내에 짧은 TCP 세션 5회 후 IP를 차단합니다. mesh-client 또는 스택의 빠른 재시작이 포함됩니다. 이 허브를 비활성화하고 최대 12시간을 기다리십시오. 다시 시작하면 차단이 연장됩니다."
     },
     "autoConnectingTo": "{{deviceName}}에 자동 연결 중…",
     "autoReconnectInProgress": "자동 재연결 진행 중…",
@@ -1335,7 +1429,9 @@
       "txQueueDropsHintBle": "이 BLE RNode는 TX 대기열을 배출할 수 없습니다 (링크 정지 또는 플랩핑). USB 직렬 또는 Wi-Fi (tcp://) 를 선호하거나 시스템 설정 → 블루투스에서 잊어버린 후 스택을 중지하고 다시 페어링하십시오.",
       "txQueueDropsHintBleBondStale": "BLE 결합이 오래되어 TX 대기열이 가득 찼습니다. 시스템 설정 → 블루투스에서 이 RNode를 지운 다음 관리자 → 블루투스를 사용하거나 (페어링 지우기/페어링 시작) USB로 전환하십시오.",
       "txQueueDropsHintNeutral": "이 인터페이스 TX 채널이 가득 찼습니다. 해당 인터페이스의 링크 상태를 확인하거나 비활성화하여 드롭을 중지하십시오.",
-      "txQueueDropsHintBleFlowControl": "라디오가 사용 중인 동안 호스트 TX 대기열 배압 (유량 제어 켜짐). RF 정체 시 예상 — 링크가 고정되지 않음. 아웃바운드 화물을 줄이거나 대기 시간을 기다리세요."
+      "txQueueDropsHintBleFlowControl": "라디오가 사용 중인 동안 호스트 TX 대기열 배압 (유량 제어 켜짐). RF 정체 시 예상 — 링크가 고정되지 않음. 아웃바운드 화물을 줄이거나 대기 시간을 기다리세요.",
+      "tcpResetByPeer": "{{name}}: 허브 TCP 세션 재설정 (피어별 연결 재설정)",
+      "tcpReadEof": "{{name}}: 허브가 TCP를 깨끗하게 닫음 (정보: TCP 읽기: EOF)"
     },
     "reticulumSidecarBundledMissing": "이 설치에는 번들로 제공되는 Reticulum 사이드카가 없습니다. 최신 릴리스로 업그레이드하거나 문제를 보고하세요. 패키지 설치에서는 소스에서 빌드할 수 없습니다.",
     "radioMqttRootDivergesWarning": "라디오 MQTT 루트 주제는 {{radioRoot}} 이지만 이 패널은 {{appPrefix}} 을 (를) 구독합니다. 라디오를 일치시켜 전국 노드 트래픽을 제한하십시오 — 주제 접두사를 업데이트하고 MQTT를 다시 연결하십시오.",
@@ -1396,7 +1492,19 @@
     "letsMeshRegionEu": "EU",
     "letsMeshRequiresWebSocket": "이 브로커 사전 설정에는 WebSocket 전송 (wss) 이 필요합니다.",
     "letsMeshRequiresPort": "이 브로커 사전 설정에는 포트 {{port}} (WebSocket TLS) 이 필요합니다.",
-    "letsMeshKnownBrokersOnly": "이 사전 설정은 알려진 공용 MeshCore MQTT 브로커만 지원합니다. 다른 브로커의 경우 사용자 지정으로 전환합니다."
+    "letsMeshKnownBrokersOnly": "이 사전 설정은 알려진 공용 MeshCore MQTT 브로커만 지원합니다. 다른 브로커의 경우 사용자 지정으로 전환합니다.",
+    "sortName": "이름",
+    "sortRssi": "RSSI",
+    "sortToolbar": "기기 목록",
+    "sortByNameAsc": "이름 A-Z",
+    "sortByNameDesc": "이름 Z-A",
+    "sortByRssiAsc": "RSSI 기준으로 정렬, 가장 먼저 약함",
+    "sortByRssiDesc": "RSSI로 정렬, 최강자 우선",
+    "pickerDeviceAria": "{{name}} {{address}}",
+    "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
+    "bluetoothMac": "블루투스 맥",
+    "bluetoothId": "블루투스 ID",
+    "reticulumAutoResendOnAnnounce": "동료가 알릴 때 실패한 메시지 재시도"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -1695,7 +1803,8 @@
         "rmap_no_tcp_hub": "검색 가능한 로컬 RNode에는 인터넷에 연결할 수 있는 TCP 클라이언트 허브가 없습니다.",
         "rmap_transport_disabled": "검색 가능한 인터페이스가 구성되었지만 전송 모드가 꺼져 있습니다.",
         "rmap_i2p_not_connectable": "I2P 인터페이스 \"{{name}}\" 는 검색 가능하지만 연결 가능은 예가 아닙니다.",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "rmap_mode_autocorrect": "비 AP/게이트웨이 모드에서 인터페이스 \"{{name}}\" 을 (를) 검색할 수 있습니다. Reticulum은 ignore_config_warnings를 설정하지 않는 한 액세스 포인트로 실행합니다. mesh-client가 옵트아웃 스탬프를 찍을 수 있도록 인터페이스를 편집하거나 스택을 다시 시작하십시오."
       },
       "runtime": {
         "rnsNotReady": "RNS 스택이 준비되지 않았습니다.",
@@ -1732,7 +1841,8 @@
         "txQueueDropsBle": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — BLE RNode 링크가 중단됨, USB 또는 재페어링 선호",
         "txQueueDropsBleBondStale": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — BLE 본드 오래됨; OS 블루투스는 잊어버리고 다시 페어링",
         "txQueueDropsNeutral": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참) — 해당 인터페이스의 링크 확인",
-        "txQueueDropsBleFlowControl": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (호스트 TX 대기열 꽉 참) — 흐름 제어 켜짐, RF 혼잡 시 예상, 링크 정지 아님"
+        "txQueueDropsBleFlowControl": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (호스트 TX 대기열 꽉 참) — 흐름 제어 켜짐, RF 혼잡 시 예상, 링크 정지 아님",
+        "tcpFastFlap": "TCP 허브 \"{{name}}\" 는 잦은 스택 재시작 후 이 IP를 차단했을 가능성이 높습니다 ({{host}}: {{port}})."
       }
     },
     "routingPort": {
@@ -2730,6 +2840,18 @@
     "reticulumScanImport": {
       "title": "스캔/get",
       "hint": "연락처, Columba lxma:// 카드 또는 암호화된 LXMF 종이 메시지를 QR에서 스캔하거나 붙여넣습니다."
+    },
+    "reticulumPathTable": {
+      "title": "경로 테이블",
+      "description": "경로 테이블을 지우면 캐시된 모든 경로가 삭제됩니다. 새로운 공지가 도착하면 경로가 다시 학습되므로 동료에게 보내는 첫 번째 메시지가 더 오래 걸릴 수 있습니다.",
+      "clear": "경로 테이블 지우기",
+      "clearing": "초기화",
+      "confirmTitle": "경로 테이블을 지우시겠습니까?",
+      "confirmBody": "캐시된 모든 경로가 삭제됩니다. 노선은 새로운 공지를 통해 재구축됩니다.",
+      "clearOk": "경로 테이블 지워짐 ({{count}} 경로 삭제됨)",
+      "clearFailed": "경로 테이블을 지울 수 없습니다.",
+      "clearAria": "경로 테이블 지우기",
+      "confirmAction": "지우기"
     }
   },
   "nodeDetailModal": {
@@ -3168,7 +3290,50 @@
       "noPages": "아직 페이지가 없습니다. 선택한 폴더에 .mu 파일을 추가하십시오 (예: index.mu).",
       "contentSourceNotFromPicker": "적용하기 전에 Choose 폴더가 있는 폴더를 선택하십시오.",
       "contentSourceNone": "선택된 폴더 없음",
-      "contentSourceRequired": "Nomad 호스팅을 시작하기 전에 페이지 폴더를 선택하세요."
+      "contentSourceRequired": "Nomad 호스팅을 시작하기 전에 페이지 폴더를 선택하세요.",
+      "newPage": "새 페이지",
+      "newPageName": "페이지 파일 이름 (.mu로 끝나야 함)",
+      "invalidPageName": ".. 또는 절대 경로 없이 .mu로 끝나는 파일 이름을 입력합니다.",
+      "edit": "편집",
+      "editPage": "{{path}} 편집",
+      "delete": "삭제",
+      "deletePage": "{{path}} 삭제",
+      "deleteConfirm": "이 페이지를 삭제하시겠습니까? 이렇게 하면 제공된 폴더에서 파일이 제거됩니다.",
+      "deleteConfirmAria": "이 페이지 삭제 확인",
+      "deleteError": "페이지를 삭제할 수 없습니다.",
+      "openError": "편집할 페이지를 열 수 없습니다.",
+      "editorTitle": "Micron 페이지 편집",
+      "editorAria": "Micron 페이지 소스",
+      "editorPreview": "미리보기",
+      "toolbarAria": "Micron 서식 작업",
+      "toolbar": {
+        "bold": "볼드",
+        "italic": "이탤릭체",
+        "underline": "밑줄",
+        "h1": "제목 1",
+        "h2": "제목 2",
+        "h3": "제목 3",
+        "alignLeft": "왼쪽으로 정렬",
+        "alignCenter": "본부, 센터",
+        "alignRight": "우측 정렬",
+        "divider": "구분자",
+        "link": "링크"
+      },
+      "linkTargetPrompt": "링크 대상 (페이지 경로 또는 대상 해시)",
+      "save": "저장",
+      "saveError": "페이지를 저장할 수 없습니다.",
+      "unsaved": "저장되지 않은 변경 사항",
+      "discard": "변경 사항을 취소",
+      "discardConfirm": "이 페이지에는 저장되지 않은 변경 사항이 있습니다.",
+      "discardConfirmAria": "저장되지 않은 변경 사항을 취소하고 닫습니다.",
+      "close": "편집기 닫기",
+      "closeBackdropAria": "Micron 페이지 편집기 닫기",
+      "pageTooLarge": "페이지가 너무 커서 호스팅할 수 없습니다 (512 KiB 제한).",
+      "pageNotFound": "해당 페이지는 더 이상 제공된 폴더에 존재하지 않습니다.",
+      "invalidPagePath": "해당 페이지 경로는 허용되지 않습니다.",
+      "pageIoError": "디스크에 있는 페이지를 읽거나 쓸 수 없습니다.",
+      "pageNotUtf8": "해당 페이지는 유효한 UTF-8 텍스트가 아닙니다.",
+      "pageWriteFailed": "페이지를 쓸 수 없습니다."
     },
     "sortLastHeard": "마지막으로 들은 시간",
     "sortHops": "홉",
@@ -3402,7 +3567,7 @@
       },
       "1": {
         "label": "클라이언트 음소거",
-        "description": "전송하지 않는 클라이언트"
+        "description": "패킷을 전달하지 않는 클라이언트. 이 역할을 적용하면 장치의 GPS 브로드캐스트 및 지도 보고서도 비활성화됩니다."
       },
       "2": {
         "label": "라우터",
@@ -3902,7 +4067,11 @@
     "floodScopeSavedEmpty": "아직 저장된 범위가 없습니다. 사용자 정의 해시태그를 적용하거나 Chat의 사용자 정의 범위를 사용하여 추가하세요.",
     "floodScopeRemoveSaved": "저장된 범위에서 제거",
     "floodScopeRemoveSavedAria": "저장된 범위에서 {{hashtag}} 제거",
-    "floodScopeInvalidHashtag": "유효한 지역 해시태그(예: #myregion)를 입력하세요."
+    "floodScopeInvalidHashtag": "유효한 지역 해시태그(예: #myregion)를 입력하세요.",
+    "sendPositionDisabledShareOff": "앱 → GPS/위치에서 내 위치 공유를 활성화하여 위치를 장치로 전송합니다.",
+    "clientMuteGpsSuppressed": "클라이언트 음소거 적용 — 장치에서 GPS 브로드캐스트 및 MQTT 맵 보고가 비활성화되었습니다.",
+    "validationShortNameTooLong": "짧은 이름은 4 UTF-8 바이트 이내여야 합니다",
+    "validationShortNameEmojiTooLarge": "이 문자는 짧은 이름에 비해 너무 큽니다 (이름당 최대 4 UTF-8 바이트)."
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",
@@ -4039,7 +4208,7 @@
     }
   },
   "repeatersPanel": {
-    "searchRepeaters": "중계기 검색",
+    "searchRepeaters": "중계기 및 룸 검색",
     "favorite": "가장 좋아하는",
     "unfavorite": "즐겨찾기 안함",
     "pingError": "핑 오류: {{error}}",
@@ -4051,12 +4220,12 @@
     "cliInput": "CLI 명령 입력",
     "cliInterface": "CLI 인터페이스",
     "sensorTelemetryLpp": "센서 원격 측정 LPP",
-    "noRepeatersYet": "아직 중계기가 발견되지 않았습니다.",
-    "noRepeatersHintPre": "\"반복기\" 유형의 연락처가 광고되면 반복기가 나타납니다. 사용",
+    "noRepeatersYet": "아직 발견된 중계기나 룸이 없습니다.",
+    "noRepeatersHintPre": "중계기와 룸 서버는 해당 유형의 연락처가 광고할 때 나타납니다. ",
     "importContacts": "연락처 가져오기",
     "noRepeatersHintMid": "에",
     "noRepeatersHintSuffix": "닉네임을 미리 로드하려면 탭하세요.",
-    "noRepeatersMatch": "검색어와 일치하는 중계기가 없습니다.",
+    "noRepeatersMatch": "검색과 일치하는 중계기나 룸이 없습니다.",
     "snrDbTooltip": "dB — 가능한 경우 요청 상태에서, 그렇지 않으면 연락처 목록에서",
     "rssiDbmTooltip": "dBm — 가능한 경우 요청 상태에서, 그렇지 않으면 연락처 목록에서",
     "hopCountTooltip": "마지막 Ping 추적의 홉 수(사용자와 이 노드 간 반복)",
@@ -4064,7 +4233,7 @@
     "heardPrefix": "들었다:",
     "noLppData": "이 응답에는 LPP 센서 데이터가 없습니다.",
     "enterCommand": "명령을 입력하세요...",
-    "searchRepeatersPlaceholder": "중계기 검색…",
+    "searchRepeatersPlaceholder": "중계기 및 룸 검색…",
     "openCliInterface": "개방형 CLI 인터페이스",
     "sensorLppButton": "센서(LPP)",
     "noTelemetryResponse": "아직 원격 분석 응답이 없습니다. 센서(LPP)를 다시 시도해 보세요.",
@@ -4079,7 +4248,7 @@
     "columnReliability": "신뢰할 수 있음",
     "columnActions": "행위",
     "nodesTabName": "노드",
-    "title": "중계기",
+    "title": "중계기와 룸",
     "columnsDataHint": "SNR, RSSI, 가동 시간 및 방송 시간은 상태 작업(또는 이 패널이 열려 있는 동안 자동 가져오기)에서 가져옵니다. 홉 및 경로 기록에는 Ping이 필요합니다. MeshCore는 광고만으로는 해당 열을 채우지 않습니다.",
     "remoteAuthLabel": "리피터 관리자 비밀번호(선택사항)",
     "remoteAuthPlaceholder": "리피터에 관리자 비밀번호가 없으면 비워 두세요.",
@@ -4164,7 +4333,34 @@
     "currentRouteLabel": "현재 경로:",
     "neighborsLoadMore": "더 보기 ({{loaded}}/{{total}} 로드됨)",
     "neighborsLoadMoreAria": "더 많은 이웃 로드 ({{loaded}}/{{total}} 로드됨)",
-    "neighborsLoadingMore": "로드 중…"
+    "neighborsLoadingMore": "로드 중…",
+    "cliClockCannotGoBackwards": "이 노드의 시계가 이 컴퓨터보다 앞서 있습니다({{utc}}). MeshCore 펌웨어는 시계를 뒤로 설정하지 않습니다. 확인 후 clkreboot를 실행한 다음 clock sync를 실행하세요.",
+    "typeFilterAria": "유형으로 필터하기",
+    "filterAll": "모두",
+    "filterRepeaters": "리피터",
+    "filterRooms": "룸",
+    "openRoom": "룸 열기",
+    "savedPasswordOrphanRoomLabel": "룸 {{nodeId}}",
+    "roomCliNeedsAdminPassword": "원격 룸 CLI에는 룸 관리자 암호(SendLogin ACL)가 필요합니다. Repeaters → 이 룸의 암호에 저장한 다음 다시 시도하세요. 게스트 BBS 로그인으로는 부족합니다.",
+    "cliHistoryError": "[오류: {{detail}}]",
+    "sortByStatusAsc": "상태순으로 정렬, 오프라인 우선",
+    "sortByStatusDesc": "상태순으로 정렬, 온라인 우선",
+    "sortByNameAsc": "이름 A-Z",
+    "sortByNameDesc": "이름 Z-A",
+    "sortByLastHeardAsc": "마지막 청문회, 가장 오래된 순서로 정렬",
+    "sortByLastHeardDesc": "마지막 청문회 기준으로 정렬, 최신순",
+    "sortBySnrAsc": "SNR 순으로 정렬, 가장 낮은 순",
+    "sortBySnrDesc": "SNR 순으로 정렬, 가장 높은 순",
+    "sortByRssiAsc": "RSSI 기준으로 정렬, 가장 먼저 약함",
+    "sortByRssiDesc": "RSSI로 정렬, 최강자 우선",
+    "sortByHopsAsc": "홉으로 정렬, 가장 가까운 우선순위",
+    "sortByHopsDesc": "홉 순으로 정렬, 가장 먼 순",
+    "sortByUptimeAsc": "가동 시간 순으로 정렬, 가장 짧은 순서로 정렬",
+    "sortByUptimeDesc": "가동 시간 순으로 정렬, 가장 긴 순서로 정렬",
+    "sortByAirPctAsc": "항공순 정렬 %, 최저 우선",
+    "sortByAirPctDesc": "항공순 정렬 %, 가장 높은 순",
+    "sortByReliabilityAsc": "신뢰도 순으로 정렬, 가장 낮은 순",
+    "sortByReliabilityDesc": "신뢰도 순으로 정렬, 가장 높은 순"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",
@@ -4323,7 +4519,17 @@
     "ignoredForAutoTitle": "자동에 대해 무시됨",
     "ignoredForAutoHint": "자동 모드는 이러한 노드를 통해 동기화되거나 저장 및 전달되지 않습니다. 수동 선호/동기화는 여전히 작동합니다.",
     "modeHelpAuto": "자동: 가장 잘 검색된 전파 노드 (추가하거나 선호하는 노드를 변경하지 않음), 구성된 리모컨, 로컬 전파 노드를 일회성으로 동기화합니다. 무시된 노드는 건너뜁니다. 네트워크 인터페이스가 없으면 로컬로만 설정됩니다.",
-    "modeHelpManual": "수동: 선호하는 노드를 동기화하거나, 선호하는 노드가 없을 때 해당 동기화에 대해 가장 가까운 추가된 노드를 선택합니다. 실패하면 다른 추가된 노드를 시도한 다음 로컬 전파 노드를 시도합니다."
+    "modeHelpManual": "수동: 선호하는 노드를 동기화하거나, 선호하는 노드가 없을 때 해당 동기화에 대해 가장 가까운 추가된 노드를 선택합니다. 실패하면 다른 추가된 노드를 시도한 다음 로컬 전파 노드를 시도합니다.",
+    "establishRecoveryTitle": "링크 증명 누락 — 다른 노드 시도 중지",
+    "establishRecoveryBody": "귀하의 신원에 대한 역방향 경로가 이 클라이언트에서 누락되었을 수 있습니다 (잘못된 전파 노드가 아님). 이 문제가 해결될 때까지 동기화는 다른 리모컨에 캐스케이드되지 않습니다.",
+    "establishRecoveryAnnounce": "지금 발표하기",
+    "establishRecoveryAnnounceAria": "지금 LXMF 배달 공지 보내기",
+    "establishRecoveryRetry": "동기화 다시 시도",
+    "establishRecoveryRetryWaiting": "동기화 다시 시도 ({{seconds}} s)",
+    "establishRecoveryRetryAria": "정산 발표를 기다린 다음 기본 설정 또는 마지막 대상에 대해 동기화를 다시 시도하십시오.",
+    "establishRecoveryDualTcpTip": "둘 이상의 TCP 인터페이스가 활성화되어 있습니다. 을 (를) 알리면 동기화 링크가 다른 경로에 남을 수 있습니다. 연결 → 인터페이스 에서 하나의 백본을 비활성화한 다음 을 (를) 알리고 다시 시도하십시오.",
+    "establishRecoveryOpenInterfaces": "인터페이스 열기",
+    "establishRecoveryOpenInterfacesAria": "연결 인터페이스를 열어 TCP 백본 조정"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 검색",
@@ -4354,7 +4560,8 @@
     "openGlobalMapAria": "Rmap.world에서 RMAP v4 글로벌 맵 열기",
     "applyPartialSuccess": "{{total}} 인터페이스의 {{applied}}에 RMAP 설정이 적용되었습니다.",
     "disablePartialSuccess": "{{total}} 인터페이스 중 {{applied}}에서 RMAP 게시가 비활성화되었습니다.",
-    "hint": "활성화된 모든 RMAP 지원 인터페이스(RNode/Multi, KISS, BLE 피어, I2P, UDP, 파이프)에서 RMAP 게시 및 앱 GPS 좌표를 활성화합니다. 확인란은 모든 적격 인터페이스가 게시될 때만 활성화됩니다. 부분적인 상태는 불확실합니다. 나머지를 동기화하려면 다시 확인하세요. 미세한 제어를 위해 Connection에서 인터페이스별 RMAP 토글을 사용합니다. LoRa 경로는 전송 및 rmap.world 허브도 가능하게 합니다."
+    "hint": "활성화된 모든 RMAP 지원 인터페이스(RNode/Multi, KISS, BLE 피어, I2P, UDP, 파이프)에서 RMAP 게시 및 앱 GPS 좌표를 활성화합니다. 확인란은 모든 적격 인터페이스가 게시될 때만 활성화됩니다. 부분적인 상태는 불확실합니다. 나머지를 동기화하려면 다시 확인하세요. 미세한 제어를 위해 Connection에서 인터페이스별 RMAP 토글을 사용합니다. LoRa 경로는 전송 및 rmap.world 허브도 가능하게 합니다.",
+    "disabledShareOff": "앱 → GPS/위치에서 내 위치 공유를 활성화하여 RMAP에 게시합니다."
   },
   "reticulumTopology": {
     "title": "네트워크 토폴로지",
@@ -4444,12 +4651,7 @@
     "postPlaceholder": "룸에 게시…",
     "postButton": "게시",
     "posting": "게시 중…",
-    "manageRoom": "관리",
-    "manageHeading": "룸 관리",
-    "cliPlaceholder": "관리자 CLI 명령...",
-    "cliSend": "보내기",
-    "clearCli": "CLI 지우기",
-    "cliEmpty": "아직 CLI 출력이 없습니다.",
+    "manageRoom": "Repeaters에서 관리",
     "aclPubkeyLabel": "공개 키 (64 16진수)",
     "aclLevelLabel": "사용권한 수준",
     "aclLevelRemove": "접근 제거",
@@ -4457,7 +4659,6 @@
     "aclLevelReadWrite": "읽기/쓰기 (게시 가능)",
     "aclLevelAdmin": "관리",
     "aclApply": "ACL 적용",
-    "adminPasswordRequired": "이 룸을 관리하려면 관리자 비밀번호가 필요합니다.",
     "postFailed": "룸에 게시하지 못했습니다.",
     "leaveRoom": "방 나가기",
     "rememberPassword": "비밀번호 기억하기",
@@ -4473,7 +4674,6 @@
     "cancelLoginHint": "다른 룸 로그인이 먼저 라디오에서 완료될 수 있습니다. 취소는 이 룸에 대한 추가 시도를 중지합니다.",
     "emptyGuestLoginHint": "비어 있는 게스트 필드: 빈 비밀번호 서버에는 \"읽기 전용으로 계속\"을 사용하세요. 로그인에는 비밀번호가 필요하며 필드가 비어 있으면 \"hello\"를 보냅니다.",
     "unreadPosts": "새 글 {{count}}개",
-    "closeManage": "닫기",
     "upgradeAccess": "업그레이드 액세스",
     "leavingRoom": "떠나기",
     "leaveRoomInProgress": "방을 나가는 중…",
@@ -4530,16 +4730,14 @@
     "legendNotSavedTooltip": "빈 원 — 이 룸에 대한 비밀번호가 저장되지 않음",
     "legendSavedTooltip": "하늘 반원 — 비밀번호가 저장되었습니다. 로그인하여 세션을 여세요",
     "legendLoggedInTooltip": "녹색 점 — 활성 클라이언트 세션 (서버가 오프라인이면 룸을 나가세요)",
-    "historyLocalHint": "게시물은 이 기기에서 이 룸에 로그인한 경우에만 표시됩니다. 자동 동기화를 활성화하여 구독 상태를 유지하세요. 기록은 룸 서버에서 채워지지 않습니다.",
+    "historyLocalHint": "로그인 시 mesh-client는 이 기기에 아직 로컬 워터마크가 없을 때 룸 서버 링 버퍼에 남아 있는 최근 게시물을 요청합니다. 연결된 동안 구독을 유지하려면 자동 동기화를 활성화하세요.",
     "loginAllSavedDisabledNoSavedPasswords": "전체 로그인을 사용하려면 먼저 룸 비밀번호를 저장하세요.",
     "membersHeadingWithCount": "회원 ({{count}})",
     "collapseRoomList": "방 목록 접기",
     "expandRoomList": "방 목록 펼치기",
-    "pathHashCliGet": "경로 해시 모드 가져오기",
-    "pathHashCliSet0": "경로 해시 모드 1바이트 설정",
-    "pathHashCliSet1": "경로 해시 모드 2바이트 설정",
-    "pathHashCliSet2": "경로 해시 모드 3바이트 설정",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} 읽지 않음"
+    "collapsedRoomWithUnread": "{{label}}, {{count}} 읽지 않음",
+    "manageJumpHint": "인프라 컨트롤(ping, status, CLI, ACL setperm)은 Repeaters 탭에 있습니다.",
+    "aclPubkeyPlaceholder": "0123456789abcdef…"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",
@@ -4763,8 +4961,7 @@
     "firmwareAvailable": "사용 가능한 펌웨어 업데이트: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} 새 메시지",
     "newMessages_other": "{{protocol}}: {{count}} 새 메시지",
-    "meshcoreDistanceFilterHint": "지도에 GPS가 있는 연락처가 {{count}}개 있습니다. 앱 → 모습에서 거리 필터를 활성화하여 근처 노드에 집중하세요.",
-    "longSessionRestartNudge": "Mesh-client가 4일 동안 실행되었습니다. 긴 MeshCore BLE 세션에서 충돌 위험을 줄이려면 앱을 다시 시작하십시오."
+    "meshcoreDistanceFilterHint": "지도에 GPS가 있는 연락처가 {{count}}개 있습니다. 앱 → 모습에서 거리 필터를 활성화하여 근처 노드에 집중하세요."
   },
   "updateStatus": {
     "checking": "확인 중…",
@@ -4952,7 +5149,15 @@
     "whisperReplyPlaceholder": "{{name}} 또는/msg에 회신…",
     "jumpToLatest": "최신으로 이동",
     "stackNotReady": "Reticulum 스택이 아직 준비되지 않았습니다. 연결될 때까지 기다린 다음 다시 시도하세요.",
-    "sidecarNotRunning": "Reticulum 사이드카가 실행되고 있지 않습니다. Connection에서 스택을 시작한 다음 다시 시도하십시오."
+    "sidecarNotRunning": "Reticulum 사이드카가 실행되고 있지 않습니다. Connection에서 스택을 시작한 다음 다시 시도하십시오.",
+    "whoReplyMissing": "{{room}} 에 대한 허브의 회원 목록이 없습니다 (답글은 링크 크기를 초과할 수 있음). 사람들이 참여하거나 채팅할 때 이름이 표시됩니다.",
+    "openNomadPage": "Nomad 페이지 열기 {{address}}",
+    "openDm": "{{address}} (으) 로 다이렉트 메시지 열기",
+    "openReticulumAddress": "Reticulum 주소 {{address}} 열기",
+    "addressChoiceTitle": "Reticulum 주소 열기",
+    "addressChoiceMessage": "{{address}}는 Nomad 페이지이거나 피어일 수 있습니다. 무엇을 열까요?",
+    "addressChoiceNomad": "Nomad 페이지",
+    "addressChoiceDm": "다이렉트 메시지"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5297,7 +5502,8 @@
     "sessionRowAria": "{{peer}} 과 (와) 의 {{app}} 게임",
     "apps": {
       "ttt": "Tic Tac Toe",
-      "chess": "체스"
+      "chess": "체스",
+      "four_in_a_row": "사목"
     },
     "status": {
       "pending": "대기",
@@ -5349,6 +5555,19 @@
       "boardAria": "Tic-Tac-Toe 보드",
       "cellEmptyAria": "Cell {{index}}, empty",
       "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+    },
+    "fourInARow": {
+      "youWon": "당신의 승리입니다!",
+      "opponentWon": "상대가 이겼습니다.",
+      "draw": "그리기",
+      "yourTurn": "당신의 차례입니다.",
+      "opponentTurn": "상대방 턴!",
+      "yourMarker": "당신은 {{marker}} 입니다",
+      "moveCount": "{{count}} 이동",
+      "boardAria": "사목 게임 보드",
+      "columnAria": "{{column}}번 열, 아래에서 위로: {{contents}}. 여기에 놓기",
+      "columnFullAria": "{{column}}번 열, 아래에서 위로: {{contents}}. 가득 참",
+      "columnEmptyContents": "비어 있음"
     },
     "chess": {
       "youWon": "당신의 승리입니다!",
@@ -5405,5 +5624,11 @@
     },
     "drawOfferWaitingBanner": "무승부 오퍼가 전송되었습니다. 상대를 기다리는 중...",
     "idleExpiryNotice": "게임은 비활성 후에 만료되며 삭제할 수 있습니다. 답이 없는 챌린지: 24시간 (모든 게임). 진행 중인 게임: 24시간 후 틱택토, 7일 후 체스 및 포인어로우."
+  },
+  "longSession": {
+    "title": "재시작 권장",
+    "body": "mesh-client는 Bluetooth 라디오가 연결된 상태에서 4일 동안 실행되고 있습니다. 긴 Noble BLE 세션에서 충돌 위험을 줄이려면 앱을 다시 시작하세요.",
+    "restart": "재시작",
+    "dismiss": "무시하기"
   }
 }
