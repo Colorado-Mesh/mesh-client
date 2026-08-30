@@ -3491,7 +3491,8 @@
     "pathsPinFailed": "このピアのメディア設定を更新できませんでした。",
     "tabHistory": "履歴",
     "emptyHistory": "メッセージ履歴はまだありません—ここでピアを見るためにLXMFメッセージを送受信します。",
-    "emptyContacts": "保存された連絡先はまだありません。ピアを開き、[連絡先として保存]を選択します。"
+    "emptyContacts": "保存された連絡先はまだありません。ピアを開き、[連絡先として保存]を選択します。",
+    "pathMediumTitle": "アクティブパスメディア： {{medium}}"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} 連絡先をデータベースにオフロードしました。",

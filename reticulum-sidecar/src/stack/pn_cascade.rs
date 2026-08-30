@@ -6,6 +6,7 @@
 use std::collections::HashSet;
 
 use crate::stack::DiscoveredPropagationRow;
+use crate::stack::path_medium::PathMediumSetting;
 use crate::stack::propagation_mode::PropagationMode;
 
 /// Cap on Auto's ephemeral discovered candidates. Mirrors the renderer's
@@ -24,6 +25,32 @@ pub fn hops_rank(hops: Option<u8>) -> u8 {
     }
 }
 
+/// Hops an RF-reachable PN may be away before it ranks behind every other candidate.
+/// Mirrors renderer `MAX_RF_PROPAGATION_HOPS` (reticulumPropagationMode.ts).
+pub const MAX_RF_PROPAGATION_HOPS: u8 = 2;
+
+/// True when a candidate is reachable only over RF beyond [`MAX_RF_PROPAGATION_HOPS`].
+///
+/// Such a node is a last resort: a multi-hop LoRa link cannot carry a propagation
+/// sync within the sync timeout, so preferring it strands outbound mail that a
+/// nearer node — or the local inbox — could have taken.
+pub fn is_slow_rf_candidate(medium: Option<PathMediumSetting>, hops: Option<u8>) -> bool {
+    if medium != Some(PathMediumSetting::Rf) {
+        return false;
+    }
+    match hops {
+        Some(h) => h > MAX_RF_PROPAGATION_HOPS,
+        // Unknown hops over RF cannot be assumed near.
+        None => true,
+    }
+}
+
+/// Sort key placing usable candidates ahead of slow RF ones, then by hop count.
+fn medium_then_hops_rank(candidate: &PnCascadeCandidate) -> (u8, u8) {
+    let slow_rf = u8::from(is_slow_rf_candidate(candidate.medium, candidate.hops));
+    (slow_rf, hops_rank(candidate.hops))
+}
+
 /// One PN eligible for Direct→Propagated cascade.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PnCascadeCandidate {
@@ -33,6 +60,8 @@ pub struct PnCascadeCandidate {
     /// True for an ephemeral Auto candidate heard from an announce (never persisted).
     pub is_discovered: bool,
     pub hops: Option<u8>,
+    /// Medium the path to this PN was learned over; `None` when no path is known.
+    pub medium: Option<PathMediumSetting>,
     pub id: String,
 }
 
@@ -78,24 +107,42 @@ pub fn build_pn_cascade_order(
     let mut remotes: Vec<PnCascadeCandidate> =
         candidates.iter().filter(|c| !c.is_local).cloned().collect();
     remotes.sort_by(|a, b| {
-        let ah = hops_rank(a.hops);
-        let bh = hops_rank(b.hops);
         a.is_discovered
             .cmp(&b.is_discovered)
-            .then_with(|| ah.cmp(&bh))
+            .then_with(|| medium_then_hops_rank(a).cmp(&medium_then_hops_rank(b)))
             .then_with(|| a.id.cmp(&b.id))
     });
+    // Slow RF remotes rank behind local-prop: depositing into the local inbox and
+    // waiting for peer sync beats a multi-hop LoRa deposit that will time out.
+    let (mut usable, slow_rf): (Vec<PnCascadeCandidate>, Vec<PnCascadeCandidate>) = remotes
+        .into_iter()
+        .partition(|c| !is_slow_rf_candidate(c.medium, c.hops));
     // Only reorder among enabled candidates — never synthesize a disabled/stale preferred.
+    // An explicitly preferred node wins even when it is slow RF: that is a user choice.
+    let mut preferred_slow: Option<PnCascadeCandidate> = None;
     if let Some(pref) = preferred_hash {
-        if let Some(idx) = remotes.iter().position(|c| c.hash == pref) {
-            let preferred = remotes.remove(idx);
-            remotes.insert(0, preferred);
+        if let Some(idx) = usable.iter().position(|c| c.hash == pref) {
+            let preferred = usable.remove(idx);
+            usable.insert(0, preferred);
+        } else if let Some(idx) = slow_rf.iter().position(|c| c.hash == pref) {
+            preferred_slow = Some(slow_rf[idx].clone());
         }
     }
-    let mut out = remotes;
+    let mut out: Vec<PnCascadeCandidate> = Vec::new();
+    if let Some(preferred) = preferred_slow {
+        out.push(preferred);
+    }
+    let promoted = out.first().map(|c| c.hash);
+    out.extend(usable);
     if let Some(local) = candidates.iter().find(|c| c.is_local).cloned() {
         out.push(local);
     }
+    out.extend(
+        slow_rf
+            .into_iter()
+            .filter(|c| promoted != Some(c.hash))
+            .collect::<Vec<_>>(),
+    );
     out
 }
 
@@ -153,6 +200,8 @@ pub fn candidates_from_propagation_rows(
                 is_local: true,
                 is_discovered: false,
                 hops: *hops,
+                // Local-prop is in-process; no path medium applies.
+                medium: None,
                 id: id.clone(),
             });
             continue;
@@ -171,6 +220,8 @@ pub fn candidates_from_propagation_rows(
             is_local: false,
             is_discovered: false,
             hops: *hops,
+            // Persisted rows carry no medium; only discovered PNs are medium-ranked.
+            medium: None,
             id: id.clone(),
         });
     }
@@ -222,13 +273,14 @@ pub fn auto_discovered_candidates(
             is_local: false,
             is_discovered: true,
             hops,
+            medium: row.medium,
             id: format!("discovered-{}", &hex::encode(hash)[..8]),
         });
     }
     out.sort_by(|a, b| {
-        let ah = hops_rank(a.hops);
-        let bh = hops_rank(b.hops);
-        ah.cmp(&bh).then_with(|| a.id.cmp(&b.id))
+        medium_then_hops_rank(a)
+            .cmp(&medium_then_hops_rank(b))
+            .then_with(|| a.id.cmp(&b.id))
     });
     out.truncate(MAX_AUTO_DISCOVERED_PN_CANDIDATES);
     out
@@ -269,6 +321,7 @@ mod tests {
             is_local: false,
             is_discovered: false,
             hops,
+            medium: None,
             id: id.into(),
         }
     }
@@ -279,11 +332,20 @@ mod tests {
             is_local: true,
             is_discovered: false,
             hops: Some(0),
+            medium: None,
             id: "local-prop".into(),
         }
     }
 
     fn discovered_row(hash_hex: &str, hops: Option<u8>) -> DiscoveredPropagationRow {
+        discovered_row_on(hash_hex, hops, None)
+    }
+
+    fn discovered_row_on(
+        hash_hex: &str,
+        hops: Option<u8>,
+        medium: Option<PathMediumSetting>,
+    ) -> DiscoveredPropagationRow {
         DiscoveredPropagationRow {
             destination_hash: hash_hex.into(),
             identity_hash: None,
@@ -293,6 +355,7 @@ mod tests {
             last_seen: Some(1),
             node_state: true,
             peering_cost: 0,
+            medium,
         }
     }
 
@@ -337,6 +400,108 @@ mod tests {
         assert_eq!(ordered[0].hash, preferred);
         assert_eq!(ordered[1].id, "pn-near");
         assert!(ordered.last().is_some_and(|c| c.is_local));
+    }
+
+    fn rf_remote(hash_byte: u8, hops: Option<u8>, id: &str) -> PnCascadeCandidate {
+        PnCascadeCandidate {
+            medium: Some(PathMediumSetting::Rf),
+            ..remote(hash_byte, hops, id)
+        }
+    }
+
+    #[test]
+    fn slow_rf_remote_ranks_behind_local_prop() {
+        // A 3-hop LoRa PN cannot carry a propagation sync; local-prop is the better bet.
+        let candidates = vec![rf_remote(0x33, Some(3), "pn-lora"), local(0x99)];
+        let ordered = build_pn_cascade_order(&candidates, None);
+        assert!(
+            ordered[0].is_local,
+            "local-prop must be tried before a multi-hop RF PN"
+        );
+        assert_eq!(ordered[1].id, "pn-lora");
+    }
+
+    #[test]
+    fn near_rf_and_network_remotes_still_rank_ahead_of_local() {
+        let candidates = vec![
+            rf_remote(0x33, Some(2), "pn-lora-near"),
+            remote(0x22, Some(4), "pn-ip-far"),
+            local(0x99),
+        ];
+        let ordered = build_pn_cascade_order(&candidates, None);
+        // Two hops of RF is within reach, so ordering stays hop-based among remotes.
+        assert_eq!(ordered[0].id, "pn-lora-near");
+        assert_eq!(ordered[1].id, "pn-ip-far");
+        assert!(ordered[2].is_local);
+    }
+
+    #[test]
+    fn rf_remote_with_unknown_hops_is_treated_as_slow() {
+        let candidates = vec![rf_remote(0x33, None, "pn-lora-unknown"), local(0x99)];
+        let ordered = build_pn_cascade_order(&candidates, None);
+        assert!(ordered[0].is_local);
+        assert_eq!(ordered[1].id, "pn-lora-unknown");
+    }
+
+    #[test]
+    fn explicit_preferred_slow_rf_still_goes_first() {
+        let preferred = [0x33; 16];
+        let candidates = vec![
+            rf_remote(0x33, Some(5), "pn-lora"),
+            remote(0x22, Some(4), "pn-ip"),
+            local(0x99),
+        ];
+        let ordered = build_pn_cascade_order(&candidates, Some(preferred));
+        assert_eq!(
+            ordered[0].hash, preferred,
+            "user choice overrides medium demotion"
+        );
+        assert_eq!(ordered[1].id, "pn-ip");
+        assert!(ordered[2].is_local);
+        // Preferred must not also appear again in the slow-RF tail.
+        assert_eq!(ordered.len(), 3);
+    }
+
+    #[test]
+    fn auto_discovered_ranks_network_ahead_of_multi_hop_rf() {
+        let lora = "33".repeat(16);
+        let ip = "22".repeat(16);
+        let discovered = vec![
+            discovered_row_on(&lora, Some(3), Some(PathMediumSetting::Rf)),
+            discovered_row_on(&ip, Some(6), Some(PathMediumSetting::Network)),
+        ];
+        let out = auto_discovered_candidates(
+            &discovered,
+            &[],
+            "",
+            PropagationMode::Auto,
+            u8::MAX,
+            &HashSet::new(),
+        );
+        let ids: Vec<&str> = out.iter().map(|c| c.id.as_str()).collect();
+        assert_eq!(
+            ids,
+            vec!["discovered-22222222", "discovered-33333333"],
+            "a 6-hop IP PN must outrank a 3-hop LoRa PN"
+        );
+    }
+
+    #[test]
+    fn is_slow_rf_candidate_only_flags_distant_rf() {
+        assert!(!is_slow_rf_candidate(None, Some(9)));
+        assert!(!is_slow_rf_candidate(
+            Some(PathMediumSetting::Network),
+            Some(9)
+        ));
+        assert!(!is_slow_rf_candidate(
+            Some(PathMediumSetting::Rf),
+            Some(MAX_RF_PROPAGATION_HOPS)
+        ));
+        assert!(is_slow_rf_candidate(
+            Some(PathMediumSetting::Rf),
+            Some(MAX_RF_PROPAGATION_HOPS + 1)
+        ));
+        assert!(is_slow_rf_candidate(Some(PathMediumSetting::Rf), None));
     }
 
     #[test]

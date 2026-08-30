@@ -124,7 +124,14 @@ function peerDisplayName(peer: ReticulumPeer): string {
   return peer.destination_hash.slice(0, 12);
 }
 
-/** Overlay live path-table route fields onto contact/history (or peer) rows. */
+/**
+ * Overlay live path-table route fields onto contact/history (or peer) rows.
+ *
+ * `interface`, `path_hash`, and `via_hash` describe one route and are merged as a
+ * unit: a patch that moves a peer to a different interface must not inherit the
+ * previous interface's next hop. Probe patches carry `{last_seen, hops, interface}`
+ * with no via, so field-by-field `??` would pair a live interface with a dead via.
+ */
 export function mergeReticulumPeerRouteFields<T extends ReticulumPeer>(
   base: T,
   live: ReticulumPeer | undefined | null,
@@ -132,8 +139,10 @@ export function mergeReticulumPeerRouteFields<T extends ReticulumPeer>(
   if (!live) return base;
   const hops = live.hops ?? base.hops;
   const iface = live.interface ?? base.interface;
-  const path_hash = live.path_hash ?? base.path_hash;
-  const via_hash = live.via_hash ?? base.via_hash;
+  const routeMoved =
+    live.interface != null && base.interface != null && live.interface !== base.interface;
+  const path_hash = routeMoved ? (live.path_hash ?? null) : (live.path_hash ?? base.path_hash);
+  const via_hash = routeMoved ? (live.via_hash ?? null) : (live.via_hash ?? base.via_hash);
   const last_seen = live.last_seen ?? base.last_seen;
   const path_hops = live.path_hops ?? base.path_hops;
   if (

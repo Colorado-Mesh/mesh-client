@@ -3491,7 +3491,8 @@
     "pathsPinFailed": "Falha ao atualizar a preferência do meio para este par.",
     "tabHistory": "Histórico",
     "emptyHistory": "Ainda não há histórico de mensagens — envie ou receba uma mensagem LXMF para ver os peers aqui.",
-    "emptyContacts": "Ainda não há contatos salvos — abra um peer e escolha Salvar como contato."
+    "emptyContacts": "Ainda não há contatos salvos — abra um peer e escolha Salvar como contato.",
+    "pathMediumTitle": "Meio de caminho ativo: {{medium}}"
   },
   "radioPanel": {
     "offloadedContacts": "Transferiu contatos {{count}} para o banco de dados.",

@@ -2014,6 +2014,8 @@ impl LiveBridge {
         let propagation = Arc::clone(&self.propagation);
         let pn_hosting_policy = Arc::clone(&self.pn_hosting_policy);
         let persisted = Arc::clone(&self.persisted);
+        let peer_via_cache = Arc::clone(&self.peer_via_cache);
+        let config_dir = self.config_dir.clone();
         tokio::spawn(async move {
             let (callback_tx, mut callback_rx) =
                 tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
@@ -2063,6 +2065,18 @@ impl LiveBridge {
                     }
                     hex::encode(pub_key)
                 });
+                // Medium of the path this PN is reachable on, so Auto ranking can
+                // demote a node that is only reachable over multi-hop LoRa.
+                let medium = peer_via_cache
+                    .lock()
+                    .ok()
+                    .and_then(|cache| cache.get(&hash_hex).cloned())
+                    .filter(|iface_name| !iface_name.is_empty())
+                    .map(|iface_name| {
+                        let config_rows =
+                            config::interfaces_from_config_dir(&config_dir).unwrap_or_default();
+                        medium_for_path_interface(&iface_name, &config_rows)
+                    });
                 let row = super::DiscoveredPropagationRow {
                     destination_hash: hash_hex.clone(),
                     identity_hash: identity_hash_hex.clone(),
@@ -2072,6 +2086,7 @@ impl LiveBridge {
                     last_seen: Some(last_seen),
                     node_state: parsed.node_state,
                     peering_cost: parsed.peering_cost,
+                    medium,
                 };
                 let (payload, cascade_fields_changed) = {
                     let Ok(mut cache) = discovered.lock() else {
@@ -2083,6 +2098,7 @@ impl LiveBridge {
                         prev.node_state != row.node_state
                             || prev.hops != row.hops
                             || prev.peering_cost != row.peering_cost
+                            || prev.medium != row.medium
                     });
                     while cache.len() > MAX_DISCOVERED_PROPAGATION {
                         // Evict oldest last_seen.
@@ -2096,17 +2112,7 @@ impl LiveBridge {
                             break;
                         }
                     }
-                    let payload = serde_json::json!({
-                        "destination_hash": hash_hex,
-                        "identity_hash": identity_hash_hex,
-                        "public_key": public_key_hex,
-                        "display_name": display_name,
-                        "hops": evt.hops,
-                        "last_seen": last_seen,
-                        "node_state": parsed.node_state,
-                        "peering_cost": parsed.peering_cost,
-                    });
-                    (payload, changed)
+                    (discovered_propagation_payload(&row), changed)
                 };
                 let frame =
                     serde_json::json!({ "type": "propagation.discovered", "payload": payload });
@@ -2594,6 +2600,9 @@ impl LiveBridge {
         let propagation = self.propagation.clone();
         let config_dir = self.config_dir.clone();
         let local_identity_hash = self.identity.hash;
+        let discovered_propagation = self.discovered_propagation.clone();
+        let persisted = self.persisted.clone();
+        let pn_hosting_policy = self.pn_hosting_policy.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(2));
             let mut known_path_hashes: HashSet<String> = HashSet::new();
@@ -2685,6 +2694,39 @@ impl LiveBridge {
                         for entry in &entries {
                             let key = hex::encode(entry.hash);
                             cache.insert(key, entry.interface.clone());
+                        }
+                    }
+                    // Announces usually arrive before the path they create, so discovered
+                    // PN mediums are resolved here as well, not only at announce time.
+                    {
+                        let iface_by_dest: HashMap<String, String> = entries
+                            .iter()
+                            .map(|e| (hex::encode(e.hash), e.interface.clone()))
+                            .collect();
+                        let config_rows =
+                            config::interfaces_from_config_dir(&config_dir).unwrap_or_default();
+                        let changed_media =
+                            reconcile_discovered_media(&discovered_propagation, &|dest| {
+                                iface_by_dest
+                                    .get(dest)
+                                    .filter(|name| !name.is_empty())
+                                    .map(|name| medium_for_path_interface(name, &config_rows))
+                            });
+                        if !changed_media.is_empty() {
+                            for row in &changed_media {
+                                let frame = serde_json::json!({
+                                    "type": "propagation.discovered",
+                                    "payload": discovered_propagation_payload(row),
+                                });
+                                let _ = event_tx.send(frame.to_string());
+                            }
+                            rebuild_pn_cascade_candidates(
+                                &persisted,
+                                &discovered_propagation,
+                                &outbound,
+                                &pn_hosting_policy,
+                            )
+                            .await;
                         }
                     }
                     let name_lookup = display_name_cache
@@ -4543,6 +4585,92 @@ impl LiveBridge {
         cleared
     }
 
+    /// Drop transport routes learned through `iface_name`; returns next hops dropped.
+    ///
+    /// Called when an interface is disabled or deleted: every route whose next hop was
+    /// reachable only through it is now dead, but RNS keeps the entry until a delivery
+    /// attempt fails — which is what makes a stale via survive an interface toggle.
+    /// Local caches are cleared even when a control query times out, since the
+    /// transport-side drop may still have applied.
+    pub async fn drop_routes_for_interface(&self, iface_name: &str, vias: &[String]) -> usize {
+        let mut dropped = 0usize;
+        for via_hex in vias {
+            let Ok(next_hop) = parse_hash16(via_hex) else {
+                continue;
+            };
+            if self
+                .query_control_timed(TransportQuery::DropAllVia { next_hop })
+                .await
+                .is_none()
+            {
+                tracing::debug!(
+                    iface = %iface_name,
+                    via = %via_hex,
+                    "drop_routes_for_interface: DropAllVia timed out or failed"
+                );
+                continue;
+            }
+            dropped += 1;
+        }
+        let stale_dests: Vec<String> = match self.peer_via_cache.lock() {
+            Ok(mut cache) => {
+                let dests: Vec<String> = cache
+                    .iter()
+                    .filter(|(_, name)| name.eq_ignore_ascii_case(iface_name))
+                    .map(|(dest, _)| dest.clone())
+                    .collect();
+                for dest in &dests {
+                    cache.remove(dest);
+                }
+                dests
+            }
+            Err(_) => Vec::new(),
+        };
+        // `DropAllVia` only reaches destinations behind a next hop. A direct neighbour on
+        // this interface has no via, so without an explicit `DropPath` the transport keeps
+        // the route and the next maintenance tick reinstalls it into `peer_via_cache`.
+        for dest in &stale_dests {
+            let Ok(dest_hash) = parse_hash16(dest) else {
+                continue;
+            };
+            if self
+                .query_control_timed(TransportQuery::DropPath { dest: dest_hash })
+                .await
+                .is_none()
+            {
+                tracing::debug!(
+                    iface = %iface_name,
+                    dest = %dest,
+                    "drop_routes_for_interface: DropPath timed out or failed"
+                );
+            }
+        }
+        if let Ok(mut driver) = self.outbound.lock() {
+            for dest in &stale_dests {
+                driver.clear_path_to(dest);
+            }
+        }
+        // The maintained path-table snapshot backs `fetch_peers(false)` and
+        // `live_path_fields_for_destination`, so it must not keep serving a route on an
+        // interface that is gone. Identity fields stay; the route clears as one unit.
+        if let Ok(mut cache) = self.path_peer_cache.lock() {
+            for peer in cache.iter_mut() {
+                let learned_here = peer
+                    .interface
+                    .as_deref()
+                    .is_some_and(|name| name.eq_ignore_ascii_case(iface_name));
+                if !learned_here {
+                    continue;
+                }
+                peer.interface = None;
+                peer.path_hash = None;
+                peer.via_hash = None;
+                peer.hops = None;
+            }
+        }
+        dropped
+    }
+
     pub async fn probe_peer(&self, hash: &str) -> Result<serde_json::Value, String> {
         let dest = parse_hash16(hash)?;
         match self
@@ -6169,6 +6297,54 @@ fn path_table_added_hashes_capped(prev: &HashSet<String>, next: &HashSet<String>
 /// Takes the shared Arcs rather than `&self` so the propagation announce task can refresh
 /// the list as soon as a new PN is heard — otherwise a discovered node would only become
 /// cascade-eligible after a settings write or a stack restart.
+/// Medium of a path-table interface name, resolved against local config rows.
+fn medium_for_path_interface(iface_name: &str, config_rows: &[InterfaceRow]) -> PathMediumSetting {
+    path_medium::medium_from_via_atom(classify_path_interface_name(iface_name, config_rows))
+}
+
+/// Wire payload for a `propagation.discovered` event.
+fn discovered_propagation_payload(row: &super::DiscoveredPropagationRow) -> serde_json::Value {
+    serde_json::json!({
+        "destination_hash": row.destination_hash,
+        "identity_hash": row.identity_hash,
+        "public_key": row.public_key,
+        "display_name": row.display_name,
+        "hops": row.hops,
+        "last_seen": row.last_seen,
+        "node_state": row.node_state,
+        "peering_cost": row.peering_cost,
+        "medium": row.medium.map(PathMediumSetting::as_str),
+    })
+}
+
+/// Refresh discovered-PN mediums against the current path table; returns changed rows.
+///
+/// A PN's medium is only knowable once a path to it exists, and an announce usually
+/// arrives before (or creates) that path — so resolving it once at announce time leaves
+/// the row stale until the next announce, up to a full announce interval away. A route
+/// that later moves from RF to a network interface has the same problem in reverse, and
+/// would keep the node wrongly demoted out of the Auto shortlist.
+fn reconcile_discovered_media(
+    discovered: &Arc<Mutex<HashMap<String, super::DiscoveredPropagationRow>>>,
+    medium_for_dest: &dyn Fn(&str) -> Option<PathMediumSetting>,
+) -> Vec<super::DiscoveredPropagationRow> {
+    let Ok(mut cache) = discovered.lock() else {
+        return Vec::new();
+    };
+    let mut changed = Vec::new();
+    for row in cache.values_mut() {
+        let next = medium_for_dest(&row.destination_hash);
+        // A destination that dropped out of the path table keeps its last known medium:
+        // clearing it would flap the ranking on every transient path expiry.
+        if next.is_none() || next == row.medium {
+            continue;
+        }
+        row.medium = next;
+        changed.push(row.clone());
+    }
+    changed
+}
+
 async fn rebuild_pn_cascade_candidates(
     persisted: &Arc<RwLock<PersistedState>>,
     discovered_propagation: &Arc<Mutex<HashMap<String, super::DiscoveredPropagationRow>>>,
@@ -7850,6 +8026,109 @@ mod reply_field_tests {
             .expect("set field");
         let decoded = reaction_fields_from_message(&ok_msg).expect("reaction fields");
         assert_eq!(decoded.reaction_target, hex::encode(target));
+    }
+}
+
+#[cfg(test)]
+mod discovered_medium_reconcile_tests {
+    use super::*;
+
+    fn discovered_row(
+        destination_hash: &str,
+        medium: Option<PathMediumSetting>,
+    ) -> super::super::DiscoveredPropagationRow {
+        super::super::DiscoveredPropagationRow {
+            destination_hash: destination_hash.to_string(),
+            identity_hash: None,
+            public_key: None,
+            display_name: Some("Gateway PN".into()),
+            hops: Some(2),
+            last_seen: Some(1_700_000_000),
+            node_state: true,
+            peering_cost: 0,
+            medium,
+        }
+    }
+
+    fn cache(
+        rows: Vec<super::super::DiscoveredPropagationRow>,
+    ) -> Arc<Mutex<HashMap<String, super::super::DiscoveredPropagationRow>>> {
+        Arc::new(Mutex::new(
+            rows.into_iter()
+                .map(|r| (r.destination_hash.clone(), r))
+                .collect(),
+        ))
+    }
+
+    #[test]
+    fn announce_before_path_fills_in_the_medium_later() {
+        let hash = "aa".repeat(16);
+        let discovered = cache(vec![discovered_row(&hash, None)]);
+
+        let changed = reconcile_discovered_media(&discovered, &|_| Some(PathMediumSetting::Rf));
+
+        assert_eq!(
+            changed.len(),
+            1,
+            "row must be re-emitted once the path lands"
+        );
+        assert_eq!(changed[0].medium, Some(PathMediumSetting::Rf));
+        assert_eq!(
+            discovered.lock().unwrap().get(&hash).unwrap().medium,
+            Some(PathMediumSetting::Rf)
+        );
+    }
+
+    #[test]
+    fn route_moving_from_rf_to_network_updates_the_row() {
+        let hash = "bb".repeat(16);
+        let discovered = cache(vec![discovered_row(&hash, Some(PathMediumSetting::Rf))]);
+
+        let changed =
+            reconcile_discovered_media(&discovered, &|_| Some(PathMediumSetting::Network));
+
+        assert_eq!(changed.len(), 1);
+        assert_eq!(changed[0].medium, Some(PathMediumSetting::Network));
+    }
+
+    #[test]
+    fn unchanged_medium_emits_nothing() {
+        let hash = "cc".repeat(16);
+        let discovered = cache(vec![discovered_row(
+            &hash,
+            Some(PathMediumSetting::Network),
+        )]);
+
+        let changed =
+            reconcile_discovered_media(&discovered, &|_| Some(PathMediumSetting::Network));
+
+        assert!(changed.is_empty());
+    }
+
+    #[test]
+    fn destination_absent_from_the_path_table_keeps_its_last_medium() {
+        let hash = "dd".repeat(16);
+        let discovered = cache(vec![discovered_row(&hash, Some(PathMediumSetting::Rf))]);
+
+        let changed = reconcile_discovered_media(&discovered, &|_| None);
+
+        assert!(changed.is_empty(), "a transient path expiry must not flap");
+        assert_eq!(
+            discovered.lock().unwrap().get(&hash).unwrap().medium,
+            Some(PathMediumSetting::Rf)
+        );
+    }
+
+    #[test]
+    fn medium_for_path_interface_classifies_rf_and_tcp() {
+        assert_eq!(
+            medium_for_path_interface("RNodeInterface[LoRa]", &[]),
+            PathMediumSetting::Rf
+        );
+        assert_eq!(
+            medium_for_path_interface("TCPInterface[hub/10.0.0.5:4242]", &[]),
+            PathMediumSetting::Network
+        );
     }
 }
 

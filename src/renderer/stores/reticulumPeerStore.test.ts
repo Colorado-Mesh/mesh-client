@@ -14,6 +14,7 @@ import {
   capReticulumPeerMaps,
   mergePeerAppearancesFromDb,
   mergeReticulumPeerMaps,
+  mergeReticulumPeerRouteFields,
   refreshReticulumPeersFromSidecar,
   resetReticulumPeerPatchBufferForTests,
   resetReticulumPeerRefreshSingleFlightForTests,
@@ -58,6 +59,67 @@ describe('resolveReticulumPeerLabel', () => {
     expect(
       resolveReticulumPeerLabel({ destination_hash: hash, display_name: null }, null, 'Nomad Node'),
     ).toBe('Nomad Node');
+  });
+});
+
+describe('mergeReticulumPeerRouteFields', () => {
+  const hash = 'd010ea4417f71ff4fd15a6182747aaec';
+  const deadVia = 'f2e5117828492caf16be98d17adfba53';
+
+  it('drops the previous next hop when the interface changes', () => {
+    // Probe patches carry interface but no via; keeping the old one pairs a live
+    // interface with a next hop that only existed on the interface it left.
+    const base = {
+      destination_hash: hash,
+      hops: 2,
+      interface: 'RNS_Transport_US-East',
+      path_hash: deadVia,
+      via_hash: deadVia,
+    };
+    const merged = mergeReticulumPeerRouteFields(base, {
+      destination_hash: hash,
+      hops: 3,
+      interface: 'ttyUSB0',
+      path_hash: null,
+      via_hash: null,
+    });
+    expect(merged.interface).toBe('ttyUSB0');
+    expect(merged.via_hash).toBeNull();
+    expect(merged.path_hash).toBeNull();
+    expect(merged.hops).toBe(3);
+  });
+
+  it('keeps known route fields when the interface is unchanged', () => {
+    const base = {
+      destination_hash: hash,
+      hops: 2,
+      interface: 'ttyUSB0',
+      path_hash: 'b9bd85e63543d48087c2cf60e02502d0',
+      via_hash: 'b9bd85e63543d48087c2cf60e02502d0',
+    };
+    const merged = mergeReticulumPeerRouteFields(base, {
+      destination_hash: hash,
+      hops: 3,
+      interface: 'ttyUSB0',
+      via_hash: null,
+    });
+    expect(merged.via_hash).toBe('b9bd85e63543d48087c2cf60e02502d0');
+    expect(merged.hops).toBe(3);
+  });
+
+  it('keeps known route fields when the patch omits the interface', () => {
+    const base = {
+      destination_hash: hash,
+      hops: 2,
+      interface: 'ttyUSB0',
+      via_hash: 'b9bd85e63543d48087c2cf60e02502d0',
+    };
+    const merged = mergeReticulumPeerRouteFields(base, {
+      destination_hash: hash,
+      last_seen: 99,
+    });
+    expect(merged.interface).toBe('ttyUSB0');
+    expect(merged.via_hash).toBe('b9bd85e63543d48087c2cf60e02502d0');
   });
 });
 

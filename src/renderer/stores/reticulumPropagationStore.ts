@@ -85,6 +85,11 @@ export interface DiscoveredPropagationRow {
   last_seen?: number | null;
   node_state: boolean;
   peering_cost: number;
+  /**
+   * Medium the path to this PN was learned over (`rf` for LoRa/BLE, `network` for IP),
+   * or null/absent when no path is known. Auto ranking demotes multi-hop RF nodes.
+   */
+  medium?: 'rf' | 'network' | null;
 }
 
 interface PropagationSyncState {

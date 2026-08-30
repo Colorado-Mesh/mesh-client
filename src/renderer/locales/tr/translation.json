@@ -3491,7 +3491,8 @@
     "pathsPinFailed": "Bu eş için ortam tercihi güncellenemedi.",
     "tabHistory": "Geçmiş",
     "emptyHistory": "Henüz mesaj geçmişi yok — eşleri burada görmek için bir LXMF mesajı gönderin veya alın.",
-    "emptyContacts": "Henüz kayıtlı kişi yok — bir eş açın ve Kişi olarak kaydet'i seçin."
+    "emptyContacts": "Henüz kayıtlı kişi yok — bir eş açın ve Kişi olarak kaydet'i seçin.",
+    "pathMediumTitle": "Aktif yol ortamı: {{medium}}"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kişi veritabanına aktarıldı.",

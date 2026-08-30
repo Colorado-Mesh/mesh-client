@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+use super::path_medium::PathMediumSetting;
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct StackIdentity {
     pub configured: bool,
@@ -156,6 +158,13 @@ pub struct DiscoveredPropagationRow {
     /// Actively serving when true (from PN announce `node_state`).
     pub node_state: bool,
     pub peering_cost: u8,
+    /// Medium the announce path was learned over, when a path is known.
+    ///
+    /// Auto ranking deprioritizes RF: a propagation node reachable only over LoRa
+    /// cannot serve a 256 KB propagation limit at usable speed, so a hop-count-only
+    /// ranking would pick it over a slightly more distant IP node and then time out.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub medium: Option<PathMediumSetting>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

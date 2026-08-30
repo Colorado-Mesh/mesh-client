@@ -3491,7 +3491,8 @@
     "pathsPinFailed": "Kan mediumvoorkeur voor deze peer niet bijwerken.",
     "tabHistory": "Historie",
     "emptyHistory": "Nog geen berichtgeschiedenis — verzend of ontvang een LXMF-bericht om peers hier te zien.",
-    "emptyContacts": "Nog geen opgeslagen contacten — open een peer en kies Opslaan als contactpersoon."
+    "emptyContacts": "Nog geen opgeslagen contacten — open een peer en kies Opslaan als contactpersoon.",
+    "pathMediumTitle": "Actief padmedium: {{medium}}"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} contacten naar de database overgebracht.",

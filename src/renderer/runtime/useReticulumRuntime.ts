@@ -972,6 +972,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
           last_seen?: number | null;
           node_state?: boolean;
           peering_cost?: number;
+          medium?: string | null;
         };
         if (typeof p.destination_hash === 'string') {
           useReticulumPropagationStore.getState().upsertDiscovered({
@@ -983,6 +984,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
             last_seen: p.last_seen,
             node_state: p.node_state !== false,
             peering_cost: typeof p.peering_cost === 'number' ? p.peering_cost : 0,
+            medium: p.medium === 'rf' || p.medium === 'network' ? p.medium : null,
           });
         }
       }

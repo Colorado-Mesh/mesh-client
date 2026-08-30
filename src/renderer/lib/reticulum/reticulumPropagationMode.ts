@@ -82,9 +82,14 @@ export type AutoPropagationTarget =
 interface RankedRemote {
   hops: number;
   sortKey: string;
+  /** True for a node reachable only over multi-hop RF; ranks behind everything else. */
+  slowRf?: boolean;
 }
 
 function sortByHopsThenKey<T extends RankedRemote>(a: T, b: T): number {
+  const aSlow = a.slowRf === true;
+  const bSlow = b.slowRf === true;
+  if (aSlow !== bSlow) return aSlow ? 1 : -1;
   if (a.hops !== b.hops) return a.hops - b.hops;
   return a.sortKey.localeCompare(b.sortKey);
 }
@@ -92,6 +97,29 @@ function sortByHopsThenKey<T extends RankedRemote>(a: T, b: T): number {
 export interface DiscoveredPropagationTarget {
   destinationHash: string;
   hops: number;
+  /** Reachable only over multi-hop RF — tried after the local inbox, never before it. */
+  slowRf: boolean;
+}
+
+/**
+ * Hops an RF-reachable PN may be away before Auto treats it as a last resort.
+ * Mirrored by sidecar `pn_cascade::MAX_RF_PROPAGATION_HOPS`.
+ *
+ * A propagation sync moves up to the propagation limit (256 KB by default). Over
+ * multi-hop LoRa that cannot finish inside the sync timeout, so ranking such a node
+ * ahead of an IP node — or ahead of the local inbox — strands outbound mail.
+ */
+export const MAX_RF_PROPAGATION_HOPS = 2;
+
+/** True when a discovered PN is reachable only over RF beyond {@link MAX_RF_PROPAGATION_HOPS}. */
+export function isSlowRfPropagationTarget(
+  medium: 'rf' | 'network' | null | undefined,
+  hops: number | null | undefined,
+): boolean {
+  if (medium !== 'rf') return false;
+  // Unknown hops over RF cannot be assumed near.
+  if (hops == null || !Number.isFinite(hops)) return true;
+  return hops > MAX_RF_PROPAGATION_HOPS;
 }
 
 /**
@@ -114,7 +142,7 @@ export function listDiscoveredPropagationTargets(
   autoBlacklist: ReadonlySet<string> = EMPTY_AUTO_BLACKLIST,
 ): DiscoveredPropagationTarget[] {
   const configuredHashes = configuredPropagationDestinationHashes(nodes);
-  const rows: { destinationHash: string; hops: number; sortKey: string }[] = [];
+  const rows: { destinationHash: string; hops: number; sortKey: string; slowRf: boolean }[] = [];
   for (const row of discovered) {
     if (!row.node_state) continue;
     const hash = row.destination_hash.toLowerCase();
@@ -124,20 +152,21 @@ export function listDiscoveredPropagationTargets(
       destinationHash: row.destination_hash,
       hops: row.hops ?? Number.POSITIVE_INFINITY,
       sortKey: row.display_name?.trim() || row.destination_hash,
+      slowRf: isSlowRfPropagationTarget(row.medium, row.hops),
     });
   }
   rows.sort(sortByHopsThenKey);
-  return rows.map(({ destinationHash, hops }) => ({ destinationHash, hops }));
+  return rows.map(({ destinationHash, hops, slowRf }) => ({ destinationHash, hops, slowRf }));
 }
 
-/** Discovered PNs with a known hop count (path table), best first. */
+/** Discovered PNs with a known hop count (path table) on a usable medium, best first. */
 export function listFiniteHopDiscoveredPropagationTargets(
   nodes: PropagationNodeRow[],
   discovered: readonly DiscoveredPropagationRow[],
   autoBlacklist: ReadonlySet<string> = EMPTY_AUTO_BLACKLIST,
 ): DiscoveredPropagationTarget[] {
-  return listDiscoveredPropagationTargets(nodes, discovered, autoBlacklist).filter((t) =>
-    hasFinitePropagationHops(t.hops),
+  return listDiscoveredPropagationTargets(nodes, discovered, autoBlacklist).filter(
+    (t) => !t.slowRf && hasFinitePropagationHops(t.hops),
   );
 }
 
@@ -148,8 +177,22 @@ export function listUnknownHopDiscoveredPropagationTargets(
   autoBlacklist: ReadonlySet<string> = EMPTY_AUTO_BLACKLIST,
 ): DiscoveredPropagationTarget[] {
   return listDiscoveredPropagationTargets(nodes, discovered, autoBlacklist).filter(
-    (t) => !hasFinitePropagationHops(t.hops),
+    (t) => !t.slowRf && !hasFinitePropagationHops(t.hops),
   );
+}
+
+/**
+ * Discovered PNs reachable only over multi-hop RF, best first.
+ *
+ * Tried after the local inbox: a LoRa deposit that times out is worse than keeping the
+ * message locally and letting peer sync carry it.
+ */
+export function listSlowRfDiscoveredPropagationTargets(
+  nodes: PropagationNodeRow[],
+  discovered: readonly DiscoveredPropagationRow[],
+  autoBlacklist: ReadonlySet<string> = EMPTY_AUTO_BLACKLIST,
+): DiscoveredPropagationTarget[] {
+  return listDiscoveredPropagationTargets(nodes, discovered, autoBlacklist).filter((t) => t.slowRf);
 }
 
 /**
@@ -254,7 +297,8 @@ export function pickAutoPropagationTarget(
   discovered: readonly DiscoveredPropagationRow[] = [],
   autoBlacklist: ReadonlySet<string> = EMPTY_AUTO_BLACKLIST,
 ): AutoPropagationTarget | null {
-  // Finite-hop discovered → configured → unknown-hop discovered → local (matches cascade).
+  // Finite-hop discovered → configured → unknown-hop discovered → local → slow RF
+  // discovered (matches cascade).
   const finiteBest = listFiniteHopDiscoveredPropagationTargets(nodes, discovered, autoBlacklist).at(
     0,
   );
@@ -278,6 +322,11 @@ export function pickAutoPropagationTarget(
 
   if (hasReadyEnabledLocalPropagationNode(nodes)) {
     return { kind: 'local' };
+  }
+
+  const slowRfBest = listSlowRfDiscoveredPropagationTargets(nodes, discovered, autoBlacklist).at(0);
+  if (slowRfBest != null) {
+    return { kind: 'discovered', destinationHash: slowRfBest.destinationHash };
   }
   return null;
 }
