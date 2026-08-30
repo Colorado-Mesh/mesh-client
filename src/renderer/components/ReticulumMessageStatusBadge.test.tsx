@@ -39,6 +39,16 @@ describe('ReticulumMessageStatusBadge', () => {
     expect(screen.getByText(/reticulumPnAbbrev/)).toBeTruthy();
   });
 
+  it('does not show the delivered check for a remote PN deposit', async () => {
+    // The proof came from the propagation node, not the recipient.
+    const view = await renderAndAssertAxe(
+      <ReticulumMessageStatusBadge status="acked" via="tcp" deliveryMethod="propagated" />,
+    );
+    expect(screen.getByText(/reticulumPnAbbrev\s+\u{1F4E5}/u)).toBeTruthy();
+    expect(screen.queryByText(/✓/)).toBeNull();
+    expect(view.container.querySelector('.text-bright-green')).toBeNull();
+  });
+
   it('shows Paper for paper Completes', async () => {
     await renderAndAssertAxe(
       <ReticulumMessageStatusBadge status="acked" via="tcp" deliveryMethod="paper" />,

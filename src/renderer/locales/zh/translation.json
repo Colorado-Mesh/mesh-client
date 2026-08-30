@@ -3491,7 +3491,8 @@
     "pathsPinFailed": "无法更新此对等方的媒体首选项。",
     "tabHistory": "历史",
     "emptyHistory": "尚无消息历史记录—发送或接收 LXMF 消息以在此处查看对等节点。",
-    "emptyContacts": "还没有保存的联系人—打开对等点并选择“另存为联系人”。"
+    "emptyContacts": "还没有保存的联系人—打开对等点并选择“另存为联系人”。",
+    "pathMediumTitle": "活动路径介质： {{medium}}"
   },
   "radioPanel": {
     "offloadedContacts": "已将{{count}}个联系人卸载到数据库。",

@@ -3532,7 +3532,8 @@
     "pathsPinFailed": "Aktualizace předvolby média pro tohoto protějšku se nezdařila.",
     "tabHistory": "Historie",
     "emptyHistory": "Zatím žádná historie zpráv — odešlete nebo přijměte zprávu LXMF, abyste zde viděli peery.",
-    "emptyContacts": "Zatím žádné uložené kontakty — otevřete peer a zvolte Uložit jako kontakt."
+    "emptyContacts": "Zatím žádné uložené kontakty — otevřete peer a zvolte Uložit jako kontakt.",
+    "pathMediumTitle": "Aktivní médium cesty: {{medium}}"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kontaktů bylo přesunuto do databáze.",

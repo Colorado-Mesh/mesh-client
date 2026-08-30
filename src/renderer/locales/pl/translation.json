@@ -3571,7 +3571,8 @@
     "pathsPinFailed": "Nie udało się zaktualizować preferencji medium dla tego partnera.",
     "tabHistory": "Historia rozmów",
     "emptyHistory": "Brak historii wiadomości — wyślij lub otrzymaj wiadomość LXMF, aby zobaczyć peerów tutaj.",
-    "emptyContacts": "Brak zapisanych kontaktów — otwórz peera i wybierz Zapisz jako kontakt."
+    "emptyContacts": "Brak zapisanych kontaktów — otwórz peera i wybierz Zapisz jako kontakt.",
+    "pathMediumTitle": "Czynnik aktywnej ścieżki: {{medium}}"
   },
   "radioPanel": {
     "offloadedContacts": "Przeniesiono kontakty {{count}} do bazy danych.",

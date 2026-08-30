@@ -3491,7 +3491,8 @@
     "pathsPinFailed": "이 피어의 중간 환경 설정을 업데이트하지 못했습니다.",
     "tabHistory": "기록",
     "emptyHistory": "아직 메시지 기록이 없습니다. 여기에서 피어를 보려면 LXMF 메시지를 보내거나 받으세요.",
-    "emptyContacts": "아직 저장된 연락처가 없습니다. 피어를 열고 연락처로 저장을 선택합니다."
+    "emptyContacts": "아직 저장된 연락처가 없습니다. 피어를 열고 연락처로 저장을 선택합니다.",
+    "pathMediumTitle": "활성 경로 매체: {{medium}}"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} 연락처를 데이터베이스로 오프로드했습니다.",

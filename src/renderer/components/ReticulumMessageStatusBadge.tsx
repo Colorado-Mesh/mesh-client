@@ -22,6 +22,11 @@ type OutboundStatus = ReticulumMessageStatusBadgeProps['status'];
 
 /** House mark for local-prop (own PN) offline storage — not a peer-delivery check. */
 const LOCAL_PN_HOUSE_ICON = '\u{1F3E0}';
+/**
+ * Inbox tray for a remote PN deposit. The proof came from the propagation node, not the
+ * recipient, so this must never share the green check that means end-to-end delivery.
+ */
+const REMOTE_PN_INBOX_ICON = '\u{1F4E5}';
 /** Info mark — Direct-only / too large for PN (notice, not a send failure). */
 const DIRECT_ONLY_NOTICE_ICON = '\u2139';
 
@@ -58,6 +63,10 @@ function statusIcon(
   if (deliveryMethod === 'stored_locally' && status !== 'failed') {
     return LOCAL_PN_HOUSE_ICON;
   }
+  // Remote PN deposit acknowledged by the PN, not by the recipient.
+  if (deliveryMethod === 'propagated' && status === 'acked') {
+    return REMOTE_PN_INBOX_ICON;
+  }
   switch (status) {
     case 'sending':
       return '\u23F3';
@@ -77,6 +86,10 @@ function statusColorClass(
     return 'text-amber-400';
   }
   if (deliveryMethod === 'stored_locally' && status !== 'failed') {
+    return 'text-amber-400';
+  }
+  // Stored at a remote PN is progress, not delivery — amber, never the delivered green.
+  if (deliveryMethod === 'propagated' && status === 'acked') {
     return 'text-amber-400';
   }
   switch (status) {

@@ -16,6 +16,10 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
 import { normalizeLastHeardMs } from '@/renderer/lib/nodeStatus';
 import {
+  classifyReticulumVia,
+  formatReticulumViaBadgeLabel,
+} from '@/renderer/lib/reticulum/classifyReticulumVia';
+import {
   registerReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
@@ -93,6 +97,37 @@ function peerHashToNodeNum(hash: string): number {
   return nodeId;
 }
 
+/**
+ * Hop count plus the medium of the active path.
+ *
+ * RNS keeps one active path per destination, so a TCP route can silently shadow a
+ * direct RF one. Showing the medium here makes that visible without opening the
+ * peer detail modal, which is the only other place ranked path slots are rendered.
+ */
+function PeerHopsCell({
+  peer,
+  t,
+}: {
+  peer: ReticulumPeer;
+  t: (key: string, opts?: Record<string, string>) => string;
+}) {
+  const iface = peer.interface?.trim();
+  const via = iface ? classifyReticulumVia(iface) : null;
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span>{peer.hops ?? '—'}</span>
+      {via != null && peer.hops != null ? (
+        <span
+          className="text-muted rounded bg-slate-700/60 px-1 py-0.5 text-[10px] font-medium"
+          title={t('peerListPanel.pathMediumTitle', { medium: formatReticulumViaBadgeLabel(via) })}
+        >
+          {formatReticulumViaBadgeLabel(via)}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 interface PeerTableRowProps {
   prepared: PreparedReticulumPeerRow;
   activeTab: PeerListTab;
@@ -162,7 +197,9 @@ const PeerTableRow = memo(function PeerTableRow({
               {contacted ? t('peerListPanel.contactYes') : t('peerListPanel.contactNo')}
             </span>
           </td>
-          <td className="py-2 pr-2">{peer.hops ?? '—'}</td>
+          <td className="py-2 pr-2">
+            <PeerHopsCell peer={peer} t={t} />
+          </td>
           <td className="py-2 pr-2 whitespace-nowrap" title={formatPeerActivity(peer)}>
             {formatPeerActivity(peer)}
           </td>
@@ -175,7 +212,9 @@ const PeerTableRow = memo(function PeerTableRow({
           <td className="py-2 pr-2 whitespace-nowrap" title={formatPeerActivity(peer)}>
             {formatPeerActivity(peer)}
           </td>
-          <td className="py-2 pr-2">{peer.hops ?? '—'}</td>
+          <td className="py-2 pr-2">
+            <PeerHopsCell peer={peer} t={t} />
+          </td>
           <td className="py-2 pr-2">
             <button
               type="button"

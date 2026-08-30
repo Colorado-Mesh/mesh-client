@@ -3491,7 +3491,8 @@
     "pathsPinFailed": "Échec de la mise à jour de la préférence moyenne pour cet homologue.",
     "tabHistory": "Historique",
     "emptyHistory": "Pas encore d'historique des messages — envoyez ou recevez un message LXMF pour voir les pairs ici.",
-    "emptyContacts": "Aucun contact enregistré pour le moment — ouvrez un pair et choisissez Enregistrer en tant que contact."
+    "emptyContacts": "Aucun contact enregistré pour le moment — ouvrez un pair et choisissez Enregistrer en tant que contact.",
+    "pathMediumTitle": "Milieu du chemin actif : {{medium}}"
   },
   "radioPanel": {
     "offloadedContacts": "Déchargement des contacts {{count}} dans la base de données.",

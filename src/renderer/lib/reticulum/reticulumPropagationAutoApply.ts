@@ -4,6 +4,7 @@ import {
   isLocalPropagationLoading,
   listConfiguredRemotePropagationIds,
   listFiniteHopDiscoveredPropagationTargets,
+  listSlowRfDiscoveredPropagationTargets,
   listUnknownHopDiscoveredPropagationTargets,
   propagationAutoBlacklistSet,
   propagationTargetDestinationHash,
@@ -388,7 +389,14 @@ async function runPropagationSyncCascade(
     if (unknownOutcome === 'cancelled') return false;
     if (unknownOutcome === 'client_local') return tryLocalSettleIfEnabled(attempts);
 
-    return tryLocalSettleIfEnabled(attempts);
+    if (await tryLocalSettleIfEnabled(attempts)) return true;
+
+    // Last resort: a PN reachable only over multi-hop RF. Depositing there usually
+    // exceeds the sync timeout, so it is tried only once everything else has failed.
+    const slowRfOutcome = await tryDiscoveredBatch(
+      listSlowRfDiscoveredPropagationTargets(nodes, discovered, autoBlacklist),
+    );
+    return slowRfOutcome === 'success';
   }
 
   // Manual: explicit first target → Preferred → picked remote → other remotes → local.

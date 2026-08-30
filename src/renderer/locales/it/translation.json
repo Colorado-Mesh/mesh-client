@@ -3491,7 +3491,8 @@
     "pathsPinFailed": "Impossibile aggiornare la preferenza media per questo peer.",
     "tabHistory": "Cronologia",
     "emptyHistory": "Ancora nessuna cronologia dei messaggi: invia o ricevi un messaggio LXMF per vedere i peer qui.",
-    "emptyContacts": "Ancora nessun contatto salvato — apri un peer e scegli Salva come contatto."
+    "emptyContacts": "Ancora nessun contatto salvato — apri un peer e scegli Salva come contatto.",
+    "pathMediumTitle": "Mezzo percorso attivo: {{medium}}"
   },
   "radioPanel": {
     "offloadedContacts": "Contatti {{count}} scaricati nel database.",

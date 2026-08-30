@@ -3491,7 +3491,8 @@
     "pathsPinFailed": "Die Medieneinstellung für diesen Peer konnte nicht aktualisiert werden.",
     "tabHistory": "Verlauf",
     "emptyHistory": "Noch kein Nachrichtenverlauf — senden oder empfangen Sie eine LXMF-Nachricht, um Peers hier zu sehen.",
-    "emptyContacts": "Noch keine gespeicherten Kontakte — öffnen Sie einen Peer und wählen Sie Als Kontakt speichern."
+    "emptyContacts": "Noch keine gespeicherten Kontakte — öffnen Sie einen Peer und wählen Sie Als Kontakt speichern.",
+    "pathMediumTitle": "Aktives Pfadmedium: {{medium}}"
   },
   "radioPanel": {
     "offloadedContacts": "Entladen von {{count}} Kontakten in die Datenbank.",

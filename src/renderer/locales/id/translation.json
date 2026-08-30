@@ -3491,7 +3491,8 @@
     "pathsPinFailed": "Gagal memperbarui preferensi media untuk peer ini.",
     "tabHistory": "Riwayat",
     "emptyHistory": "Belum ada riwayat pesan — kirim atau terima pesan LXMF untuk melihat peer di sini.",
-    "emptyContacts": "Belum ada kontak tersimpan — buka peer dan pilih Simpan sebagai kontak."
+    "emptyContacts": "Belum ada kontak tersimpan — buka peer dan pilih Simpan sebagai kontak.",
+    "pathMediumTitle": "Media jalur aktif: {{medium}}"
   },
   "radioPanel": {
     "offloadedContacts": "Membongkar {{count}} kontak ke database.",

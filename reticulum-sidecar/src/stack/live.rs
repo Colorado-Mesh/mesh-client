@@ -2014,6 +2014,8 @@ impl LiveBridge {
         let propagation = Arc::clone(&self.propagation);
         let pn_hosting_policy = Arc::clone(&self.pn_hosting_policy);
         let persisted = Arc::clone(&self.persisted);
+        let peer_via_cache = Arc::clone(&self.peer_via_cache);
+        let config_dir = self.config_dir.clone();
         tokio::spawn(async move {
             let (callback_tx, mut callback_rx) =
                 tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
@@ -2063,6 +2065,21 @@ impl LiveBridge {
                     }
                     hex::encode(pub_key)
                 });
+                // Medium of the path this PN is reachable on, so Auto ranking can
+                // demote a node that is only reachable over multi-hop LoRa.
+                let medium = peer_via_cache
+                    .lock()
+                    .ok()
+                    .and_then(|cache| cache.get(&hash_hex).cloned())
+                    .filter(|iface_name| !iface_name.is_empty())
+                    .map(|iface_name| {
+                        let config_rows =
+                            config::interfaces_from_config_dir(&config_dir).unwrap_or_default();
+                        path_medium::medium_from_via_atom(classify_path_interface_name(
+                            &iface_name,
+                            &config_rows,
+                        ))
+                    });
                 let row = super::DiscoveredPropagationRow {
                     destination_hash: hash_hex.clone(),
                     identity_hash: identity_hash_hex.clone(),
@@ -2072,6 +2089,7 @@ impl LiveBridge {
                     last_seen: Some(last_seen),
                     node_state: parsed.node_state,
                     peering_cost: parsed.peering_cost,
+                    medium,
                 };
                 let (payload, cascade_fields_changed) = {
                     let Ok(mut cache) = discovered.lock() else {
@@ -2083,6 +2101,7 @@ impl LiveBridge {
                         prev.node_state != row.node_state
                             || prev.hops != row.hops
                             || prev.peering_cost != row.peering_cost
+                            || prev.medium != row.medium
                     });
                     while cache.len() > MAX_DISCOVERED_PROPAGATION {
                         // Evict oldest last_seen.
@@ -2105,6 +2124,7 @@ impl LiveBridge {
                         "last_seen": last_seen,
                         "node_state": parsed.node_state,
                         "peering_cost": parsed.peering_cost,
+                        "medium": medium.map(PathMediumSetting::as_str),
                     });
                     (payload, changed)
                 };
@@ -4541,6 +4561,55 @@ impl LiveBridge {
             cache.clear();
         }
         cleared
+    }
+
+    /// Drop transport routes learned through `iface_name`; returns next hops dropped.
+    ///
+    /// Called when an interface is disabled or deleted: every route whose next hop was
+    /// reachable only through it is now dead, but RNS keeps the entry until a delivery
+    /// attempt fails — which is what makes a stale via survive an interface toggle.
+    /// Local caches are cleared even when a control query times out, since the
+    /// transport-side drop may still have applied.
+    pub async fn drop_routes_for_interface(&self, iface_name: &str, vias: &[String]) -> usize {
+        let mut dropped = 0usize;
+        for via_hex in vias {
+            let Ok(next_hop) = parse_hash16(via_hex) else {
+                continue;
+            };
+            if self
+                .query_control_timed(TransportQuery::DropAllVia { next_hop })
+                .await
+                .is_none()
+            {
+                tracing::debug!(
+                    iface = %iface_name,
+                    via = %via_hex,
+                    "drop_routes_for_interface: DropAllVia timed out or failed"
+                );
+                continue;
+            }
+            dropped += 1;
+        }
+        let stale_dests: Vec<String> = match self.peer_via_cache.lock() {
+            Ok(mut cache) => {
+                let dests: Vec<String> = cache
+                    .iter()
+                    .filter(|(_, name)| name.eq_ignore_ascii_case(iface_name))
+                    .map(|(dest, _)| dest.clone())
+                    .collect();
+                for dest in &dests {
+                    cache.remove(dest);
+                }
+                dests
+            }
+            Err(_) => Vec::new(),
+        };
+        if let Ok(mut driver) = self.outbound.lock() {
+            for dest in &stale_dests {
+                driver.clear_path_to(dest);
+            }
+        }
+        dropped
     }
 
     pub async fn probe_peer(&self, hash: &str) -> Result<serde_json::Value, String> {

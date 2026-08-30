@@ -90,6 +90,28 @@ impl Serialize for PathMediumSetting {
     }
 }
 
+impl<'de> Deserialize<'de> for PathMediumSetting {
+    /// Unknown tokens deserialize to `None` at the field level (`Option`) rather
+    /// than failing the whole state-file load.
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let raw = serde_json::Value::deserialize(deserializer)?;
+        raw.as_str()
+            .and_then(Self::from_wire)
+            .ok_or_else(|| serde::de::Error::custom("unknown path medium"))
+    }
+}
+
+/// Map a `via.rs` transport atom (`rf` / `ble` / `tcp` / `network`) onto a medium.
+///
+/// LoRa and BLE are RF: low bandwidth, high latency, and subject to duty-cycle
+/// limits, so they cannot carry propagation-node traffic the way IP links can.
+pub fn medium_from_via_atom(atom: &str) -> PathMediumSetting {
+    match atom.trim().to_ascii_lowercase().as_str() {
+        "rf" | "ble" => PathMediumSetting::Rf,
+        _ => PathMediumSetting::Network,
+    }
+}
+
 /// Per-destination medium pins keyed by 32 lowercase hex chars.
 ///
 /// `BTreeMap` keeps the persisted JSON key order stable across saves.

@@ -2784,6 +2784,7 @@ mod tests {
                 is_local: false,
                 is_discovered: false,
                 hops: Some(1),
+                medium: None,
                 id: "pn-a".into(),
             },
             PnCascadeCandidate {
@@ -2791,6 +2792,7 @@ mod tests {
                 is_local: false,
                 is_discovered: false,
                 hops: Some(2),
+                medium: None,
                 id: "pn-b".into(),
             },
             PnCascadeCandidate {
@@ -2798,6 +2800,7 @@ mod tests {
                 is_local: true,
                 is_discovered: false,
                 hops: Some(0),
+                medium: None,
                 id: "local-prop".into(),
             },
         ]);
@@ -2921,6 +2924,7 @@ mod tests {
                 is_local: false,
                 is_discovered: false,
                 hops: Some(2),
+                medium: None,
                 id: "pn-9f3f189e".into(),
             },
             PnCascadeCandidate {
@@ -2928,6 +2932,7 @@ mod tests {
                 is_local: false,
                 is_discovered: false,
                 hops: Some(3),
+                medium: None,
                 id: "pn-deadbeef".into(),
             },
         ]);
@@ -3001,6 +3006,7 @@ mod tests {
             is_local: false,
             is_discovered: false,
             hops: Some(2),
+            medium: None,
             id: "pn-only".into(),
         }]);
 
@@ -3068,6 +3074,7 @@ mod tests {
                 is_local: false,
                 is_discovered: false,
                 hops: Some(1),
+                medium: None,
                 id: "pn-a".into(),
             },
             PnCascadeCandidate {
@@ -3075,6 +3082,7 @@ mod tests {
                 is_local: false,
                 is_discovered: false,
                 hops: Some(2),
+                medium: None,
                 id: "pn-b".into(),
             },
         ]);
@@ -3149,6 +3157,7 @@ mod tests {
             is_local: true,
             is_discovered: false,
             hops: Some(0),
+            medium: None,
             id: "local-prop".into(),
         }]);
 
@@ -3256,6 +3265,7 @@ mod tests {
             is_local: true,
             is_discovered: false,
             hops: Some(0),
+            medium: None,
             id: "local-prop".into(),
         }]);
 
@@ -3362,6 +3372,7 @@ mod tests {
             is_local: true,
             is_discovered: false,
             hops: Some(0),
+            medium: None,
             id: "local-prop".into(),
         }]);
 
@@ -3472,6 +3483,7 @@ mod tests {
             is_local: true,
             is_discovered: false,
             hops: Some(0),
+            medium: None,
             id: "local-prop".into(),
         }]);
 

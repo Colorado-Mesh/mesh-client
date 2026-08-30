@@ -1022,7 +1022,49 @@ impl StackHandle {
         Ok(row)
     }
 
+    /// Configured interface name for `id`, resolved before a config mutation removes it.
+    async fn interface_name_for_id(&self, id: &str) -> Option<String> {
+        let inner = self.inner.read().await;
+        inner
+            .interfaces
+            .iter()
+            .find(|row| row.id.eq_ignore_ascii_case(id))
+            .map(|row| row.name.clone())
+    }
+
+    /// Drop peer routes and live transport hops learned on an interface that just went away.
+    async fn invalidate_routes_for_interface(&self, iface_name: &str) {
+        let dropped_vias = {
+            let mut inner = self.inner.write().await;
+            let vias = clear_peer_routes_for_interface(&mut inner.peers, iface_name);
+            if !vias.is_empty() {
+                if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                    tracing::warn!("failed to persist peers after interface route purge: {e}");
+                }
+            }
+            vias
+        };
+        if dropped_vias.is_empty() {
+            return;
+        }
+        tracing::info!(
+            iface = %iface_name,
+            vias = dropped_vias.len(),
+            "cleared peer routes learned on removed interface"
+        );
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live.get() {
+            live.drop_routes_for_interface(iface_name, &dropped_vias)
+                .await;
+        }
+        self.emit_event(
+            "peers_updated",
+            serde_json::json!({ "routes_cleared_interface": iface_name }),
+        );
+    }
+
     pub async fn delete_interface(&self, id: &str) -> Result<(), String> {
+        let iface_name = self.interface_name_for_id(id).await;
         config::delete_interface_from_config(&self.config_dir, id)?;
         self.sync_interfaces_from_config().await;
         self.reconcile_primary_after_interface_change().await;
@@ -1034,10 +1076,18 @@ impl StackHandle {
         if let Some(live) = self.live.get() {
             let _ = live.apply_interfaces(self).await;
         }
+        if let Some(name) = iface_name {
+            self.invalidate_routes_for_interface(&name).await;
+        }
         Ok(())
     }
 
     pub async fn set_interface_enabled(&self, id: &str, enabled: bool) -> Result<(), String> {
+        let iface_name = if enabled {
+            None
+        } else {
+            self.interface_name_for_id(id).await
+        };
         config::set_interface_enabled_in_config(&self.config_dir, id, enabled)?;
         self.sync_interfaces_from_config().await;
         self.reconcile_primary_after_interface_change().await;
@@ -1048,6 +1098,9 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live.get() {
             let _ = live.apply_interfaces(self).await;
+        }
+        if let Some(name) = iface_name {
+            self.invalidate_routes_for_interface(&name).await;
         }
         Ok(())
     }
@@ -3513,6 +3566,49 @@ fn peer_last_seen_or_zero(peer: &PeerRow) -> u64 {
     peer.last_seen.unwrap_or(0)
 }
 
+/// Clear route fields for peers whose active path was learned on `iface_name`.
+///
+/// Returns the distinct next hops that were dropped, so the caller can invalidate the
+/// live transport table too. Identity fields (`display_name`, `public_key`,
+/// `last_seen`, `interface`) are kept: the peer is still known, only its route is gone.
+/// Without this, disabling a TCP interface leaves peers advertising a `via_hash` that
+/// is reachable on no live interface, and the chat route badge renders it as real.
+fn clear_peer_routes_for_interface(peers: &mut [PeerRow], iface_name: &str) -> Vec<String> {
+    let mut dropped_vias: Vec<String> = Vec::new();
+    for peer in peers.iter_mut() {
+        let learned_here = peer
+            .interface
+            .as_deref()
+            .is_some_and(|name| name.eq_ignore_ascii_case(iface_name));
+        if !learned_here {
+            continue;
+        }
+        if let Some(via) = peer.via_hash.take() {
+            if !dropped_vias.iter().any(|v| v.eq_ignore_ascii_case(&via)) {
+                dropped_vias.push(via);
+            }
+        }
+        peer.path_hash = None;
+        peer.hops = None;
+    }
+    dropped_vias
+}
+
+/// True when a peer that left the live path table still claims a route.
+///
+/// Orphans keep their route fields verbatim, so a peer that dropped out of the table
+/// (interface down, path expired) would otherwise keep advertising a dead next hop.
+fn orphan_peer_has_route(peer: &PeerRow) -> bool {
+    peer.via_hash.is_some() || peer.path_hash.is_some() || peer.hops.is_some()
+}
+
+/// Strip route fields from an orphaned peer, keeping identity fields.
+fn strip_orphan_peer_route(peer: &mut PeerRow) {
+    peer.via_hash = None;
+    peer.path_hash = None;
+    peer.hops = None;
+}
+
 fn now_unix_secs() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -3552,6 +3648,13 @@ fn sync_live_peer_cache(cache: &mut Vec<PeerRow>, fetched: Vec<PeerRow>) -> Vec<
             None => true,
         })
         .cloned()
+        .map(|mut peer| {
+            // Left the live path table: identity stays, the route it claimed does not.
+            if orphan_peer_has_route(&peer) {
+                strip_orphan_peer_route(&mut peer);
+            }
+            peer
+        })
         .collect();
     preserved.sort_by_key(|b| std::cmp::Reverse(peer_last_seen_or_zero(b)));
     if preserved.len() > MAX_ORPHAN_PEERS {
@@ -3975,6 +4078,96 @@ mod tests {
         assert!(merged.iter().any(|p| p.destination_hash == "aa".repeat(16)));
         assert!(!merged.iter().any(|p| p.destination_hash == "ff".repeat(16)));
         assert!(merged.len() <= 1 + MAX_ORPHAN_PEERS);
+    }
+
+    fn routed_peer(hash: &str, iface: &str, via: &str, hops: u8) -> PeerRow {
+        PeerRow {
+            destination_hash: hash.into(),
+            display_name: Some("Desktop".into()),
+            hops: Some(hops),
+            last_seen: Some(now_unix_secs()),
+            interface: Some(iface.into()),
+            path_hash: Some(via.into()),
+            via_hash: Some(via.into()),
+            public_key: None,
+        }
+    }
+
+    #[test]
+    fn clear_peer_routes_for_interface_drops_route_and_keeps_identity() {
+        let via = "f2e5117828492caf16be98d17adfba53";
+        let mut peers = vec![
+            routed_peer(
+                "d010ea4417f71ff4fd15a6182747aaec",
+                "RNS_Transport_US-East",
+                via,
+                2,
+            ),
+            routed_peer("951c8d0cc5ca40c92c48baf54d1dfc63", "ttyUSB0", "b9bd85e6", 3),
+        ];
+
+        let dropped = clear_peer_routes_for_interface(&mut peers, "rns_transport_us-east");
+
+        assert_eq!(
+            dropped,
+            vec![via.to_string()],
+            "next hop must be reported for DropAllVia"
+        );
+        assert_eq!(peers[0].via_hash, None);
+        assert_eq!(peers[0].path_hash, None);
+        assert_eq!(peers[0].hops, None);
+        // Identity survives: the peer is still known, only its route is gone.
+        assert_eq!(peers[0].display_name.as_deref(), Some("Desktop"));
+        assert!(peers[0].last_seen.is_some());
+        // Peers learned on another interface are untouched.
+        assert_eq!(peers[1].via_hash.as_deref(), Some("b9bd85e6"));
+        assert_eq!(peers[1].hops, Some(3));
+    }
+
+    #[test]
+    fn clear_peer_routes_for_interface_dedupes_shared_next_hops() {
+        let via = "f2e5117828492caf16be98d17adfba53";
+        let mut peers = vec![
+            routed_peer("aa".repeat(16).as_str(), "Hub", via, 4),
+            routed_peer("bb".repeat(16).as_str(), "Hub", via, 5),
+            routed_peer("cc".repeat(16).as_str(), "Hub", "0011", 2),
+        ];
+
+        let dropped = clear_peer_routes_for_interface(&mut peers, "Hub");
+
+        assert_eq!(dropped, vec![via.to_string(), "0011".to_string()]);
+        assert!(
+            peers
+                .iter()
+                .all(|p| p.via_hash.is_none() && p.hops.is_none())
+        );
+    }
+
+    #[test]
+    fn sync_live_peer_cache_strips_routes_from_orphaned_peers() {
+        let via = "f2e5117828492caf16be98d17adfba53";
+        // Desktop learned over TCP, now absent from the live (RF-only) path table.
+        let mut cache = vec![routed_peer(
+            "d010ea4417f71ff4fd15a6182747aaec",
+            "RNS_Transport_US-East",
+            via,
+            2,
+        )];
+        let live = routed_peer("951c8d0cc5ca40c92c48baf54d1dfc63", "ttyUSB0", "b9bd85e6", 3);
+
+        let merged = sync_live_peer_cache(&mut cache, vec![live]);
+
+        let orphan = merged
+            .iter()
+            .find(|p| p.destination_hash == "d010ea4417f71ff4fd15a6182747aaec")
+            .expect("orphan retained");
+        assert_eq!(
+            orphan.via_hash, None,
+            "orphan must not keep a dead next hop"
+        );
+        assert_eq!(orphan.path_hash, None);
+        assert_eq!(orphan.hops, None);
+        assert_eq!(orphan.display_name.as_deref(), Some("Desktop"));
     }
 
     #[test]

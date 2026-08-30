@@ -8,9 +8,12 @@ import type {
 import {
   hasPropagationCascadeCandidate,
   isLocalPropagationLoading,
+  isSlowRfPropagationTarget,
   listConfiguredRemotePropagationIds,
   listFiniteHopDiscoveredPropagationTargets,
+  listSlowRfDiscoveredPropagationTargets,
   listUnknownHopDiscoveredPropagationTargets,
+  MAX_RF_PROPAGATION_HOPS,
   pickAutoPropagationNodeId,
   pickAutoPropagationTarget,
   readReticulumPropagationMode,
@@ -74,6 +77,55 @@ describe('reticulumPropagationMode', () => {
     expect(
       listUnknownHopDiscoveredPropagationTargets([], rows).map((t) => t.destinationHash),
     ).toEqual([ghost]);
+  });
+
+  it('flags only distant RF targets as slow', () => {
+    expect(isSlowRfPropagationTarget(null, 9)).toBe(false);
+    expect(isSlowRfPropagationTarget('network', 9)).toBe(false);
+    expect(isSlowRfPropagationTarget('rf', MAX_RF_PROPAGATION_HOPS)).toBe(false);
+    expect(isSlowRfPropagationTarget('rf', MAX_RF_PROPAGATION_HOPS + 1)).toBe(true);
+    expect(isSlowRfPropagationTarget('rf', null)).toBe(true);
+  });
+
+  it('keeps multi-hop RF propagation nodes out of the finite and unknown tiers', () => {
+    const lora = 'aabbccdd'.repeat(4);
+    const ip = '11223344'.repeat(4);
+    const rows = [
+      discovered({ destination_hash: lora, hops: 3, medium: 'rf' }),
+      discovered({ destination_hash: ip, hops: 6, medium: 'network' }),
+    ];
+    // A 6-hop IP node beats a 3-hop LoRa node: hop count alone is misleading here.
+    expect(
+      listFiniteHopDiscoveredPropagationTargets([], rows).map((t) => t.destinationHash),
+    ).toEqual([ip]);
+    expect(listUnknownHopDiscoveredPropagationTargets([], rows)).toEqual([]);
+    expect(listSlowRfDiscoveredPropagationTargets([], rows).map((t) => t.destinationHash)).toEqual([
+      lora,
+    ]);
+  });
+
+  it('prefers the local inbox over a multi-hop RF propagation node', () => {
+    const lora = 'aabbccdd'.repeat(4);
+    const rows = [discovered({ destination_hash: lora, hops: 4, medium: 'rf' })];
+    const nodes = [row({ id: 'local-prop', name: 'Local', enabled: true, status: 'known' })];
+    expect(pickAutoPropagationTarget(nodes, rows)).toEqual({ kind: 'local' });
+    // With no local inbox the RF node is still reachable as a last resort.
+    expect(pickAutoPropagationTarget([], rows)).toEqual({
+      kind: 'discovered',
+      destinationHash: lora,
+    });
+  });
+
+  it('still picks a near RF propagation node ahead of the local inbox', () => {
+    const lora = 'aabbccdd'.repeat(4);
+    const rows = [
+      discovered({ destination_hash: lora, hops: MAX_RF_PROPAGATION_HOPS, medium: 'rf' }),
+    ];
+    const nodes = [row({ id: 'local-prop', name: 'Local', enabled: true, status: 'known' })];
+    expect(pickAutoPropagationTarget(nodes, rows)).toEqual({
+      kind: 'discovered',
+      destinationHash: lora,
+    });
   });
 
   it('omits Auto-blacklisted hashes from discovered and configured Auto ranking', () => {
