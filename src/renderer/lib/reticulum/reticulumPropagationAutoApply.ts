@@ -130,15 +130,23 @@ function finishWithoutTarget(attempts: CascadeAttempts): boolean {
   return false;
 }
 
+/** Local settle result. `cancelled` is the user aborting, and must end the whole cascade. */
+type LocalSettleOutcome = 'success' | 'cancelled' | 'failed';
+
+/** Boolean view of {@link runLocalSettle} for callers that end the cascade either way. */
+async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boolean> {
+  return (await runLocalSettle(attempts)) === 'success';
+}
+
 /**
  * @param deferFinish When true, skip the terminal `finishWithoutTarget` bookkeeping because
  * the caller still has candidates left to try (Auto's slow-RF last resort). Writing the
  * error here would strand a stale "no target" message even if the later attempt defers.
  */
-async function tryLocalSettleIfEnabled(
+async function runLocalSettle(
   attempts: CascadeAttempts,
   deferFinish = false,
-): Promise<boolean> {
+): Promise<LocalSettleOutcome> {
   // Capture before local settle: remotes soft-deferred with no real contact must not
   // look like a full cascade success (would advance Auto interval and suppress retries).
   const remotesSoftDeferredOnly = attempts.deferred && !attempts.any;
@@ -164,7 +172,8 @@ async function tryLocalSettleIfEnabled(
     if (priorEstablishError) {
       useReticulumPropagationStore.getState().setLastSyncError(priorEstablishError);
     }
-    return deferFinish ? false : finishWithoutTarget(attempts);
+    if (!deferFinish) finishWithoutTarget(attempts);
+    return 'failed';
   }
   const priorSuccessAt = useReticulumPropagationStore.getState().lastPropagationSyncAt;
   const outcome = await attemptSync('local-prop', attempts);
@@ -178,20 +187,20 @@ async function tryLocalSettleIfEnabled(
       // Undo local settle's success stamp so Auto retries remotes after retrieve idle.
       useReticulumPropagationStore.getState().setLastPropagationSyncAt(priorSuccessAt);
       useReticulumPropagationStore.getState().setLastSyncError(PROPAGATION_SYNC_RETRIEVE_BUSY_KEY);
-      return false;
+      return 'failed';
     }
     // Keep establish-class error sticky for recovery UI even after local settle succeeds.
     restoreEstablishError();
-    return true;
+    return 'success';
   }
   if (outcome === 'cancelled') {
     restoreEstablishError();
-    return false;
+    return 'cancelled';
   }
   restoreEstablishError();
   // Local soft-defer/fail with no prior remote contact → surface why (busy / loading / none).
-  if (!hadRemoteContact && !deferFinish) return finishWithoutTarget(attempts);
-  return false;
+  if (!hadRemoteContact && !deferFinish) finishWithoutTarget(attempts);
+  return 'failed';
 }
 
 /**
@@ -399,7 +408,10 @@ async function runPropagationSyncCascade(
 
     // Slow-RF nodes still follow, so the local settle must not write a terminal
     // "no target" error yet — a slow-RF attempt that soft-defers has to win the message.
-    if (await tryLocalSettleIfEnabled(attempts, true)) return true;
+    const localOutcome = await runLocalSettle(attempts, true);
+    if (localOutcome === 'success') return true;
+    // A user cancel during local settling ends the run; it must not start another sync.
+    if (localOutcome === 'cancelled') return false;
 
     // Last resort: a PN reachable only over multi-hop RF. Depositing there usually
     // exceeds the sync timeout, so it is tried only once everything else has failed.

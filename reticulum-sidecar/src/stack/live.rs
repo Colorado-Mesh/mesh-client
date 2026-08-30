@@ -4626,6 +4626,25 @@ impl LiveBridge {
             }
             Err(_) => Vec::new(),
         };
+        // `DropAllVia` only reaches destinations behind a next hop. A direct neighbour on
+        // this interface has no via, so without an explicit `DropPath` the transport keeps
+        // the route and the next maintenance tick reinstalls it into `peer_via_cache`.
+        for dest in &stale_dests {
+            let Ok(dest_hash) = parse_hash16(dest) else {
+                continue;
+            };
+            if self
+                .query_control_timed(TransportQuery::DropPath { dest: dest_hash })
+                .await
+                .is_none()
+            {
+                tracing::debug!(
+                    iface = %iface_name,
+                    dest = %dest,
+                    "drop_routes_for_interface: DropPath timed out or failed"
+                );
+            }
+        }
         if let Ok(mut driver) = self.outbound.lock() {
             for dest in &stale_dests {
                 driver.clear_path_to(dest);

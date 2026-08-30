@@ -391,6 +391,24 @@ describe('reticulumPropagationAutoApply', () => {
     );
   });
 
+  it('Auto stops at a cancel during local settling instead of trying the slow-RF node', async () => {
+    const slowRf = 'ee55'.repeat(8);
+    const startSync = deferredStartSync((id) => (id === 'local-prop' ? 'cancel' : 'success'));
+    useReticulumPropagationStore.setState({
+      nodes: [{ id: 'local-prop', name: 'Local', enabled: true, status: 'known' }],
+      discovered: [
+        { destination_hash: slowRf, node_state: true, peering_cost: 0, hops: 5, medium: 'rf' },
+      ],
+      preferredId: null,
+      lastSyncError: null,
+      startSync,
+    });
+
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(false);
+    expect(startSync.mock.calls.map((c) => c[0])).toEqual(['local-prop']);
+    expect(startSync).not.toHaveBeenCalledWith(slowRf);
+  });
+
   it('Auto reports the local inbox as loading while its messagestore is read', async () => {
     const startSync = vi.fn().mockResolvedValue('accepted');
     useReticulumPropagationStore.setState({
