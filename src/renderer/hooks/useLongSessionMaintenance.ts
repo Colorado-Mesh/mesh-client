@@ -51,6 +51,10 @@ function isWithinDismissWindow(now: number): boolean {
 /**
  * Persistent restart nudge after 4 days main uptime when Noble BLE is active on
  * macOS/Windows. Drives in-app banner + OS attention cues.
+ *
+ * The 4-day threshold stays ahead of the ~5-day native abort (EXC_BREAKPOINT / SIGTRAP)
+ * in noble's CoreBluetooth binding, which is not catchable from JS:
+ * https://github.com/stoprocent/noble/issues/140
  */
 export function useLongSessionMaintenance(): LongSessionMaintenanceState {
   const { t } = useTranslation();

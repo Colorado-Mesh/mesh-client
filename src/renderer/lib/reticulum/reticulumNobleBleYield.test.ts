@@ -320,6 +320,8 @@ describe('syncReticulumNobleBleYield', () => {
     }
     expect(prepareReticulumBleRnodeConnect).not.toHaveBeenCalled();
     expect(state.yieldActive).toBe(false);
+    // Each tick must still hand the scan lease back so Noble can scan — silently.
+    expect(releaseReticulumBleRnodeConnect).toHaveBeenCalledTimes(5);
     for (const call of vi.mocked(releaseReticulumBleRnodeConnect).mock.calls) {
       expect(call[0]).toEqual({ notify: false });
     }
