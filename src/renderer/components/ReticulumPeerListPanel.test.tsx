@@ -182,6 +182,54 @@ describe('ReticulumPeerListPanel', () => {
     });
   });
 
+  it('labels the hop count with the medium of the active path', () => {
+    useReticulumPeerStore.setState({
+      peers: new Map([
+        [
+          'abc',
+          {
+            destination_hash: 'abc',
+            display_name: 'Alpha Peer',
+            hops: 2,
+            interface: 'TCPInterface[gateway/10.0.0.5:4242]',
+            last_seen: Date.now() / 1000,
+          },
+        ],
+      ]),
+      peersRevision: 1,
+    });
+
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+
+    expect(screen.getByText('TCP')).toBeTruthy();
+  });
+
+  it('omits the medium badge when the peer has no hop count', () => {
+    useReticulumPeerStore.setState({
+      peers: new Map([
+        [
+          'abc',
+          {
+            destination_hash: 'abc',
+            display_name: 'Alpha Peer',
+            hops: null,
+            interface: 'TCPInterface[gateway/10.0.0.5:4242]',
+            last_seen: Date.now() / 1000,
+          },
+        ],
+      ]),
+      peersRevision: 1,
+    });
+
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+
+    expect(screen.queryByText('TCP')).toBeNull();
+  });
+
   it('renders peer rows with contact badge on peers tab', () => {
     render(
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,

@@ -47,6 +47,7 @@ describe('ReticulumMessageStatusBadge', () => {
     expect(screen.getByText(/reticulumPnAbbrev\s+\u{1F4E5}/u)).toBeTruthy();
     expect(screen.queryByText(/✓/)).toBeNull();
     expect(view.container.querySelector('.text-bright-green')).toBeNull();
+    expect(view.container.querySelector('.text-amber-400')).not.toBeNull();
   });
 
   it('shows Paper for paper Completes', async () => {

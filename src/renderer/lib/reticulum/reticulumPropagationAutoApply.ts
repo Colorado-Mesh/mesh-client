@@ -130,7 +130,15 @@ function finishWithoutTarget(attempts: CascadeAttempts): boolean {
   return false;
 }
 
-async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boolean> {
+/**
+ * @param deferFinish When true, skip the terminal `finishWithoutTarget` bookkeeping because
+ * the caller still has candidates left to try (Auto's slow-RF last resort). Writing the
+ * error here would strand a stale "no target" message even if the later attempt defers.
+ */
+async function tryLocalSettleIfEnabled(
+  attempts: CascadeAttempts,
+  deferFinish = false,
+): Promise<boolean> {
   // Capture before local settle: remotes soft-deferred with no real contact must not
   // look like a full cascade success (would advance Auto interval and suppress retries).
   const remotesSoftDeferredOnly = attempts.deferred && !attempts.any;
@@ -156,7 +164,7 @@ async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boole
     if (priorEstablishError) {
       useReticulumPropagationStore.getState().setLastSyncError(priorEstablishError);
     }
-    return finishWithoutTarget(attempts);
+    return deferFinish ? false : finishWithoutTarget(attempts);
   }
   const priorSuccessAt = useReticulumPropagationStore.getState().lastPropagationSyncAt;
   const outcome = await attemptSync('local-prop', attempts);
@@ -182,7 +190,7 @@ async function tryLocalSettleIfEnabled(attempts: CascadeAttempts): Promise<boole
   }
   restoreEstablishError();
   // Local soft-defer/fail with no prior remote contact → surface why (busy / loading / none).
-  if (!hadRemoteContact) return finishWithoutTarget(attempts);
+  if (!hadRemoteContact && !deferFinish) return finishWithoutTarget(attempts);
   return false;
 }
 
@@ -389,14 +397,18 @@ async function runPropagationSyncCascade(
     if (unknownOutcome === 'cancelled') return false;
     if (unknownOutcome === 'client_local') return tryLocalSettleIfEnabled(attempts);
 
-    if (await tryLocalSettleIfEnabled(attempts)) return true;
+    // Slow-RF nodes still follow, so the local settle must not write a terminal
+    // "no target" error yet — a slow-RF attempt that soft-defers has to win the message.
+    if (await tryLocalSettleIfEnabled(attempts, true)) return true;
 
     // Last resort: a PN reachable only over multi-hop RF. Depositing there usually
     // exceeds the sync timeout, so it is tried only once everything else has failed.
     const slowRfOutcome = await tryDiscoveredBatch(
       listSlowRfDiscoveredPropagationTargets(nodes, discovered, autoBlacklist),
     );
-    return slowRfOutcome === 'success';
+    if (slowRfOutcome === 'success') return true;
+    if (slowRfOutcome === 'cancelled') return false;
+    return finishWithoutTarget(attempts);
   }
 
   // Manual: explicit first target → Preferred → picked remote → other remotes → local.

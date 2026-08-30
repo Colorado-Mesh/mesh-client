@@ -1034,27 +1034,30 @@ impl StackHandle {
 
     /// Drop peer routes and live transport hops learned on an interface that just went away.
     async fn invalidate_routes_for_interface(&self, iface_name: &str) {
-        let dropped_vias = {
+        let cleared = {
             let mut inner = self.inner.write().await;
-            let vias = clear_peer_routes_for_interface(&mut inner.peers, iface_name);
-            if !vias.is_empty() {
+            let cleared = clear_peer_routes_for_interface(&mut inner.peers, iface_name);
+            if !cleared.is_empty() {
                 if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
                     tracing::warn!("failed to persist peers after interface route purge: {e}");
                 }
             }
-            vias
+            cleared
         };
-        if dropped_vias.is_empty() {
+        // A direct neighbour has hops with no via, so cleared route fields must drive this
+        // just as much as dropped next hops.
+        if cleared.is_empty() {
             return;
         }
         tracing::info!(
             iface = %iface_name,
-            vias = dropped_vias.len(),
+            vias = cleared.dropped_vias.len(),
+            peers = cleared.changed_peers,
             "cleared peer routes learned on removed interface"
         );
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live.get() {
-            live.drop_routes_for_interface(iface_name, &dropped_vias)
+            live.drop_routes_for_interface(iface_name, &cleared.dropped_vias)
                 .await;
         }
         self.emit_event(
@@ -3566,15 +3569,30 @@ fn peer_last_seen_or_zero(peer: &PeerRow) -> u64 {
     peer.last_seen.unwrap_or(0)
 }
 
+/// Outcome of clearing peer routes for one interface.
+#[derive(Debug, Default, PartialEq, Eq)]
+struct ClearedPeerRoutes {
+    /// Distinct next hops removed, for `DropAllVia` on the live transport.
+    dropped_vias: Vec<String>,
+    /// Peers whose route fields changed. A peer can have `hops` / `path_hash` without a
+    /// `via_hash` (direct neighbour), so this is not implied by `dropped_vias`.
+    changed_peers: usize,
+}
+
+impl ClearedPeerRoutes {
+    fn is_empty(&self) -> bool {
+        self.dropped_vias.is_empty() && self.changed_peers == 0
+    }
+}
+
 /// Clear route fields for peers whose active path was learned on `iface_name`.
 ///
-/// Returns the distinct next hops that were dropped, so the caller can invalidate the
-/// live transport table too. Identity fields (`display_name`, `public_key`,
-/// `last_seen`, `interface`) are kept: the peer is still known, only its route is gone.
-/// Without this, disabling a TCP interface leaves peers advertising a `via_hash` that
-/// is reachable on no live interface, and the chat route badge renders it as real.
-fn clear_peer_routes_for_interface(peers: &mut [PeerRow], iface_name: &str) -> Vec<String> {
-    let mut dropped_vias: Vec<String> = Vec::new();
+/// Identity fields (`display_name`, `public_key`, `last_seen`, `interface`) are kept:
+/// the peer is still known, only its route is gone. Without this, disabling a TCP
+/// interface leaves peers advertising a `via_hash` that is reachable on no live
+/// interface, and the chat route badge renders it as real.
+fn clear_peer_routes_for_interface(peers: &mut [PeerRow], iface_name: &str) -> ClearedPeerRoutes {
+    let mut out = ClearedPeerRoutes::default();
     for peer in peers.iter_mut() {
         let learned_here = peer
             .interface
@@ -3583,15 +3601,23 @@ fn clear_peer_routes_for_interface(peers: &mut [PeerRow], iface_name: &str) -> V
         if !learned_here {
             continue;
         }
+        let had_route = peer.via_hash.is_some() || peer.path_hash.is_some() || peer.hops.is_some();
         if let Some(via) = peer.via_hash.take() {
-            if !dropped_vias.iter().any(|v| v.eq_ignore_ascii_case(&via)) {
-                dropped_vias.push(via);
+            if !out
+                .dropped_vias
+                .iter()
+                .any(|v| v.eq_ignore_ascii_case(&via))
+            {
+                out.dropped_vias.push(via);
             }
         }
         peer.path_hash = None;
         peer.hops = None;
+        if had_route {
+            out.changed_peers += 1;
+        }
     }
-    dropped_vias
+    out
 }
 
 /// True when a peer that left the live path table still claims a route.
@@ -4109,10 +4135,11 @@ mod tests {
         let dropped = clear_peer_routes_for_interface(&mut peers, "rns_transport_us-east");
 
         assert_eq!(
-            dropped,
+            dropped.dropped_vias,
             vec![via.to_string()],
             "next hop must be reported for DropAllVia"
         );
+        assert_eq!(dropped.changed_peers, 1);
         assert_eq!(peers[0].via_hash, None);
         assert_eq!(peers[0].path_hash, None);
         assert_eq!(peers[0].hops, None);
@@ -4135,12 +4162,47 @@ mod tests {
 
         let dropped = clear_peer_routes_for_interface(&mut peers, "Hub");
 
-        assert_eq!(dropped, vec![via.to_string(), "0011".to_string()]);
+        assert_eq!(
+            dropped.dropped_vias,
+            vec![via.to_string(), "0011".to_string()]
+        );
+        assert_eq!(dropped.changed_peers, 3);
         assert!(
             peers
                 .iter()
                 .all(|p| p.via_hash.is_none() && p.hops.is_none())
         );
+    }
+
+    #[test]
+    fn clear_peer_routes_for_interface_reports_direct_neighbour_with_no_next_hop() {
+        // A direct neighbour has hops but no via, so `dropped_vias` alone would make the
+        // purge look like a no-op and leave the stale hop count persisted and unbroadcast.
+        let mut peers = vec![routed_peer(
+            "aa".repeat(16).as_str(),
+            "RNodeLoRa",
+            "ff00",
+            1,
+        )];
+        peers[0].via_hash = None;
+        peers[0].path_hash = None;
+
+        let dropped = clear_peer_routes_for_interface(&mut peers, "RNodeLoRa");
+
+        assert!(dropped.dropped_vias.is_empty());
+        assert_eq!(dropped.changed_peers, 1);
+        assert!(!dropped.is_empty());
+        assert_eq!(peers[0].hops, None);
+    }
+
+    #[test]
+    fn clear_peer_routes_for_interface_is_empty_when_nothing_matched() {
+        let mut peers = vec![routed_peer("aa".repeat(16).as_str(), "Hub", "ff00", 1)];
+
+        let dropped = clear_peer_routes_for_interface(&mut peers, "OtherIface");
+
+        assert!(dropped.is_empty());
+        assert_eq!(peers[0].hops, Some(1));
     }
 
     #[test]
