@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildMeshtasticModuleApplyValue,
   mergeMeshtasticConfigApplyValue,
+  meshtasticConfigSignature,
   meshtasticConfigSlice,
   meshtasticConfigSliceHydrated,
   stripMeshtasticProtobufMeta,
@@ -24,6 +25,20 @@ describe('meshtasticConfigApply', () => {
     expect(stripMeshtasticProtobufMeta({ $typeName: 'x', enabled: true })).toEqual({
       enabled: true,
     });
+  });
+
+  it('signature serializes 64-bit protobuf fields instead of throwing', () => {
+    expect(() => meshtasticConfigSignature({ powermonEnables: 0n })).not.toThrow();
+    expect(meshtasticConfigSignature({ powermonEnables: 12n })).toBe('{"powermonEnables":"12n"}');
+  });
+
+  it('signature distinguishes bigint values from their decimal strings', () => {
+    expect(meshtasticConfigSignature({ v: 1n })).not.toBe(meshtasticConfigSignature({ v: '1' }));
+  });
+
+  it('signature is stable for equal slices', () => {
+    const slice = { isPowerSaving: true, powermonEnables: 3n, sdsSecs: 0 };
+    expect(meshtasticConfigSignature({ ...slice })).toBe(meshtasticConfigSignature({ ...slice }));
   });
 
   it('merge preserves hidden device fields and overlays UI', () => {
