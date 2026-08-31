@@ -3858,7 +3858,10 @@ function AppContent() {
                                   )}
                                   capabilities={capabilities}
                                   onSendLockdownAuth={
-                                    capabilities.hasLockdown
+                                    // Lockdown auth always addresses 'self', so offering it
+                                    // while the panel targets a remote node would silently
+                                    // act on the local radio instead.
+                                    capabilities.hasLockdown && !isRemoteConfigureTarget
                                       ? meshtasticPanelActions.sendLockdownAuth
                                       : undefined
                                   }

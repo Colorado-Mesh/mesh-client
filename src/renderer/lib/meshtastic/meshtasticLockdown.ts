@@ -5,7 +5,8 @@
  * provisioned passphrase. `@meshtastic/core` 2.6.6 has no typed event for this
  * variant, so state arrives through the raw `onFromRadio` subscription.
  */
-import { Mesh } from '@meshtastic/protobufs';
+import { create, toBinary } from '@bufbuild/protobuf';
+import { Admin, Mesh } from '@meshtastic/protobufs';
 
 import type { ProtobufEnumDescriptor } from './protobufEnumOptions';
 
@@ -22,6 +23,28 @@ export interface MeshtasticLockdownAuthRequest {
   maxSessionSeconds?: number;
   /** Turn lockdown off entirely (requires the current passphrase). */
   disable?: boolean;
+}
+
+/**
+ * Encodes an `AdminMessage.lockdown_auth` frame. Kept out of the runtime so the wire
+ * shape (UTF-8 passphrase bytes, zeroed optionals) is directly testable.
+ */
+export function encodeMeshtasticLockdownAuth(auth: MeshtasticLockdownAuthRequest): Uint8Array {
+  const msg = create(Admin.AdminMessageSchema, {
+    payloadVariant: {
+      case: 'lockdownAuth',
+      value: {
+        // `passphrase` is a bytes field; the firmware compares the UTF-8 encoding.
+        passphrase: new TextEncoder().encode(auth.passphrase),
+        bootsRemaining: auth.bootsRemaining ?? 0,
+        validUntilEpoch: auth.validUntilEpoch ?? 0,
+        lockNow: auth.lockNow ?? false,
+        maxSessionSeconds: auth.maxSessionSeconds ?? 0,
+        disable: auth.disable ?? false,
+      },
+    },
+  });
+  return toBinary(Admin.AdminMessageSchema, msg);
 }
 
 export type MeshtasticLockdownState =

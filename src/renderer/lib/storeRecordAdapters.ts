@@ -250,7 +250,13 @@ function nodeRecordsShallowEqual(a: NodeRecord, b: NodeRecord): boolean {
     a.numPacketsTx === b.numPacketsTx &&
     a.meshcoreLocalStats === b.meshcoreLocalStats &&
     a.publicKeyHex === b.publicKeyHex &&
-    a.reticulumDestinationHash === b.reticulumDestinationHash
+    a.reticulumDestinationHash === b.reticulumDestinationHash &&
+    a.lightningStrikeCount1h === b.lightningStrikeCount1h &&
+    a.lightningDistanceKm === b.lightningDistanceKm &&
+    a.pm25Standard === b.pm25Standard &&
+    a.co2 === b.co2 &&
+    a.keyManuallyVerified === b.keyManuallyVerified &&
+    a.hasXeddsaSigned === b.hasXeddsaSigned
   );
 }
 

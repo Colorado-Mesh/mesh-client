@@ -51,7 +51,10 @@ import {
   scheduleMeshtasticGetMetadataAfterConfigure,
 } from './meshtasticGetMetadataAfterConfigure';
 import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
-import { recordMeshtasticLockdownStatus } from './meshtasticLockdown';
+import {
+  clearMeshtasticLockdownStatus,
+  recordMeshtasticLockdownStatus,
+} from './meshtasticLockdown';
 import type { ModulePortEvent, PaxCounterPoint } from './meshtasticModuleEvents';
 import { attachMeshtasticModulePortSideEffects } from './meshtasticModulePortSideEffects';
 import type { MeshtasticMqttClientProxyBridge } from './meshtasticMqttClientProxy';
@@ -509,6 +512,7 @@ export function attachMeshtasticRuntimeWireEffects(
       stopWatchdog();
       stopGpsInterval();
       cleanupSubscriptions();
+      clearMeshtasticLockdownStatus();
       setTraceRouteResults(new Map());
       setQueueStatus(null);
       setDeviceLogs([]);

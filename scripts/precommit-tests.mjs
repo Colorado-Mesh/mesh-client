@@ -35,6 +35,8 @@ const FORCE_FULL_PATTERNS = [
   /^src\/renderer\/vitest\.electronApiMock/,
   /^package\.json$/,
   /^pnpm-lock\.yaml$/,
+  // Vendored Electron/pnpm pins: only reachable in CI, where the manifest-only skip is off.
+  /^org\.coloradomesh\.MeshClient\.yml$/,
 ];
 
 /**

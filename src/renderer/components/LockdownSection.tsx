@@ -1,11 +1,10 @@
 import { Lock, LockOpen } from 'lucide-react-motion';
-import { useEffect, useId, useState } from 'react';
+import { useId, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
   getMeshtasticLockdownStatus,
   type MeshtasticLockdownAuthRequest,
-  type MeshtasticLockdownStatus,
   subscribeMeshtasticLockdownStatus,
 } from '@/renderer/lib/meshtastic/meshtasticLockdown';
 
@@ -24,14 +23,15 @@ interface Props {
 export default function LockdownSection({ isConnected, onSendLockdownAuth }: Props) {
   const { t } = useTranslation();
   const id = useId();
-  const [status, setStatus] = useState<MeshtasticLockdownStatus | null>(() =>
-    getMeshtasticLockdownStatus(),
+  // useSyncExternalStore, not subscribe-in-effect: a status arriving between the first
+  // render and the effect would otherwise be dropped.
+  const status = useSyncExternalStore(
+    subscribeMeshtasticLockdownStatus,
+    getMeshtasticLockdownStatus,
   );
   const [passphrase, setPassphrase] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => subscribeMeshtasticLockdownStatus(setStatus), []);
 
   const send = async (auth: MeshtasticLockdownAuthRequest): Promise<void> => {
     setBusy(true);

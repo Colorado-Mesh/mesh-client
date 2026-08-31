@@ -672,6 +672,9 @@ export default function TelemetryPanel({
                         style: { fill: '#fbbf24' },
                       }}
                     />
+                    {/* Strike counts are unitless and would be squashed flat by the
+                        µg/m³ scale; hidden so the chart keeps two labeled axes. */}
+                    <YAxis yAxisId="strikes" orientation="right" hide />
                     <Tooltip
                       contentStyle={{
                         background: '#0f172a',
@@ -701,7 +704,7 @@ export default function TelemetryPanel({
                       connectNulls
                     />
                     <Line
-                      yAxisId="pm"
+                      yAxisId="strikes"
                       type="monotone"
                       dataKey="lightningStrikes"
                       name={t('telemetryPanel.seriesLightningStrikes')}

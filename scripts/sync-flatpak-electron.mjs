@@ -16,6 +16,8 @@ export const SAFE_ELECTRON_SEMVER_RE = /^\d+\.\d+\.\d+$/;
 
 /** pnpm standalone tags must be X.Y.Z (pre-release suffixes are not vendored). */
 export const SAFE_PNPM_SEMVER_RE = /^\d+\.\d+\.\d+$/;
+/** Corepack's optional `sha512.<hex>` integrity suffix. */
+const PNPM_INTEGRITY_RE = /^sha512\.[a-f0-9]{1,200}$/;
 const PNPM_SHA256_HEX_RE = /^[a-f0-9]{64}$/;
 
 const PNPM_ARCHIVE_SOURCES_RE =
@@ -162,12 +164,18 @@ export function assertSafePnpmSemverVersion(version) {
   return version;
 }
 
-/** Corepack `pnpm@VERSION[+sha512…]` — the integrity hash is not part of the release tag. */
+/**
+ * Corepack `pnpm@VERSION[+sha512…]` — the integrity hash is not part of the release tag.
+ * The whole suffix is matched so a prerelease pin (`pnpm@11.24.0-rc.1`) is rejected instead
+ * of being truncated to a stable version whose tarball we would then vendor by mistake.
+ */
 export function pnpmVersionFromPackage(pkg) {
   const spec = pkg?.packageManager;
   if (typeof spec !== 'string' || !spec.startsWith('pnpm@')) return null;
-  const m = spec.slice('pnpm@'.length).match(SEMVER_PATTERN);
-  return m?.[1] ?? null;
+  const [version, integrity, ...rest] = spec.slice('pnpm@'.length).split('+');
+  if (rest.length > 0) return null;
+  if (integrity !== undefined && !PNPM_INTEGRITY_RE.test(integrity)) return null;
+  return SAFE_PNPM_SEMVER_RE.test(version) ? version : null;
 }
 
 /** Re-validate checksum map from network parse before manifest write (CodeQL http-to-file-access). */
@@ -282,6 +290,16 @@ export async function fetchPnpmSha256s(version, fetchFn = fetch) {
   }
 }
 
+/** True when both pnpm standalone archive URLs already point at `version`. */
+export function isPnpmManifestAtVersion(yaml, version) {
+  const safeVersion = assertSafePnpmSemverVersion(version);
+  return ['x64', 'arm64'].every((arch) =>
+    yaml.includes(
+      `https://github.com/pnpm/pnpm/releases/download/v${safeVersion}/pnpm-linux-${arch}.tar.gz`,
+    ),
+  );
+}
+
 export async function syncFlatpakPnpm({
   manifestPath = MANIFEST,
   packagePath = PKG,
@@ -297,7 +315,9 @@ export async function syncFlatpakPnpm({
 
   const yaml = fs.readFileSync(manifestPath, 'utf8');
   // Avoid a network round-trip when the manifest already pins this release.
-  if (yaml.includes(`pnpm/pnpm/releases/download/v${version}/`)) {
+  // Both arches must already be at this version: a partially-updated manifest (one URL
+  // bumped, the other stale) would otherwise skip the fetch and stay broken.
+  if (isPnpmManifestAtVersion(yaml, version)) {
     return { version, changed: false, yaml };
   }
 

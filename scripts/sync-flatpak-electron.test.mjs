@@ -137,6 +137,9 @@ describe('pnpm standalone sync', () => {
     expect(pnpmVersionFromPackage({ packageManager: 'pnpm@11.24.0+sha512.beef' })).toBe('11.24.0');
     expect(pnpmVersionFromPackage({ packageManager: 'yarn@4.0.0' })).toBeNull();
     expect(pnpmVersionFromPackage({})).toBeNull();
+    // A prerelease pin must not be truncated to the stable release we would then vendor.
+    expect(pnpmVersionFromPackage({ packageManager: 'pnpm@11.24.0-rc.1' })).toBeNull();
+    expect(pnpmVersionFromPackage({ packageManager: 'pnpm@11.24.0/../../evil' })).toBeNull();
   });
 
   it('assertSafePnpmSemverVersion rejects unsafe version strings', () => {
@@ -249,6 +252,32 @@ describe('syncFlatpakPnpm integration', () => {
 
     expect(result.changed).toBe(false);
     expect(fs.readFileSync(manifestPath, 'utf8')).toBe(SAMPLE_PNPM_MANIFEST);
+  });
+
+  it('still syncs when only one arch URL is current', async () => {
+    const { syncFlatpakPnpm } = await import('./sync-flatpak-electron.mjs');
+    const { manifestPath, packagePath } = writeFixture('11.24.0');
+    // x64 already bumped, arm64 left stale — the manifest is half-updated.
+    fs.writeFileSync(
+      manifestPath,
+      SAMPLE_PNPM_MANIFEST.replace(
+        'download/v11.22.0/pnpm-linux-x64.tar.gz',
+        'download/v11.24.0/pnpm-linux-x64.tar.gz',
+      ),
+      'utf8',
+    );
+
+    const result = await syncFlatpakPnpm({
+      manifestPath,
+      packagePath,
+      fetchFn: async () => ({ ok: true, json: async () => PNPM_RELEASE_FIXTURE }),
+      write: true,
+    });
+
+    expect(result.changed).toBe(true);
+    const written = fs.readFileSync(manifestPath, 'utf8');
+    expect(written).toContain('download/v11.24.0/pnpm-linux-arm64.tar.gz');
+    expect(written).not.toContain('v11.22.0');
   });
 });
 

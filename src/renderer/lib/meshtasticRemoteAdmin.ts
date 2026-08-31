@@ -1178,7 +1178,6 @@ export class MeshtasticRemoteAdminClient {
         }),
       { wantResponse: false, requireSession: true },
     );
-    await this.commitRemoteEdit(destNodeNum);
   }
 
   async setRemoteChannel(destNodeNum: number, channel: unknown): Promise<void> {

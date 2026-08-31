@@ -21,7 +21,10 @@ import { setDebugSnapshotMeshtasticContext } from '@/renderer/lib/debugSnapshotM
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
 import { shouldSuppressMeshtasticNodeHear } from '@/renderer/lib/meshcoreBleMacMeshtasticNodeId';
-import type { MeshtasticLockdownAuthRequest } from '@/renderer/lib/meshtastic/meshtasticLockdown';
+import {
+  encodeMeshtasticLockdownAuth,
+  type MeshtasticLockdownAuthRequest,
+} from '@/renderer/lib/meshtastic/meshtasticLockdown';
 import {
   buildStoreForwardHistoryToRadioBytes,
   getLastSfHistoryFetchMs,
@@ -3987,22 +3990,8 @@ export function useMeshtasticRuntime() {
    */
   const sendLockdownAuth = useCallback(async (auth: MeshtasticLockdownAuthRequest) => {
     if (!deviceRef.current) return;
-    const msg = create(Admin.AdminMessageSchema, {
-      payloadVariant: {
-        case: 'lockdownAuth',
-        value: {
-          // `passphrase` is a bytes field; the firmware compares the UTF-8 encoding.
-          passphrase: new TextEncoder().encode(auth.passphrase),
-          bootsRemaining: auth.bootsRemaining ?? 0,
-          validUntilEpoch: auth.validUntilEpoch ?? 0,
-          lockNow: auth.lockNow ?? false,
-          maxSessionSeconds: auth.maxSessionSeconds ?? 0,
-          disable: auth.disable ?? false,
-        },
-      },
-    });
     await deviceRef.current.sendPacket(
-      toBinary(Admin.AdminMessageSchema, msg),
+      encodeMeshtasticLockdownAuth(auth),
       meshtasticPortnums.PortNum.ADMIN_APP,
       'self',
     );

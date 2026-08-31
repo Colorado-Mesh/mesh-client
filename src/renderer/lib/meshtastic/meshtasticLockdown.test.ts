@@ -1,7 +1,10 @@
+import { fromBinary } from '@bufbuild/protobuf';
+import { Admin } from '@meshtastic/protobufs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   clearMeshtasticLockdownStatus,
+  encodeMeshtasticLockdownAuth,
   getMeshtasticLockdownStatus,
   isMeshtasticLockdownBlocking,
   parseMeshtasticLockdownStatus,
@@ -39,8 +42,8 @@ describe('parseMeshtasticLockdownStatus', () => {
     expect(
       parseMeshtasticLockdownStatus({
         state: 3,
-        validUntilEpoch: 1_800_000_000,
-        bootsRemaining: 5,
+        validUntilEpoch: 1_800_000_000n,
+        bootsRemaining: 5n,
       }),
     ).toMatchObject({ validUntilEpoch: 1_800_000_000, bootsRemaining: 5 });
   });
@@ -93,5 +96,55 @@ describe('isMeshtasticLockdownBlocking', () => {
     expect(isMeshtasticLockdownBlocking({ state: 'UNLOCKED', receivedAt: 0 })).toBe(false);
     expect(isMeshtasticLockdownBlocking({ state: 'DISABLED', receivedAt: 0 })).toBe(false);
     expect(isMeshtasticLockdownBlocking({ state: 'NEEDS_PROVISION', receivedAt: 0 })).toBe(false);
+  });
+});
+
+describe('encodeMeshtasticLockdownAuth', () => {
+  function decode(bytes: Uint8Array) {
+    const variant = fromBinary(Admin.AdminMessageSchema, bytes).payloadVariant;
+    if (variant.case !== 'lockdownAuth') throw new Error(`unexpected variant ${variant.case}`);
+    return variant.value as {
+      passphrase: Uint8Array;
+      bootsRemaining: number;
+      validUntilEpoch: bigint | number;
+      lockNow: boolean;
+      maxSessionSeconds: number;
+      disable: boolean;
+    };
+  }
+
+  it('encodes the passphrase as UTF-8 bytes', () => {
+    const value = decode(encodeMeshtasticLockdownAuth({ passphrase: 'hünter2' }));
+
+    expect(new TextDecoder().decode(value.passphrase)).toBe('hünter2');
+  });
+
+  it('defaults optional fields so the firmware sees explicit zeros', () => {
+    const value = decode(encodeMeshtasticLockdownAuth({ passphrase: 'pw' }));
+
+    expect(value.bootsRemaining).toBe(0);
+    expect(Number(value.validUntilEpoch)).toBe(0);
+    expect(value.lockNow).toBe(false);
+    expect(value.maxSessionSeconds).toBe(0);
+    expect(value.disable).toBe(false);
+  });
+
+  it('round-trips provisioning options', () => {
+    const value = decode(
+      encodeMeshtasticLockdownAuth({
+        passphrase: 'pw',
+        bootsRemaining: 3,
+        validUntilEpoch: 1_800_000_000,
+        lockNow: true,
+        maxSessionSeconds: 900,
+        disable: true,
+      }),
+    );
+
+    expect(value.bootsRemaining).toBe(3);
+    expect(Number(value.validUntilEpoch)).toBe(1_800_000_000);
+    expect(value.lockNow).toBe(true);
+    expect(value.maxSessionSeconds).toBe(900);
+    expect(value.disable).toBe(true);
   });
 });
