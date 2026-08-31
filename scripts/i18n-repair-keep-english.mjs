@@ -6,7 +6,7 @@
  * Usage: node scripts/i18n-repair-keep-english.mjs
  */
 
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -40,11 +40,28 @@ const keepKeys = Object.keys(enFlat).filter(
   (k) => isKeepEnglishKey(k) && typeof enFlat[k] === 'string',
 );
 
+/**
+ * Removes CAT-tool tag residue from a machine-translated value. Applied to a fixpoint:
+ * a single pass would turn `<<i>>` into `<i>` and leave markup behind
+ * (js/incomplete-multi-character-sanitization).
+ */
+function stripMarkupResidue(value) {
+  let cleaned = value;
+  let previous;
+  do {
+    previous = cleaned;
+    cleaned = previous.replace(/<[^<>]*>/g, '').replace(/&#\d+;/g, '');
+  } while (cleaned !== previous);
+  return cleaned.trim();
+}
+
 let repaired = 0;
-for (const dir of readdirSync(LOCALES_DIR)) {
-  if (dir === 'en') continue;
+// withFileTypes rather than an existsSync guard: locales/ also holds loose modules
+// (languages.ts), and a check-then-read would be a file-system race (js/file-system-race).
+for (const entry of readdirSync(LOCALES_DIR, { withFileTypes: true })) {
+  const dir = entry.name;
+  if (!entry.isDirectory() || dir === 'en') continue;
   const file = join(LOCALES_DIR, `${dir}/translation.json`);
-  if (!existsSync(file)) continue;
   const json = JSON.parse(readFileSync(file, 'utf8'));
   const flat = flatten(json);
   let changed = 0;
@@ -59,11 +76,7 @@ for (const dir of readdirSync(LOCALES_DIR)) {
     if (!key.startsWith('radioPanel.') || typeof value !== 'string') continue;
     if (isKeepEnglishKey(key)) continue;
     if (typeof enFlat[key] !== 'string') continue;
-    const cleaned = value
-      .replace(/<[^>]+>/g, '')
-      .replace(/&#\d+;/g, '')
-      .trim();
-    const next = cleaned === '' ? enFlat[key] : cleaned;
+    const next = stripMarkupResidue(value) || enFlat[key];
     if (next === value) continue;
     setDeep(json, key, next);
     changed++;
