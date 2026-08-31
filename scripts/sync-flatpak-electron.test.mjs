@@ -6,11 +6,18 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   assertSafeElectronSemverVersion,
+  assertSafePnpmSemverVersion,
   buildElectronArchiveSourcesYaml,
+  buildPnpmArchiveSourcesYaml,
   parseElectronSha256s,
+  parsePnpmSha256s,
+  pnpmVersionFromPackage,
   sanitizeFlatpakElectronManifestYamlForDisk,
+  sanitizeFlatpakPnpmManifestYamlForDisk,
   syncFlatpakElectronManifest,
+  syncFlatpakPnpmManifest,
   validateElectronSha256ByZipArch,
+  validatePnpmSha256ByArch,
 } from './sync-flatpak-electron.mjs';
 
 const FIXTURE_SHASUMS = `512f4e0574dc5800c612ea904e854f602f36ac57cade971a0a2b239bfaa19e52 *electron-v41.10.1-linux-x64.zip
@@ -31,6 +38,31 @@ const SAMPLE_MANIFEST = `      - type: archive
         url: https://github.com/electron/electron/releases/download/v41.10.0/electron-v41.10.0-linux-arm64.zip
         sha256: 2c063804e14c325cd34de1ff7528f6066d544d49a9d55c9c2937e20dd1e717e3
         dest: electron-prebuilt
+        only-arches: [aarch64]`;
+
+const PNPM_X64_SHA = 'a'.repeat(64);
+const PNPM_ARM64_SHA = 'b'.repeat(64);
+
+const PNPM_RELEASE_FIXTURE = {
+  assets: [
+    { name: 'pnpm-linux-x64.tar.gz', digest: `sha256:${PNPM_X64_SHA}` },
+    { name: 'pnpm-linux-arm64.tar.gz', digest: `sha256:${PNPM_ARM64_SHA}` },
+    { name: 'pnpm-linux-x64-musl.tar.gz', digest: `sha256:${'c'.repeat(64)}` },
+  ],
+};
+
+const SAMPLE_PNPM_MANIFEST = `      - type: archive
+        url: https://github.com/pnpm/pnpm/releases/download/v11.22.0/pnpm-linux-x64.tar.gz
+        sha256: 4c592fa410eb23b69691a9efb9bf21c87c15b3e9d88c6ec8acdd354a0eb8de71
+        dest: pnpm-vendor
+        # pnpm tarball has root-level \`pnpm\` + \`dist/\`; default strip-components:1 drops the binary.
+        strip-components: 0
+        only-arches: [x86_64]
+      - type: archive
+        url: https://github.com/pnpm/pnpm/releases/download/v11.22.0/pnpm-linux-arm64.tar.gz
+        sha256: f1426231f365bdfd46c15fa3d1211c3936ee2c4e557afd304f6c66dbf1b2a8bf
+        dest: pnpm-vendor
+        strip-components: 0
         only-arches: [aarch64]`;
 
 describe('sync-flatpak-electron.mjs', () => {
@@ -97,6 +129,126 @@ describe('sync-flatpak-electron.mjs', () => {
     expect(next).toContain('electron-v41.10.1-linux-arm64.zip');
     expect(next).toContain(sha256ByZipArch.x64);
     expect(next).toContain(sha256ByZipArch.arm64);
+  });
+});
+
+describe('pnpm standalone sync', () => {
+  it('reads the release tag from packageManager, ignoring the integrity hash', () => {
+    expect(pnpmVersionFromPackage({ packageManager: 'pnpm@11.24.0+sha512.beef' })).toBe('11.24.0');
+    expect(pnpmVersionFromPackage({ packageManager: 'yarn@4.0.0' })).toBeNull();
+    expect(pnpmVersionFromPackage({})).toBeNull();
+  });
+
+  it('assertSafePnpmSemverVersion rejects unsafe version strings', () => {
+    expect(assertSafePnpmSemverVersion('11.24.0')).toBe('11.24.0');
+    expect(() => assertSafePnpmSemverVersion('11.24.0-evil')).toThrow(/X\.Y\.Z/);
+    expect(() => assertSafePnpmSemverVersion('../../etc/passwd')).toThrow(/X\.Y\.Z/);
+  });
+
+  it('parses only the glibc linux tarball digests from release assets', () => {
+    expect(parsePnpmSha256s(PNPM_RELEASE_FIXTURE, '11.24.0')).toEqual({
+      x64: PNPM_X64_SHA,
+      arm64: PNPM_ARM64_SHA,
+    });
+    expect(() => parsePnpmSha256s({ assets: [] }, '11.24.0')).toThrow(/missing a sha256 digest/);
+    expect(() =>
+      parsePnpmSha256s(
+        { assets: [{ name: 'pnpm-linux-x64.tar.gz', digest: 'md5:nope' }] },
+        '11.24.0',
+      ),
+    ).toThrow(/missing a sha256 digest/);
+  });
+
+  it('validatePnpmSha256ByArch rejects short or non-hex checksums', () => {
+    expect(() =>
+      validatePnpmSha256ByArch({ x64: 'abc', arm64: PNPM_ARM64_SHA }, '11.24.0'),
+    ).toThrow(/linux-x64 checksum/);
+    expect(() =>
+      validatePnpmSha256ByArch({ x64: PNPM_X64_SHA, arm64: 'not-hex' }, '11.24.0'),
+    ).toThrow(/linux-arm64 checksum/);
+  });
+
+  it('builds archive blocks that keep strip-components: 0', () => {
+    const yaml = buildPnpmArchiveSourcesYaml('11.24.0', {
+      x64: PNPM_X64_SHA,
+      arm64: PNPM_ARM64_SHA,
+    });
+    expect(yaml).toContain('download/v11.24.0/pnpm-linux-x64.tar.gz');
+    expect(yaml).toContain('download/v11.24.0/pnpm-linux-arm64.tar.gz');
+    expect(yaml.match(/strip-components: 0/g)).toHaveLength(2);
+  });
+
+  it('replaces stale pnpm URLs and checksums in the manifest', () => {
+    const shas = parsePnpmSha256s(PNPM_RELEASE_FIXTURE, '11.24.0');
+    const next = syncFlatpakPnpmManifest(SAMPLE_PNPM_MANIFEST, '11.24.0', shas);
+    expect(next).not.toContain('v11.22.0');
+    expect(next).toContain(PNPM_X64_SHA);
+    expect(next).toContain(PNPM_ARM64_SHA);
+    expect(sanitizeFlatpakPnpmManifestYamlForDisk(next, '11.24.0', shas)).toBe(next);
+  });
+
+  it('throws when the manifest has no pnpm archive blocks to replace', () => {
+    expect(() => syncFlatpakPnpmManifest(SAMPLE_MANIFEST, '11.24.0', PNPM_RELEASE_FIXTURE)).toThrow(
+      /missing expected pnpm archive source blocks/,
+    );
+  });
+});
+
+describe('syncFlatpakPnpm integration', () => {
+  const tempDirs = [];
+
+  afterEach(() => {
+    for (const dir of tempDirs.splice(0)) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  function writeFixture(pnpmVersion) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-flatpak-pnpm-'));
+    tempDirs.push(dir);
+    const manifestPath = path.join(dir, 'org.coloradomesh.MeshClient.yml');
+    const packagePath = path.join(dir, 'package.json');
+    fs.writeFileSync(manifestPath, SAMPLE_PNPM_MANIFEST, 'utf8');
+    fs.writeFileSync(
+      packagePath,
+      JSON.stringify({ packageManager: `pnpm@${pnpmVersion}+sha512.beef` }, null, 2),
+      'utf8',
+    );
+    return { manifestPath, packagePath };
+  }
+
+  it('updates a temp manifest when the pnpm pin drifts', async () => {
+    const { syncFlatpakPnpm } = await import('./sync-flatpak-electron.mjs');
+    const { manifestPath, packagePath } = writeFixture('11.24.0');
+
+    const result = await syncFlatpakPnpm({
+      manifestPath,
+      packagePath,
+      fetchFn: async () => ({ ok: true, json: async () => PNPM_RELEASE_FIXTURE }),
+      write: true,
+    });
+
+    expect(result.changed).toBe(true);
+    const written = fs.readFileSync(manifestPath, 'utf8');
+    expect(written).toContain('download/v11.24.0/pnpm-linux-x64.tar.gz');
+    expect(written).toContain(PNPM_X64_SHA);
+  });
+
+  it('skips the network round-trip when the manifest already pins the release', async () => {
+    const { syncFlatpakPnpm } = await import('./sync-flatpak-electron.mjs');
+    const { manifestPath, packagePath } = writeFixture('11.22.0');
+
+    const result = await syncFlatpakPnpm({
+      manifestPath,
+      packagePath,
+      fetchFn: async () => {
+        throw new Error('fetch should not run when the pin already matches');
+      },
+      write: true,
+    });
+
+    expect(result.changed).toBe(false);
+    expect(fs.readFileSync(manifestPath, 'utf8')).toBe(SAMPLE_PNPM_MANIFEST);
   });
 });
 

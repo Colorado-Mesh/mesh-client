@@ -38,6 +38,29 @@ const FORCE_FULL_PATTERNS = [
 ];
 
 /**
+ * Dependency-manifest paths, plus the Flatpak manifest the pre-commit pnpm sync re-stages
+ * alongside them. A commit containing only these cannot change source behavior.
+ */
+const MANIFEST_ONLY_PATHS = new Set([
+  'package.json',
+  'pnpm-lock.yaml',
+  'org.coloradomesh.MeshClient.yml',
+]);
+
+/**
+ * @param {Iterable<string>} stagedPaths
+ * @returns {boolean}
+ */
+export function isManifestOnlyCommit(stagedPaths) {
+  let seen = 0;
+  for (const p of stagedPaths) {
+    if (!MANIFEST_ONLY_PATHS.has(p.replace(/\\/g, '/'))) return false;
+    seen += 1;
+  }
+  return seen > 0;
+}
+
+/**
  * @param {string} filePath
  * @returns {boolean}
  */
@@ -190,9 +213,18 @@ export function pickProjects(relatedPaths) {
 
 /**
  * @param {string[]} stagedPaths
+ * @param {{ allowManifestOnlySkip?: boolean }} [options] PR CI opts out so it still
+ *   fails closed to the full suite for dependency manifests.
  * @returns {{ mode: 'full' | 'related' | 'skip', relatedPaths: string[], projects: VitestProject[] }}
  */
-export function planPrecommitTests(stagedPaths) {
+export function planPrecommitTests(stagedPaths, { allowManifestOnlySkip = true } = {}) {
+  // Checked before the force-full gate: a mixed manifest + source commit still runs
+  // the full suite, but a pure dependency bump defers to PR CI, which fails closed
+  // to the full suite whenever dependency manifests change.
+  if (allowManifestOnlySkip && isManifestOnlyCommit(stagedPaths)) {
+    return { mode: 'skip', relatedPaths: [], projects: [] };
+  }
+
   if (shouldForceFullSuite(stagedPaths)) {
     return {
       mode: 'full',
@@ -267,7 +299,11 @@ export function runPrecommitTests(stagedPaths, opts = {}) {
   const plan = planPrecommitTests(stagedPaths);
 
   if (plan.mode === 'skip') {
-    log('precommit-tests: skip Vitest (no staged source/test files)');
+    log(
+      isManifestOnlyCommit(stagedPaths)
+        ? 'precommit-tests: skip Vitest (manifest-only commit; PR CI runs the full suite)'
+        : 'precommit-tests: skip Vitest (no staged source/test files)',
+    );
     return 0;
   }
 

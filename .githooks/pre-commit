@@ -40,6 +40,28 @@ if [ "$deps_changed" -eq 1 ]; then
   pnpm install --frozen-lockfile || fail 'pnpm install --frozen-lockfile'
 fi
 
+# Manifest-only commits (dependency bumps) cannot change source, so the repo-wide
+# source scanners and Vitest have nothing to say. Typecheck, licenses, audit, and
+# the Flatpak pin still run. PR CI fails closed to the full suite for manifests.
+manifest_only=0
+if [ "$deps_changed" -eq 1 ] && [ -s "$STAGED_LIST" ]; then
+  manifest_only=1
+  while IFS= read -r f || [ -n "$f" ]; do
+    [ -n "$f" ] || continue
+    case "$f" in
+      package.json | pnpm-lock.yaml | org.coloradomesh.MeshClient.yml) ;;
+      *)
+        manifest_only=0
+        break
+        ;;
+    esac
+  done < "$STAGED_LIST"
+fi
+
+skip_manifest_only() {
+  printf 'pre-commit: skip %s (manifest-only commit)\n' "$1" >&2
+}
+
 # Format and lint only staged files for intentionality and speed.
 # Skip entirely if no files staged (e.g., empty commit).
 if [ -s "$STAGED_LIST" ]; then
@@ -123,18 +145,34 @@ else
   printf 'pre-commit: skip typecheck:strict-shared (no src/shared or tsconfig.strict.json staged)\n' >&2
 fi
 
-pnpm run check:electron-security || fail 'pnpm run check:electron-security'
+if [ "$manifest_only" -eq 0 ]; then
+  pnpm run check:electron-security || fail 'pnpm run check:electron-security'
+else
+  skip_manifest_only 'check:electron-security'
+fi
 
 if staged_match '^(flatpak/|org\.coloradomesh\.MeshClient\.yml|package\.json|scripts/check-flatpak\.mjs|scripts/sync-flatpak-electron)'; then
+  # Bumping packageManager without the vendored pnpm pin fails the offline Flatpak
+  # build, so re-pin from package.json and re-stage before verifying.
+  if staged_match '^package\.json$'; then
+    node scripts/sync-flatpak-electron.mjs || fail 'scripts/sync-flatpak-electron.mjs'
+    if ! git diff --quiet -- org.coloradomesh.MeshClient.yml; then
+      git add org.coloradomesh.MeshClient.yml || fail 'git add (flatpak manifest sync)'
+    fi
+  fi
   pnpm run check:flatpak || fail 'pnpm run check:flatpak'
 else
   printf 'pre-commit: skip check:flatpak (no flatpak-related paths staged)\n' >&2
 fi
 
-pnpm run check:log-injection || fail 'pnpm run check:log-injection'
-pnpm run check:log-service-sinks || fail 'pnpm run check:log-service-sinks'
-pnpm run check:codeql-extensions || fail 'pnpm run check:codeql-extensions'
-pnpm run check:insecure-temp-files || fail 'pnpm run check:insecure-temp-files'
+if [ "$manifest_only" -eq 0 ]; then
+  pnpm run check:log-injection || fail 'pnpm run check:log-injection'
+  pnpm run check:log-service-sinks || fail 'pnpm run check:log-service-sinks'
+  pnpm run check:codeql-extensions || fail 'pnpm run check:codeql-extensions'
+  pnpm run check:insecure-temp-files || fail 'pnpm run check:insecure-temp-files'
+else
+  skip_manifest_only 'check:log-injection, check:log-service-sinks, check:codeql-extensions, check:insecure-temp-files'
+fi
 
 if staged_match '^(src/main/database\.ts|src/main/db-schema-sync\.ts|src/main/db-compat\.ts|scripts/check-db-migrations\.mjs)'; then
   pnpm run check:db-migrations || fail 'pnpm run check:db-migrations'
@@ -176,16 +214,20 @@ else
   printf 'pre-commit: skip Rust checks (cargo not on PATH)\n' >&2
 fi
 
-pnpm run check:console-log || fail 'pnpm run check:console-log'
-pnpm run check:silent-catches || fail 'pnpm run check:silent-catches'
-pnpm run check:url-hostname-sanitization || fail 'pnpm run check:url-hostname-sanitization'
-pnpm run check:xss-patterns || fail 'pnpm run check:xss-patterns'
-pnpm run check:protocol-string-gates || fail 'pnpm run check:protocol-string-gates'
-pnpm run check:log-panel-filter || fail 'pnpm run check:log-panel-filter'
-if staged_match 'src/renderer/locales/en/translation\.json'; then
-  pnpm run check:i18n || fail 'pnpm run check:i18n'
+if [ "$manifest_only" -eq 0 ]; then
+  pnpm run check:console-log || fail 'pnpm run check:console-log'
+  pnpm run check:silent-catches || fail 'pnpm run check:silent-catches'
+  pnpm run check:url-hostname-sanitization || fail 'pnpm run check:url-hostname-sanitization'
+  pnpm run check:xss-patterns || fail 'pnpm run check:xss-patterns'
+  pnpm run check:protocol-string-gates || fail 'pnpm run check:protocol-string-gates'
+  pnpm run check:log-panel-filter || fail 'pnpm run check:log-panel-filter'
+  if staged_match 'src/renderer/locales/en/translation\.json'; then
+    pnpm run check:i18n || fail 'pnpm run check:i18n'
+  else
+    pnpm run check:i18n:branch || fail 'pnpm run check:i18n:branch'
+  fi
 else
-  pnpm run check:i18n:branch || fail 'pnpm run check:i18n:branch'
+  skip_manifest_only 'check:console-log, check:silent-catches, check:url-hostname-sanitization, check:xss-patterns, check:protocol-string-gates, check:log-panel-filter, check:i18n:branch'
 fi
 pnpm run check:licenses || fail 'pnpm run check:licenses'
 
