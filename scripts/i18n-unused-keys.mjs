@@ -23,6 +23,7 @@ export const DYNAMIC_T_PREFIXES = [
   { prefix: 'modulePanel.takTeamColors.', suffixes: ['label'] },
   { prefix: 'modulePanel.teamRoles.', suffixes: ['label'] },
   { prefix: 'radioPanel.displayUnits.', suffixes: ['label'] },
+  { prefix: 'radioPanel.lockdown.states.', leafKeys: true },
   { prefix: 'radioPanel.oledTypes.', suffixes: ['label'] },
   { prefix: 'radioPanel.displayModes.', suffixes: ['label'] },
   { prefix: 'radioPanel.btPairingModes.', suffixes: ['label'] },

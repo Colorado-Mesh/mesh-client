@@ -3857,6 +3857,11 @@ function AppContent() {
                                     meshcorePanelActions.setOwner,
                                   )}
                                   capabilities={capabilities}
+                                  onSendLockdownAuth={
+                                    capabilities.hasLockdown
+                                      ? meshtasticPanelActions.sendLockdownAuth
+                                      : undefined
+                                  }
                                   meshcoreChannels={
                                     capabilities.hasCompanionContactManagementConfig
                                       ? meshcoreRuntime.channels

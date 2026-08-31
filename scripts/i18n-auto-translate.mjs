@@ -31,6 +31,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   filterMissingKeysToTranslate,
+  isKeepEnglishKey,
   mapWithConcurrency,
   nextDelayAfterRateLimit,
   resolveTranslateConcurrency,
@@ -421,7 +422,9 @@ async function main() {
     await mapWithConcurrency(keysToTranslate, translateConcurrency, async (key) => {
       const englishValue = enFlat[key];
       try {
-        const translated = await translate(englishValue, lang);
+        const translated = isKeepEnglishKey(key)
+          ? englishValue
+          : await translate(englishValue, lang);
         setDeepLocaleValue(target, key, translated);
         count++;
         localeJobDone++;

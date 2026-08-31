@@ -1164,6 +1164,23 @@ export class MeshtasticRemoteAdminClient {
     );
   }
 
+  /**
+   * `AdminMessage.sensor_config` (= 103): per-sensor tuning such as the AS3935 lightning
+   * detector's tuning capacitance, which the sensor does not retain across power loss.
+   */
+  async setRemoteSensorConfig(destNodeNum: number, sensorConfig: unknown): Promise<void> {
+    await this.beginRemoteEdit(destNodeNum);
+    await this.sendAdminRequest(
+      destNodeNum,
+      () =>
+        adminMessage({
+          payloadVariant: { case: 'sensorConfig', value: sensorConfig as never },
+        }),
+      { wantResponse: false, requireSession: true },
+    );
+    await this.commitRemoteEdit(destNodeNum);
+  }
+
   async setRemoteChannel(destNodeNum: number, channel: unknown): Promise<void> {
     await this.beginRemoteEdit(destNodeNum);
     await this.sendAdminRequest(

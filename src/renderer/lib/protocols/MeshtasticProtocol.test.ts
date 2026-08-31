@@ -501,6 +501,118 @@ describe('MeshtasticProtocol Date-shaped rxTime', () => {
     teardown();
   });
 
+  it('labels portnums the SDK has no typed event for', () => {
+    const { device, emit } = mockMeshDevice();
+    const events: DomainEvent[] = [];
+    const teardown = meshtasticProtocol.subscribe(device, (e) => events.push(e));
+    const payload = new Uint8Array([1, 2, 3]);
+    emit('onMeshPacket', {
+      from: 7,
+      channel: 2,
+      payloadVariant: { case: 'decoded', value: { portnum: 78, payload } },
+    });
+    const modulePort = events.find((e) => e.type === 'meshtastic_module_port');
+    expect(modulePort?.type === 'meshtastic_module_port' && modulePort.payload).toMatchObject({
+      portLabel: 'atakPluginV2',
+      from: 7,
+      channel: 2,
+      data: payload,
+    });
+    teardown();
+  });
+
+  it('ignores portnums that already have a typed SDK event', () => {
+    const { device, emit } = mockMeshDevice();
+    const events: DomainEvent[] = [];
+    const teardown = meshtasticProtocol.subscribe(device, (e) => events.push(e));
+    emit('onMeshPacket', {
+      from: 7,
+      payloadVariant: { case: 'decoded', value: { portnum: 67, payload: new Uint8Array() } },
+    });
+    expect(events.some((e) => e.type === 'meshtastic_module_port')).toBe(false);
+    teardown();
+  });
+
+  it('collapses ADC and one-wire channel fields into sparse arrays', () => {
+    const { device, emit } = mockMeshDevice();
+    const events: DomainEvent[] = [];
+    const teardown = meshtasticProtocol.subscribe(device, (e) => events.push(e));
+    emit('onTelemetryPacket', {
+      from: 42,
+      data: {
+        variant: {
+          case: 'environmentMetrics',
+          value: {
+            adcVoltageCh0: 3.3,
+            adcVoltageCh3: 1.1,
+            oneWireTemperatureCh1: 21.5,
+            lightningStrikeCount1h: 4,
+            lightningDistanceKm: 12,
+          },
+        },
+      },
+    });
+    const telemetry = events.find((e) => e.type === 'telemetry');
+    expect(telemetry?.type === 'telemetry' && telemetry.payload).toMatchObject({
+      variantCase: 'environmentMetrics',
+      adcVoltages: [3.3, undefined, undefined, 1.1, undefined, undefined, undefined, undefined],
+      oneWireTemperatures: [
+        undefined,
+        21.5,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      ],
+      lightningStrikeCount1h: 4,
+      lightningDistanceKm: 12,
+    });
+    teardown();
+  });
+
+  it('leaves channel arrays undefined when no channel reported a value', () => {
+    const { device, emit } = mockMeshDevice();
+    const events: DomainEvent[] = [];
+    const teardown = meshtasticProtocol.subscribe(device, (e) => events.push(e));
+    emit('onTelemetryPacket', {
+      from: 42,
+      data: { variant: { case: 'environmentMetrics', value: { temperature: 20 } } },
+    });
+    const telemetry = events.find((e) => e.type === 'telemetry');
+    expect(telemetry?.type === 'telemetry' && telemetry.payload.adcVoltages).toBeUndefined();
+    expect(
+      telemetry?.type === 'telemetry' && telemetry.payload.oneWireTemperatures,
+    ).toBeUndefined();
+    teardown();
+  });
+
+  it('decodes air-quality particulates and CO2', () => {
+    const { device, emit } = mockMeshDevice();
+    const events: DomainEvent[] = [];
+    const teardown = meshtasticProtocol.subscribe(device, (e) => events.push(e));
+    emit('onTelemetryPacket', {
+      from: 42,
+      data: {
+        variant: {
+          case: 'airQualityMetrics',
+          value: { pm25Standard: 12, pm100Standard: 30, co2: 640, pmVocIdx: 110, pmNoxIdx: 3 },
+        },
+      },
+    });
+    const telemetry = events.find((e) => e.type === 'telemetry');
+    expect(telemetry?.type === 'telemetry' && telemetry.payload).toMatchObject({
+      variantCase: 'airQualityMetrics',
+      pm25Standard: 12,
+      pm100Standard: 30,
+      co2: 640,
+      pmVocIdx: 110,
+      pmNoxIdx: 3,
+    });
+    teardown();
+  });
+
   it('maps traceroute rxTime Date to epoch ms', () => {
     const { device, emit } = mockMeshDevice();
     const events: DomainEvent[] = [];

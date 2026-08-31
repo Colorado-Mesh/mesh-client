@@ -209,6 +209,10 @@ export interface MeshNode {
   env_lux?: number;
   env_wind_speed?: number;
   env_wind_direction?: number;
+  env_lightning_strike_count_1h?: number;
+  env_lightning_distance_km?: number;
+  env_pm25?: number;
+  env_co2?: number;
   // Neighbor info from MQTT (session-only)
   neighbors?: MeshNeighbor[];
   // PaxCounter from MQTT (combined wifi + ble count)
@@ -217,6 +221,10 @@ export interface MeshNode {
   detection_text?: string;
   /** Meshtastic PKC public key from NodeInfo/User when available */
   public_key_hex?: string;
+  /** `NodeInfo.is_key_manually_verified`: operator-confirmed public key */
+  key_manually_verified?: boolean;
+  /** `NodeInfo.has_xeddsa_signed`: radio has verified an XEdDSA signature from this node */
+  has_xeddsa_signed?: boolean;
 }
 
 export type RemoteAdminStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -462,6 +470,22 @@ export interface EnvironmentTelemetryPoint {
   weight?: number; // kg
   rainfall1h?: number;
   rainfall24h?: number;
+  /** AS3935 lightning sensor (rolling ~1h strike count and last-strike distance). */
+  lightningStrikeCount1h?: number;
+  lightningDistanceKm?: number;
+  /** Sparse per-channel ADC voltages / one-wire temperatures, indexed by channel 0-7. */
+  adcVoltages?: (number | undefined)[];
+  oneWireTemperatures?: (number | undefined)[];
+  /** Air-quality variant (SEN5X / SEN6X / SCD4X). */
+  pm10Standard?: number;
+  pm25Standard?: number;
+  pm40Standard?: number;
+  pm100Standard?: number;
+  co2?: number;
+  pmTemperature?: number;
+  pmHumidity?: number;
+  pmVocIdx?: number;
+  pmNoxIdx?: number;
 }
 
 export interface DeviceState {

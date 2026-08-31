@@ -3307,6 +3307,15 @@ describe('portNumEnumToProtoName', () => {
     expect(portNumEnumToProtoName(PortNum.NODEINFO_APP)).toBe('NODEINFO_APP');
   });
 
+  it('names the portnums added in protobufs 2.8.0', () => {
+    expect(portNumEnumToProtoName(11)).toBe('ALERT_APP');
+    expect(portNumEnumToProtoName(12)).toBe('KEY_VERIFICATION_APP');
+    expect(portNumEnumToProtoName(13)).toBe('REMOTE_SHELL_APP');
+    expect(portNumEnumToProtoName(36)).toBe('NODE_STATUS_APP');
+    expect(portNumEnumToProtoName(37)).toBe('MESH_BEACON_APP');
+    expect(portNumEnumToProtoName(78)).toBe('ATAK_PLUGIN_V2');
+  });
+
   it('returns UNKNOWN_APP for unmapped port numbers', () => {
     expect(portNumEnumToProtoName(999_999)).toBe('UNKNOWN_APP');
   });

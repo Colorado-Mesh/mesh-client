@@ -66,6 +66,10 @@ export interface NodeRecord {
   lux?: number;
   windSpeed?: number;
   windDirection?: number;
+  lightningStrikeCount1h?: number;
+  lightningDistanceKm?: number;
+  pm25Standard?: number;
+  co2?: number;
   telemetryTimestamp?: number;
   snr?: number;
   rssi?: number;
@@ -92,6 +96,8 @@ export interface NodeRecord {
   publicKey?: Uint8Array;
   /** Meshtastic PKC public key hex from NodeInfo/User (remote admin destination key). */
   publicKeyHex?: string;
+  keyManuallyVerified?: boolean;
+  hasXeddsaSigned?: boolean;
   // MeshCore per-node op state (results of on-demand requests for repeaters /
   // remote nodes). Optional fields; non-MeshCore nodes leave them undefined.
   meshcoreNodeStatus?: StatusResult;

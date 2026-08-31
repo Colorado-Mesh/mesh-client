@@ -48,6 +48,21 @@ import { UnsupportedOperation } from './Protocol';
 const { PortNum } = Portnums;
 
 /**
+ * Portnums added upstream after @meshtastic/core 2.6.6, which dispatches no typed event
+ * for them. Labeled from the raw packet stream so they are not anonymous bytes.
+ */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access -- PortNum comes from the untyped generated enum barrel. */
+const UNTYPED_MODULE_PORTS = new Map<number, string>([
+  [PortNum.ALERT_APP, 'alert'],
+  [PortNum.KEY_VERIFICATION_APP, 'keyVerification'],
+  [PortNum.REMOTE_SHELL_APP, 'remoteShell'],
+  [PortNum.NODE_STATUS_APP, 'nodeStatus'],
+  [PortNum.MESH_BEACON_APP, 'meshBeacon'],
+  [PortNum.ATAK_PLUGIN_V2, 'atakPluginV2'],
+]);
+/* eslint-enable @typescript-eslint/no-unsafe-member-access */
+
+/**
  * The SDK dispatches `onMeshPacket` for every packet and then a second typed
  * event for the same payload, so a TRACEROUTE_APP packet reaches `subscribe`
  * twice. Correlation state in `meshtasticTraceSideEffects` is consumed on the
@@ -281,6 +296,22 @@ export class MeshtasticProtocol implements Protocol {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
           } else if (portnum === PortNum.TRACEROUTE_APP) {
             fireTraceRoute(packet);
+          } else {
+            const label = UNTYPED_MODULE_PORTS.get(portnum as number);
+            if (label !== undefined) {
+              const p = packet as unknown as { from?: number; channel?: number };
+              emit({
+                type: 'meshtastic_module_port',
+                payload: {
+                  portLabel: label,
+                  from: normalizedNodeNum(p.from) ?? 0,
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
+                  data: packet.payloadVariant.value.payload,
+                  channel: isFiniteNumber(p.channel) ? Math.trunc(p.channel) : undefined,
+                  timestamp: Date.now(),
+                },
+              });
+            }
           }
         }
         fire(this.decodeRawPacket(packet));
@@ -847,6 +878,8 @@ export class MeshtasticProtocol implements Protocol {
       snr?: number;
       hopsAway?: number;
       viaMqtt?: boolean;
+      isKeyManuallyVerified?: boolean;
+      hasXeddsaSigned?: boolean;
       position?: { latitudeI?: number; longitudeI?: number; altitude?: number };
       deviceMetrics?: {
         batteryLevel?: number;
@@ -875,6 +908,8 @@ export class MeshtasticProtocol implements Protocol {
           snr: p.snr,
           hopsAway: p.hopsAway,
           viaMqtt: p.viaMqtt,
+          keyManuallyVerified: p.isKeyManuallyVerified === true,
+          hasXeddsaSigned: p.hasXeddsaSigned === true,
           latitude,
           longitude,
           altitude: p.position?.altitude,
@@ -923,6 +958,11 @@ export class MeshtasticProtocol implements Protocol {
     };
     const m: Record<string, unknown> = p.data.variant?.value ?? p.data.deviceMetrics ?? {};
     const num = (key: string): number | undefined => m[key] as number | undefined;
+    /** `adc_voltage_ch0`…`ch7` / `one_wire_temperature_ch0`…`ch7` collapse to a sparse array. */
+    const channels = (prefix: string): (number | undefined)[] | undefined => {
+      const values = Array.from({ length: 8 }, (_, ch) => num(`${prefix}Ch${ch}`));
+      return values.some((v) => v !== undefined) ? values : undefined;
+    };
     return [
       {
         type: 'telemetry',
@@ -947,6 +987,20 @@ export class MeshtasticProtocol implements Protocol {
           weight: num('weight'),
           rainfall1h: num('rainfall1h'),
           rainfall24h: num('rainfall24h'),
+          lightningStrikeCount1h: num('lightningStrikeCount1h'),
+          lightningDistanceKm: num('lightningDistanceKm'),
+          adcVoltages: channels('adcVoltage'),
+          // `oneWireTemperature` (tag 23) is deprecated upstream in favour of the channels.
+          oneWireTemperatures: channels('oneWireTemperature'),
+          pm10Standard: num('pm10Standard'),
+          pm25Standard: num('pm25Standard'),
+          pm40Standard: num('pm40Standard'),
+          pm100Standard: num('pm100Standard'),
+          co2: num('co2'),
+          pmTemperature: num('pmTemperature'),
+          pmHumidity: num('pmHumidity'),
+          pmVocIdx: num('pmVocIdx'),
+          pmNoxIdx: num('pmNoxIdx'),
           numPacketsRxBad: num('numPacketsRxBad'),
           numRxDupe: num('numRxDupe'),
           numPacketsRx: num('numPacketsRx'),
@@ -1167,6 +1221,8 @@ export class MeshtasticProtocol implements Protocol {
       const hopsAway = meshtasticComputedRfHopsAway(mp);
       const payload: RawPacketEntry = {
         ts: Date.now(),
+        // `rx_snr` / `rx_rssi` have explicit presence in protobufs 2.8.0: absent means the
+        // packet arrived without RF measurements (MQTT, local echo), not 0 dB.
         snr: mp.rxSnr ?? 0,
         rssi: mp.rxRssi ?? 0,
         raw: serialized,

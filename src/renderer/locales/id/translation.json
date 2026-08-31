@@ -3033,7 +3033,11 @@
     "shareContactQrAria": "Tampilkan kode QR kontak MeshCore untuk impor aplikasi resmi",
     "publicKeyCopied": "Kunci publik disalin ke clipboard.",
     "hasPublicKeyNoDm": "Memiliki kunci publik (tidak ada pesan langsung)",
-    "copyPublicKey": "Kunci Publik"
+    "copyPublicKey": "Kunci Publik",
+    "xeddsaSigned": "XEdDSA ditandatangani",
+    "xeddsaSignedHint": "Radio telah memverifikasi tanda tangan XEdDSA dari simpul ini, sehingga kunci publiknya dibuktikan secara kriptografi.",
+    "keyManuallyVerified": "Kunci terverifikasi",
+    "keyManuallyVerifiedHint": "Kunci publik simpul ini dikonfirmasi secara manual oleh operator."
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",
@@ -3554,57 +3558,65 @@
     "importConfigJson": "Impor Konfigurasi JSON",
     "offloadContacts": "Pembongkaran",
     "displayUnits": {
-      "0": {
-        "label": "Metrik"
+      "METRIC": {
+        "label": "Metric"
       },
-      "1": {
+      "IMPERIAL": {
         "label": "Imperial"
       }
     },
     "deviceRoles": {
-      "0": {
-        "label": "Klien",
+      "CLIENT": {
+        "label": "Client",
         "description": "Mode klien normal"
       },
-      "1": {
-        "label": "Klien Bisu",
+      "CLIENT_MUTE": {
+        "label": "Client Mute",
         "description": "Klien yang tidak meneruskan paket. Menerapkan peran ini juga menonaktifkan siaran GPS dan laporan peta pada perangkat."
       },
-      "2": {
+      "ROUTER": {
         "label": "Router",
         "description": "Router/repeater khusus"
       },
-      "3": {
-        "label": "Klien Router",
-        "description": "Mode router + klien"
+      "ROUTER_CLIENT": {
+        "label": "Router Client",
+        "description": "Mode router + klien. Usang dalam firmware 2.3.15 — gunakan Router atau Klien."
       },
-      "4": {
-        "label": "Basis Klien",
-        "description": "Stasiun pangkalan untuk perangkat klien"
+      "REPEATER": {
+        "label": "Repeater",
+        "description": "Menyiarkan ulang paket tanpa memulainya. Usang dalam firmware 2.7.11 — menciptakan lubang di rantai siaran ulang."
       },
-      "5": {
-        "label": "Pelacak",
+      "TRACKER": {
+        "label": "Tracker",
         "description": "Pelacak GPS saja"
       },
-      "6": {
+      "SENSOR": {
         "label": "Sensor",
         "description": "Node sensor telemetri"
       },
-      "7": {
+      "TAK": {
         "label": "TAK",
-        "description": "Perangkat berkemampuan TAK"
+        "description": "TAK-enabled device"
       },
-      "8": {
-        "label": "Klien Tersembunyi",
+      "CLIENT_HIDDEN": {
+        "label": "Client Hidden",
         "description": "Klien, disembunyikan dari daftar node"
       },
-      "9": {
-        "label": "Hilang dan Ditemukan",
-        "description": "Menyiarkan posisi untuk pemulihan"
+      "LOST_AND_FOUND": {
+        "label": "Lost and Found",
+        "description": "Posisi siaran untuk pemulihan"
       },
-      "10": {
-        "label": "Pelacak TAK",
-        "description": "Mode pelacak TAK"
+      "TAK_TRACKER": {
+        "label": "TAK Tracker",
+        "description": "TAK tracker mode"
+      },
+      "ROUTER_LATE": {
+        "label": "Router Late",
+        "description": "Router yang menyiarkan ulang hanya setelah node lain memiliki kesempatan, untuk core mesh yang padat."
+      },
+      "CLIENT_BASE": {
+        "label": "Client Base",
+        "description": "Base station untuk perangkat klien"
       }
     },
     "contactsOnRadioBadgeTitle": "{{part}} kontak di radio",
@@ -3839,29 +3851,29 @@
     "tzdefLabel": "Zona Waktu (POSIX)",
     "tzdefDesc": "String zona waktu POSIX mis. EST5EDT,M3.2.0,M11.1.0. Lihat https://github.com/nayarsystems/posix_tz_db untuk daftar referensi.",
     "rebroadcastModes": {
-      "0": {
-        "label": "All",
+      "ALL": {
+        "label": "Semua",
         "description": "Siarkan ulang semua paket (default)."
       },
-      "1": {
-        "label": "Semua Lewati Decoding",
+      "ALL_SKIP_DECODING": {
+        "label": "Semua Dekode Lewati",
         "description": "Siarkan ulang semua tanpa decoding. Mengurangi CPU pada router khusus."
       },
-      "2": {
-        "label": "Hanya Lokal",
-        "description": "Hanya paket yang disiarkan ulang dari node yang didengar langsung di RF."
+      "LOCAL_ONLY": {
+        "label": "Khusus Lokal",
+        "description": "Hanya paket siaran ulang dari node yang didengar langsung di RF."
       },
-      "3": {
+      "KNOWN_ONLY": {
         "label": "Hanya Diketahui",
-        "description": "Hanya disiarkan ulang dari node di database node lokal."
+        "description": "Hanya siaran ulang dari node di database node lokal."
       },
-      "4": {
-        "label": "Tidak ada",
+      "NONE": {
+        "label": "Tidak Ada",
         "description": "Jangan menyiarkan ulang paket apa pun."
       },
-      "5": {
-        "label": "Hanya Portnum Inti",
-        "description": "Hanya menyiarkan ulang portnum penting (teks, info node, posisi, telemetri)."
+      "CORE_PORTNUMS_ONLY": {
+        "label": "Hanya Portofolio Inti",
+        "description": "Hanya siaran ulang portnum penting (teks, nodeinfo, posisi, telemetri)."
       }
     },
     "autoScreenCarouselSecsLabel": "Interval Korsel Layar",
@@ -3879,23 +3891,23 @@
     "enableMessageBubblesLabel": "Gelembung Pesan",
     "enableMessageBubblesDesc": "Tampilkan pesan masuk dalam gelembung di layar.",
     "oledTypes": {
-      "0": {
-        "label": "Mobil"
+      "OLED_AUTO": {
+        "label": "Auto"
       },
-      "1": {
+      "OLED_SSD1306": {
         "label": "SSD1306"
       },
-      "2": {
+      "OLED_SH1106": {
         "label": "SH1106"
       },
-      "3": {
+      "OLED_SH1107": {
         "label": "SH1107 (128x64)"
       },
-      "4": {
+      "OLED_SH1107_128_128": {
         "label": "SH1107 (128x128)"
       },
-      "5": {
-        "label": "SH1107 Diputar"
+      "OLED_SH1107_ROTATED": {
+        "label": "SH1107 Rotated"
       }
     },
     "displayModes": {
@@ -3982,85 +3994,172 @@
       "shareQrAria": "Tampilkan QR saluran MeshCore untuk {{name}}"
     },
     "regions": {
-      "0": {
-        "label": "Tidak disetel"
+      "UNSET": {
+        "label": "Unset"
       },
-      "1": {
-        "label": "KITA"
+      "US": {
+        "label": "US"
       },
-      "2": {
-        "label": "UE_433"
+      "EU_433": {
+        "label": "EU_433"
       },
-      "3": {
-        "label": "UE_868"
+      "EU_868": {
+        "label": "EU_868"
       },
-      "4": {
+      "CN": {
         "label": "CN"
       },
-      "5": {
+      "JP": {
         "label": "JP"
       },
-      "6": {
+      "ANZ": {
         "label": "ANZ"
       },
-      "7": {
+      "KR": {
         "label": "KR"
       },
-      "8": {
-        "label": "DUA"
+      "TW": {
+        "label": "TW"
       },
-      "9": {
-        "label": "ru"
+      "RU": {
+        "label": "RU"
       },
-      "10": {
-        "label": "DI DALAM"
+      "IN": {
+        "label": "IN"
       },
-      "11": {
+      "NZ_865": {
         "label": "NZ_865"
       },
-      "12": {
+      "TH": {
         "label": "TH"
       },
-      "13": {
+      "LORA_24": {
+        "label": "LORA_24"
+      },
+      "UA_433": {
         "label": "UA_433"
       },
-      "14": {
+      "UA_868": {
         "label": "UA_868"
       },
-      "15": {
-        "label": "SAYA_433"
+      "MY_433": {
+        "label": "MY_433"
       },
-      "16": {
-        "label": "SAYA_919"
+      "MY_919": {
+        "label": "MY_919"
       },
-      "17": {
+      "SG_923": {
         "label": "SG_923"
       },
-      "18": {
-        "label": "LORA_24"
+      "PH_433": {
+        "label": "PH_433"
+      },
+      "PH_868": {
+        "label": "PH_868"
+      },
+      "PH_915": {
+        "label": "PH_915"
+      },
+      "ANZ_433": {
+        "label": "ANZ_433"
+      },
+      "KZ_433": {
+        "label": "KZ_433"
+      },
+      "KZ_863": {
+        "label": "KZ_863"
+      },
+      "NP_865": {
+        "label": "NP_865"
+      },
+      "BR_902": {
+        "label": "BR_902"
+      },
+      "ITU1_2M": {
+        "label": "ITU1_2M"
+      },
+      "ITU2_2M": {
+        "label": "ITU2_2M"
+      },
+      "EU_866": {
+        "label": "EU_866"
+      },
+      "EU_874": {
+        "label": "EU_874"
+      },
+      "EU_917": {
+        "label": "EU_917"
+      },
+      "EU_N_868": {
+        "label": "EU_N_868"
+      },
+      "ITU3_2M": {
+        "label": "ITU3_2M"
+      },
+      "ITU1_70CM": {
+        "label": "ITU1_70CM"
+      },
+      "ITU2_70CM": {
+        "label": "ITU2_70CM"
+      },
+      "ITU3_70CM": {
+        "label": "ITU3_70CM"
+      },
+      "ITU2_125CM": {
+        "label": "ITU2_125CM"
       }
     },
     "modemPresets": {
-      "0": {
-        "label": "Cepat Panjang"
+      "LONG_FAST": {
+        "label": "Long Fast"
       },
-      "1": {
-        "label": "Panjang Lambat"
+      "LONG_SLOW": {
+        "label": "Long Slow"
       },
-      "2": {
-        "label": "Panjang Sedang"
+      "VERY_LONG_SLOW": {
+        "label": "Very Long Slow"
       },
-      "3": {
-        "label": "Singkat Cepat"
+      "MEDIUM_SLOW": {
+        "label": "Medium Slow"
       },
-      "4": {
-        "label": "Pendek Lambat"
+      "MEDIUM_FAST": {
+        "label": "Medium Fast"
       },
-      "5": {
-        "label": "Sedang Cepat"
+      "SHORT_SLOW": {
+        "label": "Short Slow"
       },
-      "6": {
-        "label": "Sedang Lambat"
+      "SHORT_FAST": {
+        "label": "Short Fast"
+      },
+      "LONG_MODERATE": {
+        "label": "Long Moderate"
+      },
+      "SHORT_TURBO": {
+        "label": "Short Turbo"
+      },
+      "LONG_TURBO": {
+        "label": "Long Turbo"
+      },
+      "LITE_FAST": {
+        "label": "Lite Fast"
+      },
+      "LITE_SLOW": {
+        "label": "Lite Slow"
+      },
+      "NARROW_FAST": {
+        "label": "Narrow Fast"
+      },
+      "NARROW_SLOW": {
+        "label": "Narrow Slow"
+      },
+      "TINY_FAST": {
+        "label": "Tiny Fast"
+      },
+      "TINY_SLOW": {
+        "label": "Tiny Slow"
+      },
+      "MEDIUM_TURBO": {
+        "label": "Medium Turbo"
       }
     },
     "floodScopeSaved": "Cakupan yang disimpan",
@@ -4072,7 +4171,35 @@
     "sendPositionDisabledShareOff": "Aktifkan Bagikan lokasi saya di Aplikasi → GPS / Lokasi untuk mengirim posisi Anda ke perangkat.",
     "clientMuteGpsSuppressed": "Client Mute diterapkan — siaran GPS dan pelaporan peta MQTT dinonaktifkan pada perangkat.",
     "validationShortNameTooLong": "Nama Pendek harus sesuai dalam 4 UTF -8 byte",
-    "validationShortNameEmojiTooLarge": "Karakter ini terlalu besar untuk Nama Pendek (maks 4 UTF -8 byte per nama)"
+    "validationShortNameEmojiTooLarge": "Karakter ini terlalu besar untuk Nama Pendek (maks 4 UTF -8 byte per nama)",
+    "enumDeprecatedSuffix": "Tak Dipakai Lagi",
+    "lockdown": {
+      "title": "Penguncian Firmware",
+      "description": "Radio yang terkunci menolak perubahan konfigurasi sampai tidak terkunci dengan kata sandinya. Status dilaporkan oleh firmware; radio tanpa dukungan penguncian tidak pernah melaporkannya.",
+      "stateLabel": "Provinsi",
+      "stateNotReported": "Tidak dilaporkan oleh radio ini",
+      "reasonLabel": "Alasan",
+      "bootsRemainingLabel": "Reboot tersisa",
+      "validUntilLabel": "Dibuka hingga",
+      "backoffLabel": "Coba lagi mundur",
+      "backoffValue": "{{seconds}}s",
+      "passphraseLabel": "Frasa sandi",
+      "provision": "Pengaturan",
+      "unlock": "Buka Kunci",
+      "unlockAria": "Buka kunci atau kuncian firmware provisi",
+      "lockNow": "Kunci sekarang",
+      "lockNowAria": "Segera kunci radio",
+      "disable": "Nonaktifkan penguncian",
+      "disableAria": "Nonaktifkan penguncian firmware",
+      "states": {
+        "STATE_UNSPECIFIED": "Tidak dinyatakan",
+        "NEEDS_PROVISION": "Memerlukan penyediaan",
+        "LOCKED": "Terkunci",
+        "UNLOCKED": "Tidak terkunci",
+        "UNLOCK_FAILED": "Buka Kunci Gagal!",
+        "DISABLED": "Dinonaktifkan"
+      }
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",
@@ -4915,7 +5042,8 @@
     "regenerateWarning": "Regenerasi akan membuat paket data ATAK yang ada menjadi tidak valid — Anda perlu mengimpor ulang.",
     "durationSec": "{{s}}s",
     "durationMin": "{{m}}m",
-    "durationHourMin": "{{h}}h {{m}}m"
+    "durationHourMin": "{{h}}h {{m}}m",
+    "atakUndecodable": "Muatan tidak dikenali sebagai paket TAK"
   },
   "telemetryPanel": {
     "title": "Telemetri",
@@ -4956,7 +5084,14 @@
     "tempUnitC": "°C",
     "exportCsvButton": "Ekspor CSV",
     "emptyWaitingConnected": "Belum ada data telemetri. Menunggu data dari perangkat…",
-    "emptyWaitingDisconnected": "Belum ada data telemetri. Hubungkan ke perangkat untuk melihat metrik waktu nyata."
+    "emptyWaitingDisconnected": "Belum ada data telemetri. Hubungkan ke perangkat untuk melihat metrik waktu nyata.",
+    "sectionParticulates": "Partikulat, CO₂ dan Petir",
+    "chartAriaParticulates": "Bagan partikulat: PM2.5 {{pm25}} terbaru, CO₂ {{co2}}, {{count}} poin",
+    "axisParticulates": "µg/m³ · pemogokan",
+    "axisCo2": "ppm",
+    "seriesPm25": "PM2.5 (µg/m³)",
+    "seriesCo2": "CO₂ (ppm)",
+    "seriesLightningStrikes": "Sambaran petir (1j)"
   },
   "toasts": {
     "firmwareAvailable": "Pembaruan firmware tersedia: v{{version}}",

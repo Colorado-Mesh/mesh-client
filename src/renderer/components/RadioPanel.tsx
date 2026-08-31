@@ -16,6 +16,17 @@ import {
   meshtasticConfigSliceHydrated,
   stripMeshtasticProtobufMeta,
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
+import type { MeshtasticLockdownAuthRequest } from '@/renderer/lib/meshtastic/meshtasticLockdown';
+import {
+  DEVICE_ROLE_OPTIONS,
+  DISPLAY_UNIT_OPTIONS,
+  humanizeEnumName,
+  MODEM_PRESET_OPTIONS,
+  OLED_TYPE_OPTIONS,
+  type ProtobufEnumOption,
+  REBROADCAST_MODE_OPTIONS,
+  REGION_OPTIONS,
+} from '@/renderer/lib/meshtastic/protobufEnumOptions';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { bytesToHex, hexToBytesExactOrThrow } from '@/shared/hexBytes';
 import {
@@ -97,6 +108,7 @@ import type { ConfigTargetContext, RemoteConfigChannelsTailStatus } from '../lib
 import { ConfigApplyNotice } from './ConfigApplyNotice';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
+import LockdownSection from './LockdownSection';
 import MeshcoreContactSettingsSection from './MeshcoreContactSettingsSection';
 import {
   type MeshcoreFloodScopeHandle,
@@ -175,6 +187,7 @@ interface Props {
     isLicensed: boolean;
   }) => Promise<void>;
   capabilities?: ProtocolCapabilities;
+  onSendLockdownAuth?: (auth: MeshtasticLockdownAuthRequest) => Promise<void>;
   meshcoreChannels?: { index: number; name: string; secret: Uint8Array }[];
   onMeshcoreSetChannel?: (idx: number, name: string, secret: Uint8Array) => Promise<void>;
   onMeshcoreDeleteChannel?: (idx: number) => Promise<void>;
@@ -241,47 +254,6 @@ interface Props {
   remoteChannelsTailStatus?: RemoteConfigChannelsTailStatus;
   onRetryRemoteChannelsTail?: () => void;
 }
-
-const REGION_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] as const;
-
-const MODEM_PRESET_VALUES = [0, 1, 2, 3, 4, 5, 6] as const;
-
-const DEVICE_ROLES = [
-  { value: 0, label: 'Client', description: 'Normal client mode' },
-  { value: 1, label: 'Client Mute', description: 'Client that does not transmit' },
-  { value: 2, label: 'Router', description: 'Dedicated router/repeater' },
-  { value: 3, label: 'Router Client', description: 'Router + client mode' },
-  { value: 4, label: 'Client Base', description: 'Base station for client devices' },
-  { value: 5, label: 'Tracker', description: 'GPS tracker only' },
-  { value: 6, label: 'Sensor', description: 'Telemetry sensor node' },
-  { value: 7, label: 'TAK', description: 'TAK-enabled device' },
-  { value: 8, label: 'Client Hidden', description: 'Client, hidden from node list' },
-  { value: 9, label: 'Lost and Found', description: 'Broadcasts position for recovery' },
-  { value: 10, label: 'TAK Tracker', description: 'TAK tracker mode' },
-];
-
-const REBROADCAST_MODES = [
-  { value: 0, label: 'All' },
-  { value: 1, label: 'All Skip Decoding' },
-  { value: 2, label: 'Local Only' },
-  { value: 3, label: 'Known Only' },
-  { value: 4, label: 'None' },
-  { value: 5, label: 'Core Portnums Only' },
-];
-
-const DISPLAY_UNITS = [
-  { value: 0, label: 'Metric' },
-  { value: 1, label: 'Imperial' },
-];
-
-const OLED_TYPES = [
-  { value: 0, label: 'Auto' },
-  { value: 1, label: 'SSD1306' },
-  { value: 2, label: 'SH1106' },
-  { value: 3, label: 'SH1107 (128x64)' },
-  { value: 4, label: 'SH1107 (128x128)' },
-  { value: 5, label: 'SH1107 Rotated' },
-];
 
 const DISPLAY_MODES = [
   { value: 0, label: 'Default' },
@@ -749,6 +721,7 @@ export default function RadioPanel({
   deviceOwner,
   onSetOwner,
   capabilities,
+  onSendLockdownAuth,
   meshcoreChannels,
   onMeshcoreSetChannel,
   onMeshcoreDeleteChannel,
@@ -1104,56 +1077,73 @@ export default function RadioPanel({
 
   const { addToast } = useToast();
   const { t } = useTranslation();
+  /**
+   * Labels come from the proto enum name, not the wire number, so a new upstream value
+   * lands in the dropdown with a humanized fallback instead of silently shifting labels.
+   */
+  const enumLabel = useCallback(
+    (option: ProtobufEnumOption, translated: string): string => {
+      const label = translated || humanizeEnumName(option.enumName);
+      return option.deprecated ? `${label} ${t('radioPanel.enumDeprecatedSuffix')}` : label;
+    },
+    [t],
+  );
+
   const deviceRoleOptions = useMemo(
     () =>
-      DEVICE_ROLES.map((r) => ({
+      DEVICE_ROLE_OPTIONS.map((r) => ({
         value: r.value,
-        label: t(`radioPanel.deviceRoles.${r.value}.label`),
-        description: t(`radioPanel.deviceRoles.${r.value}.description`),
+        label: enumLabel(r, t(`radioPanel.deviceRoles.${r.enumName}.label`, { defaultValue: '' })),
+        description: t(`radioPanel.deviceRoles.${r.enumName}.description`, { defaultValue: '' }),
       })),
-    [t],
+    [enumLabel, t],
   );
   const rebroadcastModeOptions = useMemo(
     () =>
-      REBROADCAST_MODES.map((m) => ({
+      REBROADCAST_MODE_OPTIONS.map((m) => ({
         value: m.value,
-        label: t(`radioPanel.rebroadcastModes.${m.value}.label`),
-        description: t(`radioPanel.rebroadcastModes.${m.value}.description`),
+        label: enumLabel(
+          m,
+          t(`radioPanel.rebroadcastModes.${m.enumName}.label`, { defaultValue: '' }),
+        ),
+        description: t(`radioPanel.rebroadcastModes.${m.enumName}.description`, {
+          defaultValue: '',
+        }),
       })),
-    [t],
+    [enumLabel, t],
   );
   const displayUnitOptions = useMemo(
     () =>
-      DISPLAY_UNITS.map((u) => ({
+      DISPLAY_UNIT_OPTIONS.map((u) => ({
         value: u.value,
-        label: t(`radioPanel.displayUnits.${u.value}.label`),
+        label: enumLabel(u, t(`radioPanel.displayUnits.${u.enumName}.label`, { defaultValue: '' })),
       })),
-    [t],
+    [enumLabel, t],
   );
   const regionOptions = useMemo(
     () =>
-      REGION_VALUES.map((value) => ({
-        value,
-        label: t(`radioPanel.regions.${value}.label`),
+      REGION_OPTIONS.map((r) => ({
+        value: r.value,
+        label: enumLabel(r, t(`radioPanel.regions.${r.enumName}.label`, { defaultValue: '' })),
       })),
-    [t],
+    [enumLabel, t],
   );
   const modemPresetOptions = useMemo(
     () =>
-      MODEM_PRESET_VALUES.map((value) => ({
-        value,
-        label: t(`radioPanel.modemPresets.${value}.label`),
+      MODEM_PRESET_OPTIONS.map((p) => ({
+        value: p.value,
+        label: enumLabel(p, t(`radioPanel.modemPresets.${p.enumName}.label`, { defaultValue: '' })),
       })),
-    [t],
+    [enumLabel, t],
   );
 
   const oledTypeOptions = useMemo(
     () =>
-      OLED_TYPES.map((o) => ({
+      OLED_TYPE_OPTIONS.map((o) => ({
         value: o.value,
-        label: t(`radioPanel.oledTypes.${o.value}.label`),
+        label: enumLabel(o, t(`radioPanel.oledTypes.${o.enumName}.label`, { defaultValue: '' })),
       })),
-    [t],
+    [enumLabel, t],
   );
 
   const displayModeOptions = useMemo(
@@ -1545,6 +1535,10 @@ export default function RadioPanel({
             {t('radioPanel.importConfigJson')}
           </button>
         </div>
+      )}
+
+      {capabilities?.hasLockdown && onSendLockdownAuth && (
+        <LockdownSection isConnected={isConnected} onSendLockdownAuth={onSendLockdownAuth} />
       )}
 
       {!isConnected && (
