@@ -22,6 +22,11 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
 import { shouldSuppressMeshtasticNodeHear } from '@/renderer/lib/meshcoreBleMacMeshtasticNodeId';
 import {
+  clearMeshtasticLockdownStatus,
+  encodeMeshtasticLockdownAuth,
+  type MeshtasticLockdownAuthRequest,
+} from '@/renderer/lib/meshtastic/meshtasticLockdown';
+import {
   buildStoreForwardHistoryToRadioBytes,
   getLastSfHistoryFetchMs,
   MQTT_RECONNECT_BACKLOG_MS,
@@ -933,6 +938,10 @@ export function useMeshtasticRuntime() {
     unsubscribesRef.current = [];
     ackMeshPacketIdByTempIdRef.current.clear();
     outboundSendByTempIdRef.current.clear();
+    // Lockdown state is per-radio module state. Cleared here rather than on the
+    // DeviceDisconnected event because radio replacement tears down subscriptions
+    // before disconnecting, so that event never reaches the removed listener.
+    clearMeshtasticLockdownStatus();
     if (clearedIdentity) {
       useRelayCoverageStore.getState().clearIdentity(clearedIdentity);
     }
@@ -3980,6 +3989,19 @@ export function useMeshtasticRuntime() {
     [runRemoteAdminOp],
   );
 
+  /**
+   * `AdminMessage.lockdown_auth` (104) to the local radio. Lockdown is a property of the
+   * attached device, so this never goes through the remote-admin client.
+   */
+  const sendLockdownAuth = useCallback(async (auth: MeshtasticLockdownAuthRequest) => {
+    if (!deviceRef.current) return;
+    await deviceRef.current.sendPacket(
+      encodeMeshtasticLockdownAuth(auth),
+      meshtasticPortnums.PortNum.ADMIN_APP,
+      'self',
+    );
+  }, []);
+
   const getRemoteAdminSessionStatus = useCallback((nodeNum: number): RemoteAdminSessionStatus => {
     return remoteAdminClientRef.current?.sessionStore.getStatus(nodeNum) ?? 'none';
   }, []);
@@ -4658,6 +4680,7 @@ export function useMeshtasticRuntime() {
       setCannedMessages,
       ringtone,
       setRingtone,
+      sendLockdownAuth,
       securityConfig,
       remoteAdminKeysByNode,
       getRemoteAdminKeyForNode,
@@ -4765,6 +4788,7 @@ export function useMeshtasticRuntime() {
       setCannedMessages,
       ringtone,
       setRingtone,
+      sendLockdownAuth,
       securityConfig,
       remoteAdminKeysByNode,
       getRemoteAdminKeyForNode,

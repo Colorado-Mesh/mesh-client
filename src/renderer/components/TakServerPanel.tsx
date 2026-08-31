@@ -1,7 +1,8 @@
 import type { TFunction } from 'i18next';
-import { useId, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { decodeTakPacket, type TakPacketSummary } from '@/renderer/lib/meshtastic/takPacketDecode';
 import type { ProtocolCapabilities } from '@/renderer/lib/radio/BaseRadioProvider';
 import { MS_PER_MINUTE } from '@/renderer/lib/timeConstants';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
@@ -23,6 +24,22 @@ function formatDuration(connectedAt: number, t: TFunction): string {
   if (m < 60) return t('takServerPanel.durationMin', { m });
   const h = Math.floor(m / 60);
   return t('takServerPanel.durationHourMin', { h, m: m % 60 });
+}
+
+/** One-line description of the newest ATAK packet from a node. */
+function formatTakSummary(summary: TakPacketSummary, t: TFunction): string {
+  const parts: string[] = [];
+  if (summary.callsign !== undefined) parts.push(summary.callsign);
+  if (summary.cotType !== undefined) parts.push(summary.cotType);
+  if (summary.team !== undefined) parts.push(summary.team);
+  if (summary.latitude !== undefined && summary.longitude !== undefined) {
+    parts.push(`${summary.latitude.toFixed(5)}, ${summary.longitude.toFixed(5)}`);
+  }
+  if (summary.battery !== undefined) parts.push(`${summary.battery}%`);
+  if (summary.temperatureC !== undefined) parts.push(`${summary.temperatureC.toFixed(1)}°C`);
+  if (summary.chatMessage !== undefined) parts.push(`“${summary.chatMessage}”`);
+  else if (summary.payloadKind !== undefined) parts.push(summary.payloadKind);
+  return parts.length > 0 ? parts.join(' · ') : t('takServerPanel.atakUndecodable');
 }
 
 function formatTimeAgo(ts: number, t: TFunction): string {
@@ -57,6 +74,16 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
   const [localRequireCert, setLocalRequireCert] = useState(settings.requireClientCert);
   const [localAutoStart, setLocalAutoStart] = useState(settings.autoStart);
   const [packageGenerated, setPackageGenerated] = useState(false);
+
+  /** Decode only the newest packet per node; the buffer holds up to 100 per sender. */
+  const latestTakSummaries = useMemo(() => {
+    const out = new Map<number, TakPacketSummary | null>();
+    for (const [nodeId, messages] of atakMessages ?? []) {
+      const newest = messages[messages.length - 1];
+      out.set(nodeId, newest ? decodeTakPacket(newest.data) : null);
+    }
+    return out;
+  }, [atakMessages]);
 
   const portNum = parseInt(localPort, 10);
   const portValid = Number.isInteger(portNum) && portNum >= 1024 && portNum <= 65535;
@@ -266,16 +293,24 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
           <p className="text-xs text-gray-400">{t('takServerPanel.atakPluginDesc')}</p>
           {atakMessages && atakMessages.size > 0 ? (
             <ul className="space-y-1.5">
-              {Array.from(atakMessages.entries()).map(([nodeId, messages]) => (
-                <li key={nodeId} className="flex items-center gap-2 text-xs text-gray-300">
-                  <span className="font-mono">{formatMeshtasticNodeId(nodeId)}</span>
-                  <span className="text-gray-500">
-                    {t('takServerPanel.packets', { count: messages.length })} ·{' '}
-                    {t('takServerPanel.lastText')}{' '}
-                    {formatTimeAgo(messages[messages.length - 1]?.timestamp ?? 0, t)}
-                  </span>
-                </li>
-              ))}
+              {Array.from(atakMessages.entries()).map(([nodeId, messages]) => {
+                const summary = latestTakSummaries.get(nodeId) ?? null;
+                return (
+                  <li key={nodeId} className="flex flex-col gap-0.5 text-xs text-gray-300">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono">{formatMeshtasticNodeId(nodeId)}</span>
+                      <span className="text-gray-500">
+                        {t('takServerPanel.packets', { count: messages.length })} ·{' '}
+                        {t('takServerPanel.lastText')}{' '}
+                        {formatTimeAgo(messages[messages.length - 1]?.timestamp ?? 0, t)}
+                      </span>
+                    </div>
+                    <span className="text-gray-400">
+                      {summary ? formatTakSummary(summary, t) : t('takServerPanel.atakUndecodable')}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="text-xs text-gray-500">{t('takServerPanel.noAtakMessages')}</p>

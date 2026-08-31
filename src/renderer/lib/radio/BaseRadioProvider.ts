@@ -98,6 +98,8 @@ export interface ProtocolCapabilities {
   hasStoreForward: boolean;
   /** Whether ATAK Plugin integration is available */
   hasAtakPlugin: boolean;
+  /** Whether the firmware reports lockdown status and accepts LockdownAuth (Meshtastic) */
+  hasLockdown: boolean;
   /** Whether Map Report packets are available */
   hasMapReport: boolean;
   /** Whether XMODEM file transfer is available (Meshtastic local radio) */
@@ -219,6 +221,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasDetectionSensor: true,
   hasStoreForward: true,
   hasAtakPlugin: true,
+  hasLockdown: true,
   hasMapReport: true,
   hasXmodem: true,
   hasContactImportExport: false,
@@ -301,6 +304,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasDetectionSensor: false,
   hasStoreForward: false,
   hasAtakPlugin: false,
+  hasLockdown: false,
   hasMapReport: false,
   hasXmodem: false,
   hasContactImportExport: true,
@@ -382,6 +386,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasDetectionSensor: false,
   hasStoreForward: false,
   hasAtakPlugin: false,
+  hasLockdown: false,
   hasMapReport: false,
   hasXmodem: false,
   hasContactImportExport: false,

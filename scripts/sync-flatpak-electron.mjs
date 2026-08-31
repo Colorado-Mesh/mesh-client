@@ -14,6 +14,15 @@ const ELECTRON_SHA256_HEX_RE = /^[a-f0-9]{64}$/;
 /** Electron release tags must be X.Y.Z — validated before any GitHub fetch (CodeQL file-access-to-http). */
 export const SAFE_ELECTRON_SEMVER_RE = /^\d+\.\d+\.\d+$/;
 
+/** pnpm standalone tags must be X.Y.Z (pre-release suffixes are not vendored). */
+export const SAFE_PNPM_SEMVER_RE = /^\d+\.\d+\.\d+$/;
+/** Corepack's optional `sha512.<hex>` integrity suffix. */
+const PNPM_INTEGRITY_RE = /^sha512\.[a-f0-9]{1,200}$/;
+const PNPM_SHA256_HEX_RE = /^[a-f0-9]{64}$/;
+
+const PNPM_ARCHIVE_SOURCES_RE =
+  / {6}- type: archive\n {8}url: https:\/\/github\.com\/pnpm\/pnpm\/releases\/download\/v[\d.]+\/pnpm-linux-x64\.tar\.gz\n {8}sha256: [a-f0-9]{64}\n {8}dest: pnpm-vendor\n {8}#[^\n]*\n {8}strip-components: 0\n {8}only-arches: \[x86_64\]\n {6}- type: archive\n {8}url: https:\/\/github\.com\/pnpm\/pnpm\/releases\/download\/v[\d.]+\/pnpm-linux-arm64\.tar\.gz\n {8}sha256: [a-f0-9]{64}\n {8}dest: pnpm-vendor\n {8}strip-components: 0\n {8}only-arches: \[aarch64\]/;
+
 const ELECTRON_ARCHIVE_SOURCES_RE =
   / {6}- type: archive\n {8}url: https:\/\/github\.com\/electron\/electron\/releases\/download\/v[\d.]+\/electron-v[\d.]+-linux-x64\.zip\n {8}sha256: [a-f0-9]{64}\n {8}dest: electron-prebuilt\n {8}only-arches: \[x86_64\]\n {6}- type: archive\n {8}url: https:\/\/github\.com\/electron\/electron\/releases\/download\/v[\d.]+\/electron-v[\d.]+-linux-arm64\.zip\n {8}sha256: [a-f0-9]{64}\n {8}dest: electron-prebuilt\n {8}only-arches: \[aarch64\]/;
 
@@ -148,6 +157,185 @@ export async function fetchElectronSha256s(version, fetchFn = fetch) {
   }
 }
 
+export function assertSafePnpmSemverVersion(version) {
+  if (typeof version !== 'string' || !SAFE_PNPM_SEMVER_RE.test(version)) {
+    throw new Error(`pnpm version must match X.Y.Z (got ${JSON.stringify(version)})`);
+  }
+  return version;
+}
+
+/**
+ * Corepack `pnpm@VERSION[+sha512…]` — the integrity hash is not part of the release tag.
+ * The whole suffix is matched so a prerelease pin (`pnpm@11.24.0-rc.1`) is rejected instead
+ * of being truncated to a stable version whose tarball we would then vendor by mistake.
+ */
+export function pnpmVersionFromPackage(pkg) {
+  const spec = pkg?.packageManager;
+  if (typeof spec !== 'string' || !spec.startsWith('pnpm@')) return null;
+  const [version, integrity, ...rest] = spec.slice('pnpm@'.length).split('+');
+  if (rest.length > 0) return null;
+  if (integrity !== undefined && !PNPM_INTEGRITY_RE.test(integrity)) return null;
+  return SAFE_PNPM_SEMVER_RE.test(version) ? version : null;
+}
+
+/** Re-validate checksum map from network parse before manifest write (CodeQL http-to-file-access). */
+export function validatePnpmSha256ByArch(sha256ByArch, version) {
+  assertSafePnpmSemverVersion(version);
+  if (!sha256ByArch || typeof sha256ByArch !== 'object') {
+    throw new Error('pnpm SHA256 map must be an object');
+  }
+  const x64 = sha256ByArch.x64;
+  const arm64 = sha256ByArch.arm64;
+  if (typeof x64 !== 'string' || !PNPM_SHA256_HEX_RE.test(x64)) {
+    throw new Error('pnpm linux-x64 checksum must be 64 lowercase hex chars');
+  }
+  if (typeof arm64 !== 'string' || !PNPM_SHA256_HEX_RE.test(arm64)) {
+    throw new Error('pnpm linux-arm64 checksum must be 64 lowercase hex chars');
+  }
+  return { x64, arm64 };
+}
+
+/** GitHub release assets expose `digest: "sha256:<hex>"` for the standalone tarballs. */
+export function parsePnpmSha256s(release, version) {
+  const safeVersion = assertSafePnpmSemverVersion(version);
+  const assets = Array.isArray(release?.assets) ? release.assets : [];
+  const byArch = {};
+  for (const asset of assets) {
+    const m = /^pnpm-linux-(x64|arm64)\.tar\.gz$/.exec(String(asset?.name ?? ''));
+    if (!m) continue;
+    const digest = /^sha256:([a-f0-9]{64})$/.exec(String(asset?.digest ?? ''));
+    if (!digest) continue;
+    byArch[m[1]] = digest[1];
+  }
+  if (!byArch.x64 || !byArch.arm64) {
+    throw new Error(
+      `pnpm v${safeVersion} release is missing a sha256 digest for pnpm-linux-x64.tar.gz or pnpm-linux-arm64.tar.gz`,
+    );
+  }
+  return byArch;
+}
+
+export function buildPnpmArchiveSourcesYaml(version, sha256ByArch) {
+  const safeVersion = assertSafePnpmSemverVersion(version);
+  const validated = validatePnpmSha256ByArch(sha256ByArch, safeVersion);
+  const url = (arch) =>
+    `https://github.com/pnpm/pnpm/releases/download/v${safeVersion}/pnpm-linux-${arch}.tar.gz`;
+  return `      - type: archive
+        url: ${url('x64')}
+        sha256: ${validated.x64}
+        dest: pnpm-vendor
+        # pnpm tarball has root-level \`pnpm\` + \`dist/\`; default strip-components:1 drops the binary.
+        strip-components: 0
+        only-arches: [x86_64]
+      - type: archive
+        url: ${url('arm64')}
+        sha256: ${validated.arm64}
+        dest: pnpm-vendor
+        strip-components: 0
+        only-arches: [aarch64]`;
+}
+
+export function syncFlatpakPnpmManifest(yaml, version, sha256ByArch) {
+  if (!PNPM_ARCHIVE_SOURCES_RE.test(yaml)) {
+    throw new Error('Flatpak manifest missing expected pnpm archive source blocks (x64 + arm64)');
+  }
+  return yaml.replace(PNPM_ARCHIVE_SOURCES_RE, buildPnpmArchiveSourcesYaml(version, sha256ByArch));
+}
+
+/**
+ * Strip dangerous control characters from manifest YAML before writeFileSync.
+ * Remote release metadata becomes file body; preserve TAB/LF/CR for YAML.
+ *
+ * @param {string} yaml
+ * @param {string} version
+ * @param {{ x64: string; arm64: string }} sha256ByArch
+ * @returns {string}
+ */
+export function sanitizeFlatpakPnpmManifestYamlForDisk(yaml, version, sha256ByArch) {
+  const safeVersion = assertSafePnpmSemverVersion(version);
+  const validated = validatePnpmSha256ByArch(sha256ByArch, safeVersion);
+  const expectedBlock = buildPnpmArchiveSourcesYaml(safeVersion, validated);
+  const noCtl = String(yaml).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\u2028\u2029]/g, ''); // eslint-disable-line no-control-regex
+
+  if (!noCtl.includes(expectedBlock)) {
+    throw new Error('Flatpak manifest YAML pnpm archive block does not match validated checksums');
+  }
+  return noCtl;
+}
+
+export async function fetchPnpmSha256s(version, fetchFn = fetch) {
+  const safeVersion = assertSafePnpmSemverVersion(version);
+  const url = `https://api.github.com/repos/pnpm/pnpm/releases/tags/v${safeVersion}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetchFn(url, {
+      signal: controller.signal,
+      headers: { accept: 'application/vnd.github+json' },
+    });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} fetching ${url}`);
+    }
+    const parsed = parsePnpmSha256s(await res.json(), safeVersion);
+    return validatePnpmSha256ByArch(parsed, safeVersion);
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Timed out fetching pnpm release metadata for v${safeVersion}`, {
+        cause: error,
+      });
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** True when both pnpm standalone archive URLs already point at `version`. */
+export function isPnpmManifestAtVersion(yaml, version) {
+  const safeVersion = assertSafePnpmSemverVersion(version);
+  return ['x64', 'arm64'].every((arch) =>
+    yaml.includes(
+      `https://github.com/pnpm/pnpm/releases/download/v${safeVersion}/pnpm-linux-${arch}.tar.gz`,
+    ),
+  );
+}
+
+export async function syncFlatpakPnpm({
+  manifestPath = MANIFEST,
+  packagePath = PKG,
+  fetchFn = fetch,
+  write = true,
+} = {}) {
+  const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+  const versionRaw = pnpmVersionFromPackage(pkg);
+  if (!versionRaw) {
+    throw new Error('package.json is missing a semver pnpm packageManager field');
+  }
+  const version = assertSafePnpmSemverVersion(versionRaw);
+
+  const yaml = fs.readFileSync(manifestPath, 'utf8');
+  // Avoid a network round-trip when the manifest already pins this release.
+  // Both arches must already be at this version: a partially-updated manifest (one URL
+  // bumped, the other stale) would otherwise skip the fetch and stay broken.
+  if (isPnpmManifestAtVersion(yaml, version)) {
+    return { version, changed: false, yaml };
+  }
+
+  const sha256ByArch = await fetchPnpmSha256s(version, fetchFn);
+  const nextYaml = syncFlatpakPnpmManifest(yaml, version, sha256ByArch);
+  const changed = nextYaml !== yaml;
+
+  if (write && changed) {
+    fs.writeFileSync(
+      manifestPath,
+      sanitizeFlatpakPnpmManifestYamlForDisk(nextYaml, version, sha256ByArch),
+      'utf8',
+    );
+  }
+
+  return { version, changed, yaml: nextYaml };
+}
+
 export async function syncFlatpakElectron({
   manifestPath = MANIFEST,
   packagePath = PKG,
@@ -179,25 +367,29 @@ export async function syncFlatpakElectron({
 
 async function main() {
   const checkOnly = process.argv.includes('--check');
-  const { version, changed } = await syncFlatpakElectron({ write: !checkOnly });
+  const electron = await syncFlatpakElectron({ write: !checkOnly });
+  const pnpm = await syncFlatpakPnpm({ write: !checkOnly });
+
+  const results = [
+    { label: 'electron', ...electron },
+    { label: 'pnpm', ...pnpm },
+  ];
 
   if (checkOnly) {
-    if (changed) {
+    const stale = results.filter((r) => r.changed);
+    for (const { label, version } of stale) {
       console.error(
-        `sync-flatpak-electron: org.coloradomesh.MeshClient.yml is out of sync with electron ${version}`,
+        `sync-flatpak-electron: org.coloradomesh.MeshClient.yml is out of sync with ${label} ${version}`,
       );
-      process.exit(1);
     }
-    process.exit(0);
+    process.exit(stale.length > 0 ? 1 : 0);
   }
 
-  if (changed) {
+  for (const { label, version, changed } of results) {
     console.log(
-      `sync-flatpak-electron: updated org.coloradomesh.MeshClient.yml for electron ${version}`,
-    );
-  } else {
-    console.log(
-      `sync-flatpak-electron: org.coloradomesh.MeshClient.yml already matches electron ${version}`,
+      changed
+        ? `sync-flatpak-electron: updated org.coloradomesh.MeshClient.yml for ${label} ${version}`
+        : `sync-flatpak-electron: org.coloradomesh.MeshClient.yml already matches ${label} ${version}`,
     );
   }
 }

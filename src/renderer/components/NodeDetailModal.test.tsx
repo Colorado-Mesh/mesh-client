@@ -730,3 +730,68 @@ describe('NodeDetailModal MeshCore path names', () => {
     expect(screen.getByText(/▣\s*Dest Node/)).toBeInTheDocument();
   });
 });
+
+describe('NodeDetailModal verification badges', () => {
+  function renderWith(
+    overrides: Partial<MeshNode>,
+    protocol: 'meshtastic' | 'meshcore' = 'meshtastic',
+  ) {
+    return render(
+      <NodeDetailModal
+        node={{ ...mockNode, ...overrides }}
+        protocol={protocol}
+        onClose={vi.fn()}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+      />,
+    );
+  }
+
+  it('shows only the XEdDSA badge when just that flag is set', () => {
+    renderWith({ has_xeddsa_signed: true });
+
+    expect(screen.getByText('XEdDSA signed')).toBeTruthy();
+    expect(screen.queryByText('Key verified')).toBeNull();
+  });
+
+  it('shows only the key badge when just that flag is set', () => {
+    renderWith({ key_manually_verified: true });
+
+    expect(screen.getByText('Key verified')).toBeTruthy();
+    expect(screen.queryByText('XEdDSA signed')).toBeNull();
+  });
+
+  it('shows both badges together', () => {
+    renderWith({ has_xeddsa_signed: true, key_manually_verified: true });
+
+    expect(screen.getByText('XEdDSA signed')).toBeTruthy();
+    expect(screen.getByText('Key verified')).toBeTruthy();
+  });
+
+  it('hides both badges when neither flag is set', () => {
+    renderWith({});
+
+    expect(screen.queryByText('XEdDSA signed')).toBeNull();
+    expect(screen.queryByText('Key verified')).toBeNull();
+  });
+
+  it('hides the badges for non-Meshtastic nodes', () => {
+    renderWith({ has_xeddsa_signed: true, key_manually_verified: true }, 'meshcore');
+
+    expect(screen.queryByText('XEdDSA signed')).toBeNull();
+    expect(screen.queryByText('Key verified')).toBeNull();
+  });
+
+  it('has no axe violations with both badges rendered', async () => {
+    const { container } = renderWith({ has_xeddsa_signed: true, key_manually_verified: true });
+    hydrateAxeThemeColors(container);
+
+    const results = await axe(container);
+
+    expect(results).toHaveNoViolations();
+  });
+});

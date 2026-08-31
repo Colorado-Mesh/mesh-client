@@ -18,9 +18,13 @@ describe('meshtasticHwModelName', () => {
     expect(meshtasticHwModelName('255')).toBe('Private HW');
   });
 
-  it('returns Unknown for unmapped numeric IDs', () => {
+  it('returns Unknown for IDs absent from the HardwareModel enum', () => {
     expect(meshtasticHwModelName(200)).toBe('Unknown (200)');
-    expect(meshtasticHwModelName(127)).toBe('Unknown (127)');
+  });
+
+  it('names models added upstream since the curated table was written', () => {
+    expect(meshtasticHwModelName(127)).toBe('Heltec Mesh Node T096');
+    expect(meshtasticHwModelName(146)).toBe('MeshPager X2');
   });
 
   it('returns Unknown for unmapped string IDs', () => {

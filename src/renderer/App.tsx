@@ -3857,6 +3857,14 @@ function AppContent() {
                                     meshcorePanelActions.setOwner,
                                   )}
                                   capabilities={capabilities}
+                                  onSendLockdownAuth={
+                                    // Lockdown auth always addresses 'self', so offering it
+                                    // while the panel targets a remote node would silently
+                                    // act on the local radio instead.
+                                    capabilities.hasLockdown && !isRemoteConfigureTarget
+                                      ? meshtasticPanelActions.sendLockdownAuth
+                                      : undefined
+                                  }
                                   meshcoreChannels={
                                     capabilities.hasCompanionContactManagementConfig
                                       ? meshcoreRuntime.channels

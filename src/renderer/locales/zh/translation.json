@@ -3033,7 +3033,11 @@
     "shareContactQrAria": "显示MeshCore联系人二维码以进行官方应用导入",
     "publicKeyCopied": "公钥已复制到剪贴板。",
     "hasPublicKeyNoDm": "有公钥（无直接消息）",
-    "copyPublicKey": "复制公钥"
+    "copyPublicKey": "复制公钥",
+    "xeddsaSigned": "XEdDSA已签名",
+    "xeddsaSignedHint": "无线电已验证来自此节点的XEdDSA签名，因此其公钥经过加密证明。",
+    "keyManuallyVerified": "密钥已验证",
+    "keyManuallyVerifiedHint": "此节点的公钥已由操作员手动确认。"
   },
   "nodeInfoBody": {
     "longName": "长名称",
@@ -3554,57 +3558,65 @@
     "importConfigJson": "导入配置 JSON",
     "offloadContacts": "卸载",
     "displayUnits": {
-      "0": {
-        "label": "指标"
+      "METRIC": {
+        "label": "Metric"
       },
-      "1": {
-        "label": "英制"
+      "IMPERIAL": {
+        "label": "Imperial"
       }
     },
     "deviceRoles": {
-      "0": {
-        "description": "普通客户端模式",
-        "label": "客户端"
+      "CLIENT": {
+        "label": "Client",
+        "description": "正常客户端模式"
       },
-      "1": {
-        "label": "客户端静音",
+      "CLIENT_MUTE": {
+        "label": "Client Mute",
         "description": "不转发数据包的客户端。应用此角色还会禁用设备上的GPS广播和地图报告。"
       },
-      "2": {
-        "description": "专用路由器/中继器",
-        "label": "路由器"
+      "ROUTER": {
+        "label": "Router",
+        "description": "专用路由器/中继器"
       },
-      "3": {
-        "description": "路由器+客户端模式",
-        "label": "路由器客户端"
+      "ROUTER_CLIENT": {
+        "label": "Router Client",
+        "description": "路由器+客户端模式。固件2.3.15中已弃用—请使用路由器或客户端。"
       },
-      "4": {
-        "description": "客户端设备的基站",
-        "label": "客户群"
+      "REPEATER": {
+        "label": "Repeater",
+        "description": "重播数据包而不发送任何数据包。固件2.7.11中已弃用—在转播链中创建漏洞。"
       },
-      "5": {
-        "description": "仅 GPS 追踪器",
-        "label": "Tracker"
+      "TRACKER": {
+        "label": "Tracker",
+        "description": "GPS追踪器"
       },
-      "6": {
-        "description": "遥测传感器节点",
-        "label": "测传"
+      "SENSOR": {
+        "label": "Sensor",
+        "description": "遥测传感器节点"
       },
-      "7": {
-        "description": "支持 TAK 的设备",
-        "label": "TAK"
+      "TAK": {
+        "label": "TAK",
+        "description": "TAK-enabled device"
       },
-      "8": {
-        "description": "客户端，从节点列表中隐藏",
-        "label": "客户端已隐藏"
+      "CLIENT_HIDDEN": {
+        "label": "Client Hidden",
+        "description": "客户端，从节点列表中隐藏"
       },
-      "9": {
-        "description": "广播恢复位置",
-        "label": "失物认领"
+      "LOST_AND_FOUND": {
+        "label": "Lost and Found",
+        "description": "用于恢复的广播位置"
       },
-      "10": {
-        "description": "TAK跟踪模式",
-        "label": "TAK跟踪器"
+      "TAK_TRACKER": {
+        "label": "TAK Tracker",
+        "description": "TAK tracker mode"
+      },
+      "ROUTER_LATE": {
+        "label": "Router Late",
+        "description": "仅在其他节点有机会后重新广播的路由器，用于密集的网格核心。"
+      },
+      "CLIENT_BASE": {
+        "label": "Client Base",
+        "description": "客户端设备的基站"
       }
     },
     "contactsOnRadioBadgeTitle": "{{part}} 无线电联系人",
@@ -3839,29 +3851,29 @@
     "tzdefLabel": "时区 (POSIX)",
     "tzdefDesc": "POSIX 时区字符串，例如 EST5EDT,M3.2.0,M11.1.0。参考列表见 https://github.com/nayarsystems/posix_tz_db。",
     "rebroadcastModes": {
-      "0": {
-        "label": "All",
-        "description": "Rebroadcast all packets (default)."
+      "ALL": {
+        "label": "所有食谱",
+        "description": "重新广播所有数据包（默认）。"
       },
-      "1": {
-        "label": "All Skip Decoding",
-        "description": "Rebroadcast all without decoding. Reduces CPU on dedicated routers."
+      "ALL_SKIP_DECODING": {
+        "label": "全部跳过解码",
+        "description": "全部重播，无需解码。降低专用路由器上的CPU。"
       },
-      "2": {
+      "LOCAL_ONLY": {
         "label": "仅本地",
-        "description": "仅重播直接通过 RF 听到的节点发出的数据包。"
+        "description": "仅从直接在射频上听到的节点重新广播数据包。"
       },
-      "3": {
+      "KNOWN_ONLY": {
         "label": "仅已知",
-        "description": "仅重播本地节点数据库中的节点发出的数据包。"
+        "description": "仅从本地节点数据库中的节点转播。"
       },
-      "4": {
+      "NONE": {
         "label": "无",
-        "description": "不重播任何数据包。"
+        "description": "请勿转播任何数据包。"
       },
-      "5": {
-        "label": "Core Portnums Only",
-        "description": "Only rebroadcast essential portnums (text, nodeinfo, position, telemetry)."
+      "CORE_PORTNUMS_ONLY": {
+        "label": "仅核心端口号",
+        "description": "仅重新广播基本端口号（文本、节点信息、位置、遥测）。"
       }
     },
     "autoScreenCarouselSecsLabel": "Screen Carousel Interval",
@@ -3879,22 +3891,22 @@
     "enableMessageBubblesLabel": "消息气泡",
     "enableMessageBubblesDesc": "在显示屏上以气泡形式显示收到的消息。",
     "oledTypes": {
-      "0": {
+      "OLED_AUTO": {
         "label": "Auto"
       },
-      "1": {
+      "OLED_SSD1306": {
         "label": "SSD1306"
       },
-      "2": {
+      "OLED_SH1106": {
         "label": "SH1106"
       },
-      "3": {
+      "OLED_SH1107": {
         "label": "SH1107 (128x64)"
       },
-      "4": {
+      "OLED_SH1107_128_128": {
         "label": "SH1107 (128x128)"
       },
-      "5": {
+      "OLED_SH1107_ROTATED": {
         "label": "SH1107 Rotated"
       }
     },
@@ -3982,85 +3994,172 @@
       "shareQrAria": "显示{{name}}的MeshCore频道二维码"
     },
     "regions": {
-      "0": {
-        "label": "取消设置"
+      "UNSET": {
+        "label": "Unset"
       },
-      "1": {
-        "label": "我们"
+      "US": {
+        "label": "US"
       },
-      "2": {
+      "EU_433": {
         "label": "EU_433"
       },
-      "3": {
+      "EU_868": {
         "label": "EU_868"
       },
-      "4": {
-        "label": "中国"
+      "CN": {
+        "label": "CN"
       },
-      "5": {
-        "label": "太平绅士"
+      "JP": {
+        "label": "JP"
       },
-      "6": {
-        "label": "澳新银行"
+      "ANZ": {
+        "label": "ANZ"
       },
-      "7": {
-        "label": "韩国"
+      "KR": {
+        "label": "KR"
       },
-      "8": {
-        "label": "台湾"
+      "TW": {
+        "label": "TW"
       },
-      "9": {
-        "label": "鲁"
+      "RU": {
+        "label": "RU"
       },
-      "10": {
-        "label": "在"
+      "IN": {
+        "label": "IN"
       },
-      "11": {
+      "NZ_865": {
         "label": "NZ_865"
       },
-      "12": {
+      "TH": {
         "label": "TH"
       },
-      "13": {
+      "LORA_24": {
+        "label": "LORA_24"
+      },
+      "UA_433": {
         "label": "UA_433"
       },
-      "14": {
+      "UA_868": {
         "label": "UA_868"
       },
-      "15": {
+      "MY_433": {
         "label": "MY_433"
       },
-      "16": {
+      "MY_919": {
         "label": "MY_919"
       },
-      "17": {
+      "SG_923": {
         "label": "SG_923"
       },
-      "18": {
-        "label": "洛拉_24"
+      "PH_433": {
+        "label": "PH_433"
+      },
+      "PH_868": {
+        "label": "PH_868"
+      },
+      "PH_915": {
+        "label": "PH_915"
+      },
+      "ANZ_433": {
+        "label": "ANZ_433"
+      },
+      "KZ_433": {
+        "label": "KZ_433"
+      },
+      "KZ_863": {
+        "label": "KZ_863"
+      },
+      "NP_865": {
+        "label": "NP_865"
+      },
+      "BR_902": {
+        "label": "BR_902"
+      },
+      "ITU1_2M": {
+        "label": "ITU1_2M"
+      },
+      "ITU2_2M": {
+        "label": "ITU2_2M"
+      },
+      "EU_866": {
+        "label": "EU_866"
+      },
+      "EU_874": {
+        "label": "EU_874"
+      },
+      "EU_917": {
+        "label": "EU_917"
+      },
+      "EU_N_868": {
+        "label": "EU_N_868"
+      },
+      "ITU3_2M": {
+        "label": "ITU3_2M"
+      },
+      "ITU1_70CM": {
+        "label": "ITU1_70CM"
+      },
+      "ITU2_70CM": {
+        "label": "ITU2_70CM"
+      },
+      "ITU3_70CM": {
+        "label": "ITU3_70CM"
+      },
+      "ITU2_125CM": {
+        "label": "ITU2_125CM"
       }
     },
     "modemPresets": {
-      "0": {
-        "label": "长快"
+      "LONG_FAST": {
+        "label": "Long Fast"
       },
-      "1": {
-        "label": "长慢"
+      "LONG_SLOW": {
+        "label": "Long Slow"
       },
-      "2": {
-        "label": "长 中等"
+      "VERY_LONG_SLOW": {
+        "label": "Very Long Slow"
       },
-      "3": {
-        "label": "短快"
+      "MEDIUM_SLOW": {
+        "label": "Medium Slow"
       },
-      "4": {
-        "label": "短慢速"
+      "MEDIUM_FAST": {
+        "label": "Medium Fast"
       },
-      "5": {
-        "label": "中快"
+      "SHORT_SLOW": {
+        "label": "Short Slow"
       },
-      "6": {
-        "label": "中慢速"
+      "SHORT_FAST": {
+        "label": "Short Fast"
+      },
+      "LONG_MODERATE": {
+        "label": "Long Moderate"
+      },
+      "SHORT_TURBO": {
+        "label": "Short Turbo"
+      },
+      "LONG_TURBO": {
+        "label": "Long Turbo"
+      },
+      "LITE_FAST": {
+        "label": "Lite Fast"
+      },
+      "LITE_SLOW": {
+        "label": "Lite Slow"
+      },
+      "NARROW_FAST": {
+        "label": "Narrow Fast"
+      },
+      "NARROW_SLOW": {
+        "label": "Narrow Slow"
+      },
+      "TINY_FAST": {
+        "label": "Tiny Fast"
+      },
+      "TINY_SLOW": {
+        "label": "Tiny Slow"
+      },
+      "MEDIUM_TURBO": {
+        "label": "Medium Turbo"
       }
     },
     "floodScopeSaved": "已保存范围",
@@ -4072,7 +4171,35 @@
     "sendPositionDisabledShareOff": "启用在应用程序→GPS/位置中共享我的位置，以便将您的位置发送到设备。",
     "clientMuteGpsSuppressed": "已应用客户端静音—在设备上禁用GPS广播和MQTT地图报告。",
     "validationShortNameTooLong": "短名称必须在4个UTF-8字节以内",
-    "validationShortNameEmojiTooLarge": "此字符对于短名称太大（每个名称最多4个UTF-8字节）"
+    "validationShortNameEmojiTooLarge": "此字符对于短名称太大（每个名称最多4个UTF-8字节）",
+    "enumDeprecatedSuffix": "（废弃）",
+    "lockdown": {
+      "title": "固件锁定",
+      "description": "锁定的无线电拒绝配置更改，直到使用其密码短语解锁。固件报告状态；没有锁定支持的无线电从不报告状态。",
+      "stateLabel": "州",
+      "stateNotReported": "此收音机未报告",
+      "reasonLabel": "原因",
+      "bootsRemainingLabel": "剩余重启次数",
+      "validUntilLabel": "解锁至",
+      "backoffLabel": "重试回退",
+      "backoffValue": "{{seconds}} s",
+      "passphraseLabel": "密码短语",
+      "provision": "计提",
+      "unlock": "解锁",
+      "unlockAria": "解锁或设置固件锁定",
+      "lockNow": "立即锁定",
+      "lockNowAria": "立即锁定收音机",
+      "disable": "禁用锁定",
+      "disableAria": "禁用固件锁定",
+      "states": {
+        "STATE_UNSPECIFIED": "未指定",
+        "NEEDS_PROVISION": "需要配置",
+        "LOCKED": "已锁定",
+        "UNLOCKED": "已经解锁",
+        "UNLOCK_FAILED": "解锁失败",
+        "DISABLED": "已禁用"
+      }
+    }
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",
@@ -4915,7 +5042,8 @@
     "regenerateWarning": "重新生成会使现有 ATAK 数据包失效 - 您将需要重新导入。",
     "durationSec": "{{s}}s",
     "durationMin": "{{m}}米",
-    "durationHourMin": "{{h}}h {{m}}m"
+    "durationHourMin": "{{h}}h {{m}}m",
+    "atakUndecodable": "有效负载未识别为TAK数据包"
   },
   "telemetryPanel": {
     "title": "遥测",
@@ -4956,7 +5084,14 @@
     "tempUnitC": "°C",
     "exportCsvButton": "导出 CSV",
     "emptyWaitingConnected": "尚无遥测数据。正在等待来自设备的数据……",
-    "emptyWaitingDisconnected": "尚无遥测数据。连接到设备以查看实时指标。"
+    "emptyWaitingDisconnected": "尚无遥测数据。连接到设备以查看实时指标。",
+    "sectionParticulates": "颗粒物、二氧化碳和闪电",
+    "chartAriaParticulates": "颗粒图：最新PM2.5 {{pm25}} ， CO ₂ {{co2}} ， {{count}}点",
+    "axisParticulates": "µg/m ³ ·撞击",
+    "axisCo2": "ppm",
+    "seriesPm25": "PM2.5 (µg/m ³)",
+    "seriesCo2": "CO ₂ (ppm)",
+    "seriesLightningStrikes": "雷击（ 1小时）"
   },
   "toasts": {
     "firmwareAvailable": "固件更新可用： v {{version}}",
