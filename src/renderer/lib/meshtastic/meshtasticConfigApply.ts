@@ -19,6 +19,18 @@ export function stripMeshtasticProtobufMeta(cfg: Record<string, unknown>): Recor
 }
 
 /**
+ * Stable signature of a device config slice for change detection (skip re-applying an
+ * unchanged re-push). Some fields decode as native `bigint` (e.g. PowerConfig.powermon_enables,
+ * RemoteHardwareConfig.gpio_mask/gpio_value), which plain `JSON.stringify` cannot serialize —
+ * stringify those explicitly so the signature check itself cannot crash the panel.
+ */
+export function meshtasticConfigSignature(cfg: Record<string, unknown>): string {
+  return JSON.stringify(cfg, (_key: string, value: unknown) =>
+    typeof value === 'bigint' ? value.toString() : value,
+  );
+}
+
+/**
  * Merge device-owned config with UI edits so hidden fields are not cleared on apply.
  * Firmware setConfig/setModuleConfig replaces the full protobuf struct.
  */

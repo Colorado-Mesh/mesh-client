@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildMeshtasticModuleApplyValue,
   mergeMeshtasticConfigApplyValue,
+  meshtasticConfigSignature,
   meshtasticConfigSlice,
   meshtasticConfigSliceHydrated,
   stripMeshtasticProtobufMeta,
@@ -50,6 +51,22 @@ describe('meshtasticConfigApply', () => {
       enabled: true,
       baud: 115200,
     });
+  });
+
+  it('meshtasticConfigSignature stringifies bigint fields instead of throwing', () => {
+    // PowerConfig.powermon_enables / RemoteHardwareConfig.gpio_mask decode as native bigint —
+    // plain JSON.stringify throws "Do not know how to serialize a BigInt" on these.
+    expect(() =>
+      meshtasticConfigSignature({ powermonEnables: 42n, isPowerSaving: true }),
+    ).not.toThrow();
+    expect(meshtasticConfigSignature({ powermonEnables: 42n })).toBe(
+      JSON.stringify({ powermonEnables: '42' }),
+    );
+  });
+
+  it('meshtasticConfigSignature is stable across calls for unchanged input', () => {
+    const cfg = { gpioMask: 255n, gpioValue: 0n, enabled: true };
+    expect(meshtasticConfigSignature(cfg)).toBe(meshtasticConfigSignature({ ...cfg }));
   });
 
   it('buildMeshtasticModuleApplyValue delegates to merge', () => {

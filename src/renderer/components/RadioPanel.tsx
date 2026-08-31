@@ -12,6 +12,7 @@ import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/mesh
 import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/meshtasticClientNotification';
 import {
   mergeMeshtasticConfigApplyValue,
+  meshtasticConfigSignature,
   meshtasticConfigSlice,
   meshtasticConfigSliceHydrated,
   stripMeshtasticProtobufMeta,
@@ -1033,7 +1034,7 @@ export default function RadioPanel({
     if (Object.keys(lora).length === 0) return;
     // Skip unchanged re-pushes (the radio can resend an identical config) so a sync cannot
     // overwrite edits the user is still typing.
-    const signature = JSON.stringify(stripMeshtasticProtobufMeta(lora));
+    const signature = meshtasticConfigSignature(stripMeshtasticProtobufMeta(lora));
     if (syncedMeshtasticLoraRef.current === signature) return;
     syncedMeshtasticLoraRef.current = signature;
     if (typeof lora.region === 'number') setRegion(lora.region);
