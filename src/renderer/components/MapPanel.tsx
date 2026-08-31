@@ -651,7 +651,14 @@ export default function MapPanel({
     if (gpxExporting) return;
     setGpxExporting(true);
     try {
-      const result = await window.electronAPI.gps.exportGpx({ sinceMs: 0 });
+      // The GPS bridge is absent outside Electron (browser preview, chaos runs);
+      // surface the normal failure toast instead of throwing on an undefined namespace.
+      const exportGpx = window.electronAPI?.gps?.exportGpx;
+      if (!exportGpx) {
+        addToast(t('gpxExport.failed'), 'error');
+        return;
+      }
+      const result = await exportGpx({ sinceMs: 0 });
       if (result.success) {
         addToast(t('gpxExport.success'), 'success');
       } else if (result.reason === 'empty') {

@@ -22,6 +22,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
 import { shouldSuppressMeshtasticNodeHear } from '@/renderer/lib/meshcoreBleMacMeshtasticNodeId';
 import {
+  clearMeshtasticLockdownStatus,
   encodeMeshtasticLockdownAuth,
   type MeshtasticLockdownAuthRequest,
 } from '@/renderer/lib/meshtastic/meshtasticLockdown';
@@ -937,6 +938,10 @@ export function useMeshtasticRuntime() {
     unsubscribesRef.current = [];
     ackMeshPacketIdByTempIdRef.current.clear();
     outboundSendByTempIdRef.current.clear();
+    // Lockdown state is per-radio module state. Cleared here rather than on the
+    // DeviceDisconnected event because radio replacement tears down subscriptions
+    // before disconnecting, so that event never reaches the removed listener.
+    clearMeshtasticLockdownStatus();
     if (clearedIdentity) {
       useRelayCoverageStore.getState().clearIdentity(clearedIdentity);
     }

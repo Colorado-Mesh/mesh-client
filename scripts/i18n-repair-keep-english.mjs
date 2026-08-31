@@ -40,19 +40,17 @@ const keepKeys = Object.keys(enFlat).filter(
   (k) => isKeepEnglishKey(k) && typeof enFlat[k] === 'string',
 );
 
+/** Any angle-bracket tag or numeric entity left behind by a CAT tool. */
+const MARKUP_RESIDUE_RE = /<[^<>]*>|&#\d+;/;
+
 /**
- * Removes CAT-tool tag residue from a machine-translated value. Applied to a fixpoint:
- * a single pass would turn `<<i>>` into `<i>` and leave markup behind
- * (js/incomplete-multi-character-sanitization).
+ * Repairs a machine-translated value. Markup residue is rejected outright rather than
+ * stripped: partial removal of hostile or nested markup is unreliable
+ * (js/incomplete-multi-character-sanitization), and English is the source of truth here.
  */
-function stripMarkupResidue(value) {
-  let cleaned = value;
-  let previous;
-  do {
-    previous = cleaned;
-    cleaned = previous.replace(/<[^<>]*>/g, '').replace(/&#\d+;/g, '');
-  } while (cleaned !== previous);
-  return cleaned.trim();
+function repairTranslatedValue(value, englishValue) {
+  if (MARKUP_RESIDUE_RE.test(value)) return englishValue;
+  return value.trim() || englishValue;
 }
 
 let repaired = 0;
@@ -70,13 +68,13 @@ for (const entry of readdirSync(LOCALES_DIR, { withFileTypes: true })) {
     setDeep(json, key, enFlat[key]);
     changed++;
   }
-  // Machine translation occasionally emits CAT-tool tag residue or stray padding
-  // for radio config strings; strip it rather than shipping markup as UI copy.
+  // Machine translation occasionally emits CAT-tool tag residue or stray padding for
+  // radio config strings; fall back to English rather than shipping markup as UI copy.
   for (const [key, value] of Object.entries(flat)) {
     if (!key.startsWith('radioPanel.') || typeof value !== 'string') continue;
     if (isKeepEnglishKey(key)) continue;
     if (typeof enFlat[key] !== 'string') continue;
-    const next = stripMarkupResidue(value) || enFlat[key];
+    const next = repairTranslatedValue(value, enFlat[key]);
     if (next === value) continue;
     setDeep(json, key, next);
     changed++;
@@ -102,8 +100,8 @@ for (const entry of readdirSync(LOCALES_DIR, { withFileTypes: true })) {
   if (changed > 0) {
     writeFileSync(file, `${JSON.stringify(json, null, 2)}\n`);
     repaired += changed;
-    console.log(`${dir}: reset ${changed} keep-English key(s) to English`);
+    console.debug(`${dir}: reset ${changed} keep-English key(s) to English`);
   }
 }
 
-console.log(`i18n-repair-keep-english: ${repaired} value(s) reset`);
+console.debug(`i18n-repair-keep-english: ${repaired} value(s) reset`);
