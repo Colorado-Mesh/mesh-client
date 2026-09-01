@@ -3486,6 +3486,8 @@ function ChannelSection({
   const [editPosPrecision, setEditPosPrecision] = useState(0);
   const [saving, setSaving] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
   // Populate edit state when selection changes
   useEffect(() => {
@@ -3510,6 +3512,18 @@ function ChannelSection({
     }
     setValidationError(null);
   }, [selectedIndex, channelConfigs]);
+
+  useEffect(() => {
+    if (selectedIndex !== null && detailsRef.current) {
+      detailsRef.current.open = true;
+    }
+  }, [selectedIndex]);
+
+  useEffect(() => {
+    if (selectedIndex !== null && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [selectedIndex]);
 
   const handleKeySizeChange = (size: KeySize) => {
     setEditKeySize(size);
@@ -3605,8 +3619,196 @@ function ChannelSection({
 
   const isAesKey = editKeySize === 'aes128' || editKeySize === 'aes256';
 
+  const renderEditForm = () => {
+    if (selectedIndex === null) return null;
+    return (
+      <div
+        ref={formRef}
+        className="bg-deep-black/60 mt-1 space-y-3 rounded-lg border border-gray-600 p-3"
+      >
+        <h4 className="text-sm font-medium text-gray-200">
+          {t('radioPanel.editChannelTitle', { index: selectedIndex })}
+        </h4>
+
+        {/* Name */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <label htmlFor="radio-mt-ch-name" className="text-muted text-xs">
+              {t('radioPanel.channelNameLabel')}
+            </label>
+            <span className="text-muted text-xs">{editName.length}/11</span>
+          </div>
+          <input
+            id="radio-mt-ch-name"
+            type="text"
+            value={editName}
+            onChange={(e) => {
+              setEditName(e.target.value);
+            }}
+            maxLength={11}
+            disabled={disabled}
+            placeholder={
+              selectedIndex === 0
+                ? t('radioPanel.channelNamePrimary')
+                : t('radioPanel.channelNameSecondary')
+            }
+            className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+          />
+        </div>
+
+        {/* Role — locked for ch0 */}
+        {selectedIndex !== 0 && (
+          <div className="space-y-1">
+            <label htmlFor="radio-mt-ch-role" className="text-muted text-xs">
+              {t('radioPanel.channelRoleLabel')}
+            </label>
+            <select
+              id="radio-mt-ch-role"
+              value={editRole}
+              onChange={(e) => {
+                setEditRole(Number(e.target.value));
+              }}
+              disabled={disabled}
+              className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+            >
+              <option value={0}>{t('radioPanel.channelRoleDisabled')}</option>
+              <option value={2}>{t('radioPanel.channelRoleSecondary')}</option>
+            </select>
+          </div>
+        )}
+
+        {/* Key Size */}
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5">
+            <label htmlFor="radio-mt-ch-key-size" className="text-muted text-xs">
+              {t('radioPanel.keySizeLabel')}
+            </label>
+            <HelpTooltip text={t('radioPanel.keySizeTooltip')} />
+          </div>
+          <select
+            id="radio-mt-ch-key-size"
+            value={editKeySize}
+            onChange={(e) => {
+              handleKeySizeChange(e.target.value as KeySize);
+            }}
+            disabled={disabled}
+            className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+          >
+            <option value="none">{t('radioPanel.encryptionNone')}</option>
+            <option value="simple">{t('radioPanel.encryptionSimple')}</option>
+            <option value="aes128">{t('radioPanel.encryptionAes128')}</option>
+            <option value="aes256">{t('radioPanel.encryptionAes256')}</option>
+          </select>
+        </div>
+
+        {/* Encryption Key */}
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5">
+            <label htmlFor="radio-mt-ch-psk" className="text-muted text-xs">
+              {t('radioPanel.encryptionKeyLabel')}
+            </label>
+            <HelpTooltip text={t('radioPanel.encryptionKeyTooltip')} />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              id="radio-mt-ch-psk"
+              type="text"
+              value={editPskB64}
+              onChange={(e) => {
+                setEditPskB64(e.target.value);
+                setValidationError(null);
+              }}
+              disabled={disabled || !isAesKey}
+              readOnly={!isAesKey}
+              placeholder={t('radioPanel.pskBase64Placeholder')}
+              className="bg-secondary-dark focus:border-brand-green flex-1 rounded border border-gray-600 px-2 py-1.5 font-mono text-xs text-gray-200 read-only:opacity-60 focus:outline-none disabled:opacity-50"
+            />
+            {isAesKey && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditPskB64(pskToBase64(generateRandomPsk(editKeySize === 'aes128' ? 16 : 32)));
+                }}
+                disabled={disabled}
+                className="bg-secondary-dark text-muted rounded border border-gray-600 px-2 py-1.5 text-xs whitespace-nowrap hover:text-gray-200 disabled:opacity-50"
+                title={t('radioPanel.generateRandomKey')}
+              >
+                {t('radioPanel.regeneratePsk')}
+              </button>
+            )}
+          </div>
+          {validationError && <p className="text-xs text-red-400">{validationError}</p>}
+        </div>
+
+        {/* MQTT Uplink */}
+        <ConfigToggle
+          label={t('radioPanel.mqttUplinkLabel')}
+          checked={editUplink}
+          onChange={setEditUplink}
+          disabled={disabled}
+          description={t('radioPanel.mqttUplinkDesc')}
+        />
+
+        {/* MQTT Downlink */}
+        <ConfigToggle
+          label={t('radioPanel.mqttDownlinkLabel')}
+          checked={editDownlink}
+          onChange={setEditDownlink}
+          disabled={disabled}
+          description={t('radioPanel.mqttDownlinkDesc')}
+        />
+
+        {/* Position Precision */}
+        <div className="space-y-1">
+          <label htmlFor="radio-mt-ch-pos-precision" className="text-muted text-xs">
+            {t('radioPanel.positionPrecisionChannelLabel')}
+          </label>
+          <input
+            id="radio-mt-ch-pos-precision"
+            type="number"
+            value={editPosPrecision}
+            onChange={(e) => {
+              setEditPosPrecision(Number(e.target.value));
+            }}
+            min={0}
+            max={32}
+            disabled={disabled}
+            className="bg-secondary-dark focus:border-brand-green w-28 rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-1">
+          <button
+            type="button"
+            onClick={saveChannel}
+            disabled={disabled || saving}
+            className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted flex-1 rounded px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:bg-gray-600"
+          >
+            {saving ? t('radioPanel.savingChannel') : t('radioPanel.saveChannel')}
+          </button>
+          <button
+            type="button"
+            onClick={resetChannel}
+            disabled={disabled || saving}
+            className="rounded bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-600 disabled:opacity-50"
+            title={
+              selectedIndex === 0
+                ? t('radioPanel.resetChannelDefaults')
+                : t('radioPanel.disableChannel')
+            }
+          >
+            {selectedIndex === 0
+              ? t('radioPanel.resetChannelDefaults')
+              : t('radioPanel.disableChannel')}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
+    <details ref={detailsRef} className="group bg-deep-black/50 rounded-lg border border-gray-700">
       <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
         <span>{t('radioPanel.channels')}</span>
         <DetailsChevron />
@@ -3633,67 +3835,69 @@ function ChannelSection({
                       ? t('radioPanel.channelN', { num: i })
                       : t('radioPanel.channelRoleDisabled');
             return (
-              <button
-                type="button"
-                key={i}
-                onClick={() => {
-                  setSelectedIndex(i);
-                }}
-                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
-                  isSelected
-                    ? 'border border-gray-500 bg-gray-700'
-                    : 'bg-deep-black/60 border border-gray-700/50 hover:bg-gray-800'
-                }`}
-              >
-                {/* Index badge */}
-                <span
-                  className={`rounded px-1.5 py-0.5 font-mono text-xs font-bold ${
-                    i === 0 ? 'bg-blue-900/60 text-blue-300' : 'bg-gray-700 text-gray-400'
+              <div key={i} className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedIndex(i);
+                  }}
+                  className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
+                    isSelected
+                      ? 'border border-gray-500 bg-gray-700'
+                      : 'bg-deep-black/60 border border-gray-700/50 hover:bg-gray-800'
                   }`}
                 >
-                  {i}
-                </span>
-                {/* Name */}
-                <span
-                  className={`flex-1 text-sm ${
-                    isFailed
-                      ? 'text-amber-400 italic'
+                  {/* Index badge */}
+                  <span
+                    className={`rounded px-1.5 py-0.5 font-mono text-xs font-bold ${
+                      i === 0 ? 'bg-blue-900/60 text-blue-300' : 'bg-gray-700 text-gray-400'
+                    }`}
+                  >
+                    {i}
+                  </span>
+                  {/* Name */}
+                  <span
+                    className={`flex-1 text-sm ${
+                      isFailed
+                        ? 'text-amber-400 italic'
+                        : isPendingTail
+                          ? 'text-muted italic'
+                          : role !== 0
+                            ? 'text-gray-200'
+                            : 'text-muted italic'
+                    }`}
+                  >
+                    {slotLabel}
+                  </span>
+                  {/* Role badge */}
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-xs ${
+                      isFailed
+                        ? 'bg-amber-900/40 text-amber-300'
+                        : isPendingTail
+                          ? 'text-muted bg-gray-800'
+                          : role === 1
+                            ? 'bg-brand-green/10 text-bright-green'
+                            : role === 2
+                              ? 'bg-blue-900/50 text-blue-400'
+                              : 'text-muted bg-gray-800'
+                    }`}
+                  >
+                    {isFailed
+                      ? t('radioPanel.channelLoadFailed')
                       : isPendingTail
-                        ? 'text-muted italic'
-                        : role !== 0
-                          ? 'text-gray-200'
-                          : 'text-muted italic'
-                  }`}
-                >
-                  {slotLabel}
-                </span>
-                {/* Role badge */}
-                <span
-                  className={`rounded px-1.5 py-0.5 text-xs ${
-                    isFailed
-                      ? 'bg-amber-900/40 text-amber-300'
-                      : isPendingTail
-                        ? 'text-muted bg-gray-800'
+                        ? t('radioPanel.channelLoading')
                         : role === 1
-                          ? 'bg-brand-green/10 text-bright-green'
+                          ? t('radioPanel.channelRolePrimary')
                           : role === 2
-                            ? 'bg-blue-900/50 text-blue-400'
-                            : 'text-muted bg-gray-800'
-                  }`}
-                >
-                  {isFailed
-                    ? t('radioPanel.channelLoadFailed')
-                    : isPendingTail
-                      ? t('radioPanel.channelLoading')
-                      : role === 1
-                        ? t('radioPanel.channelRolePrimary')
-                        : role === 2
-                          ? t('radioPanel.channelRoleSecondary')
-                          : t('radioPanel.channelRoleDisabled')}
-                </span>
-                {/* Security indicator */}
-                {secLevel && <SecurityIcon level={secLevel} />}
-              </button>
+                            ? t('radioPanel.channelRoleSecondary')
+                            : t('radioPanel.channelRoleDisabled')}
+                  </span>
+                  {/* Security indicator */}
+                  {secLevel && <SecurityIcon level={secLevel} />}
+                </button>
+                {isSelected && renderEditForm()}
+              </div>
             );
           })}
         </div>
@@ -3713,191 +3917,6 @@ function ChannelSection({
               {t('radioPanel.retryRemoteChannels')}
             </button>
           )}
-
-        {/* ── Edit Form ── */}
-        {selectedIndex !== null && (
-          <div className="bg-deep-black/60 mt-3 space-y-3 rounded-lg border border-gray-600 p-3">
-            <h4 className="text-sm font-medium text-gray-200">
-              {t('radioPanel.editChannelTitle', { index: selectedIndex })}
-            </h4>
-
-            {/* Name */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label htmlFor="radio-mt-ch-name" className="text-muted text-xs">
-                  {t('radioPanel.channelNameLabel')}
-                </label>
-                <span className="text-muted text-xs">{editName.length}/11</span>
-              </div>
-              <input
-                id="radio-mt-ch-name"
-                type="text"
-                value={editName}
-                onChange={(e) => {
-                  setEditName(e.target.value);
-                }}
-                maxLength={11}
-                disabled={disabled}
-                placeholder={
-                  selectedIndex === 0
-                    ? t('radioPanel.channelNamePrimary')
-                    : t('radioPanel.channelNameSecondary')
-                }
-                className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
-              />
-            </div>
-
-            {/* Role — locked for ch0 */}
-            {selectedIndex !== 0 && (
-              <div className="space-y-1">
-                <label htmlFor="radio-mt-ch-role" className="text-muted text-xs">
-                  {t('radioPanel.channelRoleLabel')}
-                </label>
-                <select
-                  id="radio-mt-ch-role"
-                  value={editRole}
-                  onChange={(e) => {
-                    setEditRole(Number(e.target.value));
-                  }}
-                  disabled={disabled}
-                  className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
-                >
-                  <option value={0}>{t('radioPanel.channelRoleDisabled')}</option>
-                  <option value={2}>{t('radioPanel.channelRoleSecondary')}</option>
-                </select>
-              </div>
-            )}
-
-            {/* Key Size */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5">
-                <label htmlFor="radio-mt-ch-key-size" className="text-muted text-xs">
-                  {t('radioPanel.keySizeLabel')}
-                </label>
-                <HelpTooltip text={t('radioPanel.keySizeTooltip')} />
-              </div>
-              <select
-                id="radio-mt-ch-key-size"
-                value={editKeySize}
-                onChange={(e) => {
-                  handleKeySizeChange(e.target.value as KeySize);
-                }}
-                disabled={disabled}
-                className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
-              >
-                <option value="none">{t('radioPanel.encryptionNone')}</option>
-                <option value="simple">{t('radioPanel.encryptionSimple')}</option>
-                <option value="aes128">{t('radioPanel.encryptionAes128')}</option>
-                <option value="aes256">{t('radioPanel.encryptionAes256')}</option>
-              </select>
-            </div>
-
-            {/* Encryption Key */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5">
-                <label htmlFor="radio-mt-ch-psk" className="text-muted text-xs">
-                  {t('radioPanel.encryptionKeyLabel')}
-                </label>
-                <HelpTooltip text={t('radioPanel.encryptionKeyTooltip')} />
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  id="radio-mt-ch-psk"
-                  type="text"
-                  value={editPskB64}
-                  onChange={(e) => {
-                    setEditPskB64(e.target.value);
-                    setValidationError(null);
-                  }}
-                  disabled={disabled || !isAesKey}
-                  readOnly={!isAesKey}
-                  placeholder={t('radioPanel.pskBase64Placeholder')}
-                  className="bg-secondary-dark focus:border-brand-green flex-1 rounded border border-gray-600 px-2 py-1.5 font-mono text-xs text-gray-200 read-only:opacity-60 focus:outline-none disabled:opacity-50"
-                />
-                {isAesKey && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditPskB64(
-                        pskToBase64(generateRandomPsk(editKeySize === 'aes128' ? 16 : 32)),
-                      );
-                    }}
-                    disabled={disabled}
-                    className="bg-secondary-dark text-muted rounded border border-gray-600 px-2 py-1.5 text-xs whitespace-nowrap hover:text-gray-200 disabled:opacity-50"
-                    title={t('radioPanel.generateRandomKey')}
-                  >
-                    {t('radioPanel.regeneratePsk')}
-                  </button>
-                )}
-              </div>
-              {validationError && <p className="text-xs text-red-400">{validationError}</p>}
-            </div>
-
-            {/* MQTT Uplink */}
-            <ConfigToggle
-              label={t('radioPanel.mqttUplinkLabel')}
-              checked={editUplink}
-              onChange={setEditUplink}
-              disabled={disabled}
-              description={t('radioPanel.mqttUplinkDesc')}
-            />
-
-            {/* MQTT Downlink */}
-            <ConfigToggle
-              label={t('radioPanel.mqttDownlinkLabel')}
-              checked={editDownlink}
-              onChange={setEditDownlink}
-              disabled={disabled}
-              description={t('radioPanel.mqttDownlinkDesc')}
-            />
-
-            {/* Position Precision */}
-            <div className="space-y-1">
-              <label htmlFor="radio-mt-ch-pos-precision" className="text-muted text-xs">
-                {t('radioPanel.positionPrecisionChannelLabel')}
-              </label>
-              <input
-                id="radio-mt-ch-pos-precision"
-                type="number"
-                value={editPosPrecision}
-                onChange={(e) => {
-                  setEditPosPrecision(Number(e.target.value));
-                }}
-                min={0}
-                max={32}
-                disabled={disabled}
-                className="bg-secondary-dark focus:border-brand-green w-28 rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
-              />
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-2 pt-1">
-              <button
-                type="button"
-                onClick={saveChannel}
-                disabled={disabled || saving}
-                className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted flex-1 rounded px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:bg-gray-600"
-              >
-                {saving ? t('radioPanel.savingChannel') : t('radioPanel.saveChannel')}
-              </button>
-              <button
-                type="button"
-                onClick={resetChannel}
-                disabled={disabled || saving}
-                className="rounded bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-600 disabled:opacity-50"
-                title={
-                  selectedIndex === 0
-                    ? t('radioPanel.resetChannelDefaults')
-                    : t('radioPanel.disableChannel')
-                }
-              >
-                {selectedIndex === 0
-                  ? t('radioPanel.resetChannelDefaults')
-                  : t('radioPanel.disableChannel')}
-              </button>
-            </div>
-          </div>
-        )}
 
         <p className="text-muted text-xs">{t('radioPanel.channelsEditHint')}</p>
 
@@ -4004,6 +4023,7 @@ function MeshcoreChannelSection({
     setEditName(ch.name);
     setEditKeyHex(ch.secret?.length === 16 ? bytesToHex(ch.secret) : '');
     setAddingNew(false);
+    setShareQrIdx(null);
   }
 
   function openAdd() {
@@ -4070,7 +4090,132 @@ function MeshcoreChannelSection({
     }
   }
 
-  const showForm = editingIdx !== null || addingNew;
+  const renderChannelForm = (mode: 'edit' | 'add') => (
+    <div
+      ref={formRef}
+      className="bg-deep-black/60 mt-1 space-y-3 rounded-lg border border-gray-600 p-3"
+    >
+      <h4 className="text-sm font-medium text-gray-200">
+        {mode === 'add'
+          ? t('radioPanel.meshcoreChannel.addTitle')
+          : t('radioPanel.meshcoreChannel.editTitle', { index: editingIdx })}
+      </h4>
+
+      {mode === 'add' && (
+        <div className="space-y-1">
+          <label htmlFor="radio-mc-ch-idx" className="text-muted text-xs">
+            {t('radioPanel.meshcoreChannel.indexLabel', {
+              max: MESHCORE_CHANNEL_INDEX_MAX,
+            })}
+          </label>
+          <input
+            id="radio-mc-ch-idx"
+            type="number"
+            value={newIdx}
+            onChange={(e) => {
+              setNewIdx(e.target.value);
+            }}
+            min={0}
+            max={MESHCORE_CHANNEL_INDEX_MAX}
+            disabled={disabled}
+            className="bg-secondary-dark focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+          />
+        </div>
+      )}
+
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <label htmlFor="radio-mc-ch-name" className="text-muted text-xs">
+            {t('radioPanel.meshcoreChannelNameLabel')}
+          </label>
+          <span className="text-muted text-xs">
+            {editName.length}/{MESHCORE_CHANNEL_NAME_MAX_LEN}
+          </span>
+        </div>
+        <input
+          id="radio-mc-ch-name"
+          type="text"
+          value={editName}
+          onChange={(e) => {
+            setEditName(e.target.value);
+          }}
+          maxLength={MESHCORE_CHANNEL_NAME_MAX_LEN}
+          disabled={disabled}
+          className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <label htmlFor="radio-mc-ch-key" className="text-muted text-xs">
+            {t('radioPanel.meshcoreChannelKeyLabel')}
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                void handleDeriveKeyFromChannelName();
+              }}
+              disabled={disabled || deriveKeyBusy || !editName.trim()}
+              className="text-brand-green hover:text-bright-green px-1 text-xs disabled:opacity-50"
+              title={t('radioPanel.meshcoreSha256KeyTitle')}
+            >
+              {deriveKeyBusy
+                ? t('radioPanel.meshcoreDeriving')
+                : t('radioPanel.meshcoreDeriveFromName')}
+            </button>
+            <button
+              type="button"
+              onClick={generateKey}
+              className="text-xs text-blue-400 hover:text-blue-300"
+            >
+              {t('radioPanel.meshcoreGenerateRandomKey')}
+            </button>
+          </div>
+        </div>
+        <input
+          id="radio-mc-ch-key"
+          type="text"
+          value={editKeyHex}
+          onChange={(e) => {
+            setEditKeyHex(e.target.value.toLowerCase());
+          }}
+          maxLength={32}
+          placeholder={t('radioPanel.meshcorePskHexPlaceholder')}
+          disabled={disabled}
+          className={`bg-secondary-dark w-full rounded border px-2 py-1.5 font-mono text-sm focus:outline-none disabled:opacity-50 ${
+            editKeyHex.length > 0 && !isValidHex
+              ? 'border-red-500 text-red-400'
+              : 'focus:border-brand-green border-gray-600 text-gray-200'
+          }`}
+        />
+        {editKeyHex.length > 0 && !isValidHex && (
+          <p className="text-xs text-red-400">{t('radioPanel.meshcoreChannel.invalidHex')}</p>
+        )}
+      </div>
+
+      <div className="flex gap-2 pt-1">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={disabled || saving || !isValidHex || (mode === 'add' && newIdx === '')}
+          className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted flex-1 rounded px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:bg-gray-600"
+        >
+          {saving ? t('common.saving') : t('common.save')}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setEditingIdx(null);
+            setAddingNew(false);
+          }}
+          className="rounded bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-600"
+        >
+          {t('common.cancel')}
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <details ref={detailsRef} className="group bg-deep-black/50 rounded-lg border border-gray-700">
@@ -4089,6 +4234,7 @@ function MeshcoreChannelSection({
             const channelName =
               ch.name || t('radioPanel.meshcoreChannel.defaultName', { index: ch.index });
             const showShareQr = shareQrIdx === ch.index && ch.secret?.length === 16;
+            const showEditForm = editingIdx === ch.index && !addingNew;
             let shareQrUri: string | null = null;
             if (showShareQr) {
               try {
@@ -4198,6 +4344,7 @@ function MeshcoreChannelSection({
                     />
                   </div>
                 ) : null}
+                {showEditForm ? renderChannelForm('edit') : null}
               </div>
             );
           })}
@@ -4256,135 +4403,10 @@ function MeshcoreChannelSection({
           />
         </div>
 
-        {/* ── Edit / Add Form ── */}
-        {showForm && (
-          <div
-            ref={formRef}
-            className="bg-deep-black/60 mt-3 space-y-3 rounded-lg border border-gray-600 p-3"
-          >
-            <h4 className="text-sm font-medium text-gray-200">
-              {addingNew
-                ? t('radioPanel.meshcoreChannel.addTitle')
-                : t('radioPanel.meshcoreChannel.editTitle', { index: editingIdx })}
-            </h4>
+        {/* ── Add Form (no parent row) ── */}
+        {addingNew && renderChannelForm('add')}
 
-            {addingNew && (
-              <div className="space-y-1">
-                <label htmlFor="radio-mc-ch-idx" className="text-muted text-xs">
-                  {t('radioPanel.meshcoreChannel.indexLabel', {
-                    max: MESHCORE_CHANNEL_INDEX_MAX,
-                  })}
-                </label>
-                <input
-                  id="radio-mc-ch-idx"
-                  type="number"
-                  value={newIdx}
-                  onChange={(e) => {
-                    setNewIdx(e.target.value);
-                  }}
-                  min={0}
-                  max={MESHCORE_CHANNEL_INDEX_MAX}
-                  disabled={disabled}
-                  className="bg-secondary-dark focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
-                />
-              </div>
-            )}
-
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label htmlFor="radio-mc-ch-name" className="text-muted text-xs">
-                  {t('radioPanel.meshcoreChannelNameLabel')}
-                </label>
-                <span className="text-muted text-xs">
-                  {editName.length}/{MESHCORE_CHANNEL_NAME_MAX_LEN}
-                </span>
-              </div>
-              <input
-                id="radio-mc-ch-name"
-                type="text"
-                value={editName}
-                onChange={(e) => {
-                  setEditName(e.target.value);
-                }}
-                maxLength={MESHCORE_CHANNEL_NAME_MAX_LEN}
-                disabled={disabled}
-                className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <label htmlFor="radio-mc-ch-key" className="text-muted text-xs">
-                  {t('radioPanel.meshcoreChannelKeyLabel')}
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void handleDeriveKeyFromChannelName();
-                    }}
-                    disabled={disabled || deriveKeyBusy || !editName.trim()}
-                    className="text-brand-green hover:text-bright-green px-1 text-xs disabled:opacity-50"
-                    title={t('radioPanel.meshcoreSha256KeyTitle')}
-                  >
-                    {deriveKeyBusy
-                      ? t('radioPanel.meshcoreDeriving')
-                      : t('radioPanel.meshcoreDeriveFromName')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={generateKey}
-                    className="text-xs text-blue-400 hover:text-blue-300"
-                  >
-                    {t('radioPanel.meshcoreGenerateRandomKey')}
-                  </button>
-                </div>
-              </div>
-              <input
-                id="radio-mc-ch-key"
-                type="text"
-                value={editKeyHex}
-                onChange={(e) => {
-                  setEditKeyHex(e.target.value.toLowerCase());
-                }}
-                maxLength={32}
-                placeholder={t('radioPanel.meshcorePskHexPlaceholder')}
-                disabled={disabled}
-                className={`bg-secondary-dark w-full rounded border px-2 py-1.5 font-mono text-sm focus:outline-none disabled:opacity-50 ${
-                  editKeyHex.length > 0 && !isValidHex
-                    ? 'border-red-500 text-red-400'
-                    : 'focus:border-brand-green border-gray-600 text-gray-200'
-                }`}
-              />
-              {editKeyHex.length > 0 && !isValidHex && (
-                <p className="text-xs text-red-400">{t('radioPanel.meshcoreChannel.invalidHex')}</p>
-              )}
-            </div>
-
-            <div className="flex gap-2 pt-1">
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={disabled || saving || !isValidHex || (addingNew && newIdx === '')}
-                className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted flex-1 rounded px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:bg-gray-600"
-              >
-                {saving ? t('common.saving') : t('common.save')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingIdx(null);
-                  setAddingNew(false);
-                }}
-                className="rounded bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-600"
-              >
-                {t('common.cancel')}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {!showForm && (
+        {!addingNew && editingIdx === null && (
           <button
             type="button"
             onClick={openAdd}
