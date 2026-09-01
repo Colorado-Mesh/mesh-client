@@ -1210,3 +1210,189 @@ describe('RadioPanel MeshCore channel share QR placement', () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe('RadioPanel Meshtastic channel edit form placement', () => {
+  const secondaryChannelConfig = {
+    index: 1,
+    role: MESHTASTIC_CHANNEL_ROLE.SECONDARY,
+    name: 'Secondary',
+    psk: new Uint8Array([0x01]),
+    uplinkEnabled: false,
+    downlinkEnabled: false,
+    positionPrecision: 0,
+  };
+
+  it('renders the edit form under the selected slot row, not after URL import/export', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          channelConfigs={[primaryChannelConfig, secondaryChannelConfig]}
+          meshtasticLoraConfig={{ region: 1, modemPreset: 0, usePreset: true }}
+        />
+      </ToastProvider>,
+    );
+
+    await openChannelsSection(user);
+
+    const secondarySlot = screen
+      .getAllByRole('button')
+      .find((b) => b.classList.contains('text-left') && b.textContent?.includes('Secondary'));
+    expect(secondarySlot).toBeTruthy();
+    await user.click(secondarySlot!);
+
+    const editTitle = await screen.findByRole('heading', { name: 'Edit Channel 1' });
+    const itemWrapper = editTitle.closest('.space-y-1');
+    expect(itemWrapper).not.toBeNull();
+    expect(itemWrapper!.textContent).toContain('Secondary');
+    expect(within(itemWrapper as HTMLElement).getByLabelText('Name')).toBeInTheDocument();
+
+    const channelList = itemWrapper!.parentElement;
+    expect(channelList).not.toBeNull();
+    const items = [...channelList!.children].filter((el) => el.classList.contains('space-y-1'));
+    expect(items.length).toBeGreaterThanOrEqual(2);
+    expect(items[1]).toBe(itemWrapper);
+
+    const hint = screen.getByText(/Select a channel to edit/i);
+    expect(hint.compareDocumentPosition(editTitle) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  });
+
+  it('scrolls the Meshtastic edit form into view when a slot is selected', async () => {
+    const user = userEvent.setup();
+    const scrollIntoView = vi
+      .spyOn(HTMLElement.prototype, 'scrollIntoView')
+      .mockImplementation(() => {});
+
+    render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} isConnected channelConfigs={[primaryChannelConfig]} />
+      </ToastProvider>,
+    );
+
+    await openChannelsSection(user);
+    scrollIntoView.mockClear();
+
+    const primarySlot = screen
+      .getAllByRole('button')
+      .find((b) => b.classList.contains('text-left') && b.textContent?.includes('Primary'));
+    expect(primarySlot).toBeTruthy();
+    await user.click(primarySlot!);
+
+    await screen.findByRole('heading', { name: 'Edit Channel 0' });
+    await waitFor(() => {
+      expect(scrollIntoView).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('RadioPanel MeshCore channel edit form placement', () => {
+  async function openMeshcoreChannelsDetails(user: ReturnType<typeof userEvent.setup>) {
+    const channelsDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Channels (MeshCore)';
+    });
+    expect(channelsDetails).toBeDefined();
+    await user.click(channelsDetails!.querySelector('summary')!);
+  }
+
+  it('renders the edit form under the clicked channel row, not after the list', async () => {
+    const user = userEvent.setup();
+    const secretA = new Uint8Array(16).fill(0x11);
+    const secretB = new Uint8Array(16).fill(0x22);
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          meshcoreChannels={[
+            { index: 0, name: 'Alpha', secret: secretA },
+            { index: 1, name: 'Beta', secret: secretB },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    await openMeshcoreChannelsDetails(user);
+
+    const alphaRow = screen.getByText('Alpha').closest('.space-y-1');
+    expect(alphaRow).not.toBeNull();
+    await user.click(within(alphaRow as HTMLElement).getByRole('button', { name: 'Edit' }));
+
+    const editTitle = await screen.findByRole('heading', { name: 'Edit Channel 0' });
+    expect(alphaRow!.contains(editTitle)).toBe(true);
+    expect(alphaRow!.textContent).not.toContain('Beta');
+
+    const channelList = alphaRow!.parentElement;
+    expect(channelList).not.toBeNull();
+    const items = [...channelList!.children].filter((el) => el.classList.contains('space-y-1'));
+    expect(items).toHaveLength(2);
+    expect(items[0]).toBe(alphaRow);
+    expect(items[1]?.textContent).toContain('Beta');
+    expect(items[1]?.textContent).not.toContain('Edit Channel');
+  });
+
+  it('keeps the add-channel form below QR ingest, not inline on a row', async () => {
+    const user = userEvent.setup();
+    const secretA = new Uint8Array(16).fill(0x11);
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          meshcoreChannels={[{ index: 0, name: 'Alpha', secret: secretA }]}
+        />
+      </ToastProvider>,
+    );
+
+    await openMeshcoreChannelsDetails(user);
+    await user.click(screen.getByRole('button', { name: '+ Add Channel' }));
+
+    const addTitle = await screen.findByRole('heading', { name: 'Add Channel' });
+    const alphaRow = screen.getByText('Alpha').closest('.space-y-1');
+    expect(alphaRow).not.toBeNull();
+    expect(alphaRow!.contains(addTitle)).toBe(false);
+
+    const pasteHints = screen.getAllByText(/You can also paste a QR image here \(Ctrl\/Cmd\+V\)\./);
+    const pasteHint = pasteHints.find((el) => el.classList.contains('mb-1'));
+    expect(pasteHint).toBeDefined();
+    expect(
+      pasteHint!.compareDocumentPosition(addTitle) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.getByLabelText(/Index \(0–/i)).toBeInTheDocument();
+  });
+
+  it('scrolls the MeshCore edit form into view when Edit is clicked', async () => {
+    const user = userEvent.setup();
+    const secretA = new Uint8Array(16).fill(0x11);
+    const scrollIntoView = vi
+      .spyOn(HTMLElement.prototype, 'scrollIntoView')
+      .mockImplementation(() => {});
+
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          meshcoreChannels={[{ index: 0, name: 'Alpha', secret: secretA }]}
+        />
+      </ToastProvider>,
+    );
+
+    await openMeshcoreChannelsDetails(user);
+    scrollIntoView.mockClear();
+
+    const alphaRow = screen.getByText('Alpha').closest('.space-y-1');
+    expect(alphaRow).not.toBeNull();
+    await user.click(within(alphaRow as HTMLElement).getByRole('button', { name: 'Edit' }));
+
+    await screen.findByRole('heading', { name: 'Edit Channel 0' });
+    await waitFor(() => {
+      expect(scrollIntoView).toHaveBeenCalled();
+    });
+  });
+});
