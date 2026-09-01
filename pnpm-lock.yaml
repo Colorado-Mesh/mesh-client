@@ -13,7 +13,7 @@ overrides:
   app-builder-lib: ^26.15.0
   brace-expansion: 5.0.9
   builder-util-runtime: 9.7.0
-  electron: ^41.10.4
+  electron: ^44.1.0
   fast-uri: ^3.1.5
   ip-address: ^10.3.1
   js-yaml: ^4.3.0
@@ -199,8 +199,8 @@ importers:
         specifier: ^9.2.4
         version: 9.2.4
       electron:
-        specifier: ^41.10.4
-        version: 41.10.7(supports-color@8.1.1)
+        specifier: ^44.1.0
+        version: 44.1.0(supports-color@8.1.1)
       electron-builder:
         specifier: ^26.15.7
         version: 26.15.7(electron-builder-squirrel-windows@26.15.3)(supports-color@8.1.1)
@@ -2074,8 +2074,8 @@ packages:
     resolution: {integrity: sha512-bO3y10YikuUwUuDUQRM4KfwNkKhnpVO7IPdbsrejwN9/AABJzzTQ4GeHwyzNSrVO+tEH3/Np255a3sVZpZDjvg==}
     engines: {node: '>=8.0.0'}
 
-  electron@41.10.7:
-    resolution: {integrity: sha512-AqIiefddlf5i+HYCGatr8VlBuEbWJpad4/yloBFYcMB2r57j7xhW1ogiJ+BfA5kxQyfmSs5yjwy54Me+wJn1jw==}
+  electron@44.1.0:
+    resolution: {integrity: sha512-kmLg8axOg22DC3fXx5NCwBYW8fx0rK2zzJ3Tf67GjNCkxfoxEcd+yo0QfDjlBtHJs3xeA8fTg64b6iVzFTVErg==}
     engines: {node: '>= 22.12.0'}
     hasBin: true
 
@@ -6492,7 +6492,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  electron@41.10.7(supports-color@8.1.1):
+  electron@44.1.0(supports-color@8.1.1):
     dependencies:
       '@electron-internal/extract-zip': 1.0.5
       '@electron/get': 5.1.0(supports-color@8.1.1)

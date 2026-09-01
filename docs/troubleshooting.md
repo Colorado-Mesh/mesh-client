@@ -936,7 +936,9 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 ### MeshCore: Room server login, posts, and Windows 10
 
-**Minimum Windows**: Mesh-Client (Electron 41) supports **Windows 10 version 1809+** and Windows 11. Windows 10 22H2 is supported; issues reported only on Win10 are usually MeshCore protocol or app regressions, not an unsupported OS.
+**Minimum Windows**: Mesh-Client (Electron 44) supports **Windows 10 version 1809+** and Windows 11. Windows 10 22H2 is supported; issues reported only on Win10 are usually MeshCore protocol or app regressions, not an unsupported OS.
+
+**Minimum macOS**: Electron 44 requires **macOS 13 Ventura** or later (Monterey is no longer supported).
 
 **Rooms vs Chat**: Official MeshCore room clients use the **Rooms** tab BBS login path. Room-server posts appear there (`SignedPlain` / channel `-2`), **not** in Chat channel pills. Admin traffic sent as normal **channel text** shows in **Chat** only.
 

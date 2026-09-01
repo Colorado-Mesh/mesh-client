@@ -199,7 +199,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/coverage-v8": "^4.1.11",
     "concurrently": "^9.2.4",
-    "electron": "^41.10.7",
+    "electron": "^44.1.0",
     "electron-builder": "^26.15.7",
     "esbuild": "^0.28.2",
     "eslint": "^10.9.1",

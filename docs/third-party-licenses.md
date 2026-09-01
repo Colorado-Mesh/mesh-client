@@ -70,7 +70,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @vitejs/plugin-react                  | MIT             | ^6.1.1          | 6.1.1             | git+https://github.com/vitejs/vite-plugin-react.git                                  |
 | @vitest/coverage-v8                   | MIT             | ^4.1.11         | 4.1.11            | git+https://github.com/vitest-dev/vitest.git                                         |
 | concurrently                          | MIT             | ^9.2.4          | 9.2.4             | git+https://github.com/open-cli-tools/concurrently.git                               |
-| electron                              | MIT             | ^41.10.7        | 41.10.7           | git+https://github.com/electron/electron.git                                         |
+| electron                              | MIT             | ^44.1.0         | 44.1.0            | git+https://github.com/electron/electron.git                                         |
 | electron-builder                      | MIT             | ^26.15.7        | 26.15.7           | git+https://github.com/electron-userland/electron-builder.git                        |
 | esbuild                               | MIT             | ^0.28.2         | 0.28.2            | git+https://github.com/evanw/esbuild.git                                             |
 | eslint                                | MIT             | ^10.9.1         | 10.9.1            | git+https://github.com/eslint/eslint.git                                             |

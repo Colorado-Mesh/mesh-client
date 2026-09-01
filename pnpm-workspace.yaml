@@ -59,13 +59,11 @@ overrides:
   # undici-types stays on 7.x to match @types/node.
   # postcss: GHSA-fxqj-rqcc-2cmp — floor >=8.5.23.
   # ip-address: GHSA-mwp4-54f8-5fhr (mqtt → socks) — floor >=10.3.1.
-  # electron: Dependabot #91–#96 (GHSA-9f4c-93c8-jc8g needs >=41.10.3 on the
-  # 41.x line; sibling medium GHSAs need >=41.2.2). GitHub SBOM may lag the
-  # lockfile — keep the floor so alerts cannot regress on resolve.
+  # electron: deliberate major pin — bump with Flatpak sync + native rebuild smoke.
   app-builder-lib: ^26.15.0
   brace-expansion: 5.0.9
   builder-util-runtime: 9.7.0
-  electron: ^41.10.4
+  electron: ^44.1.0
   fast-uri: ^3.1.5
   ip-address: ^10.3.1
   js-yaml: ^4.3.0
