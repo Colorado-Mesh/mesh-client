@@ -43,10 +43,16 @@ function main() {
     process.exit(1);
   }
   const specialPy = resolveGeneratorSpecialPyPath(bin);
+  const electronPy = resolveGeneratorElectronPyPath(bin);
   if (!specialPy) {
     console.error(`patch-flatpak-node-generator-playwright: special.py not found next to ${bin}`);
     process.exit(1);
   }
+  if (!electronPy) {
+    console.error(`patch-flatpak-node-generator-playwright: electron.py not found next to ${bin}`);
+    process.exit(1);
+  }
+
   const playwright = applyGeneratorSkipPlaywrightSpecialSources(specialPy);
   if (!playwright.ok) {
     console.error(`patch-flatpak-node-generator-playwright: ${playwright.message}`);
@@ -57,12 +63,6 @@ function main() {
       ? `patch-flatpak-node-generator-playwright: already applied (${specialPy})`
       : `patch-flatpak-node-generator-playwright: skipped Playwright browser vendoring (${specialPy})`,
   );
-
-  const electronPy = resolveGeneratorElectronPyPath(bin);
-  if (!electronPy) {
-    console.error(`patch-flatpak-node-generator-playwright: electron.py not found next to ${bin}`);
-    process.exit(1);
-  }
   const armv7l = applyGeneratorSkipElectronArmv7l(electronPy);
   if (!armv7l.ok) {
     console.error(`patch-flatpak-node-generator-playwright: ${armv7l.message}`);

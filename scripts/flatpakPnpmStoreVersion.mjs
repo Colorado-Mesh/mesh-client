@@ -167,9 +167,9 @@ export function applyGeneratorSkipElectronArmv7l(electronPyPath, opts = {}) {
     return {
       ok: false,
       message:
-        `${electronPyPath} has no Electron ia32 skip block ` +
-        `(expected Electron v19+ drop linux-ia32). Bump the generator pin or update ` +
-        `ELECTRON_IA32_SKIP_BLOCK.`,
+        `${electronPyPath} has no anchor block to insert ` +
+        `ELECTRON_ARMV7L_SKIP_BLOCK (linux-armv7l skip for Electron >= 44). ` +
+        `Bump the generator pin or update ELECTRON_IA32_SKIP_BLOCK / ELECTRON_ARMV7L_SKIP_BLOCK.`,
     };
   }
   try {

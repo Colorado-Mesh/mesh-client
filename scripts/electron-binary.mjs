@@ -70,7 +70,7 @@ export function ensureElectronBinaryInstalled({
     );
   }
 
-  console.log('Electron binary not found — downloading via electron/install.js…');
+  process.stdout.write('Electron binary not found — downloading via electron/install.js…\n');
   const result = spawnSyncFn(process.execPath, [installJs], {
     cwd: root,
     stdio: 'inherit',
