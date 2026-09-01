@@ -1,3 +1,5 @@
+import { touch } from '@/shared/touch';
+
 import {
   isMeshcorePathHashMode,
   type MeshcorePathHashMode,
@@ -225,7 +227,7 @@ export function computeMeshcoreTracePrimeStrategy(opts: {
   canSynthesizePath: boolean;
   skipPrime?: boolean;
 }): MeshcoreTracePrimeStrategy {
-  void opts.canSynthesizePath;
+  touch(opts.canSynthesizePath);
   if (opts.skipPrime || !opts.needsRoutePrime || !opts.pathTooShort) return 'none';
   if (opts.hasUsableStoredPath) return 'none';
   if (opts.hopsAway == null) return 'passive';

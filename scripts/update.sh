@@ -574,14 +574,17 @@ RATSPEAK_KNOWN_ORG_REPOS=(
   'ratkey'
   'rathole'
   'ratspeak-docs'
+  'ratspeak-handheld'
   'ratspeak-website'
   'revanity-go'
   'rsCardputer'
   'rsDeck'
   'rsLXMF'
+  'rsLXMFLite'
   'rsLXST'
   'rsPager'
   'rsReticulum'
+  'rsReticulumLite'
 )
 
 print_ratspeak_upstream_catalog() {

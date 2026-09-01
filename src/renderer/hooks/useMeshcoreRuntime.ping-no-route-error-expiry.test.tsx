@@ -4,6 +4,8 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { touch } from '@/shared/touch';
+
 import { pubkeyToNodeId } from '../lib/meshcoreUtils';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 
@@ -59,7 +61,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
     private listeners = new Map<string | number, Set<(...args: unknown[]) => void>>();
 
     constructor(port: unknown) {
-      void port;
+      touch(port);
     }
     on(event: string | number, cb: (...args: unknown[]) => void) {
       const listeners = this.listeners.get(event) ?? new Set();
@@ -132,7 +134,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
     });
     sendFloodAdvert = vi.fn().mockResolvedValue(undefined);
     sendToRadioFrame = vi.fn().mockImplementation((data: Uint8Array) => {
-      void data;
+      touch(data);
       this.emit('rx', new Uint8Array([25, 0x0f, 3]));
     });
   }
@@ -140,11 +142,11 @@ vi.mock('@liamcottle/meshcore.js', () => {
   class MockSerialConnection {
     async write(bytes: Uint8Array) {
       await Promise.resolve();
-      void bytes;
+      touch(bytes);
     }
     async onDataReceived(value: Uint8Array) {
       await Promise.resolve();
-      void value;
+      touch(value);
     }
     async onConnected() {
       await Promise.resolve();
@@ -171,11 +173,11 @@ vi.mock('@liamcottle/meshcore.js', () => {
   class MockConnection {
     async write(bytes: Uint8Array) {
       await Promise.resolve();
-      void bytes;
+      touch(bytes);
     }
     async sendToRadioFrame(data: Uint8Array) {
       await Promise.resolve();
-      void data;
+      touch(data);
     }
     async onConnected() {
       await Promise.resolve();
@@ -184,7 +186,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
       return undefined;
     }
     onFrameReceived(frame: Uint8Array) {
-      void frame;
+      touch(frame);
       return undefined;
     }
     close = vi.fn().mockResolvedValue(undefined);

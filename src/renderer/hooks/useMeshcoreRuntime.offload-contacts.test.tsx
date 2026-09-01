@@ -4,6 +4,8 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { touch } from '@/shared/touch';
+
 import { isMeshcoreOffloadAbortError } from '../lib/meshcoreOffload';
 import { pubkeyToNodeId } from '../lib/meshcoreUtils';
 
@@ -37,7 +39,7 @@ const removeContactMock = vi.fn();
 vi.mock('@liamcottle/meshcore.js', () => {
   class MockWebSerialConnection {
     constructor(port: unknown) {
-      void port;
+      touch(port);
     }
     on() {
       return undefined;
@@ -69,11 +71,11 @@ vi.mock('@liamcottle/meshcore.js', () => {
   class MockSerialConnection {
     async write(bytes: Uint8Array) {
       await Promise.resolve();
-      void bytes;
+      touch(bytes);
     }
     async onDataReceived(value: Uint8Array) {
       await Promise.resolve();
-      void value;
+      touch(value);
     }
     async onConnected() {
       await Promise.resolve();
@@ -102,11 +104,11 @@ vi.mock('@liamcottle/meshcore.js', () => {
   class MockConnection {
     async write(bytes: Uint8Array) {
       await Promise.resolve();
-      void bytes;
+      touch(bytes);
     }
     async sendToRadioFrame(data: Uint8Array) {
       await Promise.resolve();
-      void data;
+      touch(data);
     }
     async onConnected() {
       await Promise.resolve();
@@ -252,7 +254,7 @@ describe('useMeshcoreRuntime offloadContactsFromRadio', () => {
     );
     expect(removeContactMock).toHaveBeenCalledWith(PEER_PUBKEY);
     expect(removeContactMock).not.toHaveBeenCalledWith(SELF_PUBKEY);
-    void MY_NODE_ID;
+    touch(MY_NODE_ID);
   });
 
   it('offload keeps a newer live advert name when radio contact name is stale', async () => {

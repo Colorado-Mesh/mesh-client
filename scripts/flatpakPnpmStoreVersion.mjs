@@ -52,6 +52,136 @@ export const PLAYWRIGHT_SPECIAL_SOURCE_SKIP = `        elif package.name == 'pla
             pass`;
 
 /**
+ * Marker written into the pinned generator's electron.py so Electron >= 44 does
+ * not request linux-armv7l zips (Electron 43 was the last armv7l release).
+ */
+export const ELECTRON_ARMV7L_SKIP_MARKER = 'mesh-client-skip-electron-armv7l-44';
+
+/** Exact upstream ia32 skip block in electron.py (ac5a296a) — insert armv7l skip after. */
+export const ELECTRON_IA32_SKIP_BLOCK = `            # Electron v19+ drop linux-ia32 support.
+            if (
+                SemVer.parse(self.version) >= SemVer.parse('19.0.0')
+                and electron_arch == 'ia32'
+            ):
+                continue`;
+
+export const ELECTRON_ARMV7L_SKIP_BLOCK = `            # Electron v19+ drop linux-ia32 support.
+            if (
+                SemVer.parse(self.version) >= SemVer.parse('19.0.0')
+                and electron_arch == 'ia32'
+            ):
+                continue
+
+            # mesh-client-skip-electron-armv7l-44: Electron v44+ drop linux-armv7l
+            # (Electron 43 was the last armv7l release). Flatpak ships x64+arm64 only.
+            if (
+                SemVer.parse(self.version) >= SemVer.parse('44.0.0')
+                and electron_arch == 'armv7l'
+            ):
+                continue`;
+
+/**
+ * Rewrite generator electron.py so Electron >= 44 skips missing armv7l archives.
+ *
+ * @param {string} source
+ * @returns {{ source: string, changed: boolean, already: boolean, missing: boolean }}
+ */
+export function rewriteGeneratorSkipElectronArmv7l(source) {
+  if (source.includes(ELECTRON_ARMV7L_SKIP_MARKER)) {
+    return { source, changed: false, already: true, missing: false };
+  }
+  if (!source.includes(ELECTRON_IA32_SKIP_BLOCK)) {
+    return { source, changed: false, already: false, missing: true };
+  }
+  return {
+    source: source.replace(ELECTRON_IA32_SKIP_BLOCK, ELECTRON_ARMV7L_SKIP_BLOCK),
+    changed: true,
+    already: false,
+    missing: false,
+  };
+}
+
+/**
+ * Locate electron.py next to a generator console-script (venv or pip --user).
+ *
+ * @param {string} generatorBin
+ * @param {{
+ *   existsSync?: (p: string) => boolean;
+ *   globSync?: (pattern: string, opts: { cwd: string }) => string[];
+ * }} [opts]
+ * @returns {string | null}
+ */
+export function resolveGeneratorElectronPyPath(generatorBin, opts = {}) {
+  if (!generatorBin) return null;
+  const exists = opts.existsSync ?? ((p) => fs.existsSync(p));
+  const glob = opts.globSync ?? ((pattern, o) => fs.globSync(pattern, { cwd: o.cwd }));
+  const binDir = path.dirname(generatorBin);
+  const roots = [path.dirname(binDir)];
+  const patterns = [
+    'lib/python*/site-packages/flatpak_node_generator/electron.py',
+    'lib/python*/dist-packages/flatpak_node_generator/electron.py',
+  ];
+  for (const root of roots) {
+    for (const pattern of patterns) {
+      let hits;
+      try {
+        hits = glob(pattern, { cwd: root });
+      } catch {
+        // catch-no-log-ok glob miss is a normal miss
+        hits = [];
+      }
+      for (const rel of hits) {
+        const abs = path.join(root, rel);
+        if (exists(abs)) return abs;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Patch an installed generator so Electron >= 44 skips linux-armv7l archives.
+ *
+ * @param {string} electronPyPath
+ * @param {{
+ *   readFileSync?: (p: string, enc: BufferEncoding) => string;
+ *   writeFileSync?: (p: string, data: string, enc: BufferEncoding) => void;
+ * }} [opts]
+ * @returns {{ ok: true, already: boolean } | { ok: false, message: string }}
+ */
+export function applyGeneratorSkipElectronArmv7l(electronPyPath, opts = {}) {
+  const read = opts.readFileSync ?? ((p, enc) => fs.readFileSync(p, enc));
+  const write = opts.writeFileSync ?? ((p, data, enc) => fs.writeFileSync(p, data, enc));
+  let source;
+  try {
+    source = read(electronPyPath, 'utf8');
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    return { ok: false, message: `could not read ${electronPyPath}: ${detail}` };
+  }
+  const rewritten = rewriteGeneratorSkipElectronArmv7l(source);
+  if (rewritten.already) {
+    return { ok: true, already: true };
+  }
+  if (rewritten.missing) {
+    return {
+      ok: false,
+      message:
+        `${electronPyPath} has no anchor block to insert ` +
+        `ELECTRON_ARMV7L_SKIP_BLOCK (linux-armv7l skip for Electron >= 44). ` +
+        `Bump the generator pin or update ELECTRON_IA32_SKIP_BLOCK / ELECTRON_ARMV7L_SKIP_BLOCK.`,
+    };
+  }
+  try {
+    write(electronPyPath, rewritten.source, 'utf8');
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    return { ok: false, message: `could not write ${electronPyPath}: ${detail}` };
+  }
+  return { ok: true, already: false };
+}
+
+/**
  * Rewrite generator special.py so Playwright does not fetch browsers.json.
  *
  * @param {string} source
@@ -150,6 +280,96 @@ export function applyGeneratorSkipPlaywrightSpecialSources(specialPyPath, opts =
     return { ok: false, message: `could not write ${specialPyPath}: ${detail}` };
   }
   return { ok: true, already: false };
+}
+
+/**
+ * Plan and apply Playwright + Electron armv7l generator patches atomically.
+ * Both files are validated before any write; a failed second write rolls back the first.
+ *
+ * @param {string} specialPyPath
+ * @param {string} electronPyPath
+ * @param {{
+ *   readFileSync?: (p: string, enc: BufferEncoding) => string;
+ *   writeFileSync?: (p: string, data: string, enc: BufferEncoding) => void;
+ * }} [opts]
+ * @returns {{
+ *   ok: true;
+ *   playwright: { already: boolean; changed: boolean };
+ *   armv7l: { already: boolean; changed: boolean };
+ * } | { ok: false; message: string }}
+ */
+export function applyGeneratorFlatpakNodeGeneratorPatches(
+  specialPyPath,
+  electronPyPath,
+  opts = {},
+) {
+  const read = opts.readFileSync ?? ((p, enc) => fs.readFileSync(p, enc));
+  const write = opts.writeFileSync ?? ((p, data, enc) => fs.writeFileSync(p, data, enc));
+
+  let specialOriginal;
+  try {
+    specialOriginal = read(specialPyPath, 'utf8');
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    return { ok: false, message: `could not read ${specialPyPath}: ${detail}` };
+  }
+
+  let electronOriginal;
+  try {
+    electronOriginal = read(electronPyPath, 'utf8');
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    return { ok: false, message: `could not read ${electronPyPath}: ${detail}` };
+  }
+
+  const specialPlan = rewriteGeneratorSkipPlaywrightSpecialSources(specialOriginal);
+  const electronPlan = rewriteGeneratorSkipElectronArmv7l(electronOriginal);
+
+  if (!specialPlan.already && specialPlan.missing) {
+    return {
+      ok: false,
+      message:
+        `${specialPyPath} has no playwright special-source dispatch ` +
+        `(expected elif package.name == 'playwright'). Bump the generator pin or update ` +
+        `PLAYWRIGHT_SPECIAL_SOURCE_CALL.`,
+    };
+  }
+  if (!electronPlan.already && electronPlan.missing) {
+    return {
+      ok: false,
+      message:
+        `${electronPyPath} has no anchor block to insert ` +
+        `ELECTRON_ARMV7L_SKIP_BLOCK (linux-armv7l skip for Electron >= 44). ` +
+        `Bump the generator pin or update ELECTRON_IA32_SKIP_BLOCK / ELECTRON_ARMV7L_SKIP_BLOCK.`,
+    };
+  }
+
+  let specialWritten = false;
+  try {
+    if (specialPlan.changed) {
+      write(specialPyPath, specialPlan.source, 'utf8');
+      specialWritten = true;
+    }
+    if (electronPlan.changed) {
+      write(electronPyPath, electronPlan.source, 'utf8');
+    }
+  } catch (err) {
+    if (specialWritten) {
+      try {
+        write(specialPyPath, specialOriginal, 'utf8');
+      } catch {
+        // catch-no-log-ok rollback best-effort after partial patch failure
+      }
+    }
+    const detail = err instanceof Error ? err.message : String(err);
+    return { ok: false, message: `could not write generator patch file(s): ${detail}` };
+  }
+
+  return {
+    ok: true,
+    playwright: { already: specialPlan.already, changed: specialPlan.changed },
+    armv7l: { already: electronPlan.already, changed: electronPlan.changed },
+  };
 }
 
 /**

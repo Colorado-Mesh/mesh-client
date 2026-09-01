@@ -18,6 +18,7 @@ import { buildMeshcoreContactAddUri, type MeshcoreContactType } from '@/shared/m
 import { meshcoreContactDisplayName } from '@/shared/meshcoreContactSanitize';
 import { isDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
+import { touch } from '@/shared/touch';
 
 import { MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
@@ -513,7 +514,7 @@ export default function NodeDetailModal({
         if (auth.saved) refreshRepeaterSecrets();
         return true;
       }
-      void mode;
+      touch(mode);
       return true;
     },
     [ensureRepeaterAuth, node?.long_name, refreshRepeaterSecrets, t],

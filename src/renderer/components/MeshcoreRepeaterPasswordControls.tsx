@@ -5,6 +5,7 @@ import {
   forgetMeshcoreRepeaterSavedSecret,
   getMeshcoreRepeaterSavedSecretsSummary,
 } from '@/renderer/lib/meshcoreRepeaterSavedSecrets';
+import { touch } from '@/shared/touch';
 
 export interface MeshcoreRepeaterPasswordControlsProps {
   nodeId: number;
@@ -27,7 +28,7 @@ export function MeshcoreRepeaterPasswordControls({
   onStatusMessage,
 }: MeshcoreRepeaterPasswordControlsProps) {
   const { t } = useTranslation();
-  void secretsEpoch;
+  touch(secretsEpoch);
   const summary = getMeshcoreRepeaterSavedSecretsSummary(nodeId);
 
   return (

@@ -1,8 +1,10 @@
+import type { FlashSizeValues } from 'esptool-js';
+
 /** RNode platform identifiers (ROM layout). */
 export type RNodePlatform = number;
 
 export interface Esp32FlashConfig {
-  flash_size: string;
+  flash_size: FlashSizeValues;
   flash_files: Record<string, string>;
 }
 

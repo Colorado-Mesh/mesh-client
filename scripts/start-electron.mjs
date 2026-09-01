@@ -3,30 +3,15 @@ import { spawn } from 'child_process';
 import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import {
+  ensureElectronBinaryInstalled,
+  projectRoot,
+  resolveLocalElectronBin,
+} from './electron-binary.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, '..');
 
-export function resolveLocalElectronBin(platform = process.platform, fileExists = existsSync) {
-  const distDir = path.join(projectRoot, 'node_modules', 'electron', 'dist');
-  const platformCandidates =
-    platform === 'darwin'
-      ? [path.join(distDir, 'Electron.app', 'Contents', 'MacOS', 'Electron')]
-      : platform === 'win32'
-        ? [path.join(distDir, 'electron.exe')]
-        : [path.join(distDir, 'electron')];
-  const fallbackCandidates = [
-    path.join(distDir, 'electron'),
-    path.join(distDir, 'electron.exe'),
-    path.join(distDir, 'Electron.app', 'Contents', 'MacOS', 'Electron'),
-  ];
-  const candidates = [...platformCandidates, ...fallbackCandidates];
-  for (const candidate of candidates) {
-    if (fileExists(candidate)) return candidate;
-  }
-  return platformCandidates[0];
-}
+export { resolveLocalElectronBin };
 
 export function classifyElectronStartupError(stderrText) {
   const lower = String(stderrText || '').toLowerCase();
@@ -67,6 +52,13 @@ export function linuxDisplayMissingRemediation() {
 }
 
 export async function runStartElectron(argv = process.argv.slice(2)) {
+  try {
+    ensureElectronBinaryInstalled({ root: projectRoot, fileExists: existsSync });
+  } catch (err) {
+    process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    process.exit(1);
+  }
+
   // Prefer Chromium's namespace sandbox on Linux and skip only the SUID helper path.
   // This avoids requiring root-owned chrome-sandbox setup in local/dev environments.
   const linuxArgs =

@@ -31,8 +31,10 @@ export const PINNED_MAJOR_EXCEPTIONS = {
   'cacheable-request': 'got@11 (via @electron/get) requires ^10',
   electron: 'app platform target — major upgrades are a deliberate, separate change',
   'fast-uri': 'ajv@8 (via app-builder-lib) requires ^3',
-  'js-yaml': 'app-builder-lib / electron-updater / markdownlint-cli2 all require ^4',
-  'markdown-it': 'scoped security floor for markdownlint-cli2; 15.x is a separate upgrade',
+  'js-yaml':
+    'app-builder-lib / electron-updater / builder-util require ^4 (markdownlint-cli2@0.23.2 can use 5; override keeps the tree on 4)',
+  'markdown-it':
+    'scoped security floor for markdownlint-cli2 (still on markdown-it@14.x); 15.x is a separate upgrade',
   undici: 'scoped floor lifting transitive 6.x/7.x consumers; the app depends on ^8 directly',
   'undici-types': '@types/node pins the 7.x line',
 };

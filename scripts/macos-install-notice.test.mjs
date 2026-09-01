@@ -20,12 +20,14 @@ describe('macos-install-notice', () => {
     expect(text).toContain('7-Zip');
     expect(text).toContain('https://www.keka.io/en/');
     expect(text).toContain('Squirrel.framework');
+    expect(text).toContain('macOS 13 Ventura');
     expect(readFileSync(MACOS_INSTALL_NOTICE_SOURCE, 'utf8')).toBe(text);
   });
 
   it('release markdown mentions DMG, Keka, and 7-Zip', () => {
     const md = formatMacosInstallReleaseMarkdown();
     expect(md).toContain('### macOS install');
+    expect(md).toContain('macOS 13 Ventura');
     expect(md).toContain('.dmg');
     expect(md).toContain('https://www.keka.io/en/');
     expect(md).toContain('7-Zip');

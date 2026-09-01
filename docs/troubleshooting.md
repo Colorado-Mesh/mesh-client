@@ -5,6 +5,7 @@ Setup (clone, prerequisites, Flatpak build steps) is in [development-environment
 ## Contents
 
 - [Quick reference](#quick-reference)
+- [System requirements](#system-requirements)
 - [Development and building](#development-and-building)
 - [Installation and packaged apps](#installation-and-packaged-apps)
 - [Database and local data](#database-and-local-data)
@@ -92,6 +93,18 @@ The top-level **`legend`** explains that ids like `offline-meshcore` are **inter
 Developer bundle only: `reticulum/config` (rnsd INI) and `reticulum/mesh_client_stack.json` (mnemonic redacted).
 
 Attach the GitHub report zip (or paste `debug-snapshot.json` from it; redact `myNodeNum` if you prefer). Do **not** attach the developer bundle or `mesh-client.db` to this public issue.
+
+## System requirements
+
+Packaged Mesh-Client (Electron **44**) needs:
+
+| Platform    | Minimum                                                                                         |
+| ----------- | ----------------------------------------------------------------------------------------------- |
+| **macOS**   | **13 Ventura** or later (`LSMinimumSystemVersion` in the app bundle; Monterey is not supported) |
+| **Windows** | Windows 10 version **1809+** or Windows 11                                                      |
+| **Linux**   | x86_64 or aarch64 (AppImage, `.deb`, `.rpm`, Flatpak)                                           |
+
+If the app will not launch on an older macOS, upgrade the host OS — this is not a Gatekeeper quarantine issue. See also [README — System requirements](../README.md#system-requirements).
 
 ## Development and building
 
@@ -936,7 +949,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 ### MeshCore: Room server login, posts, and Windows 10
 
-**Minimum Windows**: Mesh-Client (Electron 41) supports **Windows 10 version 1809+** and Windows 11. Windows 10 22H2 is supported; issues reported only on Win10 are usually MeshCore protocol or app regressions, not an unsupported OS.
+**Minimum Windows**: Mesh-Client (Electron 44) supports **Windows 10 version 1809+** and Windows 11. Windows 10 22H2 is supported; issues reported only on Win10 are usually MeshCore protocol or app regressions, not an unsupported OS. See [System requirements](#system-requirements) for the full platform table (including **macOS 13 Ventura+**).
 
 **Rooms vs Chat**: Official MeshCore room clients use the **Rooms** tab BBS login path. Room-server posts appear there (`SignedPlain` / channel `-2`), **not** in Chat channel pills. Admin traffic sent as normal **channel text** shows in **Chat** only.
 

@@ -3899,7 +3899,7 @@ ipcMain.handle('app:showEmojiPanel', (event) => {
 
 const CLIPBOARD_WRITE_TEXT_MAX_CHARS = 256 * 1024;
 
-ipcMain.handle('clipboard:writeText', (event, text: unknown) => {
+ipcMain.handle('clipboard:writeText', async (event, text: unknown) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
   }
@@ -3910,7 +3910,7 @@ ipcMain.handle('clipboard:writeText', (event, text: unknown) => {
     throw new Error('clipboard:writeText: text too long');
   }
   try {
-    clipboard.writeText(text);
+    await clipboard.writeText(text);
   } catch (e) {
     console.warn(
       '[IPC] clipboard:writeText failed:',

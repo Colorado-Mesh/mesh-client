@@ -305,6 +305,8 @@ flatpak install --user -y flathub org.electronjs.Electron2.BaseApp//24.08
 pip install --force-reinstall --no-cache-dir \
   "git+https://github.com/flatpak/flatpak-builder-tools@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node"
 # Skip Playwright browser vendoring (GitHub /raw/ 404s; Electron E2E skips downloads).
+# Also skips Electron linux-armv7l archive lookup for Electron >= 44 (those zips are no
+# longer published; Flatpak only ships x64 + arm64).
 node scripts/patch-flatpak-node-generator-playwright.mjs
 # Must match package.json packageManager major (pnpm 11 → v11). Generator defaults to v10.
 PNPM_MAJOR="$(node -p "require('./package.json').packageManager.match(/^pnpm@(\\d+)/)[1]")"
@@ -757,6 +759,8 @@ Auto-translation uses MyMemory by default. Incremental translations (new keys on
 - React DevTools for renderer debugging
 
 ## macOS
+
+Electron **44** (this repo’s runtime) requires **macOS 13 Ventura** or later for both `pnpm run dev` and packaged builds. Monterey hosts are unsupported.
 
 ### Install prerequisites
 

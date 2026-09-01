@@ -31,11 +31,14 @@ export function parseFlashAddress(address: string): number {
 }
 
 export async function blobToBinaryString(blob: Blob): Promise<string> {
-  const buffer = await blob.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
+  const bytes = await blobToUint8Array(blob);
   let result = '';
   for (const byte of bytes) {
     result += String.fromCharCode(byte);
   }
   return result;
+}
+
+export async function blobToUint8Array(blob: Blob): Promise<Uint8Array> {
+  return new Uint8Array(await blob.arrayBuffer());
 }
