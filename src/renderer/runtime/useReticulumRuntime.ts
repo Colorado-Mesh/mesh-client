@@ -172,6 +172,7 @@ import {
   lxmfBodyContainsRncpRequestEnable,
   parseRncpReceiveDestShare,
 } from '@/shared/rncpRequestEnable';
+import { touch } from '@/shared/touch';
 import { parseVoiceAudioRequest } from '@/shared/voice-types';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
@@ -2344,7 +2345,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const sendReaction = useCallback(
     async (glyph: string, replyId: number, channel: number) => {
-      void channel;
+      touch(channel);
       if (!identityId) return;
       const storeMessages = Object.values(useMessageStore.getState().messages[identityId] ?? {});
       const targetMsg = storeMessages.find(

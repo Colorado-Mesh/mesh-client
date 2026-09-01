@@ -82,6 +82,7 @@ import {
   resolveAppliedMeshtasticDeviceRole,
 } from '@/shared/meshtasticAppliedDeviceRole';
 import type { RrcChatMessage } from '@/shared/rrc-types';
+import { touch } from '@/shared/touch';
 
 import BootSequence from './components/BootSequence';
 import ConfigureNodeSelector from './components/ConfigureNodeSelector';
@@ -1276,7 +1277,7 @@ function AppContent() {
   );
 
   const meshtasticChatUnread = useMemo(() => {
-    void lastReadRevision.meshtastic;
+    touch(lastReadRevision.meshtastic);
     const lastRead = getSanitizedMeshtasticChatLastRead(
       meshtasticUiMessages,
       meshtasticOwnNodeIdSet,
@@ -1297,7 +1298,7 @@ function AppContent() {
   ]);
 
   const meshcoreChatLastRead = useMemo(() => {
-    void lastReadRevision.meshcore;
+    touch(lastReadRevision.meshcore);
     return getSanitizedMeshcoreChatLastRead(meshcoreUiMessages);
   }, [lastReadRevision.meshcore, meshcoreUiMessages]);
 
@@ -1334,7 +1335,7 @@ function AppContent() {
   ]);
 
   const reticulumChatUnread = useMemo(() => {
-    void lastReadRevision.reticulum;
+    touch(lastReadRevision.reticulum);
     const lastRead = getSanitizedReticulumChatLastRead(reticulumUiMessages, reticulumOwnNodeIdSet);
     return computeReticulumChatUnread(
       reticulumUiMessages,
@@ -1357,10 +1358,10 @@ function AppContent() {
   const rrcHubDestHash = useRrcSessionStore((s) => s.hubDestHash);
   const rrcLocalIdentityHash = useRrcSessionStore((s) => s.localIdentityHash);
   const rrcUnread = useMemo(() => {
-    void rrcUnreadByRoom;
-    void rrcUnreadByHub;
+    touch(rrcUnreadByRoom);
+    touch(rrcUnreadByHub);
     // Non-focused hubs only touch `sessionsByHub`, not the focused-hub mirror fields above.
-    void rrcSessionsByHub;
+    touch(rrcSessionsByHub);
     return useRrcSessionStore.getState().totalUnread();
   }, [rrcUnreadByRoom, rrcUnreadByHub, rrcSessionsByHub]);
   const remotePendingOffers = useRncpTransferStore((s) => s.pendingOffers.size);
@@ -1373,8 +1374,8 @@ function AppContent() {
   }, [rrcMessages]);
 
   const meshcoreRoomsUnread = useMemo(() => {
-    void roomsLastReadRevision;
-    void meshcoreMutedViewsRevision;
+    touch(roomsLastReadRevision);
+    touch(meshcoreMutedViewsRevision);
     const roomsLastRead = getSanitizedMeshcoreRoomsLastRead(meshcoreUiMessages);
     const knownRoomServerIds = meshcoreRoomServerIdsFromNodes(meshcoreUiNodes.values());
     const rawCount = totalRoomsUnreadCount(

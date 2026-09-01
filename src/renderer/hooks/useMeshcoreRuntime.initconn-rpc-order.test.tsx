@@ -5,6 +5,8 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { touch } from '@/shared/touch';
+
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 
 const getSelfInfoMock = vi.fn();
@@ -72,7 +74,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
     private listeners = new Map<string | number, Set<(...args: unknown[]) => void>>();
 
     constructor(port: unknown) {
-      void port;
+      touch(port);
       assignCompanionRpcMocks(this);
     }
     on(event: string | number, cb: (...args: unknown[]) => void) {
@@ -101,7 +103,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
     }
     close = vi.fn().mockResolvedValue(undefined);
     sendToRadioFrame = vi.fn().mockImplementation((data: Uint8Array) => {
-      void data;
+      touch(data);
       this.emit('rx', new Uint8Array([25, 0x0f, 3]));
     });
   }
@@ -111,10 +113,10 @@ vi.mock('@liamcottle/meshcore.js', () => {
       assignCompanionRpcMocks(this);
     }
     write(bytes: Uint8Array) {
-      void bytes;
+      touch(bytes);
     }
     onDataReceived(value: Uint8Array) {
-      void value;
+      touch(value);
     }
     async onConnected() {
       await Promise.resolve();

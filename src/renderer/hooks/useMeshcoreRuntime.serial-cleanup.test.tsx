@@ -1,32 +1,34 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { touch } from '@/shared/touch';
+
 const serialConnCloseMock = vi.fn();
 const serialConnGetSelfInfoMock = vi.fn();
 
 vi.mock('@liamcottle/meshcore.js', () => {
   class MockWebSerialConnection {
     constructor(port: unknown) {
-      void port;
+      touch(port);
     }
     on(event: string | number, cb: (...args: unknown[]) => void) {
-      void event;
-      void cb;
+      touch(event);
+      touch(cb);
       return undefined;
     }
     off(event: string | number, cb: (...args: unknown[]) => void) {
-      void event;
-      void cb;
+      touch(event);
+      touch(cb);
       return undefined;
     }
     once(event: string | number, cb: (...args: unknown[]) => void) {
-      void event;
-      void cb;
+      touch(event);
+      touch(cb);
       return undefined;
     }
     emit(event: string | number, ...args: unknown[]) {
-      void event;
-      void args;
+      touch(event);
+      touch(args);
       return undefined;
     }
     close = serialConnCloseMock;
@@ -41,12 +43,12 @@ vi.mock('@liamcottle/meshcore.js', () => {
   class MockSerialConnection {
     async write(bytes: Uint8Array) {
       await Promise.resolve();
-      void bytes;
+      touch(bytes);
       return undefined;
     }
     async onDataReceived(value: Uint8Array) {
       await Promise.resolve();
-      void value;
+      touch(value);
       return undefined;
     }
     async onConnected() {
@@ -61,23 +63,23 @@ vi.mock('@liamcottle/meshcore.js', () => {
       return undefined;
     }
     on(event: string, cb: (...args: unknown[]) => void) {
-      void event;
-      void cb;
+      touch(event);
+      touch(cb);
       return undefined;
     }
     off(event: string, cb: (...args: unknown[]) => void) {
-      void event;
-      void cb;
+      touch(event);
+      touch(cb);
       return undefined;
     }
     once(event: string, cb: (...args: unknown[]) => void) {
-      void event;
-      void cb;
+      touch(event);
+      touch(cb);
       return undefined;
     }
     emit(event: string, ...args: unknown[]) {
-      void event;
-      void args;
+      touch(event);
+      touch(args);
       return undefined;
     }
     sendToRadioFrame = vi.fn().mockRejectedValue(new Error('mocked'));
@@ -87,12 +89,12 @@ vi.mock('@liamcottle/meshcore.js', () => {
   class MockConnection {
     async write(bytes: Uint8Array) {
       await Promise.resolve();
-      void bytes;
+      touch(bytes);
       return undefined;
     }
     async sendToRadioFrame(data: Uint8Array) {
       await Promise.resolve();
-      void data;
+      touch(data);
       return undefined;
     }
     async onConnected() {
@@ -103,7 +105,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
       return undefined;
     }
     onFrameReceived(frame: Uint8Array) {
-      void frame;
+      touch(frame);
       return undefined;
     }
     async close() {
@@ -111,23 +113,23 @@ vi.mock('@liamcottle/meshcore.js', () => {
       return undefined;
     }
     on(event: string, cb: (...args: unknown[]) => void) {
-      void event;
-      void cb;
+      touch(event);
+      touch(cb);
       return undefined;
     }
     off(event: string, cb: (...args: unknown[]) => void) {
-      void event;
-      void cb;
+      touch(event);
+      touch(cb);
       return undefined;
     }
     once(event: string, cb: (...args: unknown[]) => void) {
-      void event;
-      void cb;
+      touch(event);
+      touch(cb);
       return undefined;
     }
     emit(event: string, ...args: unknown[]) {
-      void event;
-      void args;
+      touch(event);
+      touch(args);
       return undefined;
     }
   }

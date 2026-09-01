@@ -404,6 +404,14 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 
 ## Quick Start
 
+### System requirements
+
+| Platform    | Minimum                                                               |
+| ----------- | --------------------------------------------------------------------- |
+| **macOS**   | **13 Ventura** or later (Electron 44; Monterey is not supported)      |
+| **Windows** | Windows 10 version **1809+** or Windows 11 (x64 and arm64 installers) |
+| **Linux**   | x86_64 or aarch64; AppImage, `.deb`, `.rpm`, or Flatpak               |
+
 **Pre-built binaries** for **macOS**, **Linux**, and **Windows** are available in the [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) area. Download the installer or archive for your platform; no Node.js or build tools required.
 
 - **Windows (Intel/AMD x64):** `Mesh-client Setup {version}.exe`
@@ -426,6 +434,7 @@ yay -S mesh-client # or: paru -S mesh-client
 
 **macOS (release download):**
 
+- Requires **macOS 13 Ventura** or later.
 - **Recommended:** download the **arm64 `.dmg`**, open it, and drag **Mesh-client** to **Applications**.
 - If you use the **`.zip`** instead: extract with **[Keka](https://www.keka.io/en/)** or `ditto -xk` — **do not use 7-Zip** (or Finder Archive Utility). Those tools flatten macOS framework symlinks and can cause a launch crash: `Library not loaded: Squirrel.framework`.
 - **Official [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) (v5.22.0+):** macOS builds are **Developer ID signed and notarized**. Drag to **Applications** and open normally — you should **not** need `xattr` or Right-click → Open.

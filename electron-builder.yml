@@ -39,6 +39,8 @@ extraResources:
     to: macos-menubar-icon-Template@3x.png
 mac:
   category: public.app-category.utilities
+  # Electron 44 drops macOS 12 Monterey — Ventura (13) is the new floor.
+  minimumSystemVersion: '13.0.0'
   # Hardened runtime improves tamper resistance; required for notarized distribution.
   hardenedRuntime: true
   preAutoEntitlements: true

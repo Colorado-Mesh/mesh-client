@@ -65,6 +65,7 @@ import {
   useRrcSessionStore,
 } from '@/renderer/stores/rrcSessionStore';
 import type { RrcHubInfo, RrcRoomMember } from '@/shared/rrc-types';
+import { touch } from '@/shared/touch';
 
 const COLLAPSED_KEY = 'mesh-client:rrcHubListCollapsed';
 const ROOM_LIST_COLLAPSED_KEY = 'mesh-client:rrc:roomListCollapsed';
@@ -209,19 +210,19 @@ export default function RrcPanel({
 
   const recentRooms = useMemo(() => {
     if (!hubDestHash) return [];
-    void recentRoomsEpoch;
+    touch(recentRoomsEpoch);
     return loadRrcRecentRooms(hubDestHash);
   }, [hubDestHash, recentRoomsEpoch]);
 
   const roomFavourites = useMemo(() => {
     if (!hubDestHash) return [];
-    void prefsEpoch;
+    touch(prefsEpoch);
     return loadRrcRoomFavourites(hubDestHash);
   }, [hubDestHash, prefsEpoch]);
 
   const autoJoinRooms = useMemo(() => {
     if (!hubDestHash) return [];
-    void prefsEpoch;
+    touch(prefsEpoch);
     return loadRrcAutoJoinRooms(hubDestHash);
   }, [hubDestHash, prefsEpoch]);
 
@@ -627,7 +628,7 @@ export default function RrcPanel({
   // Shared with App-level useRrcStartupAutoConnect so cold start works without this panel.
   useEffect(() => {
     if (!sidecarRunning) return;
-    void hubAutoJoinEpoch;
+    touch(hubAutoJoinEpoch);
     void runRrcHubAutoConnectBatch(nickname);
     // Do not depend on sessionsByHub — clearHubSession after Disconnect must not re-fire auto-join.
   }, [sidecarRunning, hubAutoJoinEpoch, nickname]);
@@ -1086,7 +1087,7 @@ export default function RrcPanel({
           return sessionsByHub.get(key)?.status ?? null;
         }}
         isHubAutoJoin={(hash) => {
-          void hubAutoJoinEpoch;
+          touch(hubAutoJoinEpoch);
           return isRrcHubAutoJoin(hash);
         }}
         manualHash={manualHash}

@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import {
   assertApplicationsSymlink,
   assertDmgInstallNotice,
+  assertMacMinimumSystemVersion,
   assertSiblingFrameworkSymlinks,
   VerificationFailure,
   fail,
@@ -81,6 +82,47 @@ describe('verify-mac-packaging helpers', () => {
       expect(() => assertDmgInstallNotice(dir)).toThrow(VerificationFailure);
       writeFileSync(join(dir, 'IMPORTANT-Read-Me.txt'), 'macOS install notice '.repeat(8));
       expect(() => assertDmgInstallNotice(dir)).not.toThrow();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('assertMacMinimumSystemVersion requires LSMinimumSystemVersion >= 13.0.0', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'verify-mac-min-os-'));
+    const bundle = join(dir, 'Mesh-client.app');
+    const plistPath = join(bundle, 'Contents', 'Info.plist');
+    try {
+      mkdirSync(join(bundle, 'Contents'), { recursive: true });
+      expect(() => assertMacMinimumSystemVersion(bundle, 'test')).toThrow(
+        /Missing test Info\.plist/,
+      );
+
+      writeFileSync(plistPath, '<?xml version="1.0"?><plist><dict></dict></plist>');
+      expect(() => assertMacMinimumSystemVersion(bundle, 'test')).toThrow(
+        /missing LSMinimumSystemVersion/,
+      );
+
+      writeFileSync(
+        plistPath,
+        [
+          '<?xml version="1.0"?>',
+          '<plist><dict>',
+          '<key>LSMinimumSystemVersion</key><string>12.0</string>',
+          '</dict></plist>',
+        ].join('\n'),
+      );
+      expect(() => assertMacMinimumSystemVersion(bundle, 'test')).toThrow(/need >= 13\.0\.0/);
+
+      writeFileSync(
+        plistPath,
+        [
+          '<?xml version="1.0"?>',
+          '<plist><dict>',
+          '<key>LSMinimumSystemVersion</key><string>13.0.0</string>',
+          '</dict></plist>',
+        ].join('\n'),
+      );
+      expect(() => assertMacMinimumSystemVersion(bundle, 'test')).not.toThrow();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

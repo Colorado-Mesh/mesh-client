@@ -21,6 +21,7 @@ import {
   throwIfMeshcoreOffloadAborted,
 } from '@/renderer/lib/meshcoreOffload';
 import { NOBLE_BLE_YIELD_RELEASED_EVENT } from '@/renderer/lib/nobleBleYieldReleased';
+import { touch } from '@/shared/touch';
 
 import { bytesToHex } from '../../shared/hexBytes';
 import {
@@ -1965,13 +1966,13 @@ export function useMeshcoreRuntime() {
   );
 
   const getRemoteAdminKeyForNode = useCallback((nodeNum: number): string | undefined => {
-    void nodeNum;
+    touch(nodeNum);
     return undefined;
   }, []);
 
   const setRemoteAdminKeyForNode = useCallback((nodeNum: number, key: string): Promise<void> => {
-    void nodeNum;
-    void key;
+    touch(nodeNum);
+    touch(key);
     // Meshtastic-only remote admin; MeshCore has no equivalent.
     return Promise.resolve();
   }, []);

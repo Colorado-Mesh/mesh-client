@@ -1,4 +1,4 @@
-import { customReset, Transport } from 'esptool-js';
+import { CustomReset, Transport } from 'esptool-js';
 
 import { closeSerialPortIfOpen } from '@/renderer/lib/connection';
 
@@ -19,7 +19,8 @@ export async function forceEsp32DownloadMode(
   const transport = new Transport(serialPort, true);
   try {
     await transport.connect(115200);
-    await customReset(transport, slowReset ? ESP32_DOWNLOAD_RESET_SLOW : ESP32_DOWNLOAD_RESET);
+    const sequence = slowReset ? ESP32_DOWNLOAD_RESET_SLOW : ESP32_DOWNLOAD_RESET;
+    await new CustomReset(transport, sequence).reset();
   } finally {
     try {
       await transport.disconnect();

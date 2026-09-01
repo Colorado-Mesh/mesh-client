@@ -23,8 +23,10 @@ import {
   missingOfflineTarballs,
   parseGeneratedPnpmManifest,
   listLockfilePackageIds,
+  applyGeneratorSkipElectronArmv7l,
   applyGeneratorSkipPlaywrightSpecialSources,
   resolveFlatpakNodeGeneratorBin,
+  resolveGeneratorElectronPyPath,
   resolveGeneratorSpecialPyPath,
   storeVersionFromPackageManager,
 } from './flatpakPnpmStoreVersion.mjs';
@@ -87,6 +89,19 @@ function generateOfflineSources(expectedStoreVersion) {
   if (!patched.ok) {
     fs.rmSync(tmpDir, { recursive: true, force: true });
     return { ok: false, message: patched.message };
+  }
+  const electronPy = resolveGeneratorElectronPyPath(bin);
+  if (!electronPy) {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    return {
+      ok: false,
+      message: `could not find electron.py next to ${bin} (needed to skip Electron >=44 linux-armv7l)`,
+    };
+  }
+  const armv7lPatched = applyGeneratorSkipElectronArmv7l(electronPy);
+  if (!armv7lPatched.ok) {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    return { ok: false, message: armv7lPatched.message };
   }
   const result = spawnSync(
     bin,

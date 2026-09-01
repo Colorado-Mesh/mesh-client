@@ -26,6 +26,7 @@ import {
   saveMeshtasticDmKeyBackup,
 } from '@/renderer/lib/meshtasticDmKeyBackupStorage';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
+import { touch } from '@/shared/touch';
 
 import { ConfirmModal } from './ConfirmModal';
 
@@ -134,7 +135,7 @@ export function KeyBackupRestoreSection({
   }, [safeStorageAvailable, localNodeKey, protocol, refreshBackupAvailable, refreshStatus]);
 
   const allBackups = useMemo((): BackupIndexEntry[] => {
-    void indexRevision;
+    touch(indexRevision);
     return protocol === 'meshtastic' ? listMeshtasticDmKeyBackups() : listMeshcoreKeyBackups();
   }, [protocol, indexRevision]);
 

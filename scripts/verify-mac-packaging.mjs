@@ -224,6 +224,67 @@ function assertDmgInstallNotice(mountRoot) {
   }
 }
 
+/** Electron 44+ requires Ventura; electron-builder.yml sets LSMinimumSystemVersion. */
+const MIN_MACOS_SYSTEM_VERSION = '13.0.0';
+
+/**
+ * @param {string} version
+ * @returns {number[]}
+ */
+function parseDottedVersion(version) {
+  return String(version)
+    .trim()
+    .split('.')
+    .map((part) => {
+      const n = Number.parseInt(part, 10);
+      return Number.isFinite(n) ? n : 0;
+    });
+}
+
+/**
+ * @param {number[]} left
+ * @param {number[]} right
+ * @returns {number} negative if left < right, 0 if equal, positive if left > right
+ */
+function compareDottedVersions(left, right) {
+  const len = Math.max(left.length, right.length);
+  for (let i = 0; i < len; i++) {
+    const a = left[i] ?? 0;
+    const b = right[i] ?? 0;
+    if (a !== b) return a - b;
+  }
+  return 0;
+}
+
+/**
+ * @param {string} bundleRoot
+ * @param {string} label
+ */
+function assertMacMinimumSystemVersion(bundleRoot, label) {
+  const infoPlistPath = path.join(bundleRoot, 'Contents', 'Info.plist');
+  if (!existsSync(infoPlistPath)) {
+    fail(`Missing ${label} Info.plist: ${infoPlistPath}`);
+  }
+  const plist = readFileSync(infoPlistPath, 'utf8');
+  const match = plist.match(
+    /<key>\s*LSMinimumSystemVersion\s*<\/key>\s*<string>\s*([^<]+?)\s*<\/string>/i,
+  );
+  if (!match) {
+    fail(
+      `${label} Info.plist missing LSMinimumSystemVersion (expected >= ${MIN_MACOS_SYSTEM_VERSION})`,
+    );
+  }
+  const found = match[1].trim();
+  if (
+    compareDottedVersions(parseDottedVersion(found), parseDottedVersion(MIN_MACOS_SYSTEM_VERSION)) <
+    0
+  ) {
+    fail(
+      `${label} LSMinimumSystemVersion is ${found}, need >= ${MIN_MACOS_SYSTEM_VERSION} (Electron 44 / Ventura)`,
+    );
+  }
+}
+
 /** @param {string} bundleRoot @param {string} sourceLabel */
 function validateAppBundle(bundleRoot, sourceLabel) {
   const bundleName = path.basename(bundleRoot);
@@ -241,6 +302,7 @@ function validateAppBundle(bundleRoot, sourceLabel) {
   }
   assertMinSize(`macOS launcher in ${label}`, launcherPath, MIN_LAUNCHER_BYTES);
   assertMinSize(`Electron Framework in ${label}`, frameworkPath, MIN_FRAMEWORK_BYTES);
+  assertMacMinimumSystemVersion(bundleRoot, label);
   assertBundledReticulumSidecarInBundle({
     label: `bundled Reticulum sidecar in ${label}`,
     platform: 'darwin',
@@ -429,6 +491,7 @@ export {
   assertApplicationsSymlink,
   assertDmgInstallNotice,
   assertFrameworkSymlinks,
+  assertMacMinimumSystemVersion,
   assertSiblingFrameworkSymlinks,
   collectAppBundles,
   collectArchives,

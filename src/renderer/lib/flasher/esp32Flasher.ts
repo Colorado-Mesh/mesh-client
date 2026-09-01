@@ -4,9 +4,9 @@ import { ESPLoader, Transport } from 'esptool-js';
 
 import { closeSerialPortIfOpen } from '@/renderer/lib/connection';
 
-import { blobToBinaryString, parseFlashAddress, sleepMillis } from './binaryUtils';
+import { blobToUint8Array, parseFlashAddress, sleepMillis } from './binaryUtils';
 import { forceEsp32DownloadMode } from './esp32BootloaderEntry';
-import { md5Latin1String } from './md5';
+import { md5HexBytes } from './md5';
 import { prepareEsp32PortForFlash } from './prepareEsp32PortForFlash';
 import type { Esp32FlashConfig, FlashProgressCallback } from './types';
 
@@ -23,7 +23,6 @@ function createEsploader(transport: Transport): ESPLoader {
   return new ESPLoader({
     transport,
     baudrate: ESP32_FLASH_BAUD,
-    romBaudrate: 115200,
     debugLogging: false,
     enableTracing: false,
     terminal: {
@@ -109,7 +108,7 @@ export async function flashEsp32Firmware(
   try {
     const zipEntries = await zipReader.getEntries();
 
-    const filesToFlash: { address: number; data: string }[] = [];
+    const filesToFlash: { address: number; data: Uint8Array }[] = [];
     for (const [address, filename] of Object.entries(flashConfig.flash_files)) {
       const entry = zipEntries.find(
         (zipEntry): zipEntry is FileEntry => !zipEntry.directory && zipEntry.filename === filename,
@@ -118,11 +117,11 @@ export async function flashEsp32Firmware(
         throw new Error(`${filename} not found in firmware file`);
       }
       const blob = await entry.getData(new BlobWriter('application/octet-stream'));
-      const data = await blobToBinaryString(blob);
+      const data = await blobToUint8Array(blob);
       filesToFlash.push({ address: parseFlashAddress(address), data });
     }
 
-    const totalFirmwareBytes = filesToFlash.reduce((sum, file) => sum + file.data.length, 0);
+    const totalFirmwareBytes = filesToFlash.reduce((sum, file) => sum + file.data.byteLength, 0);
     let maxBytesWritten = 0;
 
     const { esploader, transport } = await connectEsp32Bootloader(serialPort, progressCallback);
@@ -148,7 +147,7 @@ export async function flashEsp32Firmware(
           flashFreq: '80m',
           eraseAll: false,
           compress: true,
-          calculateMD5Hash: (image: string) => md5Latin1String(image),
+          calculateMD5Hash: (image: Uint8Array) => md5HexBytes(image),
           reportProgress: (_fileIndex: number, written: number, total: number) => {
             hasSeenProgress = true;
             lastProgressAt = Date.now();
