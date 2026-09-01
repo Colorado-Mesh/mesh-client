@@ -63,6 +63,8 @@ modules:
           export MESH_CLIENT_BUILD_INFO="$(cat flatpak/ci-build-info.json)"
         fi
         pnpm run build
+      # pnpm --ignore-scripts skips electron postinstall; stage vendored zip offline
+      - node scripts/flatpak-stage-electron.mjs
       # Rebuild native addons (noble BLE, sqlite) against the bundled Electron ABI
       - pnpm run rebuild
       # Install app payload (Electron binary + app roots; zypak needs a real Chromium binary)
