@@ -39,8 +39,8 @@ importers:
   .:
     dependencies:
       '@bufbuild/protobuf':
-        specifier: ^2.14.0
-        version: 2.14.0
+        specifier: ^2.14.1
+        version: 2.14.1
       '@meshtastic/protobufs':
         specifier: npm:@jsr/meshtastic__protobufs@^2.8.0
         version: '@jsr/meshtastic__protobufs@2.8.0'
@@ -54,8 +54,8 @@ importers:
         specifier: ^6.0.0
         version: 6.0.0
       '@zip.js/zip.js':
-        specifier: ^2.8.61
-        version: 2.8.61
+        specifier: ^2.9.0
+        version: 2.9.0
       builder-util-runtime:
         specifier: 9.7.0
         version: 9.7.0(supports-color@8.1.1)
@@ -120,8 +120,8 @@ importers:
         specifier: ^5.33.6
         version: 5.33.6
       undici:
-        specifier: ^8.10.0
-        version: 8.10.0
+        specifier: ^8.10.1
+        version: 8.10.1
     devDependencies:
       '@axe-core/react':
         specifier: ^4.13.0
@@ -184,10 +184,10 @@ importers:
         specifier: ^19.2.5
         version: 19.2.5(@types/react@19.2.18)
       '@typescript-eslint/eslint-plugin':
-        specifier: ^8.68.0
+        specifier: 8.68.0
         version: 8.68.0(@typescript-eslint/parser@8.68.0(eslint@10.9.1(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3))(eslint@10.9.1(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
       '@typescript-eslint/parser':
-        specifier: ^8.68.0
+        specifier: 8.68.0
         version: 8.68.0(eslint@10.9.1(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
       '@vitejs/plugin-react':
         specifier: ^6.1.1
@@ -283,7 +283,7 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.68.0
+        specifier: 8.68.0
         version: 8.68.0(eslint@10.9.1(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
       vite:
         specifier: ^8.2.2
@@ -400,8 +400,8 @@ packages:
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
 
-  '@bufbuild/protobuf@2.14.0':
-    resolution: {integrity: sha512-C3UGsiCwSprE2NKIIFA3hCDlpXTMCAXRZuEVp88L1GY36Y41+rYL5fryE+nOFhp4p4JPQvdV8PQ4DWgHgeTE+w==}
+  '@bufbuild/protobuf@2.14.1':
+    resolution: {integrity: sha512-agRJn3+EJDUe8AvxTx/LnHA/GErvLE62pSaSk7+MwFOtOv8eWBu/qCq2qoZjBjVZ3C2aiFJCveuSs17KMkYGOw==}
 
   '@csstools/color-helpers@6.1.1':
     resolution: {integrity: sha512-gLNsunvwf3mCi5u5o46/Z/JcJMnhbHSaZ69rkgPzNM3J4s8hWwpPUQB6/tt0EDFyCiWzxANlx+2LJwpYj4zS1w==}
@@ -427,8 +427,8 @@ packages:
     peerDependencies:
       '@csstools/css-tokenizer': ^4.0.0
 
-  '@csstools/css-syntax-patches-for-csstree@1.1.10':
-    resolution: {integrity: sha512-xBja6gaAaH2R2c7eNyl0TY4dhnnZ2uhj+KXpLdEQ6M/wuk9bYFZM8wY0ykw3VO4TgEJ56KGlerXS/9KBKVR/Cg==}
+  '@csstools/css-syntax-patches-for-csstree@1.1.12':
+    resolution: {integrity: sha512-3vLQK+dXxhBMR2Wx99PTCifE+vHtW2ndZWyla8yK813ev6oGhyn8Lja8jCyGAWTJ+LEYZK7EVtJxrDj8ztevJw==}
     peerDependencies:
       css-tree: ^3.2.1
     peerDependenciesMeta:
@@ -1387,6 +1387,12 @@ packages:
     peerDependencies:
       typescript: '>=4.8.4 <6.1.0'
 
+  '@typescript-eslint/tsconfig-utils@8.69.0':
+    resolution: {integrity: sha512-xNqK7YTDZsLniQMV/4rpFR8Z5JlqeRvVjuG1YgF/mdPVH84HSD19L8CczMA0qg2RfwEV231GHH3VnToJDo4MfQ==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    peerDependencies:
+      typescript: '>=4.8.4 <6.1.0'
+
   '@typescript-eslint/type-utils@8.68.0':
     resolution: {integrity: sha512-X77zqoY1EjeWGs/0JNxeaMfp5C5lIz4Tw8y66F1Ne8Faq6g424sBNYM6xBAqElfGZPLpWS+CZAp0DXyKDzWiHg==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
@@ -1396,6 +1402,10 @@ packages:
 
   '@typescript-eslint/types@8.68.0':
     resolution: {integrity: sha512-9RnpsGJjrAllCMefGVVsImJM24YurhC0Q1h4UbvivtvOqXmR/vEJge2OoE++z9m6hyg8T1Q8t5SNT6tHSbrxcg==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@typescript-eslint/types@8.69.0':
+    resolution: {integrity: sha512-K3VrubUPhlo9VDBS6QdI8YB5j7ClpqLRdefcz6PFrhnwicehBweqQ9Evhl4l+FYz0HdDmMqIiSX0aldGRYtDCA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   '@typescript-eslint/typescript-estree@8.68.0':
@@ -1486,8 +1496,8 @@ packages:
   '@yarnpkg/lockfile@1.1.0':
     resolution: {integrity: sha512-GpSwvyXOcOOlV70vbnzjj4fW5xW/FdUF6nQEt1ENy7m4ZCczi1+/buVUPAqmGfqznsORNFzUMjctTIp8a9tuCQ==}
 
-  '@zip.js/zip.js@2.8.61':
-    resolution: {integrity: sha512-F9RnQJXgvCSdAJfMtSrH5Uh/LcLg8fZlg5ARC4u5N4w9v/DG27cN3C/ngUrY1JdJGX2LRv5DDViXeZJgbcppWA==}
+  '@zip.js/zip.js@2.9.0':
+    resolution: {integrity: sha512-AblaO/5MIVKiVExlF7GD17qn5NSsQ7qdtE+uEIMU6OiwHLqPxaI5Z5gLxMDxdEBzaiVVRCFNABcIc3sZpFcUeA==}
     engines: {bun: '>=0.7.0', deno: '>=1.0.0', node: '>=18.0.0'}
 
   abbrev@4.0.0:
@@ -2054,8 +2064,8 @@ packages:
   electron-publish@26.15.3:
     resolution: {integrity: sha512-g/2bn8YTavY4cuS5F+jOS7zmZbXXBV8KZ8yHKfJjFPoKtzBqrpCdNPxBd3tqdBwP7BVd0lGzf7Bk2s0KesWZ4Q==}
 
-  electron-to-chromium@1.5.416:
-    resolution: {integrity: sha512-K6bvB2BjnNrugtIih6ewlbBI9DXa976jIdiIlRLHhBoEI9a4JaQjjHyF+A1IQI543aQYR4LnmOrT/K5fZj0aPA==}
+  electron-to-chromium@1.5.418:
+    resolution: {integrity: sha512-UzS26r3AEbG5wSoGVpJKqwHIU9zwQN7LHdVIThDrJpS0I5KdlXFMEb8543fhc9dVnIIAST6ar8rhwa00AL5MlA==}
 
   electron-updater@6.8.9:
     resolution: {integrity: sha512-ZhVxM9iGONUpZGI1FxdMRgJjUFXi7AYGVa5PwKlO1tV1/4zDxQmfKpXOHVztKrd6L9rLcFjERvi1Mf2vxyTkig==}
@@ -2609,8 +2619,8 @@ packages:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
     engines: {node: '>= 4'}
 
-  ignore@7.0.7:
-    resolution: {integrity: sha512-dML0wP6oak21rsNYCJpJB6O1BJIEwNpGrTw0URPfAk4hm0e3pRfCtzkfB6olBcXcVlU2rouCyz7lCyRB0OMVCA==}
+  ignore@7.0.8:
+    resolution: {integrity: sha512-YYNsSlXBjMk92SKnkwvB5LOVSa6OznlFUGcsvrFgNJbJCd0M1XKeFVRc8ZByeCqz32FivYNHJVooLmdqrmvp/Q==}
     engines: {node: '>= 4'}
 
   immediate@3.0.6:
@@ -4348,8 +4358,8 @@ packages:
     resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
     engines: {node: '>=20.18.1'}
 
-  undici@8.10.0:
-    resolution: {integrity: sha512-HvltHd7avK13QIw/oLe4qoOLyoVSoafqJ2jYOrtMRBkbYT31eiBQ8O0ehRKZiEZCMEyLFQNIADpgCWC5fALvYQ==}
+  undici@8.10.1:
+    resolution: {integrity: sha512-YQ3WlbqjYMmNpdvDH64jAgLjxuAR9+649calDWhbshYaeQGO2bR4nI94ORJmwI3J9YhoKQnpyGOK+0zlWS5N5Q==}
     engines: {node: '>=22.19.0'}
 
   unicorn-magic@0.4.0:
@@ -4801,7 +4811,7 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
-  '@bufbuild/protobuf@2.14.0': {}
+  '@bufbuild/protobuf@2.14.1': {}
 
   '@csstools/color-helpers@6.1.1': {}
 
@@ -4821,7 +4831,7 @@ snapshots:
     dependencies:
       '@csstools/css-tokenizer': 4.0.0
 
-  '@csstools/css-syntax-patches-for-csstree@1.1.10(css-tree@3.2.1)':
+  '@csstools/css-syntax-patches-for-csstree@1.1.12(css-tree@3.2.1)':
     optionalDependencies:
       css-tree: 3.2.1
 
@@ -5077,7 +5087,7 @@ snapshots:
 
   '@jsr/meshtastic__core@2.6.6(patch_hash=337d32fca15262ad66ba99c9f5e089b431818060b6a380e17065bbde1cf2a72d)(buffer@6.0.3)':
     dependencies:
-      '@bufbuild/protobuf': 2.14.0
+      '@bufbuild/protobuf': 2.14.1
       '@jsr/meshtastic__protobufs': 2.8.0
       crc: 4.3.2(buffer@6.0.3)
       ste-simple-events: 3.0.11
@@ -5087,7 +5097,7 @@ snapshots:
 
   '@jsr/meshtastic__protobufs@2.8.0':
     dependencies:
-      '@bufbuild/protobuf': 2.14.0
+      '@bufbuild/protobuf': 2.14.1
 
   '@jsr/meshtastic__transport-http@0.2.1(buffer@6.0.3)':
     dependencies:
@@ -5652,7 +5662,7 @@ snapshots:
       '@typescript-eslint/utils': 8.68.0(eslint@10.9.1(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
       '@typescript-eslint/visitor-keys': 8.68.0
       eslint: 10.9.1(jiti@2.7.0)(supports-color@8.1.1)
-      ignore: 7.0.7
+      ignore: 7.0.8
       natural-compare: 1.4.0
       ts-api-utils: 2.5.0(typescript@6.0.3)
       typescript: 6.0.3
@@ -5673,8 +5683,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.68.0(supports-color@8.1.1)(typescript@6.0.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.68.0(typescript@6.0.3)
-      '@typescript-eslint/types': 8.68.0
+      '@typescript-eslint/tsconfig-utils': 8.69.0(typescript@6.0.3)
+      '@typescript-eslint/types': 8.69.0
       debug: 4.4.3(patch_hash=cf37fa96f5df733456b16c82c9e1c9054a92f6216692aa33d5e2e1e208888e37)(supports-color@8.1.1)
       typescript: 6.0.3
     transitivePeerDependencies:
@@ -5686,6 +5696,10 @@ snapshots:
       '@typescript-eslint/visitor-keys': 8.68.0
 
   '@typescript-eslint/tsconfig-utils@8.68.0(typescript@6.0.3)':
+    dependencies:
+      typescript: 6.0.3
+
+  '@typescript-eslint/tsconfig-utils@8.69.0(typescript@6.0.3)':
     dependencies:
       typescript: 6.0.3
 
@@ -5702,6 +5716,8 @@ snapshots:
       - supports-color
 
   '@typescript-eslint/types@8.68.0': {}
+
+  '@typescript-eslint/types@8.69.0': {}
 
   '@typescript-eslint/typescript-estree@8.68.0(supports-color@8.1.1)(typescript@6.0.3)':
     dependencies:
@@ -5806,7 +5822,7 @@ snapshots:
 
   '@yarnpkg/lockfile@1.1.0': {}
 
-  '@zip.js/zip.js@2.8.61': {}
+  '@zip.js/zip.js@2.9.0': {}
 
   abbrev@4.0.0: {}
 
@@ -6048,7 +6064,7 @@ snapshots:
     dependencies:
       baseline-browser-mapping: 2.11.20
       caniuse-lite: 1.0.30001810
-      electron-to-chromium: 1.5.416
+      electron-to-chromium: 1.5.418
       node-releases: 2.0.54
       update-browserslist-db: 1.3.2(browserslist@4.28.8)
 
@@ -6449,7 +6465,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  electron-to-chromium@1.5.416: {}
+  electron-to-chromium@1.5.418: {}
 
   electron-updater@6.8.9(supports-color@8.1.1):
     dependencies:
@@ -7097,7 +7113,7 @@ snapshots:
     dependencies:
       '@sindresorhus/merge-streams': 4.0.0
       fast-glob: 3.3.3
-      ignore: 7.0.7
+      ignore: 7.0.8
       is-path-inside: 4.0.0
       slash: 5.1.0
       unicorn-magic: 0.4.0
@@ -7193,7 +7209,7 @@ snapshots:
 
   ignore@5.3.2: {}
 
-  ignore@7.0.7: {}
+  ignore@7.0.8: {}
 
   immediate@3.0.6: {}
 
@@ -7418,7 +7434,7 @@ snapshots:
       '@asamuzakjp/css-color': 5.1.11
       '@asamuzakjp/dom-selector': 7.1.1
       '@bramus/specificity': 2.4.2
-      '@csstools/css-syntax-patches-for-csstree': 1.1.10(css-tree@3.2.1)
+      '@csstools/css-syntax-patches-for-csstree': 1.1.12(css-tree@3.2.1)
       '@exodus/bytes': 1.15.1(@noble/hashes@2.4.0)
       css-tree: 3.2.1
       data-urls: 7.0.0(@noble/hashes@2.4.0)
@@ -9039,7 +9055,7 @@ snapshots:
 
   undici@7.29.0: {}
 
-  undici@8.10.0: {}
+  undici@8.10.1: {}
 
   unicorn-magic@0.4.0: {}
 
