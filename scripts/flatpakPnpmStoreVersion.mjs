@@ -283,6 +283,96 @@ export function applyGeneratorSkipPlaywrightSpecialSources(specialPyPath, opts =
 }
 
 /**
+ * Plan and apply Playwright + Electron armv7l generator patches atomically.
+ * Both files are validated before any write; a failed second write rolls back the first.
+ *
+ * @param {string} specialPyPath
+ * @param {string} electronPyPath
+ * @param {{
+ *   readFileSync?: (p: string, enc: BufferEncoding) => string;
+ *   writeFileSync?: (p: string, data: string, enc: BufferEncoding) => void;
+ * }} [opts]
+ * @returns {{
+ *   ok: true;
+ *   playwright: { already: boolean; changed: boolean };
+ *   armv7l: { already: boolean; changed: boolean };
+ * } | { ok: false; message: string }}
+ */
+export function applyGeneratorFlatpakNodeGeneratorPatches(
+  specialPyPath,
+  electronPyPath,
+  opts = {},
+) {
+  const read = opts.readFileSync ?? ((p, enc) => fs.readFileSync(p, enc));
+  const write = opts.writeFileSync ?? ((p, data, enc) => fs.writeFileSync(p, data, enc));
+
+  let specialOriginal;
+  try {
+    specialOriginal = read(specialPyPath, 'utf8');
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    return { ok: false, message: `could not read ${specialPyPath}: ${detail}` };
+  }
+
+  let electronOriginal;
+  try {
+    electronOriginal = read(electronPyPath, 'utf8');
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    return { ok: false, message: `could not read ${electronPyPath}: ${detail}` };
+  }
+
+  const specialPlan = rewriteGeneratorSkipPlaywrightSpecialSources(specialOriginal);
+  const electronPlan = rewriteGeneratorSkipElectronArmv7l(electronOriginal);
+
+  if (!specialPlan.already && specialPlan.missing) {
+    return {
+      ok: false,
+      message:
+        `${specialPyPath} has no playwright special-source dispatch ` +
+        `(expected elif package.name == 'playwright'). Bump the generator pin or update ` +
+        `PLAYWRIGHT_SPECIAL_SOURCE_CALL.`,
+    };
+  }
+  if (!electronPlan.already && electronPlan.missing) {
+    return {
+      ok: false,
+      message:
+        `${electronPyPath} has no anchor block to insert ` +
+        `ELECTRON_ARMV7L_SKIP_BLOCK (linux-armv7l skip for Electron >= 44). ` +
+        `Bump the generator pin or update ELECTRON_IA32_SKIP_BLOCK / ELECTRON_ARMV7L_SKIP_BLOCK.`,
+    };
+  }
+
+  let specialWritten = false;
+  try {
+    if (specialPlan.changed) {
+      write(specialPyPath, specialPlan.source, 'utf8');
+      specialWritten = true;
+    }
+    if (electronPlan.changed) {
+      write(electronPyPath, electronPlan.source, 'utf8');
+    }
+  } catch (err) {
+    if (specialWritten) {
+      try {
+        write(specialPyPath, specialOriginal, 'utf8');
+      } catch {
+        // catch-no-log-ok rollback best-effort after partial patch failure
+      }
+    }
+    const detail = err instanceof Error ? err.message : String(err);
+    return { ok: false, message: `could not write generator patch file(s): ${detail}` };
+  }
+
+  return {
+    ok: true,
+    playwright: { already: specialPlan.already, changed: specialPlan.changed },
+    armv7l: { already: electronPlan.already, changed: electronPlan.changed },
+  };
+}
+
+/**
  * Resolve flatpak-node-generator: FLATPAK_NODE_GENERATOR → PATH → local CI-pin venv.
  *
  * @param {{

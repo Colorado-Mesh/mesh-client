@@ -23,6 +23,7 @@ import {
   PLAYWRIGHT_SPECIAL_SOURCE_CALL,
   ELECTRON_ARMV7L_SKIP_MARKER,
   ELECTRON_IA32_SKIP_BLOCK,
+  applyGeneratorFlatpakNodeGeneratorPatches,
   applyGeneratorSkipPlaywrightSpecialSources,
   applyGeneratorSkipElectronArmv7l,
   resolveGeneratorElectronPyPath,
@@ -514,5 +515,66 @@ ${ELECTRON_IA32_SKIP_BLOCK}
       },
     });
     expect(second).toEqual({ ok: true, already: true });
+  });
+
+  it('applyGeneratorFlatpakNodeGeneratorPatches writes both only when both plans succeed', () => {
+    const specialPy =
+      '/venv/lib/python3.12/site-packages/flatpak_node_generator/providers/special.py';
+    const electronPy = '/venv/lib/python3.12/site-packages/flatpak_node_generator/electron.py';
+    const files = new Map([
+      [specialPy, PLAYWRIGHT_SPECIAL_SOURCE_CALL],
+      [electronPy, ELECTRON_IA32_SKIP_BLOCK],
+    ]);
+    const result = applyGeneratorFlatpakNodeGeneratorPatches(specialPy, electronPy, {
+      readFileSync: (p) => files.get(p) ?? '',
+      writeFileSync: (p, data) => {
+        files.set(p, data);
+      },
+    });
+    expect(result.ok).toBe(true);
+    expect(files.get(specialPy)).toContain(PLAYWRIGHT_SPECIAL_SKIP_MARKER);
+    expect(files.get(electronPy)).toContain(ELECTRON_ARMV7L_SKIP_MARKER);
+  });
+
+  it('applyGeneratorFlatpakNodeGeneratorPatches skips writes when electron anchor is missing', () => {
+    const specialPy =
+      '/venv/lib/python3.12/site-packages/flatpak_node_generator/providers/special.py';
+    const electronPy = '/venv/lib/python3.12/site-packages/flatpak_node_generator/electron.py';
+    const originalSpecial = PLAYWRIGHT_SPECIAL_SOURCE_CALL;
+    const files = new Map([
+      [specialPy, originalSpecial],
+      [electronPy, 'no ia32 anchor\n'],
+    ]);
+    const result = applyGeneratorFlatpakNodeGeneratorPatches(specialPy, electronPy, {
+      readFileSync: (p) => files.get(p) ?? '',
+      writeFileSync: (p, data) => {
+        files.set(p, data);
+      },
+    });
+    expect(result.ok).toBe(false);
+    expect(files.get(specialPy)).toBe(originalSpecial);
+  });
+
+  it('applyGeneratorFlatpakNodeGeneratorPatches rolls back special.py when electron write fails', () => {
+    const specialPy =
+      '/venv/lib/python3.12/site-packages/flatpak_node_generator/providers/special.py';
+    const electronPy = '/venv/lib/python3.12/site-packages/flatpak_node_generator/electron.py';
+    const originalSpecial = PLAYWRIGHT_SPECIAL_SOURCE_CALL;
+    const files = new Map([
+      [specialPy, originalSpecial],
+      [electronPy, ELECTRON_IA32_SKIP_BLOCK],
+    ]);
+    const result = applyGeneratorFlatpakNodeGeneratorPatches(specialPy, electronPy, {
+      readFileSync: (p) => files.get(p) ?? '',
+      writeFileSync: (p, data) => {
+        if (p === electronPy) {
+          throw new Error('disk full');
+        }
+        files.set(p, data);
+      },
+    });
+    expect(result.ok).toBe(false);
+    expect(files.get(specialPy)).toBe(originalSpecial);
+    expect(files.get(electronPy)).toBe(ELECTRON_IA32_SKIP_BLOCK);
   });
 });

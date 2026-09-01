@@ -12,8 +12,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import {
-  applyGeneratorSkipElectronArmv7l,
-  applyGeneratorSkipPlaywrightSpecialSources,
+  applyGeneratorFlatpakNodeGeneratorPatches,
   resolveFlatpakNodeGeneratorBin,
   resolveGeneratorElectronPyPath,
   resolveGeneratorSpecialPyPath,
@@ -53,23 +52,18 @@ function main() {
     process.exit(1);
   }
 
-  const playwright = applyGeneratorSkipPlaywrightSpecialSources(specialPy);
-  if (!playwright.ok) {
-    console.error(`patch-flatpak-node-generator-playwright: ${playwright.message}`);
+  const patched = applyGeneratorFlatpakNodeGeneratorPatches(specialPy, electronPy);
+  if (!patched.ok) {
+    console.error(`patch-flatpak-node-generator-playwright: ${patched.message}`);
     process.exit(1);
   }
   console.info(
-    playwright.already
+    patched.playwright.already
       ? `patch-flatpak-node-generator-playwright: already applied (${specialPy})`
       : `patch-flatpak-node-generator-playwright: skipped Playwright browser vendoring (${specialPy})`,
   );
-  const armv7l = applyGeneratorSkipElectronArmv7l(electronPy);
-  if (!armv7l.ok) {
-    console.error(`patch-flatpak-node-generator-playwright: ${armv7l.message}`);
-    process.exit(1);
-  }
   console.info(
-    armv7l.already
+    patched.armv7l.already
       ? `patch-flatpak-node-generator-playwright: Electron armv7l skip already applied (${electronPy})`
       : `patch-flatpak-node-generator-playwright: skipped Electron >=44 linux-armv7l (${electronPy})`,
   );
