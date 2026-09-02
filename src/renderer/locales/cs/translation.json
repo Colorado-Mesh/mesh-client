@@ -1548,7 +1548,9 @@
     "manageMembersOf": "Spravovat členy {{name}}",
     "renameGroupNamed": "Přejmenovat {{name}}",
     "deleteGroupNamed": "Smazat {{name}}",
-    "memberCount_few": "{{count}} členové"
+    "memberCount_few": "{{count}} členové",
+    "needSelfNode": "Nejprve připojte rádio, aby bylo před vytvořením skupiny kontaktů známo ID vašeho uzlu.",
+    "failedCreateGroup": "Nepodařilo se vytvořit skupinu: {{message}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Vypustit řádky směrování starší než {{hours}} hodin (1–168)",

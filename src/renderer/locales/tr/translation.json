@@ -1527,7 +1527,9 @@
     "confirmDeleteButton": "Sil?",
     "manageMembersOf": "{{name}} üyelerini yönet",
     "renameGroupNamed": "{{name}} yeniden adlandır",
-    "deleteGroupNamed": "{{name}} silin"
+    "deleteGroupNamed": "{{name}} silin",
+    "needSelfNode": "Bir kişi grubu oluşturmadan önce düğüm kimliğinizin bilinmesi için önce bir telsiz bağlayın.",
+    "failedCreateGroup": "Grup oluşturulamadı: {{message}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}} saatten (1-168) daha eski olan yönlendirme satırlarını bırak",

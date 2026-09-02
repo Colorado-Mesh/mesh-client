@@ -1567,7 +1567,9 @@
     "renameGroupNamed": "Переименовать {{name}}",
     "deleteGroupNamed": "Удалить {{name}}",
     "memberCount_few": "{{count}} участника",
-    "memberCount_many": "{{count}} участников"
+    "memberCount_many": "{{count}} участников",
+    "needSelfNode": "Сначала подключите радио, чтобы ваш идентификатор узла был известен до создания контактной группы.",
+    "failedCreateGroup": "Не удалось создать группу: {{message}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Удалить строки маршрутизации старше {{hours}} часов (1–168).",

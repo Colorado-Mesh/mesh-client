@@ -1527,7 +1527,9 @@
     "confirmDeleteButton": "删除？",
     "manageMembersOf": "管理{{name}}的成员",
     "renameGroupNamed": "重命名{{name}}",
-    "deleteGroupNamed": "删除{{name}}"
+    "deleteGroupNamed": "删除{{name}}",
+    "needSelfNode": "首先连接无线电，以便在创建联系人组之前知道您的节点ID。",
+    "failedCreateGroup": "创建群组失败: {{message}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "删除早于{{hours}}小时的路由行(1–168)",
