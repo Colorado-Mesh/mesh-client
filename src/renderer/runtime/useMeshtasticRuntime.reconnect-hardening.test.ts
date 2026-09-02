@@ -391,6 +391,18 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
       /useEffect\(\(\) => \{[\s\S]{0,250}syncNodesMapToIdentityStore\(storeId, nodes\)/,
     );
   });
+
+  it('refreshNodesFromDb guards identity and reconnect generation before applying', () => {
+    const refreshBody = extractUseCallbackBody(SOURCE, 'refreshNodesFromDb');
+    expect(refreshBody).toContain('storeIdAtStart');
+    expect(refreshBody).toContain('generationAtStart');
+    expect(refreshBody).toContain('sameIdentityRefreshSession');
+    expect(refreshBody).toContain('replaceNodesMapInIdentityStore');
+    const loadIdx = refreshBody.indexOf('loadMeshtasticNodeMapFromDb');
+    const guardIdx = refreshBody.indexOf('sameIdentityRefreshSession');
+    expect(loadIdx).toBeGreaterThanOrEqual(0);
+    expect(guardIdx).toBeGreaterThan(loadIdx);
+  });
 });
 
 describe('useMeshtasticRuntime manual disconnect must not auto-reconnect', () => {

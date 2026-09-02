@@ -12,7 +12,11 @@ import {
   replaceMessageRecordsForIdentity,
   upsertMessageRecordsForIdentity,
 } from '../stores/messageStore';
-import { type NodeRecord, upsertNodeRecordsForIdentity } from '../stores/nodeStore';
+import {
+  type NodeRecord,
+  replaceNodeRecordsForIdentity,
+  upsertNodeRecordsForIdentity,
+} from '../stores/nodeStore';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
 import { errLikeToLogString } from './errLikeToLogString';
 import { beginIdentityHydration } from './identityHydrationCoordinator';
@@ -92,6 +96,8 @@ export interface HydrateIdentityStoresOptions {
   messages?: boolean;
   /** `replace` reloads the store slice from SQLite (post-delete); default upserts only. */
   messagesMode?: 'upsert' | 'replace';
+  /** `replace` reloads the node bucket from SQLite (post-delete); default upserts only. */
+  nodesMode?: 'upsert' | 'replace';
 }
 
 /** Options for post-delete message refresh (runtime + store). */
@@ -102,16 +108,27 @@ export interface MessageClearRefreshOptions {
   clearedAll?: boolean;
 }
 
-export async function hydrateMeshtasticNodesFromDb(identityId: IdentityId): Promise<void> {
+export async function hydrateMeshtasticNodesFromDb(
+  identityId: IdentityId,
+  nodesMode: 'upsert' | 'replace' = 'upsert',
+  isCurrent?: () => boolean,
+): Promise<void> {
   const nodeMap = await loadMeshtasticNodeMapFromDb();
-  syncNodesMapToIdentityStore(identityId, nodeMap);
+  if (isCurrent && !isCurrent()) return;
+  if (nodesMode === 'replace') {
+    replaceNodesMapInIdentityStore(identityId, nodeMap);
+  } else {
+    syncNodesMapToIdentityStore(identityId, nodeMap);
+  }
 }
 
 export async function hydrateMeshtasticMessagesFromDb(
   identityId: IdentityId,
   messagesMode: 'upsert' | 'replace' = 'upsert',
+  isCurrent?: () => boolean,
 ): Promise<void> {
   const msgs = await window.electronAPI.db.getMessages(undefined, getMeshtasticMessageLoadLimit());
+  if (isCurrent && !isCurrent()) return;
   const sanitized = dedupeMeshtasticHydrationOrphanSends(msgs.map(savedMessageToChatMessage));
   const reversed = sanitized.toReversed();
   const trimmed = trimChatMessagesToMax(reversed, MAX_IN_MEMORY_CHAT_MESSAGES);
@@ -166,7 +183,11 @@ export async function loadMeshcoreSavedHopRowsForHydration(): Promise<MeshcoreSa
   return mergeMeshcoreSavedHopRowsForHydration(hopRows, hopHistoryRows);
 }
 
-export async function hydrateMeshcoreNodesFromDb(identityId: IdentityId): Promise<void> {
+export async function hydrateMeshcoreNodesFromDb(
+  identityId: IdentityId,
+  nodesMode: 'upsert' | 'replace' = 'upsert',
+  isCurrent?: () => boolean,
+): Promise<void> {
   const [rows, savedNodes] = await Promise.all([
     window.electronAPI.db.getMeshcoreContacts(),
     loadMeshcoreSavedHopRowsForHydration(),
@@ -174,7 +195,12 @@ export async function hydrateMeshcoreNodesFromDb(identityId: IdentityId): Promis
   const dbMsgs = await loadMeshcoreMessagesForHydration();
   const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs);
   const nodeMap = buildMeshcoreNodeMapFromDb(rows as MeshcoreContactDbRow[], savedNodes, mapped);
-  syncNodesMapToIdentityStore(identityId, nodeMap);
+  if (isCurrent && !isCurrent()) return;
+  if (nodesMode === 'replace') {
+    replaceNodesMapInIdentityStore(identityId, nodeMap);
+  } else {
+    syncNodesMapToIdentityStore(identityId, nodeMap);
+  }
 }
 
 /** Push an in-memory node map into identity-scoped Zustand (e.g. after radio contact sync). */
@@ -188,14 +214,27 @@ export function syncNodesMapToIdentityStore(
   );
 }
 
+/** Replace identity node bucket from a full map (post-delete DB reload). */
+export function replaceNodesMapInIdentityStore(
+  identityId: IdentityId,
+  nodes: Map<number, MeshNode>,
+): void {
+  replaceNodeRecordsForIdentity(
+    identityId,
+    Array.from(nodes.values(), (node) => meshNodeToNodeRecord(node)),
+  );
+}
+
 export async function hydrateMeshcoreMessagesFromDb(
   identityId: IdentityId,
   messagesMode: 'upsert' | 'replace' = 'upsert',
+  isCurrent?: () => boolean,
 ): Promise<void> {
   const [dbMsgs, contactRows] = await Promise.all([
     loadMeshcoreMessagesForHydration(),
     window.electronAPI.db.getMeshcoreContacts(),
   ]);
+  if (isCurrent && !isCurrent()) return;
   const rows = dbMsgs;
   const roomServerIds = meshcoreRoomServerIdsFromContacts(contactRows as MeshcoreContactDbRow[]);
   const mapped = repairMeshcoreHydratedMessages(
@@ -224,49 +263,55 @@ export async function hydrateMeshcoreMessagesFromDb(
 type IdentityHydratorFn = (
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
+  isCurrent: () => boolean,
 ) => Promise<void>;
 
 async function hydrateMeshtasticIdentity(
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
+  isCurrent: () => boolean,
 ): Promise<void> {
   const loadNodes = opts.nodes !== false;
   const loadMessages = opts.messages !== false;
   const messagesMode = opts.messagesMode ?? 'upsert';
+  const nodesMode = opts.nodesMode ?? 'upsert';
   if (loadNodes && loadMessages) {
     await Promise.all([
-      hydrateMeshtasticNodesFromDb(identityId),
-      hydrateMeshtasticMessagesFromDb(identityId, messagesMode),
+      hydrateMeshtasticNodesFromDb(identityId, nodesMode, isCurrent),
+      hydrateMeshtasticMessagesFromDb(identityId, messagesMode, isCurrent),
     ]);
   } else if (loadNodes) {
-    await hydrateMeshtasticNodesFromDb(identityId);
+    await hydrateMeshtasticNodesFromDb(identityId, nodesMode, isCurrent);
   } else if (loadMessages) {
-    await hydrateMeshtasticMessagesFromDb(identityId, messagesMode);
+    await hydrateMeshtasticMessagesFromDb(identityId, messagesMode, isCurrent);
   }
 }
 
 async function hydrateMeshcoreIdentity(
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
+  isCurrent: () => boolean,
 ): Promise<void> {
   const loadNodes = opts.nodes !== false;
   const loadMessages = opts.messages !== false;
   const messagesMode = opts.messagesMode ?? 'upsert';
+  const nodesMode = opts.nodesMode ?? 'upsert';
   if (loadNodes && loadMessages) {
     await Promise.all([
-      hydrateMeshcoreNodesFromDb(identityId),
-      hydrateMeshcoreMessagesFromDb(identityId, messagesMode),
+      hydrateMeshcoreNodesFromDb(identityId, nodesMode, isCurrent),
+      hydrateMeshcoreMessagesFromDb(identityId, messagesMode, isCurrent),
     ]);
   } else if (loadNodes) {
-    await hydrateMeshcoreNodesFromDb(identityId);
+    await hydrateMeshcoreNodesFromDb(identityId, nodesMode, isCurrent);
   } else if (loadMessages) {
-    await hydrateMeshcoreMessagesFromDb(identityId, messagesMode);
+    await hydrateMeshcoreMessagesFromDb(identityId, messagesMode, isCurrent);
   }
 }
 
 function hydrateReticulumIdentity(
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
+  isCurrent: () => boolean,
 ): Promise<void> {
   const loadNodes = opts.nodes !== false;
   const loadMessages = opts.messages !== false;
@@ -279,6 +324,7 @@ function hydrateReticulumIdentity(
           last_heard?: number | null;
           favorited?: number | null;
         }[];
+        if (!isCurrent()) return;
         const { reticulumHashToNodeId, registerReticulumDestinationHash } =
           await import('./reticulum/destHash');
         const records: NodeRecord[] = [];
@@ -300,6 +346,7 @@ function hydrateReticulumIdentity(
             reticulumDestinationHash: destinationHash,
           });
         }
+        if (!isCurrent()) return;
         upsertNodeRecordsForIdentity(identityId, records);
       } catch (e) {
         console.warn('[hydrateReticulumIdentity] destinations ' + errLikeToLogString(e));
@@ -314,6 +361,7 @@ function hydrateReticulumIdentity(
           timestamp: number;
           to_hash?: string;
         }[];
+        if (!isCurrent()) return;
         replaceMessageRecordsForIdentity(
           identityId,
           rows.map((row) => reticulumDbRowToMessageRecord(row)),
@@ -350,7 +398,7 @@ export async function hydrateIdentityStoresFromDb(
 
   const isCurrent = beginIdentityHydration(protocol, identityId);
   try {
-    await hydrator(identityId, opts);
+    await hydrator(identityId, opts, isCurrent);
     if (!isCurrent()) return;
   } catch (e) {
     if (!isCurrent()) return;

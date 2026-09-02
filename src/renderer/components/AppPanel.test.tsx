@@ -514,3 +514,36 @@ describe('AppPanel: font size control', () => {
     expect(results).toHaveNoViolations();
   });
 });
+
+describe('AppPanel: Clear All Nodes success toast', () => {
+  const defaultProps = {
+    protocol: 'meshtastic' as const,
+    nodeCount: 3,
+    messageCount: 0,
+    channels: [] as { index: number; name: string }[],
+    myNodeNum: null as number | null,
+    onLocationFilterChange: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValue({});
+    vi.mocked(window.electronAPI.db.clearNodes).mockResolvedValue(undefined);
+  });
+
+  it('shows the resolved node count in the success toast', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+
+    fireEvent.click(screen.getByText('Destructive actions'));
+    fireEvent.click(screen.getByRole('button', { name: /Clear All Nodes \(3\)/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Clear 3 Nodes/i }));
+
+    expect(
+      await screen.findByText('Clear All Nodes (3) completed successfully.'),
+    ).toBeInTheDocument();
+    expect(window.electronAPI.db.clearNodes).toHaveBeenCalled();
+  });
+});
