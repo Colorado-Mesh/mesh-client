@@ -6,7 +6,7 @@ Mesh-Client application source (Electron main, preload, renderer, and shared Typ
 
 The project originally used the MIT license. However, `@meshtastic/core` (GPL-3.0-only) is statically bundled into the Electron renderer via Vite/esbuild. Under GPL-3.0's copyleft terms, a combined work that includes GPL code must itself be GPL-3.0.
 
-The project was previously inconsistent: the Reticulum sidecar (AGPL-3.0) was deliberately isolated as a separate process to keep AGPL code out of the MIT shell, while `@meshtastic/core` (GPL-3.0) was bundled directly. Relicensing resolves this.
+The project was previously inconsistent: the Reticulum sidecar (AGPL-3.0-or-later) was deliberately isolated as a separate process to keep AGPL code out of the MIT shell, while `@meshtastic/core` (GPL-3.0-only) was bundled directly. Relicensing resolves this.
 
 ## Contributor consent
 

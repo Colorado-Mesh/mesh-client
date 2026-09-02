@@ -1336,7 +1336,7 @@ function applyAboutPanelOptions(): void {
     '',
     APP_ABOUT_TAGLINE,
     '',
-    'Reticulum support uses a bundled AGPL-3.0 sidecar (mesh-client-reticulum). See docs/reticulum.md and docs/license.md.',
+    'Reticulum support uses a bundled AGPL-3.0-or-later sidecar (mesh-client-reticulum). See docs/reticulum.md and docs/license.md.',
     '',
     'Reticulum stack inspiration: Ratspeak (https://github.com/ratspeak/Ratspeak)',
     '',
