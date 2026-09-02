@@ -370,6 +370,22 @@ function checkWrapperLaunchPaths() {
     });
   }
 
+  if (!sh.includes('No usable sandbox!')) {
+    violations.push({
+      file: rel,
+      message:
+        'wrapper must detect Chromium "No usable sandbox!" fatal and retry with --no-sandbox on hardened hosts',
+    });
+  }
+
+  if (!/exec zypak-wrapper[^\n]*--no-sandbox[^\n]* \. "\$@"/.test(sh)) {
+    violations.push({
+      file: rel,
+      message:
+        'wrapper must exec zypak-wrapper with --no-sandbox fallback when user namespaces are blocked',
+    });
+  }
+
   if (sh.includes('dist-electron/main/index.js "$@"')) {
     violations.push({
       file: rel,

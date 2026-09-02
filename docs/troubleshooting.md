@@ -431,7 +431,7 @@ flatpak run org.coloradomesh.MeshClient
 
 **Symptom**: `flatpak run org.coloradomesh.MeshClient` prints `Command failed` right after `Running 'bwrap … -- mesh-client'` with no window. Common on **Arch, CachyOS, KDE Plasma 6, and Hyprland** (pure Wayland). The AppImage from the same release often works.
 
-**Cause**: The Flatpak sandbox mounts an empty `/tmp/.X11-unix`, so Electron cannot fall back to X11 unless the wrapper passes Wayland/Ozone flags. Older bundles also omitted Chromium sandbox flags and `TMPDIR` setup that zypak expects.
+**Cause**: The Flatpak sandbox mounts an empty `/tmp/.X11-unix`, so Electron cannot fall back to X11 unless the wrapper passes Wayland/Ozone flags. Older bundles also omitted Chromium sandbox flags and `TMPDIR` setup that zypak expects. A different immediate exit with `No usable sandbox!` on hardened hosts is covered in [Flatpak: "No usable sandbox!" on Ubuntu 23.10+ / hardened Linux](#flatpak-no-usable-sandbox-on-ubuntu-2310--hardened-linux).
 
 The log line `F: /lib32 does not exist in runtime` is **harmless** on x86_64-only runtimes — not the failure cause.
 
@@ -464,6 +464,28 @@ flatpak uninstall --user org.coloradomesh.MeshClient
 flatpak install --user ./org.coloradomesh.MeshClient-x86_64.flatpak
 flatpak run org.coloradomesh.MeshClient
 ```
+
+### Flatpak: "No usable sandbox!" on Ubuntu 23.10+ / hardened Linux
+
+**Symptom**: `flatpak run org.coloradomesh.MeshClient` exits immediately with no window. The terminal may show `zypak-helper` lines (for example `Wait found events, but sd-event found none`) followed by:
+
+```text
+FATAL:content/browser/zygote_host/zygote_host_impl_linux.cc:129] No usable sandbox!
+```
+
+**Cause**: The host blocks **unprivileged user namespaces** (common on **Ubuntu 23.10+** with AppArmor `apparmor_restrict_unprivileged_userns`, and on some hardened **Fedora** / **Arch** setups). The Flatpak wrapper passes `--disable-setuid-sandbox` (zypak owns Chromium sandboxing), so when user namespaces are unavailable Chromium has no usable sandbox and aborts.
+
+**Fix in app**: Current releases auto-retry with `--no-sandbox` when this fatal is detected (same fallback as `pnpm start` via `scripts/start-electron.mjs`). Reinstall the latest `.flatpak` from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) if you are on an older bundle.
+
+**Workaround** (skip the probe, force `--no-sandbox` on first launch):
+
+```bash
+MESH_CLIENT_NO_SANDBOX=1 flatpak run org.coloradomesh.MeshClient
+```
+
+The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium runs with `--no-sandbox`; only the inner Chromium namespace sandbox is relaxed.
+
+**Host root-cause fix** (optional — restores the inner Chromium sandbox): allow unprivileged user namespaces on the host, or add an AppArmor profile exception. See the upstream Chromium guide: [AppArmor userns restrictions](https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md). On older kernels, `kernel.unprivileged_userns_clone=1` may also be required — see [Linux launch notes](development-environment.md#linux-launch-notes) in development-environment.md.
 
 ## Database and local data
 
