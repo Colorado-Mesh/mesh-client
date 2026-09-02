@@ -452,6 +452,7 @@ export class MeshCoreProtocol implements Protocol {
   }
 
   private decodeContactDeleted(raw: unknown): DomainEvent[] {
+    if (raw == null || typeof raw !== 'object') return [];
     const d = raw as { publicKey?: Uint8Array };
     if (!(d.publicKey instanceof Uint8Array) || d.publicKey.length !== 32) return [];
     const nodeId = pubkeyToNodeId(d.publicKey);

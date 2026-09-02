@@ -326,6 +326,22 @@ describe('MeshCoreProtocol.subscribe', () => {
     teardown();
   });
 
+  it.each([null, undefined])(
+    'ignores malformed MC_PUSH_CONTACT_DELETED payload (%s)',
+    (payload) => {
+      const conn = mockMeshCoreConnection();
+      const events: DomainEvent[] = [];
+      const teardown = meshcoreProtocol.subscribe(conn, (e) => {
+        events.push(e);
+      });
+      expect(() => {
+        conn.emit(EVENT_CONTACT_DELETED, payload);
+      }).not.toThrow();
+      expect(events.some((e) => e.type === 'meshcore_contact_deleted')).toBe(false);
+      teardown();
+    },
+  );
+
   it('emits meshcore_contacts_full on 0x90', () => {
     const conn = mockMeshCoreConnection();
     const events: DomainEvent[] = [];

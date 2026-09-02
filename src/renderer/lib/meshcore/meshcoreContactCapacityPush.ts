@@ -151,6 +151,12 @@ export function handleMeshcoreContactsFullPush(now = Date.now()): void {
 
   if (readMeshcoreAutoOffloadWhenFull()) {
     if (contactsFullOffloadInFlight) return;
+    if (
+      lastContactsFullAlarmAt > 0 &&
+      now - lastContactsFullAlarmAt < MESHCORE_CONTACTS_FULL_ALARM_DEBOUNCE_MS
+    )
+      return;
+    lastContactsFullAlarmAt = now;
     pushAppToast(i18n.t('radioPanel.contactsFullAutoOffloadStarted'), 'warning', 6000);
     void runContactsFullOffload().catch((e: unknown) => {
       console.warn('[meshcoreContactCapacityPush] auto-offload failed ' + errLikeToLogString(e));

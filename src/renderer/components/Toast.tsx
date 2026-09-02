@@ -122,17 +122,12 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
       setVisible(true);
     });
     // Auto-dismiss
-    timerRef.current = setTimeout(() => {
-      setVisible(false);
-      dismissTimerRef.current = setTimeout(() => {
-        onDismiss(toast.id);
-      }, 300);
-    }, toast.duration);
+    timerRef.current = setTimeout(dismiss, toast.duration);
     return () => {
       clearTimeout(timerRef.current);
       clearTimeout(dismissTimerRef.current);
     };
-  }, [toast, onDismiss]);
+  }, [toast, dismiss]);
 
   const icon = {
     success: '✓',

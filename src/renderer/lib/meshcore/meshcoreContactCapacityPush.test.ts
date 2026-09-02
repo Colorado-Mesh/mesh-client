@@ -95,4 +95,20 @@ describe('meshcoreContactCapacityPush', () => {
       expect(runner).toHaveBeenCalledTimes(1);
     });
   });
+
+  it('debounces auto-offload toasts and runner while cooldown is active', async () => {
+    writeMeshcoreAutoOffloadWhenFull(true);
+    const runner = vi.fn().mockRejectedValue(new Error('offload failed'));
+    registerMeshcoreContactsFullOffloadRunner(runner);
+
+    handleMeshcoreContactsFullPush(10_000);
+    await vi.waitFor(() => {
+      expect(runner).toHaveBeenCalledTimes(1);
+      expect(pushAppToast).toHaveBeenCalledTimes(2);
+    });
+
+    handleMeshcoreContactsFullPush(10_000 + MESHCORE_CONTACTS_FULL_ALARM_DEBOUNCE_MS - 1);
+    expect(pushAppToast).toHaveBeenCalledTimes(2);
+    expect(runner).toHaveBeenCalledTimes(1);
+  });
 });

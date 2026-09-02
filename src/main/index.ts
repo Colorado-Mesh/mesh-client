@@ -5875,7 +5875,7 @@ ipcMain.handle('db:markMeshcoreContactOffRadio', (event, publicKeyHex: unknown) 
       .run(key);
     return { changes: result.changes };
   } catch (err) {
-    finishDbIpcHandler('db:markMeshcoreContactOffRadio', err);
+    return finishDbIpcReadHandler('db:markMeshcoreContactOffRadio', err, { changes: 0 });
   }
 });
 
