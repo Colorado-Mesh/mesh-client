@@ -83,7 +83,7 @@ pnpm install
 
 ### Reticulum sidecar (optional)
 
-Reticulum/LXMF runs in a separate Rust binary (`mesh-client-reticulum`) spawned by the Electron main process. The MIT TypeScript layers talk to it over localhost HTTP/WS only. You only need this when working on the **Reticulum** protocol tab.
+Reticulum/LXMF runs in a separate Rust binary (`mesh-client-reticulum`) spawned by the Electron main process. The GPL-3.0 TypeScript layers talk to it over localhost HTTP/WS only. You only need this when working on the **Reticulum** protocol tab.
 
 #### Installing Rust
 

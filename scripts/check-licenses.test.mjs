@@ -51,6 +51,15 @@ describe('isLicenseAllowed', () => {
     expect(isLicenseAllowed('LGPL-3.0')).toBe(true);
   });
 
+  it('allows GPL-3.0 family ids used by Meshtastic and the app SPDX', () => {
+    expect(isLicenseAllowed('GPL-3.0')).toBe(true);
+    expect(isLicenseAllowed('GPL-3.0-only')).toBe(true);
+    expect(isLicenseAllowed('GPL-3.0-or-later')).toBe(true);
+    expect(ALLOWED_LICENSE_IDS).toEqual(
+      expect.arrayContaining(['GPL-3.0', 'GPL-3.0-only', 'GPL-3.0-or-later']),
+    );
+  });
+
   it('allows OR when any clause is allowed', () => {
     expect(isLicenseAllowed('BSD-3-Clause OR GPL-2.0')).toBe(true);
     expect(isLicenseAllowed('(MIT OR GPL-3.0-or-later)')).toBe(true);
@@ -62,13 +71,14 @@ describe('isLicenseAllowed', () => {
     expect(isLicenseAllowed('Apache-2.0 AND BSD-3-Clause')).toBe(true);
     expect(isLicenseAllowed('(MIT AND Zlib)')).toBe(true);
     expect(isLicenseAllowed('MIT AND ISC')).toBe(true);
-    expect(isLicenseAllowed('MIT AND GPL-3.0')).toBe(false);
+    expect(isLicenseAllowed('MIT AND GPL-3.0')).toBe(true);
+    expect(isLicenseAllowed('MIT AND GPL-2.0')).toBe(false);
   });
 
-  it('rejects unknown, empty, and copyleft-only ids', () => {
+  it('rejects unknown, empty, and disallowed ids', () => {
     expect(isLicenseAllowed('')).toBe(false);
     expect(isLicenseAllowed('UNKNOWN')).toBe(false);
-    expect(isLicenseAllowed('GPL-3.0')).toBe(false);
+    expect(isLicenseAllowed('GPL-2.0')).toBe(false);
     expect(isLicenseAllowed('UNLICENSED')).toBe(false);
   });
 
@@ -82,11 +92,11 @@ describe('evaluatePnpmLicensesJson', () => {
   it('collects violations for disallowed license keys', () => {
     const result = evaluatePnpmLicensesJson({
       MIT: [{ name: 'ok-pkg', versions: ['1.0.0'] }],
-      'GPL-3.0': [{ name: 'bad-pkg', versions: ['2.0.0'] }],
+      'GPL-2.0': [{ name: 'bad-pkg', versions: ['2.0.0'] }],
     });
     expect(result.packages).toHaveLength(2);
     expect(result.violations).toEqual([
-      { license: 'GPL-3.0', name: 'bad-pkg', versions: ['2.0.0'] },
+      { license: 'GPL-2.0', name: 'bad-pkg', versions: ['2.0.0'] },
     ]);
     expect(result.counts.get('MIT')).toBe(1);
   });
@@ -95,11 +105,11 @@ describe('evaluatePnpmLicensesJson', () => {
     const report = formatLicenseCheckReport(
       evaluatePnpmLicensesJson({
         MIT: [{ name: 'ok-pkg', versions: ['1.0.0'] }],
-        'GPL-3.0': [{ name: 'bad-pkg', versions: ['2.0.0'] }],
+        'GPL-2.0': [{ name: 'bad-pkg', versions: ['2.0.0'] }],
       }),
     );
     expect(report).toMatch(/disallowed license/);
-    expect(report).toMatch(/GPL-3\.0: bad-pkg@2\.0\.0/);
+    expect(report).toMatch(/GPL-2\.0: bad-pkg@2\.0\.0/);
   });
 
   it('throws when a license group is not an array', () => {

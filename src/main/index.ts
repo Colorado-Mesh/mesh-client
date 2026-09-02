@@ -1340,7 +1340,7 @@ function applyAboutPanelOptions(): void {
     '',
     'Reticulum stack inspiration: Ratspeak (https://github.com/ratspeak/Ratspeak)',
     '',
-    'License: MIT (application code). AGPL-3.0 applies to the bundled Reticulum sidecar binary.',
+    'License: GPL-3.0-or-later (application code). AGPL-3.0-or-later applies to the bundled Reticulum sidecar binary.',
     'Author: Colorado Mesh',
     '',
     `Website:  ${HELP_URL_WEBSITE}`,
