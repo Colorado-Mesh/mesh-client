@@ -67,6 +67,21 @@ function sleepMs(ms, sleepFn) {
 }
 
 /**
+ * @param {number} maxAttempts
+ * @param {number} retryBaseMs
+ * @returns {{ attempts: number; retryBaseMs: number }}
+ */
+function validateRetryOptions(maxAttempts, retryBaseMs) {
+  if (!Number.isFinite(maxAttempts) || maxAttempts < 1) {
+    throw new Error(`maxAttempts must be a finite number >= 1, got ${String(maxAttempts)}`);
+  }
+  if (!Number.isFinite(retryBaseMs) || retryBaseMs < 0) {
+    throw new Error(`retryBaseMs must be a finite non-negative number, got ${String(retryBaseMs)}`);
+  }
+  return { attempts: Math.floor(maxAttempts), retryBaseMs };
+}
+
+/**
  * Run electron/install.js when the prebuilt binary is missing (Electron 42+ lazy download).
  * Retries on transient CDN/network failures (common in CI: `TypeError: fetch failed`).
  *
@@ -99,14 +114,17 @@ export function ensureElectronBinaryInstalled({
     );
   }
 
-  const attempts = Math.max(1, Math.floor(maxAttempts));
+  const { attempts, retryBaseMs: validatedRetryBaseMs } = validateRetryOptions(
+    maxAttempts,
+    retryBaseMs,
+  );
   let lastError = null;
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
     if (attempt === 1) {
       process.stdout.write('Electron binary not found — downloading via electron/install.js…\n');
     } else {
-      const delayMs = retryBaseMs * 2 ** (attempt - 2);
+      const delayMs = validatedRetryBaseMs * 2 ** (attempt - 2);
       warn(
         `Electron download failed (attempt ${attempt - 1}/${attempts}); retrying in ${delayMs}ms…`,
       );
