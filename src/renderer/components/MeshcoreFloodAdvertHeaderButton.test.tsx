@@ -57,4 +57,21 @@ describe('MeshcoreFloodAdvertHeaderButton', () => {
       expect(button).not.toBeDisabled();
     });
   });
+
+  it('reports a rejected send and allows retrying', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const onSend = vi.fn().mockRejectedValue(new Error('radio offline'));
+    const user = userEvent.setup();
+    renderButton(onSend);
+    const button = screen.getByRole('button', { name: 'Send flood advert' });
+
+    await user.click(button);
+
+    expect(await screen.findByText('Advert failed: radio offline')).toBeInTheDocument();
+    expect(button).not.toBeDisabled();
+    expect(warn).toHaveBeenCalledWith(
+      '[MeshcoreFloodAdvertHeaderButton] send failed radio offline',
+    );
+    warn.mockRestore();
+  });
 });
