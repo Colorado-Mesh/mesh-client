@@ -48,8 +48,9 @@ overrides:
   # brace-expansion: keep a single 5.0.9 floor. GHSA-rgw5-rvv9-x895 is a
   # bypass of the CVE-2026-14257 mitigation and marks >=4.0.0 <5.0.9 vulnerable
   # (only >=5.0.9 counts as patched). CI audit is blocking.
-  # fast-uri: GHSA-7p8r-x3mc-p8w7 (host confusion via backslash authority);
-  # electron-builder → app-builder-lib → ajv still pulls 3.1.4.
+  # fast-uri: GHSA-7p8r-x3mc-p8w7 plus the GHSA-5jgf-p345-68v8,
+  # GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf, and GHSA-jqff-g426-hqxp
+  # bypasses; electron-builder → app-builder-lib → ajv still pulls an older release.
   # undici: GHSA-4cwx-7wf7-3272 (+ sibling undici GHSAs) — floor >=7.29.0, kept as
   # a scoped `undici@<7.29.0` override so transitive consumers (jsdom ^7.25.0,
   # node-gyp ^6.25.0) land on 7.29.0. package.json depends on undici ^8.10.0
@@ -64,7 +65,7 @@ overrides:
   brace-expansion: ^5.0.9
   builder-util-runtime: ^9.7.0
   electron: ^44.1.0
-  fast-uri: ^3.1.5
+  fast-uri: ^3.1.6
   ip-address: ^10.3.1
   js-yaml: ^4.3.0
   markdown-it@<=14.1.1: '>=14.2.0 <15'
