@@ -23,7 +23,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | electron-updater           | MIT                           | ^6.8.9          | 6.8.9             | git+https://github.com/electron-userland/electron-builder.git                  |
 | emoji-picker-element       | Apache-2.0                    | ^1.29.1         | 1.29.1            | git+https://github.com/nolanlawson/emoji-picker-element.git                    |
 | esptool-js                 | Apache-2.0                    | ^0.6.1          | 0.6.1             | git+https://github.com/espressif/esptool-js.git                                |
-| i18next                    | MIT                           | ^26.4.0         | 26.4.0            | git+https://github.com/i18next/i18next.git                                     |
+| i18next                    | MIT                           | ^26.4.1         | 26.4.1            | git+https://github.com/i18next/i18next.git                                     |
 | js-md5                     | MIT                           | ^0.8.3          | 0.8.3             | git+https://github.com/emn178/js-md5.git                                       |
 | jsqr                       | Apache-2.0                    | ^1.4.0          | 1.4.0             | git+https://github.com/cozmo/jsQR.git                                          |
 | jszip                      | (MIT OR GPL-3.0-or-later)     | ^3.10.1         | 3.10.1            | git+https://github.com/Stuk/jszip.git                                          |
@@ -34,11 +34,11 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | mqtt                       | MIT                           | ^5.15.2         | 5.15.2            | git://github.com/mqttjs/MQTT.js.git                                            |
 | node-forge                 | (BSD-3-Clause OR GPL-2.0)     | ^1.4.0          | 1.4.0             | git+https://github.com/digitalbazaar/forge.git                                 |
 | qrcode                     | MIT                           | ^1.5.4          | 1.5.4             | git://github.com/soldair/node-qrcode.git                                       |
-| react-i18next              | MIT                           | ^17.0.12        | 17.0.12           | git+https://github.com/i18next/react-i18next.git                               |
+| react-i18next              | MIT                           | ^17.0.13        | 17.0.13           | git+https://github.com/i18next/react-i18next.git                               |
 | react-leaflet-cluster      | SEE LICENSE IN LICENSE        | ^4.1.3          | 4.1.3             | git+https://github.com/akursat/react-leaflet-cluster.git                       |
 | readable-stream            | MIT                           | ^4.7.0          | 4.7.0             | git://github.com/nodejs/readable-stream.git                                    |
 | semver                     | ISC                           | ^7.8.5          | 7.8.5             | git+https://github.com/npm/node-semver.git                                     |
-| systeminformation          | MIT                           | ^5.33.6         | 5.33.6            | git+https://github.com/sebhildebrandt/systeminformation.git                    |
+| systeminformation          | MIT                           | ^5.33.7         | 5.33.7            | git+https://github.com/sebhildebrandt/systeminformation.git                    |
 | undici                     | MIT                           | ^8.10.1         | 8.10.1            | git+https://github.com/nodejs/undici.git                                       |
 
 ## Development dependencies
@@ -57,7 +57,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @tanstack/react-virtual               | MIT             | ^3.14.10        | 3.14.10           | git+https://github.com/TanStack/virtual.git                                          |
 | @testing-library/jest-dom             | MIT             | ^7.0.1          | 7.0.1             | git+https://github.com/testing-library/jest-dom.git                                  |
 | @testing-library/react                | MIT             | ^16.3.3         | 16.3.3            | git+https://github.com/testing-library/react-testing-library.git                     |
-| @testing-library/user-event           | MIT             | ^14.6.6         | 14.6.6            | git+https://github.com/testing-library/user-event.git                                |
+| @testing-library/user-event           | MIT             | ^14.6.7         | 14.6.7            | git+https://github.com/testing-library/user-event.git                                |
 | @types/js-md5                         | MIT             | ^0.8.0          | 0.8.0             | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/leaflet                        | MIT             | ^1.9.22         | 1.9.22            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/node                           | MIT             | ^25.9.5         | 25.9.5            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
@@ -70,8 +70,8 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @vitejs/plugin-react                  | MIT             | ^6.1.1          | 6.1.1             | git+https://github.com/vitejs/vite-plugin-react.git                                  |
 | @vitest/coverage-v8                   | MIT             | ^4.1.11         | 4.1.11            | git+https://github.com/vitest-dev/vitest.git                                         |
 | concurrently                          | MIT             | ^9.2.4          | 9.2.4             | git+https://github.com/open-cli-tools/concurrently.git                               |
-| electron                              | MIT             | ^44.1.0         | 44.1.0            | git+https://github.com/electron/electron.git                                         |
-| electron-builder                      | MIT             | ^26.15.7        | 26.15.7           | git+https://github.com/electron-userland/electron-builder.git                        |
+| electron                              | MIT             | ^44.1.1         | 44.1.1            | git+https://github.com/electron/electron.git                                         |
+| electron-builder                      | MIT             | ^26.16.0        | 26.16.0           | git+https://github.com/electron-userland/electron-builder.git                        |
 | esbuild                               | MIT             | ^0.28.2         | 0.28.2            | git+https://github.com/evanw/esbuild.git                                             |
 | eslint                                | MIT             | ^10.9.1         | 10.9.1            | git+https://github.com/eslint/eslint.git                                             |
 | eslint-config-prettier                | MIT             | ^10.1.8         | 10.1.8            | git+https://github.com/prettier/eslint-config-prettier.git                           |
