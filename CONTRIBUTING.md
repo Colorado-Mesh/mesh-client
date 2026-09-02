@@ -48,4 +48,4 @@ Avoid duplicating always-on Cursor or editor rules with this repo's docs; merge 
 
 ---
 
-By contributing, you agree to license under the [MIT License](LICENSE).
+By contributing, you agree to license under the [GPL-3.0-or-later License](LICENSE).

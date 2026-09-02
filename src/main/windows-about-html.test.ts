@@ -29,5 +29,7 @@ describe('windows-about-html', () => {
     expect(html).not.toContain('\u2014');
     expect(html).not.toContain('\u2011');
     expect(html).toContain(escapeHtmlText(APP_ABOUT_TAGLINE));
+    expect(html).toContain('GPL-3.0-or-later');
+    expect(html).toContain('AGPL-3.0-or-later');
   });
 });

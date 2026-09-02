@@ -1527,7 +1527,9 @@
     "confirmDeleteButton": "¿Eliminar?",
     "manageMembersOf": "Gestionar miembros de {{name}}",
     "renameGroupNamed": "Cambiar nombre {{name}}",
-    "deleteGroupNamed": "Eliminar {{name}}"
+    "deleteGroupNamed": "Eliminar {{name}}",
+    "needSelfNode": "Conecte una radio primero para que se conozca su ID de nodo antes de crear un grupo de contactos.",
+    "failedCreateGroup": "Error al crear el grupo: {{message}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Filas de enrutamiento de más de {{hours}} horas (1–168)",

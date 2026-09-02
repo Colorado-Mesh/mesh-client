@@ -1527,7 +1527,9 @@
     "confirmDeleteButton": "삭제하시겠어요?",
     "manageMembersOf": "{{name}} 회원 관리",
     "renameGroupNamed": "이름 바꾸기 {{name}}",
-    "deleteGroupNamed": "{{name}} 삭제"
+    "deleteGroupNamed": "{{name}} 삭제",
+    "needSelfNode": "연락처 그룹을 생성하기 전에 노드 ID를 알 수 있도록 먼저 라디오를 연결하십시오.",
+    "failedCreateGroup": "그룹 생성 실패: {{message}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}}시간(1~168)보다 오래된 라우팅 행 삭제",

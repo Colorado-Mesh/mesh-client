@@ -14,7 +14,7 @@
     "type": "git",
     "url": "https://github.com/Colorado-Mesh/mesh-client"
   },
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "author": {
     "name": "Colorado Mesh",
     "email": "nv0n@coloradomesh.org"
