@@ -51,5 +51,30 @@ if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
 fi
 
 cd "$APP_ROOT"
+
+retry_log="${TMPDIR}/mesh-client-sandbox.log"
+
+# Explicit opt-in: single attempt with --no-sandbox (outer bubblewrap sandbox still active).
+if [ "${MESH_CLIENT_NO_SANDBOX:-}" = "1" ]; then
+  # shellcheck disable=SC2086
+  exec zypak-wrapper "$ELECTRON" $gpu_args $electron_args --no-sandbox . "$@"
+fi
+
+# First attempt keeps the zypak/Chromium sandbox. On hosts blocking unprivileged user
+# namespaces (Ubuntu 23.10+ AppArmor, etc.) Chromium fatals with "No usable sandbox!";
+# retry once with --no-sandbox (same as scripts/start-electron.mjs fallback).
 # shellcheck disable=SC2086
-exec zypak-wrapper "$ELECTRON" $gpu_args $electron_args . "$@"
+if zypak-wrapper "$ELECTRON" $gpu_args $electron_args . "$@" 2> "$retry_log"; then
+  if [ -s "$retry_log" ]; then
+    cat "$retry_log" >&2
+  fi
+  exit 0
+fi
+retry_code=$?
+if grep -q 'No usable sandbox!' "$retry_log"; then
+  echo "mesh-client: host blocks user namespaces; retrying with --no-sandbox (outer Flatpak sandbox still active)" >&2
+  # shellcheck disable=SC2086
+  exec zypak-wrapper "$ELECTRON" $gpu_args $electron_args --no-sandbox . "$@"
+fi
+cat "$retry_log" >&2
+exit $retry_code
