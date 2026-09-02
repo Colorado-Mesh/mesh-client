@@ -45,6 +45,10 @@ export const ALLOWED_LICENSE_IDS = Object.freeze([
   'LGPL-2.1-or-later',
   'LGPL-3.0',
   'LGPL-3.0-or-later',
+  // Bundled Meshtastic JS stack (GPL-3.0-only) and project SPDX id.
+  'GPL-3.0',
+  'GPL-3.0-only',
+  'GPL-3.0-or-later',
   // Data / exception tables required by the toolchain (caniuse-lite, spdx-*).
   'CC-BY-3.0',
   'CC-BY-4.0',

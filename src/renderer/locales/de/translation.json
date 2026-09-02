@@ -1527,7 +1527,9 @@
     "confirmDeleteButton": "Löschen?",
     "manageMembersOf": "Mitglieder von {{name}} verwalten",
     "renameGroupNamed": "{{name}} umbenennen",
-    "deleteGroupNamed": "{{name}} löschen"
+    "deleteGroupNamed": "{{name}} löschen",
+    "needSelfNode": "Schließen Sie zuerst ein Funkgerät an, damit Ihre Knoten-ID bekannt ist, bevor Sie eine Kontaktgruppe erstellen.",
+    "failedCreateGroup": "Gruppe konnte nicht erstellt werden: {{message}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Wirf Routingreihen, die älter als {{hours}} Stunden (1-168) sind",

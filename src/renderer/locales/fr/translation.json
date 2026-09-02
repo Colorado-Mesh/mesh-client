@@ -1527,7 +1527,9 @@
     "confirmDeleteButton": "Supprimer ?",
     "manageMembersOf": "Gérer les membres de {{name}}",
     "renameGroupNamed": "Renommer {{name}}",
-    "deleteGroupNamed": "Supprimer {{name}}"
+    "deleteGroupNamed": "Supprimer {{name}}",
+    "needSelfNode": "Connectez d'abord une radio pour connaître votre ID de nœud avant de créer un groupe de contacts.",
+    "failedCreateGroup": "Échec de la création du groupe : {{message}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Collectez lignes de routage de plus de {{hours}} heures (1–168)",

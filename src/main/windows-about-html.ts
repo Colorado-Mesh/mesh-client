@@ -44,7 +44,7 @@ export function buildWindowsAboutDocumentHtml(appName: string, version: string):
   <h1>${title}</h1>
   <div class="ver">Version ${ver}</div>
   <p>${escapeHtmlText(APP_ABOUT_TAGLINE)}</p>
-  <p>License: MIT &middot; Author: Colorado Mesh</p>
+  <p>License: GPL-3.0-or-later (application code). AGPL-3.0-or-later applies to the bundled Reticulum sidecar binary. &middot; Author: Colorado Mesh</p>
   <div class="actions" role="group" aria-label="About actions">
     <button type="button" class="close-btn" onclick="window.close()" aria-label="Close About window">Close</button>
     <a class="action-btn" role="button" href="${ABOUT_URL_WEBSITE}" aria-label="Open Colorado Mesh website">Website</a>
