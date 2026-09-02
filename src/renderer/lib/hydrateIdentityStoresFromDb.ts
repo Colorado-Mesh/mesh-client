@@ -12,7 +12,11 @@ import {
   replaceMessageRecordsForIdentity,
   upsertMessageRecordsForIdentity,
 } from '../stores/messageStore';
-import { type NodeRecord, upsertNodeRecordsForIdentity } from '../stores/nodeStore';
+import {
+  type NodeRecord,
+  replaceNodeRecordsForIdentity,
+  upsertNodeRecordsForIdentity,
+} from '../stores/nodeStore';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
 import { errLikeToLogString } from './errLikeToLogString';
 import { beginIdentityHydration } from './identityHydrationCoordinator';
@@ -92,6 +96,8 @@ export interface HydrateIdentityStoresOptions {
   messages?: boolean;
   /** `replace` reloads the store slice from SQLite (post-delete); default upserts only. */
   messagesMode?: 'upsert' | 'replace';
+  /** `replace` reloads the node bucket from SQLite (post-delete); default upserts only. */
+  nodesMode?: 'upsert' | 'replace';
 }
 
 /** Options for post-delete message refresh (runtime + store). */
@@ -102,9 +108,16 @@ export interface MessageClearRefreshOptions {
   clearedAll?: boolean;
 }
 
-export async function hydrateMeshtasticNodesFromDb(identityId: IdentityId): Promise<void> {
+export async function hydrateMeshtasticNodesFromDb(
+  identityId: IdentityId,
+  nodesMode: 'upsert' | 'replace' = 'upsert',
+): Promise<void> {
   const nodeMap = await loadMeshtasticNodeMapFromDb();
-  syncNodesMapToIdentityStore(identityId, nodeMap);
+  if (nodesMode === 'replace') {
+    replaceNodesMapInIdentityStore(identityId, nodeMap);
+  } else {
+    syncNodesMapToIdentityStore(identityId, nodeMap);
+  }
 }
 
 export async function hydrateMeshtasticMessagesFromDb(
@@ -166,7 +179,10 @@ export async function loadMeshcoreSavedHopRowsForHydration(): Promise<MeshcoreSa
   return mergeMeshcoreSavedHopRowsForHydration(hopRows, hopHistoryRows);
 }
 
-export async function hydrateMeshcoreNodesFromDb(identityId: IdentityId): Promise<void> {
+export async function hydrateMeshcoreNodesFromDb(
+  identityId: IdentityId,
+  nodesMode: 'upsert' | 'replace' = 'upsert',
+): Promise<void> {
   const [rows, savedNodes] = await Promise.all([
     window.electronAPI.db.getMeshcoreContacts(),
     loadMeshcoreSavedHopRowsForHydration(),
@@ -174,7 +190,11 @@ export async function hydrateMeshcoreNodesFromDb(identityId: IdentityId): Promis
   const dbMsgs = await loadMeshcoreMessagesForHydration();
   const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs);
   const nodeMap = buildMeshcoreNodeMapFromDb(rows as MeshcoreContactDbRow[], savedNodes, mapped);
-  syncNodesMapToIdentityStore(identityId, nodeMap);
+  if (nodesMode === 'replace') {
+    replaceNodesMapInIdentityStore(identityId, nodeMap);
+  } else {
+    syncNodesMapToIdentityStore(identityId, nodeMap);
+  }
 }
 
 /** Push an in-memory node map into identity-scoped Zustand (e.g. after radio contact sync). */
@@ -183,6 +203,17 @@ export function syncNodesMapToIdentityStore(
   nodes: Map<number, MeshNode>,
 ): void {
   upsertNodeRecordsForIdentity(
+    identityId,
+    Array.from(nodes.values(), (node) => meshNodeToNodeRecord(node)),
+  );
+}
+
+/** Replace identity node bucket from a full map (post-delete DB reload). */
+export function replaceNodesMapInIdentityStore(
+  identityId: IdentityId,
+  nodes: Map<number, MeshNode>,
+): void {
+  replaceNodeRecordsForIdentity(
     identityId,
     Array.from(nodes.values(), (node) => meshNodeToNodeRecord(node)),
   );
@@ -233,13 +264,14 @@ async function hydrateMeshtasticIdentity(
   const loadNodes = opts.nodes !== false;
   const loadMessages = opts.messages !== false;
   const messagesMode = opts.messagesMode ?? 'upsert';
+  const nodesMode = opts.nodesMode ?? 'upsert';
   if (loadNodes && loadMessages) {
     await Promise.all([
-      hydrateMeshtasticNodesFromDb(identityId),
+      hydrateMeshtasticNodesFromDb(identityId, nodesMode),
       hydrateMeshtasticMessagesFromDb(identityId, messagesMode),
     ]);
   } else if (loadNodes) {
-    await hydrateMeshtasticNodesFromDb(identityId);
+    await hydrateMeshtasticNodesFromDb(identityId, nodesMode);
   } else if (loadMessages) {
     await hydrateMeshtasticMessagesFromDb(identityId, messagesMode);
   }
@@ -252,13 +284,14 @@ async function hydrateMeshcoreIdentity(
   const loadNodes = opts.nodes !== false;
   const loadMessages = opts.messages !== false;
   const messagesMode = opts.messagesMode ?? 'upsert';
+  const nodesMode = opts.nodesMode ?? 'upsert';
   if (loadNodes && loadMessages) {
     await Promise.all([
-      hydrateMeshcoreNodesFromDb(identityId),
+      hydrateMeshcoreNodesFromDb(identityId, nodesMode),
       hydrateMeshcoreMessagesFromDb(identityId, messagesMode),
     ]);
   } else if (loadNodes) {
-    await hydrateMeshcoreNodesFromDb(identityId);
+    await hydrateMeshcoreNodesFromDb(identityId, nodesMode);
   } else if (loadMessages) {
     await hydrateMeshcoreMessagesFromDb(identityId, messagesMode);
   }

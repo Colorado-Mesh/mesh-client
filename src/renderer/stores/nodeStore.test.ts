@@ -7,6 +7,7 @@ import {
   clearNodeIdentity,
   patchNodeFavorited,
   removeNode,
+  replaceNodeRecordsForIdentity,
   updateMeshcoreOp,
   updatePosition,
   updateTelemetry,
@@ -124,6 +125,51 @@ describe('removeNode', () => {
     upsertNode(ID, { nodeId: NODE, longName: 'Alpha' });
     removeNode(ID, 999);
     expect(useNodeStore.getState().nodes[ID]?.[NODE]?.longName).toBe('Alpha');
+  });
+});
+
+describe('replaceNodeRecordsForIdentity', () => {
+  afterEach(() => {
+    useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
+  });
+
+  it('clears prior nodes when given an empty snapshot', () => {
+    upsertNode(ID, { nodeId: NODE, longName: 'Alpha' });
+    upsertNode(ID, { nodeId: NODE + 1, longName: 'Beta' });
+    replaceNodeRecordsForIdentity(ID, []);
+    expect(useNodeStore.getState().nodes[ID]).toEqual({});
+  });
+
+  it('drops ids absent from the replacement snapshot', () => {
+    upsertNode(ID, { nodeId: NODE, longName: 'Alpha' });
+    upsertNode(ID, { nodeId: NODE + 1, longName: 'Beta' });
+    replaceNodeRecordsForIdentity(ID, [{ nodeId: NODE + 1, longName: 'Beta-2' }]);
+    expect(useNodeStore.getState().nodes[ID]?.[NODE]).toBeUndefined();
+    expect(useNodeStore.getState().nodes[ID]?.[NODE + 1]?.longName).toBe('Beta-2');
+  });
+
+  it('does not clear traceRoutes, waypoints, or neighborInfo', () => {
+    upsertNode(ID, { nodeId: NODE, longName: 'Alpha' });
+    addTraceRoute(ID, { from: NODE, to: 43, route: [7], timestamp: 1 });
+    upsertWaypoint(ID, {
+      id: 5,
+      from: NODE,
+      name: 'Point',
+      latitude: 1,
+      longitude: 2,
+      timestamp: 1,
+    });
+    upsertNeighborInfo(ID, {
+      nodeId: NODE,
+      neighbors: [{ nodeId: 43, snr: 4, lastRxTime: 99 }],
+      timestamp: 1,
+    });
+    replaceNodeRecordsForIdentity(ID, []);
+    const state = useNodeStore.getState();
+    expect(state.nodes[ID]).toEqual({});
+    expect(state.traceRoutes[ID]).toHaveLength(1);
+    expect(state.waypoints[ID][5].name).toBe('Point');
+    expect(state.neighborInfo[ID][NODE].neighbors[0].nodeId).toBe(43);
   });
 });
 

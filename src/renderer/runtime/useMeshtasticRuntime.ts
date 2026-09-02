@@ -119,6 +119,7 @@ import {
 } from '../lib/gpsSource';
 import {
   hydrateMeshtasticMessagesFromDb,
+  replaceNodesMapInIdentityStore,
   syncNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
@@ -4051,10 +4052,9 @@ export function useMeshtasticRuntime() {
         console.debug(`[useMeshtasticRuntime] refreshNodesFromDb: loaded ${nodeMap.size} nodes`);
         const storeId =
           meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+        setNodes(nodeMap);
         if (storeId) {
-          syncNodesMapToIdentityStore(storeId, nodeMap);
-        } else {
-          setNodes(nodeMap);
+          replaceNodesMapInIdentityStore(storeId, nodeMap);
         }
       })
       .catch((err: unknown) => {

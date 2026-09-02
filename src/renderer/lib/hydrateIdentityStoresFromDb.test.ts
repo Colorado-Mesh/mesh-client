@@ -12,6 +12,7 @@ import {
   hydrateMeshtasticNodesFromDb,
   mergeMeshcoreDbMessageRowsForHydration,
   MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT,
+  replaceNodesMapInIdentityStore,
   syncNodesMapToIdentityStore,
 } from './hydrateIdentityStoresFromDb';
 import { resetIdentityHydrationCoordinatorForTests } from './identityHydrationCoordinator';
@@ -85,6 +86,56 @@ describe('hydrateIdentityStoresFromDb', () => {
 
     expect(useNodeStore.getState().nodes[ID_MT][1].longName).toBe('Alpha');
     expect(Object.keys(useMessageStore.getState().messages[ID_MT] ?? {})).toHaveLength(1);
+  });
+
+  it('hydrateMeshtasticNodesFromDb replace mode clears nodes absent from DB', async () => {
+    upsertNodeRecordsForIdentity(ID_MT, [
+      { nodeId: 1, longName: 'Stale-A' },
+      { nodeId: 2, longName: 'Stale-B' },
+    ]);
+    vi.spyOn(window.electronAPI.db, 'getNodes').mockResolvedValue([]);
+
+    await hydrateMeshtasticNodesFromDb(ID_MT, 'replace');
+
+    expect(useNodeStore.getState().nodes[ID_MT]).toEqual({});
+  });
+
+  it('replaceNodesMapInIdentityStore drops ids missing from the map', () => {
+    upsertNodeRecordsForIdentity(ID_MT, [
+      { nodeId: 1, longName: 'Keep' },
+      { nodeId: 2, longName: 'Drop' },
+    ]);
+    replaceNodesMapInIdentityStore(
+      ID_MT,
+      new Map([
+        [
+          1,
+          {
+            node_id: 1,
+            long_name: 'Keep-2',
+            short_name: '',
+            hw_model: '',
+            battery: 0,
+            snr: 0,
+            rssi: 0,
+            last_heard: 0,
+            latitude: null,
+            longitude: null,
+          },
+        ],
+      ]),
+    );
+    expect(useNodeStore.getState().nodes[ID_MT][1].longName).toBe('Keep-2');
+    expect(useNodeStore.getState().nodes[ID_MT][2]).toBeUndefined();
+  });
+
+  it('hydrateMeshtasticNodesFromDb upsert mode leaves prior nodes when DB is empty', async () => {
+    upsertNodeRecordsForIdentity(ID_MT, [{ nodeId: 1, longName: 'Stale-A' }]);
+    vi.spyOn(window.electronAPI.db, 'getNodes').mockResolvedValue([]);
+
+    await hydrateMeshtasticNodesFromDb(ID_MT, 'upsert');
+
+    expect(useNodeStore.getState().nodes[ID_MT][1].longName).toBe('Stale-A');
   });
 
   it('hydrates MeshCore contacts and messages into identity-scoped stores', async () => {

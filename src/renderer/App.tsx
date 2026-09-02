@@ -2295,10 +2295,10 @@ function AppContent() {
     const actions = selectByProtocol(panelActionsByProtocol, protocol);
     if (capabilities.hasRemoteAdmin) {
       void actions.refreshNodesFromDb();
-      void refreshMeshtasticNodesInStore();
+      void refreshMeshtasticNodesInStore({ nodesMode: 'replace' });
     } else {
       void actions.refreshNodesFromDb();
-      void refreshMeshcoreNodesInStore();
+      void refreshMeshcoreNodesInStore({ nodesMode: 'replace' });
     }
   }, [
     protocol,

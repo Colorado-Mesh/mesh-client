@@ -285,6 +285,23 @@ export function upsertNodeRecordsForIdentity(identityId: IdentityId, records: No
   });
 }
 
+/** Replace the full node bucket for an identity (post-delete DB reload). Empty clears nodes only. */
+export function replaceNodeRecordsForIdentity(identityId: IdentityId, records: NodeRecord[]): void {
+  useNodeStore.setState((s) => {
+    const byId: Record<number, NodeRecord> = {};
+    for (const record of records) {
+      const { nodeId, ...patch } = record;
+      byId[nodeId] = mergeNode(undefined, nodeId, patch);
+    }
+    return {
+      nodes: {
+        ...s.nodes,
+        [identityId]: byId,
+      },
+    };
+  });
+}
+
 function meshtasticLastHeardPatch(
   identityId: IdentityId,
   packetTimestampMs: number,
