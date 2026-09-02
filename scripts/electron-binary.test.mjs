@@ -58,8 +58,59 @@ describe('electron-binary helpers', () => {
       spawnSyncFn,
       fileExists: (candidate) => candidate === installJs || (installed && candidate === bin),
     });
-    expect(result).toEqual({ installed: true, skipped: false });
+    expect(result).toEqual({ installed: true, skipped: false, attempts: 1 });
     expect(spawnSyncFn).toHaveBeenCalledOnce();
+  });
+
+  it('ensureElectronBinaryInstalled retries transient install failures then succeeds', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'mesh-electron-bin-'));
+    const installJs = path.join(root, 'node_modules', 'electron', 'install.js');
+    const bin = path.join(root, 'node_modules', 'electron', 'dist', 'electron');
+    mkdirSync(path.dirname(installJs), { recursive: true });
+    writeFileSync(installJs, '// stub', 'utf8');
+    let installed = false;
+    const spawnSyncFn = vi
+      .fn()
+      .mockReturnValueOnce({ status: 1 })
+      .mockImplementationOnce(() => {
+        installed = true;
+        return { status: 0 };
+      });
+    const sleepFn = vi.fn();
+    const warn = vi.fn();
+    const result = ensureElectronBinaryInstalled({
+      root,
+      spawnSyncFn,
+      fileExists: (candidate) => candidate === installJs || (installed && candidate === bin),
+      maxAttempts: 3,
+      retryBaseMs: 10,
+      sleepFn,
+      warn,
+    });
+    expect(result).toEqual({ installed: true, skipped: false, attempts: 2 });
+    expect(spawnSyncFn).toHaveBeenCalledTimes(2);
+    expect(sleepFn).toHaveBeenCalledWith(10);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('retrying in 10ms'));
+  });
+
+  it('ensureElectronBinaryInstalled throws after exhausting retries', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'mesh-electron-bin-'));
+    const installJs = path.join(root, 'node_modules', 'electron', 'install.js');
+    mkdirSync(path.dirname(installJs), { recursive: true });
+    writeFileSync(installJs, '// stub', 'utf8');
+    const spawnSyncFn = vi.fn(() => ({ status: 1 }));
+    expect(() =>
+      ensureElectronBinaryInstalled({
+        root,
+        spawnSyncFn,
+        fileExists: (candidate) => candidate === installJs,
+        maxAttempts: 2,
+        retryBaseMs: 5,
+        sleepFn: vi.fn(),
+        warn: vi.fn(),
+      }),
+    ).toThrow(/exited with status 1/);
+    expect(spawnSyncFn).toHaveBeenCalledTimes(2);
   });
 
   it('ensureElectronBinaryInstalled throws when install.js is missing', () => {
