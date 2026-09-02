@@ -30,11 +30,7 @@ const BRACKET_PREFIX = /^@\[([^\]]*)\]\s*(.*)$/su;
 const BRACKET_REPLY_KEY_SUFFIX = /#(\d{10,})$/;
 
 export function sanitizeMeshcoreWireName(name: string): string {
-  return name
-    .replace(/\p{Extended_Pictographic}/gu, '')
-    .replace(/[\uFE00-\uFE0F\u200D]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return name.replace(/\s+/g, ' ').trim();
 }
 
 /** Build `@[Name#replyKey]` prefix (keyed wire; used by some inbound clients, not mesh-client outbound). */
@@ -46,7 +42,7 @@ export function formatMeshcoreWireReplyPrefix(displayName: string, replyKey: num
   return `@[${name}#${key}]`;
 }
 
-/** Keyless tapback prefix: `@[Display Name]` (sanitized; official companion tapback wire). */
+/** Keyless tapback prefix: `@[Display Name]` (official companion tapback wire). */
 export function formatMeshcoreWireTapbackPrefix(displayName: string): string {
   const clean = sanitizeMeshcoreWireName(displayName);
   return `@[${clean.length > 0 ? clean : 'Unknown'}]`;
