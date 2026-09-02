@@ -581,9 +581,17 @@ describe('meshcoreChannelRepairRawText', () => {
 });
 
 describe('sanitizeMeshcoreWireName', () => {
-  it('strips emojis for official tapback wire names', () => {
-    expect(sanitizeMeshcoreWireName('🛩️ NV0N 01')).toBe('NV0N 01');
+  it('preserves emoji-prefixed MeshCore display names', () => {
+    expect(sanitizeMeshcoreWireName('  🛩️   NV0N 01  ')).toBe('🛩️ NV0N 01');
+    expect(sanitizeMeshcoreWireName('👩‍💻 Operator')).toBe('👩‍💻 Operator');
     expect(sanitizeMeshcoreWireName('NV0N 01')).toBe('NV0N 01');
+  });
+
+  it('rejects names that cannot be represented safely inside the bracket wire', () => {
+    expect(sanitizeMeshcoreWireName('Alice] forged')).toBe('');
+    expect(sanitizeMeshcoreWireName('Alice#1234567890')).toBe('');
+    expect(formatMeshcoreWireTapbackPrefix('Alice] forged')).toBe('@[Unknown]');
+    expect(formatMeshcoreWireTapbackPrefix('Alice#1234567890')).toBe('@[Unknown]');
   });
 });
 
@@ -592,8 +600,8 @@ describe('buildMeshcoreOutboundTapbackWire', () => {
     expect(buildMeshcoreOutboundTapbackWire('NV0N 01', '🧐')).toBe('@[NV0N 01] 🧐');
   });
 
-  it('sanitizes emojis from target name', () => {
-    expect(buildMeshcoreOutboundTapbackWire('🛩️ NV0N 01', '🧐')).toBe('@[NV0N 01] 🧐');
+  it('preserves the target emoji so companion clients resolve the correct user', () => {
+    expect(buildMeshcoreOutboundTapbackWire('🧙 Hobo', '😂')).toBe('@[🧙 Hobo] 😂');
   });
 
   it('uses formatMeshcoreWireTapbackPrefix for the bracket segment', () => {
@@ -640,9 +648,9 @@ describe('meshcorePromoteEmojiOnlyReplyToTapback', () => {
 });
 
 describe('formatMeshcoreWireReplyPrefix', () => {
-  it('sanitizes display name before adding reply key', () => {
+  it('preserves the full display name before adding the reply key', () => {
     expect(formatMeshcoreWireReplyPrefix('🛩️ NV0N 01', 1_780_235_760_847)).toBe(
-      '@[NV0N 01#1780235760847]',
+      '@[🛩️ NV0N 01#1780235760847]',
     );
   });
 });
@@ -775,6 +783,18 @@ describe('buildMeshcoreOutboundSendText', () => {
         useKeyedReplies: true,
       }),
     ).toBe('@[durk#99] reply test');
+  });
+
+  it('preserves an emoji-prefixed target name in a channel reply', () => {
+    expect(
+      buildMeshcoreOutboundSendText({
+        text: 'apologies for my errors in burrito technology',
+        replyTo: '99',
+        channelIndex: 25,
+        myNodeNum: 7,
+        messages: [{ ...parentChannel, sender_name: '🐻 MEGABEAR β' }],
+      }),
+    ).toBe('@[🐻 MEGABEAR β] apologies for my errors in burrito technology');
   });
 
   it('returns plain text when parent is not found', () => {
