@@ -2303,7 +2303,10 @@
     "clearAllIntro": "Entfernen Sie jeden Kontakt aus dem Radio und löschen Sie die Kontaktdatenbank der App. Dies kann nicht rückgängig gemacht werden.",
     "clearAllContactsConfirm": "Alle Kontakte aus dem Radio entfernen und lokale Kontaktdaten löschen?",
     "clearingContacts": "Clearing…",
-    "clearAllContactsButton": "Löschen Sie alle Kontakte"
+    "clearAllContactsButton": "Löschen Sie alle Kontakte",
+    "autoOffloadWhenFull": "Automatisches Entladen, wenn das Radio voll ist",
+    "autoOffloadWhenFullLabel": "Automatisches Entladen, wenn voll",
+    "autoOffloadWhenFullDesc": "Wenn der Begleiter meldet, dass der Kontaktspeicher voll ist, werden die Kontakte automatisch in die App-Datenbank ausgelagert (wie bei Offload)."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Privatsphäre der Telemetrie",
@@ -4199,7 +4202,10 @@
         "UNLOCK_FAILED": "Entsperren fehlgeschlagen",
         "DISABLED": "Behnderte"
       }
-    }
+    },
+    "contactsFullAlarm": "Der Funkkontaktspeicher ist voll. Kontakte in die App-Datenbank entladen, um Slots freizugeben.",
+    "contactsFullAlarmAction": "Offload (Abladen)",
+    "contactsFullAutoOffloadStarted": "Funkkontakte voll — Automatische Entladung wird gestartet..."
   },
   "rawPacketLog": {
     "filterPackets": "Filterpakete",

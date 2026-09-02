@@ -144,6 +144,11 @@ import {
 } from '../lib/meshcore/heardRepeatTracker';
 import { assignCayenneTemperatureFields } from '../lib/meshcore/meshcoreCayenneTemperature';
 import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreChatSenderNode';
+import {
+  attachMeshcoreContactCapacityPush,
+  clearMeshcoreFirmwareContactsFullLatch,
+  registerMeshcoreContactsFullOffloadRunner,
+} from '../lib/meshcore/meshcoreContactCapacityPush';
 import { takeMeshcoreDiscoverSelfCache } from '../lib/meshcore/meshcoreDiscoverSelfCache';
 import { syncMeshcoreDmAckToMessageStore } from '../lib/meshcore/meshcoreDmAckRuntime';
 import type {
@@ -686,6 +691,7 @@ export function useMeshcoreRuntime() {
   const meshcoreConnectTypeRef = useRef<'ble' | 'serial' | 'tcp'>('ble');
   const meshcoreIngressDetachRef = useRef<(() => void) | null>(null);
   const meshcoreIngestDetachRef = useRef<(() => void) | null>(null);
+  const meshcoreContactCapacityPushDetachRef = useRef<(() => void) | null>(null);
   const meshcoreIdentityIdRef = useRef<string | null>(null);
   /** Driver identity from connect until initConn binds the store identity. */
   const meshcorePendingDriverIdentityRef = useRef<string | null>(null);
@@ -1929,6 +1935,10 @@ export function useMeshcoreRuntime() {
         meshcoreIngestDetachRef.current();
         meshcoreIngestDetachRef.current = null;
       }
+      if (meshcoreContactCapacityPushDetachRef.current) {
+        meshcoreContactCapacityPushDetachRef.current();
+        meshcoreContactCapacityPushDetachRef.current = null;
+      }
       const driverIdentity =
         opts?.driverIdentityId ??
         (meshcoreDriverConnectedRef.current
@@ -2582,11 +2592,16 @@ export function useMeshcoreRuntime() {
         if (meshcoreIngestDetachRef.current) {
           meshcoreIngestDetachRef.current();
         }
+        if (meshcoreContactCapacityPushDetachRef.current) {
+          meshcoreContactCapacityPushDetachRef.current();
+        }
         if (identityId) {
           meshcoreIngestDetachRef.current = attachMeshcoreIngest(identityId, {
             onPathUpdated: handleMeshcorePathUpdatedFromIngest,
             rawPacketsForHopCorrelation: () => rawPacketsRef.current,
           });
+          meshcoreContactCapacityPushDetachRef.current =
+            attachMeshcoreContactCapacityPush(identityId);
           setConnection(identityId, {
             status: 'connected',
             connectionType: transportType === 'tcp' ? 'http' : transportType,
@@ -8243,6 +8258,30 @@ export function useMeshcoreRuntime() {
     ensureTcpLiveForUserTx,
     runMeshcoreUserTxWithLiveTcp,
   ]);
+
+  useEffect(() => {
+    registerMeshcoreContactsFullOffloadRunner(async () => {
+      const removedFromRadio = await offloadContactsFromRadio();
+      const offloadedCount = await window.electronAPI.db.offloadAllMeshcoreContacts();
+      try {
+        await refreshContacts();
+      } catch (e) {
+        console.warn(
+          '[useMeshcoreRuntime] refreshContacts after contacts-full offload failed ' +
+            errLikeToLogString(e),
+        );
+        pushAppToast(i18n.t('radioPanel.offloadReconcileRefreshFailed'), 'error');
+      }
+      clearMeshcoreFirmwareContactsFullLatch();
+      pushAppToast(
+        i18n.t('radioPanel.offloadedContacts', {
+          count: Math.max(offloadedCount, removedFromRadio),
+        }),
+        'success',
+      );
+    });
+    return () => registerMeshcoreContactsFullOffloadRunner(null);
+  }, [offloadContactsFromRadio, refreshContacts]);
 
   return useMemo(
     () => ({

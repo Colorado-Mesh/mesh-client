@@ -9,6 +9,10 @@ export const MC_PUSH_LOGIN_FAIL = 0x86;
 export const MC_PUSH_STATUS_RESPONSE = 0x87;
 export const MC_PUSH_TELEMETRY_RESPONSE = 0x8b;
 export const MC_PUSH_BINARY_RESPONSE = 0x8c;
+/** Companion: contact removed from radio (e.g. overwrite-oldest). */
+export const MC_PUSH_CONTACT_DELETED = 0x8f;
+/** Companion: on-device contact storage is full. */
+export const MC_PUSH_CONTACTS_FULL = 0x90;
 
 /** meshcore.js CommandCodes */
 export const MC_CMD_SEND_TXT_MSG = 2;

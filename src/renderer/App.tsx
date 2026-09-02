@@ -54,6 +54,10 @@ import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
+import {
+  readMeshcoreAutoOffloadWhenFull,
+  writeMeshcoreAutoOffloadWhenFull,
+} from '@/renderer/lib/meshcore/meshcoreContactCapacityPush';
 import { isMeshcoreTcpOpenHopDeadAccepted } from '@/renderer/lib/meshcore/meshcoreTcpInitBurst';
 import {
   meshcoreConfiguredChannelIndexSet,
@@ -734,6 +738,9 @@ function AppContent() {
       }
     },
   );
+  const [meshcoreAutoOffloadWhenFull, setMeshcoreAutoOffloadWhenFullState] = useState(() =>
+    readMeshcoreAutoOffloadWhenFull(),
+  );
   const onMeshcoreContactsShowPublicKeysChange = useCallback((value: boolean) => {
     setMeshcoreContactsShowPublicKeysState(value);
     try {
@@ -749,6 +756,10 @@ function AppContent() {
     } catch {
       // catch-no-log-ok localStorage
     }
+  }, []);
+  const onMeshcoreAutoOffloadWhenFullChange = useCallback((value: boolean) => {
+    setMeshcoreAutoOffloadWhenFullState(value);
+    writeMeshcoreAutoOffloadWhenFull(value);
   }, []);
 
   // ─── Auto flood advert interval (MeshCore) ───────────────────────
@@ -3935,6 +3946,16 @@ function AppContent() {
                                   onMeshcoreContactsShowRefreshControlChange={
                                     capabilities.hasContactImportExport
                                       ? onMeshcoreContactsShowRefreshControlChange
+                                      : undefined
+                                  }
+                                  meshcoreAutoOffloadWhenFull={
+                                    capabilities.hasContactImportExport
+                                      ? meshcoreAutoOffloadWhenFull
+                                      : undefined
+                                  }
+                                  onMeshcoreAutoOffloadWhenFullChange={
+                                    capabilities.hasContactImportExport
+                                      ? onMeshcoreAutoOffloadWhenFullChange
                                       : undefined
                                   }
                                   onClearAllMeshcoreContacts={

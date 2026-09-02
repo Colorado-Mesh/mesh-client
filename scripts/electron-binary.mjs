@@ -11,6 +11,11 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const projectRoot = path.resolve(__dirname, '..');
 
+/** Default attempts for transient GitHub/CDN fetch failures during electron/install.js. */
+export const ELECTRON_INSTALL_MAX_ATTEMPTS = 3;
+/** Base backoff between install retries (ms); doubles each attempt. */
+export const ELECTRON_INSTALL_RETRY_BASE_MS = 1500;
+
 /** @param {string} platform @param {(p: string) => boolean} fileExists @param {string} [root] */
 export function resolveLocalElectronBin(
   platform = process.platform,
@@ -47,17 +52,56 @@ export function isElectronBinaryInstalled(
 }
 
 /**
+ * Sync sleep without busy-waiting (callers use spawnSync / postinstall).
+ * @param {number} ms
+ * @param {(ms: number) => void} [sleepFn]
+ */
+function sleepMs(ms, sleepFn) {
+  if (sleepFn) {
+    sleepFn(ms);
+    return;
+  }
+  const sab = new SharedArrayBuffer(4);
+  const view = new Int32Array(sab);
+  Atomics.wait(view, 0, 0, ms);
+}
+
+/**
+ * @param {number} maxAttempts
+ * @param {number} retryBaseMs
+ * @returns {{ attempts: number; retryBaseMs: number }}
+ */
+function validateRetryOptions(maxAttempts, retryBaseMs) {
+  if (!Number.isFinite(maxAttempts) || maxAttempts < 1) {
+    throw new Error(`maxAttempts must be a finite number >= 1, got ${String(maxAttempts)}`);
+  }
+  if (!Number.isFinite(retryBaseMs) || retryBaseMs < 0) {
+    throw new Error(`retryBaseMs must be a finite non-negative number, got ${String(retryBaseMs)}`);
+  }
+  return { attempts: Math.floor(maxAttempts), retryBaseMs };
+}
+
+/**
  * Run electron/install.js when the prebuilt binary is missing (Electron 42+ lazy download).
+ * Retries on transient CDN/network failures (common in CI: `TypeError: fetch failed`).
  *
  * @param {object} [opts]
  * @param {string} [opts.root]
  * @param {typeof spawnSync} [opts.spawnSyncFn]
  * @param {(p: string) => boolean} [opts.fileExists]
+ * @param {number} [opts.maxAttempts]
+ * @param {number} [opts.retryBaseMs]
+ * @param {(ms: number) => void} [opts.sleepFn] - injectable sleep for tests
+ * @param {(msg: string) => void} [opts.warn]
  */
 export function ensureElectronBinaryInstalled({
   root = projectRoot,
   spawnSyncFn = spawnSync,
   fileExists = existsSync,
+  maxAttempts = ELECTRON_INSTALL_MAX_ATTEMPTS,
+  retryBaseMs = ELECTRON_INSTALL_RETRY_BASE_MS,
+  sleepFn,
+  warn = (msg) => process.stderr.write(`${msg}\n`),
 } = {}) {
   if (isElectronBinaryInstalled(root, process.platform, fileExists)) {
     return { installed: true, skipped: true };
@@ -70,23 +114,41 @@ export function ensureElectronBinaryInstalled({
     );
   }
 
-  process.stdout.write('Electron binary not found — downloading via electron/install.js…\n');
-  const result = spawnSyncFn(process.execPath, [installJs], {
-    cwd: root,
-    stdio: 'inherit',
-    env: { ...process.env },
-  });
+  const { attempts, retryBaseMs: validatedRetryBaseMs } = validateRetryOptions(
+    maxAttempts,
+    retryBaseMs,
+  );
+  let lastError = null;
 
-  if (result.error) {
-    throw result.error;
-  }
-  if (result.status !== 0) {
-    throw new Error(`electron/install.js exited with status ${result.status ?? 'unknown'}`);
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    if (attempt === 1) {
+      process.stdout.write('Electron binary not found — downloading via electron/install.js…\n');
+    } else {
+      const delayMs = validatedRetryBaseMs * 2 ** (attempt - 2);
+      warn(
+        `Electron download failed (attempt ${attempt - 1}/${attempts}); retrying in ${delayMs}ms…`,
+      );
+      sleepMs(delayMs, sleepFn);
+    }
+
+    const result = spawnSyncFn(process.execPath, [installJs], {
+      cwd: root,
+      stdio: 'inherit',
+      env: { ...process.env },
+    });
+
+    if (result.error) {
+      lastError = result.error;
+    } else if (result.status !== 0) {
+      lastError = new Error(`electron/install.js exited with status ${result.status ?? 'unknown'}`);
+    } else if (!isElectronBinaryInstalled(root, process.platform, fileExists)) {
+      lastError = new Error('Electron install.js completed but the binary is still missing.');
+    } else {
+      return { installed: true, skipped: false, attempts: attempt };
+    }
   }
 
-  if (!isElectronBinaryInstalled(root, process.platform, fileExists)) {
-    throw new Error('Electron install.js completed but the binary is still missing.');
-  }
-
-  return { installed: true, skipped: false };
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(String(lastError ?? 'Electron install failed'));
 }

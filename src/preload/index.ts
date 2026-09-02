@@ -376,6 +376,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deleteMeshcoreContactsWithoutPubkey: () =>
       ipcRenderer.invoke('db:deleteMeshcoreContactsWithoutPubkey'),
     offloadAllMeshcoreContacts: () => ipcRenderer.invoke('db:offloadAllMeshcoreContacts'),
+    markMeshcoreContactOffRadio: (publicKeyHex: string) =>
+      ipcRenderer.invoke('db:markMeshcoreContactOffRadio', publicKeyHex),
     getMeshcoreContactById: (nodeId: number) =>
       ipcRenderer.invoke('db:getMeshcoreContactById', nodeId),
     updateMeshcoreContactNickname: (nodeId: number, nickname: string | null) =>

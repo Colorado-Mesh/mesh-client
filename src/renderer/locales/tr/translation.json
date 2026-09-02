@@ -2303,7 +2303,10 @@
     "clearAllIntro": "Radyodaki tüm kişileri kaldırın ve uygulamanın kişi veritabanını temizleyin. Bu geri alınamaz.",
     "clearAllContactsConfirm": "Telsizdeki tüm kişiler kaldırılsın ve yerel iletişim verileri temizlensin mi?",
     "clearingContacts": "Temizleniyor…",
-    "clearAllContactsButton": "Tüm kişileri temizle"
+    "clearAllContactsButton": "Tüm kişileri temizle",
+    "autoOffloadWhenFull": "Radyo dolduğunda otomatik boşaltma",
+    "autoOffloadWhenFullLabel": "Dolu olduğunda otomatik boşaltma",
+    "autoOffloadWhenFullDesc": "Refakatçi kişi depolama alanının dolu olduğunu bildirdiğinde, kişileri otomatik olarak uygulama veritabanına boşaltın (Yük Boşaltma ile aynı)."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Telemetri gizliliği",
@@ -4199,7 +4202,10 @@
         "UNLOCK_FAILED": "Kilit açma başarısız",
         "DISABLED": "Engelli"
       }
-    }
+    },
+    "contactsFullAlarm": "Telsiz iletişim deposu dolu. Boş yuvalara kişileri uygulama veritabanına aktarın.",
+    "contactsFullAlarmAction": "Bırakma",
+    "contactsFullAutoOffloadStarted": "Radyo kontakları dolu — otomatik boşaltma başlatılıyor…"
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",

@@ -2303,7 +2303,10 @@
     "clearAllIntro": "Supprimez tous les contacts de la radio et effacez la base de données de contacts de l'application. Cela ne peut pas être annulé.",
     "clearAllContactsConfirm": "Supprimer tous les contacts de la radio et effacer les données des contacts locaux ?",
     "clearingContacts": "Clairière…",
-    "clearAllContactsButton": "Effacer tous les contacts"
+    "clearAllContactsButton": "Effacer tous les contacts",
+    "autoOffloadWhenFull": "Déchargement automatique lorsque la radio est pleine",
+    "autoOffloadWhenFullLabel": "Déchargement automatique lorsqu'il est plein",
+    "autoOffloadWhenFullDesc": "Lorsque le compagnon signale que le stockage des contacts est plein, déchargez automatiquement les contacts dans la base de données de l'application (identique au déchargement)."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Confidentialité de la télémétrie",
@@ -4199,7 +4202,10 @@
         "UNLOCK_FAILED": "Échec du déverrouillage",
         "DISABLED": "Handicapé"
       }
-    }
+    },
+    "contactsFullAlarm": "Le stockage des contacts radio est plein. Déchargez les contacts vers la base de données de l'application pour libérer des emplacements.",
+    "contactsFullAlarmAction": "Décharger",
+    "contactsFullAutoOffloadStarted": "• s’occupent de 1 127 communications radio,"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",

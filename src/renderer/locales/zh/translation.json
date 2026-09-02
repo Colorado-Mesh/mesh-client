@@ -2303,7 +2303,10 @@
     "clearAllIntro": "从收音机中删除所有联系人并清除应用程序的联系人数据库。此操作无法撤消。",
     "clearAllContactsConfirm": "从对讲机中删除所有联系人并清除本地联系人数据？",
     "clearingContacts": "清算…",
-    "clearAllContactsButton": "清除所有联系人"
+    "clearAllContactsButton": "清除所有联系人",
+    "autoOffloadWhenFull": "收音机已满时自动卸载",
+    "autoOffloadWhenFullLabel": "满时自动卸载",
+    "autoOffloadWhenFullDesc": "当伴侣报告联系人存储空间已满时，自动将联系人卸载到应用程序数据库（与卸载相同）。"
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "遥测隐私",
@@ -4199,7 +4202,10 @@
         "UNLOCK_FAILED": "解锁失败",
         "DISABLED": "已禁用"
       }
-    }
+    },
+    "contactsFullAlarm": "无线电触点存储已满。将联系人卸载到应用程序数据库以释放插槽。",
+    "contactsFullAlarmAction": "卸掉",
+    "contactsFullAutoOffloadStarted": "无线电联系人已满—开始自动卸载…"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",

@@ -2303,7 +2303,10 @@
     "clearAllIntro": "Remove every contact from the radio and clear the app's contact database.これを元に戻すことはできません。",
     "clearAllContactsConfirm": "無線からすべての連絡先を削除し、ローカルの連絡先データをクリアしますか?",
     "clearingContacts": "クリア中…",
-    "clearAllContactsButton": "すべての連絡先をクリアする"
+    "clearAllContactsButton": "すべての連絡先をクリアする",
+    "autoOffloadWhenFull": "ラジオがいっぱいになると自動オフロード",
+    "autoOffloadWhenFullLabel": "いっぱいになると自動オフロード",
+    "autoOffloadWhenFullDesc": "コンパニオンが連絡先のストレージがいっぱいであると報告すると、連絡先をアプリデータベースに自動的にオフロードします（オフロードと同じ）。"
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "テレメトリーのプライバシー",
@@ -4199,7 +4202,10 @@
         "UNLOCK_FAILED": "ロック解除に失敗しました",
         "DISABLED": "無効"
       }
-    }
+    },
+    "contactsFullAlarm": "無線コンタクトストレージがいっぱいです。スロットを空けるために、連絡先をアプリデータベースにオフロードします。",
+    "contactsFullAlarmAction": "オフロード",
+    "contactsFullAutoOffloadStarted": "無線連絡先がいっぱいです—自動オフロードを開始しています…"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",

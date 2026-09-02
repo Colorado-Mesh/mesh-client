@@ -5856,6 +5856,29 @@ ipcMain.handle('db:offloadAllMeshcoreContacts', (event) => {
   }
 });
 
+// Mark a single contact off-radio by public_key (CONTACT_DELETED push). Returns { changes }.
+ipcMain.handle('db:markMeshcoreContactOffRadio', (event, publicKeyHex: unknown) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:markMeshcoreContactOffRadio: unauthorized sender');
+  try {
+    if (typeof publicKeyHex !== 'string' || !/^[0-9a-fA-F]{64}$/.test(publicKeyHex)) {
+      throw new Error('db:markMeshcoreContactOffRadio: public_key must be 64 hex chars');
+    }
+    const db = getDbForIpc('db:markMeshcoreContactOffRadio');
+    if (!db) return { changes: 0 };
+    const key = publicKeyHex.toLowerCase();
+    const result = db
+      .prepareOnce(
+        `UPDATE meshcore_contacts SET on_radio = 0
+         WHERE lower(public_key) = ? AND on_radio = 1`,
+      )
+      .run(key);
+    return { changes: result.changes };
+  } catch (err) {
+    return finishDbIpcReadHandler('db:markMeshcoreContactOffRadio', err, { changes: 0 });
+  }
+});
+
 // Get a single contact by node_id (returns on_radio status).
 ipcMain.handle('db:getMeshcoreContactById', (event, nodeId: number) => {
   try {

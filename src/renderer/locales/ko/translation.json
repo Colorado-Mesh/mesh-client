@@ -2303,7 +2303,10 @@
     "clearAllIntro": "라디오에서 모든 연락처를 제거하고 앱의 연락처 데이터베이스를 지웁니다. 이 작업은 취소할 수 없습니다.",
     "clearAllContactsConfirm": "라디오에서 모든 연락처를 삭제하고 지역 연락처 데이터를 삭제하시겠습니까?",
     "clearingContacts": "청산…",
-    "clearAllContactsButton": "모든 연락처 지우기"
+    "clearAllContactsButton": "모든 연락처 지우기",
+    "autoOffloadWhenFull": "라디오가 가득 찼을 때 자동 오프로드",
+    "autoOffloadWhenFullLabel": "가득 찼을 때 자동 오프로드",
+    "autoOffloadWhenFullDesc": "동반자가 연락처 저장소가 가득 찼다고 보고하면 자동으로 연락처를 앱 데이터베이스로 오프로드합니다 (오프로드와 동일)."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "원격 측정 개인 정보 보호",
@@ -4199,7 +4202,10 @@
         "UNLOCK_FAILED": "잠금 해제 실패",
         "DISABLED": "비활성화됨"
       }
-    }
+    },
+    "contactsFullAlarm": "무선 연락처 저장소가 가득 찼습니다. 무료 슬롯으로 앱 데이터베이스에 연락처를 오프로드합니다.",
+    "contactsFullAlarmAction": "오프로드",
+    "contactsFullAutoOffloadStarted": "라디오 연락처 가득 참 — 자동 오프로드 시작..."
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",

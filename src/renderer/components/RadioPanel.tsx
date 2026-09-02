@@ -234,6 +234,8 @@ interface Props {
   onMeshcoreContactsShowPublicKeysChange?: (value: boolean) => void;
   meshcoreContactsShowRefreshControl?: boolean;
   onMeshcoreContactsShowRefreshControlChange?: (value: boolean) => void;
+  meshcoreAutoOffloadWhenFull?: boolean;
+  onMeshcoreAutoOffloadWhenFullChange?: (value: boolean) => void;
   onClearAllMeshcoreContacts?: () => Promise<void>;
   onSendAdvert?: () => Promise<void>;
   onSendZeroHopAdvert?: () => Promise<void>;
@@ -743,6 +745,8 @@ export default function RadioPanel({
   onMeshcoreContactsShowPublicKeysChange,
   meshcoreContactsShowRefreshControl = false,
   onMeshcoreContactsShowRefreshControlChange,
+  meshcoreAutoOffloadWhenFull = false,
+  onMeshcoreAutoOffloadWhenFullChange,
   onClearAllMeshcoreContacts,
   onSendAdvert,
   onSendZeroHopAdvert,
@@ -2116,7 +2120,8 @@ export default function RadioPanel({
         meshcoreSelfInfo &&
         onApplyMeshcoreContactAutoAdd &&
         onMeshcoreContactsShowPublicKeysChange &&
-        onMeshcoreContactsShowRefreshControlChange && (
+        onMeshcoreContactsShowRefreshControlChange &&
+        onMeshcoreAutoOffloadWhenFullChange && (
           <MeshcoreContactSettingsSection
             selfInfo={meshcoreSelfInfo}
             autoadd={meshcoreAutoadd ?? null}
@@ -2126,6 +2131,8 @@ export default function RadioPanel({
             onMeshcoreContactsShowPublicKeysChange={onMeshcoreContactsShowPublicKeysChange}
             meshcoreContactsShowRefreshControl={meshcoreContactsShowRefreshControl}
             onMeshcoreContactsShowRefreshControlChange={onMeshcoreContactsShowRefreshControlChange}
+            meshcoreAutoOffloadWhenFull={meshcoreAutoOffloadWhenFull}
+            onMeshcoreAutoOffloadWhenFullChange={onMeshcoreAutoOffloadWhenFullChange}
             onApply={async (params) => {
               setApplyingMeshcoreContactMgmt(true);
               try {
