@@ -9,9 +9,23 @@ const PATCH = readFileSync(
 );
 
 describe('meshcore.js patch — firmware-ahead push codes', () => {
-  it('silently drops unknown push 0x8E (142) alongside 0x8F', () => {
+  it('silently drops CONTROL_DATA push 0x8E', () => {
     expect(PATCH).toContain('0x8E');
+    expect(PATCH).toMatch(/responseCode === 0x8E[\s\S]*drop silently/);
+  });
+
+  it('emits CONTACT_DELETED (0x8F) with publicKey instead of silent drop', () => {
     expect(PATCH).toContain('0x8F');
-    expect(PATCH).toMatch(/responseCode === 0x8E[\s\S]*firmware ahead of library/);
+    expect(PATCH).toContain('onContactDeletedPush');
+    expect(PATCH).toMatch(/this\.emit\(0x8F,\s*\{[\s\S]*publicKey:/);
+    expect(PATCH).not.toMatch(
+      /responseCode === 0x8F[\s\S]*Unknown push \(0x8F\)[\s\S]*drop silently/,
+    );
+  });
+
+  it('emits CONTACTS_FULL (0x90)', () => {
+    expect(PATCH).toContain('0x90');
+    expect(PATCH).toContain('onContactsFullPush');
+    expect(PATCH).toMatch(/this\.emit\(0x90,\s*\{\}/);
   });
 });

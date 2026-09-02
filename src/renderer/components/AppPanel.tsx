@@ -112,24 +112,6 @@ function readNodesMapForProtocol(protocol: MeshProtocol): Map<number, MeshNode> 
   return nodeRecordsToMeshNodeMap(Object.values(byId));
 }
 
-const DANGER_ACTION_LABEL_KEY: Record<DangerActionId, string> = {
-  resetDiagnostics: 'appPanel.resetDiagnostics',
-  clearGpsData: 'appPanel.clearGpsData',
-  clearPositionHistory: 'appPanel.clearPositionHistory',
-  deleteOldNodes: 'appPanel.deleteOldNodes',
-  pruneMqttOnlyNodes: 'appPanel.pruneMqttOnlyNodes',
-  pruneUnnamedNodes: 'appPanel.pruneUnnamedNodes',
-  pruneNoFixNodes: 'appPanel.pruneNoFixNodes',
-  pruneDistantNodes: 'appPanel.pruneDistantNodesTitle',
-  pruneOfflineNodes: 'appPanel.pruneOfflineNodesTitle',
-  clearNodes: 'appPanel.clearAllNodesButton',
-  deleteContactsNoPubkeys: 'appPanel.deleteContactsNoPubkeysTitle',
-  clearReticulumContacts: 'appPanel.clearReticulumContactsTitle',
-  clearMessages: 'appPanel.clearMessagesTitle',
-  clearAllRepeaters: 'appPanel.clearAllRepeaters',
-  clearAllData: 'appPanel.clearAllLocalData',
-};
-
 function gpsIntervalLabel(t: (key: string) => string, secs: number): string {
   switch (secs) {
     case 0:
@@ -719,7 +701,7 @@ export default function AppPanel({
 
   const handleConfirm = useCallback(async () => {
     if (!pendingAction) return;
-    const { actionId, action, messageClearMeta } = pendingAction;
+    const { actionId, action, messageClearMeta, title } = pendingAction;
     setPendingAction(null);
     try {
       await action();
@@ -730,7 +712,7 @@ export default function AppPanel({
       }
       addToast(
         t('appPanel.actionCompleted', {
-          name: t(DANGER_ACTION_LABEL_KEY[actionId]),
+          name: title,
         }),
         'success',
       );

@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   expandWithSiblingTests,
   isForceFullSuitePath,
+  isManifestOnlyCommit,
   pickProjects,
   planPrecommitTests,
   runPrecommitTests,
@@ -37,6 +38,38 @@ describe('precommit-tests skip', () => {
     const plan = planPrecommitTests(['docs/ci-cd.md', 'README.md']);
     expect(plan.mode).toBe('skip');
     expect(plan.relatedPaths).toEqual([]);
+  });
+});
+
+describe('precommit-tests manifest-only fast path', () => {
+  it('recognizes dependency manifests and the flatpak manifest the pnpm sync re-stages', () => {
+    expect(isManifestOnlyCommit(['package.json', 'pnpm-lock.yaml'])).toBe(true);
+    expect(isManifestOnlyCommit(['package.json', 'org.coloradomesh.MeshClient.yml'])).toBe(true);
+    expect(isManifestOnlyCommit(['package.json', 'src/main/index.ts'])).toBe(false);
+    expect(isManifestOnlyCommit(['package.json', 'README.md'])).toBe(false);
+    expect(isManifestOnlyCommit([])).toBe(false);
+  });
+
+  it('skips Vitest for a pure dependency bump', () => {
+    const plan = planPrecommitTests(['package.json', 'pnpm-lock.yaml']);
+    expect(plan.mode).toBe('skip');
+    expect(plan.relatedPaths).toEqual([]);
+  });
+
+  it('still forces the full suite when source is staged alongside manifests', () => {
+    expect(planPrecommitTests(['package.json', 'src/main/index.ts']).mode).toBe('full');
+  });
+
+  it('explains the manifest-only skip in the log line', () => {
+    const lines = [];
+    const status = runPrecommitTests(['package.json', 'pnpm-lock.yaml'], {
+      log: (msg) => lines.push(msg),
+      spawnSyncFn: () => {
+        throw new Error('vitest should not spawn for a manifest-only commit');
+      },
+    });
+    expect(status).toBe(0);
+    expect(lines.join('\n')).toContain('manifest-only commit');
   });
 });
 
@@ -109,7 +142,7 @@ describe('precommit-tests runPrecommitTests', () => {
 
   it('spawns full vitest run for force-full', () => {
     const spawnSyncFn = vi.fn(() => ({ status: 0 }));
-    const code = runPrecommitTests(['package.json'], {
+    const code = runPrecommitTests(['vitest.config.mts'], {
       spawnSyncFn,
       log: () => {},
     });

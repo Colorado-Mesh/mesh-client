@@ -66,6 +66,10 @@ export interface NodeRecord {
   lux?: number;
   windSpeed?: number;
   windDirection?: number;
+  lightningStrikeCount1h?: number;
+  lightningDistanceKm?: number;
+  pm25Standard?: number;
+  co2?: number;
   telemetryTimestamp?: number;
   snr?: number;
   rssi?: number;
@@ -92,6 +96,8 @@ export interface NodeRecord {
   publicKey?: Uint8Array;
   /** Meshtastic PKC public key hex from NodeInfo/User (remote admin destination key). */
   publicKeyHex?: string;
+  keyManuallyVerified?: boolean;
+  hasXeddsaSigned?: boolean;
   // MeshCore per-node op state (results of on-demand requests for repeaters /
   // remote nodes). Optional fields; non-MeshCore nodes leave them undefined.
   meshcoreNodeStatus?: StatusResult;
@@ -269,6 +275,24 @@ export function upsertNodeRecordsForIdentity(identityId: IdentityId, records: No
     for (const record of records) {
       const { nodeId, ...patch } = record;
       byId[nodeId] = mergeNode(byId[nodeId], nodeId, patch);
+    }
+    return {
+      nodes: {
+        ...s.nodes,
+        [identityId]: byId,
+      },
+    };
+  });
+}
+
+/** Replace the full node bucket for an identity (post-delete DB reload). Empty clears nodes only. */
+export function replaceNodeRecordsForIdentity(identityId: IdentityId, records: NodeRecord[]): void {
+  useNodeStore.setState((s) => {
+    const prior = s.nodes[identityId] ?? {};
+    const byId: Record<number, NodeRecord> = {};
+    for (const record of records) {
+      const { nodeId, ...patch } = record;
+      byId[nodeId] = mergeNode(prior[nodeId], nodeId, patch);
     }
     return {
       nodes: {

@@ -23,8 +23,9 @@ import {
   missingOfflineTarballs,
   parseGeneratedPnpmManifest,
   listLockfilePackageIds,
-  applyGeneratorSkipPlaywrightSpecialSources,
+  applyGeneratorFlatpakNodeGeneratorPatches,
   resolveFlatpakNodeGeneratorBin,
+  resolveGeneratorElectronPyPath,
   resolveGeneratorSpecialPyPath,
   storeVersionFromPackageManager,
 } from './flatpakPnpmStoreVersion.mjs';
@@ -76,6 +77,7 @@ function generateOfflineSources(expectedStoreVersion) {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-flatpak-offline-'));
   const outPath = path.join(tmpDir, 'generated-sources.json');
   const specialPy = resolveGeneratorSpecialPyPath(bin);
+  const electronPy = resolveGeneratorElectronPyPath(bin);
   if (!specialPy) {
     fs.rmSync(tmpDir, { recursive: true, force: true });
     return {
@@ -83,7 +85,14 @@ function generateOfflineSources(expectedStoreVersion) {
       message: `could not find special.py next to ${bin} (needed to skip Playwright browser vendoring)`,
     };
   }
-  const patched = applyGeneratorSkipPlaywrightSpecialSources(specialPy);
+  if (!electronPy) {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    return {
+      ok: false,
+      message: `could not find electron.py next to ${bin} (needed to skip Electron >=44 linux-armv7l)`,
+    };
+  }
+  const patched = applyGeneratorFlatpakNodeGeneratorPatches(specialPy, electronPy);
   if (!patched.ok) {
     fs.rmSync(tmpDir, { recursive: true, force: true });
     return { ok: false, message: patched.message };

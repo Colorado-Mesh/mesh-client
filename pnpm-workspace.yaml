@@ -48,8 +48,9 @@ overrides:
   # brace-expansion: keep a single 5.0.9 floor. GHSA-rgw5-rvv9-x895 is a
   # bypass of the CVE-2026-14257 mitigation and marks >=4.0.0 <5.0.9 vulnerable
   # (only >=5.0.9 counts as patched). CI audit is blocking.
-  # fast-uri: GHSA-7p8r-x3mc-p8w7 (host confusion via backslash authority);
-  # electron-builder → app-builder-lib → ajv still pulls 3.1.4.
+  # fast-uri: GHSA-7p8r-x3mc-p8w7 plus GHSA-5jgf-p345-68v8 / GHSA-f65p-4m7j-42xc /
+  # GHSA-fph4-wmhf-6fwf / GHSA-jqff-g426-hqxp — floor >=3.1.6 (electron-builder →
+  # app-builder-lib → ajv still pulls older 3.1.x without an override).
   # undici: GHSA-4cwx-7wf7-3272 (+ sibling undici GHSAs) — floor >=7.29.0, kept as
   # a scoped `undici@<7.29.0` override so transitive consumers (jsdom ^7.25.0,
   # node-gyp ^6.25.0) land on 7.29.0. package.json depends on undici ^8.10.0
@@ -59,14 +60,12 @@ overrides:
   # undici-types stays on 7.x to match @types/node.
   # postcss: GHSA-fxqj-rqcc-2cmp — floor >=8.5.23.
   # ip-address: GHSA-mwp4-54f8-5fhr (mqtt → socks) — floor >=10.3.1.
-  # electron: Dependabot #91–#96 (GHSA-9f4c-93c8-jc8g needs >=41.10.3 on the
-  # 41.x line; sibling medium GHSAs need >=41.2.2). GitHub SBOM may lag the
-  # lockfile — keep the floor so alerts cannot regress on resolve.
+  # electron: deliberate major pin — bump with Flatpak sync + native rebuild smoke.
   app-builder-lib: ^26.15.0
-  brace-expansion: 5.0.9
-  builder-util-runtime: 9.7.0
-  electron: ^41.10.4
-  fast-uri: ^3.1.5
+  brace-expansion: ^5.0.9
+  builder-util-runtime: ^9.7.0
+  electron: ^44.1.0
+  fast-uri: ^3.1.6
   ip-address: ^10.3.1
   js-yaml: ^4.3.0
   markdown-it@<=14.1.1: '>=14.2.0 <15'

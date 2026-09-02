@@ -51,6 +51,7 @@ import {
   scheduleMeshtasticGetMetadataAfterConfigure,
 } from './meshtasticGetMetadataAfterConfigure';
 import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
+import { recordMeshtasticLockdownStatus } from './meshtasticLockdown';
 import type { ModulePortEvent, PaxCounterPoint } from './meshtasticModuleEvents';
 import { attachMeshtasticModulePortSideEffects } from './meshtasticModulePortSideEffects';
 import type { MeshtasticMqttClientProxyBridge } from './meshtasticMqttClientProxy';
@@ -825,6 +826,14 @@ export function attachMeshtasticRuntimeWireEffects(
           '[useMeshtasticRuntime] mqttClientProxy FromRadio failed ' + errLikeToLogString(e),
         );
       });
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
+    if (variant?.case === 'lockdownStatus') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
+      if (recordMeshtasticLockdownStatus(variant.value) === null) {
+        console.debug('[useMeshtasticRuntime] unparseable lockdownStatus payload');
+      }
       return;
     }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.

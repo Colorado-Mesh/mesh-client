@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { touch } from '@/shared/touch';
+
 import { meshcorePathHashSizeFromTraceFlags } from '../../shared/meshcorePathHash';
 import { meshcoreTraceHopDisplayRows } from './meshcorePathChainDisplay';
 import {
@@ -46,7 +48,7 @@ function createTraceConn() {
     },
     sendToRadioFrame: vi.fn(async () => {}),
     sendCommandSendTracePath: vi.fn((...args: unknown[]) => {
-      void args;
+      touch(args);
       return Promise.resolve();
     }),
   };

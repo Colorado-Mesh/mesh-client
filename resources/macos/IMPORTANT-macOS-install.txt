@@ -1,6 +1,9 @@
 Mesh-client — macOS install (read before extracting a ZIP)
 ============================================================
 
+Requires macOS 13 Ventura or later (Electron 44).
+Monterey (12) and earlier are not supported.
+
 Prefer the .dmg (recommended)
 -----------------------------
 1. Open Mesh-client-*-arm64.dmg (or x64 if applicable).

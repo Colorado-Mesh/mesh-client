@@ -6,6 +6,8 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { touch } from '@/shared/touch';
+
 import { pubkeyToNodeId } from '../lib/meshcoreUtils';
 
 vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -27,26 +29,26 @@ const getSelfInfoMock = vi.fn();
 vi.mock('@liamcottle/meshcore.js', () => {
   class MockWebSerialConnection {
     constructor(port: unknown) {
-      void port;
+      touch(port);
     }
     on(event: string | number, cb: (...args: unknown[]) => void) {
-      void event;
-      void cb;
+      touch(event);
+      touch(cb);
       return undefined;
     }
     off(event: string | number, cb: (...args: unknown[]) => void) {
-      void event;
-      void cb;
+      touch(event);
+      touch(cb);
       return undefined;
     }
     once(event: string | number, cb: (...args: unknown[]) => void) {
-      void event;
-      void cb;
+      touch(event);
+      touch(cb);
       return undefined;
     }
     emit(event: string | number, ...args: unknown[]) {
-      void event;
-      void args;
+      touch(event);
+      touch(args);
       return undefined;
     }
     close = vi.fn().mockResolvedValue(undefined);
@@ -67,11 +69,11 @@ vi.mock('@liamcottle/meshcore.js', () => {
   class MockSerialConnection {
     async write(bytes: Uint8Array) {
       await Promise.resolve();
-      void bytes;
+      touch(bytes);
     }
     async onDataReceived(value: Uint8Array) {
       await Promise.resolve();
-      void value;
+      touch(value);
     }
     async onConnected() {
       await Promise.resolve();
@@ -100,11 +102,11 @@ vi.mock('@liamcottle/meshcore.js', () => {
   class MockConnection {
     async write(bytes: Uint8Array) {
       await Promise.resolve();
-      void bytes;
+      touch(bytes);
     }
     async sendToRadioFrame(data: Uint8Array) {
       await Promise.resolve();
-      void data;
+      touch(data);
     }
     async onConnected() {
       await Promise.resolve();

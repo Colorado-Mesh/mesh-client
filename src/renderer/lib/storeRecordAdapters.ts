@@ -186,12 +186,18 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
     env_lux: record.lux,
     env_wind_speed: record.windSpeed,
     env_wind_direction: record.windDirection,
+    env_lightning_strike_count_1h: record.lightningStrikeCount1h,
+    env_lightning_distance_km: record.lightningDistanceKm,
+    env_pm25: record.pm25Standard,
+    env_co2: record.co2,
     lastPositionWarning: record.lastPositionWarning,
     num_packets_rx_bad: record.numPacketsRxBad,
     num_rx_dupe: record.numRxDupe,
     num_packets_rx: record.numPacketsRx,
     num_packets_tx: record.numPacketsTx,
     meshcore_local_stats: record.meshcoreLocalStats,
+    key_manually_verified: record.keyManuallyVerified,
+    has_xeddsa_signed: record.hasXeddsaSigned,
     ...(record.publicKeyHex ? { public_key_hex: record.publicKeyHex } : {}),
     ...(record.reticulumDestinationHash
       ? { reticulum_destination_hash: record.reticulumDestinationHash }
@@ -244,7 +250,13 @@ function nodeRecordsShallowEqual(a: NodeRecord, b: NodeRecord): boolean {
     a.numPacketsTx === b.numPacketsTx &&
     a.meshcoreLocalStats === b.meshcoreLocalStats &&
     a.publicKeyHex === b.publicKeyHex &&
-    a.reticulumDestinationHash === b.reticulumDestinationHash
+    a.reticulumDestinationHash === b.reticulumDestinationHash &&
+    a.lightningStrikeCount1h === b.lightningStrikeCount1h &&
+    a.lightningDistanceKm === b.lightningDistanceKm &&
+    a.pm25Standard === b.pm25Standard &&
+    a.co2 === b.co2 &&
+    a.keyManuallyVerified === b.keyManuallyVerified &&
+    a.hasXeddsaSigned === b.hasXeddsaSigned
   );
 }
 
@@ -326,6 +338,10 @@ export function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
     lux: node.env_lux,
     windSpeed: node.env_wind_speed,
     windDirection: node.env_wind_direction,
+    lightningStrikeCount1h: node.env_lightning_strike_count_1h,
+    lightningDistanceKm: node.env_lightning_distance_km,
+    pm25Standard: node.env_pm25,
+    co2: node.env_co2,
     lastPositionWarning: node.lastPositionWarning,
     numPacketsRxBad: node.num_packets_rx_bad,
     numRxDupe: node.num_rx_dupe,
@@ -333,6 +349,8 @@ export function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
     numPacketsTx: node.num_packets_tx,
     meshcoreLocalStats: node.meshcore_local_stats,
     publicKeyHex: node.public_key_hex,
+    keyManuallyVerified: node.key_manually_verified,
+    hasXeddsaSigned: node.has_xeddsa_signed,
     reticulumDestinationHash: node.reticulum_destination_hash,
   };
 }

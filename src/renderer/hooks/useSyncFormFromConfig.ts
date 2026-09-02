@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import {
+  meshtasticConfigSignature,
   meshtasticConfigSlice,
   stripMeshtasticProtobufMeta,
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
@@ -15,7 +16,7 @@ export function useSyncFormFromConfig(
   useEffect(() => {
     const cfg = stripMeshtasticProtobufMeta(meshtasticConfigSlice(configSlice));
     if (Object.keys(cfg).length === 0) return;
-    const signature = JSON.stringify(cfg);
+    const signature = meshtasticConfigSignature(cfg);
     if (appliedSignatureRef.current === signature) return;
     appliedSignatureRef.current = signature;
     applyConfig(cfg);

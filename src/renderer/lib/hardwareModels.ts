@@ -1,8 +1,16 @@
+import { Mesh } from '@meshtastic/protobufs';
+
+import {
+  humanizeEnumName,
+  type ProtobufEnumDescriptor,
+} from '@/renderer/lib/meshtastic/protobufEnumOptions';
+
 /**
- * Maps Meshtastic protobuf HardwareModel enum values to human-readable branded names.
- * Values sourced from @jsr/meshtastic__protobufs mesh_pb HardwareModel enum.
+ * Curated branded names that read better than the raw proto enum name
+ * (`TBEAM` -> `T-Beam`). Models absent here fall back to the generated
+ * HardwareModel enum, so a protobufs bump lists new boards without an edit.
  */
-const MESHTASTIC_HW_MODEL_NAMES: Record<number, string> = {
+const MESHTASTIC_HW_MODEL_NAMES: Record<number, string | undefined> = {
   0: 'Unset',
   1: 'T-LoRa V2',
   2: 'T-LoRa V1',
@@ -130,22 +138,58 @@ const MESHTASTIC_HW_MODEL_NAMES: Record<number, string> = {
   124: 'T-Beam BPF',
   125: 'T-Mini ePaper S3',
   126: 'T-Display S3 Pro',
+  127: 'Heltec Mesh Node T096',
+  128: 'Mesh Tracker X1',
+  129: 'ThinkNode M7',
+  130: 'ThinkNode M8',
+  131: 'ThinkNode M9',
+  132: 'Heltec V4 R8',
+  133: 'Heltec Mesh Node T1',
+  134: 'Station G3',
+  135: 'T-Impulse Plus',
+  136: 'T-Echo Card',
+  137: 'Seeed Wio Tracker L2',
+  138: 'CrowPanel P4',
+  139: 'Heltec Mesh Tower V2',
+  140: 'Meshnology W10',
+  141: 'Heltec RC32',
+  142: 'Heltec RC52',
+  143: 'Heltec RCC6',
+  144: 'Seeed Wio Tracker L1 Pro 1W',
+  145: 'Meshnology W12',
+  146: 'MeshPager X2',
   255: 'Private HW',
 };
 
+/** Enum-name fallbacks for every HardwareModel value without a curated label. */
+const MESHTASTIC_HW_MODEL_GENERATED_NAMES: ReadonlyMap<number, string> = new Map(
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- generated enum barrel is untyped
+  (Mesh.HardwareModelSchema as ProtobufEnumDescriptor).values.map((value) => [
+    value.number,
+    humanizeEnumName(value.name),
+  ]),
+);
+
 /**
- * Returns a human-readable branded name for a Meshtastic HardwareModel value.
+ * Returns a human-readable name for a Meshtastic HardwareModel value.
  * Accepts the raw number or a string representation (as stored in the DB).
- * Falls back to "Unknown (<id>)" for unmapped values.
+ * Falls back to the generated enum name, then to "Unknown (<id>)".
  */
 export function meshtasticHwModelName(hwModel: number | string): string {
   const id = typeof hwModel === 'string' ? parseInt(hwModel, 10) : hwModel;
   if (isNaN(id)) return `Unknown (${hwModel})`;
-  return MESHTASTIC_HW_MODEL_NAMES[id] ?? `Unknown (${id})`;
+  return (
+    MESHTASTIC_HW_MODEL_NAMES[id] ??
+    MESHTASTIC_HW_MODEL_GENERATED_NAMES.get(id) ??
+    `Unknown (${id})`
+  );
 }
 
-/** Known UI labels from {@link MESHTASTIC_HW_MODEL_NAMES} (for idempotent display). */
-const MESHTASTIC_HW_MODEL_BRAND_LABELS = new Set(Object.values(MESHTASTIC_HW_MODEL_NAMES));
+/** Known UI labels (curated + generated) for idempotent display of stored strings. */
+const MESHTASTIC_HW_MODEL_BRAND_LABELS = new Set([
+  ...Object.values(MESHTASTIC_HW_MODEL_NAMES),
+  ...MESHTASTIC_HW_MODEL_GENERATED_NAMES.values(),
+]);
 
 /**
  * Formats stored `hw_model` for UI: numeric / digit-only strings map through

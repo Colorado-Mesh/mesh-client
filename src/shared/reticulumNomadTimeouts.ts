@@ -5,6 +5,7 @@
  */
 
 import { MS_PER_SECOND } from './timeConstants';
+import { touch } from './touch';
 
 export type ReticulumNomadEgressVia = 'rf' | 'tcp' | 'network';
 
@@ -74,6 +75,6 @@ export function nomadPageOverallTimeoutSecs(
  * cannot abort before the sidecar's own LinkClient deadline.
  */
 export function nomadPageProxyTimeoutMsFromApiPath(_apiPath: string): number {
-  void _apiPath;
+  touch(_apiPath);
   return NOMAD_PROXY_GET_TIMEOUT_MS;
 }

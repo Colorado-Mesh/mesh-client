@@ -15,7 +15,7 @@ index 9142fbc9fda24c07082d63ced24117a35b29dc93..2f8cf2d68d1c32c1d7cc489f33527c9a
  
      readCString(maxLength) {
 diff --git a/src/connection/connection.js b/src/connection/connection.js
-index 8d7365431d912bc97d59c2d572d227482e180927..13a97ae3be75718bf6e560630eeb840659f78e84 100644
+index 8d7365431d912bc97d59c2d572d227482e180927..e6d18b6ac0d584a38c860a1ad6b3f13e325da0a7 100644
 --- a/src/connection/connection.js
 +++ b/src/connection/connection.js
 @@ -338,6 +338,14 @@ class Connection extends EventEmitter {
@@ -33,23 +33,44 @@ index 8d7365431d912bc97d59c2d572d227482e180927..13a97ae3be75718bf6e560630eeb8406
      onFrameReceived(frame) {
  
          // emit received frame
-@@ -416,8 +424,14 @@ class Connection extends EventEmitter {
+@@ -416,8 +424,18 @@ class Connection extends EventEmitter {
              this.onNewAdvertPush(bufferReader);
          } else if(responseCode === Constants.PushCodes.BinaryResponse){
              this.onBinaryResponsePush(bufferReader);
 +        } else if(responseCode === 25){
 +            // AUTOADD_CONFIG — handled in mesh-client app rx path; ignore in library
 +        } else if(responseCode === 0x8E){
-+            // Unknown push (0x8E) — firmware ahead of library; drop silently
++            // Unknown push (0x8E CONTROL_DATA) — firmware ahead of library; drop silently
 +        } else if(responseCode === 0x8F){
-+            // Unknown push (0x8F) — firmware ahead of library; drop silently
++            // CONTACT_DELETED — companion removed a contact (e.g. overwrite-oldest)
++            this.onContactDeletedPush(bufferReader);
++        } else if(responseCode === 0x90){
++            // CONTACTS_FULL — companion contact storage is full
++            this.onContactsFullPush(bufferReader);
          } else {
 -            console.log(`unhandled frame: code=${responseCode}`, frame);
 +            console.debug(`unhandled frame: code=${responseCode}`);
          }
  
      }
-@@ -457,10 +471,22 @@ class Connection extends EventEmitter {
+@@ -434,6 +452,16 @@ class Connection extends EventEmitter {
+         });
+     }
+ 
++    onContactDeletedPush(bufferReader) {
++        this.emit(0x8F, {
++            publicKey: bufferReader.readBytes(32),
++        });
++    }
++
++    onContactsFullPush(_bufferReader) {
++        this.emit(0x90, {});
++    }
++
+     onSendConfirmedPush(bufferReader) {
+         this.emit(Constants.PushCodes.SendConfirmed, {
+             ackCode: bufferReader.readUInt32LE(),
+@@ -457,10 +485,22 @@ class Connection extends EventEmitter {
      }
  
      onLoginSuccessPush(bufferReader) {
@@ -76,7 +97,7 @@ index 8d7365431d912bc97d59c2d572d227482e180927..13a97ae3be75718bf6e560630eeb8406
      }
  
      onStatusResponsePush(bufferReader) {
-@@ -498,15 +524,25 @@ class Connection extends EventEmitter {
+@@ -498,15 +538,25 @@ class Connection extends EventEmitter {
      onTraceDataPush(bufferReader) {
          const reserved = bufferReader.readByte();
          const pathLen = bufferReader.readUInt8();
@@ -108,7 +129,7 @@ index 8d7365431d912bc97d59c2d572d227482e180927..13a97ae3be75718bf6e560630eeb8406
          });
      }
  
-@@ -586,11 +622,30 @@ class Connection extends EventEmitter {
+@@ -586,11 +636,30 @@ class Connection extends EventEmitter {
      }
  
      onDeviceInfoResponse(bufferReader) {
@@ -143,7 +164,7 @@ index 8d7365431d912bc97d59c2d572d227482e180927..13a97ae3be75718bf6e560630eeb8406
          });
      }
  
-@@ -2318,6 +2373,33 @@ class Connection extends EventEmitter {
+@@ -2318,6 +2387,33 @@ class Connection extends EventEmitter {
          });
      }
  

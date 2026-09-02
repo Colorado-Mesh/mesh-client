@@ -574,14 +574,17 @@ RATSPEAK_KNOWN_ORG_REPOS=(
   'ratkey'
   'rathole'
   'ratspeak-docs'
+  'ratspeak-handheld'
   'ratspeak-website'
   'revanity-go'
   'rsCardputer'
   'rsDeck'
   'rsLXMF'
+  'rsLXMFLite'
   'rsLXST'
   'rsPager'
   'rsReticulum'
+  'rsReticulumLite'
 )
 
 print_ratspeak_upstream_catalog() {
@@ -747,7 +750,10 @@ fi
 WATCH_ENTRIES=(
   '@jsr/meshtastic__core|@meshtastic/core|https://www.npmjs.com/package/@meshtastic/core|Custom patch (clean BLE disconnect) + upstream may introduce breaking changes'
   '@jsr/meshtastic__transport-web-serial|@jsr/meshtastic__transport-web-serial|https://www.npmjs.com/package/@jsr/meshtastic__transport-web-serial|Custom patch (USB serial clean disconnect)'
+  '@jsr/meshtastic__protobufs|@meshtastic/protobufs|https://github.com/meshtastic/protobufs/tags|Schema drift: new enum values (regions, presets, hardware models) and messages need UI + decode review'
+  '@jsr/meshtastic__transport-http|@meshtastic/transport-http|https://www.npmjs.com/package/@jsr/meshtastic__transport-http|HTTP transport for Meshtastic; upstream may introduce breaking changes'
   '@liamcottle/meshcore.js|@liamcottle/meshcore.js|https://www.npmjs.com/package/@liamcottle/meshcore.js|Custom patch (protocol fixes) + upstream may introduce breaking changes'
+  '@michaelhart/meshcore-decoder|@michaelhart/meshcore-decoder|https://www.npmjs.com/package/@michaelhart/meshcore-decoder|MeshCore packet decoding; wire-format changes affect Sniffer/diagnostics'
   'usb|usb|https://www.npmjs.com/package/usb|Custom patch (macOS C++17 std compat)'
   'readable-stream|readable-stream|https://www.npmjs.com/package/readable-stream|Custom patch (bundler process/ path compat)'
   'debug|debug|https://www.npmjs.com/package/debug|Custom patch (inlined ms/humanize for bundler compat)'

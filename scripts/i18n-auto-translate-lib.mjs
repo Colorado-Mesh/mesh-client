@@ -125,6 +125,38 @@ const SKIP_AUDIT_LEAF_KEYS = new Set([
 ]);
 
 /**
+ * Key prefixes whose values are protobuf-derived codes and hardware proper nouns
+ * (region codes, modem presets, OLED part numbers). Machine translation turns
+ * "ANZ" into sentences and "TAK" into "yes", so these stay English everywhere.
+ */
+export const KEEP_ENGLISH_KEY_PREFIXES = [
+  'radioPanel.regions.',
+  'radioPanel.modemPresets.',
+  'radioPanel.oledTypes.',
+  'radioPanel.displayUnits.',
+];
+
+/**
+ * Device-role *labels* are protocol terms and brands (Client, Router, TAK). Translators
+ * turn them into false friends ("Oberfräse" for Router, "Tak"/"yes" for TAK), so labels
+ * stay English while the accompanying descriptions are still translated.
+ */
+const KEEP_ENGLISH_KEY_PATTERNS = [
+  /^radioPanel\.deviceRoles\.[A-Z0-9_]+\.label$/,
+  // TAK role blurbs are short and brand-dominated; every engine renders the brand
+  // as the Turkish/Polish word "tak" or transliterates it away.
+  /^radioPanel\.deviceRoles\.TAK(?:_TRACKER)?\.description$/,
+];
+
+/** @param {string} key */
+export function isKeepEnglishKey(key) {
+  return (
+    KEEP_ENGLISH_KEY_PREFIXES.some((prefix) => key.startsWith(prefix)) ||
+    KEEP_ENGLISH_KEY_PATTERNS.some((pattern) => pattern.test(key))
+  );
+}
+
+/**
  * Returns true when an English value contains enough non-technical content to
  * be worth machine-translating. Values that reduce to nothing after stripping
  * placeholders and known loanwords/brands are skipped in --audit mode.
@@ -156,6 +188,9 @@ export function hasTranslatableContent(enVal) {
 export function filterMissingKeysToTranslate(enKeys, existingFlat, addedEnglishKeysSet, opts) {
   const { translateAllGaps, hasGitBaseline, auditIdentical = false, enFlat = null } = opts;
   return enKeys.filter((k) => {
+    // Keep-English keys are copied verbatim rather than machine-translated, so they
+    // are only "missing" when absent from the locale entirely.
+    if (isKeepEnglishKey(k)) return !(k in existingFlat);
     if (k in existingFlat) {
       const leaf = k.split('.').pop() ?? k;
       if (SKIP_AUDIT_LEAF_KEYS.has(leaf)) return false;

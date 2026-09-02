@@ -36,6 +36,7 @@ export function useMeshtasticPanelActions(runtime: MeshtasticRuntime) {
       setModuleConfig: runtime.setModuleConfig,
       setCannedMessages: runtime.setCannedMessages,
       setRingtone: runtime.setRingtone,
+      sendLockdownAuth: runtime.sendLockdownAuth,
       getNodes: runtime.getNodes,
       sendReaction: runtime.sendReaction,
       requestStoreForwardHistory: runtime.requestStoreForwardHistory,

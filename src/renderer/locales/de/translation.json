@@ -2303,7 +2303,10 @@
     "clearAllIntro": "Entfernen Sie jeden Kontakt aus dem Radio und löschen Sie die Kontaktdatenbank der App. Dies kann nicht rückgängig gemacht werden.",
     "clearAllContactsConfirm": "Alle Kontakte aus dem Radio entfernen und lokale Kontaktdaten löschen?",
     "clearingContacts": "Clearing…",
-    "clearAllContactsButton": "Löschen Sie alle Kontakte"
+    "clearAllContactsButton": "Löschen Sie alle Kontakte",
+    "autoOffloadWhenFull": "Automatisches Entladen, wenn das Radio voll ist",
+    "autoOffloadWhenFullLabel": "Automatisches Entladen, wenn voll",
+    "autoOffloadWhenFullDesc": "Wenn der Begleiter meldet, dass der Kontaktspeicher voll ist, werden die Kontakte automatisch in die App-Datenbank ausgelagert (wie bei Offload)."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Privatsphäre der Telemetrie",
@@ -3033,7 +3036,11 @@
     "shareContactQrAria": "MeshCore-Kontakt-QR-Code für offiziellen App-Import anzeigen",
     "publicKeyCopied": "Öffentlicher Schlüssel in die Zwischenablage kopiert.",
     "hasPublicKeyNoDm": "Verfügt über einen öffentlichen Schlüssel (keine direkten Nachrichten)",
-    "copyPublicKey": "Öffentlichen Schlüssel kopieren"
+    "copyPublicKey": "Öffentlichen Schlüssel kopieren",
+    "xeddsaSigned": "XEdDSA signiert",
+    "xeddsaSignedHint": "Das Funkgerät hat eine XEdDSA-Signatur von diesem Knoten verifiziert, sodass sein öffentlicher Schlüssel kryptografisch bestätigt wird.",
+    "keyManuallyVerified": "Schlüssel verifiziert",
+    "keyManuallyVerifiedHint": "Der öffentliche Schlüssel dieses Knotens wurde manuell von einem Bediener bestätigt."
   },
   "nodeInfoBody": {
     "longName": "Langer Name",
@@ -3554,57 +3561,65 @@
     "importConfigJson": "Konfigurations-JSON importieren",
     "offloadContacts": "Ausladen",
     "displayUnits": {
-      "0": {
-        "label": "Metrik"
+      "METRIC": {
+        "label": "Metric"
       },
-      "1": {
+      "IMPERIAL": {
         "label": "Imperial"
       }
     },
     "deviceRoles": {
-      "0": {
-        "description": "Normaler Client-Modus",
-        "label": "Client"
+      "CLIENT": {
+        "label": "Client",
+        "description": "Normaler Client-Modus"
       },
-      "1": {
-        "label": "Client stummschalten",
+      "CLIENT_MUTE": {
+        "label": "Client Mute",
         "description": "Client, der keine Pakete weiterleitet. Durch Anwenden dieser Rolle werden auch GPS-Übertragungen und Kartenberichte auf dem Gerät deaktiviert."
       },
-      "2": {
-        "description": "Dedizierter Router/Repeater",
-        "label": "Router"
+      "ROUTER": {
+        "label": "Router",
+        "description": "Dedizierter Router/Repeater"
       },
-      "3": {
-        "description": "Router + Client-Modus",
-        "label": "Router-Client"
+      "ROUTER_CLIENT": {
+        "label": "Router Client",
+        "description": "Router + Client-Modus. Veraltet in Firmware 2.3.15 — Router oder Client verwenden."
       },
-      "4": {
-        "description": "Basisstation für Client-Geräte",
-        "label": "Client-Basis"
+      "REPEATER": {
+        "label": "Repeater",
+        "description": "Sendet Pakete weiter, ohne welche zu erstellen. Veraltet in Firmware 2.7.11 — erzeugt Löcher in der Rebroadcast-Kette."
       },
-      "5": {
-        "description": "Nur GPS-Tracker",
-        "label": "Tracker"
+      "TRACKER": {
+        "label": "Tracker",
+        "description": "GPS-Tracker"
       },
-      "6": {
-        "description": "Telemetrie-Sensorknoten",
-        "label": "Sensor"
+      "SENSOR": {
+        "label": "Sensor",
+        "description": "Telemetriesensorknoten"
       },
-      "7": {
-        "description": "TAK-fähiges Gerät",
-        "label": "TAK"
+      "TAK": {
+        "label": "TAK",
+        "description": "TAK-enabled device"
       },
-      "8": {
-        "description": "Client, aus der Knotenliste ausgeblendet",
-        "label": "Versteckter Client"
+      "CLIENT_HIDDEN": {
+        "label": "Client Hidden",
+        "description": "Client, aus der Knotenliste ausgeblendet"
       },
-      "9": {
-        "description": "Sendet Position zur Genesung",
-        "label": "Fundbüro"
+      "LOST_AND_FOUND": {
+        "label": "Lost and Found",
+        "description": "Sendet Position zur Wiederherstellung"
       },
-      "10": {
-        "description": "TAK-Tracker-Modus",
-        "label": "TAK TRACKER"
+      "TAK_TRACKER": {
+        "label": "TAK Tracker",
+        "description": "TAK tracker mode"
+      },
+      "ROUTER_LATE": {
+        "label": "Router Late",
+        "description": "Router, der nur weiterverbreitet, nachdem andere Knoten eine Chance hatten, für dichte Mesh-Kerne."
+      },
+      "CLIENT_BASE": {
+        "label": "Client Base",
+        "description": "Basisstation für Client-Geräte"
       }
     },
     "contactsOnRadioBadgeTitle": "{{part}} Kontakte im Radio",
@@ -3839,29 +3854,29 @@
     "tzdefLabel": "Timezone (POSIX)",
     "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
     "rebroadcastModes": {
-      "0": {
-        "label": "All",
-        "description": "Rebroadcast all packets (default)."
+      "ALL": {
+        "label": "Alle",
+        "description": "Alle Pakete erneut übertragen (Standard)."
       },
-      "1": {
-        "label": "All Skip Decoding",
-        "description": "Rebroadcast all without decoding. Reduces CPU on dedicated routers."
+      "ALL_SKIP_DECODING": {
+        "label": "Alle Dekodierung überspringen",
+        "description": "Alle ohne Decodierung erneut übertragen. Reduziert die CPU auf dedizierten Routern."
       },
-      "2": {
-        "label": "Local Only",
-        "description": "Only rebroadcast packets from nodes heard directly on RF."
+      "LOCAL_ONLY": {
+        "label": "Nur lokal",
+        "description": "Nur Rebroadcast-Pakete von Knoten, die direkt auf RF gehört werden."
       },
-      "3": {
-        "label": "Known Only",
-        "description": "Only rebroadcast from nodes in the local node database."
+      "KNOWN_ONLY": {
+        "label": "Nur bekannt",
+        "description": "Nur von Knoten in der lokalen Knoten-Datenbank erneut übertragen."
       },
-      "4": {
+      "NONE": {
         "label": "None",
-        "description": "Do not rebroadcast any packets."
+        "description": "Senden Sie keine Pakete erneut."
       },
-      "5": {
-        "label": "Core Portnums Only",
-        "description": "Only rebroadcast essential portnums (text, nodeinfo, position, telemetry)."
+      "CORE_PORTNUMS_ONLY": {
+        "label": "Nur Kernportnums",
+        "description": "Nur wesentliche Portnums (Text, Nodeinfo, Position, Telemetrie) erneut senden."
       }
     },
     "autoScreenCarouselSecsLabel": "Screen Carousel Interval",
@@ -3879,22 +3894,22 @@
     "enableMessageBubblesLabel": "Message Bubbles",
     "enableMessageBubblesDesc": "Show incoming messages in a bubble on the display.",
     "oledTypes": {
-      "0": {
+      "OLED_AUTO": {
         "label": "Auto"
       },
-      "1": {
+      "OLED_SSD1306": {
         "label": "SSD1306"
       },
-      "2": {
+      "OLED_SH1106": {
         "label": "SH1106"
       },
-      "3": {
+      "OLED_SH1107": {
         "label": "SH1107 (128x64)"
       },
-      "4": {
+      "OLED_SH1107_128_128": {
         "label": "SH1107 (128x128)"
       },
-      "5": {
+      "OLED_SH1107_ROTATED": {
         "label": "SH1107 Rotated"
       }
     },
@@ -3982,85 +3997,172 @@
       "shareQrAria": "MeshCore-Kanal-QR für {{name}} anzeigen"
     },
     "regions": {
-      "0": {
-        "label": "Unscharf"
+      "UNSET": {
+        "label": "Unset"
       },
-      "1": {
-        "label": "UNS"
+      "US": {
+        "label": "US"
       },
-      "2": {
+      "EU_433": {
         "label": "EU_433"
       },
-      "3": {
+      "EU_868": {
         "label": "EU_868"
       },
-      "4": {
+      "CN": {
         "label": "CN"
       },
-      "5": {
+      "JP": {
         "label": "JP"
       },
-      "6": {
+      "ANZ": {
         "label": "ANZ"
       },
-      "7": {
+      "KR": {
         "label": "KR"
       },
-      "8": {
+      "TW": {
         "label": "TW"
       },
-      "9": {
+      "RU": {
         "label": "RU"
       },
-      "10": {
+      "IN": {
         "label": "IN"
       },
-      "11": {
+      "NZ_865": {
         "label": "NZ_865"
       },
-      "12": {
+      "TH": {
         "label": "TH"
       },
-      "13": {
+      "LORA_24": {
+        "label": "LORA_24"
+      },
+      "UA_433": {
         "label": "UA_433"
       },
-      "14": {
+      "UA_868": {
         "label": "UA_868"
       },
-      "15": {
+      "MY_433": {
         "label": "MY_433"
       },
-      "16": {
+      "MY_919": {
         "label": "MY_919"
       },
-      "17": {
+      "SG_923": {
         "label": "SG_923"
       },
-      "18": {
-        "label": "LORA_24"
+      "PH_433": {
+        "label": "PH_433"
+      },
+      "PH_868": {
+        "label": "PH_868"
+      },
+      "PH_915": {
+        "label": "PH_915"
+      },
+      "ANZ_433": {
+        "label": "ANZ_433"
+      },
+      "KZ_433": {
+        "label": "KZ_433"
+      },
+      "KZ_863": {
+        "label": "KZ_863"
+      },
+      "NP_865": {
+        "label": "NP_865"
+      },
+      "BR_902": {
+        "label": "BR_902"
+      },
+      "ITU1_2M": {
+        "label": "ITU1_2M"
+      },
+      "ITU2_2M": {
+        "label": "ITU2_2M"
+      },
+      "EU_866": {
+        "label": "EU_866"
+      },
+      "EU_874": {
+        "label": "EU_874"
+      },
+      "EU_917": {
+        "label": "EU_917"
+      },
+      "EU_N_868": {
+        "label": "EU_N_868"
+      },
+      "ITU3_2M": {
+        "label": "ITU3_2M"
+      },
+      "ITU1_70CM": {
+        "label": "ITU1_70CM"
+      },
+      "ITU2_70CM": {
+        "label": "ITU2_70CM"
+      },
+      "ITU3_70CM": {
+        "label": "ITU3_70CM"
+      },
+      "ITU2_125CM": {
+        "label": "ITU2_125CM"
       }
     },
     "modemPresets": {
-      "0": {
-        "label": "Lang schnell"
+      "LONG_FAST": {
+        "label": "Long Fast"
       },
-      "1": {
-        "label": "Lang Langsam"
+      "LONG_SLOW": {
+        "label": "Long Slow"
       },
-      "2": {
-        "label": "Lang Moderat"
+      "VERY_LONG_SLOW": {
+        "label": "Very Long Slow"
       },
-      "3": {
-        "label": "Kurz schnell"
+      "MEDIUM_SLOW": {
+        "label": "Medium Slow"
       },
-      "4": {
-        "label": "Kurz langsam"
+      "MEDIUM_FAST": {
+        "label": "Medium Fast"
       },
-      "5": {
-        "label": "Mittelschnell"
+      "SHORT_SLOW": {
+        "label": "Short Slow"
       },
-      "6": {
-        "label": "Mittellangsam"
+      "SHORT_FAST": {
+        "label": "Short Fast"
+      },
+      "LONG_MODERATE": {
+        "label": "Long Moderate"
+      },
+      "SHORT_TURBO": {
+        "label": "Short Turbo"
+      },
+      "LONG_TURBO": {
+        "label": "Long Turbo"
+      },
+      "LITE_FAST": {
+        "label": "Lite Fast"
+      },
+      "LITE_SLOW": {
+        "label": "Lite Slow"
+      },
+      "NARROW_FAST": {
+        "label": "Narrow Fast"
+      },
+      "NARROW_SLOW": {
+        "label": "Narrow Slow"
+      },
+      "TINY_FAST": {
+        "label": "Tiny Fast"
+      },
+      "TINY_SLOW": {
+        "label": "Tiny Slow"
+      },
+      "MEDIUM_TURBO": {
+        "label": "Medium Turbo"
       }
     },
     "floodScopeSaved": "Gespeicherter Umfang",
@@ -4072,7 +4174,38 @@
     "sendPositionDisabledShareOff": "Aktivieren Sie Meinen Standort in der App → GPS / Standort teilen, um Ihre Position an das Gerät zu senden.",
     "clientMuteGpsSuppressed": "Client-Stummschaltung angewendet - GPS-Übertragungen und MQTT-Kartenberichterstattung auf dem Gerät deaktiviert.",
     "validationShortNameTooLong": "Kurzname muss innerhalb von 4 UTF-8 Bytes passen",
-    "validationShortNameEmojiTooLarge": "Dieses Zeichen ist zu groß für Short Name (max. 4 UTF-8 Bytes pro Name)"
+    "validationShortNameEmojiTooLarge": "Dieses Zeichen ist zu groß für Short Name (max. 4 UTF-8 Bytes pro Name)",
+    "enumDeprecatedSuffix": "(veraltet)",
+    "lockdown": {
+      "title": "Firmware-Sperre",
+      "description": "Ein gesperrtes Funkgerät lehnt Konfigurationsänderungen ab, bis es mit seiner Passphrase entsperrt wird. Der Status wird von der Firmware gemeldet; Funkgeräte ohne Lockdown-Unterstützung melden niemals einen.",
+      "stateLabel": "Bundesstaat",
+      "stateNotReported": "Von diesem Funkgerät nicht gemeldet",
+      "reasonLabel": "Anlass",
+      "bootsRemainingLabel": "Verbleibende Neustarts",
+      "validUntilLabel": "Freigeschaltet bis",
+      "backoffLabel": "Backoff erneut versuchen",
+      "backoffValue": "{{seconds}}s",
+      "passphraseLabel": "Passphrase",
+      "provision": "Bereitstellung",
+      "unlock": "entriegeln",
+      "unlockAria": "Entsperren oder Bereitstellen der Firmware-Sperre",
+      "lockNow": "Jetzt sperren",
+      "lockNowAria": "Sperren Sie das Funkgerät sofort",
+      "disable": "Sperre deaktivieren",
+      "disableAria": "Firmware-Sperre deaktivieren",
+      "states": {
+        "STATE_UNSPECIFIED": "Nicht spezifiziert",
+        "NEEDS_PROVISION": "Benötigt Provisionierung",
+        "LOCKED": "Gesperrt",
+        "UNLOCKED": "freigeschaltet",
+        "UNLOCK_FAILED": "Entsperren fehlgeschlagen",
+        "DISABLED": "Behnderte"
+      }
+    },
+    "contactsFullAlarm": "Der Funkkontaktspeicher ist voll. Kontakte in die App-Datenbank entladen, um Slots freizugeben.",
+    "contactsFullAlarmAction": "Offload (Abladen)",
+    "contactsFullAutoOffloadStarted": "Funkkontakte voll — Automatische Entladung wird gestartet..."
   },
   "rawPacketLog": {
     "filterPackets": "Filterpakete",
@@ -4915,7 +5048,8 @@
     "regenerateWarning": "Durch die Neugenerierung werden vorhandene ATAK-Datenpakete ungültig – Sie müssen sie erneut importieren.",
     "durationSec": "{{s}}s",
     "durationMin": "{{m}}m",
-    "durationHourMin": "{{h}}h {{m}}m"
+    "durationHourMin": "{{h}}h {{m}}m",
+    "atakUndecodable": "Nutzlast nicht als TAK-PAKET ERKANNT"
   },
   "telemetryPanel": {
     "title": "Telemetrie",
@@ -4956,7 +5090,14 @@
     "tempUnitC": "°C",
     "exportCsvButton": "CSV exportieren",
     "emptyWaitingConnected": "Noch keine Telemetriedaten. Warten auf Daten vom Gerät...",
-    "emptyWaitingDisconnected": "Noch keine Telemetriedaten. Stellen Sie eine Verbindung zu einem Gerät her, um Echtzeitmetriken anzuzeigen."
+    "emptyWaitingDisconnected": "Noch keine Telemetriedaten. Stellen Sie eine Verbindung zu einem Gerät her, um Echtzeitmetriken anzuzeigen.",
+    "sectionParticulates": "Partikel, CO₂ und Blitzschlag",
+    "chartAriaParticulates": "Partikelkarte: zuletzt PM2,5 {{pm25}}, CO₂ {{co2}}, {{count}} Punkte",
+    "axisParticulates": "µg/m³ · Schläge",
+    "axisCo2": "ppm",
+    "seriesPm25": "PM2,5 (µg/m³)",
+    "seriesCo2": "CO₂ (ppm)",
+    "seriesLightningStrikes": "Blitzeinschlag (1h)"
   },
   "toasts": {
     "firmwareAvailable": "Firmware-Update verfügbar: v{{version}}",

@@ -35,6 +35,8 @@ describe('MeshcoreContactSettingsSection', () => {
         onMeshcoreContactsShowPublicKeysChange={vi.fn()}
         meshcoreContactsShowRefreshControl={false}
         onMeshcoreContactsShowRefreshControlChange={vi.fn()}
+        meshcoreAutoOffloadWhenFull={false}
+        onMeshcoreAutoOffloadWhenFullChange={vi.fn()}
         onApply={onApply}
       />,
     );
@@ -64,6 +66,8 @@ describe('MeshcoreContactSettingsSection', () => {
         onMeshcoreContactsShowPublicKeysChange={vi.fn()}
         meshcoreContactsShowRefreshControl={false}
         onMeshcoreContactsShowRefreshControlChange={vi.fn()}
+        meshcoreAutoOffloadWhenFull={false}
+        onMeshcoreAutoOffloadWhenFullChange={vi.fn()}
         onApply={vi.fn().mockResolvedValue(undefined)}
         onClearAllContacts={onClearAllContacts}
       />,
@@ -92,6 +96,8 @@ describe('MeshcoreContactSettingsSection consistency', () => {
         onMeshcoreContactsShowPublicKeysChange={vi.fn()}
         meshcoreContactsShowRefreshControl={false}
         onMeshcoreContactsShowRefreshControlChange={vi.fn()}
+        meshcoreAutoOffloadWhenFull={false}
+        onMeshcoreAutoOffloadWhenFullChange={vi.fn()}
         onApply={vi.fn()}
       />,
     );
@@ -112,6 +118,8 @@ describe('MeshcoreContactSettingsSection consistency', () => {
         onMeshcoreContactsShowPublicKeysChange={vi.fn()}
         meshcoreContactsShowRefreshControl={false}
         onMeshcoreContactsShowRefreshControlChange={vi.fn()}
+        meshcoreAutoOffloadWhenFull={false}
+        onMeshcoreAutoOffloadWhenFullChange={vi.fn()}
         onApply={vi.fn()}
       />,
     );
@@ -134,6 +142,8 @@ describe('MeshcoreContactSettingsSection consistency', () => {
         onMeshcoreContactsShowPublicKeysChange={vi.fn()}
         meshcoreContactsShowRefreshControl={false}
         onMeshcoreContactsShowRefreshControlChange={vi.fn()}
+        meshcoreAutoOffloadWhenFull={false}
+        onMeshcoreAutoOffloadWhenFullChange={vi.fn()}
         onApply={vi.fn()}
       />,
     );

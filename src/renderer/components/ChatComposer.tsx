@@ -21,6 +21,7 @@ import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import type { ChatMessage, MeshNode, MeshProtocol } from '@/renderer/lib/types';
 import { useReticulumVoiceMemoStore } from '@/renderer/stores/reticulumVoiceMemoStore';
 import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
+import { touch } from '@/shared/touch';
 
 import {
   isMeshcoreOpenWireCompatEnabled,
@@ -432,7 +433,7 @@ export function ChatComposer({
   const nodes = mentionNodes ?? emptyMentionNodes;
 
   const noopQueue = useCallback((entry: OutboxEntryInput): Promise<OutboxEntry> => {
-    void entry;
+    touch(entry);
     return Promise.reject(new Error('Outbox queue unavailable'));
   }, []);
 

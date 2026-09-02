@@ -18,6 +18,7 @@ import { buildMeshcoreContactAddUri, type MeshcoreContactType } from '@/shared/m
 import { meshcoreContactDisplayName } from '@/shared/meshcoreContactSanitize';
 import { isDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
+import { touch } from '@/shared/touch';
 
 import { MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
@@ -513,7 +514,7 @@ export default function NodeDetailModal({
         if (auth.saved) refreshRepeaterSecrets();
         return true;
       }
-      void mode;
+      touch(mode);
       return true;
     },
     [ensureRepeaterAuth, node?.long_name, refreshRepeaterSecrets, t],
@@ -1754,6 +1755,28 @@ export default function NodeDetailModal({
                   })()}
                 </div>
               )}
+
+              {protocol === 'meshtastic' &&
+                (node.has_xeddsa_signed === true || node.key_manually_verified === true) && (
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                    {node.has_xeddsa_signed === true && (
+                      <span
+                        className="rounded bg-green-900/40 px-2 py-1 text-green-300"
+                        title={t('nodeDetailModal.xeddsaSignedHint')}
+                      >
+                        {t('nodeDetailModal.xeddsaSigned')}
+                      </span>
+                    )}
+                    {node.key_manually_verified === true && (
+                      <span
+                        className="rounded bg-green-900/40 px-2 py-1 text-green-300"
+                        title={t('nodeDetailModal.keyManuallyVerifiedHint')}
+                      >
+                        {t('nodeDetailModal.keyManuallyVerified')}
+                      </span>
+                    )}
+                  </div>
+                )}
 
               {protocol === 'meshtastic' && onSaveRemoteAdminKey && !isOurNode && (
                 <div className="mt-4 space-y-2 rounded-lg border border-blue-700/40 bg-blue-900/20 px-3 py-2 text-sm text-blue-100">

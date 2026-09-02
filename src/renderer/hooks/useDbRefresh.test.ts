@@ -61,6 +61,24 @@ describe('useProtocolDbRefresh', () => {
     });
   });
 
+  it('refreshNodesFromDb replace mode clears nodes when DB is empty', async () => {
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          1: { nodeId: 1, longName: 'Stale' },
+        },
+      },
+    });
+    vi.spyOn(window.electronAPI.db, 'getNodes').mockResolvedValue([]);
+
+    const { result } = renderHook(() => useProtocolDbRefresh('meshtastic', ID));
+    await result.current.refreshNodesFromDb({ nodesMode: 'replace' });
+
+    await waitFor(() => {
+      expect(useNodeStore.getState().nodes[ID]).toEqual({});
+    });
+  });
+
   it('refreshMessagesFromDb loads MeshCore messages only', async () => {
     vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts').mockResolvedValue([]);
     vi.spyOn(window.electronAPI.db, 'getNodes').mockResolvedValue([]);

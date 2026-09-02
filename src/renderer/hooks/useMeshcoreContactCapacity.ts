@@ -2,6 +2,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
+  clearMeshcoreFirmwareContactsFullLatch,
+  isMeshcoreFirmwareContactsFullActive,
+  subscribeMeshcoreContactCountRefresh,
+  subscribeMeshcoreFirmwareContactsFull,
+} from '../lib/meshcore/meshcoreContactCapacityPush';
+import {
   isMeshcoreOffloadAbortError,
   MeshcoreOffloadAbortedError,
   meshcoreOffloadAbortRemovedCount,
@@ -34,7 +40,13 @@ export type OffloadContactsFromRadioFn = (
   options?: MeshcoreOffloadFromRadioOptions,
 ) => Promise<number>;
 
-function summarizeMeshcoreContactCapacity(count: number | null): MeshcoreContactCapacitySummary {
+function summarizeMeshcoreContactCapacity(
+  count: number | null,
+  firmwareFull: boolean,
+): MeshcoreContactCapacitySummary {
+  if (firmwareFull) {
+    return { count, level: 'critical', isWarning: true, isCritical: true };
+  }
   if (count === null) {
     return { count, level: 'unknown', isWarning: false, isCritical: false };
   }
@@ -56,6 +68,9 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
   const [contactCount, setContactCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [offloadProgress, setOffloadProgress] = useState<MeshcoreOffloadProgress | null>(null);
+  const [firmwareContactsFull, setFirmwareContactsFull] = useState(() =>
+    isMeshcoreFirmwareContactsFullActive(),
+  );
   const offloadAbortRef = useRef<AbortController | null>(null);
   const removedFromRadioRef = useRef(0);
 
@@ -138,6 +153,7 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
         throwIfMeshcoreOffloadAborted(signal, removedFromRadioRef.current);
 
         const reconciledCount = await refreshCount({ preserveOnError: true });
+        clearMeshcoreFirmwareContactsFullLatch();
         return { offloadedFromRadioCount, offloadedCount, reconciledCount, refreshFailed };
       } catch (e) {
         if (isMeshcoreOffloadAbortError(e)) {
@@ -175,7 +191,22 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
     void refreshCount();
   }, [enabled, refreshCount]);
 
-  const summary = useMemo(() => summarizeMeshcoreContactCapacity(contactCount), [contactCount]);
+  useEffect(() => {
+    return subscribeMeshcoreFirmwareContactsFull(() => {
+      setFirmwareContactsFull(isMeshcoreFirmwareContactsFullActive());
+    });
+  }, []);
+
+  useEffect(() => {
+    return subscribeMeshcoreContactCountRefresh(() => {
+      void refreshCount({ preserveOnError: true });
+    });
+  }, [refreshCount]);
+
+  const summary = useMemo(
+    () => summarizeMeshcoreContactCapacity(contactCount, firmwareContactsFull),
+    [contactCount, firmwareContactsFull],
+  );
 
   return {
     contactCount,

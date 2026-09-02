@@ -450,3 +450,34 @@ describe('store record adapters (merge precedence)', () => {
     expect(record.reticulumAttachmentKind).toBe('audio');
   });
 });
+
+describe('nodeRecordsToMeshNodeMap cache invalidation', () => {
+  const baseRecord: NodeRecord = { nodeId: 7, protocol: 'meshtastic' } as NodeRecord;
+
+  const fieldUpdates: [string, Partial<NodeRecord>][] = [
+    ['lightningStrikeCount1h', { lightningStrikeCount1h: 3 }],
+    ['lightningDistanceKm', { lightningDistanceKm: 12 }],
+    ['pm25Standard', { pm25Standard: 18 }],
+    ['co2', { co2: 640 }],
+    ['keyManuallyVerified', { keyManuallyVerified: true }],
+    ['hasXeddsaSigned', { hasXeddsaSigned: true }],
+  ];
+
+  it.each(fieldUpdates)('re-exports the node when %s changes', (_field, update) => {
+    resetNodeRecordsToMeshNodeMapCacheForTests();
+    const first = nodeRecordsToMeshNodeMap([baseRecord]);
+    const firstNode = first.get(7);
+
+    const second = nodeRecordsToMeshNodeMap([{ ...baseRecord, ...update }]);
+
+    expect(second.get(7)).not.toBe(firstNode);
+  });
+
+  it('reuses the cached node when nothing changed', () => {
+    resetNodeRecordsToMeshNodeMapCacheForTests();
+    const first = nodeRecordsToMeshNodeMap([baseRecord]);
+    const second = nodeRecordsToMeshNodeMap([{ ...baseRecord }]);
+
+    expect(second.get(7)).toBe(first.get(7));
+  });
+});

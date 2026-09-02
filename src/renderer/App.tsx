@@ -54,6 +54,10 @@ import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
+import {
+  readMeshcoreAutoOffloadWhenFull,
+  writeMeshcoreAutoOffloadWhenFull,
+} from '@/renderer/lib/meshcore/meshcoreContactCapacityPush';
 import { isMeshcoreTcpOpenHopDeadAccepted } from '@/renderer/lib/meshcore/meshcoreTcpInitBurst';
 import {
   meshcoreConfiguredChannelIndexSet,
@@ -82,6 +86,7 @@ import {
   resolveAppliedMeshtasticDeviceRole,
 } from '@/shared/meshtasticAppliedDeviceRole';
 import type { RrcChatMessage } from '@/shared/rrc-types';
+import { touch } from '@/shared/touch';
 
 import BootSequence from './components/BootSequence';
 import ConfigureNodeSelector from './components/ConfigureNodeSelector';
@@ -733,6 +738,9 @@ function AppContent() {
       }
     },
   );
+  const [meshcoreAutoOffloadWhenFull, setMeshcoreAutoOffloadWhenFullState] = useState(() =>
+    readMeshcoreAutoOffloadWhenFull(),
+  );
   const onMeshcoreContactsShowPublicKeysChange = useCallback((value: boolean) => {
     setMeshcoreContactsShowPublicKeysState(value);
     try {
@@ -748,6 +756,10 @@ function AppContent() {
     } catch {
       // catch-no-log-ok localStorage
     }
+  }, []);
+  const onMeshcoreAutoOffloadWhenFullChange = useCallback((value: boolean) => {
+    setMeshcoreAutoOffloadWhenFullState(value);
+    writeMeshcoreAutoOffloadWhenFull(value);
   }, []);
 
   // ─── Auto flood advert interval (MeshCore) ───────────────────────
@@ -1276,7 +1288,7 @@ function AppContent() {
   );
 
   const meshtasticChatUnread = useMemo(() => {
-    void lastReadRevision.meshtastic;
+    touch(lastReadRevision.meshtastic);
     const lastRead = getSanitizedMeshtasticChatLastRead(
       meshtasticUiMessages,
       meshtasticOwnNodeIdSet,
@@ -1297,7 +1309,7 @@ function AppContent() {
   ]);
 
   const meshcoreChatLastRead = useMemo(() => {
-    void lastReadRevision.meshcore;
+    touch(lastReadRevision.meshcore);
     return getSanitizedMeshcoreChatLastRead(meshcoreUiMessages);
   }, [lastReadRevision.meshcore, meshcoreUiMessages]);
 
@@ -1334,7 +1346,7 @@ function AppContent() {
   ]);
 
   const reticulumChatUnread = useMemo(() => {
-    void lastReadRevision.reticulum;
+    touch(lastReadRevision.reticulum);
     const lastRead = getSanitizedReticulumChatLastRead(reticulumUiMessages, reticulumOwnNodeIdSet);
     return computeReticulumChatUnread(
       reticulumUiMessages,
@@ -1357,10 +1369,10 @@ function AppContent() {
   const rrcHubDestHash = useRrcSessionStore((s) => s.hubDestHash);
   const rrcLocalIdentityHash = useRrcSessionStore((s) => s.localIdentityHash);
   const rrcUnread = useMemo(() => {
-    void rrcUnreadByRoom;
-    void rrcUnreadByHub;
+    touch(rrcUnreadByRoom);
+    touch(rrcUnreadByHub);
     // Non-focused hubs only touch `sessionsByHub`, not the focused-hub mirror fields above.
-    void rrcSessionsByHub;
+    touch(rrcSessionsByHub);
     return useRrcSessionStore.getState().totalUnread();
   }, [rrcUnreadByRoom, rrcUnreadByHub, rrcSessionsByHub]);
   const remotePendingOffers = useRncpTransferStore((s) => s.pendingOffers.size);
@@ -1373,8 +1385,8 @@ function AppContent() {
   }, [rrcMessages]);
 
   const meshcoreRoomsUnread = useMemo(() => {
-    void roomsLastReadRevision;
-    void meshcoreMutedViewsRevision;
+    touch(roomsLastReadRevision);
+    touch(meshcoreMutedViewsRevision);
     const roomsLastRead = getSanitizedMeshcoreRoomsLastRead(meshcoreUiMessages);
     const knownRoomServerIds = meshcoreRoomServerIdsFromNodes(meshcoreUiNodes.values());
     const rawCount = totalRoomsUnreadCount(
@@ -2270,10 +2282,7 @@ function AppContent() {
     setPendingDmTarget(null);
   }, []);
 
-  const {
-    refreshNodesFromDb: refreshMeshtasticNodesInStore,
-    refreshMessagesFromDb: refreshMeshtasticMessagesInStore,
-  } = meshtasticDbRefresh;
+  const { refreshMessagesFromDb: refreshMeshtasticMessagesInStore } = meshtasticDbRefresh;
   const {
     refreshNodesFromDb: refreshMeshcoreNodesInStore,
     refreshMessagesFromDb: refreshMeshcoreMessagesInStore,
@@ -2282,19 +2291,13 @@ function AppContent() {
   const refreshNodesFromDb = useCallback(() => {
     const actions = selectByProtocol(panelActionsByProtocol, protocol);
     if (capabilities.hasRemoteAdmin) {
+      // Meshtastic runtime refresh already replace-syncs the identity node store.
       void actions.refreshNodesFromDb();
-      void refreshMeshtasticNodesInStore();
     } else {
       void actions.refreshNodesFromDb();
-      void refreshMeshcoreNodesInStore();
+      void refreshMeshcoreNodesInStore({ nodesMode: 'replace' });
     }
-  }, [
-    protocol,
-    capabilities.hasRemoteAdmin,
-    panelActionsByProtocol,
-    refreshMeshtasticNodesInStore,
-    refreshMeshcoreNodesInStore,
-  ]);
+  }, [protocol, capabilities.hasRemoteAdmin, panelActionsByProtocol, refreshMeshcoreNodesInStore]);
 
   const refreshMessagesFromDb = useCallback(
     (opts?: MessageClearRefreshOptions) => {
@@ -3857,6 +3860,14 @@ function AppContent() {
                                     meshcorePanelActions.setOwner,
                                   )}
                                   capabilities={capabilities}
+                                  onSendLockdownAuth={
+                                    // Lockdown auth always addresses 'self', so offering it
+                                    // while the panel targets a remote node would silently
+                                    // act on the local radio instead.
+                                    capabilities.hasLockdown && !isRemoteConfigureTarget
+                                      ? meshtasticPanelActions.sendLockdownAuth
+                                      : undefined
+                                  }
                                   meshcoreChannels={
                                     capabilities.hasCompanionContactManagementConfig
                                       ? meshcoreRuntime.channels
@@ -3926,6 +3937,16 @@ function AppContent() {
                                   onMeshcoreContactsShowRefreshControlChange={
                                     capabilities.hasContactImportExport
                                       ? onMeshcoreContactsShowRefreshControlChange
+                                      : undefined
+                                  }
+                                  meshcoreAutoOffloadWhenFull={
+                                    capabilities.hasContactImportExport
+                                      ? meshcoreAutoOffloadWhenFull
+                                      : undefined
+                                  }
+                                  onMeshcoreAutoOffloadWhenFullChange={
+                                    capabilities.hasContactImportExport
+                                      ? onMeshcoreAutoOffloadWhenFullChange
                                       : undefined
                                   }
                                   onClearAllMeshcoreContacts={

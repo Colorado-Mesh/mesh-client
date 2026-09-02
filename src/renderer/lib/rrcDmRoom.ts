@@ -3,8 +3,8 @@
  *
  * Wire: direct NOTICE with K_DST (no K_ROOM). Client storage key: `@<32-hex>`.
  */
-
 import type { RrcChatMessage } from '@/shared/rrc-types';
+import { touch } from '@/shared/touch';
 
 const FULL_HASH_RE = /^[0-9a-f]{32}$/i;
 
@@ -128,7 +128,7 @@ export function splitLegacyWhispersMessages(
     if (!peerHash) continue;
     const room = rrcDmRoomKey(peerHash);
     const mapped: RrcChatMessage = { ...msg, room, dst_hash: msg.dst_hash ?? peerHash };
-    void peerNick;
+    touch(peerNick);
     const list = byRoom.get(room) ?? [];
     list.push(mapped);
     byRoom.set(room, list);

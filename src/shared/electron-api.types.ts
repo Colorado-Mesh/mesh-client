@@ -653,6 +653,7 @@ export interface ElectronAPI {
       excludedStubCount: number;
     }>;
     offloadAllMeshcoreContacts: () => Promise<number>;
+    markMeshcoreContactOffRadio: (publicKeyHex: string) => Promise<{ changes: number }>;
     getMeshcoreContactById: (nodeId: number) => Promise<{
       node_id: number;
       public_key: string;

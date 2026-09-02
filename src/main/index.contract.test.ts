@@ -585,7 +585,7 @@ describe('Native Electron call guards (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(
       /ipcMain\.handle\('clipboard:writeText'[\s\S]*?validateIpcSender\(event\)/,
     );
-    expect(INDEX_SOURCE).toContain('clipboard.writeText(text)');
+    expect(INDEX_SOURCE).toContain('await clipboard.writeText(text)');
   });
 
   it('bounds bluetooth-start-scan with a 15 s timeout', () => {

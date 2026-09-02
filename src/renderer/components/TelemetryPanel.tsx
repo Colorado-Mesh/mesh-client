@@ -26,6 +26,9 @@ function toF(c: number) {
   return (c * 9) / 5 + 32;
 }
 
+/** ADC and one-wire temperature channels exposed by EnvironmentMetrics (`*_ch0`…`*_ch7`). */
+const ADC_CHANNELS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
+
 /** Latest finite number for `key` walking chart rows newest-first. */
 function latestDefinedNumber(
   rows: readonly Record<string, unknown>[],
@@ -120,6 +123,9 @@ export default function TelemetryPanel({
         humidity: t.relativeHumidity,
         pressure: t.barometricPressure,
         iaq: t.iaq,
+        pm25: t.pm25Standard,
+        co2: t.co2,
+        lightningStrikes: t.lightningStrikeCount1h,
       })),
     [environmentTelemetry, useFahrenheit, use24HourTime],
   );
@@ -129,6 +135,9 @@ export default function TelemetryPanel({
   const hasHumidity = envChartData.some((d) => d.humidity !== undefined);
   const hasPressure = envChartData.some((d) => d.pressure !== undefined);
   const hasIaq = envChartData.some((d) => d.iaq !== undefined);
+  const hasParticulates = envChartData.some(
+    (d) => d.pm25 !== undefined || d.co2 !== undefined || d.lightningStrikes !== undefined,
+  );
   const latestSignal =
     signalTelemetry.length > 0 ? signalTelemetry[signalTelemetry.length - 1] : null;
   const showLiveSignalMeter = capabilities?.hasRfStats === true;
@@ -165,6 +174,11 @@ export default function TelemetryPanel({
     iaq: formatChartValue(latestDefinedNumber(envChartData, 'iaq'), chartValueUnavailable),
     count: envChartData.length,
   });
+  const particulateChartAria = t('telemetryPanel.chartAriaParticulates', {
+    pm25: formatChartValue(latestDefinedNumber(envChartData, 'pm25'), chartValueUnavailable),
+    co2: formatChartValue(latestDefinedNumber(envChartData, 'co2'), chartValueUnavailable),
+    count: envChartData.length,
+  });
 
   const handleExportCsv = useCallback(() => {
     if (telemetry.length === 0 && signalTelemetry.length === 0 && environmentTelemetry.length === 0)
@@ -187,7 +201,18 @@ export default function TelemetryPanel({
       'env_humidity_pct',
       'env_pressure_hpa',
       'env_iaq',
+      'env_pm25_standard',
+      'env_pm100_standard',
+      'env_co2_ppm',
+      'env_voc_idx',
+      'env_nox_idx',
+      'env_lightning_strikes_1h',
+      'env_lightning_distance_km',
+      ...ADC_CHANNELS.map((ch) => `env_adc_voltage_ch${ch}`),
+      ...ADC_CHANNELS.map((ch) => `env_one_wire_temperature_ch${ch}`),
     ];
+    /** Trailing blank cells so battery/signal rows line up with the environment columns. */
+    const envPadding = Array.from({ length: headers.length - 6 }, () => '');
     const batteryRows = telemetry.map((t) => [
       escapeCsvCell(new Date(t.timestamp).toISOString()),
       escapeCsvCell('battery'),
@@ -195,11 +220,7 @@ export default function TelemetryPanel({
       escapeCsvCell(t.voltage),
       escapeCsvCell(''),
       escapeCsvCell(''),
-      escapeCsvCell(''),
-      escapeCsvCell(''),
-      escapeCsvCell(''),
-      escapeCsvCell(''),
-      escapeCsvCell(''),
+      ...envPadding,
     ]);
     const signalRows = signalTelemetry.map((t) => [
       escapeCsvCell(new Date(t.timestamp).toISOString()),
@@ -208,11 +229,7 @@ export default function TelemetryPanel({
       escapeCsvCell(''),
       escapeCsvCell(t.snr),
       escapeCsvCell(t.rssi),
-      escapeCsvCell(''),
-      escapeCsvCell(''),
-      escapeCsvCell(''),
-      escapeCsvCell(''),
-      escapeCsvCell(''),
+      ...envPadding,
     ]);
     const envRows = environmentTelemetry.map((t) => [
       escapeCsvCell(new Date(t.timestamp).toISOString()),
@@ -226,6 +243,15 @@ export default function TelemetryPanel({
       escapeCsvCell(t.relativeHumidity),
       escapeCsvCell(t.barometricPressure),
       escapeCsvCell(t.iaq),
+      escapeCsvCell(t.pm25Standard),
+      escapeCsvCell(t.pm100Standard),
+      escapeCsvCell(t.co2),
+      escapeCsvCell(t.pmVocIdx),
+      escapeCsvCell(t.pmNoxIdx),
+      escapeCsvCell(t.lightningStrikeCount1h),
+      escapeCsvCell(t.lightningDistanceKm),
+      ...ADC_CHANNELS.map((ch) => escapeCsvCell(t.adcVoltages?.[ch])),
+      ...ADC_CHANNELS.map((ch) => escapeCsvCell(t.oneWireTemperatures?.[ch])),
     ]);
     const rows = [...batteryRows, ...signalRows, ...envRows].sort((a, b) =>
       a[0].localeCompare(b[0]),
@@ -602,6 +628,87 @@ export default function TelemetryPanel({
                       dataKey="iaq"
                       name={t('telemetryPanel.seriesIaq')}
                       stroke="#34d399"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* Particulates / CO2 / lightning (SEN5X, SEN6X, SCD4X, AS3935) */}
+          {showEnvironment && hasParticulates && (
+            <div className="bg-deep-black rounded-lg p-4">
+              <h3 className="text-muted mb-3 text-sm font-medium">
+                {t('telemetryPanel.sectionParticulates')}
+              </h3>
+              <div role="img" aria-label={particulateChartAria}>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={envChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
+                    <YAxis
+                      yAxisId="pm"
+                      stroke="#a78bfa"
+                      tick={{ fontSize: 11 }}
+                      label={{
+                        value: t('telemetryPanel.axisParticulates'),
+                        angle: -90,
+                        position: 'insideLeft',
+                        style: { fill: '#a78bfa' },
+                      }}
+                    />
+                    <YAxis
+                      yAxisId="co2"
+                      orientation="right"
+                      stroke="#fbbf24"
+                      tick={{ fontSize: 11 }}
+                      label={{
+                        value: t('telemetryPanel.axisCo2'),
+                        angle: 90,
+                        position: 'insideRight',
+                        style: { fill: '#fbbf24' },
+                      }}
+                    />
+                    {/* Strike counts are unitless and would be squashed flat by the
+                        µg/m³ scale; hidden so the chart keeps two labeled axes. */}
+                    <YAxis yAxisId="strikes" orientation="right" hide />
+                    <Tooltip
+                      contentStyle={{
+                        background: '#0f172a',
+                        border: '1px solid #334155',
+                        borderRadius: '8px',
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      yAxisId="pm"
+                      type="monotone"
+                      dataKey="pm25"
+                      name={t('telemetryPanel.seriesPm25')}
+                      stroke="#a78bfa"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                    <Line
+                      yAxisId="co2"
+                      type="monotone"
+                      dataKey="co2"
+                      name={t('telemetryPanel.seriesCo2')}
+                      stroke="#fbbf24"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                    <Line
+                      yAxisId="strikes"
+                      type="monotone"
+                      dataKey="lightningStrikes"
+                      name={t('telemetryPanel.seriesLightningStrikes')}
+                      stroke="#f87171"
                       strokeWidth={2}
                       dot={false}
                       connectNulls

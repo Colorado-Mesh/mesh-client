@@ -132,8 +132,11 @@ function handleModulePort(
     case 'simulator':
       appendRawMessage(deps.setSimulatorPackets, entry, 50);
       break;
+    // ATAK_PLUGIN_V2 (portnum 78) shares the TAK panel's buffer; the panel decodes
+    // TAKPacketV2 from the bytes.
     case 'atakPlugin':
     case 'atakForwarder':
+    case 'atakPluginV2':
       appendRawMessage(deps.setAtakMessages, entry, 100);
       break;
     case 'mapReport':
@@ -143,6 +146,15 @@ function handleModulePort(
       break;
     case 'private':
       appendRawMessage(deps.setPrivateMessages, entry, 50);
+      break;
+    // Portnums added in protobufs 2.8.0 with no dedicated panel yet. They are labeled
+    // here and reach the Sniffer through the raw packet stream; listing them keeps the
+    // switch an accurate record of what the app knows about.
+    case 'alert':
+    case 'keyVerification':
+    case 'remoteShell':
+    case 'nodeStatus':
+    case 'meshBeacon':
       break;
     default:
       break;

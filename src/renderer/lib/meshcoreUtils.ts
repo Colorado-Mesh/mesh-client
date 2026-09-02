@@ -1,3 +1,5 @@
+import { touch } from '@/shared/touch';
+
 import { isValidLatLon } from '../../shared/geoCoords';
 import {
   meshcorePackPathLenByte,
@@ -602,7 +604,7 @@ export function meshcoreMergeContactHopsAwayFromPrevious(
   prev: number | undefined,
   slicedPathByteLength: number,
 ): number | undefined {
-  void slicedPathByteLength;
+  touch(slicedPathByteLength);
   if (prev !== undefined && prev >= 1) {
     // Never replace a known multi-hop route with 0/unknown from a transient contact or RF parse:
     // firmware sometimes reports outPathLen/direct while bytes still imply hops, or packets carry hop 0.
@@ -657,7 +659,7 @@ export function meshcoreMergeContactAdvNameFromPrevious(
   nodeId: number,
   _opts?: MeshcoreMergeContactAdvNameOpts,
 ): string {
-  void _opts;
+  touch(_opts);
   const radioTrim = (radioAdvName ?? '').trim();
   const prevTrim = (prevLongName ?? '').trim();
   const radioReal = radioTrim.length > 0 && !meshcoreIsPlaceholderNodeLongName(radioTrim, nodeId);

@@ -5,6 +5,7 @@ Setup (clone, prerequisites, Flatpak build steps) is in [development-environment
 ## Contents
 
 - [Quick reference](#quick-reference)
+- [System requirements](#system-requirements)
 - [Development and building](#development-and-building)
 - [Installation and packaged apps](#installation-and-packaged-apps)
 - [Database and local data](#database-and-local-data)
@@ -92,6 +93,18 @@ The top-level **`legend`** explains that ids like `offline-meshcore` are **inter
 Developer bundle only: `reticulum/config` (rnsd INI) and `reticulum/mesh_client_stack.json` (mnemonic redacted).
 
 Attach the GitHub report zip (or paste `debug-snapshot.json` from it; redact `myNodeNum` if you prefer). Do **not** attach the developer bundle or `mesh-client.db` to this public issue.
+
+## System requirements
+
+Packaged Mesh-Client (Electron **44**) needs:
+
+| Platform    | Minimum                                                                                         |
+| ----------- | ----------------------------------------------------------------------------------------------- |
+| **macOS**   | **13 Ventura** or later (`LSMinimumSystemVersion` in the app bundle; Monterey is not supported) |
+| **Windows** | Windows 10 version **1809+** or Windows 11                                                      |
+| **Linux**   | x86_64 or aarch64 (AppImage, `.deb`, `.rpm`, Flatpak)                                           |
+
+If the app will not launch on an older macOS, upgrade the host OS — this is not a Gatekeeper quarantine issue. See also [README — System requirements](../README.md#system-requirements).
 
 ## Development and building
 
@@ -418,7 +431,7 @@ flatpak run org.coloradomesh.MeshClient
 
 **Symptom**: `flatpak run org.coloradomesh.MeshClient` prints `Command failed` right after `Running 'bwrap … -- mesh-client'` with no window. Common on **Arch, CachyOS, KDE Plasma 6, and Hyprland** (pure Wayland). The AppImage from the same release often works.
 
-**Cause**: The Flatpak sandbox mounts an empty `/tmp/.X11-unix`, so Electron cannot fall back to X11 unless the wrapper passes Wayland/Ozone flags. Older bundles also omitted Chromium sandbox flags and `TMPDIR` setup that zypak expects.
+**Cause**: The Flatpak sandbox mounts an empty `/tmp/.X11-unix`, so Electron cannot fall back to X11 unless the wrapper passes Wayland/Ozone flags. Older bundles also omitted Chromium sandbox flags and `TMPDIR` setup that zypak expects. A different immediate exit with `No usable sandbox!` on hardened hosts is covered in [Flatpak: "No usable sandbox!" on Ubuntu 23.10+ / hardened Linux](#flatpak-no-usable-sandbox-on-ubuntu-2310--hardened-linux).
 
 The log line `F: /lib32 does not exist in runtime` is **harmless** on x86_64-only runtimes — not the failure cause.
 
@@ -451,6 +464,28 @@ flatpak uninstall --user org.coloradomesh.MeshClient
 flatpak install --user ./org.coloradomesh.MeshClient-x86_64.flatpak
 flatpak run org.coloradomesh.MeshClient
 ```
+
+### Flatpak: "No usable sandbox!" on Ubuntu 23.10+ / hardened Linux
+
+**Symptom**: `flatpak run org.coloradomesh.MeshClient` exits immediately with no window. The terminal may show `zypak-helper` lines (for example `Wait found events, but sd-event found none`) followed by:
+
+```text
+FATAL:content/browser/zygote_host/zygote_host_impl_linux.cc:129] No usable sandbox!
+```
+
+**Cause**: The host blocks **unprivileged user namespaces** (common on **Ubuntu 23.10+** with AppArmor `apparmor_restrict_unprivileged_userns`, and on some hardened **Fedora** / **Arch** setups). The Flatpak wrapper passes `--disable-setuid-sandbox` (zypak owns Chromium sandboxing), so when user namespaces are unavailable Chromium has no usable sandbox and aborts.
+
+**Fix in app**: Current releases auto-retry with `--no-sandbox` when this fatal is detected (same fallback as `pnpm start` via `scripts/start-electron.mjs`). Reinstall the latest `.flatpak` from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) if you are on an older bundle.
+
+**Workaround** (skip the probe, force `--no-sandbox` on first launch):
+
+```bash
+MESH_CLIENT_NO_SANDBOX=1 flatpak run org.coloradomesh.MeshClient
+```
+
+The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium runs with `--no-sandbox`; only the inner Chromium namespace sandbox is relaxed.
+
+**Host root-cause fix** (optional — restores the inner Chromium sandbox): allow unprivileged user namespaces on the host, or add an AppArmor profile exception. See the upstream Chromium guide: [AppArmor userns restrictions](https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md). On older kernels, `kernel.unprivileged_userns_clone=1` may also be required — see [Linux launch notes](development-environment.md#linux-launch-notes) in development-environment.md.
 
 ## Database and local data
 
@@ -936,7 +971,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 ### MeshCore: Room server login, posts, and Windows 10
 
-**Minimum Windows**: Mesh-Client (Electron 41) supports **Windows 10 version 1809+** and Windows 11. Windows 10 22H2 is supported; issues reported only on Win10 are usually MeshCore protocol or app regressions, not an unsupported OS.
+**Minimum Windows**: Mesh-Client (Electron 44) supports **Windows 10 version 1809+** and Windows 11. Windows 10 22H2 is supported; issues reported only on Win10 are usually MeshCore protocol or app regressions, not an unsupported OS. See [System requirements](#system-requirements) for the full platform table (including **macOS 13 Ventura+**).
 
 **Rooms vs Chat**: Official MeshCore room clients use the **Rooms** tab BBS login path. Room-server posts appear there (`SignedPlain` / channel `-2`), **not** in Chat channel pills. Admin traffic sent as normal **channel text** shows in **Chat** only.
 

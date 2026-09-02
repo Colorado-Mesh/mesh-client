@@ -2303,7 +2303,10 @@
     "clearAllIntro": "Radyodaki tüm kişileri kaldırın ve uygulamanın kişi veritabanını temizleyin. Bu geri alınamaz.",
     "clearAllContactsConfirm": "Telsizdeki tüm kişiler kaldırılsın ve yerel iletişim verileri temizlensin mi?",
     "clearingContacts": "Temizleniyor…",
-    "clearAllContactsButton": "Tüm kişileri temizle"
+    "clearAllContactsButton": "Tüm kişileri temizle",
+    "autoOffloadWhenFull": "Radyo dolduğunda otomatik boşaltma",
+    "autoOffloadWhenFullLabel": "Dolu olduğunda otomatik boşaltma",
+    "autoOffloadWhenFullDesc": "Refakatçi kişi depolama alanının dolu olduğunu bildirdiğinde, kişileri otomatik olarak uygulama veritabanına boşaltın (Yük Boşaltma ile aynı)."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Telemetri gizliliği",
@@ -3033,7 +3036,11 @@
     "shareContactQrAria": "Resmi uygulama içe aktarma için MeshCore iletişim QR kodunu göster",
     "publicKeyCopied": "Genel anahtar panoya kopyalandı.",
     "hasPublicKeyNoDm": "Genel anahtarı var (doğrudan mesaj yok)",
-    "copyPublicKey": "genel anahtarı kopyala"
+    "copyPublicKey": "genel anahtarı kopyala",
+    "xeddsaSigned": "XEdDSA imzalandı",
+    "xeddsaSignedHint": "Radyo, bu düğümden bir XEdDSA imzasını doğruladı, bu nedenle genel anahtarı kriptografik olarak onaylandı.",
+    "keyManuallyVerified": "Anahtar doğrulandı",
+    "keyManuallyVerifiedHint": "Bu düğümün genel anahtarı bir operatör tarafından manuel olarak onaylandı."
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",
@@ -3554,57 +3561,65 @@
     "importConfigJson": "JSON Yapılandırmasını İçe Aktar",
     "offloadContacts": "Boşaltma",
     "displayUnits": {
-      "0": {
-        "label": "Metrik"
+      "METRIC": {
+        "label": "Metric"
       },
-      "1": {
-        "label": "İmparatorluk"
+      "IMPERIAL": {
+        "label": "Imperial"
       }
     },
     "deviceRoles": {
-      "0": {
-        "label": "Müşteri",
+      "CLIENT": {
+        "label": "Client",
         "description": "Normal istemci modu"
       },
-      "1": {
-        "label": "İstemciyi Sessize Alma",
+      "CLIENT_MUTE": {
+        "label": "Client Mute",
         "description": "Paketleri iletmeyen istemci. Bu rolün uygulanması, cihazdaki GPS yayınlarını ve harita raporunu da devre dışı bırakır."
       },
-      "2": {
-        "label": "Yönlendirici",
+      "ROUTER": {
+        "label": "Router",
         "description": "Özel yönlendirici/tekrarlayıcı"
       },
-      "3": {
-        "label": "Yönlendirici İstemcisi",
-        "description": "Yönlendirici + istemci modu"
+      "ROUTER_CLIENT": {
+        "label": "Router Client",
+        "description": "Yönlendirici + istemci modu. Ürün yazılımı 2.3.15 'te kullanımdan kaldırılmıştır — Yönlendirici veya İstemci kullanın."
       },
-      "4": {
-        "label": "Müşteri Tabanı",
-        "description": "İstemci cihazları için baz istasyonu"
+      "REPEATER": {
+        "label": "Repeater",
+        "description": "Paketleri herhangi bir kaynak oluşturmadan yeniden yayınlar. Ürün yazılımı 2.7.11 'de kullanımdan kaldırılmıştır — yeniden yayın zincirinde delikler oluşturur."
       },
-      "5": {
-        "label": "Takipçi",
-        "description": "Yalnızca GPS izleyici"
+      "TRACKER": {
+        "label": "Tracker",
+        "description": "Sadece GPS izleyici"
       },
-      "6": {
-        "label": "Sensör",
+      "SENSOR": {
+        "label": "Sensor",
         "description": "Telemetri sensör düğümü"
       },
-      "7": {
+      "TAK": {
         "label": "TAK",
-        "description": "TAK özellikli cihaz"
+        "description": "TAK-enabled device"
       },
-      "8": {
-        "label": "İstemci Gizli",
+      "CLIENT_HIDDEN": {
+        "label": "Client Hidden",
         "description": "İstemci, düğüm listesinden gizlendi"
       },
-      "9": {
-        "label": "Kayıp Eşya",
-        "description": "Kurtarma için yayın konumu"
+      "LOST_AND_FOUND": {
+        "label": "Lost and Found",
+        "description": "İyileşme için yayın pozisyonu"
       },
-      "10": {
-        "label": "TAK Takipçisi",
-        "description": "TAK takip modu"
+      "TAK_TRACKER": {
+        "label": "TAK Tracker",
+        "description": "TAK tracker mode"
+      },
+      "ROUTER_LATE": {
+        "label": "Router Late",
+        "description": "Yoğun ağ çekirdekleri için yalnızca diğer düğümlerin bir şansı olduktan sonra yeniden yayın yapan yönlendirici."
+      },
+      "CLIENT_BASE": {
+        "label": "Client Base",
+        "description": "İstemci cihazlar için baz istasyonu"
       }
     },
     "contactsOnRadioBadgeTitle": "{{part}} radyodaki kişiler",
@@ -3839,28 +3854,28 @@
     "tzdefLabel": "Saat Dilimi (POSIX)",
     "tzdefDesc": "POSIX saat dilimi dizesi ör. EST5EDT,M3.2.0,M11.1.0. Referans listesi için https://github.com/nayarsystems/posix_tz_db adresine bakın.",
     "rebroadcastModes": {
-      "0": {
-        "label": "All",
+      "ALL": {
+        "label": "Tümü",
         "description": "Tüm paketleri yeniden yayınlayın (varsayılan)."
       },
-      "1": {
-        "label": "Hepsi Kod Çözmeyi Atla",
-        "description": "Tümünü kod çözmeden yeniden yayınlayın. Özel yönlendiricilerdeki CPU'yu azaltır."
+      "ALL_SKIP_DECODING": {
+        "label": "Tüm Kod Çözmeyi Atla",
+        "description": "Tümünü deşifre etmeden yeniden yayınla. Özel yönlendiricilerdeki CPU'yu azaltır."
       },
-      "2": {
-        "label": "Yalnızca Yerel",
-        "description": "Yalnızca doğrudan RF üzerinden duyulan düğümlerden gelen paketleri yeniden yayınlayın."
+      "LOCAL_ONLY": {
+        "label": "Sadece Yerel",
+        "description": "Yalnızca doğrudan RF'de duyulan düğümlerden gelen yeniden yayın paketleri."
       },
-      "3": {
-        "label": "Yalnızca Bilinen",
-        "description": "Yalnızca yerel düğüm veritabanındaki düğümlerden yeniden yayın."
+      "KNOWN_ONLY": {
+        "label": "Sadece Bilinen",
+        "description": "Yalnızca yerel düğüm veritabanındaki düğümlerden yeniden yayın yapın."
       },
-      "4": {
-        "label": "Hiçbiri",
-        "description": "Hiçbir paketi yeniden yayınlamayın."
+      "NONE": {
+        "label": "Yok",
+        "description": "Herhangi bir paketi yeniden yayınlamayın."
       },
-      "5": {
-        "label": "Yalnızca Çekirdek Portnumları",
+      "CORE_PORTNUMS_ONLY": {
+        "label": "Yalnızca Çekirdek Portnum'lar",
         "description": "Yalnızca temel portnumları (metin, düğüm bilgisi, konum, telemetri) yeniden yayınlayın."
       }
     },
@@ -3879,23 +3894,23 @@
     "enableMessageBubblesLabel": "Mesaj Balonları",
     "enableMessageBubblesDesc": "Gelen mesajları ekranda bir baloncuk içinde gösterin.",
     "oledTypes": {
-      "0": {
-        "label": "Otomatik"
+      "OLED_AUTO": {
+        "label": "Auto"
       },
-      "1": {
+      "OLED_SSD1306": {
         "label": "SSD1306"
       },
-      "2": {
+      "OLED_SH1106": {
         "label": "SH1106"
       },
-      "3": {
+      "OLED_SH1107": {
         "label": "SH1107 (128x64)"
       },
-      "4": {
+      "OLED_SH1107_128_128": {
         "label": "SH1107 (128x128)"
       },
-      "5": {
-        "label": "SH1107 Döndürülmüş"
+      "OLED_SH1107_ROTATED": {
+        "label": "SH1107 Rotated"
       }
     },
     "displayModes": {
@@ -3982,85 +3997,172 @@
       "shareQrAria": "{{name}} için MeshCore kanal QR'sini göster"
     },
     "regions": {
-      "0": {
-        "label": "Ayarlanmadı"
+      "UNSET": {
+        "label": "Unset"
       },
-      "1": {
-        "label": "BİZ"
+      "US": {
+        "label": "US"
       },
-      "2": {
+      "EU_433": {
         "label": "EU_433"
       },
-      "3": {
+      "EU_868": {
         "label": "EU_868"
       },
-      "4": {
+      "CN": {
         "label": "CN"
       },
-      "5": {
-        "label": "Japonya"
+      "JP": {
+        "label": "JP"
       },
-      "6": {
+      "ANZ": {
         "label": "ANZ"
       },
-      "7": {
-        "label": "Kore"
+      "KR": {
+        "label": "KR"
       },
-      "8": {
+      "TW": {
         "label": "TW"
       },
-      "9": {
+      "RU": {
         "label": "RU"
       },
-      "10": {
-        "label": "İÇİNDE"
+      "IN": {
+        "label": "IN"
       },
-      "11": {
-        "label": "Yeni Zelanda_865"
+      "NZ_865": {
+        "label": "NZ_865"
       },
-      "12": {
+      "TH": {
         "label": "TH"
       },
-      "13": {
+      "LORA_24": {
+        "label": "LORA_24"
+      },
+      "UA_433": {
         "label": "UA_433"
       },
-      "14": {
+      "UA_868": {
         "label": "UA_868"
       },
-      "15": {
+      "MY_433": {
         "label": "MY_433"
       },
-      "16": {
+      "MY_919": {
         "label": "MY_919"
       },
-      "17": {
+      "SG_923": {
         "label": "SG_923"
       },
-      "18": {
-        "label": "LORA_24"
+      "PH_433": {
+        "label": "PH_433"
+      },
+      "PH_868": {
+        "label": "PH_868"
+      },
+      "PH_915": {
+        "label": "PH_915"
+      },
+      "ANZ_433": {
+        "label": "ANZ_433"
+      },
+      "KZ_433": {
+        "label": "KZ_433"
+      },
+      "KZ_863": {
+        "label": "KZ_863"
+      },
+      "NP_865": {
+        "label": "NP_865"
+      },
+      "BR_902": {
+        "label": "BR_902"
+      },
+      "ITU1_2M": {
+        "label": "ITU1_2M"
+      },
+      "ITU2_2M": {
+        "label": "ITU2_2M"
+      },
+      "EU_866": {
+        "label": "EU_866"
+      },
+      "EU_874": {
+        "label": "EU_874"
+      },
+      "EU_917": {
+        "label": "EU_917"
+      },
+      "EU_N_868": {
+        "label": "EU_N_868"
+      },
+      "ITU3_2M": {
+        "label": "ITU3_2M"
+      },
+      "ITU1_70CM": {
+        "label": "ITU1_70CM"
+      },
+      "ITU2_70CM": {
+        "label": "ITU2_70CM"
+      },
+      "ITU3_70CM": {
+        "label": "ITU3_70CM"
+      },
+      "ITU2_125CM": {
+        "label": "ITU2_125CM"
       }
     },
     "modemPresets": {
-      "0": {
-        "label": "Uzun Hızlı"
+      "LONG_FAST": {
+        "label": "Long Fast"
       },
-      "1": {
-        "label": "Uzun Yavaş"
+      "LONG_SLOW": {
+        "label": "Long Slow"
       },
-      "2": {
-        "label": "Uzun Orta"
+      "VERY_LONG_SLOW": {
+        "label": "Very Long Slow"
       },
-      "3": {
-        "label": "Kısa Hızlı"
+      "MEDIUM_SLOW": {
+        "label": "Medium Slow"
       },
-      "4": {
-        "label": "Kısa Yavaş"
+      "MEDIUM_FAST": {
+        "label": "Medium Fast"
       },
-      "5": {
-        "label": "Orta Hızlı"
+      "SHORT_SLOW": {
+        "label": "Short Slow"
       },
-      "6": {
-        "label": "Orta Yavaş"
+      "SHORT_FAST": {
+        "label": "Short Fast"
+      },
+      "LONG_MODERATE": {
+        "label": "Long Moderate"
+      },
+      "SHORT_TURBO": {
+        "label": "Short Turbo"
+      },
+      "LONG_TURBO": {
+        "label": "Long Turbo"
+      },
+      "LITE_FAST": {
+        "label": "Lite Fast"
+      },
+      "LITE_SLOW": {
+        "label": "Lite Slow"
+      },
+      "NARROW_FAST": {
+        "label": "Narrow Fast"
+      },
+      "NARROW_SLOW": {
+        "label": "Narrow Slow"
+      },
+      "TINY_FAST": {
+        "label": "Tiny Fast"
+      },
+      "TINY_SLOW": {
+        "label": "Tiny Slow"
+      },
+      "MEDIUM_TURBO": {
+        "label": "Medium Turbo"
       }
     },
     "floodScopeSaved": "Kaydedilen kapsam",
@@ -4072,7 +4174,38 @@
     "sendPositionDisabledShareOff": "Konumunuzu cihaza göndermek için Uygulama → GPS / Konum'da konumumu paylaş'ı etkinleştirin.",
     "clientMuteGpsSuppressed": "İstemci Sessiz uygulandı — GPS yayınları ve MQTT harita raporlaması cihazda devre dışı bırakıldı.",
     "validationShortNameTooLong": "Kısa Ad 4 UTF -8 bayta sığmalıdır",
-    "validationShortNameEmojiTooLarge": "Bu karakter Kısa Ad için çok büyük (ad başına maksimum 4 UTF -8 bayt)"
+    "validationShortNameEmojiTooLarge": "Bu karakter Kısa Ad için çok büyük (ad başına maksimum 4 UTF -8 bayt)",
+    "enumDeprecatedSuffix": "(* Kaldırıldı)",
+    "lockdown": {
+      "title": "Aygıt Yazılımı Kilitleme",
+      "description": "Kilitli bir radyo, parolasıyla kilidi açılana kadar yapılandırma değişikliklerini reddeder. Durum, ürün yazılımı tarafından bildirilir; kilitleme desteği olmayan telsizler asla bildirmez.",
+      "stateLabel": "Durum",
+      "stateNotReported": "Bu radyo tarafından bildirilmedi",
+      "reasonLabel": "Nedeni",
+      "bootsRemainingLabel": "Kalan yeniden başlatma sayısı",
+      "validUntilLabel": "Şu tarihe kadar açık:",
+      "backoffLabel": "Geri çekmeyi yeniden dene",
+      "backoffValue": "{{seconds}}s",
+      "passphraseLabel": "Parola",
+      "provision": "Hüküm",
+      "unlock": "Kilidini Aç",
+      "unlockAria": "Ürün yazılımı kilitlemesinin kilidini açın veya sağlayın",
+      "lockNow": "Şimdi kilitle",
+      "lockNowAria": "Radyoyu hemen kilitle",
+      "disable": "Karantinayı devre dışı bırak",
+      "disableAria": "Ürün yazılımı kilitlemesini devre dışı bırak",
+      "states": {
+        "STATE_UNSPECIFIED": "Belirtilmemiş",
+        "NEEDS_PROVISION": "Karşılanması gerekiyor",
+        "LOCKED": "Kilitli",
+        "UNLOCKED": "Kilidi açıldı",
+        "UNLOCK_FAILED": "Kilit açma başarısız",
+        "DISABLED": "Engelli"
+      }
+    },
+    "contactsFullAlarm": "Telsiz iletişim deposu dolu. Boş yuvalara kişileri uygulama veritabanına aktarın.",
+    "contactsFullAlarmAction": "Bırakma",
+    "contactsFullAutoOffloadStarted": "Radyo kontakları dolu — otomatik boşaltma başlatılıyor…"
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",
@@ -4915,7 +5048,8 @@
     "regenerateWarning": "Yeniden oluşturma, mevcut ATAK veri paketlerini geçersiz kılar; yeniden içe aktarmanız gerekecektir.",
     "durationSec": "{{s}}s",
     "durationMin": "{{m}}m",
-    "durationHourMin": "{{h}}h {{m}}m"
+    "durationHourMin": "{{h}}h {{m}}m",
+    "atakUndecodable": "Yük, TAK paketi olarak tanınmıyor"
   },
   "telemetryPanel": {
     "title": "Telemetri",
@@ -4956,7 +5090,14 @@
     "tempUnitC": "°C",
     "exportCsvButton": "CSV'yi dışa aktar",
     "emptyWaitingConnected": "Henüz telemetri verisi yok. Cihazdan veri bekleniyor…",
-    "emptyWaitingDisconnected": "Henüz telemetri verisi yok. Gerçek zamanlı ölçümleri görmek için bir cihaza bağlanın."
+    "emptyWaitingDisconnected": "Henüz telemetri verisi yok. Gerçek zamanlı ölçümleri görmek için bir cihaza bağlanın.",
+    "sectionParticulates": "Partiküller, CO₂ ve Yıldırım",
+    "chartAriaParticulates": "Partikül grafiği: en son PM2.5 {{pm25}}, CO₂ {{co2}}, {{count}} noktaları",
+    "axisParticulates": "µg/m³ · grevler",
+    "axisCo2": "ppm",
+    "seriesPm25": "PM2.5 (µg/m³)",
+    "seriesCo2": "CO₂ (ppm)",
+    "seriesLightningStrikes": "Yıldırım düşmesi (1 sa.)"
   },
   "toasts": {
     "firmwareAvailable": "Ürün yazılımı güncellemesi mevcut: v{{version}}",

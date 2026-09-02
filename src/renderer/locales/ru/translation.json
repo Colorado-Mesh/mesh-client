@@ -2355,7 +2355,10 @@
     "clearAllIntro": "Удалите все контакты из радио и очистите базу данных контактов приложения. Это невозможно отменить.",
     "clearAllContactsConfirm": "Удалить все контакты с магнитолы и очистить данные местных контактов?",
     "clearingContacts": "Очистка…",
-    "clearAllContactsButton": "Очистить все контакты"
+    "clearAllContactsButton": "Очистить все контакты",
+    "autoOffloadWhenFull": "Автоматически выключать, когда радио заполнено",
+    "autoOffloadWhenFullLabel": "Автоматическая загрузка при заполнении",
+    "autoOffloadWhenFullDesc": "Когда хранилище отчетов о контактах заполнено, автоматически выгрузите контакты в базу данных приложения (так же, как и выгрузить)."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Конфиденциальность телеметрии",
@@ -3093,7 +3096,11 @@
     "hasPublicKeyNoDm": "Имеет открытый ключ (нет прямых сообщений)",
     "copyPublicKey": "Копировать открытый ключ",
     "hopLabel_few": "{{count}} хопа",
-    "hopLabel_many": "{{count}} хопов"
+    "hopLabel_many": "{{count}} хопов",
+    "xeddsaSigned": "Подписано XEdDSA",
+    "xeddsaSignedHint": "Радио проверило подпись XEdDSA от этого узла, поэтому его открытый ключ криптографически заверен.",
+    "keyManuallyVerified": "Ключ проверен",
+    "keyManuallyVerifiedHint": "Открытый ключ этого узла был вручную подтвержден оператором."
   },
   "nodeInfoBody": {
     "longName": "Длинное имя",
@@ -3634,57 +3641,65 @@
     "importConfigJson": "Импортировать конфигурацию JSON",
     "offloadContacts": "Разгрузка",
     "displayUnits": {
-      "0": {
-        "label": "Метрика"
+      "METRIC": {
+        "label": "Metric"
       },
-      "1": {
-        "label": "Империал"
+      "IMPERIAL": {
+        "label": "Imperial"
       }
     },
     "deviceRoles": {
-      "0": {
-        "label": "Клиент",
-        "description": "Обычный клиентский режим"
+      "CLIENT": {
+        "label": "Client",
+        "description": "Обычный режим клиента"
       },
-      "1": {
-        "label": "Отключение звука клиента",
+      "CLIENT_MUTE": {
+        "label": "Client Mute",
         "description": "Клиент, который не пересылает пакеты. Применение этой роли также отключает GPS-вещание и отчет о карте на устройстве."
       },
-      "2": {
-        "label": "Маршрутизатор",
+      "ROUTER": {
+        "label": "Router",
         "description": "Выделенный маршрутизатор/ретранслятор"
       },
-      "3": {
-        "label": "Клиент маршрутизатора",
-        "description": "Режим роутера + клиент"
+      "ROUTER_CLIENT": {
+        "label": "Router Client",
+        "description": "Режим маршрутизатор + клиент. Устарело в прошивке 2.3.15 — используйте маршрутизатор или клиент."
       },
-      "4": {
-        "label": "Клиентская база",
-        "description": "Базовая станция для клиентских устройств"
+      "REPEATER": {
+        "label": "Repeater",
+        "description": "Повторно транслирует пакеты, не создавая их. Устарел в прошивке 2.7.11 — создает дыры в цепочке ретрансляции."
       },
-      "5": {
-        "label": "Трекер",
-        "description": "только GPS-трекер"
+      "TRACKER": {
+        "label": "Tracker",
+        "description": "Только GPS-трекер"
       },
-      "6": {
-        "label": "Датчик",
-        "description": "Узел датчика телеметрии"
+      "SENSOR": {
+        "label": "Sensor",
+        "description": "Узел телеметрического датчика"
       },
-      "7": {
+      "TAK": {
         "label": "TAK",
-        "description": "Устройство с поддержкой TAK"
+        "description": "TAK-enabled device"
       },
-      "8": {
-        "label": "Клиент скрыт",
-        "description": "Клиент, скрыт из списка узлов"
+      "CLIENT_HIDDEN": {
+        "label": "Client Hidden",
+        "description": "Скрытые из архива"
       },
-      "9": {
-        "label": "Потерянные и найденные",
-        "description": "Транслирует позицию для восстановления"
+      "LOST_AND_FOUND": {
+        "label": "Lost and Found",
+        "description": "Позиция трансляции для восстановления"
       },
-      "10": {
-        "label": "TAK Трекер",
-        "description": "Режим трекера TAK"
+      "TAK_TRACKER": {
+        "label": "TAK Tracker",
+        "description": "TAK tracker mode"
+      },
+      "ROUTER_LATE": {
+        "label": "Router Late",
+        "description": "Маршрутизатор, который ретранслирует только после того, как другие узлы получили шанс, для плотных ядра сетки."
+      },
+      "CLIENT_BASE": {
+        "label": "Client Base",
+        "description": "Базовая станция для клиентских устройств"
       }
     },
     "contactsOnRadioBadgeTitle": "{{part}} контакты по радио",
@@ -3919,29 +3934,29 @@
     "tzdefLabel": "Timezone (POSIX)",
     "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
     "rebroadcastModes": {
-      "0": {
-        "label": "All",
-        "description": "Rebroadcast all packets (default)."
+      "ALL": {
+        "label": "Все",
+        "description": "Повторная трансляция всех пакетов (по умолчанию)."
       },
-      "1": {
-        "label": "All Skip Decoding",
-        "description": "Rebroadcast all without decoding. Reduces CPU on dedicated routers."
+      "ALL_SKIP_DECODING": {
+        "label": "Все пропустить декодирование",
+        "description": "Ретранслируйте все без декодирования. Уменьшает ЦП на выделенных маршрутизаторах."
       },
-      "2": {
-        "label": "Local Only",
+      "LOCAL_ONLY": {
+        "label": "Только для локальных пользователей",
         "description": "Only rebroadcast packets from nodes heard directly on RF."
       },
-      "3": {
-        "label": "Known Only",
-        "description": "Only rebroadcast from nodes in the local node database."
+      "KNOWN_ONLY": {
+        "label": "Только известные",
+        "description": "Только ретрансляция с узлов в базе данных локальных узлов."
       },
-      "4": {
-        "label": "None",
-        "description": "Do not rebroadcast any packets."
+      "NONE": {
+        "label": "Нет",
+        "description": "Не ретранслируйте никакие пакеты."
       },
-      "5": {
-        "label": "Core Portnums Only",
-        "description": "Only rebroadcast essential portnums (text, nodeinfo, position, telemetry)."
+      "CORE_PORTNUMS_ONLY": {
+        "label": "Только Core Portnums",
+        "description": "Только ретрансляция существенных портумов (text, nodeinfo, position, telemetry)."
       }
     },
     "autoScreenCarouselSecsLabel": "Screen Carousel Interval",
@@ -3959,22 +3974,22 @@
     "enableMessageBubblesLabel": "Message Bubbles",
     "enableMessageBubblesDesc": "Show incoming messages in a bubble on the display.",
     "oledTypes": {
-      "0": {
+      "OLED_AUTO": {
         "label": "Auto"
       },
-      "1": {
+      "OLED_SSD1306": {
         "label": "SSD1306"
       },
-      "2": {
+      "OLED_SH1106": {
         "label": "SH1106"
       },
-      "3": {
+      "OLED_SH1107": {
         "label": "SH1107 (128x64)"
       },
-      "4": {
+      "OLED_SH1107_128_128": {
         "label": "SH1107 (128x128)"
       },
-      "5": {
+      "OLED_SH1107_ROTATED": {
         "label": "SH1107 Rotated"
       }
     },
@@ -4062,85 +4077,172 @@
       "shareQrAria": "Показать QR канала MeshCore для {{name}}"
     },
     "regions": {
-      "0": {
-        "label": "Сброшено"
+      "UNSET": {
+        "label": "Unset"
       },
-      "1": {
-        "label": "НАС"
+      "US": {
+        "label": "US"
       },
-      "2": {
-        "label": "ЕС_433"
+      "EU_433": {
+        "label": "EU_433"
       },
-      "3": {
-        "label": "ЕС_868"
+      "EU_868": {
+        "label": "EU_868"
       },
-      "4": {
-        "label": "Китай"
+      "CN": {
+        "label": "CN"
       },
-      "5": {
-        "label": "Япония"
+      "JP": {
+        "label": "JP"
       },
-      "6": {
-        "label": "АНЗ"
+      "ANZ": {
+        "label": "ANZ"
       },
-      "7": {
-        "label": "КР"
+      "KR": {
+        "label": "KR"
       },
-      "8": {
-        "label": "ТВ"
+      "TW": {
+        "label": "TW"
       },
-      "9": {
+      "RU": {
         "label": "RU"
       },
-      "10": {
-        "label": "В"
+      "IN": {
+        "label": "IN"
       },
-      "11": {
-        "label": "НЗ_865"
+      "NZ_865": {
+        "label": "NZ_865"
       },
-      "12": {
-        "label": "ТД"
+      "TH": {
+        "label": "TH"
       },
-      "13": {
+      "LORA_24": {
+        "label": "LORA_24"
+      },
+      "UA_433": {
         "label": "UA_433"
       },
-      "14": {
+      "UA_868": {
         "label": "UA_868"
       },
-      "15": {
-        "label": "МОЙ_433"
+      "MY_433": {
+        "label": "MY_433"
       },
-      "16": {
-        "label": "МОЙ_919"
+      "MY_919": {
+        "label": "MY_919"
       },
-      "17": {
+      "SG_923": {
         "label": "SG_923"
       },
-      "18": {
-        "label": "ЛОРА_24"
+      "PH_433": {
+        "label": "PH_433"
+      },
+      "PH_868": {
+        "label": "PH_868"
+      },
+      "PH_915": {
+        "label": "PH_915"
+      },
+      "ANZ_433": {
+        "label": "ANZ_433"
+      },
+      "KZ_433": {
+        "label": "KZ_433"
+      },
+      "KZ_863": {
+        "label": "KZ_863"
+      },
+      "NP_865": {
+        "label": "NP_865"
+      },
+      "BR_902": {
+        "label": "BR_902"
+      },
+      "ITU1_2M": {
+        "label": "ITU1_2M"
+      },
+      "ITU2_2M": {
+        "label": "ITU2_2M"
+      },
+      "EU_866": {
+        "label": "EU_866"
+      },
+      "EU_874": {
+        "label": "EU_874"
+      },
+      "EU_917": {
+        "label": "EU_917"
+      },
+      "EU_N_868": {
+        "label": "EU_N_868"
+      },
+      "ITU3_2M": {
+        "label": "ITU3_2M"
+      },
+      "ITU1_70CM": {
+        "label": "ITU1_70CM"
+      },
+      "ITU2_70CM": {
+        "label": "ITU2_70CM"
+      },
+      "ITU3_70CM": {
+        "label": "ITU3_70CM"
+      },
+      "ITU2_125CM": {
+        "label": "ITU2_125CM"
       }
     },
     "modemPresets": {
-      "0": {
-        "label": "Длинный пост"
+      "LONG_FAST": {
+        "label": "Long Fast"
       },
-      "1": {
-        "label": "Длинный Медленный"
+      "LONG_SLOW": {
+        "label": "Long Slow"
       },
-      "2": {
-        "label": "Длинный Средний"
+      "VERY_LONG_SLOW": {
+        "label": "Very Long Slow"
       },
-      "3": {
-        "label": "Короткое быстрое"
+      "MEDIUM_SLOW": {
+        "label": "Medium Slow"
       },
-      "4": {
-        "label": "Короткий Медленный"
+      "MEDIUM_FAST": {
+        "label": "Medium Fast"
       },
-      "5": {
-        "label": "Средне-быстро"
+      "SHORT_SLOW": {
+        "label": "Short Slow"
       },
-      "6": {
-        "label": "Средне Медленный"
+      "SHORT_FAST": {
+        "label": "Short Fast"
+      },
+      "LONG_MODERATE": {
+        "label": "Long Moderate"
+      },
+      "SHORT_TURBO": {
+        "label": "Short Turbo"
+      },
+      "LONG_TURBO": {
+        "label": "Long Turbo"
+      },
+      "LITE_FAST": {
+        "label": "Lite Fast"
+      },
+      "LITE_SLOW": {
+        "label": "Lite Slow"
+      },
+      "NARROW_FAST": {
+        "label": "Narrow Fast"
+      },
+      "NARROW_SLOW": {
+        "label": "Narrow Slow"
+      },
+      "TINY_FAST": {
+        "label": "Tiny Fast"
+      },
+      "TINY_SLOW": {
+        "label": "Tiny Slow"
+      },
+      "MEDIUM_TURBO": {
+        "label": "Medium Turbo"
       }
     },
     "floodScopeSaved": "Сохраненная область действия",
@@ -4152,7 +4254,38 @@
     "sendPositionDisabledShareOff": "Включите опцию Поделиться моим местоположением в приложении → GPS / Location, чтобы отправить свое местоположение на устройство.",
     "clientMuteGpsSuppressed": "Применено отключение звука клиента — GPS-трансляции и отчеты о карте MQTT отключены на устройстве.",
     "validationShortNameTooLong": "Короткое имя должно вписываться в 4 байта UTF-8",
-    "validationShortNameEmojiTooLarge": "Этот символ слишком велик для короткого имени (максимум 4 байта UTF-8 на имя)"
+    "validationShortNameEmojiTooLarge": "Этот символ слишком велик для короткого имени (максимум 4 байта UTF-8 на имя)",
+    "enumDeprecatedSuffix": "(Устаревшее)",
+    "lockdown": {
+      "title": "Блокировка прошивки",
+      "description": "Заблокированное радио отклоняет изменения конфигурации до тех пор, пока оно не будет разблокировано с помощью парольной фразы. Состояние сообщается встроенным программным обеспечением; радиостанции без поддержки блокировки никогда не сообщают об этом.",
+      "stateLabel": "Состояние",
+      "stateNotReported": "Не сообщено этим радио",
+      "reasonLabel": "Причина",
+      "bootsRemainingLabel": "Осталось перезагрузок",
+      "validUntilLabel": "Разблокировано до",
+      "backoffLabel": "Повторите попытку обратного отключения",
+      "backoffValue": "{{seconds}}s",
+      "passphraseLabel": "Кодовая фраза",
+      "provision": "услуг",
+      "unlock": "Разблокировать",
+      "unlockAria": "Разблокировка или блокировка прошивки",
+      "lockNow": "Заблокировать сейчас",
+      "lockNowAria": "Немедленно заблокируйте радиоприемник",
+      "disable": "Отключить блокировку",
+      "disableAria": "Отключить блокировку прошивки",
+      "states": {
+        "STATE_UNSPECIFIED": "Не уточнено",
+        "NEEDS_PROVISION": "Нуждается в подготовке",
+        "LOCKED": "Закреплен",
+        "UNLOCKED": "Разблокировано",
+        "UNLOCK_FAILED": "Сбой разблокировки",
+        "DISABLED": "Выключено"
+      }
+    },
+    "contactsFullAlarm": "Хранилище радиоконтактов заполнено. Выгрузите контакты в базу данных приложения, чтобы освободить слоты.",
+    "contactsFullAlarmAction": "Разгрузка",
+    "contactsFullAutoOffloadStarted": "Радиоконтакты полны — запуск автозагрузки…"
   },
   "rawPacketLog": {
     "filterPackets": "Фильтровать пакеты",
@@ -4997,7 +5130,8 @@
     "durationMin": "{{m}}м",
     "durationHourMin": "{{h}}h {{m}}m",
     "packets_few": "{{count}} пакета",
-    "packets_many": "{{count}} пакетов"
+    "packets_many": "{{count}} пакетов",
+    "atakUndecodable": "Полезная нагрузка не распознана как пакет TAK"
   },
   "telemetryPanel": {
     "title": "Телеметрия",
@@ -5038,7 +5172,14 @@
     "tempUnitC": "°C",
     "exportCsvButton": "Экспорт CSV",
     "emptyWaitingConnected": "Данных телеметрии пока нет. Ожидание данных от устройства…",
-    "emptyWaitingDisconnected": "Данных телеметрии пока нет. Подключите устройство для просмотра показателей в реальном времени."
+    "emptyWaitingDisconnected": "Данных телеметрии пока нет. Подключите устройство для просмотра показателей в реальном времени.",
+    "sectionParticulates": "Твердые частицы, CO₂ и молния",
+    "chartAriaParticulates": "График частиц: последние точки PM2.5 {{pm25}}, CO₂ {{co2}}, {{count}}",
+    "axisParticulates": "мкг/м³ · удары",
+    "axisCo2": "ч./млн.",
+    "seriesPm25": "PM2,5 (мкг/м³)",
+    "seriesCo2": "CO₂ (ч/млн)",
+    "seriesLightningStrikes": "Удары молнии (1 ч)"
   },
   "toasts": {
     "firmwareAvailable": "Доступно обновление прошивки: v{{version}}",

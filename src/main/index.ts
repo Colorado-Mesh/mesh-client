@@ -3899,7 +3899,7 @@ ipcMain.handle('app:showEmojiPanel', (event) => {
 
 const CLIPBOARD_WRITE_TEXT_MAX_CHARS = 256 * 1024;
 
-ipcMain.handle('clipboard:writeText', (event, text: unknown) => {
+ipcMain.handle('clipboard:writeText', async (event, text: unknown) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
   }
@@ -3910,7 +3910,7 @@ ipcMain.handle('clipboard:writeText', (event, text: unknown) => {
     throw new Error('clipboard:writeText: text too long');
   }
   try {
-    clipboard.writeText(text);
+    await clipboard.writeText(text);
   } catch (e) {
     console.warn(
       '[IPC] clipboard:writeText failed:',
@@ -5853,6 +5853,29 @@ ipcMain.handle('db:offloadAllMeshcoreContacts', (event) => {
     return result.changes;
   } catch (err) {
     finishDbIpcHandler('db:offloadAllMeshcoreContacts', err);
+  }
+});
+
+// Mark a single contact off-radio by public_key (CONTACT_DELETED push). Returns { changes }.
+ipcMain.handle('db:markMeshcoreContactOffRadio', (event, publicKeyHex: unknown) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:markMeshcoreContactOffRadio: unauthorized sender');
+  try {
+    if (typeof publicKeyHex !== 'string' || !/^[0-9a-fA-F]{64}$/.test(publicKeyHex)) {
+      throw new Error('db:markMeshcoreContactOffRadio: public_key must be 64 hex chars');
+    }
+    const db = getDbForIpc('db:markMeshcoreContactOffRadio');
+    if (!db) return { changes: 0 };
+    const key = publicKeyHex.toLowerCase();
+    const result = db
+      .prepareOnce(
+        `UPDATE meshcore_contacts SET on_radio = 0
+         WHERE lower(public_key) = ? AND on_radio = 1`,
+      )
+      .run(key);
+    return { changes: result.changes };
+  } catch (err) {
+    return finishDbIpcReadHandler('db:markMeshcoreContactOffRadio', err, { changes: 0 });
   }
 });
 

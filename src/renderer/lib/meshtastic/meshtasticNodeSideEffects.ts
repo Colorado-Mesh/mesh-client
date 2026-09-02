@@ -166,6 +166,9 @@ function handleUserPacketNodeInfo(
     hw_model: info.hwModel ?? existing.hw_model,
     role: info.role ?? existing.role,
     public_key_hex: meshtasticPublicKeyHex(info.publicKey) ?? existing.public_key_hex,
+    // Only NodeDB NodeInfo carries these flags; a live UserPacket must not clear them.
+    key_manually_verified: info.keyManuallyVerified ?? existing.key_manually_verified,
+    has_xeddsa_signed: info.hasXeddsaSigned ?? existing.has_xeddsa_signed,
     // During configure, skip rxTime bumps (NodeDB replay). After configure, use mesh rxTime.
     last_heard: mergeMeshtasticUserPacketLastHeard(
       existing.last_heard || 0,
@@ -397,6 +400,19 @@ function handleEnvironmentTelemetry(
     weight: telemetry.weight,
     rainfall1h: telemetry.rainfall1h,
     rainfall24h: telemetry.rainfall24h,
+    lightningStrikeCount1h: telemetry.lightningStrikeCount1h,
+    lightningDistanceKm: telemetry.lightningDistanceKm,
+    adcVoltages: telemetry.adcVoltages,
+    oneWireTemperatures: telemetry.oneWireTemperatures,
+    pm10Standard: telemetry.pm10Standard,
+    pm25Standard: telemetry.pm25Standard,
+    pm40Standard: telemetry.pm40Standard,
+    pm100Standard: telemetry.pm100Standard,
+    co2: telemetry.co2,
+    pmTemperature: telemetry.pmTemperature,
+    pmHumidity: telemetry.pmHumidity,
+    pmVocIdx: telemetry.pmVocIdx,
+    pmNoxIdx: telemetry.pmNoxIdx,
   };
   deps.setEnvironmentTelemetry((prev) => [...prev, point].slice(-MAX_TELEMETRY_POINTS));
   const existing = getIdentityNode(identityId, nodeNum) ?? deps.emptyNode(nodeNum);
@@ -410,6 +426,11 @@ function handleEnvironmentTelemetry(
     env_lux: telemetry.lux ?? existing.env_lux,
     env_wind_speed: telemetry.windSpeed ?? existing.env_wind_speed,
     env_wind_direction: telemetry.windDirection ?? existing.env_wind_direction,
+    env_lightning_strike_count_1h:
+      telemetry.lightningStrikeCount1h ?? existing.env_lightning_strike_count_1h,
+    env_lightning_distance_km: telemetry.lightningDistanceKm ?? existing.env_lightning_distance_km,
+    env_pm25: telemetry.pm25Standard ?? existing.env_pm25,
+    env_co2: telemetry.co2 ?? existing.env_co2,
     last_heard: mergeMeshtasticLivePacketLastHeard(
       existing.last_heard || 0,
       telemetry.timestamp,
@@ -498,7 +519,12 @@ function handleTelemetry(
   // No variant case means the packet carried neither `variant.value` nor
   // `deviceMetrics`, so there is nothing to chart or patch.
   if (!telemetry.variantCase) return;
-  if (telemetry.variantCase === 'environmentMetrics') {
+  // Air-quality metrics are environmental readings from a separate variant; they share
+  // the environment chart stream so particulates/CO2 land on the same timeline.
+  if (
+    telemetry.variantCase === 'environmentMetrics' ||
+    telemetry.variantCase === 'airQualityMetrics'
+  ) {
     handleEnvironmentTelemetry(identityId, telemetry, deps);
     return;
   }

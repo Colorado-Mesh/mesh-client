@@ -2303,7 +2303,10 @@
     "clearAllIntro": "Remova todos os contatos do rádio e limpe o banco de dados de contatos do aplicativo. Isto não pode ser desfeito.",
     "clearAllContactsConfirm": "Remover todos os contatos do rádio e limpar os dados de contato locais?",
     "clearingContacts": "Limpando…",
-    "clearAllContactsButton": "Limpar todos os contatos"
+    "clearAllContactsButton": "Limpar todos os contatos",
+    "autoOffloadWhenFull": "Descarregamento automático quando o rádio está cheio",
+    "autoOffloadWhenFullLabel": "Descarregamento automático quando cheio",
+    "autoOffloadWhenFullDesc": "Quando o companheiro relata que o armazenamento de contatos está cheio, descarregue automaticamente os contatos no banco de dados do aplicativo (o mesmo que descarregar)."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Privacidade de telemetria",
@@ -3033,7 +3036,11 @@
     "shareContactQrAria": "Mostrar código QR de contato MeshCore para importação oficial do aplicativo",
     "publicKeyCopied": "Chave pública copiada para a área de transferência.",
     "hasPublicKeyNoDm": "Tem chave pública (sem mensagens diretas)",
-    "copyPublicKey": "Copiar chave pública"
+    "copyPublicKey": "Copiar chave pública",
+    "xeddsaSigned": "XEdDSA assinado",
+    "xeddsaSignedHint": "O rádio verificou uma assinatura XEdDSA deste nó, então sua chave pública é criptograficamente atestada.",
+    "keyManuallyVerified": "Chave verificada",
+    "keyManuallyVerifiedHint": "A chave pública deste nó foi confirmada manualmente por um operador."
   },
   "nodeInfoBody": {
     "longName": "Nome longo",
@@ -3554,57 +3561,65 @@
     "importConfigJson": "Importar configuração JSON",
     "offloadContacts": "Descarregar",
     "displayUnits": {
-      "0": {
-        "label": "Métrica"
+      "METRIC": {
+        "label": "Metric"
       },
-      "1": {
+      "IMPERIAL": {
         "label": "Imperial"
       }
     },
     "deviceRoles": {
-      "0": {
-        "label": "Cliente",
+      "CLIENT": {
+        "label": "Client",
         "description": "Modo cliente normal"
       },
-      "1": {
-        "label": "Cliente mudo",
+      "CLIENT_MUTE": {
+        "label": "Client Mute",
         "description": "Cliente que não encaminha pacotes. A aplicação desta função também desativa as transmissões GPS e o relatório de mapas no dispositivo."
       },
-      "2": {
-        "label": "Roteador",
+      "ROUTER": {
+        "label": "Router",
         "description": "Roteador/repetidor dedicado"
       },
-      "3": {
-        "label": "Cliente roteador",
-        "description": "Modo roteador + cliente"
+      "ROUTER_CLIENT": {
+        "label": "Router Client",
+        "description": "Roteador + modo cliente. Obsoleto no firmware 2.3.15 — usar Roteador ou Cliente."
       },
-      "4": {
-        "label": "Base de clientes",
-        "description": "Estação base para dispositivos clientes"
+      "REPEATER": {
+        "label": "Repeater",
+        "description": "Retransmite pacotes sem originar nenhum. Obsoleto no firmware 2.7.11 — cria buracos na cadeia de retransmissão."
       },
-      "5": {
-        "label": "Rastreador",
-        "description": "Somente rastreador GPS"
+      "TRACKER": {
+        "label": "Tracker",
+        "description": "Rastreador GPS"
       },
-      "6": {
+      "SENSOR": {
         "label": "Sensor",
-        "description": "Nó sensor de telemetria"
+        "description": "Nó do sensor de telemetria"
       },
-      "7": {
+      "TAK": {
         "label": "TAK",
-        "description": "Dispositivo habilitado para TAK"
+        "description": "TAK-enabled device"
       },
-      "8": {
-        "label": "Cliente oculto",
+      "CLIENT_HIDDEN": {
+        "label": "Client Hidden",
         "description": "Cliente, oculto da lista de nós"
       },
-      "9": {
-        "label": "Achados e perdidos",
-        "description": "Transmite posição para recuperação"
+      "LOST_AND_FOUND": {
+        "label": "Lost and Found",
+        "description": "Posição de transmissões para recuperação"
       },
-      "10": {
-        "label": "Rastreador TAK",
-        "description": "Modo rastreador TAK"
+      "TAK_TRACKER": {
+        "label": "TAK Tracker",
+        "description": "TAK tracker mode"
+      },
+      "ROUTER_LATE": {
+        "label": "Router Late",
+        "description": "Roteador que retransmite somente depois que outros nós tiveram uma chance, para núcleos de malha densos."
+      },
+      "CLIENT_BASE": {
+        "label": "Client Base",
+        "description": "Estação base para dispositivos cliente"
       }
     },
     "contactsOnRadioBadgeTitle": "{{part}} contatos no rádio",
@@ -3839,29 +3854,29 @@
     "tzdefLabel": "Timezone (POSIX)",
     "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
     "rebroadcastModes": {
-      "0": {
-        "label": "All",
-        "description": "Rebroadcast all packets (default)."
+      "ALL": {
+        "label": "Todos",
+        "description": "Transmita novamente todos os pacotes (padrão)."
       },
-      "1": {
-        "label": "All Skip Decoding",
-        "description": "Rebroadcast all without decoding. Reduces CPU on dedicated routers."
+      "ALL_SKIP_DECODING": {
+        "label": "Tudo Ignorar Decodificação",
+        "description": "Transmita tudo novamente sem decodificar. Reduz a CPU em roteadores dedicados."
       },
-      "2": {
-        "label": "Local Only",
-        "description": "Only rebroadcast packets from nodes heard directly on RF."
+      "LOCAL_ONLY": {
+        "label": "Apenas local",
+        "description": "Apenas retransmita pacotes de nós ouvidos diretamente na RF."
       },
-      "3": {
-        "label": "Known Only",
-        "description": "Only rebroadcast from nodes in the local node database."
+      "KNOWN_ONLY": {
+        "label": "Somente conhecido",
+        "description": "Apenas retransmita a partir de nós no banco de dados de nós local."
       },
-      "4": {
-        "label": "None",
-        "description": "Do not rebroadcast any packets."
+      "NONE": {
+        "label": "Nenhuma.",
+        "description": "Não retransmita nenhum pacote."
       },
-      "5": {
-        "label": "Core Portnums Only",
-        "description": "Only rebroadcast essential portnums (text, nodeinfo, position, telemetry)."
+      "CORE_PORTNUMS_ONLY": {
+        "label": "Apenas portnums principais",
+        "description": "Apenas retransmita portnums essenciais (texto, nodeinfo, posição, telemetria)."
       }
     },
     "autoScreenCarouselSecsLabel": "Screen Carousel Interval",
@@ -3879,22 +3894,22 @@
     "enableMessageBubblesLabel": "Message Bubbles",
     "enableMessageBubblesDesc": "Show incoming messages in a bubble on the display.",
     "oledTypes": {
-      "0": {
+      "OLED_AUTO": {
         "label": "Auto"
       },
-      "1": {
+      "OLED_SSD1306": {
         "label": "SSD1306"
       },
-      "2": {
+      "OLED_SH1106": {
         "label": "SH1106"
       },
-      "3": {
+      "OLED_SH1107": {
         "label": "SH1107 (128x64)"
       },
-      "4": {
+      "OLED_SH1107_128_128": {
         "label": "SH1107 (128x128)"
       },
-      "5": {
+      "OLED_SH1107_ROTATED": {
         "label": "SH1107 Rotated"
       }
     },
@@ -3982,85 +3997,172 @@
       "shareQrAria": "Mostrar QR do canal MeshCore para {{name}}"
     },
     "regions": {
-      "0": {
-        "label": "Desativar"
+      "UNSET": {
+        "label": "Unset"
       },
-      "1": {
-        "label": "NÓS"
+      "US": {
+        "label": "US"
       },
-      "2": {
+      "EU_433": {
         "label": "EU_433"
       },
-      "3": {
-        "label": "UE_868"
+      "EU_868": {
+        "label": "EU_868"
       },
-      "4": {
-        "label": "NC"
+      "CN": {
+        "label": "CN"
       },
-      "5": {
+      "JP": {
         "label": "JP"
       },
-      "6": {
+      "ANZ": {
         "label": "ANZ"
       },
-      "7": {
+      "KR": {
         "label": "KR"
       },
-      "8": {
+      "TW": {
         "label": "TW"
       },
-      "9": {
-        "label": "Ru"
+      "RU": {
+        "label": "RU"
       },
-      "10": {
-        "label": "EM"
+      "IN": {
+        "label": "IN"
       },
-      "11": {
+      "NZ_865": {
         "label": "NZ_865"
       },
-      "12": {
-        "label": "º"
+      "TH": {
+        "label": "TH"
       },
-      "13": {
+      "LORA_24": {
+        "label": "LORA_24"
+      },
+      "UA_433": {
         "label": "UA_433"
       },
-      "14": {
+      "UA_868": {
         "label": "UA_868"
       },
-      "15": {
-        "label": "MEU_433"
+      "MY_433": {
+        "label": "MY_433"
       },
-      "16": {
-        "label": "MEU_919"
+      "MY_919": {
+        "label": "MY_919"
       },
-      "17": {
+      "SG_923": {
         "label": "SG_923"
       },
-      "18": {
-        "label": "LORA_24"
+      "PH_433": {
+        "label": "PH_433"
+      },
+      "PH_868": {
+        "label": "PH_868"
+      },
+      "PH_915": {
+        "label": "PH_915"
+      },
+      "ANZ_433": {
+        "label": "ANZ_433"
+      },
+      "KZ_433": {
+        "label": "KZ_433"
+      },
+      "KZ_863": {
+        "label": "KZ_863"
+      },
+      "NP_865": {
+        "label": "NP_865"
+      },
+      "BR_902": {
+        "label": "BR_902"
+      },
+      "ITU1_2M": {
+        "label": "ITU1_2M"
+      },
+      "ITU2_2M": {
+        "label": "ITU2_2M"
+      },
+      "EU_866": {
+        "label": "EU_866"
+      },
+      "EU_874": {
+        "label": "EU_874"
+      },
+      "EU_917": {
+        "label": "EU_917"
+      },
+      "EU_N_868": {
+        "label": "EU_N_868"
+      },
+      "ITU3_2M": {
+        "label": "ITU3_2M"
+      },
+      "ITU1_70CM": {
+        "label": "ITU1_70CM"
+      },
+      "ITU2_70CM": {
+        "label": "ITU2_70CM"
+      },
+      "ITU3_70CM": {
+        "label": "ITU3_70CM"
+      },
+      "ITU2_125CM": {
+        "label": "ITU2_125CM"
       }
     },
     "modemPresets": {
-      "0": {
-        "label": "Muito rápido"
+      "LONG_FAST": {
+        "label": "Long Fast"
       },
-      "1": {
-        "label": "Muito lento"
+      "LONG_SLOW": {
+        "label": "Long Slow"
       },
-      "2": {
-        "label": "Longo Moderado"
+      "VERY_LONG_SLOW": {
+        "label": "Very Long Slow"
       },
-      "3": {
-        "label": "Curto Rápido"
+      "MEDIUM_SLOW": {
+        "label": "Medium Slow"
       },
-      "4": {
-        "label": "Curto Lento"
+      "MEDIUM_FAST": {
+        "label": "Medium Fast"
       },
-      "5": {
-        "label": "Médio Rápido"
+      "SHORT_SLOW": {
+        "label": "Short Slow"
       },
-      "6": {
-        "label": "Médio lento"
+      "SHORT_FAST": {
+        "label": "Short Fast"
+      },
+      "LONG_MODERATE": {
+        "label": "Long Moderate"
+      },
+      "SHORT_TURBO": {
+        "label": "Short Turbo"
+      },
+      "LONG_TURBO": {
+        "label": "Long Turbo"
+      },
+      "LITE_FAST": {
+        "label": "Lite Fast"
+      },
+      "LITE_SLOW": {
+        "label": "Lite Slow"
+      },
+      "NARROW_FAST": {
+        "label": "Narrow Fast"
+      },
+      "NARROW_SLOW": {
+        "label": "Narrow Slow"
+      },
+      "TINY_FAST": {
+        "label": "Tiny Fast"
+      },
+      "TINY_SLOW": {
+        "label": "Tiny Slow"
+      },
+      "MEDIUM_TURBO": {
+        "label": "Medium Turbo"
       }
     },
     "floodScopeSaved": "Escopo salvo",
@@ -4072,7 +4174,38 @@
     "sendPositionDisabledShareOff": "Ative Compartilhar minha localização no aplicativo → GPS / Localização para enviar sua posição para o dispositivo.",
     "clientMuteGpsSuppressed": "Cliente Mudo aplicado — transmissões GPS e relatórios de mapa MQTT desativados no dispositivo.",
     "validationShortNameTooLong": "O nome abreviado deve caber dentro de 4 bytes UTF-8",
-    "validationShortNameEmojiTooLarge": "Este caractere é muito grande para o nome curto (máximo de 4 bytes UTF-8 por nome)"
+    "validationShortNameEmojiTooLarge": "Este caractere é muito grande para o nome curto (máximo de 4 bytes UTF-8 por nome)",
+    "enumDeprecatedSuffix": "(obsoleto)",
+    "lockdown": {
+      "title": "Bloqueio de firmware",
+      "description": "Um rádio bloqueado rejeita alterações de configuração até que seja desbloqueado com sua senha. O status é relatado pelo firmware; rádios sem suporte de bloqueio nunca relatam um.",
+      "stateLabel": "Estado",
+      "stateNotReported": "Não relatado por este rádio",
+      "reasonLabel": "Motivo",
+      "bootsRemainingLabel": "Reinicializações restantes",
+      "validUntilLabel": "Desbloqueado até",
+      "backoffLabel": "Tentar recuar novamente",
+      "backoffValue": "{{seconds}}s",
+      "passphraseLabel": "Frase secreta",
+      "provision": "Disposição",
+      "unlock": "Desbloquear",
+      "unlockAria": "Desbloquear ou provisionar bloqueio de firmware",
+      "lockNow": "Bloquear agora",
+      "lockNowAria": "Bloqueie o rádio imediatamente",
+      "disable": "## Desativar o lockdown",
+      "disableAria": "Desativar bloqueio de firmware",
+      "states": {
+        "STATE_UNSPECIFIED": "Não especificado",
+        "NEEDS_PROVISION": "Precisa de provisionamento",
+        "LOCKED": "Locked",
+        "UNLOCKED": "Desbloqueado",
+        "UNLOCK_FAILED": "Falha ao desbloquear",
+        "DISABLED": "Desabilitado"
+      }
+    },
+    "contactsFullAlarm": "O armazenamento de contato de rádio está cheio. Descarregue os contatos no banco de dados do aplicativo para liberar slots.",
+    "contactsFullAlarmAction": "Descarregar",
+    "contactsFullAutoOffloadStarted": "Contatos de rádio cheios — iniciando o descarregamento automático…"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar pacotes",
@@ -4915,7 +5048,8 @@
     "regenerateWarning": "A regeneração invalida os pacotes de dados ATAK existentes – você precisará reimportá-los.",
     "durationSec": "{{s}}s",
     "durationMin": "{{m}}m",
-    "durationHourMin": "{{h}}h {{m}}m"
+    "durationHourMin": "{{h}}h {{m}}m",
+    "atakUndecodable": "Carga útil não reconhecida como um pacote TAK"
   },
   "telemetryPanel": {
     "title": "Telemetria",
@@ -4956,7 +5090,14 @@
     "tempUnitC": "°C",
     "exportCsvButton": "Exportar CSV",
     "emptyWaitingConnected": "Ainda não há dados de telemetria. Aguardando dados do dispositivo...",
-    "emptyWaitingDisconnected": "Ainda não há dados de telemetria. Conecte-se a um dispositivo para ver métricas em tempo real."
+    "emptyWaitingDisconnected": "Ainda não há dados de telemetria. Conecte-se a um dispositivo para ver métricas em tempo real.",
+    "sectionParticulates": "Partículas, CO₂ e Relâmpagos",
+    "chartAriaParticulates": "Gráfico de partículas: últimos pontos PM2.5 {{pm25}}, CO₂ {{co2}}, {{count}}",
+    "axisParticulates": "µg/m³ · greves",
+    "axisCo2": "ppm",
+    "seriesPm25": "PM2,5 (µg/m³)",
+    "seriesCo2": "CO₂ (ppm)",
+    "seriesLightningStrikes": "Queda de Raios)"
   },
   "toasts": {
     "firmwareAvailable": "Atualização de firmware disponível: v{{version}}",

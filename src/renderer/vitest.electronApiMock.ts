@@ -124,6 +124,7 @@ export function createElectronAPIMock(): ElectronAPI {
         .fn()
         .mockResolvedValue({ deleted: 0, excludedStubCount: 0 }),
       offloadAllMeshcoreContacts: vi.fn().mockResolvedValue(0),
+      markMeshcoreContactOffRadio: vi.fn().mockResolvedValue({ changes: 0 }),
       getMeshcoreContactById: vi.fn().mockResolvedValue(null),
       updateMeshcoreContactNickname: vi.fn().mockResolvedValue(undefined),
       updateMeshcoreContactFavorited: vi.fn().mockResolvedValue(undefined),

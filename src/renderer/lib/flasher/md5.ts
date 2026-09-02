@@ -5,7 +5,12 @@ export function md5Bytes(data: number[] | Uint8Array): number[] {
   return md5.array(Array.from(data));
 }
 
-/** MD5 of a Latin-1 binary string (for esptool-js flash MD5). */
+/** MD5 hex digest of raw bytes (for esptool-js writeFlash calculateMD5Hash). */
+export function md5HexBytes(data: Uint8Array): string {
+  return md5.hex(data);
+}
+
+/** MD5 of a Latin-1 binary string (legacy; prefer md5HexBytes for esptool-js ≥0.6). */
 export function md5Latin1String(data: string): string {
   const bytes = new Uint8Array(data.length);
   for (let i = 0; i < data.length; i++) {

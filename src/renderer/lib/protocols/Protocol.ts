@@ -37,6 +37,13 @@ export interface NodeInfoEvent {
   rssi?: number;
   hopsAway?: number;
   viaMqtt?: boolean;
+  /** `NodeInfo.is_key_manually_verified`: the operator confirmed this node's PKC key. */
+  keyManuallyVerified?: boolean;
+  /**
+   * `NodeInfo.has_xeddsa_signed`: the radio has seen an XEdDSA-signed packet from this
+   * node, so its public key is cryptographically attested rather than merely observed.
+   */
+  hasXeddsaSigned?: boolean;
   latitude?: number;
   longitude?: number;
   altitude?: number;
@@ -60,6 +67,15 @@ export interface MeshcoreDmAckEvent {
 
 /** MeshCore message-waiting push (event 131) — signal only; the drain is an RPC. */
 export type MeshcoreWaitingMessagesEvent = Record<string, never>;
+
+/** MeshCore contact-deleted push (0x8F) — radio removed contact; keep in app DB off-radio. */
+export interface MeshcoreContactDeletedEvent {
+  nodeId: number;
+  publicKey: Uint8Array;
+}
+
+/** MeshCore contacts-full push (0x90) — companion contact storage is full. */
+export type MeshcoreContactsFullEvent = Record<string, never>;
 
 /** MeshCore CLI data response (direct message with `txtType === 1`). */
 export interface MeshcoreCliResponseEvent {
@@ -197,7 +213,10 @@ export interface PositionEvent {
 export interface TelemetryEvent {
   nodeId: number;
   timestamp: number;
-  /** Meshtastic `Telemetry.variant` case: deviceMetrics / environmentMetrics / localStats. */
+  /**
+   * Meshtastic `Telemetry.variant` case: deviceMetrics / environmentMetrics /
+   * airQualityMetrics / localStats.
+   */
   variantCase?: string;
   batteryLevel?: number;
   voltage?: number;
@@ -217,6 +236,27 @@ export interface TelemetryEvent {
   weight?: number;
   rainfall1h?: number;
   rainfall24h?: number;
+  /** AS3935 lightning sensor: strikes over a rolling ~1h window. */
+  lightningStrikeCount1h?: number;
+  /** AS3935 estimated distance to the last strike, km. */
+  lightningDistanceKm?: number;
+  /**
+   * Per-channel ADC readings, indexed by channel (0-7). Sparse: a channel the
+   * sensor did not report stays `undefined`.
+   */
+  adcVoltages?: (number | undefined)[];
+  /** Per-channel one-wire temperatures (°C), indexed by channel (0-7). */
+  oneWireTemperatures?: (number | undefined)[];
+  /** Air-quality variant (SEN5X / SEN6X / SCD4X): particulates, CO2 and indices. */
+  pm10Standard?: number;
+  pm25Standard?: number;
+  pm40Standard?: number;
+  pm100Standard?: number;
+  co2?: number;
+  pmTemperature?: number;
+  pmHumidity?: number;
+  pmVocIdx?: number;
+  pmNoxIdx?: number;
   numPacketsRxBad?: number;
   numRxDupe?: number;
   numPacketsRx?: number;
@@ -369,6 +409,8 @@ export type DomainEvent =
   | { type: 'meshcore_path_updated'; payload: MeshcorePathUpdatedEvent }
   | { type: 'meshcore_dm_ack'; payload: MeshcoreDmAckEvent }
   | { type: 'meshcore_waiting_messages'; payload: MeshcoreWaitingMessagesEvent }
+  | { type: 'meshcore_contact_deleted'; payload: MeshcoreContactDeletedEvent }
+  | { type: 'meshcore_contacts_full'; payload: MeshcoreContactsFullEvent }
   | { type: 'meshcore_cli_response'; payload: MeshcoreCliResponseEvent }
   | { type: 'meshcore_rf_rx'; payload: MeshcoreRfRxEvent };
 

@@ -32,6 +32,8 @@ export default function MeshcoreContactSettingsSection({
   onMeshcoreContactsShowPublicKeysChange,
   meshcoreContactsShowRefreshControl,
   onMeshcoreContactsShowRefreshControlChange,
+  meshcoreAutoOffloadWhenFull,
+  onMeshcoreAutoOffloadWhenFullChange,
   onApply,
   onClearAllContacts,
 }: {
@@ -43,6 +45,8 @@ export default function MeshcoreContactSettingsSection({
   onMeshcoreContactsShowPublicKeysChange: (value: boolean) => void;
   meshcoreContactsShowRefreshControl: boolean;
   onMeshcoreContactsShowRefreshControlChange: (value: boolean) => void;
+  meshcoreAutoOffloadWhenFull: boolean;
+  onMeshcoreAutoOffloadWhenFullChange: (value: boolean) => void;
   onApply: (params: {
     autoAddAll: boolean;
     overwriteOldest: boolean;
@@ -297,6 +301,26 @@ export default function MeshcoreContactSettingsSection({
           <p className="text-xs font-medium tracking-wide text-gray-400 uppercase">
             {t('meshcoreContactSettings.contactsListAppHeading')}
           </p>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <span className="text-sm text-gray-200">
+                {t('meshcoreContactSettings.autoOffloadWhenFullLabel')}
+              </span>
+              <p className="text-muted mt-0.5 text-xs">
+                {t('meshcoreContactSettings.autoOffloadWhenFullDesc')}
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={meshcoreAutoOffloadWhenFull}
+              onChange={(e) => {
+                onMeshcoreAutoOffloadWhenFullChange(e.target.checked);
+              }}
+              disabled={disabled || applying}
+              className="h-4 w-4 shrink-0"
+              aria-label={t('meshcoreContactSettings.autoOffloadWhenFull')}
+            />
+          </div>
           <div className="flex items-center justify-between gap-3">
             <div>
               <span className="text-sm text-gray-200">

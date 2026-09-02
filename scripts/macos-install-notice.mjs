@@ -42,6 +42,7 @@ export function readMacosInstallNoticeText() {
 export function formatMacosInstallReleaseMarkdown() {
   return (
     '### macOS install\n\n' +
+    '- Requires **macOS 13 Ventura** or later (Electron 44).\n' +
     '- **Recommended:** open the **`.dmg`** and drag **Mesh-client** to **Applications**.\n' +
     '- If you use the **`.zip`**: extract with **[Keka](https://www.keka.io/en/)** or `ditto -xk` — **do not use 7-Zip** (or Finder Archive Utility); they break framework symlinks and can crash at launch with `Library not loaded: Squirrel.framework`.\n' +
     `- See [troubleshooting](${TROUBLESHOOTING_ANCHOR}) if the app will not open after a ZIP extract.`

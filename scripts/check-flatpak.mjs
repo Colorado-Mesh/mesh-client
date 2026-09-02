@@ -207,6 +207,33 @@ function checkFlatpakWorkflowStoreVersion(pkg) {
   return violations;
 }
 
+function checkManifestStagesElectronBeforeRebuild() {
+  const violations = [];
+  if (!fs.existsSync(MANIFEST)) return violations;
+
+  const yaml = fs.readFileSync(MANIFEST, 'utf8');
+  const rel = path.relative(ROOT, MANIFEST);
+
+  if (!yaml.includes('node scripts/flatpak-stage-electron.mjs')) {
+    violations.push({
+      file: rel,
+      message:
+        'manifest must run flatpak-stage-electron.mjs before rebuild (offline electron-prebuilt → node_modules/electron/dist)',
+    });
+  }
+
+  const stageIdx = yaml.indexOf('node scripts/flatpak-stage-electron.mjs');
+  const rebuildIdx = yaml.indexOf('pnpm run rebuild');
+  if (stageIdx !== -1 && rebuildIdx !== -1 && stageIdx > rebuildIdx) {
+    violations.push({
+      file: rel,
+      message: 'flatpak-stage-electron.mjs must run before pnpm run rebuild',
+    });
+  }
+
+  return violations;
+}
+
 function checkManifestBranchAndElectronPayload(pkg) {
   const violations = [];
   if (!fs.existsSync(MANIFEST)) return violations;
@@ -340,6 +367,22 @@ function checkWrapperLaunchPaths() {
     violations.push({
       file: rel,
       message: 'wrapper must launch via zypak-wrapper … . "$@" from APP_ROOT (package.json dir)',
+    });
+  }
+
+  if (!sh.includes('No usable sandbox!')) {
+    violations.push({
+      file: rel,
+      message:
+        'wrapper must detect Chromium "No usable sandbox!" fatal and retry with --no-sandbox on hardened hosts',
+    });
+  }
+
+  if (!/exec zypak-wrapper[^\n]*--no-sandbox[^\n]* \. "\$@"/.test(sh)) {
+    violations.push({
+      file: rel,
+      message:
+        'wrapper must exec zypak-wrapper with --no-sandbox fallback when user namespaces are blocked',
     });
   }
 
@@ -630,6 +673,7 @@ function main() {
     ...checkManifestAppId(),
     ...checkManifestPnpmVersion(PKG_JSON),
     ...checkFlatpakWorkflowStoreVersion(PKG_JSON),
+    ...checkManifestStagesElectronBeforeRebuild(),
     ...checkManifestBranchAndElectronPayload(PKG_JSON),
     ...checkManifestCiBuildInfoExport(),
     ...checkFlatpakWorkflowTestBuildContracts(),

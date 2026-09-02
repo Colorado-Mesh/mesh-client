@@ -56,7 +56,7 @@ export function planCiTests(eventName, changedPaths) {
     return fullPlan('test infrastructure changed');
   }
 
-  const localPlan = planPrecommitTests(normalizedPaths);
+  const localPlan = planPrecommitTests(normalizedPaths, { allowManifestOnlySkip: false });
   if (localPlan.mode === 'full') {
     return fullPlan('test infrastructure or dependency manifest changed');
   }
