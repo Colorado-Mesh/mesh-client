@@ -28,9 +28,12 @@ const BRACKET_PREFIX = /^@\[([^\]]*)\]\s*(.*)$/su;
 /** Optional mesh-client parent key suffix inside brackets: `@[Display Name#1780235760]`. */
 /** Inbound keys may be firmware seconds or ms-scale; outbound text replies are keyless. */
 const BRACKET_REPLY_KEY_SUFFIX = /#(\d{10,})$/;
+const UNSAFE_WIRE_NAME = /\]|#\d{10,}$/u;
 
+/** Normalize a MeshCore reply target, returning empty for names the bracket wire cannot encode. */
 export function sanitizeMeshcoreWireName(name: string): string {
-  return name.replace(/\s+/g, ' ').trim();
+  const normalized = name.replace(/\s+/g, ' ').trim();
+  return UNSAFE_WIRE_NAME.test(normalized) ? '' : normalized;
 }
 
 /** Build `@[Name#replyKey]` prefix (keyed wire; used by some inbound clients, not mesh-client outbound). */

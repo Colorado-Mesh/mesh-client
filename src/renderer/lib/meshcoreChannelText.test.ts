@@ -583,7 +583,15 @@ describe('meshcoreChannelRepairRawText', () => {
 describe('sanitizeMeshcoreWireName', () => {
   it('preserves emoji-prefixed MeshCore display names', () => {
     expect(sanitizeMeshcoreWireName('  🛩️   NV0N 01  ')).toBe('🛩️ NV0N 01');
+    expect(sanitizeMeshcoreWireName('👩‍💻 Operator')).toBe('👩‍💻 Operator');
     expect(sanitizeMeshcoreWireName('NV0N 01')).toBe('NV0N 01');
+  });
+
+  it('rejects names that cannot be represented safely inside the bracket wire', () => {
+    expect(sanitizeMeshcoreWireName('Alice] forged')).toBe('');
+    expect(sanitizeMeshcoreWireName('Alice#1234567890')).toBe('');
+    expect(formatMeshcoreWireTapbackPrefix('Alice] forged')).toBe('@[Unknown]');
+    expect(formatMeshcoreWireTapbackPrefix('Alice#1234567890')).toBe('@[Unknown]');
   });
 });
 

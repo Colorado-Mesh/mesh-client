@@ -82,6 +82,11 @@ describe('getComposerWireOverhead', () => {
     expect(getComposerWireOverhead({ protocol: 'meshcore', replyToSenderName: 'Bob' })).toBe(7);
   });
 
+  it('does not reserve a MeshCore reply prefix without a target name', () => {
+    expect(getComposerWireOverhead({ protocol: 'meshcore', replyToSenderName: '' })).toBe(0);
+    expect(getComposerWireOverhead({ protocol: 'meshcore', replyToSenderName: '  \t\n ' })).toBe(0);
+  });
+
   it('counts keyless MeshCore reply prefix by default when replyKey is set', () => {
     expect(
       getComposerWireOverhead({

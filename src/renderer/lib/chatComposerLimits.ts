@@ -101,8 +101,8 @@ export function getComposerWireOverhead(opts: {
   }
   if (opts.protocol !== 'meshcore' || !opts.replyToSenderName?.trim()) return 0;
   const key = opts.replyKey;
-  // Reuse the exact wire-format builders (including whitespace normalization and the empty-name
-  // fallback) so this estimate can never drift from what actually goes out on the wire.
+  // Reuse the exact wire-format builders so normalized names and unsafe-name fallbacks cannot
+  // drift from what actually goes out on the wire. Empty names return above without a prefix.
   const prefix =
     opts.useKeyedReplies && key != null && Number.isFinite(key) && key > 0
       ? formatMeshcoreWireReplyPrefix(opts.replyToSenderName, key)
