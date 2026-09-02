@@ -3320,6 +3320,12 @@ function AppContent() {
                                 ? meshcoreRuntime.channels
                                 : undefined
                             }
+                            onSetMeshcoreChannel={
+                              capabilities.hasCompanionContactManagementConfig
+                                ? meshcorePanelActions.meshcoreSetChannel
+                                : undefined
+                            }
+                            meshcoreChannelManagementDisabled={!isOperational}
                             myNodeNum={
                               typeof activeRuntime.selfNodeId === 'number'
                                 ? activeRuntime.selfNodeId
