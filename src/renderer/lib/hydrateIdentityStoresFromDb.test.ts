@@ -212,6 +212,203 @@ describe('hydrateIdentityStoresFromDb', () => {
     expect(useNodeStore.getState().nodes[ID_MT][1]).toBeUndefined();
   });
 
+  it('drops a stale Meshtastic full hydration when a newer one finishes first', async () => {
+    upsertMessageRecordsForIdentity(ID_MT, [
+      {
+        id: 'prior',
+        from: 1,
+        to: 0xffffffff,
+        payload: 'prior',
+        channelIndex: 0,
+        timestamp: 1000,
+        senderName: 'Prior',
+      },
+    ]);
+    upsertNodeRecordsForIdentity(ID_MT, [{ nodeId: 1, longName: 'Prior' }]);
+
+    type SavedMsg = Awaited<ReturnType<typeof window.electronAPI.db.getMessages>>[number];
+    let resolveStaleMsgs!: (rows: SavedMsg[]) => void;
+    const staleMsgs = new Promise<SavedMsg[]>((resolve) => {
+      resolveStaleMsgs = resolve;
+    });
+    let getMessagesCalls = 0;
+    vi.spyOn(window.electronAPI.db, 'getMessages').mockImplementation(() => {
+      getMessagesCalls += 1;
+      if (getMessagesCalls === 1) return staleMsgs;
+      return Promise.resolve([
+        {
+          id: 20,
+          sender_id: 9,
+          sender_name: 'Fresh',
+          payload: 'fresh',
+          channel: 0,
+          timestamp: 3000,
+          packetId: null,
+          status: 'acked',
+          error: null,
+          emoji: null,
+          replyId: null,
+          to: undefined,
+          mqttStatus: null,
+          receivedVia: null,
+        },
+      ]);
+    });
+    vi.spyOn(window.electronAPI.db, 'getNodes').mockResolvedValue([
+      {
+        node_id: 9,
+        long_name: 'Fresh',
+        short_name: 'F9',
+        hw_model: 'Heltec',
+        battery: 50,
+        snr: 0,
+        rssi: -90,
+        last_heard: 1,
+        latitude: null,
+        longitude: null,
+        role: null,
+        hops_away: null,
+        via_mqtt: null,
+        voltage: null,
+        channel_utilization: null,
+        air_util_tx: null,
+        altitude: null,
+        favorited: 0,
+        source: 'rf',
+        num_packets_rx_bad: null,
+        num_rx_dupe: null,
+        num_packets_rx: null,
+        num_packets_tx: null,
+        hops: null,
+        path: null,
+      },
+    ]);
+
+    const stale = hydrateIdentityStoresFromDb('meshtastic', ID_MT, {
+      nodes: true,
+      messages: true,
+      nodesMode: 'replace',
+      messagesMode: 'replace',
+    });
+    const fresh = hydrateIdentityStoresFromDb('meshtastic', ID_MT, {
+      nodes: true,
+      messages: true,
+      nodesMode: 'replace',
+      messagesMode: 'replace',
+    });
+
+    await fresh;
+    const freshMsgIds = Object.keys(useMessageStore.getState().messages[ID_MT] ?? {});
+    expect(freshMsgIds).toHaveLength(1);
+    expect(freshMsgIds[0]).not.toBe('prior');
+    expect(useNodeStore.getState().nodes[ID_MT][9].longName).toBe('Fresh');
+
+    resolveStaleMsgs([
+      {
+        id: 99,
+        sender_id: 1,
+        sender_name: 'Stale',
+        payload: 'stale',
+        channel: 0,
+        timestamp: 1500,
+        packetId: null,
+        status: 'acked',
+        error: null,
+        emoji: null,
+        replyId: null,
+        to: undefined,
+        mqttStatus: null,
+        receivedVia: null,
+      },
+    ]);
+    await stale;
+    expect(Object.keys(useMessageStore.getState().messages[ID_MT] ?? {})).toEqual(freshMsgIds);
+    expect(useNodeStore.getState().nodes[ID_MT][9].longName).toBe('Fresh');
+    expect(useNodeStore.getState().nodes[ID_MT][1]).toBeUndefined();
+  });
+
+  it('drops a stale MeshCore full hydration when a newer one finishes first', async () => {
+    upsertMessageRecordsForIdentity(ID_MC, [
+      {
+        id: 'prior-mc',
+        from: 0xabc,
+        to: 0xffffffff,
+        payload: 'prior',
+        channelIndex: 0,
+        timestamp: 1000,
+        senderName: 'Prior',
+      },
+    ]);
+
+    type SavedMcMsg = Awaited<ReturnType<typeof window.electronAPI.db.getMeshcoreMessages>>[number];
+    let resolveStaleMsgs!: (rows: SavedMcMsg[]) => void;
+    const staleMsgs = new Promise<SavedMcMsg[]>((resolve) => {
+      resolveStaleMsgs = resolve;
+    });
+    let serveFreshMessages = false;
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessages').mockImplementation(() => {
+      if (!serveFreshMessages) return staleMsgs;
+      return Promise.resolve([
+        {
+          id: 20,
+          sender_id: 0xdef,
+          sender_name: 'Fresh',
+          payload: 'fresh',
+          channel_idx: 0,
+          timestamp: 3000,
+          status: 'acked',
+          packet_id: null,
+          emoji: null,
+          reply_id: null,
+          to_node: null,
+        },
+      ]);
+    });
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts').mockResolvedValue([]);
+    vi.spyOn(window.electronAPI.db, 'getNodes').mockResolvedValue([]);
+    vi.spyOn(window.electronAPI.db, 'getAllMeshcoreHopHistory').mockResolvedValue([]);
+
+    const stale = hydrateIdentityStoresFromDb('meshcore', ID_MC, {
+      nodes: true,
+      messages: true,
+      nodesMode: 'replace',
+      messagesMode: 'replace',
+    });
+    // Let the stale hydrator's DB awaits park on the deferred message load.
+    await Promise.resolve();
+    await Promise.resolve();
+    serveFreshMessages = true;
+    const fresh = hydrateIdentityStoresFromDb('meshcore', ID_MC, {
+      nodes: true,
+      messages: true,
+      nodesMode: 'replace',
+      messagesMode: 'replace',
+    });
+
+    await fresh;
+    const freshMsgIds = Object.keys(useMessageStore.getState().messages[ID_MC] ?? {});
+    expect(freshMsgIds).toHaveLength(1);
+    expect(freshMsgIds[0]).not.toBe('prior-mc');
+
+    resolveStaleMsgs([
+      {
+        id: 99,
+        sender_id: 0xabc,
+        sender_name: 'Stale',
+        payload: 'stale',
+        channel_idx: 0,
+        timestamp: 1500,
+        status: 'acked',
+        packet_id: null,
+        emoji: null,
+        reply_id: null,
+        to_node: null,
+      },
+    ]);
+    await stale;
+    expect(Object.keys(useMessageStore.getState().messages[ID_MC] ?? {})).toEqual(freshMsgIds);
+  });
+
   it('hydrates MeshCore contacts and messages into identity-scoped stores', async () => {
     vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts').mockResolvedValue([
       {

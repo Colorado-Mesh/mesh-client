@@ -125,8 +125,10 @@ export async function hydrateMeshtasticNodesFromDb(
 export async function hydrateMeshtasticMessagesFromDb(
   identityId: IdentityId,
   messagesMode: 'upsert' | 'replace' = 'upsert',
+  isCurrent?: () => boolean,
 ): Promise<void> {
   const msgs = await window.electronAPI.db.getMessages(undefined, getMeshtasticMessageLoadLimit());
+  if (isCurrent && !isCurrent()) return;
   const sanitized = dedupeMeshtasticHydrationOrphanSends(msgs.map(savedMessageToChatMessage));
   const reversed = sanitized.toReversed();
   const trimmed = trimChatMessagesToMax(reversed, MAX_IN_MEMORY_CHAT_MESSAGES);
@@ -226,11 +228,13 @@ export function replaceNodesMapInIdentityStore(
 export async function hydrateMeshcoreMessagesFromDb(
   identityId: IdentityId,
   messagesMode: 'upsert' | 'replace' = 'upsert',
+  isCurrent?: () => boolean,
 ): Promise<void> {
   const [dbMsgs, contactRows] = await Promise.all([
     loadMeshcoreMessagesForHydration(),
     window.electronAPI.db.getMeshcoreContacts(),
   ]);
+  if (isCurrent && !isCurrent()) return;
   const rows = dbMsgs;
   const roomServerIds = meshcoreRoomServerIdsFromContacts(contactRows as MeshcoreContactDbRow[]);
   const mapped = repairMeshcoreHydratedMessages(
@@ -274,12 +278,12 @@ async function hydrateMeshtasticIdentity(
   if (loadNodes && loadMessages) {
     await Promise.all([
       hydrateMeshtasticNodesFromDb(identityId, nodesMode, isCurrent),
-      hydrateMeshtasticMessagesFromDb(identityId, messagesMode),
+      hydrateMeshtasticMessagesFromDb(identityId, messagesMode, isCurrent),
     ]);
   } else if (loadNodes) {
     await hydrateMeshtasticNodesFromDb(identityId, nodesMode, isCurrent);
   } else if (loadMessages) {
-    await hydrateMeshtasticMessagesFromDb(identityId, messagesMode);
+    await hydrateMeshtasticMessagesFromDb(identityId, messagesMode, isCurrent);
   }
 }
 
@@ -295,12 +299,12 @@ async function hydrateMeshcoreIdentity(
   if (loadNodes && loadMessages) {
     await Promise.all([
       hydrateMeshcoreNodesFromDb(identityId, nodesMode, isCurrent),
-      hydrateMeshcoreMessagesFromDb(identityId, messagesMode),
+      hydrateMeshcoreMessagesFromDb(identityId, messagesMode, isCurrent),
     ]);
   } else if (loadNodes) {
     await hydrateMeshcoreNodesFromDb(identityId, nodesMode, isCurrent);
   } else if (loadMessages) {
-    await hydrateMeshcoreMessagesFromDb(identityId, messagesMode);
+    await hydrateMeshcoreMessagesFromDb(identityId, messagesMode, isCurrent);
   }
 }
 
