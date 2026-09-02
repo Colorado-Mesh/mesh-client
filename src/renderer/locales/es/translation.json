@@ -2303,7 +2303,10 @@
     "clearAllIntro": "Elimine todos los contactos de la radio y borre la base de datos de contactos de la aplicación. Esto no se puede deshacer.",
     "clearAllContactsConfirm": "¿Eliminar todos los contactos de la radio y borrar los datos de los contactos locales?",
     "clearingContacts": "Claro…",
-    "clearAllContactsButton": "Borrar todos los contactos"
+    "clearAllContactsButton": "Borrar todos los contactos",
+    "autoOffloadWhenFull": "Descarga automática cuando la radio está llena",
+    "autoOffloadWhenFullLabel": "Descarga automática cuando está lleno",
+    "autoOffloadWhenFullDesc": "Cuando el almacenamiento de contactos de los informes complementarios esté lleno, descargue automáticamente los contactos a la base de datos de la aplicación (igual que Descargar)."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Privacidad de telemetría",
@@ -4199,7 +4202,10 @@
         "UNLOCK_FAILED": "Error al desbloquear",
         "DISABLED": "Discapacitado"
       }
-    }
+    },
+    "contactsFullAlarm": "El almacenamiento de contactos de radio está lleno. Descargue los contactos a la base de datos de la aplicación para liberar franjas horarias.",
+    "contactsFullAlarmAction": "Descargar",
+    "contactsFullAutoOffloadStarted": "Contactos de radio llenos — iniciando la descarga automática..."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar paquetes",

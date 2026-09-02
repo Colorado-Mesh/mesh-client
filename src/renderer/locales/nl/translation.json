@@ -2303,7 +2303,10 @@
     "clearAllIntro": "Verwijder elk contact van de radio en wis de contactendatabase van de app. Dit kan niet ongedaan worden gemaakt.",
     "clearAllContactsConfirm": "Alle contacten van de radio verwijderen en lokale contactgegevens wissen?",
     "clearingContacts": "Wissen…",
-    "clearAllContactsButton": "Wis alle contacten"
+    "clearAllContactsButton": "Wis alle contacten",
+    "autoOffloadWhenFull": "Auto-offload wanneer de radio vol is",
+    "autoOffloadWhenFullLabel": "Auto-offload wanneer vol",
+    "autoOffloadWhenFullDesc": "Wanneer de metgezel meldt dat de contactenopslag vol is, laadt u contacten automatisch af naar de app-database (hetzelfde als Offload)."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Telemetrieprivacy",
@@ -4199,7 +4202,10 @@
         "UNLOCK_FAILED": "UNLOCK MISLUKT",
         "DISABLED": "Uitgeschakeld"
       }
-    }
+    },
+    "contactsFullAlarm": "Opslag radiocontact is vol. Contacten naar de app-database verplaatsen naar vrije slots.",
+    "contactsFullAlarmAction": "lossen",
+    "contactsFullAutoOffloadStarted": "Radiocontacten vol — automatisch ontladen wordt gestart..."
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",

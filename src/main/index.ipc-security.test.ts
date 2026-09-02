@@ -822,6 +822,7 @@ describe('db mutator IPC sender validation (source contract, H3)', () => {
     'db:markAllMeshcoreContactsOffRadio',
     'db:deleteMeshcoreContactsWithoutPubkey',
     'db:offloadAllMeshcoreContacts',
+    'db:markMeshcoreContactOffRadio',
     'db:createContactGroup',
     'db:updateContactGroup',
     'db:deleteContactGroup',

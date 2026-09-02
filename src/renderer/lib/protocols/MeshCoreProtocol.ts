@@ -15,6 +15,7 @@ import {
   pubKeyPrefixHex,
   pubkeyToNodeId,
 } from '../meshcoreUtils';
+import { MC_PUSH_CONTACT_DELETED, MC_PUSH_CONTACTS_FULL } from '../meshcoreWireCodes';
 import { effectiveMessageTimestampMs } from '../nodeStatus';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import { MESHCORE_CAPABILITIES } from '../radio/BaseRadioProvider';
@@ -46,6 +47,8 @@ const EVENT_PATH_UPDATED = 129;
 const EVENT_DM_ACK = 130;
 const EVENT_WAITING_MESSAGES = 131;
 const EVENT_RF_RX = 136;
+const EVENT_CONTACT_DELETED = MC_PUSH_CONTACT_DELETED;
+const EVENT_CONTACTS_FULL = MC_PUSH_CONTACTS_FULL;
 const EVENT_RX = 'rx';
 const EVENT_DISCONNECTED = 'disconnected';
 
@@ -147,6 +150,12 @@ export class MeshCoreProtocol implements Protocol {
     const onWaitingMessages = () => {
       emit({ type: 'meshcore_waiting_messages', payload: {} });
     };
+    const onContactDeleted = (data: unknown) => {
+      this.decodeContactDeleted(data).forEach(emit);
+    };
+    const onContactsFull = () => {
+      emit({ type: 'meshcore_contacts_full', payload: {} });
+    };
     const onRfRx = (data: unknown) => {
       this.decodeRfRx(data).forEach(emit);
     };
@@ -161,6 +170,8 @@ export class MeshCoreProtocol implements Protocol {
     bus.on(EVENT_PATH_UPDATED, onPathUpdated);
     bus.on(EVENT_DM_ACK, onDmAck);
     bus.on(EVENT_WAITING_MESSAGES, onWaitingMessages);
+    bus.on(EVENT_CONTACT_DELETED, onContactDeleted);
+    bus.on(EVENT_CONTACTS_FULL, onContactsFull);
     bus.on(EVENT_RF_RX, onRfRx);
     bus.on(EVENT_RX, onRx);
     bus.on(EVENT_DISCONNECTED, onDisconnected);
@@ -173,6 +184,8 @@ export class MeshCoreProtocol implements Protocol {
       bus.off(EVENT_PATH_UPDATED, onPathUpdated);
       bus.off(EVENT_DM_ACK, onDmAck);
       bus.off(EVENT_WAITING_MESSAGES, onWaitingMessages);
+      bus.off(EVENT_CONTACT_DELETED, onContactDeleted);
+      bus.off(EVENT_CONTACTS_FULL, onContactsFull);
       bus.off(EVENT_RF_RX, onRfRx);
       bus.off(EVENT_RX, onRx);
       bus.off(EVENT_DISCONNECTED, onDisconnected);
@@ -436,6 +449,14 @@ export class MeshCoreProtocol implements Protocol {
     const nodeId = pubkeyToNodeId(d.publicKey);
     if (nodeId === 0) return [];
     return [{ type: 'meshcore_path_updated', payload: { nodeId, publicKey: d.publicKey } }];
+  }
+
+  private decodeContactDeleted(raw: unknown): DomainEvent[] {
+    const d = raw as { publicKey?: Uint8Array };
+    if (!(d.publicKey instanceof Uint8Array) || d.publicKey.length !== 32) return [];
+    const nodeId = pubkeyToNodeId(d.publicKey);
+    if (nodeId === 0) return [];
+    return [{ type: 'meshcore_contact_deleted', payload: { nodeId, publicKey: d.publicKey } }];
   }
 
   private decodeAdvert(

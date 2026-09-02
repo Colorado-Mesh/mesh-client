@@ -2303,7 +2303,10 @@
     "clearAllIntro": "Hapus setiap kontak dari radio dan hapus database kontak aplikasi. Hal ini tidak dapat dibatalkan.",
     "clearAllContactsConfirm": "Hapus semua kontak dari radio dan hapus data kontak lokal?",
     "clearingContacts": "Membersihkan…",
-    "clearAllContactsButton": "Hapus semua kontak"
+    "clearAllContactsButton": "Hapus semua kontak",
+    "autoOffloadWhenFull": "Auto - offload saat radio penuh",
+    "autoOffloadWhenFullLabel": "Auto - offload saat penuh",
+    "autoOffloadWhenFullDesc": "Ketika pendamping melaporkan penyimpanan kontak penuh, secara otomatis offload kontak ke database aplikasi (sama seperti Offload)."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Privasi telemetri",
@@ -4199,7 +4202,10 @@
         "UNLOCK_FAILED": "Buka Kunci Gagal!",
         "DISABLED": "Dinonaktifkan"
       }
-    }
+    },
+    "contactsFullAlarm": "Penyimpanan kontak radio penuh. Offload kontak ke database aplikasi ke slot gratis.",
+    "contactsFullAlarmAction": "Offload",
+    "contactsFullAutoOffloadStarted": "Kontak radio penuh — mulai auto - offload…"
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",

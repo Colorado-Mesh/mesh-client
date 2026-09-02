@@ -2355,7 +2355,10 @@
     "clearAllIntro": "Usuń wszystkie kontakty z radia i wyczyść bazę danych kontaktów aplikacji. Tego nie można cofnąć.",
     "clearAllContactsConfirm": "Usunąć wszystkie kontakty z radia i wyczyścić lokalne dane kontaktowe?",
     "clearingContacts": "Czyszczenie...",
-    "clearAllContactsButton": "Wyczyść wszystkie kontakty"
+    "clearAllContactsButton": "Wyczyść wszystkie kontakty",
+    "autoOffloadWhenFull": "Automatyczne odciążanie, gdy radio jest pełne",
+    "autoOffloadWhenFullLabel": "Automatyczne odciążanie po zapełnieniu",
+    "autoOffloadWhenFullDesc": "Gdy pamięć kontaktów w raporcie osoby towarzyszącej jest pełna, automatycznie odciąż kontakty do bazy danych aplikacji (tak samo jak w przypadku odciążania)."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Prywatność telemetryczna",
@@ -4279,7 +4282,10 @@
         "UNLOCK_FAILED": "Odblokowanie nie powiodło się.",
         "DISABLED": "Wył."
       }
-    }
+    },
+    "contactsFullAlarm": "Pamięć styków radiowych jest pełna. Odciąż kontakty do bazy danych aplikacji, aby zwolnić sloty.",
+    "contactsFullAlarmAction": "Rozładowanie",
+    "contactsFullAutoOffloadStarted": "Styki radiowe pełne — uruchamianie automatycznego odciążania…"
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",

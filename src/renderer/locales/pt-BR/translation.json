@@ -2303,7 +2303,10 @@
     "clearAllIntro": "Remova todos os contatos do rádio e limpe o banco de dados de contatos do aplicativo. Isto não pode ser desfeito.",
     "clearAllContactsConfirm": "Remover todos os contatos do rádio e limpar os dados de contato locais?",
     "clearingContacts": "Limpando…",
-    "clearAllContactsButton": "Limpar todos os contatos"
+    "clearAllContactsButton": "Limpar todos os contatos",
+    "autoOffloadWhenFull": "Descarregamento automático quando o rádio está cheio",
+    "autoOffloadWhenFullLabel": "Descarregamento automático quando cheio",
+    "autoOffloadWhenFullDesc": "Quando o companheiro relata que o armazenamento de contatos está cheio, descarregue automaticamente os contatos no banco de dados do aplicativo (o mesmo que descarregar)."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Privacidade de telemetria",
@@ -4199,7 +4202,10 @@
         "UNLOCK_FAILED": "Falha ao desbloquear",
         "DISABLED": "Desabilitado"
       }
-    }
+    },
+    "contactsFullAlarm": "O armazenamento de contato de rádio está cheio. Descarregue os contatos no banco de dados do aplicativo para liberar slots.",
+    "contactsFullAlarmAction": "Descarregar",
+    "contactsFullAutoOffloadStarted": "Contatos de rádio cheios — iniciando o descarregamento automático…"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar pacotes",

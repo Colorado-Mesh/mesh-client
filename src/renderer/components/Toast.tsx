@@ -11,18 +11,38 @@ import { useTranslation } from 'react-i18next';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface Toast {
   id: number;
   message: string;
   type: ToastType;
   duration: number;
+  action?: ToastAction;
+}
+
+export interface PushAppToastOptions {
+  action?: ToastAction;
 }
 
 interface ToastContextValue {
-  addToast: (message: string, type?: ToastType, duration?: number) => void;
+  addToast: (
+    message: string,
+    type?: ToastType,
+    duration?: number,
+    options?: PushAppToastOptions,
+  ) => void;
 }
 
-type ToastFn = (message: string, type?: ToastType, duration?: number) => void;
+type ToastFn = (
+  message: string,
+  type?: ToastType,
+  duration?: number,
+  options?: PushAppToastOptions,
+) => void;
 
 const ToastContext = createContext<ToastContextValue>({
   addToast: () => {},
@@ -31,8 +51,13 @@ const ToastContext = createContext<ToastContextValue>({
 /** Module bridge so non-React code (runtimes, lib) can surface toasts when the provider is mounted. */
 let externalAddToast: ToastFn | null = null;
 
-export function pushAppToast(message: string, type: ToastType = 'info', duration = 4000): void {
-  externalAddToast?.(message, type, duration);
+export function pushAppToast(
+  message: string,
+  type: ToastType = 'info',
+  duration = 4000,
+  options?: PushAppToastOptions,
+): void {
+  externalAddToast?.(message, type, duration, options);
 }
 
 export function useToast() {
@@ -43,10 +68,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const nextIdRef = useRef(0);
 
-  const addToast = useCallback((message: string, type: ToastType = 'info', duration = 4000) => {
-    const id = nextIdRef.current++;
-    setToasts((prev) => [...prev, { id, message, type, duration }]);
-  }, []);
+  const addToast = useCallback(
+    (message: string, type: ToastType = 'info', duration = 4000, options?: PushAppToastOptions) => {
+      const id = nextIdRef.current++;
+      setToasts((prev) => [...prev, { id, message, type, duration, action: options?.action }]);
+    },
+    [],
+  );
 
   useEffect(() => {
     externalAddToast = addToast;
@@ -79,6 +107,14 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
   const [visible, setVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const dismiss = useCallback(() => {
+    clearTimeout(timerRef.current);
+    setVisible(false);
+    dismissTimerRef.current = setTimeout(() => {
+      onDismiss(toast.id);
+    }, 300);
+  }, [onDismiss, toast.id]);
 
   useEffect(() => {
     // Slide in
@@ -120,15 +156,22 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
     >
       <span className="shrink-0 text-base">{icon}</span>
       <span className="flex-1">{toast.message}</span>
+      {toast.action ? (
+        <button
+          type="button"
+          onClick={() => {
+            toast.action?.onClick();
+            dismiss();
+          }}
+          aria-label={toast.action.label}
+          className="ml-1 shrink-0 rounded border border-current/40 px-2 py-0.5 text-xs font-medium hover:bg-white/10"
+        >
+          {toast.action.label}
+        </button>
+      ) : null}
       <button
         type="button"
-        onClick={() => {
-          clearTimeout(timerRef.current);
-          setVisible(false);
-          dismissTimerRef.current = setTimeout(() => {
-            onDismiss(toast.id);
-          }, 300);
-        }}
+        onClick={dismiss}
         aria-label={t('common.dismiss')}
         className="text-muted ml-2 shrink-0 text-xs font-medium hover:text-gray-200"
       >

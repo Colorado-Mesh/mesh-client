@@ -2303,7 +2303,10 @@
     "clearAllIntro": "Rimuovi tutti i contatti dalla radio e cancella il database dei contatti dell'app. Questa operazione non può essere annullata.",
     "clearAllContactsConfirm": "Rimuovere tutti i contatti dalla radio e cancellare i dati dei contatti locali?",
     "clearingContacts": "Cancellazione…",
-    "clearAllContactsButton": "Cancella tutti i contatti"
+    "clearAllContactsButton": "Cancella tutti i contatti",
+    "autoOffloadWhenFull": "Spegnimento automatico quando la radio è piena",
+    "autoOffloadWhenFullLabel": "Spegnimento automatico quando pieno",
+    "autoOffloadWhenFullDesc": "Quando il compagno segnala che la memoria dei contatti è piena, scarica automaticamente i contatti nel database dell'app (come Offload)."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Privacy della telemetria",
@@ -4199,7 +4202,10 @@
         "UNLOCK_FAILED": "Sblocco ORC non riuscito.",
         "DISABLED": "Disabilito"
       }
-    }
+    },
+    "contactsFullAlarm": "La memoria dei contatti radio è piena. Scarica i contatti nel database dell'app per liberare gli slot.",
+    "contactsFullAlarmAction": "Scaricare",
+    "contactsFullAutoOffloadStarted": "Contatti radio pieni — avvio auto-offload in corso..."
   },
   "rawPacketLog": {
     "filterPackets": "Filtra i pacchetti",

@@ -29,7 +29,7 @@ overrides:
 patchedDependencies:
   '@jsr/meshtastic__core@2.6.6': 337d32fca15262ad66ba99c9f5e089b431818060b6a380e17065bbde1cf2a72d
   '@jsr/meshtastic__transport-web-serial@0.2.5': 27a2418bae8605e0e5ab6f1fcfd391abd9dc3110433da5754e934f38475dab74
-  '@liamcottle/meshcore.js@1.15.0': 25469f71b6cd7c5510b210ddb8846d541e9b47ebd08e1531a39267df33840b43
+  '@liamcottle/meshcore.js@1.15.0': 4f2fe6ca8ebd7b4c5d63c5b19c95b90d00542a1424b239888d1f5414dd0ea29e
   debug@4.4.3: cf37fa96f5df733456b16c82c9e1c9054a92f6216692aa33d5e2e1e208888e37
   readable-stream@4.7.0: 96023d9278085d7490d08bce1a5079dd202f7782a0daa66fa81c6b1424ef8ab1
   usb@2.18.0: 6b746e2d49b9b006a88aec5bed7a13c629d7f5ba7b40e9f1e039136754c32533
@@ -131,7 +131,7 @@ importers:
         version: 10.0.1(eslint@10.9.1(jiti@2.7.0)(supports-color@8.1.1))
       '@liamcottle/meshcore.js':
         specifier: ^1.15.0
-        version: 1.15.0(patch_hash=25469f71b6cd7c5510b210ddb8846d541e9b47ebd08e1531a39267df33840b43)(supports-color@8.1.1)
+        version: 1.15.0(patch_hash=4f2fe6ca8ebd7b4c5d63c5b19c95b90d00542a1424b239888d1f5414dd0ea29e)(supports-color@8.1.1)
       '@meshtastic/core':
         specifier: npm:@jsr/meshtastic__core@^2.6.6
         version: '@jsr/meshtastic__core@2.6.6(patch_hash=337d32fca15262ad66ba99c9f5e089b431818060b6a380e17065bbde1cf2a72d)(buffer@6.0.3)'
@@ -5105,7 +5105,7 @@ snapshots:
     transitivePeerDependencies:
       - buffer
 
-  '@liamcottle/meshcore.js@1.15.0(patch_hash=25469f71b6cd7c5510b210ddb8846d541e9b47ebd08e1531a39267df33840b43)(supports-color@8.1.1)':
+  '@liamcottle/meshcore.js@1.15.0(patch_hash=4f2fe6ca8ebd7b4c5d63c5b19c95b90d00542a1424b239888d1f5414dd0ea29e)(supports-color@8.1.1)':
     dependencies:
       '@noble/curves': 1.9.7
       serialport: 13.0.0(supports-color@8.1.1)

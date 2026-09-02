@@ -2330,7 +2330,10 @@
     "clearAllIntro": "Odstraňte všechny kontakty z rádia a vymažte databázi kontaktů aplikace. Toto nelze vrátit zpět.",
     "clearAllContactsConfirm": "Odebrat všechny kontakty z rádia a vymazat místní kontaktní údaje?",
     "clearingContacts": "Mazání…",
-    "clearAllContactsButton": "Vymazat všechny kontakty"
+    "clearAllContactsButton": "Vymazat všechny kontakty",
+    "autoOffloadWhenFull": "Automatické vypnutí, když je rádio plné",
+    "autoOffloadWhenFullLabel": "Automatické vyložení po zaplnění",
+    "autoOffloadWhenFullDesc": "Když je úložiště zpráv o kontaktech plné, automaticky odešlete kontakty do databáze aplikace (stejně jako Offload)."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Telemetrické soukromí",
@@ -4240,7 +4243,10 @@
         "UNLOCK_FAILED": "Odemknutí se nezdařilo!",
         "DISABLED": "Invalidé"
       }
-    }
+    },
+    "contactsFullAlarm": "Úložiště rádiového kontaktu je plné. Přesuňte kontakty do databáze aplikací a získejte volné sloty.",
+    "contactsFullAlarmAction": "Offload",
+    "contactsFullAutoOffloadStarted": "Rádiové kontakty jsou plné — spuštění automatického vypnutí..."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",

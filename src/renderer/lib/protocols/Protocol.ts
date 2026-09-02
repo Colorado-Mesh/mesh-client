@@ -68,6 +68,15 @@ export interface MeshcoreDmAckEvent {
 /** MeshCore message-waiting push (event 131) — signal only; the drain is an RPC. */
 export type MeshcoreWaitingMessagesEvent = Record<string, never>;
 
+/** MeshCore contact-deleted push (0x8F) — radio removed contact; keep in app DB off-radio. */
+export interface MeshcoreContactDeletedEvent {
+  nodeId: number;
+  publicKey: Uint8Array;
+}
+
+/** MeshCore contacts-full push (0x90) — companion contact storage is full. */
+export type MeshcoreContactsFullEvent = Record<string, never>;
+
 /** MeshCore CLI data response (direct message with `txtType === 1`). */
 export interface MeshcoreCliResponseEvent {
   text: string;
@@ -400,6 +409,8 @@ export type DomainEvent =
   | { type: 'meshcore_path_updated'; payload: MeshcorePathUpdatedEvent }
   | { type: 'meshcore_dm_ack'; payload: MeshcoreDmAckEvent }
   | { type: 'meshcore_waiting_messages'; payload: MeshcoreWaitingMessagesEvent }
+  | { type: 'meshcore_contact_deleted'; payload: MeshcoreContactDeletedEvent }
+  | { type: 'meshcore_contacts_full'; payload: MeshcoreContactsFullEvent }
   | { type: 'meshcore_cli_response'; payload: MeshcoreCliResponseEvent }
   | { type: 'meshcore_rf_rx'; payload: MeshcoreRfRxEvent };
 

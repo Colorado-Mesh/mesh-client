@@ -16,6 +16,8 @@ const EVENT_PATH_UPDATED = 129;
 const EVENT_DM_ACK = 130;
 const EVENT_WAITING_MESSAGES = 131;
 const EVENT_RF_RX = 136;
+const EVENT_CONTACT_DELETED = 0x8f;
+const EVENT_CONTACTS_FULL = 0x90;
 const EVENT_DISCONNECTED = 'disconnected';
 
 function mockMeshCoreConnection() {
@@ -305,6 +307,31 @@ describe('MeshCoreProtocol.subscribe', () => {
     const teardown = meshcoreProtocol.subscribe(conn, (e) => events.push(e));
     conn.emit(EVENT_WAITING_MESSAGES, {});
     expect(events.some((e) => e.type === 'meshcore_waiting_messages')).toBe(true);
+    teardown();
+  });
+
+  it('emits meshcore_contact_deleted on 0x8F with publicKey', () => {
+    const conn = mockMeshCoreConnection();
+    const events: DomainEvent[] = [];
+    const teardown = meshcoreProtocol.subscribe(conn, (e) => events.push(e));
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
+    conn.emit(EVENT_CONTACT_DELETED, { publicKey });
+    const deleted = events.find((e) => e.type === 'meshcore_contact_deleted');
+    const expectedNodeId = pubkeyToNodeId(publicKey);
+    expect(expectedNodeId).not.toBe(0);
+    expect(deleted).toMatchObject({
+      type: 'meshcore_contact_deleted',
+      payload: { publicKey, nodeId: expectedNodeId },
+    });
+    teardown();
+  });
+
+  it('emits meshcore_contacts_full on 0x90', () => {
+    const conn = mockMeshCoreConnection();
+    const events: DomainEvent[] = [];
+    const teardown = meshcoreProtocol.subscribe(conn, (e) => events.push(e));
+    conn.emit(EVENT_CONTACTS_FULL, {});
+    expect(events.some((e) => e.type === 'meshcore_contacts_full')).toBe(true);
     teardown();
   });
 

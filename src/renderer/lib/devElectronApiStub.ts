@@ -106,6 +106,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       getMeshcoreContactCount: async () => 0,
       deleteMeshcoreContactsWithoutPubkey: async () => ({ deleted: 0, excludedStubCount: 0 }),
       offloadAllMeshcoreContacts: async () => 0,
+      markMeshcoreContactOffRadio: async () => ({ changes: 0 }),
       getMeshcoreContactById: async () => null,
       updateMeshcoreContactNickname: noopAsync,
       updateMeshcoreContactFavorited: noopAsync,
