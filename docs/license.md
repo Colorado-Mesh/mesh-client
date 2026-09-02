@@ -10,7 +10,7 @@ The project was previously inconsistent: the Reticulum sidecar (AGPL-3.0-or-late
 
 ## Contributor consent
 
-Contributors with code or creative assets in the repository were notified of the license change. As of 2026-09-02, written consent has been received from 7 of 8 notified contributors (Joey Stanford, cj-vana / M3SHGH0ST, soord, DeFiDude / dude.eth, gnuamua, and Letark via the `#mesh-client` Discord channel; Joe / WB3IHY via [issue #933](https://github.com/Colorado-Mesh/mesh-client/issues/933)). Consent from megabear (KD5IHC) was still pending at ship time. Prior contributions were made under MIT, which permits relicensing; consent was requested as a courtesy.
+Contributors with code or creative assets in the repository were notified of the license change. As of 2026-09-02, written consent has been received from all 8 notified contributors (Joey Stanford, cj-vana / M3SHGH0ST, soord, DeFiDude / dude.eth, gnuamua, Letark, and megabear / KD5IHC via the `#mesh-client` Discord channel; Joe / WB3IHY via [issue #933](https://github.com/Colorado-Mesh/mesh-client/issues/933)). Prior contributions were made under MIT, which permits relicensing; consent was requested as a courtesy.
 
 ## Bundled Reticulum sidecar (AGPL-3.0-or-later)
 
