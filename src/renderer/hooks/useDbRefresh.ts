@@ -8,10 +8,17 @@ import type { IdentityId, MeshProtocol } from '../lib/types';
  * Requires `identityId` after connect (or from `identityStore` via `useActiveMeshIdentity`).
  */
 export function useProtocolDbRefresh(protocol: MeshProtocol, identityId: IdentityId | null) {
-  const refreshNodesFromDb = useCallback(async (): Promise<void> => {
-    if (!identityId) return;
-    await hydrateIdentityStoresFromDb(protocol, identityId, { nodes: true, messages: false });
-  }, [protocol, identityId]);
+  const refreshNodesFromDb = useCallback(
+    async (opts?: { nodesMode?: 'upsert' | 'replace' }): Promise<void> => {
+      if (!identityId) return;
+      await hydrateIdentityStoresFromDb(protocol, identityId, {
+        nodes: true,
+        messages: false,
+        nodesMode: opts?.nodesMode ?? 'upsert',
+      });
+    },
+    [protocol, identityId],
+  );
 
   const refreshMessagesFromDb = useCallback(
     async (opts?: { messagesMode?: 'upsert' | 'replace' }): Promise<void> => {
