@@ -44,6 +44,15 @@ describe('updater source contracts', () => {
     );
   });
 
+  it('downloads updates automatically but waits for an explicit restart to install', () => {
+    expect(UPDATER_SOURCE).toContain('updater.autoDownload = true');
+    expect(UPDATER_SOURCE).toContain('updater.autoInstallOnAppQuit = false');
+    expect(UPDATER_SOURCE).toContain('updater.quitAndInstall(false, true)');
+    expect(UPDATER_SOURCE).not.toMatch(
+      /ipcMain\.handle\('update:install',[\s\S]{0,200}process\.platform === 'darwin'/,
+    );
+  });
+
   it('declares builder-util-runtime so electron-updater resolves in packaged Windows builds', () => {
     expect(PACKAGE_JSON.dependencies?.['builder-util-runtime']).toBeTruthy();
   });
