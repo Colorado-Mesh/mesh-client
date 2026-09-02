@@ -1527,7 +1527,9 @@
     "confirmDeleteButton": "Verwijderen?",
     "manageMembersOf": "Leden van {{name}} beheren",
     "renameGroupNamed": "Hernoem {{name}}",
-    "deleteGroupNamed": "{{name}} verwijderen"
+    "deleteGroupNamed": "{{name}} verwijderen",
+    "needSelfNode": "Sluit eerst een radio aan, zodat uw knooppunt-ID bekend is voordat u een contactgroep maakt.",
+    "failedCreateGroup": "Kan groep niet aanmaken: {{message}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Rijen voor droprouting die ouder zijn dan {{hours}} uur (1–168)",

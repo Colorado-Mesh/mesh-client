@@ -1527,7 +1527,9 @@
     "confirmDeleteButton": "削除しますか？",
     "manageMembersOf": "{{name}}のメンバーを管理する",
     "renameGroupNamed": "{{name}}の名前を変更",
-    "deleteGroupNamed": "{{name}}を削除"
+    "deleteGroupNamed": "{{name}}を削除",
+    "needSelfNode": "連絡先グループを作成する前にノードIDがわかるように、まず無線を接続します。",
+    "failedCreateGroup": "グループを作成できませんでした: {{message}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}} 時間より古いルーティング行を削除 (1 ～ 168)",

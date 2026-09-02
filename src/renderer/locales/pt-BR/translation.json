@@ -1527,7 +1527,9 @@
     "confirmDeleteButton": "Excluir?",
     "manageMembersOf": "Gerenciar membros de {{name}}",
     "renameGroupNamed": "Renomear {{name}}",
-    "deleteGroupNamed": "Excluir {{name}}"
+    "deleteGroupNamed": "Excluir {{name}}",
+    "needSelfNode": "Conecte um rádio primeiro para que seu ID de nó seja conhecido antes de criar um grupo de contatos.",
+    "failedCreateGroup": "Falha ao criar grupo: {{message}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Remova as linhas de roteamento com mais de {{hours}} horas (1–168)",

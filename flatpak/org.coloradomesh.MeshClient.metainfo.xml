@@ -3,8 +3,9 @@
   <id>org.coloradomesh.MeshClient</id>
   <name>Mesh Client</name>
   <summary>Meshtastic, MeshCore, and Reticulum mesh network client</summary>
+  <!-- metadata_license covers the AppStream metadata file itself, not the application -->
   <metadata_license>MIT</metadata_license>
-  <project_license>MIT</project_license>
+  <project_license>GPL-3.0-or-later</project_license>
   <description>
     <p>
       Mesh Client is a desktop application for communicating with Meshtastic,

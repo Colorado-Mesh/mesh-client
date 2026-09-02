@@ -34,9 +34,11 @@ We were inspired by features from these projects:
 
 ### Bundled binaries
 
-| Binary                  | License  | Role                                                                                     |
-| ----------------------- | -------- | ---------------------------------------------------------------------------------------- |
-| `mesh-client-reticulum` | AGPL-3.0 | Spawned Reticulum/LXMF sidecar (separate process; see [docs/reticulum.md](reticulum.md)) |
+Application source (Electron main / preload / renderer) is **GPL-3.0-or-later**; see [docs/license.md](license.md).
+
+| Binary                  | License           | Role                                                                                     |
+| ----------------------- | ----------------- | ---------------------------------------------------------------------------------------- |
+| `mesh-client-reticulum` | AGPL-3.0-or-later | Spawned Reticulum/LXMF sidecar (separate process; see [docs/reticulum.md](reticulum.md)) |
 
 ### Bundled fonts
 

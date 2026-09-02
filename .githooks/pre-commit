@@ -69,7 +69,8 @@ if [ -s "$STAGED_LIST" ]; then
   while IFS= read -r f || [ -n "$f" ]; do
     [ -n "$f" ] || continue
     [ -e "$f" ] || continue
-    pnpm exec prettier --write "$f" || fail "prettier --write $f"
+    # LICENSE / binary assets have no Prettier parser; ignore-unknown skips them.
+    pnpm exec prettier --write --ignore-unknown "$f" || fail "prettier --write $f"
   done < "$STAGED_LIST"
 
   # Lint only staged .md files
