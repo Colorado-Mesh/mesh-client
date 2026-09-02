@@ -73,4 +73,18 @@ describe('MeshcoreChatChannelManager', () => {
     await user.click(add);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+
+  it('closes on Escape without changing the underlying chat view', async () => {
+    const user = userEvent.setup();
+    const underlyingKeyHandler = vi.fn();
+    renderManager();
+
+    await user.click(screen.getByRole('button', { name: '+ Add Channel' }));
+    document.addEventListener('keydown', underlyingKeyHandler);
+    await user.keyboard('{Escape}');
+    document.removeEventListener('keydown', underlyingKeyHandler);
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(underlyingKeyHandler).not.toHaveBeenCalled();
+  });
 });
