@@ -123,6 +123,7 @@ import {
   syncNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
+import { sameIdentityRefreshSession } from '../lib/identityHydrationCoordinator';
 import {
   getIdentityChatMessages,
   getIdentityNode,
@@ -4047,14 +4048,25 @@ export function useMeshtasticRuntime() {
   }, []);
 
   const refreshNodesFromDb = useCallback(() => {
+    const storeIdAtStart =
+      meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+    const generationAtStart = reconnectGenerationRef.current;
     void loadMeshtasticNodeMapFromDb()
       .then((nodeMap) => {
-        console.debug(`[useMeshtasticRuntime] refreshNodesFromDb: loaded ${nodeMap.size} nodes`);
-        const storeId =
+        const storeIdNow =
           meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+        if (
+          !sameIdentityRefreshSession(
+            { identityId: storeIdAtStart, generation: generationAtStart },
+            { identityId: storeIdNow, generation: reconnectGenerationRef.current },
+          )
+        ) {
+          return;
+        }
+        console.debug(`[useMeshtasticRuntime] refreshNodesFromDb: loaded ${nodeMap.size} nodes`);
         setNodes(nodeMap);
-        if (storeId) {
-          replaceNodesMapInIdentityStore(storeId, nodeMap);
+        if (storeIdNow) {
+          replaceNodesMapInIdentityStore(storeIdNow, nodeMap);
         }
       })
       .catch((err: unknown) => {

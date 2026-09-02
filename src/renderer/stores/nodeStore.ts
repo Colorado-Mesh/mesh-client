@@ -288,10 +288,11 @@ export function upsertNodeRecordsForIdentity(identityId: IdentityId, records: No
 /** Replace the full node bucket for an identity (post-delete DB reload). Empty clears nodes only. */
 export function replaceNodeRecordsForIdentity(identityId: IdentityId, records: NodeRecord[]): void {
   useNodeStore.setState((s) => {
+    const prior = s.nodes[identityId] ?? {};
     const byId: Record<number, NodeRecord> = {};
     for (const record of records) {
       const { nodeId, ...patch } = record;
-      byId[nodeId] = mergeNode(undefined, nodeId, patch);
+      byId[nodeId] = mergeNode(prior[nodeId], nodeId, patch);
     }
     return {
       nodes: {

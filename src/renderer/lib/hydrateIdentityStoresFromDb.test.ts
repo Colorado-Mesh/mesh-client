@@ -138,6 +138,80 @@ describe('hydrateIdentityStoresFromDb', () => {
     expect(useNodeStore.getState().nodes[ID_MT][1].longName).toBe('Stale-A');
   });
 
+  it('hydrateMeshcoreNodesFromDb replace mode clears nodes when contacts are empty', async () => {
+    upsertNodeRecordsForIdentity(ID_MC, [{ nodeId: 0xabc, longName: 'Stale-MC' }]);
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts').mockResolvedValue([]);
+    vi.spyOn(window.electronAPI.db, 'getNodes').mockResolvedValue([]);
+    vi.spyOn(window.electronAPI.db, 'getAllMeshcoreHopHistory').mockResolvedValue([]);
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessages').mockResolvedValue([]);
+
+    await hydrateMeshcoreNodesFromDb(ID_MC, 'replace');
+
+    expect(useNodeStore.getState().nodes[ID_MC]).toEqual({});
+  });
+
+  it('drops a stale empty node replace when a newer hydration finishes first', async () => {
+    upsertNodeRecordsForIdentity(ID_MT, [{ nodeId: 1, longName: 'Prior' }]);
+
+    let resolveStale!: (rows: never[]) => void;
+    const staleLoad = new Promise<never[]>((resolve) => {
+      resolveStale = resolve;
+    });
+    let getNodesCalls = 0;
+    vi.spyOn(window.electronAPI.db, 'getNodes').mockImplementation(() => {
+      getNodesCalls += 1;
+      if (getNodesCalls === 1) return staleLoad;
+      return Promise.resolve([
+        {
+          node_id: 9,
+          long_name: 'Fresh',
+          short_name: 'F9',
+          hw_model: 'Heltec',
+          battery: 50,
+          snr: 0,
+          rssi: -90,
+          last_heard: 1,
+          latitude: null,
+          longitude: null,
+          role: null,
+          hops_away: null,
+          via_mqtt: null,
+          voltage: null,
+          channel_utilization: null,
+          air_util_tx: null,
+          altitude: null,
+          favorited: 0,
+          source: 'rf',
+          num_packets_rx_bad: null,
+          num_rx_dupe: null,
+          num_packets_rx: null,
+          num_packets_tx: null,
+          hops: null,
+          path: null,
+        },
+      ]);
+    });
+
+    const stale = hydrateIdentityStoresFromDb('meshtastic', ID_MT, {
+      nodes: true,
+      messages: false,
+      nodesMode: 'replace',
+    });
+    const fresh = hydrateIdentityStoresFromDb('meshtastic', ID_MT, {
+      nodes: true,
+      messages: false,
+      nodesMode: 'replace',
+    });
+
+    await fresh;
+    expect(useNodeStore.getState().nodes[ID_MT][9].longName).toBe('Fresh');
+
+    resolveStale([]);
+    await stale;
+    expect(useNodeStore.getState().nodes[ID_MT][9].longName).toBe('Fresh');
+    expect(useNodeStore.getState().nodes[ID_MT][1]).toBeUndefined();
+  });
+
   it('hydrates MeshCore contacts and messages into identity-scoped stores', async () => {
     vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts').mockResolvedValue([
       {

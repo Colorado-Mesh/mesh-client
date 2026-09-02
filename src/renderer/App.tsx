@@ -2282,10 +2282,7 @@ function AppContent() {
     setPendingDmTarget(null);
   }, []);
 
-  const {
-    refreshNodesFromDb: refreshMeshtasticNodesInStore,
-    refreshMessagesFromDb: refreshMeshtasticMessagesInStore,
-  } = meshtasticDbRefresh;
+  const { refreshMessagesFromDb: refreshMeshtasticMessagesInStore } = meshtasticDbRefresh;
   const {
     refreshNodesFromDb: refreshMeshcoreNodesInStore,
     refreshMessagesFromDb: refreshMeshcoreMessagesInStore,
@@ -2294,19 +2291,13 @@ function AppContent() {
   const refreshNodesFromDb = useCallback(() => {
     const actions = selectByProtocol(panelActionsByProtocol, protocol);
     if (capabilities.hasRemoteAdmin) {
+      // Meshtastic runtime refresh already replace-syncs the identity node store.
       void actions.refreshNodesFromDb();
-      void refreshMeshtasticNodesInStore({ nodesMode: 'replace' });
     } else {
       void actions.refreshNodesFromDb();
       void refreshMeshcoreNodesInStore({ nodesMode: 'replace' });
     }
-  }, [
-    protocol,
-    capabilities.hasRemoteAdmin,
-    panelActionsByProtocol,
-    refreshMeshtasticNodesInStore,
-    refreshMeshcoreNodesInStore,
-  ]);
+  }, [protocol, capabilities.hasRemoteAdmin, panelActionsByProtocol, refreshMeshcoreNodesInStore]);
 
   const refreshMessagesFromDb = useCallback(
     (opts?: MessageClearRefreshOptions) => {

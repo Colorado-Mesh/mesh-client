@@ -111,8 +111,10 @@ export interface MessageClearRefreshOptions {
 export async function hydrateMeshtasticNodesFromDb(
   identityId: IdentityId,
   nodesMode: 'upsert' | 'replace' = 'upsert',
+  isCurrent?: () => boolean,
 ): Promise<void> {
   const nodeMap = await loadMeshtasticNodeMapFromDb();
+  if (isCurrent && !isCurrent()) return;
   if (nodesMode === 'replace') {
     replaceNodesMapInIdentityStore(identityId, nodeMap);
   } else {
@@ -182,6 +184,7 @@ export async function loadMeshcoreSavedHopRowsForHydration(): Promise<MeshcoreSa
 export async function hydrateMeshcoreNodesFromDb(
   identityId: IdentityId,
   nodesMode: 'upsert' | 'replace' = 'upsert',
+  isCurrent?: () => boolean,
 ): Promise<void> {
   const [rows, savedNodes] = await Promise.all([
     window.electronAPI.db.getMeshcoreContacts(),
@@ -190,6 +193,7 @@ export async function hydrateMeshcoreNodesFromDb(
   const dbMsgs = await loadMeshcoreMessagesForHydration();
   const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs);
   const nodeMap = buildMeshcoreNodeMapFromDb(rows as MeshcoreContactDbRow[], savedNodes, mapped);
+  if (isCurrent && !isCurrent()) return;
   if (nodesMode === 'replace') {
     replaceNodesMapInIdentityStore(identityId, nodeMap);
   } else {
@@ -255,11 +259,13 @@ export async function hydrateMeshcoreMessagesFromDb(
 type IdentityHydratorFn = (
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
+  isCurrent: () => boolean,
 ) => Promise<void>;
 
 async function hydrateMeshtasticIdentity(
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
+  isCurrent: () => boolean,
 ): Promise<void> {
   const loadNodes = opts.nodes !== false;
   const loadMessages = opts.messages !== false;
@@ -267,11 +273,11 @@ async function hydrateMeshtasticIdentity(
   const nodesMode = opts.nodesMode ?? 'upsert';
   if (loadNodes && loadMessages) {
     await Promise.all([
-      hydrateMeshtasticNodesFromDb(identityId, nodesMode),
+      hydrateMeshtasticNodesFromDb(identityId, nodesMode, isCurrent),
       hydrateMeshtasticMessagesFromDb(identityId, messagesMode),
     ]);
   } else if (loadNodes) {
-    await hydrateMeshtasticNodesFromDb(identityId, nodesMode);
+    await hydrateMeshtasticNodesFromDb(identityId, nodesMode, isCurrent);
   } else if (loadMessages) {
     await hydrateMeshtasticMessagesFromDb(identityId, messagesMode);
   }
@@ -280,6 +286,7 @@ async function hydrateMeshtasticIdentity(
 async function hydrateMeshcoreIdentity(
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
+  isCurrent: () => boolean,
 ): Promise<void> {
   const loadNodes = opts.nodes !== false;
   const loadMessages = opts.messages !== false;
@@ -287,11 +294,11 @@ async function hydrateMeshcoreIdentity(
   const nodesMode = opts.nodesMode ?? 'upsert';
   if (loadNodes && loadMessages) {
     await Promise.all([
-      hydrateMeshcoreNodesFromDb(identityId, nodesMode),
+      hydrateMeshcoreNodesFromDb(identityId, nodesMode, isCurrent),
       hydrateMeshcoreMessagesFromDb(identityId, messagesMode),
     ]);
   } else if (loadNodes) {
-    await hydrateMeshcoreNodesFromDb(identityId, nodesMode);
+    await hydrateMeshcoreNodesFromDb(identityId, nodesMode, isCurrent);
   } else if (loadMessages) {
     await hydrateMeshcoreMessagesFromDb(identityId, messagesMode);
   }
@@ -300,6 +307,7 @@ async function hydrateMeshcoreIdentity(
 function hydrateReticulumIdentity(
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
+  isCurrent: () => boolean,
 ): Promise<void> {
   const loadNodes = opts.nodes !== false;
   const loadMessages = opts.messages !== false;
@@ -312,6 +320,7 @@ function hydrateReticulumIdentity(
           last_heard?: number | null;
           favorited?: number | null;
         }[];
+        if (!isCurrent()) return;
         const { reticulumHashToNodeId, registerReticulumDestinationHash } =
           await import('./reticulum/destHash');
         const records: NodeRecord[] = [];
@@ -333,6 +342,7 @@ function hydrateReticulumIdentity(
             reticulumDestinationHash: destinationHash,
           });
         }
+        if (!isCurrent()) return;
         upsertNodeRecordsForIdentity(identityId, records);
       } catch (e) {
         console.warn('[hydrateReticulumIdentity] destinations ' + errLikeToLogString(e));
@@ -347,6 +357,7 @@ function hydrateReticulumIdentity(
           timestamp: number;
           to_hash?: string;
         }[];
+        if (!isCurrent()) return;
         replaceMessageRecordsForIdentity(
           identityId,
           rows.map((row) => reticulumDbRowToMessageRecord(row)),
@@ -383,7 +394,7 @@ export async function hydrateIdentityStoresFromDb(
 
   const isCurrent = beginIdentityHydration(protocol, identityId);
   try {
-    await hydrator(identityId, opts);
+    await hydrator(identityId, opts, isCurrent);
     if (!isCurrent()) return;
   } catch (e) {
     if (!isCurrent()) return;

@@ -148,6 +148,47 @@ describe('replaceNodeRecordsForIdentity', () => {
     expect(useNodeStore.getState().nodes[ID]?.[NODE + 1]?.longName).toBe('Beta-2');
   });
 
+  it('preserves session metadata on retained nodes', () => {
+    updateMeshcoreOp(ID, NODE, {
+      meshcoreNodeStatus: {
+        battMilliVolts: 4000,
+        noiseFloor: -120,
+        lastRssi: -90,
+        lastSnr: 8,
+        nPacketsRecv: 0,
+        nPacketsSent: 0,
+        totalAirTimeSecs: 0,
+        totalUpTimeSecs: 0,
+        nSentFlood: 0,
+        nSentDirect: 0,
+        nRecvFlood: 0,
+        nRecvDirect: 0,
+        errEvents: 0,
+        nDirectDups: 0,
+        nFloodDups: 0,
+        currTxQueueLen: 0,
+      },
+      meshcoreNeighbors: {
+        totalNeighboursCount: 1,
+        neighbours: [
+          {
+            publicKeyPrefix: new Uint8Array([0xab]),
+            prefixHex: 'ab',
+            resolvedNodeId: 7,
+            heardSecondsAgo: 1,
+            snr: 3,
+          },
+        ],
+        fetchedAt: 1000,
+      },
+    });
+    replaceNodeRecordsForIdentity(ID, [{ nodeId: NODE, longName: 'From-DB' }]);
+    const rec = useNodeStore.getState().nodes[ID][NODE];
+    expect(rec.longName).toBe('From-DB');
+    expect(rec.meshcoreNodeStatus?.battMilliVolts).toBe(4000);
+    expect(rec.meshcoreNeighbors?.neighbours[0]?.resolvedNodeId).toBe(7);
+  });
+
   it('does not clear traceRoutes, waypoints, or neighborInfo', () => {
     upsertNode(ID, { nodeId: NODE, longName: 'Alpha' });
     addTraceRoute(ID, { from: NODE, to: 43, route: [7], timestamp: 1 });

@@ -22,6 +22,14 @@ export function beginIdentityHydration(
   return () => hydrationGeneration.get(key) === next;
 }
 
+/** True when a deferred nodes DB refresh still belongs to the session that started it. */
+export function sameIdentityRefreshSession(
+  started: { identityId: IdentityId | null; generation: number },
+  current: { identityId: IdentityId | null; generation: number },
+): boolean {
+  return started.generation === current.generation && started.identityId === current.identityId;
+}
+
 /** Test-only reset. */
 export function resetIdentityHydrationCoordinatorForTests(): void {
   hydrationGeneration.clear();
