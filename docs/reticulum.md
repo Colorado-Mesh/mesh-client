@@ -2,7 +2,7 @@
 
 Reticulum is a **shipped third protocol** in mesh-client (amber header pill). It runs alongside Meshtastic and MeshCore in the same Electron app: switch tabs without stopping the other stacks.
 
-The MIT TypeScript UI talks to an **AGPL Rust sidecar** (`mesh-client-reticulum`) over localhost HTTP/WebSocket via `electronAPI.reticulum`. LXMF chat history and contacts persist in the main-process SQLite database. **Flatpak** releases always bundle the sidecar; **macOS / Linux / Windows** installers include it when `resources/reticulum-sidecar/` is populated at packaging time (see [Release Process — Reticulum sidecar](release-process.md#reticulum-sidecar-in-installers)). See [License](license.md) and [Credits — bundled binaries](credits.md#bundled-binaries).
+The GPL-3.0-or-later TypeScript UI talks to an **AGPL-3.0-or-later Rust sidecar** (`mesh-client-reticulum`) over localhost HTTP/WebSocket via `electronAPI.reticulum`. LXMF chat history and contacts persist in the main-process SQLite database. **Flatpak** releases always bundle the sidecar; **macOS / Linux / Windows** installers include it when `resources/reticulum-sidecar/` is populated at packaging time (see [Release Process — Reticulum sidecar](release-process.md#reticulum-sidecar-in-installers)). See [License](license.md) and [Credits — bundled binaries](credits.md#bundled-binaries).
 
 **Primary interop:** [Ratspeak](https://github.com/ratspeak/Ratspeak) peers on [rsReticulum](https://github.com/ratspeak/rsReticulum) / [rsLXMF](https://github.com/ratspeak/rsLXMF). Nomad page hosting uses sibling [Colorado-Mesh/rsNomad](https://github.com/Colorado-Mesh/rsNomad) (`nomad-core`).
 
@@ -153,12 +153,12 @@ Reticulum destination age prune is enabled by default at **30 days** and affects
 
 ```mermaid
 flowchart LR
-  subgraph ui [Renderer MIT]
+  subgraph ui [Renderer GPL]
     RT[useReticulumRuntime]
     Panels[Stack / Network / Admin / Chat panels]
     RT --> Panels
   end
-  subgraph main [Electron main MIT]
+  subgraph main [Electron main GPL]
     IPC[reticulum:* IPC proxy]
     DB[(SQLite reticulum_* tables)]
     IPC --> DB
@@ -551,7 +551,7 @@ Transfers require a **high-speed** path (TCP/network); LoRa/BLE-only destination
 - **Interface changes need restart** — CRUD writes config on disk; restart stack after add/edit/delete on live `rns-stack` builds
 - **Clear announces** — path table may refill from the live network on the next refresh
 - **Topology** — next-hop only; not a full end-to-end trace
-- **AGPL sidecar** — separate process and license from the MIT Electron shell
+- **AGPL-3.0-or-later sidecar** — separate process and license from the GPL-3.0-or-later Electron shell
 - **LXST voice calls** — integrated via rsLXST `TelephonyService` in the sidecar (`/api/v1/voice/*` + WS `voice.*`). Renderer owns mic/speaker (`getUserMedia` / Web Audio); Call controls live on Peers rows and Chat DM (no separate Voice tab). Live interop with Ratspeak / Python LXST should be verified manually on a real mesh.
 - **LRGP games** — integrated via sibling [lrgp-rs](https://github.com/ratspeak/lrgp-rs) (`LrgpRouter` + `LrgpStore` in the sidecar). Reticulum **Games** tab (`Gamepad2`) for Tic-Tac-Toe and Chess; Challenge from Peers / Chat DM. Dedicated IPC `reticulum:games*` (generic proxy rejects `/api/v1/games/*`). WS `games.update` / `games.action_result`. Session `delivery_state` from LXMF outbound status; last envelope in `games_outbound.db` for Resend after restart. Notification / deep-link routes `lrgp:<session_id>` and `lxm://game/<session_id>` open the Games tab (`openReticulumGameSession`). Wire-compatible with Ratspeak; see [reticulum-games-parity.md](reticulum-games-parity.md).
 - **Hardware identity (YubiKey/PIV)** — not wired

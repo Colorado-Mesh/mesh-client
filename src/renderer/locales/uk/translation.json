@@ -1567,7 +1567,9 @@
     "renameGroupNamed": "Перейменувати {{name}}",
     "deleteGroupNamed": "Видалити {{name}}",
     "memberCount_few": "{{count}} учасники",
-    "memberCount_many": "{{count}} учасників"
+    "memberCount_many": "{{count}} учасників",
+    "needSelfNode": "Спочатку підключіть радіо, щоб ваш ідентифікатор вузла був відомий перед створенням контактної групи.",
+    "failedCreateGroup": "Не вдалося створити групу: {{message}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Відкиньте рядки маршрутизації, старші за {{hours}} год (1–168)",

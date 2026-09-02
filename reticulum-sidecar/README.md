@@ -95,4 +95,4 @@ Install coverage tooling once: `cargo install cargo-llvm-cov`.
 
 ## License
 
-AGPL-3.0-or-later (separate process from MIT mesh-client app).
+AGPL-3.0-or-later (separate process from GPL-3.0-or-later mesh-client app).

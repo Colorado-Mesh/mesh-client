@@ -111,10 +111,20 @@ export default function ContactGroupsModal({
   async function handleCreate() {
     const name = newGroupName.trim();
     if (!name || busy) return;
+    if (selfNodeId == null || selfNodeId <= 0) {
+      addToast(t('contactGroupsModal.needSelfNode'), 'error');
+      return;
+    }
     setBusy(true);
     try {
       await onCreate(name);
       setNewGroupName('');
+    } catch (e: unknown) {
+      console.error('[ContactGroupsModal] create failed: ' + errLikeToLogString(e));
+      addToast(
+        t('contactGroupsModal.failedCreateGroup', { message: errLikeToLogString(e) }),
+        'error',
+      );
     } finally {
       setBusy(false);
     }
@@ -299,7 +309,8 @@ export default function ContactGroupsModal({
                 <button
                   type="button"
                   onClick={() => void handleCreate()}
-                  disabled={!newGroupName.trim() || busy}
+                  disabled={!newGroupName.trim() || busy || selfNodeId == null || selfNodeId <= 0}
+                  aria-label={t('contactGroupsModal.addButton')}
                   className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {t('contactGroupsModal.addButton')}

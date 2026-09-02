@@ -1527,7 +1527,9 @@
     "confirmDeleteButton": "Hapus?",
     "manageMembersOf": "Kelola anggota {{name}}",
     "renameGroupNamed": "Ganti nama {{name}}",
-    "deleteGroupNamed": "Hapus {{name}}"
+    "deleteGroupNamed": "Hapus {{name}}",
+    "needSelfNode": "Hubungkan radio terlebih dahulu sehingga ID node Anda diketahui sebelum membuat grup kontak.",
+    "failedCreateGroup": "Gagal membuat grup: {{message}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Hapus baris perutean yang lebih lama dari {{hours}} jam (1–168)",

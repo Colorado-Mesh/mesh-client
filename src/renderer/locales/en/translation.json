@@ -1518,6 +1518,8 @@
     "confirmDeleteButton": "Delete?",
     "cancelDelete": "Cancel delete",
     "newGroupNamePlaceholder": "New group name…",
+    "needSelfNode": "Connect a radio first so your node ID is known before creating a contact group.",
+    "failedCreateGroup": "Failed to create group: {{message}}",
     "manageMembers": "Manage members",
     "manageMembersOf": "Manage members of {{name}}",
     "rename": "Rename",

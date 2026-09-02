@@ -1527,7 +1527,9 @@
     "confirmDeleteButton": "Elimina?",
     "manageMembersOf": "Gestisci i membri di {{name}}",
     "renameGroupNamed": "Rinomina {{name}}",
-    "deleteGroupNamed": "Elimina {{name}}"
+    "deleteGroupNamed": "Elimina {{name}}",
+    "needSelfNode": "Collega prima una radio in modo che il tuo ID nodo sia noto prima di creare un gruppo di contatti.",
+    "failedCreateGroup": "Impossibile creare il gruppo: {{message}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Elimina le righe di routing più vecchie di {{hours}} ore (1–168)",
