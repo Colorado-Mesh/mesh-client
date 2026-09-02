@@ -82,6 +82,11 @@ describe('getComposerWireOverhead', () => {
     expect(getComposerWireOverhead({ protocol: 'meshcore', replyToSenderName: 'Bob' })).toBe(7);
   });
 
+  it('does not reserve a MeshCore reply prefix without a target name', () => {
+    expect(getComposerWireOverhead({ protocol: 'meshcore', replyToSenderName: '' })).toBe(0);
+    expect(getComposerWireOverhead({ protocol: 'meshcore', replyToSenderName: '  \t\n ' })).toBe(0);
+  });
+
   it('counts keyless MeshCore reply prefix by default when replyKey is set', () => {
     expect(
       getComposerWireOverhead({
@@ -103,16 +108,13 @@ describe('getComposerWireOverhead', () => {
     ).toBe(countMessageChars('@[Bob#1780235760847] '));
   });
 
-  it('reserves the "Unknown" fallback length for an all-emoji sender name (keyless)', () => {
-    // Regression: sanitizeMeshcoreWireName strips an all-pictographic name to '', and the real
-    // wire builder falls back to the literal "Unknown" — a naive estimate from the raw name
-    // ("@[😀] ", 5 chars) under-reserves by 6 bytes versus the true "@[Unknown] " (11 bytes).
+  it('reserves the UTF-8 length of an all-emoji sender name (keyless)', () => {
     expect(getComposerWireOverhead({ protocol: 'meshcore', replyToSenderName: '😀' })).toBe(
-      countMessageWireBytes('@[Unknown] '),
+      countMessageWireBytes('@[😀] '),
     );
   });
 
-  it('reserves the "Unknown" fallback length for an all-emoji sender name (keyed)', () => {
+  it('reserves the UTF-8 length of an all-emoji sender name (keyed)', () => {
     expect(
       getComposerWireOverhead({
         protocol: 'meshcore',
@@ -120,7 +122,7 @@ describe('getComposerWireOverhead', () => {
         replyKey: 1_780_235_760_847,
         useKeyedReplies: true,
       }),
-    ).toBe(countMessageWireBytes('@[Unknown#1780235760847] '));
+    ).toBe(countMessageWireBytes('@[🔥🔥#1780235760847] '));
   });
 });
 
