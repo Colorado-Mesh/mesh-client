@@ -44,7 +44,7 @@ overrides:
   # GHSA-v3r7-h72x-cjcm / GHSA-jr45-8vmc-qm54 / GHSA-m8rv-5g2x-5cg5 /
   # GHSA-fxqj-rqcc-2cmp / GHSA-mwp4-54f8-5fhr / GHSA-9f4c-93c8-jc8g /
   # GHSA-v93f-fgjr-hjrj / GHSA-4f78-qhmw-8j8m / GHSA-ff2p-hmqr-hxm4 /
-  # GHSA-f2r8-jv7c-xqmp / GHSA-p2rr-rvmm-c5fp).
+  # GHSA-f2r8-jv7c-xqmp / GHSA-p2rr-rvmm-c5fp / GHSA-6gmq-8vp8-gcm6).
   # brace-expansion: keep a single 5.0.9 floor. GHSA-rgw5-rvv9-x895 is a
   # bypass of the CVE-2026-14257 mitigation and marks >=4.0.0 <5.0.9 vulnerable
   # (only >=5.0.9 counts as patched). CI audit is blocking.
@@ -60,7 +60,11 @@ overrides:
   # undici-types stays on 7.x to match @types/node.
   # postcss: GHSA-fxqj-rqcc-2cmp — floor >=8.5.23.
   # ip-address: GHSA-mwp4-54f8-5fhr (mqtt → socks) — floor >=10.3.1.
+  # @xmldom/xmldom: GHSA-6gmq-8vp8-gcm6 — floor >=0.8.15 (electron-builder →
+  # app-builder-lib → plist / @electron/osx-sign / @electron/universal still
+  # resolve 0.8.13 without an override).
   # electron: deliberate major pin — bump with Flatpak sync + native rebuild smoke.
+  '@xmldom/xmldom': ^0.8.15
   app-builder-lib: ^26.15.0
   brace-expansion: ^5.0.9
   builder-util-runtime: ^9.7.0
