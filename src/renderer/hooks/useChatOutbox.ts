@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import type { MeshProtocol } from '@/renderer/lib/types';
-import type { MessageRecord } from '@/renderer/stores/messageStore';
+import type { MessageRecord, MessageStatus } from '@/renderer/stores/messageStore';
 import { useMessageStore } from '@/renderer/stores/messageStore';
 import type { OutboxEntry, OutboxEntryInput, OutboxStatus } from '@/shared/electron-api.types';
 import { isMeshProtocol } from '@/shared/meshProtocol';
@@ -157,9 +157,31 @@ async function sendOneOutboxRow(
   await window.electronAPI.chat.outbox.updateStatus(row.id, 'sending');
   updateRow(row.id, { status: 'sending' });
   try {
+    const attemptStartedAt = Date.now();
+    const reticulumIdentityId = protocol === 'reticulum' ? resolveReticulumIdentityId() : null;
+    const reticulumMessageIdsBeforeSend =
+      reticulumIdentityId != null ? captureReticulumMessageIds(reticulumIdentityId) : null;
     await sendFn(row.payload, row.channel, row.toNode ?? undefined, row.replyId ?? undefined);
     if (protocol === 'reticulum') {
-      const receiptState = await waitForReticulumOutboundTerminal(row, reticulumReceiptTimeoutMs);
+      if (reticulumIdentityId == null || reticulumMessageIdsBeforeSend == null) {
+        throw new Error(i18n.t('chatPanel.reticulumSendTimeout'));
+      }
+      const attemptMessage = findReticulumAttemptMessage(
+        reticulumIdentityId,
+        reticulumMessageIdsBeforeSend,
+        row,
+        attemptStartedAt,
+      );
+      if (!attemptMessage) {
+        throw new Error(i18n.t('chatPanel.reticulumSendTimeout'));
+      }
+      const receiptState = await waitForReticulumOutboundTerminal(
+        reticulumIdentityId,
+        attemptMessage.storeId,
+        attemptMessage.timestamp,
+        row,
+        reticulumReceiptTimeoutMs,
+      );
       if (receiptState === 'failed') {
         throw new Error(i18n.t('chatPanel.reticulumSendFailed'));
       }
@@ -360,38 +382,81 @@ function normalizeIdentityId(identityId: string | null): string | null {
   return identityId;
 }
 
-function matchesOutboxRow(message: MessageRecord, row: OutboxEntry): boolean {
+interface ReticulumAttemptMessage {
+  storeId: string;
+  timestamp: number;
+}
+
+function captureReticulumMessageIds(identityId: string): Set<string> {
+  return new Set(Object.keys(useMessageStore.getState().messages[identityId] ?? {}));
+}
+
+function matchesOutboxAttemptMessage(
+  message: MessageRecord,
+  row: OutboxEntry,
+  attemptStartedAt: number,
+): boolean {
   if (message.payload !== row.payload) return false;
   if (message.channelIndex !== row.channel) return false;
   if (row.toNode != null && message.to !== row.toNode) return false;
   if (row.toNode == null && message.to !== 0xffffffff) return false;
-  // Guard against matching older messages with the same text.
-  return message.timestamp >= row.createdAt - 5_000;
+  // Only messages created for this drain attempt — not an older resend with the same text.
+  return message.timestamp >= attemptStartedAt - 1_000;
 }
 
-function findLatestReticulumOutboundMessage(
+/** Resolve the optimistic row created by this outbox send attempt (before pending→hash rekey). */
+function findReticulumAttemptMessage(
   identityId: string,
+  messageIdsBeforeSend: Set<string>,
   row: OutboxEntry,
-): MessageRecord | null {
+  attemptStartedAt: number,
+): ReticulumAttemptMessage | null {
   const byId = useMessageStore.getState().messages[identityId];
   if (!byId) return null;
-  let candidate: MessageRecord | null = null;
-  for (const message of Object.values(byId)) {
-    if (!matchesOutboxRow(message, row)) continue;
-    if (!candidate || message.timestamp > candidate.timestamp) {
-      candidate = message;
+  let candidate: ReticulumAttemptMessage | null = null;
+  for (const [storeId, message] of Object.entries(byId)) {
+    if (messageIdsBeforeSend.has(storeId)) continue;
+    if (!matchesOutboxAttemptMessage(message, row, attemptStartedAt)) continue;
+    if (!candidate || message.timestamp < candidate.timestamp) {
+      candidate = { storeId, timestamp: message.timestamp };
     }
   }
   return candidate;
 }
 
+function resolveReticulumAttemptMessage(
+  identityId: string,
+  attemptStoreId: string,
+  attemptTimestamp: number,
+  row: OutboxEntry,
+): MessageRecord | null {
+  const byId = useMessageStore.getState().messages[identityId];
+  if (!byId) return null;
+  const direct = byId[attemptStoreId];
+  if (direct) return direct;
+  // Pending id → LXMF hash rekey keeps payload/timestamp; match that exact attempt only.
+  for (const message of Object.values(byId)) {
+    if (message.timestamp !== attemptTimestamp) continue;
+    if (message.payload !== row.payload) continue;
+    if (message.channelIndex !== row.channel) continue;
+    if (row.toNode != null && message.to !== row.toNode) continue;
+    if (row.toNode == null && message.to !== 0xffffffff) continue;
+    return message;
+  }
+  return null;
+}
+
 async function waitForReticulumOutboundTerminal(
+  identityId: string,
+  attemptStoreId: string,
+  attemptTimestamp: number,
   row: OutboxEntry,
   timeoutMs: number,
 ): Promise<'acked' | 'failed' | 'timeout'> {
-  const identityId = resolveReticulumIdentityId();
-  if (!identityId) return 'timeout';
-  const immediate = findLatestReticulumOutboundMessage(identityId, row)?.status;
+  const readStatus = (): MessageStatus | undefined =>
+    resolveReticulumAttemptMessage(identityId, attemptStoreId, attemptTimestamp, row)?.status;
+
+  const immediate = readStatus();
   if (immediate === 'acked' || immediate === 'failed') return immediate;
   return await new Promise<'acked' | 'failed' | 'timeout'>((resolve) => {
     const timeout = setTimeout(() => {
@@ -399,7 +464,7 @@ async function waitForReticulumOutboundTerminal(
       resolve('timeout');
     }, timeoutMs);
     const unsubscribe = useMessageStore.subscribe(() => {
-      const status = findLatestReticulumOutboundMessage(identityId, row)?.status;
+      const status = readStatus();
       if (status === 'acked' || status === 'failed') {
         clearTimeout(timeout);
         unsubscribe();
