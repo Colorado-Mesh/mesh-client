@@ -532,6 +532,7 @@
     "routeRelaysPredictedHopsOnly": "Route: ~{{count}} relays",
     "routeViaPredicted": "Route: via {{hop}}",
     "reticulumSendSending": "Sending…",
+    "reticulumSendAwaitingPeerReceipt": "Sent (awaiting peer receipt)",
     "reticulumSendPropagated": "Queued at propagation node",
     "reticulumSendStoredAtPn": "Stored at propagation node (not yet delivered to peer)",
     "reticulumSendStoringLocally": "Saving to your local propagation inbox…",

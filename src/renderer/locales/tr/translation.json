@@ -748,7 +748,8 @@
     "heardByRepeatersDetail_other": "{{count}} tarafından duyuldu: {{names}}",
     "heardByRepeaterNodeFallback": "Düğüm {{nodeId}}",
     "heardByRepeatersAdditional_one": "{{count}} EK tanımlanamayan nakliyeci (hash'ler: {{hashes}})",
-    "heardByRepeatersAdditional_other": "{{count}} kimliği belirsiz ek göndericiler (hash'ler: {{hashes}})"
+    "heardByRepeatersAdditional_other": "{{count}} kimliği belirsiz ek göndericiler (hash'ler: {{hashes}})",
+    "reticulumSendAwaitingPeerReceipt": "Gönderildi (akran makbuzu bekleniyor)"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

@@ -748,7 +748,8 @@
     "heardByRepeatersDetail_other": "Didengar oleh {{count}}: {{names}}",
     "heardByRepeaterNodeFallback": "Node {{nodeId}}",
     "heardByRepeatersAdditional_one": "{{count}} forwarder tak dikenal tambahan (hash: {{hashes}})",
-    "heardByRepeatersAdditional_other": "{{count}} forwarder tak dikenal tambahan (hash: {{hashes}})"
+    "heardByRepeatersAdditional_other": "{{count}} forwarder tak dikenal tambahan (hash: {{hashes}})",
+    "reticulumSendAwaitingPeerReceipt": "Terkirim (menunggu tanda terima sejawat)"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

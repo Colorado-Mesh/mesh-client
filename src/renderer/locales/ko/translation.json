@@ -748,7 +748,8 @@
     "heardByRepeatersDetail_other": "{{count}}개 수신: {{names}}",
     "heardByRepeaterNodeFallback": "노드 {{nodeId}}",
     "heardByRepeatersAdditional_one": "{{count}} 추가 미확인 전달자 (해시: {{hashes}})",
-    "heardByRepeatersAdditional_other": "{{count}} 추가 미확인 전달자 (해시: {{hashes}})"
+    "heardByRepeatersAdditional_other": "{{count}} 추가 미확인 전달자 (해시: {{hashes}})",
+    "reticulumSendAwaitingPeerReceipt": "전송 완료 (동료 영수증 대기 중)"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

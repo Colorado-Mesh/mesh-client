@@ -748,7 +748,8 @@
     "heardByRepeatersDetail_other": "Entendu par {{count}} : {{names}}",
     "heardByRepeaterNodeFallback": "Nœud {{nodeId}}",
     "heardByRepeatersAdditional_one": "{{count}} expéditeur supplémentaire non identifié (hachages : {{hashes}})",
-    "heardByRepeatersAdditional_other": "{{count}} expéditeurs supplémentaires non identifiés (hachages : {{hashes}})"
+    "heardByRepeatersAdditional_other": "{{count}} expéditeurs supplémentaires non identifiés (hachages : {{hashes}})",
+    "reticulumSendAwaitingPeerReceipt": "Envoyé (en attente de réception par les pairs)"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

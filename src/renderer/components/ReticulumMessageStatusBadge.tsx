@@ -119,6 +119,9 @@ function statusLabelText(
       if (deliveryMethod === 'propagated') {
         return t('chatPanel.reticulumSendPropagated');
       }
+      if (deliveryMethod === 'direct') {
+        return t('chatPanel.reticulumSendAwaitingPeerReceipt');
+      }
       return t('chatPanel.reticulumSendSending');
     case 'acked':
       if (deliveryMethod === 'stored_locally') {

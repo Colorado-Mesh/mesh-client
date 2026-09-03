@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
+import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import type { MeshProtocol } from '@/renderer/lib/types';
+import type { MessageStatus } from '@/renderer/stores/messageStore';
+import { useMessageStore } from '@/renderer/stores/messageStore';
 import type { OutboxEntry, OutboxEntryInput, OutboxStatus } from '@/shared/electron-api.types';
 import { isMeshProtocol } from '@/shared/meshProtocol';
 
@@ -20,6 +24,7 @@ export const OUTBOX_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 /** Legacy mesh-client `[i/N] ` chunk prefix on outbox payloads queued before single-packet. */
 const LEGACY_MULTIPART_PREFIX_RE = /^\[\d+\/\d+\]\s/;
+const RETICULUM_RECEIPT_TIMEOUT_MS = 30_000;
 
 function isEncryptionBlockedError(errMsg: string): boolean {
   return /no.?encr|no.?key|encryption/i.test(errMsg);
@@ -143,14 +148,40 @@ async function quarantineLegacyMultipartOutboxRow(
 
 async function sendOneOutboxRow(
   row: OutboxEntry,
+  protocol: MeshProtocol,
   sendFn: UseChatOutboxOptions['sendFn'],
+  reticulumReceiptTimeoutMs: number,
   updateRow: (id: number, patch: Partial<OutboxEntry>) => void,
   removeRow: (id: number) => void,
 ): Promise<void> {
   await window.electronAPI.chat.outbox.updateStatus(row.id, 'sending');
   updateRow(row.id, { status: 'sending' });
   try {
-    await sendFn(row.payload, row.channel, row.toNode ?? undefined, row.replyId ?? undefined);
+    const reticulumIdentityId = protocol === 'reticulum' ? resolveReticulumIdentityId() : null;
+    const sendResult = await sendFn(
+      row.payload,
+      row.channel,
+      row.toNode ?? undefined,
+      row.replyId ?? undefined,
+    );
+    if (protocol === 'reticulum') {
+      const attemptStoreId =
+        typeof sendResult === 'string' && sendResult !== '' ? sendResult : null;
+      if (reticulumIdentityId == null || attemptStoreId == null) {
+        throw new Error(i18n.t('chatPanel.reticulumSendTimeout'));
+      }
+      const receiptState = await waitForReticulumOutboundTerminal(
+        reticulumIdentityId,
+        attemptStoreId,
+        reticulumReceiptTimeoutMs,
+      );
+      if (receiptState === 'failed') {
+        throw new Error(i18n.t('chatPanel.reticulumSendFailed'));
+      }
+      if (receiptState !== 'acked') {
+        throw new Error(i18n.t('chatPanel.reticulumSendTimeout'));
+      }
+    }
     // Keep the app-wide single-packet fast-send clock honest: a drained row is airtime too.
     if (isMeshProtocol(row.protocol) && getRadioCapabilities(row.protocol).composerMaxChunks <= 1) {
       recordMeshcoreSend();
@@ -165,12 +196,14 @@ async function sendOneOutboxRow(
 export interface UseChatOutboxOptions {
   protocol: MeshProtocol;
   isSendAvailable: boolean;
+  /** Test override for deterministic timeout coverage. */
+  reticulumReceiptTimeoutMs?: number;
   sendFn: (
     text: string,
     channel: number,
     destination?: number,
     replyId?: number,
-  ) => Promise<void> | void;
+  ) => Promise<string | undefined> | string | undefined;
 }
 
 export interface UseChatOutbox {
@@ -184,6 +217,7 @@ export interface UseChatOutbox {
 export function useChatOutbox({
   protocol,
   isSendAvailable,
+  reticulumReceiptTimeoutMs = RETICULUM_RECEIPT_TIMEOUT_MS,
   sendFn,
 }: UseChatOutboxOptions): UseChatOutbox {
   const [rows, setRows] = useState<OutboxEntry[]>([]);
@@ -240,7 +274,15 @@ export function useChatOutbox({
           await quarantineLegacyMultipartOutboxRow(row, updateRow);
           continue;
         }
-        const sendRow = () => sendOneOutboxRow(row, sendFnRef.current, updateRow, removeRow);
+        const sendRow = () =>
+          sendOneOutboxRow(
+            row,
+            protocol,
+            sendFnRef.current,
+            reticulumReceiptTimeoutMs,
+            updateRow,
+            removeRow,
+          );
         // Meshtastic-only pacing, shared with ChatComposer so live sends and outbox drain cannot
         // race firmware's TEXT_MESSAGE_APP RATE_LIMIT_EXCEEDED window. Single-packet protocols
         // drain without a client interval — they only advance the fast-send clock after success.
@@ -255,7 +297,7 @@ export function useChatOutbox({
     } finally {
       drainingRef.current = false;
     }
-  }, [protocol, isSendAvailable, updateRow, removeRow]);
+  }, [protocol, isSendAvailable, reticulumReceiptTimeoutMs, updateRow, removeRow]);
 
   // Drain when send becomes available, or when protocol changes while already connected
   useEffect(() => {
@@ -319,4 +361,68 @@ export function useChatOutbox({
   );
 
   return { rows, queue, retry, cancel, drainNow: drainOnce };
+}
+
+function resolveReticulumIdentityId(): string | null {
+  return (
+    normalizeIdentityId(getIdentityIdForProtocol('reticulum')) ??
+    getOfflineIdentityIdForProtocol('reticulum')
+  );
+}
+
+function normalizeIdentityId(identityId: string | null): string | null {
+  if (identityId == null || identityId === '') return null;
+  return identityId;
+}
+
+function captureReticulumMessageIds(identityId: string): Set<string> {
+  return new Set(Object.keys(useMessageStore.getState().messages[identityId] ?? {}));
+}
+
+/**
+ * Follow one outbound attempt by store id. Pending → LXMF hash rekey is detected when
+ * the tracked id disappears and exactly one new id appears in the same store update.
+ */
+async function waitForReticulumOutboundTerminal(
+  identityId: string,
+  attemptStoreId: string,
+  timeoutMs: number,
+): Promise<'acked' | 'failed' | 'timeout'> {
+  let trackedId = attemptStoreId;
+  let knownIds = captureReticulumMessageIds(identityId);
+
+  const readStatus = (): MessageStatus | undefined => {
+    const byId = useMessageStore.getState().messages[identityId];
+    if (!byId) return undefined;
+    const currentIds = new Set(Object.keys(byId));
+    const added: string[] = [];
+    for (const id of currentIds) {
+      if (!knownIds.has(id)) added.push(id);
+    }
+    if (!currentIds.has(trackedId) && added.length === 1) {
+      const renamedId = added[0];
+      if (renamedId != null) {
+        trackedId = renamedId;
+      }
+    }
+    knownIds = currentIds;
+    return byId[trackedId]?.status;
+  };
+
+  const immediate = readStatus();
+  if (immediate === 'acked' || immediate === 'failed') return immediate;
+  return await new Promise<'acked' | 'failed' | 'timeout'>((resolve) => {
+    const timeout = setTimeout(() => {
+      unsubscribe();
+      resolve('timeout');
+    }, timeoutMs);
+    const unsubscribe = useMessageStore.subscribe(() => {
+      const status = readStatus();
+      if (status === 'acked' || status === 'failed') {
+        clearTimeout(timeout);
+        unsubscribe();
+        resolve(status);
+      }
+    });
+  });
 }

@@ -1161,7 +1161,7 @@ function AppContent() {
     (text: string, channel: number, destination?: number, replyRef?: number | string) => {
       const replyTo =
         replyRef == null ? undefined : typeof replyRef === 'string' ? replyRef : String(replyRef);
-      sendMessage(text, channel, destination, replyTo);
+      return sendMessage(text, channel, destination, replyTo);
     },
     [sendMessage],
   );
