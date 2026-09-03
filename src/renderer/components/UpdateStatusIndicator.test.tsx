@@ -109,22 +109,26 @@ describe('UpdateStatusIndicator', () => {
     expect(onViewRelease).toHaveBeenCalledTimes(1);
   });
 
-  it('shows a green restart control when an update is ready', async () => {
-    const onInstall = vi.fn();
-    const user = userEvent.setup();
-    render(
-      <UpdateStatusIndicator
-        updateState={{ phase: 'ready', isPackaged: true }}
-        onCheck={noop}
-        onDownload={noop}
-        onInstall={onInstall}
-        onViewRelease={noop}
-      />,
-    );
+  it.each(['darwin', 'win32', 'linux'] as const)(
+    'shows a green restart control when an update is ready on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const onInstall = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <UpdateStatusIndicator
+          updateState={{ phase: 'ready', isPackaged: true }}
+          onCheck={noop}
+          onDownload={noop}
+          onInstall={onInstall}
+          onViewRelease={noop}
+        />,
+      );
 
-    const restart = screen.getByRole('button', { name: 'Restart' });
-    expect(restart).toHaveClass('text-bright-green');
-    await user.click(restart);
-    expect(onInstall).toHaveBeenCalledTimes(1);
-  });
+      const restart = screen.getByRole('button', { name: 'Restart' });
+      expect(restart).toHaveClass('text-bright-green');
+      await user.click(restart);
+      expect(onInstall).toHaveBeenCalledTimes(1);
+    },
+  );
 });

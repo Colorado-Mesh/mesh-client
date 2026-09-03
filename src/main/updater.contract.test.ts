@@ -174,12 +174,15 @@ afterEach(() => {
 });
 
 describe('updater behavior (electron-updater path)', () => {
-  it('downloads updates automatically but never installs without an explicit restart request', () => {
-    setup('darwin');
-    expect(harness.autoUpdater.autoDownload).toBe(true);
-    expect(harness.autoUpdater.autoInstallOnAppQuit).toBe(false);
-    expect(harness.autoUpdater.quitAndInstall).not.toHaveBeenCalled();
-  });
+  it.each(['darwin', 'win32', 'linux'] as const)(
+    'downloads updates automatically but never installs without an explicit restart request on %s',
+    (platform) => {
+      setup(platform);
+      expect(harness.autoUpdater.autoDownload).toBe(true);
+      expect(harness.autoUpdater.autoInstallOnAppQuit).toBe(false);
+      expect(harness.autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+    },
+  );
 
   it.each(['darwin', 'win32', 'linux'] as const)(
     'installs only via update:install, forcing run-after-restart, on %s',
