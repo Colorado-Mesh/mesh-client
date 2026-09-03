@@ -228,6 +228,16 @@ flowchart TB
 
 **Gate for new automation:** Is this RNS transport, LXMF client/PN (lxmd parity), or mesh-client policy? Prefer library/overlay for transport; prefer sidecar lxmd-shaped loops for LXMF; prefer explicit, documented policy modules for product overrides — never a parallel path table or announce flood in the renderer.
 
+**Duplication vs ownership (send / path / propagation):** Extra sidecar (or renderer) code is not automatically “Ratspeak duplicated.” Classify before deleting or relocating:
+
+| Area              | Upstream-owned                                                               | mesh-client-owned (keep)                                                                                                                                                                         | Suspicious duplication (do not add)                                      |
+| ----------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| **Send pipeline** | LXMF wire, Direct outbound driver, terminal `lxmf_outbound_status` Completes | Renderer outbox drain, optimistic pending→hash rekey, SQLite `delivery_status`, badge semantics (`sending` vs recipient **Delivered** vs PN deposit). `POST /lxmf/send` enqueue is not delivery. | A second outbound driver or treating HTTP send `ok` as recipient receipt |
+| **Path policy**   | RNS path table, `RequestPath`, announce flood                                | `auto_path_policy.rs`, `path_failover.rs`, path-medium preference/pins — product policy on the RNS table                                                                                         | A parallel pathfinder or announce loop in sidecar or UI                  |
+| **Propagation**   | PN `/offer`/`/get` wire (rsLXMF)                                             | Sidecar LXMF/PN loops (lxmd parity) plus `pn_cascade.rs` / Auto-discovered candidates / Off·Auto·Manual sync order (`reticulumPropagationAutoApply.ts`)                                          | A second messagestore or PN protocol implementation                      |
+
+False **Delivered** on RF-only Chat is typically **renderer correlation** (outbox vs store row), not missing Ratspeak send logic. Correlate receipts to the attempt’s optimistic id/hash (`useChatOutbox.ts`); do not “fix” it by moving UI status into the sidecar.
+
 ---
 
 ## Interface management (Connection tab)
