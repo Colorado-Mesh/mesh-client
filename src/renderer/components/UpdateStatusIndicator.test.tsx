@@ -55,6 +55,26 @@ describe('UpdateStatusIndicator', () => {
     expect(onViewRelease).not.toHaveBeenCalled();
   });
 
+  it('shows Download on linux when packaged and not mac', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    const onDownload = vi.fn();
+    const onViewRelease = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <UpdateStatusIndicator
+        updateState={baseAvailable}
+        onCheck={noop}
+        onDownload={onDownload}
+        onInstall={noop}
+        onViewRelease={onViewRelease}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Download' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Download' }));
+    expect(onDownload).toHaveBeenCalledTimes(1);
+    expect(onViewRelease).not.toHaveBeenCalled();
+  });
+
   it('downloads packaged updates when the event reports macOS', async () => {
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('win32');
     const onDownload = vi.fn();
