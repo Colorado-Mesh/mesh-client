@@ -97,6 +97,7 @@ import { HelpTooltip } from './components/HelpTooltip';
 import { InactiveProtocolNotifier } from './components/InactiveProtocolNotifier';
 import LanguageSelector from './components/LanguageSelector';
 import { LongSessionRestartBanner } from './components/LongSessionRestartBanner';
+import { MeshcoreFloodAdvertHeaderButton } from './components/MeshcoreFloodAdvertHeaderButton';
 import { MeshcoreWaitingMessagesHeaderIndicator } from './components/MeshcoreWaitingMessagesHeaderIndicator';
 import { ProtocolAutoConnectCoordinator } from './components/ProtocolAutoConnectCoordinator';
 import { ProtocolSwitcher } from './components/ProtocolSwitcher';
@@ -3050,6 +3051,12 @@ function AppContent() {
                     })}
                   </span>
                 )}
+              {capabilities.hasRoomServersPanel ? (
+                <MeshcoreFloodAdvertHeaderButton
+                  disabled={!isOperational}
+                  onSend={meshcorePanelActions.sendAdvert}
+                />
+              ) : null}
               {showMeshcoreWaitingMessagesIndicator && (
                 <MeshcoreWaitingMessagesHeaderIndicator
                   waitingMessagesCount={meshcoreWaitingMessagesInput.waitingMessagesCount}

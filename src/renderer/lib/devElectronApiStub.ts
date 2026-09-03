@@ -5,10 +5,10 @@ const noop = (): void => {};
 const noopUnsub = (): (() => void) => () => {};
 const noopAsync = async (): Promise<void> => {};
 
-function stubOutboxEntry(entry: OutboxEntryInput): OutboxEntry {
+function stubOutboxEntry(entry: OutboxEntryInput, id: number): OutboxEntry {
   const now = Date.now();
   return {
-    id: 0,
+    id,
     attemptCount: 0,
     createdAt: now,
     updatedAt: now,
@@ -18,6 +18,8 @@ function stubOutboxEntry(entry: OutboxEntryInput): OutboxEntry {
 
 /** No-op electronAPI for Vite browser dev when Electron preload is unavailable. */
 export function createDevElectronApiStub(): typeof window.electronAPI {
+  let nextOutboxId = 1;
+
   return {
     db: {
       saveMessage: noopAsync,
@@ -288,7 +290,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       },
       outbox: {
         list: async () => [],
-        add: async (entry: OutboxEntryInput) => stubOutboxEntry(entry),
+        add: async (entry: OutboxEntryInput) => stubOutboxEntry(entry, nextOutboxId++),
         updateStatus: noopAsync,
         remove: noopAsync,
       },

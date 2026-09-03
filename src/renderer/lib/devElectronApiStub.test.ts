@@ -39,4 +39,28 @@ describe('devElectronApiStub', () => {
     expect(api.getPlatform()).toBe('linux');
     expect(typeof api.onNobleBleDisconnected(() => {})).toBe('function');
   });
+
+  it('assigns unique outbox IDs to queued messages', async () => {
+    const api = createDevElectronApiStub();
+    const entry = {
+      protocol: 'meshtastic',
+      viewKey: 'ch:0',
+      channel: 0,
+      toNode: null,
+      payload: 'queued message',
+      replyId: null,
+      status: 'queued' as const,
+      error: null,
+      nextRetryAt: null,
+      groupId: null,
+      groupIndex: null,
+      groupTotal: null,
+    };
+
+    const first = await api.chat.outbox.add(entry);
+    const second = await api.chat.outbox.add({ ...entry, payload: 'another queued message' });
+
+    expect(first.id).toBe(1);
+    expect(second.id).toBe(2);
+  });
 });
