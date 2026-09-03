@@ -122,7 +122,9 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
     return false;
   }
 
-  updater.autoDownload = false;
+  // Download in the background after every startup/periodic check. Installation
+  // stays user-controlled so active radio sessions are never interrupted.
+  updater.autoDownload = true;
   updater.autoInstallOnAppQuit = false;
 
   updater.on('update-available', (info: { version: string }) => {
@@ -201,10 +203,6 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
 
   ipcMain.handle('update:download', async (event: IpcMainInvokeEvent) => {
     assertIpcSender(event, 'update:download');
-    if (process.platform === 'darwin') {
-      await openAppReleasePage(send);
-      return;
-    }
     try {
       await updater.downloadUpdate();
     } catch (e: unknown) {
@@ -217,7 +215,6 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
 
   ipcMain.handle('update:install', (event: IpcMainInvokeEvent) => {
     assertIpcSender(event, 'update:install');
-    if (process.platform === 'darwin') return;
     updater.quitAndInstall(false, true);
   });
 
