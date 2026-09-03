@@ -748,7 +748,8 @@
     "heardByRepeatersDetail_other": "Gehört von {{count}}: {{names}}",
     "heardByRepeaterNodeFallback": "Knoten {{nodeId}}",
     "heardByRepeatersAdditional_one": "{{count}} zusätzlicher nicht identifizierter Spediteur (Hashes: {{hashes}})",
-    "heardByRepeatersAdditional_other": "{{count}} weitere nicht identifizierte Spediteure (Hashes: {{hashes}})"
+    "heardByRepeatersAdditional_other": "{{count}} weitere nicht identifizierte Spediteure (Hashes: {{hashes}})",
+    "reticulumSendAwaitingPeerReceipt": "Gesendet (wartet auf Peer-Eingang)"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

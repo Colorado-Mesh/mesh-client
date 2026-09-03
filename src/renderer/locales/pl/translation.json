@@ -786,7 +786,8 @@
     "heardByRepeatersDetail_few": "Odebrano przez {{count}}: {{names}}",
     "heardByRepeatersDetail_many": "Odebrano przez {{count}}: {{names}}",
     "searchResults_few": "{{count}} wyniki",
-    "searchResults_many": "{{count}} wyników"
+    "searchResults_many": "{{count}} wyników",
+    "reticulumSendAwaitingPeerReceipt": "Wysłano (oczekiwanie na pokwitowanie)"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

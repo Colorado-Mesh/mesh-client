@@ -748,7 +748,8 @@
     "heardByRepeatersDetail_other": "Escuchado por {{count}} repetidores: {{names}}",
     "heardByRepeaterNodeFallback": "Nodo {{nodeId}}",
     "heardByRepeatersAdditional_one": "{{count}} reenviador no identificado adicional (hashes: {{hashes}})",
-    "heardByRepeatersAdditional_other": "{{count}} reenviadores no identificados adicionales (hashes: {{hashes}})"
+    "heardByRepeatersAdditional_other": "{{count}} reenviadores no identificados adicionales (hashes: {{hashes}})",
+    "reticulumSendAwaitingPeerReceipt": "Enviado (pendiente de recibo del compañero)"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

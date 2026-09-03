@@ -80,6 +80,15 @@ describe('ReticulumMessageStatusBadge', () => {
     ).toBeTruthy();
   });
 
+  it('shows awaiting-peer-receipt wording for direct sending state', async () => {
+    await renderAndAssertAxe(
+      <ReticulumMessageStatusBadge status="sending" via="rf" deliveryMethod="direct" />,
+    );
+    expect(
+      screen.getByLabelText('chatPanel.sentViaRf: chatPanel.reticulumSendAwaitingPeerReceipt'),
+    ).toBeTruthy();
+  });
+
   it('shows PN with house icon for local-prop stored_locally (not green check)', async () => {
     await renderAndAssertAxe(
       <ReticulumMessageStatusBadge status="acked" via="tcp" deliveryMethod="stored_locally" />,

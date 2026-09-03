@@ -748,7 +748,8 @@
     "heardByRepeatersDetail_other": "{{count}}件で受信: {{names}}",
     "heardByRepeaterNodeFallback": "ノード{{nodeId}}",
     "heardByRepeatersAdditional_one": "{{count}}追加の未確認フォワーダー（ハッシュ： {{hashes}} ）",
-    "heardByRepeatersAdditional_other": "{{count}}追加の未確認フォワーダー（ハッシュ： {{hashes}} ）"
+    "heardByRepeatersAdditional_other": "{{count}}追加の未確認フォワーダー（ハッシュ： {{hashes}} ）",
+    "reticulumSendAwaitingPeerReceipt": "送信済み（ピアレシート待ち）"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

@@ -786,7 +786,8 @@
     "heardByRepeatersDetail_few": "Услышали {{count}}: {{names}}",
     "heardByRepeatersDetail_many": "Услышали {{count}}: {{names}}",
     "searchResults_few": "{{count}} результата",
-    "searchResults_many": "{{count}} результатов"
+    "searchResults_many": "{{count}} результатов",
+    "reticulumSendAwaitingPeerReceipt": "Отправлено (ожидает получения коллегой)"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

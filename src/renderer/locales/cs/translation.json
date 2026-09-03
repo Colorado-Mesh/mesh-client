@@ -768,7 +768,8 @@
     "heardByRepeaters_few": "Slyšeno {{count}}",
     "heardByRepeatersAdditional_few": "{{count}} další neidentifikovaní přeposílatelé (hash: {{hashes}})",
     "heardByRepeatersDetail_few": "Slyšeno {{count}}: {{names}}",
-    "searchResults_few": "{{count}} výsledky"
+    "searchResults_few": "{{count}} výsledky",
+    "reticulumSendAwaitingPeerReceipt": "Odesláno (čeká se na potvrzení od kolegy)"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

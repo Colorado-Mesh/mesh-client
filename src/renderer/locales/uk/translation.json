@@ -786,7 +786,8 @@
     "heardByRepeatersDetail_few": "Почули {{count}}: {{names}}",
     "heardByRepeatersDetail_many": "Почули {{count}}: {{names}}",
     "searchResults_few": "{{count}} результати",
-    "searchResults_many": "{{count}} результатів"
+    "searchResults_many": "{{count}} результатів",
+    "reticulumSendAwaitingPeerReceipt": "Надіслано (очікується отримання від колеги)"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

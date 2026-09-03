@@ -748,7 +748,8 @@
     "heardByRepeatersDetail_other": "Gehoord door {{count}}: {{names}}",
     "heardByRepeaterNodeFallback": "Knooppunt {{nodeId}}",
     "heardByRepeatersAdditional_one": "{{count}} extra niet-geïdentificeerde expediteur (hashes: {{hashes}})",
-    "heardByRepeatersAdditional_other": "{{count}} extra niet-geïdentificeerde expediteurs (hashes: {{hashes}})"
+    "heardByRepeatersAdditional_other": "{{count}} extra niet-geïdentificeerde expediteurs (hashes: {{hashes}})",
+    "reticulumSendAwaitingPeerReceipt": "Verzonden (in afwachting van ontvangst door collega's)"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

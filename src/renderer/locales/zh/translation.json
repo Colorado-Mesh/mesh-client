@@ -748,7 +748,8 @@
     "heardByRepeatersDetail_other": "{{count}}个节点听到：{{names}}",
     "heardByRepeaterNodeFallback": "节点{{nodeId}}",
     "heardByRepeatersAdditional_one": "{{count}}其他身份不明的货运代理（哈希值： {{hashes}} ）",
-    "heardByRepeatersAdditional_other": "{{count}}其他身份不明的转发商（哈希： {{hashes}} ）"
+    "heardByRepeatersAdditional_other": "{{count}}其他身份不明的转发商（哈希： {{hashes}} ）",
+    "reticulumSendAwaitingPeerReceipt": "已发送（等待同行回执）"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
