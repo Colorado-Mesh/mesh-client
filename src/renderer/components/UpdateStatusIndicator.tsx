@@ -18,9 +18,6 @@ interface Props {
   onViewRelease: () => void;
 }
 
-const linkBtn =
-  'text-bright-green underline hover:opacity-80 cursor-pointer bg-transparent border-0 p-0 font-inherit text-[11px]';
-
 export default function UpdateStatusIndicator({
   updateState,
   onCheck,
@@ -29,8 +26,8 @@ export default function UpdateStatusIndicator({
   onViewRelease,
 }: Props) {
   const { t } = useTranslation();
-  const { phase, version, isPackaged, isMac, percent, errorMessage } = updateState;
-  const useReleasePage = !isPackaged || isMac || window.electronAPI.getPlatform() === 'darwin';
+  const { phase, version, isPackaged, percent, errorMessage } = updateState;
+  const useReleasePage = !isPackaged;
 
   return (
     <span
@@ -95,17 +92,15 @@ export default function UpdateStatusIndicator({
       )}
 
       {phase === 'ready' && (
-        <span className="inline-flex min-w-0 items-center gap-1">
-          <IconRestart />
-          <button
-            type="button"
-            onClick={onInstall}
-            className={linkBtn}
-            title={t('updateStatus.restartTitle')}
-          >
-            {t('updateStatus.restart')}
-          </button>
-        </span>
+        <button
+          type="button"
+          onClick={onInstall}
+          className="text-bright-green inline-flex min-w-0 cursor-pointer items-center gap-1 rounded border border-green-500/70 bg-green-950/70 px-2 py-1 shadow-[0_0_10px_rgba(34,197,94,0.2)] transition-colors hover:bg-green-900/70"
+          title={t('updateStatus.restartTitle')}
+        >
+          <IconRestart className="text-bright-green h-3.5 w-3.5 shrink-0" />
+          {t('updateStatus.restart')}
+        </button>
       )}
 
       {phase === 'error' && (
