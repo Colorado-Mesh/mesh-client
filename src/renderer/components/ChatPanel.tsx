@@ -160,6 +160,7 @@ import { ChatDmPaperShareControl, ChatPaperScanControl } from './ChatDmPaperCont
 import { ChatPayloadText } from './ChatPayloadText';
 import { ChatRfHopLabel } from './ChatRfHopLabel';
 import { HelpTooltip } from './HelpTooltip';
+import MeshcoreChatChannelManager from './MeshcoreChatChannelManager';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { RelayCoverageLine, relayCoverageMessageKey } from './RelayCoverageLine';
 import { ChatDmRncpControl } from './remote/ChatDmRncpControl';
@@ -485,6 +486,10 @@ export interface ChatPanelProps {
   channels: { index: number; name: string }[];
   /** Full MeshCore channel list with PSK metadata for unread filtering (display uses `channels`). */
   meshcoreChannelSources?: readonly MeshcoreChatChannelSource[];
+  /** MeshCore: save a channel on the connected companion radio. */
+  onSetMeshcoreChannel?: (index: number, name: string, secret: Uint8Array) => Promise<void>;
+  /** MeshCore: companion radio is unavailable for channel writes. */
+  meshcoreChannelManagementDisabled?: boolean;
   myNodeNum: number;
   ownNodeIds?: number[];
   onSend: (
@@ -570,6 +575,8 @@ function ChatPanel({
   messagesForUnread,
   channels,
   meshcoreChannelSources,
+  onSetMeshcoreChannel,
+  meshcoreChannelManagementDisabled = false,
   myNodeNum,
   ownNodeIds,
   onSend,
@@ -2244,6 +2251,17 @@ function ChatPanel({
                   </button>
                 );
               })}
+              {meshcoreChannelSources && onSetMeshcoreChannel ? (
+                <MeshcoreChatChannelManager
+                  channels={meshcoreChannelSources}
+                  disabled={meshcoreChannelManagementDisabled}
+                  onSetChannel={onSetMeshcoreChannel}
+                  onSelectChannel={(index) => {
+                    selectChannel(index);
+                    setViewMode('channels');
+                  }}
+                />
+              ) : null}
             </>
           )}
         </div>
