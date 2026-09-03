@@ -15,7 +15,7 @@ describe('UpdateStatusIndicator', () => {
     isMac: false,
   };
 
-  it('shows View Release on darwin even when isMac is false (footer hardening)', async () => {
+  it('downloads packaged updates on darwin', async () => {
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
     const onDownload = vi.fn();
     const onViewRelease = vi.fn();
@@ -29,10 +29,10 @@ describe('UpdateStatusIndicator', () => {
         onViewRelease={onViewRelease}
       />,
     );
-    expect(screen.getByRole('button', { name: 'View Release' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'View Release' }));
-    expect(onViewRelease).toHaveBeenCalledTimes(1);
-    expect(onDownload).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Download' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Download' }));
+    expect(onDownload).toHaveBeenCalledTimes(1);
+    expect(onViewRelease).not.toHaveBeenCalled();
   });
 
   it('shows Download on win32 when packaged and not mac', async () => {
@@ -55,21 +55,41 @@ describe('UpdateStatusIndicator', () => {
     expect(onViewRelease).not.toHaveBeenCalled();
   });
 
-  it('shows View Release when isMac is true regardless of getPlatform', async () => {
-    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('win32');
+  it('shows Download on linux when packaged and not mac', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    const onDownload = vi.fn();
     const onViewRelease = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <UpdateStatusIndicator
+        updateState={baseAvailable}
+        onCheck={noop}
+        onDownload={onDownload}
+        onInstall={noop}
+        onViewRelease={onViewRelease}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Download' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Download' }));
+    expect(onDownload).toHaveBeenCalledTimes(1);
+    expect(onViewRelease).not.toHaveBeenCalled();
+  });
+
+  it('downloads packaged updates when the event reports macOS', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('win32');
+    const onDownload = vi.fn();
     const user = userEvent.setup();
     render(
       <UpdateStatusIndicator
         updateState={{ ...baseAvailable, isMac: true }}
         onCheck={noop}
-        onDownload={noop}
+        onDownload={onDownload}
         onInstall={noop}
-        onViewRelease={onViewRelease}
+        onViewRelease={noop}
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'View Release' }));
-    expect(onViewRelease).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole('button', { name: 'Download' }));
+    expect(onDownload).toHaveBeenCalledTimes(1);
   });
 
   it('shows View Release when not packaged', async () => {
@@ -88,4 +108,27 @@ describe('UpdateStatusIndicator', () => {
     await user.click(screen.getByRole('button', { name: 'View Release' }));
     expect(onViewRelease).toHaveBeenCalledTimes(1);
   });
+
+  it.each(['darwin', 'win32', 'linux'] as const)(
+    'shows a green restart control when an update is ready on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const onInstall = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <UpdateStatusIndicator
+          updateState={{ phase: 'ready', isPackaged: true }}
+          onCheck={noop}
+          onDownload={noop}
+          onInstall={onInstall}
+          onViewRelease={noop}
+        />,
+      );
+
+      const restart = screen.getByRole('button', { name: 'Restart' });
+      expect(restart).toHaveClass('text-bright-green');
+      await user.click(restart);
+      expect(onInstall).toHaveBeenCalledTimes(1);
+    },
+  );
 });
