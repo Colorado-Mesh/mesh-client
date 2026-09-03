@@ -497,7 +497,7 @@ export interface ChatPanelProps {
     channel: number,
     destination?: number,
     replyRef?: number | string,
-  ) => void | Promise<void>;
+  ) => string | undefined | Promise<string | undefined>;
   onReact: (glyph: string, replyId: number, channel: number) => Promise<void>;
   onResend: (msg: ChatMessage) => void;
   onNodeClick: (nodeNum: number) => void;

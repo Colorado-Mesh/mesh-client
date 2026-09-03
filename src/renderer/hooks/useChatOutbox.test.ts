@@ -503,6 +503,7 @@ describe('useChatOutbox', () => {
           },
         },
       });
+      return 'reticulum-pending-70';
     });
     const { result } = renderHook(() =>
       useChatOutbox({ protocol: 'reticulum', isSendAvailable: true, sendFn }),
@@ -582,6 +583,7 @@ describe('useChatOutbox', () => {
           },
         },
       });
+      return 'reticulum-pending-72';
     });
     const { result } = renderHook(() =>
       useChatOutbox({ protocol: 'reticulum', isSendAvailable: true, sendFn }),
@@ -661,6 +663,7 @@ describe('useChatOutbox', () => {
           },
         },
       });
+      return 'reticulum-pending-73';
     });
     renderHook(() =>
       useChatOutbox({
@@ -707,6 +710,97 @@ describe('useChatOutbox', () => {
         expect.any(Number),
         1,
       );
+    });
+    expect(mockOutbox.remove).not.toHaveBeenCalled();
+  });
+
+  it('does not complete an outbox row from a same-content concurrent send', async () => {
+    const now = Date.now();
+    const row = makeEntry({
+      id: 74,
+      protocol: 'reticulum',
+      payload: 'same text',
+      toNode: 111,
+      viewKey: 'dm:111',
+      createdAt: now,
+      updatedAt: now,
+    });
+    vi.mocked(mockOutbox.list).mockResolvedValue([row]);
+    const sendFn = vi.fn().mockImplementation(() => {
+      useMessageStore.setState({
+        messages: {
+          [OFFLINE_RETICULUM_IDENTITY_ID]: {
+            'reticulum-pending-74': {
+              id: 'reticulum-pending-74',
+              from: 1,
+              to: 111,
+              payload: 'same text',
+              channelIndex: 0,
+              timestamp: now + 1,
+              status: 'sending',
+            },
+            'reticulum-pending-concurrent': {
+              id: 'reticulum-pending-concurrent',
+              from: 1,
+              to: 111,
+              payload: 'same text',
+              channelIndex: 0,
+              timestamp: now + 2,
+              status: 'sending',
+            },
+          },
+        },
+      });
+      return 'reticulum-pending-74';
+    });
+    const { result } = renderHook(() =>
+      useChatOutbox({
+        protocol: 'reticulum',
+        isSendAvailable: true,
+        reticulumReceiptTimeoutMs: 1,
+        sendFn,
+      }),
+    );
+    await waitFor(() => {
+      expect(sendFn).toHaveBeenCalledTimes(1);
+    });
+
+    useMessageStore.setState({
+      messages: {
+        [OFFLINE_RETICULUM_IDENTITY_ID]: {
+          'reticulum-pending-74': {
+            id: 'reticulum-pending-74',
+            from: 1,
+            to: 111,
+            payload: 'same text',
+            channelIndex: 0,
+            timestamp: now + 1,
+            status: 'sending',
+          },
+          'reticulum-pending-concurrent': {
+            id: 'reticulum-pending-concurrent',
+            from: 1,
+            to: 111,
+            payload: 'same text',
+            channelIndex: 0,
+            timestamp: now + 2,
+            status: 'acked',
+          },
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+        74,
+        'failed',
+        'Send timed out. The Reticulum stack may be starting or busy — try again.',
+        expect.any(Number),
+        1,
+      );
+    });
+    await waitFor(() => {
+      expect(result.current.rows.find((r) => r.id === 74)?.status).toBe('failed');
     });
     expect(mockOutbox.remove).not.toHaveBeenCalled();
   });

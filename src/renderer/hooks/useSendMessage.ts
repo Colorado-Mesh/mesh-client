@@ -104,7 +104,7 @@ export function useSendMessage(
   destination?: number,
   replyTo?: string,
   retryOfStoreId?: string,
-) => void {
+) => string | undefined {
   const { addToast } = useToast();
   const { t } = useTranslation();
   return useCallback(
@@ -123,18 +123,19 @@ export function useSendMessage(
       }
       // Reticulum: sidecar LXMF send (no ConnectionDriver handle).
       if (identity.protocol.type === 'reticulum') {
-        sendReticulumChatMessage({
-          identityId,
-          text,
-          channelIndex,
-          destination,
-          replyTo,
-          retryOfStoreId,
-          onNoPropagationNode: () => {
-            addToast(t('chatPanel.reticulumNoPropagationNode'), 'error');
-          },
-        });
-        return;
+        return (
+          sendReticulumChatMessage({
+            identityId,
+            text,
+            channelIndex,
+            destination,
+            replyTo,
+            retryOfStoreId,
+            onNoPropagationNode: () => {
+              addToast(t('chatPanel.reticulumNoPropagationNode'), 'error');
+            },
+          }) ?? undefined
+        );
       }
 
       const handle = connectionDriver.getHandle(identityId);

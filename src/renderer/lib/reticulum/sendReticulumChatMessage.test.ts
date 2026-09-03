@@ -103,7 +103,7 @@ describe('sendReticulumChatMessage predicted route coverage', () => {
         destination: DEST_NODE,
         onNoPropagationNode: () => {},
       }),
-    ).toBe(true);
+    ).toMatch(/^reticulum-pending-/);
 
     const pendingId = Object.keys(useMessageStore.getState().messages[ID] ?? {}).find((id) =>
       id.startsWith('reticulum-pending-'),

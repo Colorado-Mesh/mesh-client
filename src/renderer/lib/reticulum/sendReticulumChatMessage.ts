@@ -59,9 +59,10 @@ export interface SendReticulumChatMessageOpts {
 
 /**
  * Optimistic store + SQLite outbound row, then sidecar LXMF send.
- * Returns true when the Reticulum path handled the attempt (including soft failures).
+ * Returns the optimistic store id when the Reticulum path handled the attempt
+ * (including soft failures); otherwise null.
  */
-export function sendReticulumChatMessage(opts: SendReticulumChatMessageOpts): boolean {
+export function sendReticulumChatMessage(opts: SendReticulumChatMessageOpts): string | null {
   const {
     identityId,
     text,
@@ -75,17 +76,17 @@ export function sendReticulumChatMessage(opts: SendReticulumChatMessageOpts): bo
   const send = getReticulumSendMessage(session);
   if (!send || !session) {
     console.warn('[sendReticulumChatMessage] Reticulum runtime not mounted');
-    return true;
+    return null;
   }
   const destHash = resolveReticulumChatDestHash(destination);
   if (!destHash) {
     console.warn('[sendReticulumChatMessage] no Reticulum destination hash for', destination);
-    return true;
+    return null;
   }
   const selfNodeId = session.selfNodeId;
   if (typeof selfNodeId !== 'number') {
     console.warn('[sendReticulumChatMessage] Reticulum self node id not ready');
-    return true;
+    return null;
   }
   const receivedVia = resolveReticulumOutboundVia(destHash);
   const toNodeId = (destination ?? reticulumHashToNodeId(destHash)) >>> 0;
@@ -151,5 +152,5 @@ export function sendReticulumChatMessage(opts: SendReticulumChatMessageOpts): bo
       console.warn('[sendReticulumChatMessage] reticulum send failed ' + err);
     },
   );
-  return true;
+  return pendingId;
 }
