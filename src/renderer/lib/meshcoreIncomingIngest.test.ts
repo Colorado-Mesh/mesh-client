@@ -187,6 +187,26 @@ describe('parseMeshcoreChannelIncomingFromThread (canonical live ingest)', () =>
     expect(parsed.replyId).toBe(1780240608140);
     expect(parsed.replyPreviewText).toContain('Message B');
   });
+
+  it('refreshes a stale firmware-seconds key to the latest targeted message', () => {
+    const staleTs = 1_788_442_372_706;
+    const latestTs = 1_788_526_257_000;
+    seedStore([
+      nv0n('reply previews should be fixed in the next release', staleTs),
+      nv0n('ugh i want my cool fall. tired of the heat', latestTs),
+    ]);
+    const prior = listChatMessagesFromStore(ID);
+    const parsed = parseMeshcoreChannelIncomingFromThread(prior, {
+      rawText: `Runr 01: @[${NV0N}#${Math.floor(staleTs / 1000)}] fall wx will be much appreciated this year!`,
+      senderId: 204,
+      displayName: 'Runr 01',
+      channel: CH,
+      timestamp: 1_788_528_196_000,
+      receivedVia: 'rf',
+    });
+    expect(parsed.replyId).toBe(latestTs);
+    expect(parsed.replyPreviewText).toBe('ugh i want my cool fall. tired of the heat');
+  });
 });
 
 describe('ingestMeshcoreChannelMessage + store persist', () => {
@@ -194,12 +214,12 @@ describe('ingestMeshcoreChannelMessage + store persist', () => {
     useMessageStore.setState({ messages: {} });
   });
 
-  it('persists reply parent matched by firmware seconds wire key', () => {
+  it('keeps a firmware-seconds parent when the reply body corroborates it', () => {
     const tsSec = 1_780_240_708;
     const tsMs = tsSec * 1000;
     seedStore([nv0n('message one', tsMs), nv0n('message two', tsMs + 60_000)]);
     const parsed = ingestMeshcoreChannelMessage(ID, {
-      rawText: `🆎 Alex: @[${NV0N}#${tsSec}] replying to first`,
+      rawText: `🆎 Alex: @[${NV0N}#${tsSec}] replying about message one`,
       senderId: 205,
       displayName: '🆎 Alex',
       channel: CH,
@@ -209,7 +229,9 @@ describe('ingestMeshcoreChannelMessage + store persist', () => {
     const result = upsertMeshcoreMessageWithDedup(ID, parsed);
     expect(result.message.replyId).toBe(tsMs);
     expect(result.message.replyPreviewText).toBe('message one');
-    const inStore = listChatMessagesFromStore(ID).find((m) => m.payload === 'replying to first');
+    const inStore = listChatMessagesFromStore(ID).find(
+      (m) => m.payload === 'replying about message one',
+    );
     expect(inStore?.replyId).toBe(tsMs);
     expect(inStore?.replyPreviewText).toBe('message one');
   });
@@ -320,6 +342,30 @@ describe('meshcoreChatMessagesForDisplay (historical backfill only)', () => {
     const out = meshcoreChatMessagesForDisplay(rows);
     const wherewolf = out.find((m) => m.payload === 'reply to b');
     expect(wherewolf?.replyId).toBe(1780240608140);
+  });
+
+  it('repairs a stale firmware-seconds parent saved during live ingest', () => {
+    const staleTs = 1_788_442_372_706;
+    const latestTs = 1_788_526_257_000;
+    const rows: ChatMessage[] = [
+      nv0n('reply previews should be fixed in the next release', staleTs),
+      nv0n('ugh i want my cool fall. tired of the heat', latestTs),
+      {
+        sender_id: 204,
+        sender_name: 'Runr 01',
+        payload: 'fall wx will be much appreciated this year!',
+        channel: CH,
+        timestamp: 1_788_528_196_000,
+        status: 'acked',
+        replyId: staleTs,
+        replyPreviewText: 'reply previews should be fixed in the next release',
+        replyPreviewSender: NV0N,
+      },
+    ];
+    const out = meshcoreChatMessagesForDisplay(rows);
+    const reply = out.find((m) => m.payload.startsWith('fall wx'));
+    expect(reply?.replyId).toBe(latestTs);
+    expect(reply?.replyPreviewText).toBe('ugh i want my cool fall. tired of the heat');
   });
 
   it('does not replace live-ingest-correct rows on display pass', () => {
