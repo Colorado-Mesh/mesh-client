@@ -368,6 +368,30 @@ describe('meshcoreChatMessagesForDisplay (historical backfill only)', () => {
     expect(reply?.replyPreviewText).toBe('ugh i want my cool fall. tired of the heat');
   });
 
+  it('keeps a corroborated stale parent after explicit-key provenance is lost', () => {
+    const staleTs = 1_788_442_372_706;
+    const latestTs = 1_788_526_257_000;
+    const rows: ChatMessage[] = [
+      nv0n('message one about espresso machines', staleTs),
+      nv0n('message two about cooler weather', latestTs),
+      {
+        sender_id: 204,
+        sender_name: 'Runr 01',
+        payload: 'I agree about espresso machines',
+        channel: CH,
+        timestamp: 1_788_528_196_000,
+        status: 'acked',
+        replyId: staleTs,
+        replyPreviewText: 'message one about espresso machines',
+        replyPreviewSender: NV0N,
+      },
+    ];
+    const out = meshcoreChatMessagesForDisplay(rows);
+    const reply = out.find((m) => m.payload.startsWith('I agree'));
+    expect(reply?.replyId).toBe(staleTs);
+    expect(reply?.replyPreviewText).toBe('message one about espresso machines');
+  });
+
   it('does not replace live-ingest-correct rows on display pass', () => {
     seedStore([nv0n('Message B - reply to this please.', 1780240608140)]);
     const correct = wireReply(

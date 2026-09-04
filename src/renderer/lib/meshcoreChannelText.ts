@@ -682,8 +682,9 @@ const GENERIC_MESHCORE_REPLY_BODIES = new Set([
 ]);
 
 /**
- * True when a reply body substantively references `parentPayload` (keep an explicit wire `#key`
- * parent). Generic short replies and tapbacks return false so a stale keyed parent can upgrade.
+ * True when a reply body substantively references `parentPayload` so a persisted parent survives
+ * hydration even when its explicit wire-key provenance is unavailable. Generic short replies and
+ * tapbacks return false so a stale keyed parent can upgrade.
  */
 export function meshcoreReplyBodyReferencesParent(body: string, parentPayload: string): boolean {
   const bodyNorm = normalizePayloadMatchText(body);
@@ -750,7 +751,6 @@ function tryUpgradeMeshcoreReplyToLatestSameSender(
   targetName: string,
   lookupOpts: MeshcoreReplyLookupOptions,
   currentParent: ChatMessage | undefined,
-  explicitWireKey: boolean,
 ): { replyId: number; parent: ChatMessage } | null {
   const resolvedKey = resolveMeshcoreLatestBracketParentKey(msg, prior, targetName);
   if (resolvedKey == null) return null;
@@ -760,7 +760,7 @@ function tryUpgradeMeshcoreReplyToLatestSameSender(
     return { replyId: resolvedKey, parent: resolvedParent };
   }
   if (resolvedParent.timestamp <= currentParent.timestamp) return null;
-  if (explicitWireKey && meshcoreReplyBodyReferencesParent(msg.payload, currentParent.payload)) {
+  if (meshcoreReplyBodyReferencesParent(msg.payload, currentParent.payload)) {
     return null;
   }
   return { replyId: resolvedKey, parent: resolvedParent };
@@ -976,7 +976,6 @@ function refreshMeshcoreReplyParent(msg: ChatMessage, prior: readonly ChatMessag
         targetName,
         lookupOpts,
         parent,
-        explicitWireKey,
       );
       if (upgraded) {
         replyId = upgraded.replyId;
@@ -990,7 +989,6 @@ function refreshMeshcoreReplyParent(msg: ChatMessage, prior: readonly ChatMessag
       targetName,
       lookupOpts,
       parent,
-      false,
     );
     if (upgraded) {
       replyId = upgraded.replyId;
