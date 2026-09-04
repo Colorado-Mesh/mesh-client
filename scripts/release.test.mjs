@@ -85,6 +85,23 @@ describe('release.sh full-suite gate', () => {
     expect(finishBody).not.toMatch(/pnpm run test:run/);
   });
 
+  it('rebases onto origin/main before push when main advanced during preflight', () => {
+    // Cut release can take ~20m; concurrent main merges (e.g. licenses bot) reject a
+    // naive `git push origin main`. Rebase+retry, retagging the tip each attempt.
+    expect(script).toMatch(/push_release_main_with_rebase/);
+    expect(script).toMatch(/git fetch origin main/);
+    expect(script).toMatch(/git merge-base --is-ancestor origin\/main HEAD/);
+    expect(script).toMatch(/git rebase origin\/main/);
+    const helperFn = script.slice(script.indexOf('push_release_main_with_rebase()'));
+    const helperBody = helperFn.slice(0, helperFn.indexOf('\n}\n\n'));
+    const rebaseIdx = helperBody.indexOf('git rebase origin/main');
+    const tagIdx = helperBody.indexOf('git tag -a');
+    const pushIdx = helperBody.indexOf('git push origin main');
+    expect(rebaseIdx).toBeGreaterThanOrEqual(0);
+    expect(tagIdx).toBeGreaterThan(rebaseIdx);
+    expect(pushIdx).toBeGreaterThan(tagIdx);
+  });
+
   it('supports --yes / MESH_CLIENT_RELEASE_YES to skip confirmation prompts', () => {
     expect(script).toMatch(/confirm_or_yes/);
     expect(script).toMatch(/--yes \| -y\)/);
