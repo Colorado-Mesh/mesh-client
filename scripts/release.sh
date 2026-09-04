@@ -129,7 +129,11 @@ push_release_main_with_rebase() {
     if ! git merge-base --is-ancestor origin/main HEAD; then
       print_warning "origin/main advanced during release; rebasing (attempt ${attempt}/${max_attempts})..."
       if ! git rebase origin/main; then
-        git rebase --abort 2> /dev/null || true
+        # Do not swallow abort stderr — a failed abort leaves the repo mid-rebase.
+        if ! git rebase --abort; then
+          print_error "Rebase onto origin/main failed, and git rebase --abort also failed (repo may be mid-rebase). Fix the working tree, then: pnpm run release --finish"
+          return 2
+        fi
         print_error "Rebase onto origin/main failed (conflicts). Resolve, then: pnpm run release --finish"
         return 1
       fi

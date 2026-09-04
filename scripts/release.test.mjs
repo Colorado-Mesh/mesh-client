@@ -100,6 +100,10 @@ describe('release.sh full-suite gate', () => {
     expect(rebaseIdx).toBeGreaterThanOrEqual(0);
     expect(tagIdx).toBeGreaterThan(rebaseIdx);
     expect(pushIdx).toBeGreaterThan(tagIdx);
+    // Failed abort must surface Git stderr and use a distinct status (not `2>/dev/null || true`).
+    expect(helperBody).toMatch(/if ! git rebase --abort; then/);
+    expect(helperBody).toMatch(/return 2/);
+    expect(helperBody).not.toMatch(/git rebase --abort 2>\s*\/dev\/null/);
   });
 
   it('supports --yes / MESH_CLIENT_RELEASE_YES to skip confirmation prompts', () => {
