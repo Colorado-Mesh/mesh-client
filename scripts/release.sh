@@ -116,17 +116,59 @@ print_release_usage() {
   echo "       (Bare -- from \`pnpm run release -- …\` is ignored; pnpm 11 forwards it.)"
 }
 
+# Rebase the local release tip onto origin/main when main advanced during the long
+# pre-flight (Cut release ~20m). Recreate the annotated tag on the rebased tip each
+# attempt so the tag SHA matches what we push. Retries cover a second concurrent push.
+push_release_main_with_rebase() {
+  local new_version="$1"
+  local max_attempts="${2:-5}"
+  local attempt=1
+
+  while [ "$attempt" -le "$max_attempts" ]; do
+    git fetch origin main
+    if ! git merge-base --is-ancestor origin/main HEAD; then
+      print_warning "origin/main advanced during release; rebasing (attempt ${attempt}/${max_attempts})..."
+      if ! git rebase origin/main; then
+        # Do not swallow abort stderr — a failed abort leaves the repo mid-rebase.
+        if ! git rebase --abort; then
+          print_error "Rebase onto origin/main failed, and git rebase --abort also failed (repo may be mid-rebase). Fix the working tree, then: pnpm run release --finish"
+          return 2
+        fi
+        print_error "Rebase onto origin/main failed (conflicts). Resolve, then: pnpm run release --finish"
+        return 1
+      fi
+    fi
+
+    # Point the release tag at HEAD after any rebase (drop a stale local tag first).
+    if git rev-parse "$new_version" > /dev/null 2>&1; then
+      git tag -d "$new_version"
+    fi
+    git tag -a "$new_version" -m "Release $new_version"
+
+    if git push origin main; then
+      return 0
+    fi
+    if [ "$attempt" -eq "$max_attempts" ]; then
+      print_error "Failed to push main after ${max_attempts} rebase/push attempts."
+      return 1
+    fi
+    print_warning "Push rejected; fetching and retrying..."
+    attempt=$((attempt + 1))
+    sleep "$attempt"
+  done
+  return 1
+}
+
 commit_tag_and_push_release() {
   local new_version="$1"
   git add package.json pnpm-lock.yaml org.coloradomesh.MeshClient.yml
   [ -f "$METAINFO_FILE" ] && git add "$METAINFO_FILE"
   git commit -m "chore: release $new_version"
 
-  print_header "Creating tag $new_version..."
-  git tag -a "$new_version" -m "Release $new_version"
-
-  print_header "Pushing to GitHub..."
-  git push origin main
+  print_header "Creating tag $new_version and pushing to GitHub..."
+  if ! push_release_main_with_rebase "$new_version" 5; then
+    exit 1
+  fi
   git push origin "$new_version"
 
   print_success "--------------------------------------------------------"
