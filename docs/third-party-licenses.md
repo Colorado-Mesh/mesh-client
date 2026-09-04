@@ -17,13 +17,13 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @stoprocent/noble          | MIT                           | ^2.8.0          | 2.8.0             | git+https://github.com/stoprocent/noble.git                                    |
 | @xterm/addon-fit           | MIT                           | ^0.11.0         | 0.11.0            | git+https://github.com/xtermjs/xterm.js.git#master                             |
 | @xterm/xterm               | MIT                           | ^6.0.0          | 6.0.0             | git+https://github.com/xtermjs/xterm.js.git                                    |
-| @zip.js/zip.js             | BSD-3-Clause                  | ^2.9.0          | 2.9.0             | git+https://github.com/gildas-lormeau/zip.js.git                               |
+| @zip.js/zip.js             | BSD-3-Clause                  | ^2.10.0         | 2.10.0            | git+https://github.com/gildas-lormeau/zip.js.git                               |
 | builder-util-runtime       | MIT                           | ^9.7.0          | 9.7.0             | git+https://github.com/electron-userland/electron-builder.git                  |
 | dompurify                  | (MPL-2.0 OR Apache-2.0)       | ^3.4.14         | 3.4.14            | git://github.com/cure53/DOMPurify.git                                          |
 | electron-updater           | MIT                           | ^6.8.9          | 6.8.9             | git+https://github.com/electron-userland/electron-builder.git                  |
 | emoji-picker-element       | Apache-2.0                    | ^1.29.1         | 1.29.1            | git+https://github.com/nolanlawson/emoji-picker-element.git                    |
 | esptool-js                 | Apache-2.0                    | ^0.6.1          | 0.6.1             | git+https://github.com/espressif/esptool-js.git                                |
-| i18next                    | MIT                           | ^26.4.1         | 26.4.1            | git+https://github.com/i18next/i18next.git                                     |
+| i18next                    | MIT                           | ^26.4.2         | 26.4.2            | git+https://github.com/i18next/i18next.git                                     |
 | js-md5                     | MIT                           | ^0.8.3          | 0.8.3             | git+https://github.com/emn178/js-md5.git                                       |
 | jsqr                       | Apache-2.0                    | ^1.4.0          | 1.4.0             | git+https://github.com/cozmo/jsQR.git                                          |
 | jszip                      | (MIT OR GPL-3.0-or-later)     | ^3.10.1         | 3.10.1            | git+https://github.com/Stuk/jszip.git                                          |
@@ -38,7 +38,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | react-leaflet-cluster      | SEE LICENSE IN LICENSE        | ^4.1.3          | 4.1.3             | git+https://github.com/akursat/react-leaflet-cluster.git                       |
 | readable-stream            | MIT                           | ^4.7.0          | 4.7.0             | git://github.com/nodejs/readable-stream.git                                    |
 | semver                     | ISC                           | ^7.8.5          | 7.8.5             | git+https://github.com/npm/node-semver.git                                     |
-| systeminformation          | MIT                           | ^5.33.7         | 5.33.7            | git+https://github.com/sebhildebrandt/systeminformation.git                    |
+| systeminformation          | MIT                           | ^5.33.8         | 5.33.8            | git+https://github.com/sebhildebrandt/systeminformation.git                    |
 | undici                     | MIT                           | ^8.10.1         | 8.10.1            | git+https://github.com/nodejs/undici.git                                       |
 
 ## Development dependencies
@@ -64,7 +64,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @types/node-forge                     | MIT             | ^1.3.14         | 1.3.14            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/qrcode                         | MIT             | ^1.5.6          | 1.5.6             | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/react                          | MIT             | ^19.2.18        | 19.2.18           | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
-| @types/react-dom                      | MIT             | ^19.2.5         | 19.2.5            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
+| @types/react-dom                      | MIT             | ^19.2.7         | 19.2.7            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @typescript-eslint/eslint-plugin      | MIT             | ^8.69.0         | 8.69.0            | https://github.com/typescript-eslint/typescript-eslint.git                           |
 | @typescript-eslint/parser             | MIT             | ^8.69.0         | 8.69.0            | https://github.com/typescript-eslint/typescript-eslint.git                           |
 | @vitejs/plugin-react                  | MIT             | ^6.1.1          | 6.1.1             | git+https://github.com/vitejs/vite-plugin-react.git                                  |
