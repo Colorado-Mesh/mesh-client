@@ -7,6 +7,7 @@ Local overlays applied via `pnpm-workspace.yaml` → `patchedDependencies`. When
 | `@liamcottle__meshcore.js@1.15.0.patch` | [meshcore-dev/meshcore.js](https://github.com/meshcore-dev/meshcore.js) | Open: [#30](https://github.com/meshcore-dev/meshcore.js/pull/30), [#31](https://github.com/meshcore-dev/meshcore.js/pull/31), [#33](https://github.com/meshcore-dev/meshcore.js/pull/33); [#29](https://github.com/meshcore-dev/meshcore.js/pull/29) closed (unnecessary); [#32](https://github.com/meshcore-dev/meshcore.js/pull/32) closed (not carried — firmware does not push LoginFail). Upstream `1.15.0` removes deprecated `pingRepeaterZeroHop` (use `tracePath`) and requires explicit `pathLen` for `sendCommandSendRawData` (multi-byte path hashes via `MeshCorePath.toPathLen()`); patch rebased onto that release. |
 | `@jsr__meshtastic__core@2.6.6.patch` | [meshtastic/web](https://github.com/meshtastic/web) (`packages/sdk`) | [#1312](https://github.com/meshtastic/web/pull/1312) |
 | `@jsr__meshtastic__transport-web-serial@0.2.5.patch` | [meshtastic/web](https://github.com/meshtastic/web) (`packages/transport-web-serial`) | Fixed on upstream `main` (per-instance `toDeviceStream` + abort); keep patch until npm/`@jsr` package bump includes it |
+| `app-builder-lib@26.15.3.patch` | [electron-userland/electron-builder](https://github.com/electron-userland/electron-builder) (`packages/app-builder-lib`) | Merged on master: [#10101](https://github.com/electron-userland/electron-builder/pull/10101) / [#10066](https://github.com/electron-userland/electron-builder/issues/10066); not yet in published `26.x` (only `27.0.0-alpha`) |
 | `usb@2.18.0.patch` | [node-usb/node-usb](https://github.com/node-usb/node-usb) | [#964](https://github.com/node-usb/node-usb/pull/964) |
 | `readable-stream@4.7.0.patch` | [nodejs/readable-stream](https://github.com/nodejs/readable-stream) | **Intentionally local** — upstream uses `require('process/')` for browser bundlers; Electron/Node needs bare `process` |
 | `debug@4.4.3.patch` | [debug-js/debug](https://github.com/debug-js/debug) | **Intentionally local** — inlines `ms`/`humanize` so electron-vite does not fail resolving the `ms` dependency |
@@ -52,6 +53,18 @@ Per-instance `toDeviceStream` (instead of shared `Utils.toDeviceStream`) and swa
 ### Sunset
 
 When the published `@jsr/meshtastic__transport-web-serial` (or successor package) includes per-instance framing + abort teardown, remove the patch and bump the dependency.
+
+## app-builder-lib@26.15.3
+
+Pass the temporary keychain unlock password (not the `.p12` import password) to `security set-key-partition-list -k` during `CSC_LINK` macOS signing. Without this, dual-arch `dist:mac` fails with `SecKeychainUnlock: The user name or passphrase you entered is not correct` (electron-builder [#10066](https://github.com/electron-userland/electron-builder/issues/10066)).
+
+| Field | Value |
+| ----- | ----- |
+| **Upstream PR** | https://github.com/electron-userland/electron-builder/pull/10101 (merged to master; shipped in `27.0.0-alpha`, not `26.16.0`) |
+
+### Sunset
+
+When a published `app-builder-lib` **26.x** (or the electron-builder line we pin) includes [#10101](https://github.com/electron-userland/electron-builder/pull/10101), remove the patch and bump the override / lockfile. Do not jump to `27.0.0-alpha` solely for this fix.
 
 ## usb@2.18.0
 

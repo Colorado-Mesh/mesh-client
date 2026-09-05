@@ -754,6 +754,7 @@ WATCH_ENTRIES=(
   '@jsr/meshtastic__transport-http|@meshtastic/transport-http|https://www.npmjs.com/package/@jsr/meshtastic__transport-http|HTTP transport for Meshtastic; upstream may introduce breaking changes'
   '@liamcottle/meshcore.js|@liamcottle/meshcore.js|https://www.npmjs.com/package/@liamcottle/meshcore.js|Custom patch (protocol fixes) + upstream may introduce breaking changes'
   '@michaelhart/meshcore-decoder|@michaelhart/meshcore-decoder|https://www.npmjs.com/package/@michaelhart/meshcore-decoder|MeshCore packet decoding; wire-format changes affect Sniffer/diagnostics'
+  'app-builder-lib|app-builder-lib|https://www.npmjs.com/package/app-builder-lib|Custom patch (macOS CSC_LINK set-key-partition-list keychain password; electron-builder#10101)'
   'usb|usb|https://www.npmjs.com/package/usb|Custom patch (macOS C++17 std compat)'
   'readable-stream|readable-stream|https://www.npmjs.com/package/readable-stream|Custom patch (bundler process/ path compat)'
   'debug|debug|https://www.npmjs.com/package/debug|Custom patch (inlined ms/humanize for bundler compat)'
