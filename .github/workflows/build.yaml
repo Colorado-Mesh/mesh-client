@@ -50,7 +50,7 @@ jobs:
           - os: macos-latest
             build_script: pnpm run dist:mac
             sidecar_platform: darwin
-            rust_targets: aarch64-apple-darwin
+            rust_targets: x86_64-apple-darwin,aarch64-apple-darwin
           - os: ubuntu-latest
             build_script: pnpm run dist:linux
             sidecar_platform: linux
@@ -177,6 +177,8 @@ jobs:
           path: |
             release/mac/**/*.dmg
             release/mac/**/*.zip
+            release/mac-x64/**/*.dmg
+            release/mac-x64/**/*.zip
             release/mac-arm64/**/*.dmg
             release/mac-arm64/**/*.zip
             release/mac-universal/**/*.dmg

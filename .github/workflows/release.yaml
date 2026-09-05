@@ -263,6 +263,8 @@ jobs:
           path: |
             release/mac/**/*.dmg
             release/mac/**/*.zip
+            release/mac-x64/**/*.dmg
+            release/mac-x64/**/*.zip
             release/mac-arm64/**/*.dmg
             release/mac-arm64/**/*.zip
             release/mac-universal/**/*.dmg

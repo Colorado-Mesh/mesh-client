@@ -6,19 +6,21 @@
  * Fallback: hard fail before artifact upload so a broken macOS build never ships.
  *
  * CI smoke path (artifact download): validates .app from shipped ZIP (ditto) and DMG (hdiutil).
- * Local dist:mac path: validates on-disk .app plus DMG mount; skips ZIP extract when .app exists.
+ * Local dist:mac path: validates on-disk .app plus every ZIP extract and DMG mount.
  */
 import { spawnSync } from 'node:child_process';
 import {
   existsSync,
   lstatSync,
   mkdirSync,
+  mkdtempSync,
   readdirSync,
   readFileSync,
   readlinkSync,
   rmSync,
   statSync,
 } from 'fs';
+import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
@@ -42,8 +44,6 @@ const ELECTRON_FRAMEWORK_BINARY = path.join(
   'Electron Framework',
 );
 const ELECTRON_FRAMEWORK_ROOT = path.join('Contents', 'Frameworks', 'Electron Framework.framework');
-const VERIFY_ZIP_EXTRACT_DIR = path.join(releaseDir, '.verify-mac-extract');
-const VERIFY_DMG_MOUNT_DIR = path.join(releaseDir, '.verify-mac-dmg-mount');
 
 /** Electron sibling frameworks required at launch (auto-update stack). */
 const SIBLING_FRAMEWORKS = [
@@ -134,7 +134,7 @@ function collectArchives(dir, ext) {
 }
 
 /**
- * Largest archive wins (electron-builder can emit per-arch variants).
+ * Largest archive wins (kept for unit tests / callers that need a single pick).
  * Callers guarantee a non-empty list (main() fails early when none exist).
  * @param {string[]} archives @returns {string}
  */
@@ -144,6 +144,136 @@ function pickPrimaryArchive(archives) {
     (largest, current) => (current.size > largest.size ? current : largest),
     sized[0],
   ).filePath;
+}
+
+/** @typedef {'x64' | 'arm64' | 'universal' | 'unknown'} MacArchiveArch */
+/** @typedef {'x64' | 'arm64' | 'universal'} ExpectedMacArch */
+
+/**
+ * Classify a macOS release archive by path or electron-builder file name.
+ * @param {string} filePath
+ * @returns {MacArchiveArch}
+ */
+function classifyMacArchiveArch(filePath) {
+  const normalized = filePath.replace(/\\/g, '/').toLowerCase();
+  const base = path.basename(normalized);
+  if (normalized.includes('/mac-arm64/') || /(^|[^a-z0-9])arm64([^a-z0-9]|$)/.test(base)) {
+    return 'arm64';
+  }
+  if (normalized.includes('/mac-x64/') || /(^|[^a-z0-9])x64([^a-z0-9]|$)/.test(base)) {
+    return 'x64';
+  }
+  if (normalized.includes('/mac-universal/') || base.includes('universal')) {
+    return 'universal';
+  }
+  // electron-builder may omit `-x64` for the Intel default artifact name.
+  return 'unknown';
+}
+
+/**
+ * Map archive path/name classification to the Mach-O arch we expect inside the bundle.
+ * Unscoped names default to Intel (x64), matching dual-arch sibling rules.
+ * @param {string} filePath
+ * @returns {ExpectedMacArch}
+ */
+function resolveExpectedMacArch(filePath) {
+  const classified = classifyMacArchiveArch(filePath);
+  if (classified === 'unknown') {
+    return 'x64';
+  }
+  return classified;
+}
+
+/**
+ * @param {ExpectedMacArch} expectedArch
+ * @returns {string[]} sorted lipo arch names
+ */
+function expectedLipoArchsForMacArch(expectedArch) {
+  if (expectedArch === 'arm64') {
+    return ['arm64'];
+  }
+  if (expectedArch === 'x64') {
+    return ['x86_64'];
+  }
+  if (expectedArch === 'universal') {
+    return ['arm64', 'x86_64'];
+  }
+  fail(`Unsupported expected mac arch: ${String(expectedArch)}`);
+}
+
+/**
+ * @param {string[]} archs
+ * @returns {string[]}
+ */
+function normalizeLipoArchList(archs) {
+  return [...archs].filter(Boolean).sort();
+}
+
+/**
+ * Reject when lipo archs disagree with the archive's labeled architecture.
+ * @param {string} label
+ * @param {string} binaryLabel
+ * @param {string[]} actualArchs
+ * @param {ExpectedMacArch} expectedArch
+ */
+function assertLipoArchsMatch(label, binaryLabel, actualArchs, expectedArch) {
+  const expected = expectedLipoArchsForMacArch(expectedArch);
+  const actual = normalizeLipoArchList(actualArchs);
+  if (actual.length !== expected.length || actual.some((arch, index) => arch !== expected[index])) {
+    fail(
+      `${label} ${binaryLabel} Mach-O archs [${actual.join(', ')}] do not match expected ${expectedArch} [${expected.join(', ')}]`,
+    );
+  }
+}
+
+/**
+ * @param {string} binaryPath
+ * @returns {string[]}
+ */
+function readLipoArchs(binaryPath) {
+  const result = spawnSync('lipo', ['-archs', binaryPath], { encoding: 'utf8' });
+  if (result.error || result.status !== 0) {
+    fail(`lipo -archs failed for ${binaryPath}: ${result.error ?? result.status}`);
+  }
+  return String(result.stdout ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+/**
+ * @param {string} bundleRoot
+ * @param {string} label
+ * @param {ExpectedMacArch} expectedArch
+ */
+function assertBundleMatchesExpectedArch(bundleRoot, label, expectedArch) {
+  const launcherPath = path.join(bundleRoot, MACOS_LAUNCHER);
+  const frameworkPath = path.join(bundleRoot, ELECTRON_FRAMEWORK_BINARY);
+  assertLipoArchsMatch(label, 'launcher', readLipoArchs(launcherPath), expectedArch);
+  assertLipoArchsMatch(label, 'Electron Framework', readLipoArchs(frameworkPath), expectedArch);
+}
+
+/**
+ * Fail unless both Intel (x64) and Apple Silicon (arm64) archives are present.
+ * Unscoped names count as x64 when an arm64 sibling exists.
+ * @param {string[]} archives
+ * @param {string} [formatLabel='archives'] e.g. `.dmg` or `.zip`
+ */
+function assertDualArchMacArchives(archives, formatLabel = 'archives') {
+  /** @type {Record<MacArchiveArch, string[]>} */
+  const byArch = { x64: [], arm64: [], universal: [], unknown: [] };
+  for (const filePath of archives) {
+    byArch[classifyMacArchiveArch(filePath)].push(filePath);
+  }
+  const hasArm64 = byArch.arm64.length > 0;
+  const hasX64 = byArch.x64.length > 0 || (hasArm64 && byArch.unknown.length > 0);
+  if (!hasArm64 || !hasX64) {
+    fail(
+      `Expected both x64 and arm64 macOS ${formatLabel} under release/; ` +
+        `found arm64=${byArch.arm64.length}, x64=${byArch.x64.length}, ` +
+        `unscoped=${byArch.unknown.length}, universal=${byArch.universal.length}`,
+    );
+  }
 }
 
 /** @param {string} bundleRoot @param {string} label */
@@ -285,8 +415,8 @@ function assertMacMinimumSystemVersion(bundleRoot, label) {
   }
 }
 
-/** @param {string} bundleRoot @param {string} sourceLabel */
-function validateAppBundle(bundleRoot, sourceLabel) {
+/** @param {string} bundleRoot @param {string} sourceLabel @param {ExpectedMacArch} expectedArch */
+function validateAppBundle(bundleRoot, sourceLabel, expectedArch) {
   const bundleName = path.basename(bundleRoot);
   const label = `${sourceLabel} ${bundleName}`;
   const launcherPath = path.join(bundleRoot, MACOS_LAUNCHER);
@@ -303,6 +433,7 @@ function validateAppBundle(bundleRoot, sourceLabel) {
   assertMinSize(`macOS launcher in ${label}`, launcherPath, MIN_LAUNCHER_BYTES);
   assertMinSize(`Electron Framework in ${label}`, frameworkPath, MIN_FRAMEWORK_BYTES);
   assertMacMinimumSystemVersion(bundleRoot, label);
+  assertBundleMatchesExpectedArch(bundleRoot, label, expectedArch);
   assertBundledReticulumSidecarInBundle({
     label: `bundled Reticulum sidecar in ${label}`,
     platform: 'darwin',
@@ -334,54 +465,62 @@ function runCommand(command, args, failLabel) {
   }
 }
 
-/** @param {string} zipPath @returns {string} */
-function extractZipToTemp(zipPath) {
-  rmSync(VERIFY_ZIP_EXTRACT_DIR, { recursive: true, force: true });
-  mkdirSync(VERIFY_ZIP_EXTRACT_DIR, { recursive: true });
+/** @param {string} zipPath @param {string} extractDir @returns {string} */
+function extractZipToTemp(zipPath, extractDir) {
+  rmSync(extractDir, { recursive: true, force: true });
+  mkdirSync(extractDir, { recursive: true });
   // ditto -xk preserves symlinks inside electron-builder zips.
-  runCommand(
-    'ditto',
-    ['-xk', zipPath, VERIFY_ZIP_EXTRACT_DIR],
-    `Failed to extract zip with ditto: ${zipPath}`,
-  );
+  runCommand('ditto', ['-xk', zipPath, extractDir], `Failed to extract zip with ditto: ${zipPath}`);
 
-  const bundle = findCompleteAppBundle(VERIFY_ZIP_EXTRACT_DIR);
+  const bundle = findCompleteAppBundle(extractDir);
   if (!bundle) {
     fail(`No complete ${APP_NAME}.app found inside zip: ${zipPath}`);
   }
   return bundle;
 }
 
-/** @param {string} dmgPath @param {(bundleRoot: string) => void} validate */
-function mountDmgAndValidate(dmgPath, validate) {
-  rmSync(VERIFY_DMG_MOUNT_DIR, { recursive: true, force: true });
-  mkdirSync(VERIFY_DMG_MOUNT_DIR, { recursive: true });
+/** @param {string} dmgPath @param {string} mountDir @param {(bundleRoot: string) => void} validate */
+function mountDmgAndValidate(dmgPath, mountDir, validate) {
+  rmSync(mountDir, { recursive: true, force: true });
+  mkdirSync(mountDir, { recursive: true });
 
-  // hdiutil attach: mount dmg read-only for bundle inspection.
-  runCommand(
-    'hdiutil',
-    ['attach', '-nobrowse', '-readonly', '-mountpoint', VERIFY_DMG_MOUNT_DIR, dmgPath],
-    `Failed to mount dmg with hdiutil: ${dmgPath}`,
-  );
-
+  let attached = false;
   try {
-    assertApplicationsSymlink(VERIFY_DMG_MOUNT_DIR);
-    assertDmgInstallNotice(VERIFY_DMG_MOUNT_DIR);
-    const bundle = findCompleteAppBundle(VERIFY_DMG_MOUNT_DIR);
+    // hdiutil attach: mount dmg read-only for bundle inspection.
+    const attach = spawnSync(
+      'hdiutil',
+      ['attach', '-nobrowse', '-readonly', '-mountpoint', mountDir, dmgPath],
+      { stdio: 'inherit' },
+    );
+    if (attach.error || attach.status !== 0) {
+      fail(`Failed to mount dmg with hdiutil: ${dmgPath}`);
+    }
+    attached = true;
+
+    assertApplicationsSymlink(mountDir);
+    assertDmgInstallNotice(mountDir);
+    const bundle = findCompleteAppBundle(mountDir);
     if (!bundle) {
       fail(`No complete ${APP_NAME}.app found inside dmg: ${dmgPath}`);
     }
     validate(bundle);
   } finally {
-    detachDmgMount();
+    if (attached) {
+      // Single-owner detach: only after a successful attach (main must not detach again).
+      detachDmgMount(mountDir);
+    } else if (existsSync(mountDir)) {
+      // Attach never succeeded — drop the empty mountpoint prep dir for this attempt.
+      rmSync(mountDir, { recursive: true, force: true });
+    }
   }
 }
 
-function detachDmgMount() {
-  if (!existsSync(VERIFY_DMG_MOUNT_DIR)) {
+/** @param {string} mountDir */
+function detachDmgMount(mountDir) {
+  if (!existsSync(mountDir)) {
     return;
   }
-  const quiet = spawnSync('hdiutil', ['detach', VERIFY_DMG_MOUNT_DIR, '-quiet'], {
+  const quiet = spawnSync('hdiutil', ['detach', mountDir, '-quiet'], {
     stdio: 'inherit',
   });
   if (quiet.error || quiet.status !== 0) {
@@ -389,7 +528,7 @@ function detachDmgMount() {
       '[verify-mac-packaging] hdiutil detach failed, retrying with -force:',
       quiet.error,
     );
-    const forced = spawnSync('hdiutil', ['detach', '-force', VERIFY_DMG_MOUNT_DIR], {
+    const forced = spawnSync('hdiutil', ['detach', '-force', mountDir], {
       stdio: 'inherit',
     });
     if (forced.error || forced.status !== 0) {
@@ -404,6 +543,10 @@ function detachDmgMount() {
 
 function main() {
   stageMacosInstallNoticeReleaseAsset(releaseDir);
+  /** @type {string | null} */
+  let zipExtractDir = null;
+  /** @type {string | null} */
+  let dmgMountDir = null;
   try {
     if (!existsSync(releaseDir)) {
       fail(`Missing release directory: ${releaseDir}`);
@@ -419,6 +562,10 @@ function main() {
       fail(`No .zip artifacts under ${releaseDir}`);
     }
 
+    // Require both arches per format so a mixed set (e.g. arm64 DMG + x64 ZIP only) fails.
+    assertDualArchMacArchives(dmgArchives, '.dmg');
+    assertDualArchMacArchives(zipArchives, '.zip');
+
     for (const dmgPath of dmgArchives) {
       assertMinSize(`dmg ${path.basename(dmgPath)}`, dmgPath, MIN_DMG_BYTES);
     }
@@ -426,37 +573,52 @@ function main() {
       assertMinSize(`zip ${path.basename(zipPath)}`, zipPath, MIN_ZIP_BYTES);
     }
 
+    zipExtractDir = mkdtempSync(path.join(tmpdir(), 'mesh-verify-mac-zip-'));
+    dmgMountDir = mkdtempSync(path.join(tmpdir(), 'mesh-verify-mac-dmg-'));
+
     /** @type {string[]} */
     const validatedSources = [];
 
     /** @type {string[]} */
     const onDiskBundles = [];
     collectAppBundles(releaseDir, onDiskBundles);
-    const directBundle = onDiskBundles.find((bundle) => isCompleteAppBundle(bundle));
-
-    if (directBundle) {
-      validateAppBundle(directBundle, 'direct');
-      validatedSources.push('direct');
+    for (const bundle of onDiskBundles.filter((candidate) => isCompleteAppBundle(candidate))) {
+      const parent = path.basename(path.dirname(bundle));
+      const expectedArch = resolveExpectedMacArch(bundle);
+      validateAppBundle(bundle, `direct:${parent}`, expectedArch);
+      validatedSources.push(`direct:${parent}/${path.basename(bundle)}`);
     }
 
-    if (process.env.CI === 'true' || !directBundle) {
-      const zipBundle = extractZipToTemp(pickPrimaryArchive(zipArchives));
-      validateAppBundle(zipBundle, 'zip');
-      validatedSources.push('zip');
+    // Deep-validate every archive (both arches) — do not stop at the largest primary.
+    for (const zipPath of zipArchives) {
+      const zipLabel = `zip:${path.basename(zipPath)}`;
+      const expectedArch = resolveExpectedMacArch(zipPath);
+      const zipBundle = extractZipToTemp(zipPath, zipExtractDir);
+      validateAppBundle(zipBundle, zipLabel, expectedArch);
+      validatedSources.push(zipLabel);
     }
 
-    mountDmgAndValidate(pickPrimaryArchive(dmgArchives), (dmgBundle) => {
-      validateAppBundle(dmgBundle, 'dmg');
-      validatedSources.push('dmg');
-    });
+    for (const dmgPath of dmgArchives) {
+      const dmgLabel = `dmg:${path.basename(dmgPath)}`;
+      const expectedArch = resolveExpectedMacArch(dmgPath);
+      mountDmgAndValidate(dmgPath, dmgMountDir, (dmgBundle) => {
+        validateAppBundle(dmgBundle, dmgLabel, expectedArch);
+        validatedSources.push(dmgLabel);
+      });
+    }
 
     const version = readPackageVersion();
     console.debug(
       `[verify-mac-packaging] OK — validated via ${validatedSources.join(', ')}; ${dmgArchives.length} dmg, ${zipArchives.length} zip (v${version})`,
     );
   } finally {
-    rmSync(VERIFY_ZIP_EXTRACT_DIR, { recursive: true, force: true });
-    rmSync(VERIFY_DMG_MOUNT_DIR, { recursive: true, force: true });
+    // mountDmgAndValidate owns detach; main only removes run-owned temp dirs.
+    if (dmgMountDir) {
+      rmSync(dmgMountDir, { recursive: true, force: true });
+    }
+    if (zipExtractDir) {
+      rmSync(zipExtractDir, { recursive: true, force: true });
+    }
   }
 }
 
@@ -490,15 +652,20 @@ try {
 export {
   assertApplicationsSymlink,
   assertDmgInstallNotice,
+  assertDualArchMacArchives,
   assertFrameworkSymlinks,
+  assertLipoArchsMatch,
   assertMacMinimumSystemVersion,
   assertSiblingFrameworkSymlinks,
+  classifyMacArchiveArch,
   collectAppBundles,
   collectArchives,
   detachDmgMount,
+  expectedLipoArchsForMacArch,
   fail,
   isCompleteAppBundle,
   pickPrimaryArchive,
+  resolveExpectedMacArch,
   SIBLING_FRAMEWORKS,
   VerificationFailure,
 };

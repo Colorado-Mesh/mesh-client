@@ -207,6 +207,9 @@ describe('Windows packaging (contract)', () => {
     expect(readFileSync(join(REPO_ROOT, 'scripts', 'resolve-release-matrix.mjs'), 'utf-8')).toMatch(
       /platform_key:\s*'win'[\s\S]*build_script:\s*'pnpm run dist:win'/,
     );
+    expect(readFileSync(join(REPO_ROOT, 'scripts', 'resolve-release-matrix.mjs'), 'utf-8')).toMatch(
+      /platform_key:\s*'mac'[\s\S]*rust_targets:\s*'x86_64-apple-darwin,aarch64-apple-darwin'/,
+    );
     expect(releaseWorkflow).toContain('scripts/resolve-release-matrix.mjs');
     expect(releaseWorkflow).toContain(
       "contains(matrix.build_script, 'dist:win') && matrix.os != 'windows-latest'",
@@ -238,6 +241,7 @@ describe('Windows packaging (contract)', () => {
     for (const scriptName of ['dist:mac', 'dist:mac:publish'] as const) {
       const script = packageJson.scripts?.[scriptName];
       expect(script, scriptName).toBeDefined();
+      expect(script).toContain('--mac --x64 --arm64');
       expect(script).toContain('node scripts/verify-mac-packaging.mjs');
     }
     for (const scriptName of ['dist:linux', 'dist:linux:publish'] as const) {
@@ -256,12 +260,65 @@ describe('Windows packaging (contract)', () => {
     expect(macVerify).toContain('isSymbolicLink');
     expect(macVerify).toContain('assertApplicationsSymlink');
     expect(macVerify).toContain('assertDmgInstallNotice');
+    expect(macVerify).toContain('assertDualArchMacArchives');
+    expect(macVerify).toContain('classifyMacArchiveArch');
+    expect(macVerify).toContain('resolveExpectedMacArch');
+    expect(macVerify).toContain('assertLipoArchsMatch');
+    expect(macVerify).toContain("lipo', ['-archs'");
     expect(macVerify).toContain('stageMacosInstallNoticeReleaseAsset');
     expect(macVerify).toContain('Squirrel.framework');
     expect(macVerify).toContain('/Applications');
     expect(macVerify).toMatch(
-      /function mountDmgAndValidate\([\s\S]*?assertApplicationsSymlink\(VERIFY_DMG_MOUNT_DIR\)/,
+      /function mountDmgAndValidate\([\s\S]*?assertApplicationsSymlink\(mountDir\)/,
     );
+    expect(macVerify).toMatch(
+      /function mountDmgAndValidate[\s\S]*let attached = false[\s\S]*if \(attached\)[\s\S]*detachDmgMount\(mountDir\)/,
+    );
+    expect(macVerify).toMatch(
+      /} finally \{\s*\/\/ mountDmgAndValidate owns detach[\s\S]*rmSync\(dmgMountDir/,
+    );
+    expect(macVerify).not.toMatch(
+      /} finally \{\s*\/\/ mountDmgAndValidate owns detach[\s\S]*detachDmgMount\(dmgMountDir\)/,
+    );
+    expect(macVerify).toContain('mkdtempSync');
+    expect(macVerify).toContain('mesh-verify-mac-zip-');
+    expect(macVerify).toContain('mesh-verify-mac-dmg-');
+    expect(macVerify).toContain("assertDualArchMacArchives(dmgArchives, '.dmg')");
+    expect(macVerify).toContain("assertDualArchMacArchives(zipArchives, '.zip')");
+    expect(macVerify).toMatch(/for \(const zipPath of zipArchives\)/);
+    expect(macVerify).toMatch(/for \(const dmgPath of dmgArchives\)[\s\S]*mountDmgAndValidate/);
+    expect(macVerify).toMatch(/validateAppBundle\(zipBundle, zipLabel, expectedArch\)/);
+    expect(macVerify).toMatch(/validateAppBundle\(dmgBundle, dmgLabel, expectedArch\)/);
+
+    const buildWorkflow = readFileSync(
+      join(REPO_ROOT, '.github', 'workflows', 'build.yaml'),
+      'utf-8',
+    );
+    expect(buildWorkflow).toContain('rust_targets: x86_64-apple-darwin,aarch64-apple-darwin');
+    expect(buildWorkflow).toContain('release/mac-x64/**/*.dmg');
+    expect(buildWorkflow).toContain('release/mac-x64/**/*.zip');
+
+    const releaseWorkflowMacUpload = readFileSync(
+      join(REPO_ROOT, '.github', 'workflows', 'release.yaml'),
+      'utf-8',
+    );
+    expect(releaseWorkflowMacUpload).toContain('release/mac-x64/**/*.dmg');
+    expect(releaseWorkflowMacUpload).toContain('release/mac-x64/**/*.zip');
+
+    const sidecarWorkflow = readFileSync(
+      join(REPO_ROOT, '.github', 'workflows', 'reticulum-sidecar.yaml'),
+      'utf-8',
+    );
+    expect(sidecarWorkflow).toContain('target: x86_64-apple-darwin');
+    expect(sidecarWorkflow).toContain('mesh-client-reticulum-macos-x64');
+    expect(sidecarWorkflow).toContain('mesh-client-reticulum-rns-macos-x64');
+
+    const staging = readFileSync(
+      join(REPO_ROOT, 'scripts', 'reticulum-sidecar-staging.mjs'),
+      'utf-8',
+    );
+    expect(staging).toContain("cargoTarget: 'x86_64-apple-darwin'");
+    expect(staging).toContain("archKey: 'x64'");
 
     const electronBuilder = readFileSync(join(REPO_ROOT, 'electron-builder.yml'), 'utf-8');
     expect(electronBuilder).toMatch(/type:\s*link\s*\n\s*path:\s*\/Applications/);
