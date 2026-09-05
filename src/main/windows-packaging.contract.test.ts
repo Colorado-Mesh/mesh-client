@@ -362,4 +362,33 @@ describe('Windows packaging (contract)', () => {
     expect(releaseWorkflow).toContain('CSC_IDENTITY_AUTO_DISCOVERY');
     expect(releaseWorkflow).toContain('Validate macOS signing secrets');
   });
+
+  it('patches app-builder-lib so CSC_LINK signing uses the keychain password', () => {
+    const workspaceYaml = readFileSync(join(REPO_ROOT, 'pnpm-workspace.yaml'), 'utf-8');
+    const lockfile = readFileSync(join(REPO_ROOT, 'pnpm-lock.yaml'), 'utf-8');
+    const appBuilderLibLockRe = /^ {2}app-builder-lib@(26\.\d+\.\d+):$/m;
+    const resolvedMatch = appBuilderLibLockRe.exec(lockfile);
+    expect(resolvedMatch).not.toBeNull();
+    const resolvedVersion = resolvedMatch![1];
+    expect(workspaceYaml).toContain(
+      `app-builder-lib@${resolvedVersion}: patches/app-builder-lib@${resolvedVersion}.patch`,
+    );
+
+    const macCodeSign = readFileSync(
+      join(REPO_ROOT, 'node_modules', 'app-builder-lib', 'out', 'codeSign', 'macCodeSign.js'),
+      'utf-8',
+    );
+    expect(macCodeSign).toContain(
+      'importCerts(keychainFile, certPaths, cscPasswords, keychainPassword)',
+    );
+    expect(macCodeSign).toContain(
+      '["set-key-partition-list", "-S", "apple-tool:,apple:", "-s", "-k", keychainPassword, keychainFile]',
+    );
+    expect(macCodeSign).not.toMatch(
+      /set-key-partition-list", "-S", "apple-tool:,apple:", "-s", "-k", password,/,
+    );
+
+    const updateScript = readFileSync(join(REPO_ROOT, 'scripts', 'update.sh'), 'utf-8');
+    expect(updateScript).toMatch(/WATCH_ENTRIES=\([\s\S]*'app-builder-lib\|app-builder-lib\|/);
+  });
 });
