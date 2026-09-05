@@ -6,9 +6,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   assertApplicationsSymlink,
+  assertDualArchMacArchives,
   assertDmgInstallNotice,
   assertMacMinimumSystemVersion,
   assertSiblingFrameworkSymlinks,
+  classifyMacArchiveArch,
   VerificationFailure,
   fail,
   isCompleteAppBundle,
@@ -44,6 +46,45 @@ describe('verify-mac-packaging helpers', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  it('classifyMacArchiveArch uses path and file-name markers', () => {
+    expect(classifyMacArchiveArch('/r/mac-arm64/Mesh-client-1.0.0-arm64.dmg')).toBe('arm64');
+    expect(classifyMacArchiveArch('/r/mac-x64/Mesh-client-1.0.0-x64.dmg')).toBe('x64');
+    expect(classifyMacArchiveArch('/r/Mesh-client-1.0.0-arm64-mac.zip')).toBe('arm64');
+    expect(classifyMacArchiveArch('/r/Mesh-client-1.0.0-x64-mac.zip')).toBe('x64');
+    expect(classifyMacArchiveArch('/r/mac-universal/Mesh-client-1.0.0-universal.dmg')).toBe(
+      'universal',
+    );
+    expect(classifyMacArchiveArch('/r/Mesh-client-1.0.0.dmg')).toBe('unknown');
+  });
+
+  it('assertDualArchMacArchives requires both arches', () => {
+    expect(() =>
+      assertDualArchMacArchives([
+        '/r/mac-arm64/Mesh-client-1.0.0-arm64.dmg',
+        '/r/mac-arm64/Mesh-client-1.0.0-arm64-mac.zip',
+      ]),
+    ).toThrow(/Expected both x64 and arm64/);
+
+    expect(() =>
+      assertDualArchMacArchives([
+        '/r/mac-arm64/Mesh-client-1.0.0-arm64.dmg',
+        '/r/mac-x64/Mesh-client-1.0.0-x64.dmg',
+        '/r/mac-arm64/Mesh-client-1.0.0-arm64-mac.zip',
+        '/r/mac-x64/Mesh-client-1.0.0-x64-mac.zip',
+      ]),
+    ).not.toThrow();
+
+    // Unscoped Intel name counts as x64 when arm64 sibling exists.
+    expect(() =>
+      assertDualArchMacArchives([
+        '/r/Mesh-client-1.0.0-arm64.dmg',
+        '/r/Mesh-client-1.0.0.dmg',
+        '/r/Mesh-client-1.0.0-arm64-mac.zip',
+        '/r/Mesh-client-1.0.0-mac.zip',
+      ]),
+    ).not.toThrow();
   });
 
   it('isCompleteAppBundle returns false for missing launcher paths', () => {

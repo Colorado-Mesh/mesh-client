@@ -67,6 +67,9 @@ jobs:
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact: mesh-client-reticulum-macos-arm64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact: mesh-client-reticulum-macos-x64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact: mesh-client-reticulum-win-x64
@@ -105,6 +108,9 @@ jobs:
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact: mesh-client-reticulum-rns-macos-arm64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact: mesh-client-reticulum-rns-macos-x64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact: mesh-client-reticulum-rns-win-x64

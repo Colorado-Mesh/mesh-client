@@ -134,7 +134,7 @@ function collectArchives(dir, ext) {
 }
 
 /**
- * Largest archive wins (electron-builder can emit per-arch variants).
+ * Largest archive wins (kept for unit tests / callers that need a single pick).
  * Callers guarantee a non-empty list (main() fails early when none exist).
  * @param {string[]} archives @returns {string}
  */
@@ -144,6 +144,51 @@ function pickPrimaryArchive(archives) {
     (largest, current) => (current.size > largest.size ? current : largest),
     sized[0],
   ).filePath;
+}
+
+/** @typedef {'x64' | 'arm64' | 'universal' | 'unknown'} MacArchiveArch */
+
+/**
+ * Classify a macOS release archive by path or electron-builder file name.
+ * @param {string} filePath
+ * @returns {MacArchiveArch}
+ */
+function classifyMacArchiveArch(filePath) {
+  const normalized = filePath.replace(/\\/g, '/').toLowerCase();
+  const base = path.basename(normalized);
+  if (normalized.includes('/mac-arm64/') || /(^|[^a-z0-9])arm64([^a-z0-9]|$)/.test(base)) {
+    return 'arm64';
+  }
+  if (normalized.includes('/mac-x64/') || /(^|[^a-z0-9])x64([^a-z0-9]|$)/.test(base)) {
+    return 'x64';
+  }
+  if (normalized.includes('/mac-universal/') || base.includes('universal')) {
+    return 'universal';
+  }
+  // electron-builder may omit `-x64` for the Intel default artifact name.
+  return 'unknown';
+}
+
+/**
+ * Fail unless both Intel (x64) and Apple Silicon (arm64) archives are present.
+ * Unscoped names count as x64 when an arm64 sibling exists.
+ * @param {string[]} archives
+ */
+function assertDualArchMacArchives(archives) {
+  /** @type {Record<MacArchiveArch, string[]>} */
+  const byArch = { x64: [], arm64: [], universal: [], unknown: [] };
+  for (const filePath of archives) {
+    byArch[classifyMacArchiveArch(filePath)].push(filePath);
+  }
+  const hasArm64 = byArch.arm64.length > 0;
+  const hasX64 = byArch.x64.length > 0 || (hasArm64 && byArch.unknown.length > 0);
+  if (!hasArm64 || !hasX64) {
+    fail(
+      `Expected both x64 and arm64 macOS archives under release/; ` +
+        `found arm64=${byArch.arm64.length}, x64=${byArch.x64.length}, ` +
+        `unscoped=${byArch.unknown.length}, universal=${byArch.universal.length}`,
+    );
+  }
 }
 
 /** @param {string} bundleRoot @param {string} label */
@@ -419,6 +464,8 @@ function main() {
       fail(`No .zip artifacts under ${releaseDir}`);
     }
 
+    assertDualArchMacArchives([...dmgArchives, ...zipArchives]);
+
     for (const dmgPath of dmgArchives) {
       assertMinSize(`dmg ${path.basename(dmgPath)}`, dmgPath, MIN_DMG_BYTES);
     }
@@ -432,23 +479,27 @@ function main() {
     /** @type {string[]} */
     const onDiskBundles = [];
     collectAppBundles(releaseDir, onDiskBundles);
-    const directBundle = onDiskBundles.find((bundle) => isCompleteAppBundle(bundle));
-
-    if (directBundle) {
-      validateAppBundle(directBundle, 'direct');
-      validatedSources.push('direct');
+    for (const bundle of onDiskBundles.filter((candidate) => isCompleteAppBundle(candidate))) {
+      const parent = path.basename(path.dirname(bundle));
+      validateAppBundle(bundle, `direct:${parent}`);
+      validatedSources.push(`direct:${parent}/${path.basename(bundle)}`);
     }
 
-    if (process.env.CI === 'true' || !directBundle) {
-      const zipBundle = extractZipToTemp(pickPrimaryArchive(zipArchives));
-      validateAppBundle(zipBundle, 'zip');
-      validatedSources.push('zip');
+    // Deep-validate every archive (both arches) — do not stop at the largest primary.
+    for (const zipPath of zipArchives) {
+      const zipLabel = `zip:${path.basename(zipPath)}`;
+      const zipBundle = extractZipToTemp(zipPath);
+      validateAppBundle(zipBundle, zipLabel);
+      validatedSources.push(zipLabel);
     }
 
-    mountDmgAndValidate(pickPrimaryArchive(dmgArchives), (dmgBundle) => {
-      validateAppBundle(dmgBundle, 'dmg');
-      validatedSources.push('dmg');
-    });
+    for (const dmgPath of dmgArchives) {
+      const dmgLabel = `dmg:${path.basename(dmgPath)}`;
+      mountDmgAndValidate(dmgPath, (dmgBundle) => {
+        validateAppBundle(dmgBundle, dmgLabel);
+        validatedSources.push(dmgLabel);
+      });
+    }
 
     const version = readPackageVersion();
     console.debug(
@@ -490,9 +541,11 @@ try {
 export {
   assertApplicationsSymlink,
   assertDmgInstallNotice,
+  assertDualArchMacArchives,
   assertFrameworkSymlinks,
   assertMacMinimumSystemVersion,
   assertSiblingFrameworkSymlinks,
+  classifyMacArchiveArch,
   collectAppBundles,
   collectArchives,
   detachDmgMount,

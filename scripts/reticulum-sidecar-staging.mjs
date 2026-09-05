@@ -19,7 +19,10 @@ export const PLATFORM_TARGETS = {
     { cargoTarget: 'x86_64-unknown-linux-gnu', archKey: 'x64' },
     { cargoTarget: 'aarch64-unknown-linux-gnu', archKey: 'arm64' },
   ],
-  darwin: [{ cargoTarget: 'aarch64-apple-darwin', archKey: 'arm64' }],
+  darwin: [
+    { cargoTarget: 'x86_64-apple-darwin', archKey: 'x64' },
+    { cargoTarget: 'aarch64-apple-darwin', archKey: 'arm64' },
+  ],
 };
 
 /** @param {ElectronPlatform} platform */

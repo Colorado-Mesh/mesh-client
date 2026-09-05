@@ -462,8 +462,8 @@ Post-build smoke tests:
 ### macOS packaging verify (`verify-mac-packaging.mjs`)
 
 - **`scripts/verify-mac-packaging.mjs`** — macOS packaging guard (runs after `dist:mac` / `dist:mac:publish` and in `packaging-smoke` on tag releases). Validates:
-  - **`.dmg` and `.zip`** artifacts exist under `release/` with minimum size thresholds
-  - Bundle layout via **direct `.app`** (local dist), **`ditto -xk` ZIP extract** (CI artifact path — preserves symlinks), and **`hdiutil attach` DMG mount**
+  - **Both x64 and arm64** `.dmg` / `.zip` artifacts under `release/` (path or file-name markers), each above minimum size
+  - Bundle layout via **direct `.app`** (every complete on-disk bundle), **`ditto -xk` ZIP extract for every ZIP**, and **`hdiutil attach` for every DMG** (not only the largest archive)
   - DMG mount root includes an **`Applications` → `/Applications` symlink** and **`IMPORTANT-Read-Me.txt`** (7-Zip / bad ZIP extract warning; prefer DMG or [Keka](https://www.keka.io/en/)) — drag-to-install layout from `electron-builder.yml` `dmg.contents`
   - **Electron Framework symlinks** (`Versions/Current`, root `Electron Framework`) remain symlinks — `upload-artifact` dereferences them and breaks the bundle (~3× framework bloat)
   - **Squirrel / Mantle / ReactiveObjC** framework symlinks and binaries (7-Zip flattening breaks Squirrel at launch)

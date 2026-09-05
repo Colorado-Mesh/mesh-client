@@ -259,15 +259,15 @@ Complete reference of all pnpm scripts in [`package.json`](../package.json), org
 
 #### Package (distributables)
 
-| Script               | Description                                                                                       |
-| -------------------- | ------------------------------------------------------------------------------------------------- |
-| `dist`               | Build for current platform → `release/`                                                           |
-| `dist:mac`           | Build macOS .dmg + .zip + verify packaging (`verify-mac-packaging.mjs` stages ZIP install notice) |
-| `dist:mac:publish`   | Build macOS and upload to release server                                                          |
-| `dist:linux`         | Build Linux x64 + arm64 (.AppImage, .deb, .rpm) + verify packaging                                |
-| `dist:linux:publish` | Build Linux and upload to release server                                                          |
-| `dist:win`           | Build Windows .exe installer (hoisted install workaround) + verify packaging                      |
-| `dist:win:publish`   | Build Windows and upload to release server                                                        |
+| Script               | Description                                                                                                       |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `dist`               | Build for current platform → `release/`                                                                           |
+| `dist:mac`           | Build macOS x64 + arm64 `.dmg` + `.zip` + verify packaging (`verify-mac-packaging.mjs` stages ZIP install notice) |
+| `dist:mac:publish`   | Build macOS and upload to release server                                                                          |
+| `dist:linux`         | Build Linux x64 + arm64 (.AppImage, .deb, .rpm) + verify packaging                                                |
+| `dist:linux:publish` | Build Linux and upload to release server                                                                          |
+| `dist:win`           | Build Windows .exe installer (hoisted install workaround) + verify packaging                                      |
+| `dist:win:publish`   | Build Windows and upload to release server                                                                        |
 
 `dist:mac`, `dist:linux`, and `predist` run `dedupe:dist` (`scripts/dedupe-dist.mjs`) before packaging; that helper retries on transient `@jsr/_tmp_*` rename races. `dist:win` uses `scripts/dist-win-hoisted-install.mjs` and restores `node_modules` afterward.
 
@@ -620,7 +620,7 @@ pnpm run dist:win   # Windows -> .exe installer in release/
 
 Output goes to the `release/` directory.
 
-**macOS (`dist:mac`)** runs `electron-builder --mac --publish never`, then **`node scripts/verify-mac-packaging.mjs`**. Verify stages **`00-READ-ME-BEFORE-EXTRACTING-macOS-ZIP.txt`** for GitHub Releases, asserts `.dmg` + `.zip` artifacts, symlink-preserving ZIP extract (`ditto -xk`), DMG mount (including **IMPORTANT-Read-Me.txt**), launcher/framework sizes, Squirrel/Mantle/ReactiveObjC framework symlinks, and bundled Reticulum sidecar — same checks CI `packaging-smoke` uses on downloaded artifacts. It does **not** require signing secrets; unsigned local builds are expected to pass verify.
+**macOS (`dist:mac`)** runs `electron-builder --mac --x64 --arm64 --publish never` (Intel + Apple Silicon DMG/ZIP pairs), then **`node scripts/verify-mac-packaging.mjs`**. Verify stages **`00-READ-ME-BEFORE-EXTRACTING-macOS-ZIP.txt`** for GitHub Releases, asserts both arch `.dmg` + `.zip` artifacts, deep-validates every archive (symlink-preserving ZIP extract via `ditto -xk`, DMG mount including **IMPORTANT-Read-Me.txt**), launcher/framework sizes, Squirrel/Mantle/ReactiveObjC framework symlinks, and bundled Reticulum sidecar — same checks CI `packaging-smoke` uses on downloaded artifacts. It does **not** require signing secrets; unsigned local builds are expected to pass verify. Building both arches is slower than a single-arch pack.
 
 **Optional macOS signing (release parity):** export the same env vars CI uses before `pnpm run dist:mac` or `dist:mac:publish`:
 

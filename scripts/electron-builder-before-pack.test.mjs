@@ -41,6 +41,9 @@ describe('reticulum-sidecar-staging', () => {
         'resources/reticulum-sidecar/staged/darwin-arm64/mesh-client-reticulum',
       ),
     );
+    expect(stagedSidecarPath(projectRoot, 'darwin', 'x64')).toBe(
+      path.join(projectRoot, 'resources/reticulum-sidecar/staged/darwin-x64/mesh-client-reticulum'),
+    );
   });
 
   it('resolves pack context paths for beforePack hook', () => {
