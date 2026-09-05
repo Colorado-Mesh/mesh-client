@@ -266,8 +266,13 @@ describe('Windows packaging (contract)', () => {
     expect(macVerify).toContain('Squirrel.framework');
     expect(macVerify).toContain('/Applications');
     expect(macVerify).toMatch(
-      /function mountDmgAndValidate\([\s\S]*?assertApplicationsSymlink\(VERIFY_DMG_MOUNT_DIR\)/,
+      /function mountDmgAndValidate\([\s\S]*?assertApplicationsSymlink\(mountDir\)/,
     );
+    expect(macVerify).toContain('mkdtempSync');
+    expect(macVerify).toContain('mesh-verify-mac-zip-');
+    expect(macVerify).toContain('mesh-verify-mac-dmg-');
+    expect(macVerify).toContain("assertDualArchMacArchives(dmgArchives, '.dmg')");
+    expect(macVerify).toContain("assertDualArchMacArchives(zipArchives, '.zip')");
     expect(macVerify).toMatch(/for \(const zipPath of zipArchives\)/);
     expect(macVerify).toMatch(/for \(const dmgPath of dmgArchives\)[\s\S]*mountDmgAndValidate/);
 

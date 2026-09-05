@@ -61,30 +61,55 @@ describe('verify-mac-packaging helpers', () => {
 
   it('assertDualArchMacArchives requires both arches', () => {
     expect(() =>
-      assertDualArchMacArchives([
-        '/r/mac-arm64/Mesh-client-1.0.0-arm64.dmg',
-        '/r/mac-arm64/Mesh-client-1.0.0-arm64-mac.zip',
-      ]),
-    ).toThrow(/Expected both x64 and arm64/);
+      assertDualArchMacArchives(
+        [
+          '/r/mac-arm64/Mesh-client-1.0.0-arm64.dmg',
+          '/r/mac-arm64/Mesh-client-1.0.0-arm64-mac.zip',
+        ],
+        '.dmg',
+      ),
+    ).toThrow(/Expected both x64 and arm64 macOS \.dmg/);
 
     expect(() =>
-      assertDualArchMacArchives([
-        '/r/mac-arm64/Mesh-client-1.0.0-arm64.dmg',
-        '/r/mac-x64/Mesh-client-1.0.0-x64.dmg',
-        '/r/mac-arm64/Mesh-client-1.0.0-arm64-mac.zip',
-        '/r/mac-x64/Mesh-client-1.0.0-x64-mac.zip',
-      ]),
+      assertDualArchMacArchives(
+        ['/r/mac-arm64/Mesh-client-1.0.0-arm64.dmg', '/r/mac-x64/Mesh-client-1.0.0-x64.dmg'],
+        '.dmg',
+      ),
+    ).not.toThrow();
+
+    expect(() =>
+      assertDualArchMacArchives(
+        [
+          '/r/mac-arm64/Mesh-client-1.0.0-arm64-mac.zip',
+          '/r/mac-x64/Mesh-client-1.0.0-x64-mac.zip',
+        ],
+        '.zip',
+      ),
     ).not.toThrow();
 
     // Unscoped Intel name counts as x64 when arm64 sibling exists.
     expect(() =>
-      assertDualArchMacArchives([
-        '/r/Mesh-client-1.0.0-arm64.dmg',
-        '/r/Mesh-client-1.0.0.dmg',
-        '/r/Mesh-client-1.0.0-arm64-mac.zip',
-        '/r/Mesh-client-1.0.0-mac.zip',
-      ]),
+      assertDualArchMacArchives(
+        ['/r/Mesh-client-1.0.0-arm64.dmg', '/r/Mesh-client-1.0.0.dmg'],
+        '.dmg',
+      ),
     ).not.toThrow();
+  });
+
+  it('assertDualArchMacArchives fails when a format is missing an arch', () => {
+    // A mixed release (arm64 DMG + x64 ZIP only) looks dual-arch if lists are combined,
+    // but each format must be dual-arch on its own.
+    expect(() =>
+      assertDualArchMacArchives(['/r/mac-arm64/Mesh-client-1.0.0-arm64.dmg'], '.dmg'),
+    ).toThrow(/Expected both x64 and arm64 macOS \.dmg/);
+
+    expect(() =>
+      assertDualArchMacArchives(['/r/mac-x64/Mesh-client-1.0.0-x64-mac.zip'], '.zip'),
+    ).toThrow(/Expected both x64 and arm64 macOS \.zip/);
+
+    expect(() =>
+      assertDualArchMacArchives(['/r/mac-arm64/Mesh-client-1.0.0-arm64-mac.zip'], '.zip'),
+    ).toThrow(/Expected both x64 and arm64 macOS \.zip/);
   });
 
   it('isCompleteAppBundle returns false for missing launcher paths', () => {
