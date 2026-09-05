@@ -1,0 +1,3059 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../meshcore-meshtastic-parity/">
+      
+      
+        <link rel="next" href="../reticulum-sidecar-ipc/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Reticulum - Colorado Mesh Client</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#reticulum-in-mesh-client" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Colorado Mesh Client" class="md-header__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Colorado Mesh Client
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Reticulum
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../development-environment/" class="md-tabs__link">
+          
+  
+  
+  Engineering
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../diagnostics/" class="md-tabs__link">
+          
+  
+  
+  Support
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../license/" class="md-tabs__link">
+          
+  
+  
+  Project
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Colorado Mesh Client" class="md-nav__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Colorado Mesh Client
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineering
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Engineering
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accessibility-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-cd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../localization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Localization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-backup-and-crypto/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Backup & Crypto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshtastic-telemetry-local-client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic Telemetry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nomad-hosting-interop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Nomad Hosting Interop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore-meshtastic-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic & MeshCore Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-included" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is included
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sidebar-tabs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidebar tabs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sidebar tabs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-hub-presets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default hub presets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rmap-v4-discovery-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RMAP v4 discovery map
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#app-retention-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        App → Retention &amp; limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ownership-rns-vs-lxmf-client-vs-mesh-client-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ownership: RNS vs LXMF client vs mesh-client policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interface-management-connection-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface management (Connection tab)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interface management (Connection tab)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#interface-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rmap-publish-and-interface-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RMAP publish and interface mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config-audit-and-repair" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config audit and repair
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#network-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network tab
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chat-lxmf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chat (LXMF)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rrc-reticulum-relay-chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RRC (Reticulum Relay Chat)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RRC (Reticulum Relay Chat)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#delivery-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delivery modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#path-routing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Path routing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#peers-and-topology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Peers and topology
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rnode-over-wi-fi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RNode over Wi-Fi
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#admin-rnode-flasher" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Admin (RNode flasher)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data storage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data storage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sqlite-main-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQLite (main process)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sidecar-userdata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidecar userData
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config-import-paths-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config import paths (system)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-the-sidecar-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building the sidecar (development)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nomad-network-hosting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nomad Network hosting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote-rnsh-rncp-interop-smoke" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote (rnsh / rncp) interop smoke
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-sidecar-ipc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Sidecar IPC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../letsmesh-mqtt-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LetsMesh MQTT Auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Community
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://discord.com/invite/McChKR5NpS" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Discord
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://coloradomesh.org/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Website
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../third-party-licenses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Third-party licenses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-included" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is included
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sidebar-tabs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidebar tabs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sidebar tabs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-hub-presets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default hub presets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rmap-v4-discovery-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RMAP v4 discovery map
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#app-retention-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        App → Retention &amp; limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ownership-rns-vs-lxmf-client-vs-mesh-client-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ownership: RNS vs LXMF client vs mesh-client policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interface-management-connection-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface management (Connection tab)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interface management (Connection tab)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#interface-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rmap-publish-and-interface-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RMAP publish and interface mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config-audit-and-repair" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config audit and repair
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#network-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network tab
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chat-lxmf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chat (LXMF)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rrc-reticulum-relay-chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RRC (Reticulum Relay Chat)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RRC (Reticulum Relay Chat)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#delivery-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delivery modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#path-routing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Path routing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#peers-and-topology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Peers and topology
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rnode-over-wi-fi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RNode over Wi-Fi
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#admin-rnode-flasher" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Admin (RNode flasher)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data storage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data storage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sqlite-main-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQLite (main process)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sidecar-userdata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidecar userData
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config-import-paths-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config import paths (system)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-the-sidecar-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building the sidecar (development)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nomad-network-hosting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nomad Network hosting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote-rnsh-rncp-interop-smoke" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote (rnsh / rncp) interop smoke
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="reticulum-in-mesh-client">Reticulum in mesh-client</h1>
+<p>Reticulum is a <strong>shipped third protocol</strong> in mesh-client (amber header pill). It runs alongside Meshtastic and MeshCore in the same Electron app: switch tabs without stopping the other stacks.</p>
+<p>The GPL-3.0-or-later TypeScript UI talks to an <strong>AGPL-3.0-or-later Rust sidecar</strong> (<code>mesh-client-reticulum</code>) over localhost HTTP/WebSocket via <code>electronAPI.reticulum</code>. LXMF chat history and contacts persist in the main-process SQLite database. <strong>Flatpak</strong> releases always bundle the sidecar; <strong>macOS / Linux / Windows</strong> installers include it when <code>resources/reticulum-sidecar/</code> is populated at packaging time (see <a href="../release-process/#reticulum-sidecar-in-installers">Release Process — Reticulum sidecar</a>). See <a href="../license/">License</a> and <a href="../credits/#bundled-binaries">Credits — bundled binaries</a>.</p>
+<p><strong>Primary interop:</strong> <a href="https://github.com/ratspeak/Ratspeak">Ratspeak</a> peers on <a href="https://github.com/ratspeak/rsReticulum">rsReticulum</a> / <a href="https://github.com/ratspeak/rsLXMF">rsLXMF</a>. Nomad page hosting uses sibling <a href="https://github.com/Colorado-Mesh/rsNomad">Colorado-Mesh/rsNomad</a> (<code>nomad-core</code>).</p>
+<p>Related docs: <a href="../README.md#reticulum-features">README — Reticulum Features</a>, <a href="../reticulum-sidecar-ipc/">Sidecar IPC contract</a>, <a href="../reticulum-games-parity/">Games parity (Ratspeak)</a>, <a href="../development-environment/#reticulum-sidecar-optional">Development — Reticulum sidecar</a>, <a href="../troubleshooting/#reticulum">Troubleshooting — Reticulum</a>.</p>
+<hr />
+<h2 id="quick-start">Quick start</h2>
+<ol>
+<li>Select the <strong>Reticulum</strong> pill (amber) in the header.</li>
+<li><strong>Connection</strong> → <strong>Start stack</strong> (optional <strong>Auto-start</strong> for next launch).</li>
+<li><strong>Network</strong> → generate or import your LXMF identity (stack must be running).</li>
+<li><strong>Connection → Interfaces</strong> → add and enable transports (TCP hub, I2P, Auto, or RNode over USB / BLE / Wi‑Fi). Use <strong>Add default backbones</strong> to sync community backbone presets by region (adds missing rows disabled, repairs mismatched endpoints, disables decommissioned official testnet hubs, skips correct ones) after identity is configured. <strong>Enable 1 to 3 backbone gateways at most</strong> (2 is the sweet spot; local RNodes/LAN do not count).</li>
+<li><strong>Chat</strong> → LXMF direct messages. <strong>Games</strong> → Tic-Tac-Toe / Chess over LRGP (or Challenge from Peers / Chat DM). <strong>Remote</strong> → rnsh shell + rncp file send/receive/fetch (high-speed paths). <strong>RRC</strong> → multi-hub relay chat. <strong>Peers</strong> and <strong>Topology</strong> for path-table visibility. <strong>Nomad Network</strong> → browse announced nodes or open <strong>My Pages</strong> to host a static Nomad site.</li>
+</ol>
+<p>After changing interfaces on a live network, <strong>restart the stack</strong> so RNS picks up transport changes.</p>
+<hr />
+<h2 id="what-is-included">What is included</h2>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Shipped behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stack lifecycle</td>
+<td>Start / stop / auto-start; disconnect &amp; quit. Sidecar <strong>listen-first</strong>: HTTP binds before live RNS/LXMF attach; Connect marks <strong>configured</strong> when HTTP + identity are ready (live attach / BLE may still be in progress)</td>
+</tr>
+<tr>
+<td>Interfaces</td>
+<td>TCP client, I2P (<code>peers</code>), Auto discovery, RNode (USB serial, <code>ble://…</code>, Wi‑Fi <code>tcp://host:7633</code>); default hub picker by region (Primary &amp; Global selected by default; added disabled; syncs/repairs selected endpoints and disables remaining decommissioned testnet hubs)</td>
+</tr>
+<tr>
+<td>Identity</td>
+<td>Generate / import mnemonic; Ratspeak <code>.rsi</code> PIN backup; official raw identity file export/import; <strong>identity vault</strong> optional local <code>.rsi</code> store</td>
+</tr>
+<tr>
+<td>LXMF chat</td>
+<td>DM-only text, reactions, and <strong>voice memos</strong> (<code>FIELD_AUDIO</code> / <code>AM_OPUS_OGG</code>, Ratspeak wire parity; ~240 KiB / ~4 min cap under the 256 KiB LXMF field + default PN deposit). Attachment labels render; <strong>cached raster images</strong> display inline; use Remote rncp for peer files. <strong>LXST live voice Call</strong> is separate telephony (rsLXST), not an LXMF voice clip. Oversized memos that exceed the PN deposit limit surface as Direct-only (<code>message_too_large_for_propagation</code>) — never as a PN outage.</td>
+</tr>
+<tr>
+<td>Remote</td>
+<td><strong>rnsh</strong> multi-session shell + <strong>rncp</strong> send/receive/fetch under one tab (Shell / Transfer / Saved / Settings); Chat DM send-file convenience; path-speed gate (TCP/network); inbound Ask/allow-list; auto-reconnect / auto-retry; LXMF “request enable receive” prompt between mesh-client peers</td>
+</tr>
+<tr>
+<td>RRC</td>
+<td>Reticulum Relay Chat — discovered/manual/favourite hubs, up to <strong>8</strong> concurrent sessions, hub/room auto-join, rooms, nicklists, slash commands (<code>/list</code>, <code>/who</code>, <code>/join</code>, …), unread badges + sounds for any new room message by default (also badges the <strong>Reticulum protocol pill</strong> with LXMF Chat; <strong>App → Notifications</strong> can switch to IRC-style DMs/@mentions only), toasts when the RRC tab is inactive, automatic reconnect with backoff</td>
+</tr>
+<tr>
+<td>Delivery</td>
+<td><strong>Direct</strong> when destination is in path table (outbound-initiated Direct replies need the sidecar <strong>outbound Direct backchannel</strong>). After Direct exhausts: <strong>multi-PN cascade</strong> — preferred remote → other enabled remotes (hop-sorted) → in <strong>Auto</strong> only, up to 3 heard-but-not-added <strong>Discovered</strong> PNs (hop-sorted, never persisted) → <strong>local-prop last</strong>. Remote PN Completes as <code>delivered</code> (<strong>Stored at propagation node</strong>, PN + green check); local-prop Completes as <code>stored_locally</code> (deposited on your hosted PN — PN + amber house; full PN parity with <code>lxmd</code>, including peer <code>/offer</code> sync — not an outbox). Propagation mode <strong>Off</strong> disables the cascade entirely. <strong>Paper</strong> for offline encrypted QR/<code>lxm://</code> handoff (no network — Completes immediately, no <code>lxmf_outbound_status</code>). Path/transport badges (RF/BLE/TCP/NET, multi, PN, Paper) are egress evidence — network UI stays <strong>Sending</strong> until <code>lxmf_outbound_status</code> (<code>delivered</code> / <code>stored_locally</code> / <code>failed</code>). Terminal <code>delivery_status</code> + <code>delivery_method</code> persist in SQLite. Hosted-PN Completes ≠ recipient opened Chat. Inbound <code>received_via</code> / TCP badges use local interface <strong>config type</strong>, not display name.</td>
+</tr>
+<tr>
+<td>Peers</td>
+<td>RNS path table + messaged History + saved Contacts + Favorites (Peers tab sub-tabs); LXMFace avatars; probe; <strong>LXST Call</strong> and <strong>LRGP Challenge</strong> on rows; peer detail modal (Save as contact is manual)</td>
+</tr>
+<tr>
+<td>Games</td>
+<td>LRGP Tic-Tac-Toe + Chess via sibling <a href="https://github.com/ratspeak/lrgp-rs">lrgp-rs</a>; Games tab + Challenge from Peers/Chat; opponent labels via <code>resolveReticulumRemoteHashLabel</code>; deep-link <code>lrgp:&lt;session&gt;</code> / <code>lxm://game/&lt;id&gt;</code>; delivery chips + resend-after-restart (<code>games_outbound.db</code>); Chess promotion picker + threefold/50-move claims; wire-compatible with Ratspeak (<a href="../reticulum-games-parity/">parity checklist</a>)</td>
+</tr>
+<tr>
+<td>Topology</td>
+<td>Best-effort graph from path-table next hops (not a full multi-hop trace)</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>Local RMAP v4 discovery map (heard opt-in interfaces with GPS); link to rmap.world for global view</td>
+</tr>
+<tr>
+<td>Nomad Network</td>
+<td>Favourites / announces list (collapsible sidebar, default Favourites sub-tab) plus <strong>My Pages</strong> watched-folder hosting; <strong>lazy-mount after first visit</strong>; Micron (.mu) browser in a <strong>dual-axis scroll shell</strong>; <strong>fit-width wrap default</strong> with open-width toggle for ASCII pages; in-page navigation, back/forward, session page cache, <code>/file/</code> downloads, source toggle, and lxmf:// DM links; page/file errors humanized via <code>nomadPageErrorHumanize.ts</code>. Local hosting uses sibling <a href="https://github.com/Colorado-Mesh/rsNomad">rsNomad</a> (<code>nomad-core</code>) for static <code>/page</code> + <code>/file</code> serving and <code>nomadnetwork.node</code> announces (no CGI). Choose a site root (<code>pages/</code>) or pages directory; FS watcher reloads routes; <code>nomad_serving_enabled</code> auto-restores after stack start. My Pages also supports in-app <code>.mu</code> authoring (new / edit / delete) via the <strong>Micron page editor</strong> (source + live preview); no file uploads.</td>
+</tr>
+<tr>
+<td>Propagation</td>
+<td><strong>Propagation mode</strong> (Off / Auto / Manual; default <strong>Off</strong>) with per-mode guidance — Off disables sync <strong>and</strong> the outbound PN cascade. <strong>Sync</strong> is <strong>client <code>/get</code>-primary</strong> (inbox into Chat; UI progress from <code>PropagationClient</code>). Auto order: <strong>finite-hop Discovered</strong> (no Add/Preferred) → configured remotes → <strong>unknown-hop Discovered</strong> → local-prop; <strong>Ignored for Auto</strong> hashes are skipped for sync and deposit. Manual: Preferred (or closest added for that sync) → other remotes → local-prop. Hard-fails with <code>PROPAGATION_PATH_UNKNOWN</code> when no path after announce settle. Peer <code>/offer</code> inventory push stays on the <strong>Host peer loop</strong> when serving. <strong>Outbound deposit cascade</strong> (separate): preferred / configured remotes → in Auto up to 3 Discovered PNs (plausible hops ≤32) → local-prop last. Preferred, per-node Sync, rename/delete, Discovered Add/<code>/offer</code> probe, local PN hosting, auto-sync interval, Advanced PN hosting policy.</td>
+</tr>
+<tr>
+<td>Diagnostics</td>
+<td>Reticulum-native interface / path / LXMF health and config audit (<code>reticulum/*</code> rows only on this tab; LoRa Hop Goblins and foreign-LoRa tables are Meshtastic/MeshCore-scoped)</td>
+</tr>
+<tr>
+<td>Admin</td>
+<td>RNode firmware flasher (Web Serial), stack factory reset</td>
+</tr>
+<tr>
+<td>Sniffer / Stats</td>
+<td>Reticulum packet log tab (<code>rawPacketLog.reticulum.*</code>)</td>
+</tr>
+<tr>
+<td>Coexistence</td>
+<td>BLE on a <strong>different</strong> MAC from Meshtastic/MeshCore; scan mutex; <strong>Noble BLE yield</strong> when an enabled BLE RNode is in config (sidecar suspends Noble on macOS/Windows so btleplug can pair)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Not in Reticulum mode:</strong> Meshtastic/MeshCore-style RF channel chat, MQTT broker card, Meshtastic/MeshCore LoRa node position map, Rooms BBS, TAK, Meshtastic PKI Security tab, Hop Goblins routing diagnostics. (RRC is hub room chat over Reticulum Links — not LoRa RF channels.)</p>
+<hr />
+<h2 id="sidebar-tabs">Sidebar tabs</h2>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Connection</td>
+<td>Stack start/stop, auto-start, interfaces CRUD, interface health, sidecar interface-issue banner (clears when hubs are disabled/removed), <strong>Pick device</strong> (serial / BLE)</td>
+</tr>
+<tr>
+<td>Chat</td>
+<td>LXMF DMs (+ rncp Send file when peer has a receive destination)</td>
+</tr>
+<tr>
+<td>Games</td>
+<td>LRGP Tic-Tac-Toe + Chess (<code>GamesPanel</code>, <code>Gamepad2</code> icon); challenge/accept/play; Challenge also on Peers / Chat DM</td>
+</tr>
+<tr>
+<td>Remote</td>
+<td>rnsh shell + rncp transfer (<code>ReticulumRemotePanel</code>): multi-session terminals, send/fetch/receive, saved addresses, inbound policy</td>
+</tr>
+<tr>
+<td>RRC</td>
+<td>Multi-hub relay chat (<code>RrcPanel</code>): favourites/discovered hubs, rooms, nicklist, slash commands, reconnect</td>
+</tr>
+<tr>
+<td>Nomad Network</td>
+<td>Favourites, announces, <strong>My Pages</strong> (watched-folder static host via rsNomad; auto-restore when stack starts), Micron page browser (dual-axis scroll shell, fit-width default + open-width toggle, navigation, cache, file downloads); lazy-mount keep-alive after first visit</td>
+</tr>
+<tr>
+<td>Peers</td>
+<td>Path-table <strong>Peers</strong>, messaged <strong>History</strong> (<code>last_heard</code>), saved <strong>Contacts</strong> (<code>is_contact</code>), <strong>Favorites</strong>; ranked multi-path slots + per-peer medium pin in peer path detail (sidebar label <strong>Peers</strong>; Meshtastic/MeshCore use <strong>Nodes</strong> with All/History DM tabs)</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>Identity, stack settings (including global <strong>path medium</strong> preference), announces, propagation (preferred, sync, rename/delete remote nodes), config import/export, identity vault (sidebar label <strong>Network</strong>; LoRa tabs use <strong>Radio</strong>)</td>
+</tr>
+<tr>
+<td>Admin</td>
+<td>RNode firmware flasher; factory reset (danger zone)</td>
+</tr>
+<tr>
+<td>Diagnostics</td>
+<td>Reticulum runtime rows + interface config audit/repair; LoRa routing/RF and foreign-LoRa findings hidden</td>
+</tr>
+<tr>
+<td>Topology</td>
+<td>Path-table graph (force layout; <code>via_hash</code> next-hop edges)</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>RMAP v4 discovery map (local heard interfaces + path-table reachability overlay)</td>
+</tr>
+<tr>
+<td>Stats / Sniffer</td>
+<td>Packet log views (<code>rawPacketLog.reticulum.*</code>)</td>
+</tr>
+<tr>
+<td>App</td>
+<td>Shared app settings, DB tools, appearance (includes <strong>Log panel</strong> toggle)</td>
+</tr>
+</tbody>
+</table>
+<p>Hidden tabs (Meshtastic/MeshCore only): Modules/Repeaters, Rooms, Telemetry, Security, TAK, RF, Graph.</p>
+<p>The <strong>Log panel</strong> (right rail, toggled from <strong>App → Log panel</strong>) is shared across protocols; on Reticulum it shows sidecar and local-interface lines tagged for filtering.</p>
+<h3 id="default-hub-presets">Default hub presets</h3>
+<p><strong>Connection → Interfaces</strong> offers <strong>Add default backbones</strong>, which opens a regional checkbox picker (Primary &amp; Global Backbone selected by default). <strong>Enable 1 to 3 backbone gateways at most</strong>—2 is the sweet spot for redundancy without bandwidth bloat (1 global hub + 1 regional gateway; specialty like I2P/Yggdrasil only as needed). Locally connected RNodes and local LAN interfaces do not count toward this limit. The UI warns when more than three default backbones are enabled. Sync applies only the selected presets from <a href="../src/renderer/lib/reticulum/reticulumDefaultHubPresets.ts"><code>reticulumDefaultHubPresets.ts</code></a>. New presets are added <strong>disabled</strong> so you can enable them after review (add always sets <code>mode=boundary</code>). The sync <strong>skips</strong> rows that already match the preset (including any valid rnsd <code>mode</code>), <strong>repairs</strong> rows that match the same TCP host+port or I2P peer but have wrong name/type/host formatting or a missing/invalid <code>mode</code> (missing/invalid → <code>boundary</code>; does not overwrite a valid non-boundary mode or change <code>enabled</code>), <strong>disables</strong> enabled interfaces pointed at remaining decommissioned official testnet endpoints (Amsterdam) even when those hubs were not in the selected region set, and <strong>adds</strong> missing selected presets. The interfaces list is grouped by the same regions, with non-preset rows under <strong>User Defined</strong>. Disabled rows are visually muted; use row checkboxes and <strong>Delete selected</strong> to remove many interfaces at once (system-managed rows are not selectable):</p>
+<table>
+<thead>
+<tr>
+<th>Region</th>
+<th>Preset</th>
+<th>Type</th>
+<th>Host</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Primary &amp; Global</td>
+<td>RNS Dublin Mainnet</td>
+<td>TCP</td>
+<td><code>dublin.connect.reticulum.network:4965</code></td>
+</tr>
+<tr>
+<td>Primary &amp; Global</td>
+<td>RNS Between The Borders</td>
+<td>TCP</td>
+<td><code>reticulum.betweentheborders.com:4242</code></td>
+</tr>
+<tr>
+<td>Primary &amp; Global</td>
+<td>RMAP World</td>
+<td>TCP</td>
+<td><code>rmap.world:4242</code></td>
+</tr>
+<tr>
+<td>Primary &amp; Global</td>
+<td>RNS Simply Equipped</td>
+<td>TCP</td>
+<td><code>rns.simplyequipped.com:4242</code></td>
+</tr>
+<tr>
+<td>Primary &amp; Global</td>
+<td>RNS Beleth</td>
+<td>TCP</td>
+<td><code>rns.beleth.net:4242</code></td>
+</tr>
+<tr>
+<td>North America</td>
+<td>RNS_Transport_US-East</td>
+<td>TCP</td>
+<td><code>45.77.109.86:4965</code></td>
+</tr>
+<tr>
+<td>North America</td>
+<td>RNS DFW Central</td>
+<td>TCP</td>
+<td><code>dfw.us.g00n.cloud:6969</code></td>
+</tr>
+<tr>
+<td>North America</td>
+<td>RNS AceHoss</td>
+<td>TCP</td>
+<td><code>rns.acehoss.net:4242</code></td>
+</tr>
+<tr>
+<td>North America</td>
+<td>RNS FireZen</td>
+<td>TCP</td>
+<td><code>firezen.com:4242</code></td>
+</tr>
+<tr>
+<td>North America</td>
+<td>RNS WashMesh</td>
+<td>TCP</td>
+<td><code>reticulum.washmesh.net:7242</code></td>
+</tr>
+<tr>
+<td>North America</td>
+<td>MichMesh</td>
+<td>TCP</td>
+<td><code>rns.michmesh.net:7822</code></td>
+</tr>
+<tr>
+<td>Europe</td>
+<td>RNS Sweden bnZ</td>
+<td>TCP</td>
+<td><code>node01.rns.bnz.se:4242</code></td>
+</tr>
+<tr>
+<td>Europe</td>
+<td>RNS Germany rtclm</td>
+<td>TCP</td>
+<td><code>rtclm.de:4242</code></td>
+</tr>
+<tr>
+<td>Europe</td>
+<td>RNS Germany Dismail</td>
+<td>TCP</td>
+<td><code>rns.dismail.de:7822</code></td>
+</tr>
+<tr>
+<td>Europe</td>
+<td>RNS Belgium ON6ZQ</td>
+<td>TCP</td>
+<td><code>reticulum.on6zq.be:4965</code></td>
+</tr>
+<tr>
+<td>Europe</td>
+<td>RNS Quad4</td>
+<td>TCP</td>
+<td><code>rns.quad4.io:4242</code></td>
+</tr>
+<tr>
+<td>Europe</td>
+<td>RNS Istanbul</td>
+<td>TCP</td>
+<td><code>istanbul.reserve.network:9034</code></td>
+</tr>
+<tr>
+<td>Europe</td>
+<td>RNS UberSpace</td>
+<td>TCP</td>
+<td><code>aspark.uber.space:44860</code></td>
+</tr>
+<tr>
+<td>Europe</td>
+<td>noDNS1</td>
+<td>TCP</td>
+<td><code>202.61.243.41:4965</code></td>
+</tr>
+<tr>
+<td>Europe</td>
+<td>noDNS2</td>
+<td>TCP</td>
+<td><code>193.26.158.230:4965</code></td>
+</tr>
+<tr>
+<td>Europe</td>
+<td>AT-Vienna-Backbone</td>
+<td>TCP</td>
+<td><code>rns.radical.computer:4242</code></td>
+</tr>
+<tr>
+<td>Asia &amp; Oceania</td>
+<td>RNS Sydney Australia</td>
+<td>TCP</td>
+<td><code>sydney.reticulum.au:4242</code></td>
+</tr>
+<tr>
+<td>Asia &amp; Oceania</td>
+<td>RNS China</td>
+<td>TCP</td>
+<td><code>rns.net.cn:4242</code></td>
+</tr>
+<tr>
+<td>Asia &amp; Oceania</td>
+<td>RNS SE Asia</td>
+<td>TCP</td>
+<td><code>rns.jaykayenn.net:4242</code></td>
+</tr>
+<tr>
+<td>Asia &amp; Oceania</td>
+<td>Nexus BackbonePH</td>
+<td>TCP</td>
+<td><code>212.227.208.95:4242</code></td>
+</tr>
+<tr>
+<td>Specialty</td>
+<td>RNS I2P Hub A</td>
+<td>I2P</td>
+<td><code>g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p</code></td>
+</tr>
+<tr>
+<td>Specialty</td>
+<td>Yggdrasil_Ashburn_VA</td>
+<td>TCP</td>
+<td><code>[201:ac2f:89eb:2afe:5f3d:9db9:a7e9:2f75]:4343</code> (Yggdrasil)</td>
+</tr>
+<tr>
+<td>Specialty</td>
+<td>Ratspeak &amp; Colorado Mesh</td>
+<td>TCP</td>
+<td><code>rns.ratspeak.org:4242</code></td>
+</tr>
+</tbody>
+</table>
+<p>The historical Amsterdam public testnet hub (<code>amsterdam.connect.reticulum.network:4965</code>) remains decommissioned. Connection → Interfaces shows a red <strong>decommissioned</strong> badge on matching rows and blocks <strong>Enable</strong> (with guidance to use <strong>Add default backbones</strong> or <strong>Directory ↗</strong>). Stack start also auto-disables enabled interfaces pointed at that decommissioned host. Connection → Interfaces shows a <strong>Directory ↗</strong> link to <a href="https://directory.rns.recipes/">directory.rns.recipes</a> for additional community backbone definitions. Directory-listed hubs such as <strong>StoppedCold</strong> are <strong>not</strong> included in <strong>Add default backbones</strong> sync — add them manually from the directory if desired. <strong>Yggdrasil_Ashburn_VA</strong> (Specialty) is added as a disabled TCP client to the directory Backbone remote — enable it only when Yggdrasil is running locally; the Reticulum manual recommends binding outbound Yggdrasil links to your tunnel device (often <code>tun0</code>).</p>
+<p>Configure a Reticulum identity on the <strong>Network</strong> tab before adding interfaces; the panel disables interface actions until identity is ready.</p>
+<h3 id="rmap-v4-discovery-map">RMAP v4 discovery map</h3>
+<p>The <strong>Map</strong> tab shows <strong>local</strong> RMAP v4 discovery data — interfaces your stack has heard on aspect <code>rnstransport.discovery.interface</code>. This is distinct from Meshtastic/MeshCore node position maps:</p>
+<table>
+<thead>
+<tr>
+<th>View</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Map tab (local)</strong></td>
+<td>rsReticulum <code>DiscoveryStore</code> via <code>GET /api/v1/rmap/discovered</code>; refreshed on a timer and via WebSocket <code>rmap.discovery</code></td>
+</tr>
+<tr>
+<td><strong>Global map (external)</strong></td>
+<td><a href="https://rmap.world/">rmap.world</a> — link in Map tab and Network → RMAP controls</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Publish (appear on maps):</strong> Network → <strong>RMAP v4 discovery</strong> or per-interface <strong>RMAP</strong> toggles on Connection. Requires App → GPS coordinates for map markers. LoRa-only stacks need an enabled TCP hub (for example <code>rmap.world:4242</code>) so discovery announces reach the wider network — see config audit <code>rmap_no_tcp_hub</code>.</p>
+<p><strong>Eligible publish interfaces:</strong> enabled RNode / RNode Multi / KISS (with serial port), BLE peer, I2P, UDP, and pipe. <strong>Not eligible:</strong> Auto, outbound TCP client hubs (including community presets), and system-managed shared-instance rows.</p>
+<p><strong>Network → Publish on RMAP v4:</strong> enables <code>discoverable</code> on <strong>all</strong> eligible enabled interfaces (plus LoRa/BLE transport + <code>rmap.world</code> hub when needed). The checkbox is checked only when every eligible interface is publishing; a partial set is indeterminate — check again to sync the rest. Uncheck clears discoverable on all eligible rows.</p>
+<p><strong>Connection status:</strong> shows <strong>publishing X of Y</strong> (eligible interfaces only; TCP hubs do not count toward Y). Amber when <code>0 &lt; X &lt; Y</code>, brand green when <code>X === Y</code>, gray when not publishing.</p>
+<p><strong>Consume (Map tab):</strong> Sidecar bootstrap migrations in rnsd config: <code>discover_interfaces = Yes</code> so the stack listens for discovery announces; when <code>announce_interval_sec</code> is absent, writes <strong>3600</strong> (explicit <strong>0</strong> is preserved). Markers show GPS when coordinates were included in the announce; interfaces without coords appear in the sidebar list only. <strong>Reachable</strong> badges join discovery rows with the RNS path table (Peers tab) by matching <code>transport_id</code> against peer <code>destination_hash</code> or <code>via_hash</code>.</p>
+<p><strong>UI:</strong> Leaflet map with 280px sidebar list; filter pills (All, LoRa, Backbone, I2P, TCP, Other); basemap switcher and Locate Me (App GPS); manual Refresh; marker click opens peer detail when the node is in the path table. List row click flies to coordinates at zoom 14.</p>
+<p><strong>Refresh model:</strong> Map tab polls <code>GET /api/v1/rmap/discovered</code> every <strong>30s</strong> while mounted; sidecar also pushes WebSocket <code>rmap.discovery</code> every <strong>10s</strong> when the discovery fingerprint changes (runtime updates store even when Map tab is hidden).</p>
+<p><strong>Publish settings (Network → RMAP v4 discovery):</strong> announce interval <strong>60–1440 min</strong> (default <strong>360</strong>); optional height (meters) and <code>reachable_on</code> (max 256 chars). LoRa/BLE publish auto-enables <code>enable_transport</code> and the <strong><code>rmap.world:4242</code></strong> hub. Stack restart confirm after enabling publish.</p>
+<p><strong>Performance / memory:</strong> Renderer mirrors discovery rows in <code>reticulumDiscoveryMapStore</code> (in-memory only; capped at <strong>2,000</strong> newest rows with client-side 7-day <code>last_heard</code> eviction). Peers tab opens use the sidecar’s soft cached peer read; manual <strong>Refresh</strong> forces live <code>GET /api/v1/peers?refresh=1</code>. Path-table peers apply <strong>incremental</strong> <code>peers_updated</code> / announce patches (50ms batch); full dumps run on connect, manual Refresh, stack restart, exceptional <code>peers_updated</code> events, and a slow safety poll (30s, or 60s above 2,000 peers). In-memory hard ceiling <strong>100,000</strong>; App tab destination cap defaults to <strong>10,000</strong> (max <strong>50,000</strong>) and age prune for SQLite contact meta. The sidecar selects at most <strong>2,000</strong> peers before topology graph construction; the renderer feeds at most <strong>800</strong> path-table rows into Topology after hop filters (and RF-only when enabled). The <strong>drawn</strong> graph uses the same visible-node cap as Meshtastic/MeshCore Graph: <strong>400</strong> after hop filters (force layout switches to grid repulsion above <strong>400</strong>). Topology also has an <strong>RF only</strong> filter (RNode / KISS / BLE RNode / BLE Peer; hides TCP / I2P / Auto hubs and their peers). Hop and RF-only filters run before the 800 last-seen ingest slice. Topology auto-refresh pauses above the large-mesh threshold. Leaflet uses <code>preferCanvas</code>; tile layer <code>keepBuffer={1}</code>. Stores clear on disconnect and unexpected sidecar stop.</p>
+<h3 id="app-retention-limits">App → Retention &amp; limits</h3>
+<p>Reticulum destination age prune is enabled by default at <strong>30 days</strong> and affects only non-favorited destinations. The destination count cap is also enabled by default at <strong>10,000</strong> (maximum <strong>50,000</strong>); favorites are preserved. Reticulum message retention is independently configurable and defaults to keeping the newest <strong>4,000</strong> messages. RRC room history retention is independently enabled by default (newest <strong>10,000</strong> messages; <strong>30-day</strong> age prune) and is controlled from App → Retention (<code>rrcMessageRetentionEnabled</code> / <code>rrcMessageRetentionCount</code>). Per-room UI hydrate loads at most <strong>500</strong> newest rows (<code>RRC_ROOM_HISTORY_LOAD_COUNT</code> via <code>rrcRoomHistory.ts</code>) — older retained SQLite rows stay on disk until prune.</p>
+<p><strong>Config audit kinds:</strong> <code>rmap_missing_coordinates</code>, <code>rmap_no_tcp_hub</code>, <code>rmap_transport_disabled</code>, <code>rmap_i2p_not_connectable</code>.</p>
+<p><strong>Implementation:</strong> <code>ReticulumMapPanel.tsx</code>, <code>reticulumDiscoveryMapStore.ts</code>, <code>reticulumDiscoveryMapLayout.ts</code>, <code>reticulumRmapDiscovery.ts</code> (capable gate, Network all-eligible checked state, X-of-Y tone), <code>ReticulumRmapDiscoveryControls</code> / <code>ReticulumRmapConnectionStatus</code>, <code>useReticulumRuntime.ts</code> (WS <code>rmap.discovery</code>).</p>
+<p><strong>Related panels:</strong> <strong>Topology</strong> = logical hops (no geography); <strong>Peers</strong> = path table; <strong>Map</strong> = geographic discovery + reachability.</p>
+<hr />
+<h2 id="architecture">Architecture</h2>
+<pre><code class="language-mermaid">flowchart LR
+  subgraph ui [Renderer GPL]
+    RT[useReticulumRuntime]
+    Panels[Stack / Network / Admin / Chat panels]
+    RT --&gt; Panels
+  end
+  subgraph main [Electron main GPL]
+    IPC[reticulum:* IPC proxy]
+    DB[(SQLite reticulum_* tables)]
+    IPC --&gt; DB
+  end
+  subgraph sidecar [Sidecar AGPL]
+    Bin[mesh-client-reticulum]
+    RNS[rsReticulum + rsLXMF]
+    Bin --&gt; RNS
+  end
+  ui &lt;--&gt;|electronAPI| IPC
+  IPC &lt;--&gt;|127.0.0.1| Bin
+</code></pre>
+<p>The renderer <strong>must not</strong> call the sidecar URL directly (sandbox). All HTTP/WS goes through main-process <code>reticulum:proxyGet</code> / <code>proxyPost</code> / <code>proxyPut</code> / <code>proxyDelete</code>. Paths must start with <code>/api/v1/</code>. Full route list: <a href="../reticulum-sidecar-ipc/">reticulum-sidecar-ipc.md</a>.</p>
+<p><strong>Listen-first connect:</strong> The sidecar binds HTTP first, then <code>attach_live</code> brings up RNS/LXMF (path table, BLE Peer, deferred PN messagestore). Electron health is <code>GET /api/v1/status</code> with <code>status: "ok"</code> — not <code>rns_ready</code> / <code>lxmf_ready</code>. <code>useReticulumRuntime</code> marks connection <strong>configured</strong> once start succeeds and identity is known, then hydrates peers/DB in the background and dispatches <code>RETICULUM_CONFIGURED_EVENT</code>. TCP hubs and RRC can proceed after live attach; Chat LXMF send/reaction fail closed with <code>requires live rns-stack sidecar</code> until the bridge is up. <strong>Cancel</strong> / stop does not wait on cargo or BLE; Noble yield for an enabled BLE RNode starts only after health (fire-and-forget). Renderer LXMF/RRC proxy sends use a <strong>15 s</strong> IPC deadline (<code>RETICULUM_IPC_SEND_TIMEOUT_MS</code>).</p>
+<h3 id="ownership-rns-vs-lxmf-client-vs-mesh-client-policy">Ownership: RNS vs LXMF client vs mesh-client policy</h3>
+<p>Reticulum is not one blob that “does everything automatically.” Before adding sidecar or UI automation, classify the work:</p>
+<pre><code class="language-mermaid">flowchart TB
+  subgraph rns [RNS transport - library]
+    PathTable[Path table / RequestPath]
+    AnnounceFlood[Announce flood / Auto beacons]
+    Links[Links / proofs / Resources]
+  end
+  subgraph lxmf [LXMF app layer - client or lxmd must own]
+    DeliveryAnnounce[lxmf.delivery announces]
+    OutboundDriver[Direct then Propagated delivery]
+    PnHost[PN serve /get /offer]
+    IdentityLearn[Pubkey from announces / path responses]
+  end
+  subgraph mesh [mesh-client product policy]
+    AutoDemote[Auto vs private LAN demotion]
+    PnCascade[Multi-PN deposit and sync cascade]
+    PathMedium[Prefer RF vs network slots]
+    UiProbe[DM probe / Nomad force-path]
+  end
+  rns --&gt; lxmf
+  lxmf --&gt; mesh
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Owns</th>
+<th>mesh-client role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>RNS transport</strong> (rsReticulum)</td>
+<td>Path table, announce flooding, AutoInterface beacons, RMAP discovery announce signing, Links / proofs / Resources</td>
+<td>Call transport APIs (<code>RequestPath</code>, path table reads, destination register). Do <strong>not</strong> reimplement pathfinding or beacon loops in the sidecar or UI. Library gaps belong in overlays under <a href="../reticulum-sidecar/patches/README.md"><code>reticulum-sidecar/patches/</code></a>, not a second routing plane.</td>
+</tr>
+<tr>
+<td><strong>LXMF client / PN</strong> (rsLXMF + sidecar orchestration)</td>
+<td><code>lxmf.delivery</code> announce schedules, Direct→Propagated outbound driver, identity learning for LRPROOF, local PN serve (<code>/offer</code>/<code>/get</code>), client inbox retrieve</td>
+<td>Intentional <strong>lxmd / Ratspeak parity</strong>. rsLXMF is a library, not a full daemon — the sidecar owns these loops (<code>lxmf_delivery.rs</code>, <code>lxmf_outbound.rs</code>, <code>propagation_*</code>, <code>pn_inbound.rs</code>). Without them, Chat and offline delivery do not work. Documented elsewhere as “Host PN fabric → Chat (lxmd-style glue)”: mesh-client is PN + end-client on rsLXMF, <strong>not</strong> a second <code>lxmd</code> binary.</td>
+</tr>
+<tr>
+<td><strong>mesh-client product policy</strong></td>
+<td>AutoInterface demotion toward private TCP/UDP, multi-slot path failover before PN fallback, prefer path medium, multi-PN deposit/sync cascade (Off/Auto/Manual), Chat DM auto-probe, Nomad <code>force_path_refresh</code></td>
+<td><strong>Not</strong> required by bare RNS. Exists for multi-hub / Auto+LAN / UX. Treat as intentional product behavior; do not mistake it for transport.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Renderer rule:</strong> UI mirrors sidecar events and configures policy (announce interval, Propagation mode, Path/Probe buttons, RMAP publish toggles, topology layout). It must not invent peer discovery, announce flooding, or a second pathfinder. Optimistic <code>announce.received</code> peer rows and Topology graphs are <strong>views</strong> over the RNS path table, not routing.</p>
+<p><strong>What looks “automatic” but is correct to own in the sidecar</strong></p>
+<ul>
+<li>Periodic / startup <strong>LXMF delivery</strong> announces and Network <strong>Announce now</strong> (Ratspeak/lxmd parity; see Network tab).</li>
+<li><code>LxmfOutboundDriver</code> Direct planning, path-request gating, retries, then Propagated cascade.</li>
+<li>PN hosting admission, peer <code>/offer</code> bookkeeping, silent <code>/get</code> catch-up, and renderer Auto/Manual <strong>sync cascades</strong> that call into those APIs.</li>
+<li>Registering announce/path-response handlers so Direct LRPROOF has peer public keys.</li>
+</ul>
+<p><strong>What is product policy above RNS</strong> (keep intentional; cite when changing)</p>
+<ul>
+<li><a href="../reticulum-sidecar/src/stack/auto_path_policy.rs"><code>auto_path_policy.rs</code></a> — RNS correctly prefers 0-hop Auto; sidecar demotes unhealthy Auto toward a live <strong>private</strong> path for LXMF Direct (see <a href="#path-routing">Path routing</a>).</li>
+<li><a href="../reticulum-sidecar/src/stack/path_failover.rs"><code>path_failover.rs</code></a> + path-medium overlays — ranked slots / medium preference before giving up Direct.</li>
+<li><a href="../reticulum-sidecar/src/stack/pn_cascade.rs"><code>pn_cascade.rs</code></a> + <a href="../src/renderer/lib/reticulum/reticulumPropagationAutoApply.ts"><code>reticulumPropagationAutoApply.ts</code></a> — multi-PN deposit and sync order.</li>
+<li>Chat DM auto-probe (<code>useReticulumDmPathProbe</code>) — reachability UX; RNS would still path on send.</li>
+<li>Nomad <code>force_path_refresh</code> — DropPath→RequestPath recovery for stale TCP hub paths.</li>
+</ul>
+<p><strong>Gate for new automation:</strong> Is this RNS transport, LXMF client/PN (lxmd parity), or mesh-client policy? Prefer library/overlay for transport; prefer sidecar lxmd-shaped loops for LXMF; prefer explicit, documented policy modules for product overrides — never a parallel path table or announce flood in the renderer.</p>
+<p><strong>Duplication vs ownership (send / path / propagation):</strong> Extra sidecar (or renderer) code is not automatically “Ratspeak duplicated.” Classify before deleting or relocating:</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Upstream-owned</th>
+<th>mesh-client-owned (keep)</th>
+<th>Suspicious duplication (do not add)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Send pipeline</strong></td>
+<td>LXMF wire, Direct outbound driver, terminal <code>lxmf_outbound_status</code> Completes</td>
+<td>Renderer outbox drain, optimistic pending→hash rekey, SQLite <code>delivery_status</code>, badge semantics (<code>sending</code> vs recipient <strong>Delivered</strong> vs PN deposit). <code>POST /lxmf/send</code> enqueue is not delivery.</td>
+<td>A second outbound driver or treating HTTP send <code>ok</code> as recipient receipt</td>
+</tr>
+<tr>
+<td><strong>Path policy</strong></td>
+<td>RNS path table, <code>RequestPath</code>, announce flood</td>
+<td><code>auto_path_policy.rs</code>, <code>path_failover.rs</code>, path-medium preference/pins — product policy on the RNS table</td>
+<td>A parallel pathfinder or announce loop in sidecar or UI</td>
+</tr>
+<tr>
+<td><strong>Propagation</strong></td>
+<td>PN <code>/offer</code>/<code>/get</code> wire (rsLXMF)</td>
+<td>Sidecar LXMF/PN loops (lxmd parity) plus <code>pn_cascade.rs</code> / Auto-discovered candidates / Off·Auto·Manual sync order (<code>reticulumPropagationAutoApply.ts</code>)</td>
+<td>A second messagestore or PN protocol implementation</td>
+</tr>
+</tbody>
+</table>
+<p>False <strong>Delivered</strong> on RF-only Chat is typically <strong>renderer correlation</strong> (outbox vs store row), not missing Ratspeak send logic. Correlate receipts to the attempt’s optimistic id/hash (<code>useChatOutbox.ts</code>); do not “fix” it by moving UI status into the sidecar.</p>
+<hr />
+<h2 id="interface-management-connection-tab">Interface management (Connection tab)</h2>
+<p>Config lives under <code>userData/reticulum/config/</code> (rnsd INI). The Connection tab supports add, edit, enable/disable, and delete:</p>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Sidecar API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Add</td>
+<td><code>POST /api/v1/interfaces</code></td>
+</tr>
+<tr>
+<td>Edit</td>
+<td><code>PUT /api/v1/interfaces/{id}</code></td>
+</tr>
+<tr>
+<td>Enable / disable</td>
+<td><code>POST …/enable</code> or <code>…/disable</code></td>
+</tr>
+<tr>
+<td>Delete</td>
+<td><code>DELETE /api/v1/interfaces/{id}</code></td>
+</tr>
+<tr>
+<td>Set primary RNode</td>
+<td><code>POST /api/v1/interfaces/primary-local-rnode</code> <code>{ id }</code> when <strong>two or more</strong> enabled local RNode paths are active (USB serial, BLE, or local TCP)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Fields by type</strong></p>
+<ul>
+<li><strong>All:</strong> display name; optional rnsd <strong>mode</strong> (<code>full</code>, <code>gateway</code>, <code>access_point</code>, <code>roaming</code>, <code>boundary</code>, <code>point_to_point</code> — shorthands <code>gw</code> / <code>ap</code> accepted). Defaults when omitted on add: TCP/UDP/I2P → <code>boundary</code>; RNode / RNode Multi → <code>access_point</code>; <strong>Auto, BLE Peer, KISS, Pipe</strong> leave mode unset (RNS default <code>full</code>). Hubs usually use <strong>Boundary</strong>; RNodes usually use <strong>Access point</strong>. On edit, clearing mode omits it from config (RNS <code>full</code>).</li>
+<li><strong>IFAC (all types):</strong> optional <code>network_name</code> and <code>passphrase</code> for private/authenticated network segments (<a href="https://reticulum.network/manual/interfaces.html#common-interface-options">common interface options</a>). Shown on add and edit; passphrase uses a masked input with show/hide.</li>
+<li><strong>Flow control (RF only — RNode / RNode Multi / KISS, covering USB, <code>ble://</code>, and <code>tcp://</code> RNode ports):</strong> typed <code>flow_control</code> checkbox. <strong>Defaults on</strong> for RF interfaces so device writes wait for the <code>CMD_READY</code> ready-gate instead of flooding the radio. On <strong>Bluetooth</strong>, NUS often never delivers <code>CMD_READY</code>; the BLE driver waits briefly then releases the one-packet permit so FC still paces bursts without freezing the host 256-slot TX queue. Flow control does <strong>not</strong> enlarge the host-bounded TX channel (rsReticulum uses a fixed 256-slot queue vs Python RNS’s unbounded <code>packet_queue</code>); under RF airtime saturation the host can still drop with <code>PACKET DROPPED: interface TX channel full</code> — expected backpressure, not a stuck link when FC is on. Connection/Diagnostics use <strong><code>txQueueDropsBleFlowControl</code></strong> for that case. The header <strong>Q: used/max</strong> badge shows the <strong>worst fill</strong> among enabled online local RF interfaces (USB / BLE / Wi‑Fi RNode); an amber spinner appears while any of those queues has <code>used &gt; 0</code> (host buffering). Not shown for TCP/UDP/I2P/Auto/BLE Peer (key omitted). Existing RF interfaces missing the key are repaired to <code>Yes</code> once on sidecar bootstrap; an explicit <code>No</code> is preserved. Changing it requires a stack restart. No longer needs the Advanced editor.</li>
+<li><strong>Advanced (edit only):</strong> free-form <code>key = value</code> lines for other common options (e.g. <code>forward_interval</code>, <code>ifac_size</code>, I2P SAM host/port below). Keys that duplicate typed form fields are ignored. Unknown INI keys are preserved across enable/edit/repair via sidecar <code>extra_config</code> (no longer silently dropped).</li>
+<li><strong>TCP client:</strong> host, port (mesh hub — default port <strong>4242</strong>); IPv6 literals use brackets: <code>[2001:db8::1]:4242</code></li>
+<li><strong>I2P:</strong> comma-separated peer hostnames (<code>.b32.i2p</code> addresses, e.g. <code>{52-base32-chars}.b32.i2p</code>); max <strong>512</strong> characters total; validated in UI and sidecar before write. The typed <strong>Host</strong> field is the hub <strong>peers</strong> list, not the SAM bridge. By default the stack talks to a <strong>SAM application bridge</strong> on <strong><code>127.0.0.1:7656</code></strong> on the machine running mesh-client (not HTTP/HTTPS I2PTunnel proxies on <code>4444</code>/<code>4445</code>). <strong>Restart I2P after enabling SAM</strong> so the bridge listens, then enable the interface and restart the Reticulum stack if it stays down. RMAP publish on I2P sets <code>connectable=yes</code> (inbound); hub <code>peers</code> are dialed as clients as well (Python RNS parity).</li>
+<li>
+<p><strong>Remote SAM (LAN I2P router):</strong> when the I2P router runs on another host, edit the I2P interface → <strong>Advanced</strong> and set rsReticulum keys (not Python RNS <code>sam_address</code> / <code>sam_port</code>):</p>
+<p><code>ini
+i2p_sam_host = 192.168.1.86
+i2p_sam_port = 7656</code></p>
+<p>Save, <strong>enable</strong> the interface (default backbones are added disabled), and restart the stack. On the I2P router, configure SAM to listen on the LAN address (or <code>0.0.0.0</code>), not only <code>127.0.0.1</code>, and confirm reachability from the mesh-client host (e.g. <code>nc -z 192.168.1.86 7656</code>).
+- <strong>RNode:</strong> USB serial, <strong>Bluetooth</strong> (<code>ble://…</code>), or <strong>Wi‑Fi</strong> (<code>tcp://host[:7633]</code>, default <strong>7633</strong>), LoRa preset, callsign. Enabled <strong>Bluetooth</strong> RNode rows show <strong>Signal</strong> bars + dBm from sidecar BLE scans (<code>useReticulumBleRnodeRssiMap</code>): polling starts while the sidecar is <strong>running</strong> (including during <code>connecting</code>) with a short burst until the first sample, then steadies; disabling all BLE RNodes stops scans immediately.
+- <strong>BLE Peer mesh:</strong> optional seed peer addresses
+- <strong>Auto:</strong> name only (link-local discovery)</p>
+</li>
+</ul>
+<h3 id="interface-modes">Interface modes</h3>
+<p>rnsd <strong>mode</strong> applies to every interface type (TCP, I2P, RNode, …), not only radios. It controls path expiry, path seeking, and announce propagation between segments.</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Path Expiry</th>
+<th>Path Seeking</th>
+<th>When to use on an RNode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>full</code></td>
+<td>7 days</td>
+<td>No</td>
+<td>Primary nodes, repeaters, fixed infrastructure — full mesh participation, auto-announces, routes traffic. <strong>Note:</strong> with RMAP <code>discoverable = Yes</code>, RNS silently rewrites to Access Point unless <code>ignore_config_warnings = Yes</code> (mesh-client stamps this when publish is on and you keep Full/Roaming/Boundary).</td>
+</tr>
+<tr>
+<td><code>access_point</code></td>
+<td>24 hours</td>
+<td>Yes</td>
+<td>High-elevation or wide-area radios serving intermittent users — stays quiet until queried, fast path expiry</td>
+</tr>
+<tr>
+<td><code>roaming</code></td>
+<td>6 hours</td>
+<td>Yes</td>
+<td>Mobile/handheld or vehicular RNodes moving between coverage areas — short path timeouts, active discovery</td>
+</tr>
+<tr>
+<td><code>boundary</code></td>
+<td>7 days</td>
+<td>No</td>
+<td>Linking a LoRa segment to an Internet/TCP backbone — isolates local traffic, selective announce bridging</td>
+</tr>
+<tr>
+<td><code>gateway</code></td>
+<td>7 days</td>
+<td>Yes</td>
+<td>Client-facing interface that resolves unknown paths on behalf of connected nodes</td>
+</tr>
+<tr>
+<td><code>point_to_point</code></td>
+<td>7 days</td>
+<td>No</td>
+<td>Dedicated direct link between exactly two nodes — no routing, no announce propagation</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>When adding an RNode, the type default is <strong>Access point</strong> — a good starting point for most radio deployments. Switch to <strong>Roaming</strong> if the radio moves, or <strong>Full</strong> for a fixed high-participation LoRa node. For Internet/LoRa bridging, keep the RNode on Access point (or Roaming) and set the TCP/I2P hub interface to <strong>Boundary</strong> (mesh-client’s hub default).</p>
+</blockquote>
+<h3 id="rmap-publish-and-interface-mode">RMAP publish and interface mode</h3>
+<p>Reticulum requires discoverable interfaces to run as <strong>Gateway</strong>, <strong>Internal</strong>, or <strong>Access Point</strong>. Enabling RMAP publish (<code>discoverable = Yes</code>) on an RNode configured as Full, Roaming, Boundary, or Point-to-point causes rsReticulum to <strong>auto-correct the runtime mode to Access Point</strong> unless the interface INI sets <code>ignore_config_warnings = Yes</code>.</p>
+<p>mesh-client <strong>honors an explicit Full (or other non-AP/Gateway) mode with publish</strong> by writing that opt-out when you enable RMAP on such an interface (and on stack start for existing configs). Connection shows an <strong>Effective: Access Point</strong> badge when live stats still differ from the configured mode (e.g. before restart).</p>
+<table>
+<thead>
+<tr>
+<th>Config</th>
+<th>Runtime after restart</th>
+<th>Idle RF announce behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Full + RMAP publish</td>
+<td>Full (with opt-out)</td>
+<td>LXMF delivery announces egress the RNode on <code>announce_interval_sec</code> (default <strong>1 hour</strong>), plus RMAP discovery announces on the per-interface interval</td>
+</tr>
+<tr>
+<td>Access point + RMAP publish</td>
+<td>Access point</td>
+<td>Quiet until queried; RMAP discovery announces only; 24 h path expiry</td>
+</tr>
+<tr>
+<td>Full, publish off</td>
+<td>Full</td>
+<td>LXMF delivery announces on the radio; no RMAP publish</td>
+</tr>
+</tbody>
+</table>
+<p>Turning publish off clears <code>ignore_config_warnings</code> when it is no longer needed. Do not hand-edit the flag unless you know you need the upstream opt-out.</p>
+<p><code>point_to_point</code> is omitted from the official Reticulum manual’s interface-modes section but is defined in RNS (<code>MODE_POINT_TO_POINT</code>) and included in mesh-client’s mode catalog.</p>
+<p>Inbound “other apps / nodes connect to me” on this machine uses <strong>Share instance</strong> under <strong>Network → stack settings</strong> (runtime <code>SharedInstanceServer</code>), not a separate TCP server interface type. See also <a href="../diagnostics/">diagnostics.md</a> SharedInstance notes.</p>
+<p>Defaults for new/incomplete configs: <code>share_instance = No</code> and <code>instance_name = mesh-client</code> (avoids attaching as a client on system <code>\0rns/default</code>, which would skip spawning local TCP hubs). Existing installs that already have <code>share_instance = Yes</code> / <code>instance_name = default</code> are <strong>not</strong> auto-migrated — use the Connection banner, Network → <strong>Share Reticulum instance</strong>, or Diagnostics <strong>Turn off Share instance</strong> repair, then restart. <strong>Network → Check config</strong> runs an offline parse/audit of <code>userData/reticulum/config</code> via the bundled sidecar (<code>validate-config</code>) on macOS, Windows, and Linux. Maintainers can run the same lint from the CLI: <code>pnpm run reticulum:config:check</code> (optional <code>MESH_CLIENT_RETICULUM_CONFIG_DIR</code>).</p>
+<p><strong>Pick device</strong> opens a modal for serial or BLE selection:</p>
+<ul>
+<li><strong>Serial:</strong> lists <code>GET /api/v1/serial/ports</code> with refresh; manual path entry supported</li>
+<li><strong>BLE RNode / BLE Peer:</strong> runs <code>GET /api/v1/ble/scan</code> with <code>mode=rnode</code> or <code>mode=peer</code> (8 s timeout); rescans after Noble/btleplug settle when Meshtastic/MeshCore also use BLE</li>
+<li>Sidecar exposes <code>GET /api/v1/ble/availability</code> for permission / adapter state</li>
+</ul>
+<p>When multiple enabled local RNode interfaces are connected, the interface list shows which row is <strong>primary</strong>; use <strong>Set as primary</strong> to reorder via <code>primary-local-rnode</code> (see <a href="../reticulum-sidecar-ipc/">Sidecar IPC</a>).</p>
+<p><strong>RNode Wi‑Fi:</strong> stays type <strong>RNode</strong> with <code>port = tcp://host:7633</code>. Do <strong>not</strong> use the TCP Client type for RNode Wi‑Fi. Provision Wi‑Fi over USB from <strong>Admin → Wi‑Fi</strong> (or RNode AP bootstrap) before adding the interface. Packaged sidecars include <code>rns-rnode-tcp</code>. See <a href="#rnode-over-wi-fi">RNode over Wi-Fi</a> below.</p>
+<p><strong>Bluetooth coexistence:</strong> Meshtastic, MeshCore, and Reticulum may each use Bluetooth on <strong>different devices</strong> at once. Same MAC is rejected. Only <strong>active scans</strong> are serialized; connected GATT links are not torn down for another protocol’s scan. On Linux, LoRa stacks use Web Bluetooth in the renderer; Reticulum uses the sidecar <code>btleplug</code> stack.</p>
+<p><strong>Noble BLE yield (macOS/Windows):</strong> When the Reticulum config includes an <strong>enabled BLE RNode</strong> (<code>ble://…</code>), sidecar start kicks <code>bleCoexistence:suspendNobleForReticulumBleConnect</code> <strong>after</strong> HTTP health succeeds (not during cargo/spawn) — Noble disconnects GATT sessions and holds the scan mutex until the RNode connects or a grace window expires. Cancel during cargo never suspends Meshtastic/MeshCore. While <code>scanOwner === 'reticulum'</code>, Meshtastic/MeshCore Noble <strong>connect is rejected</strong> (<code>BleScanBusyError</code>). After the post-connect grace, yield <strong>stops re-contending</strong> (prepare backoff) so an offline RNode cannot thrash LoRa BLE. mesh-client then dispatches <code>mesh-client:nobleBleYieldReleased</code> so Meshtastic/MeshCore can reconnect. If Noble disconnect times out during suspend, the yield is <strong>released</strong> (fail closed) rather than leaving a half-held mutex. Yield lifecycle is owned exclusively by <code>useReticulumNobleBleYieldWatcher</code> (not <code>useReticulumInterfaceSnapshot</code>) with a shared grace clock (<code>reticulumBleConnectGrace.ts</code>) so sidecar pairing is not interrupted. On stack restart, grace may renew when main re-acquires the scan mutex. Meshtastic/MeshCore autostart waits up to ~<strong>65 s</strong> (<code>awaitReticulumBleCoexistenceClear</code>) when Reticulum auto-starts with a BLE RNode.</p>
+<p><strong>Stale BLE bond:</strong> Sidecar may latch <code>bleBondRemoved</code> when the peer dropped pairing information while the OS still shows Paired (bond-desync overlay also <strong>halts</strong> BLE reconnect until stack restart). Connection / Diagnostics / TX-drop bond-stale hints surface Forget-and-re-pair copy — forget the RNode in System Settings → Bluetooth first, prefer USB/<code>tcp://</code> when possible, use Admin → Bluetooth → <strong>Clear paired devices</strong> (USB <code>CMD_BT_UNPAIR</code>, ESP32) then <strong>Start pairing</strong>, <strong>remove and re-add</strong> the BLE interface (<strong>Pick device</strong>) so the saved <code>ble://</code> id refreshes, restart the stack, enter the new PIN. Connection banners link to Admin Bluetooth.</p>
+<p><strong>Pairing timeout:</strong> Sidecar may latch <code>blePairingTimedOut</code> when the OS passkey was not entered within ~60s. Admin <strong>Start pairing</strong> shows the PIN in the Admin panel over USB (radio display may stay blank); do not use Meshtastic’s <code>123456</code> default. The RNode need not appear in System Settings before mesh-client connects.</p>
+<p><strong>Bulk migration:</strong> <strong>Network → Config import</strong> (merge or replace), or import from standard system paths (see <a href="#config-import-paths-system">Config import paths</a>).</p>
+<h3 id="config-audit-and-repair">Config audit and repair</h3>
+<p><strong>Diagnostics → Reticulum interface config</strong> (and inline Connection hints) compare rnsd config to the live interface list:</p>
+<ul>
+<li>Ghost TCP rows (enabled in config but not loaded by RNS)</li>
+<li>Unreachable TCP hubs</li>
+<li>RNode RF preset mismatches</li>
+</ul>
+<p><strong>Repair config</strong> normalizes TCP blocks and legacy preset ids; <strong>Apply preset</strong> writes coordinated defaults. Preset data: <a href="../src/shared/reticulumRnodeRfProfiles.json"><code>src/shared/reticulumRnodeRfProfiles.json</code></a> (coordinated regional, global fallback, legacy aliases such as <code>rnode_us915</code> → <code>rnode_us</code>).</p>
+<hr />
+<h2 id="network-tab">Network tab</h2>
+<ul>
+<li><strong>Identity:</strong> generate BIP-39 recovery phrase; import <strong>private key</strong> as text (hex / base64 / URL-safe base64 / base32) or via <code>reticulum:showIdentityImportDialog</code> (<strong>raw binary 64-byte</strong> identity file only — not hex/base64 text files); import/export PIN-encrypted Ratspeak <strong><code>.rsi</code></strong> (<code>ratspeak.identity.v2</code> via vendored Ratspeak vault); export/import official <strong>raw 64-byte Reticulum identity</strong> file (<code>export-raw</code>, PIN ≥ 6); display name; <strong>replace identity</strong> confirm when keys already exist (<code>replace: true</code> on generate/import)</li>
+<li><strong>Identity slots:</strong> Network panel lists local slots (<code>GET /api/v1/identities</code>), create / switch / delete (<code>POST /api/v1/identities</code>, <code>/switch</code>, <code>/delete</code>). Create/switch are serialized and commit the active pointer only after the working key is applied; the sidecar restarts after a successful change. Soft cap <strong>16</strong> slots; display names are sanitized (control chars rejected, max 128 chars).</li>
+<li><strong>Identity / contact QR:</strong> share via <code>QrCodeImage</code> — Columba-compatible <strong><code>lxma://&lt;lxmf_hash&gt;:&lt;public_key&gt;</code></strong> when the sidecar reports a public key (identity Network QR and peer detail when known); otherwise mesh-client <strong><code>lxm://identity/…</code></strong> / <strong><code>lxm://contact/…</code></strong>. Ingest via paste/file/camera (<code>QrIngestControl</code> under Network <strong>Scan / import</strong>) including <code>lxma://</code> (registers pubkey + saved contact) and encrypted <strong>LXMF paper</strong> <code>lxm://</code> blobs (<code>POST /api/v1/lxmf/paper/ingest</code>) — in-app Network/Chat QR apply <strong>immediately</strong> via <code>handleReticulumQrIngest</code>. OS deep links use the registered <strong><code>lxm://</code></strong> scheme (<code>electron-builder.yml</code>); <code>lxma://</code> / <code>meshcore://</code> are handled when opened/pasted (not OS-registered). <strong>OS-opened</strong> contact / MeshCore imports require confirmation (<code>MeshClientDeepLinkHost</code>); paper OS deep links ingest without confirm.</li>
+<li><strong>Peer fingerprint verification:</strong> Peer detail can mark a contact verified (pins <code>verified_identity_hash</code> + <code>verified_at</code> in SQLite via <code>db:setReticulumDestinationVerified</code>) and warns on mismatch when the live announce hash drifts.</li>
+<li><strong>Header self label:</strong> when configured, the app header shows your Network <strong>display name</strong> (<code>reticulumSelfNodeLabel.ts</code>) — not a hash-prefix stub; omit the <code>Node:</code> label when no real name is set</li>
+<li><strong>Identity vault:</strong> optional passcode (minimum 8 characters) to encrypt a local copy of the last exported <code>.rsi</code> JSON in the main process; unlock is rate-limited. Portable backup is the <code>.rsi</code> / raw identity file, not the vault alone.</li>
+<li><strong>Stack settings:</strong> <code>enable_transport</code>, <code>share_instance</code>, <code>loglevel</code> via <code>PUT /api/v1/stack/settings</code> (UI merge-reads so <code>announce_interval_sec</code> is not cleared accidentally); missing <code>share_instance</code> defaults to <strong>off</strong></li>
+<li><strong>Config validate:</strong> Electron IPC <code>reticulum:validateConfig</code> → one-shot sidecar <code>validate-config --json</code> against <code>userData/reticulum/config</code></li>
+<li><strong>Announces:</strong> interval (<code>announce_interval_sec</code>, 0–86400; default <strong>3600</strong> s / 1 h when unset; <code>0</code> = startup-only) persisted in rnsd config. The live sidecar sends an <strong>LXMF delivery</strong> announce shortly after stack start and on that interval (Ratspeak/lxmd parity). <strong>Announce now</strong> (<code>POST /api/v1/announces</code>) forces an immediate delivery announce. <strong>Clear announces</strong> (<code>DELETE /api/v1/announces</code>) clears the stub peer cache; the live path table may refill on the next peer refresh. Per-interface <code>announce_interval_min</code> (RMAP/discoverable interfaces) is separate.</li>
+<li><strong>Inbound LXMF:</strong> the sidecar registers <code>lxmf.delivery</code> with the transport (<code>RegisterDestination</code> + <code>LinkManager</code>) and feeds decrypted link/resource payloads into the delivery callback (WS <code>lxmf_message</code>). Without this registration, peer DMs never appear in Chat even when paths exist.</li>
+<li><strong>Propagation:</strong> <strong>Propagation mode</strong> (Network → Propagation nodes; <strong>Off</strong> default / <strong>Auto</strong> / <strong>Manual</strong>) — <strong>Off</strong> means <strong>no propagation support</strong>: no sync (periodic, bottom <strong>Sync</strong>, or per-node <strong>Sync messages</strong>) and no outbound Direct→PN cascade; a saved Preferred row stays on disk and is re-armed only when you pick Auto/Manual (renderer pushes mode via <code>POST /api/v1/propagation/mode</code>, persisted as <code>propagation_mode</code> in <code>mesh_client_stack.json</code>). <strong>User Sync is client <code>/get</code>-primary</strong> — inbox retrieval into Chat; UI progress comes from <code>PropagationClient</code> (<code>propagation_bridge.rs</code> / <code>live.rs::spawn_client_download_driver</code>). Peer <code>/offer</code> inventory replication stays on the <strong>local Host peer loop</strong> when serving (not on the Sync button), so a nonempty messagestore cannot hang Sync at AwaitingResponse against non-peer remotes. <strong>Auto</strong> sync cascade order: <strong>finite-hop Discovered</strong> by destination hash (does <strong>not</strong> Add or change Preferred) → configured remotes → <strong>unknown-hop Discovered</strong> → local-prop (skips remotes when no enabled interfaces). Hop counts above <code>MAX_PLAUSIBLE_PROPAGATION_HOPS</code> (32) rank as unknown on both sync and Auto deposit. <strong>Ignore for Auto</strong> (<code>POST/DELETE /api/v1/propagation/auto-blacklist</code>, persisted as <code>propagation_auto_blacklist</code>) omits those hashes from Auto sync <strong>and</strong> Auto deposit; Manual Prefer/Sync still works. Auto also <strong>deposits</strong> outbound LXMF on Discovered PNs: <code>auto_discovered_candidates</code> (<code>pn_cascade.rs</code>) appends up to <code>MAX_AUTO_DISCOVERED_PN_CANDIDATES</code> (3) heard nodes — hop-sorted, skipping inactive announces, self hash, configured hashes, Auto-blacklist, and <code>peering_cost</code> above <code>max_peering_cost</code> — after added remotes and before local-prop. Chat <strong>“No propagation node is configured”</strong> hides in Auto when a non-ignored Discovered PN exists; Manual only counts added nodes. Banner <strong>Don't show again</strong> ↔ Network <strong>Show propagation reminder in Chat</strong>. <strong>Manual</strong> syncs Preferred; with no Preferred picks the closest added remote <strong>for that sync only</strong>, then other remotes, then local-prop. Cascade steps await settle (<code>awaitPropagationSyncSettled</code>); Cancel stops the chain; Cancel mid-<code>/get</code> calls rsLXMF <code>PropagationClient::abort_transfer</code> (overlay) so the next Sync is not stuck <code>PROPAGATION_RETRIEVE_BUSY</code>. Soft-defer codes: <code>PROPAGATION_SYNC_OUTBOUND_BUSY</code>, <code>PROPAGATION_RETRIEVE_BUSY</code>, <code>PROPAGATION_STACK_NOT_LIVE</code>. Hard-fail <code>PROPAGATION_PATH_UNKNOWN</code> when <code>ensure_path_for_direct</code> fails after announce settle (same gate as <code>/offer</code> probe) — no 45s Establishing stall. Remote half capped by <code>PROPAGATION_CASCADE_BUDGET_MS</code> (5 min) and ~60s per attempt; 15-minute failure backoff (not for soft-defer). <strong>Local-only PN</strong> is supported. Preferred / Discovered Add / rename / delete / local hosting (<code>/offer</code>+<code>/get</code> + stamp-validated Resource ingress) / Advanced PN hosting / auto-sync interval as before. Local-prop messagestore load is deferred; <code>status: "loading"</code> while pending. Empty-cascade errors: <code>syncLocalLoading</code> / <code>syncNoTarget</code> / <code>syncRetrieveBusy</code>. Every attempt stamps <code>syncTargetId</code>. <code>local-prop</code> Sync drains via <code>drain_local_inbox</code> (requires live stack — else <code>PROPAGATION_STACK_NOT_LIVE</code>). Remote Sync still announces + settles before Establishing, pins PN identity, rejects <code>PROPAGATION_TARGET_NOT_PN</code>, stalls ~45s / ceiling ~180s. Logs: <code>propagation-deposit</code>, <code>propagation-retrieve</code> (<code>retrieve_mode=get|get_post_peer|get_periodic|local</code>), <code>propagation-sync</code> peer_outcome (offer side — <strong>not</strong> inbox retrieval). Support bundles include <code>propagationClient</code> + PATH_UNKNOWN-capable log slices.</li>
+</ul>
+<hr />
+<h2 id="chat-lxmf">Chat (LXMF)</h2>
+<ul>
+<li><strong>DM-only</strong> on the Chat tab — no RF channel pills (RRC covers hub rooms separately)</li>
+<li>Text and emoji reactions. <strong>LXMF voice memos</strong> use native <code>FIELD_AUDIO</code> (Ogg/Opus <code>AM_OPUS_OGG</code>); Chat DM mic records via sidecar <code>/api/v1/voice/memo/*</code> (dedicated IPC). Historic <code>[file:name:mime]</code> bubbles and inbound Sideband-style attachments render a read-only label; when the file remains in <code>reticulum/attachments/</code>, <strong>raster images</strong> (JPEG/PNG/GIF/WebP/AVIF/BMP — not SVG) display inline via main-process <code>chat:readReticulumAttachmentAsDataUrl</code> (magic-byte MIME check, 2 MiB cap, path jailed, IPC rate-limited), and <strong>voice memos</strong> play via <code>chat:readReticulumAttachmentBytes</code> (OggS sniff, 256 KiB). Peer file transfer is via Remote rncp.</li>
+<li><strong>Replies:</strong> outbound DMs stamp LXMF <code>FIELD_REPLY_TO</code> (0x30) and optional <code>FIELD_REPLY_QUOTE</code> (0x31, capped) before sign so peers see structured replies; ingest/Chat use <code>reticulum_reply_to_hash</code> plus quote preview (store parent when present, else wire quote) and jump-to-parent by message hash</li>
+<li><strong>Reactions:</strong> outbound tapbacks stamp standard LXMF <code>FIELD_REACTION</code> (0x40) before sign — a msgpack map (<code>REACTION_TO</code> = 32-byte parent hash, <code>REACTION_CONTENT</code> = emoji) — while still carrying the emoji as message content, so Ratspeak/Sideband render a structured reaction and clients that ignore <code>0x40</code> still show the emoji. Inbound decode is fail-open: a valid <code>0x40</code> maps to <code>reaction_target</code> (accepting a 32-byte binary or 64-hex <code>REACTION_TO</code>, normalized to lowercase) and wins over a reply for classification; a missing or malformed field leaves the reply/plain-text path unchanged. Ratspeak legacy <code>0xFB</code>/<code>0xFC</code> reaction envelopes are not emitted or decoded.</li>
+<li>Outbound <strong>Sending</strong> until sidecar emits <code>lxmf_outbound_status</code> (<code>delivered</code> / <code>stored_locally</code> / <code>failed</code>); <code>/api/v1/lxmf/send</code> may return <code>delivery_status: "queued"</code> or <code>"sending"</code> — that is enqueue/acceptance, not delivery confirmation. After Direct exhausts, the sidecar <strong>cascades</strong> preferred remote → other enabled remotes (hop-sorted) → in <strong>Auto</strong> only, up to 3 heard-but-not-added <strong>Discovered</strong> PNs (hop-sorted) → local-prop last, re-emitting <code>sending</code> with <code>delivery_method: "propagated"</code> (remote) or <code>"stored_locally"</code> (hosted local PN) between attempts. <strong>Exception — paper:</strong> Chat DM <strong>Share as paper</strong> (<code>createReticulumPaperMessage</code> → <code>POST /api/v1/lxmf/paper/create</code>) encrypts offline to a QR/<code>lxm://</code> URI with <strong>no network send</strong>; Completes immediately (<code>delivery_method: paper</code>, badge <strong>Paper</strong>) and does <strong>not</strong> use <code>lxmf_outbound_status</code>. Ingest via Chat <strong>Scan paper</strong>, Network <strong>Scan / import</strong>, or OS <code>lxm://</code> (<code>POST /api/v1/lxmf/paper/ingest</code> — HTTP <code>message</code> fallback-ingested when WS lags). Create needs peer pubkey (<code>identity_unknown</code> otherwise); ingest needs matching local identity (<code>decrypt_failed</code> otherwise); size-capped (<code>paper_too_large</code>).</li>
+<li>Terminal <strong>Completes</strong> / <strong>Failed</strong> from <code>lxmf_outbound_status</code> are persisted to SQLite (<code>delivery_status</code> + <code>delivery_method</code> on <code>reticulum_messages</code>) via <code>applyReticulumOutboundDeliveryStatus.ts</code> so restart/DB hydration keeps PN vs Direct vs local-inbox labeling; early WS events before provisional id→hash rekey are buffered</li>
+<li><strong>Optimistic pending rekey:</strong> Chat send creates a <code>reticulum-pending-*</code> row; when the sidecar returns the real <code>message_hash</code>, ingest/SQLite upsert passes <code>replaces_message_hash</code> so the pending row is deleted atomically (avoids orphan Sending duplicates)</li>
+<li>Remote PN Completes (<code>delivered</code>) render as <strong>Stored at propagation node</strong> — PN badge with a green check; local-prop Completes (<code>stored_locally</code>) render as <strong>PN</strong> with an amber <strong>house</strong> mark (<code>ReticulumMessageStatusBadge</code>) so a deposit on your hosted PN is visually distinct from a remote Prefer deposit — neither is recipient <strong>Delivered</strong>; local hosting still peers/propagates like <code>lxmd</code></li>
+<li><strong>DM path reachability:</strong> active DM header shows a reachability badge (<code>ReticulumDmPathReachabilityBadge</code> + <code>useReticulumDmPathProbe</code>) seeded from path-table/contact hops, then settled by peer probe; when settled, <strong>Request path</strong> / <strong>Probe</strong> use the same sidecar endpoints as the Peers tab. Chat <strong>Probe</strong> mirrors Peer List UX: stack-running check → <code>/probe</code> → toast → peer refresh; <code>onProbeSettled</code> / <code>applyProbeResult(forHash, …)</code> applies the result without a second <code>/probe</code> (stale hashes after DM switch are ignored); manual reprobe forces Checking… even when passive hops already look reachable</li>
+</ul>
+<h2 id="rrc-reticulum-relay-chat">RRC (Reticulum Relay Chat)</h2>
+<p>IRC-style multi-pane client (<code>RrcPanel</code> + <code>rrcHubStore</code> / <code>rrcSessionStore</code>). Panel chrome uses the standard app slate/green theme (same as Nomad, Peers, and LXMF Chat); IRC mono transcript layout is unchanged.</p>
+<ul>
+<li>Discover hubs from announces, connect by hash, or favourite hubs (Nomad-style). Soft cap <strong>8</strong> concurrent hub sessions.</li>
+<li>Headless hub <strong>auto-connect</strong> (<code>useRrcStartupAutoConnect</code>, mounted from App): polls ~<strong>500 ms</strong> while any preferred hub is still pending (waiting for live attach / first link), then ~<strong>4 s</strong> steady; also wakes immediately on <code>RETICULUM_CONFIGURED_EVENT</code>.</li>
+<li>Per-hub rooms, nicklists (<code>/who</code>), topics, slash commands (<code>/help</code>, <code>/join</code>, <code>/part</code>, <code>/list</code>, <code>/msg</code>, …). Hub and room <strong>auto-join</strong> prefs in localStorage. Hidden <code>/who</code> omits <code>K_ROOM</code> (hub-global command). Notices with empty <code>K_ROOM</code> land in <code>[hub]</code>, not the focused room. The first <code>/who</code> snapshot may appear in the named room; later snapshots update the nicklist only.</li>
+<li><strong>Per-peer DMs (<code>@&lt;identity-hash&gt;</code>):</strong> <code>/msg NICK text</code> opens an IRC-style query tab for that peer. Wire delivery is a direct NOTICE with <code>K_DST</code> and no <code>K_ROOM</code> / room JOIN — this requires the hub to advertise <strong><code>CAP_DIRECT_NOTICE</code></strong> (<code>capabilities.direct_notice</code>). When the hub does not advertise that capability, <code>/msg</code> and plain replies in a DM tab show <code>rrc.directNoticeUnsupported</code> and do not send. Sidebar/header show the nick. Leave closes that DM locally; open DMs persist in localStorage until left. Legacy <code>[whispers]</code> inbox is migrated best-effort into per-peer rooms.</li>
+<li>Chat virtualization pins to the bottom while reading live traffic; <strong>Jump to latest</strong> appears when scrolled up; leaving/re-entering RRC restores the prior scroll pin when possible (<code>RrcChatView</code> + TanStack Virtual).</li>
+<li>Unintended link drops enter <strong>reconnecting</strong> (backoff 2–30 s), preserve desired rooms (including join keys), and rejoin after WELCOME. Explicit <strong>Disconnect</strong> / <strong>Cancel</strong> clears that hub (<code>will_reconnect: false</code>).</li>
+<li><strong>Involuntary PART:</strong> hub/self <code>PARTED</code> while the room is still desired queues a silent re-JOIN; UI banner uses neutral <code>rrc.moderation.hubParted</code> (not kick/ban wording). Member-fanout <code>PARTED</code> (another peer left) updates the nicklist only — must not be treated as self-leave.</li>
+<li>Unread badges and inactive-tab sounds for any new room <code>msg</code>/<code>action</code> by default (also badges the <strong>Reticulum protocol pill</strong> with LXMF Chat). <strong>App → Notifications → RRC unread for all room messages</strong> (default on) couples badge + beep; off is IRC-style DMs + <code>@nick</code> only. Hub notices/<code>/who</code>/JOINED do not alert. Muted views use the shared Chat mute storage keyed as <code>rrc:&lt;hub&gt;:&lt;room&gt;</code>.</li>
+<li>Sidecar modules: <code>rrc_codec</code>, <code>rrc_link</code>, <code>rrc_session</code>, <code>rrc_defaults</code>; REST under <code>/api/v1/rrc/*</code> (see <a href="../reticulum-sidecar-ipc/">sidecar IPC</a>).</li>
+<li>History: persist via <code>rrcMessagePersist.ts</code>; hydrate/clear via <code>rrcRoomHistory.ts</code> (UI load cap <strong>500</strong>/room; SQLite retention default <strong>10,000</strong>).</li>
+</ul>
+<h3 id="delivery-modes">Delivery modes</h3>
+<table>
+<thead>
+<tr>
+<th>Path table</th>
+<th>Propagation node</th>
+<th>Routing / UI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Destination present</td>
+<td>— (no cascade candidates)</td>
+<td><strong>Direct</strong> link delivery; RF/BLE/TCP/NET (or explicit multi e.g. RF+TCP) badge = path-table / PacketTap egress — message stays <strong>Sending</strong> until <code>lxmf_outbound_status: delivered</code></td>
+</tr>
+<tr>
+<td>Destination present</td>
+<td>Remotes and/or enabled local-prop</td>
+<td>Direct-first; on Direct fail, <strong>cascade</strong> preferred remote → other enabled remotes (hop-sorted) → in <strong>Auto</strong> up to 3 Discovered PNs → local-prop last. Remote Completes → <strong>PN</strong> / <strong>Stored at propagation node</strong> (<code>delivered</code>); local-prop → <strong>hosted PN</strong> (<code>stored_locally</code>; peer sync may propagate)</td>
+</tr>
+<tr>
+<td>Destination absent</td>
+<td>Preferred / enabled remotes</td>
+<td><strong>Propagated</strong> via cascade (preferred first); <strong>PN</strong> badge — Completes as <strong>Stored at propagation node</strong> (not recipient-delivered)</td>
+</tr>
+<tr>
+<td>Destination absent</td>
+<td>Local-prop only</td>
+<td>Completes as <code>stored_locally</code> on your <strong>hosted PN</strong> (full PN; clients need not Prefer you)</td>
+</tr>
+<tr>
+<td>Destination absent</td>
+<td>None</td>
+<td>Error <code>no_propagation_node</code>; set a preferred <strong>remote</strong> node (or enable local-prop hosting) on Network tab</td>
+</tr>
+<tr>
+<td>Any</td>
+<td>Propagation mode <strong>Off</strong></td>
+<td>Direct only — no cascade candidates and no armed outbound PN; Direct exhaustion is terminal (<strong>Failed</strong>) and offline peers need Auto/Manual or <strong>Paper</strong></td>
+</tr>
+<tr>
+<td>n/a (offline)</td>
+<td>n/a</td>
+<td><strong>Paper</strong> — encrypted QR/<code>lxm://</code> handoff (<code>DeliveryMethod::Paper</code>); no path table or PN; Completes immediately; badge <strong>Paper</strong>; does not use <code>lxmf_outbound_status</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Path ≠ delivered:</strong> a path-table entry means RNS knows a route, not that LXMF completed. Reticulum is async — offline peers need a propagation fabric (remote PN, <strong>local hosting</strong> with healthy peering, or <strong>paper</strong> QR handoff). <strong>Local-prop</strong> is a full Propagation Node (last in the sender cascade; Completes as <code>stored_locally</code>, badge <strong>PN</strong> + house) — not an outbox; fabric reachability depends on PN↔PN peering, and recipients need not Prefer you. Remote PN Completes mean the PN accepted the encrypted blob (Ratspeak envelope parity), not that the recipient opened Chat. Prefer link timeouts advance the cascade when other candidates remain. The renderer link-timeout Failed bridge skips while cascade capacity remains (any untried remote <strong>or</strong> enabled local-prop) — in mode <strong>Off</strong> there is no capacity, so the bridge fails the row. LXMF retrieval is <strong>any-node</strong>: deposit on PN A and Sync from PN B is valid when the fabric peers; parties need not share the same preferred PN.</p>
+<hr />
+<h2 id="path-routing">Path routing</h2>
+<p>When a destination is reachable over more than one next hop, the sidecar keeps up to <strong>three ranked path slots</strong> (one active + backups). Failover promotes a backup (or rediscovers via another live interface) before giving up — Nomad page loads exhaust alternate paths inside one request; LXMF Direct does the same before the <strong>multi-PN cascade</strong>. These failover / medium / Auto-demotion behaviors are <strong>mesh-client product policy</strong> on top of the RNS path table — see <a href="#ownership-rns-vs-lxmf-client-vs-mesh-client-policy">Ownership</a>. Triage: <a href="../troubleshooting/#nomad-network-pages-hang-or-almost-never-load">troubleshooting</a>.</p>
+<p><strong>AutoInterface vs private TCP/UDP:</strong> Peers learned on Auto are normal 0-hop neighbors; RNS may keep Auto active even when a private LAN hub path exists (including equal-hop ties). For LXMF Direct, the sidecar <strong>automatically</strong> demotes Auto toward a live <strong>private</strong> path when Auto is unhealthy for delivery or Direct fails on Auto — then fails over private → public → multi-PN cascade (preferred remote → other enabled remotes hop-sorted → in Auto, up to 3 Discovered PNs → local-prop last). It does <strong>not</strong> rewrite healthy Auto Direct, and does <strong>not</strong> preempt Auto to public internet hubs. See <a href="../troubleshooting/#reticulum-local-dms-hang-with-autointerface--private-tcp-hub">troubleshooting — local DMs hang with AutoInterface + private TCP hub</a>.</p>
+<p><strong>Network → stack settings → Prefer path medium</strong> sets the global bias:</p>
+<table>
+<thead>
+<tr>
+<th>Preference</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lowest path (hop count)</td>
+<td>No RF/network bias; rank by hops only (<code>lowest</code>)</td>
+</tr>
+<tr>
+<td>Network (non-RF)</td>
+<td>Prefer TCP/UDP/I2P/gateway/shared-instance slots when available</td>
+</tr>
+<tr>
+<td>RF (RNode)</td>
+<td>Prefer LoRa / RNode slots when available</td>
+</tr>
+</tbody>
+</table>
+<p><code>network</code> / <code>rf</code> are “prefer if possible”: if the preferred medium has no live slot, another medium stays active without clearing the preference, so the preferred medium can reclaim the route later.</p>
+<p><strong>Peers → path detail</strong> (Paths control on a peer row) shows the ranked slots (active vs backup, hops, interface, medium) and optional <strong>per-peer pin</strong> (Auto / RF / Network) that overrides the global preference for that destination. API contract: <a href="../reticulum-sidecar-ipc/#path-medium-preference-and-pins">reticulum-sidecar-ipc.md</a>.</p>
+<hr />
+<h2 id="peers-and-topology">Peers and topology</h2>
+<ul>
+<li><strong><code>GET /api/v1/peers</code>:</strong> live RNS path table when the sidecar is built with the full stack; may serve a short-TTL maintenance cache unless <code>?refresh=1</code> (manual Refresh); falls back to last cache on live query failure. Active-route only — fetch ranked slots per destination via <code>GET /api/v1/peers/{hash}/paths</code> (see <strong>Path routing</strong> above)</li>
+<li><strong>Peers tab UX:</strong> keep-alive after first visit; opening the tab uses soft/cached path-table data (skips refresh when peers are already in the store). Manual <strong>Refresh</strong> forces a live dump (<code>?refresh=1</code>). Row prepare/sort for large lists is deferred so chrome paints immediately.</li>
+<li><strong>After a DB wipe:</strong> peer rows refill only as destinations announce again (or path responses arrive). Connecting to the same hub does <strong>not</strong> dump every known destination instantly. mesh-client applies announces / <code>peers_updated</code> patches incrementally (batched), with a full peer dump on connect, manual Refresh, stack restart, and a 30s safety poll (60s when the path table is large).</li>
+<li><strong>Your node</strong> does not appear as a peer row; identity hash is under <strong>Network → Identity</strong>; topology uses a synthetic <strong>You</strong> center node</li>
+<li><strong>Avatar:</strong> peers without a custom Lucide icon show an <a href="https://github.com/ratspeak/LXMFace">LXMFace</a> default identicon (<code>src/renderer/lib/reticulum/lxmface.ts</code>); a custom icon still overrides. <strong>People</strong> maps wire <code>people</code>/<code>person</code>/<code>user</code> → Lucide <code>user</code> (<code>reticulumIconAppearance.ts</code>). Legacy <code>circle</code> is treated as unset (not a real avatar choice).</li>
+<li><strong><code>interface</code> column:</strong> path learned via that interface, not “devices on this serial port”</li>
+<li><strong>Display names / aliases:</strong> sidecar peers may ship without labels; mesh-client enriches from (in order) sidecar <code>display_name</code>, <strong>LXMF / Nomad announce</strong> <code>app_data</code> (msgpack, JSON <code>server_name</code>, or UTF-8 — parsed in the sidecar; RMAP/geo JSON blobs are rejected), SQLite <code>reticulum_destinations.display_name</code>, and Nomad Network node list during <code>refreshReticulumPeersFromSidecar</code>. Sidecar <code>list_contacts</code> / contact upsert also fills nameless or hash-prefix contact labels from that announce/peer/Nomad cache (does not overwrite a real stored name; may persist fills; retries persist after save failure). Renderer refresh preserves peer announce aliases when contact dumps omit names after path/probe, keeps in-memory <strong>icon/appearance</strong> when the DB row lacks icons, and Chat/<code>nodeStore</code> sync via <code>reticulumContactToNodeRecordPreservingLabel</code> refuses hash-prefix <code>longName</code> overwrites. Renderer display (<code>sanitizeReticulumDisplayName</code> / <code>reticulumRealDisplayName</code>) mirrors sidecar rules for already-stored bad values. Inbound LXMF ingest (<code>reticulumIngest.ts</code>) treats a <code>sender_name</code> equal to the destination hash prefix as a <strong>placeholder</strong>, not a real alias — contact upserts omit it. SQLite upsert (<code>db:upsertReticulumDestination</code>) requires an exact <strong>32-hex</strong> destination hash (lowercased; no separator stripping), <strong>refuses to overwrite</strong> an existing name with a hash-prefix alias (case-insensitive guard on the first 12 hex chars), and leaves <strong><code>favorited</code> alone</strong> when the payload omits it (icon-only patches). Schema upgrade collapses legacy case-variant destination rows onto one lowercase PK.</li>
+<li><strong>Topology:</strong> one next hop per destination (<code>via_hash</code>); sidecar infers <code>self → relay</code> when needed; force layout with hop fallback; auto-refresh debounced and paused under large path tables (manual Refresh always available)</li>
+</ul>
+<hr />
+<h2 id="rnode-over-wi-fi">RNode over Wi-Fi</h2>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Provision</td>
+<td>USB → <strong>Admin → Wi‑Fi</strong>, or join RNode AP → <code>http://10.0.0.1</code>, or <code>rnodeconf</code></td>
+</tr>
+<tr>
+<td>Interface</td>
+<td><strong>Connection → Interfaces → RNode → Wi‑Fi</strong> → host/IP, port <strong>7633</strong>, LoRa preset</td>
+</tr>
+<tr>
+<td>Hardware</td>
+<td>ESP32-S3 Wi‑Fi boards; stock firmware disables plain ESP32 Wi‑Fi</td>
+</tr>
+<tr>
+<td>Pitfall</td>
+<td>Wi‑Fi off until provisioned; find station IP on OLED, DHCP, or Admin <strong>Read config</strong></td>
+</tr>
+<tr>
+<td>IPv6</td>
+<td>Use bracketed literals: <code>tcp://[2001:db8::1]:7633</code></td>
+</tr>
+</tbody>
+</table>
+<p>Stop the stack (or disable the RNode interface) before flashing the same device over USB — the sidecar holds the serial port.</p>
+<hr />
+<h2 id="admin-rnode-flasher">Admin (RNode flasher)</h2>
+<p>Collapsible <strong>RNode Firmware Flasher</strong> (available even before the stack starts). Uses Web Serial in the renderer:</p>
+<ol>
+<li>Flash nRF52 (DFU + zip) or ESP32 (<code>esptool-js</code>)</li>
+<li>Provision EEPROM (device info, checksum, lock)</li>
+<li>Set firmware hash after flash</li>
+<li>Optional: Bluetooth, Wi‑Fi provisioning, TNC, display, EEPROM wipe</li>
+</ol>
+<p>Firmware <code>.zip</code> files are selected locally (no in-app GitHub download). Disconnect Meshtastic/MeshCore USB on the same port before flashing.</p>
+<p><strong>Factory reset</strong> in the danger zone clears stack state (destructive).</p>
+<hr />
+<h2 id="data-storage">Data storage</h2>
+<h3 id="sqlite-main-process">SQLite (main process)</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>reticulum_destinations</code></td>
+<td>Destination meta (canonical 32-hex hash, display name, favorited, <code>icon_name</code>, <code>icon_color</code>, <code>last_heard</code> for History, <code>is_contact</code> for saved Contacts)</td>
+</tr>
+<tr>
+<td><code>reticulum_messages</code></td>
+<td>LXMF history (<code>message_hash</code>, <code>reply_to_hash</code>, <code>delivery_status</code> — <code>sending</code>/<code>queued</code>/<code>pending</code>/<code>delivered</code>/<code>failed</code>; <code>delivery_method</code> — <code>direct</code>/<code>propagated</code>/<code>opportunistic</code>/<code>paper</code>/<code>stored_locally</code>; wire <code>stored_locally</code> Completes map to SQLite <code>delivered</code> + <code>delivery_method: stored_locally</code>; <code>received_via</code> atoms include <code>rf</code>/<code>ble</code>/<code>tcp</code>/<code>network</code>/<code>mqtt</code>/<code>both</code>/<code>paper</code>; terminal outbound status written on <code>lxmf_outbound_status</code> except paper Completes from create/ingest; stale <code>sending</code> rows marked failed on startup; optional <code>replaces_message_hash</code> on upsert deletes the prior optimistic pending hash)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sidecar-userdata">Sidecar <code>userData</code></h3>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>reticulum/config/</code></td>
+<td>Active rnsd INI</td>
+</tr>
+<tr>
+<td><code>reticulum/attachments/</code></td>
+<td>Inbound LXMF attachment cache; Chat reads raster files here for inline display (see Chat section)</td>
+</tr>
+<tr>
+<td><code>reticulum/storage/mesh_client_stack.json</code></td>
+<td>Stub/dev file-backed stack state when not using live RNS — <strong>treat as sensitive</strong> (may hold mnemonic in stub mode)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="config-import-paths-system">Config import paths (system)</h3>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Paths</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>macOS / Linux</td>
+<td><code>~/.reticulum/config</code>, <code>~/.config/rsReticulum/config</code>, <code>~/.rsReticulum/config</code></td>
+</tr>
+<tr>
+<td>Windows</td>
+<td><code>%APPDATA%\Reticulum\config</code>, <code>%APPDATA%\rsReticulum\config</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="building-the-sidecar-development">Building the sidecar (development)</h2>
+<p><code>rns-stack</code> builds need the repo-local <code>.rsstack/</code> workspace checkouts <code>rsReticulum</code>, <code>rsLXMF</code>, <code>rsNomad</code>, <code>rsLXST</code>, and <code>lrgp-rs</code> (see <code>scripts/clone-ratspeak-stack.sh</code>). That script floats each to <code>origin/main</code> by default (bisect with <code>RS_RETICULUM_REF</code> / <code>RS_LXMF_REF</code> / <code>RS_NOMAD_REF</code> / <code>RS_LXST_REF</code> / <code>RS_LRGP_REF</code>) and applies mesh-client overlays for rsReticulum/rsLXMF (fails if a patch will not apply). Peer list / detail default avatars use <a href="https://github.com/ratspeak/LXMFace">LXMFace</a> (<code>src/renderer/lib/reticulum/lxmface.ts</code>) when no custom Lucide icon is set.</p>
+<p>End users of <strong>GitHub Releases</strong> or <strong>Flatpak</strong> do not need Rust. Developers and contributors do.</p>
+<p><strong>One command</strong> (from repo root; requires <a href="https://rustup.rs/">Rust</a>):</p>
+<pre><code class="language-bash">pnpm run reticulum:sidecar:build
+</code></pre>
+<p>Cargo always needs the <code>.rsstack/</code> checkouts (<code>rsReticulum</code>, <code>rsLXMF</code>, <code>rsNomad</code>, <code>rsLXST</code>, <code>lrgp-rs</code>) as path dependencies — clone them with <code>./scripts/clone-ratspeak-stack.sh</code> (same as <a href="../reticulum-sidecar/README.md">reticulum-sidecar/README.md</a>). With those trees present, the build script applies required patches and compiles with <strong><code>rns-stack,rns-ble,rns-rnode-tcp</code></strong> for the <strong>real mesh-I/O</strong> stack (live path table, BLE, RNode USB/Wi‑Fi, Nomad hosting, LXST voice, LRGP games). Building <strong>without</strong> <code>--features rns-stack</code> still uses those checkouts but links the <strong>stub</strong> stack (file-backed API for UI/tests — not for real mesh I/O).</p>
+<p><strong>Electron dev:</strong> <strong>Start stack</strong> auto-runs <code>cargo build</code> when the debug binary is missing, when <code>reticulum-sidecar/src/**/*.rs</code> or <code>Cargo.toml</code> is newer than the binary, or when a stub binary is present but the full <code>.rsstack/</code> workspace exists. First compile can take several minutes — pre-build with the command above.</p>
+<p><strong>Run sidecar alone:</strong></p>
+<pre><code class="language-bash">pnpm run reticulum:sidecar:dev
+curl -s http://127.0.0.1:19437/api/v1/status
+</code></pre>
+<p>CI matrix (stub + full stack): <a href="../.github/workflows/reticulum-sidecar.yaml"><code>.github/workflows/reticulum-sidecar.yaml</code></a>. Flatpak release builds bundle the full-stack binary into <code>resources/reticulum-sidecar/</code>.</p>
+<p>Patch overlays (packet tap, AutoInterface utun, discovery-announce-egress, rsLXMF policy-setters, …): <a href="../reticulum-sidecar/patches/README.md"><code>reticulum-sidecar/patches/README.md</code></a>.</p>
+<hr />
+<h2 id="nomad-network-hosting">Nomad Network hosting</h2>
+<p>mesh-client can <strong>host</strong> a static Nomad site (not only browse peers):</p>
+<ol>
+<li>Start the Reticulum stack and ensure an identity exists.</li>
+<li>Open <strong>Nomad Network</strong> → <strong>My Pages</strong>.</li>
+<li><strong>Choose folder</strong> (site root with <code>pages/</code> or the pages directory itself), set a display name, <strong>Start serving</strong>. Edit <code>.mu</code> files (and optional <code>files/</code>) on disk — the watcher picks up changes.</li>
+<li>Author pages in-app from the My Pages list: <strong>New page</strong> (filename must end in <code>.mu</code>), <strong>Edit</strong>, or <strong>Delete</strong>. Edit and New open the <strong>Micron page editor</strong> — a split pane with the raw <code>.mu</code> source plus a formatting toolbar on the left and a live preview on the right. Saving writes into the watched folder, so the FS watcher re-indexes the change and serving picks it up. Authoring needs a configured content source but <strong>not</strong> active serving, so pages can be drafted while stopped.</li>
+<li>Use <strong>Open in browser</strong> to self-preview <code>index.mu</code> without a second peer.</li>
+<li>Peers discover the node via <code>nomadnetwork.node</code> announces; browse <code>/page/index.mu</code> from NomadNet / MeshChat / another mesh-client.</li>
+</ol>
+<p>Implementation: sibling <a href="https://github.com/Colorado-Mesh/rsNomad">rsNomad</a> (<code>nomad-core</code>) inside the AGPL sidecar. Link REQUEST form bodies use <code>nomad-core</code> <code>encode_request_fields</code> / <code>decode_request_fields</code> (sidecar HTTP <code>data</code> stays base64 JSON). Hosting <strong>requires</strong> a watched folder via <strong>Choose folder</strong> (<code>nomad_serving_content_source</code>): site roots use <code>pages/</code> with optional sibling <code>files/</code> (served under <code>/file/…</code>; missing <code>files/</code> stays empty until created on disk). Serving is <strong>off by default</strong>. Preferences persist as <code>nomad_serving_enabled</code> / <code>nomad_serving_display_name</code> / <code>nomad_serving_content_source</code> and auto-restores hosting on stack start when enabled <strong>and</strong> a content source is set. If serving was enabled without a folder, restore surfaces <code>content_source_required</code> and does not start. Failures surface in My Pages (<code>last_error</code>), as <code>[nomad-serving]</code> / <code>[NomadHosting]</code> log warnings (Analyze category <code>reticulum-nomad-hosting</code>), and in Export for GitHub/Developer. CGI/executable pages are not supported. Dotfiles and <code>*.allowed</code> paths are not listed or served (NomadNet parity). Request handling is concurrency-bounded in <code>nomad-core</code>.</p>
+<p>In-app authoring goes through <code>GET /api/v1/nomadnetwork/serving/page</code> plus <code>PUT</code> / <code>DELETE</code> on <code>/api/v1/nomadnetwork/serving/pages</code> (renderer wrappers <code>getServingPageRaw</code> / <code>putServingPage</code> / <code>deleteServingPage</code> in <code>nomadServingApi.ts</code>). <code>NomadServerHandle</code> maps <code>NomadError</code> to stable snake_case codes via <code>page_error_code</code> (<code>page_too_large</code>, <code>page_not_found</code>, <code>invalid_page_path</code>, <code>page_io_error</code>, <code>page_not_utf8</code>, <code>page_write_failed</code>) so <code>nomadPageErrorHumanize.ts</code> can translate them; the underlying English detail is logged, not shown. Path safety and the size cap stay server-side in <code>nomad-core</code> (<code>resolve_under_root</code> plus symlink rejection), so client-side filename validation (<code>micronPageName.ts</code>) is UX only. File <strong>uploads</strong> and a local-files list remain intentionally absent — see <code>.cursor/rules/nomad-hosting-folder-only.mdc</code>.</p>
+<p><strong>Limits / UI notes:</strong> Page content is capped near <strong>512 KiB</strong> and files near <strong>4 MiB</strong> in <code>nomad-core</code>. The node re-announces about every <strong>1 hour</strong>. Missing <code>index.mu</code> is auto-seeded in the watched <code>pages/</code> directory when hosting starts.</p>
+<p><strong>Follow-ups:</strong> Markdown→Micron CMS, theme/nav editors, Nomad chat rooms, forums, streaming large files — see <a href="https://github.com/Colorado-Mesh/rsNomad/blob/main/ROADMAP.md">rsNomad ROADMAP</a>.</p>
+<p><strong>Live interop:</strong> see <a href="../nomad-hosting-interop/">nomad-hosting-interop.md</a> (announce + page + file against NomadNet / MeshChat / second mesh-client).</p>
+<hr />
+<h2 id="remote-rnsh-rncp-interop-smoke">Remote (rnsh / rncp) interop smoke</h2>
+<p>Wire protocols are stock Reticulum utilities — mesh-client is a client (and rncp receive listener), not a private dialect.</p>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Peer side</th>
+<th>mesh-client side</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Shell</td>
+<td><code>rnsh</code> / <code>rnsh-rs</code> listen; allow our identity (<code>-a</code> / allow-list)</td>
+<td>Remote → Shell → paste <code>rnsh</code> destination hash → connect</td>
+</tr>
+<tr>
+<td>Send file</td>
+<td><code>rncp -l -a &lt;our_identity&gt;</code> (or mesh-client inbound Ask)</td>
+<td>Remote → Transfer / Chat DM → peer <code>rncp.receive</code> hash (not LXMF)</td>
+</tr>
+<tr>
+<td>Receive file</td>
+<td><code>rncp file &lt;our_receive_hash&gt;</code></td>
+<td>Remote → Settings → inbound Ask/allow-list; copy <strong>My rncp receive destination</strong></td>
+</tr>
+<tr>
+<td>Fetch</td>
+<td>Peer <code>rncp -l -F -j &lt;jail&gt; -a &lt;our_id&gt;</code></td>
+<td>Remote → Transfer → Fetch remote path</td>
+</tr>
+<tr>
+<td>Auth fail</td>
+<td>Peer allow-list omits us</td>
+<td>Error shows <strong>not allowed</strong> + copy our identity hash</td>
+</tr>
+<tr>
+<td>Request enable</td>
+<td>Second mesh-client</td>
+<td>Chat/Transfer <strong>Request enable</strong> (<code>mesh-client:request-rncp-receive:v1</code>); peer replies with <code>mesh-client:rncp-receive-dest:v1:&lt;hash&gt;</code> so the sender autofills</td>
+</tr>
+</tbody>
+</table>
+<p>Transfers require a <strong>high-speed</strong> path (TCP/network); LoRa/BLE-only destinations are refused locally before a link opens. There is no byte-level resume — Retry restarts the full file.</p>
+<hr />
+<h2 id="limitations">Limitations</h2>
+<ul>
+<li><strong>No LoRa companion parity</strong> — no <code>ConnectionDriver</code>, MQTT hybrid, channel chat, Rooms, or Meshtastic-style diagnostics</li>
+<li><strong>Interface changes need restart</strong> — CRUD writes config on disk; restart stack after add/edit/delete on live <code>rns-stack</code> builds</li>
+<li><strong>Clear announces</strong> — path table may refill from the live network on the next refresh</li>
+<li><strong>Topology</strong> — next-hop only; not a full end-to-end trace</li>
+<li><strong>AGPL-3.0-or-later sidecar</strong> — separate process and license from the GPL-3.0-or-later Electron shell</li>
+<li><strong>LXST voice calls</strong> — integrated via rsLXST <code>TelephonyService</code> in the sidecar (<code>/api/v1/voice/*</code> + WS <code>voice.*</code>). Renderer owns mic/speaker (<code>getUserMedia</code> / Web Audio); Call controls live on Peers rows and Chat DM (no separate Voice tab). Live interop with Ratspeak / Python LXST should be verified manually on a real mesh.</li>
+<li><strong>LRGP games</strong> — integrated via sibling <a href="https://github.com/ratspeak/lrgp-rs">lrgp-rs</a> (<code>LrgpRouter</code> + <code>LrgpStore</code> in the sidecar). Reticulum <strong>Games</strong> tab (<code>Gamepad2</code>) for Tic-Tac-Toe and Chess; Challenge from Peers / Chat DM. Dedicated IPC <code>reticulum:games*</code> (generic proxy rejects <code>/api/v1/games/*</code>). WS <code>games.update</code> / <code>games.action_result</code>. Session <code>delivery_state</code> from LXMF outbound status; last envelope in <code>games_outbound.db</code> for Resend after restart. Notification / deep-link routes <code>lrgp:&lt;session_id&gt;</code> and <code>lxm://game/&lt;session_id&gt;</code> open the Games tab (<code>openReticulumGameSession</code>). Wire-compatible with Ratspeak; see <a href="../reticulum-games-parity/">reticulum-games-parity.md</a>.</li>
+<li><strong>Hardware identity (YubiKey/PIV)</strong> — not wired</li>
+<li><strong>In-app firmware download</strong> — local <code>.zip</code> pick only</li>
+</ul>
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Doc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sidecar won't start / health timeout</td>
+<td><a href="../troubleshooting/#reticulum-sidecar-wont-start-or-health-poll-times-out">troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out</a></td>
+</tr>
+<tr>
+<td>RRC/LXMF requires live… just after start</td>
+<td><a href="../troubleshooting/#reticulum-rrclxmf-requires-live-rns-stack-right-after-start">troubleshooting.md#reticulum-rrclxmf-requires-live-rns-stack-right-after-start</a></td>
+</tr>
+<tr>
+<td>Cancel then Connect stuck on START_ABORTED</td>
+<td><a href="../troubleshooting/#reticulum-cancel-then-connect-stuck-on-start_aborted">troubleshooting.md#reticulum-cancel-then-connect-stuck-on-start_aborted</a></td>
+</tr>
+<tr>
+<td><code>register_packet_tap</code> / cargo build failed</td>
+<td><a href="../troubleshooting/#reticulum-sidecar-cargo-build-fails-register_packet_tap--reticulum_cargo_build_failed">troubleshooting.md#reticulum-sidecar-cargo-build-fails</a></td>
+</tr>
+<tr>
+<td>AutoInterface utun log spam (macOS VPN)</td>
+<td><a href="../troubleshooting/#reticulum-autointerface-log-spam-on-macos-vpn-utun--enobufs">troubleshooting.md#reticulum-autointerface-log-spam-on-macos</a></td>
+</tr>
+<tr>
+<td>Local DMs hang (Auto + private TCP hub)</td>
+<td><a href="../troubleshooting/#reticulum-local-dms-hang-with-autointerface--private-tcp-hub">troubleshooting.md#reticulum-local-dms-hang-with-autointerface--private-tcp-hub</a></td>
+</tr>
+<tr>
+<td>Interface add/edit/delete fails</td>
+<td><a href="../troubleshooting/#reticulum-interface-addeditdelete-fails">troubleshooting.md#reticulum-interface-addeditdelete-fails</a></td>
+</tr>
+<tr>
+<td>Nomad / topology 404</td>
+<td><a href="../troubleshooting/#reticulum-nomad-network-or-topology-api-returns-404">troubleshooting.md#reticulum-nomad-network-or-topology-api-returns-404</a></td>
+</tr>
+<tr>
+<td>RNode Wi‑Fi won't connect</td>
+<td><a href="../troubleshooting/#rnode-wi-fi-interface-offline-or-wont-connect">troubleshooting.md#rnode-wi-fi-interface-offline-or-wont-connect</a></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
