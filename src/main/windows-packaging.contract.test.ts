@@ -262,11 +262,23 @@ describe('Windows packaging (contract)', () => {
     expect(macVerify).toContain('assertDmgInstallNotice');
     expect(macVerify).toContain('assertDualArchMacArchives');
     expect(macVerify).toContain('classifyMacArchiveArch');
+    expect(macVerify).toContain('resolveExpectedMacArch');
+    expect(macVerify).toContain('assertLipoArchsMatch');
+    expect(macVerify).toContain("lipo', ['-archs'");
     expect(macVerify).toContain('stageMacosInstallNoticeReleaseAsset');
     expect(macVerify).toContain('Squirrel.framework');
     expect(macVerify).toContain('/Applications');
     expect(macVerify).toMatch(
       /function mountDmgAndValidate\([\s\S]*?assertApplicationsSymlink\(mountDir\)/,
+    );
+    expect(macVerify).toMatch(
+      /function mountDmgAndValidate[\s\S]*let attached = false[\s\S]*if \(attached\)[\s\S]*detachDmgMount\(mountDir\)/,
+    );
+    expect(macVerify).toMatch(
+      /} finally \{\s*\/\/ mountDmgAndValidate owns detach[\s\S]*rmSync\(dmgMountDir/,
+    );
+    expect(macVerify).not.toMatch(
+      /} finally \{\s*\/\/ mountDmgAndValidate owns detach[\s\S]*detachDmgMount\(dmgMountDir\)/,
     );
     expect(macVerify).toContain('mkdtempSync');
     expect(macVerify).toContain('mesh-verify-mac-zip-');
@@ -275,6 +287,8 @@ describe('Windows packaging (contract)', () => {
     expect(macVerify).toContain("assertDualArchMacArchives(zipArchives, '.zip')");
     expect(macVerify).toMatch(/for \(const zipPath of zipArchives\)/);
     expect(macVerify).toMatch(/for \(const dmgPath of dmgArchives\)[\s\S]*mountDmgAndValidate/);
+    expect(macVerify).toMatch(/validateAppBundle\(zipBundle, zipLabel, expectedArch\)/);
+    expect(macVerify).toMatch(/validateAppBundle\(dmgBundle, dmgLabel, expectedArch\)/);
 
     const buildWorkflow = readFileSync(
       join(REPO_ROOT, '.github', 'workflows', 'build.yaml'),

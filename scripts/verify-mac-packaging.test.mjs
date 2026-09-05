@@ -8,9 +8,12 @@ import {
   assertApplicationsSymlink,
   assertDualArchMacArchives,
   assertDmgInstallNotice,
+  assertLipoArchsMatch,
   assertMacMinimumSystemVersion,
   assertSiblingFrameworkSymlinks,
   classifyMacArchiveArch,
+  expectedLipoArchsForMacArch,
+  resolveExpectedMacArch,
   VerificationFailure,
   fail,
   isCompleteAppBundle,
@@ -110,6 +113,40 @@ describe('verify-mac-packaging helpers', () => {
     expect(() =>
       assertDualArchMacArchives(['/r/mac-arm64/Mesh-client-1.0.0-arm64-mac.zip'], '.zip'),
     ).toThrow(/Expected both x64 and arm64 macOS \.zip/);
+  });
+
+  it('resolveExpectedMacArch maps labels and defaults unscoped to x64', () => {
+    expect(resolveExpectedMacArch('/r/mac-arm64/Mesh-client.app')).toBe('arm64');
+    expect(resolveExpectedMacArch('/r/Mesh-client-1.0.0-x64.dmg')).toBe('x64');
+    expect(resolveExpectedMacArch('/r/Mesh-client-1.0.0.dmg')).toBe('x64');
+    expect(expectedLipoArchsForMacArch('arm64')).toEqual(['arm64']);
+    expect(expectedLipoArchsForMacArch('x64')).toEqual(['x86_64']);
+    expect(expectedLipoArchsForMacArch('universal')).toEqual(['arm64', 'x86_64']);
+  });
+
+  it('assertLipoArchsMatch rejects filename/binary architecture disagreement', () => {
+    // arm64-labeled archive whose launcher is actually Intel.
+    expect(() =>
+      assertLipoArchsMatch('zip:Mesh-client-1.0.0-arm64-mac.zip', 'launcher', ['x86_64'], 'arm64'),
+    ).toThrow(/launcher Mach-O archs \[x86_64\] do not match expected arm64 \[arm64\]/);
+
+    // x64-labeled archive whose framework is arm64-only.
+    expect(() =>
+      assertLipoArchsMatch('dmg:Mesh-client-1.0.0-x64.dmg', 'Electron Framework', ['arm64'], 'x64'),
+    ).toThrow(/Electron Framework Mach-O archs \[arm64\] do not match expected x64 \[x86_64\]/);
+
+    expect(() =>
+      assertLipoArchsMatch('zip:Mesh-client-1.0.0-x64-mac.zip', 'launcher', ['x86_64'], 'x64'),
+    ).not.toThrow();
+
+    expect(() =>
+      assertLipoArchsMatch(
+        'zip:Mesh-client-1.0.0-universal-mac.zip',
+        'launcher',
+        ['x86_64', 'arm64'],
+        'universal',
+      ),
+    ).not.toThrow();
   });
 
   it('isCompleteAppBundle returns false for missing launcher paths', () => {

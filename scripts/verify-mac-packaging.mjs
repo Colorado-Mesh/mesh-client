@@ -147,6 +147,7 @@ function pickPrimaryArchive(archives) {
 }
 
 /** @typedef {'x64' | 'arm64' | 'universal' | 'unknown'} MacArchiveArch */
+/** @typedef {'x64' | 'arm64' | 'universal'} ExpectedMacArch */
 
 /**
  * Classify a macOS release archive by path or electron-builder file name.
@@ -167,6 +168,89 @@ function classifyMacArchiveArch(filePath) {
   }
   // electron-builder may omit `-x64` for the Intel default artifact name.
   return 'unknown';
+}
+
+/**
+ * Map archive path/name classification to the Mach-O arch we expect inside the bundle.
+ * Unscoped names default to Intel (x64), matching dual-arch sibling rules.
+ * @param {string} filePath
+ * @returns {ExpectedMacArch}
+ */
+function resolveExpectedMacArch(filePath) {
+  const classified = classifyMacArchiveArch(filePath);
+  if (classified === 'unknown') {
+    return 'x64';
+  }
+  return classified;
+}
+
+/**
+ * @param {ExpectedMacArch} expectedArch
+ * @returns {string[]} sorted lipo arch names
+ */
+function expectedLipoArchsForMacArch(expectedArch) {
+  if (expectedArch === 'arm64') {
+    return ['arm64'];
+  }
+  if (expectedArch === 'x64') {
+    return ['x86_64'];
+  }
+  if (expectedArch === 'universal') {
+    return ['arm64', 'x86_64'];
+  }
+  fail(`Unsupported expected mac arch: ${String(expectedArch)}`);
+}
+
+/**
+ * @param {string[]} archs
+ * @returns {string[]}
+ */
+function normalizeLipoArchList(archs) {
+  return [...archs].filter(Boolean).sort();
+}
+
+/**
+ * Reject when lipo archs disagree with the archive's labeled architecture.
+ * @param {string} label
+ * @param {string} binaryLabel
+ * @param {string[]} actualArchs
+ * @param {ExpectedMacArch} expectedArch
+ */
+function assertLipoArchsMatch(label, binaryLabel, actualArchs, expectedArch) {
+  const expected = expectedLipoArchsForMacArch(expectedArch);
+  const actual = normalizeLipoArchList(actualArchs);
+  if (actual.length !== expected.length || actual.some((arch, index) => arch !== expected[index])) {
+    fail(
+      `${label} ${binaryLabel} Mach-O archs [${actual.join(', ')}] do not match expected ${expectedArch} [${expected.join(', ')}]`,
+    );
+  }
+}
+
+/**
+ * @param {string} binaryPath
+ * @returns {string[]}
+ */
+function readLipoArchs(binaryPath) {
+  const result = spawnSync('lipo', ['-archs', binaryPath], { encoding: 'utf8' });
+  if (result.error || result.status !== 0) {
+    fail(`lipo -archs failed for ${binaryPath}: ${result.error ?? result.status}`);
+  }
+  return String(result.stdout ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+/**
+ * @param {string} bundleRoot
+ * @param {string} label
+ * @param {ExpectedMacArch} expectedArch
+ */
+function assertBundleMatchesExpectedArch(bundleRoot, label, expectedArch) {
+  const launcherPath = path.join(bundleRoot, MACOS_LAUNCHER);
+  const frameworkPath = path.join(bundleRoot, ELECTRON_FRAMEWORK_BINARY);
+  assertLipoArchsMatch(label, 'launcher', readLipoArchs(launcherPath), expectedArch);
+  assertLipoArchsMatch(label, 'Electron Framework', readLipoArchs(frameworkPath), expectedArch);
 }
 
 /**
@@ -331,8 +415,8 @@ function assertMacMinimumSystemVersion(bundleRoot, label) {
   }
 }
 
-/** @param {string} bundleRoot @param {string} sourceLabel */
-function validateAppBundle(bundleRoot, sourceLabel) {
+/** @param {string} bundleRoot @param {string} sourceLabel @param {ExpectedMacArch} expectedArch */
+function validateAppBundle(bundleRoot, sourceLabel, expectedArch) {
   const bundleName = path.basename(bundleRoot);
   const label = `${sourceLabel} ${bundleName}`;
   const launcherPath = path.join(bundleRoot, MACOS_LAUNCHER);
@@ -349,6 +433,7 @@ function validateAppBundle(bundleRoot, sourceLabel) {
   assertMinSize(`macOS launcher in ${label}`, launcherPath, MIN_LAUNCHER_BYTES);
   assertMinSize(`Electron Framework in ${label}`, frameworkPath, MIN_FRAMEWORK_BYTES);
   assertMacMinimumSystemVersion(bundleRoot, label);
+  assertBundleMatchesExpectedArch(bundleRoot, label, expectedArch);
   assertBundledReticulumSidecarInBundle({
     label: `bundled Reticulum sidecar in ${label}`,
     platform: 'darwin',
@@ -399,14 +484,19 @@ function mountDmgAndValidate(dmgPath, mountDir, validate) {
   rmSync(mountDir, { recursive: true, force: true });
   mkdirSync(mountDir, { recursive: true });
 
-  // hdiutil attach: mount dmg read-only for bundle inspection.
-  runCommand(
-    'hdiutil',
-    ['attach', '-nobrowse', '-readonly', '-mountpoint', mountDir, dmgPath],
-    `Failed to mount dmg with hdiutil: ${dmgPath}`,
-  );
-
+  let attached = false;
   try {
+    // hdiutil attach: mount dmg read-only for bundle inspection.
+    const attach = spawnSync(
+      'hdiutil',
+      ['attach', '-nobrowse', '-readonly', '-mountpoint', mountDir, dmgPath],
+      { stdio: 'inherit' },
+    );
+    if (attach.error || attach.status !== 0) {
+      fail(`Failed to mount dmg with hdiutil: ${dmgPath}`);
+    }
+    attached = true;
+
     assertApplicationsSymlink(mountDir);
     assertDmgInstallNotice(mountDir);
     const bundle = findCompleteAppBundle(mountDir);
@@ -415,7 +505,13 @@ function mountDmgAndValidate(dmgPath, mountDir, validate) {
     }
     validate(bundle);
   } finally {
-    detachDmgMount(mountDir);
+    if (attached) {
+      // Single-owner detach: only after a successful attach (main must not detach again).
+      detachDmgMount(mountDir);
+    } else if (existsSync(mountDir)) {
+      // Attach never succeeded — drop the empty mountpoint prep dir for this attempt.
+      rmSync(mountDir, { recursive: true, force: true });
+    }
   }
 }
 
@@ -488,22 +584,25 @@ function main() {
     collectAppBundles(releaseDir, onDiskBundles);
     for (const bundle of onDiskBundles.filter((candidate) => isCompleteAppBundle(candidate))) {
       const parent = path.basename(path.dirname(bundle));
-      validateAppBundle(bundle, `direct:${parent}`);
+      const expectedArch = resolveExpectedMacArch(bundle);
+      validateAppBundle(bundle, `direct:${parent}`, expectedArch);
       validatedSources.push(`direct:${parent}/${path.basename(bundle)}`);
     }
 
     // Deep-validate every archive (both arches) — do not stop at the largest primary.
     for (const zipPath of zipArchives) {
       const zipLabel = `zip:${path.basename(zipPath)}`;
+      const expectedArch = resolveExpectedMacArch(zipPath);
       const zipBundle = extractZipToTemp(zipPath, zipExtractDir);
-      validateAppBundle(zipBundle, zipLabel);
+      validateAppBundle(zipBundle, zipLabel, expectedArch);
       validatedSources.push(zipLabel);
     }
 
     for (const dmgPath of dmgArchives) {
       const dmgLabel = `dmg:${path.basename(dmgPath)}`;
+      const expectedArch = resolveExpectedMacArch(dmgPath);
       mountDmgAndValidate(dmgPath, dmgMountDir, (dmgBundle) => {
-        validateAppBundle(dmgBundle, dmgLabel);
+        validateAppBundle(dmgBundle, dmgLabel, expectedArch);
         validatedSources.push(dmgLabel);
       });
     }
@@ -513,8 +612,8 @@ function main() {
       `[verify-mac-packaging] OK — validated via ${validatedSources.join(', ')}; ${dmgArchives.length} dmg, ${zipArchives.length} zip (v${version})`,
     );
   } finally {
+    // mountDmgAndValidate owns detach; main only removes run-owned temp dirs.
     if (dmgMountDir) {
-      detachDmgMount(dmgMountDir);
       rmSync(dmgMountDir, { recursive: true, force: true });
     }
     if (zipExtractDir) {
@@ -555,15 +654,18 @@ export {
   assertDmgInstallNotice,
   assertDualArchMacArchives,
   assertFrameworkSymlinks,
+  assertLipoArchsMatch,
   assertMacMinimumSystemVersion,
   assertSiblingFrameworkSymlinks,
   classifyMacArchiveArch,
   collectAppBundles,
   collectArchives,
   detachDmgMount,
+  expectedLipoArchsForMacArch,
   fail,
   isCompleteAppBundle,
   pickPrimaryArchive,
+  resolveExpectedMacArch,
   SIBLING_FRAMEWORKS,
   VerificationFailure,
 };
