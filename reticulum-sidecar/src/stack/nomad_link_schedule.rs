@@ -1,8 +1,10 @@
 //! Nomad Link scheduling: page/file preempt vs in-page media queue.
 //!
 //! Page and file fetches use last-wins cancel so a newer navigation aborts an
-//! older Link. In-page `/media` images must queue under the shared lock without
-//! canceling siblings — otherwise concurrent media fetches race to `nomad_busy`.
+//! older Link. In-page `/media` images must queue under a request-scoped mutex
+//! across the full Link + via-failover lifecycle without canceling siblings —
+//! otherwise concurrent media fetches race to `nomad_busy`, including during
+//! the gap when `nomad_link_lock` is released between Link attempts.
 
 use std::time::Duration;
 
@@ -11,8 +13,8 @@ use std::time::Duration;
 pub enum NomadLinkSchedule {
     /// Page/file: bump generation and cancel any in-flight prior Link.
     Preempt,
-    /// Media: wait for the lock without canceling siblings; still abort if a
-    /// later [`Preempt`] bumps generation (navigation away).
+    /// Media: wait for the request queue without canceling siblings; still abort
+    /// if a later [`Preempt`] bumps generation (navigation away).
     Queue,
 }
 
@@ -24,6 +26,15 @@ pub fn nomad_link_schedule_cancels_prior(schedule: NomadLinkSchedule) -> bool {
 /// Whether this schedule bumps the shared generation counter (last-wins).
 pub fn nomad_link_schedule_bumps_generation(schedule: NomadLinkSchedule) -> bool {
     matches!(schedule, NomadLinkSchedule::Preempt)
+}
+
+/// Whether this schedule holds a request-scoped mutex across Link + failover.
+///
+/// Distinct from `nomad_link_lock` (per Link attempt) so Queue can release the
+/// attempt lock during `suppress_via_and_rediscover` without letting another
+/// media fetch start.
+pub fn nomad_link_schedule_holds_request_queue(schedule: NomadLinkSchedule) -> bool {
+    matches!(schedule, NomadLinkSchedule::Queue)
 }
 
 /// Lock-acquire budget for the given schedule.
@@ -48,6 +59,9 @@ pub fn nomad_link_lock_wait(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use tokio::sync::Mutex;
 
     #[test]
     fn preempt_cancels_and_bumps_generation() {
@@ -57,8 +71,14 @@ mod tests {
         assert!(nomad_link_schedule_bumps_generation(
             NomadLinkSchedule::Preempt
         ));
+        assert!(!nomad_link_schedule_holds_request_queue(
+            NomadLinkSchedule::Preempt
+        ));
         assert!(!nomad_link_schedule_cancels_prior(NomadLinkSchedule::Queue));
         assert!(!nomad_link_schedule_bumps_generation(
+            NomadLinkSchedule::Queue
+        ));
+        assert!(nomad_link_schedule_holds_request_queue(
             NomadLinkSchedule::Queue
         ));
     }
@@ -78,5 +98,53 @@ mod tests {
             nomad_link_lock_wait(NomadLinkSchedule::Queue, preempt, 3),
             Duration::from_secs(8)
         );
+    }
+
+    /// Queue B must stay blocked while Queue A holds the request mutex through
+    /// a failover gap (link attempt lock released, rediscover in progress).
+    #[tokio::test]
+    async fn queue_request_mutex_blocks_sibling_through_failover_gap() {
+        let request_queue = Arc::new(Mutex::new(()));
+        let link_attempt = Arc::new(Mutex::new(()));
+        let (a_in_failover_tx, a_in_failover_rx) = tokio::sync::oneshot::channel::<()>();
+        let (release_failover_tx, release_failover_rx) = tokio::sync::oneshot::channel::<()>();
+        let b_entered_request = Arc::new(AtomicBool::new(false));
+
+        let queue_a = Arc::clone(&request_queue);
+        let link_a = Arc::clone(&link_attempt);
+        let task_a = tokio::spawn(async move {
+            let _request = queue_a.lock().await;
+            {
+                let _link = link_a.lock().await;
+                // initial Link attempt
+            }
+            // Failover gap: attempt lock released; request mutex still held.
+            let _ = a_in_failover_tx.send(());
+            let _ = release_failover_rx.await;
+            {
+                let _link = link_a.lock().await;
+                // failover Link attempt
+            }
+        });
+
+        let queue_b = Arc::clone(&request_queue);
+        let link_b = Arc::clone(&link_attempt);
+        let b_flag = Arc::clone(&b_entered_request);
+        let task_b = tokio::spawn(async move {
+            let _request = queue_b.lock().await;
+            b_flag.store(true, Ordering::SeqCst);
+            let _link = link_b.lock().await;
+        });
+
+        a_in_failover_rx.await.expect("A reached failover gap");
+        tokio::time::sleep(Duration::from_millis(40)).await;
+        assert!(
+            !b_entered_request.load(Ordering::SeqCst),
+            "Queue B must not enter the request mutex while A is in failover"
+        );
+        release_failover_tx.send(()).expect("release A failover");
+        task_a.await.expect("A");
+        task_b.await.expect("B");
+        assert!(b_entered_request.load(Ordering::SeqCst));
     }
 }
