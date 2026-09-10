@@ -16,6 +16,7 @@ mod lxmf_inbound_log;
 mod nomad_content_source;
 mod nomad_file;
 mod nomad_link_errors;
+mod nomad_link_schedule;
 #[cfg(feature = "rns-stack")]
 mod nomad_request_payload;
 mod nomad_timeouts;

@@ -1295,20 +1295,20 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 **Humanized error categories** (sidecar code → user message):
 
-| Sidecar code            | Meaning                                                             |
-| ----------------------- | ------------------------------------------------------------------- |
-| `path_timeout`          | No route to the node (path lookup timed out)                        |
-| `pubkey_not_found`      | Destination identity key not cached yet — wait for a Nomad announce |
-| `link_timeout`          | Link could not be established in time (UI may say path OK vs stale) |
-| `response_timeout`      | Link opened but page payload did not arrive in time                 |
-| `missing_identity_hash` | No remembered identity for the node yet                             |
-| `network_not_ready`     | No usable path/interface yet — wait for hub/path or restart stack   |
-| `nomad_not_serving`     | Remote node is not serving Nomad pages                              |
-| `invalid_url`           | Malformed Nomad page/file URL                                       |
-| `transport_unavailable` | Reticulum transport unavailable — restart stack                     |
-| `sidecar_not_running`   | Sidecar not running — start stack from Connection                   |
-| `response_too_large`    | Remote response exceeded the sidecar size cap                       |
-| `nomad_busy`            | Another Nomad page/file query still holds the link lock             |
+| Sidecar code            | Meaning                                                                                                                                                                                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `path_timeout`          | No route to the node (path lookup timed out)                                                                                                                                                                                                    |
+| `pubkey_not_found`      | Destination identity key not cached yet — wait for a Nomad announce                                                                                                                                                                             |
+| `link_timeout`          | Link could not be established in time (UI may say path OK vs stale)                                                                                                                                                                             |
+| `response_timeout`      | Link opened but page payload did not arrive in time                                                                                                                                                                                             |
+| `missing_identity_hash` | No remembered identity for the node yet                                                                                                                                                                                                         |
+| `network_not_ready`     | No usable path/interface yet — wait for hub/path or restart stack                                                                                                                                                                               |
+| `nomad_not_serving`     | Remote node is not serving Nomad pages                                                                                                                                                                                                          |
+| `invalid_url`           | Malformed Nomad page/file URL                                                                                                                                                                                                                   |
+| `transport_unavailable` | Reticulum transport unavailable — restart stack                                                                                                                                                                                                 |
+| `sidecar_not_running`   | Sidecar not running — start stack from Connection                                                                                                                                                                                               |
+| `response_too_large`    | Remote response exceeded the sidecar size cap                                                                                                                                                                                                   |
+| `nomad_busy`            | Another Nomad page/file query still holds the link lock, or a page navigation preempted an in-flight query. In-page `/media` images queue (do not cancel each other); rebuild sidecar if multiple images fail with this code on an older build. |
 
 Unrecognized codes pass through unchanged.
 
