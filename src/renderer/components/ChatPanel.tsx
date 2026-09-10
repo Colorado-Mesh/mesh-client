@@ -130,7 +130,6 @@ import {
   getChatMessageVirtualizerKey,
   getDistFromChatBottom,
   scheduleVirtualRowRemeasure,
-  VIRTUALIZER_SCROLL_END_THRESHOLD,
 } from '../lib/chatScrollUtils';
 import {
   type ChatUnreadDmOptions,
@@ -1384,7 +1383,7 @@ function ChatPanel({
     getItemKey: (index) => getChatMessageVirtualizerKey(filteredMessages[index], index),
     anchorTo: 'end',
     followOnAppend: true,
-    scrollEndThreshold: VIRTUALIZER_SCROLL_END_THRESHOLD,
+    scrollEndThreshold: CHAT_SCROLL_END_THRESHOLD,
   });
 
   messageVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = createChatScrollAdjustPredicate({
@@ -1625,8 +1624,7 @@ function ChatPanel({
     };
   }, [applyNearBottomReadState, isActive, updateScrollButtonVisibility]);
 
-  // Refresh scroll button + mark-read when message list changes; scrollToEnd when app-pinned
-  // (followOnAppend uses the tighter VIRTUALIZER_SCROLL_END_THRESHOLD).
+  // Follow only while pinned; the virtualizer uses the same bottom tolerance.
   useEffect(() => {
     if (!isActive || isAppWindowInactive()) return;
     if (isPinnedToBottomRef.current) {

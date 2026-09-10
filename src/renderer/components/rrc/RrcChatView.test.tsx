@@ -674,7 +674,7 @@ describe('RrcChatView stick-to-bottom', () => {
     }
   });
 
-  it('does not follow appends when scrolled up and shows Jump to Latest', async () => {
+  it.each([8, 60, 150])('does not follow appends when only %ipx from latest', async (distance) => {
     const user = userEvent.setup();
     const { rerender } = render(
       <RrcChatView {...baseProps} messages={[makeMsg({ id: '1', body: 'one' })]} />,
@@ -683,8 +683,13 @@ describe('RrcChatView stick-to-bottom', () => {
       expect(mockScrollToEnd).toHaveBeenCalled();
     });
 
-    mockIsAtEnd = false;
-    fireEvent.scroll(screen.getByTestId('rrc-message-stream'));
+    const stream = screen.getByTestId('rrc-message-stream');
+    Object.defineProperties(stream, {
+      scrollHeight: { value: 2000, configurable: true },
+      clientHeight: { value: 400, configurable: true },
+      scrollTop: { value: 1600 - distance, writable: true, configurable: true },
+    });
+    fireEvent.scroll(stream);
     expect(screen.getByLabelText('rrc.jumpToLatest')).toBeInTheDocument();
 
     mockScrollToEnd.mockClear();
