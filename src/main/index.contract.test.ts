@@ -499,6 +499,25 @@ describe('Long-session maintenance (source contract)', () => {
   });
 });
 
+describe('Unread app badge wiring (source contract)', () => {
+  it('initializes native notification support without displaying a notification', () => {
+    const start = INDEX_SOURCE.indexOf('function refreshUnreadAppBadge(): void');
+    const end = INDEX_SOURCE.indexOf("ipcMain.on('set-tray-unread'", start);
+    const refresh = INDEX_SOURCE.slice(start, end);
+    expect(refresh).toContain('Notification.isSupported()');
+    expect(refresh).not.toContain('new Notification');
+    expect(refresh).not.toContain('.show()');
+    expect(refresh).toContain('shouldSuppressUnreadDockBadge()');
+    expect(refresh).toContain('mainWindow.isDestroyed()');
+  });
+
+  it('reapplies the latest unread count on focus and before best-effort tray updates', () => {
+    expect(INDEX_SOURCE).toMatch(/win\.on\('focus', \(\) => \{[^}]*refreshUnreadAppBadge\(\)/);
+    expect(INDEX_SOURCE).toMatch(/lastTrayUnreadCount = n;\s*refreshUnreadAppBadge\(\);/);
+    expect(INDEX_SOURCE).toContain("'[main] app unread badge update failed:'");
+  });
+});
+
 describe('Native Electron call guards (source contract)', () => {
   it('keeps tray, badge, and power-save native calls best-effort', () => {
     expect(INDEX_SOURCE).toContain("'[main] tray icon load failed:'");

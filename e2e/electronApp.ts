@@ -116,7 +116,10 @@ export async function launchApp(options: LaunchAppOptions = {}): Promise<Launche
   }
 
   const env: Record<string, string | undefined> = { ...process.env };
-  delete env.VITE_DEV_SERVER_URL;
+  // Test the production build even when another project is serving on port 5173.
+  env.VITE_DEV_SERVER_URL = pathToFileURL(
+    path.join(repoRoot, 'dist', 'renderer', 'index.html'),
+  ).href;
   // OS-specific: disable GPU on Linux headless/Xvfb (MESH_CLIENT_DISABLE_GPU honored in main).
   if (process.platform === 'linux') {
     env.MESH_CLIENT_DISABLE_GPU = '1';

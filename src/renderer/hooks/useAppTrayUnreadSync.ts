@@ -35,7 +35,7 @@ function persistRrcUnread(count: number): void {
   }
 }
 
-/** Persist per-protocol unread counts and sync combined total to the macOS tray badge. */
+/** Persist per-protocol unread counts and sync the combined total to native tray and app-icon badges. */
 export function useAppTrayUnreadSync(
   meshtasticChatUnread: number,
   meshcoreChatUnread: number,

@@ -1726,6 +1726,12 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 
 ## Chat, nodes, and notifications
 
+### Unread messages but no app-icon badge
+
+On **macOS**, allow notifications for Mesh Client and enable **Badge application icon** in **System Settings → Notifications → Mesh Client**. The app initializes macOS notification authorization when unread messages exist and reapplies the current badge when its window regains focus. Reading the remaining unread messages clears the badge. macOS notification settings still control whether the badge is visible; the app does not override a denied permission.
+
+On **Windows**, unread messages use a red taskbar overlay. On **Linux**, launcher counts depend on desktop support for the LauncherEntry D-Bus API. Tray indicators remain separate from the app-icon badge.
+
 ### Meshtastic: inbound messages on the wrong channel tab
 
 **Symptoms**
