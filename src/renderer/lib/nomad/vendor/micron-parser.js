@@ -1303,10 +1303,8 @@ class MicronParser {
         img.style.height = 'auto';
         img.style.objectFit = 'contain';
       } else {
-        // Height-only (or full-width + height): constrain height, keep aspect.
-        img.style.width = 'auto';
+        // Height-only (omitted w): keep full-width default; constrain height.
         img.style.maxHeight = heightCss;
-        img.style.height = heightCss;
         img.style.objectFit = 'contain';
       }
     }

@@ -394,6 +394,19 @@ describe('NomadNet 1.4.1 micron images and collapsibles', () => {
     expect(img?.style.objectFit).toBe('contain');
   });
 
+  it('keeps full-width default for height-only images and centers independently of page align', () => {
+    const html = renderNomadMicronPage('`l\n`(x`h=12`:/media/x.webp)');
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    const img = container.querySelector<HTMLImageElement>('.nomad-micron-media');
+    const figure = container.querySelector<HTMLElement>('.nomad-micron-media-figure');
+    expect(img?.style.width).toBe('100%');
+    expect(img?.style.height).toBe('12lh');
+    expect(img?.style.maxHeight).toBe('12lh');
+    expect(img?.style.objectFit).toBe('contain');
+    expect(figure?.style.textAlign).toBe('center');
+  });
+
   it('renders open and collapsed collapsible headings as details/summary', () => {
     const markup = [
       '`+>Open by default',
