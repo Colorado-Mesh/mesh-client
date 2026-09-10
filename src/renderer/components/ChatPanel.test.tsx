@@ -1495,9 +1495,17 @@ describe('ChatPanel scroll pinning', () => {
     expect(scrollIntoView).not.toHaveBeenCalled();
   });
 
-  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
-    'preserves a small scroll away from latest through repeated %s arrivals and status updates',
-    async (protocol) => {
+  it.each(
+    (['linux', 'darwin', 'win32'] as const).flatMap((platform) =>
+      (['meshtastic', 'meshcore', 'reticulum'] as const).map((protocol) => ({
+        platform,
+        protocol,
+      })),
+    ),
+  )(
+    'preserves a small scroll away from latest through repeated $protocol message updates on $platform',
+    async ({ platform, protocol }) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
       const initial = Array.from({ length: 5 }, (_, i) => makeMsg(i));
       const { container, rerender } = render(
         <ToastProvider>
