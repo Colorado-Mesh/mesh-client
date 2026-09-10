@@ -56,6 +56,7 @@ use super::nomad_link_errors::map_nomad_link_error;
 use super::nomad_link_schedule::{
     NomadLinkSchedule, nomad_link_lock_wait, nomad_link_schedule_bumps_generation,
     nomad_link_schedule_cancels_prior, nomad_link_schedule_holds_request_queue,
+    nomad_media_queue_lock_wait,
 };
 use super::nomad_request_payload::{nomad_media_request_payload, nomad_page_request_payload};
 use super::nomad_server::NomadServerHandle;
@@ -1147,8 +1148,17 @@ impl LiveBridge {
         // Queue: hold request mutex across Link attempts + suppress_via_and_rediscover
         // so a sibling /media fetch cannot start in the failover gap. Preempt skips
         // this lock (last-wins via generation/cancel). Attempt lock stays separate.
+        // Wait budget covers full lifecycle (attempts + rediscovery), not one Link.
         let _media_queue_guard = if nomad_link_schedule_holds_request_queue(schedule) {
-            let wait = nomad_link_lock_wait(schedule, NOMAD_LINK_LOCK_WAIT, timeout_secs);
+            let rediscover_secs = path_failover::VIA_FAILOVER_PROBE_WAIT
+                .saturating_add(path_failover::VIA_FAILOVER_EXTRA_PROBE_WAIT)
+                .as_secs();
+            let wait = nomad_media_queue_lock_wait(
+                timeout_secs,
+                NOMAD_LINK_LOCK_WAIT,
+                path_failover::MAX_VIA_FAILOVERS,
+                rediscover_secs,
+            );
             match tokio::time::timeout(wait, self.nomad_media_queue_lock.lock()).await {
                 Ok(g) => Some(g),
                 Err(_) => {

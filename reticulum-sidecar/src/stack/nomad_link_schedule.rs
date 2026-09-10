@@ -37,11 +37,10 @@ pub fn nomad_link_schedule_holds_request_queue(schedule: NomadLinkSchedule) -> b
     matches!(schedule, NomadLinkSchedule::Queue)
 }
 
-/// Lock-acquire budget for the given schedule.
+/// Lock-acquire budget for a single Link attempt / Preempt unwind.
 ///
 /// Preempt uses a short unwind window after canceling the prior query.
-/// Queue waits up to the Link query timeout so a slow sibling image does not
-/// fail later images with `nomad_busy`.
+/// Queue attempt waits floor at the Link query timeout (per attempt only).
 pub fn nomad_link_lock_wait(
     schedule: NomadLinkSchedule,
     preempt_wait: Duration,
@@ -54,6 +53,27 @@ pub fn nomad_link_lock_wait(
             Duration::from_secs(secs)
         }
     }
+}
+
+/// Wait budget for the request-scoped `/media` queue mutex.
+///
+/// Covers the full protected lifecycle held under `nomad_media_queue_lock`:
+/// initial Link + up to `max_via_failovers` retries, each with a rediscovery
+/// window (`rediscover_secs_per_failover`), not a single `timeout_secs` attempt.
+pub fn nomad_media_queue_lock_wait(
+    query_timeout_secs: u64,
+    preempt_wait: Duration,
+    max_via_failovers: u8,
+    rediscover_secs_per_failover: u64,
+) -> Duration {
+    let attempts = u64::from(max_via_failovers).saturating_add(1);
+    let link_budget = query_timeout_secs.saturating_mul(attempts);
+    let rediscover_budget =
+        u64::from(max_via_failovers).saturating_mul(rediscover_secs_per_failover);
+    let secs = link_budget
+        .saturating_add(rediscover_budget)
+        .max(preempt_wait.as_secs());
+    Duration::from_secs(secs)
 }
 
 #[cfg(test)]
@@ -100,12 +120,28 @@ mod tests {
         );
     }
 
+    #[test]
+    fn media_queue_lock_wait_covers_attempts_plus_rediscovery() {
+        let preempt = Duration::from_secs(8);
+        // 3 attempts × 45s + 2 × 16s rediscover = 167s
+        assert_eq!(
+            nomad_media_queue_lock_wait(45, preempt, 2, 16),
+            Duration::from_secs(167)
+        );
+        // Tiny query timeout still floors at preempt unwind.
+        assert_eq!(
+            nomad_media_queue_lock_wait(1, preempt, 0, 0),
+            Duration::from_secs(8)
+        );
+    }
+
     /// Queue B must stay blocked while Queue A holds the request mutex through
     /// a failover gap (link attempt lock released, rediscover in progress).
     #[tokio::test]
     async fn queue_request_mutex_blocks_sibling_through_failover_gap() {
         let request_queue = Arc::new(Mutex::new(()));
         let link_attempt = Arc::new(Mutex::new(()));
+        let (a_holding_tx, a_holding_rx) = tokio::sync::oneshot::channel::<()>();
         let (a_in_failover_tx, a_in_failover_rx) = tokio::sync::oneshot::channel::<()>();
         let (release_failover_tx, release_failover_rx) = tokio::sync::oneshot::channel::<()>();
         let b_entered_request = Arc::new(AtomicBool::new(false));
@@ -114,6 +150,7 @@ mod tests {
         let link_a = Arc::clone(&link_attempt);
         let task_a = tokio::spawn(async move {
             let _request = queue_a.lock().await;
+            let _ = a_holding_tx.send(());
             {
                 let _link = link_a.lock().await;
                 // initial Link attempt
@@ -126,6 +163,11 @@ mod tests {
                 // failover Link attempt
             }
         });
+
+        // Spawn B only after A holds the request mutex (deterministic ordering).
+        a_holding_rx
+            .await
+            .expect("A acquired request mutex before spawning B");
 
         let queue_b = Arc::clone(&request_queue);
         let link_b = Arc::clone(&link_attempt);
