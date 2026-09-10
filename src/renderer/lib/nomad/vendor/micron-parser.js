@@ -1224,6 +1224,8 @@ class MicronParser {
   /**
    * NomadNet 1.4.1 image tag: `(alt`w=`h=`a=`url)
    * Emits an <img> placeholder; the view layer fetches /media bytes.
+   * Size/align match ImageWidget (columns→ch, NN%, n=native, omitted w=100%,
+   * omitted a=center).
    */
   parseImage(line, state) {
     const endpos = line.lastIndexOf(')');
@@ -1249,22 +1251,18 @@ class MicronParser {
       else if (key === 'a') alignProp = value;
     }
 
-    let alignCss = null;
-    if (alignProp === 'c') alignCss = 'center';
-    else if (alignProp === 'l') alignCss = 'left';
-    else if (alignProp === 'r') alignCss = 'right';
-    else if (alignProp === 'center' || alignProp === 'left' || alignProp === 'right') {
-      alignCss = alignProp;
-    } else if (state?.align === 'center' || state?.align === 'left' || state?.align === 'right') {
-      // Inherit page alignment when `a=` is omitted (avoids old NomadNet
-      // interpreting `` `a `` inside the image tag as an align reset).
-      alignCss = state.align;
-    }
+    // NomadNet ImageWidget defaults align to center when `a=` is omitted
+    // (does not inherit page `` `c `` / `` `l ``).
+    let alignCss = 'center';
+    if (alignProp === 'c' || alignProp === 'center') alignCss = 'center';
+    else if (alignProp === 'l' || alignProp === 'left') alignCss = 'left';
+    else if (alignProp === 'r' || alignProp === 'right') alignCss = 'right';
 
     const figure = document.createElement('figure');
     figure.className = 'nomad-micron-media-figure';
     this.applySectionIndent(figure, state);
-    if (alignCss) figure.style.textAlign = alignCss;
+    figure.style.width = '100%';
+    figure.style.textAlign = alignCss;
 
     const img = document.createElement('img');
     img.className = 'nomad-micron-media';
@@ -1275,6 +1273,42 @@ class MicronParser {
     if (height != null) img.setAttribute('data-h', String(height));
     if (alignProp != null) img.setAttribute('data-a', String(alignProp));
 
+    img.style.display = 'inline-block';
+    img.style.maxWidth = '100%';
+    img.style.verticalAlign = 'middle';
+
+    const widthCss = MicronParser._nomadImageSizeToCss(width, 'width');
+    const heightCss = MicronParser._nomadImageSizeToCss(height, 'height');
+    const widthConcrete = widthCss && widthCss !== 'native' && widthCss !== 'full';
+    const heightConcrete = heightCss && heightCss !== 'native' && heightCss !== 'full';
+
+    if (widthCss === 'native') {
+      // Leave width unset (intrinsic), capped by max-width.
+      img.style.height = 'auto';
+    } else if (widthConcrete) {
+      img.style.width = widthCss;
+      img.style.height = 'auto';
+    } else {
+      // Omitted w or invalid → NomadNet full layout width.
+      img.style.width = '100%';
+      img.style.height = 'auto';
+    }
+
+    if (heightConcrete) {
+      img.style.height = heightCss;
+      if (widthConcrete) {
+        img.style.objectFit = 'contain';
+      } else if (widthCss === 'native') {
+        img.style.maxHeight = heightCss;
+        img.style.height = 'auto';
+        img.style.objectFit = 'contain';
+      } else {
+        // Height-only (omitted w): keep full-width default; constrain height.
+        img.style.maxHeight = heightCss;
+        img.style.objectFit = 'contain';
+      }
+    }
+
     const notice = document.createElement('figcaption');
     notice.className = 'nomad-micron-media-notice';
     notice.textContent = altText ? `[${altText}]` : '[image]';
@@ -1282,6 +1316,23 @@ class MicronParser {
     figure.appendChild(img);
     figure.appendChild(notice);
     return [figure];
+  }
+
+  /**
+   * Map NomadNet ImageWidget size specs to CSS.
+   * @returns {'full'|'native'|string|null} CSS length, sentinel, or null if omitted
+   */
+  static _nomadImageSizeToCss(value, axis) {
+    if (value == null || value === '') return null;
+    const v = String(value).trim();
+    if (!v) return null;
+    if (v.toLowerCase() === 'n') return 'native';
+    if (/^\d+$/.test(v)) {
+      // Terminal columns / rows → ch / lh.
+      return axis === 'height' ? `${v}lh` : `${v}ch`;
+    }
+    if (/^\d+(\.\d+)?%$/.test(v)) return v;
+    return null;
   }
 
   static upgradeInputToTextarea(input, options = {}) {
