@@ -53,6 +53,11 @@ use super::lxmf_delivery::{
 };
 use super::nomad_file::{nomad_file_name_from_metadata_or_path, nomad_file_name_from_path};
 use super::nomad_link_errors::map_nomad_link_error;
+use super::nomad_link_schedule::{
+    NomadLinkSchedule, nomad_link_lock_wait, nomad_link_schedule_bumps_generation,
+    nomad_link_schedule_cancels_prior, nomad_link_schedule_holds_request_queue,
+    nomad_media_queue_lock_wait,
+};
 use super::nomad_request_payload::{nomad_media_request_payload, nomad_page_request_payload};
 use super::nomad_server::NomadServerHandle;
 use super::nomad_timeouts;
@@ -159,11 +164,17 @@ pub struct LiveBridge {
     /// delivery callback Arc stays alive for the lifetime of the bridge.
     #[allow(dead_code)]
     inbound_lxmf: Arc<super::lxmf_inbound_log::LxmfInboundBuffer>,
-    /// Serialize Nomad Link queries — transport actor is single-threaded and
-    /// overlapping page/file fetches contend with path/pubkey discovery.
+    /// Serialize Nomad Link *attempts* — transport actor is single-threaded and
+    /// overlapping page/file/media Link queries contend with path/pubkey discovery.
+    /// Held only for one LinkClient query (released between via-failover rounds).
     nomad_link_lock: Arc<tokio::sync::Mutex<()>>,
-    /// Cancel in-flight Nomad Link when a newer page selection arrives (renderer
-    /// debounce coalesces clicks; leaving the Nomad tab does not cancel).
+    /// Request-scoped serialization for [`NomadLinkSchedule::Queue`] (`/media`):
+    /// held across the initial Link attempt and all via-failover work so a sibling
+    /// image cannot start while the first is in `suppress_via_and_rediscover`.
+    nomad_media_queue_lock: Arc<tokio::sync::Mutex<()>>,
+    /// Cancel in-flight Nomad Link when a newer page/file selection arrives
+    /// (renderer debounce coalesces clicks; leaving the Nomad tab does not cancel).
+    /// `/media` installs this slot only while holding `nomad_link_lock`.
     nomad_link_cancel: Arc<tokio::sync::Mutex<Option<tokio::sync::oneshot::Sender<()>>>>,
     nomad_link_generation: Arc<AtomicU64>,
     rrc_session: Arc<RrcSessionManager>,
@@ -519,6 +530,7 @@ impl LiveBridge {
             packet_log,
             inbound_lxmf,
             nomad_link_lock: Arc::new(tokio::sync::Mutex::new(())),
+            nomad_media_queue_lock: Arc::new(tokio::sync::Mutex::new(())),
             nomad_link_cancel: Arc::new(tokio::sync::Mutex::new(None)),
             nomad_link_generation: Arc::new(AtomicU64::new(0)),
             rrc_session: Arc::new(RrcSessionManager::spawn(
@@ -934,6 +946,7 @@ impl LiveBridge {
         interfaces: &[InterfaceRow],
         force_path_refresh: bool,
         progress_request_id: Option<&str>,
+        schedule: NomadLinkSchedule,
     ) -> Result<(Vec<u8>, NomadRemoteQueryOk), NomadRemoteQueryError> {
         let query_started = tokio::time::Instant::now();
         let remote_hash = parse_hash16(identity_hash_hex).map_err(|e| NomadRemoteQueryError {
@@ -1122,12 +1135,52 @@ impl LiveBridge {
             &live_interface_names(interfaces),
             interfaces,
         );
-        // One generation for this page request + all via failovers. Bumping per
-        // Link attempt would cancel a newer request when the older one retries.
-        let link_gen = self
-            .nomad_link_generation
-            .fetch_add(1, Ordering::SeqCst)
-            .wrapping_add(1);
+        // Preempt (page/file): one generation for this request + all via failovers.
+        // Queue (media): snapshot only — do not bump or cancel sibling image fetches.
+        // Bumping per Link attempt would cancel a newer request when the older one retries.
+        let link_gen = if nomad_link_schedule_bumps_generation(schedule) {
+            self.nomad_link_generation
+                .fetch_add(1, Ordering::SeqCst)
+                .wrapping_add(1)
+        } else {
+            self.nomad_link_generation.load(Ordering::SeqCst)
+        };
+        // Queue: hold request mutex across Link attempts + suppress_via_and_rediscover
+        // so a sibling /media fetch cannot start in the failover gap. Preempt skips
+        // this lock (last-wins via generation/cancel). Attempt lock stays separate.
+        // Wait budget covers full lifecycle (attempts + rediscovery), not one Link.
+        let _media_queue_guard = if nomad_link_schedule_holds_request_queue(schedule) {
+            let rediscover_secs = path_failover::VIA_FAILOVER_PROBE_WAIT
+                .saturating_add(path_failover::VIA_FAILOVER_EXTRA_PROBE_WAIT)
+                .as_secs();
+            let wait = nomad_media_queue_lock_wait(
+                timeout_secs,
+                NOMAD_LINK_LOCK_WAIT,
+                path_failover::MAX_VIA_FAILOVERS,
+                rediscover_secs,
+            );
+            match tokio::time::timeout(wait, self.nomad_media_queue_lock.lock()).await {
+                Ok(g) => Some(g),
+                Err(_) => {
+                    return Err(NomadRemoteQueryError {
+                        code: "nomad_busy".into(),
+                        egress: Some(egress),
+                        path_hops: Some(hops),
+                        link_hops: Some(link_hops),
+                        timeout_secs: Some(timeout_secs),
+                        force_path_ok,
+                        path_ensure_kind,
+                        raw_error: None,
+                        elapsed_ms: Some(elapsed_ms_since(query_started)),
+                        tried_interfaces: None,
+                        failover_rounds: None,
+                        last_iface: current_iface.clone(),
+                    });
+                }
+            }
+        } else {
+            None
+        };
         self.emit_nomad_page_progress(
             hash_hex,
             path,
@@ -1154,6 +1207,7 @@ impl LiveBridge {
                 force_path_ok,
                 path_ensure_kind,
                 link_gen,
+                schedule,
             )
             .await;
 
@@ -1272,6 +1326,7 @@ impl LiveBridge {
                     Some(true),
                     Some(rediscovered),
                     link_gen,
+                    schedule,
                 )
                 .await;
             hops = failover_hops;
@@ -1311,8 +1366,12 @@ impl LiveBridge {
 
     /// One LinkClient Nomad query under the shared Nomad link lock / cancel slot.
     ///
-    /// `my_gen` is owned by the outer page request (see [`Self::query_nomad_node`]) so
+    /// `my_gen` is owned by the outer request (see [`Self::query_nomad_node`]) so
     /// via-failover retries do not bump generation or cancel a newer page load.
+    /// [`NomadLinkSchedule::Queue`] snapshots generation without bumping so sibling
+    /// `/media` fetches do not preempt each other. Request-level serialization is
+    /// `nomad_media_queue_lock` in [`Self::query_nomad_node`]; this method only holds
+    /// `nomad_link_lock` for one Link attempt.
     #[allow(clippy::too_many_arguments, clippy::result_large_err)] // hops / budgets / Nomad Link Err diagnostics
     async fn nomad_link_client_query(
         &self,
@@ -1326,85 +1385,73 @@ impl LiveBridge {
         force_path_ok: Option<bool>,
         path_ensure_kind: Option<&'static str>,
         my_gen: u64,
+        schedule: NomadLinkSchedule,
     ) -> Result<(Vec<u8>, Option<Vec<u8>>), NomadRemoteQueryError> {
+        let busy = || NomadRemoteQueryError {
+            code: "nomad_busy".into(),
+            egress: Some(egress),
+            path_hops: Some(hops),
+            link_hops: Some(link_hops),
+            timeout_secs: Some(timeout_secs),
+            force_path_ok,
+            path_ensure_kind,
+            raw_error: None,
+            elapsed_ms: None,
+            tried_interfaces: None,
+            failover_rounds: None,
+            last_iface: None,
+        };
         // Abort before touching the cancel slot so a superseded failover cannot
         // cancel the newer request that already owns last-request-wins.
         if self.nomad_link_generation.load(Ordering::SeqCst) != my_gen {
-            return Err(NomadRemoteQueryError {
-                code: "nomad_busy".into(),
-                egress: Some(egress),
-                path_hops: Some(hops),
-                link_hops: Some(link_hops),
-                timeout_secs: Some(timeout_secs),
-                force_path_ok,
-                path_ensure_kind,
-                raw_error: None,
-                elapsed_ms: None,
-                tried_interfaces: None,
-                failover_rounds: None,
-                last_iface: None,
-            });
+            return Err(busy());
         }
+        let lock_wait = nomad_link_lock_wait(schedule, NOMAD_LINK_LOCK_WAIT, timeout_secs);
         let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel();
-        {
-            let mut slot = self.nomad_link_cancel.lock().await;
+        let guard = if nomad_link_schedule_cancels_prior(schedule) {
+            // Preempt: claim cancel (abort prior Link) then wait for the lock.
+            {
+                let mut slot = self.nomad_link_cancel.lock().await;
+                if self.nomad_link_generation.load(Ordering::SeqCst) != my_gen {
+                    return Err(busy());
+                }
+                if let Some(prev) = slot.take() {
+                    let _ = prev.send(());
+                }
+                *slot = Some(cancel_tx);
+            }
+            let Ok(guard) = tokio::time::timeout(lock_wait, self.nomad_link_lock.lock()).await
+            else {
+                if self.nomad_link_generation.load(Ordering::SeqCst) == my_gen {
+                    *self.nomad_link_cancel.lock().await = None;
+                }
+                return Err(busy());
+            };
+            guard
+        } else {
+            // Queue: wait for the lock without canceling siblings; install cancel
+            // only while holding the lock so a later Preempt can still abort us.
+            let Ok(guard) = tokio::time::timeout(lock_wait, self.nomad_link_lock.lock()).await
+            else {
+                return Err(busy());
+            };
             if self.nomad_link_generation.load(Ordering::SeqCst) != my_gen {
-                return Err(NomadRemoteQueryError {
-                    code: "nomad_busy".into(),
-                    egress: Some(egress),
-                    path_hops: Some(hops),
-                    link_hops: Some(link_hops),
-                    timeout_secs: Some(timeout_secs),
-                    force_path_ok,
-                    path_ensure_kind,
-                    raw_error: None,
-                    elapsed_ms: None,
-                    tried_interfaces: None,
-                    failover_rounds: None,
-                    last_iface: None,
-                });
+                return Err(busy());
             }
-            if let Some(prev) = slot.take() {
-                let _ = prev.send(());
+            {
+                let mut slot = self.nomad_link_cancel.lock().await;
+                if self.nomad_link_generation.load(Ordering::SeqCst) != my_gen {
+                    return Err(busy());
+                }
+                if let Some(prev) = slot.take() {
+                    let _ = prev.send(());
+                }
+                *slot = Some(cancel_tx);
             }
-            *slot = Some(cancel_tx);
-        }
-        let Ok(guard) =
-            tokio::time::timeout(NOMAD_LINK_LOCK_WAIT, self.nomad_link_lock.lock()).await
-        else {
-            if self.nomad_link_generation.load(Ordering::SeqCst) == my_gen {
-                *self.nomad_link_cancel.lock().await = None;
-            }
-            return Err(NomadRemoteQueryError {
-                code: "nomad_busy".into(),
-                egress: Some(egress),
-                path_hops: Some(hops),
-                link_hops: Some(link_hops),
-                timeout_secs: Some(timeout_secs),
-                force_path_ok,
-                path_ensure_kind,
-                raw_error: None,
-                elapsed_ms: None,
-                tried_interfaces: None,
-                failover_rounds: None,
-                last_iface: None,
-            });
+            guard
         };
         if self.nomad_link_generation.load(Ordering::SeqCst) != my_gen {
-            return Err(NomadRemoteQueryError {
-                code: "nomad_busy".into(),
-                egress: Some(egress),
-                path_hops: Some(hops),
-                link_hops: Some(link_hops),
-                timeout_secs: Some(timeout_secs),
-                force_path_ok,
-                path_ensure_kind,
-                raw_error: None,
-                elapsed_ms: None,
-                tried_interfaces: None,
-                failover_rounds: None,
-                last_iface: None,
-            });
+            return Err(busy());
         }
         let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
         let query_fut = client.query(
@@ -1417,20 +1464,7 @@ impl LiveBridge {
         );
         let result = tokio::select! {
             biased;
-            _ = cancel_rx => Err(NomadRemoteQueryError {
-                code: "nomad_busy".into(),
-                egress: Some(egress),
-                path_hops: Some(hops),
-                link_hops: Some(link_hops),
-                timeout_secs: Some(timeout_secs),
-                force_path_ok,
-                path_ensure_kind,
-                raw_error: None,
-                elapsed_ms: None,
-                tried_interfaces: None,
-                failover_rounds: None,
-                last_iface: None,
-            }),
+            _ = cancel_rx => Err(busy()),
             query_result = query_fut => {
                 query_result
                     .map(|resp| (resp.data, resp.metadata))
@@ -1690,6 +1724,7 @@ impl LiveBridge {
                 interfaces,
                 force_path_refresh,
                 None,
+                NomadLinkSchedule::Preempt,
             )
             .await
         {
@@ -1715,6 +1750,9 @@ impl LiveBridge {
 
     /// Fetch NomadNet 1.4.1 in-page WebP via Link query path `/media` with
     /// `{path, key: nil}` payload (not the `/file/...` route).
+    /// Uses [`NomadLinkSchedule::Queue`] so multiple images on one page serialize
+    /// under `nomad_media_queue_lock` across Link + via-failover (not last-wins
+    /// cancel / `nomad_busy` between siblings).
     /// See `fetch_nomad_file` for `hash_hex` / `identity_hash_hex` semantics.
     pub async fn fetch_nomad_media(
         &self,
@@ -1762,6 +1800,7 @@ impl LiveBridge {
                 interfaces,
                 force_path_refresh,
                 None,
+                NomadLinkSchedule::Queue,
             )
             .await
         {
@@ -1842,6 +1881,7 @@ impl LiveBridge {
                 interfaces,
                 force_path_refresh,
                 progress_request_id,
+                NomadLinkSchedule::Preempt,
             )
             .await
         {

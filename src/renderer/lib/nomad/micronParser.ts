@@ -187,8 +187,8 @@ export interface NomadMicronMediaFetchResult {
   error?: string;
 }
 
-/** Max in-flight Nomad `/media` fetches per bind (avoids stampeding a node). */
-export const NOMAD_MICRON_MEDIA_FETCH_CONCURRENCY = 4;
+/** Max in-flight Nomad `/media` fetches per bind (serialize like NomadNet Link use). */
+export const NOMAD_MICRON_MEDIA_FETCH_CONCURRENCY = 1;
 
 async function runPool<T>(
   items: readonly T[],
