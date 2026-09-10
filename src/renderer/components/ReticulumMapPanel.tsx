@@ -15,7 +15,6 @@ import {
   MapResizeInvalidator,
   MapViewportSaver,
 } from '@/renderer/components/map/leafletMapControls';
-import { CHAT_SCROLL_END_THRESHOLD } from '@/renderer/lib/chatScrollUtils';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayDateTime } from '@/renderer/lib/formatDisplayTime';
 import { readStoredStaticGps } from '@/renderer/lib/gpsSource';
@@ -243,7 +242,7 @@ export default function ReticulumMapPanel({
 
   const updateListScrollTopButton = useCallback(() => {
     const scrollTop = listScrollRef.current?.scrollTop ?? 0;
-    setShowScrollTopButton(scrollTop > CHAT_SCROLL_END_THRESHOLD);
+    setShowScrollTopButton(scrollTop > 200);
   }, []);
 
   const scrollListToTop = useCallback(() => {

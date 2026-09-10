@@ -1506,10 +1506,10 @@ describe('ChatPanel scroll pinning', () => {
     'preserves a small scroll away from latest through repeated $protocol message updates on $platform',
     async ({ platform, protocol }) => {
       vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
-      const initial = Array.from({ length: 5 }, (_, i) => makeMsg(i));
+      let messages = Array.from({ length: 5 }, (_, i) => makeMsg(i));
       const { container, rerender } = render(
         <ToastProvider>
-          <ChatPanel {...baseProps} protocol={protocol} messages={initial} />
+          <ChatPanel {...baseProps} protocol={protocol} messages={messages} />
         </ToastProvider>,
       );
       const stream = container.querySelector<HTMLDivElement>('div.overflow-y-auto')!;
@@ -1518,17 +1518,14 @@ describe('ChatPanel scroll pinning', () => {
         clientHeight: { value: 400, configurable: true },
         scrollTop: { value: 1600, writable: true, configurable: true },
       });
-      for (const distance of [8, 60, 150]) {
+      for (const distance of [3, 8, 60, 150]) {
         stream.scrollTop = 1600 - distance;
         fireEvent.scroll(stream);
         mockScrollToEnd.mockClear();
+        messages = [...messages, makeMsg(messages.length)];
         rerender(
           <ToastProvider>
-            <ChatPanel
-              {...baseProps}
-              protocol={protocol}
-              messages={[...initial, makeMsg(distance)]}
-            />
+            <ChatPanel {...baseProps} protocol={protocol} messages={messages} />
           </ToastProvider>,
         );
         await waitFor(() => {
@@ -1539,12 +1536,13 @@ describe('ChatPanel scroll pinning', () => {
         expect(mockScrollToEnd).not.toHaveBeenCalled();
         expect(stream.scrollTop).toBe(1600 - distance);
       }
-      stream.scrollTop = 1600;
+      stream.scrollTop = 1598;
       fireEvent.scroll(stream);
       mockScrollToEnd.mockClear();
+      messages = [...messages, makeMsg(messages.length)];
       rerender(
         <ToastProvider>
-          <ChatPanel {...baseProps} protocol={protocol} messages={[...initial, makeMsg(200)]} />
+          <ChatPanel {...baseProps} protocol={protocol} messages={messages} />
         </ToastProvider>,
       );
       await waitFor(() => {

@@ -1000,8 +1000,8 @@ describe('RoomsPanel', () => {
     expect(screen.getByTestId('rooms-composer-footer')).toHaveClass('shrink-0');
   });
 
-  it.each([8, 60, 150])(
-    'does not follow room posts when only %ipx from latest',
+  it.each([2, 3, 8, 60, 150])(
+    'follows room posts only within the bottom tolerance (%ipx from latest)',
     async (distance) => {
       mockIsAtEnd = true;
       const room = makeRoom(0x1017, 'Reading Room');
@@ -1044,8 +1044,12 @@ describe('RoomsPanel', () => {
       await waitFor(() => {
         expect(screen.getByText('post 3000')).toBeInTheDocument();
       });
-      expect(mockScrollToEnd).not.toHaveBeenCalled();
-      expect(stream.scrollTop).toBe(1600 - distance);
+      if (distance <= 2) {
+        expect(mockScrollToEnd).toHaveBeenCalled();
+      } else {
+        expect(mockScrollToEnd).not.toHaveBeenCalled();
+        expect(stream.scrollTop).toBe(1600 - distance);
+      }
     },
   );
 

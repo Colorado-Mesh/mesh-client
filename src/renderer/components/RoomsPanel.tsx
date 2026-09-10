@@ -306,7 +306,9 @@ export default function RoomsPanel({
     loadPersistedRoomsLastRead(),
   );
   const persistedRoomsLastReadRef = useRef(persistedRoomsLastRead);
-  persistedRoomsLastReadRef.current = persistedRoomsLastRead;
+  useEffect(() => {
+    persistedRoomsLastReadRef.current = persistedRoomsLastRead;
+  }, [persistedRoomsLastRead]);
   const [streamView, setStreamView] = useState<'posts' | 'starred'>('posts');
   const [starred, setStarred] = useState<StarredMessage[]>(() => loadStarred('meshcore'));
   const [membersOpen, setMembersOpen] = useState(false);
