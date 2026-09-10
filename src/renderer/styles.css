@@ -372,9 +372,11 @@ html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-off .cm-waterma
 }
 .nomad-micron-page .nomad-micron-media-figure {
   margin: 0.5em 0;
+  width: 100%;
   max-width: 100%;
 }
 .nomad-micron-page .nomad-micron-media {
+  display: inline-block;
   max-width: 100%;
   height: auto;
   vertical-align: middle;

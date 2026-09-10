@@ -342,6 +342,56 @@ describe('NomadNet 1.4.1 micron images and collapsibles', () => {
     expect(img?.alt).toBe('The RNS logo');
     const figure = container.querySelector<HTMLElement>('.nomad-micron-media-figure');
     expect(figure?.style.textAlign).toBe('center');
+    expect(figure?.style.width).toBe('100%');
+    // w=n → no forced ch/% width
+    expect(img?.style.width).toBe('');
+  });
+
+  it('applies NomadNet column width and center align', () => {
+    const html = renderNomadMicronPage('`(x`w=30`a=c`:/media/x.webp)');
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    const img = container.querySelector<HTMLImageElement>('.nomad-micron-media');
+    const figure = container.querySelector<HTMLElement>('.nomad-micron-media-figure');
+    expect(img?.style.width).toBe('30ch');
+    expect(img?.style.height).toBe('auto');
+    expect(figure?.style.textAlign).toBe('center');
+  });
+
+  it('applies percent width specs', () => {
+    const html = renderNomadMicronPage('`(x`w=30%`:/media/x.webp)');
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    const img = container.querySelector<HTMLImageElement>('.nomad-micron-media');
+    expect(img?.style.width).toBe('30%');
+  });
+
+  it('defaults omitted width to full layout width and omitted align to center', () => {
+    const html = renderNomadMicronPage('`(x`:/media/x.webp)');
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    const img = container.querySelector<HTMLImageElement>('.nomad-micron-media');
+    const figure = container.querySelector<HTMLElement>('.nomad-micron-media-figure');
+    expect(img?.style.width).toBe('100%');
+    expect(figure?.style.textAlign).toBe('center');
+  });
+
+  it('does not inherit page left align when image a= is omitted', () => {
+    const html = renderNomadMicronPage('`l\n`(x`w=20`:/media/x.webp)');
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    const figure = container.querySelector<HTMLElement>('.nomad-micron-media-figure');
+    expect(figure?.style.textAlign).toBe('center');
+  });
+
+  it('applies both width and height with object-fit contain', () => {
+    const html = renderNomadMicronPage('`(x`w=40`h=10`:/media/x.webp)');
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    const img = container.querySelector<HTMLImageElement>('.nomad-micron-media');
+    expect(img?.style.width).toBe('40ch');
+    expect(img?.style.height).toBe('10lh');
+    expect(img?.style.objectFit).toBe('contain');
   });
 
   it('renders open and collapsed collapsible headings as details/summary', () => {
