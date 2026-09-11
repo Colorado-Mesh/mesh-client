@@ -93,7 +93,7 @@ export async function resolveRendererLoadUrl(
     return {
       url: options.devServerUrl,
       // E2E uses an explicit file URL to bypass the Vite probe and load the production build.
-      openDevTools: !options.devServerUrl.startsWith('file:'),
+      openDevTools: !/^file:/i.test(options.devServerUrl),
       source: 'env',
     };
   }
