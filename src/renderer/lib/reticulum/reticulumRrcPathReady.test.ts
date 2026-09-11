@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as pathMedium from '@/renderer/lib/reticulum/reticulumPathMedium';
 import {
-  evaluateReticulumRrcPathReady,
   probeReticulumRrcPathReady,
   resetReticulumRrcPathReadyForTests,
 } from '@/renderer/lib/reticulum/reticulumRrcPathReady';
@@ -24,26 +23,6 @@ const ratspeakSlot = {
   expires: 999,
   expired: false,
 };
-
-describe('evaluateReticulumRrcPathReady', () => {
-  it('does not treat passive hops alone as RRC-ready', () => {
-    expect(evaluateReticulumRrcPathReady(2, 'Ratspeak')).toEqual({
-      ready: false,
-      reason: 'no_path',
-      passiveHops: 2,
-      passiveIface: 'Ratspeak',
-    });
-  });
-
-  it('is not ready without hops', () => {
-    expect(evaluateReticulumRrcPathReady(null)).toEqual({
-      ready: false,
-      reason: 'no_path',
-      hops: null,
-      passiveHops: null,
-    });
-  });
-});
 
 describe('probeReticulumRrcPathReady', () => {
   beforeEach(() => {

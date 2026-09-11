@@ -4,7 +4,6 @@ import { topologyGraphVisibleNodeCap } from '../topologyGraphLimits';
 import {
   buildReticulumMeshTopologyGraph,
   buildReticulumTopologyGraph,
-  buildReticulumTopologyLayout,
   buildReticulumViaHashEdges,
   computeReticulumNodeDepths,
   countRelayTargets,
@@ -409,7 +408,7 @@ describe('reticulum topology helpers', () => {
   });
 });
 
-describe('buildReticulumTopologyLayout (via-hash legacy)', () => {
+describe('buildReticulumTopologyGraph (via-hash)', () => {
   it('assigns BFS depths from self over via edges', () => {
     const nodes = [
       { destination_hash: 'hub', hops: 1 },
@@ -441,9 +440,9 @@ describe('buildReticulumTopologyLayout (via-hash legacy)', () => {
       { source: 'self', target: 'hub' },
       { source: 'hub', target: 'leaf' },
     ];
-    const layout = buildReticulumTopologyLayout(nodes, edges, { selfLabel: 'You' });
-    const hub = layout.find((n) => n.id === 'hub');
-    const leaf = layout.find((n) => n.id === 'leaf');
+    const graph = buildReticulumTopologyGraph(nodes, edges, { selfLabel: 'You' });
+    const hub = graph.nodes.find((n) => n.id === 'hub');
+    const leaf = graph.nodes.find((n) => n.id === 'leaf');
     expect(hub?.depth).toBe(1);
     expect(leaf?.depth).toBe(2);
   });
@@ -456,8 +455,8 @@ describe('buildReticulumTopologyLayout (via-hash legacy)', () => {
     ];
     const merged = mergeReticulumTopologyEdgeNodes(nodes, edges);
     expect(merged.some((n) => n.destination_hash === 'relay99')).toBe(true);
-    const layout = buildReticulumTopologyLayout(nodes, edges, { selfLabel: 'You' });
-    expect(layout.some((n) => n.id === 'relay99')).toBe(true);
+    const graph = buildReticulumTopologyGraph(nodes, edges, { selfLabel: 'You' });
+    expect(graph.nodes.some((n) => n.id === 'relay99')).toBe(true);
   });
 
   it('marks relay when fanning out to multiple targets', () => {

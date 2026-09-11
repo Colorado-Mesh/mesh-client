@@ -195,25 +195,6 @@ export function deleteInterfaceProfile(
   return { ...state, profiles: state.profiles.filter((p) => p.id !== id) };
 }
 
-export function setInterfaceProfileMembers(
-  state: InterfaceProfilesState,
-  id: string,
-  members: string[],
-  validNames: ReadonlySet<string>,
-): InterfaceProfilesState {
-  const seen = new Set<string>();
-  const ordered: string[] = [];
-  for (const m of filterProfileMemberNames(members)) {
-    if (!validNames.has(m) || seen.has(m)) continue;
-    seen.add(m);
-    ordered.push(m);
-  }
-  return {
-    ...state,
-    profiles: state.profiles.map((p) => (p.id === id ? { ...p, members: ordered } : p)),
-  };
-}
-
 /**
  * Remember the live enabled-set as Default when it matches no named profile
  * (NomadNet update_default_if_custom).
@@ -237,20 +218,6 @@ export function updateDefaultInterfaceMembersIfCustom(
     return state;
   }
   return { ...state, defaultMembers: enabled };
-}
-
-export function pruneInterfaceProfiles(
-  state: InterfaceProfilesState,
-  validNames: ReadonlySet<string>,
-): InterfaceProfilesState {
-  const profiles = state.profiles.map((p) => ({
-    ...p,
-    members: p.members.filter((m) => validNames.has(m)),
-  }));
-  const changed = profiles.some(
-    (p, i) => p.members.length !== (state.profiles[i]?.members.length ?? 0),
-  );
-  return changed ? { ...state, profiles } : state;
 }
 
 export type InterfaceEnableToggle = (

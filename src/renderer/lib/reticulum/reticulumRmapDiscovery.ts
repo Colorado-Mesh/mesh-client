@@ -131,17 +131,11 @@ export function isReticulumRmapDiscoveryCapable(
   return false;
 }
 
-/** @deprecated Prefer isReticulumRmapDiscoveryCapable */
-export const isReticulumRmapPublishTarget = isReticulumRmapDiscoveryCapable;
-
 export function listReticulumRmapDiscoveryCapable(
   interfaces: readonly ReticulumInterfaceRow[],
 ): ReticulumInterfaceRow[] {
   return interfaces.filter(isReticulumRmapDiscoveryCapable);
 }
-
-/** @deprecated Prefer listReticulumRmapDiscoveryCapable */
-export const listReticulumRmapPublishTargets = listReticulumRmapDiscoveryCapable;
 
 /** True when at least one eligible interface is discoverable (publishing intent / maybeSync). */
 export function readRmapAnyPublishing(interfaces: readonly ReticulumInterfaceRow[]): boolean {

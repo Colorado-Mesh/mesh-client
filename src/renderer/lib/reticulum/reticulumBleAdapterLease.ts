@@ -12,11 +12,6 @@ export function isBlePeripheralConflictErrorMessage(message: string): boolean {
   return /already in use by/i.test(message);
 }
 
-/** @deprecated Use isBleScanBusyErrorMessage or isBlePeripheralConflictErrorMessage. */
-export function isReticulumBleBusyErrorMessage(message: string): boolean {
-  return isBleScanBusyErrorMessage(message) || isBlePeripheralConflictErrorMessage(message);
-}
-
 export async function acquireReticulumBleScan(): Promise<boolean> {
   try {
     await window.electronAPI.bleCoexistence.acquireScan('reticulum');
@@ -102,21 +97,5 @@ export function bleOwnerI18nKey(owner: BlePeripheralOwner): string | null {
       return 'connectionPanel.bleOwner.reticulum';
     default:
       return null;
-  }
-}
-
-/** English fallback for logs/tests; UI should use bleOwnerI18nKey + t(). */
-export function reticulumOwnerLabel(owner: BlePeripheralOwner): string {
-  switch (owner) {
-    case 'noble:meshtastic':
-    case 'webbt:meshtastic':
-      return 'Meshtastic';
-    case 'noble:meshcore':
-    case 'webbt:meshcore':
-      return 'MeshCore';
-    case 'reticulum':
-      return 'Reticulum';
-    default:
-      return owner;
   }
 }

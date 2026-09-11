@@ -18,7 +18,6 @@ vi.mock('@/renderer/lib/chatNotifications', () => ({
 }));
 
 vi.mock('@/renderer/lib/reticulum/fetchRecentInboundLxmf', () => ({
-  fetchRecentInboundLxmf: vi.fn().mockResolvedValue([]),
   fetchRecentInboundLxmfDetailed: vi.fn().mockResolvedValue({ messages: [], ringLen: 0 }),
 }));
 

@@ -22,35 +22,3 @@ export function computeWaveform(samples: Float32Array, barCount = 40): number[] 
   if (globalMax === 0) return bars.map(() => 0);
   return bars.map((v) => v / globalMax);
 }
-
-/**
- * Compute a waveform from a base64-encoded OggS blob using Web Audio decodeAudioData.
- * Resolves to null when decoding fails (unsupported codec, empty data, etc.).
- */
-export async function computeWaveformFromOgg(
-  dataBase64: string,
-  barCount = 40,
-): Promise<{ bars: number[]; durationSec: number } | null> {
-  let ctx: AudioContext | null = null;
-  try {
-    const binary = atob(dataBase64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    ctx = new AudioContext();
-    const oggCopy = new ArrayBuffer(bytes.byteLength);
-    new Uint8Array(oggCopy).set(bytes);
-    const buffer = await ctx.decodeAudioData(oggCopy);
-    const channelData = buffer.getChannelData(0);
-    return {
-      bars: computeWaveform(channelData, barCount),
-      durationSec: buffer.duration,
-    };
-  } catch {
-    // catch-no-log-ok: OggS decode may fail if the codec isn't supported — fall back to flat bars
-    return null;
-  } finally {
-    if (ctx) void ctx.close();
-  }
-}

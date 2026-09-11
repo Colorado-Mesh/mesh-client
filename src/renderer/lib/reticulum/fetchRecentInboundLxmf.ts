@@ -32,14 +32,6 @@ export interface FetchRecentInboundLxmfResult {
  * Fetch recent inbound LXMF payloads from the sidecar ring buffer
  * (`GET /api/v1/lxmf/recent`) for WS lag / reconnect catch-up.
  */
-export async function fetchRecentInboundLxmf(
-  opts: FetchRecentInboundLxmfOpts = {},
-): Promise<ReticulumLxmfPayload[]> {
-  const result = await fetchRecentInboundLxmfDetailed(opts);
-  return result.messages;
-}
-
-/** Same as {@link fetchRecentInboundLxmf} but also returns ring size when present. */
 export async function fetchRecentInboundLxmfDetailed(
   opts: FetchRecentInboundLxmfOpts = {},
 ): Promise<FetchRecentInboundLxmfResult> {

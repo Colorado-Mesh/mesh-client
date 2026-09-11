@@ -28,7 +28,6 @@ import {
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 vi.mock('@/renderer/lib/reticulum/fetchRecentInboundLxmf', () => ({
-  fetchRecentInboundLxmf: vi.fn(),
   fetchRecentInboundLxmfDetailed: vi.fn(),
 }));
 
