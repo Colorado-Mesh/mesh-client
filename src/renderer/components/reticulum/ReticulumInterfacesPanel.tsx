@@ -649,6 +649,7 @@ export function ReticulumInterfacesPanel({
     id: string,
     enabled: boolean,
     ifaceTypeName?: string,
+    opts?: { deferStackRestart?: boolean },
   ): Promise<boolean> => {
     setInterfaceError(null);
     const row = interfaces.find((iface) => iface.id === id);
@@ -678,7 +679,12 @@ export function ReticulumInterfacesPanel({
       if (enabled) {
         await syncRmapAfterInterfaceChange(id);
       }
-      if (enabled && ifaceTypeName && reticulumInterfaceChangeRequiresStackRestart(ifaceTypeName)) {
+      const willRestart =
+        !opts?.deferStackRestart &&
+        enabled &&
+        Boolean(ifaceTypeName) &&
+        reticulumInterfaceChangeRequiresStackRestart(ifaceTypeName);
+      if (willRestart) {
         await restartStackForInterfaceChange();
       }
       return true;
@@ -985,7 +991,9 @@ export function ReticulumInterfacesPanel({
       <ReticulumInterfaceProfilesSection
         interfaces={interfaces}
         actionsDisabled={actionsDisabled}
-        onToggle={(id, enabled, typeName) => toggleInterface(id, enabled, typeName)}
+        onToggle={(id, enabled, typeName) =>
+          toggleInterface(id, enabled, typeName, { deferStackRestart: true })
+        }
         onApplied={(needsRestartHint) => {
           if (needsRestartHint) setRestartStackHint(true);
         }}
