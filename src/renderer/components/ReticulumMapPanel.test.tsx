@@ -175,7 +175,12 @@ describe('ReticulumMapPanel', () => {
     );
     render(<ReticulumMapPanel stackConfigured={true} />);
     const list = screen.getByRole('list');
-    Object.defineProperty(list, 'scrollTop', { value: 400, configurable: true });
+    for (const scrollTop of [3, 200]) {
+      Object.defineProperty(list, 'scrollTop', { value: scrollTop, configurable: true });
+      fireEvent.scroll(list);
+      expect(screen.queryByRole('button', { name: 'aria.backToTop' })).not.toBeInTheDocument();
+    }
+    Object.defineProperty(list, 'scrollTop', { value: 201, configurable: true });
     fireEvent.scroll(list);
     expect(screen.getByRole('button', { name: 'aria.backToTop' })).toBeInTheDocument();
   });

@@ -9,13 +9,13 @@ import {
 } from './reticulum/reticulumMessageHash';
 import type { ChatMessage } from './types';
 
-/** Pixels from latest message treated as “at bottom” (Jump to Latest, read-state, mark read). */
-export const CHAT_SCROLL_END_THRESHOLD = 200;
+/** Bottom-follow tolerance for fractional scroll offsets; scrolling up must release the pin. */
+export const CHAT_SCROLL_END_THRESHOLD = 2;
 
 /**
  * TanStack Virtual end-pin threshold (`wasAtEnd`, `followOnAppend`, default `isAtEnd()`).
- * Tighter than {@link CHAT_SCROLL_END_THRESHOLD} so one Windows mouse wheel notch (~60px)
- * clears the library's independent resize scroll-correction path.
+ * Used by the packet log. Chat views use CHAT_SCROLL_END_THRESHOLD for both their
+ * own pin and the virtualizer, so append/resize following cannot override a released pin.
  */
 export const VIRTUALIZER_SCROLL_END_THRESHOLD = 30;
 
