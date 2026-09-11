@@ -9,6 +9,8 @@ use std::time::Duration;
 
 use rns_identity::identity::Identity;
 use rns_runtime::destination_resolver::DestinationResolveOptions;
+#[cfg(test)]
+use rns_runtime::link_session::LinkSessionResourceOffer;
 use rns_runtime::link_session::{
     LinkSession, LinkSessionCloseReason, LinkSessionConfig, LinkSessionError, LinkSessionEvent,
     discover_destination,
@@ -178,17 +180,13 @@ pub async fn open_rrc_link_with_path_refresh(
                             }
                         }
                         Some(LinkSessionEvent::Closed { reason }) => {
-                            let label = close_reason_label(reason);
+                            let reason = close_reason_label(reason).to_string();
                             debug!(
                                 link_id = %hex::encode(link_id),
-                                reason = label,
+                                reason = %reason,
                                 "rrc link closed"
                             );
-                            let _ = event_tx
-                                .send(RrcLinkEvent::Closed {
-                                    reason: label.into(),
-                                })
-                                .await;
+                            let _ = event_tx.send(RrcLinkEvent::Closed { reason }).await;
                             return;
                         }
                         Some(LinkSessionEvent::Stale) => {
@@ -199,11 +197,9 @@ pub async fn open_rrc_link_with_path_refresh(
                         }
                         Some(_) => {}
                         None => {
-                            let _ = event_tx
-                                .send(RrcLinkEvent::Closed {
-                                    reason: "session_ended".into(),
-                                })
-                                .await;
+                            let reason = terminal_close_reason_from_event(None)
+                                .expect("None event is terminal");
+                            let _ = event_tx.send(RrcLinkEvent::Closed { reason }).await;
                             return;
                         }
                     }
@@ -270,17 +266,45 @@ pub async fn open_rrc_link_with_path_refresh(
 /// `Closed` reason over the synthetic `resource_offers_closed` label.
 fn closed_reason_after_offers_ended(events: &mut mpsc::Receiver<LinkSessionEvent>) -> String {
     while let Ok(ev) = events.try_recv() {
-        if let Some(reason) = closed_reason_from_session_event(&ev) {
+        if let Some(reason) = terminal_close_reason_from_event(Some(&ev)) {
             return reason;
         }
     }
     "resource_offers_closed".into()
 }
 
+#[cfg(test)]
 fn closed_reason_from_session_event(ev: &LinkSessionEvent) -> Option<String> {
+    terminal_close_reason_from_event(Some(ev))
+}
+
+/// Terminal close reason from a session event recv result. Shared by the link
+/// loop and race tests so biased Closed-vs-offers-end handling stays aligned.
+fn terminal_close_reason_from_event(ev: Option<&LinkSessionEvent>) -> Option<String> {
     match ev {
-        LinkSessionEvent::Closed { reason } => Some(close_reason_label(*reason).into()),
-        _ => None,
+        Some(LinkSessionEvent::Closed { reason }) => Some(close_reason_label(*reason).into()),
+        None => Some("session_ended".into()),
+        Some(_) => None,
+    }
+}
+
+/// Production-biased race: prefer session Closed/session_ended over offers-end.
+#[cfg(test)]
+async fn race_session_close_vs_offers_end(
+    events: &mut mpsc::Receiver<LinkSessionEvent>,
+    offers: &mut mpsc::Receiver<LinkSessionResourceOffer>,
+) -> String {
+    tokio::select! {
+        biased;
+        ev = events.recv() => terminal_close_reason_from_event(ev.as_ref())
+            .expect("race helper expects a terminal session event"),
+        offer = offers.recv() => {
+            assert!(
+                offer.is_none(),
+                "race helper expects offers channel closed, not an offer"
+            );
+            closed_reason_after_offers_ended(events)
+        }
     }
 }
 
@@ -310,9 +334,9 @@ async fn refresh_hub_path(
     let mut options = DestinationResolveOptions::new(PATH_LOOKUP_TIMEOUT);
     options.refresh_cached_path = true;
     if mode == RrcPathRefresh::DropAndRefresh {
-        options.drop_existing_path = true;
-        // When identity is already cached, resolve_destination returns early
-        // after RequestPath only — still DropPath so a dead via cannot stick.
+        // Explicit DropPath covers both cached and uncached identities. Clear
+        // drop_existing_path so resolve_destination does not DropPath again on
+        // a cache miss.
         match drop_path_rpc(transport_tx, dest_hash, PATH_LOOKUP_TIMEOUT).await? {
             TransportQueryResponse::Ok => {
                 debug!(
@@ -327,6 +351,7 @@ async fn refresh_hub_path(
                 );
             }
         }
+        options.drop_existing_path = false;
     }
     // Fire RequestPath via resolve options when identity is missing; when
     // identity is cached, refresh_cached_path still emits RequestPath.
@@ -408,7 +433,6 @@ fn map_link_session_error(e: LinkSessionError) -> RrcLinkError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rns_runtime::link_session::LinkSessionResourceOffer;
     use rns_transport::messages::RecalledDestinationRpcEntry;
 
     #[tokio::test]
@@ -457,8 +481,7 @@ mod tests {
         assert_eq!(closed_reason_after_offers_ended(&mut rx), "transport_error");
     }
 
-    /// Mirrors the production `biased` select: when both `Closed` and offers-end
-    /// are ready, the Closed reason must win (not `resource_offers_closed`).
+    /// Production-biased race helper: Closed wins over offers-end.
     #[tokio::test]
     async fn biased_select_emits_timeout_when_closed_and_offers_end_race() {
         let (ev_tx, mut events) = mpsc::channel::<LinkSessionEvent>(4);
@@ -472,17 +495,7 @@ mod tests {
         drop(ev_tx);
         drop(offer_tx);
 
-        let reason = tokio::select! {
-            biased;
-            ev = events.recv() => match ev {
-                Some(LinkSessionEvent::Closed { reason }) => close_reason_label(reason).to_string(),
-                other => panic!("expected Closed event, got {other:?}"),
-            },
-            offer = offers.recv() => {
-                assert!(offer.is_none(), "offers channel must be closed");
-                closed_reason_after_offers_ended(&mut events)
-            }
-        };
+        let reason = race_session_close_vs_offers_end(&mut events, &mut offers).await;
         assert_eq!(reason, "timeout");
     }
 
@@ -512,9 +525,9 @@ mod tests {
         let public_key = [0xCD; 64];
         let (transport_tx, mut transport_rx) = mpsc::channel(8);
         let responder = tokio::spawn(async move {
-            let mut saw_drop = false;
+            let mut drop_count = 0usize;
             let mut saw_request = false;
-            while !(saw_drop && saw_request) {
+            while !saw_request {
                 let msg = transport_rx.recv().await.expect("transport message");
                 match msg {
                     TransportMessage::Rpc {
@@ -523,7 +536,11 @@ mod tests {
                     } => {
                         assert_eq!(d, dest);
                         assert!(!saw_request, "DropPath must precede RequestPath");
-                        saw_drop = true;
+                        drop_count += 1;
+                        assert!(
+                            drop_count <= 1,
+                            "explicit DropPath must not be followed by a second resolver DropPath"
+                        );
                         response_tx.send(TransportQueryResponse::Ok).unwrap();
                     }
                     TransportMessage::Rpc {
@@ -531,6 +548,44 @@ mod tests {
                         response_tx,
                     } => {
                         assert_eq!(d, dest);
+                        // Cache miss then hit after RequestPath — exercises the
+                        // uncached path where a second DropPath would otherwise fire.
+                        if drop_count == 1 && !saw_request {
+                            response_tx
+                                .send(TransportQueryResponse::RecalledDestination(None))
+                                .unwrap();
+                        } else {
+                            response_tx
+                                .send(TransportQueryResponse::RecalledDestination(Some(
+                                    RecalledDestinationRpcEntry {
+                                        dest_hash: dest,
+                                        public_key,
+                                        app_data: None,
+                                        ratchet: None,
+                                        hops: 1,
+                                        timestamp: 1.0,
+                                    },
+                                )))
+                                .unwrap();
+                        }
+                    }
+                    TransportMessage::RequestPath {
+                        destination_hash: d,
+                    } => {
+                        assert_eq!(d, dest);
+                        assert_eq!(drop_count, 1, "exactly one DropPath before RequestPath");
+                        saw_request = true;
+                    }
+                    other => panic!("unexpected transport message: {other:?}"),
+                }
+            }
+            // Allow the post-RequestPath recall to complete.
+            if let Some(msg) = transport_rx.recv().await {
+                match msg {
+                    TransportMessage::Rpc {
+                        query: TransportQuery::RecallDestination { .. },
+                        response_tx,
+                    } => {
                         response_tx
                             .send(TransportQueryResponse::RecalledDestination(Some(
                                 RecalledDestinationRpcEntry {
@@ -544,17 +599,14 @@ mod tests {
                             )))
                             .unwrap();
                     }
-                    TransportMessage::RequestPath {
-                        destination_hash: d,
-                    } => {
-                        assert_eq!(d, dest);
-                        assert!(saw_drop, "DropPath must precede RequestPath");
-                        saw_request = true;
-                    }
-                    other => panic!("unexpected transport message: {other:?}"),
+                    TransportMessage::Rpc {
+                        query: TransportQuery::DropPath { .. },
+                        ..
+                    } => panic!("second DropPath must not occur after explicit drop"),
+                    other => panic!("unexpected trailing message: {other:?}"),
                 }
             }
-            saw_drop && saw_request
+            drop_count == 1 && saw_request
         });
 
         refresh_hub_path(&transport_tx, dest, RrcPathRefresh::DropAndRefresh)
@@ -562,7 +614,7 @@ mod tests {
             .expect("refresh_hub_path");
         assert!(
             responder.await.expect("responder join"),
-            "expected DropPath then RequestPath"
+            "expected single DropPath then RequestPath"
         );
     }
 
