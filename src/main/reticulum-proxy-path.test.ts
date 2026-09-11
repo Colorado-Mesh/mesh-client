@@ -73,6 +73,13 @@ describe('reticulumProxyGetTimeoutMs', () => {
     ).toBe(185_000);
   });
 
+  it('uses flat Nomad proxy cap for media fetches', () => {
+    expect(
+      reticulumProxyGetTimeoutMs('/api/v1/nomadnetwork/media/abc?path=%2Fmedia%2Fdemo.webp'),
+    ).toBe(185_000);
+    expect(reticulumProxyGetTimeoutMs('/api/v1/nomadnetwork/media/abc')).toBe(185_000);
+  });
+
   it('uses default timeout for other GET routes', () => {
     expect(reticulumProxyGetTimeoutMs('/api/v1/nomadnetwork/nodes')).toBe(10_000);
   });

@@ -34,7 +34,8 @@ function computeReticulumProxyGetTimeoutMs(apiPath: string): number {
   const normalized = pathOnly.startsWith('/') ? pathOnly : `/${pathOnly}`;
   if (
     normalized.includes('/api/v1/nomadnetwork/page/') ||
-    normalized.includes('/api/v1/nomadnetwork/file/')
+    normalized.includes('/api/v1/nomadnetwork/file/') ||
+    normalized.includes('/api/v1/nomadnetwork/media/')
   ) {
     return nomadPageProxyTimeoutMsFromApiPath(trimmed);
   }

@@ -67,10 +67,6 @@ jobs:
       - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
         env:
           WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
-          # Keep in sync with reticulum-sidecar.yaml / ratspeak-stack-ci-pins.env.
-          RS_RETICULUM_REF: e16bd152256a5caffb704446bbe15530c1b20f48
-          RS_LXMF_REF: c3d8b44942e7726dbbe6bb53e0976d4c72134119
-          RS_NOMAD_REF: ec6b6dde23addf9d8248b794238baaa6498fe171
         run: bash scripts/clone-ratspeak-stack.sh
 
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
