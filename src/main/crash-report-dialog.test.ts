@@ -184,6 +184,15 @@ describe('redactSensitiveForReport', () => {
     expect(redactSensitiveForReport('token: abc123XYZ')).toBe('token: <redacted>');
   });
 
+  it('redacts Authorization Bearer credentials', () => {
+    expect(redactSensitiveForReport('Authorization: Bearer eyJhbGciOiJ.abc.def')).toBe(
+      'Authorization: Bearer <redacted>',
+    );
+    expect(redactSensitiveForReport('failed with bearer sk-live-1234567890')).toBe(
+      'failed with Bearer <redacted>',
+    );
+  });
+
   it('leaves ordinary error text unchanged', () => {
     const msg = 'Cannot read properties of null (reading foo)';
     expect(redactSensitiveForReport(msg)).toBe(msg);

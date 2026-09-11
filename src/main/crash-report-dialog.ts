@@ -102,6 +102,8 @@ export function redactSensitiveForReport(text: string): string {
       .replace(/([A-Za-z]:\\Users\\)[^\\/\r\n]+/g, '$1<user>')
       // POSIX home paths → /home/<user> or /Users/<user>
       .replace(/((?:\/home|\/Users)\/)[^/\r\n]+/g, '$1<user>')
+      // Authorization: Bearer <credential> (space-separated header form)
+      .replace(/\bbearer\s+\S+/gi, 'Bearer <redacted>')
       // key/value secrets → key=<redacted>
       .replace(
         /\b(pass(?:word)?|secret|token|api[_-]?key|auth|bearer)\b(\s*[:=]\s*)\S+/gi,
