@@ -5,6 +5,7 @@
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { getReticulumInterfaceHelp } from '@/renderer/lib/reticulum/reticulumInterfaceHelp';
+import { reticulumInterfaceChangeRequiresStackRestart } from '@/renderer/lib/reticulum/reticulumInterfaceStackRestart';
 import {
   RETICULUM_SHARED_INSTANCE_CLIENT_NAME,
   RETICULUM_SHARED_INSTANCE_NAME,
@@ -288,7 +289,9 @@ export async function applyInterfaceEnableSet(
     if (result === false) {
       return { changed, needsRestartHint, ok: false };
     }
-    if (want) needsRestartHint = true;
+    if (want && reticulumInterfaceChangeRequiresStackRestart(iface.type)) {
+      needsRestartHint = true;
+    }
   }
   return { changed, needsRestartHint, ok: true };
 }

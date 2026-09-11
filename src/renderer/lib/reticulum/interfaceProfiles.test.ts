@@ -61,6 +61,7 @@ describe('interfaceProfiles', () => {
     });
     expect(res.changed).toBe(true);
     expect(res.ok).toBe(true);
+    expect(res.needsRestartHint).toBe(true);
     expect(calls).toEqual([
       { id: 'a', enabled: false },
       { id: 'b', enabled: true },
@@ -75,46 +76,80 @@ describe('interfaceProfiles', () => {
       return id !== 'a';
     });
     expect(res.ok).toBe(false);
+    expect(res.needsRestartHint).toBe(false);
     expect(calls).toEqual([{ id: 'a', enabled: false }]);
   });
 
-  it('skips SharedInstanceServer when applying empty profile', async () => {
-    const withShared = [
-      ...ifaces,
-      {
-        id: 'rns-0',
-        name: 'SharedInstanceServer',
-        enabled: true,
-        type: 'Full',
-      },
+  it('hints restart once for multiple restart-requiring enables', async () => {
+    const rows = [
+      { id: 'tcp-1', name: 'Hub A', enabled: false, type: 'tcp' },
+      { id: 'tcp-2', name: 'Hub B', enabled: false, type: 'tcp' },
+      { id: 'auto-1', name: 'LAN', enabled: true, type: 'auto' },
     ];
-    const calls: { id: string; enabled: boolean }[] = [];
-    const res = await applyInterfaceEnableSet(withShared, new Set(), (id, enabled) => {
-      calls.push({ id, enabled });
-    });
+    const calls: { id: string; enabled: boolean; type?: string }[] = [];
+    const res = await applyInterfaceEnableSet(
+      rows,
+      new Set(['Hub A', 'Hub B']),
+      (id, enabled, type) => {
+        calls.push({ id, enabled, type });
+      },
+    );
     expect(res.ok).toBe(true);
-    expect(res.changed).toBe(true);
-    expect(calls.some((c) => c.id === 'rns-0')).toBe(false);
+    expect(res.needsRestartHint).toBe(true);
     expect(calls).toEqual([
-      { id: 'a', enabled: false },
-      { id: 'c', enabled: false },
+      { id: 'tcp-1', enabled: true, type: 'tcp' },
+      { id: 'tcp-2', enabled: true, type: 'tcp' },
+      { id: 'auto-1', enabled: false, type: 'auto' },
     ]);
   });
 
-  it('omits SharedInstanceServer from saved profile members and active match', () => {
-    expect(isSystemManagedInterfaceProfileName('SharedInstanceServer')).toBe(true);
-    const withShared = [
-      ...ifaces,
-      {
-        id: 'rns-0',
-        name: 'SharedInstanceServer',
-        enabled: true,
-        type: 'Full',
-      },
+  it('does not hint restart for hot-applied enable-only changes', async () => {
+    const rows = [
+      { id: 'hot-1', name: 'Hot', enabled: false, type: 'custom_hot' },
+      { id: 'tcp-1', name: 'Hub', enabled: true, type: 'tcp' },
     ];
-    const state = saveCurrentAsInterfaceProfile(emptyInterfaceProfilesState(), 'Home', withShared);
-    expect(state.profiles[0]?.members).toEqual(['Alpha', 'Gamma']);
-    expect(activeInterfaceProfileId(state, withShared)).toBe(state.profiles[0]?.id);
-    expect(activeInterfaceProfileId(state, ifaces)).toBe(state.profiles[0]?.id);
+    const res = await applyInterfaceEnableSet(rows, new Set(['Hot']), () => true);
+    expect(res.ok).toBe(true);
+    expect(res.changed).toBe(true);
+    expect(res.needsRestartHint).toBe(false);
   });
+
+  it.each([
+    { name: 'SharedInstanceServer', id: 'rns-0' },
+    { name: 'SharedInstanceClient', id: 'rns-client' },
+  ] as const)(
+    'skips $name when applying empty profile and omits it from saved members',
+    async ({ name, id }) => {
+      expect(isSystemManagedInterfaceProfileName(name)).toBe(true);
+      const withShared = [
+        ...ifaces,
+        {
+          id,
+          name,
+          enabled: true,
+          type: 'Full',
+        },
+      ];
+      const calls: { id: string; enabled: boolean }[] = [];
+      const res = await applyInterfaceEnableSet(withShared, new Set(), (ifaceId, enabled) => {
+        calls.push({ id: ifaceId, enabled });
+      });
+      expect(res.ok).toBe(true);
+      expect(res.changed).toBe(true);
+      expect(calls.some((c) => c.id === id)).toBe(false);
+      expect(calls).toEqual([
+        { id: 'a', enabled: false },
+        { id: 'c', enabled: false },
+      ]);
+
+      const state = saveCurrentAsInterfaceProfile(
+        emptyInterfaceProfilesState(),
+        'Home',
+        withShared,
+      );
+      expect(state.profiles[0]?.members).toEqual(['Alpha', 'Gamma']);
+      expect(activeInterfaceProfileId(state, withShared)).toBe(state.profiles[0]?.id);
+      expect(activeInterfaceProfileId(state, ifaces)).toBe(state.profiles[0]?.id);
+    },
+  );
 });
