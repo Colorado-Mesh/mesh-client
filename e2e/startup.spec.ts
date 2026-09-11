@@ -11,7 +11,13 @@ test.describe('startup', () => {
 
   test('launches main window with protocol switcher', async () => {
     launched = await launchApp();
-    const { page } = launched;
+    const { app, page } = launched;
+
+    expect(
+      await app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows().some((win) => win.webContents.isDevToolsOpened()),
+      ),
+    ).toBe(false);
 
     await expect(page).toHaveTitle('Mesh Client');
     await expect(page.locator('#root')).toBeVisible();

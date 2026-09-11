@@ -27,6 +27,8 @@ export default tseslint.config(
       '*.config.{ts,js,mjs,cjs}',
       'dist-electron/**',
       'coverage/**',
+      'playwright-report/**',
+      'test-results/**',
     ],
   },
   js.configs.recommended,
