@@ -365,7 +365,16 @@ check_ratspeak_patches() {
         HAS_WARNING=1
         ;;
       *)
-        echo "  ${label}: could not query ${repo}#${pr} (install gh or check network) — ${url}"
+        # Unknown PR state (gh/network unavailable). Still warn when the tracked
+        # overlay file is missing so ratspeak-patches-only cannot report clean.
+        if [ "${patch_present}" -eq 0 ]; then
+          warn_box "${label} (Ratspeak overlay)" "patch absent" "PR state unknown" "${url}"
+          echo "  ${label}: ${patch_base} missing and could not query ${repo}#${pr} — restore overlay or verify sunset."
+          has_ratspeak_warning=1
+          HAS_WARNING=1
+        else
+          echo "  ${label}: could not query ${repo}#${pr} (install gh or check network) — ${url}"
+        fi
         ;;
     esac
   done

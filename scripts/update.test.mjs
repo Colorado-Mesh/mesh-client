@@ -186,6 +186,47 @@ exit 1
     );
   });
 
+  it('warns when PR state is unknown and a tracked overlay patch is missing', () => {
+    const work = mkdtempSync(path.join(os.tmpdir(), 'mesh-update-patches-unknown-'));
+    tempDirs.push(work);
+    mkdirSync(path.join(work, 'reticulum-sidecar/patches'), { recursive: true });
+    // Intentionally omit tracked overlays; fake gh returns non-PR JSON so state=unknown.
+    const binDir = path.join(work, 'bin');
+    mkdirSync(binDir, { recursive: true });
+    const ghPath = path.join(binDir, 'gh');
+    writeFileSync(
+      ghPath,
+      `#!/usr/bin/env bash
+set -euo pipefail
+if [[ "\${1:-}" != "api" ]]; then
+  echo "unexpected gh args: $*" >&2
+  exit 1
+fi
+# Empty / malformed body → github_pr_state prints unknown.
+printf '%s' '{}'
+exit 0
+`,
+      'utf8',
+    );
+    chmodSync(ghPath, 0o755);
+    const result = runUpdate(
+      [],
+      {
+        UPDATE_SH_TEST_HOOK: 'ratspeak-patches-only',
+        PATH: `${binDir}:${process.env.PATH ?? ''}`,
+      },
+      work,
+    );
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain('HAS_WARNING=1');
+    expect(result.stdout).toMatch(
+      /rsReticulum-reply-file-query-metadata\.patch missing and could not query ratspeak\/rsReticulum#26/,
+    );
+    expect(result.stdout).toMatch(
+      /rsLXMF-file-attachments-list\.patch missing and could not query ratspeak\/rsLXMF#7/,
+    );
+  });
+
   it('wires check_ratspeak_upstream after overlay PR checks', () => {
     expect(updateScript).toContain('check_ratspeak_upstream()');
     expect(updateScript).toContain('RATSPEAK_RELEASE_WATCH_ENTRIES');
