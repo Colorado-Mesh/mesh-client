@@ -20,14 +20,8 @@ LRGP_DIR="${WORKSPACE_ROOT}/lrgp-rs"
 export RS_RETICULUM_DIR="${RNS_DIR}"
 export RS_LXMF_DIR="${LXMF_DIR}"
 
-# Optional bisect / known-good overrides. Unset or empty → float to origin/main.
-# In CI, load temporary stacked pins when present (local clones stay floating).
-if [[ "${CI:-}" == 'true' && -f "${SCRIPT_DIR}/ratspeak-stack-ci-pins.env" ]]; then
-  set -a
-  # shellcheck disable=SC1091
-  source "${SCRIPT_DIR}/ratspeak-stack-ci-pins.env"
-  set +a
-fi
+# Optional bisect overrides only. Unset or empty → float to origin/main.
+# CI and pnpm run update never set these — open upstream feature PRs are overlays.
 RS_RETICULUM_REF="${RS_RETICULUM_REF:-}"
 RS_LXMF_REF="${RS_LXMF_REF:-}"
 RS_NOMAD_REF="${RS_NOMAD_REF:-}"

@@ -31,7 +31,7 @@ export const NOMAD_RF_TRANSFER_GRACE_SECS = 30;
 export const NOMAD_RF_MAX_OVERALL_SECS = 180;
 
 /**
- * Main-process IPC proxy AbortSignal timeout for Nomad page/file GETs.
+ * Main-process IPC proxy AbortSignal timeout for Nomad page/file/media GETs.
  * Sidecar LinkClient already enforces the egress×hops deadline; main must not
  * cut off early when UI hops are stale (use a flat cap above the RF max).
  */
@@ -70,7 +70,7 @@ export function nomadPageOverallTimeoutSecs(
 }
 
 /**
- * IPC proxy timeout for Nomad page/file fetches.
+ * IPC proxy timeout for Nomad page/file/media fetches.
  * Always the flat {@link NOMAD_PROXY_GET_TIMEOUT_MS} so stale renderer hops
  * cannot abort before the sidecar's own LinkClient deadline.
  */

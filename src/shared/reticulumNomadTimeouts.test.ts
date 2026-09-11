@@ -19,7 +19,7 @@ describe('reticulumNomadTimeouts', () => {
     expect(nomadPageOverallTimeoutSecs('rf', 32)).toBe(180);
   });
 
-  it('uses a flat IPC proxy cap for all Nomad page/file paths', () => {
+  it('uses a flat IPC proxy cap for all Nomad page/file/media paths', () => {
     expect(NOMAD_PROXY_GET_TIMEOUT_MS).toBe(185_000);
     expect(
       nomadPageProxyTimeoutMsFromApiPath(

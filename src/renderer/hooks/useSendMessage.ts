@@ -297,8 +297,10 @@ export function useSendMessage(
         return;
       }
 
+      // getHandle() is `unknown`; NonNullable<unknown> is `unknown & {}` and trips
+      // @typescript-eslint/no-generated-empty-object-type under typescript-eslint 8.70+.
       const finishSend = (
-        sendHandle: NonNullable<typeof handle>,
+        sendHandle: unknown,
         opts?: { trackForOpenHopLiveWindow?: boolean },
       ): void => {
         const sendPromise = identity.protocol.sendMessage(sendHandle, {
