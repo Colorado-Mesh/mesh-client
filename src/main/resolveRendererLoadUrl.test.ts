@@ -23,6 +23,22 @@ describe('resolveRendererLoadUrl', () => {
     });
   });
 
+  it.each([
+    ['linux', 'file:///home/runner/mesh-client/dist/renderer/index.html'],
+    ['darwin', 'file:///Users/runner/mesh-client/dist/renderer/index.html'],
+    ['win32', 'file:///D:/a/mesh-client/dist/renderer/index.html'],
+  ])('loads an explicit production file without DevTools on %s', async (_platform, url) => {
+    const probe = vi.fn().mockResolvedValue(true);
+    const resolved = await resolveRendererLoadUrl({
+      packaged: false,
+      devServerUrl: url,
+      distIndexPath: '/unused/index.html',
+      isDevServerReachable: probe,
+    });
+    expect(resolved).toEqual({ url, openDevTools: false, source: 'env' });
+    expect(probe).not.toHaveBeenCalled();
+  });
+
   it('probes local Vite when unpackaged and env is unset', async () => {
     const probe = vi.fn().mockResolvedValue(true);
     const resolved = await resolveRendererLoadUrl({
