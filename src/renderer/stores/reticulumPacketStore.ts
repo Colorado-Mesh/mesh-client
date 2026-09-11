@@ -10,7 +10,6 @@ export const RETICULUM_PACKET_RING_CAPACITY = 500;
 interface ReticulumPacketStoreState {
   packets: ReticulumRawPacketEntry[];
   appendPacket: (entry: ReticulumRawPacketEntry) => void;
-  appendPackets: (entries: ReticulumRawPacketEntry[]) => void;
   replacePackets: (entries: ReticulumRawPacketEntry[]) => void;
   clearPackets: () => void;
   hydrateFromSidecar: () => Promise<void>;
@@ -60,11 +59,6 @@ export const useReticulumPacketStore = create<ReticulumPacketStoreState>((set, g
     } else {
       flushPendingPackets();
     }
-  },
-
-  appendPackets: (entries) => {
-    if (entries.length === 0) return;
-    set((s) => ({ packets: trimRingBuffer([...s.packets, ...entries]) }));
   },
 
   replacePackets: (entries) => {

@@ -21,7 +21,6 @@ import {
   resolveReticulumPeerLabel,
   reticulumContactToNodeRecordPreservingLabel,
   reticulumHashForNodeId,
-  reticulumPeerDisplayName,
   useReticulumPeerStore,
 } from './reticulumPeerStore';
 
@@ -1370,7 +1369,7 @@ describe('reticulumPeerStore', () => {
     await refreshReticulumPeersFromSidecar();
 
     const hist = useReticulumPeerStore.getState().history.get(hash);
-    expect(reticulumPeerDisplayName(hist!)).toBe('Hub Peer');
+    expect(useReticulumPeerStore.getState().getDisplayName(hist!)).toBe('Hub Peer');
     expect(hist?.hops).toBe(2);
     expect(useReticulumPeerStore.getState().contacts.has(hash)).toBe(false);
     expect(useReticulumPeerStore.getState().peerAppearanceByHash.get(hash)).toEqual({

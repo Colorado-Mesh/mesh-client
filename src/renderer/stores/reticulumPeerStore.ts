@@ -201,11 +201,6 @@ function persistDismissedContactHashes(hashes: Set<string>): void {
   localStorage.setItem(DISMISSED_CONTACTS_STORAGE_KEY, JSON.stringify([...hashes]));
 }
 
-/** Canonical display label for a Reticulum peer/contact row. */
-export function reticulumPeerDisplayName(peer: ReticulumPeer): string {
-  return peerDisplayName(peer);
-}
-
 function overlayDbMeta(
   peer: ReticulumPeer,
   dbByHash: Map<string, ReticulumDestinationDbRow>,

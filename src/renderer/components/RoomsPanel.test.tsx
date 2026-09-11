@@ -85,17 +85,6 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@/renderer/hooks/useMeshcoreRoomAuth', () => ({
-  useMeshcoreRoomAuth: () => ({
-    ensureRoomAuth: vi.fn().mockResolvedValue({
-      ok: true,
-      guestPassword: '',
-      adminPassword: 'password',
-    }),
-    RemoteAuthModal: null,
-  }),
-}));
-
 function makeRoom(nodeId: number, longName: string): MeshNode {
   return {
     node_id: nodeId,

@@ -26,16 +26,11 @@ describe('modal z-index layering contract', () => {
     expect(src).not.toMatch(/z-\[10000\]/);
   });
 
-  it('repeater and room auth hooks use Z_NESTED_AUTH_OVERLAY above the node modal', () => {
-    for (const file of [
-      'hooks/useMeshcoreRepeaterRemoteAuth.tsx',
-      'hooks/useMeshcoreRoomAuth.tsx',
-    ]) {
-      const src = readRenderer(file);
-      expect(src).toContain('Z_NESTED_AUTH_OVERLAY');
-      expect(src).toMatch(/style=\{\{\s*zIndex:\s*Z_NESTED_AUTH_OVERLAY\s*\}\}/);
-      expect(src).not.toMatch(/z-\[200\]/);
-    }
+  it('repeater auth hook uses Z_NESTED_AUTH_OVERLAY above the node modal', () => {
+    const src = readRenderer('hooks/useMeshcoreRepeaterRemoteAuth.tsx');
+    expect(src).toContain('Z_NESTED_AUTH_OVERLAY');
+    expect(src).toMatch(/style=\{\{\s*zIndex:\s*Z_NESTED_AUTH_OVERLAY\s*\}\}/);
+    expect(src).not.toMatch(/z-\[200\]/);
   });
 
   it('constants remain ordered so auth can cover node detail and tooltips cover both', () => {
