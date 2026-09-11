@@ -90,7 +90,7 @@ Path-filtered on `reticulum-sidecar/**` and related scripts:
 1. **`lint` job (ubuntu-latest)** — `cargo fmt --check` + `cargo clippy` with `rns-stack,rns-ble,rns-rnode-tcp` (`-D warnings`)
 2. **Build matrix** — stub + full-stack `cargo test` and release builds on Linux, macOS, and Windows (including WoA arm64 jobs)
 
-CI and local **dev** clones float the `.rsstack/` workspace via `scripts/clone-ratspeak-stack.sh` to `origin/main` (overlays must apply; override with `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` / `RS_LRGP_REF` for bisect). When CI must build against open stacked ratspeak PRs, `scripts/ratspeak-stack-ci-pins.env` supplies defaults under `CI=true` (tracked by `RATSPEAK_STACK_PR_ENTRIES` in `scripts/update.sh`; see [reticulum-sidecar/patches/README.md](../reticulum-sidecar/patches/README.md#stacked-upstream-feature-prs-ci-pins)). **Release** packaging (`scripts/build-reticulum-sidecar-release.mjs`) runs the same clone and records the resolved commit SHAs for all five crates in `.rsstack/RESOLVED_SHAS.txt` so artifacts retain the exact source revisions used — pin via `RS_*_REF` when a release must not float.
+CI and local **dev** clones float the `.rsstack/` workspace via `scripts/clone-ratspeak-stack.sh` to `origin/main` (overlays must apply; optional `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` / `RS_LRGP_REF` for bisect only — CI never pins Ratspeak SHAs). Open upstream feature PRs needed before they land on `main` (e.g. [rsReticulum#26](https://github.com/ratspeak/rsReticulum/pull/26) ReplyFile, [rsLXMF#7](https://github.com/ratspeak/rsLXMF/pull/7) multi-file attachments) are carried as overlays under `reticulum-sidecar/patches/` and tracked by `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`. **Release** packaging (`scripts/build-reticulum-sidecar-release.mjs`) runs the same clone and records the resolved commit SHAs for all five crates in `.rsstack/RESOLVED_SHAS.txt` so artifacts retain the exact source revisions used — set `RS_*_REF` only when a release must not float.
 
 Local parity: `pnpm run reticulum:sidecar:clippy:full`, `pnpm run check:reticulum-sidecar` (pre-commit full-feature). See [development-environment.md](development-environment.md#reticulum-sidecar-optional).
 
@@ -185,14 +185,14 @@ Automated dependency updates are configured in `.github/dependabot.yml`:
 - **GitHub Actions:** Grouped into one PR
 - **Open PRs:** `open-pull-requests-limit: 0` — Dependabot scans but does **not** open PRs.
   Dependency bumps are applied manually via `pnpm run update` (`scripts/update.sh`), which
-  also runs dedupe, Ratspeak overlay PR checks, stacked feature-PR pin watches
-  ([rsReticulum#26](https://github.com/ratspeak/rsReticulum/pull/26) ReplyFile,
-  [rsLXMF#7](https://github.com/ratspeak/rsLXMF/pull/7) multi-file attachments — see
-  `scripts/ratspeak-stack-ci-pins.env`), and an upstream release / new-org-repo watch
-  (rsLXST, lrgp-rs, Ratspeak Games-parity when a newer published release exists, LXMFace
-  `js/lxmface.js` commit). Sibling **rsReticulum** /
+  also runs dedupe, Ratspeak overlay PR checks
+  ([rsReticulum#26](https://github.com/ratspeak/rsReticulum/pull/26) ReplyFile and
+  [rsLXMF#7](https://github.com/ratspeak/rsLXMF/pull/7) multi-file attachments are overlays
+  on floated `origin/main` — see `reticulum-sidecar/patches/README.md`), and an upstream
+  release / new-org-repo watch (rsLXST, lrgp-rs, Ratspeak Games-parity when a newer published
+  release exists, LXMFace `js/lxmface.js` commit). Sibling **rsReticulum** /
   **rsLXMF** / **rsNomad** / **rsLXST** / **lrgp-rs** float to `origin/main` via
-  `clone-ratspeak-stack.sh` (overlays must apply; CI may pin open stacked PRs). See AGENTS.md §6.
+  `clone-ratspeak-stack.sh` (overlays must apply; no committed SHA pins). See AGENTS.md §6.
 
 ### Testing Dependabot PRs locally
 

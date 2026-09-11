@@ -104,10 +104,7 @@ describe('update.sh Reticulum stack functionality check', () => {
   it('prints Ratspeak upstream catalog (upstream-catalog-only)', () => {
     const result = runUpdate([], { UPDATE_SH_TEST_HOOK: 'upstream-catalog-only' });
     expect(result.status, result.stderr || result.stdout).toBe(0);
-    expect(result.stdout).toContain('RATSPEAK_STACK_PR_ENTRIES:');
-    expect(result.stdout).toContain('ratspeak/rsReticulum|26|');
-    expect(result.stdout).toContain('Colorado-Mesh/rsNomad|8|');
-    expect(result.stdout).toContain('ratspeak/rsLXMF|7|');
+    expect(result.stdout).not.toContain('RATSPEAK_STACK_PR_ENTRIES:');
     expect(result.stdout).toContain('RATSPEAK_RELEASE_WATCH_ENTRIES:');
     expect(result.stdout).toContain('ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.2.0');
     expect(result.stdout).toContain('ratspeak/lrgp-rs||lrgp-rs games (LRGP)|v0.4.1');
@@ -126,80 +123,22 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.stdout).toContain('  lrgp-rs');
   });
 
-  it('wires check_ratspeak_stack_prs between overlay and upstream checks', () => {
-    expect(updateScript).toContain('check_ratspeak_stack_prs()');
-    expect(updateScript).toContain('RATSPEAK_STACK_PR_ENTRIES');
-    expect(updateScript).toContain('ratspeak/rsReticulum|26|');
-    expect(updateScript).toContain('ratspeak/rsLXMF|7|');
-    expect(updateScript).toContain('Colorado-Mesh/rsNomad|8|');
-    expect(updateScript).toContain('ratspeak-stack-ci-pins.env');
+  it('tracks ReplyFile and multi-file attachment overlays in RATSPEAK_PATCH_ENTRIES', () => {
+    expect(updateScript).toContain(
+      'rsReticulum-reply-file-query-metadata.patch|ratspeak/rsReticulum|26|',
+    );
+    expect(updateScript).toContain('rsLXMF-file-attachments-list.patch|ratspeak/rsLXMF|7|');
+    expect(updateScript).not.toContain('RATSPEAK_STACK_PR_ENTRIES');
+    expect(updateScript).not.toContain('check_ratspeak_stack_prs');
+    expect(updateScript).not.toContain('ratspeak-stack-ci-pins.env');
+  });
+
+  it('wires check_ratspeak_patches before upstream checks', () => {
+    expect(updateScript).toContain('check_ratspeak_patches()');
     const patchesCall = updateScript.lastIndexOf('\ncheck_ratspeak_patches\n');
-    const stackPrsCall = updateScript.lastIndexOf('\ncheck_ratspeak_stack_prs\n');
     const upstreamCall = updateScript.lastIndexOf('\ncheck_ratspeak_upstream\n');
     expect(patchesCall).toBeGreaterThanOrEqual(0);
-    expect(stackPrsCall).toBeGreaterThan(patchesCall);
-    expect(upstreamCall).toBeGreaterThan(stackPrsCall);
-  });
-
-  it('stack-prs-only reports open pins without warning', () => {
-    const binDir = mkdtempSync(path.join(os.tmpdir(), 'mesh-update-stack-prs-'));
-    tempDirs.push(binDir);
-    const ghPath = path.join(binDir, 'gh');
-    writeFileSync(
-      ghPath,
-      `#!/bin/bash
-# Fake gh api for stack PR state
-if [[ "$*" == *repos/ratspeak/rsReticulum/pulls/26* ]] || [[ "$*" == *repos/ratspeak/rsLXMF/pulls/7* ]]; then
-  printf '%s' '{"state":"open","merged":false}'
-  exit 0
-fi
-printf '%s' '{}'
-exit 0
-`,
-      'utf8',
-    );
-    chmodSync(ghPath, 0o755);
-    const result = runUpdate([], {
-      UPDATE_SH_TEST_HOOK: 'stack-prs-only',
-      PATH: `${binDir}:${process.env.PATH ?? ''}`,
-    });
-    expect(result.status, result.stderr || result.stdout).toBe(0);
-    expect(result.stdout).toContain('still open');
-    expect(result.stdout).toContain('rsReticulum ReplyFile');
-    expect(result.stdout).toContain('rsLXMF multi-file');
-    expect(result.stdout).toContain('HAS_WARNING=0');
-    expect(result.stdout).not.toContain('WARNING:');
-  });
-
-  it('stack-prs-only warns when a stacked PR is merged', () => {
-    const binDir = mkdtempSync(path.join(os.tmpdir(), 'mesh-update-stack-merged-'));
-    tempDirs.push(binDir);
-    const ghPath = path.join(binDir, 'gh');
-    writeFileSync(
-      ghPath,
-      `#!/bin/bash
-if [[ "$*" == *repos/ratspeak/rsReticulum/pulls/26* ]]; then
-  printf '%s' '{"state":"closed","merged":true,"merged_at":"2026-09-09T00:00:00Z"}'
-  exit 0
-fi
-if [[ "$*" == *repos/ratspeak/rsLXMF/pulls/7* ]]; then
-  printf '%s' '{"state":"open","merged":false}'
-  exit 0
-fi
-printf '%s' '{}'
-exit 0
-`,
-      'utf8',
-    );
-    chmodSync(ghPath, 0o755);
-    const result = runUpdate([], {
-      UPDATE_SH_TEST_HOOK: 'stack-prs-only',
-      PATH: `${binDir}:${process.env.PATH ?? ''}`,
-    });
-    expect(result.status, result.stderr || result.stdout).toBe(0);
-    expect(result.stdout).toContain('upstream MERGED');
-    expect(result.stdout).toContain('ratspeak-stack-ci-pins.env');
-    expect(result.stdout).toContain('HAS_WARNING=1');
+    expect(upstreamCall).toBeGreaterThan(patchesCall);
   });
 
   it('wires check_ratspeak_upstream after overlay PR checks', () => {

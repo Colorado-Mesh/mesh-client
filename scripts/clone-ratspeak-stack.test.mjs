@@ -88,8 +88,6 @@ function runEnsureRepo({ remoteUrl, destDir, pinRef = '', env = {}, mergeStderr 
       GIT_CONFIG_GLOBAL: '/dev/null',
       // Host shells often export RS_STACK_DISCARD_DIRTY=1 while debugging clones.
       RS_STACK_DISCARD_DIRTY: '',
-      // Avoid CI pin file when sourcing the script under unit tests.
-      CI: '',
       ...env,
     },
   });
@@ -102,8 +100,8 @@ describe('clone-ratspeak-stack.sh float policy', () => {
     expect(cloneScript).toContain('checkout --quiet --detach');
     expect(cloneScript).toMatch(/RS_RETICULUM_REF="\$\{RS_RETICULUM_REF:-\}"/);
     expect(cloneScript).toMatch(/RS_LXMF_REF="\$\{RS_LXMF_REF:-\}"/);
-    expect(cloneScript).toContain('ratspeak-stack-ci-pins.env');
-    expect(cloneScript).toContain('CI:-');
+    expect(cloneScript).not.toContain('ratspeak-stack-ci-pins.env');
+    expect(cloneScript).toContain('open upstream feature PRs are overlays');
     expect(cloneScript).toContain('export RS_RETICULUM_DIR=');
     expect(cloneScript).toContain('export RS_LXMF_DIR=');
     expect(cloneScript).toContain('refuse to float/pin');
