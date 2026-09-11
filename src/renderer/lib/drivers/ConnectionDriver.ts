@@ -69,7 +69,7 @@ function transportTypeToConnectionType(type: TransportType): ConnectionType | nu
  * (`useMeshtasticRuntime` / `useMeshcoreRuntime`); this driver owns connect/
  * disconnect serialization and slot registry only. MQTT status mirroring into
  * `connectionStore` is updated from runtime MQTT IPC handlers via
- * `mirrorMqttStatusToConnection` until MQTT moves fully into drivers (see AGENTS.md).
+ * `mirrorMqttStatusForProtocol` until MQTT moves fully into drivers (see AGENTS.md).
  */
 export class ConnectionDriver {
   private slots = new Map<string, TransportSlot>();
