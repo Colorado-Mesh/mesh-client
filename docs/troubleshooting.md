@@ -1100,13 +1100,16 @@ AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, RRC, and RNode Wi
 
 ### RRC hub dropped vs Disconnect
 
-**Symptoms**: Hub shows **Reconnecting…** with an error, rooms still listed; or the hub disappears after you clicked Disconnect.
+**Symptoms**: Hub shows **Reconnecting…** with an error, rooms still listed; or the hub disappears after you clicked Disconnect. Coming back after idle may also show a fresh `room …: registered` NOTICE and `/who` member list even though the laptop did not sleep and the hub process stayed up.
+
+**Cause (idle flaps):** RRC session lifetime is the RNS Link. Initiator keepalive/stale (RTT-scaled; on a fast TCP path this can be ~5s keepalive / ~10s stale) tears the Link when keepalive echoes miss — Wi‑Fi power save, brief NAT stalls, or a pinned next-hop iface that died while another path to the hub still works. Sidecar then emits `rrc.disconnected` with `will_reconnect: true`, re-HELLO/JOINs, and the client re-arms `/who`. Log `reason=` values: `timeout` (keepalive/stale), `transport_error` (iface/endpoint terminal), `remote_close` (hub closed Link). A historical `resource_offers_closed` label was usually a raced real `Closed` reason (fixed in `rrc_link`).
 
 **What to do**:
 
-1. **Unintended drop** (`will_reconnect: true`): sidecar retries with backoff (~2–30 s), preserves desired rooms (including join keys), and rejoins after WELCOME. Wait for **Active** or check `rrc.error` / link-close reasons in the log.
+1. **Unintended drop** (`will_reconnect: true`): sidecar retries with backoff (~2–30 s), DropPath+RequestPath on timeout/transport/remote close so the next Link can attach on a live interface, preserves desired rooms (including join keys), and rejoins after WELCOME. Wait for **Active** or check `rrc.error` / link-close reasons in the log (`[useReticulumRuntime] rrc.disconnected … reason=`).
 2. **Explicit Disconnect / Cancel** (`local_disconnect` or `will_reconnect: false`): that hub session is removed from the UI. Reconnect manually or rely on hub auto-join when the stack starts.
 3. Failed initial connect also clears the hub slot so it cannot exhaust the 8-session cap.
+4. If flaps are frequent on multi-iface stacks, check Connection → Interfaces for Auto/TCP competition and prefer a stable path to the hub.
 
 ### RRC false self-PART / hubParted banner
 

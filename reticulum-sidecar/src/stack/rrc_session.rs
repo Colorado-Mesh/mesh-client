@@ -28,7 +28,8 @@ use super::rrc_codec::{
     parse_welcome_limits, text_body,
 };
 use super::rrc_link::{
-    MAX_CONCURRENT_RRC_RESOURCES, RrcLinkError, RrcLinkEvent, RrcLinkHandle, open_rrc_link,
+    MAX_CONCURRENT_RRC_RESOURCES, RrcLinkError, RrcLinkEvent, RrcLinkHandle, RrcPathRefresh,
+    open_rrc_link_with_path_refresh, rrc_disconnect_should_drop_path,
 };
 
 const CLIENT_NAME: &str = "mesh-client";
@@ -565,6 +566,7 @@ fn spawn_connect_job(
     hops: u8,
     nickname: String,
     delay_ms: u64,
+    path_refresh: RrcPathRefresh,
     reply: Option<oneshot::Sender<Result<(), String>>>,
 ) -> ConnectJob {
     let hex_for_fut = dest_hash_hex.clone();
@@ -587,6 +589,7 @@ fn spawn_connect_job(
                 &hex_for_fut,
                 hops,
                 &nick_for_fut,
+                path_refresh,
             )
             .await
         }),
@@ -670,6 +673,7 @@ async fn session_loop(
                             hops,
                             nickname,
                             0,
+                            RrcPathRefresh::Refresh,
                             Some(reply),
                         ));
                     }
@@ -896,6 +900,7 @@ async fn session_loop(
                                     retry_hops,
                                     nickname,
                                     delay,
+                                    RrcPathRefresh::DropAndRefresh,
                                     None,
                                 ));
                             }
@@ -984,7 +989,14 @@ async fn session_loop(
                                 let nickname =
                                     resolve_reconnect_nickname(&inner, &intent_nick).await;
                                 let delay = backoff_ms;
+                                let path_refresh = if rrc_disconnect_should_drop_path(&reason) {
+                                    RrcPathRefresh::DropAndRefresh
+                                } else {
+                                    RrcPathRefresh::Refresh
+                                };
                                 debug!(
+                                    reason = %reason,
+                                    ?path_refresh,
                                     "rrc reconnecting to {dest_hash_hex} in {delay}ms"
                                 );
                                 backoff_ms =
@@ -999,6 +1011,7 @@ async fn session_loop(
                                     hops,
                                     nickname,
                                     delay,
+                                    path_refresh,
                                     None,
                                 ));
                             }
@@ -1028,10 +1041,17 @@ async fn establish_session(
     dest_hash_hex: &str,
     hops: u8,
     nickname: &str,
+    path_refresh: RrcPathRefresh,
 ) -> Result<RrcLinkHandle, String> {
-    let mut handle = open_rrc_link(transport_tx.clone(), identity, dest_hash, hops)
-        .await
-        .map_err(|e| e.to_string())?;
+    let mut handle = open_rrc_link_with_path_refresh(
+        transport_tx.clone(),
+        identity,
+        dest_hash,
+        hops,
+        path_refresh,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
 
     {
         let mut g = inner.lock().await;
