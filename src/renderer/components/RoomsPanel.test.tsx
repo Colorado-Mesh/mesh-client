@@ -1000,9 +1000,14 @@ describe('RoomsPanel', () => {
     expect(screen.getByTestId('rooms-composer-footer')).toHaveClass('shrink-0');
   });
 
-  it.each([2, 3, 8, 60, 150])(
-    'follows room posts only within the bottom tolerance (%ipx from latest)',
-    async (distance) => {
+  it.each(
+    (['linux', 'darwin', 'win32'] as const).flatMap((platform) =>
+      [2, 3, 8, 60, 150].map((distance) => ({ platform, distance })),
+    ),
+  )(
+    'follows room posts only within the bottom tolerance ($distance px from latest on $platform)',
+    async ({ platform, distance }) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
       mockIsAtEnd = true;
       const room = makeRoom(0x1017, 'Reading Room');
       meshcoreApplyRoomSession(room.node_id, {

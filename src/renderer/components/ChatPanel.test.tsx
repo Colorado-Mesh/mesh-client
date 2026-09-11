@@ -1497,19 +1497,35 @@ describe('ChatPanel scroll pinning', () => {
 
   it.each(
     (['linux', 'darwin', 'win32'] as const).flatMap((platform) =>
-      (['meshtastic', 'meshcore', 'reticulum'] as const).map((protocol) => ({
-        platform,
-        protocol,
-      })),
+      (
+        [
+          { protocol: 'meshtastic', view: 'channel' },
+          { protocol: 'meshtastic', view: 'dm' },
+          { protocol: 'meshcore', view: 'channel' },
+          { protocol: 'meshcore', view: 'dm' },
+          { protocol: 'reticulum', view: 'dm' },
+        ] as const
+      ).map((chat) => ({ platform, ...chat })),
     ),
   )(
-    'preserves a small scroll away from latest through repeated $protocol message updates on $platform',
-    async ({ platform, protocol }) => {
+    'preserves a small scroll away from latest through repeated $protocol $view arrivals on $platform',
+    async ({ platform, protocol, view }) => {
       vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
-      let messages = Array.from({ length: 5 }, (_, i) => makeMsg(i));
+      const props = {
+        ...baseProps,
+        protocol,
+        dmOnlyChat: protocol === 'reticulum',
+        initialDmTarget: view === 'dm' ? 2 : undefined,
+        ownNodeIds: [1],
+      };
+      const makeViewMessage = (index: number): ChatMessage => ({
+        ...makeMsg(index),
+        ...(view === 'dm' ? { channel: -1, to: 1 } : {}),
+      });
+      let messages = Array.from({ length: 5 }, (_, i) => makeViewMessage(i));
       const { container, rerender } = render(
         <ToastProvider>
-          <ChatPanel {...baseProps} protocol={protocol} messages={messages} />
+          <ChatPanel {...props} messages={messages} />
         </ToastProvider>,
       );
       const stream = container.querySelector<HTMLDivElement>('div.overflow-y-auto')!;
@@ -1522,13 +1538,14 @@ describe('ChatPanel scroll pinning', () => {
         stream.scrollTop = 1600 - distance;
         fireEvent.scroll(stream);
         mockScrollToEnd.mockClear();
-        messages = [...messages, makeMsg(messages.length)];
+        messages = [...messages, makeViewMessage(messages.length)];
         rerender(
           <ToastProvider>
-            <ChatPanel {...baseProps} protocol={protocol} messages={messages} />
+            <ChatPanel {...props} messages={messages} />
           </ToastProvider>,
         );
         await waitFor(() => {
+          expect(screen.getByText(messages.at(-1)!.payload)).toBeInTheDocument();
           expect(
             screen.getByRole('button', { name: /Jump to (Latest|Unread)/ }),
           ).toBeInTheDocument();
@@ -1536,13 +1553,13 @@ describe('ChatPanel scroll pinning', () => {
         expect(mockScrollToEnd).not.toHaveBeenCalled();
         expect(stream.scrollTop).toBe(1600 - distance);
       }
-      stream.scrollTop = 1598;
+      stream.scrollTop = 1600 - 2;
       fireEvent.scroll(stream);
       mockScrollToEnd.mockClear();
-      messages = [...messages, makeMsg(messages.length)];
+      messages = [...messages, makeViewMessage(messages.length)];
       rerender(
         <ToastProvider>
-          <ChatPanel {...baseProps} protocol={protocol} messages={messages} />
+          <ChatPanel {...props} messages={messages} />
         </ToastProvider>,
       );
       await waitFor(() => {

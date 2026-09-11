@@ -674,12 +674,20 @@ describe('RrcChatView stick-to-bottom', () => {
     }
   });
 
-  it.each([2, 3, 8, 60, 150])(
-    'follows appends only within the bottom tolerance (%ipx from latest)',
-    async (distance) => {
+  it.each(
+    (['linux', 'darwin', 'win32'] as const).flatMap((platform) =>
+      ['#general', '[hub]', `@${'bb'.repeat(16)}`].flatMap((activeRoom) =>
+        [2, 3, 8, 60, 150].map((distance) => ({ platform, activeRoom, distance })),
+      ),
+    ),
+  )(
+    'follows appends only within the bottom tolerance ($distance px in $activeRoom on $platform)',
+    async ({ platform, activeRoom, distance }) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const props = { ...baseProps, activeRoom };
       const user = userEvent.setup();
       const { rerender } = render(
-        <RrcChatView {...baseProps} messages={[makeMsg({ id: '1', body: 'one' })]} />,
+        <RrcChatView {...props} messages={[makeMsg({ id: '1', body: 'one', room: activeRoom })]} />,
       );
       await waitFor(() => {
         expect(mockScrollToEnd).toHaveBeenCalled();
@@ -701,8 +709,11 @@ describe('RrcChatView stick-to-bottom', () => {
       mockScrollToEnd.mockClear();
       rerender(
         <RrcChatView
-          {...baseProps}
-          messages={[makeMsg({ id: '1', body: 'one' }), makeMsg({ id: '2', body: 'two' })]}
+          {...props}
+          messages={[
+            makeMsg({ id: '1', body: 'one', room: activeRoom }),
+            makeMsg({ id: '2', body: 'two', room: activeRoom }),
+          ]}
         />,
       );
       if (distance <= 2) {
