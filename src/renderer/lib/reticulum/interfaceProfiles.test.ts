@@ -7,6 +7,7 @@ import {
   deleteInterfaceProfile,
   emptyInterfaceProfilesState,
   enabledInterfaceNames,
+  isSystemManagedInterfaceProfileName,
   renameInterfaceProfile,
   saveCurrentAsInterfaceProfile,
   updateDefaultInterfaceMembersIfCustom,
@@ -75,5 +76,45 @@ describe('interfaceProfiles', () => {
     });
     expect(res.ok).toBe(false);
     expect(calls).toEqual([{ id: 'a', enabled: false }]);
+  });
+
+  it('skips SharedInstanceServer when applying empty profile', async () => {
+    const withShared = [
+      ...ifaces,
+      {
+        id: 'rns-0',
+        name: 'SharedInstanceServer',
+        enabled: true,
+        type: 'Full',
+      },
+    ];
+    const calls: { id: string; enabled: boolean }[] = [];
+    const res = await applyInterfaceEnableSet(withShared, new Set(), (id, enabled) => {
+      calls.push({ id, enabled });
+    });
+    expect(res.ok).toBe(true);
+    expect(res.changed).toBe(true);
+    expect(calls.some((c) => c.id === 'rns-0')).toBe(false);
+    expect(calls).toEqual([
+      { id: 'a', enabled: false },
+      { id: 'c', enabled: false },
+    ]);
+  });
+
+  it('omits SharedInstanceServer from saved profile members and active match', () => {
+    expect(isSystemManagedInterfaceProfileName('SharedInstanceServer')).toBe(true);
+    const withShared = [
+      ...ifaces,
+      {
+        id: 'rns-0',
+        name: 'SharedInstanceServer',
+        enabled: true,
+        type: 'Full',
+      },
+    ];
+    const state = saveCurrentAsInterfaceProfile(emptyInterfaceProfilesState(), 'Home', withShared);
+    expect(state.profiles[0]?.members).toEqual(['Alpha', 'Gamma']);
+    expect(activeInterfaceProfileId(state, withShared)).toBe(state.profiles[0]?.id);
+    expect(activeInterfaceProfileId(state, ifaces)).toBe(state.profiles[0]?.id);
   });
 });

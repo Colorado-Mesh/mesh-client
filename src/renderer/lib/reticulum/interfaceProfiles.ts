@@ -4,9 +4,23 @@
  */
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { getReticulumInterfaceHelp } from '@/renderer/lib/reticulum/reticulumInterfaceHelp';
+import {
+  RETICULUM_SHARED_INSTANCE_CLIENT_NAME,
+  RETICULUM_SHARED_INSTANCE_NAME,
+} from '@/renderer/lib/reticulum/reticulumSharedInstanceNames';
 
 export const INTERFACE_PROFILES_STORAGE_KEY = 'mesh-client:reticulumInterfaceProfiles';
 export const INTERFACE_PROFILES_VERSION = 1;
+
+/** Runtime-only shared-instance rows are not config-toggleable (e.g. rns-0). */
+export function isSystemManagedInterfaceProfileName(name: string): boolean {
+  return name === RETICULUM_SHARED_INSTANCE_NAME || name === RETICULUM_SHARED_INSTANCE_CLIENT_NAME;
+}
+
+function filterProfileMemberNames(members: readonly string[]): string[] {
+  return members.filter((m) => m.length > 0 && !isSystemManagedInterfaceProfileName(m));
+}
 
 export interface InterfaceProfile {
   id: string;
@@ -58,7 +72,7 @@ export function loadInterfaceProfiles(): InterfaceProfilesState {
       if (!id || seen.has(id)) continue;
       seen.add(id);
       const members = Array.isArray(p.members)
-        ? p.members.filter((m): m is string => typeof m === 'string' && m.length > 0)
+        ? filterProfileMemberNames(p.members.filter((m): m is string => typeof m === 'string'))
         : [];
       const name = typeof p.name === 'string' && p.name ? p.name : 'Profile';
       profiles.push({ id, name, members });
@@ -68,7 +82,7 @@ export function loadInterfaceProfiles(): InterfaceProfilesState {
       version: INTERFACE_PROFILES_VERSION,
       profiles,
       defaultMembers: Array.isArray(dm)
-        ? dm.filter((m): m is string => typeof m === 'string')
+        ? filterProfileMemberNames(dm.filter((m): m is string => typeof m === 'string'))
         : null,
     };
   } catch (e) {
@@ -97,16 +111,23 @@ export function saveInterfaceProfiles(state: InterfaceProfilesState): void {
 }
 
 export function enabledInterfaceNames(
-  interfaces: readonly { name: string; enabled: boolean }[],
+  interfaces: readonly {
+    name: string;
+    enabled: boolean;
+  }[],
 ): Set<string> {
-  return new Set(interfaces.filter((i) => i.enabled).map((i) => i.name));
+  return new Set(
+    interfaces
+      .filter((i) => i.enabled && !isSystemManagedInterfaceProfileName(i.name))
+      .map((i) => i.name),
+  );
 }
 
 export function membersExisting(
   profile: InterfaceProfile,
   interfaceNames: ReadonlySet<string>,
 ): Set<string> {
-  return new Set(profile.members.filter((m) => interfaceNames.has(m)));
+  return new Set(filterProfileMemberNames(profile.members).filter((m) => interfaceNames.has(m)));
 }
 
 export function activeInterfaceProfileId(
@@ -133,7 +154,14 @@ export function createInterfaceProfile(
   const id = newProfileId(ids);
   return {
     ...state,
-    profiles: [...state.profiles, { id, name: name.trim() || 'Profile', members: [...members] }],
+    profiles: [
+      ...state.profiles,
+      {
+        id,
+        name: name.trim() || 'Profile',
+        members: filterProfileMemberNames(members),
+      },
+    ],
   };
 }
 
@@ -174,7 +202,7 @@ export function setInterfaceProfileMembers(
 ): InterfaceProfilesState {
   const seen = new Set<string>();
   const ordered: string[] = [];
-  for (const m of members) {
+  for (const m of filterProfileMemberNames(members)) {
     if (!validNames.has(m) || seen.has(m)) continue;
     seen.add(m);
     ordered.push(m);
@@ -235,14 +263,25 @@ export type InterfaceEnableToggle = (
  * Stops early when a toggle reports failure (`false`).
  */
 export async function applyInterfaceEnableSet(
-  interfaces: readonly { id: string; name: string; enabled: boolean; type: string }[],
+  interfaces: readonly {
+    id: string;
+    name: string;
+    enabled: boolean;
+    type: string;
+    serial_port?: string | null;
+  }[],
   members: ReadonlySet<string>,
   toggle: InterfaceEnableToggle,
 ): Promise<{ changed: boolean; needsRestartHint: boolean; ok: boolean }> {
   let changed = false;
   let needsRestartHint = false;
+  const wantNames = new Set(filterProfileMemberNames([...members]));
   for (const iface of interfaces) {
-    const want = members.has(iface.name);
+    // SharedInstanceServer / Client are runtime-only (not in config); enable/disable 404s.
+    if (getReticulumInterfaceHelp(iface).isSystemManaged) {
+      continue;
+    }
+    const want = wantNames.has(iface.name);
     if (iface.enabled === want) continue;
     changed = true;
     const result = await Promise.resolve(toggle(iface.id, want, iface.type));
