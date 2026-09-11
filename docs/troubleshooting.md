@@ -1295,20 +1295,20 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 **Humanized error categories** (sidecar code → user message):
 
-| Sidecar code            | Meaning                                                             |
-| ----------------------- | ------------------------------------------------------------------- |
-| `path_timeout`          | No route to the node (path lookup timed out)                        |
-| `pubkey_not_found`      | Destination identity key not cached yet — wait for a Nomad announce |
-| `link_timeout`          | Link could not be established in time (UI may say path OK vs stale) |
-| `response_timeout`      | Link opened but page payload did not arrive in time                 |
-| `missing_identity_hash` | No remembered identity for the node yet                             |
-| `network_not_ready`     | No usable path/interface yet — wait for hub/path or restart stack   |
-| `nomad_not_serving`     | Remote node is not serving Nomad pages                              |
-| `invalid_url`           | Malformed Nomad page/file URL                                       |
-| `transport_unavailable` | Reticulum transport unavailable — restart stack                     |
-| `sidecar_not_running`   | Sidecar not running — start stack from Connection                   |
-| `response_too_large`    | Remote response exceeded the sidecar size cap                       |
-| `nomad_busy`            | Another Nomad page/file query still holds the link lock             |
+| Sidecar code            | Meaning                                                                                                                                                                                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `path_timeout`          | No route to the node (path lookup timed out)                                                                                                                                                                                                    |
+| `pubkey_not_found`      | Destination identity key not cached yet — wait for a Nomad announce                                                                                                                                                                             |
+| `link_timeout`          | Link could not be established in time (UI may say path OK vs stale)                                                                                                                                                                             |
+| `response_timeout`      | Link opened but page payload did not arrive in time                                                                                                                                                                                             |
+| `missing_identity_hash` | No remembered identity for the node yet                                                                                                                                                                                                         |
+| `network_not_ready`     | No usable path/interface yet — wait for hub/path or restart stack                                                                                                                                                                               |
+| `nomad_not_serving`     | Remote node is not serving Nomad pages                                                                                                                                                                                                          |
+| `invalid_url`           | Malformed Nomad page/file URL                                                                                                                                                                                                                   |
+| `transport_unavailable` | Reticulum transport unavailable — restart stack                                                                                                                                                                                                 |
+| `sidecar_not_running`   | Sidecar not running — start stack from Connection                                                                                                                                                                                               |
+| `response_too_large`    | Remote response exceeded the sidecar size cap                                                                                                                                                                                                   |
+| `nomad_busy`            | Another Nomad page/file query still holds the link lock, or a page navigation preempted an in-flight query. In-page `/media` images queue (do not cancel each other); rebuild sidecar if multiple images fail with this code on an older build. |
 
 Unrecognized codes pass through unchanged.
 
@@ -1725,6 +1725,12 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 **What to do**: Usually no action; the watchdog recovers a wedged-but-alive sidecar. If restarts loop, check for a stuck link/interface or resource exhaustion in the sidecar log and **Stop stack** to clear state.
 
 ## Chat, nodes, and notifications
+
+### Unread messages but no app-icon badge
+
+On **macOS**, allow notifications for Mesh Client and enable **Badge application icon** in **System Settings → Notifications → Mesh Client**. The app initializes macOS notification authorization when unread messages exist and reapplies the current badge when its window regains focus. Reading the remaining unread messages clears the badge. macOS notification settings still control whether the badge is visible; the app does not override a denied permission.
+
+On **Windows**, unread messages use a red taskbar overlay. On **Linux**, launcher counts depend on desktop support for the LauncherEntry D-Bus API. Tray indicators remain separate from the app-icon badge.
 
 ### Meshtastic: inbound messages on the wrong channel tab
 

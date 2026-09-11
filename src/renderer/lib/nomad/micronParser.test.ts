@@ -455,11 +455,8 @@ describe('NomadNet 1.4.1 micron images and collapsibles', () => {
     expect(isNomadMediaPath('/file/demo.webp')).toBe(false);
   });
 
-  it('limits concurrent /media fetches to the configured pool size', async () => {
-    const lines = Array.from(
-      { length: NOMAD_MICRON_MEDIA_FETCH_CONCURRENCY + 3 },
-      (_, i) => `\`(Img ${i}\`:/media/i${i}.webp)`,
-    );
+  it('serializes /media fetches (concurrency 1, NomadNet Link parity)', async () => {
+    const lines = Array.from({ length: 4 }, (_, i) => `\`(Img ${i}\`:/media/i${i}.webp)`);
     const container = document.createElement('div');
     mountNomadMicronHtml(container, renderNomadMicronPage(lines.join('\n')));
 
@@ -483,9 +480,9 @@ describe('NomadNet 1.4.1 micron images and collapsibles', () => {
       concurrency: NOMAD_MICRON_MEDIA_FETCH_CONCURRENCY,
     });
 
-    expect(fetchMedia).toHaveBeenCalledTimes(NOMAD_MICRON_MEDIA_FETCH_CONCURRENCY + 3);
-    expect(maxInFlight).toBeLessThanOrEqual(NOMAD_MICRON_MEDIA_FETCH_CONCURRENCY);
-    expect(maxInFlight).toBeGreaterThan(1);
+    expect(fetchMedia).toHaveBeenCalledTimes(4);
+    expect(maxInFlight).toBe(1);
+    expect(NOMAD_MICRON_MEDIA_FETCH_CONCURRENCY).toBe(1);
   });
 
   it('skips DOM updates after AbortSignal aborts', async () => {

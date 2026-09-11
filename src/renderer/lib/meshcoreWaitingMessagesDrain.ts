@@ -26,7 +26,10 @@ let lastMsgWaitingEventAt = 0;
 let silentBulkAttemptId = 0;
 /** Consecutive silent-bulk getWaitingMessages timeouts on this connection. */
 let silentBulkTimeoutStreak = 0;
-/** Once tripped, skip bulk and go straight to syncNextMessage until reconnect/success. */
+/**
+ * Once tripped, skip bulk and go straight to syncNextMessage until reconnect/teardown
+ * reset or a real successful getWaitingMessages — not incremental syncNextMessage success.
+ */
 let silentBulkSkipped = false;
 /**
  * CLI reply path: skip bulk while awaiting CLI_DATA (cleared when CLI hold ends).
@@ -171,7 +174,10 @@ export function shouldPreferMeshcoreSilentIncrementalDrain(
   return connectionType === 'tcp' || shouldSkipMeshcoreSilentBulkGetWaitingMessages();
 }
 
-/** Record a successful silent bulk drain (including empty queue). */
+/**
+ * Record a successful silent bulk getWaitingMessages (including empty queue).
+ * Do not call this after incremental syncNextMessage — that would re-open bulk too soon.
+ */
 export function noteMeshcoreSilentBulkSuccess(): void {
   silentBulkTimeoutStreak = 0;
   silentBulkSkipped = false;

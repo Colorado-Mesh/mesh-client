@@ -11,7 +11,9 @@ import * as meshcoreRepeaterRpcInFlight from '@/renderer/lib/meshcoreRepeaterRpc
 import { meshcoreChatStubNodeIdFromDisplayName } from '@/renderer/lib/meshcoreUtils';
 import {
   beginMeshcoreSilentBulkAttempt,
+  resetMeshcoreWaitingMessagesDrainSchedule,
   resetMeshcoreWaitingMessagesDrainState,
+  shouldSkipMeshcoreSilentBulkGetWaitingMessages,
 } from '@/renderer/lib/meshcoreWaitingMessagesDrain';
 import type { DomainEvent } from '@/renderer/lib/protocols/Protocol';
 import {
@@ -484,6 +486,7 @@ describe('attachMeshcoreConnSideEffects', () => {
     expect(h.conn.getWaitingMessages).toHaveBeenCalledTimes(
       MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP,
     );
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(true);
 
     vi.mocked(h.conn.getWaitingMessages).mockClear();
     const skipped = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
@@ -493,12 +496,22 @@ describe('attachMeshcoreConnSideEffects', () => {
     expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
     expect(h.syncNextMessage).toHaveBeenCalled();
     expect(h.handleConnectionLost).not.toHaveBeenCalled();
+    // Incremental success must leave the breaker open (no bulk re-probe until reconnect).
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(true);
 
     vi.mocked(h.conn.getWaitingMessages).mockClear();
     vi.mocked(h.conn.getWaitingMessages).mockResolvedValue([]);
-    const retried = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
+    const stillSkipped = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
     await vi.runAllTimersAsync();
-    await retried;
+    await stillSkipped;
+    expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(true);
+
+    resetMeshcoreWaitingMessagesDrainSchedule();
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(false);
+    const afterReconnect = h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: false });
+    await vi.runAllTimersAsync();
+    await afterReconnect;
     expect(h.conn.getWaitingMessages).toHaveBeenCalledTimes(1);
   });
 

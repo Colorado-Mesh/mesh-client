@@ -7,6 +7,7 @@ import {
   awaitMeshcoreWaitingMessagesDrainIdle,
   beginMeshcoreSilentBulkAttempt,
   endMeshcoreSilentBulkCliPreempt,
+  getMeshcoreSilentBulkDrainSnapshot,
   isMeshcoreCompanionDrainDeferred,
   isMeshcoreSilentBulkAttemptCurrent,
   isMeshcoreSyncNextMessageTimeoutError,
@@ -402,6 +403,21 @@ describe('silent bulk timeout circuit breaker', () => {
     expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(true);
     noteMeshcoreSilentBulkSuccess();
     expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(false);
+  });
+
+  it('stays open when incremental drain succeeds without noteMeshcoreSilentBulkSuccess', () => {
+    for (let i = 0; i < MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP; i += 1) {
+      noteMeshcoreSilentBulkTimeout();
+    }
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(true);
+    expect(shouldPreferMeshcoreSilentIncrementalDrain('ble')).toBe(true);
+    // Prefer-incremental path must not call noteMeshcoreSilentBulkSuccess — circuit stays open
+    // until reconnect reset or a real getWaitingMessages success.
+    expect(shouldSkipMeshcoreSilentBulkGetWaitingMessages()).toBe(true);
+    expect(getMeshcoreSilentBulkDrainSnapshot()).toEqual({
+      silentBulkSkipped: true,
+      silentBulkTimeoutStreak: MESHCORE_WAITING_MESSAGES_SILENT_BULK_TIMEOUT_TRIP,
+    });
   });
 
   it('resets on drain state reset (reconnect)', () => {

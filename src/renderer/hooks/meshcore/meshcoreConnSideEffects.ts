@@ -332,8 +332,9 @@ async function drainWaitingMessagesSilent(
   const preferIncremental =
     opts?.incrementalOnly || shouldPreferMeshcoreSilentIncrementalDrain(deps.connectionType);
   if (preferIncremental) {
-    const retrieved = await drainWaitingMessagesIncremental(conn, state, deps, syncNextTimeoutMs);
-    if (retrieved) noteMeshcoreSilentBulkSuccess();
+    // Incremental success must not clear the silent-bulk timeout circuit — only a real
+    // getWaitingMessages success (below) or disconnect/teardown reset may re-probe bulk.
+    await drainWaitingMessagesIncremental(conn, state, deps, syncNextTimeoutMs);
     return;
   }
 

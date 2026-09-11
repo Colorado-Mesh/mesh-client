@@ -3,14 +3,8 @@ name: Reticulum sidecar
 permissions:
   contents: read
 
-# Stacked Nomad file/metadata work: pin siblings until upstream PRs merge, then float again.
-# ratspeak/rsReticulum#26, ratspeak/rsLXMF#7 (rsNomad#7 merged — float). Keep in sync with
-# scripts/ratspeak-stack-ci-pins.env and RATSPEAK_STACK_PR_ENTRIES in scripts/update.sh.
-env:
-  RS_RETICULUM_REF: e16bd152256a5caffb704446bbe15530c1b20f48
-  RS_LXMF_REF: c3d8b44942e7726dbbe6bb53e0976d4c72134119
-  RS_NOMAD_REF: ec6b6dde23addf9d8248b794238baaa6498fe171
-
+# Float rsReticulum / rsLXMF / rsNomad to origin/main; open feature PRs are overlays
+# (see reticulum-sidecar/patches/README.md — ReplyFile #26, LXMF attachments #7).
 on:
   workflow_dispatch:
   push:
