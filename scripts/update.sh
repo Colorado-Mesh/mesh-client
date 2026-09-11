@@ -741,6 +741,14 @@ if [ "${UPDATE_SH_TEST_HOOK:-}" = 'upstream-check-only' ]; then
   exit 0
 fi
 
+# Test hook: exercise check_ratspeak_patches (fake gh via PATH; cwd may supply patches/).
+if [ "${UPDATE_SH_TEST_HOOK:-}" = 'ratspeak-patches-only' ]; then
+  HAS_WARNING=0
+  check_ratspeak_patches
+  printf 'HAS_WARNING=%s\n' "${HAS_WARNING}"
+  exit 0
+fi
+
 # --- Guard: must be project root ---
 if [ ! -f "${LOCKFILE}" ]; then
   echo "Error: ${LOCKFILE} not found. Run this script from the project root." >&2
