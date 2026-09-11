@@ -313,28 +313,19 @@ async fn refresh_hub_path(
         options.drop_existing_path = true;
         // When identity is already cached, resolve_destination returns early
         // after RequestPath only — still DropPath so a dead via cannot stick.
-        let (response_tx, response_rx) = oneshot::channel();
-        transport_tx
-            .send(TransportMessage::Rpc {
-                query: TransportQuery::DropPath { dest: dest_hash },
-                response_tx,
-            })
-            .await
-            .map_err(|_| RrcLinkError::TransportUnavailable)?;
-        match response_rx.await {
-            Ok(TransportQueryResponse::Ok) => {
+        match drop_path_rpc(transport_tx, dest_hash, PATH_LOOKUP_TIMEOUT).await? {
+            TransportQueryResponse::Ok => {
                 debug!(
                     dest = %hex::encode(dest_hash),
                     "rrc DropPath before reconnect establish"
                 );
             }
-            Ok(_) => {
+            _ => {
                 debug!(
                     dest = %hex::encode(dest_hash),
                     "rrc DropPath returned unexpected response; continuing"
                 );
             }
-            Err(_) => return Err(RrcLinkError::TransportUnavailable),
         }
     }
     // Fire RequestPath via resolve options when identity is missing; when
@@ -347,6 +338,33 @@ async fn refresh_hub_path(
     .await
     .map_err(|e| map_resolve_error(&e))?;
     Ok(())
+}
+
+/// Bound DropPath RPC (send + reply) so a hung transport cannot stall reconnect.
+async fn drop_path_rpc(
+    transport_tx: &mpsc::Sender<TransportMessage>,
+    dest_hash: [u8; 16],
+    timeout: Duration,
+) -> Result<TransportQueryResponse, RrcLinkError> {
+    let (response_tx, response_rx) = oneshot::channel();
+    let drop_result = tokio::time::timeout(timeout, async {
+        transport_tx
+            .send(TransportMessage::Rpc {
+                query: TransportQuery::DropPath { dest: dest_hash },
+                response_tx,
+            })
+            .await
+            .map_err(|_| RrcLinkError::TransportUnavailable)?;
+        response_rx
+            .await
+            .map_err(|_| RrcLinkError::TransportUnavailable)
+    })
+    .await;
+    match drop_result {
+        Err(_) => Err(RrcLinkError::Timeout("DropPath")),
+        Ok(Err(e)) => Err(e),
+        Ok(Ok(response)) => Ok(response),
+    }
 }
 
 fn map_resolve_error(
@@ -390,6 +408,8 @@ fn map_link_session_error(e: LinkSessionError) -> RrcLinkError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rns_runtime::link_session::LinkSessionResourceOffer;
+    use rns_transport::messages::RecalledDestinationRpcEntry;
 
     #[tokio::test]
     async fn excess_resource_offers_rejected_when_slots_full() {
@@ -435,6 +455,147 @@ mod tests {
         .unwrap();
         drop(tx);
         assert_eq!(closed_reason_after_offers_ended(&mut rx), "transport_error");
+    }
+
+    /// Mirrors the production `biased` select: when both `Closed` and offers-end
+    /// are ready, the Closed reason must win (not `resource_offers_closed`).
+    #[tokio::test]
+    async fn biased_select_emits_timeout_when_closed_and_offers_end_race() {
+        let (ev_tx, mut events) = mpsc::channel::<LinkSessionEvent>(4);
+        let (offer_tx, mut offers) = mpsc::channel::<LinkSessionResourceOffer>(1);
+        ev_tx
+            .send(LinkSessionEvent::Closed {
+                reason: LinkSessionCloseReason::Timeout,
+            })
+            .await
+            .unwrap();
+        drop(ev_tx);
+        drop(offer_tx);
+
+        let reason = tokio::select! {
+            biased;
+            ev = events.recv() => match ev {
+                Some(LinkSessionEvent::Closed { reason }) => close_reason_label(reason).to_string(),
+                other => panic!("expected Closed event, got {other:?}"),
+            },
+            offer = offers.recv() => {
+                assert!(offer.is_none(), "offers channel must be closed");
+                closed_reason_after_offers_ended(&mut events)
+            }
+        };
+        assert_eq!(reason, "timeout");
+    }
+
+    /// When offers end first, drain any already-queued Closed reason.
+    #[tokio::test]
+    async fn offers_end_first_drains_queued_closed_reason() {
+        let (ev_tx, mut events) = mpsc::channel::<LinkSessionEvent>(4);
+        let (offer_tx, mut offers) = mpsc::channel::<LinkSessionResourceOffer>(1);
+        ev_tx
+            .send(LinkSessionEvent::Closed {
+                reason: LinkSessionCloseReason::Remote,
+            })
+            .await
+            .unwrap();
+        drop(ev_tx);
+        drop(offer_tx);
+
+        let offer = offers.recv().await;
+        assert!(offer.is_none());
+        let reason = closed_reason_after_offers_ended(&mut events);
+        assert_eq!(reason, "remote_close");
+    }
+
+    #[tokio::test]
+    async fn drop_and_refresh_sends_drop_path_before_request_path() {
+        let dest = [0xAB; 16];
+        let public_key = [0xCD; 64];
+        let (transport_tx, mut transport_rx) = mpsc::channel(8);
+        let responder = tokio::spawn(async move {
+            let mut saw_drop = false;
+            let mut saw_request = false;
+            while !(saw_drop && saw_request) {
+                let msg = transport_rx.recv().await.expect("transport message");
+                match msg {
+                    TransportMessage::Rpc {
+                        query: TransportQuery::DropPath { dest: d },
+                        response_tx,
+                    } => {
+                        assert_eq!(d, dest);
+                        assert!(!saw_request, "DropPath must precede RequestPath");
+                        saw_drop = true;
+                        response_tx.send(TransportQueryResponse::Ok).unwrap();
+                    }
+                    TransportMessage::Rpc {
+                        query: TransportQuery::RecallDestination { dest: d },
+                        response_tx,
+                    } => {
+                        assert_eq!(d, dest);
+                        response_tx
+                            .send(TransportQueryResponse::RecalledDestination(Some(
+                                RecalledDestinationRpcEntry {
+                                    dest_hash: dest,
+                                    public_key,
+                                    app_data: None,
+                                    ratchet: None,
+                                    hops: 1,
+                                    timestamp: 1.0,
+                                },
+                            )))
+                            .unwrap();
+                    }
+                    TransportMessage::RequestPath {
+                        destination_hash: d,
+                    } => {
+                        assert_eq!(d, dest);
+                        assert!(saw_drop, "DropPath must precede RequestPath");
+                        saw_request = true;
+                    }
+                    other => panic!("unexpected transport message: {other:?}"),
+                }
+            }
+            saw_drop && saw_request
+        });
+
+        refresh_hub_path(&transport_tx, dest, RrcPathRefresh::DropAndRefresh)
+            .await
+            .expect("refresh_hub_path");
+        assert!(
+            responder.await.expect("responder join"),
+            "expected DropPath then RequestPath"
+        );
+    }
+
+    #[tokio::test]
+    async fn drop_path_rpc_timeout_maps_to_timeout_error() {
+        let dest = [0x11; 16];
+        let (transport_tx, mut transport_rx) = mpsc::channel(1);
+        let _hold = tokio::spawn(async move {
+            // Keep the Rpc (and its response_tx) alive so the caller blocks on reply.
+            let _keep = transport_rx.recv().await;
+            std::future::pending::<()>().await;
+        });
+        let err = drop_path_rpc(&transport_tx, dest, Duration::from_millis(30))
+            .await
+            .expect_err("must time out");
+        assert!(
+            matches!(err, RrcLinkError::Timeout("DropPath")),
+            "hung DropPath must be Timeout, got {err}"
+        );
+    }
+
+    #[tokio::test]
+    async fn drop_path_rpc_closed_channel_is_transport_unavailable() {
+        let dest = [0x22; 16];
+        let (transport_tx, transport_rx) = mpsc::channel(1);
+        drop(transport_rx);
+        let err = drop_path_rpc(&transport_tx, dest, Duration::from_secs(1))
+            .await
+            .expect_err("must fail");
+        assert!(
+            matches!(err, RrcLinkError::TransportUnavailable),
+            "closed transport must be TransportUnavailable, got {err}"
+        );
     }
 
     #[test]

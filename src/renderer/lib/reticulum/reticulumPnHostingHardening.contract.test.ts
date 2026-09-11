@@ -9,7 +9,6 @@ const STACK_MOD = join(REPO_ROOT, 'reticulum-sidecar/src/stack/mod.rs');
 const PN_APPLY = join(REPO_ROOT, 'reticulum-sidecar/src/stack/pn_hosting_apply.rs');
 const CI_YAML = join(REPO_ROOT, '.github/workflows/ci.yaml');
 const RRC_SESSION = join(REPO_ROOT, 'reticulum-sidecar/src/stack/rrc_session.rs');
-const RRC_LINK = join(REPO_ROOT, 'reticulum-sidecar/src/stack/rrc_link.rs');
 
 /** Slice from `fnName` through the next same-indent `pub async fn` (or EOF). */
 function extractAsyncFnBody(src: string, fnName: string): string {
@@ -77,18 +76,6 @@ describe('reticulum PN hosting / propagation hardening contracts', () => {
     expect(pendingSlice).toMatch(
       /for \(room, key\) in rejoins \{[\s\S]*?handle_rejoin_failure\s*\(/,
     );
-  });
-
-  it('rrc link prefers Closed reason over resource_offers channel close', () => {
-    const linkSrc = readFileSync(RRC_LINK, 'utf8');
-    expect(linkSrc).toMatch(/fn closed_reason_after_offers_ended\s*\(/);
-    expect(linkSrc).toMatch(/biased;/);
-    expect(linkSrc).toMatch(/RrcPathRefresh::DropAndRefresh/);
-    expect(linkSrc).toMatch(/fn rrc_disconnect_should_drop_path\s*\(/);
-
-    const sessionSrc = readFileSync(RRC_SESSION, 'utf8');
-    expect(sessionSrc).toMatch(/rrc_disconnect_should_drop_path\(&reason\)/);
-    expect(sessionSrc).toMatch(/RrcPathRefresh::DropAndRefresh/);
   });
 
   it('ci.yaml pnpm audit is blocking (no || echo fallback)', () => {
