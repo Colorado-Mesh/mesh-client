@@ -788,7 +788,9 @@
     "searchResults_few": "{{count}} результати",
     "searchResults_many": "{{count}} результатів",
     "reticulumSendAwaitingPeerReceipt": "Надіслано (очікується отримання від колеги)",
-    "reticulumChatNeedsLxmfDelivery": "Цей вузол ще не має адреси доставки LXMF (чат не може використовувати призначення лише для голосу). Дочекайтеся оголошення LXMF або вставте їх 32-символьний хеш LXMF."
+    "reticulumChatNeedsLxmfDelivery": "Цей вузол ще не має адреси доставки LXMF (чат не може використовувати призначення лише для голосу). Дочекайтеся оголошення LXMF або вставте їх 32-символьний хеш LXMF.",
+    "saveAttachment": "Зберегти",
+    "revealAttachment": "У теці"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -1350,7 +1352,19 @@
       "fieldNotANumber": "Введіть ціле число (лише цифри).",
       "fieldOutOfRange": "Значення виходить за межі дозволеного діапазону.",
       "fieldTooLong": "Цей рядок занадто довгий.",
-      "fieldInvalidOption": "Непідтримуване значення."
+      "fieldInvalidOption": "Непідтримуване значення.",
+      "profilesTitle": "Interface profiles",
+      "profilesHint": "Named enable-sets for which interfaces are on. Switching a profile enables its members and disables the rest.",
+      "profilesEmpty": "No profiles yet. Save the current enable-set to create one.",
+      "profilesDefault": "Default",
+      "profilesUnnamed": "(unnamed)",
+      "profilesNamePlaceholder": "Profile name",
+      "profilesSaveCurrent": "Save current",
+      "profilesCreateEmpty": "New empty",
+      "profilesRename": "Rename",
+      "profilesSaveRename": "Save",
+      "profilesDelete": "Delete",
+      "profilesRenameAria": "Rename profile {{name}}"
     },
     "reticulumPeers": {
       "hops": "Хопи",
@@ -3494,7 +3508,9 @@
     "pageProgressFailoverGeneric": "Спробувати інший маршрут...",
     "pageProgressNoAlternate": "Немає інших доступних маршрутів — завершення цієї спроби...",
     "hopsAway_few": "за {{count}} хопи",
-    "hopsAway_many": "за {{count}} хопів"
+    "hopsAway_many": "за {{count}} хопів",
+    "downloadFile": "Завантаження",
+    "dismissPreview": "Відпустити"
   },
   "packetDistribution": {
     "overallDistribution": "Загальний розподіл",
@@ -5450,7 +5466,17 @@
     "memberCount_few": "{{count}} учасники",
     "memberCount_many": "{{count}} учасників",
     "userCount_few": "{{count}} користувачі",
-    "userCount_many": "{{count}} користувачів"
+    "userCount_many": "{{count}} користувачів",
+    "byteLimit": {
+      "approaching": "{{count}} / {{limit}}",
+      "overMax": "Задовге повідомлення — ліміт концентратора становить {{limit}} байт"
+    },
+    "nickLimit": {
+      "overMax": "Задовгий псевдонім — ліміт концентратора становить {{limit}} байт"
+    },
+    "roomNameLimit": {
+      "overMax": "Назва кімнати задовга — ліміт концентратора становить {{limit}} байт"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI (індикатор потужності прийнятого сигналу)",

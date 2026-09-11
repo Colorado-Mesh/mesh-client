@@ -1077,7 +1077,7 @@ async fn establish_session(
                         g.hub_name = hub_name.clone();
                         g.hub_version = hub_version;
                         g.capabilities = capabilities.clone();
-                        g.limits = limits;
+                        g.limits = limits.clone();
                         g.last_error = None;
                     }
                     emit(
@@ -1091,6 +1091,13 @@ async fn establish_session(
                                 "direct_notice": capabilities.direct_notice,
                                 "action": capabilities.action,
                                 "resource_envelope": capabilities.resource_envelope,
+                            },
+                            "limits": {
+                                "max_nick_bytes": limits.max_nick_bytes,
+                                "max_room_name_bytes": limits.max_room_name_bytes,
+                                "max_msg_body_bytes": limits.max_msg_body_bytes,
+                                "max_rooms_per_session": limits.max_rooms_per_session,
+                                "rate_limit_msgs_per_minute": limits.rate_limit_msgs_per_minute,
                             },
                         }),
                     );
@@ -1764,6 +1771,25 @@ mod tests {
         assert!(inner.hub_version.is_none());
         assert!(inner.limits.max_nick_bytes.is_none());
         assert!(inner.pending_resources.is_empty());
+    }
+
+    #[test]
+    fn session_json_includes_welcome_limits() {
+        let mut inner = RrcSessionInner::new([0u8; 16]);
+        inner.limits.max_msg_body_bytes = Some(350);
+        inner.limits.max_nick_bytes = Some(32);
+        inner.limits.max_room_name_bytes = Some(64);
+        let snap = session_json("aabbccddeeff00112233445566778899", &inner);
+        let limits = snap.get("limits").expect("limits");
+        assert_eq!(
+            limits.get("max_msg_body_bytes"),
+            Some(&serde_json::json!(350))
+        );
+        assert_eq!(limits.get("max_nick_bytes"), Some(&serde_json::json!(32)));
+        assert_eq!(
+            limits.get("max_room_name_bytes"),
+            Some(&serde_json::json!(64))
+        );
     }
 
     #[test]

@@ -150,4 +150,30 @@ describe('resolveReticulumDmFaceHash', () => {
     expect(resolveReticulumDmBoundDestinationHash(telephonyNum, null)).toBe(telephony);
     expect(resolveReticulumDmBoundDestinationHash(telephonyNum, telephony)).toBe(telephony);
   });
+
+  it('remaps a bound RNS identity hash to lxmf.delivery for DM probe/face', () => {
+    const identity = '0f79468863d76b3ba574baa92606ffcb';
+    const lxmf = 'e3359f1314aff4fb6261400a8202149b';
+    const identityNum = reticulumHashToNodeId(identity);
+    reticulumHashForNodeIdMock.mockImplementation((id: number) =>
+      id === identityNum ? identity : null,
+    );
+    useReticulumIdentityActivityStore.setState({
+      byDestination: new Map([
+        [
+          lxmf,
+          [
+            {
+              destination_hash: lxmf,
+              aspect: LXMF_DELIVERY_ASPECT,
+              identity_hash: identity,
+              last_seen: 2,
+            },
+          ],
+        ],
+      ]),
+    });
+    expect(resolveReticulumDmFaceHash(identityNum, identity)).toBe(lxmf);
+    expect(resolveReticulumDmFaceHash(identityNum, null)).toBe(lxmf);
+  });
 });

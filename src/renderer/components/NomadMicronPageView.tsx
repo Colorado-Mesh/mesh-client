@@ -1,20 +1,25 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 
 import {
+  bindNomadMicronMedia,
   bindNomadMicronPartials,
   buildNomadLinkRequest,
   isExternalHttpUrl,
   isNomadFilePath,
   loadNomadMicronPartial,
   mountNomadMicronHtml,
+  type NomadMicronMediaFetchResult,
   type NomadMicronPartialPageResult,
   parseNomadNetworkLinkUrl,
   renderNomadMicronPage,
 } from '@/renderer/lib/nomad/micronParser';
+import { nomadRasterDataUrl } from '@/renderer/lib/nomad/nomadRasterPreview';
+import { openRrcHubFromLink } from '@/renderer/lib/openRrcHubFromLink';
 import {
   isReticulumLxmfLink,
   parseReticulumLxmfLinkUrl,
 } from '@/renderer/lib/reticulum/reticulumDestinationInput';
+import { isRrcLink } from '@/renderer/lib/rrcLink';
 
 interface NomadMicronPageViewProps {
   content: string;
@@ -31,6 +36,31 @@ interface NomadMicronPageViewProps {
     path: string,
     requestData?: Record<string, string>,
   ) => Promise<NomadMicronPartialPageResult>;
+  /** Fetch NomadNet `/media` WebP bytes for in-page images (not `/file` downloads). */
+  onFetchMedia?: (hash: string, mediaPath: string) => Promise<NomadMicronMediaFetchResult>;
+}
+
+function mediaBindOptions(
+  ctx: {
+    selectedHash: string;
+    defaultPagePath: string;
+    onFetchMedia?: (hash: string, mediaPath: string) => Promise<NomadMicronMediaFetchResult>;
+  },
+  signal: AbortSignal,
+) {
+  const fetchMedia = ctx.onFetchMedia;
+  if (!fetchMedia) return null;
+  return {
+    selectedHash: ctx.selectedHash,
+    defaultPagePath: ctx.defaultPagePath,
+    signal,
+    fetchMedia: (hash: string, mediaPath: string) => fetchMedia(hash, mediaPath),
+    toDataUrl: (fileName: string, contentBase64: string) =>
+      nomadRasterDataUrl(
+        fileName.toLowerCase().endsWith('.webp') ? fileName : `${fileName}.webp`,
+        contentBase64,
+      ) ?? nomadRasterDataUrl('image.webp', contentBase64),
+  };
 }
 
 export default function NomadMicronPageView({
@@ -42,6 +72,7 @@ export default function NomadMicronPageView({
   onDownloadFile,
   onOpenDm,
   onFetchPartial,
+  onFetchMedia,
 }: NomadMicronPageViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   // Keep latest link handlers/context in a ref so Micron remounts only when `content` changes.
@@ -54,6 +85,7 @@ export default function NomadMicronPageView({
     onDownloadFile,
     onOpenDm,
     onFetchPartial,
+    onFetchMedia,
   });
   useLayoutEffect(() => {
     linkContextRef.current = {
@@ -63,8 +95,17 @@ export default function NomadMicronPageView({
       onDownloadFile,
       onOpenDm,
       onFetchPartial,
+      onFetchMedia,
     };
-  }, [defaultPagePath, selectedHash, onNavigate, onDownloadFile, onOpenDm, onFetchPartial]);
+  }, [
+    defaultPagePath,
+    selectedHash,
+    onNavigate,
+    onDownloadFile,
+    onOpenDm,
+    onFetchPartial,
+    onFetchMedia,
+  ]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -75,6 +116,11 @@ export default function NomadMicronPageView({
       const ctx = linkContextRef.current;
       if (isExternalHttpUrl(destination)) {
         window.open(destination, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      if (isRrcLink(destination)) {
+        openRrcHubFromLink(destination);
         return;
       }
 
@@ -119,7 +165,12 @@ export default function NomadMicronPageView({
         return;
       }
       event.preventDefault();
-      // micron-parser strips lxmf:// from data-destination; href/title keep the scheme.
+      // micron-parser strips lxmf:// / rrc:// from data-destination; href/title keep schemes.
+      const rrcSource = [href, title, dataDestination].find((v) => v && isRrcLink(v));
+      if (rrcSource) {
+        openRrcHubFromLink(rrcSource);
+        return;
+      }
       const lxmfSource = [href, title].find((v) => v && isReticulumLxmfLink(v));
       const destination = (lxmfSource ?? dataDestination) || href;
       if (!destination) return;
@@ -127,6 +178,19 @@ export default function NomadMicronPageView({
       handleNomadLink(destination, dataFields);
     };
     container.addEventListener('click', onActivate);
+
+    const partialMediaAborts: AbortController[] = [];
+    const onPartialLoaded = (event: Event) => {
+      const el = event.target;
+      if (!(el instanceof HTMLElement) || !el.classList.contains('Mu-partial')) return;
+      if (!container.contains(el)) return;
+      const ac = new AbortController();
+      partialMediaAborts.push(ac);
+      const bindOpts = mediaBindOptions(linkContextRef.current, ac.signal);
+      if (!bindOpts) return;
+      void bindNomadMicronMedia(el, bindOpts);
+    };
+    container.addEventListener('partial-loaded', onPartialLoaded);
 
     let unbindPartials: (() => void) | undefined;
     if (linkContextRef.current.onFetchPartial) {
@@ -154,16 +218,32 @@ export default function NomadMicronPageView({
 
     return () => {
       container.removeEventListener('click', onActivate);
+      container.removeEventListener('partial-loaded', onPartialLoaded);
+      for (const ac of partialMediaAborts) ac.abort();
       unbindPartials?.();
     };
   }, [content]);
+
+  // Rebind /media when page content or fetch context changes (hash / path / fetcher).
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !onFetchMedia) return;
+    const ac = new AbortController();
+    const opts = mediaBindOptions({ selectedHash, defaultPagePath, onFetchMedia }, ac.signal);
+    if (opts) void bindNomadMicronMedia(container, opts);
+    return () => {
+      ac.abort();
+    };
+  }, [content, selectedHash, defaultPagePath, onFetchMedia]);
 
   return (
     <div
       ref={containerRef}
       className={[
         'nomad-micron-page text-sm leading-snug text-gray-200',
-        '[&_a]:text-amber-400 [&_a]:underline [&_a:hover]:text-amber-300',
+        // Default link chrome only when Micron did not set an inline color
+        // (so `` `FT020617` `` tips matching #!bg stay invisible).
+        '[&_a]:underline [&_a:not([style*="color"])]:text-amber-400 [&_a:not([style*="color"]):hover]:text-amber-300',
         '[&_hr]:my-3 [&_hr]:border-gray-600',
         '[&_input]:rounded [&_input]:border [&_input]:border-gray-600 [&_input]:bg-slate-900 [&_input]:px-1 [&_input]:text-gray-200',
         fitWidth ? 'nomad-micron-page--fit-width' : null,

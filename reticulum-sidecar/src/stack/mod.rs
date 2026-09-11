@@ -16,6 +16,7 @@ mod lxmf_inbound_log;
 mod nomad_content_source;
 mod nomad_file;
 mod nomad_link_errors;
+mod nomad_link_schedule;
 #[cfg(feature = "rns-stack")]
 mod nomad_request_payload;
 mod nomad_timeouts;
@@ -2844,6 +2845,33 @@ impl StackHandle {
         serde_json::json!({
             "ok": false,
             "error": "nomad file fetch requires live rns-stack sidecar"
+        })
+    }
+
+    pub async fn nomad_media(
+        &self,
+        hash: &str,
+        path: &str,
+        force_path_refresh: bool,
+    ) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live.get() {
+            let interfaces = self.inner.read().await.interfaces.clone();
+            let identity_hash = self.nomad_identity_hash_for(hash).await;
+            return live
+                .fetch_nomad_media(
+                    hash,
+                    identity_hash.as_deref(),
+                    path,
+                    &interfaces,
+                    force_path_refresh,
+                )
+                .await;
+        }
+        let _ = (hash, path, force_path_refresh);
+        serde_json::json!({
+            "ok": false,
+            "error": "nomad media fetch requires live rns-stack sidecar"
         })
     }
 

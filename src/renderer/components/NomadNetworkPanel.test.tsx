@@ -92,6 +92,7 @@ describe('NomadNetworkPanel', () => {
       refreshFromSidecar: vi.fn().mockResolvedValue(undefined),
       fetchNomadPage: vi.fn().mockResolvedValue({ ok: true, content: 'hello' }),
       fetchNomadFile: vi.fn().mockResolvedValue({ ok: true, content_base64: 'aGVsbG8=' }),
+      fetchNomadMedia: vi.fn().mockResolvedValue({ ok: true, content_base64: 'aGVsbG8=' }),
     });
   });
 

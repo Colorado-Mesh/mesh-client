@@ -72,6 +72,25 @@ describe('NomadMicronPageView', () => {
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
+  it('opens RRC hub for rrc:// links instead of navigating', () => {
+    const onNavigate = vi.fn();
+    const listener = vi.fn();
+    window.addEventListener('mesh-client:openRrcHub', listener);
+    const markup = `\`[Hub\`rrc://${LXMF_HASH}/lobby\`*]\``;
+    try {
+      render(<NomadMicronPageView {...defaultProps} onNavigate={onNavigate} content={markup} />);
+      const link = document.querySelector<HTMLElement>('[data-action="openNode"]');
+      expect(link).not.toBeNull();
+      fireEvent.click(link!);
+      expect(onNavigate).not.toHaveBeenCalled();
+      expect(listener).toHaveBeenCalled();
+      const detail = (listener.mock.calls[0][0] as CustomEvent).detail;
+      expect(detail).toMatchObject({ hubHash: LXMF_HASH, room: 'lobby' });
+    } finally {
+      window.removeEventListener('mesh-client:openRrcHub', listener);
+    }
+  });
+
   it('submits Micron form field values on link click', () => {
     const onNavigate = vi.fn();
     const markup = ['`Search:`', '`<20|q`>`', '`[Go`:/page/results.mu`q|mode=search|*]`'].join(
@@ -200,5 +219,72 @@ describe('NomadMicronPageView', () => {
     });
     fireEvent.click(document.querySelector('[data-action="openNode"]')!);
     expect(onNavigate).toHaveBeenCalledWith(defaultProps.selectedHash, '/page/inner.mu', undefined);
+  });
+
+  it('fetches /media via onFetchMedia and sets img src (not onDownloadFile)', async () => {
+    const onFetchMedia = vi.fn().mockResolvedValue({
+      ok: true,
+      content_base64: 'UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA=',
+      file_name: 'demo.webp',
+    });
+    const onDownloadFile = vi.fn();
+    render(
+      <NomadMicronPageView
+        {...defaultProps}
+        onDownloadFile={onDownloadFile}
+        onFetchMedia={onFetchMedia}
+        content="`(Banner`a=c`:/media/demo.webp)"
+      />,
+    );
+
+    await vi.waitFor(() => {
+      const img = document.querySelector<HTMLImageElement>('.nomad-micron-media');
+      expect(img?.getAttribute('src') ?? '').toMatch(/^data:image\/webp;base64,/);
+    });
+    expect(onFetchMedia).toHaveBeenCalledWith(defaultProps.selectedHash, '/media/demo.webp');
+    expect(onDownloadFile).not.toHaveBeenCalled();
+  });
+
+  it('fetches /media placeholders that appear inside loaded partials', async () => {
+    const onFetchMedia = vi.fn().mockResolvedValue({
+      ok: true,
+      content_base64: 'UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA=',
+      file_name: 'inner.webp',
+    });
+    const onFetchPartial = vi.fn().mockResolvedValue({
+      ok: true,
+      content: '`(Inner`a=c`:/media/inner.webp)',
+    });
+    render(
+      <NomadMicronPageView
+        {...defaultProps}
+        onFetchPartial={onFetchPartial}
+        onFetchMedia={onFetchMedia}
+        content="`{:/page/partial.mu}"
+      />,
+    );
+
+    await vi.waitFor(() => {
+      const img = document.querySelector<HTMLImageElement>('.nomad-micron-media');
+      expect(img?.getAttribute('src') ?? '').toMatch(/^data:image\/webp;base64,/);
+    });
+    expect(onFetchMedia).toHaveBeenCalledWith(defaultProps.selectedHash, '/media/inner.webp');
+  });
+
+  it('shows alt notice when onFetchMedia fails', async () => {
+    const onFetchMedia = vi.fn().mockResolvedValue({ ok: false, error: 'link_timeout' });
+    render(
+      <NomadMicronPageView
+        {...defaultProps}
+        onFetchMedia={onFetchMedia}
+        content="`(Banner`a=c`:/media/missing.webp)"
+      />,
+    );
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('.nomad-micron-media-notice')?.textContent).toContain(
+        'Could not load Banner',
+      );
+    });
   });
 });

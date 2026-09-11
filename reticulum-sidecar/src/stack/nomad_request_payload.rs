@@ -1,13 +1,13 @@
 //! Encode NomadNet link request data (`field_*` / `var_*` map) for RNS link REQUEST payloads.
 //!
-//! Wire MessagePack encoding lives in `nomad-core` (`encode_request_fields`).
-//! This module only translates the mesh-client HTTP `data` (base64 JSON) shape.
+//! Wire MessagePack encoding lives in `nomad-core` (`encode_request_fields`,
+//! `encode_media_request`). This module translates mesh-client HTTP shapes.
 
 use std::collections::BTreeMap;
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
-use nomad_core::encode_request_fields;
+use nomad_core::{encode_media_request, encode_request_fields};
 
 /// Decode base64 JSON object into msgpack map bytes for `LinkClient::query` payload.
 pub fn nomad_page_request_payload(data_b64: Option<&str>) -> Vec<u8> {
@@ -21,6 +21,11 @@ pub fn nomad_page_request_payload(data_b64: Option<&str>) -> Vec<u8> {
         return Vec::new();
     };
     encode_request_fields(&fields)
+}
+
+/// Encode NomadNet `/media` request body: msgpack map `{path, key: nil}`.
+pub fn nomad_media_request_payload(path: &str) -> Vec<u8> {
+    encode_media_request(path)
 }
 
 #[cfg(test)]
@@ -63,5 +68,35 @@ mod tests {
         assert!(nomad_page_request_payload(None).is_empty());
         assert!(nomad_page_request_payload(Some("")).is_empty());
         assert!(nomad_page_request_payload(Some("not-base64!!!")).is_empty());
+    }
+
+    #[test]
+    fn media_request_encodes_path_with_nil_key() {
+        let payload = nomad_media_request_payload("/media/header.webp");
+        assert!(!payload.is_empty());
+        let value: rmpv::Value = rmpv::decode::read_value(&mut payload.as_slice()).unwrap();
+        let rmpv::Value::Map(map) = value else {
+            panic!("expected map");
+        };
+        let mut path = None;
+        let mut key_is_nil = false;
+        for (k, v) in map {
+            let name = match k {
+                rmpv::Value::String(s) => s.as_str().map(str::to_owned),
+                _ => None,
+            };
+            match name.as_deref() {
+                Some("path") => {
+                    path = match v {
+                        rmpv::Value::String(s) => s.as_str().map(str::to_owned),
+                        _ => None,
+                    };
+                }
+                Some("key") => key_is_nil = matches!(v, rmpv::Value::Nil),
+                _ => {}
+            }
+        }
+        assert_eq!(path.as_deref(), Some("/media/header.webp"));
+        assert!(key_is_nil, "NomadNet 1.4.1 media requests require key: Nil");
     }
 }

@@ -1188,4 +1188,58 @@ describe('ChatComposer', () => {
       expect(await axe(container)).toHaveNoViolations();
     });
   });
+
+  describe('RRC hub body limits', () => {
+    it('shows a wire-byte counter and splits sends under a hub payloadLimit', async () => {
+      const onSendChunk = vi.fn().mockResolvedValue(undefined);
+      const onInterceptSend = vi.fn().mockResolvedValue(false);
+      render(
+        <ChatComposer
+          protocol="reticulum"
+          viewKey="rrc:hub:general"
+          isConnected
+          allowOutbox={false}
+          payloadLimit={50}
+          useWireByteCount
+          shouldSuppressLimits={() => false}
+          onInterceptSend={onInterceptSend}
+          onSendChunk={onSendChunk}
+          sendButtonLabel="Send"
+        />,
+      );
+      const body = 'a'.repeat(60);
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: body } });
+      expect(await screen.findByRole('button', { name: 'Send 2 parts' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Send 2 parts' }));
+      await waitFor(() => {
+        expect(onSendChunk.mock.calls.length).toBeGreaterThan(1);
+      });
+      expect(onInterceptSend).toHaveBeenCalled();
+    });
+
+    it('intercepts slash commands without calling onSendChunk', async () => {
+      const onSendChunk = vi.fn().mockResolvedValue(undefined);
+      const onInterceptSend = vi.fn().mockResolvedValue(true);
+      render(
+        <ChatComposer
+          protocol="reticulum"
+          viewKey="rrc:hub:general"
+          isConnected
+          allowOutbox={false}
+          payloadLimit={350}
+          useWireByteCount
+          shouldSuppressLimits={() => true}
+          onInterceptSend={onInterceptSend}
+          onSendChunk={onSendChunk}
+          sendButtonLabel="Send"
+        />,
+      );
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: '/help' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+      await waitFor(() => {
+        expect(onInterceptSend).toHaveBeenCalledWith('/help');
+      });
+      expect(onSendChunk).not.toHaveBeenCalled();
+    });
+  });
 });

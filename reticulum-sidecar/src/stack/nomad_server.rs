@@ -227,6 +227,7 @@ impl NomadServerHandle {
                 display_name: display_name.clone(),
                 announce_interval: Some(Duration::from_secs(DEFAULT_ANNOUNCE_INTERVAL_SECS)),
                 announce_at_start: true,
+                allow_executable_pages: false,
             },
         )
         .await
@@ -304,6 +305,33 @@ impl NomadServerHandle {
             }
         };
         Some(read.map_err(|e| e.to_string()))
+    }
+
+    /// Local preview for NomadNet `/media` WebP under `pages/` (same jail as remote serve).
+    pub async fn try_read_local_media(
+        &self,
+        dest_hash: &str,
+        media_path: &str,
+    ) -> Option<Result<Vec<u8>, String>> {
+        let guard = self.inner.lock().await;
+        let node = guard.as_ref()?;
+        let local = node.destination_hash_hex();
+        let clean = dest_hash
+            .chars()
+            .filter(char::is_ascii_hexdigit)
+            .collect::<String>();
+        if !local.eq_ignore_ascii_case(&clean) {
+            return None;
+        }
+        let rel = media_path
+            .trim()
+            .strip_prefix("/media/")
+            .unwrap_or(media_path.trim())
+            .trim_start_matches('/');
+        if rel.is_empty() {
+            return Some(Err("invalid_media_path".into()));
+        }
+        Some(node.store().read_media_rel(rel).map_err(|e| e.to_string()))
     }
 
     pub async fn list_pages(&self) -> Result<Vec<nomad_core::NomadPageEntry>, String> {

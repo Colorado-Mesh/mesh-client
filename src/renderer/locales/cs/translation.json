@@ -770,7 +770,9 @@
     "heardByRepeatersDetail_few": "Slyšeno {{count}}: {{names}}",
     "searchResults_few": "{{count}} výsledky",
     "reticulumSendAwaitingPeerReceipt": "Odesláno (čeká se na potvrzení od kolegy)",
-    "reticulumChatNeedsLxmfDelivery": "Tento protějšek zatím nemá doručovací adresu LXMF (Chat nemůže používat cíl pouze pro hlas). Počkejte na oznámení LXMF nebo vložte jeho 32místný hash LXMF."
+    "reticulumChatNeedsLxmfDelivery": "Tento protějšek zatím nemá doručovací adresu LXMF (Chat nemůže používat cíl pouze pro hlas). Počkejte na oznámení LXMF nebo vložte jeho 32místný hash LXMF.",
+    "saveAttachment": "Uložit...",
+    "revealAttachment": "Zobrazit ve složce"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -1331,7 +1333,19 @@
       "fieldNotANumber": "Zadejte celé číslo (pouze číslice).",
       "fieldOutOfRange": "Hodnota je mimo povolený rozsah.",
       "fieldTooLong": "Hodnota je příliš dlouhá.",
-      "fieldInvalidOption": "Nepodporovaná hodnota."
+      "fieldInvalidOption": "Nepodporovaná hodnota.",
+      "profilesTitle": "Interface profiles",
+      "profilesHint": "Named enable-sets for which interfaces are on. Switching a profile enables its members and disables the rest.",
+      "profilesEmpty": "No profiles yet. Save the current enable-set to create one.",
+      "profilesDefault": "Default",
+      "profilesUnnamed": "(unnamed)",
+      "profilesNamePlaceholder": "Profile name",
+      "profilesSaveCurrent": "Save current",
+      "profilesCreateEmpty": "New empty",
+      "profilesRename": "Rename",
+      "profilesSaveRename": "Save",
+      "profilesDelete": "Delete",
+      "profilesRenameAria": "Rename profile {{name}}"
     },
     "reticulumPeers": {
       "hops": "Skoky",
@@ -3456,7 +3470,9 @@
     "pageProgressFailoverIface": "Zkusit jinou trasu přes {{iface}}…",
     "pageProgressFailoverGeneric": "Zkouším jinou trasu...",
     "pageProgressNoAlternate": "Žádné jiné trasy nejsou k dispozici — dokončení tohoto pokusu...",
-    "hopsAway_few": "{{count}} skoky daleko"
+    "hopsAway_few": "{{count}} skoky daleko",
+    "downloadFile": "Stáhnout",
+    "dismissPreview": "Zamítnout"
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",
@@ -5406,7 +5422,17 @@
     "addressChoiceDm": "Přímá zpráva",
     "hopsAway_few": "{{count}} skoky daleko",
     "memberCount_few": "{{count}} členové",
-    "userCount_few": "{{count}} uživatelé"
+    "userCount_few": "{{count}} uživatelé",
+    "byteLimit": {
+      "approaching": "{{count}} / {{limit}}",
+      "overMax": "Zpráva je příliš dlouhá — limit rozbočovače je {{limit}} bajtů"
+    },
+    "nickLimit": {
+      "overMax": "Přezdívka je příliš dlouhá — limit rozbočovače je {{limit}} bajtů"
+    },
+    "roomNameLimit": {
+      "overMax": "Název místnosti je příliš dlouhý — limit rozbočovače je {{limit}} bajtů"
+    }
   },
   "signalMeter": {
     "rssi": "\"RSSI\"",

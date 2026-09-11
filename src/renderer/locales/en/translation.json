@@ -496,6 +496,8 @@
     "sendButton": "Send",
     "sendButtonDm": "DM",
     "sendButtonSending": "...",
+    "saveAttachment": "Save…",
+    "revealAttachment": "Show in folder",
     "waitingMessagesQueued": "{{count}} queued message(s) on radio",
     "waitingMessagesSyncProgress": "Syncing {{processed}} / {{total}} from radio…",
     "waitingMessagesSyncProgressIndeterminate": "Syncing queued messages from radio…",
@@ -1165,6 +1167,18 @@
       "seedAddressesPlaceholder": "AA:BB:CC:DD:EE:FF",
       "rowSummary": "{{name}} ({{type}}) — {{status}}",
       "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
+      "profilesTitle": "Interface profiles",
+      "profilesHint": "Named enable-sets for which interfaces are on. Switching a profile enables its members and disables the rest.",
+      "profilesEmpty": "No profiles yet. Save the current enable-set to create one.",
+      "profilesDefault": "Default",
+      "profilesUnnamed": "(unnamed)",
+      "profilesNamePlaceholder": "Profile name",
+      "profilesSaveCurrent": "Save current",
+      "profilesCreateEmpty": "New empty",
+      "profilesRename": "Rename",
+      "profilesSaveRename": "Save",
+      "profilesDelete": "Delete",
+      "profilesRenameAria": "Rename profile {{name}}",
       "mode": "Mode",
       "modeAria": "Interface mode",
       "modeHint": "Controls how this interface joins the wider network (path seeking, announce propagation). On add, Type default is Boundary for TCP/UDP/I2P hubs and Access point for RNodes. On edit, Default (clear) omits mode (RNS Full).",
@@ -3458,6 +3472,8 @@
     "pageLoadingCountdownOverdue": "Loading page… still working",
     "pageLoadingRetryCountdown": "First attempt timed out — refreshing path and retrying… {{time}} left",
     "pageLoadingRetryOverdue": "Refreshing path and retrying… still working",
+    "downloadFile": "Download",
+    "dismissPreview": "Dismiss",
     "pageLoadingTimeLeft": "{{time}} left on this attempt",
     "pageLoadingStillWorking": "Still working…",
     "pageProgressLinking": "Connecting via {{iface}} ({{hops}} hops)…",
@@ -5534,6 +5550,16 @@
     "dismissBanner": "Dismiss notice",
     "directNoticeUnsupported": "This hub does not support direct NOTICE (/msg).",
     "capDirectNotice": "direct msg",
+    "byteLimit": {
+      "approaching": "{{count}} / {{limit}}",
+      "overMax": "Message too long — hub limit is {{limit}} bytes"
+    },
+    "nickLimit": {
+      "overMax": "Nickname too long — hub limit is {{limit}} bytes"
+    },
+    "roomNameLimit": {
+      "overMax": "Room name too long — hub limit is {{limit}} bytes"
+    },
     "errors": {
       "linkProofTimeout": "Timed out waiting for the hub link (link proof). Try again, or check path/hops to the hub.",
       "pathTimeout": "Could not find a path to the hub. Wait for a fresher announce, then reconnect.",

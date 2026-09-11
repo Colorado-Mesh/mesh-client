@@ -750,7 +750,9 @@
     "heardByRepeatersAdditional_one": "{{count}}追加の未確認フォワーダー（ハッシュ： {{hashes}} ）",
     "heardByRepeatersAdditional_other": "{{count}}追加の未確認フォワーダー（ハッシュ： {{hashes}} ）",
     "reticulumSendAwaitingPeerReceipt": "送信済み（ピアレシート待ち）",
-    "reticulumChatNeedsLxmfDelivery": "このピアにはまだLXMF配信アドレスがありません（チャットは音声のみの宛先を使用できません）。LXMFの発表を待つか、32文字のLXMFハッシュを貼り付けます。"
+    "reticulumChatNeedsLxmfDelivery": "このピアにはまだLXMF配信アドレスがありません（チャットは音声のみの宛先を使用できません）。LXMFの発表を待つか、32文字のLXMFハッシュを貼り付けます。",
+    "saveAttachment": "保存...",
+    "revealAttachment": "フォルダを表示"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -1312,7 +1314,19 @@
       "fieldNotANumber": "整数（数字のみ）を入力してください。",
       "fieldOutOfRange": "値が許容範囲外です。",
       "fieldTooLong": "値が長すぎます。",
-      "fieldInvalidOption": "サポートされていない値です。"
+      "fieldInvalidOption": "サポートされていない値です。",
+      "profilesTitle": "Interface profiles",
+      "profilesHint": "Named enable-sets for which interfaces are on. Switching a profile enables its members and disables the rest.",
+      "profilesEmpty": "No profiles yet. Save the current enable-set to create one.",
+      "profilesDefault": "Default",
+      "profilesUnnamed": "(unnamed)",
+      "profilesNamePlaceholder": "Profile name",
+      "profilesSaveCurrent": "Save current",
+      "profilesCreateEmpty": "New empty",
+      "profilesRename": "Rename",
+      "profilesSaveRename": "Save",
+      "profilesDelete": "Delete",
+      "profilesRenameAria": "Rename profile {{name}}"
     },
     "reticulumPeers": {
       "hops": "ホップ",
@@ -3416,7 +3430,9 @@
     "pageProgressFailover": "{{iface}} （ {{hops}}ホップ）経由で別のルートを試しています…",
     "pageProgressFailoverIface": "{{iface}}経由で別のルートを試しています…",
     "pageProgressFailoverGeneric": "別のルートを試しています…",
-    "pageProgressNoAlternate": "他に利用可能なルートはありません—この試みを終了しています…"
+    "pageProgressNoAlternate": "他に利用可能なルートはありません—この試みを終了しています…",
+    "downloadFile": "ダウンロード",
+    "dismissPreview": "却下"
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",
@@ -5360,7 +5376,17 @@
     "addressChoiceTitle": "Reticulum アドレスを開く",
     "addressChoiceMessage": "{{address}} は Nomad ページかピアの可能性があります。どちらを開きますか？",
     "addressChoiceNomad": "Nomad ページ",
-    "addressChoiceDm": "ダイレクトメッセージ"
+    "addressChoiceDm": "ダイレクトメッセージ",
+    "byteLimit": {
+      "approaching": "{{count}}/{{limit}}",
+      "overMax": "メッセージが長すぎます—ハブの制限は{{limit}}バイトです"
+    },
+    "nickLimit": {
+      "overMax": "ニックネームが長すぎます—ハブの制限は{{limit}}バイトです"
+    },
+    "roomNameLimit": {
+      "overMax": "ルーム名が長すぎます—ハブの制限は{{limit}}バイトです"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

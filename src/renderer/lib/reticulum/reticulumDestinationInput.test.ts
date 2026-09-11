@@ -141,4 +141,49 @@ describe('openReticulumDmFromHash', () => {
     });
     expect(() => openReticulumDmFromHash(telephony)).toThrow(ReticulumChatMissingLxmfError);
   });
+
+  it('opens identity hash on the LXMF fold when lxmf.delivery is known', () => {
+    const identity = '0f79468863d76b3ba574baa92606ffcb';
+    const lxmf = 'e3359f1314aff4fb6261400a8202149b';
+    useReticulumIdentityActivityStore.setState({
+      byDestination: new Map([
+        [
+          lxmf,
+          [
+            {
+              destination_hash: lxmf,
+              aspect: 'lxmf.delivery',
+              identity_hash: identity,
+              last_seen: 1,
+            },
+          ],
+        ],
+      ]),
+    });
+    const fromIdentity = openReticulumDmFromHash(identity);
+    const fromLxmf = openReticulumDmFromHash(lxmf);
+    expect(fromIdentity).toBe(fromLxmf);
+    expect(resolveReticulumDestinationHash(fromIdentity)).toBe(lxmf);
+  });
+
+  it('throws ReticulumChatMissingLxmfError when identity has no lxmf.delivery', () => {
+    const identity = '0f79468863d76b3ba574baa92606ffcb';
+    const telephony = 'ab1d53d6923d6983dfb4451e3869b878';
+    useReticulumIdentityActivityStore.setState({
+      byDestination: new Map([
+        [
+          telephony,
+          [
+            {
+              destination_hash: telephony,
+              aspect: 'lxst.telephony',
+              identity_hash: identity,
+              last_seen: 1,
+            },
+          ],
+        ],
+      ]),
+    });
+    expect(() => openReticulumDmFromHash(identity)).toThrow(ReticulumChatMissingLxmfError);
+  });
 });

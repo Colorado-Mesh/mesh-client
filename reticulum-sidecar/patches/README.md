@@ -2,15 +2,17 @@
 
 Patches applied on top of [ratspeak/rsReticulum](https://github.com/ratspeak/rsReticulum) / [ratspeak/rsLXMF](https://github.com/ratspeak/rsLXMF) checkouts for mesh-client `rns-stack` builds (`.rsstack/rsNomad` from [Colorado-Mesh/rsNomad](https://github.com/Colorado-Mesh/rsNomad) is also required for Nomad hosting; no mesh-client overlay today). Checkouts live in the repo-local `.rsstack/` gitignored workspace, keeping a standalone `rsReticulum` mirror (if present) pristine.
 
-By default `scripts/clone-ratspeak-stack.sh` floats the `.rsstack/` checkouts to **`origin/main`** and applies these overlays (fails loud if a patch will not apply). Use `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` to pin a known-good SHA for bisect. Per-overlay **Base commit** tables below record the last regeneration baseline, not a permanent pin — when regenerating, prefer floated `origin/main` and record the short SHA in the PR.
+By default `scripts/clone-ratspeak-stack.sh` floats the `.rsstack/` checkouts to **`origin/main`** and applies these overlays (fails loud if a patch will not apply). Use `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` only as a manual bisect escape hatch — CI and `pnpm run update` never pin Ratspeak SHAs. Per-overlay **Base commit** tables below record the last regeneration baseline, not a permanent pin — when regenerating, prefer floated `origin/main` and record the short SHA in the PR.
+
+Open upstream feature PRs that mesh-client needs before they land on `main` (for example [rsReticulum#26](https://github.com/ratspeak/rsReticulum/pull/26) ReplyFile, [rsLXMF#7](https://github.com/ratspeak/rsLXMF/pull/7) multi-file attachments) are carried as **overlays** below — same apply path as other patches. `pnpm run update` tracks them in `RATSPEAK_PATCH_ENTRIES` and warns when the upstream PR merges so the overlay can be removed. Colorado-Mesh/rsNomad floats `origin/main` with **no** mesh-client overlay (NomadNet `/media` is already on main).
 
 ## Development — overlays/patches
 
 Overlays require **git checkouts** in the repo-local `.rsstack/` workspace (not a bare Cargo cache path):
 
-- `.rsstack/rsReticulum` — floated to `origin/main` unless `RS_RETICULUM_REF` is set
-- `.rsstack/rsLXMF` — floated to `origin/main` unless `RS_LXMF_REF` is set
-- `.rsstack/rsNomad` — floated to `origin/main` unless `RS_NOMAD_REF` is set
+- `.rsstack/rsReticulum` — floated to `origin/main` unless `RS_RETICULUM_REF` is set (bisect only)
+- `.rsstack/rsLXMF` — floated to `origin/main` unless `RS_LXMF_REF` is set (bisect only)
+- `.rsstack/rsNomad` — floated to `origin/main` unless `RS_NOMAD_REF` is set (bisect only)
 
 **First-time setup:**
 
@@ -29,6 +31,43 @@ git -C .rsstack/rsReticulum status --short
 ```
 
 If a patch is skipped or conflicts after an upstream bump, CI/`ensure-rsReticulum-patches.sh` will fail. Rebase the overlay, regenerate the `.patch` file per the section below, then re-run the apply script.
+
+## rsReticulum-reply-file-query-metadata.patch
+
+Carry [ratspeak/rsReticulum#26](https://github.com/ratspeak/rsReticulum/pull/26) on floated `origin/main`: `RequestOutcome::ReplyFile`, `pack_file_name_metadata`, 4-arg `set_request_handler_ex` (remote identity), and `LinkClient::query` Resource metadata. Required for Colorado-Mesh/rsNomad NomadNet `/file` and `/media` response Resources.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | `9bc7ee5ff9caf04cfb3ba5a50bd19394aeaf9d33` (`ratspeak/rsReticulum` `origin/main`) |
+| **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/26 |
+
+**Adds (8 files):**
+
+- `crates/rns-runtime/src/link_manager.rs` — `ReplyFile`, `pack_file_name_metadata`, handler remote identity
+- `crates/rns-runtime/src/link_client.rs` — query metadata / `LinkQueryResponse`
+- `crates/rns-runtime/src/{lib,reticulum,rncp}.rs` — re-exports and call sites
+- `crates/rns-tools/src/commands/{rnpath,rnstatus}.rs` — tool updates
+- `api/snapshots/rns-runtime.txt` — API snapshot
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-reply-file-query-metadata.sh
+```
+
+### Regenerate
+
+```bash
+# From a clean floated main checkout matching Base commit (or newer tip):
+gh pr diff 26 --repo ratspeak/rsReticulum \
+  > reticulum-sidecar/patches/rsReticulum-reply-file-query-metadata.patch
+git -C .rsstack/rsReticulum apply --check \
+  "$(pwd)/reticulum-sidecar/patches/rsReticulum-reply-file-query-metadata.patch"
+```
+
+### Sunset
+
+When [ratspeak/rsReticulum#26](https://github.com/ratspeak/rsReticulum/pull/26) merges and floated `origin/main` includes it, remove this patch, `scripts/apply-rsReticulum-reply-file-query-metadata.sh`, the apply-list entry, and the `RATSPEAK_PATCH_ENTRIES` row.
 
 ## rsReticulum-packet-tap.patch
 
@@ -267,6 +306,39 @@ git diff -- \
 ### Sunset
 
 When [ratspeak/rsReticulum#19](https://github.com/ratspeak/rsReticulum/pull/19) merges and floated `origin/main` includes it, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
+
+## rsLXMF-file-attachments-list.patch
+
+Carry [ratspeak/rsLXMF#7](https://github.com/ratspeak/rsLXMF/pull/7) on floated `origin/main`: multi-file `set_file_attachments_field` / `file_attachments` (single-file helper remains).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | `e609864d8898d70d0a67072e527aa012055edcab` (`ratspeak/rsLXMF` `origin/main`) |
+| **Upstream PR** | https://github.com/ratspeak/rsLXMF/pull/7 |
+
+**Adds (2 files):**
+
+- `crates/lxmf-core/src/message.rs` — multi-file attachment pack/list APIs + tests
+- `README.md` — field table for typed media setters
+
+### Apply locally
+
+```bash
+./scripts/apply-rsLXMF-file-attachments-list.sh
+```
+
+### Regenerate
+
+```bash
+gh pr diff 7 --repo ratspeak/rsLXMF \
+  > reticulum-sidecar/patches/rsLXMF-file-attachments-list.patch
+git -C .rsstack/rsLXMF apply --check \
+  "$(pwd)/reticulum-sidecar/patches/rsLXMF-file-attachments-list.patch"
+```
+
+### Sunset
+
+When [ratspeak/rsLXMF#7](https://github.com/ratspeak/rsLXMF/pull/7) merges and floated `origin/main` includes it, remove this patch, `scripts/apply-rsLXMF-file-attachments-list.sh`, the apply-list entry, and the `RATSPEAK_PATCH_ENTRIES` row.
 
 ## rsLXMF-propagation-sync-peering.patch
 

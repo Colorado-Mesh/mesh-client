@@ -25,6 +25,7 @@ import {
 import type {
   RrcChatMessage,
   RrcHubCapabilities,
+  RrcHubLimits,
   RrcListedRoom,
   RrcRoomInfo,
   RrcRoomMember,
@@ -127,6 +128,8 @@ export interface RrcHubSessionState {
   status: RrcSessionStatus;
   hubName: string | null;
   capabilities: RrcHubCapabilities;
+  /** WELCOME hub operational limits (bytes / rates). */
+  limits: RrcHubLimits;
   rooms: Map<string, RrcRoomInfo>;
   listedRooms: RrcListedRoom[];
   activeRoom: string | null;
@@ -151,6 +154,7 @@ export function emptyHubSession(): RrcHubSessionState {
     status: 'disconnected',
     hubName: null,
     capabilities: {},
+    limits: {},
     rooms: new Map(),
     listedRooms: [],
     activeRoom: null,
@@ -183,6 +187,7 @@ function mirrorFromSession(
   | 'status'
   | 'hubName'
   | 'capabilities'
+  | 'limits'
   | 'rooms'
   | 'listedRooms'
   | 'activeRoom'
@@ -197,6 +202,7 @@ function mirrorFromSession(
     status: session.status,
     hubName: session.hubName,
     capabilities: session.capabilities,
+    limits: session.limits,
     rooms: session.rooms,
     listedRooms: session.listedRooms,
     activeRoom: session.activeRoom,
@@ -328,6 +334,7 @@ interface RrcSessionStoreState {
   hubDestHash: string | null;
   hubName: string | null;
   capabilities: RrcHubCapabilities;
+  limits: RrcHubLimits;
   rooms: Map<string, RrcRoomInfo>;
   listedRooms: RrcListedRoom[];
   activeRoom: string | null;
@@ -346,6 +353,7 @@ interface RrcSessionStoreState {
   setActiveRoom: (room: string | null, hubHash?: string) => void;
   setShowTimestamps: (show: boolean) => void;
   setCapabilities: (caps: RrcHubCapabilities, hubHash?: string) => void;
+  setLimits: (limits: RrcHubLimits, hubHash?: string) => void;
   setListedRooms: (rooms: RrcListedRoom[], hubHash?: string) => void;
   setRoomTopic: (room: string, topic: string | null, hubHash?: string) => void;
   mergeRoomMembers: (
@@ -474,6 +482,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   hubDestHash: null,
   hubName: null,
   capabilities: {},
+  limits: {},
   rooms: new Map(),
   listedRooms: [],
   activeRoom: null,
@@ -524,6 +533,10 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
 
   setCapabilities: (caps, hubHash) => {
     set((s) => mutateHubSession(s, hubHash, (session) => ({ ...session, capabilities: caps })));
+  },
+
+  setLimits: (limits, hubHash) => {
+    set((s) => mutateHubSession(s, hubHash, (session) => ({ ...session, limits })));
   },
 
   setListedRooms: (rooms, hubHash) => {

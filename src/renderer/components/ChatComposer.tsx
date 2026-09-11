@@ -57,9 +57,13 @@ import {
 import { isMeshcoreSendTooFast, recordMeshcoreSend } from '../lib/meshcoreSendRateNotice';
 import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
 import { useRadioProvider } from '../lib/radio/providerFactory';
+import { insertRrcNickMention, nextRrcNickCompleteIndex } from '../lib/rrcNickComplete';
 import { MESHCORE_FAST_SEND_WARN_INTERVAL_MS } from '../lib/timeConstants';
 import { HelpTooltip } from './HelpTooltip';
-import MentionAutocomplete, { buildMentionCandidates } from './MentionAutocomplete';
+import MentionAutocomplete, {
+  buildMentionCandidates,
+  type MentionCandidate,
+} from './MentionAutocomplete';
 import { useToast } from './Toast';
 
 /**
@@ -196,6 +200,28 @@ export interface ChatComposerProps {
   /** When set, renders a mic button that triggers voice memo recording. */
   onVoiceMemo?: () => void;
   className?: string;
+  /**
+   * When provided and returns true, ChatComposer clears the draft and skips split/send
+   * (RRC slash commands handled by the panel).
+   */
+  onInterceptSend?: (text: string) => Promise<boolean>;
+  /** Count approaching/warn using UTF-8 wire bytes (RRC hub body limits). */
+  useWireByteCount?: boolean;
+  /** Hide split/overMax chrome for this draft (RRC slash bypass). */
+  shouldSuppressLimits?: (text: string) => boolean;
+  /**
+   * Alternate @mention completion (RRC IRC nicks). When set, replaces MeshNode lookup
+   * and default `@[name] ` insert format.
+   */
+  mentionAdapter?: {
+    findAtCaret: (text: string, caret: number) => { start: number; query: string } | null;
+    buildCandidates: (query: string) => MentionCandidate[];
+    formatInsert: (name: string) => string;
+  };
+  /**
+   * When `token` changes, replace the composer input (e.g. RRC nicklist → `/msg nick `).
+   */
+  composeSeed?: { text: string; token: number } | null;
 }
 
 export function ChatComposer({
@@ -230,6 +256,11 @@ export function ChatComposer({
   textareaRef,
   onVoiceMemo,
   className,
+  onInterceptSend,
+  useWireByteCount = false,
+  shouldSuppressLimits,
+  mentionAdapter,
+  composeSeed,
 }: ChatComposerProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
@@ -270,6 +301,10 @@ export function ChatComposer({
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionTriggerPos, setMentionTriggerPos] = useState(0);
   const [mentionSelectedIdx, setMentionSelectedIdx] = useState(0);
+  /** RRC Tab cycle: original `@` query while cycling through matches. */
+  const [mentionCyclePrefix, setMentionCyclePrefix] = useState<string | null>(null);
+  const [mentionInsertedNickLen, setMentionInsertedNickLen] = useState(0);
+  const [mentionTabCycleIndex, setMentionTabCycleIndex] = useState(-1);
   const [meshcoreFastSendWarn, setMeshcoreFastSendWarn] = useState(false);
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -291,6 +326,12 @@ export function ChatComposer({
     setFloodScopeCustomEditing(false);
     setFloodScopeCustomDraft('');
     setFloodScopeCustomError(null);
+  }, []);
+
+  const clearMentionCycle = useCallback(() => {
+    setMentionCyclePrefix(null);
+    setMentionInsertedNickLen(0);
+    setMentionTabCycleIndex(-1);
   }, []);
 
   const persistFloodScopeOverride = useCallback(
@@ -381,6 +422,8 @@ export function ChatComposer({
       ? replyTo.reticulum_message_hash
       : undefined;
 
+  const suppressLimits = shouldSuppressLimits?.(input) ?? false;
+
   const limitStatus = useMemo(
     () =>
       computeComposerLimitStatus(input, protocol, {
@@ -390,6 +433,8 @@ export function ChatComposer({
         replyToSenderName,
         replyKey,
         useKeyedReplies: meshcoreOpenWireCompat,
+        useWireByteCount,
+        suppressLimits,
       }),
     [
       input,
@@ -400,6 +445,8 @@ export function ChatComposer({
       replyToSenderName,
       replyKey,
       meshcoreOpenWireCompat,
+      useWireByteCount,
+      suppressLimits,
     ],
   );
 
@@ -468,37 +515,55 @@ export function ChatComposer({
     }
     setMentionQuery(null);
     setChatActionError(null);
+    clearMentionCycle();
     // Clear any lingering fast-send advisory when switching chat views.
     if (meshcoreFastSendWarnTimerRef.current) {
       clearTimeout(meshcoreFastSendWarnTimerRef.current);
       meshcoreFastSendWarnTimerRef.current = null;
     }
     setMeshcoreFastSendWarn(false);
-  }, [viewKey, protocol, showFloodScopeOverride]);
+  }, [viewKey, protocol, showFloodScopeOverride, clearMentionCycle]);
 
-  const mentionCandidates = useMemo(
-    () => (mentionQuery != null ? buildMentionCandidates(nodes, protocol, mentionQuery) : []),
-    [mentionQuery, nodes, protocol],
-  );
+  // Apply nicklist `/msg` seeds without an effect (avoids set-state-in-effect).
+  const [appliedComposeSeedToken, setAppliedComposeSeedToken] = useState<number | null>(null);
+  if (composeSeed && composeSeed.token !== appliedComposeSeedToken) {
+    setAppliedComposeSeedToken(composeSeed.token);
+    setInput(composeSeed.text);
+    setMentionQuery(null);
+    setChatActionError(null);
+    setMentionCyclePrefix(null);
+    setMentionInsertedNickLen(0);
+    setMentionTabCycleIndex(-1);
+  }
+
+  const mentionCandidates = useMemo(() => {
+    if (mentionQuery == null) return [];
+    const queryForBuild =
+      mentionAdapter && mentionCyclePrefix != null ? mentionCyclePrefix : mentionQuery;
+    return mentionAdapter
+      ? mentionAdapter.buildCandidates(queryForBuild)
+      : buildMentionCandidates(nodes, protocol, mentionQuery);
+  }, [mentionQuery, mentionCyclePrefix, mentionAdapter, nodes, protocol]);
 
   const insertMention = useCallback(
     (name: string) => {
       const textarea = inputRef.current;
       const currentInput = inputValueRef.current;
-      const insert = `@[${name}] `;
+      const insert = mentionAdapter ? mentionAdapter.formatInsert(name) : `@[${name}] `;
       const before = currentInput.slice(0, mentionTriggerPos);
       const after = currentInput.slice(mentionTriggerPos + (mentionQuery?.length ?? 0) + 1);
       const newVal = before + insert + after;
       if (newVal.length > maxInputLength) return;
       setInput(newVal);
       setMentionQuery(null);
+      clearMentionCycle();
       requestAnimationFrame(() => {
         const newCursor = mentionTriggerPos + insert.length;
         textarea?.focus();
         textarea?.setSelectionRange(newCursor, newCursor);
       });
     },
-    [maxInputLength, mentionTriggerPos, mentionQuery],
+    [clearMentionCycle, maxInputLength, mentionAdapter, mentionTriggerPos, mentionQuery],
   );
 
   const clearSentDraft = useCallback(
@@ -568,15 +633,45 @@ export function ChatComposer({
       const gifWire = normalizeMeshcoreGifOutboundWire(trimmedSend);
       if (gifWire != null) trimmedSend = gifWire;
     }
-    const chunks = splitChatMessage(
-      trimmedSend,
-      protocol,
-      limitStatus.singleMessageLimit,
-      wireOverheadFirstChunk,
-    );
-    if (chunks === null) return;
-
-    const textsToSend = chunks.length === 0 ? [trimmedSend] : chunks;
+    if (onInterceptSend) {
+      setSending(true);
+      setChatActionError(null);
+      try {
+        const handled = await onInterceptSend(trimmedSend);
+        if (handled) {
+          clearSentDraft(draftSnapshot);
+          setMentionQuery(null);
+          onReplyClear?.();
+          onSendSuccess?.();
+          return;
+        }
+      } catch (err) {
+        console.error('[ChatComposer] Intercept send failed: ' + errLikeToLogString(err));
+        const fallback =
+          variant === 'room' ? t('roomsPanel.postFailed') : t('chatPanel.sendFailed');
+        setChatActionError({
+          message: err instanceof Error ? err.message : fallback,
+          viewKey,
+        });
+        return;
+      } finally {
+        setSending(false);
+      }
+    }
+    // suppressLimits: slash / no hub cap — never multi-part split this draft.
+    let textsToSend: string[];
+    if (suppressLimits) {
+      textsToSend = [trimmedSend];
+    } else {
+      const chunks = splitChatMessage(
+        trimmedSend,
+        protocol,
+        limitStatus.singleMessageLimit,
+        wireOverheadFirstChunk,
+      );
+      if (chunks === null) return;
+      textsToSend = chunks.length === 0 ? [trimmedSend] : chunks;
+    }
 
     if (replyTo && protocol === 'meshtastic' && (replyKey == null || replyKey === 0)) {
       setChatActionError({
@@ -699,6 +794,7 @@ export function ChatComposer({
     isConnected,
     isMqttOnly,
     limitStatus.singleMessageLimit,
+    onInterceptSend,
     onReplyClear,
     onSendChunk,
     onSendSuccess,
@@ -719,6 +815,7 @@ export function ChatComposer({
     meshcoreOpenWireCompat,
     tracksSendCadence,
     finishSendCadence,
+    suppressLimits,
   ]);
 
   const sendGifWire = useCallback(
@@ -896,6 +993,42 @@ export function ChatComposer({
           setMentionSelectedIdx((i) => Math.max(0, i - 1));
           return;
         }
+        if (e.key === 'Tab' && mentionAdapter) {
+          e.preventDefault();
+          const cycling = mentionCyclePrefix != null;
+          const prefix = cycling ? mentionCyclePrefix : mentionQuery;
+          const names = mentionAdapter.buildCandidates(prefix).map((c) => c.name);
+          if (names.length === 0) return;
+          const nextIdx = nextRrcNickCompleteIndex(
+            names,
+            cycling ? mentionTabCycleIndex : -1,
+            e.shiftKey,
+          );
+          if (nextIdx < 0) return;
+          const nick = names[nextIdx];
+          if (!nick) return;
+          const replaceLen = cycling ? mentionInsertedNickLen : mentionQuery.length;
+          const { text, caret } = insertRrcNickMention(
+            inputValueRef.current,
+            mentionTriggerPos,
+            replaceLen,
+            nick,
+          );
+          if (text.length > maxInputLength) return;
+          if (!cycling) setMentionCyclePrefix(mentionQuery);
+          setMentionInsertedNickLen(nick.length);
+          setMentionTabCycleIndex(nextIdx);
+          setMentionSelectedIdx(nextIdx);
+          setInput(text);
+          // Keep the list open while Tab/Shift+Tab cycles (do not clear mentionQuery).
+          setMentionQuery(nick);
+          requestAnimationFrame(() => {
+            const textarea = inputRef.current;
+            textarea?.focus();
+            textarea?.setSelectionRange(caret, caret);
+          });
+          return;
+        }
         if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
           e.preventDefault();
           const candidate = mentionCandidates[mentionSelectedIdx];
@@ -908,7 +1041,19 @@ export function ChatComposer({
         void handleSend();
       }
     },
-    [handleSend, insertMention, mentionCandidates, mentionQuery, mentionSelectedIdx],
+    [
+      handleSend,
+      insertMention,
+      maxInputLength,
+      mentionAdapter,
+      mentionCandidates,
+      mentionCyclePrefix,
+      mentionInsertedNickLen,
+      mentionQuery,
+      mentionSelectedIdx,
+      mentionTabCycleIndex,
+      mentionTriggerPos,
+    ],
   );
 
   useEffect(() => {
@@ -1234,13 +1379,26 @@ export function ChatComposer({
               const val = e.target.value;
               setInput(val);
               setChatActionError(null);
-              const match = /@(\w*)$/.exec(val);
-              if (match) {
-                setMentionQuery(match[1]);
-                setMentionTriggerPos(val.length - match[0].length);
-                setMentionSelectedIdx(0);
+              clearMentionCycle();
+              if (mentionAdapter) {
+                const caret = e.target.selectionStart ?? val.length;
+                const at = mentionAdapter.findAtCaret(val, caret);
+                if (at) {
+                  setMentionQuery(at.query);
+                  setMentionTriggerPos(at.start);
+                  setMentionSelectedIdx(0);
+                } else {
+                  setMentionQuery(null);
+                }
               } else {
-                setMentionQuery(null);
+                const match = /@(\w*)$/.exec(val);
+                if (match) {
+                  setMentionQuery(match[1]);
+                  setMentionTriggerPos(val.length - match[0].length);
+                  setMentionSelectedIdx(0);
+                } else {
+                  setMentionQuery(null);
+                }
               }
             }}
             onKeyDown={handleKeyDown}
@@ -1257,7 +1415,7 @@ export function ChatComposer({
             aria-busy={sending}
             disabled={disabled || (!isConnected && !allowOutbox)}
             className={`${textareaClass} ${!isConnected ? 'opacity-60' : ''} ${disabled ? 'opacity-40' : ''}`}
-            maxLength={maxInputLength}
+            maxLength={suppressLimits ? undefined : maxInputLength}
           />
         </div>
         <HelpTooltip text={t('chatPanel.insertEmoji')}>
@@ -1326,7 +1484,9 @@ export function ChatComposer({
               onClick={() => {
                 void handleSend();
               }}
-              disabled={!input.trim() || sending || inputChunks === null || disabled}
+              disabled={
+                !input.trim() || sending || (!suppressLimits && inputChunks === null) || disabled
+              }
               aria-label={sendLabel}
               className={sendButtonSplitMainClass}
             >
@@ -1546,7 +1706,9 @@ export function ChatComposer({
               onClick={() => {
                 void handleSend();
               }}
-              disabled={!input.trim() || sending || inputChunks === null || disabled}
+              disabled={
+                !input.trim() || sending || (!suppressLimits && inputChunks === null) || disabled
+              }
               aria-label={sendLabel}
               className={sendButtonClass}
             >

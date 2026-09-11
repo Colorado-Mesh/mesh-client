@@ -3,6 +3,8 @@ name: Reticulum sidecar
 permissions:
   contents: read
 
+# Float rsReticulum / rsLXMF / rsNomad to origin/main; open feature PRs are overlays
+# (see reticulum-sidecar/patches/README.md — ReplyFile #26, LXMF attachments #7).
 on:
   workflow_dispatch:
   push:

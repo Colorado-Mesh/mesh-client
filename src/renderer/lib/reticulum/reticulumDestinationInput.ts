@@ -88,7 +88,8 @@ export function parseReticulumLxmfLinkUrl(url: string): string | null {
 
 /**
  * Register the peer's LXMF delivery hash and return its uint32 node id for chat stores.
- * Remaps `lxst.telephony` (and other non-lxmf aspects) to that identity's `lxmf.delivery`.
+ * Remaps RNS identity hashes and `lxst.telephony` (and other non-lxmf aspects) to that
+ * identity's `lxmf.delivery` when known.
  */
 export function openReticulumDmFromHash(hash: string): number {
   const normalized = parseReticulumDestinationInput(hash);

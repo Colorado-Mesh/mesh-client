@@ -11,6 +11,12 @@ import { RrcTopicBar } from '@/renderer/components/rrc/RrcTopicBar';
 import { runRrcHubAutoConnectBatch } from '@/renderer/hooks/useRrcStartupAutoConnect';
 import { loadMutedViews, saveMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import {
+  consumePendingRrcLinkJoin,
+  OPEN_RRC_HUB_EVENT,
+  type OpenRrcHubDetail,
+  takePendingRrcHubOpen,
+} from '@/renderer/lib/openRrcHubFromLink';
 import { withReticulumIpcSendDeadline } from '@/renderer/lib/reticulum/reticulumIpcDeadline';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import {
@@ -22,6 +28,14 @@ import {
 import { formatRrcErrorMessage } from '@/renderer/lib/rrcErrorHumanize';
 import { clearRrcHubAutoJoinBackoff } from '@/renderer/lib/rrcHubAutoJoinBackoff';
 import { setRrcHubDisconnectSuppressed } from '@/renderer/lib/rrcHubDisconnectSuppress';
+import {
+  computeRrcByteLimitStatus,
+  isRrcHubMsgBodyLimitError,
+  isRrcHubNickLimitError,
+  resolveRrcMsgBodyLimit,
+  rrcComposerBypassesSplit,
+  RrcComposerPreflightError,
+} from '@/renderer/lib/rrcHubLimits';
 import { isRrcHubAutoJoin, toggleRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { isRrcHubLinked } from '@/renderer/lib/rrcHubSession';
 import { migrateLegacyWhispersForHub } from '@/renderer/lib/rrcLegacyWhispersMigrate';
@@ -138,6 +152,7 @@ export default function RrcPanel({
   const sessionsByHub = useRrcSessionStore((s) => s.sessionsByHub);
   const showTimestamps = useRrcSessionStore((s) => s.showTimestamps);
   const capabilities = useRrcSessionStore((s) => s.capabilities);
+  const limits = useRrcSessionStore((s) => s.limits);
   const setNickname = useRrcSessionStore((s) => s.setNickname);
   const setFocusedHub = useRrcSessionStore((s) => s.setFocusedHub);
   const setRrcPanelFocused = useRrcSessionStore((s) => s.setRrcPanelFocused);
@@ -175,7 +190,7 @@ export default function RrcPanel({
   /** Short-lived join/part only — never block the whole panel on connect. */
   const [actionBusy, setActionBusy] = useState(false);
   const [mutedViews, setMutedViews] = useState(() => loadMutedViews('reticulum'));
-  const [draft, setDraft] = useState('');
+  const [composeSeed, setComposeSeed] = useState<{ text: string; token: number } | null>(null);
   const [confirmClearHistory, setConfirmClearHistory] = useState(false);
 
   useEffect(() => {
@@ -573,6 +588,12 @@ export default function RrcPanel({
       const wantFocus = opts?.focus !== false;
       const session = useRrcSessionStore.getState();
       const existing = session.sessionsByHub.get(target);
+      const targetNickLimit = existing?.limits.max_nick_bytes;
+      const nickLim = computeRrcByteLimitStatus(nickname, targetNickLimit);
+      if (nickLim?.phase === 'overMax') {
+        setError(t('rrc.nickLimit.overMax', { limit: nickLim.limit }), target);
+        return;
+      }
       // Already tracked and connecting/active — just bring it into focus, never re-connect.
       if (existing && isRrcHubLinked(existing.status)) {
         if (wantFocus) setFocusedHub(target);
@@ -666,6 +687,11 @@ export default function RrcPanel({
   const joinRoom = useCallback(
     async (roomRaw: string, key?: string) => {
       if (!hubDestHash) return;
+      const roomLim = computeRrcByteLimitStatus(roomRaw, limits.max_room_name_bytes);
+      if (roomLim?.phase === 'overMax') {
+        setError(t('rrc.roomNameLimit.overMax', { limit: roomLim.limit }));
+        return;
+      }
       const room = resolveRrcJoinRoomName(roomRaw, {
         listed: listedRooms,
         joined: [...rooms.keys()].map((name) => ({ name })),
@@ -703,8 +729,42 @@ export default function RrcPanel({
         setActionBusy(false);
       }
     },
-    [hubDestHash, listedRooms, rooms, setActiveRoom, setError, t],
+    [hubDestHash, limits.max_room_name_bytes, listedRooms, rooms, setActiveRoom, setError, t],
   );
+
+  // Micron / deep-link rrc:// — upsert hub, connect/focus; room join waits until linked.
+  useEffect(() => {
+    const openFromLink = async (detail: OpenRrcHubDetail) => {
+      const hub = await upsertManual(detail.hubHash, detail.destName ?? undefined);
+      const hash = hub?.destination_hash ?? detail.hubHash;
+      await handleConnect(hash, { focus: true });
+    };
+
+    const pending = takePendingRrcHubOpen();
+    if (pending) {
+      void openFromLink(pending);
+    }
+
+    const onOpen = (event: Event) => {
+      // Prefer the event detail; clear any queued pending so remount does not double-connect.
+      takePendingRrcHubOpen();
+      const detail = (event as CustomEvent<OpenRrcHubDetail>).detail;
+      if (!detail?.hubHash) return;
+      void openFromLink(detail);
+    };
+    window.addEventListener(OPEN_RRC_HUB_EVENT, onOpen);
+    return () => {
+      window.removeEventListener(OPEN_RRC_HUB_EVENT, onOpen);
+    };
+  }, [handleConnect, upsertManual]);
+
+  useEffect(() => {
+    if (!hubDestHash || status !== 'active') return;
+    const room = consumePendingRrcLinkJoin(hubDestHash);
+    if (!room) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deep-link room join after hub becomes active
+    void joinRoom(room);
+  }, [hubDestHash, status, joinRoom]);
 
   const handlePart = useCallback(
     async (room?: string) => {
@@ -764,6 +824,18 @@ export default function RrcPanel({
     [activeRoom, addMessage, setActiveRoom],
   );
 
+  const setRrcSendError = useCallback((message: string | null) => {
+    if (!message) {
+      useRrcSessionStore.getState().setError(null);
+      return;
+    }
+    if (isRrcHubMsgBodyLimitError(message) || isRrcHubNickLimitError(message)) {
+      // Composer / field counters already explain hub WELCOME limits.
+      return;
+    }
+    useRrcSessionStore.getState().setError(message);
+  }, []);
+
   const handleSend = useCallback(
     async (text: string) => {
       try {
@@ -773,7 +845,6 @@ export default function RrcPanel({
         if (parsed.kind === 'local') {
           if (parsed.command === 'help') {
             appendSystemLines(RRC_HELP_I18N_KEYS.map((k) => t(k)));
-            setDraft('');
             return;
           }
           if (parsed.command === 'usage') {
@@ -781,6 +852,12 @@ export default function RrcPanel({
             return;
           }
           if (parsed.command === 'nick') {
+            const nickLim = computeRrcByteLimitStatus(parsed.nickname, limits.max_nick_bytes);
+            if (nickLim?.phase === 'overMax') {
+              throw new RrcComposerPreflightError(
+                t('rrc.nickLimit.overMax', { limit: nickLim.limit }),
+              );
+            }
             setNickname(parsed.nickname);
             try {
               localStorage.setItem(NICK_KEY, parsed.nickname);
@@ -793,7 +870,7 @@ export default function RrcPanel({
                 hub_dest_hash: hubDestHash,
               });
               if (!nickRes.ok) {
-                useRrcSessionStore.getState().setError(nickRes.error ?? t('rrc.sendFailed'));
+                setRrcSendError(nickRes.error ?? t('rrc.sendFailed'));
                 return;
               }
               // Push K_NICK to the hub so /who and member lists pick up the new nick.
@@ -816,17 +893,20 @@ export default function RrcPanel({
               useRrcSessionStore.getState().mergeRoomMembers(activeRoom, next, 'replace');
             }
             appendSystemLines([t('rrc.slash.nickChanged', { name: parsed.nickname })]);
-            setDraft('');
             return;
           }
           if (parsed.command === 'join') {
+            const roomLim = computeRrcByteLimitStatus(parsed.room, limits.max_room_name_bytes);
+            if (roomLim?.phase === 'overMax') {
+              throw new RrcComposerPreflightError(
+                t('rrc.roomNameLimit.overMax', { limit: roomLim.limit }),
+              );
+            }
             await joinRoom(parsed.room, parsed.key);
-            setDraft('');
             return;
           }
           if (parsed.command === 'part') {
             await handlePart(parsed.room);
-            setDraft('');
             return;
           }
           if (parsed.command === 'me') {
@@ -838,6 +918,15 @@ export default function RrcPanel({
               useRrcSessionStore.getState().setError(t('rrc.joinRoomPrompt'));
               return;
             }
+            const bodyLim = computeRrcByteLimitStatus(
+              parsed.action,
+              resolveRrcMsgBodyLimit(limits.max_msg_body_bytes),
+            );
+            if (bodyLim?.phase === 'overMax') {
+              throw new RrcComposerPreflightError(
+                t('rrc.byteLimit.overMax', { limit: bodyLim.limit }),
+              );
+            }
             const res = await rrcSendBounded({
               hub_dest_hash: hubDestHash,
               room: activeRoom,
@@ -845,10 +934,9 @@ export default function RrcPanel({
               type: 'action',
             });
             if (!res.ok) {
-              useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
+              setRrcSendError(res.error ?? t('rrc.sendFailed'));
               return;
             }
-            setDraft('');
             return;
           }
           if (parsed.command === 'msg') {
@@ -867,6 +955,15 @@ export default function RrcPanel({
               useRrcSessionStore.getState().setError(t('rrc.slash.msgTargetNotFound'));
               return;
             }
+            const bodyLim = computeRrcByteLimitStatus(
+              parsed.text,
+              resolveRrcMsgBodyLimit(limits.max_msg_body_bytes),
+            );
+            if (bodyLim?.phase === 'overMax') {
+              throw new RrcComposerPreflightError(
+                t('rrc.byteLimit.overMax', { limit: bodyLim.limit }),
+              );
+            }
             const res = await rrcSendBounded({
               hub_dest_hash: hubDestHash,
               body: parsed.text,
@@ -874,7 +971,7 @@ export default function RrcPanel({
               dst_hash: resolved.identity_hash,
             });
             if (!res.ok) {
-              useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
+              setRrcSendError(res.error ?? t('rrc.sendFailed'));
               return;
             }
             const dmRoom = rrcDmRoomKey(resolved.identity_hash);
@@ -896,17 +993,14 @@ export default function RrcPanel({
               timestamp: Date.now(),
               dst_hash: resolved.identity_hash,
             });
-            setDraft('');
             return;
           }
           if (parsed.command === 'clear') {
             clearActiveRoomMessages();
-            setDraft('');
             return;
           }
           if (parsed.command === 'quit') {
             await handleDisconnect();
-            setDraft('');
             return;
           }
         }
@@ -951,12 +1045,11 @@ export default function RrcPanel({
             if (whoForceRoom) {
               useRrcSessionStore.getState().releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
             }
-            useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
+            setRrcSendError(res.error ?? t('rrc.sendFailed'));
             return;
           }
           if (whoForceRoom) scheduleWhoReplyWatchdog(whoForceRoom, { forced: true });
           appendSystemLines([t('rrc.slash.commandSent', { cmd: expanded })]);
-          setDraft('');
           return;
         }
 
@@ -977,7 +1070,7 @@ export default function RrcPanel({
             dst_hash: activeDmHash,
           });
           if (!res.ok) {
-            useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
+            setRrcSendError(res.error ?? t('rrc.sendFailed'));
             return;
           }
           addMessage({
@@ -990,7 +1083,6 @@ export default function RrcPanel({
             timestamp: Date.now(),
             dst_hash: activeDmHash,
           });
-          setDraft('');
           return;
         }
         if (!activeRoom || activeRoom.startsWith('[')) {
@@ -1008,11 +1100,12 @@ export default function RrcPanel({
           type: 'msg',
         });
         if (!res.ok) {
-          useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
+          setRrcSendError(res.error ?? t('rrc.sendFailed'));
           return;
         }
-        setDraft('');
       } catch (e) {
+        // Keep the draft: ChatComposer only clears after onInterceptSend resolves.
+        if (e instanceof RrcComposerPreflightError) throw e;
         console.warn('[RrcPanel] send ' + errLikeToLogString(e));
         useRrcSessionStore.getState().setError(formatRrcErrorMessage(errLikeToLogString(e), t));
       }
@@ -1028,6 +1121,9 @@ export default function RrcPanel({
       handlePart,
       hubDestHash,
       joinRoom,
+      limits.max_msg_body_bytes,
+      limits.max_nick_bytes,
+      limits.max_room_name_bytes,
       localIdentityHash,
       nickname,
       openDm,
@@ -1035,6 +1131,7 @@ export default function RrcPanel({
       scheduleWhoReplyWatchdog,
       sendHubCommand,
       setNickname,
+      setRrcSendError,
       status,
       t,
     ],
@@ -1078,6 +1175,7 @@ export default function RrcPanel({
             // catch-no-log-ok
           }
         }}
+        maxNickBytes={limits.max_nick_bytes}
         favourites={hubList.favourites}
         discovered={hubList.discovered}
         hubDestHash={hubDestHash}
@@ -1120,6 +1218,7 @@ export default function RrcPanel({
           onJoinRoomNameChange={setJoinRoomName}
           joinRoomKey={joinRoomKey}
           onJoinRoomKeyChange={setJoinRoomKey}
+          maxRoomNameBytes={limits.max_room_name_bytes}
           busy={actionBusy}
           onJoin={() => void joinRoom(joinRoomName, joinRoomKey)}
           onRefreshList={() => void sendHubCommand('/list')}
@@ -1270,11 +1369,9 @@ export default function RrcPanel({
             activeRoom={activeRoom}
             messages={activeMessages}
             showTimestamps={showTimestamps}
-            draft={draft}
-            onDraftChange={setDraft}
-            onSend={(text) => void handleSend(text)}
             canSend={status === 'active'}
             isMuted={isMuted}
+            maxMsgBodyBytes={limits.max_msg_body_bytes}
             nickname={nickname}
             members={chatCompleteMembers}
             alwaysShowMessageActions={alwaysShowMessageActions}
@@ -1282,6 +1379,15 @@ export default function RrcPanel({
             isActive={isActive}
             onCaughtUp={handleCaughtUp}
             onOpenDm={onOpenDm}
+            composeSeed={composeSeed}
+            onSendChunk={async (chunk) => {
+              await handleSend(chunk);
+            }}
+            onInterceptSend={async (fullText) => {
+              if (!rrcComposerBypassesSplit(fullText)) return false;
+              await handleSend(fullText);
+              return true;
+            }}
           />
           {showNicklist && (
             <RrcNickList
@@ -1302,7 +1408,7 @@ export default function RrcPanel({
               }}
               onNickClick={(member: RrcRoomMember) => {
                 const label = member.nickname || member.identity_hash.slice(0, 8);
-                setDraft(`/msg ${label} `);
+                setComposeSeed({ text: `/msg ${label} `, token: Date.now() });
               }}
             />
           )}

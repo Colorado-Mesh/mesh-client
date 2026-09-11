@@ -750,7 +750,9 @@
     "heardByRepeatersAdditional_one": "{{count}} ulteriore spedizioniere non identificato (hash: {{hashes}})",
     "heardByRepeatersAdditional_other": "{{count}} ulteriori spedizionieri non identificati (hash: {{hashes}})",
     "reticulumSendAwaitingPeerReceipt": "Inviato (in attesa di ricezione da parte del pari)",
-    "reticulumChatNeedsLxmfDelivery": "Questo peer non ha ancora un indirizzo di consegna LXMF (la chat non può utilizzare una destinazione solo vocale). Attendi un annuncio LXMF o incolla il loro hash LXMF di 32 caratteri."
+    "reticulumChatNeedsLxmfDelivery": "Questo peer non ha ancora un indirizzo di consegna LXMF (la chat non può utilizzare una destinazione solo vocale). Attendi un annuncio LXMF o incolla il loro hash LXMF di 32 caratteri.",
+    "saveAttachment": "Salva…",
+    "revealAttachment": "Nella cartella"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -1310,7 +1312,19 @@
       "fieldNotANumber": "Inserisci un numero intero (solo cifre).",
       "fieldOutOfRange": "Il valore non è compreso nell'intervallo consentito.",
       "fieldTooLong": "Il valore è troppo lungo",
-      "fieldInvalidOption": "Valore non supportato."
+      "fieldInvalidOption": "Valore non supportato.",
+      "profilesTitle": "Interface profiles",
+      "profilesHint": "Named enable-sets for which interfaces are on. Switching a profile enables its members and disables the rest.",
+      "profilesEmpty": "No profiles yet. Save the current enable-set to create one.",
+      "profilesDefault": "Default",
+      "profilesUnnamed": "(unnamed)",
+      "profilesNamePlaceholder": "Profile name",
+      "profilesSaveCurrent": "Save current",
+      "profilesCreateEmpty": "New empty",
+      "profilesRename": "Rename",
+      "profilesSaveRename": "Save",
+      "profilesDelete": "Delete",
+      "profilesRenameAria": "Rename profile {{name}}"
     },
     "reticulumPeers": {
       "hops": "Salti",
@@ -3416,7 +3430,9 @@
     "pageProgressFailover": "Prova un percorso diverso tramite {{iface}} ({{hops}} Hops)...",
     "pageProgressFailoverIface": "Prova un percorso diverso tramite {{iface}}...",
     "pageProgressFailoverGeneric": "Sto provando un percorso diverso...",
-    "pageProgressNoAlternate": "Nessun altro percorso disponibile — terminare questo tentativo..."
+    "pageProgressNoAlternate": "Nessun altro percorso disponibile — terminare questo tentativo...",
+    "downloadFile": "Download",
+    "dismissPreview": "Ignora"
   },
   "packetDistribution": {
     "overallDistribution": "Distribuzione complessiva",
@@ -5360,7 +5376,17 @@
     "addressChoiceTitle": "Apri indirizzo Reticulum",
     "addressChoiceMessage": "{{address}} potrebbe essere una pagina Nomad o un peer. Quale vuoi aprire?",
     "addressChoiceNomad": "Pagina Nomad",
-    "addressChoiceDm": "Messaggio diretto"
+    "addressChoiceDm": "Messaggio diretto",
+    "byteLimit": {
+      "approaching": "{{count}} / {{limit}}",
+      "overMax": "Messaggio troppo lungo — il limite dell'hub è di {{limit}} byte"
+    },
+    "nickLimit": {
+      "overMax": "Soprannome troppo lungo — il limite dell'hub è {{limit}} byte"
+    },
+    "roomNameLimit": {
+      "overMax": "Nome della stanza troppo lungo — il limite dell'hub è di {{limit}} byte"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

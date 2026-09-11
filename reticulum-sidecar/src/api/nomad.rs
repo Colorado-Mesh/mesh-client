@@ -79,6 +79,27 @@ pub async fn get_nomad_file(
     )
 }
 
+#[derive(Debug, Deserialize)]
+pub struct NomadMediaQuery {
+    /// Media resource path from the Micron image URL (e.g. `/media/header.webp`).
+    pub path: String,
+    /// When true, RequestPath even if a cached path exists (stale-route retry).
+    #[serde(default)]
+    pub force_path_refresh: bool,
+}
+
+pub async fn get_nomad_media(
+    State(stack): State<Arc<StackHandle>>,
+    Path(hash): Path<String>,
+    Query(query): Query<NomadMediaQuery>,
+) -> Json<serde_json::Value> {
+    Json(
+        stack
+            .nomad_media(&hash, &query.path, query.force_path_refresh)
+            .await,
+    )
+}
+
 pub async fn get_nomad_serving(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
     let status = stack.nomad_serving_status().await;
     Json(serde_json::json!({ "ok": true, "serving": status }))
@@ -248,5 +269,13 @@ mod force_path_refresh_query_tests {
                 .expect("query");
         assert!(q.force_path_refresh);
         assert_eq!(q.path, "/file/x.bin");
+    }
+
+    #[test]
+    fn nomad_media_query_parses_path() {
+        let q: NomadMediaQuery =
+            serde_urlencoded::from_str("path=%2Fmedia%2Fheader.webp").expect("query");
+        assert!(!q.force_path_refresh);
+        assert_eq!(q.path, "/media/header.webp");
     }
 }

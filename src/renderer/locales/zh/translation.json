@@ -750,7 +750,9 @@
     "heardByRepeatersAdditional_one": "{{count}}其他身份不明的货运代理（哈希值： {{hashes}} ）",
     "heardByRepeatersAdditional_other": "{{count}}其他身份不明的转发商（哈希： {{hashes}} ）",
     "reticulumSendAwaitingPeerReceipt": "已发送（等待同行回执）",
-    "reticulumChatNeedsLxmfDelivery": "此对等方还没有LXMF交付地址（聊天不能使用仅语音目的地）。等待LXMF公告，或粘贴其32个字符的LXMF哈希。"
+    "reticulumChatNeedsLxmfDelivery": "此对等方还没有LXMF交付地址（聊天不能使用仅语音目的地）。等待LXMF公告，或粘贴其32个字符的LXMF哈希。",
+    "saveAttachment": "保存",
+    "revealAttachment": "在文件夹中"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -1312,7 +1314,19 @@
       "fieldNotANumber": "输入整数（仅限数字）。",
       "fieldOutOfRange": "值超出允许的范围。",
       "fieldTooLong": "此值太长。",
-      "fieldInvalidOption": "不支持的V值。"
+      "fieldInvalidOption": "不支持的V值。",
+      "profilesTitle": "Interface profiles",
+      "profilesHint": "Named enable-sets for which interfaces are on. Switching a profile enables its members and disables the rest.",
+      "profilesEmpty": "No profiles yet. Save the current enable-set to create one.",
+      "profilesDefault": "Default",
+      "profilesUnnamed": "(unnamed)",
+      "profilesNamePlaceholder": "Profile name",
+      "profilesSaveCurrent": "Save current",
+      "profilesCreateEmpty": "New empty",
+      "profilesRename": "Rename",
+      "profilesSaveRename": "Save",
+      "profilesDelete": "Delete",
+      "profilesRenameAria": "Rename profile {{name}}"
     },
     "reticulumPeers": {
       "hops": "跳数",
@@ -3416,7 +3430,9 @@
     "pageProgressFailover": "正在尝试通过{{iface}} （ {{hops}}跳）选择其他路线……",
     "pageProgressFailoverIface": "尝试通过{{iface}}选择其他路线…",
     "pageProgressFailoverGeneric": "正在尝试其他路线…",
-    "pageProgressNoAlternate": "没有其他路线可用—正在完成此尝试…"
+    "pageProgressNoAlternate": "没有其他路线可用—正在完成此尝试…",
+    "downloadFile": "下载",
+    "dismissPreview": "解散"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",
@@ -5360,7 +5376,17 @@
     "addressChoiceTitle": "打开 Reticulum 地址",
     "addressChoiceMessage": "{{address}} 可能是 Nomad 页面，也可能是一个节点。要打开哪一个？",
     "addressChoiceNomad": "Nomad 页面",
-    "addressChoiceDm": "私信"
+    "addressChoiceDm": "私信",
+    "byteLimit": {
+      "approaching": "{{count}}/{{limit}}",
+      "overMax": "消息太长—集线器限制为{{limit}}字节"
+    },
+    "nickLimit": {
+      "overMax": "昵称太长—集线器限制为{{limit}}字节"
+    },
+    "roomNameLimit": {
+      "overMax": "房间名称太长—集线器限制为{{limit}}字节"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

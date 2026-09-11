@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, RefreshCw, Star } from 'lucide-react-motion';
 import { useTranslation } from 'react-i18next';
 
+import { RrcByteLimitHint } from '@/renderer/components/rrc/RrcByteLimitHint';
 import { resolveRrcHubSidebarMarker, type RrcHubSidebarMarker } from '@/renderer/lib/rrcHubPrefs';
 import type { RrcHubInfo } from '@/shared/rrc-types';
 
@@ -16,6 +17,8 @@ export interface RrcHubBrowserProps {
   onHubSearchChange: (v: string) => void;
   nickname: string;
   onNicknameChange: (v: string) => void;
+  /** Hub WELCOME max_nick_bytes when known. */
+  maxNickBytes?: number | null;
   favourites: RrcHubInfo[];
   discovered: RrcHubInfo[];
   hubDestHash: string | null;
@@ -202,6 +205,7 @@ export function RrcHubBrowser({
   onHubSearchChange,
   nickname,
   onNicknameChange,
+  maxNickBytes = null,
   favourites,
   discovered,
   hubDestHash,
@@ -313,6 +317,11 @@ export function RrcHubBrowser({
               }}
               aria-label={t('rrc.nickname')}
               className="bg-deep-black mt-0.5 w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
+            />
+            <RrcByteLimitHint
+              text={nickname}
+              limit={maxNickBytes}
+              overMaxKey="rrc.nickLimit.overMax"
             />
           </label>
           {rows.length > 0 ? (

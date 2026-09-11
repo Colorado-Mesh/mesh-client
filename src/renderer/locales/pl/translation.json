@@ -788,7 +788,9 @@
     "searchResults_few": "{{count}} wyniki",
     "searchResults_many": "{{count}} wyników",
     "reticulumSendAwaitingPeerReceipt": "Wysłano (oczekiwanie na pokwitowanie)",
-    "reticulumChatNeedsLxmfDelivery": "Ten partner nie ma jeszcze adresu dostawy LXMF (czat nie może używać miejsca docelowego tylko dla połączeń głosowych). Poczekaj na ogłoszenie LXMF lub wklej 32-znakowy skrót LXMF."
+    "reticulumChatNeedsLxmfDelivery": "Ten partner nie ma jeszcze adresu dostawy LXMF (czat nie może używać miejsca docelowego tylko dla połączeń głosowych). Poczekaj na ogłoszenie LXMF lub wklej 32-znakowy skrót LXMF.",
+    "saveAttachment": "Zapisz",
+    "revealAttachment": "Pokaż w folderze"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -1348,7 +1350,19 @@
       "fieldNotANumber": "Wprowadź liczbę całkowitą (tylko cyfry).",
       "fieldOutOfRange": "Wartość wykracza poza dozwolony zakres.",
       "fieldTooLong": "Wartość jest zbyt długa.",
-      "fieldInvalidOption": "Nieobsługiwane"
+      "fieldInvalidOption": "Nieobsługiwane",
+      "profilesTitle": "Interface profiles",
+      "profilesHint": "Named enable-sets for which interfaces are on. Switching a profile enables its members and disables the rest.",
+      "profilesEmpty": "No profiles yet. Save the current enable-set to create one.",
+      "profilesDefault": "Default",
+      "profilesUnnamed": "(unnamed)",
+      "profilesNamePlaceholder": "Profile name",
+      "profilesSaveCurrent": "Save current",
+      "profilesCreateEmpty": "New empty",
+      "profilesRename": "Rename",
+      "profilesSaveRename": "Save",
+      "profilesDelete": "Delete",
+      "profilesRenameAria": "Rename profile {{name}}"
     },
     "reticulumPeers": {
       "hops": "Skoki",
@@ -3494,7 +3508,9 @@
     "pageProgressFailoverGeneric": "Próbuję wybrać inną trasę…",
     "pageProgressNoAlternate": "Brak innych dostępnych tras — kończenie tej próby…",
     "hopsAway_few": "{{count}} przeskoki dalej",
-    "hopsAway_many": "{{count}} przeskoków dalej"
+    "hopsAway_many": "{{count}} przeskoków dalej",
+    "downloadFile": "Pobierz",
+    "dismissPreview": "Odrzuć"
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",
@@ -5450,7 +5466,17 @@
     "memberCount_few": "{{count}} członkowie",
     "memberCount_many": "{{count}} członków",
     "userCount_few": "{{count}} użytkownicy",
-    "userCount_many": "{{count}} użytkowników"
+    "userCount_many": "{{count}} użytkowników",
+    "byteLimit": {
+      "approaching": "{{count}} / {{limit}}",
+      "overMax": "Wiadomość zbyt długa — limit koncentratora wynosi {{limit}} bajtów"
+    },
+    "nickLimit": {
+      "overMax": "Pseudonim zbyt długi — limit koncentratora to {{limit}} bajtów"
+    },
+    "roomNameLimit": {
+      "overMax": "Nazwa pokoju jest zbyt długa — limit koncentratora wynosi {{limit}} bajtów"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

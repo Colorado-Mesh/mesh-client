@@ -64,6 +64,15 @@ export interface RrcHubCapabilities {
   resource_envelope?: boolean;
 }
 
+/** WELCOME `B_WELCOME_LIMITS` — hub-advertised operational caps (bytes / counts). */
+export interface RrcHubLimits {
+  max_nick_bytes?: number | null;
+  max_room_name_bytes?: number | null;
+  max_msg_body_bytes?: number | null;
+  max_rooms_per_session?: number | null;
+  rate_limit_msgs_per_minute?: number | null;
+}
+
 export interface RrcSessionSnapshot {
   status: RrcSessionStatus;
   hub_dest_hash?: string | null;
@@ -73,6 +82,7 @@ export interface RrcSessionSnapshot {
   rooms: RrcRoomInfo[];
   error?: string | null;
   capabilities?: RrcHubCapabilities | null;
+  limits?: RrcHubLimits | null;
 }
 
 /** Multi-hub status from sidecar `GET /rrc/status`. */

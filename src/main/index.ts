@@ -180,6 +180,7 @@ import {
   isSupportBundleMode,
 } from './support-bundle';
 import type { TakServerManager } from './tak-server-manager';
+import { updateUnreadAppBadge } from './unreadAppBadge';
 import { getCheckNowFromMenu, initUpdater } from './updater';
 import { assertIpcSender, validateIpcSender } from './validate-ipc-sender';
 import { buildWindowsAboutDocumentHtml } from './windows-about-html';
@@ -2174,6 +2175,7 @@ function createWindow() {
 
   win.on('focus', () => {
     getLongSessionNudge().onMainWindowFocus();
+    refreshUnreadAppBadge();
   });
 
   setupTray(mainWindow);
@@ -2186,6 +2188,41 @@ let _cachedBadgeIcon: ReturnType<typeof nativeImage.createFromBuffer> | null = n
 let _cachedTrayIconUnread: Electron.NativeImage | null = null;
 let _cachedTrayIconRead: Electron.NativeImage | null = null;
 let _lastTrayUnreadVariant: boolean | null = null;
+function refreshUnreadAppBadge(): void {
+  try {
+    updateUnreadAppBadge(lastTrayUnreadCount, {
+      platform: process.platform,
+      initializeNotifications: () => {
+        // OS-specific: Electron 44 initializes UNUserNotificationCenter and requests
+        // badge authorization here. setBadge alone does not request permission.
+        // https://github.com/electron/electron/blob/v44.1.1/shell/browser/notifications/mac/notification_presenter_mac.mm
+        Notification.isSupported();
+      },
+      suppressDockBadge: () => getLongSessionNudge().shouldSuppressUnreadDockBadge(),
+      setDockBadge: (text) => {
+        app.dock?.setBadge(text);
+      },
+      setLauncherBadge: (count) => {
+        app.setBadgeCount(count);
+      },
+      setTaskbarBadge: (count) => {
+        if (!mainWindow || mainWindow.isDestroyed()) return;
+        if (count > 0) {
+          _cachedBadgeIcon ??= nativeImage.createFromBuffer(buildBadgePng());
+          mainWindow.setOverlayIcon(_cachedBadgeIcon, `${count} unread messages`);
+        } else {
+          mainWindow.setOverlayIcon(null, '');
+        }
+      },
+    });
+  } catch (e) {
+    console.error(
+      '[main] app unread badge update failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+  }
+}
+
 ipcMain.on('set-tray-unread', (event, count: unknown) => {
   if (!validateIpcSender(event)) {
     console.warn('[IPC] set-tray-unread: unauthorized sender');
@@ -2194,6 +2231,7 @@ ipcMain.on('set-tray-unread', (event, count: unknown) => {
   try {
     const n = Math.max(0, Math.min(Math.floor(Number(count)) || 0, 99999));
     lastTrayUnreadCount = n;
+    refreshUnreadAppBadge();
     const hasUnread = n > 0;
     if (_lastTrayUnreadVariant !== hasUnread) {
       _lastTrayUnreadVariant = hasUnread;
@@ -2208,20 +2246,6 @@ ipcMain.on('set-tray-unread', (event, count: unknown) => {
       tray?.setImage(img);
     }
     tray?.setToolTip(hasUnread ? `Mesh-Client (${n} unread)` : 'Mesh-Client');
-    if (process.platform === 'darwin') {
-      if (!getLongSessionNudge().shouldSuppressUnreadDockBadge()) {
-        app.dock?.setBadge(hasUnread ? String(n) : '');
-      }
-    } else if (process.platform === 'linux') {
-      app.setBadgeCount(hasUnread ? n : 0);
-    } else if (process.platform === 'win32' && mainWindow) {
-      if (hasUnread) {
-        _cachedBadgeIcon ??= nativeImage.createFromBuffer(buildBadgePng());
-        mainWindow.setOverlayIcon(_cachedBadgeIcon, `${n} unread messages`);
-      } else {
-        mainWindow.setOverlayIcon(null, '');
-      }
-    }
   } catch (e) {
     console.error(
       '[main] tray unread update failed:',

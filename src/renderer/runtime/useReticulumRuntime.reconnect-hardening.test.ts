@@ -301,9 +301,16 @@ describe('useReticulumRuntime outbound delivery persistence', () => {
     expect(SOURCE).toMatch(/if \(!applyBridge\) \{/);
     expect(SOURCE).toContain('cascade eligible');
     expect(SOURCE).toContain('propagation hydrate failed/uncertain');
+    expect(SOURCE).toContain('shouldSkipLinkTimeoutDest');
+    expect(SOURCE).toContain('markLinkTimeoutDestProcessed');
+    expect(SOURCE).toContain('clearLinkTimeoutDestProcessed');
     expect(SOURCE).toMatch(
-      /processedLinkTimeoutDestsRef\.current\.add\(norm\);\s*failReticulumSendingOutboundToDestHash/,
+      /markLinkTimeoutDestProcessed\(\s*processedLinkTimeoutDestsRef\.current,\s*destinationHash,\s*\)/,
     );
+    expect(SOURCE).toMatch(
+      /clearLinkTimeoutDestProcessed\(processedLinkTimeoutDestsRef\.current, destination\)/,
+    );
+    expect(SOURCE).toMatch(/failReticulumSendingOutboundToDestHash\(/);
   });
 
   it('aborts link-timeout bridge after delayed hydrate when generation is stale', () => {

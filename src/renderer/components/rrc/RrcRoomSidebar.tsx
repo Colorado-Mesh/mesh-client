@@ -1,6 +1,10 @@
 import { ChevronLeft, ChevronRight, LogIn, Star } from 'lucide-react-motion';
 import { useTranslation } from 'react-i18next';
 
+import {
+  isRrcByteLimitOverMax,
+  RrcByteLimitHint,
+} from '@/renderer/components/rrc/RrcByteLimitHint';
 import { isRrcWhisperRoom } from '@/renderer/lib/rrcMention';
 import { rrcRoomMatchKey, rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import type { RrcListedRoom, RrcRoomInfo } from '@/shared/rrc-types';
@@ -50,6 +54,8 @@ export interface RrcRoomSidebarProps {
   onJoinRoomNameChange: (v: string) => void;
   joinRoomKey: string;
   onJoinRoomKeyChange: (v: string) => void;
+  /** Hub WELCOME max_room_name_bytes when known. */
+  maxRoomNameBytes?: number | null;
   busy: boolean;
   onJoin: () => void;
   onRefreshList: () => void;
@@ -76,6 +82,7 @@ export function RrcRoomSidebar({
   onJoinRoomNameChange,
   joinRoomKey,
   onJoinRoomKeyChange,
+  maxRoomNameBytes = null,
   busy,
   onJoin,
   onRefreshList,
@@ -283,25 +290,32 @@ export function RrcRoomSidebar({
             className="bg-deep-black w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
           />
           <p className="text-muted px-1 text-[10px] leading-snug">{t('rrc.roomLegend')}</p>
-          <div className="flex gap-1">
-            <input
-              type="text"
-              value={joinRoomName}
-              onChange={(e) => {
-                onJoinRoomNameChange(e.target.value);
-              }}
-              aria-label={t('rrc.joinRoom')}
-              className="bg-deep-black min-w-0 flex-1 rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
+          <div className="flex flex-col gap-0.5">
+            <div className="flex gap-1">
+              <input
+                type="text"
+                value={joinRoomName}
+                onChange={(e) => {
+                  onJoinRoomNameChange(e.target.value);
+                }}
+                aria-label={t('rrc.joinRoom')}
+                className="bg-deep-black min-w-0 flex-1 rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
+              />
+              <button
+                type="button"
+                className="bg-readable-green rounded px-2 py-1 text-xs text-white hover:opacity-90 disabled:opacity-50"
+                aria-label={t('rrc.join')}
+                disabled={busy || isRrcByteLimitOverMax(joinRoomName, maxRoomNameBytes)}
+                onClick={onJoin}
+              >
+                <LogIn size={14} />
+              </button>
+            </div>
+            <RrcByteLimitHint
+              text={joinRoomName}
+              limit={maxRoomNameBytes}
+              overMaxKey="rrc.roomNameLimit.overMax"
             />
-            <button
-              type="button"
-              className="bg-readable-green rounded px-2 py-1 text-xs text-white hover:opacity-90"
-              aria-label={t('rrc.join')}
-              disabled={busy}
-              onClick={onJoin}
-            >
-              <LogIn size={14} />
-            </button>
           </div>
           <input
             type="password"

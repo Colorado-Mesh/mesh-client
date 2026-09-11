@@ -244,6 +244,7 @@ import { shouldAutoLaunchMeshcoreMqttAtStartup, tryAutoLaunchMqtt } from './lib/
 import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
 import { OPEN_NOMAD_PAGE_EVENT, type OpenNomadPageDetail } from './lib/nomad/openNomadPageFromLink';
 import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities';
+import { OPEN_RRC_HUB_EVENT } from './lib/openRrcHubFromLink';
 import { parseStoredJson } from './lib/parseStoredJson';
 import { protocolHeaderBorderClass } from './lib/protocolTheme';
 import { queueBadgeColorClass } from './lib/queueBadgeColors';
@@ -2153,6 +2154,35 @@ function AppContent() {
       window.removeEventListener(OPEN_NOMAD_PAGE_EVENT, onOpen);
     };
   }, [handleOpenNomadPage]);
+
+  const handleOpenRrcHubTab = useCallback(() => {
+    // Gate on Reticulum capabilities — micron rrc:// links must work while another protocol is active.
+    if (!reticulumCapabilities.hasRrcPanel) return;
+    if (protocol !== 'reticulum') {
+      lastTabByProtocol.current.set(protocol, activeTab);
+      lastPanelByProtocol.current.set(protocol, activePanelIndex);
+      localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+      setProtocol('reticulum');
+    }
+    const rrcTabIndex = findFilteredTabIndexForPanel(
+      selectByProtocol(tabsByProtocol, 'reticulum'),
+      RRC_PANEL_INDEX,
+    );
+    if (rrcTabIndex >= 0) {
+      setActiveTab(rrcTabIndex);
+      setRrcTabVisited(true);
+    }
+  }, [activePanelIndex, activeTab, protocol, reticulumCapabilities.hasRrcPanel, tabsByProtocol]);
+
+  useEffect(() => {
+    const onOpen = () => {
+      handleOpenRrcHubTab();
+    };
+    window.addEventListener(OPEN_RRC_HUB_EVENT, onOpen);
+    return () => {
+      window.removeEventListener(OPEN_RRC_HUB_EVENT, onOpen);
+    };
+  }, [handleOpenRrcHubTab]);
 
   useEffect(() => {
     setReticulumGamesTabFocused(

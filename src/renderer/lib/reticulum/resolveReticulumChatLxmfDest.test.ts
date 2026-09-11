@@ -117,6 +117,88 @@ describe('resolveReticulumChatLxmfDestination', () => {
     });
   });
 
+  it('remaps a known RNS identity hash to lxmf.delivery', () => {
+    useReticulumIdentityActivityStore.setState({
+      byDestination: new Map([
+        [
+          LXMF,
+          [
+            {
+              destination_hash: LXMF,
+              aspect: LXMF_DELIVERY_ASPECT,
+              identity_hash: IDENTITY,
+              last_seen: 150,
+            },
+          ],
+        ],
+      ]),
+    });
+    expect(resolveReticulumChatLxmfDestination(IDENTITY)).toEqual({
+      status: 'ok',
+      hash: LXMF,
+      remapped: true,
+    });
+  });
+
+  it('returns missing_lxmf for a known identity without lxmf.delivery', () => {
+    useReticulumIdentityActivityStore.setState({
+      byDestination: new Map([
+        [
+          TELEPHONY,
+          [
+            {
+              destination_hash: TELEPHONY,
+              aspect: LXST_TELEPHONY_ASPECT,
+              identity_hash: IDENTITY,
+              last_seen: 200,
+            },
+          ],
+        ],
+      ]),
+    });
+    expect(resolveReticulumChatLxmfDestination(IDENTITY)).toEqual({ status: 'missing_lxmf' });
+  });
+
+  it('remaps identity via peer.identity_hash when activity dest rows are empty for the paste', () => {
+    useReticulumIdentityActivityStore.setState({
+      byDestination: new Map([
+        [
+          LXMF,
+          [
+            {
+              destination_hash: LXMF,
+              aspect: LXMF_DELIVERY_ASPECT,
+              identity_hash: IDENTITY,
+              last_seen: 150,
+            },
+          ],
+        ],
+      ]),
+    });
+    useReticulumPeerStore.setState({
+      peers: new Map([
+        [
+          LXMF,
+          {
+            destination_hash: LXMF,
+            display_name: 'Peer',
+            identity_hash: IDENTITY,
+            hops: null,
+            last_seen: 1,
+            is_contact: false,
+          },
+        ],
+      ]),
+      contacts: new Map(),
+      history: new Map(),
+    });
+    expect(resolveReticulumChatLxmfDestination(IDENTITY)).toEqual({
+      status: 'ok',
+      hash: LXMF,
+      remapped: true,
+    });
+  });
+
   it('rejects invalid hashes', () => {
     expect(resolveReticulumChatLxmfDestination('not-a-hash')).toEqual({ status: 'invalid' });
   });
@@ -231,6 +313,30 @@ describe('canonicalizeReticulumChatDmNodeId', () => {
       contacts: new Map(),
       history: new Map(),
     });
+  });
+
+  it('canonicalizes an identity-bound node id to the LXMF fold', () => {
+    const identityId = reticulumHashToNodeId(IDENTITY) >>> 0;
+    const lxmfId = reticulumHashToNodeId(LXMF) >>> 0;
+    registerReticulumDestinationHash(identityId, IDENTITY);
+    useReticulumIdentityActivityStore.setState({
+      byDestination: new Map([
+        [
+          LXMF,
+          [
+            {
+              destination_hash: LXMF,
+              aspect: LXMF_DELIVERY_ASPECT,
+              identity_hash: IDENTITY,
+              last_seen: 150,
+            },
+          ],
+        ],
+      ]),
+    });
+    expect(canonicalizeReticulumChatDmNodeId(identityId)).toBe(lxmfId);
+    expect(remapReticulumChatDmTabNodeId(identityId)).toBe(lxmfId);
+    expect(reticulumChatDmNodeIdsEquivalent(identityId, lxmfId)).toBe(true);
   });
 
   it('canonicalizes a telephony-bound node id to the LXMF fold', () => {

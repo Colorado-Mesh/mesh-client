@@ -146,7 +146,7 @@ function appendNomadDiagParts(parts: string[], diag: NomadFetchLogDiag): void {
 
 /** Failure-only warn — keep link-budget / path-ensure fields for triage (not success spam). */
 function logNomadFetchFailure(
-  kind: 'page' | 'file',
+  kind: 'page' | 'file' | 'media',
   opts: {
     hash: string;
     path: string;
@@ -176,7 +176,7 @@ function hopsForNomadHash(nodes: Map<string, NomadNodeRow>, hash: string): numbe
 }
 
 async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
-  kind: 'page' | 'file',
+  kind: 'page' | 'file' | 'media',
   opts: {
     hash: string;
     path: string;
@@ -268,6 +268,11 @@ interface NomadNetworkStoreState {
     path: string,
     opts?: FetchNomadPageOpts,
   ) => Promise<NomadFileResponse>;
+  fetchNomadMedia: (
+    hash: string,
+    path: string,
+    opts?: FetchNomadPageOpts,
+  ) => Promise<NomadFileResponse>;
   toggleFavorite: (hash: string, favorited: boolean) => Promise<void>;
   getNode: (hash: string) => NomadNodeRow | undefined;
 }
@@ -313,6 +318,15 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
 
   fetchNomadFile: async (hash, path, opts) =>
     fetchNomadResource<NomadFileResponse>('file', {
+      hash,
+      path,
+      nodes: get().nodes,
+      forcePathRefresh: opts?.forcePathRefresh,
+      requestId: opts?.requestId,
+    }),
+
+  fetchNomadMedia: async (hash, path, opts) =>
+    fetchNomadResource<NomadFileResponse>('media', {
       hash,
       path,
       nodes: get().nodes,

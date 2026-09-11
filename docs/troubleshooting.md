@@ -1295,20 +1295,20 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 **Humanized error categories** (sidecar code → user message):
 
-| Sidecar code            | Meaning                                                             |
-| ----------------------- | ------------------------------------------------------------------- |
-| `path_timeout`          | No route to the node (path lookup timed out)                        |
-| `pubkey_not_found`      | Destination identity key not cached yet — wait for a Nomad announce |
-| `link_timeout`          | Link could not be established in time (UI may say path OK vs stale) |
-| `response_timeout`      | Link opened but page payload did not arrive in time                 |
-| `missing_identity_hash` | No remembered identity for the node yet                             |
-| `network_not_ready`     | No usable path/interface yet — wait for hub/path or restart stack   |
-| `nomad_not_serving`     | Remote node is not serving Nomad pages                              |
-| `invalid_url`           | Malformed Nomad page/file URL                                       |
-| `transport_unavailable` | Reticulum transport unavailable — restart stack                     |
-| `sidecar_not_running`   | Sidecar not running — start stack from Connection                   |
-| `response_too_large`    | Remote response exceeded the sidecar size cap                       |
-| `nomad_busy`            | Another Nomad page/file query still holds the link lock             |
+| Sidecar code            | Meaning                                                                                                                                                                                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `path_timeout`          | No route to the node (path lookup timed out)                                                                                                                                                                                                    |
+| `pubkey_not_found`      | Destination identity key not cached yet — wait for a Nomad announce                                                                                                                                                                             |
+| `link_timeout`          | Link could not be established in time (UI may say path OK vs stale)                                                                                                                                                                             |
+| `response_timeout`      | Link opened but page payload did not arrive in time                                                                                                                                                                                             |
+| `missing_identity_hash` | No remembered identity for the node yet                                                                                                                                                                                                         |
+| `network_not_ready`     | No usable path/interface yet — wait for hub/path or restart stack                                                                                                                                                                               |
+| `nomad_not_serving`     | Remote node is not serving Nomad pages                                                                                                                                                                                                          |
+| `invalid_url`           | Malformed Nomad page/file URL                                                                                                                                                                                                                   |
+| `transport_unavailable` | Reticulum transport unavailable — restart stack                                                                                                                                                                                                 |
+| `sidecar_not_running`   | Sidecar not running — start stack from Connection                                                                                                                                                                                               |
+| `response_too_large`    | Remote response exceeded the sidecar size cap                                                                                                                                                                                                   |
+| `nomad_busy`            | Another Nomad page/file query still holds the link lock, or a page navigation preempted an in-flight query. In-page `/media` images queue (do not cancel each other); rebuild sidecar if multiple images fail with this code on an older build. |
 
 Unrecognized codes pass through unchanged.
 
@@ -1535,17 +1535,18 @@ Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the
 
 ### Reticulum: announces / Nomad / RRC work but Chat fails both ways
 
-**Symptoms**: Both mesh-client instances hear announces, Nomad pages and RRC work, probes look reachable, but Chat DMs never arrive either way. Developer bundles show outbound `to_hash` values that are **not** the peer’s Network **LXMF** hash. Diagnostics may list **Direct LXMF link … timed out** against a hash that identity activity marks as `lxst.telephony`. When **MeshChatX** (or another RNS app) runs on one side, the other may briefly show **Delivered** via RF — that Complete is for MeshChatX’s LXMF identity, not mesh-client Chat.
+**Symptoms**: Both mesh-client instances hear announces, Nomad pages and RRC work, probes look reachable, but Chat DMs never arrive either way. Developer bundles show outbound `to_hash` values that are **not** the peer’s Network **LXMF** hash. Pasting the peer’s **identity** hash and their **LXMF** hash opens **two** Chat tabs. Diagnostics may list **Direct LXMF link … timed out** against a hash that identity activity marks as `lxst.telephony` (or against the RNS identity hash). When **MeshChatX** (or another RNS app) runs on one side, the other may briefly show **Delivered** via RF — that Complete is for MeshChatX’s LXMF identity, not mesh-client Chat. Peers may appear in the list (announce heard) while Network topology shows **no** RF edge (`hops` null / no path). Prefer **RF** is not the same as disabling TCP hubs.
 
-**Cause**: The RNS path table lists **every** destination aspect. Opening **Peers → Message** (or a stale DM) on an `lxst.telephony` row sends LXMF Chat to a Voice destination. mesh-client remaps Message to the peer’s `lxmf.delivery` hash when identity activity knows it; without an LXMF announce it refuses send.
+**Cause**: The RNS path table lists **every** destination aspect. Opening **Peers → Message** (or a stale DM) on an `lxst.telephony` row, or pasting the peer’s **RNS identity** hash, used to send LXMF Chat to a non-`lxmf.delivery` destination. mesh-client remaps identity and telephony to the peer’s `lxmf.delivery` hash when identity activity knows it; without an LXMF announce it refuses send. A peer coming online after the other side’s hourly announce can miss the reverse LXMF path until **Announce now**. With Propagation **Off**, Direct timeout has no PN cascade. A prior link-timeout failure bridge could also leave later Sends stuck on **Sending** for the same dest until a new outbound clears that dedupe.
 
 **Fix / retest checklist**:
 
 1. **Fully quit** MeshChatX / other Reticulum apps on both machines during a mesh-client ↔ mesh-client test.
 2. On **Network**, confirm each side’s **LXMF** hash (not only the identity hash). Example pair: upstairs `ac978c…` ↔ downstairs `e3359f…`.
-3. Open Chat from Peers **Message** (or paste the peer’s 32-character **LXMF** hash). The DM header shows a copyable **LXMF** prefix — it must match Network, not a Voice-only row.
-4. If Direct still fails, set Propagation to **Auto** or **Manual** with a usable PN (Propagation **Off** has no cascade after Direct timeout).
-5. Export **both** Developer bundles; check `reticulum_messages.to_hash` against `reticulum_identity_activity` (`lxmf.delivery` vs `lxst.telephony`) and `reticulum/lxmf-outbound.log` for Direct Completes / Failed lines.
+3. Both sides **Announce now**, then wait until each sees the peer’s **LXMF** row with a path (hops ≥ 0) or Probe succeeds.
+4. Open Chat from Peers **Message** (or paste the peer’s 32-character **LXMF** hash — not the identity hash). The DM header shows a copyable **LXMF** prefix — it must match Network, not identity-only or a Voice-only row.
+5. If Direct still fails, set Propagation to **Auto** or **Manual** with a usable PN (Propagation **Off** has no cascade after Direct timeout). Prefer RF does not disable TCP — turn TCP hubs off on Connection → Interfaces when testing RF-only.
+6. Export **both** Developer bundles; check `reticulum_messages.to_hash` against `reticulum_identity_activity` (`lxmf.delivery` vs identity / `lxst.telephony`) and `reticulum/lxmf-outbound.log` for Direct Completes / Failed lines. Stuck `reticulum-pending-*` / `sending` rows after link timeouts are a client bridge bug (fixed builds clear dest dedupe on each new Send).
 
 ### Reticulum DM stuck on Sending (MeshChatX / shared instance)
 
@@ -1724,6 +1725,12 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 **What to do**: Usually no action; the watchdog recovers a wedged-but-alive sidecar. If restarts loop, check for a stuck link/interface or resource exhaustion in the sidecar log and **Stop stack** to clear state.
 
 ## Chat, nodes, and notifications
+
+### Unread messages but no app-icon badge
+
+On **macOS**, allow notifications for Mesh Client and enable **Badge application icon** in **System Settings → Notifications → Mesh Client**. The app initializes macOS notification authorization when unread messages exist and reapplies the current badge when its window regains focus. Reading the remaining unread messages clears the badge. macOS notification settings still control whether the badge is visible; the app does not override a denied permission.
+
+On **Windows**, unread messages use a red taskbar overlay. On **Linux**, launcher counts depend on desktop support for the LauncherEntry D-Bus API. Tray indicators remain separate from the app-icon badge.
 
 ### Meshtastic: inbound messages on the wrong channel tab
 

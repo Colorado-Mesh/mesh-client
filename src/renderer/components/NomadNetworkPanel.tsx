@@ -42,6 +42,7 @@ import {
   readNomadPageFitWidth,
   writeNomadPageFitWidth,
 } from '@/renderer/lib/nomad/nomadPageFitWidth';
+import { nomadRasterDataUrl } from '@/renderer/lib/nomad/nomadRasterPreview';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { NomadNodeRow, NomadPageRequestData } from '@/shared/nomad-types';
 
@@ -245,6 +246,7 @@ export default function NomadNetworkPanel({
   const refreshFromSidecar = useNomadNetworkStore((s) => s.refreshFromSidecar);
   const fetchNomadPage = useNomadNetworkStore((s) => s.fetchNomadPage);
   const fetchNomadFile = useNomadNetworkStore((s) => s.fetchNomadFile);
+  const fetchNomadMedia = useNomadNetworkStore((s) => s.fetchNomadMedia);
   const toggleFavorite = useNomadNetworkStore((s) => s.toggleFavorite);
 
   const selectedHash = useNomadPageViewerStore((s) => s.selectedHash);
@@ -282,6 +284,11 @@ export default function NomadNetworkPanel({
   const [pageLoadingRemainingSec, setPageLoadingRemainingSec] = useState(0);
   const [fileDownloading, setFileDownloading] = useState(false);
   const [fileDownloadError, setFileDownloadError] = useState<string | null>(null);
+  const [filePreview, setFilePreview] = useState<{
+    fileName: string;
+    dataUrl: string;
+    contentBase64: string;
+  } | null>(null);
   const [nodeListCollapsed, setNodeListCollapsed] = useState(
     () => localStorage.getItem(NOMAD_NODE_LIST_COLLAPSED_STORAGE_KEY) === 'true',
   );
@@ -481,6 +488,7 @@ export default function NomadNetworkPanel({
       fileDownloadInFlightRef.current = true;
       setFileDownloading(true);
       setFileDownloadError(null);
+      setFilePreview(null);
       try {
         const normalizedPath = normalizeNomadPagePath(path);
         const res = await fetchNomadFile(hash, normalizedPath);
@@ -490,7 +498,12 @@ export default function NomadNetworkPanel({
           return;
         }
         const fileName = res.file_name ?? normalizedPath.split('/').pop() ?? 'downloaded_file';
-        downloadNomadFileFromBase64(fileName, res.content_base64);
+        const dataUrl = nomadRasterDataUrl(fileName, res.content_base64);
+        if (dataUrl) {
+          setFilePreview({ fileName, dataUrl, contentBase64: res.content_base64 });
+        } else {
+          downloadNomadFileFromBase64(fileName, res.content_base64);
+        }
       } catch (e) {
         // Failure point: unexpected fetchNomadFile reject. Fallback: humanize if possible.
         if (!mountedRef.current) return;
@@ -1076,6 +1089,39 @@ export default function NomadNetworkPanel({
                       {t('nomadNetwork.fileDownloadFailed', { error: fileDownloadError })}
                     </p>
                   ) : null}
+                  {filePreview ? (
+                    <div className="mb-3 space-y-2 rounded border border-gray-700/80 bg-slate-900/50 p-2">
+                      <p className="text-muted text-xs">{filePreview.fileName}</p>
+                      <img
+                        src={filePreview.dataUrl}
+                        alt={filePreview.fileName}
+                        className="max-h-[50vh] max-w-full object-contain"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-gray-800"
+                          onClick={() => {
+                            downloadNomadFileFromBase64(
+                              filePreview.fileName,
+                              filePreview.contentBase64,
+                            );
+                          }}
+                        >
+                          {t('nomadNetwork.downloadFile', { defaultValue: 'Download' })}
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-gray-800"
+                          onClick={() => {
+                            setFilePreview(null);
+                          }}
+                        >
+                          {t('nomadNetwork.dismissPreview', { defaultValue: 'Dismiss' })}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                   {pageLoading ? (
                     <div className="space-y-1">
                       <p className="text-muted text-sm">
@@ -1133,6 +1179,7 @@ export default function NomadNetworkPanel({
                         onDownloadFile={handleMicronDownload}
                         onOpenDm={onOpenDm}
                         onFetchPartial={fetchNomadPage}
+                        onFetchMedia={fetchNomadMedia}
                       />
                     ) : (
                       <pre

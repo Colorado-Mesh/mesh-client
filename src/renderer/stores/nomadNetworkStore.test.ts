@@ -184,6 +184,36 @@ describe('nomadNetworkStore', () => {
     expect(res).toEqual({ ok: true, file_name: 'readme.txt', content_base64: 'aGVsbG8=' });
   });
 
+  it('fetchNomadMedia requests /media API with media path', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
+    useNomadNetworkStore.setState({
+      nodes: new Map([
+        [
+          'abc',
+          {
+            destination_hash: 'abc',
+            display_name: 'Forum',
+            favorited: false,
+            hops: 2,
+          },
+        ],
+      ]),
+    });
+    proxyGet.mockResolvedValue({
+      ok: true,
+      file_name: 'demo.webp',
+      content_base64: 'aGVsbG8=',
+    });
+
+    const res = await useNomadNetworkStore.getState().fetchNomadMedia('abc', '/media/demo.webp');
+
+    expect(proxyGet).toHaveBeenCalledWith(
+      '/api/v1/nomadnetwork/media/abc?path=%2Fmedia%2Fdemo.webp',
+    );
+    expect(res).toEqual({ ok: true, file_name: 'demo.webp', content_base64: 'aGVsbG8=' });
+  });
+
   it('logs failure warning with link budget when page fetch returns ok:false', async () => {
     const { spy, restore } = mockConsoleWarn();
     try {

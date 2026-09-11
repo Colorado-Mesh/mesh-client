@@ -227,6 +227,7 @@ class MicronParser {
       table_buffer: [],
       table_align: null,
       table_maxwidth: this.MAX_TABLE_WIDTH,
+      collapsible_stack: [],
     };
 
     const lines = markup.split('\n');
@@ -241,15 +242,7 @@ class MicronParser {
 
     for (let line of lines) {
       const lineOutput = this.parseLine(line, state);
-      if (lineOutput && lineOutput.length > 0) {
-        for (let el of lineOutput) {
-          tempContainer.appendChild(el);
-        }
-      } else if (lineOutput && lineOutput.length === 0) {
-        // skip
-      } else {
-        tempContainer.appendChild(document.createElement('br'));
-      }
+      this._appendLineOutput(tempContainer, lineOutput, state);
     }
 
     MicronParser._resolveEmptyAnchors(tempContainer);
@@ -302,6 +295,7 @@ class MicronParser {
       table_buffer: [],
       table_align: null,
       table_maxwidth: this.MAX_TABLE_WIDTH,
+      collapsible_stack: [],
     };
 
     // create container div for page-level colors
@@ -318,21 +312,46 @@ class MicronParser {
     for (let line of lines) {
       line = DOMPurify.sanitize(line, { USE_PROFILES: { html: true } });
       const lineOutput = this.parseLine(line, state);
-      if (lineOutput && lineOutput.length > 0) {
-        for (let el of lineOutput) {
-          container.appendChild(el);
-        }
-      } else if (lineOutput && lineOutput.length === 0) {
-        // skip
-      } else {
-        container.appendChild(document.createElement('br'));
-      }
+      this._appendLineOutput(container, lineOutput, state);
     }
 
     MicronParser._resolveEmptyAnchors(container);
 
     fragment.appendChild(container);
     return fragment;
+  }
+
+  _closeCollapsiblesToDepth(state, depth) {
+    if (!state.collapsible_stack) return;
+    while (state.collapsible_stack.length > 0) {
+      const top = state.collapsible_stack[state.collapsible_stack.length - 1];
+      if (top.depth < depth) break;
+      state.collapsible_stack.pop();
+    }
+  }
+
+  _appendLineOutput(container, lineOutput, state) {
+    const parent =
+      state.collapsible_stack && state.collapsible_stack.length > 0
+        ? state.collapsible_stack[state.collapsible_stack.length - 1].body
+        : container;
+    if (lineOutput && lineOutput.length > 0) {
+      for (let el of lineOutput) {
+        parent.appendChild(el);
+        if (el._micronCollapsibleDepth != null) {
+          if (!state.collapsible_stack) state.collapsible_stack = [];
+          state.collapsible_stack.push({
+            depth: el._micronCollapsibleDepth,
+            body: el,
+          });
+          delete el._micronCollapsibleDepth;
+        }
+      }
+    } else if (lineOutput && lineOutput.length === 0) {
+      // skip
+    } else {
+      parent.appendChild(document.createElement('br'));
+    }
   }
 
   parseLine(line, state) {
@@ -376,8 +395,20 @@ class MicronParser {
       }
 
       let preEscape = false;
+      let collapsibleHeading = false;
+      let collapsedInitial = false;
 
       if (!state.literal) {
+        if (
+          (line.startsWith('`+') || line.startsWith('`-')) &&
+          line.length >= 3 &&
+          line[2] === '>'
+        ) {
+          collapsibleHeading = true;
+          collapsedInitial = line[1] === '-';
+          line = line.slice(2);
+        }
+
         if (line[0] === '>' && line.includes('`<')) {
           line = line.replace(/^>+/, '');
         }
@@ -389,7 +420,10 @@ class MicronParser {
           return [];
         } else if (line.startsWith('`{')) {
           return this.parsePartial(line.slice(2)) || [];
+        } else if (line.startsWith('`(')) {
+          return this.parseImage(line.slice(2), state) || [];
         } else if (line[0] === '<') {
+          this._closeCollapsiblesToDepth(state, 0);
           state.depth = 0;
           if (line.length === 1) return [];
           return this.parseLine(line.slice(1), state);
@@ -399,6 +433,7 @@ class MicronParser {
             i++;
           }
           state.depth = i;
+          this._closeCollapsiblesToDepth(state, i);
           let headingLine = line.slice(i);
 
           if (headingLine.length > 0) {
@@ -430,10 +465,28 @@ class MicronParser {
             }
 
             if (outputParts && outputParts.length > 0) {
+              if (collapsibleHeading) {
+                const details = document.createElement('details');
+                details.className = 'nomad-micron-collapsible';
+                if (!collapsedInitial) details.open = true;
+                details.dataset.depth = String(i);
+                details._micronCollapsibleDepth = i;
+
+                const summary = document.createElement('summary');
+                this.applyStyleToElement(summary, style);
+                this.applySectionIndent(summary, state);
+                this.applyAlignment(summary, state);
+                this.appendOutput(summary, outputParts, state);
+                details.appendChild(summary);
+                return [details];
+              }
+
               const outerDiv = document.createElement('div');
               this.applyStyleToElement(outerDiv, style);
               outerDiv.style.display = 'block';
               outerDiv.style.width = '100%';
+              outerDiv.className = 'nomad-micron-heading';
+              outerDiv.dataset.depth = String(i);
 
               const innerDiv = document.createElement('div');
               this.applySectionIndent(innerDiv, state);
@@ -630,7 +683,10 @@ class MicronParser {
           this.applyStyleToElement(label, this.styleFromState(p.style), state.default_bg);
           container.appendChild(label);
         } else if (p.type === 'link') {
-          let directURL = p.url.replace('nomadnetwork://', '').replace('lxmf://', '');
+          let directURL = p.url
+            .replace('nomadnetwork://', '')
+            .replace('lxmf://', '')
+            .replace('rrc://', '');
           // use p.url as is for the href
           const formattedUrl = p.url;
 
@@ -717,6 +773,13 @@ class MicronParser {
 
     if (fgColor && fgColor !== 'default') {
       el.style.color = fgColor;
+      // Same fg as page/default bg → progressive tip for non-truecolor clients;
+      // hide on color-capable renderers (mesh-client).
+      const pageBgCss = this.colorToCss(defaultBg);
+      if (pageBgCss && fgColor.toLowerCase() === pageBgCss.toLowerCase()) {
+        el.classList.add('nomad-micron-fg-matches-bg');
+        el.setAttribute('aria-hidden', 'true');
+      }
     }
     if (bgColor && bgColor !== 'default' && style.bg !== defaultBg) {
       el.style.backgroundColor = bgColor;
@@ -1156,6 +1219,120 @@ class MicronParser {
     if (partial_fields.length > 0) el.setAttribute('data-partial-fields', partial_fields.join('|'));
 
     return [el];
+  }
+
+  /**
+   * NomadNet 1.4.1 image tag: `(alt`w=`h=`a=`url)
+   * Emits an <img> placeholder; the view layer fetches /media bytes.
+   * Size/align match ImageWidget (columns→ch, NN%, n=native, omitted w=100%,
+   * omitted a=center).
+   */
+  parseImage(line, state) {
+    const endpos = line.lastIndexOf(')');
+    if (endpos <= 0) return null;
+    const imageData = line.substring(0, endpos);
+    const fields = imageData.split('`');
+    if (fields.length < 2) return null;
+
+    const altText = fields[0].trim();
+    const imageUrl = fields[fields.length - 1].trim();
+    const properties = fields.slice(1, -1);
+
+    let width = null;
+    let height = null;
+    let alignProp = null;
+    for (const prop of properties) {
+      if (!prop.includes('=')) continue;
+      const eq = prop.indexOf('=');
+      const key = prop.slice(0, eq).trim();
+      const value = prop.slice(eq + 1).trim();
+      if (key === 'w') width = value;
+      else if (key === 'h') height = value;
+      else if (key === 'a') alignProp = value;
+    }
+
+    // NomadNet ImageWidget defaults align to center when `a=` is omitted
+    // (does not inherit page `` `c `` / `` `l ``).
+    let alignCss = 'center';
+    if (alignProp === 'c' || alignProp === 'center') alignCss = 'center';
+    else if (alignProp === 'l' || alignProp === 'left') alignCss = 'left';
+    else if (alignProp === 'r' || alignProp === 'right') alignCss = 'right';
+
+    const figure = document.createElement('figure');
+    figure.className = 'nomad-micron-media-figure';
+    this.applySectionIndent(figure, state);
+    figure.style.width = '100%';
+    figure.style.textAlign = alignCss;
+
+    const img = document.createElement('img');
+    img.className = 'nomad-micron-media';
+    img.alt = altText || '';
+    img.setAttribute('data-nomad-media-url', imageUrl);
+    img.setAttribute('data-nomad-media-alt', altText);
+    if (width != null) img.setAttribute('data-w', String(width));
+    if (height != null) img.setAttribute('data-h', String(height));
+    if (alignProp != null) img.setAttribute('data-a', String(alignProp));
+
+    img.style.display = 'inline-block';
+    img.style.maxWidth = '100%';
+    img.style.verticalAlign = 'middle';
+
+    const widthCss = MicronParser._nomadImageSizeToCss(width, 'width');
+    const heightCss = MicronParser._nomadImageSizeToCss(height, 'height');
+    const widthConcrete = widthCss && widthCss !== 'native' && widthCss !== 'full';
+    const heightConcrete = heightCss && heightCss !== 'native' && heightCss !== 'full';
+
+    if (widthCss === 'native') {
+      // Leave width unset (intrinsic), capped by max-width.
+      img.style.height = 'auto';
+    } else if (widthConcrete) {
+      img.style.width = widthCss;
+      img.style.height = 'auto';
+    } else {
+      // Omitted w or invalid → NomadNet full layout width.
+      img.style.width = '100%';
+      img.style.height = 'auto';
+    }
+
+    if (heightConcrete) {
+      img.style.height = heightCss;
+      if (widthConcrete) {
+        img.style.objectFit = 'contain';
+      } else if (widthCss === 'native') {
+        img.style.maxHeight = heightCss;
+        img.style.height = 'auto';
+        img.style.objectFit = 'contain';
+      } else {
+        // Height-only (omitted w): keep full-width default; constrain height.
+        img.style.maxHeight = heightCss;
+        img.style.objectFit = 'contain';
+      }
+    }
+
+    const notice = document.createElement('figcaption');
+    notice.className = 'nomad-micron-media-notice';
+    notice.textContent = altText ? `[${altText}]` : '[image]';
+
+    figure.appendChild(img);
+    figure.appendChild(notice);
+    return [figure];
+  }
+
+  /**
+   * Map NomadNet ImageWidget size specs to CSS.
+   * @returns {'full'|'native'|string|null} CSS length, sentinel, or null if omitted
+   */
+  static _nomadImageSizeToCss(value, axis) {
+    if (value == null || value === '') return null;
+    const v = String(value).trim();
+    if (!v) return null;
+    if (v.toLowerCase() === 'n') return 'native';
+    if (/^\d+$/.test(v)) {
+      // Terminal columns / rows → ch / lh.
+      return axis === 'height' ? `${v}lh` : `${v}ch`;
+    }
+    if (/^\d+(\.\d+)?%$/.test(v)) return v;
+    return null;
   }
 
   static upgradeInputToTextarea(input, options = {}) {

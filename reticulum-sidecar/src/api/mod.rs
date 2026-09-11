@@ -209,6 +209,10 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             get(nomad::get_nomad_file),
         )
         .route(
+            "/api/v1/nomadnetwork/media/{hash}",
+            get(nomad::get_nomad_media),
+        )
+        .route(
             "/api/v1/nomadnetwork/serving",
             get(nomad::get_nomad_serving).put(nomad::put_nomad_serving),
         )

@@ -30,7 +30,6 @@ rns-stack = [
     "dep:rns-crypto",
     "dep:argon2",
     "dep:zeroize",
-    "dep:rmpv",
     "dep:tempfile",
     "dep:notify",
     "dep:rusqlite",
@@ -55,7 +54,8 @@ uuid = { version = "1", features = ["v4"] }
 hex = "0.4"
 sha2 = "0.10"
 tempfile = { version = "3", optional = true }
-rmpv = { version = "1", optional = true }
+# Always on: stub builds compile `nomad_file` metadata helpers (Resource name msgpack).
+rmpv = "1"
 
 base64 = "0.22"
 bytes = "1"

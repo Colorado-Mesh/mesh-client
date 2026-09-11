@@ -750,7 +750,9 @@
     "heardByRepeatersAdditional_one": "{{count}} forwarder tak dikenal tambahan (hash: {{hashes}})",
     "heardByRepeatersAdditional_other": "{{count}} forwarder tak dikenal tambahan (hash: {{hashes}})",
     "reticulumSendAwaitingPeerReceipt": "Terkirim (menunggu tanda terima sejawat)",
-    "reticulumChatNeedsLxmfDelivery": "Rekan ini belum memiliki alamat pengiriman LXMF (Obrolan tidak dapat menggunakan tujuan khusus Suara). Tunggu pengumuman LXMF, atau tempelkan hash LXMF 32 karakternya."
+    "reticulumChatNeedsLxmfDelivery": "Rekan ini belum memiliki alamat pengiriman LXMF (Obrolan tidak dapat menggunakan tujuan khusus Suara). Tunggu pengumuman LXMF, atau tempelkan hash LXMF 32 karakternya.",
+    "saveAttachment": "Simpan",
+    "revealAttachment": "Tampilkan dalam Folder"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -1312,7 +1314,19 @@
       "fieldNotANumber": "Masukkan bilangan bulat (digit saja).",
       "fieldOutOfRange": "Nilai berada di luar rentang yang diizinkan.",
       "fieldTooLong": "Nilai terlalu panjang.",
-      "fieldInvalidOption": "Nilai tidak didukung."
+      "fieldInvalidOption": "Nilai tidak didukung.",
+      "profilesTitle": "Interface profiles",
+      "profilesHint": "Named enable-sets for which interfaces are on. Switching a profile enables its members and disables the rest.",
+      "profilesEmpty": "No profiles yet. Save the current enable-set to create one.",
+      "profilesDefault": "Default",
+      "profilesUnnamed": "(unnamed)",
+      "profilesNamePlaceholder": "Profile name",
+      "profilesSaveCurrent": "Save current",
+      "profilesCreateEmpty": "New empty",
+      "profilesRename": "Rename",
+      "profilesSaveRename": "Save",
+      "profilesDelete": "Delete",
+      "profilesRenameAria": "Rename profile {{name}}"
     },
     "reticulumPeers": {
       "hops": "Hop",
@@ -3416,7 +3430,9 @@
     "pageProgressFailover": "Mencoba rute yang berbeda melalui {{iface}} ({{hops}} hop)...",
     "pageProgressFailoverIface": "Mencoba rute lain melalui {{iface}}…",
     "pageProgressFailoverGeneric": "Mencoba rute yang berbeda...",
-    "pageProgressNoAlternate": "Tidak ada rute lain yang tersedia — menyelesaikan upaya ini..."
+    "pageProgressNoAlternate": "Tidak ada rute lain yang tersedia — menyelesaikan upaya ini...",
+    "downloadFile": "Unduh",
+    "dismissPreview": "Tutup"
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",
@@ -5360,7 +5376,17 @@
     "addressChoiceTitle": "Buka alamat Reticulum",
     "addressChoiceMessage": "{{address}} bisa berupa halaman Nomad atau sebuah peer. Mana yang ingin dibuka?",
     "addressChoiceNomad": "Halaman Nomad",
-    "addressChoiceDm": "Pesan langsung"
+    "addressChoiceDm": "Pesan langsung",
+    "byteLimit": {
+      "approaching": "{{count}} / {{limit}}",
+      "overMax": "Pesan terlalu panjang — batas hub {{limit}} byte"
+    },
+    "nickLimit": {
+      "overMax": "Nama panggilan terlalu panjang — batas hub adalah {{limit}} byte"
+    },
+    "roomNameLimit": {
+      "overMax": "Nama ruangan terlalu panjang — batas hub {{limit}} byte"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

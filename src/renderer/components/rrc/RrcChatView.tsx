@@ -2,7 +2,6 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ArrowDown, Copy } from 'lucide-react-motion';
 import {
-  type KeyboardEvent,
   type ReactNode,
   useCallback,
   useEffect,
@@ -13,8 +12,9 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ChatComposer } from '@/renderer/components/ChatComposer';
 import { ConfirmModal } from '@/renderer/components/ConfirmModal';
-import MentionAutocomplete from '@/renderer/components/MentionAutocomplete';
+import { RrcFormattedBody } from '@/renderer/components/rrc/RrcFormattedBody';
 import { useAppWindowActivity } from '@/renderer/lib/appWindowActivity';
 import { isSafeChatUrl } from '@/renderer/lib/chatMentionSegments';
 import {
@@ -31,6 +31,7 @@ import {
   findReticulumChatLinks,
   type ReticulumChatLink,
 } from '@/renderer/lib/nomad/reticulumLinkText';
+import { resolveRrcMsgBodyLimit, rrcComposerBypassesSplit } from '@/renderer/lib/rrcHubLimits';
 import {
   bodyMentionsRrcNick,
   findNextRrcNickMention,
@@ -40,9 +41,7 @@ import { parseRrcWhisperEcho, shouldDisplayRrcChatMessage } from '@/renderer/lib
 import { rrcNickColorClass } from '@/renderer/lib/rrcNickColor';
 import {
   findRrcAtMentionAtCaret,
-  insertRrcNickMention,
   listRrcNickCompleteCandidates,
-  nextRrcNickCompleteIndex,
   rrcMemberNickLabels,
 } from '@/renderer/lib/rrcNickComplete';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
@@ -77,7 +76,6 @@ function rrcMessageVirtualizerKey(msg: RrcChatMessage | null | undefined, index:
 }
 
 const EMPTY_RRC_MEMBERS: readonly RrcRoomMember[] = Object.freeze([]);
-const RRC_MENTION_LISTBOX_ID = 'rrc-mention-listbox';
 
 const URL_PATTERN = /https?:\/\/[^\s<>"{}|\\^`[\]]+/gu;
 const TRAILING_PUNCT = /[.,!?;:'"()]+$/;
@@ -251,14 +249,13 @@ export interface RrcChatViewProps {
   activeRoom: string | null;
   messages: RrcChatMessage[];
   showTimestamps: boolean;
-  draft: string;
-  onDraftChange: (v: string) => void;
-  onSend: (text: string) => void;
   canSend: boolean;
   isMuted: boolean;
+  /** Hub WELCOME max_msg_body_bytes (drives ChatComposer payloadLimit). */
+  maxMsgBodyBytes?: number | null;
   /** Local session nick — used to highlight @mentions of self. */
   nickname?: string;
-  /** Active room members for @ / Tab nick completion. */
+  /** Active room members for @ nick completion. */
   members?: readonly RrcRoomMember[];
   /** Keep the per-message copy control visible (same App Appearance setting as Chat). */
   alwaysShowMessageActions?: boolean;
@@ -270,6 +267,14 @@ export interface RrcChatViewProps {
   onCaughtUp?: () => void;
   /** Open a Chat DM for an LXMF destination hash posted in a message. */
   onOpenDm?: (destinationHash: string) => void;
+  /** Plain chat / action chunk send (ChatComposer may call multiple times when splitting). */
+  onSendChunk: (text: string) => Promise<void>;
+  /**
+   * When true, ChatComposer skips split/send (slash commands). Return false for plain chat.
+   */
+  onInterceptSend: (text: string) => Promise<boolean>;
+  /** Seed composer from nicklist `/msg` clicks. */
+  composeSeed?: { text: string; token: number } | null;
 }
 
 export function RrcChatView({
@@ -278,11 +283,9 @@ export function RrcChatView({
   activeRoom,
   messages,
   showTimestamps,
-  draft,
-  onDraftChange,
-  onSend,
   canSend,
   isMuted,
+  maxMsgBodyBytes = null,
   nickname = '',
   members = EMPTY_RRC_MEMBERS,
   alwaysShowMessageActions = false,
@@ -290,6 +293,9 @@ export function RrcChatView({
   isActive = true,
   onCaughtUp,
   onOpenDm,
+  onSendChunk,
+  onInterceptSend,
+  composeSeed = null,
 }: RrcChatViewProps) {
   const { t } = useTranslation();
   const { inactive: appWindowInactive } = useAppWindowActivity();
@@ -323,9 +329,6 @@ export function RrcChatView({
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  /** Skip one caret sync after programmatic Tab/insert selection updates. */
-  const skipMentionSyncRef = useRef(false);
   /** Sticky intent: user is reading latest messages and wants auto-follow on new traffic. */
   const isPinnedToBottomRef = useRef(true);
   /** Hub/room stream switch — trust pin until the user scrolls (virtualizer can lag). */
@@ -337,76 +340,30 @@ export function RrcChatView({
   const prevStreamKeyRef = useRef<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
-  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [mentionTriggerPos, setMentionTriggerPos] = useState(0);
-  const [mentionSelectedIdx, setMentionSelectedIdx] = useState(0);
-  const [tabCycleIndex, setTabCycleIndex] = useState(-1);
-  /** Original `@` prefix while Tab-cycling so candidates do not narrow to the inserted nick. */
-  const [mentionCyclePrefix, setMentionCyclePrefix] = useState<string | null>(null);
-  /** Length of the nick currently inserted during an active Tab cycle. */
-  const [mentionInsertedNickLen, setMentionInsertedNickLen] = useState(0);
-
   const visibleMessages = useMemo(() => messages.filter(shouldDisplayRrcChatMessage), [messages]);
 
   const nickLabels = useMemo(() => rrcMemberNickLabels(members), [members]);
 
-  const mentionCandidates = useMemo(() => {
-    if (mentionQuery == null) return [];
-    const filterQuery = mentionCyclePrefix ?? mentionQuery;
-    return listRrcNickCompleteCandidates(nickLabels, filterQuery).map((name, i) => ({
-      nodeId: i,
-      name,
-    }));
-  }, [mentionQuery, mentionCyclePrefix, nickLabels]);
-
-  const clearMentionCycle = useCallback(() => {
-    setMentionCyclePrefix(null);
-    setMentionInsertedNickLen(0);
-    setTabCycleIndex(-1);
-  }, []);
-
-  const syncMentionFromCaret = useCallback(
-    (value: string, caret: number) => {
-      const at = findRrcAtMentionAtCaret(value, caret);
-      if (!at) {
-        setMentionQuery(null);
-        clearMentionCycle();
-        return;
-      }
-      setMentionTriggerPos(at.start);
-      setMentionQuery(at.query);
-      setMentionSelectedIdx(0);
-      clearMentionCycle();
-    },
-    [clearMentionCycle],
+  const mentionAdapter = useMemo(
+    () => ({
+      findAtCaret: findRrcAtMentionAtCaret,
+      buildCandidates: (query: string) =>
+        listRrcNickCompleteCandidates(nickLabels, query).map((name, i) => ({
+          nodeId: i,
+          name,
+        })),
+      formatInsert: (name: string) => `@${name} `,
+    }),
+    [nickLabels],
   );
 
-  const insertMention = useCallback(
-    (name: string) => {
-      const queryLen =
-        mentionCyclePrefix != null ? mentionInsertedNickLen : (mentionQuery?.length ?? 0);
-      const { text, caret } = insertRrcNickMention(draft, mentionTriggerPos, queryLen, name);
-      onDraftChange(text);
-      setMentionQuery(null);
-      clearMentionCycle();
-      skipMentionSyncRef.current = true;
-      requestAnimationFrame(() => {
-        const el = textareaRef.current;
-        if (!el) return;
-        el.focus();
-        el.setSelectionRange(caret, caret);
-      });
-    },
-    [
-      clearMentionCycle,
-      draft,
-      mentionCyclePrefix,
-      mentionInsertedNickLen,
-      mentionQuery,
-      mentionTriggerPos,
-      onDraftChange,
-    ],
-  );
+  const composerViewKey = useMemo(() => {
+    const hub = (hubDestHash ?? 'none').toLowerCase();
+    const room = activeRoom ?? '_none';
+    return `rrc:${hub}:${room}`;
+  }, [hubDestHash, activeRoom]);
+
+  const payloadLimit = resolveRrcMsgBodyLimit(maxMsgBodyBytes);
 
   const estimateSize = useCallback(
     (index: number) => estimateRrcRowHeight(visibleMessages[index]),
@@ -600,97 +557,6 @@ export function RrcChatView({
     });
   }, [updateScrollButtonVisibility]);
 
-  const handleComposerKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (mentionQuery != null && mentionCandidates.length > 0) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setMentionSelectedIdx((i) => Math.min(i + 1, mentionCandidates.length - 1));
-        return;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setMentionSelectedIdx((i) => Math.max(i - 1, 0));
-        return;
-      }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setMentionQuery(null);
-        clearMentionCycle();
-        return;
-      }
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        const candidate = mentionCandidates[mentionSelectedIdx];
-        if (candidate) insertMention(candidate.name);
-        return;
-      }
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        const cycling = mentionCyclePrefix != null;
-        const prefix = cycling ? mentionCyclePrefix : mentionQuery;
-        const names = listRrcNickCompleteCandidates(nickLabels, prefix);
-        const nextIdx = nextRrcNickCompleteIndex(names, tabCycleIndex, e.shiftKey);
-        if (nextIdx < 0) return;
-        const nick = names[nextIdx];
-        if (!nick) return;
-        const replaceLen = cycling ? mentionInsertedNickLen : mentionQuery.length;
-        if (!cycling) setMentionCyclePrefix(mentionQuery);
-        setMentionInsertedNickLen(nick.length);
-        setTabCycleIndex(nextIdx);
-        setMentionSelectedIdx(nextIdx);
-        const { text, caret } = insertRrcNickMention(draft, mentionTriggerPos, replaceLen, nick);
-        onDraftChange(text);
-        // Keep dropdown open for further Tab cycles (query = completed nick).
-        setMentionQuery(nick);
-        skipMentionSyncRef.current = true;
-        requestAnimationFrame(() => {
-          const el = textareaRef.current;
-          if (!el) return;
-          el.focus();
-          el.setSelectionRange(caret, caret);
-        });
-        return;
-      }
-    } else if (e.key === 'Tab') {
-      const el = e.currentTarget;
-      const caret = el.selectionStart ?? draft.length;
-      const at = findRrcAtMentionAtCaret(draft, caret);
-      if (at) {
-        e.preventDefault();
-        const candidates = listRrcNickCompleteCandidates(nickLabels, at.query);
-        if (candidates.length === 0) return;
-        const nextIdx = nextRrcNickCompleteIndex(candidates, -1, e.shiftKey);
-        const nick = candidates[nextIdx];
-        if (!nick) return;
-        setMentionTriggerPos(at.start);
-        setMentionCyclePrefix(at.query);
-        setMentionInsertedNickLen(nick.length);
-        setTabCycleIndex(nextIdx);
-        setMentionSelectedIdx(nextIdx);
-        const { text, caret: newCaret } = insertRrcNickMention(
-          draft,
-          at.start,
-          at.query.length,
-          nick,
-        );
-        onDraftChange(text);
-        setMentionQuery(nick);
-        skipMentionSyncRef.current = true;
-        requestAnimationFrame(() => {
-          textareaRef.current?.setSelectionRange(newCaret, newCaret);
-        });
-        return;
-      }
-    }
-
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      setMentionQuery(null);
-      clearMentionCycle();
-      onSend(draft);
-    }
-  };
-
   if (!connected) {
     return (
       <div className="flex flex-1 items-center justify-center p-6 text-sm text-gray-400">
@@ -750,11 +616,14 @@ export function RrcChatView({
                       : msg.kind === 'error'
                         ? 'text-red-300'
                         : 'text-gray-100';
-                const body = highlightRrcSelfMentions(
-                  whisperEcho ? whisperEcho.text : msg.body,
-                  nickname,
-                  inlineOpts,
-                );
+                const rawBody = whisperEcho ? whisperEcho.text : msg.body;
+                const plainBody = highlightRrcSelfMentions(rawBody, nickname, inlineOpts);
+                const body =
+                  msg.kind === 'msg' || msg.kind === 'action' || whisperAsRoomMsg ? (
+                    <RrcFormattedBody text={rawBody} fallback={plainBody} onOpenDm={onOpenDm} />
+                  ) : (
+                    plainBody
+                  );
 
                 return (
                   <div
@@ -833,66 +702,24 @@ export function RrcChatView({
           </button>
         )}
       </div>
-      <div className="relative flex gap-2 border-t border-gray-700 p-2">
-        {mentionQuery != null && mentionCandidates.length > 0 && (
-          <MentionAutocomplete
-            listboxId={RRC_MENTION_LISTBOX_ID}
-            candidates={mentionCandidates}
-            selectedIdx={mentionSelectedIdx}
-            onSelect={insertMention}
-            onSetSelectedIdx={setMentionSelectedIdx}
-          />
-        )}
-        <div
-          role="combobox"
-          tabIndex={-1}
-          aria-label={composerPlaceholder}
-          aria-haspopup="listbox"
-          aria-expanded={mentionQuery != null && mentionCandidates.length > 0}
-          aria-controls={RRC_MENTION_LISTBOX_ID}
-          aria-activedescendant={
-            mentionQuery != null && mentionCandidates.length > 0
-              ? `${RRC_MENTION_LISTBOX_ID}-option-${mentionSelectedIdx}`
-              : undefined
-          }
-          className="min-w-0 flex-1"
-        >
-          <textarea
-            ref={textareaRef}
-            value={draft}
-            onChange={(e) => {
-              const value = e.target.value;
-              onDraftChange(value);
-              syncMentionFromCaret(value, e.target.selectionStart ?? value.length);
-            }}
-            onSelect={(e) => {
-              if (skipMentionSyncRef.current) {
-                skipMentionSyncRef.current = false;
-                return;
-              }
-              const el = e.currentTarget;
-              syncMentionFromCaret(el.value, el.selectionStart ?? el.value.length);
-            }}
-            onKeyDown={handleComposerKeyDown}
-            disabled={!canSend || isMuted}
-            placeholder={composerPlaceholder}
-            aria-label={composerPlaceholder}
-            aria-autocomplete="list"
-            rows={2}
-            className="bg-deep-black w-full resize-none rounded border border-gray-600 px-2 py-1.5 font-sans text-sm text-gray-100 disabled:opacity-50"
-          />
-        </div>
-        <button
-          type="button"
-          className="bg-readable-green self-end rounded px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-          aria-label={t('rrc.send')}
-          disabled={!canSend || isMuted || !draft.trim()}
-          onClick={() => {
-            onSend(draft);
-          }}
-        >
-          {t('rrc.send')}
-        </button>
+      <div className="border-t border-gray-700 p-2 font-sans">
+        <ChatComposer
+          protocol="reticulum"
+          viewKey={composerViewKey}
+          isConnected={canSend}
+          allowOutbox={false}
+          disabled={isMuted || !activeRoom}
+          placeholder={composerPlaceholder}
+          sendButtonLabel={t('rrc.send')}
+          payloadLimit={payloadLimit}
+          useWireByteCount
+          shouldSuppressLimits={rrcComposerBypassesSplit}
+          onInterceptSend={onInterceptSend}
+          onSendChunk={onSendChunk}
+          mentionAdapter={mentionAdapter}
+          composeSeed={composeSeed}
+          className="w-full"
+        />
       </div>
       {pendingAddress && (
         <ConfirmModal

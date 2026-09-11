@@ -750,7 +750,9 @@
     "heardByRepeatersAdditional_one": "{{count}} extra niet-geïdentificeerde expediteur (hashes: {{hashes}})",
     "heardByRepeatersAdditional_other": "{{count}} extra niet-geïdentificeerde expediteurs (hashes: {{hashes}})",
     "reticulumSendAwaitingPeerReceipt": "Verzonden (in afwachting van ontvangst door collega's)",
-    "reticulumChatNeedsLxmfDelivery": "Deze peer heeft nog geen LXMF-bezorgadres (chat kan geen bestemming met alleen spraak gebruiken). Wacht op een LXMF-aankondiging of plak hun LXMF-hash van 32 tekens."
+    "reticulumChatNeedsLxmfDelivery": "Deze peer heeft nog geen LXMF-bezorgadres (chat kan geen bestemming met alleen spraak gebruiken). Wacht op een LXMF-aankondiging of plak hun LXMF-hash van 32 tekens.",
+    "saveAttachment": "Opslaan",
+    "revealAttachment": "Tonen in map"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -1311,7 +1313,19 @@
       "fieldNotANumber": "Voer een geheel getal in (alleen cijfers).",
       "fieldOutOfRange": "Waarde valt buiten het toegestane bereik.",
       "fieldTooLong": "Waarde is te lang",
-      "fieldInvalidOption": "Niet-ondersteund waardetype"
+      "fieldInvalidOption": "Niet-ondersteund waardetype",
+      "profilesTitle": "Interface profiles",
+      "profilesHint": "Named enable-sets for which interfaces are on. Switching a profile enables its members and disables the rest.",
+      "profilesEmpty": "No profiles yet. Save the current enable-set to create one.",
+      "profilesDefault": "Default",
+      "profilesUnnamed": "(unnamed)",
+      "profilesNamePlaceholder": "Profile name",
+      "profilesSaveCurrent": "Save current",
+      "profilesCreateEmpty": "New empty",
+      "profilesRename": "Rename",
+      "profilesSaveRename": "Save",
+      "profilesDelete": "Delete",
+      "profilesRenameAria": "Rename profile {{name}}"
     },
     "reticulumPeers": {
       "hops": "Hop",
@@ -3416,7 +3430,9 @@
     "pageProgressFailover": "Een andere route proberen via {{iface}} ({{hops}} hops)...",
     "pageProgressFailoverIface": "Een andere route proberen via {{iface}}…",
     "pageProgressFailoverGeneric": "Probeer een andere route...",
-    "pageProgressNoAlternate": "Geen andere routes beschikbaar — deze poging afronden..."
+    "pageProgressNoAlternate": "Geen andere routes beschikbaar — deze poging afronden...",
+    "downloadFile": "Download",
+    "dismissPreview": "Afwijzen"
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",
@@ -5360,7 +5376,17 @@
     "addressChoiceTitle": "Reticulum-adres openen",
     "addressChoiceMessage": "{{address}} kan een Nomad-pagina of een peer zijn. Wat wil je openen?",
     "addressChoiceNomad": "Nomad-pagina",
-    "addressChoiceDm": "Direct bericht"
+    "addressChoiceDm": "Direct bericht",
+    "byteLimit": {
+      "approaching": "{{count}} / {{limit}}",
+      "overMax": "Bericht te lang — hublimiet is {{limit}} bytes"
+    },
+    "nickLimit": {
+      "overMax": "Bijnaam te lang — hublimiet is {{limit}} bytes"
+    },
+    "roomNameLimit": {
+      "overMax": "Kamernaam te lang — hublimiet is {{limit}} bytes"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

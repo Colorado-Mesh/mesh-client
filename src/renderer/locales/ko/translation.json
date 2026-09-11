@@ -750,7 +750,9 @@
     "heardByRepeatersAdditional_one": "{{count}} 추가 미확인 전달자 (해시: {{hashes}})",
     "heardByRepeatersAdditional_other": "{{count}} 추가 미확인 전달자 (해시: {{hashes}})",
     "reticulumSendAwaitingPeerReceipt": "전송 완료 (동료 영수증 대기 중)",
-    "reticulumChatNeedsLxmfDelivery": "이 동료는 아직 LXMF 배달 주소가 없습니다 (채팅은 음성 전용 목적지를 사용할 수 없습니다). LXMF가 발표될 때까지 기다리거나 32자 LXMF 해시를 붙여넣습니다."
+    "reticulumChatNeedsLxmfDelivery": "이 동료는 아직 LXMF 배달 주소가 없습니다 (채팅은 음성 전용 목적지를 사용할 수 없습니다). LXMF가 발표될 때까지 기다리거나 32자 LXMF 해시를 붙여넣습니다.",
+    "saveAttachment": "저장…",
+    "revealAttachment": "폴더에 표시"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -1312,7 +1314,19 @@
       "fieldNotANumber": "정수 (숫자만) 를 입력하세요.",
       "fieldOutOfRange": "값이 허용된 범위를 벗어났습니다.",
       "fieldTooLong": "값이 너무 깁니다.",
-      "fieldInvalidOption": "지원되지 않는 값입니다."
+      "fieldInvalidOption": "지원되지 않는 값입니다.",
+      "profilesTitle": "Interface profiles",
+      "profilesHint": "Named enable-sets for which interfaces are on. Switching a profile enables its members and disables the rest.",
+      "profilesEmpty": "No profiles yet. Save the current enable-set to create one.",
+      "profilesDefault": "Default",
+      "profilesUnnamed": "(unnamed)",
+      "profilesNamePlaceholder": "Profile name",
+      "profilesSaveCurrent": "Save current",
+      "profilesCreateEmpty": "New empty",
+      "profilesRename": "Rename",
+      "profilesSaveRename": "Save",
+      "profilesDelete": "Delete",
+      "profilesRenameAria": "Rename profile {{name}}"
     },
     "reticulumPeers": {
       "hops": "홉",
@@ -3416,7 +3430,9 @@
     "pageProgressFailover": "{{iface}} ({{hops}} HOPS) 을 (를) 통해 다른 경로로 시도 중...",
     "pageProgressFailoverIface": "{{iface}} 을 (를) 경유하는 다른 경로로 시도 중...",
     "pageProgressFailoverGeneric": "다른 경로로 시도 중...",
-    "pageProgressNoAlternate": "사용 가능한 다른 경로가 없습니다. 이 시도를 완료하는 중..."
+    "pageProgressNoAlternate": "사용 가능한 다른 경로가 없습니다. 이 시도를 완료하는 중...",
+    "downloadFile": "다운로드",
+    "dismissPreview": "무시하기"
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",
@@ -5360,7 +5376,17 @@
     "addressChoiceTitle": "Reticulum 주소 열기",
     "addressChoiceMessage": "{{address}}는 Nomad 페이지이거나 피어일 수 있습니다. 무엇을 열까요?",
     "addressChoiceNomad": "Nomad 페이지",
-    "addressChoiceDm": "다이렉트 메시지"
+    "addressChoiceDm": "다이렉트 메시지",
+    "byteLimit": {
+      "approaching": "{{count}}/{{limit}}",
+      "overMax": "메시지가 너무 깁니다 — 허브 한도는 {{limit}} 바이트입니다"
+    },
+    "nickLimit": {
+      "overMax": "별명이 너무 깁니다 — 허브 한도는 {{limit}} 바이트입니다"
+    },
+    "roomNameLimit": {
+      "overMax": "방 이름이 너무 깁니다 — 허브 한도는 {{limit}} 바이트입니다"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

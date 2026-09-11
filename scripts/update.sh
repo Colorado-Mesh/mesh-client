@@ -253,6 +253,7 @@ fi
 check_ratspeak_patches() {
   # Format: "patch-basename|github-owner/repo|pr-number-or-empty|display-label|review-url"
   local RATSPEAK_PATCH_ENTRIES=(
+    'rsReticulum-reply-file-query-metadata.patch|ratspeak/rsReticulum|26|rsReticulum ReplyFile / LinkClient query metadata|https://github.com/ratspeak/rsReticulum/pull/26'
     'rsReticulum-packet-tap.patch|ratspeak/rsReticulum|10|rsReticulum packet-tap|https://github.com/ratspeak/rsReticulum/pull/10'
     'rsReticulum-path-medium-slots.patch|ratspeak/rsReticulum||rsReticulum path-medium slots|'
     'rsReticulum-auto-beacon-utun.patch|ratspeak/rsReticulum|11|rsReticulum auto-beacon utun|https://github.com/ratspeak/rsReticulum/pull/11'
@@ -264,6 +265,7 @@ check_ratspeak_patches() {
     'rsReticulum-interface-tx-queue-stats.patch|ratspeak/rsReticulum||rsReticulum interface TX queue stats|'
     'rsReticulum-announce-rebroadcast-exclude-rf.patch|ratspeak/rsReticulum||rsReticulum announce rebroadcast exclude RF sinks (ratspeak/rsReticulum#24)|https://github.com/ratspeak/rsReticulum/issues/24'
     'rsReticulum-ble-rnode-flow-control-ready-timeout.patch|ratspeak/rsReticulum||rsReticulum BLE RNode flow-control READY timeout|'
+    'rsLXMF-file-attachments-list.patch|ratspeak/rsLXMF|7|rsLXMF multi-file attachment APIs|https://github.com/ratspeak/rsLXMF/pull/7'
     'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF|4|rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF/pull/4'
     'rsLXMF-propagation-node-policy-setters.patch|ratspeak/rsLXMF|6|rsLXMF PropagationNode policy setters|https://github.com/ratspeak/rsLXMF/pull/6'
     'rsLXMF-propagation-node-deferred-messagestore-load.patch|ratspeak/rsLXMF||rsLXMF PropagationNode deferred messagestore load|'
@@ -363,7 +365,16 @@ check_ratspeak_patches() {
         HAS_WARNING=1
         ;;
       *)
-        echo "  ${label}: could not query ${repo}#${pr} (install gh or check network) — ${url}"
+        # Unknown PR state (gh/network unavailable). Still warn when the tracked
+        # overlay file is missing so ratspeak-patches-only cannot report clean.
+        if [ "${patch_present}" -eq 0 ]; then
+          warn_box "${label} (Ratspeak overlay)" "patch absent" "PR state unknown" "${url}"
+          echo "  ${label}: ${patch_base} missing and could not query ${repo}#${pr} — restore overlay or verify sunset."
+          has_ratspeak_warning=1
+          HAS_WARNING=1
+        else
+          echo "  ${label}: could not query ${repo}#${pr} (install gh or check network) — ${url}"
+        fi
         ;;
     esac
   done
@@ -736,6 +747,14 @@ fi
 # Test hook: exercise check_ratspeak_upstream (fake gh/curl via PATH).
 if [ "${UPDATE_SH_TEST_HOOK:-}" = 'upstream-check-only' ]; then
   check_ratspeak_upstream
+  exit 0
+fi
+
+# Test hook: exercise check_ratspeak_patches (fake gh via PATH; cwd may supply patches/).
+if [ "${UPDATE_SH_TEST_HOOK:-}" = 'ratspeak-patches-only' ]; then
+  HAS_WARNING=0
+  check_ratspeak_patches
+  printf 'HAS_WARNING=%s\n' "${HAS_WARNING}"
   exit 0
 fi
 

@@ -107,6 +107,43 @@ describe('sendReticulumChatMessage helpers', () => {
     expect(resolveReticulumChatDestHashDetailed(0x99)).toEqual({ status: 'missing_lxmf' });
   });
 
+  it('sendReticulumChatMessage remaps identity-bound destination to lxmf.delivery', () => {
+    const identity = '0f79468863d76b3ba574baa92606ffcb';
+    const lxmf = 'e3359f1314aff4fb6261400a8202149b';
+    const identityNode = 0x4688;
+    useReticulumIdentityActivityStore.setState({
+      byDestination: new Map([
+        [
+          lxmf,
+          [
+            {
+              destination_hash: lxmf,
+              aspect: 'lxmf.delivery',
+              identity_hash: identity,
+              last_seen: 1,
+            },
+          ],
+        ],
+      ]),
+    });
+    registerReticulumDestinationHash(identityNode, identity);
+    const session = mountSession();
+    sendReticulumChatMessage({
+      identityId: ID,
+      text: 'ping',
+      channelIndex: 0,
+      destination: identityNode,
+      onNoPropagationNode: () => {},
+    });
+    expect(session.sendMessage).toHaveBeenCalledWith(
+      'ping',
+      lxmf,
+      undefined,
+      expect.stringMatching(/^reticulum-pending-/),
+      undefined,
+    );
+  });
+
   it('buildReticulumReplyFields returns empty when replyTo absent', () => {
     expect(buildReticulumReplyFields(ID, undefined)).toEqual({});
     expect(buildReticulumReplyFields(ID, '')).toEqual({});

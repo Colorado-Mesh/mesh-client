@@ -59,7 +59,7 @@ overrides:
   # GHSA-2883-xcg3-v3hh / GHSA-w5vr-8v7q-w6rv / GHSA-82fw-gwwq-j7x9 /
   # GHSA-4w3w-2rp5-g8jm / GHSA-w2rr-34g9-rvrj / GHSA-93r5-fhx6-vmg9 /
   # GHSA-8344-3jmq-59r6 / GHSA-6h8r-xr42-gp59 / GHSA-27p8-2357-5qqv /
-  # GHSA-c7q8-3ch8-vqpv).
+  # GHSA-c7q8-3ch8-vqpv / GHSA-7w5x-hrqm-74c2).
   # brace-expansion: keep a single 5.0.9 floor. GHSA-rgw5-rvv9-x895 is a
   # bypass of the CVE-2026-14257 mitigation and marks >=4.0.0 <5.0.9 vulnerable
   # (only >=5.0.9 counts as patched). CI audit is blocking.
@@ -85,6 +85,7 @@ overrides:
   # baseline-browser-mapping: GHSA-w5vr-8v7q-w6rv — floor >=2.11.0.
   # vitest / @vitest/mocker: GHSA-82fw-gwwq-j7x9 — package.json pins vitest
   # ^4.1.11 (no override needed while the direct pin holds the floor).
+  # smol-toml: GHSA-7w5x-hrqm-74c2 (markdownlint-cli2) — floor >=1.7.1.
   # extract-zip (GHSA-7pqw-9j4j-h8q3): no patched release; Electron replaced it
   # with hardened @electron-internal/extract-zip (not the vulnerable package).
   # electron: deliberate major pin — bump with Flatpak sync + native rebuild smoke.
@@ -100,6 +101,7 @@ overrides:
   markdown-it@<=14.1.1: '>=14.2.0 <15'
   postcss: ^8.5.25
   shell-quote: ^1.9.0
+  smol-toml: ^1.7.1
   tar: ^7.5.18
   tmp: ^0.2.6
   undici@<7.29.0: ^7.29.0

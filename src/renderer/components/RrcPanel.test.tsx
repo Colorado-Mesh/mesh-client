@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { peekPendingRrcLinkJoin, setPendingRrcLinkJoin } from '@/renderer/lib/openRrcHubFromLink';
 import * as pathReady from '@/renderer/lib/reticulum/reticulumRrcPathReady';
 import * as transportReady from '@/renderer/lib/reticulum/reticulumRrcTransportReady';
 import {
@@ -55,6 +56,7 @@ describe('RrcPanel', () => {
   beforeEach(() => {
     useRrcSessionStore.getState().clearSession();
     useRrcHubStore.setState({ hubs: new Map() });
+    setPendingRrcLinkJoin('', null);
     resetRrcHubDisconnectSuppressForTests();
     resetRrcHubAutoJoinBackoffForTests();
     resetRrcRoomHistoryForTests();
@@ -137,6 +139,30 @@ describe('RrcPanel', () => {
     render(<RrcPanel isActive />);
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
     expect(screen.getByText('Connecting…')).toBeInTheDocument();
+  });
+
+  it('defers deep-link room join until the hub session is active', async () => {
+    vi.mocked(window.electronAPI.reticulum.rrc.join).mockReset();
+    vi.mocked(window.electronAPI.reticulum.rrc.join).mockResolvedValue({ ok: true });
+    setPendingRrcLinkJoin(hubA, 'general');
+    useRrcSessionStore.getState().applyStatus('connecting', hubA, 'Hub A');
+    render(<RrcPanel isActive />);
+
+    expect(peekPendingRrcLinkJoin()).toEqual({ hubHash: hubA, room: 'general' });
+    expect(window.electronAPI.reticulum.rrc.join).not.toHaveBeenCalled();
+
+    act(() => {
+      useRrcSessionStore.getState().applyStatus('active', hubA, 'Hub A');
+    });
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rrc.join).toHaveBeenCalledWith({
+        hub_dest_hash: hubA,
+        room: 'general',
+        key: undefined,
+      });
+    });
+    expect(peekPendingRrcLinkJoin()).toBeNull();
   });
 
   it('keeps sibling hub sessions when focusing another connected hub', () => {
@@ -1170,16 +1196,18 @@ describe('RrcPanel', () => {
     store.applyStatus('active', hubA, 'Hub A');
     store.setCapabilities({ direct_notice: true });
     store.setActiveRoom('[hub]');
+    store.setError(null);
     vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+    localStorage.clear();
 
     render(<RrcPanel isActive />);
 
-    const composer = screen.getByRole('textbox', { name: /Message or \/command/i });
-    await user.type(composer, 'hello hub');
-    await user.click(screen.getByRole('button', { name: 'Send' }));
+    const composer = await screen.findByRole('textbox', { name: /Message or \/command/i });
+    await user.clear(composer);
+    await user.type(composer, 'hello hub{Enter}');
 
     await waitFor(() => {
-      expect(useRrcSessionStore.getState().lastError).toBe('Join a room to start chatting.');
+      expect(useRrcSessionStore.getState().lastError).toMatch(/join a room/i);
     });
     expect(window.electronAPI.reticulum.rrc.send).not.toHaveBeenCalled();
   });

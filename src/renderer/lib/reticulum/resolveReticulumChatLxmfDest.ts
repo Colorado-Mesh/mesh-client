@@ -79,11 +79,62 @@ function peerIdentityHint(hash: string): string | null {
 }
 
 /**
+ * True when `hash` is known as an RNS identity (appears as `identity_hash` on activity
+ * or peer rows), not merely as a destination aspect hash.
+ */
+export function isKnownRnsIdentityHash(
+  hash: string,
+  activityByDestination: ReadonlyMap<
+    string,
+    ReticulumIdentityActivityRow[]
+  > = useReticulumIdentityActivityStore.getState().byDestination,
+): boolean {
+  const id = canonicalizeReticulumDestinationHash(hash);
+  if (!id) return false;
+  for (const rows of activityByDestination.values()) {
+    for (const row of rows) {
+      const rowId = row.identity_hash
+        ? canonicalizeReticulumDestinationHash(row.identity_hash)
+        : null;
+      if (rowId === id) return true;
+    }
+  }
+  const store = useReticulumPeerStore.getState();
+  for (const map of [store.contacts, store.history, store.peers]) {
+    for (const peer of map.values()) {
+      const peerId = peer.identity_hash
+        ? canonicalizeReticulumDestinationHash(peer.identity_hash)
+        : null;
+      if (peerId === id) return true;
+    }
+  }
+  return false;
+}
+
+function resolveIdentityHashToLxmf(
+  identityHash: string,
+  activityByDestination: ReadonlyMap<string, ReticulumIdentityActivityRow[]>,
+): ResolveReticulumChatLxmfDestResult {
+  const lxmf = findLxmfDeliveryHashForIdentity(identityHash, activityByDestination);
+  if (lxmf) {
+    return {
+      status: 'ok',
+      hash: lxmf,
+      remapped: lxmf !== identityHash,
+    };
+  }
+  return { status: 'missing_lxmf' };
+}
+
+/**
  * Resolve a path-table / pasted / registry destination to the peer's LXMF delivery hash.
  *
- * - Already `lxmf.delivery` (or no aspect known) → use as-is.
+ * - Already `lxmf.delivery` → use as-is.
+ * - Bare RNS **identity** hash (known via activity/peer `identity_hash`) → remap to that
+ *   identity's `lxmf.delivery`, or `missing_lxmf` when none heard yet.
  * - `lxst.telephony` / other non-lxmf with known identity → remap to that identity's lxmf.delivery.
  * - Non-lxmf with no lxmf.delivery heard → `missing_lxmf` (do not send).
+ * - No aspect known yet (pasted LXMF / path-table before activity lands) → allow as-is.
  */
 export function resolveReticulumChatLxmfDestination(
   candidateHash: string,
@@ -95,6 +146,11 @@ export function resolveReticulumChatLxmfDestination(
   const rows = activityStore.getActivity(canonical);
   if (activityHasAspect(rows, LXMF_DELIVERY_ASPECT)) {
     return { status: 'ok', hash: canonical, remapped: false };
+  }
+
+  // Pasted / opened RNS identity hash — never treat as lxmf.delivery.
+  if (isKnownRnsIdentityHash(canonical, activityStore.byDestination)) {
+    return resolveIdentityHashToLxmf(canonical, activityStore.byDestination);
   }
 
   const hasNonLxmfAspect = rows.some(

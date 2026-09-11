@@ -4,6 +4,7 @@
 # shellcheck shell=bash
 
 RS_RETICULUM_APPLY_SCRIPTS=(
+  apply-rsReticulum-reply-file-query-metadata.sh
   apply-rsReticulum-packet-tap.sh
   apply-rsReticulum-auto-beacon-utun.sh
   apply-rsReticulum-link-client-proof-budget.sh
@@ -18,6 +19,7 @@ RS_RETICULUM_APPLY_SCRIPTS=(
 )
 
 RS_LXMF_APPLY_SCRIPTS=(
+  apply-rsLXMF-file-attachments-list.sh
   apply-rsLXMF-propagation-sync-peering.sh
   apply-rsLXMF-propagation-node-policy-setters.sh
   apply-rsLXMF-propagation-node-deferred-messagestore-load.sh

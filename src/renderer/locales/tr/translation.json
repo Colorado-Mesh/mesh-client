@@ -750,7 +750,9 @@
     "heardByRepeatersAdditional_one": "{{count}} EK tanımlanamayan nakliyeci (hash'ler: {{hashes}})",
     "heardByRepeatersAdditional_other": "{{count}} kimliği belirsiz ek göndericiler (hash'ler: {{hashes}})",
     "reticulumSendAwaitingPeerReceipt": "Gönderildi (akran makbuzu bekleniyor)",
-    "reticulumChatNeedsLxmfDelivery": "Bu akranın henüz LXMF teslimat adresi yok (Sohbet yalnızca Sesli bir hedef kullanamaz). Bir LXMF duyurusu bekleyin veya 32 karakterlik LXMF karmasını yapıştırın."
+    "reticulumChatNeedsLxmfDelivery": "Bu akranın henüz LXMF teslimat adresi yok (Sohbet yalnızca Sesli bir hedef kullanamaz). Bir LXMF duyurusu bekleyin veya 32 karakterlik LXMF karmasını yapıştırın.",
+    "saveAttachment": "Kaydetmek…",
+    "revealAttachment": "Dizinde"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -1312,7 +1314,19 @@
       "fieldNotANumber": "Bir tam sayı girin (yalnızca rakam).",
       "fieldOutOfRange": "Değer izin verilen aralığın dışında.",
       "fieldTooLong": "Değer fazla uzun.",
-      "fieldInvalidOption": "Desteklenmeyen değer."
+      "fieldInvalidOption": "Desteklenmeyen değer.",
+      "profilesTitle": "Interface profiles",
+      "profilesHint": "Named enable-sets for which interfaces are on. Switching a profile enables its members and disables the rest.",
+      "profilesEmpty": "No profiles yet. Save the current enable-set to create one.",
+      "profilesDefault": "Default",
+      "profilesUnnamed": "(unnamed)",
+      "profilesNamePlaceholder": "Profile name",
+      "profilesSaveCurrent": "Save current",
+      "profilesCreateEmpty": "New empty",
+      "profilesRename": "Rename",
+      "profilesSaveRename": "Save",
+      "profilesDelete": "Delete",
+      "profilesRenameAria": "Rename profile {{name}}"
     },
     "reticulumPeers": {
       "hops": "Hop",
@@ -3416,7 +3430,9 @@
     "pageProgressFailover": "{{iface}} ({{hops}} atlama) üzerinden farklı bir rota deniyor…",
     "pageProgressFailoverIface": "{{iface}} üzerinden farklı bir rota deniyor…",
     "pageProgressFailoverGeneric": "Farklı bir rota deniyor...",
-    "pageProgressNoAlternate": "Başka rota yok — bu girişim tamamlanıyor…"
+    "pageProgressNoAlternate": "Başka rota yok — bu girişim tamamlanıyor…",
+    "downloadFile": "İndir",
+    "dismissPreview": "Yok say"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",
@@ -5360,7 +5376,17 @@
     "addressChoiceTitle": "Reticulum adresini aç",
     "addressChoiceMessage": "{{address}} bir Nomad sayfası veya eş olabilir. Hangisini açmak istersiniz?",
     "addressChoiceNomad": "Nomad sayfası",
-    "addressChoiceDm": "Doğrudan mesaj"
+    "addressChoiceDm": "Doğrudan mesaj",
+    "byteLimit": {
+      "approaching": "{{count}} / {{limit}}",
+      "overMax": "Mesaj çok uzun — hub sınırı {{limit}} bayt"
+    },
+    "nickLimit": {
+      "overMax": "Takma ad çok uzun — hub sınırı {{limit}} bayt"
+    },
+    "roomNameLimit": {
+      "overMax": "Oda adı çok uzun — merkez sınırı {{limit}} bayt"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

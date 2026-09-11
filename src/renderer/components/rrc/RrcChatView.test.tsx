@@ -1,6 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -68,11 +67,11 @@ const baseProps = {
   connected: true as const,
   activeRoom: '#general',
   showTimestamps: false,
-  draft: '',
-  onDraftChange: vi.fn(),
-  onSend: vi.fn(),
   canSend: true,
   isMuted: false,
+  maxMsgBodyBytes: 350,
+  onSendChunk: vi.fn().mockResolvedValue(undefined),
+  onInterceptSend: vi.fn().mockResolvedValue(false),
 };
 
 describe('estimateRrcRowHeight', () => {
@@ -441,27 +440,15 @@ describe('RrcChatView mention completer', () => {
   beforeEach(() => {
     mockIsAtEnd = true;
     mockScrollToEnd.mockClear();
+    localStorage.clear();
     hydrateAxeThemeColors(document.documentElement);
   });
 
-  it('shows listbox and inserts @Zeva on select', async () => {
+  it('shows listbox and inserts @Zeva on select via ChatComposer', async () => {
     const user = userEvent.setup();
     const members = [{ identity_hash: 'aa'.repeat(16), nickname: 'Zeva' }];
 
-    function Harness() {
-      const [draft, setDraft] = useState('');
-      return (
-        <RrcChatView
-          {...baseProps}
-          draft={draft}
-          onDraftChange={setDraft}
-          members={members}
-          messages={[]}
-        />
-      );
-    }
-
-    const { container } = render(<Harness />);
+    const { container } = render(<RrcChatView {...baseProps} members={members} messages={[]} />);
     const box = screen.getByRole('textbox');
     await user.type(box, '@ze');
     await waitFor(() => {
@@ -469,9 +456,6 @@ describe('RrcChatView mention completer', () => {
     });
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
-    const combo = screen.getByRole('combobox');
-    expect(combo).toHaveAttribute('aria-expanded', 'true');
-    expect(combo).toHaveAttribute('aria-controls', 'rrc-mention-listbox');
     await user.click(screen.getByRole('option', { name: /Zeva/i }));
     expect(box).toHaveValue('@Zeva ');
     expect((box as HTMLTextAreaElement).value).not.toContain('@[');
@@ -481,21 +465,7 @@ describe('RrcChatView mention completer', () => {
     const user = userEvent.setup();
     const members = [{ identity_hash: 'aa'.repeat(16), nickname: 'Zeva' }];
 
-    function Harness() {
-      const [draft, setDraft] = useState('');
-      return (
-        <RrcChatView
-          {...baseProps}
-          activeRoom="[whispers]"
-          draft={draft}
-          onDraftChange={setDraft}
-          members={members}
-          messages={[]}
-        />
-      );
-    }
-
-    render(<Harness />);
+    render(<RrcChatView {...baseProps} activeRoom="[whispers]" members={members} messages={[]} />);
     const box = screen.getByRole('textbox');
     await user.type(box, '@ze');
     await waitFor(() => {
@@ -505,27 +475,14 @@ describe('RrcChatView mention completer', () => {
     expect(box).toHaveValue('@Zeva ');
   });
 
-  it('Tab cycles nicks without narrowing the original prefix', async () => {
+  it('Tab cycles nick completion while the mention list stays open', async () => {
     const user = userEvent.setup();
     const members = [
       { identity_hash: 'aa'.repeat(16), nickname: 'Zeva' },
       { identity_hash: 'bb'.repeat(16), nickname: 'Zoe' },
     ];
 
-    function Harness() {
-      const [draft, setDraft] = useState('');
-      return (
-        <RrcChatView
-          {...baseProps}
-          draft={draft}
-          onDraftChange={setDraft}
-          members={members}
-          messages={[]}
-        />
-      );
-    }
-
-    render(<Harness />);
+    render(<RrcChatView {...baseProps} members={members} messages={[]} />);
     const box = screen.getByRole('textbox');
     await user.type(box, '@z');
     await waitFor(() => {
@@ -533,8 +490,13 @@ describe('RrcChatView mention completer', () => {
     });
     await user.keyboard('{Tab}');
     expect(box).toHaveValue('@Zeva ');
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
     await user.keyboard('{Tab}');
     expect(box).toHaveValue('@Zoe ');
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(box).toHaveValue('@Zeva ');
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
   });
 });
 

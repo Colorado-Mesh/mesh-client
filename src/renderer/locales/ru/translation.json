@@ -788,7 +788,9 @@
     "searchResults_few": "{{count}} результата",
     "searchResults_many": "{{count}} результатов",
     "reticulumSendAwaitingPeerReceipt": "Отправлено (ожидает получения коллегой)",
-    "reticulumChatNeedsLxmfDelivery": "Этот узел еще не имеет адреса доставки LXMF (чат не может использовать пункт назначения только для голоса). Дождитесь объявления LXMF или вставьте их 32-символьный хэш LXMF."
+    "reticulumChatNeedsLxmfDelivery": "Этот узел еще не имеет адреса доставки LXMF (чат не может использовать пункт назначения только для голоса). Дождитесь объявления LXMF или вставьте их 32-символьный хэш LXMF.",
+    "saveAttachment": "Спасти…",
+    "revealAttachment": "Показать в папке"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -1350,7 +1352,19 @@
       "fieldNotANumber": "Введите целое число (только цифры).",
       "fieldOutOfRange": "Значение вне допустимого диапазона.",
       "fieldTooLong": "Значение слишком длинное.",
-      "fieldInvalidOption": "Неподдерживаемое значение."
+      "fieldInvalidOption": "Неподдерживаемое значение.",
+      "profilesTitle": "Interface profiles",
+      "profilesHint": "Named enable-sets for which interfaces are on. Switching a profile enables its members and disables the rest.",
+      "profilesEmpty": "No profiles yet. Save the current enable-set to create one.",
+      "profilesDefault": "Default",
+      "profilesUnnamed": "(unnamed)",
+      "profilesNamePlaceholder": "Profile name",
+      "profilesSaveCurrent": "Save current",
+      "profilesCreateEmpty": "New empty",
+      "profilesRename": "Rename",
+      "profilesSaveRename": "Save",
+      "profilesDelete": "Delete",
+      "profilesRenameAria": "Rename profile {{name}}"
     },
     "reticulumPeers": {
       "hops": "Хопы",
@@ -3494,7 +3508,9 @@
     "pageProgressFailoverGeneric": "Попробовать другой маршрут...",
     "pageProgressNoAlternate": "Нет других доступных маршрутов — завершение этой попытки...",
     "hopsAway_few": "На расстоянии {{count}} хопов",
-    "hopsAway_many": "На расстоянии {{count}} хопов"
+    "hopsAway_many": "На расстоянии {{count}} хопов",
+    "downloadFile": "Загрузить",
+    "dismissPreview": "Пропустить"
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",
@@ -5450,7 +5466,17 @@
     "memberCount_few": "{{count}} участника",
     "memberCount_many": "{{count}} участников",
     "userCount_few": "{{count}} пользователя",
-    "userCount_many": "{{count}} пользователей"
+    "userCount_many": "{{count}} пользователей",
+    "byteLimit": {
+      "approaching": "{{count}} / {{limit}}",
+      "overMax": "Слишком длинное сообщение — ограничение концентратора составляет {{limit}} байт"
+    },
+    "nickLimit": {
+      "overMax": "Слишком длинное имя псевдонима — ограничение концентратора составляет {{limit}} байт"
+    },
+    "roomNameLimit": {
+      "overMax": "Слишком длинное название комнаты — ограничение концентратора составляет {{limit}} байт"
+    }
   },
   "signalMeter": {
     "rssi": "РССИ",

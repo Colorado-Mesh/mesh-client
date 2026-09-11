@@ -171,6 +171,13 @@ export function computeComposerLimitStatus(
     replyToSenderName?: string;
     replyKey?: number;
     useKeyedReplies?: boolean;
+    /**
+     * When true, UI count / warn threshold use UTF-8 wire bytes (RRC hub body limits).
+     * Split/overMax already use wire bytes via `splitChatMessage`.
+     */
+    useWireByteCount?: boolean;
+    /** When true, skip limit chrome (RRC slash commands that bypass multi-part send). */
+    suppressLimits?: boolean;
   },
 ): ComposerLimitStatus {
   const singleMessageLimit = getComposerPayloadLimit({
@@ -186,13 +193,26 @@ export function computeComposerLimitStatus(
     useKeyedReplies: opts?.useKeyedReplies,
   });
   const trimmed = text.trim();
-  const charCount = countMessageChars(trimmed);
+  const charCount = opts?.useWireByteCount
+    ? countMessageWireBytes(trimmed)
+    : countMessageChars(trimmed);
   const showThreshold = Math.floor(singleMessageLimit * 0.8);
   const totalMaxChars = computeComposerTotalMaxChars(
     singleMessageLimit,
     wireOverheadFirstChunk,
     getMaxChunks(protocol),
   );
+
+  if (opts?.suppressLimits) {
+    return {
+      charCount,
+      singleMessageLimit,
+      chunkCount: 1,
+      totalMaxChars: Number.MAX_SAFE_INTEGER,
+      phase: 'ok',
+      showThreshold,
+    };
+  }
 
   const chunks = splitChatMessage(trimmed, protocol, singleMessageLimit, wireOverheadFirstChunk);
 

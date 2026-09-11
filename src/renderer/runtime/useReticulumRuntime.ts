@@ -75,6 +75,11 @@ import {
   withReticulumIpcSendDeadline,
 } from '@/renderer/lib/reticulum/reticulumIpcDeadline';
 import {
+  clearLinkTimeoutDestProcessed,
+  markLinkTimeoutDestProcessed,
+  shouldSkipLinkTimeoutDest,
+} from '@/renderer/lib/reticulum/reticulumLinkTimeoutBridgeDedup';
+import {
   logReticulumInterfaceStateEvent,
   logReticulumLocalInterfaceHealthChanges,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceLogging';
@@ -141,6 +146,7 @@ import {
   isRrcAutoJoinBackoffWorthyReason,
   recordRrcHubAutoJoinFailure,
 } from '@/renderer/lib/rrcHubAutoJoinBackoff';
+import { parseRrcHubLimits } from '@/renderer/lib/rrcHubLimits';
 import { isRrcRoomMuted, resolveRrcAlertType } from '@/renderer/lib/rrcMention';
 import {
   resolveRrcHubScopedNoticeRoom,
@@ -1033,6 +1039,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
             action?: boolean;
             resource_envelope?: boolean;
           };
+          limits?: {
+            max_nick_bytes?: number | null;
+            max_room_name_bytes?: number | null;
+            max_msg_body_bytes?: number | null;
+            max_rooms_per_session?: number | null;
+            rate_limit_msgs_per_minute?: number | null;
+          };
         };
         const hubDestHash = p.hub_dest_hash ?? undefined;
         const st =
@@ -1056,6 +1069,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
             hubDestHash,
           );
         }
+        // Always apply: absent WELCOME limits normalize to {} and clear stale caps.
+        useRrcSessionStore.getState().setLimits(parseRrcHubLimits(p.limits), hubDestHash);
         if (st === 'active' && hubDestHash && p.hub_name) {
           useRrcHubStore.getState().applyWelcomeName(hubDestHash, p.hub_name);
         }
@@ -1079,6 +1094,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
                 },
                 hubDestHash,
               );
+            }
+            if (sessionSnap) {
+              useRrcSessionStore
+                .getState()
+                .setLimits(parseRrcHubLimits(sessionSnap.limits), hubDestHash);
             }
           })
           .catch((e: unknown) => {
@@ -1747,8 +1767,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
               ) {
                 return;
               }
+              if (
+                shouldSkipLinkTimeoutDest(processedLinkTimeoutDestsRef.current, destinationHash)
+              ) {
+                continue;
+              }
               const norm = destinationHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
-              if (!norm || processedLinkTimeoutDestsRef.current.has(norm)) continue;
               // PN cascade (remote or local-prop): sidecar owns outcome via WS.
               if (!applyBridge) {
                 console.debug(
@@ -1756,10 +1780,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
                 );
                 continue;
               }
-              processedLinkTimeoutDestsRef.current.add(norm);
+              const marked = markLinkTimeoutDestProcessed(
+                processedLinkTimeoutDestsRef.current,
+                destinationHash,
+              );
+              if (!marked) continue;
               failReticulumSendingOutboundToDestHash(
                 bridgeIdentityId,
-                norm,
+                marked,
                 i18n.t('chatPanel.reticulumSendFailed'),
               );
             }
@@ -2245,6 +2273,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
         typeof to === 'string'
           ? to
           : (reticulumHashForNodeId(to) ?? resolveReticulumDestinationHash(to) ?? String(to));
+      // New outbound: allow a later link-timeout bridge to fail this attempt
+      // (do not permanently skip the dest after a prior bridge apply).
+      clearLinkTimeoutDestProcessed(processedLinkTimeoutDestsRef.current, destination);
       const body: Record<string, unknown> = {
         destination_hash: destination,
         text,
