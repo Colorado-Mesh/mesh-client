@@ -32,9 +32,15 @@ const REPO_OWNER = 'Colorado-Mesh';
 const REPO_NAME = 'mesh-client';
 const ISSUE_TEMPLATE = 'crash_report.md';
 
-/** Max URL length safe for most browsers and GitHub's server (practical limit ~8192). */
-const MAX_URL_LENGTH = 8000;
-/** Max stack trace chars to include in the issue body. */
+/**
+ * Max URL length for the pre-filled issue. Electron's `shell.openExternal`
+ * rejects URLs over 2081 characters on Windows, so stay below that to keep
+ * crash reporting working cross-platform. The full stack trace can exceed this;
+ * when it does, the body is truncated and the issue template asks the user to
+ * attach the "Export for GitHub" diagnostic zip instead.
+ */
+const MAX_URL_LENGTH = 2000;
+/** Max stack trace chars to include in the issue body (kept small for the URL cap). */
 const MAX_STACK_LENGTH = 1500;
 /** Max error message chars shown in the dialog detail. */
 const MAX_DETAIL_MESSAGE_LENGTH = 500;
@@ -75,6 +81,35 @@ function getPlatformLabel(): string {
 
 function errorMessageOf(ctx: CrashContext): string {
   return ctx.error instanceof Error ? ctx.error.message : ctx.error;
+}
+
+/**
+ * Redact values that could leak from an error message or stack trace before it
+ * goes into a public GitHub issue. This is best-effort defense-in-depth on top
+ * of {@link sanitizeLogMessage} (which only strips control characters):
+ * - user home directory paths (`/Users/name`, `/home/name`, `C:\Users\name`)
+ * - long hex strings that look like identity/destination hashes or keys
+ * - anything that looks like `password`/`token`/`secret`/`key = value`
+ *
+ * It keeps enough structure (filenames, `<user>` placeholder) to stay useful
+ * for debugging while honoring the consent promise that identities, credentials,
+ * and local paths are not included.
+ */
+export function redactSensitiveForReport(text: string): string {
+  return (
+    text
+      // Windows user profile paths → C:\Users\<user>
+      .replace(/([A-Za-z]:\\Users\\)[^\\/\r\n]+/g, '$1<user>')
+      // POSIX home paths → /home/<user> or /Users/<user>
+      .replace(/((?:\/home|\/Users)\/)[^/\r\n]+/g, '$1<user>')
+      // key/value secrets → key=<redacted>
+      .replace(
+        /\b(pass(?:word)?|secret|token|api[_-]?key|auth|bearer)\b(\s*[:=]\s*)\S+/gi,
+        '$1$2<redacted>',
+      )
+      // long hex runs (identity/destination hashes, keys) → <redacted-hex>
+      .replace(/\b[0-9a-fA-F]{32,}\b/g, '<redacted-hex>')
+  );
 }
 
 /**
@@ -123,8 +158,10 @@ export function describeReportContents(ctx: CrashContext): string {
     `• App version: ${getAppVersion()} (packaged: ${packaged})`,
     '• Error message and stack trace',
     '',
-    'No logs, message content, identities, or database contents are included, and',
-    'nothing is sent automatically — you review and submit the issue yourself.',
+    'No logs, message content, identities, or database contents are included.',
+    'Home-directory paths, long identity/key hashes, and obvious secrets are',
+    'redacted from the error text, and nothing is sent automatically — you review',
+    'and submit the issue yourself.',
   ].join('\n');
 }
 
@@ -148,12 +185,12 @@ function formatErrorForBody(ctx: CrashContext): string {
     '',
     '**Error message:**',
     '```',
-    sanitizeLogMessage(msg),
+    redactSensitiveForReport(sanitizeLogMessage(msg)),
     '```',
     '',
     '**Stack trace:**',
     '```',
-    sanitizeLogMessage(stack),
+    redactSensitiveForReport(sanitizeLogMessage(stack)),
     '```',
     '',
     '---',
@@ -192,10 +229,10 @@ export function buildCrashReportUrl(ctx: CrashContext): string {
 
   // Too long: append a truncation notice, then shrink the body until the fully
   // encoded URL fits. Encoding can expand characters (a space becomes `+`, a
-  // newline `%0A`), so estimate then verify rather than trusting a char count.
+  // newline `%0A`), so estimate from the fixed overhead then verify.
   const notice = '\n\n_(truncated — attach Export for GitHub zip for full details)_';
-  const overhead = url.length - buildUrl('').length; // encoded, minus the body
-  let keep = Math.max(0, MAX_URL_LENGTH - overhead - notice.length * 3);
+  const fixedLength = buildUrl('').length; // everything except the body
+  let keep = Math.max(0, Math.min(body.length, MAX_URL_LENGTH - fixedLength - notice.length * 3));
   do {
     body = body.slice(0, keep) + notice;
     url = buildUrl(body);

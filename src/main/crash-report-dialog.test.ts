@@ -51,6 +51,7 @@ import {
   CRASH_REPORT_CONSENT_SETTING_KEY,
   describeReportContents,
   hasStoredCrashReportConsent,
+  redactSensitiveForReport,
   resetCrashReportCooldownForTests,
   showCrashReportDialog,
 } from './crash-report-dialog';
@@ -104,15 +105,29 @@ describe('buildCrashReportUrl', () => {
     expect(body).toContain('(no stack trace)');
   });
 
-  it('truncates the URL to stay within browser limits', () => {
+  it('truncates the URL to stay within the Windows-safe limit but keeps body content', () => {
     const longMessage = 'x'.repeat(10000);
     const url = buildCrashReportUrl({
       source: 'uncaughtException',
       error: new Error(longMessage),
     });
+    const body = new URL(url).searchParams.get('body') ?? '';
 
-    expect(url.length).toBeLessThanOrEqual(8000);
-    expect(new URL(url).searchParams.get('body') ?? '').toContain('truncated');
+    // Under Electron's 2081-char Windows cap for shell.openExternal.
+    expect(url.length).toBeLessThanOrEqual(2000);
+    expect(body).toContain('truncated');
+    // The body must NOT collapse to only the truncation notice — real
+    // diagnostic content (the crash source header) has to survive.
+    expect(body).toContain('Crash source');
+    expect(body.length).toBeGreaterThan(100);
+  });
+
+  it('keeps a normal-sized report URL under the Windows-safe limit', () => {
+    const url = buildCrashReportUrl({
+      source: 'unhandledRejection',
+      error: new Error('a typical error message'),
+    });
+    expect(url.length).toBeLessThanOrEqual(2000);
   });
 
   it('truncates the title to 80 chars (plus the [Crash] prefix)', () => {
@@ -141,6 +156,54 @@ describe('describeReportContents', () => {
     expect(detail).toContain('nothing is sent automatically');
     // Must NOT claim to include logs, messages, identities or the database.
     expect(detail).toContain('No logs, message content, identities, or database contents');
+  });
+});
+
+describe('redactSensitiveForReport', () => {
+  it('redacts POSIX home-directory paths', () => {
+    expect(redactSensitiveForReport('at /home/alex/app/index.js:10')).toBe(
+      'at /home/<user>/app/index.js:10',
+    );
+    expect(redactSensitiveForReport('/Users/alex/Library/foo')).toBe('/Users/<user>/Library/foo');
+  });
+
+  it('redacts Windows user-profile paths', () => {
+    expect(redactSensitiveForReport('C:\\Users\\Alex\\AppData\\x')).toBe(
+      'C:\\Users\\<user>\\AppData\\x',
+    );
+  });
+
+  it('redacts long hex identity/key hashes', () => {
+    expect(redactSensitiveForReport('identity 862ccee13d81d8fdbcbc74ea44c26707 failed')).toBe(
+      'identity <redacted-hex> failed',
+    );
+  });
+
+  it('redacts key/value secrets', () => {
+    expect(redactSensitiveForReport('password=hunter2')).toBe('password=<redacted>');
+    expect(redactSensitiveForReport('token: abc123XYZ')).toBe('token: <redacted>');
+  });
+
+  it('leaves ordinary error text unchanged', () => {
+    const msg = 'Cannot read properties of null (reading foo)';
+    expect(redactSensitiveForReport(msg)).toBe(msg);
+  });
+});
+
+describe('buildCrashReportUrl redaction', () => {
+  it('redacts sensitive values that appear in the error/stack', () => {
+    const err = new Error('boom at /home/alex/secret with token=abcdef');
+    err.stack = 'Error: boom\n    at /home/alex/app.js (862ccee13d81d8fdbcbc74ea44c26707)';
+    const body =
+      new URL(buildCrashReportUrl({ source: 'uncaughtException', error: err })).searchParams.get(
+        'body',
+      ) ?? '';
+
+    expect(body).toContain('/home/<user>');
+    expect(body).toContain('<redacted-hex>');
+    expect(body).toContain('token=<redacted>');
+    expect(body).not.toContain('/home/alex');
+    expect(body).not.toContain('862ccee13d81d8fdbcbc74ea44c26707');
   });
 });
 
