@@ -12,7 +12,7 @@ import {
   saveActiveChannel,
   saveDraft,
 } from '../lib/chatPanelProtocolStorage';
-import { getDistFromChatBottom, VIRTUALIZER_SCROLL_END_THRESHOLD } from '../lib/chatScrollUtils';
+import { CHAT_SCROLL_END_THRESHOLD, getDistFromChatBottom } from '../lib/chatScrollUtils';
 import i18n from '../lib/i18n';
 import { ensureLocaleLoaded } from '../lib/localeResources';
 import { messageRecordsToChatMessages } from '../lib/storeRecordAdapters';
@@ -1266,7 +1266,7 @@ describe('ChatPanel scroll pinning', () => {
     );
     expect(lastVirtualizerOptions?.anchorTo).toBe('end');
     expect(lastVirtualizerOptions?.followOnAppend).toBe(true);
-    expect(lastVirtualizerOptions?.scrollEndThreshold).toBe(VIRTUALIZER_SCROLL_END_THRESHOLD);
+    expect(lastVirtualizerOptions?.scrollEndThreshold).toBe(CHAT_SCROLL_END_THRESHOLD);
     expect(lastVirtualizerOptions?.measureElement).toBeTypeOf('function');
     const adjust = lastVirtualizerInstance?.shouldAdjustScrollPositionOnItemSizeChange as (
       item: { index: number },
@@ -1494,6 +1494,79 @@ describe('ChatPanel scroll pinning', () => {
     });
     expect(scrollIntoView).not.toHaveBeenCalled();
   });
+
+  it.each(
+    (['linux', 'darwin', 'win32'] as const).flatMap((platform) =>
+      (
+        [
+          { protocol: 'meshtastic', view: 'channel' },
+          { protocol: 'meshtastic', view: 'dm' },
+          { protocol: 'meshcore', view: 'channel' },
+          { protocol: 'meshcore', view: 'dm' },
+          { protocol: 'reticulum', view: 'dm' },
+        ] as const
+      ).map((chat) => ({ platform, ...chat })),
+    ),
+  )(
+    'preserves a small scroll away from latest through repeated $protocol $view arrivals on $platform',
+    async ({ platform, protocol, view }) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const props = {
+        ...baseProps,
+        protocol,
+        dmOnlyChat: protocol === 'reticulum',
+        initialDmTarget: view === 'dm' ? 2 : undefined,
+        ownNodeIds: [1],
+      };
+      const makeViewMessage = (index: number): ChatMessage => ({
+        ...makeMsg(index),
+        ...(view === 'dm' ? { channel: -1, to: 1 } : {}),
+      });
+      let messages = Array.from({ length: 5 }, (_, i) => makeViewMessage(i));
+      const { container, rerender } = render(
+        <ToastProvider>
+          <ChatPanel {...props} messages={messages} />
+        </ToastProvider>,
+      );
+      const stream = container.querySelector<HTMLDivElement>('div.overflow-y-auto')!;
+      Object.defineProperties(stream, {
+        scrollHeight: { value: 2000, configurable: true },
+        clientHeight: { value: 400, configurable: true },
+        scrollTop: { value: 1600, writable: true, configurable: true },
+      });
+      for (const distance of [3, 8, 60, 150]) {
+        stream.scrollTop = 1600 - distance;
+        fireEvent.scroll(stream);
+        mockScrollToEnd.mockClear();
+        messages = [...messages, makeViewMessage(messages.length)];
+        rerender(
+          <ToastProvider>
+            <ChatPanel {...props} messages={messages} />
+          </ToastProvider>,
+        );
+        await waitFor(() => {
+          expect(screen.getByText(messages.at(-1)!.payload)).toBeInTheDocument();
+          expect(
+            screen.getByRole('button', { name: /Jump to (Latest|Unread)/ }),
+          ).toBeInTheDocument();
+        });
+        expect(mockScrollToEnd).not.toHaveBeenCalled();
+        expect(stream.scrollTop).toBe(1600 - distance);
+      }
+      stream.scrollTop = 1600 - 2;
+      fireEvent.scroll(stream);
+      mockScrollToEnd.mockClear();
+      messages = [...messages, makeViewMessage(messages.length)];
+      rerender(
+        <ToastProvider>
+          <ChatPanel {...props} messages={messages} />
+        </ToastProvider>,
+      );
+      await waitFor(() => {
+        expect(mockScrollToEnd).toHaveBeenCalled();
+      });
+    },
+  );
 
   it('shows Jump to Latest when virtualizer reports not at end', async () => {
     mockIsAtEnd = false;

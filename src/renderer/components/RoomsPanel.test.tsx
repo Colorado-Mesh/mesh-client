@@ -10,7 +10,7 @@ import {
   saveStarred,
   type StarredMessage,
 } from '@/renderer/lib/chatPanelProtocolStorage';
-import { VIRTUALIZER_SCROLL_END_THRESHOLD } from '@/renderer/lib/chatScrollUtils';
+import { CHAT_SCROLL_END_THRESHOLD } from '@/renderer/lib/chatScrollUtils';
 import { serializeMeshcoreUserMessage } from '@/renderer/lib/meshcore/meshcoreMessageI18n';
 import { buildMeshcoreRoomIncomingMessage } from '@/renderer/lib/meshcoreChannelText';
 import {
@@ -36,6 +36,7 @@ import RoomsPanel from './RoomsPanel';
 
 const mockScrollToEnd = vi.fn();
 const mockScrollToIndex = vi.fn();
+let mockIsAtEnd = false;
 let lastRoomsVirtualizerOptions: Record<string, unknown> | undefined;
 
 vi.mock('@tanstack/react-virtual', () => ({
@@ -52,7 +53,7 @@ vi.mock('@tanstack/react-virtual', () => ({
       getTotalSize: () => count * 96,
       measureElement: () => {},
       containerRef: { current: null },
-      isAtEnd: () => false,
+      isAtEnd: () => mockIsAtEnd,
       scrollToEnd: mockScrollToEnd,
       scrollToIndex: mockScrollToIndex,
       scrollDirection: 'forward' as const,
@@ -136,6 +137,7 @@ function renderRoomsPanel(
 
 describe('RoomsPanel', () => {
   beforeEach(() => {
+    mockIsAtEnd = false;
     localStorage.clear();
     meshcoreClearAllRoomSessions();
     clearAllMeshcoreRoomAutoLoginFailures();
@@ -998,6 +1000,64 @@ describe('RoomsPanel', () => {
     expect(screen.getByTestId('rooms-composer-footer')).toHaveClass('shrink-0');
   });
 
+  it.each(
+    (['linux', 'darwin', 'win32'] as const).flatMap((platform) =>
+      [2, 3, 8, 60, 150].map((distance) => ({ platform, distance })),
+    ),
+  )(
+    'follows room posts only within the bottom tolerance ($distance px from latest on $platform)',
+    async ({ platform, distance }) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      mockIsAtEnd = true;
+      const room = makeRoom(0x1017, 'Reading Room');
+      meshcoreApplyRoomSession(room.node_id, {
+        guestPassword: 'hello',
+        adminPassword: '',
+        role: 'readwrite',
+      });
+      const post = (timestamp: number) =>
+        buildMeshcoreRoomIncomingMessage({
+          rawText: `post ${timestamp}`,
+          roomServerId: room.node_id,
+          authorId: 0x200,
+          authorName: 'Alice',
+          timestamp,
+          receivedVia: 'rf',
+        });
+      const props = {
+        nodes: new Map([[room.node_id, room]]),
+        myNodeNum: 1,
+        isConnected: true,
+        initialRoomTarget: room.node_id,
+        onLoginRoom: vi.fn(),
+        onCancelRoomLogin: vi.fn(),
+        onLeaveRoom: vi.fn(),
+        onSendRoomPost: vi.fn(),
+        onSendRoomAdminCli: vi.fn(),
+        isActive: true,
+      };
+      const { rerender } = render(<RoomsPanel {...props} messages={[post(2000)]} />);
+      const stream = screen.getByTestId('rooms-post-stream');
+      Object.defineProperties(stream, {
+        scrollHeight: { value: 2000, configurable: true },
+        clientHeight: { value: 400, configurable: true },
+        scrollTop: { value: 1600 - distance, writable: true, configurable: true },
+      });
+      fireEvent.scroll(stream);
+      mockScrollToEnd.mockClear();
+      rerender(<RoomsPanel {...props} messages={[post(2000), post(3000)]} />);
+      await waitFor(() => {
+        expect(screen.getByText('post 3000')).toBeInTheDocument();
+      });
+      if (distance <= 2) {
+        expect(mockScrollToEnd).toHaveBeenCalled();
+      } else {
+        expect(mockScrollToEnd).not.toHaveBeenCalled();
+        expect(stream.scrollTop).toBe(1600 - distance);
+      }
+    },
+  );
+
   it('restores stream scrollTop on tab re-entry instead of leaving it at the value set while hidden', () => {
     meshcoreClearAllRoomSessions();
     const room = makeRoom(0x1017, 'Scroll Restore Room');
@@ -1340,7 +1400,7 @@ describe('RoomsPanel', () => {
     });
     expect(lastRoomsVirtualizerOptions?.anchorTo).toBe('end');
     expect(lastRoomsVirtualizerOptions?.followOnAppend).toBe(true);
-    expect(lastRoomsVirtualizerOptions?.scrollEndThreshold).toBe(VIRTUALIZER_SCROLL_END_THRESHOLD);
+    expect(lastRoomsVirtualizerOptions?.scrollEndThreshold).toBe(CHAT_SCROLL_END_THRESHOLD);
     expect(lastRoomsVirtualizerOptions?.measureElement).toBeTypeOf('function');
   });
 
