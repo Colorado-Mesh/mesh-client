@@ -1620,6 +1620,20 @@ describe('App ConnectionPanel facade wiring', () => {
     expect(source).not.toMatch(/useProtocolConnectionActions\(/);
   });
 
+  it('reads active-tab panel, connectionView, and queue from the facade', () => {
+    const source = readFileSync(join(__dirname, 'App.tsx'), 'utf-8');
+    expect(source).toContain('const panelActions = activeFacade.panel.actions;');
+    expect(source).toContain('const activeConnectionView = activeFacade.connectionView;');
+    expect(source).toContain('const activeQueueFromStore = activeFacade.queue;');
+    expect(source).toContain('void panelActions.refreshNodesFromDb()');
+    expect(source).toContain('void panelActions.refreshMessagesFromDb({ replaceFromDb })');
+    expect(source).toContain('activeConnection.connectAutomatic');
+    expect(source).not.toMatch(/selectByProtocol\(\s*panelActionsByProtocol,\s*protocol\s*\)/);
+    expect(source).not.toMatch(/selectByProtocol\(\s*connectionActionsByProtocol/);
+    expect(source).toContain('selectByProtocol(panelActionsByProtocol, detailModalProtocol)');
+    expect(source).toContain('selectByProtocol(connectionViewByProtocol, detailModalProtocol)');
+  });
+
   it.each([
     {
       protocol: 'meshtastic' as const,
