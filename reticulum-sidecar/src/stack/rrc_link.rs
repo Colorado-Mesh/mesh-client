@@ -398,9 +398,11 @@ async fn refresh_hub_path(
     options.refresh_cached_path = true;
     let mut snapshot = None;
     if mode == RrcPathRefresh::DropAndRefresh {
-        snapshot = query_path_route(transport_tx, dest_hash).await;
+        snapshot = query_path_route(transport_tx, dest_hash, PATH_LOOKUP_TIMEOUT).await;
         if let Some(ref failed) = snapshot {
-            apply_failed_route_failover(transport_tx, dest_hash, failed, failover).await;
+            if should_apply_rrc_path_failover(failed, failover.rounds) {
+                apply_failed_route_failover(transport_tx, dest_hash, failed, failover).await;
+            }
         }
         // Explicit DropPath covers both cached and uncached identities. Clear
         // drop_existing_path so resolve_destination does not DropPath again on
@@ -432,22 +434,25 @@ async fn refresh_hub_path(
     .map_err(|e| map_resolve_error(&e))?;
 
     let resolved = if mode == RrcPathRefresh::DropAndRefresh && snapshot.is_some() {
+        let probe_deadline = tokio::time::Instant::now() + VIA_FAILOVER_PROBE_WAIT;
         if let Some(route) = poll_unblocked_route(
             transport_tx,
             dest_hash,
             failover,
             snapshot.as_ref().and_then(|s| s.via.as_deref()),
+            probe_deadline,
         )
         .await
         {
             Some(route)
-        } else if let Some(route) = query_path_route(transport_tx, dest_hash).await {
-            Some(route)
+        } else if let Some(timeout) = remaining_until(probe_deadline) {
+            query_path_route(transport_tx, dest_hash, timeout).await
         } else {
-            snapshot.clone()
+            None
         }
+        .or_else(|| snapshot.clone())
     } else {
-        query_path_route(transport_tx, dest_hash).await
+        query_path_route(transport_tx, dest_hash, PATH_LOOKUP_TIMEOUT).await
     };
 
     let route = resolved.unwrap_or(RrcResolvedRoute {
@@ -459,6 +464,16 @@ async fn refresh_hub_path(
     Ok(route)
 }
 
+/// True when DropAndRefresh has a concrete failed iface/via and budget remains.
+fn should_apply_rrc_path_failover(failed: &RrcResolvedRoute, rounds: u8) -> bool {
+    rounds < path_failover::MAX_VIA_FAILOVERS && (failed.iface.is_some() || failed.via.is_some())
+}
+
+fn remaining_until(deadline: tokio::time::Instant) -> Option<Duration> {
+    let rem = deadline.saturating_duration_since(tokio::time::Instant::now());
+    (!rem.is_zero()).then_some(rem)
+}
+
 /// Suppress the failed iface and drop its next hop so RequestPath can attach elsewhere.
 async fn apply_failed_route_failover(
     transport_tx: &mpsc::Sender<TransportMessage>,
@@ -466,15 +481,16 @@ async fn apply_failed_route_failover(
     failed: &RrcResolvedRoute,
     failover: &mut RrcPathFailoverState,
 ) {
-    if failover.rounds < path_failover::MAX_VIA_FAILOVERS {
-        record_path_failover_attempt(
-            &mut Vec::new(),
-            &mut failover.blocked_ifaces,
-            &mut failover.blocked_vias,
-            failed.iface.as_deref(),
-            failed.via.as_deref(),
-        );
+    if !should_apply_rrc_path_failover(failed, failover.rounds) {
+        return;
     }
+    record_path_failover_attempt(
+        &mut Vec::new(),
+        &mut failover.blocked_ifaces,
+        &mut failover.blocked_vias,
+        failed.iface.as_deref(),
+        failed.via.as_deref(),
+    );
     let ops = path_failover::build_path_failover_control_ops(
         dest_hash,
         &failover.blocked_vias,
@@ -517,10 +533,11 @@ async fn poll_unblocked_route(
     dest_hash: [u8; 16],
     failover: &RrcPathFailoverState,
     failed_via: Option<&str>,
+    deadline: tokio::time::Instant,
 ) -> Option<RrcResolvedRoute> {
-    let deadline = tokio::time::Instant::now() + VIA_FAILOVER_PROBE_WAIT;
     loop {
-        let slots = query_path_slots_json(transport_tx, dest_hash).await;
+        let timeout = remaining_until(deadline)?;
+        let slots = query_path_slots_json(transport_tx, dest_hash, timeout).await;
         if let Some(cand) = select_unblocked_slot(
             &slots,
             &failover.blocked_ifaces,
@@ -530,29 +547,33 @@ async fn poll_unblocked_route(
         ) {
             return Some(route_from_candidate(cand));
         }
-        if tokio::time::Instant::now() >= deadline {
-            return None;
-        }
-        tokio::time::sleep(VIA_FAILOVER_POLL_INTERVAL).await;
+        let rem = remaining_until(deadline)?;
+        tokio::time::sleep(rem.min(VIA_FAILOVER_POLL_INTERVAL)).await;
     }
 }
 
 async fn query_path_route(
     transport_tx: &mpsc::Sender<TransportMessage>,
     dest_hash: [u8; 16],
+    timeout: Duration,
 ) -> Option<RrcResolvedRoute> {
-    let slots = query_path_slots_json(transport_tx, dest_hash).await;
+    let slots = query_path_slots_json(transport_tx, dest_hash, timeout).await;
     best_slot_route(&slots)
 }
 
 async fn query_path_slots_json(
     transport_tx: &mpsc::Sender<TransportMessage>,
     dest_hash: [u8; 16],
+    timeout: Duration,
 ) -> Vec<serde_json::Value> {
+    let deadline = tokio::time::Instant::now() + timeout;
+    let Some(first) = remaining_until(deadline) else {
+        return Vec::new();
+    };
     if let Ok(TransportQueryResponse::PathSlots(entry)) = transport_rpc(
         transport_tx,
         TransportQuery::GetPathSlots { dest: dest_hash },
-        PATH_LOOKUP_TIMEOUT,
+        first,
     )
     .await
     {
@@ -570,13 +591,10 @@ async fn query_path_slots_json(
             })
             .collect();
     }
-    match transport_rpc(
-        transport_tx,
-        TransportQuery::GetPathTable,
-        PATH_LOOKUP_TIMEOUT,
-    )
-    .await
-    {
+    let Some(second) = remaining_until(deadline) else {
+        return Vec::new();
+    };
+    match transport_rpc(transport_tx, TransportQuery::GetPathTable, second).await {
         Ok(TransportQueryResponse::PathTable(entries)) => entries
             .iter()
             .filter(|e| e.hash == dest_hash)
@@ -724,7 +742,38 @@ fn map_link_session_error(e: LinkSessionError) -> RrcLinkError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rns_transport::messages::RecalledDestinationRpcEntry;
+    use rns_transport::constants::InterfaceMode;
+    use rns_transport::messages::{InterfaceRole, RecalledDestinationRpcEntry};
+
+    const TEST_TRANSPORT_RECV: Duration = Duration::from_secs(2);
+
+    fn test_path_table_entry(
+        dest: [u8; 16],
+        via: [u8; 16],
+        hops: u8,
+        iface: &str,
+    ) -> PathTableRpcEntry {
+        PathTableRpcEntry {
+            hash: dest,
+            timestamp: 1.0,
+            via: Some(via),
+            hops,
+            expires: 100.0,
+            interface: iface.into(),
+            interface_id: 1,
+            interface_mode: InterfaceMode::Full,
+            interface_role: InterfaceRole::Normal,
+        }
+    }
+
+    async fn recv_transport(
+        transport_rx: &mut mpsc::Receiver<TransportMessage>,
+    ) -> TransportMessage {
+        tokio::time::timeout(TEST_TRANSPORT_RECV, transport_rx.recv())
+            .await
+            .expect("timed out waiting for transport message")
+            .expect("transport channel closed")
+    }
 
     #[tokio::test]
     async fn excess_resource_offers_rejected_when_slots_full() {
@@ -813,13 +862,17 @@ mod tests {
     #[tokio::test]
     async fn drop_and_refresh_sends_drop_path_before_request_path() {
         let dest = [0xAB; 16];
+        let failed_via = [0x7C; 16];
+        let alt_via = [0xAA; 16];
         let public_key = [0xCD; 64];
-        let (transport_tx, mut transport_rx) = mpsc::channel(8);
+        let (transport_tx, mut transport_rx) = mpsc::channel(16);
         let responder = tokio::spawn(async move {
             let mut drop_count = 0usize;
             let mut saw_request = false;
-            while !saw_request {
-                let msg = transport_rx.recv().await.expect("transport message");
+            let mut answered_unblocked = false;
+            let mut seq = Vec::new();
+            while !(saw_request && answered_unblocked) {
+                let msg = recv_transport(&mut transport_rx).await;
                 match msg {
                     TransportMessage::Rpc {
                         query: TransportQuery::GetPathSlots { dest: d },
@@ -832,9 +885,32 @@ mod tests {
                         query: TransportQuery::GetPathTable,
                         response_tx,
                     } => {
+                        let entry = if saw_request {
+                            answered_unblocked = true;
+                            test_path_table_entry(dest, alt_via, 3, "Ratspeak")
+                        } else {
+                            test_path_table_entry(dest, failed_via, 2, "RNS DFW Central")
+                        };
                         response_tx
-                            .send(TransportQueryResponse::PathTable(Vec::new()))
+                            .send(TransportQueryResponse::PathTable(vec![entry]))
                             .unwrap();
+                    }
+                    TransportMessage::Rpc {
+                        query: TransportQuery::SuppressCurrentPathInterface { dest: d, duration },
+                        response_tx,
+                    } => {
+                        assert_eq!(d, dest);
+                        assert!(duration > 0.0);
+                        seq.push("SuppressCurrentPathInterface");
+                        response_tx.send(TransportQueryResponse::Ok).unwrap();
+                    }
+                    TransportMessage::Rpc {
+                        query: TransportQuery::DropAllVia { next_hop },
+                        response_tx,
+                    } => {
+                        assert_eq!(next_hop, failed_via);
+                        seq.push("DropAllVia");
+                        response_tx.send(TransportQueryResponse::Ok).unwrap();
                     }
                     TransportMessage::Rpc {
                         query: TransportQuery::DropPath { dest: d },
@@ -847,6 +923,7 @@ mod tests {
                             drop_count <= 1,
                             "explicit DropPath must not be followed by a second resolver DropPath"
                         );
+                        seq.push("DropPath");
                         response_tx.send(TransportQueryResponse::Ok).unwrap();
                     }
                     TransportMessage::Rpc {
@@ -880,18 +957,121 @@ mod tests {
                     } => {
                         assert_eq!(d, dest);
                         assert_eq!(drop_count, 1, "exactly one DropPath before RequestPath");
+                        seq.push("RequestPath");
                         saw_request = true;
                     }
                     other => panic!("unexpected transport message: {other:?}"),
                 }
             }
-            // Allow the post-RequestPath recall to complete.
-            if let Some(msg) = transport_rx.recv().await {
+            seq
+        });
+
+        let mut failover = RrcPathFailoverState::default();
+        let route = refresh_hub_path(
+            &transport_tx,
+            dest,
+            1,
+            RrcPathRefresh::DropAndRefresh,
+            &mut failover,
+        )
+        .await
+        .expect("refresh_hub_path");
+        assert_eq!(
+            responder.await.expect("responder join"),
+            [
+                "SuppressCurrentPathInterface",
+                "DropAllVia",
+                "DropPath",
+                "RequestPath"
+            ]
+        );
+        assert_eq!(route.hops, 3);
+        assert_eq!(route.iface.as_deref(), Some("Ratspeak"));
+    }
+
+    #[tokio::test]
+    async fn drop_and_refresh_without_live_route_skips_failover() {
+        let dest = [0xAB; 16];
+        let public_key = [0xCD; 64];
+        let (transport_tx, mut transport_rx) = mpsc::channel(8);
+        let responder = tokio::spawn(async move {
+            let mut drop_count = 0usize;
+            let mut saw_request = false;
+            let mut saw_failover = false;
+            while !saw_request {
+                let msg = recv_transport(&mut transport_rx).await;
                 match msg {
                     TransportMessage::Rpc {
-                        query: TransportQuery::RecallDestination { .. },
+                        query: TransportQuery::GetPathSlots { dest: d },
                         response_tx,
                     } => {
+                        assert_eq!(d, dest);
+                        response_tx.send(TransportQueryResponse::Ok).unwrap();
+                    }
+                    TransportMessage::Rpc {
+                        query: TransportQuery::GetPathTable,
+                        response_tx,
+                    } => {
+                        response_tx
+                            .send(TransportQueryResponse::PathTable(Vec::new()))
+                            .unwrap();
+                    }
+                    TransportMessage::Rpc {
+                        query:
+                            TransportQuery::SuppressCurrentPathInterface { .. }
+                            | TransportQuery::DropAllVia { .. },
+                        ..
+                    } => {
+                        saw_failover = true;
+                    }
+                    TransportMessage::Rpc {
+                        query: TransportQuery::DropPath { dest: d },
+                        response_tx,
+                    } => {
+                        assert_eq!(d, dest);
+                        drop_count += 1;
+                        response_tx.send(TransportQueryResponse::Ok).unwrap();
+                    }
+                    TransportMessage::Rpc {
+                        query: TransportQuery::RecallDestination { dest: d },
+                        response_tx,
+                    } => {
+                        assert_eq!(d, dest);
+                        if drop_count == 1 && !saw_request {
+                            response_tx
+                                .send(TransportQueryResponse::RecalledDestination(None))
+                                .unwrap();
+                        } else {
+                            response_tx
+                                .send(TransportQueryResponse::RecalledDestination(Some(
+                                    RecalledDestinationRpcEntry {
+                                        dest_hash: dest,
+                                        public_key,
+                                        app_data: None,
+                                        ratchet: None,
+                                        hops: 1,
+                                        timestamp: 1.0,
+                                    },
+                                )))
+                                .unwrap();
+                        }
+                    }
+                    TransportMessage::RequestPath {
+                        destination_hash: d,
+                    } => {
+                        assert_eq!(d, dest);
+                        saw_request = true;
+                    }
+                    other => panic!("unexpected transport message: {other:?}"),
+                }
+            }
+            // Allow the post-RequestPath recall / path query to complete.
+            if let Ok(msg) = tokio::time::timeout(TEST_TRANSPORT_RECV, transport_rx.recv()).await {
+                match msg {
+                    Some(TransportMessage::Rpc {
+                        query: TransportQuery::RecallDestination { .. },
+                        response_tx,
+                    }) => {
                         response_tx
                             .send(TransportQueryResponse::RecalledDestination(Some(
                                 RecalledDestinationRpcEntry {
@@ -905,14 +1085,30 @@ mod tests {
                             )))
                             .unwrap();
                     }
-                    TransportMessage::Rpc {
+                    Some(TransportMessage::Rpc {
+                        query: TransportQuery::GetPathSlots { dest: d },
+                        response_tx,
+                    }) => {
+                        assert_eq!(d, dest);
+                        response_tx.send(TransportQueryResponse::Ok).unwrap();
+                    }
+                    Some(TransportMessage::Rpc {
+                        query: TransportQuery::GetPathTable,
+                        response_tx,
+                    }) => {
+                        response_tx
+                            .send(TransportQueryResponse::PathTable(Vec::new()))
+                            .unwrap();
+                    }
+                    Some(TransportMessage::Rpc {
                         query: TransportQuery::DropPath { .. },
                         ..
-                    } => panic!("second DropPath must not occur after explicit drop"),
-                    other => panic!("unexpected trailing message: {other:?}"),
+                    }) => panic!("second DropPath must not occur after explicit drop"),
+                    Some(other) => panic!("unexpected trailing message: {other:?}"),
+                    None => {}
                 }
             }
-            drop_count == 1 && saw_request
+            !saw_failover && drop_count == 1 && saw_request
         });
 
         let mut failover = RrcPathFailoverState::default();
@@ -927,8 +1123,10 @@ mod tests {
         .expect("refresh_hub_path");
         assert!(
             responder.await.expect("responder join"),
-            "expected single DropPath then RequestPath"
+            "empty path table must DropPath then RequestPath without failover RPCs"
         );
+        assert!(failover.blocked_ifaces.is_empty());
+        assert!(failover.blocked_vias.is_empty());
     }
 
     #[tokio::test]
@@ -1092,7 +1290,7 @@ mod tests {
             let mut saw_suppress = false;
             let mut saw_drop_via = false;
             for _ in 0..2 {
-                let msg = transport_rx.recv().await.expect("transport message");
+                let msg = recv_transport(&mut transport_rx).await;
                 match msg {
                     TransportMessage::Rpc {
                         query: TransportQuery::SuppressCurrentPathInterface { dest: d, duration },
@@ -1135,5 +1333,50 @@ mod tests {
                 .iter()
                 .any(|v| v.eq_ignore_ascii_case(&hex::encode(failed_via)))
         );
+    }
+
+    #[tokio::test]
+    async fn apply_failed_route_failover_skips_when_rounds_exhausted() {
+        let dest = [0xD7; 16];
+        let failed = RrcResolvedRoute {
+            hops: 2,
+            iface: Some("RNS DFW Central".into()),
+            via: Some(hex::encode([0x7C; 16])),
+        };
+        let (transport_tx, mut transport_rx) = mpsc::channel(4);
+        let mut failover = RrcPathFailoverState {
+            rounds: path_failover::MAX_VIA_FAILOVERS,
+            ..RrcPathFailoverState::default()
+        };
+        apply_failed_route_failover(&transport_tx, dest, &failed, &mut failover).await;
+        assert!(
+            tokio::time::timeout(Duration::from_millis(100), transport_rx.recv())
+                .await
+                .is_err(),
+            "SuppressCurrentPathInterface and DropAllVia stay gated by MAX_VIA_FAILOVERS"
+        );
+        assert!(failover.blocked_ifaces.is_empty());
+        assert!(failover.blocked_vias.is_empty());
+    }
+
+    #[test]
+    fn path_failover_requires_failed_route_and_remaining_rounds() {
+        let failed = RrcResolvedRoute {
+            hops: 2,
+            iface: Some("RNS DFW Central".into()),
+            via: Some(hex::encode([0x7C; 16])),
+        };
+        let empty = RrcResolvedRoute {
+            hops: 2,
+            iface: None,
+            via: None,
+        };
+        assert!(should_apply_rrc_path_failover(&failed, 0));
+        assert!(should_apply_rrc_path_failover(&failed, 1));
+        assert!(!should_apply_rrc_path_failover(
+            &failed,
+            path_failover::MAX_VIA_FAILOVERS
+        ));
+        assert!(!should_apply_rrc_path_failover(&empty, 0));
     }
 }
