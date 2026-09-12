@@ -1,4 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe, configureAxe } from 'vitest-axe';
 
@@ -15,6 +17,7 @@ import {
   RETICULUM_CAPABILITIES,
 } from './lib/radio/BaseRadioProvider';
 import * as providerFactory from './lib/radio/providerFactory';
+import { type MeshcoreSessionApi, registerMeshcoreSession } from './lib/sessions/meshcoreSession';
 import { registerMeshtasticSession } from './lib/sessions/meshtasticSession';
 import {
   resetReticulumVacuumScheduleForTests,
@@ -69,6 +72,7 @@ const {
   createMeshCoreMock,
   getStoredMeshProtocolMock,
   lastChatPanelProps,
+  lastConnectionPanelProps,
   lastNodeDetailModalProps,
   useDeviceMock,
   useMeshCoreMock,
@@ -244,9 +248,11 @@ const {
     waitingMessagesCount: 0,
     waitingMessagesSyncActive: false,
     waitingMessagesSyncProgress: null,
+    ensureMeshcoreMqttIdentity: vi.fn().mockResolvedValue(true),
   }),
   getStoredMeshProtocolMock: vi.fn(() => 'meshtastic'),
   lastChatPanelProps: { current: null as null | Record<string, unknown> },
+  lastConnectionPanelProps: { current: null as null | Record<string, unknown> },
   lastNodeDetailModalProps: { current: null as null | Record<string, unknown> },
   useDeviceMock: vi.fn(),
   useMeshCoreMock: vi.fn(),
@@ -260,6 +266,7 @@ beforeEach(() => {
   getStoredMeshProtocolMock.mockReset();
   getStoredMeshProtocolMock.mockReturnValue('meshtastic');
   lastChatPanelProps.current = null;
+  lastConnectionPanelProps.current = null;
   lastNodeDetailModalProps.current = null;
   useIdentityStore.setState({
     identities: {
@@ -352,7 +359,31 @@ vi.mock('./lazyAppPanels', () => ({
       : '';
     return <div data-testid="chat-panel-props">{channels}</div>;
   },
-  ConnectionPanel: () => <div data-testid="connection-panel-mock">connection</div>,
+  ConnectionPanel: (props: Record<string, unknown>) => {
+    lastConnectionPanelProps.current = props;
+    return (
+      <div data-testid="connection-panel-mock">
+        <button
+          type="button"
+          aria-label="test-connection-connect"
+          onClick={() => {
+            void (props.onConnect as (type: string) => Promise<void> | void)('serial');
+          }}
+        >
+          connect
+        </button>
+        <button
+          type="button"
+          aria-label="test-connection-disconnect"
+          onClick={() => {
+            void (props.onDisconnect as () => Promise<void> | void)();
+          }}
+        >
+          disconnect
+        </button>
+      </div>
+    );
+  },
   LogPanel: () => null,
   NodeListPanel: () => null,
 }));
@@ -1548,4 +1579,164 @@ describe('App accessibility', () => {
     });
     expect(screen.getByTestId('connection-panel-mock')).toBeInTheDocument();
   });
+});
+
+describe('App ConnectionPanel facade wiring', () => {
+  function stubRadioCapabilities(): void {
+    vi.mocked(providerFactory.useRadioProvider).mockImplementation((protocol) => {
+      if (protocol === 'reticulum') return RETICULUM_CAPABILITIES;
+      if (protocol === 'meshcore') return MESHCORE_CAPABILITIES;
+      return MESHTASTIC_CAPABILITIES;
+    });
+  }
+
+  function createMeshcoreSessionStub(): MeshcoreSessionApi {
+    return {
+      connect: vi.fn().mockResolvedValue(undefined),
+      prepareRfConnect: vi.fn().mockResolvedValue(undefined),
+      attachRfSession: vi.fn().mockResolvedValue(undefined),
+      handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
+      finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
+      connectAutomatic: vi.fn().mockResolvedValue(undefined),
+    };
+  }
+
+  it('mounts a single ConnectionPanel from App.tsx', () => {
+    const source = readFileSync(join(__dirname, 'App.tsx'), 'utf-8');
+    expect(source.match(/<ConnectionPanel\b/g)).toHaveLength(1);
+    expect(source).toContain('activeConnection.connect');
+    expect(source).not.toContain("protocol === 'meshtastic' && capabilities.hasChannelConfig");
+  });
+
+  it.each([
+    {
+      protocol: 'meshtastic' as const,
+      myNodeNum: 0xabc,
+      extras: {
+        firmware: true,
+        mqttIdentity: false,
+        reticulum: false,
+        myNodeLabel: '!abc',
+      },
+    },
+    {
+      protocol: 'meshcore' as const,
+      myNodeNum: 0x12345678,
+      extras: {
+        firmware: true,
+        mqttIdentity: true,
+        reticulum: false,
+        myNodeLabel: '!12345678',
+      },
+    },
+    {
+      protocol: 'reticulum' as const,
+      myNodeNum: 0,
+      extras: {
+        firmware: false,
+        mqttIdentity: false,
+        reticulum: true,
+        myNodeLabel: undefined,
+      },
+    },
+  ])(
+    'renders one $protocol ConnectionPanel and wires connect/disconnect extras',
+    async ({ protocol, myNodeNum, extras }) => {
+      stubRadioCapabilities();
+      getStoredMeshProtocolMock.mockReturnValue(protocol);
+      if (protocol === 'meshtastic') {
+        useDeviceMock.mockReturnValue({
+          ...createDeviceMock(),
+          state: { status: 'disconnected', myNodeNum, connectionType: null },
+        });
+      }
+      if (protocol === 'meshcore') {
+        useMeshCoreMock.mockReturnValue({
+          ...createMeshCoreMock(),
+          state: { status: 'disconnected', myNodeNum, connectionType: null },
+        });
+      }
+
+      const meshtasticSession = {
+        prepareRfConnect: vi.fn().mockResolvedValue(undefined),
+        attachRfSession: vi.fn().mockResolvedValue(undefined),
+        handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
+        finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
+        connectAutomatic: vi.fn().mockResolvedValue(undefined),
+        sendChatMessage: vi.fn(),
+      };
+      registerMeshtasticSession(meshtasticSession);
+      const meshcoreSession = createMeshcoreSessionStub();
+      registerMeshcoreSession(meshcoreSession);
+
+      renderApp();
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId('connection-panel-mock')).toHaveLength(1);
+      });
+
+      const props = lastConnectionPanelProps.current;
+      expect(props?.protocol).toBe(protocol);
+      expect(props?.onConnect).toEqual(expect.any(Function));
+      expect(props?.onDisconnect).toEqual(expect.any(Function));
+      expect(props?.onAutoConnect).toEqual(expect.any(Function));
+      if (protocol !== 'reticulum') {
+        expect(props?.myNodeLabel).toBe(extras.myNodeLabel);
+      }
+
+      if (extras.firmware) {
+        expect(props?.firmwareCheckState).toEqual({ phase: 'idle' });
+        expect(props?.onOpenFirmwareReleases).toEqual(expect.any(Function));
+      } else {
+        expect(props?.firmwareCheckState).toBeUndefined();
+        expect(props?.onOpenFirmwareReleases).toBeUndefined();
+      }
+
+      if (extras.mqttIdentity) {
+        expect(props?.ensureMeshcoreMqttIdentity).toEqual(expect.any(Function));
+      } else {
+        expect(props?.ensureMeshcoreMqttIdentity).toBeUndefined();
+      }
+
+      if (extras.reticulum) {
+        expect(props?.onStartReticulumStack).toEqual(expect.any(Function));
+        expect(props?.onOpenReticulumRmapSettings).toEqual(expect.any(Function));
+        expect(props?.onOpenReticulumSetupDestination).toEqual(expect.any(Function));
+      } else {
+        expect(props?.onStartReticulumStack).toBeUndefined();
+        expect(props?.onOpenReticulumRmapSettings).toBeUndefined();
+        expect(props?.onOpenReticulumSetupDestination).toBeUndefined();
+      }
+
+      if (protocol === 'meshtastic') {
+        await act(async () => {
+          await (props?.onConnect as (type: string) => Promise<void>)('serial').catch(
+            () => undefined,
+          );
+        });
+        expect(meshtasticSession.prepareRfConnect).toHaveBeenCalledWith(
+          'serial',
+          undefined,
+          undefined,
+        );
+        await act(async () => {
+          await (props?.onDisconnect as () => Promise<void>)();
+        });
+        expect(meshtasticSession.finalizeDriverDisconnect).toHaveBeenCalled();
+      }
+
+      if (protocol === 'meshcore') {
+        await act(async () => {
+          await (props?.onConnect as (type: string) => Promise<void>)('serial');
+        });
+        expect(meshcoreSession.connect).toHaveBeenCalled();
+        await act(async () => {
+          await (props?.onDisconnect as () => Promise<void>)();
+        });
+        expect(meshcoreSession.finalizeDriverDisconnect).toHaveBeenCalled();
+      }
+
+      registerMeshcoreSession(null);
+    },
+  );
 });
