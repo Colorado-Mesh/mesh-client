@@ -1,6 +1,7 @@
 //! Nomad page fetch timeouts (MeshChat + Python RNS per-hop scaling on RF).
 
 use super::types::InterfaceRow;
+#[cfg(test)]
 use super::via::resolve_outbound_sent_via;
 
 /// MeshChat `NomadnetDownloader.download()` path_lookup_timeout default.
@@ -44,7 +45,7 @@ pub fn nomad_page_overall_timeout_secs(egress_via: &str, hops: u8) -> u64 {
 /// Resolve egress from enabled interfaces and compute overall timeout.
 /// Prefer [`resolve_nomad_page_timeout_secs`] with a path-table interface when known —
 /// a local BLE/RNode being enabled must not force RF budgets for TCP-routed peers.
-#[allow(dead_code)] // kept for tests + call sites that lack a path interface
+#[cfg(test)]
 pub fn nomad_page_timeout_secs_for_interfaces(interfaces: &[InterfaceRow], hops: u8) -> u64 {
     let egress = resolve_outbound_sent_via(interfaces);
     nomad_page_overall_timeout_secs(egress, hops)

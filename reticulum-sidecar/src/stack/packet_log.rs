@@ -2,7 +2,6 @@ use std::collections::VecDeque;
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
-use tokio::sync::broadcast;
 
 pub const MAX_WIRE_PACKET_LOG: usize = 2500;
 
@@ -62,14 +61,6 @@ impl PacketLogBuffer {
             buf.clear();
         }
     }
-}
-
-/// Formerly emitted live `wire_packet` on the shared WS bus. Kept for unit tests /
-/// egress helpers; production PacketTap only fills [`PacketLogBuffer`] (Sniffer polls HTTP).
-#[allow(dead_code)]
-pub fn emit_wire_packet_event(event_tx: &broadcast::Sender<String>, row: &WirePacketRow) {
-    let msg = serde_json::json!({ "type": "wire_packet", "payload": row });
-    let _ = event_tx.send(msg.to_string());
 }
 
 /// Collect PacketTap Tx interface names for LXMF egress evidence.
