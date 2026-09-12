@@ -639,6 +639,29 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 
 When upstream rsReticulum lands equivalent BLE READY timeout / non-blocking FC, remove this patch and the apply step.
 
+## rsReticulum-response-resource-window-fast.patch
+
+Promote inbound **response** Resources to `WINDOW_MAX_FAST` (75) when Link RTT is ≤ 1s. `grow()` only leaves `WINDOW_MAX_SLOW` (10) after four rounds above `RATE_FAST` (6250 B/s). A 2-hop TCP hub at ~200–300ms RTT stays around 8–20 KB/s, so a ~480 KB Nomad `/media` Resource crawls ~16–20s. Jumping the window matches the observed TCP-class path without changing RF slow-start.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | `9bc7ee5` (`ratspeak/rsReticulum` `origin/main`) |
+| **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsReticulum) |
+
+**Touches:** `crates/rns-protocol/src/resource.rs` (`WindowState::promote_fast`), `crates/rns-runtime/src/link_session.rs` (`inbound_transfer_from_advertisement`)
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-response-resource-window-fast.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`. Sidecar Nomad browse reuses one `LinkSession` per dest so this window applies to page + queued `/media` on the same Link.
+
+### Sunset
+
+When upstream rsReticulum promotes TCP-class response Resources (or otherwise reaches `WINDOW_MAX_FAST` without waiting on `RATE_FAST`), remove this patch and the apply step.
+
 ## Removed: rsLXMF-propagation-client-link-attached-tx.patch
 
 Sunset when floated rsLXMF `origin/main` pinned PropagationClient link-scoped TX with `SendLinkEndpoint` plus `attached_interface` (interface-pinned link TX). That superseded the local `OutboundAttached` / `queue_link_outbound` overlay for the same pathless-Link flood as [ratspeak/rsReticulum#22](https://github.com/ratspeak/rsReticulum/issues/22). Tracked entry removed from `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` after sunset confirmation.
