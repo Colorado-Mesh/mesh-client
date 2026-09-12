@@ -111,7 +111,6 @@ import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
 import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
-import { useActiveMeshIdentity } from './hooks/useActiveMeshIdentity';
 import { useAllProtocolPanelActions } from './hooks/useAllProtocolPanelActions';
 import { useAppStartupDbPrune } from './hooks/useAppStartupDbPrune';
 import { useAppTrayUnreadSync } from './hooks/useAppTrayUnreadSync';
@@ -893,15 +892,15 @@ function AppContent() {
     typeof useReticulumPanelActions
   >;
   const activeFacade = useProtocolFacade(protocol, allPanelActions);
-  const panelActions = allPanelActions[protocol];
+  const panelActions = activeFacade.panel.actions;
   const {
     identityIdByProtocol,
     focusedIdentityId,
+    reticulumIdentityId,
     capabilities: activeProtocolCapabilities,
-  } = useActiveMeshIdentity(protocol);
+  } = activeFacade;
   const meshtasticIdentityId = identityIdByProtocol.meshtastic;
   const meshcoreIdentityId = identityIdByProtocol.meshcore;
-  const reticulumIdentityId = identityIdByProtocol.reticulum;
   const meshtasticNodesById = useNodeStore((s) =>
     meshtasticIdentityId ? s.nodes[meshtasticIdentityId] : undefined,
   );
