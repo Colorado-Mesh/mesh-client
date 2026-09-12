@@ -3,6 +3,9 @@
  * Prefer this over a new `scripts/check-*.mjs` for file-local / small-glob invariants.
  * Suppress with `// source-policy-ok <rule-id> <reason>` on the violating line (forbid)
  * or anywhere in the file (require).
+ *
+ * Cross-file “every lazy export must mount in App.tsx” is not expressible as a
+ * per-file regex; that invariant lives in `lazyPanelsMounted.test.ts`.
  */
 export interface SourcePolicyRule {
   id: string;

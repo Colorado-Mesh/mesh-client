@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * Guard: every lazy-exported shell panel/modal must be referenced in App.tsx so new
- * lazy modules cannot be forgotten.
+ * lazy modules cannot be forgotten. Cross-file, so not a sourcePolicyRules regex.
  */
 const RENDERER_DIR = join(__dirname, '../renderer');
 const LAZY_FILES = ['lazyTabPanels.ts', 'lazyAppPanels.ts', 'lazyModals.ts'] as const;
