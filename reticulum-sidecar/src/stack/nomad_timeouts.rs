@@ -1,6 +1,7 @@
 //! Nomad page fetch timeouts (MeshChat + Python RNS per-hop scaling on RF).
 
 use super::types::InterfaceRow;
+#[cfg(test)]
 use super::via::resolve_outbound_sent_via;
 
 /// MeshChat `NomadnetDownloader.download()` path_lookup_timeout default.

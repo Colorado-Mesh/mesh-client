@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use lxmf_core::message::LxMessage;
 use lxmf_core::peer::OutboundOfferPolicy;
@@ -18,7 +18,7 @@ use lxmf_core::types::PropagationTransientId;
 use rns_identity::destination::Destination;
 use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
-use tokio::sync::{Notify, broadcast, mpsc};
+use tokio::sync::{Notify, mpsc};
 
 use super::propagation_download::{ClientDownloadPoll, decode_downloaded_propagated_blob};
 
@@ -1023,6 +1023,8 @@ fn persist_router_peer(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
+
     use lxmf_core::constants::DeliveryMethod;
 
     /// Manual blob → drain (partial loopback). Full outbound→stored_locally→drain
