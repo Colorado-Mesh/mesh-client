@@ -172,9 +172,14 @@ describe('CI workflow contracts', () => {
   it('collects related JUnit reports without installing the application in the merge job', () => {
     const mergeJob = testsWorkflow.split('  merge-reports:')[1];
     const steps = mergeJob.split(/^ {6}- /m).slice(1);
-    for (const step of steps.filter((value) =>
-      /actions\/checkout@|setup-node-pnpm|Download blob reports|Merge coverage reports/.test(value),
-    )) {
+    for (const requiredStep of [
+      'uses: actions/checkout@',
+      'uses: ./.github/actions/setup-node-pnpm',
+      'name: Download blob reports',
+      'name: Merge coverage reports',
+    ]) {
+      const step = steps.find((value) => value.startsWith(requiredStep));
+      expect(step, requiredStep).toBeDefined();
       expect(step).toContain("if: needs.changes.outputs.vitest_mode == 'full'");
     }
     expect(mergeJob).not.toContain('pnpm exec vitest run --merge-reports');
