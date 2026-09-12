@@ -61,6 +61,13 @@ fn via_blocked(via: Option<&str>, blocked_vias: &[String]) -> bool {
     via.is_some_and(|v| blocked_vias.iter().any(|b| b.eq_ignore_ascii_case(v)))
 }
 
+/// True when a path-slot JSON object is marked expired.
+pub fn slot_expired(slot: &serde_json::Value) -> bool {
+    slot.get("expired")
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false)
+}
+
 /// Parse hops / interface / via from a path-slot JSON object.
 pub fn slot_candidate(slot: &serde_json::Value) -> Option<PathSlotCandidate> {
     let hops = slot
@@ -128,6 +135,9 @@ pub fn select_unblocked_slot(
 ) -> Option<PathSlotCandidate> {
     let mut fallback: Option<PathSlotCandidate> = None;
     for slot in slots {
+        if slot_expired(slot) {
+            continue;
+        }
         let Some(cand) = slot_candidate(slot) else {
             continue;
         };
@@ -385,6 +395,34 @@ mod tests {
         let prefer = vec!["Local Transport Pi".into()];
         assert!(
             select_unblocked_slot(&slots, &blocked_ifaces, &blocked_vias, Some(via), &prefer)
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn select_unblocked_skips_expired_including_fallback() {
+        let slots = [
+            serde_json::json!({
+                "active": false,
+                "hops": 1,
+                "interface": "Ratspeak",
+                "via_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "expired": true,
+            }),
+            serde_json::json!({
+                "active": false,
+                "hops": 4,
+                "interface": "Local Transport Pi",
+                "via_hash": "dddddddddddddddddddddddddddddddd",
+                "expired": false,
+            }),
+        ];
+        let found = select_unblocked_slot(&slots, &[], &[], None, &["Ratspeak".into()])
+            .expect("live fallback");
+        assert_eq!(found.iface.as_deref(), Some("Local Transport Pi"));
+        assert_eq!(found.hops, 4);
+        assert!(
+            select_unblocked_slot(&[slots[0].clone()], &[], &[], None, &["Ratspeak".into()])
                 .is_none()
         );
     }

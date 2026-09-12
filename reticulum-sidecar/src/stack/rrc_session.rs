@@ -20,6 +20,7 @@ use sha2::{Digest, Sha256};
 use tokio::sync::{Mutex, broadcast, mpsc, oneshot};
 use tracing::{debug, warn};
 
+use super::path_failover::MAX_VIA_FAILOVERS;
 use super::rrc_codec::{
     RRC_IDENTITY_HASH_LEN, RrcEnvelope, RrcResourceEnvelopeMeta, RrcWelcomeCapabilities,
     RrcWelcomeLimits, apply_advisory_nick, body_as_text, decode_envelope, encode_envelope,
@@ -28,8 +29,9 @@ use super::rrc_codec::{
     parse_welcome_limits, text_body,
 };
 use super::rrc_link::{
-    MAX_CONCURRENT_RRC_RESOURCES, RrcLinkError, RrcLinkEvent, RrcLinkHandle, RrcPathRefresh,
-    open_rrc_link_with_path_refresh, rrc_disconnect_should_drop_path,
+    MAX_CONCURRENT_RRC_RESOURCES, RrcLinkError, RrcLinkEvent, RrcLinkHandle, RrcPathFailoverState,
+    RrcPathRefresh, is_rrc_link_proof_timeout, open_rrc_link_with_path_refresh,
+    rrc_disconnect_should_drop_path, rrc_link_proof_timeout_log_fields, rrc_reconnect_hops,
 };
 
 const CLIENT_NAME: &str = "mesh-client";
@@ -87,6 +89,8 @@ struct RrcSessionInner {
     limits: RrcWelcomeLimits,
     /// FIFO expectations from `T_RESOURCE_ENVELOPE` until RNS Resource completes.
     pending_resources: VecDeque<(RrcResourceEnvelopeMeta, Option<String>, Instant)>,
+    /// Iface/via blocks + last route across consecutive link-proof failures.
+    path_failover: RrcPathFailoverState,
 }
 
 impl RrcSessionInner {
@@ -104,6 +108,7 @@ impl RrcSessionInner {
             capabilities: RrcWelcomeCapabilities::default(),
             limits: RrcWelcomeLimits::default(),
             pending_resources: VecDeque::new(),
+            path_failover: RrcPathFailoverState::default(),
         }
     }
 
@@ -144,6 +149,7 @@ fn reset_hub_metadata(g: &mut RrcSessionInner) {
     g.capabilities = RrcWelcomeCapabilities::default();
     g.limits = RrcWelcomeLimits::default();
     g.pending_resources.clear();
+    g.path_failover.clear();
 }
 
 /// Handle to one hub's session task: a command channel for actions that must
@@ -533,14 +539,15 @@ fn session_json(hex: &str, g: &RrcSessionInner) -> serde_json::Value {
     })
 }
 
+type RrcEstablishResult = Result<(RrcLinkHandle, u8), String>;
+
 /// In-flight establish (user connect or auto-reconnect). Dropping cancels the
 /// future so Disconnect / a new Connect can run without waiting for WELCOME.
 struct ConnectJob {
-    fut: Pin<Box<dyn Future<Output = Result<RrcLinkHandle, String>> + Send>>,
+    fut: Pin<Box<dyn Future<Output = RrcEstablishResult> + Send>>,
     reply: Option<oneshot::Sender<Result<(), String>>>,
     dest_hash: [u8; 16],
     dest_hash_hex: String,
-    hops: u8,
     nickname: String,
 }
 
@@ -596,7 +603,6 @@ fn spawn_connect_job(
         reply,
         dest_hash,
         dest_hash_hex,
-        hops,
         nickname,
     }
 }
@@ -796,16 +802,19 @@ async fn session_loop(
                     reply,
                     dest_hash,
                     dest_hash_hex,
-                    hops,
                     nickname,
                     ..
                 } = job;
                 match result {
-                    Ok(handle) => {
+                    Ok((handle, resolved_hops)) => {
                         link = Some(handle);
                         let hub_hex = dest_hash_hex.clone();
+                        {
+                            let mut g = inner.lock().await;
+                            g.path_failover.clear();
+                        }
                         reconnect_intent =
-                            Some((dest_hash, dest_hash_hex, hops, nickname.clone()));
+                            Some((dest_hash, dest_hash_hex, resolved_hops, nickname.clone()));
                         backoff_ms = RECONNECT_BASE_MS;
                         // Re-join desired rooms after welcome (reconnect path).
                         let rooms: Vec<(String, Option<String>)> = {
@@ -869,7 +878,11 @@ async fn session_loop(
                         if let Some(reply) = reply {
                             let _ = reply.send(Err(e));
                         } else if should_retry {
-                            warn!("rrc reconnect failed; scheduling retry");
+                            warn!(
+                                target: "rrc",
+                                hub = %dest_hash_hex,
+                                "rrc reconnect failed; scheduling retry"
+                            );
                         }
                         if should_retry {
                             if let Some((
@@ -884,8 +897,23 @@ async fn session_loop(
                                     &intent_nick,
                                 )
                                 .await;
+                                let hops = {
+                                    let g = inner.lock().await;
+                                    rrc_reconnect_hops(
+                                        retry_hops,
+                                        g.path_failover.last_route.as_ref(),
+                                    )
+                                };
+                                reconnect_intent = Some((
+                                    retry_dest,
+                                    retry_hex.clone(),
+                                    hops,
+                                    intent_nick.clone(),
+                                ));
                                 let delay = backoff_ms;
                                 debug!(
+                                    target: "rrc",
+                                    hops,
                                     "rrc reconnecting to {retry_hex} in {delay}ms after failure"
                                 );
                                 backoff_ms =
@@ -897,7 +925,7 @@ async fn session_loop(
                                     event_tx.clone(),
                                     retry_dest,
                                     retry_hex,
-                                    retry_hops,
+                                    hops,
                                     nickname,
                                     delay,
                                     RrcPathRefresh::DropAndRefresh,
@@ -1100,16 +1128,48 @@ async fn establish_session(
     hops: u8,
     nickname: &str,
     path_refresh: RrcPathRefresh,
-) -> Result<RrcLinkHandle, String> {
-    let mut handle = open_rrc_link_with_path_refresh(
+) -> Result<(RrcLinkHandle, u8), String> {
+    let mut failover = {
+        let g = inner.lock().await;
+        g.path_failover.clone()
+    };
+    let open = open_rrc_link_with_path_refresh(
         transport_tx.clone(),
         identity,
         dest_hash,
         hops,
         path_refresh,
+        &mut failover,
     )
-    .await
-    .map_err(|e| e.to_string())?;
+    .await;
+    {
+        let mut g = inner.lock().await;
+        g.path_failover = failover.clone();
+    }
+    let (mut handle, route) = match open {
+        Ok(pair) => pair,
+        Err(e) => {
+            if is_rrc_link_proof_timeout(&e) {
+                {
+                    let mut g = inner.lock().await;
+                    if g.path_failover.rounds < MAX_VIA_FAILOVERS {
+                        g.path_failover.rounds = g.path_failover.rounds.saturating_add(1);
+                    }
+                }
+                warn!(
+                    target: "rrc",
+                    "{}",
+                    rrc_link_proof_timeout_log_fields(
+                        dest_hash_hex,
+                        failover.last_route.as_ref(),
+                        path_refresh,
+                    )
+                );
+            }
+            return Err(e.to_string());
+        }
+    };
+    let hops = rrc_reconnect_hops(hops, Some(&route));
 
     {
         let mut g = inner.lock().await;
@@ -1179,7 +1239,7 @@ async fn establish_session(
                             },
                         }),
                     );
-                    return Ok(handle);
+                    return Ok((handle, hops));
                 }
                 if env.msg_type == msg_type::ERROR {
                     let msg = body_as_text(env.body.as_ref()).unwrap_or_else(|| "hub ERROR".into());
@@ -1704,6 +1764,7 @@ fn emit(event_tx: &broadcast::Sender<String>, event_type: &str, payload: serde_j
 
 #[cfg(test)]
 mod tests {
+    use super::super::rrc_link::RrcResolvedRoute;
     use super::*;
 
     #[test]
@@ -1845,10 +1906,32 @@ mod tests {
             Some("general".into()),
             Instant::now(),
         ));
+        inner.path_failover.last_route = Some(RrcResolvedRoute {
+            hops: 2,
+            iface: Some("RNS DFW Central".into()),
+            via: Some("7cbbe5ada62d88ee2d4dbe0c3cb1bceb".into()),
+        });
+        inner.path_failover.rounds = 1;
         reset_hub_metadata(&mut inner);
         assert!(inner.hub_version.is_none());
         assert!(inner.limits.max_nick_bytes.is_none());
         assert!(inner.pending_resources.is_empty());
+        assert!(inner.path_failover.last_route.is_none());
+        assert_eq!(inner.path_failover.rounds, 0);
+    }
+
+    #[test]
+    fn reconnect_hops_follow_last_route() {
+        let mut inner = RrcSessionInner::new([0u8; 16]);
+        inner.path_failover.last_route = Some(RrcResolvedRoute {
+            hops: 5,
+            iface: Some("Ratspeak".into()),
+            via: Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".into()),
+        });
+        assert_eq!(
+            rrc_reconnect_hops(2, inner.path_failover.last_route.as_ref()),
+            5
+        );
     }
 
     #[test]

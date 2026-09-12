@@ -11,7 +11,7 @@ const BEACON_FAIL_WARN_INTERVAL_MS = 60 * MS_PER_SECOND;
 // propagation-retrieve at info for pn_hash / establish / failover lines; per-message
 // inbound delivery records stay debug-only with redacted from_prefix in live.rs.
 export const SIDECAR_DEFAULT_RUST_LOG =
-  'warn,propagation-sync=info,propagation-retrieve=info,propagation-deposit=info,lxmf-outbound=info';
+  'warn,propagation-sync=info,propagation-retrieve=info,propagation-deposit=info,lxmf-outbound=info,rrc=info';
 
 /**
  * Whether a sidecar stdout line should be written to the app log.
@@ -23,6 +23,7 @@ const SIDECAR_STDOUT_INFO_FORWARD_MARKERS = [
   'propagation-retrieve',
   'propagation-deposit',
   'lxmf-outbound',
+  'rrc',
 ] as const;
 
 export function shouldForwardReticulumSidecarStdout(text: string): boolean {
@@ -46,7 +47,7 @@ export function shouldForwardReticulumSidecarStdout(text: string): boolean {
   ) {
     return true;
   }
-  // INFO for PN connect triage only (matches SIDECAR_DEFAULT_RUST_LOG targets).
+  // INFO for PN / RRC triage only (matches SIDECAR_DEFAULT_RUST_LOG targets).
   const isInfo = severity === 'INFO' || severity.startsWith('INFO\u001b[');
   if (!isInfo) return false;
   // Match markers against the tracing target token only — not message text / other fields.
