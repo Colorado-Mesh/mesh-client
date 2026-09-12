@@ -83,10 +83,14 @@ describe('CI workflow contracts', () => {
     ]) {
       expect(job).toContain(`pnpm run ${script}`);
     }
-    expect(job).not.toContain('check:pr');
-    expect(job).not.toContain('check:i18n');
-    expect(job).not.toContain('check:licenses');
-    expect(job).not.toContain('check:flatpak');
+    const runs = job
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith('pnpm run '));
+    expect(runs.some((line) => line === 'pnpm run check:pr')).toBe(false);
+    expect(runs.some((line) => line.startsWith('pnpm run check:i18n'))).toBe(false);
+    expect(runs.some((line) => line === 'pnpm run check:licenses')).toBe(false);
+    expect(runs.some((line) => line.startsWith('pnpm run check:flatpak'))).toBe(false);
   });
 
   it('blocks required coverage checks when detection or any shard fails', () => {
