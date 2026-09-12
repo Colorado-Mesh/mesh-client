@@ -1,5 +1,5 @@
 /**
- * Linux Web Bluetooth chooser cancel IPC (awaitable invoke + fire-and-forget send).
+ * Linux Web Bluetooth chooser cancel IPC (awaitable invoke).
  *
  * Extracted from index.ts so sender validation and generation handling can be
  * exercised without loading the full Electron main entrypoint.
@@ -39,11 +39,5 @@ export function registerLinuxWebBluetoothCancelIpcHandlers(): void {
   ipcMain.handle('bluetooth-device-cancel', (event, generation: unknown) => {
     assertIpcSender(event, 'bluetooth-device-cancel');
     return applyLinuxWebBluetoothCancelIpc(generation);
-  });
-
-  // Fire-and-forget path (Cancel button / teardown). Connect must use the invoke handle.
-  ipcMain.on('bluetooth-device-cancelled', (event, generation: unknown) => {
-    assertIpcSender(event, 'bluetooth-device-cancelled');
-    applyLinuxWebBluetoothCancelIpc(generation);
   });
 }

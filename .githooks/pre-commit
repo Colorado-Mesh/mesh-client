@@ -181,7 +181,7 @@ else
   printf 'pre-commit: skip check:db-migrations (no DB schema paths staged)\n' >&2
 fi
 
-if staged_match '^(src/shared/electron-api\.types\.ts|src/preload/|src/main/index\.ts|src/main/ipc/|src/main/updater\.ts|src/main/database\.ts|src/main/mqtt-manager\.ts|src/main/meshcore-mqtt-adapter\.ts|src/main/log-service\.ts|scripts/check-ipc-contract\.mjs)'; then
+if staged_match '^(src/shared/electron-api\.types\.ts|src/preload/|src/main/index\.ts|src/main/ipc/|src/main/updater\.ts|src/main/linuxWebBluetoothCancelIpc\.ts|scripts/check-ipc-contract\.mjs)'; then
   pnpm run check:ipc-contract || fail 'pnpm run check:ipc-contract'
 else
   printf 'pre-commit: skip check:ipc-contract (no IPC contract paths staged)\n' >&2
