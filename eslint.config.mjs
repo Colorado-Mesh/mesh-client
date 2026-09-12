@@ -211,9 +211,8 @@ export default tseslint.config(
       ...jsxA11y.flatConfigs.recommended.rules,
       ...reactHooks.configs.flat.recommended.rules,
       'react-hooks/exhaustive-deps': 'error',
-      // Strictness from eslint-plugin-react-hooks v7 flat preset: keep as warn until each
-      // callsite matches App.tsx-style fixes (effects for ref mirrors, queueMicrotask for
-      // setState-in-effect, purity for impure render helpers).
+      // eslint-plugin-react-hooks v7 flat preset: refs / set-state-in-effect / purity
+      // are errors (same as exhaustive-deps).
       'react-hooks/refs': 'error',
       'react-hooks/set-state-in-effect': 'error',
       'react-hooks/purity': 'error',

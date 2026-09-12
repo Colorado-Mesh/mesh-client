@@ -6,11 +6,11 @@ Project layout, data flow, and code placement for human reference. For AI coding
 
 Path alias `@/*` maps to `src/*` (see `tsconfig.json`).
 
-| Boundary | Path            | Role                                                                                                                                                                                                                                                                                                |
-| -------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Main     | `src/main/`     | SQLite (`database.ts`, `db-compat.ts`), BLE (`noble-ble-manager.ts`), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers (`index.ts` plus namespaced modules in `src/main/ipc/` — Reticulum, TAK, GPS), window, GPS, updater |
-| Preload  | `src/preload/`  | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                                                                                                  |
-| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/` (protocol runtimes, single mount), `stores/`, `lib/`, `locales/`, `workers/`                                                                                                                                                         |
+| Boundary | Path            | Role                                                                                                                                                                                                                                                                                                                                          |
+| -------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Main     | `src/main/`     | SQLite (`database.ts`, `db-compat.ts`), BLE (`noble-ble-manager.ts`), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers (`index.ts` plus namespaced modules in `src/main/ipc/` — Reticulum, Reticulum DB, Reticulum identity, RRC DB, TAK, GPS), window, GPS, updater |
+| Preload  | `src/preload/`  | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                                                                                                                                            |
+| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/` (protocol runtimes, single mount), `stores/`, `lib/`, `locales/`, `workers/`                                                                                                                                                                                                   |
 
 | Shared | `src/shared/` | IPC contracts (`electron-api.types.ts`), protocol-neutral helpers |
 
@@ -46,7 +46,7 @@ const capabilities = useRadioProvider(protocol);
 Adding a cross-boundary feature:
 
 1. Types in `src/shared/electron-api.types.ts`.
-2. `ipcMain.handle('namespace:action', ...)` in `src/main/index.ts`, or in a namespaced module under `src/main/ipc/` (e.g. `reticulum-handlers.ts`, `tak-handlers.ts`, `gps-handlers.ts`) registered from `index.ts` (mirror existing patterns).
+2. `ipcMain.handle('namespace:action', ...)` in `src/main/index.ts` — or in a namespaced module under `src/main/ipc/` (e.g. `reticulum-handlers.ts`, `reticulum-db-handlers.ts`, `reticulum-identity-handlers.ts`, `rrc-db-handlers.ts`, `tak-handlers.ts`, `gps-handlers.ts`) registered from `index.ts` when the handler set is large enough to warrant its own file.
 3. Expose on `electronAPI` in `src/preload/index.ts` via `ipcRenderer.invoke`.
 4. Call from renderer: `window.electronAPI....`
 

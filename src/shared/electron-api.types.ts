@@ -101,7 +101,10 @@ export interface ReticulumIdentityExportSaveResult {
 }
 //
 // Rules for maintaining this file:
-// - Every method here must have a matching ipcMain.handle/on in src/main/index.ts
+// - Every method here must have a matching ipcMain.handle/on in src/main/**
+//   (index.ts plus namespaced modules under src/main/ipc/, and a few sibling files).
+//   `pnpm run check:ipc-contract` (scripts/check-ipc-contract.mjs) enforces preload↔main
+//   channel alignment.
 // - Every method here must be present in the mock in src/renderer/vitest.setup.ts
 // - The preload (src/preload/index.ts) annotates its exposeInMainWorld call with `satisfies ElectronAPI`
 //
