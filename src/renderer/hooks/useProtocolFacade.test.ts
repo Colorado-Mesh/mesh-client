@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -15,12 +18,10 @@ import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { addIdentity, useIdentityStore } from '../stores/identityStore';
 import { useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
+import type { ConnectionActionsByProtocol } from './useAllProtocolConnectionActions';
 import type { PanelActionsByProtocol } from './useAllProtocolPanelActions';
+import type { ProtocolConnectionActions } from './useProtocolConnection';
 import { useProtocolFacade } from './useProtocolFacade';
-
-vi.mock('./useConnect', () => ({
-  useConnect: () => vi.fn().mockResolvedValue('id-driver'),
-}));
 
 const IDENTITY = 'id-facade-mt';
 
@@ -87,6 +88,24 @@ function panelPrebuilt(): PanelActionsByProtocol {
   } as unknown as PanelActionsByProtocol;
 }
 
+function connectionActionsStub(): ProtocolConnectionActions {
+  return {
+    state: { status: 'disconnected', myNodeNum: 0, connectionType: null },
+    mqttStatus: 'disconnected',
+    connect: vi.fn(),
+    connectAutomatic: vi.fn(),
+    disconnect: vi.fn(),
+  };
+}
+
+function connectionPrebuilt(): ConnectionActionsByProtocol {
+  return {
+    meshtastic: connectionActionsStub(),
+    meshcore: connectionActionsStub(),
+    reticulum: connectionActionsStub(),
+  };
+}
+
 function addConnectedIdentity(protocol: MeshProtocol, id: IdentityId): void {
   addIdentity({
     id,
@@ -132,15 +151,16 @@ describe('useProtocolFacade', () => {
       queueMax: 16,
     });
 
-    const { result } = renderHook(() => useProtocolFacade('meshtastic', panelPrebuilt()));
+    const connections = connectionPrebuilt();
+    const { result } = renderHook(() =>
+      useProtocolFacade('meshtastic', panelPrebuilt(), connections),
+    );
 
     expect(result.current.focusedIdentityId).toBe(IDENTITY);
     expect(result.current.identityIdByProtocol.meshtastic).toBe(IDENTITY);
     expect(result.current.capabilities.protocol).toBe('meshtastic');
     expect(result.current.panel.protocol).toBe('meshtastic');
-    expect(result.current.connection.connect).toEqual(expect.any(Function));
-    expect(result.current.connection.connectAutomatic).toEqual(expect.any(Function));
-    expect(result.current.connection.disconnect).toEqual(expect.any(Function));
+    expect(result.current.connection).toBe(connections.meshtastic);
     expect(result.current.connectionView.state.status).toBe('configured');
     expect(result.current.connectionView.state.myNodeNum).toBe(0xabc);
     expect(result.current.connectionView.mqttStatus).toBe('connected');
@@ -160,8 +180,12 @@ describe('useProtocolFacade', () => {
         addConnectedIdentity(p, CONNECTED_IDS[p]);
       }
 
-      const { result } = renderHook(() => useProtocolFacade(protocol, panelPrebuilt()));
+      const connections = connectionPrebuilt();
+      const { result } = renderHook(() =>
+        useProtocolFacade(protocol, panelPrebuilt(), connections),
+      );
 
+      expect(result.current.connection).toBe(connections[protocol]);
       expect(result.current.focusedIdentityId).toBe(CONNECTED_IDS[protocol]);
       expect(result.current.identityIdByProtocol).toEqual(CONNECTED_IDS);
       expect(result.current.reticulumIdentityId).toBe(CONNECTED_IDS.reticulum);
@@ -172,7 +196,9 @@ describe('useProtocolFacade', () => {
   it('resolves reticulum to its own offline bucket, not meshcore', () => {
     ensureOfflineProtocolIdentities();
 
-    const { result } = renderHook(() => useProtocolFacade('reticulum', panelPrebuilt()));
+    const { result } = renderHook(() =>
+      useProtocolFacade('reticulum', panelPrebuilt(), connectionPrebuilt()),
+    );
 
     expect(result.current.focusedIdentityId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
     expect(result.current.reticulumIdentityId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
@@ -182,5 +208,11 @@ describe('useProtocolFacade', () => {
       result.current.identityIdByProtocol.meshcore,
     );
     expect(result.current.capabilities.protocol).toBe('reticulum');
+  });
+
+  it('does not import or call useProtocolConnectionActions', () => {
+    const source = readFileSync(join(__dirname, 'useProtocolFacade.ts'), 'utf-8');
+    expect(source).not.toMatch(/useProtocolConnectionActions/);
+    expect(source).toContain('connectionPrebuilt[protocol]');
   });
 });
