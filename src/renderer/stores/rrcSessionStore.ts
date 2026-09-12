@@ -123,9 +123,33 @@ function coalesceRoomAliases(
   return { key, existing, rooms: next };
 }
 
+/**
+ * Survives clearHubSession so a clear+reconnect cannot reuse a pre-await generation
+ * and let a stale getStatus() wipe the new session.
+ */
+const hubGenerationCeiling = new Map<string, number>();
+
+/** Next monotonic generation for `hub` (also advances the clear/recreate ceiling). */
+export function nextRrcHubGeneration(hub: string, existingGeneration = 0): number {
+  const ceiling = hubGenerationCeiling.get(hub) ?? 0;
+  const next = Math.max(existingGeneration, ceiling) + 1;
+  hubGenerationCeiling.set(hub, next);
+  return next;
+}
+
+/** Test/helper: reset clear/recreate generation ceilings. */
+export function resetRrcHubGenerationCeilings(): void {
+  hubGenerationCeiling.clear();
+}
+
 /** Per-hub RRC session state, keyed by lowercase hub destination hash in `sessionsByHub`. */
 export interface RrcHubSessionState {
   status: RrcSessionStatus;
+  /**
+   * Monotonic per-hub counter bumped on status apply / clear. Async status reconcile
+   * captures this before getStatus() and skips hubs that advanced while awaiting.
+   */
+  generation: number;
   hubName: string | null;
   capabilities: RrcHubCapabilities;
   /** WELCOME hub operational limits (bytes / rates). */
@@ -152,6 +176,7 @@ export interface RrcHubSessionState {
 export function emptyHubSession(): RrcHubSessionState {
   return {
     status: 'disconnected',
+    generation: 0,
     hubName: null,
     capabilities: {},
     limits: {},
@@ -241,6 +266,9 @@ function mutateHubSession(
  */
 function removeHubSession(s: RrcSessionStoreState, hub: string): Partial<RrcSessionStoreState> {
   const session = s.sessionsByHub.get(hub);
+  // Advance ceiling so an in-flight reconcile that captured the old generation cannot
+  // mistreat a clear+reconnect as still "current".
+  nextRrcHubGeneration(hub, session?.generation ?? 0);
   const sessionsByHub = new Map(s.sessionsByHub);
   sessionsByHub.delete(hub);
 
@@ -772,6 +800,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const nextSession: RrcHubSessionState = {
         ...existing,
         status,
+        generation: nextRrcHubGeneration(targetHub, existing.generation),
         hubName: hubName !== undefined ? hubName : existing.hubName,
         whoRequestedRooms: reHandshake ? new Set() : existing.whoRequestedRooms,
       };
@@ -1023,6 +1052,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   clearSession: () => {
+    resetRrcHubGenerationCeilings();
     set(() => ({
       sessionsByHub: new Map(),
       focusedHubHash: null,
