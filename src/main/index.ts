@@ -21,7 +21,6 @@ import {
   Tray,
 } from 'electron';
 import fs from 'fs';
-import net from 'net';
 import path from 'path';
 import zlib from 'zlib';
 
@@ -35,7 +34,7 @@ import {
 } from '../shared/appSettingsKeyPrefixes';
 import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
 import { clampQueryLimit } from '../shared/clampQueryLimit';
-import { formatHostForSocket, parseConnectHostPort } from '../shared/connectHost';
+import { parseConnectHostPort } from '../shared/connectHost';
 import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
 import { findLxmUrlInArgv, isForwardableMeshClientOpenUrl } from '../shared/meshClientDeepLink';
 import {
@@ -121,6 +120,7 @@ import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './ipc/
 import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-handlers';
 import { registerRrcDbIpcHandlers } from './ipc/rrc-db-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
+import { destroyRegisteredTcpBridgeSockets, registerTcpBridgeIpcHandlers } from './ipc/tcp-bridge';
 import { createIpcRateLimiter } from './ipcRateLimit';
 import { registerLinuxWebBluetoothCancelIpcHandlers } from './linuxWebBluetoothCancelIpc';
 import {
@@ -128,13 +128,7 @@ import {
   linuxWebBluetoothDeviceSelection,
 } from './linuxWebBluetoothDeviceSelection';
 import { listMeshcoreDmPeersFromDb, listMeshtasticDmPeersFromDb } from './listDmPeers';
-import {
-  clearLiveSessionMeter,
-  noteLiveSessionData,
-  noteLiveSessionWrite,
-  resetLiveSessionMeter,
-  snapshotLiveSessionMeter,
-} from './live-session-meter';
+import { snapshotLiveSessionMeter } from './live-session-meter';
 import {
   clearLogFile,
   exportLogTo,
@@ -156,7 +150,6 @@ import {
 } from './longSessionNudge';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
-import { meshtasticTcpWriteErrorIsNoSocket } from './meshtasticTcpWriteResult';
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
@@ -336,10 +329,6 @@ async function ensureTakServerManager(): Promise<TakServerManager> {
   return takServerManagerLoadPromise;
 }
 
-/** Max bytes per MeshCore TCP IPC write (DoS guard). */
-const MESHCORE_TCP_WRITE_MAX_BYTES = 256 * 1024;
-/** Cap per-chunk IPC fan-out from OpenHop/companion TCP reads (align with write max). */
-const MESHCORE_TCP_DATA_MAX_BYTES = MESHCORE_TCP_WRITE_MAX_BYTES;
 /** Min node ID for MeshCore chat stub nodes (derived from meshcoreUtils). */
 const MESHCORE_CHAT_STUB_ID_MIN = 0xa0000000 >>> 0;
 /** Max node ID for MeshCore chat stub nodes (derived from meshcoreUtils). */
@@ -448,28 +437,7 @@ async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void>
 
     await shutdownAppResources();
 
-    if (meshcoreTcpSocket) {
-      try {
-        meshcoreTcpSocket.destroy();
-      } catch (err) {
-        console.debug(
-          '[main] quitMainProcess TCP socket destroy (ignored):',
-          err instanceof Error ? err.message : err,
-        ); // log-injection-ok internal Node.js socket error during cleanup
-      }
-      meshcoreTcpSocket = null;
-    }
-    if (meshtasticTcpSocket) {
-      try {
-        meshtasticTcpSocket.destroy();
-      } catch (err) {
-        console.debug(
-          '[main] quitMainProcess TCP socket destroy (ignored):',
-          err instanceof Error ? err.message : err,
-        ); // log-injection-ok internal Node.js socket error during cleanup
-      }
-      meshtasticTcpSocket = null;
-    }
+    destroyRegisteredTcpBridgeSockets('quitMainProcess TCP socket destroy (ignored)');
     stopPowerSaveBlocker();
 
     nobleBleManager.releaseNobleProcessHandles();
@@ -6325,326 +6293,12 @@ ipcMain.handle('db:deleteAllMeshcorePathHistory', (event) => {
   }
 });
 
-// ─── MeshCore TCP bridge ───────────────────────────────────────────
-let meshcoreTcpSocket: net.Socket | null = null;
-
-ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
-  assertIpcSender(event, 'meshcore:tcp-connect');
-  return new Promise<void>((resolve, reject) => {
-    let settled = false;
-    const p = port;
-    if (!Number.isInteger(p) || p < 1 || p > 65535) {
-      reject(new Error('Invalid port'));
-      return;
-    }
-    try {
-      validateHttpHost(host);
-    } catch (err) {
-      // catch-no-log-ok validation error forwarded to promise reject
-      reject(err instanceof Error ? err : new Error(String(err)));
-      return;
-    }
-    if (meshcoreTcpSocket) {
-      // Null before destroy so the superseded socket's 'close' does not emit
-      // meshcore:tcp-disconnected (renderer reconnect is driven by that event — #792).
-      const prev = meshcoreTcpSocket;
-      meshcoreTcpSocket = null;
-      clearLiveSessionMeter('meshcore');
-      prev.destroy();
-    }
-    const socketHost = formatHostForSocket(host);
-    const socket = new net.Socket();
-    // MeshCore Open / official companion TCP clients use TCP_NODELAY; Node defaults can
-    // Nagle-batch small companion RPCs and OpenHop peers often FIN mid-init.
-    socket.setNoDelay(true);
-    socket.setKeepAlive(true, MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS);
-    meshcoreTcpSocket = socket;
-    const connectTimeout = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      if (meshcoreTcpSocket === socket) {
-        meshcoreTcpSocket = null;
-        clearLiveSessionMeter('meshcore');
-      }
-      socket.destroy();
-      reject(new Error('meshcore:tcp-connect: connection timeout'));
-    }, MESHCORE_TCP_CONNECT_TIMEOUT_MS);
-    socket.connect(p, socketHost, () => {
-      clearTimeout(connectTimeout);
-      console.debug('[IPC] meshcore:tcp-connect connected to', sanitizeLogMessage(socketHost), p);
-      logDeviceConnection(
-        `transport=tcp stack=meshcore host=${sanitizeLogMessage(socketHost)} port=${p}`,
-      );
-      resetLiveSessionMeter('meshcore');
-      if (!settled) {
-        settled = true;
-        resolve();
-      }
-    });
-    socket.on('data', (data) => {
-      const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
-      if (chunk.length > MESHCORE_TCP_DATA_MAX_BYTES) {
-        console.warn(
-          `[IPC] meshcore:tcp-data oversized chunk (${chunk.length} > ${MESHCORE_TCP_DATA_MAX_BYTES}); dropping socket`,
-        );
-        try {
-          socket.destroy();
-        } catch (e) {
-          console.debug(
-            '[IPC] meshcore:tcp-data destroy after oversize ' +
-              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-          );
-        }
-        return;
-      }
-      // Superseded sockets must not update the live session meter (#792 connect-replace).
-      if (meshcoreTcpSocket === socket) {
-        noteLiveSessionData('meshcore');
-      }
-      mainWindow?.webContents.send('meshcore:tcp-data', new Uint8Array(chunk));
-    });
-    socket.on('close', (hadError) => {
-      clearTimeout(connectTimeout);
-      // readableEnded=true after peer FIN; local destroy-before-null tear downs do not hit this
-      // branch as active (ref cleared first). Log fields help triage n7eal post-contacts hangs.
-      const remote = socket.remoteAddress
-        ? `${socket.remoteAddress}:${socket.remotePort ?? '?'}`
-        : 'unknown';
-      console.debug(
-        '[IPC] meshcore:tcp socket closed',
-        hadError ? '(hadError)' : '(clean)',
-        `remote=${sanitizeLogMessage(remote)}`,
-        `readableEnded=${socket.readableEnded}`,
-        `writableEnded=${socket.writableEnded}`,
-      );
-      // Only notify when this socket is still the active bridge. connect/disconnect clear the
-      // ref before destroy(), so superseded closes must not look like a live link drop
-      // (renderer reconnect is driven by this event — see #792).
-      if (meshcoreTcpSocket === socket) {
-        meshcoreTcpSocket = null;
-        clearLiveSessionMeter('meshcore');
-        mainWindow?.webContents.send('meshcore:tcp-disconnected');
-      }
-    });
-    socket.on('error', (err) => {
-      clearTimeout(connectTimeout);
-      console.error('[IPC] meshcore:tcp-connect error:', sanitizeLogMessage(err.message));
-      if (!settled) {
-        settled = true;
-        reject(err);
-      }
-      // Do not null meshcoreTcpSocket here. Node fires 'error' before 'close' on ECONNRESET
-      // etc.; nulling early makes close's active-socket guard fail and swallows
-      // meshcore:tcp-disconnected (renderer never reconnects). close owns that transition.
-    });
-  });
-});
-
-ipcMain.handle('meshcore:tcp-write', (event, bytes: number[]) => {
-  assertIpcSender(event, 'meshcore:tcp-write');
-  if (!Array.isArray(bytes) || bytes.length > MESHCORE_TCP_WRITE_MAX_BYTES) {
-    return Promise.reject(
-      new Error(
-        `meshcore:tcp-write: invalid or oversized payload (max ${MESHCORE_TCP_WRITE_MAX_BYTES} bytes)`,
-      ),
-    );
-  }
-  // Validate each element is a valid byte value so Uint8Array coercion is not silently lossy.
-  if (!bytes.every((b) => Number.isInteger(b) && b >= 0 && b <= 255)) {
-    return Promise.reject(new Error('meshcore:tcp-write: byte values must be integers 0-255'));
-  }
-  if (!meshcoreTcpSocket) {
-    const msg = 'meshcore:tcp-write: no active socket';
-    console.warn(`[IPC] ${msg}`);
-    return Promise.reject(new Error(msg));
-  }
-  const sock = meshcoreTcpSocket;
-  return new Promise<void>((resolve, reject) => {
-    sock.write(new Uint8Array(bytes), (err) => {
-      if (err) {
-        console.error('[IPC] meshcore:tcp-write error:', sanitizeLogMessage(err.message));
-        reject(err);
-      } else {
-        // Ignore write completions from a superseded socket.
-        if (meshcoreTcpSocket === sock) {
-          noteLiveSessionWrite('meshcore');
-        }
-        resolve();
-      }
-    });
-  });
-});
-
-ipcMain.handle('meshcore:tcp-disconnect', (event) => {
-  assertIpcSender(event, 'meshcore:tcp-disconnect');
-  if (meshcoreTcpSocket) {
-    console.debug('[IPC] meshcore:tcp-disconnect');
-    // Null before destroy so this teardown close is not reported as a live link drop.
-    const prev = meshcoreTcpSocket;
-    meshcoreTcpSocket = null;
-    clearLiveSessionMeter('meshcore');
-    prev.destroy();
-  }
-});
-
-// ─── Meshtastic TCP bridge ──────────────────────────────────────────
-// Independent from meshcoreTcpSocket: Meshtastic and MeshCore may be
-// connected simultaneously, each over its own transport.
-let meshtasticTcpSocket: net.Socket | null = null;
-
-ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => {
-  assertIpcSender(event, 'meshtastic:tcp-connect');
-  return new Promise<void>((resolve, reject) => {
-    let settled = false;
-    const p = port;
-    if (!Number.isInteger(p) || p < 1 || p > 65535) {
-      reject(new Error('Invalid port'));
-      return;
-    }
-    try {
-      validateHttpHost(host);
-    } catch (err) {
-      // catch-no-log-ok validation error forwarded to promise reject
-      reject(err instanceof Error ? err : new Error(String(err)));
-      return;
-    }
-    if (meshtasticTcpSocket) {
-      // Null before destroy so the superseded socket's 'close' does not emit
-      // meshtastic:tcp-disconnected (renderer reconnect is driven by that event — #792).
-      const prev = meshtasticTcpSocket;
-      meshtasticTcpSocket = null;
-      clearLiveSessionMeter('meshtastic');
-      prev.destroy();
-    }
-    const socketHost = formatHostForSocket(host);
-    const socket = new net.Socket();
-    socket.setNoDelay(true);
-    socket.setKeepAlive(true, MESHTASTIC_TCP_KEEPALIVE_INITIAL_DELAY_MS);
-    meshtasticTcpSocket = socket;
-    const connectTimeout = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      if (meshtasticTcpSocket === socket) {
-        meshtasticTcpSocket = null;
-        clearLiveSessionMeter('meshtastic');
-      }
-      socket.destroy();
-      reject(new Error('meshtastic:tcp-connect: connection timeout'));
-    }, MESHTASTIC_TCP_CONNECT_TIMEOUT_MS);
-    socket.connect(p, socketHost, () => {
-      clearTimeout(connectTimeout);
-      console.debug('[IPC] meshtastic:tcp-connect connected to', sanitizeLogMessage(socketHost), p);
-      logDeviceConnection(
-        `transport=tcp stack=meshtastic host=${sanitizeLogMessage(socketHost)} port=${p}`,
-      );
-      resetLiveSessionMeter('meshtastic');
-      if (!settled) {
-        settled = true;
-        resolve();
-      }
-    });
-    socket.on('data', (data) => {
-      const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
-      if (chunk.length > MESHTASTIC_TCP_DATA_MAX_BYTES) {
-        console.warn(
-          `[IPC] meshtastic:tcp-data oversized chunk (${chunk.length} > ${MESHTASTIC_TCP_DATA_MAX_BYTES}); dropping socket`,
-        );
-        try {
-          socket.destroy();
-        } catch (e) {
-          console.debug(
-            '[IPC] meshtastic:tcp-data destroy after oversize ' +
-              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-          );
-        }
-        return;
-      }
-      // Superseded sockets must not update the live session meter (#792 connect-replace).
-      if (meshtasticTcpSocket === socket) {
-        noteLiveSessionData('meshtastic');
-      }
-      mainWindow?.webContents.send('meshtastic:tcp-data', new Uint8Array(chunk));
-    });
-    socket.on('close', (hadError) => {
-      clearTimeout(connectTimeout);
-      console.debug('[IPC] meshtastic:tcp socket closed', hadError ? '(hadError)' : '(clean)');
-      // Only notify when this socket is still the active bridge. connect/disconnect clear the
-      // ref before destroy(), so superseded closes must not look like a live link drop
-      // (renderer reconnect is driven by this event — see #792).
-      if (meshtasticTcpSocket === socket) {
-        meshtasticTcpSocket = null;
-        clearLiveSessionMeter('meshtastic');
-        mainWindow?.webContents.send('meshtastic:tcp-disconnected');
-      }
-    });
-    socket.on('error', (err) => {
-      clearTimeout(connectTimeout);
-      console.error('[IPC] meshtastic:tcp-connect error:', sanitizeLogMessage(err.message));
-      if (!settled) {
-        settled = true;
-        reject(err);
-      }
-      // Do not null meshtasticTcpSocket here. Node fires 'error' before 'close' on ECONNRESET
-      // etc.; nulling early makes close's active-socket guard fail and swallows
-      // meshtastic:tcp-disconnected (renderer never reconnects). close owns that transition.
-    });
-  });
-});
-
-ipcMain.handle('meshtastic:tcp-write', (event, bytes: number[]) => {
-  assertIpcSender(event, 'meshtastic:tcp-write');
-  if (!Array.isArray(bytes) || bytes.length > MESHTASTIC_TCP_WRITE_MAX_BYTES) {
-    return Promise.reject(
-      new Error(
-        `meshtastic:tcp-write: invalid or oversized payload (max ${MESHTASTIC_TCP_WRITE_MAX_BYTES} bytes)`,
-      ),
-    );
-  }
-  // Validate each element is a valid byte value so Uint8Array coercion is not silently lossy.
-  if (!bytes.every((b) => Number.isInteger(b) && b >= 0 && b <= 255)) {
-    return Promise.reject(new Error('meshtastic:tcp-write: byte values must be integers 0-255'));
-  }
-  if (!meshtasticTcpSocket) {
-    // Expected reconnect race — resolve so Electron does not log handler [error].
-    console.debug('[IPC] meshtastic:tcp-write: no active socket');
-    return 'no-socket';
-  }
-  const sock = meshtasticTcpSocket;
-  if (sock.destroyed || sock.writableEnded) {
-    console.debug('[IPC] meshtastic:tcp-write: no active socket');
-    return 'no-socket';
-  }
-  return new Promise<'no-socket' | undefined>((resolve, reject) => {
-    sock.write(new Uint8Array(bytes), (err) => {
-      if (err) {
-        if (meshtasticTcpWriteErrorIsNoSocket(sock, err)) {
-          console.debug('[IPC] meshtastic:tcp-write: no active socket');
-          resolve('no-socket');
-          return;
-        }
-        console.error('[IPC] meshtastic:tcp-write error:', sanitizeLogMessage(err.message));
-        reject(err);
-      } else {
-        // Ignore write completions from a superseded socket.
-        if (meshtasticTcpSocket === sock) {
-          noteLiveSessionWrite('meshtastic');
-        }
-        resolve(undefined);
-      }
-    });
-  });
-});
-
-ipcMain.handle('meshtastic:tcp-disconnect', (event) => {
-  assertIpcSender(event, 'meshtastic:tcp-disconnect');
-  if (meshtasticTcpSocket) {
-    console.debug('[IPC] meshtastic:tcp-disconnect');
-    // Null before destroy so this teardown close is not reported as a live link drop.
-    const prev = meshtasticTcpSocket;
-    meshtasticTcpSocket = null;
-    clearLiveSessionMeter('meshtastic');
-    prev.destroy();
-  }
+// ─── MeshCore / Meshtastic TCP bridges ─────────────────────────────
+// Independent sockets (two createTcpBridge instances). writeMissing is the
+// only protocol fork: MeshCore rejects; Meshtastic returns 'no-socket'.
+registerTcpBridgeIpcHandlers({
+  getMainWindow: () => mainWindow,
+  validateHost: validateHttpHost,
 });
 
 // ─── Meshtastic HTTP bridge ─────────────────────────────────────────
@@ -6704,16 +6358,6 @@ async function readBoundedArrayBuffer(response: Response, maxBytes: number): Pro
   }
   return merged.buffer;
 }
-const MESHCORE_TCP_CONNECT_TIMEOUT_MS = 20_000;
-/** Initial TCP keepalive probe delay for MeshCore companion sockets (ms). */
-const MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS = 30_000;
-const MESHTASTIC_TCP_CONNECT_TIMEOUT_MS = 20_000;
-/** Initial TCP keepalive probe delay for Meshtastic WiFi/TCP sockets (ms). */
-const MESHTASTIC_TCP_KEEPALIVE_INITIAL_DELAY_MS = 30_000;
-/** Max Meshtastic TCP toRadio write payload (aligned with meshcore:tcp-write cap). */
-const MESHTASTIC_TCP_WRITE_MAX_BYTES = 256 * 1024;
-/** Cap inbound Meshtastic TCP chunks before IPC fan-out (same as write max). */
-const MESHTASTIC_TCP_DATA_MAX_BYTES = MESHTASTIC_TCP_WRITE_MAX_BYTES;
 const CHAT_EXPORT_MAX_MESSAGES = 10_000;
 const DB_SAVE_NODE_PATH_MAX_BYTES = 16 * 1024;
 /** Max Meshtastic HTTP toRadio payload (aligned with meshcore:tcp-write cap). */
@@ -7194,28 +6838,7 @@ app.on('will-quit', (event) => {
         err instanceof Error ? err.message : err,
       ); // log-injection-ok internal library error during cleanup
     }
-    if (meshcoreTcpSocket) {
-      try {
-        meshcoreTcpSocket.destroy();
-      } catch (err) {
-        console.debug(
-          '[main] TCP socket destroy during will-quit (ignored):',
-          err instanceof Error ? err.message : err,
-        ); // log-injection-ok internal Node.js socket error during cleanup
-      }
-      meshcoreTcpSocket = null;
-    }
-    if (meshtasticTcpSocket) {
-      try {
-        meshtasticTcpSocket.destroy();
-      } catch (err) {
-        console.debug(
-          '[main] TCP socket destroy during will-quit (ignored):',
-          err instanceof Error ? err.message : err,
-        ); // log-injection-ok internal Node.js socket error during cleanup
-      }
-      meshtasticTcpSocket = null;
-    }
+    destroyRegisteredTcpBridgeSockets('TCP socket destroy during will-quit (ignored)');
     stopPowerSaveBlocker();
     nobleBleManager.releaseNobleProcessHandles();
     tray?.destroy();

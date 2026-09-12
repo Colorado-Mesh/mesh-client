@@ -5,15 +5,16 @@ import { describe, expect, it } from 'vitest';
 
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
 const PRELOAD_SOURCE = readFileSync(join(__dirname, '../preload/index.ts'), 'utf-8');
+const TCP_BRIDGE_SOURCE = readFileSync(join(__dirname, 'ipc/tcp-bridge.ts'), 'utf-8');
 
 describe('IPC payload size limits (source contract)', () => {
   it('defines meshcore tcp-write, http:write, and noble-ble limits and uses them in handlers', () => {
-    expect(INDEX_SOURCE).toContain('const MESHCORE_TCP_WRITE_MAX_BYTES = 256 * 1024');
-    expect(INDEX_SOURCE).toContain('MESHCORE_TCP_DATA_MAX_BYTES');
+    expect(TCP_BRIDGE_SOURCE).toContain('export const TCP_BRIDGE_WRITE_MAX_BYTES = 256 * 1024');
+    expect(TCP_BRIDGE_SOURCE).toContain('TCP_BRIDGE_DATA_MAX_BYTES');
     expect(INDEX_SOURCE).toContain('const HTTP_WRITE_TO_RADIO_MAX_BYTES = 256 * 1024');
     expect(INDEX_SOURCE).toContain('const NOBLE_BLE_TO_RADIO_MAX_BYTES = 512');
     expect(INDEX_SOURCE).toMatch(/maxBytes: NOBLE_BLE_TO_RADIO_MAX_BYTES/);
-    expect(INDEX_SOURCE).toMatch(/bytes\.length > MESHCORE_TCP_WRITE_MAX_BYTES/);
+    expect(TCP_BRIDGE_SOURCE).toMatch(/bytes\.length > TCP_BRIDGE_WRITE_MAX_BYTES/);
     expect(INDEX_SOURCE).toMatch(/data\.length > HTTP_WRITE_TO_RADIO_MAX_BYTES/);
     expect(INDEX_SOURCE).toMatch(/http:write: byte values must be integers 0-255/);
   });
@@ -30,11 +31,13 @@ describe('Noble BLE disconnect handling (source contract)', () => {
   });
 
   it('resolves meshtastic:tcp-write with no-socket instead of rejecting when the socket is gone', () => {
-    expect(INDEX_SOURCE).toMatch(
-      /meshtastic:tcp-write[\s\S]{0,800}console\.debug\('\[IPC\] meshtastic:tcp-write: no active socket'\)[\s\S]{0,80}return 'no-socket'/,
+    expect(TCP_BRIDGE_SOURCE).toContain("writeMissing: 'no-socket'");
+    expect(TCP_BRIDGE_SOURCE).toContain("writeMissing: 'reject'");
+    expect(TCP_BRIDGE_SOURCE).toMatch(
+      /writeMissing === 'no-socket'[\s\S]{0,200}console\.debug\(`\[IPC\] \$\{writeChannel\}: no active socket`\)[\s\S]{0,80}return 'no-socket'/,
     );
-    expect(INDEX_SOURCE).toContain('meshtasticTcpWriteErrorIsNoSocket');
-    expect(INDEX_SOURCE).toMatch(/sock\.destroyed \|\| sock\.writableEnded/);
+    expect(TCP_BRIDGE_SOURCE).toContain('meshtasticTcpWriteErrorIsNoSocket');
+    expect(TCP_BRIDGE_SOURCE).toMatch(/sock\.destroyed \|\| sock\.writableEnded/);
     expect(PRELOAD_SOURCE).toMatch(/result === 'no-socket'/);
     expect(PRELOAD_SOURCE).toMatch(/throw new Error\('meshtastic:tcp-write: no active socket'\)/);
   });
@@ -417,27 +420,19 @@ describe('Host link quality IPC (source contract)', () => {
   });
 
   it('wires live-session meters on both Meshtastic and MeshCore TCP bridges', () => {
-    expect(INDEX_SOURCE).toContain("resetLiveSessionMeter('meshtastic')");
-    expect(INDEX_SOURCE).toContain("resetLiveSessionMeter('meshcore')");
-    expect(INDEX_SOURCE).toContain("noteLiveSessionWrite('meshtastic')");
-    expect(INDEX_SOURCE).toContain("noteLiveSessionWrite('meshcore')");
-    expect(INDEX_SOURCE).toContain("noteLiveSessionData('meshtastic')");
-    expect(INDEX_SOURCE).toContain("noteLiveSessionData('meshcore')");
-    expect(INDEX_SOURCE).toContain("clearLiveSessionMeter('meshtastic')");
-    expect(INDEX_SOURCE).toContain("clearLiveSessionMeter('meshcore')");
+    expect(TCP_BRIDGE_SOURCE).toContain('resetLiveSessionMeter(protocol)');
+    expect(TCP_BRIDGE_SOURCE).toContain('noteLiveSessionWrite(protocol)');
+    expect(TCP_BRIDGE_SOURCE).toContain('noteLiveSessionData(protocol)');
+    expect(TCP_BRIDGE_SOURCE).toContain('clearLiveSessionMeter(protocol)');
     // Accounting must ignore superseded sockets (same active-ref guard as #792 disconnect IPC).
-    expect(INDEX_SOURCE).toMatch(
-      /if \(meshcoreTcpSocket === socket\) \{\s*noteLiveSessionData\('meshcore'\)/,
+    expect(TCP_BRIDGE_SOURCE).toMatch(
+      /if \(activeSocket === socket\) \{\s*noteLiveSessionData\(protocol\)/,
     );
-    expect(INDEX_SOURCE).toMatch(
-      /if \(meshtasticTcpSocket === socket\) \{\s*noteLiveSessionData\('meshtastic'\)/,
+    expect(TCP_BRIDGE_SOURCE).toMatch(
+      /if \(activeSocket === sock\) \{\s*noteLiveSessionWrite\(protocol\)/,
     );
-    expect(INDEX_SOURCE).toMatch(
-      /if \(meshcoreTcpSocket === sock\) \{\s*noteLiveSessionWrite\('meshcore'\)/,
-    );
-    expect(INDEX_SOURCE).toMatch(
-      /if \(meshtasticTcpSocket === sock\) \{\s*noteLiveSessionWrite\('meshtastic'\)/,
-    );
+    expect(INDEX_SOURCE).toContain('registerTcpBridgeIpcHandlers({');
+    expect(INDEX_SOURCE).toContain('destroyRegisteredTcpBridgeSockets(');
   });
 });
 
