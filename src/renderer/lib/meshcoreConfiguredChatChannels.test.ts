@@ -20,6 +20,20 @@ describe('meshcoreConfiguredChatChannels', () => {
     ]);
   });
 
+  it('ignores unknown channel entries from ProtocolRuntime.channels', () => {
+    const channels = [
+      { index: 0, name: 'General', secret: new Uint8Array(16).fill(0x11) },
+      { name: 'no-index', secret: new Uint8Array(16).fill(0x22) },
+      null,
+      'not-a-channel',
+      { index: 2, name: 'Ops', secret: new Uint8Array(16).fill(0x33) },
+    ];
+    expect(meshcoreConfiguredChatChannels(channels)).toEqual([
+      { index: 0, name: 'General' },
+      { index: 2, name: 'Ops' },
+    ]);
+  });
+
   it('omits channels with all-zero secret', () => {
     const channels = [
       { index: 0, name: 'General', secret: new Uint8Array(16).fill(0x11) },

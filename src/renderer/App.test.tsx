@@ -784,6 +784,57 @@ describe('App accessibility', () => {
     });
   });
 
+  it('passes Meshtastic channel pills from ProtocolRuntime.channels to ChatPanel', async () => {
+    useDeviceMock.mockReturnValue({
+      ...createDeviceMock(),
+      state: { status: 'configured', myNodeNum: 1, connectionType: 'serial' },
+      selfNodeId: 1,
+      channels: [{ index: 0, name: 'Primary' }, { index: 1, name: 'Ops' }, { name: 'no-index' }],
+    });
+
+    renderApp();
+    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
+
+    await waitFor(() => {
+      expect(lastChatPanelProps.current?.channels).toEqual([
+        { index: 0, name: 'Primary' },
+        { index: 1, name: 'Ops' },
+      ]);
+      expect(lastChatPanelProps.current?.myNodeNum).toBe(1);
+    });
+  });
+
+  it('builds node-detail hop labels from ProtocolRuntime traceRouteResults', async () => {
+    setConnection(MESHTASTIC_TEST_IDENTITY, {
+      status: 'configured',
+      myNodeNum: 1,
+      connectionType: 'serial',
+    });
+    useDeviceMock.mockReturnValue({
+      ...createDeviceMock(),
+      state: { status: 'configured', myNodeNum: 1, connectionType: 'serial' },
+      selfNodeId: 1,
+      getFullNodeLabel: vi.fn((id: number) => (id === 1 ? '' : `N${id.toString(16)}`)),
+      traceRouteResults: new Map([[0x23456789, { route: [0x11], from: 0x23456789, timestamp: 1 }]]),
+    });
+
+    renderApp();
+    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
+
+    await waitFor(() => {
+      expect(lastChatPanelProps.current).not.toBeNull();
+    });
+    const onNodeClick = lastChatPanelProps.current?.onNodeClick as
+      ((nodeId: number) => void) | null;
+    act(() => {
+      onNodeClick?.(0x23456789);
+    });
+
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current?.traceRouteHops).toEqual(['Me', 'N11', 'N23456789']);
+    });
+  });
+
   it('wires header waiting-message sync to syncWaitingMessages, not getWaitingMessages', async () => {
     getStoredMeshProtocolMock.mockReturnValue('meshcore');
     const syncWaitingMessages = vi.fn().mockResolvedValue(undefined);
