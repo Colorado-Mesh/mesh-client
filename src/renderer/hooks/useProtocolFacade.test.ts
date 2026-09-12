@@ -8,8 +8,8 @@ import {
 } from '../lib/offlineProtocolIdentities';
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
-import { reticulumProtocol } from '../lib/protocols/ReticulumProtocol';
 import type { Protocol } from '../lib/protocols/Protocol';
+import { reticulumProtocol } from '../lib/protocols/ReticulumProtocol';
 import type { IdentityId, MeshProtocol } from '../lib/types';
 import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { addIdentity, useIdentityStore } from '../stores/identityStore';
@@ -175,7 +175,9 @@ describe('useProtocolFacade', () => {
     expect(result.current.reticulumIdentityId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
     expect(result.current.identityIdByProtocol.reticulum).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
     expect(result.current.identityIdByProtocol.meshcore).toBe(OFFLINE_MESHCORE_IDENTITY_ID);
-    expect(result.current.reticulumIdentityId).not.toBe(result.current.identityIdByProtocol.meshcore);
+    expect(result.current.reticulumIdentityId).not.toBe(
+      result.current.identityIdByProtocol.meshcore,
+    );
     expect(result.current.capabilities.protocol).toBe('reticulum');
   });
 });
