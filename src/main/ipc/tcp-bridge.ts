@@ -161,6 +161,12 @@ export function createTcpBridge(deps: TcpBridgeDeps): TcpBridgeHandlers {
           clearLiveSessionMeter(protocol);
           getMainWindow()?.webContents.send(disconnectedChannel);
         }
+        // Connect-replace / timeout destroy can close a socket that never connected.
+        // Clearing the timeout above would otherwise leave the IPC invoke pending.
+        if (!settled) {
+          settled = true;
+          reject(new Error(`${connectChannel}: closed before connect`));
+        }
       });
       socket.on('error', (err) => {
         clearTimeout(connectTimeout);

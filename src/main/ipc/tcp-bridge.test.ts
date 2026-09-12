@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { FakeSocket, sockets } = vi.hoisted(() => {
   const sockets: FakeSocket[] = [];
@@ -126,6 +126,10 @@ describe('createTcpBridge', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('rejects MeshCore writes without a socket and returns no-socket for Meshtastic', async () => {
     const meshcore = createTcpBridge({
       protocol: 'meshcore',
@@ -207,6 +211,27 @@ describe('createTcpBridge', () => {
     expect(send).toHaveBeenCalledWith('meshcore:tcp-disconnected');
   });
 
+  it('rejects a still-pending connect when a later connect supersedes it', async () => {
+    const bridge = createTcpBridge({
+      protocol: 'meshcore',
+      writeMissing: 'reject',
+      getMainWindow,
+      validateHost,
+    });
+
+    const first = bridge.connect(event, '192.168.1.8', 5000);
+    const firstSock = latestSocket();
+    const second = bridge.connect(event, '192.168.1.9', 5000);
+    const secondSock = latestSocket();
+
+    await expect(first).rejects.toThrow('meshcore:tcp-connect: closed before connect');
+    expect(firstSock.destroy).toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalledWith('meshcore:tcp-disconnected');
+
+    secondSock.completeConnect();
+    await second;
+  });
+
   it('does not emit tcp-data for oversized chunks and destroys the socket', async () => {
     const bridge = createTcpBridge({
       protocol: 'meshtastic',
@@ -260,7 +285,6 @@ describe('createTcpBridge', () => {
     await vi.advanceTimersByTimeAsync(TCP_BRIDGE_CONNECT_TIMEOUT_MS);
     await expectation;
     expect(sock.destroy).toHaveBeenCalled();
-    vi.useRealTimers();
   });
 
   it('returns no-socket for Meshtastic writes on a destroyed or classified-dead socket', async () => {
