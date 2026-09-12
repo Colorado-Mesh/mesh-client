@@ -169,6 +169,74 @@ describe('CI workflow contracts', () => {
     expect(ciWorkflow).toContain('pnpm run lint --concurrency 2');
   });
 
+  it('collects related JUnit reports without installing the application in the merge job', () => {
+    const mergeJob = testsWorkflow.split('  merge-reports:')[1];
+    const steps = mergeJob.split(/^ {6}- /m).slice(1);
+    for (const step of steps.filter((value) =>
+      /actions\/checkout@|setup-node-pnpm|Download blob reports|Merge coverage reports/.test(value),
+    )) {
+      expect(step).toContain("if: needs.changes.outputs.vitest_mode == 'full'");
+    }
+    expect(mergeJob).not.toContain('pnpm exec vitest run --merge-reports');
+    const download = steps.find((step) => step.startsWith('name: Download scoped test results'));
+    expect(download).toContain("if: always() && needs.changes.outputs.vitest_mode == 'related'");
+    expect(download).toContain('uses: actions/download-artifact@v7');
+    expect(download).toContain('pattern: vitest-junit-*');
+    expect(download).toContain('path: test-results');
+    expect(download).toContain('merge-multiple: true');
+    expect(mergeJob).toContain('name: vitest-report');
+    expect(mergeJob).toContain('retention-days: 7');
+    expect(mergeJob).toContain('run: pnpm run test:coverage:merge');
+  });
+
+  it('uploads only the selected report format and retains reports from failing shards', () => {
+    const shards = testsWorkflow.split('  test-shards:')[1].split('  tests:')[0];
+    const steps = shards.split(/^ {6}- /m).slice(1);
+    for (const [name, mode, artifact, reportPath] of [
+      ['Upload blob report', 'full', 'vitest-blob', '.vitest-reports/*'],
+      [
+        'Upload scoped test results',
+        'related',
+        'vitest-junit',
+        'test-results/junit-${{ matrix.project }}-${{ matrix.shard }}-${{ matrix.shards }}.xml',
+      ],
+    ]) {
+      const upload = steps.find((step) => step.startsWith(`name: ${name}\n`));
+      expect(upload).toContain(`always() && needs.changes.outputs.vitest_mode == '${mode}' &&`);
+      expect(upload).toContain(
+        'contains(fromJSON(needs.changes.outputs.vitest_projects), matrix.project)',
+      );
+      expect(upload).toContain(`name: ${artifact}-\${{ matrix.project }}-\${{ matrix.shard }}`);
+      expect(upload).toContain(`path: ${reportPath}`);
+      expect(upload).toContain('if-no-files-found: error');
+    }
+  });
+
+  it.each(['full', 'related', 'skip'])('preserves the final required gate for %s runs', (mode) => {
+    const gate = testsWorkflow
+      .split('      - name: Verify selected test jobs')[1]
+      .split('      # actions/checkout')[0]
+      .split('        run: |\n')[1];
+    const success = {
+      ...process.env,
+      CHANGES_RESULT: 'success',
+      SIDECAR_SELECTED: 'false',
+      SIDECAR_RESULT: 'skipped',
+      TESTS_RESULT: mode === 'skip' ? 'skipped' : 'success',
+      VITEST_MODE: mode,
+    };
+    expect(spawnSync('bash', ['-c', gate], { env: success }).status).toBe(0);
+    for (const status of ['failure', 'cancelled', 'skipped']) {
+      for (const env of [
+        { CHANGES_RESULT: status },
+        { SIDECAR_SELECTED: 'true', SIDECAR_RESULT: status },
+        ...(mode === 'skip' ? [] : [{ TESTS_RESULT: status }]),
+      ]) {
+        expect(spawnSync('bash', ['-c', gate], { env: { ...success, ...env } }).status).toBe(1);
+      }
+    }
+  });
+
   it('scopes pull request tests and keeps protected events on full coverage', () => {
     expect(testsWorkflow).toContain('run: node scripts/ci-test-scope.mjs');
     expect(testsWorkflow).toContain('VITEST_MODE: ${{ needs.changes.outputs.vitest_mode }}');

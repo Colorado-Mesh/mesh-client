@@ -16,27 +16,44 @@ describe('ci-run-vitest', () => {
       '--coverage.clean=false',
       '--project',
       'main',
+      '--passWithNoTests',
       '--reporter=blob',
       '--outputFile.blob=.vitest-reports/blob-main.json',
-      '--passWithNoTests',
     ]);
   });
 
-  it.each(['full', 'related'])('shards %s runs without colliding blob reports', (mode) => {
-    const outputs = [1, 2, 3].map((index) => {
+  it.each(['full', 'related'])('shards %s runs without colliding reports', (mode) => {
+    const reporter = mode === 'full' ? 'blob' : 'junit';
+    const shards = [
+      ['renderer-ui', '1/3'],
+      ['renderer-ui', '2/3'],
+      ['renderer-ui', '3/3'],
+      ['renderer-logic', '1/1'],
+      ['main', '1/1'],
+    ];
+    const outputs = shards.map(([project, shard]) => {
       const args = buildCiVitestArgs({
         mode,
-        project: 'renderer-ui',
-        shard: `${index}/3`,
+        project,
+        shard,
         relatedPaths: ['src/renderer/App.tsx'],
       });
-      expect(args).toContain(`--shard=${index}/3`);
+      expect(args).toContain(`--shard=${shard}`);
       expect(args.includes('--coverage')).toBe(mode === 'full');
-      if (mode === 'related') expect(args).toContain('src/renderer/App.tsx');
-      return args.find((arg) => arg.startsWith('--outputFile.blob='));
+      expect(args).toContain(`--reporter=${reporter}`);
+      if (mode === 'related') {
+        expect(args).toContain('src/renderer/App.tsx');
+        expect(args).toContain('--reporter=default');
+        expect(args).not.toContain('--reporter=blob');
+      }
+      return args.find((arg) => arg.startsWith(`--outputFile.${reporter}=`));
     });
-    expect(new Set(outputs).size).toBe(3);
-    expect(outputs[0]).toBe('--outputFile.blob=.vitest-reports/blob-renderer-ui-1-3.json');
+    expect(new Set(outputs).size).toBe(5);
+    expect(outputs[0]).toBe(
+      mode === 'full'
+        ? '--outputFile.blob=.vitest-reports/blob-renderer-ui-1-3.json'
+        : '--outputFile.junit=test-results/junit-renderer-ui-1-3.xml',
+    );
   });
 
   it.each(['0/3', '4/3', '1/0', '-1/3', '1.5/3', '1/3/4', 'invalid', '1/9007199254740992'])(
@@ -50,10 +67,10 @@ describe('ci-run-vitest', () => {
     },
   );
 
-  it('propagates a failing shard exit code', () => {
+  it.each(['full', 'related'])('propagates a failing %s shard exit code', (mode) => {
     expect(
       runCiVitest(
-        { mode: 'full', project: 'renderer-ui', shard: '2/3' },
+        { mode, project: 'renderer-ui', shard: '2/3', relatedPaths: ['src/renderer/App.tsx'] },
         { runVitestArgvFn: () => 1 },
       ),
     ).toBe(1);
@@ -74,9 +91,10 @@ describe('ci-run-vitest', () => {
         '--run',
         '--project',
         'main',
-        '--reporter=blob',
-        '--outputFile.blob=.vitest-reports/blob-main.json',
         '--passWithNoTests',
+        '--reporter=default',
+        '--reporter=junit',
+        '--outputFile.junit=test-results/junit-main.xml',
         relatedPath,
       ],
       expect.objectContaining({ cwd: '/repo' }),
