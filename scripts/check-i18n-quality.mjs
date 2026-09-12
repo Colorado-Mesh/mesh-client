@@ -164,7 +164,8 @@ export function isMeshAdvertCommercialCheckKey(flatKey) {
 
 /**
  * Auto-translate often turns mesh "advert" into commercial advertising by locale.
- * Checked on MESH_ADVERT_COMMERCIAL_CHECK_LEAF_KEYS and (nl only) any isMeshAdvertUiKey().
+ * Checked on MESH_ADVERT_COMMERCIAL_CHECK_LEAF_KEYS and any isMeshAdvertUiKey()
+ * (English/key contains advert or flood advert).
  */
 export const MESH_ADVERT_COMMERCIAL_FALSE_FRIENDS = {
   nl: [
@@ -213,6 +214,10 @@ export const MESH_ADVERT_COMMERCIAL_FALSE_FRIENDS = {
     {
       re: /\b[Rr]eklam/i,
       hint: 'use "advert", not commercial "reklama"',
+    },
+    {
+      re: /\b[Ii]nzer[áa]t/i,
+      hint: 'use "advert", not commercial "inzerát"',
     },
   ],
   pl: [
@@ -308,7 +313,7 @@ export const RAW_PACKET_LOG_FLOOD_ROUTING_LEAF_KEYS = new Set([
 /** Shared water-disaster false friends for FLOOD routing (protocol term, not natural flood). */
 export const FLOOD_ROUTING_FALSE_FRIENDS = {
   de: [
-    { re: /\bHochwasser\b/i, hint: 'use flood-routing "Flood", not water "Hochwasser"' },
+    { re: /Hochwasser/i, hint: 'use flood-routing "Flood", not water "Hochwasser"' },
     { re: /Überschwemmung/i, hint: 'use flood-routing "Flood", not water "Überschwemmung"' },
   ],
   nl: [
@@ -318,7 +323,10 @@ export const FLOOD_ROUTING_FALSE_FRIENDS = {
   zh: [{ re: /洪水/, hint: 'use flood-routing 泛洪, not natural flood 洪水' }],
   ja: [{ re: /洪水/, hint: 'preserve FLOOD protocol token, not natural flood 洪水' }],
   ko: [{ re: /홍수/, hint: 'preserve FLOOD protocol token, not natural flood 홍수' }],
-  ru: [{ re: /ПОГРУЖЕНИЕ/i, hint: 'preserve FLOOD protocol token, not diving "погружение"' }],
+  ru: [
+    { re: /ПОГРУЖЕНИЕ/i, hint: 'preserve FLOOD protocol token, not diving "погружение"' },
+    { re: /наводнен/i, hint: 'use flood-routing Flood, not disaster "наводнение"' },
+  ],
   id: [
     { re: /T_FROID/i, hint: 'preserve T_FLOOD token, not French "T_FROID"' },
     { re: /\bbanjir\b/i, hint: 'use flood-routing Flood, not disaster "banjir"' },
@@ -341,8 +349,14 @@ export const FLOOD_ROUTING_FALSE_FRIENDS = {
   ],
   es: [{ re: /\binunda/i, hint: 'use flood-routing Flood, not disaster "inundación"' }],
   fr: [{ re: /\binonda/i, hint: 'use flood-routing Flood, not disaster "inondation"' }],
-  it: [{ re: /\binonda/i, hint: 'use flood-routing Flood, not disaster "inondazione"' }],
-  cs: [{ re: /povod/i, hint: 'use flood-routing Flood, not disaster "povodně"' }],
+  it: [
+    { re: /\binonda/i, hint: 'use flood-routing Flood, not disaster "inondazione"' },
+    { re: /alluvion/i, hint: 'use flood-routing Flood, not disaster "alluvione"' },
+  ],
+  cs: [
+    { re: /povod/i, hint: 'use flood-routing Flood, not disaster "povodně"' },
+    { re: /záplav/i, hint: 'use flood-routing Flood, not disaster "záplavy"' },
+  ],
 };
 
 /** @deprecated Prefer {@link FLOOD_ROUTING_FALSE_FRIENDS} — kept as alias for existing imports/tests. */
@@ -986,6 +1000,7 @@ export function isReticulumUiFlatKey(flatKey) {
   if (flatKey.startsWith('networkPanel.reticulum')) return true;
   if (flatKey.startsWith('adminPanel.reticulum')) return true;
   if (flatKey.startsWith('reticulumRemote.')) return true;
+  if (flatKey.startsWith('reticulumVoice.')) return true;
   if (flatKey.startsWith('chatPanel.rncp.')) return true;
   return false;
 }
@@ -1125,6 +1140,7 @@ function checkReticulumConnectionPanelIssues(ctx) {
     flatKey.startsWith('networkPanel.reticulum') ||
     flatKey.startsWith('adminPanel.reticulum') ||
     flatKey.startsWith('reticulumRemote.') ||
+    flatKey.startsWith('reticulumVoice.') ||
     flatKey.startsWith('chatPanel.rncp.');
 
   if (
@@ -2378,6 +2394,8 @@ const MOJIBAKE_RE = /Ð[\u0080-\u00FF]{2,}|Ã[\u0080-\u00BF]{2,}|Â[\u0080-\u00B
 const BROKEN_MESHTASTIC_SCHEME_RE = /meshtastic[\s\u00a0]+:\/\//i;
 /** Auto-translate often inserts spaces / NBSP before `://` in `lxm://` / `lxma://`. */
 const BROKEN_LXM_SCHEME_RE = /\blxma?[\s\u00a0]+:\/\//i;
+/** Same CAT spacing on tcp:// (and other lowercase schemes) in flasher / RNode hints. */
+const BROKEN_GENERIC_SCHEME_RE = /\b[a-z]{2,}[\s\u00a0]+:\/\//;
 /**
  * Prose glued onto a scheme after stripping complete URI tokens
  * (e.g. leftover `lxm://` + word). Paper payloads are URL-safe base64 and may
@@ -2428,6 +2446,29 @@ const UNTRANSLATED_READ_ONLY_BADGE_RE = /\(read only\)/i;
 
 function isMeshcoreRoomUiKey(flatKey) {
   return flatKey.startsWith(ROOMS_PANEL_PREFIX) || MESHCORE_ROOM_UI_KEYS.has(flatKey);
+}
+
+/** MeshCore / RRC "room" sense outside already-gated roomsPanel / rrc prefixes. */
+const ROOM_SENSE_KEY_RE =
+  /(?:^|\.)(?:room|rooms)(?:[A-Z.]|$)|rrcUnread|deviceTypeRoom|noSavedRoom|roomSession|roomLogin|roomLogout|roomPost|roomCli|openRoom|typeRoom|filterRooms/;
+
+/**
+ * True when the key or English refers to a MeshCore/RRC chat room (not a hotel room).
+ * Skips roomsPanel / rrc (already gated) and routing-port wire identifiers.
+ * @param {string} flatKey
+ * @param {string} enVal
+ */
+export function isRoomSenseUiKey(flatKey, enVal) {
+  if (flatKey.startsWith(ROOMS_PANEL_PREFIX) || flatKey.startsWith(RRC_PREFIX)) return false;
+  if (flatKey.startsWith(ROUTING_PORT_PREFIX)) return false;
+  if (isMeshcoreRoomUiKey(flatKey)) return true;
+  if (flatKey.startsWith('appPanel.rrc') || flatKey.startsWith('appPanel.capStoredRrc'))
+    return true;
+  if (flatKey.startsWith('meshcore.errors.room')) return true;
+  if (flatKey.startsWith('reticulumSetup.rooms')) return true;
+  if (ROOM_SENSE_KEY_RE.test(flatKey)) return true;
+  if (/\broom(?:s)?\b/i.test(enVal) && !/^RoomAdvert$/i.test(enVal)) return true;
+  return false;
 }
 
 function isMqttProxyUiKey(flatKey) {
@@ -2514,7 +2555,7 @@ function checkReticulumRuntimeAndRoutingPortIssues(ctx) {
   }
   if (flatKey.startsWith(ROUTING_PORT_PREFIX)) {
     const leaf = flatKey.slice(ROUTING_PORT_PREFIX.length);
-    if (ROUTING_PORT_TOKENS.includes(leaf) && val !== enVal) {
+    if (ROUTING_PORT_TOKENS.includes(enVal) && val !== enVal) {
       issues.push(`routingPort.${leaf} must equal English protocol identifier verbatim`);
     }
   }
@@ -2563,6 +2604,14 @@ function checkCatEncodingAndMeshtasticIssues(ctx) {
 
   if (BROKEN_LXM_SCHEME_RE.test(val)) {
     issues.push('lxm:// / lxma:// scheme must not contain whitespace before "://"');
+  }
+
+  if (
+    BROKEN_GENERIC_SCHEME_RE.test(val) &&
+    !BROKEN_MESHTASTIC_SCHEME_RE.test(val) &&
+    !BROKEN_LXM_SCHEME_RE.test(val)
+  ) {
+    issues.push('URI scheme must not contain whitespace before "://" (e.g. tcp:// not tcp ://)');
   }
 
   // Strip complete URI tokens first so alphabetic paper payloads (e.g. lxm://AbC…)
@@ -2838,14 +2887,17 @@ function checkRadioPanelChannelIssues(ctx) {
  * @returns {string[]}
  */
 function checkRoomsPanelFalseFriendIssues(ctx) {
-  const { locale, flatKey, val } = ctx;
+  const { locale, flatKey, val, enVal } = ctx;
   const issues = [];
-  if (isMeshcoreRoomUiKey(flatKey)) {
+  if (isMeshcoreRoomUiKey(flatKey) || isRoomSenseUiKey(flatKey, enVal)) {
     for (const { re, hint } of ROOMS_PANEL_FALSE_FRIENDS[locale] ?? []) {
       if (re.test(val)) {
         issues.push(`roomsPanel false friend: ${hint}`);
       }
     }
+  }
+  if (isRoomSenseUiKey(flatKey, enVal) && locale === 'fr' && /\bpièce\b/i.test(val)) {
+    issues.push('roomsPanel false friend: use "salle" for MeshCore Room, not hotel "pièce"');
   }
 
   if (locale === 'ja' && flatKey === 'nodesPanel.meshcoreTypeRoom' && /部屋/.test(val)) {
@@ -2862,8 +2914,7 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
   const { locale, flatKey, val, enVal } = ctx;
   const issues = [];
   const shouldCheckMeshAdvertCommercial =
-    isMeshAdvertCommercialCheckKey(flatKey) ||
-    (locale === 'nl' && isMeshAdvertUiKey(flatKey, enVal));
+    isMeshAdvertCommercialCheckKey(flatKey) || isMeshAdvertUiKey(flatKey, enVal);
   if (shouldCheckMeshAdvertCommercial) {
     for (const { re, hint } of MESH_ADVERT_COMMERCIAL_FALSE_FRIENDS[locale] ?? []) {
       if (re.test(val)) {
@@ -3097,7 +3148,11 @@ function checkRoomsGuestPasswordAndNlMeshIssues(ctx) {
     issues.push('guestPasswordPlaceholder must stay literal wire password "hello"');
   }
 
-  if (locale === 'nl' && isMeshcoreRoomUiKey(flatKey) && /\b[Kk]amer/i.test(val)) {
+  if (
+    locale === 'nl' &&
+    (isMeshcoreRoomUiKey(flatKey) || isRoomSenseUiKey(flatKey, enVal)) &&
+    /\b[Kk]amer/i.test(val)
+  ) {
     issues.push('roomsPanel false friend: use "ruimte" for MeshCore Room, not hotel "kamer"');
   }
 
@@ -3132,8 +3187,12 @@ function checkMqttWifiAndScriptIssues(ctx) {
     }
   }
 
-  if (enVal.includes('Wi-Fi') && WIFI_SPACED_RE.test(val)) {
+  if (locale !== 'en' && WIFI_SPACED_RE.test(val)) {
     issues.push('use "Wi-Fi" without spaces around the hyphen (not "Wi - Fi")');
+  }
+
+  if (locale !== 'en' && /\bI2P\b/.test(enVal) && /I\s+2\s+P/.test(val)) {
+    issues.push('keep I2P as contiguous token (not "I 2 P")');
   }
 
   if (!CJK_LOCALES.has(locale) && CJK_SCRIPT_RE.test(val) && !CJK_SCRIPT_RE.test(enVal)) {
@@ -3685,8 +3744,11 @@ const HOP_AWAY_VERB_FALSE_FRIENDS = {
 /** LoRa channel-utilization "Air Time" leaf keys (radioPanel / diagnostics metrics). */
 const AIR_TIME_LEAF_KEYS = new Set(['airTimeLabel', 'txAirTimeLabel', 'rxAirTimeLabel']);
 
-/** MT reliably mis-parses the "TX"/"RX" radio abbreviations as the US state "Texas", and
- * "Air Time" (LoRa duty-cycle metric) as literal aviation/hang-time or phone-plan minutes. */
+/** MT reliably mis-parses radio "TX"/"RX" as the US state "Texas". */
+const TX_RX_TEXAS_RE = /Техас|Teksas|텍사스|德克萨斯/i;
+
+/** "Air Time" (LoRa duty-cycle metric) as literal aviation/hang-time or phone-plan minutes.
+ * Texas tokens stay here so TX/RX air-time labels are still caught even if English omits "TX". */
 const AIR_TIME_FALSE_FRIEND_RE = /Техас|Teksas|텍사스|德克萨斯|Bodenberührung|飞跃时刻|通话时间/i;
 
 /**
@@ -3694,12 +3756,17 @@ const AIR_TIME_FALSE_FRIEND_RE = /Техас|Teksas|텍사스|德克萨斯|Boden
  * @returns {string[]}
  */
 function checkAirTimeFalseFriendIssues(ctx) {
-  const { locale, leafKey, val } = ctx;
+  const { locale, leafKey, val, enVal } = ctx;
   const issues = [];
-  if (locale === 'en' || !AIR_TIME_LEAF_KEYS.has(leafKey)) return issues;
-  if (AIR_TIME_FALSE_FRIEND_RE.test(val)) {
+  if (locale === 'en') return issues;
+  if (/\b(?:TX|RX)\b/.test(enVal) && TX_RX_TEXAS_RE.test(val)) {
     issues.push(
-      `${leafKey} air-time false friend: "TX"/"RX" are radio transmit/receive abbreviations (not the US state "Texas"), and Air Time is LoRa duty-cycle usage (not aviation hang-time or phone-plan minutes)`,
+      'TX/RX Texas false friend: "TX"/"RX" are radio transmit/receive abbreviations, not the US state "Texas"',
+    );
+  }
+  if (AIR_TIME_LEAF_KEYS.has(leafKey) && AIR_TIME_FALSE_FRIEND_RE.test(val)) {
+    issues.push(
+      `${leafKey} air-time false friend: Air Time is LoRa duty-cycle usage (not aviation hang-time or phone-plan minutes)`,
     );
   }
   return issues;
@@ -4054,24 +4121,21 @@ function checkReticulumMapIssues(ctx) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
+/** English "backbone" (network) — not spine/anatomy. */
+export const BACKBONE_ANATOMY_FALSE_FRIENDS = [
+  { re: /colonne vertébrale/i, hint: 'use network backbone, not spine/anatomy' },
+  { re: /spina dorsale/i, hint: 'use network backbone (dorsale), not spine anatomy' },
+  { re: /tulang punggung/i, hint: 'use backbone (network), not spine anatomy' },
+  { re: /\bkręgosłup/i, hint: 'use magistrala/sieć szkieletowa, not kręgosłup' },
+];
+
 function checkPreReleaseLocaleAccuracyIssues(ctx) {
   const { locale, flatKey, val, enVal } = ctx;
   const issues = [];
   if (locale === 'en') return issues;
 
-  const BACKBONE_ANATOMY = [
-    { re: /colonne vertébrale/i, hint: 'use network backbone, not spine/anatomy' },
-    { re: /spina dorsale/i, hint: 'use network backbone (dorsale), not spine anatomy' },
-    { re: /tulang punggung/i, hint: 'use backbone (network), not spine anatomy' },
-    { re: /\bkręgosłup/i, hint: 'use magistrala/sieć szkieletowa, not kręgosłup' },
-  ];
-
-  if (
-    flatKey === 'connectionPanel.reticulumInterfaces.defaultHubRegion.primary_global' ||
-    flatKey === 'connectionPanel.reticulumInterfaces.addDefaultHubs' ||
-    flatKey === 'connectionPanel.reticulumInterfaces.defaultHubsPickerTitle'
-  ) {
-    for (const { re, hint } of BACKBONE_ANATOMY) {
+  if (/\bbackbone/i.test(enVal) || /\bbackbone/i.test(flatKey)) {
+    for (const { re, hint } of BACKBONE_ANATOMY_FALSE_FRIENDS) {
       if (re.test(val)) {
         issues.push(`${flatKey} false friend: ${hint}`);
       }
@@ -4240,6 +4304,11 @@ function checkRrcPanelQualityIssues(ctx) {
 
   if (!flatKey.startsWith(RRC_PREFIX)) return issues;
 
+  const rrcLeaf = flatKey.slice(RRC_PREFIX.length);
+  if (RRC_MUST_TRANSLATE_LEAF_KEYS.has(rrcLeaf) && val === enVal) {
+    issues.push(`rrc "${rrcLeaf}" is still identical to English — translate the UI text`);
+  }
+
   for (const { re, hint } of RRC_LEAF_FORBIDDEN[flatKey] ?? []) {
     if (re.test(val)) {
       issues.push(`rrc ${flatKey}: ${hint}`);
@@ -4263,10 +4332,21 @@ function checkRrcPanelQualityIssues(ctx) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
+function isFloodSenseUiKey(flatKey, enVal) {
+  if (isFloodRoutingUiKey(flatKey)) return true;
+  if (flatKey.startsWith(ROUTING_PORT_PREFIX)) return false;
+  // Whole-word flood / flooding / floods / flood-routed — not "flooded" logs.
+  if (/\bflood(?:s|ing|-routed|-advert)?\b/i.test(enVal)) return true;
+  if (/floodAdvert|excessiveFlooding|FloodTooltip|floodDirect|dupsDirectFlood/i.test(flatKey)) {
+    return true;
+  }
+  return false;
+}
+
 function checkFloodRoutingUiIssues(ctx) {
-  const { locale, flatKey, val } = ctx;
+  const { locale, flatKey, val, enVal } = ctx;
   const issues = [];
-  if (locale === 'en' || !isFloodRoutingUiKey(flatKey)) return issues;
+  if (locale === 'en' || !isFloodSenseUiKey(flatKey, enVal)) return issues;
   // rawPacketLog chips already emit a prefixed message from checkRadioPanelChannelIssues path;
   // skip double-report for those leaves here when under rawPacketLog.
   if (flatKey.startsWith('rawPacketLog.')) return issues;
@@ -4309,6 +4389,124 @@ function checkMeshcoreNodeHealthAndPubkeyIssues(ctx) {
   return issues;
 }
 
+/** High-visibility RRC error/empty-state leaves that must not stay English. */
+export const RRC_MUST_TRANSLATE_LEAF_KEYS = new Set([
+  'connectManual',
+  'connectFailed',
+  'disconnectFailed',
+  'joinFailed',
+  'partFailed',
+  'sendFailed',
+  'selectHubPrompt',
+  'noDiscoveredHubs',
+  'joinRoomPrompt',
+  'noRoomsJoined',
+]);
+
+/** gamesPanel leaves that must be translated (not left identical to English). */
+export const GAMES_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
+  'resign',
+  'resignAria',
+  'resignConfirmTitle',
+  'resignConfirmMessage',
+  'draw',
+  'offerDraw',
+  'acceptDraw',
+  'declineDraw',
+  'challenge',
+  'claimThreefold',
+  'cellEmptyAria',
+  'cellOccupiedAria',
+  'opponentLabel',
+  'idleExpiryNotice',
+]);
+
+/** Game-term false friends: resign≠job, draw≠sketch/lottery, challenge≠difficulty, threefold≠reward. */
+export const GAMES_PANEL_FALSE_FRIENDS = {
+  de: [
+    { re: /Kündigung|kündigen/i, hint: 'resign is forfeit (Aufgeben), not employment Kündigung' },
+    { re: /Einzeichnen|Auslosung/i, hint: 'draw is a tie (Remis), not sketch/lottery' },
+    {
+      re: /Schwierigkeiten/i,
+      hint: 'challenge is a game challenge (Herausforderung), not difficulties',
+    },
+    { re: /Einsprechend/i, hint: 'opponent is Gegner, not legal Einsprechender' },
+  ],
+  fr: [
+    {
+      re: /Démissionner|démissionner/i,
+      hint: 'resign is forfeit (Abandonner), not employment Démissionner',
+    },
+    { re: /\bDessin\b/i, hint: 'draw is a tie (Nulle), not a sketch' },
+  ],
+  es: [
+    { re: /^Plano$/i, hint: 'draw is a tie (Tablas), not a blueprint' },
+    { re: /Sorteo/i, hint: 'draw offer is tablas, not lottery Sorteo' },
+  ],
+  cs: [{ re: /Nákres/i, hint: 'draw is a tie (Remíza), not a sketch' }],
+  'pt-BR': [{ re: /\bDesenho\b/i, hint: 'draw is a tie (Empate), not a sketch' }],
+  ru: [
+    { re: /увольнен/i, hint: 'resign is forfeit (Сдаться), not employment увольнение' },
+    { re: /Чертеж/i, hint: 'draw is a tie (Ничья), not a blueprint' },
+    { re: /жеребь/i, hint: 'draw offer is ничья, not lottery жеребьевка' },
+  ],
+  uk: [
+    { re: /\bБалка\b/i, hint: 'draw is a tie (Нічия), not a beam' },
+    { re: /Проблема/i, hint: 'challenge is a game challenge (Виклик), not a problem' },
+    { re: /хрестики-ноги/i, hint: 'tic-tac-toe is хрестики-нулики, not хрестики-ноги' },
+  ],
+  zh: [
+    { re: /抽奖/, hint: 'draw is a tie (和棋), not a lottery' },
+    { re: /三倍奖励/, hint: 'threefold is repetition draw, not a 3× reward' },
+    { re: /抽搐/, hint: 'tic-tac-toe is 井字棋, not convulsions 抽搐' },
+  ],
+  ko: [
+    { re: /사직/, hint: 'resign is forfeit (기권), not employment 사직' },
+    { re: /그리기/, hint: 'draw is a tie (무승부), not drawing' },
+    { re: /추첨/, hint: 'draw offer is 무승부, not lottery 추첨' },
+    { re: /3배 받기/, hint: 'threefold is repetition draw, not a 3× reward' },
+  ],
+  pl: [
+    { re: /^Rys\./i, hint: 'draw is a tie (Remis), not a sketch' },
+    { re: /losowan/i, hint: 'draw offer is remis, not lottery losowanie' },
+  ],
+  nl: [{ re: /\bRapen\b/i, hint: 'draw is a tie (Remise), not gleaning' }],
+  ja: [
+    { re: /^引け$/, hint: 'draw is a tie (引き分け), not 引け' },
+    { re: /3倍にする/, hint: 'threefold is 千日手, not make 3×' },
+  ],
+  id: [
+    { re: /Mengundurkan Diri/i, hint: 'resign is forfeit (Menyerah), not employment resignation' },
+  ],
+  it: [
+    { re: /Riscuoti il triplo/i, hint: 'threefold is ripetizione tripla, not collect triple' },
+    { re: /\bEstrazione\b/i, hint: 'draw offer is patta, not lottery Estrazione' },
+    { re: /eliminare questo gioco/i, hint: 'resign is abbandonare, not delete the game' },
+  ],
+};
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkGamesPanelQualityIssues(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
+  if (locale === 'en' || !flatKey.startsWith('gamesPanel.')) return issues;
+
+  if (GAMES_PANEL_MUST_TRANSLATE_LEAF_KEYS.has(leafKey) && val === enVal) {
+    issues.push(`"${leafKey}" is still identical to English — translate the game UI text`);
+  }
+
+  for (const { re, hint } of GAMES_PANEL_FALSE_FRIENDS[locale] ?? []) {
+    if (re.test(val)) {
+      issues.push(`gamesPanel false friend: ${hint}`);
+    }
+  }
+
+  return issues;
+}
+
 const LOCALE_STRING_QUALITY_CHECKS = [
   checkCatEncodingAndMeshtasticIssues,
   checkMustTranslateAndFormFieldIssues,
@@ -4343,6 +4541,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkNomadHostingLiteralIssues,
   checkRrcPanelQualityIssues,
   checkFloodRoutingUiIssues,
+  checkGamesPanelQualityIssues,
 ];
 
 /**

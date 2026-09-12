@@ -2268,3 +2268,179 @@ describe('sniffer tab and MQTT channel PSK i18n quality', () => {
     expectIssue(issues, 'English "Path"');
   });
 });
+
+describe('i18n accuracy sweep (meaning-gated rules)', () => {
+  it('flags TX→Texas on any key whose English has TX', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'tr',
+      flatKey: 'radioPanel.txPowerLabel',
+      enVal: 'TX Power',
+      val: 'Teksas Gücü',
+    });
+    expectIssue(issues, 'TX/RX Texas');
+  });
+
+  it('passes TX power when the radio abbreviation is kept', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'tr',
+        flatKey: 'radioPanel.txPowerLabel',
+        enVal: 'TX Power',
+        val: 'TX gücü',
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags spaced Wi-Fi even when English uses WiFi', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ja',
+      flatKey: 'connectionPanel.wifiTcp',
+      enVal: 'WiFi/TCP (fast)',
+      val: 'Wi - Fi/TCP（高速）',
+    });
+    expectIssue(issues, 'Wi-Fi');
+  });
+
+  it('flags spaced I2P on any key when English has I2P', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ja',
+      flatKey: 'reticulumMap.filter.i2p',
+      enVal: 'I2P',
+      val: 'I 2 P',
+    });
+    expectIssue(issues, 'I2P');
+  });
+
+  it('flags spaced tcp:// scheme', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'id',
+      flatKey: 'flasher.wifiHint',
+      enVal: 'Use tcp://host (port 7633).',
+      val: 'Gunakan tcp :// host (port 7633).',
+    });
+    expectIssue(issues, 'tcp://');
+  });
+
+  it('flags hotel-room wording outside roomsPanel when English says room', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'chatPanel.sendErrors.noSavedRoomCredential',
+      enVal: 'No saved room password. Log in to the room first.',
+      val: 'No se ha guardado la contraseña de la habitación.',
+    });
+    expectIssue(issues, 'habitación');
+  });
+
+  it('flags water-flood wording on floodAdvertScheduleLabel', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'appPanel.floodAdvertScheduleLabel',
+      enVal: 'Automatically send a flood advert on a schedule:',
+      val: 'Senden Sie automatisch eine Hochwasseranzeige nach einem Zeitplan:',
+    });
+    expectIssue(issues, 'flood-routing');
+  });
+
+  it('does not treat overflowing logs as flood-routing', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'es',
+        flatKey: 'diagnosticsPanel.reticulum.runtime.autoBeaconTunnelOnly',
+        enVal: 'AutoInterface beacon TX is failing. Disable AutoInterface if the logs are flooded.',
+        val: 'El TX está fallando. Desactive AutoInterface si los registros están inundados.',
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags commercial advert wording on sendFloodAdvert', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ko',
+      flatKey: 'nodeListPanel.sendFloodAdvert',
+      enVal: 'Send flood advert',
+      val: '홍수 광고 보내기',
+    });
+    expectIssue(issues, 'mesh-advert');
+  });
+
+  it('flags backbone anatomy on sibling hub keys', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pl',
+      flatKey: 'connectionPanel.reticulumInterfaces.defaultHubsLabel',
+      enVal: 'Default backbones',
+      val: 'Domyślne kręgosłupy',
+    });
+    expectIssue(issues, 'kręgosłup');
+  });
+
+  it('flags translated RoomAdvert via English value, not camelCase leaf', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'cs',
+      flatKey: 'diagnosticsPanel.routingPort.roomAdvert',
+      enVal: 'RoomAdvert',
+      val: 'Reklama na pokoj',
+    });
+    expectIssue(issues, 'verbatim');
+  });
+
+  it('passes routingPort when the protocol identifier is kept', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'cs',
+        flatKey: 'diagnosticsPanel.routingPort.roomAdvert',
+        enVal: 'RoomAdvert',
+        val: 'RoomAdvert',
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags gamesPanel resign employment false friend', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'gamesPanel.resign',
+      enVal: 'Resign',
+      val: 'Kündigung',
+    });
+    expectIssue(issues, 'Aufgeben');
+  });
+
+  it('flags gamesPanel draw sketch false friend', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'gamesPanel.ttt.draw',
+      enVal: 'Draw.',
+      val: 'Dessin.',
+    });
+    expectIssue(issues, 'Nulle');
+  });
+
+  it('flags gamesPanel leftover English cell aria', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'gamesPanel.ttt.cellEmptyAria',
+      enVal: 'Cell {{index}}, empty',
+      val: 'Cell {{index}}, empty',
+    });
+    expectIssue(issues, 'identical to English');
+  });
+
+  it('flags leftover English rrc.connectFailed', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'rrc.connectFailed',
+      enVal: 'Could not connect to RRC hub.',
+      val: 'Could not connect to RRC hub.',
+    });
+    expectIssue(issues, 'connectFailed');
+  });
+
+  it('passes fixed gamesPanel resign in German', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'gamesPanel.resign',
+        enVal: 'Resign',
+        val: 'Aufgeben',
+      }),
+    ).toEqual([]);
+  });
+});

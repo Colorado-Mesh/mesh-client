@@ -59,6 +59,11 @@ CI does **not** run `check:i18n` as a standalone workflow step. Quality rules ru
 
 - **Boot sequence** (`bootSequence.transport*`, `bootSequence.radioInterfaceFallback`) — short transport labels must not be mistranslated as serial numbers, TV series, broadcast stations, or mixed-language RF interface text.
 - **Reticulum hub/stack** (`connectionPanel.reticulumInterfaces.*`, `reticulumStack*`, `reticulumPeers.*`) — “hub”, “stack”, “peer”, and “host” must not become unrelated words (pressure, colleague, chimney stack, etc.).
+- **TX/RX Texas** — radio `TX`/`RX` must not become the US state (Teksas, Техас, 德克萨斯) on any key.
+- **URI / token spacing** — `tcp://`, `Wi-Fi`, and `I2P` must stay contiguous (no CAT `tcp ://` / `Wi - Fi` / `I 2 P`).
+- **Flood / advert / room / backbone** — gated by English meaning, not a handful of leaf names (routing Flood, mesh advert, MeshCore/RRC room, network backbone — not water, ads, hotels, or spines).
+- **Routing-port identifiers** — `NodeInfo`, `Telemetry`, `NeighborInfo`, `DiscoveryFlood`, `RoomAdvert` must match English verbatim (matched on the English value, not camelCase leaf names).
+- **gamesPanel** — resign is forfeit (not quitting a job); draw is a tie (not a sketch/lottery); challenge/threefold are chess terms.
 - **Repeaters CLI danger confirm** (`repeatersPanel.cliDangerConfirmAction`) — confirm button must be translated and must not read like “delete” or other false friends.
 - **`repeatersPanel.cliMultiHopHint`** — must describe **multi-hop** CLI and automatic **Ping** before the first command, not multi-tab UI wording.
 
