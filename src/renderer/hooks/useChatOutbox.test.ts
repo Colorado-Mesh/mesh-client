@@ -136,6 +136,22 @@ describe('useChatOutbox', () => {
     });
   });
 
+  it('keeps retryable encryption-init timeouts in failed (not blocked)', async () => {
+    const entry = makeEntry({ id: 81 });
+    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+    const sendFn = vi.fn().mockRejectedValue(new Error('timeout while initializing encryption'));
+    renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
+    await waitFor(() => {
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+        81,
+        'failed',
+        'chatPanel.sendErrors.timeout',
+        expect.any(Number),
+        1,
+      );
+    });
+  });
+
   it('marks row as blocked on encryption error without retry', async () => {
     const entry = makeEntry({ id: 8 });
     vi.mocked(mockOutbox.list).mockResolvedValue([entry]);

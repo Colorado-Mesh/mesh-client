@@ -93,7 +93,8 @@ async function recordOutboxSendFailure(
   updateRow: (id: number, patch: Partial<OutboxEntry>) => void,
 ): Promise<void> {
   const errMsg = persistableChatSendError(err);
-  const isBlocked = isEncryptionBlockedSendError(err instanceof Error ? err.message : errMsg);
+  const rawMsg = err instanceof Error ? err.message : errMsg;
+  const isBlocked = isEncryptionBlockedSendError(rawMsg) || isEncryptionBlockedSendError(errMsg);
   const nextAttemptCount = row.attemptCount + 1;
   const newStatus: OutboxStatus = isBlocked ? 'blocked' : 'failed';
   const nextRetryAt =

@@ -47,6 +47,13 @@ describe('chatSendErrorI18n', () => {
       'chatPanel.reticulumSendTimeout',
     ],
     ['Failed to send', 'chatPanel.reticulumSendFailed'],
+    ['Gagal mengirim', 'chatPanel.reticulumSendFailed'],
+    ["Échec d'envoi", 'chatPanel.reticulumSendFailed'],
+    [
+      'Waktu pengiriman habis. Stack Reticulum mungkin sedang mulai atau sibuk — coba lagi.',
+      'chatPanel.reticulumSendTimeout',
+    ],
+    ['timeout while initializing encryption', CHAT_SEND_ERROR_TIMEOUT_KEY],
     ['delivered; outbox remove failed: db locked', CHAT_OUTBOX_REMOVE_FAILED_KEY],
     ['User denied Geolocation', 'chatPanel.shareLocationUnavailable'],
   ])('maps %s to a locale key', (raw, key) => {
@@ -92,5 +99,7 @@ describe('chatSendErrorI18n', () => {
     expect(isEncryptionBlockedSendError('no encryption key')).toBe(true);
     expect(isEncryptionBlockedSendError(CHAT_SEND_ERROR_ENCRYPTION_KEY)).toBe(true);
     expect(isEncryptionBlockedSendError('radio busy')).toBe(false);
+    expect(isEncryptionBlockedSendError('timeout while initializing encryption')).toBe(false);
+    expect(isEncryptionBlockedSendError(CHAT_SEND_ERROR_TIMEOUT_KEY)).toBe(false);
   });
 });

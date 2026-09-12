@@ -1,7 +1,6 @@
 import type { TFunction } from 'i18next';
 
-import en from '@/renderer/locales/en/translation.json';
-
+import { CHAT_SEND_ERROR_LOCALE_TEXT_TO_KEY } from './chatSendErrorI18nLocaleValues';
 import { isMeshcoreI18nKey, translateMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
 
 /** Persist / display keys for chat outbox + composer send failures. */
@@ -56,39 +55,13 @@ const EXACT_ENGLISH_TO_KEY: Record<string, string> = {
   'No saved room credential': CHAT_SEND_ERROR_NO_ROOM_CREDENTIAL_KEY,
 };
 
-/** Keys whose stored English (or current-locale) text should reverse-map after persist. */
-const REVERSE_LOOKUP_KEYS = [
-  'chatPanel.reticulumSendTimeout',
-  'chatPanel.reticulumSendFailed',
-  'chatPanel.outboxLegacyMultipartBlocked',
-  CHAT_OUTBOX_REMOVE_FAILED_KEY,
-  'chatPanel.replyRequiresPacketId',
-  'chatPanel.sendFailed',
-  'chatPanel.shareLocationUnavailable',
-  'roomsPanel.postFailed',
-  CHAT_SEND_ERROR_NO_ROOM_CREDENTIAL_KEY,
-  CHAT_SEND_ERROR_NOT_CONNECTED_KEY,
-  CHAT_SEND_ERROR_ENCRYPTION_KEY,
-  CHAT_SEND_ERROR_TIMEOUT_KEY,
-  CHAT_SEND_ERROR_EMPTY_KEY,
-  CHAT_SEND_ERROR_DEST_KEY_KEY,
-  CHAT_SEND_ERROR_INVALID_REACTION_KEY,
-  CHAT_SEND_ERROR_REACTION_TARGET_KEY,
-  CHAT_SEND_ERROR_BLE_KEY,
-  CHAT_SEND_ERROR_ROOM_SESSION_KEY,
-  'meshcore.errors.notConnected',
-  'meshcore.errors.nodeNotFound',
-] as const;
-
-function englishValueForKey(key: string): string | null {
-  const parts = key.split('.');
-  let cur: unknown = en;
-  for (const part of parts) {
-    if (typeof cur !== 'object' || cur == null || !(part in cur)) return null;
-    cur = (cur as Record<string, unknown>)[part];
-  }
-  return typeof cur === 'string' ? cur : null;
-}
+/** Known no-key / no-encryption forms. Do not match bare "encryption" (retryable timeouts). */
+const ENCRYPTION_BLOCKED_RES = [
+  /\bno[-\s.]?encr/i,
+  /\bno[-\s.]?key\b/i,
+  /destinationPubKey/,
+  /no RF encryption key/i,
+];
 
 export function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : typeof err === 'string' ? err : String(err);
@@ -106,14 +79,11 @@ export function isEncryptionBlockedSendError(errMsg: string): boolean {
   ) {
     return true;
   }
-  return /no.?encr|no.?key|encryption|destinationPubKey/i.test(errMsg);
+  return ENCRYPTION_BLOCKED_RES.some((re) => re.test(errMsg));
 }
 
 function reverseLookupKnownTranslation(msg: string): string | null {
-  for (const key of REVERSE_LOOKUP_KEYS) {
-    if (englishValueForKey(key) === msg) return key;
-  }
-  return null;
+  return CHAT_SEND_ERROR_LOCALE_TEXT_TO_KEY[msg] ?? null;
 }
 
 /**
@@ -136,17 +106,18 @@ export function resolveChatSendErrorKey(
   if (exact) return exact;
   const reversed = reverseLookupKnownTranslation(trimmed);
   if (reversed) return reversed;
-  if (isEncryptionBlockedSendError(trimmed)) {
-    return CHAT_SEND_ERROR_ENCRYPTION_KEY;
-  }
   if (/not connected/i.test(trimmed)) {
     return CHAT_SEND_ERROR_NOT_CONNECTED_KEY;
   }
   if (/geolocation|user denied|location unavailable|gps/i.test(trimmed)) {
     return 'chatPanel.shareLocationUnavailable';
   }
+  // Timeout before encryption: "timeout while initializing encryption" is retryable.
   if (/timeout|timed out/i.test(trimmed)) {
     return CHAT_SEND_ERROR_TIMEOUT_KEY;
+  }
+  if (isEncryptionBlockedSendError(trimmed)) {
+    return CHAT_SEND_ERROR_ENCRYPTION_KEY;
   }
   return fallbackKey;
 }
