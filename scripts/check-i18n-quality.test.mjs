@@ -2443,4 +2443,26 @@ describe('i18n accuracy sweep (meaning-gated rules)', () => {
       }),
     ).toEqual([]);
   });
+
+  it('flags gamesPanel challenge difficulty false friend', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'gamesPanel.challenge',
+      enVal: 'Challenge',
+      val: 'Schwierigkeiten',
+    });
+    expectIssue(issues, 'Herausforderung');
+  });
+
+  it('ignores German Schwierigkeiten on unrelated gamesPanel text', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'gamesPanel.idleExpiryNotice',
+        enVal:
+          'Games expire after inactivity and can then only be deleted. Unanswered challenges: 24 hours (all games).',
+        val: 'Bei Schwierigkeiten laufen Spiele bei Inaktivität ab und können danach nur noch gelöscht werden.',
+      }),
+    ).toEqual([]);
+  });
 });

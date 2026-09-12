@@ -55,8 +55,12 @@ use super::lxmf_delivery::{
     spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver, spawn_lxmf_outbound_backchannel,
 };
 use super::nomad_file::{nomad_file_name_from_metadata_or_path, nomad_file_name_from_path};
-use super::nomad_link_errors::map_nomad_link_error;
-use super::nomad_link_reuse::nomad_link_cache_should_reuse;
+use super::nomad_link_errors::{
+    NomadLinkSessionKind, map_nomad_link_session_kind, nomad_link_session_kind_from_timeout_what,
+};
+use super::nomad_link_reuse::{
+    NomadFreshRequestOutcome, nomad_fresh_request_must_drop_cache, nomad_link_cache_should_reuse,
+};
 use super::nomad_link_schedule::{
     NomadLinkSchedule, nomad_link_lock_wait, nomad_link_schedule_bumps_generation,
     nomad_link_schedule_cancels_prior, nomad_link_schedule_holds_request_queue,
@@ -1476,7 +1480,7 @@ impl LiveBridge {
             query_result = query_fut => {
                 query_result.map_err(|e| {
                     let raw = format!("{e}");
-                    let code = map_nomad_link_error(&raw);
+                    let code = Self::nomad_remote_code_from_link_session_error(&e);
                     NomadRemoteQueryError {
                         code,
                         egress: Some(egress),
@@ -1499,6 +1503,22 @@ impl LiveBridge {
         }
         drop(guard);
         result
+    }
+
+    fn nomad_remote_code_from_link_session_error(e: &LinkSessionError) -> String {
+        let kind = match e {
+            LinkSessionError::PublicKeyUnavailable => NomadLinkSessionKind::PublicKeyUnavailable,
+            LinkSessionError::ProofInvalid(_) => NomadLinkSessionKind::ProofInvalid,
+            LinkSessionError::HandshakeFailed(_) => NomadLinkSessionKind::HandshakeFailed,
+            LinkSessionError::SessionClosed | LinkSessionError::LinkNotActive => {
+                NomadLinkSessionKind::LinkTimeout
+            }
+            LinkSessionError::TransportUnavailable => NomadLinkSessionKind::TransportUnavailable,
+            LinkSessionError::PayloadTooLarge { .. } => NomadLinkSessionKind::ResponseTooLarge,
+            LinkSessionError::Timeout(what) => nomad_link_session_kind_from_timeout_what(what),
+            _ => NomadLinkSessionKind::Legacy,
+        };
+        map_nomad_link_session_kind(kind, &format!("{e}"))
     }
 
     async fn close_nomad_link_session(&self) {
@@ -1602,7 +1622,12 @@ impl LiveBridge {
         }
         let result = handle.request(path, &payload, Some(remaining)).await;
         match result {
-            Ok(resp) => Ok((resp.data, resp.metadata)),
+            Ok(resp) => {
+                debug_assert!(!nomad_fresh_request_must_drop_cache(
+                    NomadFreshRequestOutcome::Success
+                ));
+                Ok((resp.data, resp.metadata))
+            }
             Err(LinkSessionError::SessionClosed) if reused => {
                 self.close_nomad_link_session().await;
                 let (handle, _) = self
@@ -1610,10 +1635,22 @@ impl LiveBridge {
                     .await?;
                 let remaining = deadline.saturating_duration_since(Instant::now());
                 if remaining.is_zero() {
+                    if nomad_fresh_request_must_drop_cache(NomadFreshRequestOutcome::Timeout) {
+                        self.close_nomad_link_session().await;
+                    }
                     return Err(LinkSessionError::Timeout("overall query"));
                 }
-                let resp = handle.request(path, &payload, Some(remaining)).await?;
-                Ok((resp.data, resp.metadata))
+                match handle.request(path, &payload, Some(remaining)).await {
+                    Ok(resp) => Ok((resp.data, resp.metadata)),
+                    Err(e) => {
+                        if nomad_fresh_request_must_drop_cache(
+                            NomadFreshRequestOutcome::RequestError,
+                        ) {
+                            self.close_nomad_link_session().await;
+                        }
+                        Err(e)
+                    }
+                }
             }
             Err(e) => {
                 self.close_nomad_link_session().await;

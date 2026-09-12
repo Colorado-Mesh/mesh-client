@@ -24,10 +24,19 @@ if [[ ! -f "${PATCH_FILE}" ]]; then
   exit 1
 fi
 
-if [[ -f "${RESOURCE_RS}" ]] \
-  && [[ -f "${LINK_SESSION_RS}" ]] \
-  && grep -q 'fn promote_fast' "${RESOURCE_RS}" \
-  && grep -q 'promote_fast()' "${LINK_SESSION_RS}"; then
+overlay_already_present() {
+  [[ -f "${RESOURCE_RS}" && -f "${LINK_SESSION_RS}" ]] || return 1
+  # Full TCP fast-start patch: promote_fast writes WINDOW_MAX_FAST and the
+  # inbound response path gates on RTT ≤ 1s. A method declaration + call
+  # alone is a partial marker and must not no-op.
+  grep -q 'fn promote_fast' "${RESOURCE_RS}" \
+    && grep -q 'self.window = WINDOW_MAX_FAST' "${RESOURCE_RS}" \
+    && grep -q 'self.window_max = WINDOW_MAX_FAST' "${RESOURCE_RS}" \
+    && grep -q 'promote_fast()' "${LINK_SESSION_RS}" \
+    && grep -q 'flags.is_response && rtt <= Duration::from_millis(1000)' "${LINK_SESSION_RS}"
+}
+
+if overlay_already_present; then
   echo "response-resource-window-fast overlay already applied on rsReticulum @ $(git -C "${RNS_DIR}" rev-parse --short HEAD)"
   exit 0
 fi

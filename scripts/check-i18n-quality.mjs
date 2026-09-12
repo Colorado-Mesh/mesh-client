@@ -4421,67 +4421,156 @@ export const GAMES_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'idleExpiryNotice',
 ]);
 
+export const GAMES_PANEL_RESIGN_LEAF_KEYS = new Set([
+  'resign',
+  'resignAria',
+  'resignConfirmTitle',
+  'resignConfirmMessage',
+]);
+export const GAMES_PANEL_DRAW_LEAF_KEYS = new Set([
+  'draw',
+  'offerDraw',
+  'acceptDraw',
+  'declineDraw',
+  'offerDrawAria',
+  'acceptDrawAria',
+  'declineDrawAria',
+]);
+export const GAMES_PANEL_CHALLENGE_LEAF_KEYS = new Set([
+  'challenge',
+  'challengeAria',
+  'challengeAppAria',
+  'challengeSent',
+  'sendChallenge',
+  'sendChallengeAria',
+  'newChallenge',
+]);
+export const GAMES_PANEL_OPPONENT_LEAF_KEYS = new Set(['opponentLabel']);
+export const GAMES_PANEL_THREEFOLD_LEAF_KEYS = new Set(['claimThreefold', 'claimThreefoldAria']);
+
+/** English concepts that a gamesPanel false-friend regex may apply to. */
+export function gamesPanelEnglishConcepts(leafKey, enVal) {
+  const concepts = new Set();
+  if (GAMES_PANEL_RESIGN_LEAF_KEYS.has(leafKey) || /^\s*resign\b/i.test(enVal)) {
+    concepts.add('resign');
+  }
+  if (GAMES_PANEL_DRAW_LEAF_KEYS.has(leafKey) || /^\s*draw\b/i.test(enVal)) {
+    concepts.add('draw');
+  }
+  if (GAMES_PANEL_CHALLENGE_LEAF_KEYS.has(leafKey) || /^\s*challenge\b/i.test(enVal)) {
+    concepts.add('challenge');
+  }
+  if (GAMES_PANEL_OPPONENT_LEAF_KEYS.has(leafKey) || /^\s*opponent\b/i.test(enVal)) {
+    concepts.add('opponent');
+  }
+  if (GAMES_PANEL_THREEFOLD_LEAF_KEYS.has(leafKey) || /\bthreefold\b/i.test(enVal)) {
+    concepts.add('threefold');
+  }
+  if (leafKey === 'ttt' || /^tic-tac-toe\b/i.test(enVal)) {
+    concepts.add('ttt');
+  }
+  return concepts;
+}
+
 /** Game-term false friends: resign≠job, draw≠sketch/lottery, challenge≠difficulty, threefold≠reward. */
 export const GAMES_PANEL_FALSE_FRIENDS = {
   de: [
-    { re: /Kündigung|kündigen/i, hint: 'resign is forfeit (Aufgeben), not employment Kündigung' },
-    { re: /Einzeichnen|Auslosung/i, hint: 'draw is a tie (Remis), not sketch/lottery' },
     {
+      concept: 'resign',
+      re: /Kündigung|kündigen/i,
+      hint: 'resign is forfeit (Aufgeben), not employment Kündigung',
+    },
+    {
+      concept: 'draw',
+      re: /Einzeichnen|Auslosung/i,
+      hint: 'draw is a tie (Remis), not sketch/lottery',
+    },
+    {
+      concept: 'challenge',
       re: /Schwierigkeiten/i,
       hint: 'challenge is a game challenge (Herausforderung), not difficulties',
     },
-    { re: /Einsprechend/i, hint: 'opponent is Gegner, not legal Einsprechender' },
+    {
+      concept: 'opponent',
+      re: /Einsprechend/i,
+      hint: 'opponent is Gegner, not legal Einsprechender',
+    },
   ],
   fr: [
     {
+      concept: 'resign',
       re: /Démissionner|démissionner/i,
       hint: 'resign is forfeit (Abandonner), not employment Démissionner',
     },
-    { re: /\bDessin\b/i, hint: 'draw is a tie (Nulle), not a sketch' },
+    { concept: 'draw', re: /\bDessin\b/i, hint: 'draw is a tie (Nulle), not a sketch' },
   ],
   es: [
-    { re: /^Plano$/i, hint: 'draw is a tie (Tablas), not a blueprint' },
-    { re: /Sorteo/i, hint: 'draw offer is tablas, not lottery Sorteo' },
+    { concept: 'draw', re: /^Plano$/i, hint: 'draw is a tie (Tablas), not a blueprint' },
+    { concept: 'draw', re: /Sorteo/i, hint: 'draw offer is tablas, not lottery Sorteo' },
   ],
-  cs: [{ re: /Nákres/i, hint: 'draw is a tie (Remíza), not a sketch' }],
-  'pt-BR': [{ re: /\bDesenho\b/i, hint: 'draw is a tie (Empate), not a sketch' }],
+  cs: [{ concept: 'draw', re: /Nákres/i, hint: 'draw is a tie (Remíza), not a sketch' }],
+  'pt-BR': [{ concept: 'draw', re: /\bDesenho\b/i, hint: 'draw is a tie (Empate), not a sketch' }],
   ru: [
-    { re: /увольнен/i, hint: 'resign is forfeit (Сдаться), not employment увольнение' },
-    { re: /Чертеж/i, hint: 'draw is a tie (Ничья), not a blueprint' },
-    { re: /жеребь/i, hint: 'draw offer is ничья, not lottery жеребьевка' },
+    {
+      concept: 'resign',
+      re: /увольнен/i,
+      hint: 'resign is forfeit (Сдаться), not employment увольнение',
+    },
+    { concept: 'draw', re: /Чертеж/i, hint: 'draw is a tie (Ничья), not a blueprint' },
+    { concept: 'draw', re: /жеребь/i, hint: 'draw offer is ничья, not lottery жеребьевка' },
   ],
   uk: [
-    { re: /\bБалка\b/i, hint: 'draw is a tie (Нічия), not a beam' },
-    { re: /Проблема/i, hint: 'challenge is a game challenge (Виклик), not a problem' },
-    { re: /хрестики-ноги/i, hint: 'tic-tac-toe is хрестики-нулики, not хрестики-ноги' },
+    { concept: 'draw', re: /\bБалка\b/i, hint: 'draw is a tie (Нічия), not a beam' },
+    {
+      concept: 'challenge',
+      re: /Проблема/i,
+      hint: 'challenge is a game challenge (Виклик), not a problem',
+    },
+    {
+      concept: 'ttt',
+      re: /хрестики-ноги/i,
+      hint: 'tic-tac-toe is хрестики-нулики, not хрестики-ноги',
+    },
   ],
   zh: [
-    { re: /抽奖/, hint: 'draw is a tie (和棋), not a lottery' },
-    { re: /三倍奖励/, hint: 'threefold is repetition draw, not a 3× reward' },
-    { re: /抽搐/, hint: 'tic-tac-toe is 井字棋, not convulsions 抽搐' },
+    { concept: 'draw', re: /抽奖/, hint: 'draw is a tie (和棋), not a lottery' },
+    { concept: 'threefold', re: /三倍奖励/, hint: 'threefold is repetition draw, not a 3× reward' },
+    { concept: 'ttt', re: /抽搐/, hint: 'tic-tac-toe is 井字棋, not convulsions 抽搐' },
   ],
   ko: [
-    { re: /사직/, hint: 'resign is forfeit (기권), not employment 사직' },
-    { re: /그리기/, hint: 'draw is a tie (무승부), not drawing' },
-    { re: /추첨/, hint: 'draw offer is 무승부, not lottery 추첨' },
-    { re: /3배 받기/, hint: 'threefold is repetition draw, not a 3× reward' },
+    { concept: 'resign', re: /사직/, hint: 'resign is forfeit (기권), not employment 사직' },
+    { concept: 'draw', re: /그리기/, hint: 'draw is a tie (무승부), not drawing' },
+    { concept: 'draw', re: /추첨/, hint: 'draw offer is 무승부, not lottery 추첨' },
+    { concept: 'threefold', re: /3배 받기/, hint: 'threefold is repetition draw, not a 3× reward' },
   ],
   pl: [
-    { re: /^Rys\./i, hint: 'draw is a tie (Remis), not a sketch' },
-    { re: /losowan/i, hint: 'draw offer is remis, not lottery losowanie' },
+    { concept: 'draw', re: /^Rys\./i, hint: 'draw is a tie (Remis), not a sketch' },
+    { concept: 'draw', re: /losowan/i, hint: 'draw offer is remis, not lottery losowanie' },
   ],
-  nl: [{ re: /\bRapen\b/i, hint: 'draw is a tie (Remise), not gleaning' }],
+  nl: [{ concept: 'draw', re: /\bRapen\b/i, hint: 'draw is a tie (Remise), not gleaning' }],
   ja: [
-    { re: /^引け$/, hint: 'draw is a tie (引き分け), not 引け' },
-    { re: /3倍にする/, hint: 'threefold is 千日手, not make 3×' },
+    { concept: 'draw', re: /^引け$/, hint: 'draw is a tie (引き分け), not 引け' },
+    { concept: 'threefold', re: /3倍にする/, hint: 'threefold is 千日手, not make 3×' },
   ],
   id: [
-    { re: /Mengundurkan Diri/i, hint: 'resign is forfeit (Menyerah), not employment resignation' },
+    {
+      concept: 'resign',
+      re: /Mengundurkan Diri/i,
+      hint: 'resign is forfeit (Menyerah), not employment resignation',
+    },
   ],
   it: [
-    { re: /Riscuoti il triplo/i, hint: 'threefold is ripetizione tripla, not collect triple' },
-    { re: /\bEstrazione\b/i, hint: 'draw offer is patta, not lottery Estrazione' },
-    { re: /eliminare questo gioco/i, hint: 'resign is abbandonare, not delete the game' },
+    {
+      concept: 'threefold',
+      re: /Riscuoti il triplo/i,
+      hint: 'threefold is ripetizione tripla, not collect triple',
+    },
+    { concept: 'draw', re: /\bEstrazione\b/i, hint: 'draw offer is patta, not lottery Estrazione' },
+    {
+      concept: 'resign',
+      re: /eliminare questo gioco/i,
+      hint: 'resign is abbandonare, not delete the game',
+    },
   ],
 };
 
@@ -4498,8 +4587,9 @@ function checkGamesPanelQualityIssues(ctx) {
     issues.push(`"${leafKey}" is still identical to English — translate the game UI text`);
   }
 
-  for (const { re, hint } of GAMES_PANEL_FALSE_FRIENDS[locale] ?? []) {
-    if (re.test(val)) {
+  const concepts = gamesPanelEnglishConcepts(leafKey, enVal);
+  for (const { concept, re, hint } of GAMES_PANEL_FALSE_FRIENDS[locale] ?? []) {
+    if (concepts.has(concept) && re.test(val)) {
       issues.push(`gamesPanel false friend: ${hint}`);
     }
   }

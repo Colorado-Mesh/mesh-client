@@ -74,7 +74,19 @@ describe('apply-rsReticulum-response-resource-window-fast.sh', () => {
     expect(patch).toMatch(/crates\/rns-runtime\/src\/link_session\.rs/);
   });
 
-  it('is a no-op when promote_fast is already present', () => {
+  it('is a no-op when the complete TCP fast-start overlay is present', () => {
+    const rns = makeFakeRsReticulum({
+      'crates/rns-protocol/src/resource.rs':
+        'impl WindowState {\n    pub fn promote_fast(&mut self) {\n        self.window = WINDOW_MAX_FAST;\n        self.window_max = WINDOW_MAX_FAST;\n    }\n}\n',
+      'crates/rns-runtime/src/link_session.rs':
+        'if flags.is_response && rtt <= Duration::from_millis(1000) {\n        transfer.resource.window.promote_fast();\n    }\n',
+    });
+    const result = runApply(rns);
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toMatch(/already applied/);
+  });
+
+  it('does not treat a partial promote_fast marker as already applied', () => {
     const rns = makeFakeRsReticulum({
       'crates/rns-protocol/src/resource.rs':
         'impl WindowState {\n    pub fn promote_fast(&mut self) {}\n}\n',
@@ -82,8 +94,9 @@ describe('apply-rsReticulum-response-resource-window-fast.sh', () => {
         'if flags.is_response {\n        transfer.resource.window.promote_fast();\n    }\n',
     });
     const result = runApply(rns);
-    expect(result.status, result.stderr || result.stdout).toBe(0);
-    expect(result.stdout).toMatch(/already applied/);
+    expect(result.status).not.toBe(0);
+    expect(result.stdout).not.toMatch(/already applied/);
+    expect(result.stderr).toMatch(/did not apply|regenerate overlay/);
   });
 
   it('fails with git diagnostic on incompatible checkouts', () => {
