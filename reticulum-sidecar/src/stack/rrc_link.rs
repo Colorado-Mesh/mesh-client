@@ -15,10 +15,17 @@ use rns_runtime::link_session::{
     LinkSession, LinkSessionCloseReason, LinkSessionConfig, LinkSessionError, LinkSessionEvent,
     discover_destination,
 };
-use rns_transport::messages::{TransportMessage, TransportQuery, TransportQueryResponse};
+use rns_transport::messages::{
+    PathTableRpcEntry, TransportMessage, TransportQuery, TransportQueryResponse,
+};
 use thiserror::Error;
 use tokio::sync::{Semaphore, mpsc, oneshot};
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
+
+use super::path_failover::{
+    self, PathSlotCandidate, VIA_FAILOVER_POLL_INTERVAL, VIA_FAILOVER_PROBE_WAIT,
+    record_path_failover_attempt, select_unblocked_slot, via_prefix,
+};
 
 const PATH_LOOKUP_TIMEOUT: Duration = Duration::from_secs(15);
 const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(30);
@@ -96,9 +103,58 @@ impl RrcLinkHandle {
 pub enum RrcPathRefresh {
     /// RequestPath even when identity is cached (fresh next-hop advertisement).
     Refresh,
-    /// DropPath + RequestPath so LRPROOF can attach on a live interface after
-    /// keepalive timeout / transport death (stale via pin otherwise keeps failing).
+    /// Suppress the failed iface/via, DropPath + RequestPath so LRPROOF can
+    /// attach on a live interface after keepalive timeout / transport death
+    /// (stale TCP via pin otherwise keeps failing).
     DropAndRefresh,
+}
+
+/// Route chosen for the next RRC Link (hops must match the live path slot).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct RrcResolvedRoute {
+    pub hops: u8,
+    pub iface: Option<String>,
+    pub via: Option<String>,
+}
+
+/// Accumulated iface/via blocks across reconnect proof failures (Nomad-style).
+#[derive(Debug, Clone, Default)]
+pub struct RrcPathFailoverState {
+    pub blocked_ifaces: Vec<String>,
+    pub blocked_vias: Vec<String>,
+    pub last_route: Option<RrcResolvedRoute>,
+    pub rounds: u8,
+}
+
+impl RrcPathFailoverState {
+    pub fn clear(&mut self) {
+        self.blocked_ifaces.clear();
+        self.blocked_vias.clear();
+        self.last_route = None;
+        self.rounds = 0;
+    }
+}
+
+/// Hops for Link / reconnect_intent: prefer the rediscovered slot.
+pub fn rrc_reconnect_hops(fallback: u8, route: Option<&RrcResolvedRoute>) -> u8 {
+    route.map(|r| r.hops).filter(|&h| h > 0).unwrap_or(fallback)
+}
+
+/// True when establish failed because LRPROOF never arrived.
+pub fn is_rrc_link_proof_timeout(err: &RrcLinkError) -> bool {
+    matches!(err, RrcLinkError::Timeout(what) if *what == "link proof")
+}
+
+/// Stable warn fields for app-log assertions (one `target=rrc` line).
+pub fn rrc_link_proof_timeout_log_fields(
+    dest_hex: &str,
+    route: Option<&RrcResolvedRoute>,
+    path_refresh: RrcPathRefresh,
+) -> String {
+    let hops = route.map(|r| r.hops);
+    let iface = route.and_then(|r| r.iface.as_deref()).unwrap_or("-");
+    let via = via_prefix(route.and_then(|r| r.via.as_deref())).unwrap_or_else(|| "-".into());
+    format!("hub={dest_hex} iface={iface} hops={hops:?} via={via} path_refresh={path_refresh:?}")
 }
 
 pub async fn open_rrc_link_with_path_refresh(
@@ -107,17 +163,19 @@ pub async fn open_rrc_link_with_path_refresh(
     dest_hash: [u8; 16],
     hops: u8,
     path_refresh: RrcPathRefresh,
-) -> Result<RrcLinkHandle, RrcLinkError> {
-    refresh_hub_path(&transport_tx, dest_hash, path_refresh).await?;
+    failover: &mut RrcPathFailoverState,
+) -> Result<(RrcLinkHandle, RrcResolvedRoute), RrcLinkError> {
+    let route = refresh_hub_path(&transport_tx, dest_hash, hops, path_refresh, failover).await?;
     let entry = discover_destination(&transport_tx, dest_hash, PATH_LOOKUP_TIMEOUT)
         .await
         .map_err(map_link_session_error)?;
     let pubkey = entry.public_key.ok_or(RrcLinkError::PubkeyNotDiscovered)?;
+    let link_hops = rrc_reconnect_hops(hops, Some(&route));
 
     let config = LinkSessionConfig {
         destination_hash: dest_hash,
         remote_public_key: pubkey,
-        hops,
+        hops: link_hops,
         establishment_timeout: HANDSHAKE_TIMEOUT,
         client_label: "rrc.link".into(),
         identify: true,
@@ -255,11 +313,14 @@ pub async fn open_rrc_link_with_path_refresh(
         }
     });
 
-    Ok(RrcLinkHandle {
-        cmd_tx,
-        event_rx,
-        link_id,
-    })
+    Ok((
+        RrcLinkHandle {
+            cmd_tx,
+            event_rx,
+            link_id,
+        },
+        route,
+    ))
 }
 
 /// When the resource-offers receiver ends, prefer an already-queued session
@@ -329,11 +390,18 @@ pub fn rrc_disconnect_should_drop_path(reason: &str) -> bool {
 async fn refresh_hub_path(
     transport_tx: &mpsc::Sender<TransportMessage>,
     dest_hash: [u8; 16],
+    fallback_hops: u8,
     mode: RrcPathRefresh,
-) -> Result<(), RrcLinkError> {
+    failover: &mut RrcPathFailoverState,
+) -> Result<RrcResolvedRoute, RrcLinkError> {
     let mut options = DestinationResolveOptions::new(PATH_LOOKUP_TIMEOUT);
     options.refresh_cached_path = true;
+    let mut snapshot = None;
     if mode == RrcPathRefresh::DropAndRefresh {
+        snapshot = query_path_route(transport_tx, dest_hash).await;
+        if let Some(ref failed) = snapshot {
+            apply_failed_route_failover(transport_tx, dest_hash, failed, failover).await;
+        }
         // Explicit DropPath covers both cached and uncached identities. Clear
         // drop_existing_path so resolve_destination does not DropPath again on
         // a cache miss.
@@ -362,7 +430,230 @@ async fn refresh_hub_path(
     )
     .await
     .map_err(|e| map_resolve_error(&e))?;
-    Ok(())
+
+    let resolved = if mode == RrcPathRefresh::DropAndRefresh && snapshot.is_some() {
+        if let Some(route) = poll_unblocked_route(
+            transport_tx,
+            dest_hash,
+            failover,
+            snapshot.as_ref().and_then(|s| s.via.as_deref()),
+        )
+        .await
+        {
+            Some(route)
+        } else if let Some(route) = query_path_route(transport_tx, dest_hash).await {
+            Some(route)
+        } else {
+            snapshot.clone()
+        }
+    } else {
+        query_path_route(transport_tx, dest_hash).await
+    };
+
+    let route = resolved.unwrap_or(RrcResolvedRoute {
+        hops: fallback_hops,
+        iface: snapshot.as_ref().and_then(|s| s.iface.clone()),
+        via: snapshot.as_ref().and_then(|s| s.via.clone()),
+    });
+    failover.last_route = Some(route.clone());
+    Ok(route)
+}
+
+/// Suppress the failed iface and drop its next hop so RequestPath can attach elsewhere.
+async fn apply_failed_route_failover(
+    transport_tx: &mpsc::Sender<TransportMessage>,
+    dest_hash: [u8; 16],
+    failed: &RrcResolvedRoute,
+    failover: &mut RrcPathFailoverState,
+) {
+    if failover.rounds < path_failover::MAX_VIA_FAILOVERS {
+        record_path_failover_attempt(
+            &mut Vec::new(),
+            &mut failover.blocked_ifaces,
+            &mut failover.blocked_vias,
+            failed.iface.as_deref(),
+            failed.via.as_deref(),
+        );
+    }
+    let ops = path_failover::build_path_failover_control_ops(
+        dest_hash,
+        &failover.blocked_vias,
+        failed.via.as_deref(),
+        &[],
+    );
+    let _ = transport_rpc(
+        transport_tx,
+        TransportQuery::SuppressCurrentPathInterface {
+            dest: dest_hash,
+            duration: ops.suppress_secs,
+        },
+        PATH_LOOKUP_TIMEOUT,
+    )
+    .await;
+    for via_hex in &ops.vias_to_drop {
+        let Some(next_hop) = parse_dest_hash(via_hex) else {
+            continue;
+        };
+        let _ = transport_rpc(
+            transport_tx,
+            TransportQuery::DropAllVia { next_hop },
+            PATH_LOOKUP_TIMEOUT,
+        )
+        .await;
+    }
+    info!(
+        target: "rrc",
+        dest = %hex::encode(dest_hash),
+        iface = ?failed.iface,
+        hops = failed.hops,
+        via = ?via_prefix(failed.via.as_deref()),
+        blocked_ifaces = ?failover.blocked_ifaces,
+        "rrc DropAndRefresh failover"
+    );
+}
+
+async fn poll_unblocked_route(
+    transport_tx: &mpsc::Sender<TransportMessage>,
+    dest_hash: [u8; 16],
+    failover: &RrcPathFailoverState,
+    failed_via: Option<&str>,
+) -> Option<RrcResolvedRoute> {
+    let deadline = tokio::time::Instant::now() + VIA_FAILOVER_PROBE_WAIT;
+    loop {
+        let slots = query_path_slots_json(transport_tx, dest_hash).await;
+        if let Some(cand) = select_unblocked_slot(
+            &slots,
+            &failover.blocked_ifaces,
+            &failover.blocked_vias,
+            failed_via,
+            &[],
+        ) {
+            return Some(route_from_candidate(cand));
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return None;
+        }
+        tokio::time::sleep(VIA_FAILOVER_POLL_INTERVAL).await;
+    }
+}
+
+async fn query_path_route(
+    transport_tx: &mpsc::Sender<TransportMessage>,
+    dest_hash: [u8; 16],
+) -> Option<RrcResolvedRoute> {
+    let slots = query_path_slots_json(transport_tx, dest_hash).await;
+    best_slot_route(&slots)
+}
+
+async fn query_path_slots_json(
+    transport_tx: &mpsc::Sender<TransportMessage>,
+    dest_hash: [u8; 16],
+) -> Vec<serde_json::Value> {
+    if let Ok(TransportQueryResponse::PathSlots(entry)) = transport_rpc(
+        transport_tx,
+        TransportQuery::GetPathSlots { dest: dest_hash },
+        PATH_LOOKUP_TIMEOUT,
+    )
+    .await
+    {
+        return entry
+            .slots
+            .iter()
+            .map(|slot| {
+                serde_json::json!({
+                    "active": slot.active,
+                    "hops": slot.hops,
+                    "via_hash": slot.via.map(hex::encode),
+                    "interface": slot.interface,
+                    "expired": slot.expired,
+                })
+            })
+            .collect();
+    }
+    match transport_rpc(
+        transport_tx,
+        TransportQuery::GetPathTable,
+        PATH_LOOKUP_TIMEOUT,
+    )
+    .await
+    {
+        Ok(TransportQueryResponse::PathTable(entries)) => entries
+            .iter()
+            .filter(|e| e.hash == dest_hash)
+            .map(path_table_slot_json)
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
+fn path_table_slot_json(entry: &PathTableRpcEntry) -> serde_json::Value {
+    serde_json::json!({
+        "active": true,
+        "hops": entry.hops,
+        "via_hash": entry.via.map(hex::encode),
+        "interface": entry.interface,
+        "expired": false,
+    })
+}
+
+fn best_slot_route(slots: &[serde_json::Value]) -> Option<RrcResolvedRoute> {
+    let active = slots.iter().find(|slot| {
+        slot.get("active")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false)
+            && !slot
+                .get("expired")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(false)
+    });
+    if let Some(slot) = active {
+        return path_failover::slot_candidate(slot).map(route_from_candidate);
+    }
+    slots
+        .iter()
+        .filter_map(path_failover::slot_candidate)
+        .min_by_key(|c| c.hops)
+        .map(route_from_candidate)
+}
+
+fn route_from_candidate(cand: PathSlotCandidate) -> RrcResolvedRoute {
+    RrcResolvedRoute {
+        hops: cand.hops,
+        iface: cand.iface,
+        via: cand.via,
+    }
+}
+
+fn parse_dest_hash(hex_str: &str) -> Option<[u8; 16]> {
+    let clean: String = hex_str.chars().filter(char::is_ascii_hexdigit).collect();
+    if clean.len() != 32 {
+        return None;
+    }
+    let bytes = hex::decode(&clean).ok()?;
+    bytes.try_into().ok()
+}
+
+async fn transport_rpc(
+    transport_tx: &mpsc::Sender<TransportMessage>,
+    query: TransportQuery,
+    timeout: Duration,
+) -> Result<TransportQueryResponse, RrcLinkError> {
+    let (response_tx, response_rx) = oneshot::channel();
+    let result = tokio::time::timeout(timeout, async {
+        transport_tx
+            .send(TransportMessage::Rpc { query, response_tx })
+            .await
+            .map_err(|_| RrcLinkError::TransportUnavailable)?;
+        response_rx
+            .await
+            .map_err(|_| RrcLinkError::TransportUnavailable)
+    })
+    .await;
+    match result {
+        Err(_) => Err(RrcLinkError::Timeout("transport rpc")),
+        Ok(Err(e)) => Err(e),
+        Ok(Ok(response)) => Ok(response),
+    }
 }
 
 /// Bound DropPath RPC (send + reply) so a hung transport cannot stall reconnect.
@@ -531,6 +822,21 @@ mod tests {
                 let msg = transport_rx.recv().await.expect("transport message");
                 match msg {
                     TransportMessage::Rpc {
+                        query: TransportQuery::GetPathSlots { dest: d },
+                        response_tx,
+                    } => {
+                        assert_eq!(d, dest);
+                        response_tx.send(TransportQueryResponse::Ok).unwrap();
+                    }
+                    TransportMessage::Rpc {
+                        query: TransportQuery::GetPathTable,
+                        response_tx,
+                    } => {
+                        response_tx
+                            .send(TransportQueryResponse::PathTable(Vec::new()))
+                            .unwrap();
+                    }
+                    TransportMessage::Rpc {
                         query: TransportQuery::DropPath { dest: d },
                         response_tx,
                     } => {
@@ -609,9 +915,16 @@ mod tests {
             drop_count == 1 && saw_request
         });
 
-        refresh_hub_path(&transport_tx, dest, RrcPathRefresh::DropAndRefresh)
-            .await
-            .expect("refresh_hub_path");
+        let mut failover = RrcPathFailoverState::default();
+        refresh_hub_path(
+            &transport_tx,
+            dest,
+            1,
+            RrcPathRefresh::DropAndRefresh,
+            &mut failover,
+        )
+        .await
+        .expect("refresh_hub_path");
         assert!(
             responder.await.expect("responder join"),
             "expected single DropPath then RequestPath"
@@ -671,5 +984,156 @@ mod tests {
             Some("remote_close")
         );
         assert!(closed_reason_from_session_event(&LinkSessionEvent::Stale).is_none());
+    }
+
+    #[test]
+    fn reconnect_hops_prefers_resolved_route() {
+        let route = RrcResolvedRoute {
+            hops: 4,
+            iface: Some("Ratspeak".into()),
+            via: Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".into()),
+        };
+        assert_eq!(rrc_reconnect_hops(2, Some(&route)), 4);
+        assert_eq!(rrc_reconnect_hops(2, None), 2);
+        assert_eq!(
+            rrc_reconnect_hops(
+                2,
+                Some(&RrcResolvedRoute {
+                    hops: 0,
+                    iface: None,
+                    via: None
+                })
+            ),
+            2
+        );
+    }
+
+    #[test]
+    fn link_proof_timeout_log_includes_route_fields() {
+        let route = RrcResolvedRoute {
+            hops: 2,
+            iface: Some("RNS DFW Central".into()),
+            via: Some("7cbbe5ada62d88ee2d4dbe0c3cb1bceb".into()),
+        };
+        let line = rrc_link_proof_timeout_log_fields(
+            "d765e919676aa0340412a1afae006553",
+            Some(&route),
+            RrcPathRefresh::DropAndRefresh,
+        );
+        assert!(line.contains("hub=d765e919676aa0340412a1afae006553"));
+        assert!(line.contains("iface=RNS DFW Central"));
+        assert!(line.contains("hops=Some(2)"));
+        assert!(line.contains("via=7cbbe5ad"));
+        assert!(line.contains("path_refresh=DropAndRefresh"));
+        assert!(is_rrc_link_proof_timeout(&RrcLinkError::Timeout(
+            "link proof"
+        )));
+        assert!(!is_rrc_link_proof_timeout(&RrcLinkError::Timeout(
+            "DropPath"
+        )));
+    }
+
+    #[test]
+    fn unblocked_slot_rejects_pre_drop_via() {
+        let failed_via = "7cbbe5ada62d88ee2d4dbe0c3cb1bceb";
+        let slots = vec![
+            serde_json::json!({
+                "active": true,
+                "hops": 2,
+                "via_hash": failed_via,
+                "interface": "RNS DFW Central",
+                "expired": false,
+            }),
+            serde_json::json!({
+                "active": false,
+                "hops": 3,
+                "via_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "interface": "Ratspeak",
+                "expired": false,
+            }),
+        ];
+        let picked = select_unblocked_slot(
+            &slots,
+            &["RNS DFW Central".into()],
+            &[],
+            Some(failed_via),
+            &[],
+        )
+        .expect("alternate slot");
+        assert_eq!(picked.iface.as_deref(), Some("Ratspeak"));
+        assert_eq!(picked.hops, 3);
+        assert_eq!(
+            select_unblocked_slot(
+                &slots,
+                &["RNS DFW Central".into()],
+                &[failed_via.into()],
+                Some(failed_via),
+                &[]
+            ),
+            Some(PathSlotCandidate {
+                hops: 3,
+                iface: Some("Ratspeak".into()),
+                via: Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".into()),
+            })
+        );
+    }
+
+    #[tokio::test]
+    async fn drop_and_refresh_failover_sends_suppress_and_drop_all_via() {
+        let dest = [0xD7; 16];
+        let failed_via = [0x7C; 16];
+        let failed = RrcResolvedRoute {
+            hops: 2,
+            iface: Some("RNS DFW Central".into()),
+            via: Some(hex::encode(failed_via)),
+        };
+        let (transport_tx, mut transport_rx) = mpsc::channel(8);
+        let responder = tokio::spawn(async move {
+            let mut saw_suppress = false;
+            let mut saw_drop_via = false;
+            for _ in 0..2 {
+                let msg = transport_rx.recv().await.expect("transport message");
+                match msg {
+                    TransportMessage::Rpc {
+                        query: TransportQuery::SuppressCurrentPathInterface { dest: d, duration },
+                        response_tx,
+                    } => {
+                        assert_eq!(d, dest);
+                        assert!(duration > 0.0);
+                        saw_suppress = true;
+                        response_tx.send(TransportQueryResponse::Ok).unwrap();
+                    }
+                    TransportMessage::Rpc {
+                        query: TransportQuery::DropAllVia { next_hop },
+                        response_tx,
+                    } => {
+                        assert_eq!(next_hop, failed_via);
+                        saw_drop_via = true;
+                        response_tx.send(TransportQueryResponse::Ok).unwrap();
+                    }
+                    other => panic!("unexpected transport message: {other:?}"),
+                }
+            }
+            saw_suppress && saw_drop_via
+        });
+
+        let mut failover = RrcPathFailoverState::default();
+        apply_failed_route_failover(&transport_tx, dest, &failed, &mut failover).await;
+        assert!(
+            responder.await.expect("responder join"),
+            "expected Suppress then DropAllVia"
+        );
+        assert!(
+            failover
+                .blocked_ifaces
+                .iter()
+                .any(|n| n.eq_ignore_ascii_case("RNS DFW Central"))
+        );
+        assert!(
+            failover
+                .blocked_vias
+                .iter()
+                .any(|v| v.eq_ignore_ascii_case(&hex::encode(failed_via)))
+        );
     }
 }
