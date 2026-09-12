@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe, configureAxe } from 'vitest-axe';
 
 import App from './App';
@@ -1583,6 +1583,11 @@ describe('App accessibility', () => {
 });
 
 describe('App ConnectionPanel facade wiring', () => {
+  afterEach(() => {
+    registerMeshcoreSession(null);
+    registerMeshtasticSession(null);
+  });
+
   function stubRadioCapabilities(): void {
     vi.mocked(providerFactory.useRadioProvider).mockImplementation((protocol) => {
       if (protocol === 'reticulum') return RETICULUM_CAPABILITIES;
@@ -1736,8 +1741,6 @@ describe('App ConnectionPanel facade wiring', () => {
         });
         expect(meshcoreSession.finalizeDriverDisconnect).toHaveBeenCalled();
       }
-
-      registerMeshcoreSession(null);
     },
   );
 });
