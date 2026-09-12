@@ -907,6 +907,7 @@ function AppContent() {
     focusedIdentityId,
     reticulumIdentityId,
     capabilities: activeProtocolCapabilities,
+    connection: activeConnection,
   } = activeFacade;
   const meshtasticIdentityId = identityIdByProtocol.meshtastic;
   const meshcoreIdentityId = identityIdByProtocol.meshcore;
@@ -1491,6 +1492,19 @@ function AppContent() {
   }, [meshcoreCapabilities.hasContactImportExport, meshcoreRuntime.meshcorePubKeyHexByNodeId]);
 
   const capabilities = activeProtocolCapabilities;
+  const showConnectionPanel =
+    capabilities.hasChannelConfig ||
+    capabilities.prefersDeviceOwnerLongNameInHeader ||
+    capabilities.hasReticulumInterfaceConfig;
+  const showConnectionFirmwareCheck = capabilities.hasFirmwareUpdateCheck;
+  const openFirmwareReleases = useCallback(() => {
+    void window.electronAPI.update.openReleases(
+      firmwareCheckState.releaseUrl ??
+        (capabilities.prefersDeviceOwnerLongNameInHeader
+          ? MESHCORE_FIRMWARE_RELEASES_URL
+          : MESHTASTIC_FIRMWARE_RELEASES_URL),
+    );
+  }, [capabilities.prefersDeviceOwnerLongNameInHeader, firmwareCheckState.releaseUrl]);
   const nodeCountLabel = capabilities.nodeListTabUsesContactsLabel
     ? t('common.contacts')
     : capabilities.nodeListTabUsesPeersLabel
@@ -3273,116 +3287,81 @@ function AppContent() {
                       className="w-full min-w-0"
                     >
                       <Suspense fallback={<PanelSkeleton />}>
-                        {protocol === 'meshtastic' && capabilities.hasChannelConfig && (
+                        {showConnectionPanel && (
                           <ConnectionPanel
-                            state={meshtasticConnection.state}
-                            onConnect={meshtasticConnection.connect}
-                            onAutoConnect={meshtasticConnection.connectAutomatic}
-                            onDisconnect={meshtasticConnection.disconnect}
-                            mqttStatus={meshtasticConnection.mqttStatus}
+                            state={activeConnection.state}
+                            onConnect={activeConnection.connect}
+                            onAutoConnect={activeConnection.connectAutomatic}
+                            onDisconnect={activeConnection.disconnect}
+                            mqttStatus={activeConnection.mqttStatus}
                             myNodeLabel={
-                              meshtasticRuntime.state.myNodeNum > 0
-                                ? meshtasticRuntime.getPickerStyleNodeLabel(
-                                    meshtasticRuntime.state.myNodeNum,
+                              activeRuntime.state.myNodeNum > 0
+                                ? activeRuntime.getPickerStyleNodeLabel(
+                                    activeRuntime.state.myNodeNum,
                                   )
                                 : undefined
                             }
-                            protocol="meshtastic"
+                            protocol={protocol}
                             firmwareCheckState={
-                              meshtasticCapabilities.hasFirmwareUpdateCheck &&
-                              !capabilities.prefersDeviceOwnerLongNameInHeader
-                                ? firmwareCheckState
-                                : undefined
+                              showConnectionFirmwareCheck ? firmwareCheckState : undefined
                             }
                             onOpenFirmwareReleases={
-                              meshtasticCapabilities.hasFirmwareUpdateCheck &&
-                              !capabilities.prefersDeviceOwnerLongNameInHeader
+                              showConnectionFirmwareCheck ? openFirmwareReleases : undefined
+                            }
+                            ensureMeshcoreMqttIdentity={
+                              capabilities.hasMqttConnectionPanel &&
+                              capabilities.prefersDeviceOwnerLongNameInHeader
+                                ? meshcoreRuntime.ensureMeshcoreMqttIdentity
+                                : undefined
+                            }
+                            onStartReticulumStack={
+                              capabilities.hasReticulumInterfaceConfig
+                                ? startReticulumStack
+                                : undefined
+                            }
+                            onOpenReticulumRmapSettings={
+                              capabilities.hasReticulumInterfaceConfig
                                 ? () => {
-                                    void window.electronAPI.update.openReleases(
-                                      firmwareCheckState.releaseUrl ??
-                                        MESHTASTIC_FIRMWARE_RELEASES_URL,
-                                    );
+                                    const networkTabIdx = tabSlotIds.indexOf('Radio');
+                                    if (networkTabIdx >= 0) {
+                                      setActiveTab(networkTabIdx);
+                                    }
                                   }
                                 : undefined
                             }
-                          />
-                        )}
-                        {protocol === 'meshcore' &&
-                          capabilities.prefersDeviceOwnerLongNameInHeader && (
-                            <ConnectionPanel
-                              state={meshcoreConnection.state}
-                              onConnect={meshcoreConnection.connect}
-                              onAutoConnect={meshcoreConnection.connectAutomatic}
-                              onDisconnect={meshcoreConnection.disconnect}
-                              mqttStatus={meshcoreConnection.mqttStatus}
-                              myNodeLabel={
-                                meshcoreRuntime.state.myNodeNum > 0
-                                  ? meshcoreRuntime.getPickerStyleNodeLabel(
-                                      meshcoreRuntime.state.myNodeNum,
-                                    )
-                                  : undefined
-                              }
-                              protocol="meshcore"
-                              ensureMeshcoreMqttIdentity={
-                                meshcoreRuntime.ensureMeshcoreMqttIdentity
-                              }
-                              firmwareCheckState={
-                                meshcoreCapabilities.hasFirmwareUpdateCheck &&
-                                capabilities.prefersDeviceOwnerLongNameInHeader
-                                  ? firmwareCheckState
-                                  : undefined
-                              }
-                              onOpenFirmwareReleases={
-                                meshcoreCapabilities.hasFirmwareUpdateCheck &&
-                                capabilities.prefersDeviceOwnerLongNameInHeader
-                                  ? () => {
-                                      void window.electronAPI.update.openReleases(
-                                        firmwareCheckState.releaseUrl ??
-                                          MESHCORE_FIRMWARE_RELEASES_URL,
-                                      );
-                                    }
-                                  : undefined
-                              }
-                            />
-                          )}
-                        {protocol === 'reticulum' && capabilities.hasReticulumInterfaceConfig && (
-                          <ConnectionPanel
-                            state={reticulumConnection.state}
-                            onConnect={reticulumConnection.connect}
-                            onAutoConnect={reticulumConnection.connectAutomatic}
-                            onDisconnect={reticulumConnection.disconnect}
-                            mqttStatus={reticulumConnection.mqttStatus}
-                            protocol="reticulum"
-                            onStartReticulumStack={() =>
-                              reticulumConnection.connectAutomatic('http')
+                            onOpenReticulumSetupDestination={
+                              capabilities.hasReticulumInterfaceConfig
+                                ? (destination) => {
+                                    const target = tabSlotIds.indexOf(destination);
+                                    if (target >= 0) setActiveTab(target);
+                                    return target >= 0;
+                                  }
+                                : undefined
                             }
-                            onOpenReticulumRmapSettings={() => {
-                              const networkTabIdx = tabSlotIds.indexOf('Radio');
-                              if (networkTabIdx >= 0) {
-                                setActiveTab(networkTabIdx);
-                              }
-                            }}
-                            onOpenReticulumSetupDestination={(destination) => {
-                              const target = tabSlotIds.indexOf(destination);
-                              if (target >= 0) setActiveTab(target);
-                              return target >= 0;
-                            }}
-                            onOpenAppGpsSettings={() => {
-                              const appTabIdx = tabSlotIds.indexOf('App');
-                              if (appTabIdx >= 0) {
-                                setAppTabVisited(true);
-                                setActiveTab(appTabIdx);
-                              }
-                            }}
-                            onOpenAdminBluetooth={() => {
-                              const adminTabIdx = findFilteredTabIndexForPanel(
-                                selectByProtocol(tabsByProtocol, protocol),
-                                ADMIN_PANEL_INDEX,
-                              );
-                              if (adminTabIdx >= 0) {
-                                setActiveTab(adminTabIdx);
-                              }
-                            }}
+                            onOpenAppGpsSettings={
+                              capabilities.hasReticulumInterfaceConfig
+                                ? () => {
+                                    const appTabIdx = tabSlotIds.indexOf('App');
+                                    if (appTabIdx >= 0) {
+                                      setAppTabVisited(true);
+                                      setActiveTab(appTabIdx);
+                                    }
+                                  }
+                                : undefined
+                            }
+                            onOpenAdminBluetooth={
+                              capabilities.hasReticulumInterfaceConfig
+                                ? () => {
+                                    const adminTabIdx = findFilteredTabIndexForPanel(
+                                      selectByProtocol(tabsByProtocol, protocol),
+                                      ADMIN_PANEL_INDEX,
+                                    );
+                                    if (adminTabIdx >= 0) {
+                                      setActiveTab(adminTabIdx);
+                                    }
+                                  }
+                                : undefined
+                            }
                           />
                         )}
                       </Suspense>

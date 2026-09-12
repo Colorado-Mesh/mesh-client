@@ -138,6 +138,9 @@ describe('useProtocolFacade', () => {
     expect(result.current.identityIdByProtocol.meshtastic).toBe(IDENTITY);
     expect(result.current.capabilities.protocol).toBe('meshtastic');
     expect(result.current.panel.protocol).toBe('meshtastic');
+    expect(result.current.connection.connect).toEqual(expect.any(Function));
+    expect(result.current.connection.connectAutomatic).toEqual(expect.any(Function));
+    expect(result.current.connection.disconnect).toEqual(expect.any(Function));
     expect(result.current.connectionView.state.status).toBe('configured');
     expect(result.current.connectionView.state.myNodeNum).toBe(0xabc);
     expect(result.current.connectionView.mqttStatus).toBe('connected');
