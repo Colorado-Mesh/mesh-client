@@ -722,7 +722,12 @@ export default function DiagnosticsPanel({
           </td>
           <td className="text-muted px-4 py-2.5 text-right text-xs">
             {isPending ? (
-              <span className="animate-pulse text-blue-400">{t('diagnosticsPanel.tracing')}</span>
+              <span className="inline-flex items-center justify-end gap-1 text-blue-400">
+                <span aria-hidden className="inline-block animate-pulse">
+                  ●
+                </span>
+                <span>{t('diagnosticsPanel.tracing')}</span>
+              </span>
             ) : (
               formatRowTime(anomaly.detectedAt)
             )}

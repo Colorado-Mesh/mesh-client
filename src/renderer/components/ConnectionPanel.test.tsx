@@ -1229,6 +1229,84 @@ describe('ConnectionPanel firmware status indicator', () => {
   });
 });
 
+describe('ConnectionPanel status i18n and pulse', () => {
+  it('translates radio status, connection type, and docs link when connected', () => {
+    renderWithFirmware();
+    expect(screen.getByText('Configured')).toBeInTheDocument();
+    expect(screen.getByText('Bluetooth')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Docs ↗' })).toHaveAttribute(
+      'href',
+      'https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md',
+    );
+    expect(screen.queryByText('configured')).not.toBeInTheDocument();
+    expect(screen.queryByText('ble')).not.toBeInTheDocument();
+  });
+
+  it('pulses the reconnecting radio status dot, not the status text', () => {
+    render(
+      <ConnectionPanel
+        state={{ ...configuredState, status: 'reconnecting' }}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+    const statusText = screen.getByText('Reconnecting');
+    expect(statusText).not.toHaveClass('animate-pulse');
+    expect(statusText.previousElementSibling).toHaveClass('animate-pulse');
+  });
+
+  it('pulses the MQTT connecting dot, not the status text', () => {
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="connecting"
+        protocol="meshtastic"
+      />,
+    );
+    const mqttCard = screen.getByText('MQTT Connection').closest('.bg-deep-black');
+    expect(mqttCard).toBeTruthy();
+    const statusText = within(mqttCard as HTMLElement).getByText('connecting');
+    expect(statusText).not.toHaveClass('animate-pulse');
+    expect(statusText.parentElement).toHaveClass('text-yellow-400');
+    expect(statusText.parentElement).not.toHaveClass('animate-pulse');
+    expect(statusText.previousElementSibling).toHaveClass('animate-pulse');
+  });
+
+  it('translates last-connection transport type', () => {
+    const lastConnKey = 'mesh-client:lastConnection:meshtastic';
+    localStorage.setItem(
+      lastConnKey,
+      JSON.stringify({ type: 'http', httpAddress: '192.168.1.20' }),
+    );
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+        />,
+      );
+      const lastCard = screen
+        .getByRole('button', { name: /^Reconnect$/i })
+        .closest('.bg-deep-black');
+      expect(lastCard).toBeTruthy();
+      expect(within(lastCard as HTMLElement).getByText('WiFi/HTTP')).toBeInTheDocument();
+      expect(within(lastCard as HTMLElement).queryByText(/^http$/i)).not.toBeInTheDocument();
+    } finally {
+      localStorage.removeItem(lastConnKey);
+    }
+  });
+});
+
 describe("ConnectionPanel Meshtastic MQTT presets — Liam's server", () => {
   function renderMeshtasticMqtt() {
     return render(

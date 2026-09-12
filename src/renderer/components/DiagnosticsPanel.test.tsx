@@ -810,3 +810,43 @@ describe('DiagnosticsPanel reticulum scope', () => {
     expect(screen.getByRole('button', { name: /edit interface/i })).toBeInTheDocument();
   });
 });
+
+describe('DiagnosticsPanel tracing pulse', () => {
+  it('pulses a decorative dot, not the tracing label', () => {
+    const nodeId = 0x1234;
+    const node = minimalNode(nodeId);
+    const row: RoutingDiagnosticRow = {
+      kind: 'routing',
+      id: `routing:${nodeId}`,
+      nodeId,
+      type: 'hop_goblin',
+      severity: 'warning',
+      description: 'Test anomaly',
+      detectedAt: Date.now(),
+    };
+    diagnosticsStoreState.diagnosticRows = [row];
+    diagnosticsStoreState.packetStats = new Map();
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map<number, MeshNode>([[nodeId, node]])}
+        myNodeNum={0}
+        onTraceRoute={() => new Promise(() => {})}
+        isConnected
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
+        protocol="meshtastic"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Trace Route/i }));
+    const labels = screen.getAllByText('Tracing…');
+    expect(labels.length).toBeGreaterThan(0);
+    for (const label of labels) {
+      expect(label).not.toHaveClass('animate-pulse');
+    }
+    expect(
+      labels.some((label) => label.previousElementSibling?.classList.contains('animate-pulse')),
+    ).toBe(true);
+  });
+});
