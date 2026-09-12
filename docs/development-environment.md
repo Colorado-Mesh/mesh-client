@@ -505,7 +505,6 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `reticulum:sidecar:fmt`         | `cargo fmt` in `reticulum-sidecar/`                                                                                             |
 | `reticulum:sidecar:fmt:check`   | `cargo fmt --check`                                                                                                             |
 | `reticulum:sidecar:test`        | Full-feature `cargo test` (clones the `.rsstack/` workspace if needed)                                                          |
-| `reticulum:sidecar:test:full`   | Alias for `reticulum:sidecar:test`                                                                                              |
 | `setup:actionlint`              | Install actionlint for GitHub workflow linting                                                                                  |
 | `setup:build-deps`              | Install native build dependencies                                                                                               |
 | `setup:dialout`                 | Add user to dialout group for serial port access (Linux)                                                                        |
