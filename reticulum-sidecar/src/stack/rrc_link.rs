@@ -24,7 +24,7 @@ use tracing::{debug, info, warn};
 
 use super::path_failover::{
     self, PathSlotCandidate, VIA_FAILOVER_POLL_INTERVAL, VIA_FAILOVER_PROBE_WAIT,
-    record_path_failover_attempt, select_unblocked_slot, via_prefix,
+    record_path_failover_attempt, select_unblocked_slot, slot_expired, via_prefix,
 };
 
 const PATH_LOOKUP_TIMEOUT: Duration = Duration::from_secs(15);
@@ -604,23 +604,34 @@ async fn query_path_slots_json(
     }
 }
 
+fn path_table_entry_expired(expires: f64) -> bool {
+    unix_now_secs() > expires
+}
+
+fn unix_now_secs() -> f64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs_f64())
+        .unwrap_or(0.0)
+}
+
 fn path_table_slot_json(entry: &PathTableRpcEntry) -> serde_json::Value {
     serde_json::json!({
         "active": true,
         "hops": entry.hops,
         "via_hash": entry.via.map(hex::encode),
         "interface": entry.interface,
-        "expired": false,
+        "expires": entry.expires,
+        "expired": path_table_entry_expired(entry.expires),
     })
 }
 
 fn best_slot_route(slots: &[serde_json::Value]) -> Option<RrcResolvedRoute> {
+    let live = |slot: &&serde_json::Value| !slot_expired(slot);
     let active = slots.iter().find(|slot| {
-        slot.get("active")
-            .and_then(serde_json::Value::as_bool)
-            .unwrap_or(false)
-            && !slot
-                .get("expired")
+        live(slot)
+            && slot
+                .get("active")
                 .and_then(serde_json::Value::as_bool)
                 .unwrap_or(false)
     });
@@ -629,6 +640,7 @@ fn best_slot_route(slots: &[serde_json::Value]) -> Option<RrcResolvedRoute> {
     }
     slots
         .iter()
+        .filter(live)
         .filter_map(path_failover::slot_candidate)
         .min_by_key(|c| c.hops)
         .map(route_from_candidate)
@@ -758,7 +770,7 @@ mod tests {
             timestamp: 1.0,
             via: Some(via),
             hops,
-            expires: 100.0,
+            expires: unix_now_secs() + 86_400.0,
             interface: iface.into(),
             interface_id: 1,
             interface_mode: InterfaceMode::Full,
@@ -1229,6 +1241,71 @@ mod tests {
         assert!(!is_rrc_link_proof_timeout(&RrcLinkError::Timeout(
             "DropPath"
         )));
+    }
+
+    #[test]
+    fn path_table_slot_json_preserves_expires() {
+        let dest = [0xAB; 16];
+        let via = [0x7C; 16];
+        let live = test_path_table_entry(dest, via, 2, "RNS DFW Central");
+        let live_json = path_table_slot_json(&live);
+        assert_eq!(
+            live_json.get("expires").and_then(serde_json::Value::as_f64),
+            Some(live.expires)
+        );
+        assert_eq!(
+            live_json
+                .get("expired")
+                .and_then(serde_json::Value::as_bool),
+            Some(false)
+        );
+
+        let mut expired = live.clone();
+        expired.expires = 1.0;
+        let expired_json = path_table_slot_json(&expired);
+        assert_eq!(
+            expired_json
+                .get("expires")
+                .and_then(serde_json::Value::as_f64),
+            Some(1.0)
+        );
+        assert_eq!(
+            expired_json
+                .get("expired")
+                .and_then(serde_json::Value::as_bool),
+            Some(true)
+        );
+    }
+
+    #[test]
+    fn best_slot_route_skips_expired_including_fallback() {
+        let slots = vec![
+            serde_json::json!({
+                "active": true,
+                "hops": 1,
+                "via_hash": "11111111111111111111111111111111",
+                "interface": "RNS DFW Central",
+                "expired": true,
+            }),
+            serde_json::json!({
+                "active": false,
+                "hops": 2,
+                "via_hash": "22222222222222222222222222222222",
+                "interface": "Expired Backup",
+                "expired": true,
+            }),
+            serde_json::json!({
+                "active": false,
+                "hops": 4,
+                "via_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "interface": "Ratspeak",
+                "expired": false,
+            }),
+        ];
+        let picked = best_slot_route(&slots).expect("live fallback");
+        assert_eq!(picked.iface.as_deref(), Some("Ratspeak"));
+        assert_eq!(picked.hops, 4);
+        assert!(best_slot_route(&slots[..2]).is_none());
     }
 
     #[test]
