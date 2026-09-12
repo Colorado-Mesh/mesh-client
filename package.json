@@ -119,7 +119,6 @@
     "reticulum:sidecar:fmt": "cd reticulum-sidecar && cargo fmt",
     "reticulum:sidecar:fmt:check": "cd reticulum-sidecar && cargo fmt --check",
     "reticulum:sidecar:test": "bash scripts/clone-ratspeak-stack.sh && cd reticulum-sidecar && cargo test --features rns-stack,rns-ble,rns-rnode-tcp",
-    "reticulum:sidecar:test:full": "pnpm run reticulum:sidecar:test",
     "setup:actionlint": "node scripts/install-actionlint.mjs",
     "setup:build-deps": "node scripts/setup-build-deps.mjs",
     "setup:dialout": "node scripts/setup-dialout.mjs",
