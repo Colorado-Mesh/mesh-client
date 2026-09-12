@@ -72,16 +72,6 @@ pub fn classify_path_interface_name(
     classify_interface(path_interface_name)
 }
 
-/// Resolve transport for a peer destination hash from a path-table interface name.
-/// Prefer [`resolve_path_sent_via`] when local interface rows are available.
-#[allow(dead_code)] // legacy path-table helper; live stack uses resolve_path_sent_via
-pub fn resolve_peer_sent_via(peer_interface: Option<&str>) -> &'static str {
-    match peer_interface {
-        Some(name) if !name.is_empty() => classify_interface(name),
-        _ => "network",
-    }
-}
-
 /// Path-table egress label: match local interface row when possible.
 pub fn resolve_path_sent_via(
     peer_interface: Option<&str>,
@@ -125,12 +115,6 @@ pub fn resolve_lxmf_sent_via(
         return via.to_string();
     }
     resolve_outbound_sent_via_with_primary(interfaces, primary_local_serial_id).to_string()
-}
-
-/// Pick the primary outbound transport from enabled stub interfaces.
-#[allow(dead_code)] // stub-stack egress; live stack uses resolve_outbound_sent_via_with_primary
-pub fn resolve_stub_sent_via(interfaces: &[InterfaceRow]) -> &'static str {
-    resolve_outbound_sent_via_with_primary(interfaces, None)
 }
 
 /// Local capability egress (enabled interfaces). For Nomad timeouts / no-path fallback only —
@@ -446,7 +430,6 @@ mod tests {
             tx_queue_max: None,
             extra_config: std::collections::HashMap::new(),
         }];
-        assert_eq!(resolve_stub_sent_via(&ifaces), "rf");
         assert_eq!(resolve_outbound_sent_via(&ifaces), "rf");
     }
 

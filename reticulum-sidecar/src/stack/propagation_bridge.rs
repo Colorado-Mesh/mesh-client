@@ -482,12 +482,6 @@ impl PropagationBridge {
         }
     }
 
-    /// Whether a post-loop terminal success (progress 100) should be emitted.
-    #[allow(dead_code)] // used by peer-sync progress emitter + unit tests
-    pub fn should_emit_terminal_success(last_finished_ok: Option<bool>) -> bool {
-        last_finished_ok != Some(false)
-    }
-
     /// Start a client `/get` download of our own mail from `pn_hash`.
     ///
     /// This is the retrieval half of Sync (Python
@@ -948,158 +942,6 @@ impl PropagationBridge {
         }
         terminal
     }
-
-    /// Emit peer `/offer` sync progress over WS (offer probe / host diagnostics).
-    /// User Sync drives UI from the client `/get` path instead.
-    #[allow(dead_code)] // retained for offer-probe / peer-sync diagnostics
-    pub fn spawn_sync_progress_emitter(
-        self: &Arc<Self>,
-        event_tx: broadcast::Sender<String>,
-        cancel: Arc<AtomicBool>,
-        run_id: u64,
-        active_run_id: Arc<AtomicU64>,
-        on_terminal: Option<Arc<dyn Fn() + Send + Sync>>,
-    ) {
-        let bridge = Arc::clone(self);
-        tokio::spawn(async move {
-            const SYNC_STALL_TIMEOUT: Duration = Duration::from_secs(45);
-            let mut interval = tokio::time::interval(Duration::from_millis(500));
-            let started = Instant::now();
-            let clear_pins = || {
-                bridge.run_if_current(&active_run_id, run_id, || {
-                    if let Some(ref cb) = on_terminal {
-                        cb();
-                    }
-                });
-            };
-            loop {
-                interval.tick().await;
-                if cancel.load(Ordering::SeqCst) {
-                    bridge.run_if_current(&active_run_id, run_id, || {
-                        bridge.cancel_sync();
-                        tracing::info!(
-                            target: "propagation-sync",
-                            progress = bridge.sync_progress(),
-                            establish_error = ?bridge.last_establish_error(),
-                            "propagation sync cancelled"
-                        );
-                    });
-                    break;
-                }
-                let active = bridge.sync_active();
-                let finished_ok = bridge.last_finished_ok();
-                let offer_error = bridge.last_offer_error();
-                let establish_error = bridge.last_establish_error();
-                // Complete/Failed immediately collapse to Idle (progress 0). Use sticky
-                // last_finished_ok so success (e.g. HaveAll) is not reported as failure.
-                let progress = if active {
-                    bridge.sync_progress()
-                } else {
-                    match finished_ok {
-                        Some(true) => 100.0,
-                        Some(false) => 0.0,
-                        None => bridge.sync_progress(),
-                    }
-                };
-                if active && progress <= 10.0 && started.elapsed() > SYNC_STALL_TIMEOUT {
-                    bridge.run_if_current(&active_run_id, run_id, || {
-                        if let Ok(mut slot) = bridge.last_establish_error.lock() {
-                            if slot.is_none() {
-                                *slot = Some("NoLinkProof");
-                            }
-                        }
-                        bridge.cancel_sync();
-                        let message = bridge
-                            .last_establish_error()
-                            .or(establish_error)
-                            .map(|e| format!("propagation establish failed: {e}"))
-                            .unwrap_or_else(|| {
-                                "propagation establish failed: NoLinkProof".to_string()
-                            });
-                        tracing::info!(
-                            target: "propagation-sync",
-                            message = %message,
-                            progress,
-                            "propagation sync stalled while establishing"
-                        );
-                        let payload = serde_json::json!({
-                            "active": false,
-                            "progress": 0.0,
-                            "message": message,
-                        });
-                        let frame = serde_json::json!({
-                            "type": "propagation_sync",
-                            "payload": payload,
-                        });
-                        let _ = event_tx.send(frame.to_string());
-                    });
-                    break;
-                }
-                let fail_message = if !active && progress == 0.0 {
-                    offer_error
-                        .map(|e| format!("propagation offer rejected: {e}"))
-                        .or_else(|| {
-                            establish_error.map(|e| format!("propagation establish failed: {e}"))
-                        })
-                } else {
-                    None
-                };
-                let payload = serde_json::json!({
-                    "active": active,
-                    "progress": progress,
-                    "message": fail_message,
-                });
-                let frame = serde_json::json!({
-                    "type": "propagation_sync",
-                    "payload": payload,
-                });
-                // Drop stale progress frames when a newer sync run has taken ownership.
-                if !bridge.run_if_current(&active_run_id, run_id, || {
-                    let _ = event_tx.send(frame.to_string());
-                }) {
-                    break;
-                }
-                if !active && (progress >= 99.0 || finished_ok.is_some()) {
-                    if finished_ok == Some(true) {
-                        let peak = bridge.last_peak_progress();
-                        let peer_outcome = if peak >= 70.0 { "transfer" } else { "have_all" };
-                        tracing::info!(
-                            target: "propagation-sync",
-                            progress,
-                            peak_progress = peak,
-                            peer_outcome,
-                            "propagation peer sync completed successfully"
-                        );
-                    } else if let Some(ref msg) = fail_message {
-                        tracing::info!(
-                            target: "propagation-sync",
-                            message = %msg,
-                            progress,
-                            "propagation sync terminal failure"
-                        );
-                    }
-                    break;
-                }
-            }
-            clear_pins();
-            // Do not emit a blanket progress=100 after a real failure/cancel terminal.
-            bridge.run_if_current(&active_run_id, run_id, || {
-                if !Self::should_emit_terminal_success(bridge.last_finished_ok()) {
-                    return;
-                }
-                let payload = serde_json::json!({
-                    "active": false,
-                    "progress": 100.0,
-                    "message": null,
-                });
-                let frame = serde_json::json!({
-                    "type": "propagation_sync",
-                    "payload": payload,
-                });
-                let _ = event_tx.send(frame.to_string());
-            });
-        });
-    }
 }
 
 /// Merge peer-handled transient IDs into the router peer and persist (lxmd parity).
@@ -1505,15 +1347,6 @@ mod tests {
         );
 
         let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn should_emit_terminal_success_skips_explicit_failure() {
-        assert!(!PropagationBridge::should_emit_terminal_success(Some(
-            false
-        )));
-        assert!(PropagationBridge::should_emit_terminal_success(Some(true)));
-        assert!(PropagationBridge::should_emit_terminal_success(None));
     }
 
     #[test]

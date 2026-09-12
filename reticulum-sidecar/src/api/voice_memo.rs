@@ -6,7 +6,7 @@ use axum::Json;
 use axum::extract::State;
 use serde::Deserialize;
 
-use crate::api::validate::{MAX_DEST_HASH_CHARS, reject_oversize};
+use crate::api::validate::reject_oversize;
 use crate::stack::StackHandle;
 
 const MAX_SAMPLES_B64_CHARS: usize = 512 * 1024;
@@ -53,8 +53,6 @@ pub async fn voice_memo_stop(
     if let Some(err) = reject_oversize("session_id", &body.session_id, MAX_SESSION_ID_CHARS) {
         return Json(serde_json::json!({ "ok": false, "error": err }));
     }
-    // Reuse dest-hash char budget as a generic short-id cap when session_id is huge.
-    let _ = MAX_DEST_HASH_CHARS;
     Json(stack.voice_memo_stop(&body.session_id))
 }
 
