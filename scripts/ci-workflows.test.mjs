@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ESLint } from 'eslint';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -76,25 +77,56 @@ describe('CI workflow contracts', () => {
     }
   });
 
-  it('includes ESLint failure in the required build gate', () => {
-    const gate = ciWorkflow
-      .split('      - name: Verify CI fan-out')[1]
-      .split('        run: |\n')[1];
-    const success = {
-      ...process.env,
-      CHANGES_RESULT: 'success',
-      QUALITY_RESULT: 'success',
-      LINT_RESULT: 'success',
-      TYPECHECK_RESULT: 'success',
-      BUILD_RESULT: 'success',
-      FLATPAK_RESULT: 'skipped',
-      GITHUB_STEP_SUMMARY: '/dev/null',
-    };
-    for (const lint of ['success', 'failure', 'cancelled', 'skipped']) {
-      const result = spawnSync('bash', ['-c', gate], {
-        env: { ...success, LINT_RESULT: lint },
+  it.each(['LINT_RESULT', 'QUALITY_RESULT'])(
+    'includes %s failure in the required build gate',
+    (job) => {
+      const gate = ciWorkflow
+        .split('      - name: Verify CI fan-out')[1]
+        .split('        run: |\n')[1];
+      const success = {
+        ...process.env,
+        CHANGES_RESULT: 'success',
+        QUALITY_RESULT: 'success',
+        LINT_RESULT: 'success',
+        TYPECHECK_RESULT: 'success',
+        BUILD_RESULT: 'success',
+        FLATPAK_RESULT: 'skipped',
+        GITHUB_STEP_SUMMARY: '/dev/null',
+      };
+      for (const status of ['success', 'failure', 'cancelled', 'skipped']) {
+        const result = spawnSync('bash', ['-c', gate], {
+          env: { ...success, [job]: status },
+        });
+        expect(result.status === 0).toBe(status === 'success');
+      }
+    },
+  );
+
+  it('delegates only duplicate formatting rules to the required format check', async () => {
+    const local = new ESLint({ cwd: ROOT });
+    const ci = new ESLint({ cwd: ROOT, overrideConfigFile: 'eslint.ci.config.mjs' });
+    const quality = ciWorkflow.split('  quality:')[1].split('  lint:')[0];
+    expect(quality).toContain('run: pnpm run format:check');
+    expect(quality).not.toMatch(/\bif:|continue-on-error:/);
+    expect(ciWorkflow).toContain('pnpm run lint --concurrency 2 --config eslint.ci.config.mjs');
+    const scripts = JSON.parse(read('package.json')).scripts;
+    expect(scripts['format:check']).toContain('**/*.{ts,tsx,js,jsx,json,css,md,sh}');
+    expect(scripts.lint).toBe('eslint . --max-warnings 0');
+
+    for (const file of ['src/shared/tcpPort.ts', 'src/renderer/App.tsx', 'e2e/startup.spec.ts']) {
+      const original = await local.calculateConfigForFile(file);
+      const optimized = await ci.calculateConfigForFile(file);
+      expect(original.rules['prettier/prettier'][0], file).toBe(2);
+      expect(optimized.rules, file).toEqual({
+        ...original.rules,
+        'prettier/prettier': [0],
       });
-      expect(result.status === 0).toBe(lint === 'success');
+    }
+    // format:check does not include these extensions; preserve their existing rules.
+    for (const file of ['vitest.harness.mts', 'scripts/electron-binary.mjs']) {
+      expect((await ci.calculateConfigForFile(file)).rules, file).toEqual(
+        (await local.calculateConfigForFile(file)).rules,
+      );
     }
   });
 
