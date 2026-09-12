@@ -115,13 +115,71 @@ export function asGpsIntervalChange(
   };
 }
 
+function optionalNumber(value: unknown): boolean {
+  return value === undefined || typeof value === 'number';
+}
+
+function optionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string';
+}
+
+function optionalSparseNumberArray(value: unknown): boolean {
+  return (
+    value === undefined ||
+    (Array.isArray(value) && value.every((item) => item === undefined || typeof item === 'number'))
+  );
+}
+
+function optionalNumbers(rec: Record<string, unknown>, keys: readonly string[]): boolean {
+  return keys.every((key) => optionalNumber(rec[key]));
+}
+
+const TELEMETRY_OPTIONAL_NUMBERS = ['batteryLevel', 'voltage', 'snr', 'rssi'] as const;
+
+const ENV_OPTIONAL_NUMBERS = [
+  'temperature',
+  'mcuTemperature',
+  'relativeHumidity',
+  'barometricPressure',
+  'gasResistance',
+  'iaq',
+  'lux',
+  'windSpeed',
+  'windDirection',
+  'windGust',
+  'windLull',
+  'weight',
+  'rainfall1h',
+  'rainfall24h',
+  'lightningStrikeCount1h',
+  'lightningDistanceKm',
+  'pm10Standard',
+  'pm25Standard',
+  'pm40Standard',
+  'pm100Standard',
+  'co2',
+  'pmTemperature',
+  'pmHumidity',
+  'pmVocIdx',
+  'pmNoxIdx',
+] as const;
+
 function isTelemetryPoint(value: unknown): value is TelemetryPoint {
-  return isRecord(value) && typeof value.timestamp === 'number';
+  return (
+    isRecord(value) &&
+    typeof value.timestamp === 'number' &&
+    optionalNumbers(value, TELEMETRY_OPTIONAL_NUMBERS)
+  );
 }
 
 function isEnvironmentTelemetryPoint(value: unknown): value is EnvironmentTelemetryPoint {
   return (
-    isRecord(value) && typeof value.timestamp === 'number' && typeof value.nodeNum === 'number'
+    isRecord(value) &&
+    typeof value.timestamp === 'number' &&
+    typeof value.nodeNum === 'number' &&
+    optionalNumbers(value, ENV_OPTIONAL_NUMBERS) &&
+    optionalSparseNumberArray(value.adcVoltages) &&
+    optionalSparseNumberArray(value.oneWireTemperatures)
   );
 }
 
@@ -133,7 +191,9 @@ function isMeshWaypoint(value: unknown): value is MeshWaypoint {
     typeof value.longitude === 'number' &&
     typeof value.name === 'string' &&
     typeof value.from === 'number' &&
-    typeof value.timestamp === 'number'
+    typeof value.timestamp === 'number' &&
+    optionalString(value.description) &&
+    optionalNumbers(value, ['icon', 'lockedTo', 'expire'])
   );
 }
 

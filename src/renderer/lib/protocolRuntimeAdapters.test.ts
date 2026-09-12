@@ -165,5 +165,27 @@ describe('protocolRuntimeAdapters', () => {
     expect([...neighbors.entries()]).toEqual([[1, goodNeighbor]]);
     expect(asNeighborInfoMap(undefined).size).toBe(0);
     expect(asNeighborInfoMap([]).size).toBe(0);
+
+    expect(
+      asTelemetryPoints([
+        { timestamp: 1, voltage: 3.7 },
+        { timestamp: 2, voltage: 'bad' },
+      ]),
+    ).toEqual([{ timestamp: 1, voltage: 3.7 }]);
+    expect(
+      asEnvironmentTelemetryPoints([
+        { timestamp: 1, nodeNum: 9, temperature: 12, adcVoltages: [1, undefined, 2] },
+        { timestamp: 2, nodeNum: 9, temperature: 'hot' },
+        { timestamp: 3, nodeNum: 9, adcVoltages: ['x'] },
+      ]),
+    ).toEqual([{ timestamp: 1, nodeNum: 9, temperature: 12, adcVoltages: [1, undefined, 2] }]);
+    expect(
+      asWaypointMap(
+        new Map<number, unknown>([
+          [1, goodWp],
+          [3, { ...goodWp, id: 3, description: 12 }],
+        ]),
+      )!.size,
+    ).toBe(1);
   });
 });
