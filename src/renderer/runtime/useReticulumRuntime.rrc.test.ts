@@ -185,6 +185,18 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
     expect(SOURCE).toMatch(/voluntary='/);
     expect(SOURCE).toMatch(/will_reconnect='/);
   });
+
+  it('reconciles RRC session status after WS lag and reconnect', () => {
+    expect(SOURCE).toMatch(
+      /import \{ scheduleRrcSessionStatusReconcile \} from '@\/renderer\/lib\/reconcileRrcSessionsFromSnapshot'/,
+    );
+    expect(SOURCE).toMatch(
+      /evt\.type === 'events_lagged'[\s\S]*?scheduleRrcSessionStatusReconcile\('events_lagged'\)/,
+    );
+    expect(SOURCE).toMatch(
+      /evt\.type === 'ws_connected'[\s\S]*?reconnect === true[\s\S]*?scheduleRrcSessionStatusReconcile\('ws_reconnect'\)/,
+    );
+  });
 });
 
 describe('useReticulumRuntime RRC empty-K_ROOM hub-scoped routing', () => {

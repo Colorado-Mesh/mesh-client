@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatRrcErrorMessage, rrcErrorToI18nKey } from './rrcErrorHumanize';
+import {
+  formatRrcErrorMessage,
+  isRrcDeadSessionSendError,
+  rrcErrorToI18nKey,
+} from './rrcErrorHumanize';
 
 describe('rrcErrorHumanize', () => {
   it('maps link proof timeouts', () => {
@@ -31,5 +35,11 @@ describe('rrcErrorHumanize', () => {
     expect(rrcErrorToI18nKey('rrc connect requires live rns-stack sidecar')).toBe(
       'rrc.stackNotReady',
     );
+  });
+
+  it('detects dead-session send errors from the sidecar', () => {
+    expect(isRrcDeadSessionSendError('not connected to an RRC hub')).toBe(true);
+    expect(isRrcDeadSessionSendError('rrc session not active (disconnected)')).toBe(true);
+    expect(isRrcDeadSessionSendError('rate limit exceeded')).toBe(false);
   });
 });
