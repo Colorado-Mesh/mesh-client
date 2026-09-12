@@ -752,7 +752,20 @@
     "reticulumSendAwaitingPeerReceipt": "送信済み（ピアレシート待ち）",
     "reticulumChatNeedsLxmfDelivery": "このピアにはまだLXMF配信アドレスがありません（チャットは音声のみの宛先を使用できません）。LXMFの発表を待つか、32文字のLXMFハッシュを貼り付けます。",
     "saveAttachment": "保存...",
-    "revealAttachment": "フォルダを表示"
+    "revealAttachment": "フォルダを表示",
+    "outboxRemoveFailed": "メッセージが送信されましたが、送信トレイから削除できませんでした。キューに入っているコピーをキャンセルします。",
+    "sendErrors": {
+      "notConnected": "接続されていません。ラジオを接続して、もう一度お試しください。",
+      "emptyPayload": "メッセージは必須です。",
+      "missingDestinationKey": "このダイレクトメッセージを送信できません—受信者の暗号化キーがありません。連絡先の同期または再接続を待ちます。",
+      "encryptionBlocked": "送信できません—暗号化キーがありません。",
+      "timeout": "送信がタイムアウトしました。もう一度お試しください。",
+      "invalidReaction": "その反応は有効ではありません。",
+      "reactionTargetMissing": "応答するメッセージが見つかりませんでした。",
+      "bleUnavailable": "Bluetoothの準備ができていません。再接続してもう一度お試しください。",
+      "roomSessionExpired": "ルームセッションの有効期限が切れました。再度ログインして投稿してください。",
+      "noSavedRoomCredential": "保存された部屋のパスワードはありません。まず部屋にログインします。"
+    }
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

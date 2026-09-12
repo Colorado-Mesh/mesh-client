@@ -790,7 +790,20 @@
     "reticulumSendAwaitingPeerReceipt": "Wysłano (oczekiwanie na pokwitowanie)",
     "reticulumChatNeedsLxmfDelivery": "Ten partner nie ma jeszcze adresu dostawy LXMF (czat nie może używać miejsca docelowego tylko dla połączeń głosowych). Poczekaj na ogłoszenie LXMF lub wklej 32-znakowy skrót LXMF.",
     "saveAttachment": "Zapisz",
-    "revealAttachment": "Pokaż w folderze"
+    "revealAttachment": "Pokaż w folderze",
+    "outboxRemoveFailed": "Wiadomość została wysłana, ale usunięcie jej ze skrzynki nadawczej nie powiodło się. Anuluj kopię w kolejce.",
+    "sendErrors": {
+      "notConnected": "Nie podłączony — podłącz radio i spróbuj ponownie.",
+      "emptyPayload": "Wymagany jest tekst wiadomości",
+      "missingDestinationKey": "Nie można wysłać tej wiadomości bezpośredniej — brakuje klucza szyfrowania odbiorcy. Poczekaj na synchronizację kontaktu lub ponowne połączenie.",
+      "encryptionBlocked": "Nie można wysłać — brakuje klucza szyfrowania.",
+      "timeout": "Przekroczono limit czasu wysyłania. Spróbuj ponownie.",
+      "invalidReaction": "Ta reakcja jest nieważna.",
+      "reactionTargetMissing": "Nie znaleziono wiadomości, na którą należy zareagować.",
+      "bleUnavailable": "Bluetooth nie jest gotowy. Połącz się ponownie i spróbuj ponownie.",
+      "roomSessionExpired": "Sesja w pokoju wygasła — zaloguj się ponownie, aby opublikować.",
+      "noSavedRoomCredential": "Brak zapisanego hasła do pokoju. Najpierw zaloguj się do pokoju."
+    }
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

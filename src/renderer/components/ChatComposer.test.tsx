@@ -26,6 +26,9 @@ vi.mock('react-i18next', () => ({
         'chatPanel.composePlaceholderConnectFirst': 'Connect to send',
         'chatPanel.sendButton': 'Send',
         'chatPanel.sendButtonSending': 'Sending…',
+        'chatPanel.sendFailed': 'Send failed',
+        'chatPanel.sendErrors.notConnected': 'Not connected — connect the radio and try again.',
+        'roomsPanel.postFailed': 'Failed to post to room',
         'chatPanel.emojiButton': 'Emoji',
         'chatPanel.insertEmoji': 'Insert emoji',
         'chatPanel.cancelReply': 'Cancel reply',
@@ -1241,5 +1244,61 @@ describe('ChatComposer', () => {
       });
       expect(onSendChunk).not.toHaveBeenCalled();
     });
+  });
+
+  it('shows a locale send-failed banner instead of raw Error.message', async () => {
+    const onSendChunk = vi.fn().mockRejectedValue(new Error('radio busy'));
+    render(
+      <ChatComposer
+        protocol="meshtastic"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+      />,
+    );
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'hello' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Send failed');
+    expect(alert).not.toHaveTextContent('radio busy');
+  });
+
+  it('maps Meshtastic not-connected throws to a locale banner', async () => {
+    const onSendChunk = vi.fn().mockRejectedValue(new Error('Not connected'));
+    render(
+      <ChatComposer
+        protocol="meshtastic"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+      />,
+    );
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'hello' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Not connected — connect the radio and try again.');
+  });
+
+  it('keeps already-translated intercept errors (RRC preflight)', async () => {
+    const onInterceptSend = vi
+      .fn()
+      .mockRejectedValue(new Error('Nickname is too long (limit 32 bytes).'));
+    render(
+      <ChatComposer
+        protocol="reticulum"
+        viewKey="rrc:hub:general"
+        isConnected
+        allowOutbox={false}
+        onInterceptSend={onInterceptSend}
+        onSendChunk={vi.fn()}
+        sendButtonLabel="Send"
+      />,
+    );
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '/nick toolongname' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Nickname is too long (limit 32 bytes).');
   });
 });

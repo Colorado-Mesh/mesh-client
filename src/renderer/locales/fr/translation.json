@@ -752,7 +752,20 @@
     "reticulumSendAwaitingPeerReceipt": "Envoyé (en attente de réception par les pairs)",
     "reticulumChatNeedsLxmfDelivery": "Ce pair n'a pas encore d'adresse de livraison LXMF (le chat ne peut pas utiliser une destination vocale uniquement). Attendez une annonce LXMF ou collez leur hachage LXMF de 32 caractères.",
     "saveAttachment": "Sauvegarder…",
-    "revealAttachment": "Montrer dans son dossier"
+    "revealAttachment": "Montrer dans son dossier",
+    "outboxRemoveFailed": "Le message a été envoyé, mais sa suppression de la boîte d'envoi a échoué. Annulez la copie en file d'attente.",
+    "sendErrors": {
+      "notConnected": "Non connecté — connectez la radio et réessayez.",
+      "emptyPayload": "Un texte pour le message est requis",
+      "missingDestinationKey": "Impossible d'envoyer ce message direct — la clé de chiffrement du destinataire est manquante. Attendez la synchronisation des contacts ou reconnectez-vous.",
+      "encryptionBlocked": "Impossible d'envoyer — la clé de chiffrement est manquante.",
+      "timeout": "Envoi expiré. Réessayez.",
+      "invalidReaction": "Cette réaction n'est pas valide.",
+      "reactionTargetMissing": "Le message auquel réagir est introuvable.",
+      "bleUnavailable": "Bluetooth n'est pas prêt. Reconnectez-vous et réessayez.",
+      "roomSessionExpired": "La session de la salle a expiré — reconnectez-vous pour publier.",
+      "noSavedRoomCredential": "Aucun mot de passe de chambre enregistré. Connectez-vous d'abord à la pièce."
+    }
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

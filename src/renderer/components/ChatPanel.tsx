@@ -38,6 +38,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
+import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
@@ -301,15 +302,16 @@ function OutboxBubble({
         : row.status === 'blocked'
           ? 'text-amber-400'
           : 'text-red-400';
+  const displayError = row.error ? translateChatSendError(t, row.error) : null;
   return (
     <div className="mb-1 flex justify-end px-4">
       <div className="max-w-[75%] rounded-xl bg-slate-700 px-3 py-2 opacity-80">
         <div className="text-sm text-white">{row.payload}</div>
         <div className={`mt-1 flex items-center gap-2 text-[11px] ${statusColor}`}>
           <span>{statusLabel}</span>
-          {row.error && (
-            <span className="text-muted max-w-[140px] truncate" title={row.error}>
-              — {row.error}
+          {displayError && (
+            <span className="text-muted max-w-[140px] truncate" title={displayError}>
+              — {displayError}
             </span>
           )}
           {(row.status === 'failed' || row.status === 'blocked') && (
@@ -1889,9 +1891,8 @@ function ChatPanel({
       await onReact(glyph, packetId, sendChannel);
     } catch (err) {
       console.error('[ChatPanel] React failed: ' + errLikeToLogString(err));
-      const message = err instanceof Error ? err.message : t('chatPanel.reactionFailed');
       setChatActionError({
-        message,
+        message: translateChatSendError(t, err, { fallbackKey: 'chatPanel.reactionFailed' }),
         viewKey,
       });
     }

@@ -752,7 +752,20 @@
     "reticulumSendAwaitingPeerReceipt": "已发送（等待同行回执）",
     "reticulumChatNeedsLxmfDelivery": "此对等方还没有LXMF交付地址（聊天不能使用仅语音目的地）。等待LXMF公告，或粘贴其32个字符的LXMF哈希。",
     "saveAttachment": "保存",
-    "revealAttachment": "在文件夹中"
+    "revealAttachment": "在文件夹中",
+    "outboxRemoveFailed": "消息已发送，但将其从发件箱中删除失败。取消排队的副本。",
+    "sendErrors": {
+      "notConnected": "未连接—请连接收音机并重试。",
+      "emptyPayload": "必须填写消息文本",
+      "missingDestinationKey": "无法发送此直接消息—缺少收件人加密密钥。等待联系人同步或重新连接。",
+      "encryptionBlocked": "无法发送—缺少加密密钥。",
+      "timeout": "发送超时。请重试。",
+      "invalidReaction": "该反应无效。",
+      "reactionTargetMissing": "未找到要响应的消息。",
+      "bleUnavailable": "蓝牙尚未准备就绪。请重新连接并重试。",
+      "roomSessionExpired": "聊天室会话已过期—请重新登录以发布。",
+      "noSavedRoomCredential": "未保存房间密码。请先登录房间。"
+    }
   },
   "chatPayload": {
     "mention": "提及{{label}}",

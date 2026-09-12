@@ -125,7 +125,7 @@ describe('useChatOutbox', () => {
       expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
         7,
         'failed',
-        'radio busy',
+        'chatPanel.sendFailed',
         expect.any(Number),
         1,
       );
@@ -133,6 +133,22 @@ describe('useChatOutbox', () => {
     await waitFor(() => {
       const row = result.current.rows.find((r) => r.id === 7);
       expect(row?.status).toBe('failed');
+    });
+  });
+
+  it('keeps retryable encryption-init timeouts in failed (not blocked)', async () => {
+    const entry = makeEntry({ id: 81 });
+    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+    const sendFn = vi.fn().mockRejectedValue(new Error('timeout while initializing encryption'));
+    renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
+    await waitFor(() => {
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+        81,
+        'failed',
+        'chatPanel.sendErrors.timeout',
+        expect.any(Number),
+        1,
+      );
     });
   });
 
@@ -145,7 +161,7 @@ describe('useChatOutbox', () => {
       expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
         8,
         'blocked',
-        'no encryption key',
+        'chatPanel.sendErrors.encryptionBlocked',
         undefined,
         1,
       );
@@ -272,7 +288,7 @@ describe('useChatOutbox', () => {
       expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
         60,
         'blocked',
-        expect.stringMatching(/multi-part|shorter/i),
+        'chatPanel.outboxLegacyMultipartBlocked',
         undefined,
       );
     });
@@ -280,7 +296,7 @@ describe('useChatOutbox', () => {
     await waitFor(() => {
       const row = result.current.rows.find((r) => r.id === 60);
       expect(row?.status).toBe('blocked');
-      expect(row?.error).toMatch(/multi-part|shorter/i);
+      expect(row?.error).toBe('chatPanel.outboxLegacyMultipartBlocked');
     });
   });
 
@@ -302,7 +318,7 @@ describe('useChatOutbox', () => {
     expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
       61,
       'blocked',
-      expect.stringMatching(/multi-part|shorter/i),
+      'chatPanel.outboxLegacyMultipartBlocked',
       undefined,
     );
   });
@@ -383,7 +399,7 @@ describe('useChatOutbox', () => {
       expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
         12,
         'failed',
-        'sync boom',
+        'chatPanel.sendFailed',
         expect.any(Number),
         1,
       );
@@ -399,7 +415,7 @@ describe('useChatOutbox', () => {
       expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
         13,
         'failed',
-        'radio busy',
+        'chatPanel.sendFailed',
         undefined,
         5,
       );
@@ -415,7 +431,7 @@ describe('useChatOutbox', () => {
       expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
         14,
         'failed',
-        'timeout',
+        'chatPanel.sendErrors.timeout',
         expect.any(Number),
         3,
       );
@@ -434,7 +450,7 @@ describe('useChatOutbox', () => {
       expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
         21,
         'blocked',
-        expect.stringContaining('outbox remove failed'),
+        'chatPanel.outboxRemoveFailed',
         undefined,
         1,
       );
@@ -614,7 +630,7 @@ describe('useChatOutbox', () => {
       expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
         72,
         'failed',
-        'Failed to send',
+        'chatPanel.reticulumSendFailed',
         expect.any(Number),
         1,
       );
@@ -706,7 +722,7 @@ describe('useChatOutbox', () => {
       expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
         73,
         'failed',
-        'Send timed out. The Reticulum stack may be starting or busy — try again.',
+        'chatPanel.reticulumSendTimeout',
         expect.any(Number),
         1,
       );
@@ -794,7 +810,7 @@ describe('useChatOutbox', () => {
       expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
         74,
         'failed',
-        'Send timed out. The Reticulum stack may be starting or busy — try again.',
+        'chatPanel.reticulumSendTimeout',
         expect.any(Number),
         1,
       );
@@ -834,7 +850,7 @@ describe('useChatOutbox', () => {
       expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
         71,
         'failed',
-        'Send timed out. The Reticulum stack may be starting or busy — try again.',
+        'chatPanel.reticulumSendTimeout',
         expect.any(Number),
         1,
       );
