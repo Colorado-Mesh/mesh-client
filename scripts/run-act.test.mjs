@@ -1,9 +1,14 @@
 // @vitest-environment node
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import {
+  ACT_CI_JOBS,
   ACT_PLATFORM_IMAGE,
   ACT_PULL_IMAGES,
+  ACT_TARGETS,
   buildActArgs,
   buildActBaseArgs,
   parseActMode,
@@ -155,6 +160,57 @@ describe('run-act buildActBaseArgs', () => {
       '-P',
       `ubuntu-latest=${ACT_PLATFORM_IMAGE}`,
       '-n',
+    ]);
+  });
+});
+
+describe('run-act ACT_TARGETS.ci', () => {
+  const ciWorkflow = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '..', '.github/workflows/ci.yaml'),
+    'utf8',
+  );
+
+  it('points Docker act:ci at real ci.yaml work jobs, not the Build & Test aggregator', () => {
+    expect(ACT_CI_JOBS).toEqual(['quality', 'lint', 'typecheck', 'app-build', 'policy-scanners']);
+    expect(ACT_CI_JOBS).not.toContain('build');
+    expect(Array.isArray(ACT_TARGETS.ci)).toBe(true);
+    if (!Array.isArray(ACT_TARGETS.ci)) {
+      throw new Error('expected ACT_TARGETS.ci to be an invocation list');
+    }
+
+    const jobs = ACT_TARGETS.ci.map((invocation) => invocation.job);
+    expect(jobs).toEqual(ACT_CI_JOBS);
+
+    for (const invocation of ACT_TARGETS.ci) {
+      expect(invocation.workflow).toBe('.github/workflows/ci.yaml');
+      expect(invocation.event).toBe('workflow_dispatch');
+      expect(ciWorkflow).toContain(`  ${invocation.job}:`);
+    }
+
+    // Required GitHub check name stays on the aggregator job; act must not target it.
+    expect(ciWorkflow).toContain('name: Build & Test');
+    expect(ciWorkflow).toMatch(/^ {2}build:/m);
+  });
+
+  it('builds act args for each ci work job', () => {
+    if (!Array.isArray(ACT_TARGETS.ci)) {
+      throw new Error('expected ACT_TARGETS.ci to be an invocation list');
+    }
+    expect(
+      buildActArgs(ACT_TARGETS.ci[0], {
+        hostArch: 'x64',
+        dockerSocket: '/var/run/docker.sock',
+      }),
+    ).toEqual([
+      '-P',
+      `ubuntu-latest=${ACT_PLATFORM_IMAGE}`,
+      '--container-daemon-socket',
+      '/var/run/docker.sock',
+      '-W',
+      '.github/workflows/ci.yaml',
+      '-j',
+      'quality',
+      'workflow_dispatch',
     ]);
   });
 });
