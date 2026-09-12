@@ -32,7 +32,10 @@ use nomad_core::{DEFAULT_MAX_FILE_BYTES, DEFAULT_MAX_PAGE_BYTES, NOMAD_NODE_ASPE
 use rns_identity::destination::Destination;
 use rns_identity::identity::Identity;
 use rns_runtime::lifecycle::ShutdownSignal;
-use rns_runtime::link_client::LinkClient;
+use rns_runtime::link_session::{
+    LinkSession, LinkSessionConfig, LinkSessionError, LinkSessionEvent, LinkSessionHandle,
+    discover_destination,
+};
 use rns_runtime::reticulum;
 use rns_transport::messages::{
     AnnounceHandlerEvent, PathTableRpcEntry, TransportMessage, TransportQuery,
@@ -53,6 +56,7 @@ use super::lxmf_delivery::{
 };
 use super::nomad_file::{nomad_file_name_from_metadata_or_path, nomad_file_name_from_path};
 use super::nomad_link_errors::map_nomad_link_error;
+use super::nomad_link_reuse::nomad_link_cache_should_reuse;
 use super::nomad_link_schedule::{
     NomadLinkSchedule, nomad_link_lock_wait, nomad_link_schedule_bumps_generation,
     nomad_link_schedule_cancels_prior, nomad_link_schedule_holds_request_queue,
@@ -166,7 +170,7 @@ pub struct LiveBridge {
     inbound_lxmf: Arc<super::lxmf_inbound_log::LxmfInboundBuffer>,
     /// Serialize Nomad Link *attempts* — transport actor is single-threaded and
     /// overlapping page/file/media Link queries contend with path/pubkey discovery.
-    /// Held only for one LinkClient query (released between via-failover rounds).
+    /// Held only for one LinkSession request (released between via-failover rounds).
     nomad_link_lock: Arc<tokio::sync::Mutex<()>>,
     /// Request-scoped serialization for [`NomadLinkSchedule::Queue`] (`/media`):
     /// held across the initial Link attempt and all via-failover work so a sibling
@@ -177,6 +181,8 @@ pub struct LiveBridge {
     /// `/media` installs this slot only while holding `nomad_link_lock`.
     nomad_link_cancel: Arc<tokio::sync::Mutex<Option<tokio::sync::oneshot::Sender<()>>>>,
     nomad_link_generation: Arc<AtomicU64>,
+    /// Reused initiator session for sequential Nomad page/media to one dest.
+    nomad_link_session: Arc<tokio::sync::Mutex<Option<NomadCachedLink>>>,
     rrc_session: Arc<RrcSessionManager>,
     rnsh_session: Arc<RnshSessionManager>,
     rncp_transfer: Arc<RncpTransferManager>,
@@ -190,10 +196,17 @@ pub struct LiveBridge {
     ble_peer_state: Arc<tokio::sync::Mutex<BlePeerRuntimeState>>,
 }
 
+/// Cached Nomad initiator Link for one remote `nomadnetwork.node` dest.
+struct NomadCachedLink {
+    dest: [u8; 16],
+    handle: LinkSessionHandle,
+}
+
 impl LiveBridge {
     /// Orderly RNS drain so BLE RNode tasks detach (radio-off) before process kill.
     pub async fn prepare_stop(&self) {
         tracing::info!("prepare_stop: shutting down RNS runtime for graceful BLE detach");
+        self.close_nomad_link_session().await;
         self.handle.shutdown_and_wait().await;
     }
 
@@ -529,6 +542,7 @@ impl LiveBridge {
             nomad_media_queue_lock: Arc::new(tokio::sync::Mutex::new(())),
             nomad_link_cancel: Arc::new(tokio::sync::Mutex::new(None)),
             nomad_link_generation: Arc::new(AtomicU64::new(0)),
+            nomad_link_session: Arc::new(tokio::sync::Mutex::new(None)),
             rrc_session: Arc::new(RrcSessionManager::spawn(
                 handle.transport_tx.clone(),
                 identity.clone(),
@@ -927,7 +941,7 @@ impl LiveBridge {
     /// `hash_hex` is the announced Nomad node destination hash (used for the
     /// path-table hops lookup); `identity_hash_hex` is the node's identity
     /// hash recovered from its announce (`AnnounceHandlerEvent::identity_hash`),
-    /// required by `LinkClient::query` to rebuild the `nomadnetwork.node`
+    /// required by `LinkSession` to rebuild the `nomadnetwork.node`
     /// destination on our side.
     /// Returns page/file bytes plus the egress atom and overall timeout used for the Link.
     /// Remote errors after egress is known include that atom so the UI countdown can update.
@@ -1359,7 +1373,7 @@ impl LiveBridge {
         )
     }
 
-    /// One LinkClient Nomad query under the shared Nomad link lock / cancel slot.
+    /// One LinkSession Nomad query under the shared Nomad link lock / cancel slot.
     ///
     /// `my_gen` is owned by the outer request (see [`Self::query_nomad_node`]) so
     /// via-failover retries do not bump generation or cancel a newer page load.
@@ -1448,22 +1462,19 @@ impl LiveBridge {
         if self.nomad_link_generation.load(Ordering::SeqCst) != my_gen {
             return Err(busy());
         }
-        let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
-        let query_fut = client.query(
-            remote_hash,
-            NOMAD_NODE_ASPECT,
-            path,
-            payload,
-            link_hops,
-            Duration::from_secs(timeout_secs),
-        );
+        let dest_hash =
+            Destination::hash_from_name_and_identity(NOMAD_NODE_ASPECT, Some(&remote_hash));
+        let query_deadline = Instant::now() + Duration::from_secs(timeout_secs);
+        let query_fut =
+            self.nomad_session_query(dest_hash, path, payload, link_hops, query_deadline);
         let result = tokio::select! {
             biased;
-            _ = cancel_rx => Err(busy()),
+            _ = cancel_rx => {
+                self.close_nomad_link_session().await;
+                Err(busy())
+            }
             query_result = query_fut => {
-                query_result
-                    .map(|resp| (resp.data, resp.metadata))
-                    .map_err(|e| {
+                query_result.map_err(|e| {
                     let raw = format!("{e}");
                     let code = map_nomad_link_error(&raw);
                     NomadRemoteQueryError {
@@ -1477,8 +1488,8 @@ impl LiveBridge {
                         raw_error: Some(raw),
                         elapsed_ms: None,
                         tried_interfaces: None,
-                failover_rounds: None,
-                last_iface: None,
+                        failover_rounds: None,
+                        last_iface: None,
                     }
                 })
             }
@@ -1488,6 +1499,127 @@ impl LiveBridge {
         }
         drop(guard);
         result
+    }
+
+    async fn close_nomad_link_session(&self) {
+        let handle = {
+            let mut slot = self.nomad_link_session.lock().await;
+            slot.take().map(|cached| cached.handle)
+        };
+        if let Some(handle) = handle {
+            handle.close().await;
+        }
+    }
+
+    fn spawn_nomad_session_pump(session: LinkSession) {
+        tokio::spawn(async move {
+            let mut events = session.events;
+            let mut resource_offers = session.resource_offers;
+            loop {
+                tokio::select! {
+                    ev = events.recv() => {
+                        match ev {
+                            Some(LinkSessionEvent::Closed { .. }) | None => break,
+                            _ => {}
+                        }
+                    }
+                    offer = resource_offers.recv() => {
+                        if offer.is_none() {
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    async fn ensure_nomad_link_session(
+        &self,
+        dest_hash: [u8; 16],
+        link_hops: u8,
+        deadline: Instant,
+    ) -> Result<(LinkSessionHandle, bool), LinkSessionError> {
+        {
+            let slot = self.nomad_link_session.lock().await;
+            if let Some(cached) = slot.as_ref() {
+                if nomad_link_cache_should_reuse(&cached.dest, &dest_hash) {
+                    return Ok((cached.handle.clone(), true));
+                }
+            }
+        }
+        self.close_nomad_link_session().await;
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(LinkSessionError::Timeout("overall query"));
+        }
+        let entry = discover_destination(&self.handle.transport_tx, dest_hash, remaining).await?;
+        let pubkey = entry
+            .public_key
+            .ok_or(LinkSessionError::PublicKeyUnavailable)?;
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(LinkSessionError::Timeout("overall query"));
+        }
+        let config = LinkSessionConfig {
+            destination_hash: dest_hash,
+            remote_public_key: pubkey,
+            hops: link_hops,
+            establishment_timeout: remaining,
+            client_label: "nomad.link".into(),
+            identify: true,
+            track_phy_stats: false,
+        };
+        let session = LinkSession::connect(
+            self.handle.transport_tx.clone(),
+            self.identity.clone(),
+            config,
+        )
+        .await?;
+        let handle = session.handle.clone();
+        Self::spawn_nomad_session_pump(session);
+        *self.nomad_link_session.lock().await = Some(NomadCachedLink {
+            dest: dest_hash,
+            handle: handle.clone(),
+        });
+        Ok((handle, false))
+    }
+
+    async fn nomad_session_query(
+        &self,
+        dest_hash: [u8; 16],
+        path: &str,
+        payload: Vec<u8>,
+        link_hops: u8,
+        deadline: Instant,
+    ) -> Result<(Vec<u8>, Option<Vec<u8>>), LinkSessionError> {
+        let (handle, reused) = self
+            .ensure_nomad_link_session(dest_hash, link_hops, deadline)
+            .await?;
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            self.close_nomad_link_session().await;
+            return Err(LinkSessionError::Timeout("overall query"));
+        }
+        let result = handle.request(path, &payload, Some(remaining)).await;
+        match result {
+            Ok(resp) => Ok((resp.data, resp.metadata)),
+            Err(LinkSessionError::SessionClosed) if reused => {
+                self.close_nomad_link_session().await;
+                let (handle, _) = self
+                    .ensure_nomad_link_session(dest_hash, link_hops, deadline)
+                    .await?;
+                let remaining = deadline.saturating_duration_since(Instant::now());
+                if remaining.is_zero() {
+                    return Err(LinkSessionError::Timeout("overall query"));
+                }
+                let resp = handle.request(path, &payload, Some(remaining)).await?;
+                Ok((resp.data, resp.metadata))
+            }
+            Err(e) => {
+                self.close_nomad_link_session().await;
+                Err(e)
+            }
+        }
     }
 
     /// After a link failure, suppress the dead iface, drop failed vias, promote

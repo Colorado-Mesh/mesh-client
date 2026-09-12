@@ -1,0 +1,71 @@
+diff --git a/crates/rns-protocol/src/resource.rs b/crates/rns-protocol/src/resource.rs
+index e5695f0..f1aff45 100644
+--- a/crates/rns-protocol/src/resource.rs
++++ b/crates/rns-protocol/src/resource.rs
+@@ -228,6 +228,21 @@ impl WindowState {
+         }
+     }
+ 
++    /// Skip slow-start when the Link RTT is already TCP-class.
++    ///
++    /// `grow()` only promotes to [`WINDOW_MAX_FAST`] after four rounds above
++    /// [`RATE_FAST`] (6250 B/s). A 2-hop TCP hub at ~500ms RTT with
++    /// [`WINDOW_MAX_SLOW`] (10) stays at ~8 KB/s and never crosses that bar,
++    /// so a 480 KB Nomad `/media` Resource crawls ~20s. Jumping the window
++    /// on a sub-second RTT matches the observed path without touching RF.
++    pub fn promote_fast(&mut self) {
++        self.window = WINDOW_MAX_FAST;
++        self.window_max = WINDOW_MAX_FAST;
++        self.window_min = WINDOW_MIN;
++        self.fast_rate_rounds = FAST_RATE_THRESHOLD;
++        self.very_slow_rate_rounds = 0;
++    }
++
+     /// Shrink the window after a timeout. Both the instantaneous `window`
+     /// and the ceiling `window_max` contract, and the flexibility band
+     /// between them is kept within `WINDOW_FLEXIBILITY - 1`.
+@@ -2639,6 +2654,16 @@ mod tests {
+         assert_eq!(ws.window, initial);
+     }
+ 
++    #[test]
++    fn test_window_promote_fast_skips_slow_start() {
++        let mut ws = WindowState::new();
++        assert_eq!(ws.window_max, WINDOW_MAX_SLOW);
++        ws.promote_fast();
++        assert_eq!(ws.window, WINDOW_MAX_FAST);
++        assert_eq!(ws.window_max, WINDOW_MAX_FAST);
++        assert_eq!(ws.fast_rate_rounds, FAST_RATE_THRESHOLD);
++    }
++
+     #[test]
+     fn test_progress() {
+         let inbound = InboundResource::new(
+diff --git a/crates/rns-runtime/src/link_session.rs b/crates/rns-runtime/src/link_session.rs
+index 51f3763..5570f8f 100644
+--- a/crates/rns-runtime/src/link_session.rs
++++ b/crates/rns-runtime/src/link_session.rs
+@@ -2249,7 +2249,7 @@ fn inbound_transfer_from_advertisement(
+     if advertisement.total_segments > 1 && advertisement.segment_index > 1 {
+         flags.has_metadata = false;
+     }
+-    InboundTransfer::from_advertisement(
++    let mut transfer = InboundTransfer::from_advertisement(
+         advertisement.num_parts,
+         advertisement.transfer_size,
+         advertisement.data_size,
+@@ -2259,7 +2259,13 @@ fn inbound_transfer_from_advertisement(
+         advertisement.get_map_hashes(),
+         rtt,
+     )
+-    .map_err(|error| LinkSessionResourceError::InvalidAdvertisement(error.to_string()))
++    .map_err(|error| LinkSessionResourceError::InvalidAdvertisement(error.to_string()))?;
++    // Response Resources (Nomad /file /media) over a sub-second RTT never
++    // promote past WINDOW_MAX_SLOW=10 when a TCP hub keeps rate < RATE_FAST.
++    if flags.is_response && rtt <= Duration::from_millis(1000) {
++        transfer.resource.window.promote_fast();
++    }
++    Ok(transfer)
+ }
+ 
+ async fn accept_inbound_offer(

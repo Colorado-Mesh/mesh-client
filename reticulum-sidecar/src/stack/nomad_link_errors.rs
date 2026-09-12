@@ -10,6 +10,9 @@ pub fn map_nomad_link_error(err: &str) -> String {
     if lower.contains("path lookup")
         || lower.contains("path/announce")
         || lower.contains("pubkey recall")
+        || lower.contains("destination identity")
+        || lower.contains("public key unavailable")
+        || lower.contains("did not include a public key")
     {
         return "path_timeout".into();
     }
@@ -34,6 +37,9 @@ pub fn map_nomad_link_error(err: &str) -> String {
     }
     if lower.contains("nomad_busy") {
         return "nomad_busy".into();
+    }
+    if lower.contains("session task is no longer running") || lower.contains("sessionclosed") {
+        return "link_timeout".into();
     }
     err.to_string()
 }
@@ -63,6 +69,14 @@ mod tests {
         assert_eq!(
             map_nomad_link_error("could not discover remote identity public key for destination"),
             "pubkey_not_found"
+        );
+        assert_eq!(
+            map_nomad_link_error("timed out waiting for destination identity"),
+            "path_timeout"
+        );
+        assert_eq!(
+            map_nomad_link_error("Link session task is no longer running"),
+            "link_timeout"
         );
     }
 
