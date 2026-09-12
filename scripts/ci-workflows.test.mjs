@@ -259,3 +259,67 @@ describe('CI workflow contracts', () => {
     expect(testsWorkflow.match(/persist-credentials: false/g)).toHaveLength(4);
   });
 });
+
+describe('Windows ARM64 sidecar builds', () => {
+  const workflow = read('.github/workflows/reticulum-sidecar.yaml');
+  const variants = [
+    { suffix: '', features: '', artifact: 'mesh-client-reticulum-win-arm64' },
+    {
+      suffix: '-rns-stack',
+      features: ' --features rns-stack,rns-ble,rns-rnode-tcp',
+      artifact: 'mesh-client-reticulum-rns-win-arm64',
+    },
+  ];
+
+  function job(name) {
+    const body = workflow.split(`\n  ${name}:\n`)[1];
+    expect(body, `job ${name}`).toBeDefined();
+    return body.split(/\n {2}[\w-]+:\n/)[0];
+  }
+
+  it.each(variants)('keeps $artifact builds and matching Windows host tests', (variant) => {
+    const native = job(`build${variant.suffix}`);
+    expect(native).toContain('os: windows-latest');
+    expect(native).toContain('target: x86_64-pc-windows-msvc');
+    const testStep = native
+      .split('\n      - ')
+      .find((step) => step.startsWith('name: Test sidecar'));
+    expect(testStep).toBeDefined();
+    expect(testStep.split('\n').map((line) => line.trim())).toContain(
+      `run: cargo test${variant.features}`,
+    );
+    expect(testStep).not.toMatch(/\bif:|cargo build/);
+    expect(native).not.toMatch(/continue-on-error:/);
+
+    const arm64 = job(`build-windows-arm64${variant.suffix}`);
+    expect(arm64).toContain('runs-on: windows-latest');
+    expect(arm64).not.toMatch(/cargo test|\bif:|continue-on-error:/);
+    expect(arm64).toContain(
+      `run: cargo build --release --target aarch64-pc-windows-msvc${variant.features}\n`,
+    );
+    expect(arm64).toContain('working-directory: reticulum-sidecar');
+    expect(arm64).toContain(`name: ${variant.artifact}\n`);
+    expect(arm64).toContain(
+      'path: reticulum-sidecar/target/aarch64-pc-windows-msvc/release/mesh-client-reticulum.exe',
+    );
+  });
+
+  it.each(variants)(
+    'caches dependencies after fresh source/toolchain setup for $artifact',
+    (variant) => {
+      const arm64 = job(`build-windows-arm64${variant.suffix}`);
+      const clone = requireIndex(arm64, 'run: bash scripts/clone-ratspeak-stack.sh', 'clone');
+      const toolchain = requireIndex(arm64, 'targets: aarch64-pc-windows-msvc', 'toolchain');
+      const cache = requireIndex(arm64, 'uses: Swatinem/rust-cache@', 'cache');
+      const build = requireIndex(arm64, 'run: cargo build', 'build');
+      expect(clone).toBeLessThan(cache);
+      expect(toolchain).toBeLessThan(cache);
+      expect(cache).toBeLessThan(build);
+      expect(arm64).toMatch(/Swatinem\/rust-cache@[0-9a-f]{40}\n/);
+      expect(arm64).toContain('workspaces: reticulum-sidecar -> target');
+      expect(arm64).toContain('key: aarch64-pc-windows-msvc');
+      expect(arm64).toContain('cache-workspace-crates: false');
+      expect(arm64).not.toMatch(/shared-key:|add-job-id-key: false/);
+    },
+  );
+});

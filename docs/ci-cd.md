@@ -89,7 +89,9 @@ Local: `pnpm run test:e2e:build`. See [development-environment.md](development-e
 Path-filtered on `reticulum-sidecar/**` and related scripts:
 
 1. **`lint` job (ubuntu-latest)** — `cargo fmt --check` + `cargo clippy` with `rns-stack,rns-ble,rns-rnode-tcp` (`-D warnings`)
-2. **Build matrix** — stub + full-stack `cargo test` and release builds on Linux, macOS, and Windows (including WoA arm64 jobs)
+2. **Build matrix** — stub + full-stack `cargo test` and release builds on Linux, macOS, and Windows. The WoA arm64 jobs cross-compile release binaries on Windows x64 runners; the Windows x64 matrix jobs run the corresponding host tests once.
+
+The two WoA jobs cache Cargo downloads and compiled dependencies with `Swatinem/rust-cache`, separately by job and Rust toolchain. The sidecar workspace crate is excluded from the cache. Every run still clones the current Ratspeak sources, applies overlays, and invokes Cargo to rebuild changed path dependencies and the ARM64 executable. A cache miss performs a normal release build.
 
 CI and local **dev** clones float the `.rsstack/` workspace via `scripts/clone-ratspeak-stack.sh` to `origin/main` (overlays must apply; optional `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` / `RS_LRGP_REF` for bisect only — CI never pins Ratspeak SHAs). Open upstream feature PRs needed before they land on `main` (e.g. [rsReticulum#26](https://github.com/ratspeak/rsReticulum/pull/26) ReplyFile, [rsLXMF#7](https://github.com/ratspeak/rsLXMF/pull/7) multi-file attachments) are carried as overlays under `reticulum-sidecar/patches/` and tracked by `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`. **Release** packaging (`scripts/build-reticulum-sidecar-release.mjs`) runs the same clone and records the resolved commit SHAs for all five crates in `.rsstack/RESOLVED_SHAS.txt` so artifacts retain the exact source revisions used — set `RS_*_REF` only when a release must not float.
 
