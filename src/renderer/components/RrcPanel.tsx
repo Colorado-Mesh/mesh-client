@@ -17,6 +17,7 @@ import {
   type OpenRrcHubDetail,
   takePendingRrcHubOpen,
 } from '@/renderer/lib/openRrcHubFromLink';
+import { reconcileRrcHubAfterDeadSend } from '@/renderer/lib/reconcileRrcSessionsFromSnapshot';
 import { withReticulumIpcSendDeadline } from '@/renderer/lib/reticulum/reticulumIpcDeadline';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import {
@@ -25,7 +26,7 @@ import {
   rrcDmDisplayLabel,
   rrcDmRoomKey,
 } from '@/renderer/lib/rrcDmRoom';
-import { formatRrcErrorMessage } from '@/renderer/lib/rrcErrorHumanize';
+import { formatRrcErrorMessage, isRrcDeadSessionSendError } from '@/renderer/lib/rrcErrorHumanize';
 import { clearRrcHubAutoJoinBackoff } from '@/renderer/lib/rrcHubAutoJoinBackoff';
 import { setRrcHubDisconnectSuppressed } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import {
@@ -824,17 +825,24 @@ export default function RrcPanel({
     [activeRoom, addMessage, setActiveRoom],
   );
 
-  const setRrcSendError = useCallback((message: string | null) => {
-    if (!message) {
-      useRrcSessionStore.getState().setError(null);
-      return;
-    }
-    if (isRrcHubMsgBodyLimitError(message) || isRrcHubNickLimitError(message)) {
-      // Composer / field counters already explain hub WELCOME limits.
-      return;
-    }
-    useRrcSessionStore.getState().setError(message);
-  }, []);
+  const setRrcSendError = useCallback(
+    (message: string | null) => {
+      if (!message) {
+        useRrcSessionStore.getState().setError(null);
+        return;
+      }
+      if (isRrcHubMsgBodyLimitError(message) || isRrcHubNickLimitError(message)) {
+        // Composer / field counters already explain hub WELCOME limits.
+        return;
+      }
+      useRrcSessionStore.getState().setError(message);
+      // Sidecar already rejected the send — demote Connected before the next click.
+      if (isRrcDeadSessionSendError(message) && hubDestHash) {
+        void reconcileRrcHubAfterDeadSend(hubDestHash);
+      }
+    },
+    [hubDestHash],
+  );
 
   const handleSend = useCallback(
     async (text: string) => {
