@@ -86,3 +86,19 @@ describe('flatpakWorkflowTestBuildContractViolations', () => {
     expect(violations.map((v) => v.message).join('\n')).toMatch(/rename-test-build-artifacts/);
   });
 });
+
+describe('Electron archive sources', () => {
+  it('keep strip-components: 0 in the real manifest', () => {
+    const manifest = fs.readFileSync(path.join(ROOT, 'org.coloradomesh.MeshClient.yml'), 'utf8');
+    const blocks = manifest
+      .split(/^\s*- type: archive\s*$/m)
+      .filter((block) => /electron-v[\d.]+-linux-(?:x64|arm64)\.zip/.test(block));
+
+    expect(blocks).toHaveLength(2);
+    for (const block of blocks) {
+      // strip-components:1 (the flatpak-builder default) flattens locales/ and
+      // resources/ into dest, and Electron then exits 1 with no output.
+      expect(block).toMatch(/strip-components:\s*0\b/);
+    }
+  });
+});
