@@ -1074,7 +1074,6 @@ function AppContent() {
     () => protocolRecord(meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView),
     [meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView],
   );
-  const connectionActionsByProtocol = allConnectionActions;
   const panelActionsByProtocol = useMemo(
     () => protocolRecord(meshtasticPanelActions, meshcorePanelActions, reticulumPanelActions),
     [meshtasticPanelActions, meshcorePanelActions, reticulumPanelActions],
@@ -2363,15 +2362,14 @@ function AppContent() {
   } = meshcoreDbRefresh;
 
   const refreshNodesFromDb = useCallback(() => {
-    const actions = selectByProtocol(panelActionsByProtocol, protocol);
     if (capabilities.hasRemoteAdmin) {
       // Meshtastic runtime refresh already replace-syncs the identity node store.
-      void actions.refreshNodesFromDb();
+      void panelActions.refreshNodesFromDb();
     } else {
-      void actions.refreshNodesFromDb();
+      void panelActions.refreshNodesFromDb();
       void refreshMeshcoreNodesInStore({ nodesMode: 'replace' });
     }
-  }, [protocol, capabilities.hasRemoteAdmin, panelActionsByProtocol, refreshMeshcoreNodesInStore]);
+  }, [capabilities.hasRemoteAdmin, panelActions, refreshMeshcoreNodesInStore]);
 
   const refreshMessagesFromDb = useCallback(
     (opts?: MessageClearRefreshOptions) => {
@@ -2382,26 +2380,24 @@ function AppContent() {
         opts?.clearedChannel != null;
       const messagesMode = replace ? 'replace' : 'upsert';
       const replaceFromDb = replace;
-      const actions = selectByProtocol(panelActionsByProtocol, protocol);
-      const activeCaps = selectByProtocol(capabilitiesByProtocol, protocol);
 
-      if (activeCaps.hasRemoteAdmin) {
-        void actions.refreshMessagesFromDb({ replaceFromDb });
+      if (capabilities.hasRemoteAdmin) {
+        void panelActions.refreshMessagesFromDb({ replaceFromDb });
         void refreshMeshtasticMessagesInStore({ messagesMode });
       } else {
-        void actions.refreshMessagesFromDb({ replaceFromDb });
+        void panelActions.refreshMessagesFromDb({ replaceFromDb });
         void refreshMeshcoreMessagesInStore({ messagesMode });
       }
 
       if (opts?.clearedAll) {
         clearPersistedLastReadForProtocol(protocol);
-        if (activeCaps.hasRoomServersPanel) {
+        if (capabilities.hasRoomServersPanel) {
           clearPersistedRoomsLastRead();
         }
       } else if (opts?.clearedChannel != null) {
         removePersistedLastReadForChannel(protocol, opts.clearedChannel);
         if (
-          activeCaps.hasRoomServersPanel &&
+          capabilities.hasRoomServersPanel &&
           opts.clearedChannel === MESHCORE_ROOM_MESSAGE_CHANNEL
         ) {
           clearPersistedRoomsLastRead();
@@ -2410,8 +2406,9 @@ function AppContent() {
     },
     [
       protocol,
-      panelActionsByProtocol,
-      capabilitiesByProtocol,
+      panelActions,
+      capabilities.hasRemoteAdmin,
+      capabilities.hasRoomServersPanel,
       refreshMeshtasticMessagesInStore,
       refreshMeshcoreMessagesInStore,
     ],
@@ -2438,14 +2435,18 @@ function AppContent() {
   useEffect(() => {
     const prev = prevProtocolForMqttAutostartRef.current;
     prevProtocolForMqttAutostartRef.current = protocol;
-    const activeCaps = selectByProtocol(capabilitiesByProtocol, protocol);
-    if (!activeCaps.hasMqttHybrid) return;
+    if (!capabilities.hasMqttHybrid) return;
     if (selectByProtocol(capabilitiesByProtocol, prev).hasMqttHybrid) return;
     if (meshtasticConnectionView.mqttStatus !== 'disconnected') return;
     void tryAutoLaunchMqtt('meshtastic').catch((e: unknown) => {
       console.warn('[App] MQTT auto-launch on tab switch failed ' + errLikeToLogString(e));
     });
-  }, [protocol, meshtasticConnectionView.mqttStatus, capabilitiesByProtocol]);
+  }, [
+    protocol,
+    meshtasticConnectionView.mqttStatus,
+    capabilities.hasMqttHybrid,
+    capabilitiesByProtocol,
+  ]);
 
   // ─── MQTT auto-launch on startup ─────────────────────────────────
   // Launch MQTT for each protocol when autoLaunch is enabled. Meshtastic MQTT skips
@@ -2777,20 +2778,11 @@ function AppContent() {
 
           void reconnectRfFromLastConnection(protocol, lastType, {
             connectBleAutomatic: (bleDeviceId) =>
-              selectByProtocol(connectionActionsByProtocol, protocol).connectAutomatic(
-                'ble',
-                undefined,
-                undefined,
-                bleDeviceId,
-              ),
+              activeConnection.connectAutomatic('ble', undefined, undefined, bleDeviceId),
             connectBleDirect: (bleDeviceId) =>
               protocolConnect(protocol, 'ble', undefined, bleDeviceId),
             connectSerialAutomatic: (serialPortId) =>
-              selectByProtocol(connectionActionsByProtocol, protocol).connectAutomatic(
-                'serial',
-                undefined,
-                serialPortId,
-              ),
+              activeConnection.connectAutomatic('serial', undefined, serialPortId),
             connectHttp: (httpAddress) => protocolConnect(protocol, 'http', httpAddress),
             connectTcp: (httpAddress) => protocolConnect(protocol, 'tcp', httpAddress),
           })
@@ -2807,7 +2799,7 @@ function AppContent() {
   }, [
     activeConnectionView.state.connectionType,
     activeConnectionView.state.serialNeedsReselect,
-    connectionActionsByProtocol,
+    activeConnection,
     protocol,
     protocolConnect,
     protocolDisconnect,
