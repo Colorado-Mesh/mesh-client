@@ -11,6 +11,15 @@ const UPDATER_SOURCE = readFileSync(join(__dirname, 'updater.ts'), 'utf-8');
 const SUPPORT_BUNDLE_SOURCE = readFileSync(join(__dirname, 'support-bundle.ts'), 'utf-8');
 const TAK_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/tak-handlers.ts'), 'utf-8');
 const GPS_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/gps-handlers.ts'), 'utf-8');
+const TCP_BRIDGE_SOURCE = readFileSync(join(__dirname, 'ipc/tcp-bridge.ts'), 'utf-8');
+
+function ipcHandlerBody(channel: string, span = 400): string {
+  for (const src of [INDEX_SOURCE, TCP_BRIDGE_SOURCE, TAK_IPC_SOURCE, GPS_IPC_SOURCE]) {
+    const idx = src.indexOf(`ipcMain.handle('${channel}'`);
+    if (idx >= 0) return src.slice(idx, idx + span);
+  }
+  return '';
+}
 
 // ─── http:preflight / http:connect hostname validation ──────────────
 
@@ -90,102 +99,72 @@ describe('validateHttpHost (source contract)', () => {
   });
 });
 
-// ─── meshtastic:tcp-write byte element validation ───────────────────
+// ─── shared TCP bridge write / connect contracts ────────────────────
 
-describe('meshtastic:tcp-write byte validation (source contract)', () => {
+describe('tcp-bridge write and connect (source contract)', () => {
   it('validates individual byte elements in addition to array length', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-write'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 600);
-    expect(handlerBody).toContain('Number.isInteger(b)');
-    expect(handlerBody).toContain('b >= 0');
-    expect(handlerBody).toContain('b <= 255');
-  });
-
-  it('defines a 256 KB cap on meshtastic tcp-write payloads', () => {
-    expect(INDEX_SOURCE).toContain('const MESHTASTIC_TCP_WRITE_MAX_BYTES = 256 * 1024');
-  });
-
-  it('rejects connect when port is out of range', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
-    expect(handlerBody).toContain('p < 1');
-    expect(handlerBody).toContain('p > 65535');
-  });
-
-  it('destroys prior socket before opening a new meshtastic tcp connection', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1400);
-    // Null the active ref before destroy so the superseded close does not emit
-    // meshtastic:tcp-disconnected against a healthy replacement (#792).
-    expect(handlerBody).toMatch(
-      /const prev = meshtasticTcpSocket;\s*meshtasticTcpSocket = null;\s*clearLiveSessionMeter\('meshtastic'\);\s*prev\.destroy\(\)/,
-    );
-  });
-
-  it('emits meshtastic:tcp-disconnected only for the active socket (PR #792)', () => {
-    // connect/disconnect null the ref before destroy(); a superseded close must not broadcast
-    // or the renderer TCP loss-watch will tear down a healthy replacement session.
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const closeIdx = INDEX_SOURCE.indexOf("socket.on('close'", handlerIdx);
-    expect(closeIdx).toBeGreaterThan(handlerIdx);
-    const closeBody = INDEX_SOURCE.slice(closeIdx, closeIdx + 900);
-    expect(closeBody).toContain('if (meshtasticTcpSocket === socket)');
-    expect(closeBody).toContain("mainWindow?.webContents.send('meshtastic:tcp-disconnected')");
-    // Emit must be inside the active-socket guard (not before it).
-    const guardIdx = closeBody.indexOf('if (meshtasticTcpSocket === socket)');
-    const emitIdx = closeBody.indexOf(
-      "mainWindow?.webContents.send('meshtastic:tcp-disconnected')",
-    );
-    expect(guardIdx).toBeGreaterThan(-1);
-    expect(emitIdx).toBeGreaterThan(guardIdx);
-  });
-
-  it('nulls meshtasticTcpSocket before destroy on disconnect (PR #792)', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-disconnect'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 500);
-    expect(handlerBody).toMatch(
-      /const prev = meshtasticTcpSocket;\s*meshtasticTcpSocket = null;\s*clearLiveSessionMeter\('meshtastic'\);\s*prev\.destroy\(\)/,
-    );
-  });
-
-  it('does not null meshtasticTcpSocket in the error handler (error-before-close race)', () => {
-    // Node emits 'error' then 'close' on ECONNRESET. If error nulls the ref first, close's
-    // active-socket guard fails and meshtastic:tcp-disconnected is swallowed.
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const errorIdx = INDEX_SOURCE.indexOf("socket.on('error'", handlerIdx);
-    expect(errorIdx).toBeGreaterThan(handlerIdx);
-    const closeIdx = INDEX_SOURCE.indexOf("socket.on('close'", handlerIdx);
-    expect(closeIdx).toBeGreaterThan(handlerIdx);
-    expect(errorIdx).toBeGreaterThan(closeIdx);
-    const errorBody = INDEX_SOURCE.slice(errorIdx, errorIdx + 500);
-    expect(errorBody).not.toMatch(/meshtasticTcpSocket\s*=\s*null/);
-    expect(errorBody).toContain('Do not null meshtasticTcpSocket');
-  });
-});
-
-// ─── meshcore:tcp-write byte element validation ──────────────────────
-
-describe('meshcore:tcp-write byte validation (source contract)', () => {
-  it('validates individual byte elements in addition to array length', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-write'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    // Read enough of the handler to see the element validation
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 600);
-
-    // Must check each byte is a valid 0-255 integer
+    const writeIdx = TCP_BRIDGE_SOURCE.indexOf('const write = ');
+    expect(writeIdx).toBeGreaterThan(-1);
+    const handlerBody = TCP_BRIDGE_SOURCE.slice(writeIdx, writeIdx + 800);
     expect(handlerBody).toContain('Number.isInteger(b)');
     expect(handlerBody).toContain('b >= 0');
     expect(handlerBody).toContain('b <= 255');
   });
 
   it('defines a 256 KB cap on tcp-write payloads', () => {
-    expect(INDEX_SOURCE).toContain('const MESHCORE_TCP_WRITE_MAX_BYTES = 256 * 1024');
+    expect(TCP_BRIDGE_SOURCE).toContain('export const TCP_BRIDGE_WRITE_MAX_BYTES = 256 * 1024');
+  });
+
+  it('rejects connect when port is out of range', () => {
+    const connectIdx = TCP_BRIDGE_SOURCE.indexOf('const connect = ');
+    expect(connectIdx).toBeGreaterThan(-1);
+    const handlerBody = TCP_BRIDGE_SOURCE.slice(connectIdx, connectIdx + 500);
+    expect(handlerBody).toContain('p < 1');
+    expect(handlerBody).toContain('p > 65535');
+  });
+
+  it('destroys prior socket before opening a new tcp connection', () => {
+    const connectIdx = TCP_BRIDGE_SOURCE.indexOf('const connect = ');
+    expect(connectIdx).toBeGreaterThan(-1);
+    const handlerBody = TCP_BRIDGE_SOURCE.slice(connectIdx, connectIdx + 1400);
+    // Null the active ref before destroy so the superseded close does not emit
+    // tcp-disconnected against a healthy replacement (#792).
+    expect(handlerBody).toMatch(
+      /const prev = activeSocket;\s*activeSocket = null;\s*clearLiveSessionMeter\(protocol\);\s*prev\.destroy\(\)/,
+    );
+  });
+
+  it('emits tcp-disconnected only for the active socket (PR #792)', () => {
+    const closeIdx = TCP_BRIDGE_SOURCE.indexOf("socket.on('close'");
+    expect(closeIdx).toBeGreaterThan(-1);
+    const closeBody = TCP_BRIDGE_SOURCE.slice(closeIdx, closeIdx + 1600);
+    expect(closeBody).toContain('if (activeSocket === socket)');
+    expect(closeBody).toContain('getMainWindow()?.webContents.send(disconnectedChannel)');
+    expect(closeBody).toContain('readableEnded');
+    expect(closeBody).toContain('writableEnded');
+    expect(closeBody).toContain('remoteAddress');
+    const guardIdx = closeBody.indexOf('if (activeSocket === socket)');
+    const emitIdx = closeBody.indexOf('getMainWindow()?.webContents.send(disconnectedChannel)');
+    expect(guardIdx).toBeGreaterThan(-1);
+    expect(emitIdx).toBeGreaterThan(guardIdx);
+  });
+
+  it('nulls activeSocket before destroy on disconnect (PR #792)', () => {
+    const disconnectIdx = TCP_BRIDGE_SOURCE.indexOf('const disconnect = ');
+    expect(disconnectIdx).toBeGreaterThan(-1);
+    const handlerBody = TCP_BRIDGE_SOURCE.slice(disconnectIdx, disconnectIdx + 500);
+    expect(handlerBody).toMatch(
+      /const prev = activeSocket;\s*activeSocket = null;\s*clearLiveSessionMeter\(protocol\);\s*prev\.destroy\(\)/,
+    );
+  });
+
+  it('does not null activeSocket in the error handler (error-before-close race)', () => {
+    const errorIdx = TCP_BRIDGE_SOURCE.indexOf("socket.on('error'");
+    const closeIdx = TCP_BRIDGE_SOURCE.indexOf("socket.on('close'");
+    expect(errorIdx).toBeGreaterThan(closeIdx);
+    const errorBody = TCP_BRIDGE_SOURCE.slice(errorIdx, errorIdx + 500);
+    expect(errorBody).not.toMatch(/activeSocket\s*=\s*null/);
+    expect(errorBody).toContain('Do not null the active socket');
   });
 });
 
@@ -349,88 +328,39 @@ describe('session permission whitelist (source contract)', () => {
   });
 });
 
-// ─── meshcore:tcp-connect hostname validation ────────────────────────
+// ─── tcp-bridge hostname validation ─────────────────────────────────
 
-describe('meshcore:tcp-connect hostname validation (source contract)', () => {
-  it('calls validateHttpHost in the meshcore:tcp-connect handler', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 600);
-    expect(handlerBody).toContain('validateHttpHost(');
+describe('tcp-bridge hostname validation (source contract)', () => {
+  it('calls validateHost in the shared connect handler', () => {
+    const connectIdx = TCP_BRIDGE_SOURCE.indexOf('const connect = ');
+    expect(connectIdx).toBeGreaterThan(-1);
+    const handlerBody = TCP_BRIDGE_SOURCE.slice(connectIdx, connectIdx + 600);
+    expect(handlerBody).toContain('validateHost(');
   });
 
-  it('does not use a bare length-only host check in meshcore:tcp-connect', () => {
+  it('does not use a bare length-only host check in tcp-connect', () => {
     // The old pattern was: typeof host !== 'string' || host.length === 0 || host.length > MAX_TCP_HOST_LENGTH
     // It should now delegate entirely to validateHttpHost which applies isValidHttpHostname
     expect(INDEX_SOURCE).not.toContain('MAX_TCP_HOST_LENGTH');
+    expect(TCP_BRIDGE_SOURCE).not.toContain('MAX_TCP_HOST_LENGTH');
   });
 
   it('normalizes bracketed IPv6 before net.Socket.connect', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1400);
+    const connectIdx = TCP_BRIDGE_SOURCE.indexOf('const connect = ');
+    expect(connectIdx).toBeGreaterThan(-1);
+    const handlerBody = TCP_BRIDGE_SOURCE.slice(connectIdx, connectIdx + 1400);
     expect(handlerBody).toContain('formatHostForSocket(');
   });
 
-  it('emits meshcore:tcp-disconnected only for the active socket (PR #792)', () => {
-    // Same contract as meshtastic:tcp-connect — superseded closes from connect-replace /
-    // disconnect must not look like a live link drop to the renderer reconnect path.
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const closeIdx = INDEX_SOURCE.indexOf("socket.on('close'", handlerIdx);
-    expect(closeIdx).toBeGreaterThan(handlerIdx);
-    const closeBody = INDEX_SOURCE.slice(closeIdx, closeIdx + 1600);
-    expect(closeBody).toContain('if (meshcoreTcpSocket === socket)');
-    expect(closeBody).toContain("mainWindow?.webContents.send('meshcore:tcp-disconnected')");
-    expect(closeBody).toContain('readableEnded');
-    expect(closeBody).toContain('writableEnded');
-    expect(closeBody).toContain('remoteAddress');
-    const guardIdx = closeBody.indexOf('if (meshcoreTcpSocket === socket)');
-    const emitIdx = closeBody.indexOf("mainWindow?.webContents.send('meshcore:tcp-disconnected')");
-    expect(guardIdx).toBeGreaterThan(-1);
-    expect(emitIdx).toBeGreaterThan(guardIdx);
-  });
-
-  it('nulls meshcoreTcpSocket before destroy on connect-replace and disconnect (PR #792)', () => {
-    const connectIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
+  it('enables TCP_NODELAY and keepalive on connect sockets', () => {
+    expect(TCP_BRIDGE_SOURCE).toContain('TCP_BRIDGE_KEEPALIVE_INITIAL_DELAY_MS');
+    const connectIdx = TCP_BRIDGE_SOURCE.indexOf('const connect = ');
     expect(connectIdx).toBeGreaterThan(-1);
-    const connectBody = INDEX_SOURCE.slice(connectIdx, connectIdx + 1400);
-    expect(connectBody).toMatch(
-      /const prev = meshcoreTcpSocket;\s*meshcoreTcpSocket = null;\s*clearLiveSessionMeter\('meshcore'\);\s*prev\.destroy\(\)/,
-    );
-
-    const disconnectIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-disconnect'");
-    expect(disconnectIdx).toBeGreaterThan(-1);
-    const disconnectBody = INDEX_SOURCE.slice(disconnectIdx, disconnectIdx + 500);
-    expect(disconnectBody).toMatch(
-      /const prev = meshcoreTcpSocket;\s*meshcoreTcpSocket = null;\s*clearLiveSessionMeter\('meshcore'\);\s*prev\.destroy\(\)/,
-    );
-  });
-
-  it('enables TCP_NODELAY and keepalive on meshcore:tcp-connect sockets', () => {
-    expect(INDEX_SOURCE).toContain('MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS');
-    const connectIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
-    expect(connectIdx).toBeGreaterThan(-1);
-    const connectBody = INDEX_SOURCE.slice(connectIdx, connectIdx + 1600);
+    const connectBody = TCP_BRIDGE_SOURCE.slice(connectIdx, connectIdx + 1600);
     expect(connectBody).toContain('socket.setNoDelay(true)');
     expect(connectBody).toContain(
-      'socket.setKeepAlive(true, MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS)',
+      'socket.setKeepAlive(true, TCP_BRIDGE_KEEPALIVE_INITIAL_DELAY_MS)',
     );
-  });
-
-  it('does not null meshcoreTcpSocket in the error handler (error-before-close race)', () => {
-    // Node emits 'error' then 'close' on ECONNRESET. If error nulls the ref first, close's
-    // active-socket guard fails and meshcore:tcp-disconnected is swallowed (n7eal).
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const errorIdx = INDEX_SOURCE.indexOf("socket.on('error'", handlerIdx);
-    expect(errorIdx).toBeGreaterThan(handlerIdx);
-    const closeIdx = INDEX_SOURCE.indexOf("socket.on('close'", handlerIdx);
-    expect(closeIdx).toBeGreaterThan(handlerIdx);
-    expect(errorIdx).toBeGreaterThan(closeIdx);
-    const errorBody = INDEX_SOURCE.slice(errorIdx, errorIdx + 500);
-    expect(errorBody).not.toMatch(/meshcoreTcpSocket\s*=\s*null/);
-    expect(errorBody).toContain('Do not null meshcoreTcpSocket');
   });
 });
 
@@ -447,43 +377,32 @@ describe('hostLink:getSessionMeter validation (source contract)', () => {
   });
 });
 
-// ─── meshtastic:tcp-connect hostname validation ──────────────────────
-
-describe('meshtastic:tcp-connect hostname validation (source contract)', () => {
-  it('calls validateHttpHost in the meshtastic:tcp-connect handler', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 600);
-    expect(handlerBody).toContain('validateHttpHost(');
+describe('tcp-bridge protocol wiring (source contract)', () => {
+  it('creates independent MeshCore and Meshtastic bridges with writeMissing flags', () => {
+    expect(INDEX_SOURCE).toContain('registerTcpBridgeIpcHandlers({');
+    expect(INDEX_SOURCE).toContain('validateHost: validateHttpHost');
+    expect(TCP_BRIDGE_SOURCE).toContain("protocol: 'meshcore'");
+    expect(TCP_BRIDGE_SOURCE).toContain("writeMissing: 'reject'");
+    expect(TCP_BRIDGE_SOURCE).toContain("protocol: 'meshtastic'");
+    expect(TCP_BRIDGE_SOURCE).toContain("writeMissing: 'no-socket'");
+    expect(TCP_BRIDGE_SOURCE).toContain('let activeSocket: net.Socket | null = null;');
+    expect(TCP_BRIDGE_SOURCE).toMatch(/ipcMain\.handle\('meshcore:tcp-connect'/);
+    expect(TCP_BRIDGE_SOURCE).toMatch(/ipcMain\.handle\('meshtastic:tcp-connect'/);
   });
 
-  it('normalizes bracketed IPv6 before net.Socket.connect', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1400);
-    expect(handlerBody).toContain('formatHostForSocket(');
-  });
-
-  it('uses an independent socket ref from meshcore:tcp-connect', () => {
-    expect(INDEX_SOURCE).toContain('let meshtasticTcpSocket: net.Socket | null = null;');
-  });
-
-  it('destroys the socket on oversized meshtastic:tcp-data chunks without emitting', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const dataIdx = INDEX_SOURCE.indexOf("socket.on('data'", handlerIdx);
-    expect(dataIdx).toBeGreaterThan(handlerIdx);
-    const dataBody = INDEX_SOURCE.slice(dataIdx, dataIdx + 900);
-    expect(dataBody).toContain('MESHTASTIC_TCP_DATA_MAX_BYTES');
-    expect(dataBody).toContain('meshtastic:tcp-data oversized chunk');
+  it('destroys the socket on oversized tcp-data chunks without emitting', () => {
+    const dataIdx = TCP_BRIDGE_SOURCE.indexOf("socket.on('data'");
+    expect(dataIdx).toBeGreaterThan(-1);
+    const dataBody = TCP_BRIDGE_SOURCE.slice(dataIdx, dataIdx + 900);
+    expect(dataBody).toContain('TCP_BRIDGE_DATA_MAX_BYTES');
+    expect(dataBody).toContain('oversized chunk');
     expect(dataBody).toContain('socket.destroy()');
-    const oversizeIdx = dataBody.indexOf('chunk.length > MESHTASTIC_TCP_DATA_MAX_BYTES');
+    const oversizeIdx = dataBody.indexOf('chunk.length > TCP_BRIDGE_DATA_MAX_BYTES');
     const destroyIdx = dataBody.indexOf('socket.destroy()');
-    const emitIdx = dataBody.indexOf("mainWindow?.webContents.send('meshtastic:tcp-data'");
+    const emitIdx = dataBody.indexOf('getMainWindow()?.webContents.send(dataChannel');
     expect(oversizeIdx).toBeGreaterThan(-1);
     expect(destroyIdx).toBeGreaterThan(oversizeIdx);
     expect(emitIdx).toBeGreaterThan(destroyIdx);
-    // Oversized branch returns before the emit (emit is only on the success path after return).
     const returnAfterDestroy = dataBody.slice(destroyIdx, emitIdx);
     expect(returnAfterDestroy).toContain('return;');
   });
@@ -576,12 +495,6 @@ describe('privileged IPC sender validation (source contract)', () => {
     'storage:decrypt',
     'http:write',
     'http:disconnect',
-    'meshcore:tcp-connect',
-    'meshcore:tcp-write',
-    'meshcore:tcp-disconnect',
-    'meshtastic:tcp-connect',
-    'meshtastic:tcp-write',
-    'meshtastic:tcp-disconnect',
     'hostLink:getSessionMeter',
     'noble-ble-connect',
     'noble-ble-disconnect',
@@ -631,13 +544,26 @@ describe('privileged IPC sender validation (source contract)', () => {
   ] as const;
 
   it.each(privilegedChannels)('%s calls assertIpcSender or validateIpcSender', (channel) => {
-    const handlerIdx = INDEX_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    const handlerBody = ipcHandlerBody(channel);
+    expect(handlerBody.length).toBeGreaterThan(0);
     expect(
       handlerBody.includes('assertIpcSender(event') ||
         handlerBody.includes('validateIpcSender(event)'),
     ).toBe(true);
+  });
+
+  it.each([
+    'meshcore:tcp-connect',
+    'meshcore:tcp-write',
+    'meshcore:tcp-disconnect',
+    'meshtastic:tcp-connect',
+    'meshtastic:tcp-write',
+    'meshtastic:tcp-disconnect',
+  ] as const)('%s is registered from the shared TCP bridge with assertIpcSender', (channel) => {
+    expect(TCP_BRIDGE_SOURCE).toContain(`ipcMain.handle('${channel}'`);
+    expect(TCP_BRIDGE_SOURCE).toContain('assertIpcSender(event, connectChannel)');
+    expect(TCP_BRIDGE_SOURCE).toContain('assertIpcSender(event, writeChannel)');
+    expect(TCP_BRIDGE_SOURCE).toContain('assertIpcSender(event, disconnectChannel)');
   });
 
   it.each(['device-connected', 'device-disconnected'] as const)(
@@ -688,18 +614,9 @@ describe('privileged IPC sender validation (source contract)', () => {
     );
   });
 
-  it('meshcore tcp-connect uses connect timeout', () => {
-    expect(INDEX_SOURCE).toContain('MESHCORE_TCP_CONNECT_TIMEOUT_MS');
-    expect(INDEX_SOURCE).toMatch(
-      /meshcore:tcp-connect[\s\S]{0,1800}meshcore:tcp-connect: connection timeout/,
-    );
-  });
-
-  it('meshtastic tcp-connect uses connect timeout', () => {
-    expect(INDEX_SOURCE).toContain('MESHTASTIC_TCP_CONNECT_TIMEOUT_MS');
-    expect(INDEX_SOURCE).toMatch(
-      /meshtastic:tcp-connect[\s\S]{0,1800}meshtastic:tcp-connect: connection timeout/,
-    );
+  it('tcp-bridge connect uses a shared connect timeout', () => {
+    expect(TCP_BRIDGE_SOURCE).toContain('TCP_BRIDGE_CONNECT_TIMEOUT_MS');
+    expect(TCP_BRIDGE_SOURCE).toMatch(/\$\{connectChannel\}: connection timeout/);
   });
 
   it('validateMqttSettings rejects invalid broker hostnames', () => {

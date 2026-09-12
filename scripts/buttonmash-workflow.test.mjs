@@ -10,13 +10,13 @@ describe('Buttonmash CI', () => {
   it('runs the Vite renderer through the browser-safe Electron API stub', () => {
     expect(workflow).toContain('pnpm exec vite --host 127.0.0.1 --port 4173 --strictPort');
     expect(workflow).toContain('target: http://127.0.0.1:4173');
-    expect(workflow).toContain('pnpm install --frozen-lockfile');
+    expect(workflow).toContain('uses: ./.github/actions/setup-node-pnpm');
   });
 
   it('pins actions and the CLI while keeping the run bounded and safe', () => {
     expect(workflow).toContain('uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803');
     expect(workflow).toContain('persist-credentials: false');
-    expect(workflow).toContain('uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38');
+    expect(workflow).toContain('uses: ./.github/actions/setup-node-pnpm');
     expect(workflow).toContain("node-version: '22.23.2'");
     expect(workflow).toContain('uses: cj-vana/buttonmash@3dfe5aa15e824accfd5f72c176ac64b2f63450db');
     expect(workflow).toContain(

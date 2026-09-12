@@ -8,7 +8,7 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 | Workflow                    | Trigger                                      | Purpose                                                                         |
 | --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`    | Lint, typecheck, build, Flatpak manifest validation                             |
+| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`    | Lint, typecheck, build, policy scanners, Flatpak manifest validation            |
 | `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`    | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
 | `buttonmash.yaml`           | PR/`merge_group`/`workflow_dispatch`         | Browser-based chaos testing of the Vite renderer                                |
 | `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS; not a PR gate)                 |
@@ -31,6 +31,7 @@ Runs on every push, pull request, and merge-queue `merge_group` for `main` (and 
 - **Typecheck:** `pnpm run typecheck`
 - **Application build:** `pnpm run build`
 - **Flatpak checks:** only when Flatpak inputs change; runs `check:flatpak`, `check:flatpak-offline-pnpm`, `desktop-file-validate`, and `appstreamcli validate`
+- **Policy scanners:** cheap always-on `check:*` set from pre-commit/release (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, and the matching cheap scanners) so `--no-verify` and GitHub-only edits cannot skip them
 
 Each Node lane uses the same pinned Node 22/pnpm setup action and frozen install. The final `Build & Test` job aggregates every lane so the existing required check name remains stable. Superseded runs for the same pull request or ref are cancelled.
 
@@ -367,6 +368,7 @@ The ruleset is already **active** with `merge_group` triggers on `ci.yaml` / `te
 All PRs (and merge-queue groups) for `main` must pass the **required check names** listed above. Those jobs cover:
 
 - Lint, format, markdown, licenses, actionlint, yamllint (`pnpm run lint` and related steps in `ci.yaml`)
+- Cheap always-on policy scanners (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, and the matching cheap `check:*` set)
 - Typecheck and build (`pnpm run typecheck`, `pnpm run build`)
 - Affected Vitest tests on pull requests; full Vitest with global coverage thresholds on `merge_group`, `main`, and manual runs
 
@@ -386,7 +388,7 @@ The pre-commit hook (`.githooks/pre-commit`) runs checks beyond what GitHub Acti
 
 **PR CI** ([`tests.yaml`](../.github/workflows/tests.yaml)) selects merge-base-related Vitest work and fails closed to the full suite when scoping is unsafe. The merge queue and **`pnpm run release`** always run full Vitest; green pre-commit does not replace those gates.
 
-CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage tests. i18n quality is enforced locally via pre-commit and indirectly in CI through Vitest (`locale-quality.test.ts`).
+CI focuses on lint, typecheck, build, cheap always-on policy scanners, Flatpak metadata validation, and coverage tests. i18n quality is enforced locally via pre-commit and indirectly in CI through Vitest (`locale-quality.test.ts`).
 
 ---
 
