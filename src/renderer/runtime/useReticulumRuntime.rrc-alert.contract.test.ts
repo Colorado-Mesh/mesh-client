@@ -14,7 +14,6 @@ import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 vi.mock('@/renderer/lib/reticulum/fetchRecentInboundLxmf', () => ({
-  fetchRecentInboundLxmf: vi.fn().mockResolvedValue([]),
   fetchRecentInboundLxmfDetailed: vi.fn().mockResolvedValue({ messages: [], ringLen: 0 }),
 }));
 

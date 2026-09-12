@@ -351,8 +351,3 @@ export function cancelReticulumVoiceMemo(): Promise<void> {
   useReticulumVoiceMemoStore.getState().reset();
   return Promise.resolve();
 }
-
-/** True while mic capture is active. */
-export function isReticulumVoiceMemoRecording(): boolean {
-  return activeSession != null;
-}

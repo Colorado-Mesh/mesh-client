@@ -59,17 +59,6 @@ export interface ReticulumTopologyGraph {
   totalNodeCount: number;
 }
 
-/** Ring-layout node coordinates (legacy tests). */
-export interface ReticulumTopologyLayoutNode {
-  id: string;
-  label: string;
-  x: number;
-  y: number;
-  depth: number;
-  hops?: number | null;
-  isRelay: boolean;
-}
-
 const SELF_ID = 'self';
 
 export const RETICULUM_TOPOLOGY_NEARBY_NODE_CAP = TOPOLOGY_GRAPH_NEARBY_NODE_CAP;
@@ -659,28 +648,4 @@ export function buildReticulumTopologyGraph(
     hiddenCount,
     totalNodeCount: allPeerIds.length + 1,
   };
-}
-
-export interface BuildReticulumTopologyLayoutOptions {
-  selfLabel: string;
-  cx?: number;
-  cy?: number;
-}
-
-/** Ring layout (legacy); prefer buildReticulumTopologyGraph for force-directed UI. */
-export function buildReticulumTopologyLayout(
-  nodes: ReticulumTopologyNodeInput[],
-  edges: ReticulumTopologyEdgeInput[],
-  opts: BuildReticulumTopologyLayoutOptions,
-): ReticulumTopologyLayoutNode[] {
-  const graph = buildReticulumTopologyGraph(nodes, edges, opts);
-  return graph.nodes.map((n) => ({
-    id: n.id,
-    label: n.label,
-    x: n.seedX,
-    y: n.seedY,
-    depth: n.depth,
-    hops: n.hops,
-    isRelay: n.isHub,
-  }));
 }
