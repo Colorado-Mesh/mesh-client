@@ -123,6 +123,7 @@ import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
 import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
+import { useAllProtocolConnectionActions } from './hooks/useAllProtocolConnectionActions';
 import { useAllProtocolPanelActions } from './hooks/useAllProtocolPanelActions';
 import { useAppStartupDbPrune } from './hooks/useAppStartupDbPrune';
 import { useAppTrayUnreadSync } from './hooks/useAppTrayUnreadSync';
@@ -138,11 +139,7 @@ import { useMessages } from './hooks/useMessages';
 import { useNodeStatusNotifier } from './hooks/useNodeStatusNotifier';
 import { useNowMs } from './hooks/useNowMs';
 import { usePowerRecovery } from './hooks/usePowerRecovery';
-import {
-  useProtocolConnect,
-  useProtocolConnectionActions,
-  useProtocolDisconnect,
-} from './hooks/useProtocolConnection';
+import { useProtocolConnect, useProtocolDisconnect } from './hooks/useProtocolConnection';
 import { useProtocolFacade } from './hooks/useProtocolFacade';
 import { useRendererHeartbeat } from './hooks/useRendererHeartbeat';
 import type { useReticulumPanelActions } from './hooks/useReticulumPanelActions';
@@ -852,9 +849,10 @@ function AppContent() {
 
   const protocolConnect = useProtocolConnect();
   const protocolDisconnect = useProtocolDisconnect();
-  const meshtasticConnection = useProtocolConnectionActions('meshtastic');
-  const meshcoreConnection = useProtocolConnectionActions('meshcore');
-  const reticulumConnection = useProtocolConnectionActions('reticulum');
+  const allConnectionActions = useAllProtocolConnectionActions();
+  const meshtasticConnection = allConnectionActions.meshtastic;
+  const meshcoreConnection = allConnectionActions.meshcore;
+  const reticulumConnection = allConnectionActions.reticulum;
   const startReticulumStack = useCallback(
     () => reticulumConnection.connectAutomatic('http'),
     [reticulumConnection],
@@ -900,7 +898,7 @@ function AppContent() {
   const reticulumPanelActions = allPanelActions.reticulum as ReturnType<
     typeof useReticulumPanelActions
   >;
-  const activeFacade = useProtocolFacade(protocol, allPanelActions);
+  const activeFacade = useProtocolFacade(protocol, allPanelActions, allConnectionActions);
   const panelActions = activeFacade.panel.actions;
   const {
     identityIdByProtocol,
@@ -1076,10 +1074,7 @@ function AppContent() {
     () => protocolRecord(meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView),
     [meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView],
   );
-  const connectionActionsByProtocol = useMemo(
-    () => protocolRecord(meshtasticConnection, meshcoreConnection, reticulumConnection),
-    [meshtasticConnection, meshcoreConnection, reticulumConnection],
-  );
+  const connectionActionsByProtocol = allConnectionActions;
   const panelActionsByProtocol = useMemo(
     () => protocolRecord(meshtasticPanelActions, meshcorePanelActions, reticulumPanelActions),
     [meshtasticPanelActions, meshcorePanelActions, reticulumPanelActions],

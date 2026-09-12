@@ -1614,6 +1614,12 @@ describe('App ConnectionPanel facade wiring', () => {
     expect(source).not.toContain("protocol === 'meshtastic' && capabilities.hasChannelConfig");
   });
 
+  it('builds connection actions once via useAllProtocolConnectionActions', () => {
+    const source = readFileSync(join(__dirname, 'App.tsx'), 'utf-8');
+    expect(source).toContain('useAllProtocolConnectionActions()');
+    expect(source).not.toMatch(/useProtocolConnectionActions\(/);
+  });
+
   it.each([
     {
       protocol: 'meshtastic' as const,
