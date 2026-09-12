@@ -1,6 +1,7 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe, configureAxe } from 'vitest-axe';
 
