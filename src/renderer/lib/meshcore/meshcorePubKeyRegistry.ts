@@ -1,4 +1,4 @@
-import { pubKeyPrefixHex, pubkeyToNodeId } from '../meshcoreUtils';
+import { pubKeyPrefixHex } from '../meshcoreUtils';
 
 const pubKeyByNodeId = new Map<number, Uint8Array>();
 const pubKeyPrefixByHex = new Map<string, number>();
@@ -120,12 +120,4 @@ export function copyMeshcorePubKeyRegistryToRefs(
 /** @internal Test helper */
 export function meshcorePubKeyRegistrySize(): number {
   return pubKeyByNodeId.size;
-}
-
-/** Register from raw pubkey bytes (validates node id). */
-export function registerMeshcorePubKeyBytes(publicKey: Uint8Array): number {
-  const nodeId = pubkeyToNodeId(publicKey);
-  if (nodeId === 0) return 0;
-  registerMeshcorePubKey(nodeId, publicKey);
-  return nodeId;
 }

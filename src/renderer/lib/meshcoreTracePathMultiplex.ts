@@ -333,12 +333,3 @@ export function startMeshcoreTracePathMultiplexed(
     cancel: (reason?: string) => cancelFn?.(reason),
   };
 }
-
-export function runMeshcoreTracePathMultiplexed(
-  conn: MeshcoreTracePathConnection,
-  path: Uint8Array,
-  extraTimeoutMillis: number,
-  runSerialized: <T>(fn: () => Promise<T>) => Promise<T>,
-): Promise<MeshcoreTracePathResult> {
-  return startMeshcoreTracePathMultiplexed(conn, path, extraTimeoutMillis, runSerialized).promise;
-}

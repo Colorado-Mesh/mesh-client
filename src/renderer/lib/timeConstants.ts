@@ -113,9 +113,6 @@ export function computeRoomLoginSentWaitMs(
     : MESHCORE_ROOM_LOGIN_SENT_WAIT_DIRECT_MS;
 }
 
-/** Cap wait for SendLogin / room post `sendTextMessage` Sent response (meshcore.js has no timeout). */
-export const MESHCORE_ROOM_POST_SENT_TIMEOUT_MS = 45_000;
-
 /** Wall clock for room post including repeater RPC queue wait behind a stuck login. */
 export function computeRoomPostTotalTimeoutMs(
   hopsAway?: number | null,
