@@ -101,7 +101,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
       # Bound worker count because each type-aware worker loads TypeScript programs.
-      - run: pnpm run lint --concurrency 2
+      - run: pnpm run lint --concurrency 2 --config eslint.ci.config.mjs
 
   typecheck:
     name: Typecheck

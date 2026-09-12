@@ -27,7 +27,7 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 Runs on every push, pull request, and merge-queue `merge_group` for `main` (and `workflow_dispatch`). Independent lanes start concurrently; only Flatpak waits for change detection:
 
 - **Code quality:** format, markdownlint, license allowlist, actionlint, dependency audit, and yamllint
-- **ESLint:** full repository lint with two workers, in parallel with formatting; all type-aware rules and the zero-warning gate remain enabled
+- **ESLint:** full repository lint with two workers, using `eslint.ci.config.mjs` to avoid running Prettier again for extensions already covered by the required Code quality job. All type-aware rules and the zero-warning gate remain enabled; local lint still checks formatting.
 - **Typecheck:** `pnpm run typecheck`
 - **Application build:** `pnpm run build`
 - **Flatpak checks:** only when Flatpak inputs change; runs `check:flatpak`, `check:flatpak-offline-pnpm`, `desktop-file-validate`, and `appstreamcli validate`
