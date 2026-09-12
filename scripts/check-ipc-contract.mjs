@@ -24,10 +24,6 @@ const PRELOAD_FILE = path.join(ROOT, 'src', 'preload', 'index.ts');
 const MAIN_FILES = [
   path.join(ROOT, 'src', 'main', 'index.ts'),
   path.join(ROOT, 'src', 'main', 'updater.ts'),
-  path.join(ROOT, 'src', 'main', 'database.ts'),
-  path.join(ROOT, 'src', 'main', 'mqtt-manager.ts'),
-  path.join(ROOT, 'src', 'main', 'meshcore-mqtt-adapter.ts'),
-  path.join(ROOT, 'src', 'main', 'log-service.ts'),
   // Linux Web Bluetooth cancel handlers live beside the session helper (not under ipc/).
   path.join(ROOT, 'src', 'main', 'linuxWebBluetoothCancelIpc.ts'),
   ...collectIpcHandlerFiles(path.join(ROOT, 'src', 'main', 'ipc')),
@@ -128,6 +124,13 @@ function main() {
   for (const ch of mainHandles) {
     if (!rendererInvokes.has(ch)) {
       warnings.push(`  Main handles '${ch}' but preload never invokes it (dead handler)`);
+    }
+  }
+
+  // Every ipcMain.on that isn't sent from preload is a dead handler (warning only)
+  for (const ch of mainOns) {
+    if (!rendererSends.has(ch)) {
+      warnings.push(`  Main ons '${ch}' but preload never sends it (dead handler)`);
     }
   }
 
