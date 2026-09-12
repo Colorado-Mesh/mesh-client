@@ -752,7 +752,20 @@
     "reticulumSendAwaitingPeerReceipt": "Terkirim (menunggu tanda terima sejawat)",
     "reticulumChatNeedsLxmfDelivery": "Rekan ini belum memiliki alamat pengiriman LXMF (Obrolan tidak dapat menggunakan tujuan khusus Suara). Tunggu pengumuman LXMF, atau tempelkan hash LXMF 32 karakternya.",
     "saveAttachment": "Simpan",
-    "revealAttachment": "Tampilkan dalam Folder"
+    "revealAttachment": "Tampilkan dalam Folder",
+    "outboxRemoveFailed": "Pesan terkirim, tetapi tidak berhasil menghapusnya dari kotak keluar. Batalkan salinan yang diantrekan.",
+    "sendErrors": {
+      "notConnected": "Tidak tersambung — hubungkan radio dan coba lagi.",
+      "emptyPayload": "Teks pesan wajib diisi.",
+      "missingDestinationKey": "Tidak dapat mengirim pesan langsung ini — kunci enkripsi penerima hilang. Tunggu sinkronisasi kontak atau sambungkan kembali.",
+      "encryptionBlocked": "Tidak dapat mengirim — kunci enkripsi hilang.",
+      "timeout": "Waktu pengiriman habis. Coba lagi.",
+      "invalidReaction": "Reaksi itu tidak valid.",
+      "reactionTargetMissing": "Pesan untuk bereaksi tidak ditemukan.",
+      "bleUnavailable": "Bluetooth belum siap. Sambungkan kembali dan coba lagi.",
+      "roomSessionExpired": "Sesi kamar kedaluwarsa — masuk lagi untuk memposting.",
+      "noSavedRoomCredential": "Tidak ada kata sandi kamar yang disimpan. Masuk ke kamar terlebih dahulu."
+    }
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

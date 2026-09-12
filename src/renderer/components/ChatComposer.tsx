@@ -15,6 +15,7 @@ import {
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
+import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
@@ -647,10 +648,12 @@ export function ChatComposer({
         }
       } catch (err) {
         console.error('[ChatComposer] Intercept send failed: ' + errLikeToLogString(err));
-        const fallback =
-          variant === 'room' ? t('roomsPanel.postFailed') : t('chatPanel.sendFailed');
+        const fallbackKey = variant === 'room' ? 'roomsPanel.postFailed' : 'chatPanel.sendFailed';
         setChatActionError({
-          message: err instanceof Error ? err.message : fallback,
+          message: translateChatSendError(t, err, {
+            fallbackKey,
+            passthroughUnknown: true,
+          }),
           viewKey,
         });
         return;
@@ -752,8 +755,8 @@ export function ChatComposer({
       onSendSuccess?.();
     } catch (err) {
       console.error('[ChatComposer] Send failed: ' + errLikeToLogString(err));
-      const fallback = variant === 'room' ? t('roomsPanel.postFailed') : t('chatPanel.sendFailed');
-      const errMsg = err instanceof Error ? err.message : fallback;
+      const fallbackKey = variant === 'room' ? 'roomsPanel.postFailed' : 'chatPanel.sendFailed';
+      const errMsg = translateChatSendError(t, err, { fallbackKey });
       if (allowOutbox && queueOutbox) {
         const groupId = textsToSend.length > 1 ? crypto.randomUUID() : null;
         for (let i = 0; i < textsToSend.length; i++) {
@@ -841,7 +844,7 @@ export function ChatComposer({
       } catch (err) {
         console.error('[ChatComposer] GIF send failed: ' + errLikeToLogString(err));
         setChatActionError({
-          message: err instanceof Error ? err.message : t('chatPanel.sendFailed'),
+          message: translateChatSendError(t, err),
           viewKey,
         });
       } finally {
@@ -955,7 +958,7 @@ export function ChatComposer({
         );
       }
       setChatActionError({
-        message: err instanceof Error ? err.message : t('chatPanel.sendFailed'),
+        message: translateChatSendError(t, err),
         viewKey,
       });
     } finally {

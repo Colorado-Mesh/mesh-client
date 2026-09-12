@@ -752,7 +752,20 @@
     "reticulumSendAwaitingPeerReceipt": "Inviato (in attesa di ricezione da parte del pari)",
     "reticulumChatNeedsLxmfDelivery": "Questo peer non ha ancora un indirizzo di consegna LXMF (la chat non può utilizzare una destinazione solo vocale). Attendi un annuncio LXMF o incolla il loro hash LXMF di 32 caratteri.",
     "saveAttachment": "Salva…",
-    "revealAttachment": "Nella cartella"
+    "revealAttachment": "Nella cartella",
+    "outboxRemoveFailed": "Il messaggio è stato inviato, ma la rimozione dalla posta in uscita non è riuscita. Annullare la copia in coda.",
+    "sendErrors": {
+      "notConnected": "Non connesso: collega la radio e riprova.",
+      "emptyPayload": "Il testo del messaggio è obbligatorio",
+      "missingDestinationKey": "Impossibile inviare questo messaggio diretto: manca la chiave di crittografia del destinatario. Attendere la sincronizzazione o la riconnessione del contatto.",
+      "encryptionBlocked": "Impossibile inviare — chiave di crittografia mancante.",
+      "timeout": "Invio scaduto. Riprova.",
+      "invalidReaction": "Questa reazione non è valida.",
+      "reactionTargetMissing": "Il messaggio a cui reagire non è stato trovato.",
+      "bleUnavailable": "Il Bluetooth non è pronto. Riconnettiti e riprova.",
+      "roomSessionExpired": "Sessione room scaduta — accedi di nuovo per pubblicare.",
+      "noSavedRoomCredential": "Nessuna password della stanza salvata. Accedi prima alla stanza."
+    }
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

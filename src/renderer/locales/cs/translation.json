@@ -772,7 +772,20 @@
     "reticulumSendAwaitingPeerReceipt": "Odesláno (čeká se na potvrzení od kolegy)",
     "reticulumChatNeedsLxmfDelivery": "Tento protějšek zatím nemá doručovací adresu LXMF (Chat nemůže používat cíl pouze pro hlas). Počkejte na oznámení LXMF nebo vložte jeho 32místný hash LXMF.",
     "saveAttachment": "Uložit...",
-    "revealAttachment": "Zobrazit ve složce"
+    "revealAttachment": "Zobrazit ve složce",
+    "outboxRemoveFailed": "Zpráva byla odeslána, ale odebrání ze schránky se nezdařilo. Zrušte kopii ve frontě.",
+    "sendErrors": {
+      "notConnected": "Nepřipojeno — připojte rádio a zkuste to znovu.",
+      "emptyPayload": "Text zprávy je vyžadován.",
+      "missingDestinationKey": "Tuto přímou zprávu nelze odeslat — chybí šifrovací klíč příjemce. Počkejte na synchronizaci nebo opětovné připojení kontaktu.",
+      "encryptionBlocked": "Nelze odeslat — chybí šifrovací klíč.",
+      "timeout": "Čas odeslání vypršel. Zkuste to znovu.",
+      "invalidReaction": "Tato reakce není platná.",
+      "reactionTargetMissing": "Zpráva, na kterou chcete reagovat, nebyla nalezena.",
+      "bleUnavailable": "Bluetooth není připraven. Připojte se znovu a zkuste to znovu.",
+      "roomSessionExpired": "Relace místnosti vypršela — pro zveřejnění se znovu přihlaste.",
+      "noSavedRoomCredential": "Žádné uložené heslo místnosti. Nejprve se přihlaste do místnosti."
+    }
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

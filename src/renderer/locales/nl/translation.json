@@ -752,7 +752,20 @@
     "reticulumSendAwaitingPeerReceipt": "Verzonden (in afwachting van ontvangst door collega's)",
     "reticulumChatNeedsLxmfDelivery": "Deze peer heeft nog geen LXMF-bezorgadres (chat kan geen bestemming met alleen spraak gebruiken). Wacht op een LXMF-aankondiging of plak hun LXMF-hash van 32 tekens.",
     "saveAttachment": "Opslaan",
-    "revealAttachment": "Tonen in map"
+    "revealAttachment": "Tonen in map",
+    "outboxRemoveFailed": "Bericht is verzonden, maar het verwijderen uit het postvak uit is mislukt. Annuleer de kopie in de wachtrij.",
+    "sendErrors": {
+      "notConnected": "Niet verbonden — sluit de radio aan en probeer het opnieuw.",
+      "emptyPayload": "Berichttekst is vereist",
+      "missingDestinationKey": "Kan dit directe bericht niet verzenden — de versleutelingssleutel van de ontvanger ontbreekt. Wacht op contact synchronisatie of maak opnieuw verbinding.",
+      "encryptionBlocked": "Kan niet verzenden — versleutelingssleutel ontbreekt.",
+      "timeout": "Time-out bij verzenden. Probeer het opnieuw.",
+      "invalidReaction": "Die reactie is niet geldig.",
+      "reactionTargetMissing": "Het bericht om op te reageren is niet gevonden.",
+      "bleUnavailable": "Bluetooth is niet gereed. Maak opnieuw verbinding en probeer het opnieuw.",
+      "roomSessionExpired": "Roomsessie verlopen — log opnieuw in om te posten.",
+      "noSavedRoomCredential": "Geen opgeslagen kamerwachtwoord. Log eerst in op de kamer."
+    }
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

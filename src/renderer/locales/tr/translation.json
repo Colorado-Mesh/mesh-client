@@ -752,7 +752,20 @@
     "reticulumSendAwaitingPeerReceipt": "Gönderildi (akran makbuzu bekleniyor)",
     "reticulumChatNeedsLxmfDelivery": "Bu akranın henüz LXMF teslimat adresi yok (Sohbet yalnızca Sesli bir hedef kullanamaz). Bir LXMF duyurusu bekleyin veya 32 karakterlik LXMF karmasını yapıştırın.",
     "saveAttachment": "Kaydetmek…",
-    "revealAttachment": "Dizinde"
+    "revealAttachment": "Dizinde",
+    "outboxRemoveFailed": "Mesaj gönderildi, ancak giden kutusundan kaldırılamadı. Kuyruktaki kopyayı iptal edin.",
+    "sendErrors": {
+      "notConnected": "Bağlı değil — radyoyu bağlayın ve tekrar deneyin.",
+      "emptyPayload": "Lütfen mesajınızı yazın.",
+      "missingDestinationKey": "Bu doğrudan mesaj gönderilemiyor — alıcı şifreleme anahtarı eksik. Kişi senkronizasyonunu bekleyin veya yeniden bağlanın.",
+      "encryptionBlocked": "Gönderilemiyor — şifreleme anahtarı eksik.",
+      "timeout": "Gönderme zaman aşımına uğradı. Tekrar deneyin.",
+      "invalidReaction": "Bu tepki geçerli değildir.",
+      "reactionTargetMissing": "Tepki verilecek mesaj bulunamadı.",
+      "bleUnavailable": "Bluetooth hazır değil. Yeniden bağlanın ve tekrar deneyin.",
+      "roomSessionExpired": "Oda oturumunun süresi doldu — yayınlamak için tekrar giriş yapın.",
+      "noSavedRoomCredential": "Kaydedilmiş oda şifresi yok. Önce odaya giriş yapın."
+    }
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

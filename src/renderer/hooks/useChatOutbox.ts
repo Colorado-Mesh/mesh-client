@@ -9,7 +9,11 @@ import type { OutboxEntry, OutboxEntryInput, OutboxStatus } from '@/shared/elect
 import { isMeshProtocol } from '@/shared/meshProtocol';
 
 import { registerChatOutboxDrainListener } from '../lib/chatOutboxDrain';
-import i18n from '../lib/i18n';
+import {
+  CHAT_OUTBOX_REMOVE_FAILED_KEY,
+  isEncryptionBlockedSendError,
+  persistableChatSendError,
+} from '../lib/chatSendErrorI18n';
 import { recordMeshcoreSend } from '../lib/meshcoreSendRateNotice';
 import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
 import { getRadioCapabilities } from '../lib/radio/providerFactory';
@@ -25,14 +29,6 @@ export const OUTBOX_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 /** Legacy mesh-client `[i/N] ` chunk prefix on outbox payloads queued before single-packet. */
 const LEGACY_MULTIPART_PREFIX_RE = /^\[\d+\/\d+\]\s/;
 const RETICULUM_RECEIPT_TIMEOUT_MS = 30_000;
-
-function isEncryptionBlockedError(errMsg: string): boolean {
-  return /no.?encr|no.?key|encryption/i.test(errMsg);
-}
-
-function errMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
 
 /**
  * True for durable outbox rows from before MeshCore single-packet: grouped multi-chunk sends
@@ -74,8 +70,7 @@ async function finalizeSuccessfulOutboxSend(
     removeRow(row.id);
   } catch (removeErr: unknown) {
     console.warn('[useChatOutbox] remove after send failed', row.id, removeErr);
-    const removeMsg = errMessage(removeErr);
-    const error = `delivered; outbox remove failed: ${removeMsg}`;
+    const error = CHAT_OUTBOX_REMOVE_FAILED_KEY;
     const attemptCount = row.attemptCount + 1;
     try {
       await window.electronAPI.chat.outbox.updateStatus(
@@ -97,8 +92,8 @@ async function recordOutboxSendFailure(
   err: unknown,
   updateRow: (id: number, patch: Partial<OutboxEntry>) => void,
 ): Promise<void> {
-  const errMsg = errMessage(err);
-  const isBlocked = isEncryptionBlockedError(errMsg);
+  const errMsg = persistableChatSendError(err);
+  const isBlocked = isEncryptionBlockedSendError(err instanceof Error ? err.message : errMsg);
   const nextAttemptCount = row.attemptCount + 1;
   const newStatus: OutboxStatus = isBlocked ? 'blocked' : 'failed';
   const nextRetryAt =
@@ -136,7 +131,7 @@ async function quarantineLegacyMultipartOutboxRow(
   row: OutboxEntry,
   updateRow: (id: number, patch: Partial<OutboxEntry>) => void,
 ): Promise<void> {
-  const error = i18n.t('chatPanel.outboxLegacyMultipartBlocked');
+  const error = 'chatPanel.outboxLegacyMultipartBlocked';
   try {
     await window.electronAPI.chat.outbox.updateStatus(row.id, 'blocked', error, undefined);
   } catch (persistErr: unknown) {
@@ -168,7 +163,7 @@ async function sendOneOutboxRow(
       const attemptStoreId =
         typeof sendResult === 'string' && sendResult !== '' ? sendResult : null;
       if (reticulumIdentityId == null || attemptStoreId == null) {
-        throw new Error(i18n.t('chatPanel.reticulumSendTimeout'));
+        throw new Error('chatPanel.reticulumSendTimeout');
       }
       const receiptState = await waitForReticulumOutboundTerminal(
         reticulumIdentityId,
@@ -176,10 +171,10 @@ async function sendOneOutboxRow(
         reticulumReceiptTimeoutMs,
       );
       if (receiptState === 'failed') {
-        throw new Error(i18n.t('chatPanel.reticulumSendFailed'));
+        throw new Error('chatPanel.reticulumSendFailed');
       }
       if (receiptState !== 'acked') {
-        throw new Error(i18n.t('chatPanel.reticulumSendTimeout'));
+        throw new Error('chatPanel.reticulumSendTimeout');
       }
     }
     // Keep the app-wide single-packet fast-send clock honest: a drained row is airtime too.
