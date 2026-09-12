@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -110,7 +110,7 @@ describe('ReticulumStackPanel', () => {
       />,
     );
 
-    const status = await screen.findByText('● connectionPanel.disconnected');
+    const status = (await screen.findByText('connectionPanel.disconnected')).parentElement;
     const startButton = screen.getByRole('button', {
       name: 'connectionPanel.reticulumStartStack',
     });
@@ -119,6 +119,29 @@ describe('ReticulumStackPanel', () => {
     expect(startButton).toHaveClass('bg-amber-700', 'text-white', 'hover:bg-amber-800');
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('pulses the connecting stack status dot, not the text', async () => {
+    vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
+      running: false,
+      port: 0,
+      pid: null,
+      interfaceIssueAlert: null,
+    });
+
+    render(
+      <ReticulumStackPanel connecting onStartStack={async () => {}} onStopStack={async () => {}} />,
+    );
+
+    const title = await screen.findByText('connectionPanel.reticulumStackTitle');
+    const header = title.closest('.bg-secondary-dark');
+    expect(header).toBeTruthy();
+    const statusText = within(header as HTMLElement).getByText('connectionPanel.connecting');
+    const status = statusText.parentElement;
+    expect(status).toHaveClass('text-yellow-400');
+    expect(statusText).not.toHaveClass('animate-pulse');
+    expect(status).not.toHaveClass('animate-pulse');
+    expect(statusText.previousElementSibling).toHaveClass('animate-pulse');
   });
 
   it('shows local interface alert when serial port is stale', async () => {

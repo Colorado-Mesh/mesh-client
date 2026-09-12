@@ -52,6 +52,10 @@ import {
   humanizeSerialError,
 } from '../lib/connectionPanelErrorHumanize';
 import {
+  connectionPanelConnectionTypeLabel,
+  connectionPanelRadioStatusLabel,
+} from '../lib/connectionPanelLabels';
+import {
   COLORADO_MQTT_REGION_ACK_KEY,
   meshcoreMqttNeedsColoradoRegionAck,
   runConnectionPanelStorageMigrations,
@@ -2225,21 +2229,28 @@ export default function ConnectionPanel({
           mqttStatus === 'connected'
             ? 'text-brand-green'
             : mqttStatus === 'connecting'
-              ? 'animate-pulse text-yellow-400'
+              ? 'text-yellow-400'
               : mqttStatus === 'error'
                 ? 'text-red-400'
                 : 'text-gray-300'
         }`}
         aria-live="polite"
       >
-        <span aria-hidden="true">● </span>
-        {mqttStatus === 'connected'
-          ? t('connectionPanel.mqttStatusConnected')
-          : mqttStatus === 'connecting'
-            ? t('connectionPanel.mqttStatusConnecting')
-            : mqttStatus === 'error'
-              ? t('connectionPanel.mqttStatusError')
-              : t('connectionPanel.mqttStatusDisconnected')}
+        <span
+          aria-hidden="true"
+          className={mqttStatus === 'connecting' ? 'inline-block animate-pulse' : undefined}
+        >
+          ●{' '}
+        </span>
+        <span>
+          {mqttStatus === 'connected'
+            ? t('connectionPanel.mqttStatusConnected')
+            : mqttStatus === 'connecting'
+              ? t('connectionPanel.mqttStatusConnecting')
+              : mqttStatus === 'error'
+                ? t('connectionPanel.mqttStatusError')
+                : t('connectionPanel.mqttStatusDisconnected')}
+        </span>
       </span>
     </div>
   );
@@ -3104,7 +3115,7 @@ export default function ConnectionPanel({
                 rel="noreferrer"
                 className="hover:text-brand-green text-xs text-gray-300 transition-colors"
               >
-                Docs ↗
+                {t('diagnosticsPanel.docsLink')}
               </a>
               <span
                 className={`inline-flex items-center gap-1 text-xs font-medium ${
@@ -3116,16 +3127,20 @@ export default function ConnectionPanel({
                     ●
                   </span>
                 ) : (
-                  <>●</>
+                  <span aria-hidden>●</span>
                 )}{' '}
-                {state.status}
+                <span>{connectionPanelRadioStatusLabel(t, state.status)}</span>
               </span>
             </div>
           </div>
           <div className="space-y-3 p-4">
             <div className="flex justify-between text-sm">
               <span className="text-muted">{t('connectionPanel.connectionType')}</span>
-              <span className="text-gray-200 uppercase">{state.connectionType}</span>
+              <span className="text-gray-200">
+                {state.connectionType
+                  ? connectionPanelConnectionTypeLabel(t, state.connectionType, protocol)
+                  : null}
+              </span>
             </div>
             {state.connectionType === 'ble' && lastBleIdentity ? (
               <div className="flex justify-between text-sm">
@@ -3256,7 +3271,9 @@ export default function ConnectionPanel({
                 {lastConnection.type === 'ble' && lastBleIdentity ? (
                   <p className="text-muted font-mono text-xs">{lastBleIdentity.display}</p>
                 ) : (
-                  <p className="text-muted text-xs uppercase">{lastConnection.type}</p>
+                  <p className="text-muted text-xs">
+                    {connectionPanelConnectionTypeLabel(t, lastConnection.type, protocol)}
+                  </p>
                 )}
               </div>
             </div>
@@ -3298,7 +3315,7 @@ export default function ConnectionPanel({
               rel="noreferrer"
               className="hover:text-brand-green text-xs text-gray-300 transition-colors"
             >
-              Docs ↗
+              {t('diagnosticsPanel.docsLink')}
             </a>
             <span className="text-xs font-medium text-gray-400">
               {t('connectionPanel.disconnected')}
