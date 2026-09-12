@@ -191,10 +191,10 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
       /import \{ scheduleRrcSessionStatusReconcile \} from '@\/renderer\/lib\/reconcileRrcSessionsFromSnapshot'/,
     );
     expect(SOURCE).toMatch(
-      /evt\.type === 'events_lagged'[\s\S]*?scheduleRrcSessionStatusReconcile\('events_lagged'\)/,
+      /evt\.type === 'events_lagged'[\s\S]*?void scheduleRrcSessionStatusReconcile\('events_lagged'\)/,
     );
     expect(SOURCE).toMatch(
-      /evt\.type === 'ws_connected'[\s\S]*?reconnect === true[\s\S]*?scheduleRrcSessionStatusReconcile\('ws_reconnect'\)/,
+      /evt\.type === 'ws_connected'[\s\S]*?reconnect === true[\s\S]*?void scheduleRrcSessionStatusReconcile\('ws_reconnect'\)/,
     );
   });
 });

@@ -903,7 +903,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
             '[useReticulumRuntime] catch-up after events_lagged failed ' + errLikeToLogString(e),
           );
         });
-        scheduleRrcSessionStatusReconcile('events_lagged');
+        void scheduleRrcSessionStatusReconcile('events_lagged');
       }
       if (evt.type === 'ws_connected' && evt.payload && typeof evt.payload === 'object') {
         const reconnect = (evt.payload as { reconnect?: boolean }).reconnect === true;
@@ -914,7 +914,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
               '[useReticulumRuntime] catch-up after ws_reconnect failed ' + errLikeToLogString(e),
             );
           });
-          scheduleRrcSessionStatusReconcile('ws_reconnect');
+          void scheduleRrcSessionStatusReconcile('ws_reconnect');
         }
       }
       if (evt.type === 'lxmf_outbound_status' && evt.payload && typeof evt.payload === 'object') {
