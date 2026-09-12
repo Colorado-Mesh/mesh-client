@@ -657,6 +657,8 @@ mod tests {
         assert!(rrc_disconnect_should_drop_path("resource_offers_closed"));
         assert!(!rrc_disconnect_should_drop_path("local_close"));
         assert!(!rrc_disconnect_should_drop_path("local_disconnect"));
+        // Silent event-channel end — reconnect with Refresh, not DropPath.
+        assert!(!rrc_disconnect_should_drop_path("link_ended"));
     }
 
     #[test]

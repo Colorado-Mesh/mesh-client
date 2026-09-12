@@ -274,6 +274,23 @@ function checkManifestBranchAndElectronPayload(pkg) {
       });
     }
   }
+  // Electron zips keep `electron`, `locales/` and `resources/` at the archive root.
+  // flatpak-builder defaults to strip-components:1, which flattens locales/*.pak and
+  // resources/default_app.asar into dest; Chromium's ResourceBundle init then fails and
+  // the browser process exits 1 with no output.
+  const electronArchiveBlocks = yaml
+    .split(/^\s*- type: archive\s*$/m)
+    .filter((block) => /electron-v[\d.]+-linux-(?:x64|arm64)\.zip/.test(block));
+  for (const block of electronArchiveBlocks) {
+    if (!/strip-components:\s*0\b/.test(block)) {
+      violations.push({
+        file: rel,
+        message:
+          'electron zip archive sources must set strip-components: 0 (default 1 flattens locales/ and resources/, Electron then exits 1)',
+      });
+      break;
+    }
+  }
 
   if (!yaml.includes('resources /app/lib/mesh-client/')) {
     violations.push({

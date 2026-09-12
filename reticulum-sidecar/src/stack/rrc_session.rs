@@ -1018,7 +1018,65 @@ async fn session_loop(
                         }
                     }
                     None => {
+                        // Event channel ended without Closed (task drop / channel close).
+                        // Treat like an unintended link death so the UI is not left Active.
                         link = None;
+                        let reason = "link_ended".to_string();
+                        let should_reconnect =
+                            reconnect_intent.is_some() && connect_job.is_none();
+                        {
+                            let mut g = inner.lock().await;
+                            if should_reconnect {
+                                g.status = RrcSessionStatus::Reconnecting;
+                            } else if connect_job.is_none() {
+                                g.status = RrcSessionStatus::Disconnected;
+                                g.rooms.clear();
+                            }
+                            g.last_error = Some(reason.clone());
+                        }
+                        emit(
+                            &event_tx,
+                            "rrc.disconnected",
+                            json!({
+                                "hub_dest_hash": hex,
+                                "reason": reason,
+                                "will_reconnect": should_reconnect,
+                            }),
+                        );
+                        if should_reconnect {
+                            if let Some((dest_hash, dest_hash_hex, hops, intent_nick)) =
+                                reconnect_intent.clone()
+                            {
+                                let nickname =
+                                    resolve_reconnect_nickname(&inner, &intent_nick).await;
+                                let delay = backoff_ms;
+                                let path_refresh = if rrc_disconnect_should_drop_path(&reason) {
+                                    RrcPathRefresh::DropAndRefresh
+                                } else {
+                                    RrcPathRefresh::Refresh
+                                };
+                                debug!(
+                                    reason = %reason,
+                                    ?path_refresh,
+                                    "rrc reconnecting to {dest_hash_hex} in {delay}ms after link_ended"
+                                );
+                                backoff_ms =
+                                    (backoff_ms.saturating_mul(2)).min(RECONNECT_MAX_MS);
+                                connect_job = Some(spawn_connect_job(
+                                    transport_tx.clone(),
+                                    identity.clone(),
+                                    Arc::clone(&inner),
+                                    event_tx.clone(),
+                                    dest_hash,
+                                    dest_hash_hex,
+                                    hops,
+                                    nickname,
+                                    delay,
+                                    path_refresh,
+                                    None,
+                                ));
+                            }
+                        }
                     }
                 }
             }

@@ -72,9 +72,6 @@ export function hasRsstackWorkspace(projectDir: string): boolean {
   return fs.existsSync(rnsRuntime) && fs.existsSync(lxmfCore);
 }
 
-/** @deprecated Use {@link hasRsstackWorkspace}. */
-export const hasRnsStackSiblings = hasRsstackWorkspace;
-
 /** Cargo build args: full RNS stack (+ BLE) when the repo-local .rsstack is present. */
 export function sidecarCargoBuildArgs(projectDir: string): string[] {
   if (hasRsstackWorkspace(projectDir)) {

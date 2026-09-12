@@ -48,13 +48,22 @@ export const FLATPAK_CONTAINER_IMAGE =
 
 export const ACT_PULL_IMAGES = [ACT_PLATFORM_IMAGE, FLATPAK_CONTAINER_IMAGE];
 
+/**
+ * Real `ci.yaml` work jobs for Docker `act:ci`.
+ * Do not include `build` — that is the GitHub-required "Build & Test" aggregator
+ * that only checks sibling results, so `act -j build` does no lint/typecheck/build.
+ * `changes` / `flatpak` stay path-gated on GitHub; native `act:ci:native` still
+ * runs the Flatpak checks.
+ */
+export const ACT_CI_JOBS = ['quality', 'lint', 'typecheck', 'app-build', 'policy-scanners'];
+
 /** @type {Record<string, ActInvocation | ActInvocation[]>} */
 export const ACT_TARGETS = {
-  ci: {
+  ci: ACT_CI_JOBS.map((job) => ({
     event: 'workflow_dispatch',
     workflow: '.github/workflows/ci.yaml',
-    job: 'build',
-  },
+    job,
+  })),
   tests: {
     event: 'workflow_dispatch',
     workflow: '.github/workflows/tests.yaml',
@@ -514,7 +523,7 @@ Modes (default: docker / act in containers):
   MESH_CLIENT_ACT_MODE=native|docker
 
 Targets:
-  ci                 CI workflow (lint, typecheck, build, flatpak checks)
+  ci                 CI work jobs (quality, lint, typecheck, app-build, policy-scanners)
   tests              Tests workflow (coverage)
   build-linux        build.yaml ubuntu-latest leg (dist:linux)
   reticulum-sidecar  Reticulum sidecar Linux jobs

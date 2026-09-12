@@ -221,6 +221,8 @@ Do not use `npm install`; it will create a `package-lock.json` and may not respe
 
 Container mode runs GitHub Actions jobs inside Linux containers using a Docker-compatible engine (Podman preferred). Host mode runs the same pnpm/cargo steps directly — use this when no container engine is available or act cannot reach the daemon. `pnpm run check:environment` warns if no container engine or act is missing but does not block commits. Use **native** scripts when no Docker-compatible engine is available or act cannot reach the daemon.
 
+Docker `pnpm run act:ci` runs the real `ci.yaml` work jobs (`quality`, `lint`, `typecheck`, `app-build`, `policy-scanners`) in sequence. It does **not** invoke the `Build & Test` aggregator (`build`) — that job only checks sibling results on GitHub so the required check name stays stable. Path-filtered Flatpak checks are not part of container `act:ci` (native `act:ci:native` still runs them; or change Flatpak inputs and use the `flatpak` job / `act:flatpak`).
+
 **macOS note:** [Podman Desktop](https://podman.io/) is the preferred Docker-compatible engine for local CI. When Docker compatibility is enabled, Podman exposes a Docker-compatible socket at `/var/run/docker.sock`; pass that path to `act` via `ACT_DOCKER_SOCKET`, or let `act` detect it automatically if Podman created the symlink. If you use Docker Desktop instead, its socket is typically under `~/.docker/run/docker.sock`.
 
 Install act (container mode only):
@@ -247,6 +249,8 @@ pnpm run act:pull-images
 pnpm run act:list
 
 # PR parity — container (act + Podman/Docker)
+# act:ci runs quality / lint / typecheck / app-build / policy-scanners
+# (not the GitHub-only Build & Test aggregator job)
 pnpm run act:ci
 pnpm run act:tests
 pnpm run act:pr

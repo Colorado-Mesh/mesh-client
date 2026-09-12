@@ -29,6 +29,7 @@ import {
   MAX_RAW_PACKET_LOG_ENTRIES,
   type ReticulumRawPacketEntry,
 } from '@/renderer/lib/rawPacketLogConstants';
+import { scheduleRrcSessionStatusReconcile } from '@/renderer/lib/reconcileRrcSessionsFromSnapshot';
 import { announceDestinationHashes } from '@/renderer/lib/reticulum/announceDestinationHashes';
 import {
   applyReticulumOutboundDeliveryStatus,
@@ -902,6 +903,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
             '[useReticulumRuntime] catch-up after events_lagged failed ' + errLikeToLogString(e),
           );
         });
+        void scheduleRrcSessionStatusReconcile('events_lagged');
       }
       if (evt.type === 'ws_connected' && evt.payload && typeof evt.payload === 'object') {
         const reconnect = (evt.payload as { reconnect?: boolean }).reconnect === true;
@@ -912,6 +914,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
               '[useReticulumRuntime] catch-up after ws_reconnect failed ' + errLikeToLogString(e),
             );
           });
+          void scheduleRrcSessionStatusReconcile('ws_reconnect');
         }
       }
       if (evt.type === 'lxmf_outbound_status' && evt.payload && typeof evt.payload === 'object') {
