@@ -115,20 +115,93 @@ export function asGpsIntervalChange(
   };
 }
 
+function isTelemetryPoint(value: unknown): value is TelemetryPoint {
+  return isRecord(value) && typeof value.timestamp === 'number';
+}
+
+function isEnvironmentTelemetryPoint(value: unknown): value is EnvironmentTelemetryPoint {
+  return (
+    isRecord(value) && typeof value.timestamp === 'number' && typeof value.nodeNum === 'number'
+  );
+}
+
+function isMeshWaypoint(value: unknown): value is MeshWaypoint {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'number' &&
+    typeof value.latitude === 'number' &&
+    typeof value.longitude === 'number' &&
+    typeof value.name === 'string' &&
+    typeof value.from === 'number' &&
+    typeof value.timestamp === 'number'
+  );
+}
+
+function isMeshNeighbor(
+  value: unknown,
+): value is { nodeId: number; snr: number; lastRxTime: number } {
+  return (
+    isRecord(value) &&
+    typeof value.nodeId === 'number' &&
+    typeof value.snr === 'number' &&
+    typeof value.lastRxTime === 'number'
+  );
+}
+
+function isNeighborInfoRecord(value: unknown): value is NeighborInfoRecord {
+  return (
+    isRecord(value) &&
+    typeof value.nodeId === 'number' &&
+    typeof value.timestamp === 'number' &&
+    Array.isArray(value.neighbors) &&
+    value.neighbors.every(isMeshNeighbor)
+  );
+}
+
 export function asWaypointMap(value: unknown): Map<number, MeshWaypoint> | undefined {
-  return value instanceof Map ? (value as Map<number, MeshWaypoint>) : undefined;
+  if (!(value instanceof Map)) return undefined;
+  let allValid = true;
+  for (const [id, wp] of value) {
+    if (typeof id !== 'number' || !isMeshWaypoint(wp)) {
+      allValid = false;
+      break;
+    }
+  }
+  if (allValid) return value as Map<number, MeshWaypoint>;
+  const out = new Map<number, MeshWaypoint>();
+  for (const [id, wp] of value) {
+    if (typeof id === 'number' && isMeshWaypoint(wp)) out.set(id, wp);
+  }
+  return out;
 }
 
 export function asTelemetryPoints(value: unknown): TelemetryPoint[] {
-  return Array.isArray(value) ? (value as TelemetryPoint[]) : [];
+  if (!Array.isArray(value)) return [];
+  return value.every(isTelemetryPoint) ? value : value.filter(isTelemetryPoint);
 }
 
 export function asEnvironmentTelemetryPoints(value: unknown): EnvironmentTelemetryPoint[] {
-  return Array.isArray(value) ? (value as EnvironmentTelemetryPoint[]) : [];
+  if (!Array.isArray(value)) return [];
+  return value.every(isEnvironmentTelemetryPoint)
+    ? value
+    : value.filter(isEnvironmentTelemetryPoint);
 }
 
-export function asNeighborInfoMap(value: Map<number, unknown>): Map<number, NeighborInfoRecord> {
-  return value as Map<number, NeighborInfoRecord>;
+export function asNeighborInfoMap(value: unknown): Map<number, NeighborInfoRecord> {
+  if (!(value instanceof Map)) return new Map();
+  let allValid = true;
+  for (const [id, rec] of value) {
+    if (typeof id !== 'number' || !isNeighborInfoRecord(rec)) {
+      allValid = false;
+      break;
+    }
+  }
+  if (allValid) return value as Map<number, NeighborInfoRecord>;
+  const out = new Map<number, NeighborInfoRecord>();
+  for (const [id, rec] of value) {
+    if (typeof id === 'number' && isNeighborInfoRecord(rec)) out.set(id, rec);
+  }
+  return out;
 }
 
 export function asRadioDeviceOwner(

@@ -5,6 +5,7 @@ import {
   asEnvironmentTelemetryPoints,
   asGpsIntervalChange,
   asMqttConnectionLoss,
+  asNeighborInfoMap,
   asNumericNodeId,
   asOurPosition,
   asRadioDeviceOwner,
@@ -108,6 +109,9 @@ describe('protocolRuntimeAdapters', () => {
     expect(asTelemetryPoints(null)).toEqual([]);
     expect(asTelemetryPoints([{ timestamp: 1 }])).toEqual([{ timestamp: 1 }]);
     expect(asEnvironmentTelemetryPoints(null)).toEqual([]);
+    expect(asEnvironmentTelemetryPoints([{ timestamp: 1, nodeNum: 2 }])).toEqual([
+      { timestamp: 1, nodeNum: 2 },
+    ]);
     expect(asRadioDeviceOwner(null)).toBeNull();
     expect(asRadioDeviceOwner({ longName: 'A' })).toEqual({
       longName: 'A',
@@ -118,5 +122,48 @@ describe('protocolRuntimeAdapters', () => {
     asGpsIntervalChange(gps as (...args: never[]) => void)?.(30);
     expect(gps).toHaveBeenCalledWith(30);
     expect(asGpsIntervalChange(undefined)).toBeUndefined();
+  });
+
+  it('drops malformed map and array members before panels see them', () => {
+    const goodWp = {
+      id: 1,
+      latitude: 40,
+      longitude: -105,
+      name: 'Camp',
+      from: 2,
+      timestamp: 3,
+    };
+    const waypoints = asWaypointMap(
+      new Map<number, unknown>([
+        [1, goodWp],
+        [2, { id: 2, name: 'no-coords' }],
+      ]),
+    );
+    expect([...waypoints!.entries()]).toEqual([[1, goodWp]]);
+
+    expect(asTelemetryPoints([{ timestamp: 1 }, { batteryLevel: 80 }, null])).toEqual([
+      { timestamp: 1 },
+    ]);
+    expect(
+      asEnvironmentTelemetryPoints([
+        { timestamp: 1, nodeNum: 9, temperature: 12 },
+        { timestamp: 2 },
+      ]),
+    ).toEqual([{ timestamp: 1, nodeNum: 9, temperature: 12 }]);
+
+    const goodNeighbor = {
+      nodeId: 1,
+      timestamp: 4,
+      neighbors: [{ nodeId: 2, snr: 3, lastRxTime: 5 }],
+    };
+    const neighbors = asNeighborInfoMap(
+      new Map<number, unknown>([
+        [1, goodNeighbor],
+        [2, { nodeId: 2, timestamp: 4, neighbors: [{ nodeId: 'x' }] }],
+      ]),
+    );
+    expect([...neighbors.entries()]).toEqual([[1, goodNeighbor]]);
+    expect(asNeighborInfoMap(undefined).size).toBe(0);
+    expect(asNeighborInfoMap([]).size).toBe(0);
   });
 });

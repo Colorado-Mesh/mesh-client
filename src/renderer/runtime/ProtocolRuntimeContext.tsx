@@ -35,6 +35,8 @@ export function useRuntime(protocol: MeshProtocol): ProtocolRuntime {
       `useRuntime: ${protocol} not registered — mount ProtocolRuntimeProvider from App`,
     );
   }
+  // Hook ReturnTypes are not assignable to ProtocolRuntime (connect/telemetry shapes).
+  // Single active-path boundary — do not recast as MeshtasticRuntime in App.
   return runtime as ProtocolRuntime;
 }
 
