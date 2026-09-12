@@ -479,12 +479,8 @@ impl LiveBridge {
         // Outbound Direct reusable links ACK peer replies via LinkProof even when the
         // plaintext is not forwarded — wire set_inbound_packet_sender so backchannel
         // DATA reaches the same unpack path as peer-initiated lxmf.delivery links.
-        let mut outbound_driver = LxmfOutboundDriver::new(
-            handle.transport_tx.clone(),
-            &identity,
-            lxmf_hash_hex.clone(),
-            display_name.clone(),
-        );
+        let mut outbound_driver =
+            LxmfOutboundDriver::new(handle.transport_tx.clone(), &identity, &lxmf_hash_hex);
         outbound_driver.set_inbound_packet_sender(spawn_lxmf_outbound_backchannel(
             lxmf_dest_hash,
             router.clone(),
@@ -547,7 +543,6 @@ impl LiveBridge {
                 handle.transport_tx.clone(),
                 identity.clone(),
                 event_tx.clone(),
-                storage_dir.clone(),
                 config_dir.clone(),
             )),
             voice_session: Arc::new(VoiceSessionManager::spawn(
@@ -7115,7 +7110,7 @@ mod announce_display_name_tests {
         let hash = "d765e919676aa0340412a1afae006553";
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         assert!(!driver.has_path_to(hash));
 
         let mut peer_via_cache: HashMap<String, String> =
@@ -7165,7 +7160,7 @@ mod announce_display_name_tests {
         let dest_hash: [u8; 16] = hex::decode(hash).unwrap().try_into().unwrap();
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         driver.update_path_table(&[PathTableRoute {
             hash: dest_hash,
             hops: 3,

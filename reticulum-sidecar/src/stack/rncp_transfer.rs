@@ -166,8 +166,6 @@ pub struct RncpTransferManager {
     transport_tx: mpsc::Sender<TransportMessage>,
     identity: Identity,
     event_tx: broadcast::Sender<String>,
-    #[allow(dead_code)] // retained for future default save/fetch dir helpers
-    storage_dir: PathBuf,
     /// rnsd config dir — used to read `announce_interval_sec` for listen announces.
     config_dir: PathBuf,
     active: Mutex<HashMap<String, ActiveTransfer>>,
@@ -181,14 +179,12 @@ impl RncpTransferManager {
         transport_tx: mpsc::Sender<TransportMessage>,
         identity: Identity,
         event_tx: broadcast::Sender<String>,
-        storage_dir: PathBuf,
         config_dir: PathBuf,
     ) -> Self {
         Self {
             transport_tx,
             identity,
             event_tx,
-            storage_dir,
             config_dir,
             active: Mutex::new(HashMap::new()),
             pending_offers: Arc::new(Mutex::new(HashMap::new())),
@@ -1156,7 +1152,6 @@ mod tests {
                 Identity::new(),
                 event_tx,
                 storage_dir.to_path_buf(),
-                storage_dir.to_path_buf(),
             ),
             event_rx,
         )
@@ -1650,7 +1645,6 @@ mod tests {
             Identity::new(),
             event_tx,
             dir.path().to_path_buf(),
-            dir.path().to_path_buf(),
         );
         manager
             .configure_policy("ask", vec![], vec![])
@@ -1732,7 +1726,6 @@ loglevel = 4
             Identity::new(),
             event_tx,
             dir.path().to_path_buf(),
-            dir.path().to_path_buf(),
         );
         manager
             .configure_policy("ask", vec![], vec![])
@@ -1780,7 +1773,6 @@ loglevel = 4
             transport_tx,
             Identity::new(),
             event_tx,
-            dir.path().to_path_buf(),
             dir.path().to_path_buf(),
         );
         manager

@@ -201,20 +201,13 @@ pub struct LxmfOutboundDriver {
     local_prop_node: Option<Arc<Mutex<PropagationNode>>>,
     /// Effective PN deposit size limit (from `propagation_limit_kb`).
     propagation_max_message_size: usize,
-    /// Local LXMF identity (retained for driver construction / future failed-detail payloads).
-    #[allow(dead_code)]
-    self_lxmf_hash: String,
-    #[allow(dead_code)]
-    self_display_name: String,
 }
 
 impl LxmfOutboundDriver {
-    #[allow(clippy::needless_pass_by_value)] // hash hex is cloned into driver state at construction
     pub fn new(
         transport_tx: mpsc::Sender<TransportMessage>,
         identity: &Identity,
-        self_lxmf_hash: String,
-        self_display_name: String,
+        self_lxmf_hash: &str,
     ) -> Self {
         let mut driver = Self {
             transport_tx: transport_tx.clone(),
@@ -244,10 +237,8 @@ impl LxmfOutboundDriver {
             local_prop_node: None,
             propagation_max_message_size:
                 crate::stack::pn_hosting_policy::DEFAULT_PROPAGATION_LIMIT_KB.saturating_mul(1024),
-            self_lxmf_hash: self_lxmf_hash.clone(),
-            self_display_name,
         };
-        driver.register_identity_key(&self_lxmf_hash, identity.get_public_key());
+        driver.register_identity_key(self_lxmf_hash, identity.get_public_key());
         driver
     }
 
@@ -1807,27 +1798,6 @@ pub(crate) fn choose_lxmf_send_route(
 /// Cap on retained destination public keys (announce / path flood bound).
 const MAX_KNOWN_IDENTITIES: usize = 4096;
 
-/// Convenience wrapper around [`emit_outbound_status_with_via`] (hash/to/sent_via from payload).
-#[allow(dead_code)] // kept for callers that already hold a full lxmf_message payload
-pub fn emit_outbound_status(
-    event_tx: &broadcast::Sender<String>,
-    message_payload: &serde_json::Value,
-    status: &str,
-    delivery_method: &str,
-) {
-    emit_outbound_status_with_via(
-        event_tx,
-        message_payload.get("message_hash").cloned(),
-        message_payload.get("to_hash").cloned(),
-        status,
-        Some(delivery_method),
-        message_payload
-            .get("sent_via")
-            .and_then(|v| v.as_str())
-            .map(str::to_string),
-    );
-}
-
 pub fn emit_outbound_status_with_via(
     event_tx: &broadcast::Sender<String>,
     message_hash: Option<serde_json::Value>,
@@ -2160,7 +2130,7 @@ mod tests {
 
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let dest_hash = dest(0xab);
         let msg_hash = [0x42u8; 32];
         let pn_hash = dest(0x11);
@@ -2207,7 +2177,7 @@ mod tests {
 
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let dest_hash = dest(0xcd);
         let mut msg = LxMessage::new(
             dest_hash,
@@ -2261,7 +2231,7 @@ mod tests {
     fn clear_path_to_removes_stale_route_so_refresh_can_reinstall() {
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let dest_hash = dest(0xab);
         let dest_hex = hex::encode(dest_hash);
         // Stale cached route (5 hops).
@@ -2324,7 +2294,7 @@ mod tests {
     fn clear_all_paths_empties_every_path_map() {
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let routes = [seeded_route(0xa1), seeded_route(0xa2), seeded_route(0xa3)];
         driver.update_path_table(&routes);
         for route in &routes {
@@ -2349,7 +2319,7 @@ mod tests {
     fn clear_all_paths_on_empty_driver_is_noop() {
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         driver.clear_all_paths();
         driver.clear_all_paths();
         assert!(driver.path_table_hashes.is_empty());
@@ -2360,7 +2330,7 @@ mod tests {
     fn clear_all_paths_leaves_driver_able_to_reinstall_routes() {
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let dest_hash = dest(0xb7);
         let dest_hex = hex::encode(dest_hash);
         driver.update_path_table(&[PathTableRoute {
@@ -2390,7 +2360,7 @@ mod tests {
     fn clear_all_paths_resets_path_request_backoff() {
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let dest_hash = dest(0xc4);
         // Exhaust the gate so decide() would refuse further path requests.
         for _ in 0..PATH_REQUEST_MAX_ATTEMPTS {
@@ -2421,7 +2391,7 @@ mod tests {
 
         let identity = Identity::new();
         let (tx, mut rx) = mpsc::channel(32);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let dest_hash = dest(0xcd);
         let msg_hash = [0x42u8; 32];
         driver.update_path_table(&[PathTableRoute {
@@ -2548,7 +2518,7 @@ mod tests {
 
         let identity = Identity::new();
         let (tx, mut rx) = mpsc::channel(64);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         driver.update_interfaces(vec![
             iface_row("Auto", "auto", true, "up", None),
             iface_row(
@@ -2615,7 +2585,7 @@ mod tests {
     fn healthy_auto_with_down_sibling_does_not_preempt() {
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         driver.update_interfaces(vec![
             iface_row("Auto", "auto", true, "up", None),
             iface_row("Auto Backup", "auto", true, "down", None),
@@ -2651,7 +2621,7 @@ mod tests {
     fn register_identity_key_is_retrievable() {
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let dest = "0123456789abcdef0123456789abcdef";
         let key = [0x7au8; 64];
         driver.register_identity_key(dest, key);
@@ -2663,7 +2633,7 @@ mod tests {
     fn pin_identity_survives_eviction_flood() {
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let pn_hex = "deadbeef".to_string() + &"ab".repeat(12);
         let pn_key = [0x42u8; 64];
         driver.pin_identity_for_propagation(&pn_hex, pn_key);
@@ -2755,7 +2725,7 @@ mod tests {
         // cover end-to-end delivery. Without this call, LDM Acks and drops plaintext.
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(8);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let (inbound_tx, mut inbound_rx) = mpsc::unbounded_channel::<(Vec<u8>, [u8; 16])>();
         driver.set_inbound_packet_sender(inbound_tx.clone());
         // Prove the UnboundedSender we installed is live (clone still delivers).
@@ -2777,7 +2747,7 @@ mod tests {
 
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(32);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let preferred = [0x11u8; 16];
         let next_remote = [0x22u8; 16];
         let local = [0x99u8; 16];
@@ -2911,7 +2881,7 @@ mod tests {
 
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(32);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         // Fixture hashes from Joey Prefer (9f3f…) / w0rmt Prefer (deadbeef).
         let prefer = hex::decode("9f3f189e9f3f189e9f3f189e9f3f189e")
             .ok()
@@ -3002,7 +2972,7 @@ mod tests {
 
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(32);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let prefer = [0x9fu8; 16];
         let dest_hash = dest(0xcd);
         let msg_hash = [0x43u8; 32];
@@ -3064,7 +3034,7 @@ mod tests {
 
         let identity = Identity::new();
         let (tx, _rx) = mpsc::channel(32);
-        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
         let prefer = [0x9fu8; 16];
         let next = [0xdeu8; 16];
         let dest_hash = dest(0xcd);
@@ -3157,8 +3127,7 @@ mod tests {
             Destination::hash_from_name_and_identity("lxmf.delivery", Some(&sender.hash));
         let recipient_delivery =
             Destination::hash_from_name_and_identity("lxmf.delivery", Some(&recipient.hash));
-        let mut driver =
-            LxmfOutboundDriver::new(tx, &sender, hex::encode(sender_delivery), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &sender, &hex::encode(sender_delivery));
         driver.register_identity_key(&hex::encode(recipient_delivery), recipient.get_public_key());
         driver.set_local_prop_node(Some(bridge.local_node()));
         driver.set_pn_cascade_candidates(vec![PnCascadeCandidate {
@@ -3265,8 +3234,7 @@ mod tests {
             Destination::hash_from_name_and_identity("lxmf.delivery", Some(&sender.hash));
         let recipient_delivery =
             Destination::hash_from_name_and_identity("lxmf.delivery", Some(&recipient.hash));
-        let mut driver =
-            LxmfOutboundDriver::new(tx, &sender, hex::encode(sender_delivery), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &sender, &hex::encode(sender_delivery));
         driver.register_identity_key(&hex::encode(recipient_delivery), recipient.get_public_key());
         driver.set_local_prop_node(Some(bridge.local_node()));
         driver.set_pn_cascade_candidates(vec![PnCascadeCandidate {
@@ -3372,8 +3340,7 @@ mod tests {
             Destination::hash_from_name_and_identity("lxmf.delivery", Some(&sender.hash));
         let recipient_delivery =
             Destination::hash_from_name_and_identity("lxmf.delivery", Some(&recipient.hash));
-        let mut driver =
-            LxmfOutboundDriver::new(tx, &sender, hex::encode(sender_delivery), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &sender, &hex::encode(sender_delivery));
         driver.register_identity_key(&hex::encode(recipient_delivery), recipient.get_public_key());
         driver.set_local_prop_node(Some(bridge.local_node()));
         driver.set_pn_cascade_candidates(vec![PnCascadeCandidate {
@@ -3483,8 +3450,7 @@ mod tests {
             Destination::hash_from_name_and_identity("lxmf.delivery", Some(&sender.hash));
         let other_delivery =
             Destination::hash_from_name_and_identity("lxmf.delivery", Some(&other.hash));
-        let mut driver =
-            LxmfOutboundDriver::new(tx, &sender, hex::encode(sender_delivery), "me".into());
+        let mut driver = LxmfOutboundDriver::new(tx, &sender, &hex::encode(sender_delivery));
         driver.register_identity_key(&hex::encode(other_delivery), other.get_public_key());
         driver.set_local_prop_node(Some(bridge.local_node()));
         driver.set_pn_cascade_candidates(vec![PnCascadeCandidate {

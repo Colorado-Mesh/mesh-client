@@ -287,18 +287,6 @@ pub fn interfaces_from_config_dir(config_dir: &Path) -> Result<Vec<InterfaceRow>
     interfaces_from_config(&content)
 }
 
-/// Bulk-write interface rows back to config (used by stub persistence paths).
-#[allow(dead_code)]
-pub fn sync_config_interfaces(
-    config_dir: &Path,
-    interfaces: &[InterfaceRow],
-) -> Result<(), String> {
-    let content = read_config(config_dir)?;
-    let mut parsed = parse_config(&content)?;
-    parsed.interfaces = interfaces.iter().map(interface_row_to_block).collect();
-    write_config(config_dir, &serialize_config(&parsed))
-}
-
 pub fn import_config(
     config_dir: &Path,
     content: &str,

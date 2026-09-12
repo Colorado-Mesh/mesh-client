@@ -602,16 +602,6 @@ impl StackHandle {
         (stored, effective)
     }
 
-    /// Public API for outbound transport resolution from enabled interfaces.
-    #[allow(dead_code)] // renderer IPC may call before all call sites are wired
-    pub async fn resolve_outbound_sent_via_for_interfaces(
-        &self,
-        interfaces: &[InterfaceRow],
-    ) -> &'static str {
-        let (_, effective) = self.primary_local_serial_interface_ids().await;
-        via::resolve_outbound_sent_via_with_primary(interfaces, effective.as_deref())
-    }
-
     pub async fn set_primary_local_serial_interface(
         &self,
         id: &str,
@@ -807,39 +797,6 @@ impl StackHandle {
         {
             let bytes = identity_import::decode_private_key_input(private_key)?;
             let rns_identity = identity_apply::identity_from_private_bytes(&bytes)?;
-            let mut inner = self.inner.write().await;
-            let identity = identity_apply::apply_unified_identity(
-                &mut inner,
-                &self.config_dir,
-                &self.storage_dir,
-                &rns_identity,
-                display_name,
-                None,
-            )?;
-            drop(inner);
-            self.maybe_emit_identity_restart();
-            Ok(identity)
-        }
-        #[cfg(not(feature = "rns-stack"))]
-        {
-            Err("identity operations require an rns-stack sidecar build".into())
-        }
-    }
-
-    /// Binary private-key import (file picker / IPC).
-    #[allow(dead_code)] // public identity API; not all builds expose the route yet
-    pub async fn identity_import_private_bytes(
-        &self,
-        bytes: &[u8],
-        display_name: Option<String>,
-        replace: bool,
-    ) -> Result<StackIdentity, String> {
-        identity_apply::identity_requires_rns_stack()?;
-        self.ensure_identity_replace_allowed(replace).await?;
-        #[cfg(feature = "rns-stack")]
-        {
-            let key = identity_import::decode_private_key_bytes(bytes)?;
-            let rns_identity = identity_apply::identity_from_private_bytes(&key)?;
             let mut inner = self.inner.write().await;
             let identity = identity_apply::apply_unified_identity(
                 &mut inner,
@@ -2348,9 +2305,7 @@ impl StackHandle {
     }
 
     pub async fn list_rrc_hubs(&self) -> Vec<RrcHubRow> {
-        let mut inner = self.inner.write().await;
-        inner.seed_rrc_default_hubs();
-        inner.rrc_hubs.clone()
+        self.inner.read().await.rrc_hubs.clone()
     }
 
     pub async fn upsert_rrc_hub(

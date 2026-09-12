@@ -125,13 +125,6 @@ impl PersistedState {
             });
         }
         self.sync_local_propagation_hash();
-        self.seed_rrc_default_hubs();
-    }
-
-    /// No-op: curated RRC hub catalog is empty (Favourites are user-starred only).
-    #[allow(clippy::unused_self)] // method slot on PersistedState for future default seeding
-    pub fn seed_rrc_default_hubs(&mut self) {
-        let _ = super::rrc_defaults::RRC_DEFAULT_HUBS;
     }
 
     pub fn sync_local_propagation_hash(&mut self) {
@@ -513,7 +506,7 @@ impl PersistedState {
         let now = Self::now_secs();
         let recommended = super::rrc_defaults::RRC_DEFAULT_HUBS
             .iter()
-            .any(|h| h.destination_hash.eq_ignore_ascii_case(&key));
+            .any(|h| h.eq_ignore_ascii_case(&key));
         let incoming_name_source = name_source.unwrap_or(match source {
             "recommended" => "recommended",
             "manual" => "manual",
@@ -597,7 +590,7 @@ impl PersistedState {
         }
         let recommended = super::rrc_defaults::RRC_DEFAULT_HUBS
             .iter()
-            .any(|h| h.destination_hash.eq_ignore_ascii_case(&key));
+            .any(|h| h.eq_ignore_ascii_case(&key));
         self.rrc_hubs.push(RrcHubRow {
             destination_hash: hash.to_string(),
             identity_hash: None,
