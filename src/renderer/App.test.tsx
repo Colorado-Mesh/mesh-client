@@ -80,6 +80,7 @@ const {
   lastNodeDetailModalProps,
   reticulumRefreshMessagesFromDb,
   reticulumRefreshNodesFromDb,
+  tryAutoLaunchMqttMock,
   useDeviceMock,
   useMeshCoreMock,
 } = vi.hoisted(() => ({
@@ -263,6 +264,7 @@ const {
   lastNodeDetailModalProps: { current: null as null | Record<string, unknown> },
   reticulumRefreshMessagesFromDb: vi.fn().mockResolvedValue(undefined),
   reticulumRefreshNodesFromDb: vi.fn().mockResolvedValue(undefined),
+  tryAutoLaunchMqttMock: vi.fn().mockResolvedValue(undefined),
   useDeviceMock: vi.fn(),
   useMeshCoreMock: vi.fn(),
 }));
@@ -280,6 +282,7 @@ beforeEach(() => {
   lastNodeDetailModalProps.current = null;
   reticulumRefreshNodesFromDb.mockClear();
   reticulumRefreshMessagesFromDb.mockClear();
+  tryAutoLaunchMqttMock.mockClear();
   useIdentityStore.setState({
     identities: {
       [MESHTASTIC_TEST_IDENTITY]: {
@@ -399,6 +402,18 @@ vi.mock('./lazyAppPanels', () => ({
   LogPanel: () => null,
   NodeListPanel: () => null,
 }));
+
+vi.mock('./lib/mqttAutoLaunch', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
+  const actual = await importOriginal<typeof import('./lib/mqttAutoLaunch')>();
+  return {
+    ...actual,
+    tryAutoLaunchMqtt: (...args: Parameters<typeof actual.tryAutoLaunchMqtt>) => {
+      void tryAutoLaunchMqttMock(...args);
+      return actual.tryAutoLaunchMqtt(...args);
+    },
+  };
+});
 
 vi.mock('./hooks/useReticulumPanelActions', async (importOriginal) => {
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
@@ -1753,6 +1768,47 @@ describe('App ConnectionPanel facade wiring', () => {
       }
     },
   );
+
+  it('auto-launches Meshtastic MQTT only when switching onto hasMqttHybrid', async () => {
+    stubRadioCapabilities();
+    expect(MESHTASTIC_CAPABILITIES.hasMqttHybrid).toBe(true);
+    expect(MESHCORE_CAPABILITIES.hasMqttHybrid).toBe(false);
+    expect(RETICULUM_CAPABILITIES.hasMqttHybrid).toBe(false);
+
+    getStoredMeshProtocolMock.mockReturnValue('meshcore');
+    ensureOfflineProtocolIdentities();
+    setConnection(MESHTASTIC_TEST_IDENTITY, {
+      status: 'disconnected',
+      connectionType: null,
+      mqttStatus: 'disconnected',
+      myNodeNum: 0,
+    });
+
+    renderApp();
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Switch to Meshtastic/ })).toBeInTheDocument();
+    });
+    expect(tryAutoLaunchMqttMock).not.toHaveBeenCalledWith('meshtastic');
+
+    fireEvent.click(screen.getByRole('button', { name: /Switch to Reticulum/ }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Switch to Reticulum/ })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    });
+    expect(tryAutoLaunchMqttMock).not.toHaveBeenCalledWith('meshtastic');
+
+    tryAutoLaunchMqttMock.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: /Switch to Meshtastic/ }));
+
+    await waitFor(() => {
+      expect(tryAutoLaunchMqttMock).toHaveBeenCalledWith('meshtastic');
+    });
+    expect(tryAutoLaunchMqttMock).not.toHaveBeenCalledWith('meshcore');
+    expect(tryAutoLaunchMqttMock).not.toHaveBeenCalledWith('reticulum');
+  });
 
   it.each([
     {
