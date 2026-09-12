@@ -50,15 +50,47 @@ describe('CI workflow contracts', () => {
       'typecheck:',
       'app-build:',
       'flatpak:',
+      'policy-scanners:',
       'build:',
     ]) {
       expect(ciWorkflow).toContain(`  ${job}`);
     }
-    expect(ciWorkflow).toContain('needs: [changes, quality, lint, typecheck, app-build, flatpak]');
+    expect(ciWorkflow).toContain(
+      'needs: [changes, quality, lint, typecheck, app-build, flatpak, policy-scanners]',
+    );
     expect(ciWorkflow).toContain('FLATPAK_RESULT: ${{ needs.flatpak.result }}');
+    expect(ciWorkflow).toContain('POLICY_SCANNERS_RESULT: ${{ needs.policy-scanners.result }}');
     expect(ciWorkflow).toContain(
       '[[ "$FLATPAK_RESULT" == \'success\' || "$FLATPAK_RESULT" == \'skipped\' ]]',
     );
+  });
+
+  it('runs the cheap always-on policy scanners in CI', () => {
+    const job = ciWorkflow.split('  policy-scanners:')[1].split('  build:')[0];
+    for (const script of [
+      'check:electron-security',
+      'check:log-injection',
+      'check:log-service-sinks',
+      'check:codeql-extensions',
+      'check:insecure-temp-files',
+      'check:ipc-contract',
+      'check:console-log',
+      'check:silent-catches',
+      'check:url-hostname-sanitization',
+      'check:xss-patterns',
+      'check:protocol-string-gates',
+      'check:log-panel-filter',
+    ]) {
+      expect(job).toContain(`pnpm run ${script}`);
+    }
+    const runs = job
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith('pnpm run '));
+    expect(runs.some((line) => line === 'pnpm run check:pr')).toBe(false);
+    expect(runs.some((line) => line.startsWith('pnpm run check:i18n'))).toBe(false);
+    expect(runs.some((line) => line === 'pnpm run check:licenses')).toBe(false);
+    expect(runs.some((line) => line.startsWith('pnpm run check:flatpak'))).toBe(false);
   });
 
   it('blocks required coverage checks when detection or any shard fails', () => {
@@ -77,7 +109,7 @@ describe('CI workflow contracts', () => {
     }
   });
 
-  it.each(['LINT_RESULT', 'QUALITY_RESULT'])(
+  it.each(['LINT_RESULT', 'QUALITY_RESULT', 'POLICY_SCANNERS_RESULT'])(
     'includes %s failure in the required build gate',
     (job) => {
       const gate = ciWorkflow
@@ -90,6 +122,7 @@ describe('CI workflow contracts', () => {
         LINT_RESULT: 'success',
         TYPECHECK_RESULT: 'success',
         BUILD_RESULT: 'success',
+        POLICY_SCANNERS_RESULT: 'success',
         FLATPAK_RESULT: 'skipped',
         GITHUB_STEP_SUMMARY: '/dev/null',
       };
@@ -150,6 +183,9 @@ describe('CI workflow contracts', () => {
     expect(testsWorkflow).toContain('cancel-in-progress: true');
     expect(ciWorkflow).toContain('uses: ./.github/actions/setup-node-pnpm');
     expect(testsWorkflow).toContain('uses: ./.github/actions/setup-node-pnpm');
+    expect(read('.github/workflows/buttonmash.yaml')).toContain(
+      'uses: ./.github/actions/setup-node-pnpm',
+    );
     expect(setupAction).toContain(`pnpm/action-setup@${PNPM_ACTION_SETUP_SHA}`);
     expect(setupAction).toContain(`actions/setup-node@${SETUP_NODE_SHA}`);
     expect(setupAction).toContain("default: '22.23.2'");
@@ -215,11 +251,11 @@ describe('CI workflow contracts', () => {
   });
 
   it('pins checkout and removes persisted credentials before running repository code', () => {
-    expect(ciWorkflow.match(new RegExp(`actions/checkout@${CHECKOUT_SHA}`, 'g'))).toHaveLength(6);
+    expect(ciWorkflow.match(new RegExp(`actions/checkout@${CHECKOUT_SHA}`, 'g'))).toHaveLength(7);
     expect(testsWorkflow.match(new RegExp(`actions/checkout@${CHECKOUT_SHA}`, 'g'))).toHaveLength(
       4,
     );
-    expect(ciWorkflow.match(/persist-credentials: false/g)).toHaveLength(6);
+    expect(ciWorkflow.match(/persist-credentials: false/g)).toHaveLength(7);
     expect(testsWorkflow.match(/persist-credentials: false/g)).toHaveLength(4);
   });
 });

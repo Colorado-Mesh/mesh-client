@@ -162,9 +162,34 @@ jobs:
       - name: Validate metainfo
         run: appstreamcli validate --no-net flatpak/org.coloradomesh.MeshClient.metainfo.xml
 
+  # Cheap always-on check:* scanners (pre-commit / release). Blocks --no-verify / web edits.
+  policy-scanners:
+    name: Policy scanners
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm
+      - name: Always-on policy scanners
+        run: |
+          pnpm run check:electron-security
+          pnpm run check:log-injection
+          pnpm run check:log-service-sinks
+          pnpm run check:codeql-extensions
+          pnpm run check:insecure-temp-files
+          pnpm run check:ipc-contract
+          pnpm run check:console-log
+          pnpm run check:silent-catches
+          pnpm run check:url-hostname-sanitization
+          pnpm run check:xss-patterns
+          pnpm run check:protocol-string-gates
+          pnpm run check:log-panel-filter
+
   build:
     name: Build & Test
-    needs: [changes, quality, lint, typecheck, app-build, flatpak]
+    needs: [changes, quality, lint, typecheck, app-build, flatpak, policy-scanners]
     if: always() && !cancelled()
     runs-on: ubuntu-latest
     env:
@@ -174,12 +199,14 @@ jobs:
       TYPECHECK_RESULT: ${{ needs.typecheck.result }}
       BUILD_RESULT: ${{ needs.app-build.result }}
       FLATPAK_RESULT: ${{ needs.flatpak.result }}
+      POLICY_SCANNERS_RESULT: ${{ needs.policy-scanners.result }}
     steps:
       - name: Verify CI fan-out
         shell: bash
         run: |
           required_ok=true
-          for result in "$CHANGES_RESULT" "$QUALITY_RESULT" "$LINT_RESULT" "$TYPECHECK_RESULT" "$BUILD_RESULT"; do
+          for result in "$CHANGES_RESULT" "$QUALITY_RESULT" "$LINT_RESULT" \
+            "$TYPECHECK_RESULT" "$BUILD_RESULT" "$POLICY_SCANNERS_RESULT"; do
             [[ "$result" == 'success' ]] || required_ok=false
           done
           flatpak_ok=false
@@ -194,6 +221,7 @@ jobs:
             echo "- Typecheck: $TYPECHECK_RESULT"
             echo "- Application build: $BUILD_RESULT"
             echo "- Flatpak checks: $FLATPAK_RESULT"
+            echo "- Policy scanners: $POLICY_SCANNERS_RESULT"
           } >> "$GITHUB_STEP_SUMMARY"
 
           [[ "$required_ok" == true && "$flatpak_ok" == true ]]
