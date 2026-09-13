@@ -316,6 +316,90 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
       expect(onTransportLost).not.toHaveBeenCalled();
     });
 
+    it('does not log recover when an older heartbeat settles after a newer elevated reject', async () => {
+      const pending: { resolve: () => void; reject: (reason: unknown) => void }[] = [];
+      const device = {
+        heartbeat: vi.fn(
+          () =>
+            new Promise((resolve, reject) => {
+              pending.push({
+                resolve: () => {
+                  resolve(0);
+                },
+                reject,
+              });
+            }),
+        ),
+        queue: { getState: () => [] },
+      } as unknown as MeshDevice;
+
+      pushMeshtasticTransportSideEffectUnsubs(
+        device,
+        'tcp',
+        (unsub) => unsubs.push(unsub),
+        onTransportLost,
+      );
+
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(pending).toHaveLength(1);
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(pending).toHaveLength(2);
+
+      pending[1]?.reject(new Error('Packet does not exist'));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(findLine('heartbeat send failed')).toBeDefined();
+      expect(findLine('heartbeat recovered')).toBeUndefined();
+
+      pending[0]?.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(findLine('heartbeat recovered')).toBeUndefined();
+
+      await vi.advanceTimersByTimeAsync(60_000);
+      pending[2]?.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(findLine('heartbeat recovered after 1 consecutive failures')).toBeDefined();
+      expect(onTransportLost).not.toHaveBeenCalled();
+    });
+
+    it('does not log recover when a pending heartbeat fulfills after teardown', async () => {
+      const pending: { resolve: () => void; reject: (reason: unknown) => void }[] = [];
+      const device = {
+        heartbeat: vi.fn(
+          () =>
+            new Promise((resolve, reject) => {
+              pending.push({
+                resolve: () => {
+                  resolve(0);
+                },
+                reject,
+              });
+            }),
+        ),
+        queue: { getState: () => [] },
+      } as unknown as MeshDevice;
+
+      pushMeshtasticTransportSideEffectUnsubs(
+        device,
+        'tcp',
+        (unsub) => unsubs.push(unsub),
+        onTransportLost,
+      );
+
+      await vi.advanceTimersByTimeAsync(60_000);
+      pending[0]?.reject(new Error('Packet does not exist'));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(findLine('heartbeat send failed')).toBeDefined();
+
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(pending).toHaveLength(2);
+      for (const unsub of unsubs) unsub();
+      pending[1]?.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(findLine('heartbeat recovered')).toBeUndefined();
+      expect(onTransportLost).not.toHaveBeenCalled();
+    });
+
     it('logs the second consecutive 60s miss and recovers only after that elevated fail', async () => {
       let settle: { resolve: () => void; reject: (reason: unknown) => void } | undefined;
       const device = {

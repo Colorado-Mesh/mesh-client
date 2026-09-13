@@ -107,11 +107,19 @@ export function pushMeshtasticTransportSideEffectUnsubs(
     let consecutiveFailures = 0;
     let loggedElevatedFailure = false;
     let tornDown = false;
+    let heartbeatSeq = 0;
+    let lastElevatedSeq = 0;
     const heartbeatTimer = setInterval(() => {
       const startedAt = Date.now();
       const depthBefore = readMeshtasticQueueDepth(device);
+      const seq = ++heartbeatSeq;
       void device.heartbeat().then(
         () => {
+          // A newer elevated reject wins over this settlement; teardown must not
+          // emit a recover line from a handler that outlived unsubscribe.
+          if (tornDown || seq < lastElevatedSeq) {
+            return;
+          }
           if (loggedElevatedFailure) {
             console.debug(
               `[meshtasticTransportSideEffects] ${type}: heartbeat recovered after ` +
@@ -136,6 +144,7 @@ export function pushMeshtasticTransportSideEffectUnsubs(
           ) {
             return;
           }
+          lastElevatedSeq = seq;
           loggedElevatedFailure = true;
           console.debug(
             `[meshtasticTransportSideEffects] ${type}: heartbeat send failed ` +
