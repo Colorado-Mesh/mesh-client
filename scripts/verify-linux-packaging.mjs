@@ -9,6 +9,7 @@ import { execFileSync } from 'child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { assertUpdateYmlArtifacts } from './assert-update-yml-artifacts.mjs';
 import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -146,6 +147,15 @@ function main() {
       bundleRoot,
       fail,
     });
+  }
+
+  try {
+    assertUpdateYmlArtifacts({
+      rootDir: releaseDir,
+      requiredFiles: ['latest-linux.yml', 'latest-linux-arm64.yml'],
+    });
+  } catch (e) {
+    fail(e instanceof Error ? e.message : String(e));
   }
 
   const version = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf-8')).version;

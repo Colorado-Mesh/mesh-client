@@ -178,7 +178,24 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
 
   const doCheck = async () => {
     try {
-      await updater.checkForUpdates();
+      const result: unknown = await updater.checkForUpdates();
+      const download =
+        result &&
+        typeof result === 'object' &&
+        'downloadPromise' in result &&
+        result.downloadPromise instanceof Promise
+          ? result.downloadPromise
+          : undefined;
+      if (download) {
+        try {
+          await download;
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e);
+          const safe = sanitizeLogMessage(msg);
+          console.warn('[updater] auto-download failed:', safe);
+          send('update:error', { message: safe });
+        }
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       const safe = sanitizeLogMessage(msg);

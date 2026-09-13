@@ -198,6 +198,7 @@ jobs:
             release/mac-universal/**/*.zip
             release/*.dmg
             release/*.zip
+            release/latest-mac.yml
             release/READ-ME-FIRST-test-build.md
           retention-days: 30
 
@@ -210,6 +211,8 @@ jobs:
             release/*.AppImage
             release/*.deb
             release/*.rpm
+            release/latest-linux.yml
+            release/latest-linux-arm64.yml
             release/READ-ME-FIRST-test-build.md
           retention-days: 30
 
@@ -221,6 +224,7 @@ jobs:
           path: |
             # Per-arch NSIS installers (test builds: …-run{N}.exe / …-run{N}-arm64.exe)
             release/*.exe
+            release/latest.yml
             release/READ-ME-FIRST-test-build.md
           if-no-files-found: error
           retention-days: 30
@@ -237,19 +241,28 @@ jobs:
           - os: macos-latest
             label: macOS packaging
             artifact: mesh-client-macos-${{ github.sha }}
-            smoke_run: node scripts/verify-mac-packaging.mjs
+            smoke_run: >-
+              node scripts/assert-update-yml-artifacts.mjs --require latest-mac.yml
+              && node scripts/verify-mac-packaging.mjs
           - os: ubuntu-latest
             label: Linux packaging
             artifact: mesh-client-linux-${{ github.sha }}
-            smoke_run: node scripts/verify-linux-packaging.mjs && node scripts/test-linux-appimage-reticulum-sidecar.mjs
+            smoke_run: >-
+              node scripts/assert-update-yml-artifacts.mjs --require latest-linux.yml
+              --require latest-linux-arm64.yml && node scripts/verify-linux-packaging.mjs
+              && node scripts/test-linux-appimage-reticulum-sidecar.mjs
           - os: windows-latest
             label: x64 NSIS install
             artifact: mesh-client-windows-${{ github.sha }}
-            smoke_run: node scripts/test-win-nsis-install.mjs --arch x64
+            smoke_run: >-
+              node scripts/assert-update-yml-artifacts.mjs --require latest.yml
+              && node scripts/test-win-nsis-install.mjs --arch x64
           - os: windows-11-vs2026-arm
             label: arm64 NSIS install (WoA)
             artifact: mesh-client-windows-${{ github.sha }}
-            smoke_run: node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z
+            smoke_run: >-
+              node scripts/assert-update-yml-artifacts.mjs --require latest.yml
+              && node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z
     steps:
       - name: Checkout code
         uses: actions/checkout@v6

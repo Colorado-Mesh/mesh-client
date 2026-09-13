@@ -11,6 +11,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
+import { assertUpdateYmlArtifacts } from './assert-update-yml-artifacts.mjs';
 import { collectWinSetupInstallers } from './win-setup-installer-names.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -81,6 +82,12 @@ function main() {
   const installers = collectSetupInstallers(version);
   assertExe('x64 NSIS installer', path.join(releaseDir, installers.x64));
   assertExe('arm64 NSIS installer', path.join(releaseDir, installers.arm64));
+
+  try {
+    assertUpdateYmlArtifacts({ rootDir: releaseDir, requiredFiles: ['latest.yml'] });
+  } catch (e) {
+    fail(e instanceof Error ? e.message : String(e));
+  }
 
   console.debug(
     `[verify-win-packaging] OK — ${APP_EXE} in win-unpacked + win-arm64-unpacked; installers: ${installers.x64}, ${installers.arm64}`,

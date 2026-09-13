@@ -36,7 +36,7 @@ const harness = vi.hoisted(() => {
       on(event: string, cb: Listener): void {
         listeners.set(event, [...(listeners.get(event) ?? []), cb]);
       },
-      checkForUpdates: vi.fn((): Promise<void> => Promise.resolve()),
+      checkForUpdates: vi.fn((): Promise<unknown> => Promise.resolve()),
       downloadUpdate: vi.fn((): Promise<void> => Promise.resolve()),
       quitAndInstall: vi.fn(),
     },
@@ -248,6 +248,48 @@ describe('updater behavior (electron-updater path)', () => {
     await handler('update:check')(trustedEvent);
     expect(harness.send).toHaveBeenCalledWith('update:error', { message: 'offline now' });
   });
+
+  it.each(['darwin', 'win32', 'linux'] as const)(
+    'surfaces a sanitized update:error when auto-download 404s on %s without an unhandled rejection',
+    async (platform) => {
+      setup(platform);
+      const unhandled: unknown[] = [];
+      const onUnhandled = (reason: unknown) => {
+        unhandled.push(reason);
+      };
+      process.on('unhandledRejection', onUnhandled);
+      try {
+        harness.autoUpdater.checkForUpdates.mockResolvedValueOnce({
+          // Reject after a tick so doCheck() can attach its catch first.
+          downloadPromise: Promise.resolve().then(() => {
+            throw new Error('Cannot download Mesh-client-Setup-5.36.0.exe status:404\ninjected');
+          }),
+        });
+        await handler('update:check')(trustedEvent);
+        await flushMicrotasks();
+        expect(harness.send).toHaveBeenCalledWith('update:error', {
+          message: 'Cannot download Mesh-client-Setup-5.36.0.exe status:404 injected',
+        });
+        expect(unhandled).toEqual([]);
+      } finally {
+        process.off('unhandledRejection', onUnhandled);
+      }
+    },
+  );
+
+  it.each(['darwin', 'win32', 'linux'] as const)(
+    'does not emit update:error when auto-download succeeds on %s',
+    async (platform) => {
+      setup(platform);
+      harness.autoUpdater.checkForUpdates.mockResolvedValueOnce({
+        downloadPromise: Promise.resolve(['Mesh-client-Setup-9.9.9.exe']),
+      });
+      await handler('update:check')(trustedEvent);
+      emitUpdaterEvent('update-downloaded');
+      expect(harness.send).toHaveBeenCalledWith('update:downloaded');
+      expect(harness.send).not.toHaveBeenCalledWith('update:error', expect.anything());
+    },
+  );
 
   it('emits update:checking for IPC checks and exposes a notifying menu check', async () => {
     setup('darwin');

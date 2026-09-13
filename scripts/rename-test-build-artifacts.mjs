@@ -59,7 +59,7 @@ export function shouldRenameInstaller(name) {
   if (!INSTALLER_EXTENSIONS.has(ext)) return false;
 
   if (ext === '.exe') {
-    return name.startsWith('Mesh-client Setup ');
+    return name.startsWith('Mesh-client Setup ') || name.startsWith('Mesh-client-Setup-');
   }
   return true;
 }

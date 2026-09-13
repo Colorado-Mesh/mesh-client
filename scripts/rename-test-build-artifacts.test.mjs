@@ -65,6 +65,12 @@ describe('stampedInstallerName', () => {
     expect(stampedInstallerName('Mesh-client Setup 5.26.0-arm64.exe', 214)).toBe(
       'Mesh-client Setup 5.26.0-run214-arm64.exe',
     );
+    expect(stampedInstallerName('Mesh-client-Setup-5.26.0.exe', 214)).toBe(
+      'Mesh-client-Setup-5.26.0-run214.exe',
+    );
+    expect(stampedInstallerName('Mesh-client-Setup-5.26.0-arm64.exe', 214)).toBe(
+      'Mesh-client-Setup-5.26.0-run214-arm64.exe',
+    );
   });
 
   it('stamps Flatpak and is idempotent', () => {
@@ -82,6 +88,7 @@ describe('shouldRenameInstaller', () => {
   it('accepts installers and skips non-installers', () => {
     expect(shouldRenameInstaller('Mesh-client-5.26.0.AppImage')).toBe(true);
     expect(shouldRenameInstaller('Mesh-client Setup 5.26.0.exe')).toBe(true);
+    expect(shouldRenameInstaller('Mesh-client-Setup-5.26.0.exe')).toBe(true);
     expect(shouldRenameInstaller('org.coloradomesh.MeshClient.flatpak')).toBe(true);
     expect(shouldRenameInstaller('READ-ME-FIRST-test-build.md')).toBe(false);
     expect(shouldRenameInstaller('Mesh-client.exe')).toBe(false);
@@ -137,8 +144,8 @@ describe('renameTestBuildArtifacts', () => {
     fs.writeFileSync(path.join(root, 'Mesh-client-5.26.0.AppImage'), 'x');
     fs.writeFileSync(path.join(root, 'Mesh-client-5.26.0-arm64.AppImage'), 'x');
     fs.writeFileSync(path.join(root, 'mesh-client_5.26.0_amd64.deb'), 'x');
-    fs.writeFileSync(path.join(root, 'Mesh-client Setup 5.26.0.exe'), 'x');
-    fs.writeFileSync(path.join(root, 'Mesh-client Setup 5.26.0-arm64.exe'), 'x');
+    fs.writeFileSync(path.join(root, 'Mesh-client-Setup-5.26.0.exe'), 'x');
+    fs.writeFileSync(path.join(root, 'Mesh-client-Setup-5.26.0-arm64.exe'), 'x');
     fs.writeFileSync(path.join(mac, 'Mesh-client-5.26.0.dmg'), 'x');
     fs.writeFileSync(path.join(root, 'READ-ME-FIRST-test-build.md'), 'note');
     fs.writeFileSync(path.join(root, 'Mesh-client.exe'), 'exe');
@@ -152,7 +159,7 @@ describe('renameTestBuildArtifacts', () => {
     expect(result.renamed).toHaveLength(6);
     expect(fs.existsSync(path.join(root, 'Mesh-client-5.26.0-run214.AppImage'))).toBe(true);
     expect(fs.existsSync(path.join(root, 'Mesh-client-5.26.0-run214-arm64.AppImage'))).toBe(true);
-    expect(fs.existsSync(path.join(root, 'Mesh-client Setup 5.26.0-run214.exe'))).toBe(true);
+    expect(fs.existsSync(path.join(root, 'Mesh-client-Setup-5.26.0-run214.exe'))).toBe(true);
     expect(fs.existsSync(path.join(mac, 'Mesh-client-5.26.0-run214.dmg'))).toBe(true);
     expect(fs.existsSync(path.join(root, 'READ-ME-FIRST-test-build.md'))).toBe(true);
     expect(fs.existsSync(path.join(root, 'Mesh-client.exe'))).toBe(true);

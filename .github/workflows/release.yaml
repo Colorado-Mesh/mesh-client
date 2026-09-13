@@ -283,6 +283,7 @@ jobs:
             release/mac-universal/**/*.zip
             release/*.dmg
             release/*.zip
+            release/latest-mac.yml
           retention-days: 30
 
       - name: Upload Linux Artifact
@@ -298,6 +299,8 @@ jobs:
             release/linux/**/*.AppImage
             release/linux/**/*.rpm
             release/linux/**/*.deb
+            release/latest-linux.yml
+            release/latest-linux-arm64.yml
           retention-days: 30
 
       - name: Upload Windows Artifact
@@ -306,8 +309,9 @@ jobs:
         with:
           name: mesh-client-windows-${{ github.sha }}
           path: |
-            # Per-arch NSIS installers: Mesh-client Setup {version}.exe + {version}-arm64.exe
+            # Per-arch NSIS installers: Mesh-client-Setup-{version}.exe + {version}-arm64.exe
             release/*.exe
+            release/latest.yml
             release/win-unpacked/**/*
             release/win-arm64-unpacked/**/*
             release/win-x64-unpacked/**/*
@@ -348,6 +352,14 @@ jobs:
           RELEASE_ID: ${{ needs.prepare-github-release.outputs.release_id }}
         run: node scripts/ci-verify-github-draft-release.mjs
 
+      - name: Verify updater channel yml urls match GitHub assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
+          RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
+          RELEASE_ID: ${{ needs.prepare-github-release.outputs.release_id }}
+        run: node scripts/assert-github-release-update-yml.mjs
+
   packaging-smoke:
     name: Smoke test ${{ matrix.label }}
     needs: [release, finalize-github-release]
@@ -360,19 +372,28 @@ jobs:
           - os: macos-latest
             label: macOS packaging
             artifact: mesh-client-macos-${{ github.sha }}
-            smoke_run: node scripts/verify-mac-packaging.mjs
+            smoke_run: >-
+              node scripts/assert-update-yml-artifacts.mjs --require latest-mac.yml
+              && node scripts/verify-mac-packaging.mjs
           - os: ubuntu-latest
             label: Linux packaging
             artifact: mesh-client-linux-${{ github.sha }}
-            smoke_run: node scripts/verify-linux-packaging.mjs && node scripts/test-linux-appimage-reticulum-sidecar.mjs
+            smoke_run: >-
+              node scripts/assert-update-yml-artifacts.mjs --require latest-linux.yml
+              --require latest-linux-arm64.yml && node scripts/verify-linux-packaging.mjs
+              && node scripts/test-linux-appimage-reticulum-sidecar.mjs
           - os: windows-latest
             label: x64 NSIS install
             artifact: mesh-client-windows-${{ github.sha }}
-            smoke_run: node scripts/test-win-nsis-install.mjs --arch x64
+            smoke_run: >-
+              node scripts/assert-update-yml-artifacts.mjs --require latest.yml
+              && node scripts/test-win-nsis-install.mjs --arch x64
           - os: windows-11-vs2026-arm
             label: arm64 NSIS install (WoA)
             artifact: mesh-client-windows-${{ github.sha }}
-            smoke_run: node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z
+            smoke_run: >-
+              node scripts/assert-update-yml-artifacts.mjs --require latest.yml
+              && node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
