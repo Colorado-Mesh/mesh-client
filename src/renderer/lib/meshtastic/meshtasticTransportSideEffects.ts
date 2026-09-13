@@ -1,11 +1,54 @@
 import type { MeshDevice } from '@meshtastic/core';
 
 import { errLikeToLogString } from '../errLikeToLogString';
+import { MS_PER_SECOND } from '../timeConstants';
 import type { ConnectionType } from '../types';
 import { attachMeshtasticTransportLossWatch } from './meshtasticTransportLossDetection';
 
 /** Liveness heartbeat cadence for persistent links (serial/BLE/TCP). */
-const MESHTASTIC_HEARTBEAT_INTERVAL_MS = 60_000;
+const MESHTASTIC_HEARTBEAT_INTERVAL_MS = 60 * MS_PER_SECOND;
+
+/**
+ * Healthy heartbeats are never ACKed; they settle when the SDK's 60s queue wait fires.
+ * Allow scheduling / TCP-write slack so idle `Packet does not exist` rejects stay quiet.
+ */
+const HEARTBEAT_SETTLE_SLACK_MS = 20 * MS_PER_SECOND;
+
+export interface MeshtasticHeartbeatFailureDiagnostics {
+  consecutive: number;
+  elapsedMs: number;
+  depthBefore: number | null;
+  depthAfter: number | null;
+  tornDown: boolean;
+}
+
+/**
+ * True when a heartbeat reject is worth a debug line (and a later recover line).
+ *
+ * Idle TCP keep-alives reject at ~60s with a stable 0↔1 queue and `consecutive === 1`.
+ * That is the SDK queue timeout, not a transport fault — logging it drowned overnight
+ * support logs. Elevate for teardown, a second consecutive miss, settle time far from
+ * 60s, or a queue that grew beyond the heartbeat item itself.
+ */
+export function isElevatedMeshtasticHeartbeatFailure(
+  d: MeshtasticHeartbeatFailureDiagnostics,
+): boolean {
+  if (d.tornDown || d.consecutive >= 2) {
+    return true;
+  }
+  const settleMin = MESHTASTIC_HEARTBEAT_INTERVAL_MS - HEARTBEAT_SETTLE_SLACK_MS;
+  const settleMax = MESHTASTIC_HEARTBEAT_INTERVAL_MS + HEARTBEAT_SETTLE_SLACK_MS;
+  if (d.elapsedMs < settleMin || d.elapsedMs > settleMax) {
+    return true;
+  }
+  // 0→1 is the heartbeat item appearing in an empty queue, not a backlog.
+  return (
+    d.depthBefore !== null &&
+    d.depthAfter !== null &&
+    d.depthAfter > d.depthBefore &&
+    d.depthAfter > 1
+  );
+}
 
 /**
  * Current SDK queue depth, or `null` when the device does not expose one.
@@ -59,26 +102,50 @@ export function pushMeshtasticTransportSideEffectUnsubs(
     // (processQueue sleeps 200ms per unsent item) accounts for the delay on its own.
     //
     // Note also that heartbeats are never acknowledged by the device, so even a healthy heartbeat
-    // only settles when that same 60s timeout fires. `elapsed` near 60s is normal, not a warning.
+    // only settles when that same 60s timeout fires. `elapsed` near 60s is normal, not a warning —
+    // only elevated rejects (`isElevatedMeshtasticHeartbeatFailure`) are logged.
     let consecutiveFailures = 0;
+    let loggedElevatedFailure = false;
     let tornDown = false;
+    let heartbeatSeq = 0;
+    let lastElevatedSeq = 0;
     const heartbeatTimer = setInterval(() => {
       const startedAt = Date.now();
       const depthBefore = readMeshtasticQueueDepth(device);
+      const seq = ++heartbeatSeq;
       void device.heartbeat().then(
         () => {
-          if (consecutiveFailures > 0) {
+          // A newer elevated reject wins over this settlement; teardown must not
+          // emit a recover line from a handler that outlived unsubscribe.
+          if (tornDown || seq < lastElevatedSeq) {
+            return;
+          }
+          if (loggedElevatedFailure) {
             console.debug(
               `[meshtasticTransportSideEffects] ${type}: heartbeat recovered after ` +
                 `${String(consecutiveFailures)} consecutive failures`,
             );
           }
           consecutiveFailures = 0;
+          loggedElevatedFailure = false;
         },
         (e: unknown) => {
           consecutiveFailures += 1;
           const elapsedMs = Date.now() - startedAt;
           const depthAfter = readMeshtasticQueueDepth(device);
+          if (
+            !isElevatedMeshtasticHeartbeatFailure({
+              consecutive: consecutiveFailures,
+              elapsedMs,
+              depthBefore,
+              depthAfter,
+              tornDown,
+            })
+          ) {
+            return;
+          }
+          lastElevatedSeq = seq;
+          loggedElevatedFailure = true;
           console.debug(
             `[meshtasticTransportSideEffects] ${type}: heartbeat send failed ` +
               errLikeToLogString(e) +

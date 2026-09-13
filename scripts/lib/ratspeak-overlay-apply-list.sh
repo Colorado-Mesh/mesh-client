@@ -16,6 +16,7 @@ RS_RETICULUM_APPLY_SCRIPTS=(
   apply-rsReticulum-interface-tx-queue-stats.sh
   apply-rsReticulum-announce-rebroadcast-exclude-rf.sh
   apply-rsReticulum-ble-rnode-flow-control-ready-timeout.sh
+  apply-rsReticulum-response-resource-window-fast.sh
 )
 
 RS_LXMF_APPLY_SCRIPTS=(

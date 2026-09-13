@@ -32,6 +32,7 @@ describe('ratspeak overlay apply list', () => {
     expect(list).toContain('apply-rsReticulum-path-medium-slots.sh');
     expect(list).toContain('apply-rsReticulum-announce-rebroadcast-exclude-rf.sh');
     expect(list).toContain('apply-rsReticulum-ble-rnode-flow-control-ready-timeout.sh');
+    expect(list).toContain('apply-rsReticulum-response-resource-window-fast.sh');
     expect(list).toContain('apply-rsLXMF-link-delivery-has-pending-to.sh');
   });
 
