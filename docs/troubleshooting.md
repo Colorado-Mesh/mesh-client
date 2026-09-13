@@ -305,7 +305,7 @@ Older releases also shipped a **universal** NSIS installer (x64 + arm64 in one `
 **Fix**
 
 1. Delete the broken install folder: `%LOCALAPPDATA%\Programs\Mesh-client\`
-2. Download the **arm64** installer from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases): `Mesh-client Setup {version}-arm64.exe` (not the x64-only `Mesh-client Setup {version}.exe`).
+2. Download the **arm64** installer from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases): `Mesh-client-Setup-{version}-arm64.exe` (not the x64-only `Mesh-client-Setup-{version}.exe`). Older releases may show dotted GitHub names (`Mesh-client.Setup.{version}-arm64.exe`) — use that file if the hyphenated name is missing.
 3. Re-run the installer. Confirm `Mesh-client.exe` exists in the install folder and the app appears in **Installed apps**.
 
 **Diagnostic checklist (if the exe is still missing)**
@@ -314,7 +314,7 @@ Capture this before opening a GitHub issue — it helps isolate NSIS extract vs 
 
 1. **NSIS install log** — run the installer from Command Prompt or PowerShell with logging:
    ```bat
-   "Mesh-client Setup {version}-arm64.exe" /LOG=%USERPROFILE%\Desktop\mesh-install.log
+   "Mesh-client-Setup-{version}-arm64.exe" /LOG=%USERPROFILE%\Desktop\mesh-install.log
    ```
    After failure, open `mesh-install.log` and search for `Mesh-client.exe`, `CopyFiles`, or `error`.
 2. **Event Viewer** — **Windows Logs → Application** during the install window; note any errors from `MsiInstaller`, `Application Error`, or antivirus agents.
@@ -322,7 +322,7 @@ Capture this before opening a GitHub issue — it helps isolate NSIS extract vs 
 4. **Install path** — confirm `%LOCALAPPDATA%` is on a local NTFS volume, not OneDrive-redirected or sync-rooted.
 5. **Custom install directory** — test a short path:
    ```bat
-   "Mesh-client Setup {version}-arm64.exe" /D=C:\mc-test /LOG=%USERPROFILE%\Desktop\mesh-install.log
+   "Mesh-client-Setup-{version}-arm64.exe" /D=C:\mc-test /LOG=%USERPROFILE%\Desktop\mesh-install.log
    ```
 6. **Clean tree** — ensure no leftover `Mesh-client` folder or running `Mesh-client.exe` from a prior partial install before re-running the installer.
 
@@ -1063,6 +1063,10 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 - Fixed by declaring `semver` as a direct production dependency (same class of issue as `builder-util-runtime` on hoisted `dist:win` builds). Updater falls back to GitHub Releases API until you install a build with the fix.
 
+**Windows packaged updater: `Cannot download … Mesh-client-Setup-….exe status:404` (crash dialog)**:
+
+- `latest.yml` asks for hyphenated Setup names. GitHub stored dotted names when CI uploaded spaced NSIS filenames (`Mesh-client Setup {version}.exe` → `Mesh-client.Setup.{version}.exe`). Download the installer from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) manually (dotted or hyphenated name). Repair steps for a published release: [release-process.md](release-process.md#repair-windows-updater-assets-on-an-already-published-release).
+
 **Retest checklist (after upgrading from a known-good build)**:
 
 1. Connect MeshCore over TCP or BLE; confirm nodes load.
@@ -1138,7 +1142,7 @@ AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, RRC, and RNode Wi
 0. **Identity wizard**: click **Start stack** at the top of the Reticulum Connection panel before generating or importing a mnemonic. The sidecar must be running for `reticulum:proxyGet` / `proxyPost` identity routes.
 1. **Dev — binary missing**: build once from repo root: `pnpm run reticulum:sidecar:build` (requires [Rust](https://rustup.rs/); see [development-environment.md](development-environment.md#reticulum-sidecar-optional)). Electron **Start stack** can auto-run `cargo build` on first click, but you need `cargo` on `PATH`. Error text `sidecar binary not found` means `reticulum-sidecar/target/debug/mesh-client-reticulum` does not exist yet.
 2. **Dev — run / health**: `pnpm run reticulum:sidecar:dev` or confirm `curl http://127.0.0.1:19437/api/v1/status` after **Start stack** (`status` should be `ok`; `rns_ready`/`lxmf_ready` may still be `false` for a short window).
-3. **Packaged app — sidecar missing from installer**: older Electron releases (before CI bundled the sidecar) ship without `mesh-client-reticulum` under `resources/reticulum-sidecar/`; the UI shows a message about a missing bundled sidecar — **upgrade to a newer release** (or use Flatpak on Linux). WoA needs the **arm64** installer (`Mesh-client Setup {version}-arm64.exe`) with an **arm64** sidecar inside, not the x64 binary.
+3. **Packaged app — sidecar missing from installer**: older Electron releases (before CI bundled the sidecar) ship without `mesh-client-reticulum` under `resources/reticulum-sidecar/`; the UI shows a message about a missing bundled sidecar — **upgrade to a newer release** (or use Flatpak on Linux). WoA needs the **arm64** installer (`Mesh-client-Setup-{version}-arm64.exe`) with an **arm64** sidecar inside, not the x64 binary.
 4. **Packaged app — verify install**: confirm `mesh-client-reticulum` (or `.exe` on Windows) exists under the app resources (`reticulum-sidecar/` beside the executable).
 5. **macOS Gatekeeper**: unsigned local sidecar builds may need `xattr -cr` on the binary or ad-hoc signing for dev.
 6. **Port conflict**: sidecar picks an ephemeral port; stale processes under `~/Library/Application Support/mesh-client/reticulum/` are rare — quit the app fully and retry.

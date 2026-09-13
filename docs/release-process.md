@@ -217,13 +217,34 @@ Both tag-triggered workflows must complete before the release is fully populated
 | macOS         | `.dmg` and `.zip` (x64 and arm64)                                                           |
 | Linux         | `.AppImage`, `.deb`, `.rpm` (x64 and arm64)                                                 |
 | Linux Flatpak | `org.coloradomesh.MeshClient-x86_64.flatpak`, `org.coloradomesh.MeshClient-aarch64.flatpak` |
-| Windows x64   | `Mesh-client Setup {version}.exe`                                                           |
-| Windows arm64 | `Mesh-client Setup {version}-arm64.exe` (Windows 11 on ARM — not the x64 installer)         |
+| Windows x64   | `Mesh-client-Setup-{version}.exe`                                                           |
+| Windows arm64 | `Mesh-client-Setup-{version}-arm64.exe` (Windows 11 on ARM — not the x64 installer)         |
 
 1. Paste or edit release notes (use the block printed by `pnpm run release`, or GitHub’s generated notes)
 2. Optionally smoke-test downloads on one platform per family
 
 Until you click **Publish release**, the tag exists but the release stays hidden from the public Releases page.
+
+`finalize-github-release` runs `scripts/assert-github-release-update-yml.mjs` so every `latest.yml` / `latest-mac.yml` / `latest-linux.yml` / `latest-linux-arm64.yml` `url` is an exact GitHub asset name. Windows Setup names must be hyphenated (`Mesh-client-Setup-{version}.exe`). Spaced names become dotted on upload and the in-app updater 404s.
+
+### Repair Windows updater assets on an already-published release
+
+If `latest.yml` lists hyphenated Setup names but the release only has dotted GitHub names (`Mesh-client.Setup.{version}.exe`):
+
+1. Download the existing x64 and arm64 NSIS binaries from the release (dotted names).
+2. Re-upload the **same files** as extra assets named `Mesh-client-Setup-{version}.exe` and `Mesh-client-Setup-{version}-arm64.exe`. Keep the dotted files.
+3. Confirm `https://github.com/Colorado-Mesh/mesh-client/releases/download/v{version}/Mesh-client-Setup-{version}.exe` returns 302, not 404.
+
+Example for v5.36.0 (run from a temp dir after `gh auth login`):
+
+```bash
+gh release download v5.36.0 --pattern 'Mesh-client.Setup.5.36.0.exe' --pattern 'Mesh-client.Setup.5.36.0-arm64.exe'
+mv Mesh-client.Setup.5.36.0.exe Mesh-client-Setup-5.36.0.exe
+mv Mesh-client.Setup.5.36.0-arm64.exe Mesh-client-Setup-5.36.0-arm64.exe
+gh release upload v5.36.0 Mesh-client-Setup-5.36.0.exe Mesh-client-Setup-5.36.0-arm64.exe
+```
+
+v5.36.0 already has both dotted and hyphenated Setup assets (repaired 2026-09-13). Repeat only for an older tag that still 404s. The next tag still needs hyphenated names from CI (`normalize-win-setup-artifact-names.mjs`).
 
 ---
 
