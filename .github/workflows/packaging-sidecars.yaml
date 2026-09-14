@@ -1,0 +1,72 @@
+name: Packaging sidecars
+
+on:
+  workflow_call:
+    inputs:
+      platforms:
+        description: Platforms to build (all, mac, linux, win, or comma-separated)
+        type: string
+        default: all
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      include: ${{ steps.matrix.outputs.include }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+      - name: Resolve sidecar matrix
+        id: matrix
+        env:
+          RELEASE_PLATFORMS: ${{ inputs.platforms }}
+        run: |
+          include="$(node scripts/resolve-release-matrix.mjs --sidecars)"
+          echo "include=$include" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Sidecar ${{ matrix.platform }} ${{ matrix.arch }}
+    needs: matrix
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.include) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+      - name: Install Linux sidecar build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          bash scripts/ci-setup-linux-arm64-apt.sh
+          sudo apt-get install -y libdbus-1-dev libdbus-1-dev:arm64 pkg-config gcc-aarch64-linux-gnu
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          targets: ${{ matrix.target }}
+      # Each OS runs host tests once, in its native architecture job.
+      - name: Build and stage sidecar
+        env:
+          WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
+        run: >-
+          node scripts/build-reticulum-sidecar-release.mjs
+          --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+          ${{ !matrix.run_tests && '--skip-tests' || '' }}
+      - name: Archive sidecar and source revisions
+        shell: bash
+        env:
+          SIDECAR: ${{ matrix.platform }}-${{ matrix.arch }}
+        run: |
+          cp .rsstack/RESOLVED_SHAS.txt "resources/reticulum-sidecar/staged/$SIDECAR/RESOLVED_SHAS.txt"
+          tar -cf "sidecar-$SIDECAR.tar" -C resources/reticulum-sidecar/staged "$SIDECAR"
+      - name: Upload staged sidecar
+        uses: actions/upload-artifact@v7
+        with:
+          name: packaging-sidecar-${{ matrix.platform }}-${{ matrix.arch }}
+          path: sidecar-${{ matrix.platform }}-${{ matrix.arch }}.tar
+          if-no-files-found: error
+          retention-days: 7

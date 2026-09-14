@@ -116,11 +116,21 @@ jobs:
         id: matrix
         env:
           RELEASE_PLATFORMS: ${{ github.event_name == 'workflow_dispatch' && inputs.platforms || 'all' }}
-        run: echo "include=$(node scripts/resolve-release-matrix.mjs)" >> "$GITHUB_OUTPUT"
+        run: |
+          include="$(node scripts/resolve-release-matrix.mjs)"
+          echo "include=$include" >> "$GITHUB_OUTPUT"
+
+  sidecars:
+    needs: resolve-release-matrix
+    permissions:
+      contents: read
+    uses: ./.github/workflows/packaging-sidecars.yaml
+    with:
+      platforms: ${{ github.event_name == 'workflow_dispatch' && inputs.platforms || 'all' }}
 
   release:
-    needs: [schema-release-compare, prepare-github-release, resolve-release-matrix]
-    if: ${{ !cancelled() && needs.prepare-github-release.result != 'failure' }}
+    needs: [schema-release-compare, prepare-github-release, resolve-release-matrix, sidecars]
+    if: ${{ !cancelled() && needs.prepare-github-release.result != 'failure' && needs.sidecars.result == 'success' }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -166,18 +176,10 @@ jobs:
             pkg-config \
             gcc-aarch64-linux-gnu
 
-      - name: Install Rust toolchain for Reticulum sidecar
-        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+      - name: Download Reticulum sidecars for Electron packaging
+        uses: ./.github/actions/download-packaging-sidecars
         with:
-          targets: ${{ matrix.rust_targets }}
-
-      - name: Build Reticulum sidecar for Electron packaging
-        env:
-          WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
-        run: node scripts/build-reticulum-sidecar-release.mjs --platform ${{ matrix.sidecar_platform }}
-
-      - name: Verify staged Reticulum sidecars
-        run: node scripts/verify-reticulum-sidecar-staged.mjs --platform ${{ matrix.sidecar_platform }}
+          platform: ${{ matrix.sidecar_platform }}
 
       - name: Validate Windows build runner
         if: contains(matrix.build_script, 'dist:win') && matrix.os != 'windows-latest'
