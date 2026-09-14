@@ -116,7 +116,9 @@ jobs:
         id: matrix
         env:
           RELEASE_PLATFORMS: ${{ github.event_name == 'workflow_dispatch' && inputs.platforms || 'all' }}
-        run: echo "include=$(node scripts/resolve-release-matrix.mjs)" >> "$GITHUB_OUTPUT"
+        run: |
+          include="$(node scripts/resolve-release-matrix.mjs)"
+          echo "include=$include" >> "$GITHUB_OUTPUT"
 
   sidecars:
     needs: resolve-release-matrix

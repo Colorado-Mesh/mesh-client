@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import {
   chmodSync,
   copyFileSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -12,6 +13,7 @@ import {
 } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import yaml from 'js-yaml';
 import { afterEach, describe, expect, it } from 'vitest';
 import { stagedSidecarPath } from './reticulum-sidecar-staging.mjs';
 
@@ -20,10 +22,11 @@ const sidecars = read('.github/workflows/packaging-sidecars.yaml');
 const download = read('.github/actions/download-packaging-sidecars/action.yaml');
 
 function runBlock(source, step) {
-  const body = source.split(`name: ${step}\n`)[1]?.split(/\n\s+- (?:name|uses):/)[0];
-  expect(body, step).toBeDefined();
-  const run = body.split('run: |\n')[1];
-  expect(run, step).toBeDefined();
+  const workflow = yaml.load(source);
+  const steps =
+    workflow.runs?.steps ?? Object.values(workflow.jobs).flatMap((job) => job.steps ?? []);
+  const run = steps.find(({ name }) => name === step)?.run;
+  expect(run, step).toBeTypeOf('string');
   return run;
 }
 
@@ -82,7 +85,11 @@ function fixture() {
   const root = mkdtempSync(path.join(os.tmpdir(), 'mesh-sidecar-archive-'));
   fixtures.push(root);
   for (const dir of ['scripts', '.rsstack', '.sidecar-artifacts']) mkdirSync(path.join(root, dir));
-  for (const file of ['verify-reticulum-sidecar-staged.mjs', 'reticulum-sidecar-staging.mjs']) {
+  for (const file of [
+    'verify-reticulum-sidecar-staged.mjs',
+    'reticulum-sidecar-staging.mjs',
+    'resolve-release-matrix.mjs',
+  ]) {
     copyFileSync(new URL(file, import.meta.url), path.join(root, 'scripts', file));
   }
   writeFileSync(path.join(root, '.rsstack/RESOLVED_SHAS.txt'), 'rsNomad abc123\n');
@@ -104,6 +111,38 @@ function verify(root, platform) {
     { encoding: 'utf8' },
   );
 }
+
+const matrixSteps = [
+  { workflow: 'packaging-sidecars', step: 'Resolve sidecar matrix', rows: 4 },
+  { workflow: 'release', step: 'Resolve release matrix', rows: 2 },
+];
+
+describe.skipIf(process.platform === 'win32')('matrix resolver shell steps', () => {
+  it.each(matrixSteps)('publishes the selected $workflow matrix', ({ workflow, step, rows }) => {
+    const root = fixture();
+    const output = path.join(root, 'github-output');
+    const result = bash(root, runBlock(read(`.github/workflows/${workflow}.yaml`), step), {
+      RELEASE_PLATFORMS: 'linux,win',
+      GITHUB_OUTPUT: output,
+    });
+    expect(result.status, result.stderr).toBe(0);
+    const value = readFileSync(output, 'utf8').trim();
+    expect(value.startsWith('include=')).toBe(true);
+    expect(JSON.parse(value.slice('include='.length))).toHaveLength(rows);
+  });
+
+  it.each(matrixSteps)('preserves invalid input failures in $workflow', ({ workflow, step }) => {
+    const root = fixture();
+    const output = path.join(root, 'github-output');
+    const result = bash(root, runBlock(read(`.github/workflows/${workflow}.yaml`), step), {
+      RELEASE_PLATFORMS: 'unknown',
+      GITHUB_OUTPUT: output,
+    });
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('No release platforms matched input: unknown');
+    expect(existsSync(output)).toBe(false);
+  });
+});
 
 // The archive harness uses POSIX bash; real Windows packaging is covered by CI smoke jobs.
 describe.skipIf(process.platform === 'win32')('staged sidecar archive handoff', () => {

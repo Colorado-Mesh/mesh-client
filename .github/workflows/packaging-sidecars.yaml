@@ -24,7 +24,9 @@ jobs:
         id: matrix
         env:
           RELEASE_PLATFORMS: ${{ inputs.platforms }}
-        run: echo "include=$(node scripts/resolve-release-matrix.mjs --sidecars)" >> "$GITHUB_OUTPUT"
+        run: |
+          include="$(node scripts/resolve-release-matrix.mjs --sidecars)"
+          echo "include=$include" >> "$GITHUB_OUTPUT"
 
   build:
     name: Sidecar ${{ matrix.platform }} ${{ matrix.arch }}
