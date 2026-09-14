@@ -175,6 +175,7 @@ function readUtf8FileIfPresent(filePath) {
     const code =
       err && typeof err === 'object' ? /** @type {{ code?: unknown }} */ (err).code : undefined;
     if (code === 'ENOENT' || code === 'EISDIR') {
+      // catch-no-log-ok optional channel file missing or is a directory
       return null;
     }
     throw err;
