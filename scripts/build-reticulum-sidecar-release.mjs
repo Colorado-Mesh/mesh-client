@@ -7,9 +7,10 @@
  * Fallback: none; packaging verify scripts assert staged binaries land in unpacked apps.
  */
 import { spawnSync } from 'child_process';
-import { chmodSync, copyFileSync, existsSync, mkdirSync, statSync } from 'fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, realpathSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { parseArgs } from 'node:util';
 import {
   MIN_SIDECAR_BYTES,
   PLATFORM_TARGETS,
@@ -129,25 +130,39 @@ function buildAndStage(cargoTarget, platform, archKey) {
   console.debug(`[build-reticulum-sidecar-release] staged ${destPath} (${size} bytes)`);
 }
 
-function parseArgs(argv) {
-  const platformArg =
-    argv.find((a) => a.startsWith('--platform='))?.split('=')[1] ??
-    (argv.includes('--platform') ? argv[argv.indexOf('--platform') + 1] : undefined);
-  if (!platformArg) {
-    fail('Usage: node scripts/build-reticulum-sidecar-release.mjs --platform win32|linux|darwin');
+/** Select one CI target or retain the two-target local build. */
+export function parseBuildArgs(argv) {
+  const { values } = parseArgs({
+    args: argv,
+    options: {
+      platform: { type: 'string' },
+      arch: { type: 'string' },
+      'skip-tests': { type: 'boolean', default: false },
+    },
+  });
+  if (!values.platform) {
+    throw new Error('Usage: --platform win32|linux|darwin [--arch x64|arm64 [--skip-tests]]');
   }
-  return parseElectronPlatform(platformArg);
+  const platform = parseElectronPlatform(values.platform);
+  const targets = PLATFORM_TARGETS[platform].filter(
+    (target) => !values.arch || target.archKey === values.arch,
+  );
+  if (!targets.length || values.arch === '') {
+    throw new Error(`Unsupported --arch value: ${values.arch}`);
+  }
+  if (values['skip-tests'] && !values.arch) {
+    throw new Error(
+      '--skip-tests requires an explicit --arch; native CI jobs retain the host tests',
+    );
+  }
+  return { platform, targets, skipTests: values['skip-tests'] };
 }
 
 function main() {
-  const platform = parseArgs(process.argv.slice(2));
-  const targets = PLATFORM_TARGETS[platform];
-  if (!targets?.length) {
-    fail(`No sidecar targets configured for platform ${platform}`);
-  }
+  const { platform, targets, skipTests } = parseBuildArgs(process.argv.slice(2));
 
   cloneRatspeakStack();
-  runSidecarTests();
+  if (!skipTests) runSidecarTests();
   for (const { cargoTarget, archKey } of targets) {
     buildAndStage(cargoTarget, platform, archKey);
   }
@@ -157,9 +172,15 @@ function main() {
   );
 }
 
-try {
-  main();
-} catch (e) {
-  console.error('[build-reticulum-sidecar-release] Unexpected error:', e);
-  process.exit(1);
+if (
+  process.argv[1] &&
+  existsSync(process.argv[1]) &&
+  realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  try {
+    main();
+  } catch (e) {
+    console.error('[build-reticulum-sidecar-release] Unexpected error:', e);
+    process.exit(1);
+  }
 }

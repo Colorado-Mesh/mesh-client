@@ -36,8 +36,14 @@ jobs:
           path: READ-ME-FIRST-test-build.md
           retention-days: 30
 
-  build:
+  sidecars:
     needs: schema-release-compare
+    permissions:
+      contents: read
+    uses: ./.github/workflows/packaging-sidecars.yaml
+
+  build:
+    needs: [schema-release-compare, sidecars]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -50,15 +56,12 @@ jobs:
           - os: macos-latest
             build_script: pnpm run dist:mac
             sidecar_platform: darwin
-            rust_targets: x86_64-apple-darwin,aarch64-apple-darwin
           - os: ubuntu-latest
             build_script: pnpm run dist:linux
             sidecar_platform: linux
-            rust_targets: x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu
           - os: windows-latest
             build_script: pnpm run dist:win
             sidecar_platform: win32
-            rust_targets: x86_64-pc-windows-msvc,aarch64-pc-windows-msvc
 
     steps:
       - name: Checkout code
@@ -101,18 +104,10 @@ jobs:
             pkg-config \
             gcc-aarch64-linux-gnu
 
-      - name: Install Rust toolchain for Reticulum sidecar
-        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+      - name: Download Reticulum sidecars for Electron packaging
+        uses: ./.github/actions/download-packaging-sidecars
         with:
-          targets: ${{ matrix.rust_targets }}
-
-      - name: Build Reticulum sidecar for Electron packaging
-        env:
-          WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
-        run: node scripts/build-reticulum-sidecar-release.mjs --platform ${{ matrix.sidecar_platform }}
-
-      - name: Verify staged Reticulum sidecars
-        run: node scripts/verify-reticulum-sidecar-staged.mjs --platform ${{ matrix.sidecar_platform }}
+          platform: ${{ matrix.sidecar_platform }}
 
       - name: Validate Windows build runner
         if: contains(matrix.build_script, 'dist:win') && matrix.os != 'windows-latest'
