@@ -104,12 +104,25 @@ jobs:
         run: node scripts/ci-run-vitest.mjs
 
       - name: Upload blob report
-        if: always() && contains(fromJSON(needs.changes.outputs.vitest_projects), matrix.project)
+        if: >-
+          always() && needs.changes.outputs.vitest_mode == 'full' &&
+          contains(fromJSON(needs.changes.outputs.vitest_projects), matrix.project)
         uses: actions/upload-artifact@v7
         with:
           name: vitest-blob-${{ matrix.project }}-${{ matrix.shard }}
           path: .vitest-reports/*
           include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Upload scoped test results
+        if: >-
+          always() && needs.changes.outputs.vitest_mode == 'related' &&
+          contains(fromJSON(needs.changes.outputs.vitest_projects), matrix.project)
+        uses: actions/upload-artifact@v7
+        with:
+          name: vitest-junit-${{ matrix.project }}-${{ matrix.shard }}
+          path: test-results/junit-${{ matrix.project }}-${{ matrix.shard }}-${{ matrix.shards }}.xml
           retention-days: 1
           if-no-files-found: error
 
@@ -211,15 +224,15 @@ jobs:
 
       # actions/checkout v6.1.0
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-        if: needs.changes.outputs.vitest_mode != 'skip'
+        if: needs.changes.outputs.vitest_mode == 'full'
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: ./.github/actions/setup-node-pnpm
-        if: needs.changes.outputs.vitest_mode != 'skip'
+        if: needs.changes.outputs.vitest_mode == 'full'
 
       - name: Download blob reports
-        if: needs.changes.outputs.vitest_mode != 'skip'
+        if: needs.changes.outputs.vitest_mode == 'full'
         uses: actions/download-artifact@v7
         with:
           path: .vitest-reports
@@ -230,9 +243,14 @@ jobs:
         if: needs.changes.outputs.vitest_mode == 'full'
         run: pnpm run test:coverage:merge
 
-      - name: Merge scoped test reports
-        if: needs.changes.outputs.vitest_mode == 'related'
-        run: pnpm exec vitest run --merge-reports
+      # Related shards already wrote JUnit; collecting them needs no repository or dependencies.
+      - name: Download scoped test results
+        if: always() && needs.changes.outputs.vitest_mode == 'related'
+        uses: actions/download-artifact@v7
+        with:
+          path: test-results
+          pattern: vitest-junit-*
+          merge-multiple: true
 
       - name: Record skipped test scope
         if: needs.changes.outputs.vitest_mode == 'skip'

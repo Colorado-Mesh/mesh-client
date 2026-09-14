@@ -31,19 +31,32 @@ export function buildCiVitestArgs({ mode, project, relatedPaths = [], shard = ''
   }
 
   const reportSuffix = shard ? `-${shard.replace('/', '-')}` : '';
-  const reportArgs = [
+  const shardArgs = [
     '--project',
     project,
-    '--reporter=blob',
-    `--outputFile.blob=.vitest-reports/blob-${project}${reportSuffix}.json`,
     '--passWithNoTests',
     ...(shard ? [`--shard=${shard}`] : []),
   ];
   if (mode === 'full') {
-    return ['run', '--coverage', '--coverage.clean=false', ...reportArgs];
+    return [
+      'run',
+      '--coverage',
+      '--coverage.clean=false',
+      ...shardArgs,
+      '--reporter=blob',
+      `--outputFile.blob=.vitest-reports/blob-${project}${reportSuffix}.json`,
+    ];
   }
   if (mode === 'related' && relatedPaths.length > 0) {
-    return ['related', '--run', ...reportArgs, ...relatedPaths.map(normalizeRelatedPathForVitest)];
+    return [
+      'related',
+      '--run',
+      ...shardArgs,
+      '--reporter=default',
+      '--reporter=junit',
+      `--outputFile.junit=test-results/junit-${project}${reportSuffix}.xml`,
+      ...relatedPaths.map(normalizeRelatedPathForVitest),
+    ];
   }
   throw new Error(`Invalid Vitest CI selection: mode=${mode}, paths=${relatedPaths.length}`);
 }

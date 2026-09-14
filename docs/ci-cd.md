@@ -61,10 +61,10 @@ Runs on every push, pull request, and merge-queue `merge_group` for `main`:
 2. **Pull requests:** run `vitest related` without coverage for the affected project lanes. Docs-only changes skip Vitest. Shared contracts select all projects.
 3. **Safe fallback:** test infrastructure, dependency manifests, deleted/renamed paths, oversized output, or detector failures run the full matrix.
 4. **Protected events:** `merge_group`, pushes to `main`, and manual runs always run full coverage across `renderer-ui`, `renderer-logic`, and `main`.
-5. **Sharding:** `renderer-ui` runs in three shards; `renderer-logic` and `main` each run once. This applies to both related tests and full coverage. Each shard uploads a uniquely named blob report. The existing `Coverage (...)` required checks verify that detection and every shard succeeded.
-6. **Merge job:** combine scoped blob reports for PR feedback, or run `pnpm run test:coverage:merge` on protected events to enforce global thresholds.
+5. **Sharding:** `renderer-ui` runs in three shards; `renderer-logic` and `main` each run once. This applies to both related tests and full coverage. Full runs upload blob reports; related runs write JUnit reports named `junit-<project>-<shard>-<total>.xml` and print results in each shard's log. The existing `Coverage (...)` required checks verify that detection and every shard succeeded.
+6. **Merge job:** collect related JUnit reports without checkout, Node/pnpm setup, or dependency installation. Full runs (protected events and PRs that cannot be safely scoped) still run `pnpm run test:coverage:merge` to enforce global thresholds.
 7. **`reticulum-sidecar-coverage`:** when sidecar paths change, clone the `.rsstack/` workspace, run `cargo llvm-cov --fail-under-lines 45`, and upload `lcov.info`.
-8. Upload merged test results (retained 7 days).
+8. Upload the `vitest-report` artifact (retained 7 days): separate JUnit files for related shards, including empty shards and available reports from failed runs; one merged `junit.xml` for full runs.
 
 The three `Coverage (...)` job names and `Merge coverage` remain stable for the repository ruleset, including when a project or the whole test matrix has no relevant PR work. Superseded runs for the same pull request or ref are cancelled.
 
