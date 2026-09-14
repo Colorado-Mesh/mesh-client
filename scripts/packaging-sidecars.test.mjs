@@ -169,7 +169,9 @@ describe.skipIf(process.platform === 'win32')('staged sidecar archive handoff', 
       expect(checked.status, checked.stderr).toBe(0);
       for (const arch of ['x64', 'arm64']) {
         const binary = stagedSidecarPath(root, platform, arch);
-        expect(readFileSync(binary)).toEqual(Buffer.alloc(1024 * 1024, arch === 'x64' ? 33 : 77));
+        expect(
+          readFileSync(binary).equals(Buffer.alloc(1024 * 1024, arch === 'x64' ? 33 : 77)),
+        ).toBe(true);
         expect(statSync(binary).mode & 0o111).toBe(0o111);
         expect(readFileSync(path.join(path.dirname(binary), 'RESOLVED_SHAS.txt'), 'utf8')).toBe(
           'rsNomad abc123\n',
