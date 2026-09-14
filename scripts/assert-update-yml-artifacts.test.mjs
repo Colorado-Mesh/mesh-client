@@ -177,4 +177,24 @@ describe('assertUpdateYmlArtifacts', () => {
       },
     ]);
   });
+
+  it('skips missing channel files without existsSync TOCTOU', () => {
+    const root = makeTempDir();
+    fs.writeFileSync(path.join(root, 'latest.yml'), WIN_YML);
+    fs.writeFileSync(path.join(root, 'Mesh-client-Setup-5.36.0.exe'), 'x');
+    fs.writeFileSync(path.join(root, 'Mesh-client-Setup-5.36.0-arm64.exe'), 'x');
+    const result = assertUpdateYmlArtifacts({ rootDir: root, requiredFiles: ['latest.yml'] });
+    expect(result.checked).toEqual(['latest.yml']);
+    expect(result.matched).toHaveLength(2);
+  });
+
+  it('skips a directory that collides with a channel filename', () => {
+    const root = makeTempDir();
+    fs.mkdirSync(path.join(root, 'latest-mac.yml'));
+    fs.writeFileSync(path.join(root, 'latest.yml'), WIN_YML);
+    fs.writeFileSync(path.join(root, 'Mesh-client-Setup-5.36.0.exe'), 'x');
+    fs.writeFileSync(path.join(root, 'Mesh-client-Setup-5.36.0-arm64.exe'), 'x');
+    const result = assertUpdateYmlArtifacts({ rootDir: root, requiredFiles: ['latest.yml'] });
+    expect(result.checked).toEqual(['latest.yml']);
+  });
 });

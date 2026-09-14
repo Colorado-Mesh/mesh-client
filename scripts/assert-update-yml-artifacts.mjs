@@ -164,15 +164,33 @@ export function assertUpdateYmlUrlsMatchBasenames(opts) {
 }
 
 /**
+ * Read a UTF-8 file if present. Avoid existsSync→stat→read TOCTOU (CodeQL js/file-system-race).
+ * @param {string} filePath
+ * @returns {string | null}
+ */
+function readUtf8FileIfPresent(filePath) {
+  try {
+    return fs.readFileSync(filePath, 'utf8');
+  } catch (err) {
+    const code =
+      err && typeof err === 'object' ? /** @type {{ code?: unknown }} */ (err).code : undefined;
+    if (code === 'ENOENT' || code === 'EISDIR') {
+      return null;
+    }
+    throw err;
+  }
+}
+
+/**
  * @param {{ rootDir: string, requiredFiles?: string[] }} opts
  */
 export function assertUpdateYmlArtifacts(opts) {
   /** @type {Record<string, string>} */
   const ymlByName = {};
   for (const name of UPDATE_YML_CHANNEL_FILES) {
-    const filePath = path.join(opts.rootDir, name);
-    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-      ymlByName[name] = fs.readFileSync(filePath, 'utf8');
+    const text = readUtf8FileIfPresent(path.join(opts.rootDir, name));
+    if (text != null) {
+      ymlByName[name] = text;
     }
   }
   return assertUpdateYmlUrlsMatchBasenames({
