@@ -47,6 +47,23 @@ Electron main validates proxy paths: must start with `/api/v1/` (no `..` segment
 | GET    | `/api/v1/ble/availability`               |                                                                                                                    | `{ available, missing, permissions_granted, probe_failed? }`                                           |
 | GET    | `/api/v1/ble/scan`                       | `timeout_secs` (1–30, default 5), `mode` (`peer` \| `rnode` \| `all`)                                              | `{ devices: [{ address, name?, rssi?, kind? }] }` or `{ ok: false, error }`                            |
 
+### LoRa GATT (Meshtastic / MeshCore)
+
+Shared sidecar `btleplug` central for LoRa companion GATT. Electron main proxies via `gatt-sidecar-proxy.ts` / `gatt:*` IPC; LoRa BLE can call `ensureForBle()` without a Reticulum UI Start. Concurrent sessions on different MACs are allowed; same MAC → `mac_conflict`; overlapping scans → `scan_busy`. Stable error codes: `adapter_missing`, `permission_denied`, `scan_busy`, `mac_conflict`, `connect_timeout`, `gatt_discover_failed`, `pairing_required`, `bond_removed`, `write_failed`, `session_not_found`, `notified_read_forbidden`, `feature_disabled`, …
+
+| Method | Path                                           | Body / notes                                         | Response                                                          |
+| ------ | ---------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------- |
+| GET    | `/api/v1/gatt/availability`                    |                                                      | `{ available, missing, permissions_granted, probe_failed? }`      |
+| GET    | `/api/v1/gatt/scan`                            | `mode` (`meshtastic` \| `meshcore`), `timeout_secs`  | `{ ok, devices: […] }` or `{ ok: false, code, error, owner? }`    |
+| POST   | `/api/v1/gatt/sessions`                        | `{ profile, address }`                               | `{ ok, sessionId, mtu? }` or `{ ok: false, code, error, owner? }` |
+| DELETE | `/api/v1/gatt/sessions/{session_id}`           |                                                      | `{ ok }` or error                                                 |
+| POST   | `/api/v1/gatt/sessions/{session_id}/write`     | `{ data_b64 }`                                       | `{ ok }` or error                                                 |
+| GET    | `/api/v1/gatt/sessions/{session_id}/rssi`      |                                                      | `{ ok, rssi }`                                                    |
+| GET    | `/api/v1/gatt/sessions/{session_id}/connected` |                                                      | `{ connected }`                                                   |
+| GET    | `/api/v1/gatt/sessions/{session_id}/events`    | WebSocket                                            | session events (`bytes`, `disconnected`, `rssi`, `error`, …)      |
+| POST   | `/api/v1/gatt/registry/register`               | `{ profile, address }` — external owner (e.g. RNode) | `{ ok }` or `mac_conflict`                                        |
+| POST   | `/api/v1/gatt/registry/unregister`             | `{ profile, address }`                               | `{ ok }`                                                          |
+
 **`PUT /api/v1/interfaces/{id}` patch fields** (all optional): `name`, `type`, `enabled`, `host`, `port`, `preset`, `serial_port`, `frequency`, `bandwidth`, `txpower`, `spreading_factor`, `coding_rate`, `callsign`, `id_interval`, `mode` (`full` \| `point_to_point` \| `access_point` \| `roaming` \| `boundary` \| `gateway`; aliases `ap`/`gw`; empty clears; invalid non-empty → API error `invalid interface mode: …`; omitted on PUT preserves existing), `discoverable`, `latitude`, `longitude`, `height`, `discovery_name`, `announce_interval_min`, `connectable`, `reachable_on`. On **POST** add, omitted `mode` defaults to `boundary` (tcp/udp/i2p) or `access_point` (rnode/rnode_multi); Auto/BLE Peer/KISS/Pipe leave mode unset.
 
 The Connection tab UI edits a subset: **name** and **mode** for all types; **host** / **port** for TCP/UDP; **serial_port**, **preset**, **callsign** for RNode. Enable/disable uses the dedicated POST routes.

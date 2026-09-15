@@ -969,7 +969,6 @@
       },
       "ble": {
         "adapterWindowsHint": "检查设置 > 蓝牙和设备。如果蓝牙已打开但不可用，请在设备管理器中更新蓝牙驱动程序。",
-        "adapterLinuxHint": "确保蓝牙已启用并且网络蓝牙实验标志已设置。尝试：systemctl status 蓝牙",
         "adapterGenericHint": "确保蓝牙已启用。在 Linux 上，运行：systemctl status bluetooth",
         "securityPermissionHint": "蓝牙权限被拒绝。确保应用程序可以访问蓝牙设备。",
         "gattDisconnectedHint": "GATT 连接断开。尝试靠近设备并重新连接。",
@@ -1376,8 +1375,6 @@
     "autoConnectingTo": "正在自动连接到 {{deviceName}}…",
     "autoReconnectInProgress": "正在自动重新连接…",
     "stageAutoConnectingBle": "正在连接到 {{deviceName}}…",
-    "stageWaitingNobleBleMeshtastic": "正在等待 Meshtastic Bluetooth 完成 — 完成后 MeshCore 将自动连接到 {{deviceName}}…",
-    "stageWaitingNobleBleMeshcore": "正在等待 MeshCore Bluetooth 完成 — 完成后 Meshtastic 将自动连接到 {{deviceName}}…",
     "reticulumStats": {
       "interfaces": "{{count}}接口",
       "peers": "{{count}}同行"
@@ -1510,7 +1507,6 @@
     "linkQuality": "连接质量",
     "linkQualityMs": "{{ms}}毫秒",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "不可用（网页蓝牙）",
     "meshcoreCaBroker": "MeshCore.CA代理",
     "meshcoreCaPrimary": "首先",
     "meshcoreCaBackup": "后援",
@@ -1533,7 +1529,24 @@
     "pickerDeviceAriaWithRssi": "{{name}} {{address}} ， {{rssi}} dBm",
     "bluetoothMac": "蓝牙MAC",
     "bluetoothId": "蓝牙编号：",
-    "reticulumAutoResendOnAnnounce": "当对等体宣布时重试失败的消息"
+    "reticulumAutoResendOnAnnounce": "当对等体宣布时重试失败的消息",
+    "errors": {
+      "ble": {
+        "adapter_missing": "No Bluetooth adapter was found. Enable Bluetooth in system settings and try again.",
+        "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
+        "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
+        "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
+        "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
+        "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
+        "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",
+        "bond_removed": "The Bluetooth bond is no longer valid. Forget the device in system settings, then re-pair.",
+        "write_failed": "Failed to write to the Bluetooth device. Reconnect and try again.",
+        "session_not_found": "The Bluetooth session is no longer available. Disconnect and connect again.",
+        "notified_read_forbidden": "This Bluetooth characteristic cannot be read that way. Reconnect and try again.",
+        "feature_disabled": "Bluetooth GATT support is not available in this build.",
+        "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
+      }
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -2297,10 +2310,7 @@
       "bleAlreadyInProgress": "蓝牙连接已在进行中。等待它完成或尝试串行/USB。",
       "bleMissingServices": "设备不支持 MeshCore BLE 协议。确保设备正在运行 MeshCore 固件。",
       "blePeripheralInUse": "该设备已通过 Meshtastic BLE 连接。在作为 MeshCore 连接之前先断开它。",
-      "bleTimeoutWebBtHandshake": "MeshCore 握手超时（网络蓝牙）。无线电可能需要首先与 Linux 配对的 PI​​N：使用“删除并重新配对设备”并输入设备上显示的 PIN，或与 bluetoothctl 配对，然后再次点击“连接”。",
-      "bleTimeoutWebBt": "通过网络蓝牙打开 MeshCore 时蓝牙连接超时。重试、保持设备唤醒、重新启动无线电上的 BLE，或使用串行/TCP。",
       "bleTimeoutHandshake": "蓝牙已连接，但在断开/超时之前 MeshCore 协议握手未完成。重试、保持设备处于唤醒状态并在附近、重新启动 BLE 或使用串行/TCP。",
-      "bleTimeoutNoble": "通过 Noble IPC 打开 MeshCore 时蓝牙连接超时。重试、重新启动设备上的 BLE，或使用串行/TCP。",
       "roomPost": {
         "badState": "房间帖子被拒绝（未登录收音机）。注销，重新登录，然后重试。",
         "illegalArg": "房间帖子被拒绝（消息格式无效）。",
@@ -2330,7 +2340,8 @@
       "cliDangerNotConfirmed": "破坏性CLI命令需要在Repeaters （中继器）面板中确认。",
       "pingFailed": "Ping失败",
       "floodScopeBusy": "当中继器管理或跟踪路由正在进行时，泛洪范围覆盖不可用。空闲时再试一次。",
-      "removeContactFailed": "已在本地删除，但电台拒绝了removeContact。刷新后联系人可能会重新出现。"
+      "removeContactFailed": "已在本地删除，但电台拒绝了removeContact。刷新后联系人可能会重新出现。",
+      "bleTimeoutGatt": "Bluetooth connection timed out while opening MeshCore over sidecar GATT. Retry, power-cycle BLE on the device, or use Serial/TCP."
     },
     "mqttHints": {
       "notAuthorized": "验证 v1_ 用户名、令牌签名和 JWT 受众与经纪人；请参阅 docs/letsmesh-mqtt-auth.md。如果需要，使用自定义粘贴操作员颁发的令牌。",
@@ -5861,12 +5872,6 @@
     },
     "drawOfferWaitingBanner": "已发出和棋提议。等待对手…",
     "idleExpiryNotice": "对局因长时间无操作而过期，之后只能删除。未应答的挑战：24 小时（所有游戏）。进行中的对局：井字棋 24 小时后，国际象棋和四子棋 7 天后。"
-  },
-  "longSession": {
-    "title": "建议重新启动",
-    "body": "在蓝牙无线电连接的情况下，mesh-client 已经运行了四天。重新启动应用程序，以降低长时间 Noble BLE 会话中崩溃的风险。",
-    "restart": "重启",
-    "dismiss": "解散"
   },
   "reticulumSetup": {
     "eyebrow": "Reticulum·入门",

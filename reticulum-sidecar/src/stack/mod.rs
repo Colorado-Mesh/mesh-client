@@ -189,6 +189,8 @@ pub struct StackHandle {
     identity_op_lock: Mutex<()>,
     /// Serializes path-medium preference/pin persist → live-apply → rollback sequences.
     path_medium_op_lock: Mutex<()>,
+    /// App-wide BLE GATT sessions (Meshtastic / MeshCore) + MAC registry.
+    gatt: Arc<crate::gatt::GattManager>,
     #[cfg(feature = "rns-stack")]
     /// Set once after HTTP is already listening (TCP usable before BLE finishes).
     live: std::sync::OnceLock<Arc<live::LiveBridge>>,
@@ -309,6 +311,8 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         let packet_log = Arc::new(PacketLogBuffer::new(MAX_WIRE_PACKET_LOG));
 
+        let gatt = crate::gatt::create_gatt_manager().await;
+
         #[cfg(feature = "rns-stack")]
         let handle = Self {
             config_dir,
@@ -320,6 +324,7 @@ impl StackHandle {
             contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
             identity_op_lock: Mutex::new(()),
             path_medium_op_lock: Mutex::new(()),
+            gatt,
             live: std::sync::OnceLock::new(),
             attach_live_lock: Mutex::new(()),
             voice_memo: Arc::new(voice_memo::VoiceMemoManager::new()),
@@ -337,6 +342,7 @@ impl StackHandle {
             contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
             identity_op_lock: Mutex::new(()),
             path_medium_op_lock: Mutex::new(()),
+            gatt,
             #[cfg(test)]
             test_path_medium_apply_error: Mutex::new(None),
         };
@@ -480,6 +486,11 @@ impl StackHandle {
 
     pub fn subscribe_events(&self) -> broadcast::Receiver<String> {
         self.event_tx.subscribe()
+    }
+
+    /// App-wide GATT session manager (Meshtastic / MeshCore + MAC registry).
+    pub fn gatt(&self) -> &Arc<crate::gatt::GattManager> {
+        &self.gatt
     }
 
     /// High-rate `voice.audio` PCM frames (dedicated `/ws/voice` bus, not shared `/ws`).
@@ -2940,6 +2951,11 @@ impl StackHandle {
     }
 
     pub async fn ble_availability(&self) -> serde_json::Value {
+        // Prefer gatt manager probe when available; fall back to rns-ble probe.
+        let gatt = self.gatt().availability().await;
+        if gatt.get("available").and_then(serde_json::Value::as_bool) == Some(true) {
+            return gatt;
+        }
         ble::ble_availability().await
     }
 
@@ -2948,6 +2964,26 @@ impl StackHandle {
         timeout_secs: u64,
         mode: &str,
     ) -> Result<serde_json::Value, String> {
+        if matches!(mode, "meshtastic" | "meshcore") {
+            return match self.gatt().scan(mode, timeout_secs).await {
+                Ok(devices) => {
+                    let devices: Vec<serde_json::Value> = devices
+                        .into_iter()
+                        .map(|d| {
+                            serde_json::json!({
+                                "address": d.address,
+                                "name": d.name,
+                                "rssi": d.rssi,
+                                "kind": mode,
+                                "service_uuids": d.service_uuids,
+                            })
+                        })
+                        .collect();
+                    Ok(serde_json::json!({ "devices": devices }))
+                }
+                Err(e) => Err(e.to_string()),
+            };
+        }
         ble::ble_scan(timeout_secs, mode).await
     }
 

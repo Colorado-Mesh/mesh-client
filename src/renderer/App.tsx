@@ -108,7 +108,6 @@ import { GlobalInstantTooltip } from './components/GlobalInstantTooltip';
 import { HelpTooltip } from './components/HelpTooltip';
 import { InactiveProtocolNotifier } from './components/InactiveProtocolNotifier';
 import LanguageSelector from './components/LanguageSelector';
-import { LongSessionRestartBanner } from './components/LongSessionRestartBanner';
 import { MeshcoreFloodAdvertHeaderButton } from './components/MeshcoreFloodAdvertHeaderButton';
 import { MeshcoreWaitingMessagesHeaderIndicator } from './components/MeshcoreWaitingMessagesHeaderIndicator';
 import { ProtocolAutoConnectCoordinator } from './components/ProtocolAutoConnectCoordinator';
@@ -130,7 +129,6 @@ import { useAppTrayUnreadSync } from './hooks/useAppTrayUnreadSync';
 import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
-import { useLongSessionMaintenance } from './hooks/useLongSessionMaintenance';
 import { MeshClientDeepLinkHost } from './hooks/useMeshClientDeepLink';
 import { useMeshcoreDistanceFilterHint } from './hooks/useMeshcoreDistanceFilterHint';
 import type { useMeshcorePanelActions } from './hooks/useMeshcorePanelActions';
@@ -879,7 +877,6 @@ function AppContent() {
       },
     },
   });
-  const longSessionMaintenance = useLongSessionMaintenance();
   useRendererHeartbeat();
   useSerialServiceListeners();
   useSpellcheckReplaceSync();
@@ -3185,14 +3182,6 @@ function AppContent() {
           reconnectAttempt={activeConnectionView.state.reconnectAttempt}
           onReconnect={handleReconnect}
         />
-
-        {longSessionMaintenance.visible ? (
-          <LongSessionRestartBanner
-            onRestart={longSessionMaintenance.onRestart}
-            onDismiss={longSessionMaintenance.onDismiss}
-          />
-        ) : null}
-
         {/* Telemetry disabled notice */}
         {isOperational && activeRuntime.telemetryEnabled === false && !telemetryNoticeDismissed && (
           <div

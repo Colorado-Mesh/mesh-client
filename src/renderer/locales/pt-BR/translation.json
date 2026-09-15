@@ -969,7 +969,6 @@
       },
       "ble": {
         "adapterWindowsHint": "Verifique Configurações> Bluetooth e dispositivos. Se o Bluetooth estiver ativado, mas indisponível, atualize o driver Bluetooth no Gerenciador de dispositivos.",
-        "adapterLinuxHint": "Certifique-se de que o Bluetooth esteja ativado e o sinalizador experimental Web Bluetooth esteja definido. Tente: status do systemctl bluetooth",
         "adapterGenericHint": "Certifique-se de que o Bluetooth esteja ativado. No Linux, execute: systemctl status bluetooth",
         "securityPermissionHint": "Permissão Bluetooth negada. Certifique-se de que o aplicativo tenha acesso ao dispositivo Bluetooth.",
         "gattDisconnectedHint": "A conexão GATT caiu. Tente aproximar-se do dispositivo e reconectar.",
@@ -1376,8 +1375,6 @@
     "autoConnectingTo": "Conectando-se automaticamente a {{deviceName}}…",
     "autoReconnectInProgress": "Auto-reconexão em andamento…",
     "stageAutoConnectingBle": "Conectando-se a {{deviceName}}…",
-    "stageWaitingNobleBleMeshtastic": "Aguardando a conclusão do Meshtastic Bluetooth — O MeshCore se conectará a {{deviceName}} automaticamente quando terminar…",
-    "stageWaitingNobleBleMeshcore": "Aguardando a conclusão do MeshCore Bluetooth — O Meshtastic se conectará a {{deviceName}} automaticamente quando terminar…",
     "reticulumStats": {
       "interfaces": "Interfaces {{count}}",
       "peers": "{{count}} colegas"
@@ -1510,7 +1507,6 @@
     "linkQuality": "Qualidade da ligação",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Indisponível (Web Bluetooth)",
     "meshcoreCaBroker": "Corretora MeshCore.CA",
     "meshcoreCaPrimary": "Principal",
     "meshcoreCaBackup": "Backup",
@@ -1533,7 +1529,24 @@
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "MAC BLUETOOTH",
     "bluetoothId": "ID Bluetooth",
-    "reticulumAutoResendOnAnnounce": "Repetir mensagens com falha quando um colega anunciar"
+    "reticulumAutoResendOnAnnounce": "Repetir mensagens com falha quando um colega anunciar",
+    "errors": {
+      "ble": {
+        "adapter_missing": "No Bluetooth adapter was found. Enable Bluetooth in system settings and try again.",
+        "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
+        "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
+        "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
+        "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
+        "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
+        "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",
+        "bond_removed": "The Bluetooth bond is no longer valid. Forget the device in system settings, then re-pair.",
+        "write_failed": "Failed to write to the Bluetooth device. Reconnect and try again.",
+        "session_not_found": "The Bluetooth session is no longer available. Disconnect and connect again.",
+        "notified_read_forbidden": "This Bluetooth characteristic cannot be read that way. Reconnect and try again.",
+        "feature_disabled": "Bluetooth GATT support is not available in this build.",
+        "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
+      }
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",
@@ -2297,10 +2310,7 @@
       "bleAlreadyInProgress": "Conexão Bluetooth já em andamento. Aguarde a conclusão ou tente Serial/USB.",
       "bleMissingServices": "O dispositivo não oferece suporte ao protocolo MeshCore BLE. Certifique-se de que o dispositivo esteja executando o firmware MeshCore.",
       "blePeripheralInUse": "Este dispositivo já está conectado via Meshtastic BLE. Desconecte-o primeiro antes de conectar como MeshCore.",
-      "bleTimeoutWebBtHandshake": "O handshake do MeshCore expirou (Web Bluetooth). O rádio pode precisar primeiro de um PIN emparelhado com Linux: use Remover e reemparelhar dispositivo e insira o PIN mostrado no dispositivo ou emparelhe com bluetoothctl e toque em Conectar novamente.",
-      "bleTimeoutWebBt": "A conexão Bluetooth expirou ao abrir o MeshCore via Web Bluetooth. Tente novamente, mantenha o dispositivo ativado, desligue e ligue o BLE no rádio ou use Serial/TCP.",
       "bleTimeoutHandshake": "Bluetooth conectado, mas o handshake do protocolo MeshCore não foi concluído antes da desconexão/tempo limite. Tente novamente, mantenha o dispositivo ativo e próximo, desligue e ligue o BLE ou use Serial/TCP.",
-      "bleTimeoutNoble": "A conexão Bluetooth expirou ao abrir o MeshCore no Noble IPC. Tente novamente, desligue e ligue o BLE no dispositivo ou use Serial/TCP.",
       "roomPost": {
         "badState": "Postagem da sala rejeitada (não logado na rádio). Saia, faça login novamente e tente novamente.",
         "illegalArg": "Postagem da sala rejeitada (formato de mensagem inválido).",
@@ -2330,7 +2340,8 @@
       "cliDangerNotConfirmed": "Comandos CLI destrutivos requerem confirmação no painel Repetidores.",
       "pingFailed": "Falha no ping",
       "floodScopeBusy": "A substituição do escopo Flood não está disponível enquanto o administrador do repetidor ou o traceroute estão em andamento. Tente novamente quando estiver inativo.",
-      "removeContactFailed": "Removido localmente, mas o rádio rejeitou removeContact. O contato pode reaparecer após uma atualização."
+      "removeContactFailed": "Removido localmente, mas o rádio rejeitou removeContact. O contato pode reaparecer após uma atualização.",
+      "bleTimeoutGatt": "Bluetooth connection timed out while opening MeshCore over sidecar GATT. Retry, power-cycle BLE on the device, or use Serial/TCP."
     },
     "mqttHints": {
       "notAuthorized": "Verifique o nome de usuário v1_, assinatura de token e público JWT versus corretor; consulte documentos/letsmesh-mqtt-auth.md. Use Personalizado para colar um token emitido pelo operador, se necessário.",
@@ -5861,12 +5872,6 @@
     },
     "drawOfferWaitingBanner": "Oferta de empate enviada. Aguardando o oponente…",
     "idleExpiryNotice": "As partidas expiram por inatividade e depois só podem ser excluídas. Desafios sem resposta: 24 horas (todos os jogos). Partidas ativas: jogo da velha após 24 horas, xadrez e quatro em linha após 7 dias."
-  },
-  "longSession": {
-    "title": "Recomenda-se reiniciar",
-    "body": "O mesh-client está em execução há quatro dias com o rádio Bluetooth conectado. Reinicie o aplicativo para reduzir o risco de falhas em sessões longas do Noble BLE.",
-    "restart": "Recomeçar",
-    "dismiss": "Dispensar"
   },
   "reticulumSetup": {
     "title": "Sua primeira conexão",

@@ -45,10 +45,11 @@ vi.mock('@liamcottle/meshcore.js', () => {
 });
 
 vi.mock('../../bleReconnectHelper', () => ({
-  connectNobleBleWithScanBusyRetry: vi.fn().mockResolvedValue(undefined),
+  connectGattWithScanBusyRetry: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../meshcoreDualNobleBleInit', () => ({
+  notifyBlePrimaryRfLinkReady: vi.fn(),
   notifyNobleBlePrimaryRfLinkReady: vi.fn(),
 }));
 
@@ -61,10 +62,10 @@ vi.mock('../../meshcoreCompanionTxEchoFilter', () => ({
   patchMeshcoreCompanionTxEchoFilter: vi.fn(),
 }));
 
-import { connectNobleBleWithScanBusyRetry } from '../../bleReconnectHelper';
+import { connectGattWithScanBusyRetry } from '../../bleReconnectHelper';
 import { createMeshCoreConnection } from './MeshCoreTransport';
 
-const connectNobleBleWithScanBusyRetryMock = vi.mocked(connectNobleBleWithScanBusyRetry);
+const connectGattWithScanBusyRetryMock = vi.mocked(connectGattWithScanBusyRetry);
 
 describe('MeshCoreTransport IPC listener cleanup', () => {
   const originalPlatform = process.platform;
@@ -199,10 +200,8 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
     });
   });
 
-  describe('Noble BLE', () => {
+  describe('Sidecar GATT BLE', () => {
     beforeEach(() => {
-      // Force Noble path: process.platform alone is insufficient on Linux CI jsdom,
-      // where navigator.userAgent / platform still match rendererLikelyLinux().
       Object.defineProperty(process, 'platform', {
         configurable: true,
         value: 'darwin',
@@ -211,17 +210,17 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
         userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
         platform: 'MacIntel',
       });
-      connectNobleBleWithScanBusyRetryMock.mockResolvedValue(undefined);
+      connectGattWithScanBusyRetryMock.mockResolvedValue(undefined);
     });
 
     it('unsubscribes IPC listeners on connection.close()', async () => {
       const offData = vi.fn();
       const offDisc = vi.fn();
       const offAbort = vi.fn();
-      window.electronAPI.onNobleBleFromRadio = vi.fn().mockReturnValue(offData);
-      window.electronAPI.onNobleBleDisconnected = vi.fn().mockReturnValue(offDisc);
-      window.electronAPI.onNobleBleConnectAborted = vi.fn().mockReturnValue(offAbort);
-      window.electronAPI.disconnectNobleBle = vi.fn().mockResolvedValue(undefined);
+      window.electronAPI.onGattFromRadio = vi.fn().mockReturnValue(offData);
+      window.electronAPI.onGattDisconnected = vi.fn().mockReturnValue(offDisc);
+      window.electronAPI.onGattConnectAborted = vi.fn().mockReturnValue(offAbort);
+      window.electronAPI.disconnectGatt = vi.fn().mockResolvedValue(undefined);
 
       const conn = await createMeshCoreConnection({
         transport: 'ble',
@@ -232,7 +231,7 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
       expect(offData).toHaveBeenCalledTimes(1);
       expect(offDisc).toHaveBeenCalledTimes(1);
       expect(offAbort).toHaveBeenCalledTimes(1);
-      expect(window.electronAPI.disconnectNobleBle).toHaveBeenCalledWith('meshcore');
+      expect(window.electronAPI.disconnectGatt).toHaveBeenCalledWith('meshcore');
     });
 
     it('unsubscribes IPC listeners on peripheral disconnect event', async () => {
@@ -240,14 +239,14 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
       const offDisc = vi.fn();
       const offAbort = vi.fn();
       let onDiscCb: ((sid: 'meshtastic' | 'meshcore' | 'reticulum') => void) | undefined;
-      window.electronAPI.onNobleBleFromRadio = vi.fn().mockReturnValue(offData);
-      window.electronAPI.onNobleBleDisconnected = vi.fn(
+      window.electronAPI.onGattFromRadio = vi.fn().mockReturnValue(offData);
+      window.electronAPI.onGattDisconnected = vi.fn(
         (cb: (sid: 'meshtastic' | 'meshcore' | 'reticulum') => void) => {
           onDiscCb = cb;
           return offDisc;
         },
       );
-      window.electronAPI.onNobleBleConnectAborted = vi.fn().mockReturnValue(offAbort);
+      window.electronAPI.onGattConnectAborted = vi.fn().mockReturnValue(offAbort);
 
       await createMeshCoreConnection({
         transport: 'ble',
@@ -265,11 +264,11 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
       const offData = vi.fn();
       const offDisc = vi.fn();
       const offAbort = vi.fn();
-      window.electronAPI.onNobleBleFromRadio = vi.fn().mockReturnValue(offData);
-      window.electronAPI.onNobleBleDisconnected = vi.fn().mockReturnValue(offDisc);
-      window.electronAPI.onNobleBleConnectAborted = vi.fn().mockReturnValue(offAbort);
-      window.electronAPI.disconnectNobleBle = vi.fn().mockResolvedValue(undefined);
-      connectNobleBleWithScanBusyRetryMock.mockRejectedValue(new Error('adapter busy'));
+      window.electronAPI.onGattFromRadio = vi.fn().mockReturnValue(offData);
+      window.electronAPI.onGattDisconnected = vi.fn().mockReturnValue(offDisc);
+      window.electronAPI.onGattConnectAborted = vi.fn().mockReturnValue(offAbort);
+      window.electronAPI.disconnectGatt = vi.fn().mockResolvedValue(undefined);
+      connectGattWithScanBusyRetryMock.mockRejectedValue(new Error('adapter busy'));
 
       await expect(
         createMeshCoreConnection({
@@ -281,7 +280,7 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
       expect(offData).toHaveBeenCalledTimes(1);
       expect(offDisc).toHaveBeenCalledTimes(1);
       expect(offAbort).toHaveBeenCalledTimes(1);
-      expect(window.electronAPI.disconnectNobleBle).toHaveBeenCalledWith('meshcore');
+      expect(window.electronAPI.disconnectGatt).toHaveBeenCalledWith('meshcore');
     });
 
     it('unsubscribes IPC listeners when main signals connect aborted during handshake', async () => {
@@ -294,9 +293,9 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
             message: string;
           }) => void)
         | undefined;
-      window.electronAPI.onNobleBleFromRadio = vi.fn().mockReturnValue(offData);
-      window.electronAPI.onNobleBleDisconnected = vi.fn().mockReturnValue(offDisc);
-      window.electronAPI.onNobleBleConnectAborted = vi.fn(
+      window.electronAPI.onGattFromRadio = vi.fn().mockReturnValue(offData);
+      window.electronAPI.onGattDisconnected = vi.fn().mockReturnValue(offDisc);
+      window.electronAPI.onGattConnectAborted = vi.fn(
         (
           cb: (payload: {
             sessionId: 'meshtastic' | 'meshcore' | 'reticulum';
@@ -307,8 +306,8 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
           return offAbort;
         },
       );
-      window.electronAPI.disconnectNobleBle = vi.fn().mockResolvedValue(undefined);
-      connectNobleBleWithScanBusyRetryMock.mockImplementation(() => {
+      window.electronAPI.disconnectGatt = vi.fn().mockResolvedValue(undefined);
+      connectGattWithScanBusyRetryMock.mockImplementation(() => {
         expect(onAbortCb).toBeTypeOf('function');
         onAbortCb!({ sessionId: 'meshcore', message: 'pairing cancelled' });
         return Promise.resolve();

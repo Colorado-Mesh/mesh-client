@@ -3,12 +3,12 @@
  * Contract check: every [TAG] prefix used in a Meshtastic or MeshCore device
  * source file must be registered in isDeviceEntry() in LogPanel.tsx.
  *
- * This prevents the "new prefix added to noble-ble-manager / mqtt-manager /
+ * This prevents the "new prefix added to gatt-sidecar-proxy / mqtt-manager /
  * meshcore-mqtt-adapter / useMeshtasticRuntime, but never added to the log filter"
  * regression.
  *
  * Files checked:
- *   Meshtastic main:  noble-ble-manager.ts, mqtt-manager.ts
+ *   Meshtastic main:  gatt-sidecar-proxy.ts, mqtt-manager.ts
  *   Meshtastic renderer: useMeshtasticRuntime.ts, meshtasticRuntimeWireEffects.ts
  *   MeshCore main:    meshcore-mqtt-adapter.ts
  *   MeshCore renderer: useMeshcoreRuntime.ts, meshcoreConnSideEffects.ts
@@ -33,7 +33,7 @@ const LOG_PANEL = path.join(ROOT, 'src', 'renderer', 'components', 'LogPanel.tsx
  */
 const DEVICE_FILES = {
   meshtastic: [
-    path.join(ROOT, 'src', 'main', 'noble-ble-manager.ts'),
+    path.join(ROOT, 'src', 'main', 'gatt-sidecar-proxy.ts'),
     path.join(ROOT, 'src', 'main', 'mqtt-manager.ts'),
     path.join(ROOT, 'src', 'renderer', 'runtime', 'useMeshtasticRuntime.ts'),
     path.join(ROOT, 'src', 'renderer', 'lib', 'meshtastic', 'meshtasticRuntimeWireEffects.ts'),

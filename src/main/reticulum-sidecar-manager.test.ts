@@ -23,24 +23,6 @@ vi.mock('./reticulum-sidecar-path', () => ({
   resolveSidecarBinaryPath: () => '/tmp/mesh-client-test/mesh-client-reticulum',
 }));
 
-const suspendNobleMock = vi.fn().mockResolvedValue(undefined);
-const releaseScanMock = vi.fn();
-const getStateMock = vi.fn().mockReturnValue({ connections: [], scanOwner: null });
-const setNobleYieldDecisionPendingMock = vi.fn();
-
-vi.mock('./ble-coexistence-coordinator', () => ({
-  bleCoexistenceCoordinator: {
-    suspendNobleForReticulumBleConnect: (...args: unknown[]) => suspendNobleMock(...args),
-    releaseScan: (...args: unknown[]) => releaseScanMock(...args),
-    getState: (...args: unknown[]) => getStateMock(...args),
-    setNobleYieldDecisionPending: (...args: unknown[]) => setNobleYieldDecisionPendingMock(...args),
-  },
-}));
-
-vi.mock('./reticulum-ble-rnode-config', () => ({
-  reticulumConfigDirHasEnabledBleRnode: vi.fn().mockReturnValue(false),
-}));
-
 const mockWsInstances: MockWebSocketInstance[] = [];
 
 interface MockWebSocketInstance {
@@ -92,7 +74,6 @@ import {
   RETICULUM_PROXY_MAX_RESPONSE_BYTES,
   RETICULUM_WS_MAX_MESSAGE_BYTES,
 } from '../shared/reticulumProxyLimits';
-import { reticulumConfigDirHasEnabledBleRnode } from './reticulum-ble-rnode-config';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
 import { ensureDevSidecarBinary } from './reticulum-sidecar-path';
 import { SIDECAR_DEFAULT_RUST_LOG } from './reticulumSidecarStderrLog';
@@ -122,11 +103,8 @@ describe('ReticulumSidecarManager', () => {
   beforeEach(() => {
     mockWsInstances.length = 0;
     spawnMock.mockReset();
-    suspendNobleMock.mockClear();
-    releaseScanMock.mockClear();
-    setNobleYieldDecisionPendingMock.mockClear();
-    getStateMock.mockReturnValue({ connections: [], scanOwner: null });
-    vi.mocked(reticulumConfigDirHasEnabledBleRnode).mockReturnValue(false);
+    vi.mocked(ensureDevSidecarBinary).mockReset();
+    vi.mocked(ensureDevSidecarBinary).mockResolvedValue(undefined);
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -587,17 +565,9 @@ describe('ReticulumSidecarManager', () => {
     expect(wsInstance.handlers.has('error')).toBe(true);
   });
 
-  it('starts Noble BLE yield after health succeeds (does not block start on yield)', async () => {
+  it('ensureForBle starts the sidecar and returns the HTTP port', async () => {
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
     const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
-    vi.mocked(reticulumConfigDirHasEnabledBleRnode).mockReturnValue(true);
-
-    let resolveYield!: () => void;
-    const yieldGate = new Promise<void>((resolve) => {
-      resolveYield = resolve;
-    });
-    suspendNobleMock.mockImplementationOnce(() => yieldGate);
-
     const proc = mockSidecarProc();
     proc.kill.mockImplementation(() => {
       proc.emit('exit', 0, null);
@@ -605,94 +575,28 @@ describe('ReticulumSidecarManager', () => {
     spawnMock.mockReturnValue(proc);
 
     const manager = new ReticulumSidecarManager();
-    const started = await manager.start();
-    expect(started.running).toBe(true);
+    const port = await manager.ensureForBle();
+    expect(port).toBeGreaterThan(0);
     expect(spawnMock).toHaveBeenCalledTimes(1);
-    // Yield pending is latched before status/RF unblock; suspend still runs after health.
-    expect(setNobleYieldDecisionPendingMock).toHaveBeenCalledWith(true);
-    expect(suspendNobleMock).toHaveBeenCalledTimes(1);
-    expect(spawnMock.mock.invocationCallOrder[0]).toBeLessThan(
-      suspendNobleMock.mock.invocationCallOrder[0],
-    );
+    expect(manager.getStatus().running).toBe(true);
 
-    resolveYield();
-    await yieldGate;
-    await vi.waitFor(() => {
-      expect(suspendNobleMock).toHaveBeenCalledTimes(1);
-      expect(setNobleYieldDecisionPendingMock).toHaveBeenCalledWith(false);
-    });
+    // reuseIfRunning: second ensure does not respawn
+    const port2 = await manager.ensureForBle();
+    expect(port2).toBe(port);
+    expect(spawnMock).toHaveBeenCalledTimes(1);
 
     await manager.stop();
     existsSpy.mockRestore();
     mkdirSpy.mockRestore();
   });
 
-  it('stale yield finally cannot clear a newer attempt pending flag', async () => {
+  it('does not spawn when sidecar binary ensure fails before spawn', async () => {
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
     const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
-    vi.mocked(reticulumConfigDirHasEnabledBleRnode).mockReturnValue(true);
-
-    let resolveYield1!: () => void;
-    const yieldGate1 = new Promise<void>((resolve) => {
-      resolveYield1 = resolve;
-    });
-    let resolveYield2!: () => void;
-    const yieldGate2 = new Promise<void>((resolve) => {
-      resolveYield2 = resolve;
-    });
-    suspendNobleMock
-      .mockImplementationOnce(() => yieldGate1)
-      .mockImplementationOnce(() => yieldGate2);
-
-    const proc1 = mockSidecarProc();
-    proc1.kill.mockImplementation(() => {
-      proc1.emit('exit', 0, null);
-    });
-    const proc2 = mockSidecarProc();
-    proc2.kill.mockImplementation(() => {
-      proc2.emit('exit', 0, null);
-    });
-    spawnMock.mockReturnValueOnce(proc1).mockReturnValueOnce(proc2);
-
-    const manager = new ReticulumSidecarManager();
-    await manager.start();
-    expect(setNobleYieldDecisionPendingMock).toHaveBeenCalledWith(true);
-
-    await manager.stop();
-    // stop invalidates generation and clears pending before a subsequent start.
-    expect(setNobleYieldDecisionPendingMock).toHaveBeenCalledWith(false);
-    setNobleYieldDecisionPendingMock.mockClear();
-
-    await manager.start();
-    expect(setNobleYieldDecisionPendingMock).toHaveBeenCalledWith(true);
-    setNobleYieldDecisionPendingMock.mockClear();
-
-    // Completing the first (stale) yield must not clear the second attempt's pending.
-    resolveYield1();
-    await yieldGate1;
-    await Promise.resolve();
-    expect(setNobleYieldDecisionPendingMock).not.toHaveBeenCalledWith(false);
-
-    resolveYield2();
-    await yieldGate2;
-    await vi.waitFor(() => {
-      expect(setNobleYieldDecisionPendingMock).toHaveBeenCalledWith(false);
-    });
-
-    await manager.stop();
-    existsSpy.mockRestore();
-    mkdirSpy.mockRestore();
-  });
-
-  it('does not yield Noble when sidecar binary ensure fails before spawn', async () => {
-    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
-    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
-    vi.mocked(reticulumConfigDirHasEnabledBleRnode).mockReturnValue(true);
     vi.mocked(ensureDevSidecarBinary).mockRejectedValueOnce(new Error('missing rust toolchain'));
 
     const manager = new ReticulumSidecarManager();
     await expect(manager.start()).rejects.toThrow('missing rust toolchain');
-    expect(suspendNobleMock).not.toHaveBeenCalled();
     expect(spawnMock).not.toHaveBeenCalled();
 
     existsSpy.mockRestore();
@@ -702,7 +606,6 @@ describe('ReticulumSidecarManager', () => {
   it('stop during pre-spawn cargo does not await the startPromise', async () => {
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
     const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
-    vi.mocked(reticulumConfigDirHasEnabledBleRnode).mockReturnValue(true);
     let resolveCargo!: () => void;
     const cargoGate = new Promise<void>((resolve) => {
       resolveCargo = () => {
@@ -720,8 +623,6 @@ describe('ReticulumSidecarManager', () => {
     const stopT0 = Date.now();
     await manager.stop();
     expect(Date.now() - stopT0).toBeLessThan(500);
-    // Cancel during cargo must never yank Meshtastic/MeshCore Noble.
-    expect(suspendNobleMock).not.toHaveBeenCalled();
 
     resolveCargo();
     await expect(startP).rejects.toThrow(/START_ABORTED|aborted/i);
@@ -768,62 +669,6 @@ describe('ReticulumSidecarManager', () => {
     await manager.stop();
     existsSpy.mockRestore();
     mkdirSpy.mockRestore();
-  });
-
-  it('releases Noble when an aborted yield resumes after a newer start clears abort', async () => {
-    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
-    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
-    vi.mocked(reticulumConfigDirHasEnabledBleRnode).mockReturnValue(true);
-
-    let resolveFirstYield!: () => void;
-    const firstYieldGate = new Promise<void>((resolve) => {
-      resolveFirstYield = resolve;
-    });
-    suspendNobleMock.mockImplementationOnce(() => {
-      getStateMock.mockReturnValue({ connections: [], scanOwner: 'reticulum' });
-      return firstYieldGate;
-    });
-
-    const proc1 = mockSidecarProc();
-    proc1.kill.mockImplementation(() => {
-      proc1.emit('exit', 0, null);
-    });
-    spawnMock.mockReturnValue(proc1);
-
-    const manager = new ReticulumSidecarManager();
-    await manager.start();
-    expect(suspendNobleMock).toHaveBeenCalledTimes(1);
-
-    await manager.stop();
-    releaseScanMock.mockClear();
-    // Aborted yield still holds the coordinator ownership until it resumes.
-    getStateMock.mockReturnValue({ connections: [], scanOwner: 'reticulum' });
-
-    const proc2 = mockSidecarProc();
-    proc2.kill.mockImplementation(() => {
-      proc2.emit('exit', 0, null);
-    });
-    spawnMock.mockReturnValue(proc2);
-    suspendNobleMock.mockResolvedValue(undefined);
-
-    const started = manager.start();
-    resolveFirstYield();
-    await firstYieldGate;
-    await vi.waitFor(() => {
-      expect(releaseScanMock).toHaveBeenCalledWith('reticulum');
-    });
-    await started;
-    await manager.stop();
-
-    existsSpy.mockRestore();
-    mkdirSpy.mockRestore();
-  });
-
-  it('releases Noble scan lock on stop when reticulum holds scanOwner', async () => {
-    getStateMock.mockReturnValue({ connections: [], scanOwner: 'reticulum' });
-    const manager = new ReticulumSidecarManager();
-    await manager.stop();
-    expect(releaseScanMock).toHaveBeenCalledWith('reticulum');
   });
 
   it('does not auto-respawn the sidecar after process exit or stop', () => {

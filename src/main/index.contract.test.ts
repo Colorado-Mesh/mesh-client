@@ -8,26 +8,22 @@ const PRELOAD_SOURCE = readFileSync(join(__dirname, '../preload/index.ts'), 'utf
 const TCP_BRIDGE_SOURCE = readFileSync(join(__dirname, 'ipc/tcp-bridge.ts'), 'utf-8');
 
 describe('IPC payload size limits (source contract)', () => {
-  it('defines meshcore tcp-write, http:write, and noble-ble limits and uses them in handlers', () => {
+  it('defines meshcore tcp-write, http:write, and gatt to-radio limits and uses them in handlers', () => {
     expect(TCP_BRIDGE_SOURCE).toContain('export const TCP_BRIDGE_WRITE_MAX_BYTES = 256 * 1024');
     expect(TCP_BRIDGE_SOURCE).toContain('TCP_BRIDGE_DATA_MAX_BYTES');
     expect(INDEX_SOURCE).toContain('const HTTP_WRITE_TO_RADIO_MAX_BYTES = 256 * 1024');
-    expect(INDEX_SOURCE).toContain('const NOBLE_BLE_TO_RADIO_MAX_BYTES = 512');
-    expect(INDEX_SOURCE).toMatch(/maxBytes: NOBLE_BLE_TO_RADIO_MAX_BYTES/);
+    expect(INDEX_SOURCE).toContain('const GATT_TO_RADIO_MAX_BYTES = 512');
+    expect(INDEX_SOURCE).toMatch(/GATT_TO_RADIO_MAX_BYTES/);
     expect(TCP_BRIDGE_SOURCE).toMatch(/bytes\.length > TCP_BRIDGE_WRITE_MAX_BYTES/);
     expect(INDEX_SOURCE).toMatch(/data\.length > HTTP_WRITE_TO_RADIO_MAX_BYTES/);
     expect(INDEX_SOURCE).toMatch(/http:write: byte values must be integers 0-255/);
   });
 });
 
-describe('Noble BLE disconnect handling (source contract)', () => {
-  it('classifies expected disconnect write races and ignores them in noble-ble-to-radio', () => {
-    expect(INDEX_SOURCE).toContain("import { handleNobleBleToRadioWrite } from './noble-ble-ipc'");
-    expect(INDEX_SOURCE).toMatch(/const result = await handleNobleBleToRadioWrite\(/);
-    expect(INDEX_SOURCE).toMatch(/result === 'ignored-expected-disconnect'/);
-    expect(INDEX_SOURCE).toMatch(
-      /noble-ble-to-radio: disconnected during write, ignoring session=/,
-    );
+describe('GATT BLE disconnect handling (source contract)', () => {
+  it('ignores expected disconnect races in gatt:to-radio', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('gatt:to-radio'");
+    expect(INDEX_SOURCE).toMatch(/gatt:to-radio: disconnected during write, ignoring session=/);
   });
 
   it('resolves meshtastic:tcp-write with no-socket instead of rejecting when the socket is gone', () => {
@@ -42,11 +38,9 @@ describe('Noble BLE disconnect handling (source contract)', () => {
     expect(PRELOAD_SOURCE).toMatch(/throw new Error\('meshtastic:tcp-write: no active socket'\)/);
   });
 
-  it('returns scan_busy result instead of throwing when Reticulum holds the scan mutex', () => {
-    expect(INDEX_SOURCE).toContain('BleScanBusyError');
-    expect(INDEX_SOURCE).toMatch(
-      /noble-ble-start-scan[\s\S]{0,1200}err instanceof BleScanBusyError[\s\S]{0,400}code: 'scan_busy'/,
-    );
+  it('returns scan_busy from gattSidecarProxy.startScan without throwing', () => {
+    expect(INDEX_SOURCE).toContain('gattSidecarProxy.startScan');
+    expect(INDEX_SOURCE).toMatch(/gatt:start-scan[\s\S]{0,400}return gattSidecarProxy\.startScan/);
   });
 });
 
@@ -412,8 +406,8 @@ describe('HTTP bridge IPC handlers (source contract)', () => {
 });
 
 describe('Host link quality IPC (source contract)', () => {
-  it('forwards Noble link RSSI and registers HTTP/TCP RTT probes', () => {
-    expect(INDEX_SOURCE).toContain("webContents.send('noble-ble-link-rssi'");
+  it('forwards GATT link RSSI and registers HTTP/TCP RTT probes', () => {
+    expect(INDEX_SOURCE).toContain("webContents.send('gatt-link-rssi'");
     expect(INDEX_SOURCE).toContain("ipcMain.handle('hostLink:probeHttpRtt'");
     expect(INDEX_SOURCE).toContain("ipcMain.handle('hostLink:probeTcpRtt'");
     expect(INDEX_SOURCE).toContain("ipcMain.handle('hostLink:getSessionMeter'");
@@ -437,9 +431,9 @@ describe('Host link quality IPC (source contract)', () => {
 });
 
 describe('Host link quality preload surface (source contract)', () => {
-  it('exposes onNobleBleLinkRssi and hostLink probe APIs', () => {
-    expect(PRELOAD_SOURCE).toContain('onNobleBleLinkRssi:');
-    expect(PRELOAD_SOURCE).toContain("ipcRenderer.on('noble-ble-link-rssi'");
+  it('exposes onGattLinkRssi and hostLink probe APIs', () => {
+    expect(PRELOAD_SOURCE).toContain('onGattLinkRssi:');
+    expect(PRELOAD_SOURCE).toContain("ipcRenderer.on('gatt-link-rssi'");
     expect(PRELOAD_SOURCE).toContain('hostLink:');
     expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('hostLink:probeHttpRtt'");
     expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('hostLink:probeTcpRtt'");
@@ -484,14 +478,6 @@ describe('Long-session maintenance (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(/if \(opts\.relaunch\) \{\s*app\.relaunch\(\);/);
     expect(INDEX_SOURCE).toContain('app.exit(0)');
   });
-
-  it('registers long-session OS notify IPC with sender checks', () => {
-    expect(INDEX_SOURCE).toContain("ipcMain.handle('notify:longSessionRestart'");
-    expect(INDEX_SOURCE).toContain("assertIpcSender(event, 'notify:longSessionRestart')");
-    expect(INDEX_SOURCE).toContain("ipcMain.handle('notify:clearLongSessionNudge'");
-    expect(INDEX_SOURCE).toContain("assertIpcSender(event, 'notify:clearLongSessionNudge')");
-    expect(INDEX_SOURCE).toContain('createLongSessionNudgeController');
-  });
 });
 
 describe('Unread app badge wiring (source contract)', () => {
@@ -502,7 +488,7 @@ describe('Unread app badge wiring (source contract)', () => {
     expect(refresh).toContain('Notification.isSupported()');
     expect(refresh).not.toContain('new Notification');
     expect(refresh).not.toContain('.show()');
-    expect(refresh).toContain('shouldSuppressUnreadDockBadge()');
+    expect(refresh).toContain('suppressDockBadge: () => false');
     expect(refresh).toContain('mainWindow.isDestroyed()');
   });
 

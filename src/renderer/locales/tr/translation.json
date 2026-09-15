@@ -969,7 +969,6 @@
       },
       "ble": {
         "adapterWindowsHint": "Ayarlar > Bluetooth ve cihazlar'ı kontrol edin. Bluetooth açık ancak kullanılamıyorsa Bluetooth sürücünüzü Aygıt Yöneticisi'nde güncelleyin.",
-        "adapterLinuxHint": "Bluetooth'un etkinleştirildiğinden ve Web Bluetooth deneysel bayrağının ayarlandığından emin olun. Deneyin: systemctl durumu bluetooth",
         "adapterGenericHint": "Bluetooth'un etkin olduğundan emin olun. Linux'ta şunu çalıştırın: systemctl status bluetooth",
         "securityPermissionHint": "Bluetooth izni reddedildi. Uygulamanın Bluetooth cihazına erişimi olduğundan emin olun.",
         "gattDisconnectedHint": "GATT bağlantısı kesildi. Cihaza yaklaşıp yeniden bağlanmayı deneyin.",
@@ -1376,8 +1375,6 @@
     "autoConnectingTo": "{{deviceName}}'a otomatik bağlanılıyor…",
     "autoReconnectInProgress": "Otomatik yeniden bağlanma işlemi devam ediyor…",
     "stageAutoConnectingBle": "{{deviceName}}'a bağlanılıyor…",
-    "stageWaitingNobleBleMeshtastic": "Meshtastic Bluetooth'un bitmesi bekleniyor — İşlem tamamlandığında MeshCore {{deviceName}}'a otomatik olarak bağlanacak…",
-    "stageWaitingNobleBleMeshcore": "MeshCore Bluetooth'un tamamlanması bekleniyor — İşlem tamamlandığında Meshtastic {{deviceName}}'a otomatik olarak bağlanacaktır…",
     "reticulumStats": {
       "interfaces": "{{count}} arayüzler",
       "peers": "{{count}} akranlar"
@@ -1510,7 +1507,6 @@
     "linkQuality": "Hat kalitesi",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Kullanılamıyor (Web Bluetooth)",
     "meshcoreCaBroker": "MeshCore.CA brokeri",
     "meshcoreCaPrimary": "Birincil",
     "meshcoreCaBackup": "Yedekleme",
@@ -1533,7 +1529,24 @@
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
     "bluetoothId": "Bluetooth Kimliği",
-    "reticulumAutoResendOnAnnounce": "Bir akran duyuru yaptığında başarısız mesajları yeniden dene"
+    "reticulumAutoResendOnAnnounce": "Bir akran duyuru yaptığında başarısız mesajları yeniden dene",
+    "errors": {
+      "ble": {
+        "adapter_missing": "No Bluetooth adapter was found. Enable Bluetooth in system settings and try again.",
+        "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
+        "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
+        "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
+        "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
+        "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
+        "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",
+        "bond_removed": "The Bluetooth bond is no longer valid. Forget the device in system settings, then re-pair.",
+        "write_failed": "Failed to write to the Bluetooth device. Reconnect and try again.",
+        "session_not_found": "The Bluetooth session is no longer available. Disconnect and connect again.",
+        "notified_read_forbidden": "This Bluetooth characteristic cannot be read that way. Reconnect and try again.",
+        "feature_disabled": "Bluetooth GATT support is not available in this build.",
+        "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
+      }
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -2297,10 +2310,7 @@
       "bleAlreadyInProgress": "Bluetooth bağlantısı zaten devam ediyor. Bitmesini bekleyin veya bunun yerine Seri/USB'yi deneyin.",
       "bleMissingServices": "Cihaz MeshCore BLE protokolünü desteklemiyor. Cihazın MeshCore ürün yazılımını çalıştırdığından emin olun.",
       "blePeripheralInUse": "Bu cihaz zaten Meshtastic BLE aracılığıyla bağlı. MeshCore olarak bağlanmadan önce ilk olarak bağlantısını kesin.",
-      "bleTimeoutWebBtHandshake": "MeshCore anlaşması zaman aşımına uğradı (Web Bluetooth). Telsizin öncelikle Linux ile eşleştirilmiş bir PIN'e ihtiyacı olabilir: Cihazı Kaldır ve Yeniden Eşleştir'i kullanın ve cihazda gösterilen PIN'i girin veya bluetoothctl ile eşleştirin ve ardından tekrar Bağlan'a dokunun.",
-      "bleTimeoutWebBt": "MeshCore'u Web Bluetooth üzerinden açarken Bluetooth bağlantısı zaman aşımına uğradı. Tekrar deneyin, cihazı uyanık tutun, radyoda BLE'yi kapatıp açın veya Seri/TCP'yi kullanın.",
       "bleTimeoutHandshake": "Bluetooth bağlandı ancak MeshCore protokolü anlaşması bağlantı kesmeden/zaman aşımına uğramadan tamamlanmadı. Tekrar deneyin, cihazı uyanık ve yakında tutun, BLE'yi kapatıp açın veya Seri/TCP'yi kullanın.",
-      "bleTimeoutNoble": "Noble IPC üzerinden MeshCore açılırken Bluetooth bağlantısı zaman aşımına uğradı. Yeniden deneyin, cihazdaki BLE'yi kapatıp açın veya Seri/TCP'yi kullanın.",
       "roomPost": {
         "badState": "Oda mesajı reddedildi (radyoda oturum açılmadı). Oturumu kapatın, tekrar oturum açın ve yeniden deneyin.",
         "illegalArg": "Oda gönderimi reddedildi (geçersiz mesaj biçimi).",
@@ -2330,7 +2340,8 @@
       "cliDangerNotConfirmed": "Yıkıcı CLI komutları Tekrarlayıcılar panelinde onay gerektirir.",
       "pingFailed": "Ping başarısız oldu",
       "floodScopeBusy": "Tekrarlayıcı yönetimi veya traceroute devam ederken taşma kapsamını geçersiz kılma kullanılamaz. Boştayken tekrar deneyin.",
-      "removeContactFailed": "Yerel olarak kaldırıldı, ancak telsiz removeContact’ı reddetti. Kişi yenilendikten sonra yeniden görünebilir."
+      "removeContactFailed": "Yerel olarak kaldırıldı, ancak telsiz removeContact’ı reddetti. Kişi yenilendikten sonra yeniden görünebilir.",
+      "bleTimeoutGatt": "Bluetooth connection timed out while opening MeshCore over sidecar GATT. Retry, power-cycle BLE on the device, or use Serial/TCP."
     },
     "mqttHints": {
       "notAuthorized": "v1_ kullanıcı adını, belirteç imzasını ve JWT hedef kitlesi ile aracının karşılaştırmasını doğrulayın; docs/letsmesh-mqtt-auth.md'ye bakın. Gerekirse operatör tarafından verilen belirteci yapıştırmak için Özel'i kullanın.",
@@ -5861,12 +5872,6 @@
     },
     "drawOfferWaitingBanner": "Beraberlik teklifi gönderildi. Rakip bekleniyor…",
     "idleExpiryNotice": "Oyunlar hareketsizlikten sonra sona erer ve o zaman yalnızca silinebilir. Yanıtsız meydan okumalar: 24 saat (tüm oyunlar). Aktif oyunlar: tic-tac-toe 24 saat, satranç ve dörtlü 7 gün."
-  },
-  "longSession": {
-    "title": "Yeniden başlatma önerilir",
-    "body": "mesh-client dört gündür Bluetooth radyo bağlı olarak çalışıyor. Uzun Noble BLE oturumlarında çökme riskini azaltmak için uygulamayı yeniden başlat.",
-    "restart": "Yeniden Başlat",
-    "dismiss": "Yok say"
   },
   "reticulumSetup": {
     "eyebrow": "RETICULUM · BAŞLARKEN",

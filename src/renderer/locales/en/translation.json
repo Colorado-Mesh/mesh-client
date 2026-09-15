@@ -884,7 +884,6 @@
     "linkQuality": "Link quality",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Unavailable (Web Bluetooth)",
     "devicesFound": "{{count}} found",
     "sortName": "Name",
     "sortRssi": "RSSI",
@@ -1466,8 +1465,6 @@
     "stageConnecting": "Connecting to device…",
     "stageScanning": "Scanning — select your device when it appears below",
     "stageConnectingSaved": "Connecting to saved Bluetooth device…",
-    "stageWaitingNobleBleMeshtastic": "Waiting for Meshtastic Bluetooth to finish — MeshCore will connect to {{deviceName}} automatically when it is done…",
-    "stageWaitingNobleBleMeshcore": "Waiting for MeshCore Bluetooth to finish — Meshtastic will connect to {{deviceName}} automatically when it is done…",
     "stageSelectBluetooth": "Select your Bluetooth device below",
     "stageEnterPin": "Enter the PIN shown on your device",
     "stageEnterPinPair": "Enter PIN to pair device",
@@ -1503,7 +1500,6 @@
       },
       "ble": {
         "adapterWindowsHint": "Check Settings > Bluetooth & devices. If Bluetooth is on but unavailable, update your Bluetooth driver in Device Manager.",
-        "adapterLinuxHint": "Make sure Bluetooth is enabled and the Web Bluetooth experimental flag is set. Try: systemctl status bluetooth",
         "adapterGenericHint": "Make sure Bluetooth is enabled. On Linux, run: systemctl status bluetooth",
         "securityPermissionHint": "Bluetooth permission denied. Ensure the app has access to the Bluetooth device.",
         "gattDisconnectedHint": "GATT connection dropped. Try moving closer to the device and reconnecting.",
@@ -1533,6 +1529,23 @@
       "pinPairingFailed": "PIN pairing failed: {{msg}}",
       "pinAcceptedNext": "PIN accepted. Pairing completed. Press Connect and select your device to finish connecting.",
       "connectionFailed": "Connection failed"
+    },
+    "errors": {
+      "ble": {
+        "adapter_missing": "No Bluetooth adapter was found. Enable Bluetooth in system settings and try again.",
+        "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
+        "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
+        "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
+        "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
+        "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
+        "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",
+        "bond_removed": "The Bluetooth bond is no longer valid. Forget the device in system settings, then re-pair.",
+        "write_failed": "Failed to write to the Bluetooth device. Reconnect and try again.",
+        "session_not_found": "The Bluetooth session is no longer available. Disconnect and connect again.",
+        "notified_read_forbidden": "This Bluetooth characteristic cannot be read that way. Reconnect and try again.",
+        "feature_disabled": "Bluetooth GATT support is not available in this build.",
+        "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
+      }
     }
   },
   "contactGroupsModal": {
@@ -2388,12 +2401,6 @@
     "widenLogPanel": "Widen log panel",
     "clearFailed": "Could not clear log"
   },
-  "longSession": {
-    "title": "Restart recommended",
-    "body": "mesh-client has been running for four days with Bluetooth radio connected. Restart the app to reduce the risk of crashes on long Noble BLE sessions.",
-    "restart": "Restart",
-    "dismiss": "Dismiss"
-  },
   "mapPanel": {
     "locationUnavailable": "Location unavailable.",
     "locationRequestFailed": "Location request failed.",
@@ -2450,10 +2457,7 @@
       "bleAlreadyInProgress": "Bluetooth connection already in progress. Wait for it to finish or try Serial/USB instead.",
       "bleMissingServices": "Device does not support the MeshCore BLE protocol. Make sure the device is running MeshCore firmware.",
       "blePeripheralInUse": "This device is already connected via Meshtastic BLE. Disconnect it first before connecting as MeshCore.",
-      "bleTimeoutWebBtHandshake": "MeshCore handshake timed out (Web Bluetooth). The radio may need a PIN paired with Linux first: use Remove & Re-pair Device and enter the PIN shown on the device, or pair with bluetoothctl, then tap Connect again.",
-      "bleTimeoutWebBt": "Bluetooth connection timed out while opening MeshCore over Web Bluetooth. Retry, keep the device awake, power-cycle BLE on the radio, or use Serial/TCP.",
       "bleTimeoutHandshake": "Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.",
-      "bleTimeoutNoble": "Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.",
       "roomPost": {
         "badState": "Room post rejected (not logged in on the radio). Log out, log in again, then retry.",
         "illegalArg": "Room post rejected (invalid message format).",
@@ -2478,7 +2482,8 @@
         "timedOut": "Room logout timed out. The room may be out of range or not responding.",
         "rejected": "Room logout rejected by radio.",
         "failed": "Could not leave room"
-      }
+      },
+      "bleTimeoutGatt": "Bluetooth connection timed out while opening MeshCore over sidecar GATT. Retry, power-cycle BLE on the device, or use Serial/TCP."
     },
     "mqttHints": {
       "notAuthorized": "Verify v1_ username, token signature, and JWT audience vs broker; see docs/letsmesh-mqtt-auth.md. Use Custom to paste an operator-issued token if needed.",

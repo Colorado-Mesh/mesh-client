@@ -9,10 +9,7 @@ import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { ConnectionIcon, MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { SpinnerIcon, SpinnerIconLg } from '@/renderer/lib/icons/spinnerIcon';
-import {
-  isRendererNobleBlePlatform,
-  meshcoreTargetsSharedMeshtasticBlePeripheral,
-} from '@/renderer/lib/meshcoreDualNobleBleInit';
+import { meshcoreTargetsSharedMeshtasticBlePeripheral } from '@/renderer/lib/meshcoreDualNobleBleInit';
 import { markMqttUserDisconnect } from '@/renderer/lib/mqttDisconnectIntent';
 import { mqttUsesTls } from '@/renderer/lib/mqttTls';
 import { parseTcpAddress } from '@/renderer/lib/parseTcpAddress';
@@ -31,7 +28,6 @@ import { clampTcpPort, parseTcpPortFromString } from '@/shared/tcpPort';
 
 import { useActiveMeshIdentity } from '../hooks/useActiveMeshIdentity';
 import { useHostLinkMeter } from '../hooks/useHostLinkMeter';
-import { useNobleBleConnectMutexWait } from '../hooks/useNobleBleConnectMutexWait';
 import {
   flushPendingMqttSave,
   getMqttSettingsStorageKey,
@@ -44,7 +40,7 @@ import {
   getBleDeviceMac,
   loadBleDeviceMacCache,
 } from '../lib/bleDeviceMacCache';
-import { reconnectBleWithScan, startNobleBleScanningWithRetry } from '../lib/bleReconnectHelper';
+import { reconnectBleWithScan, startGattScanningWithRetry } from '../lib/bleReconnectHelper';
 import {
   humanizeBleError,
   humanizeHttpError,
@@ -130,10 +126,10 @@ import { isWeakBleRssi } from '../lib/signal';
 import type {
   ConnectionType,
   DeviceState,
+  GattBleDevice,
   MeshProtocol,
   MQTTSettings,
   MQTTStatus,
-  NobleBleDevice,
   SerialPortInfo,
 } from '../lib/types';
 import { useDeviceStore } from '../stores/deviceStore';
@@ -206,8 +202,6 @@ function parseBluetoothctlPairedState(info: string): 'yes' | 'no' | 'unknown' {
 }
 
 const STAGE_LINUX_UNPAIRED = 'connectionPanel.stageLinuxUnpaired';
-const STAGE_WAITING_NOBLE_BLE_MESHTASTIC = 'connectionPanel.stageWaitingNobleBleMeshtastic';
-const STAGE_WAITING_NOBLE_BLE_MESHCORE = 'connectionPanel.stageWaitingNobleBleMeshcore';
 
 function resolveConnectionStageText(
   stage: string,
@@ -216,12 +210,6 @@ function resolveConnectionStageText(
 ): string {
   if (!stage) return '';
   if (autoConnectTarget) {
-    if (stage === STAGE_WAITING_NOBLE_BLE_MESHCORE) {
-      return t('connectionPanel.stageWaitingNobleBleMeshcore', { deviceName: autoConnectTarget });
-    }
-    if (stage === STAGE_WAITING_NOBLE_BLE_MESHTASTIC) {
-      return t('connectionPanel.stageWaitingNobleBleMeshtastic', { deviceName: autoConnectTarget });
-    }
     if (
       stage === 'connectionPanel.stageConnecting' ||
       stage === 'connectionPanel.stageConnectingLast'
@@ -462,7 +450,6 @@ export default function ConnectionPanel({
   const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [connectionStage, setConnectionStage] = useState('');
-  const nobleBleMutexWait = useNobleBleConnectMutexWait(protocol);
   const [showRePairButton, setShowRePairButton] = useState(false);
   const [showPinPrompt, setShowPinPrompt] = useState(false);
   const showPinPromptRef = useRef(false);
@@ -738,7 +725,7 @@ export default function ConnectionPanel({
   }, [channelPskDraft, t, setActiveMqttSettings]);
 
   // ─── BLE device picker state ──────────────────────────────────
-  const [bleDevices, setBleDevices] = useState<NobleBleDevice[]>([]);
+  const [bleDevices, setBleDevices] = useState<GattBleDevice[]>([]);
   const [showBlePicker, setShowBlePicker] = useState(false);
   const [blePickerSort, setBlePickerSort] = useState(() => defaultPickerSort('ble'));
   const bleDeviceNamesCache = useMemo(() => {
@@ -764,7 +751,7 @@ export default function ConnectionPanel({
     return cache;
   }, [bleDevices]);
   const getBlePickerName = useCallback(
-    (device: NobleBleDevice) =>
+    (device: GattBleDevice) =>
       blePickerDisplayName(
         device.deviceId,
         device.deviceName,
@@ -772,8 +759,8 @@ export default function ConnectionPanel({
       ),
     [bleDeviceNamesCache],
   );
-  const getBlePickerId = useCallback((device: NobleBleDevice) => device.deviceId, []);
-  const getBlePickerRssi = useCallback((device: NobleBleDevice) => device.rssi, []);
+  const getBlePickerId = useCallback((device: GattBleDevice) => device.deviceId, []);
+  const getBlePickerRssi = useCallback((device: GattBleDevice) => device.rssi, []);
   const sortedBleDevices = useDebouncedPickerSort(
     bleDevices,
     blePickerSort.key,
@@ -988,7 +975,7 @@ export default function ConnectionPanel({
 
   // Listen for BLE devices discovered by noble in main process
   useEffect(() => {
-    return window.electronAPI.onNobleBleDeviceDiscovered((device) => {
+    return window.electronAPI.onGattDeviceDiscovered((device) => {
       if (device.address) cacheBleDeviceMac(device.deviceId, device.address);
       setBleDevices((prev) => {
         const idx = prev.findIndex((d) => d.deviceId === device.deviceId);
@@ -1412,9 +1399,9 @@ export default function ConnectionPanel({
       // Reconnect to the last device uses handleReconnect / startup auto-connect instead.
       setConnectionStage('connectionPanel.stageScanning');
       try {
-        await startNobleBleScanningWithRetry(protocol);
+        await startGattScanningWithRetry(protocol);
       } catch (err) {
-        console.warn('[ConnectionPanel] startNobleBleScanning failed: ' + errLikeToLogString(err));
+        console.warn('[ConnectionPanel] startGattScanning failed: ' + errLikeToLogString(err));
         const bleErrMsg = humanizeBleError(err, t);
         if (bleErrMsg) setError(bleErrMsg);
         setConnecting(false);
@@ -1483,9 +1470,9 @@ export default function ConnectionPanel({
         if (webBluetoothDevice) {
           setWebBluetoothDevice(null);
         }
-      } else if (capabilities.hasNobleBleScanning) {
-        void window.electronAPI.stopNobleBleScanning(protocol).catch((e: unknown) => {
-          console.debug('[ConnectionPanel] stopNobleBleScanning failed ' + errLikeToLogString(e));
+      } else if (capabilities.hasGattBleScanning) {
+        void window.electronAPI.stopGattScanning(protocol).catch((e: unknown) => {
+          console.debug('[ConnectionPanel] stopGattScanning failed ' + errLikeToLogString(e));
         });
       }
     }
@@ -1510,7 +1497,7 @@ export default function ConnectionPanel({
     protocol,
     isLinux,
     webBluetoothDevice,
-    capabilities.hasNobleBleScanning,
+    capabilities.hasGattBleScanning,
   ]);
 
   const handleSelectBleDevice = useCallback(
@@ -1568,9 +1555,9 @@ export default function ConnectionPanel({
         // Don't call onConnect again - the original onConnect will continue from requestDevice()
         // and proceed to connect(), which triggers the pairing handler.
       } else {
-        if (capabilities.hasNobleBleScanning) {
-          void window.electronAPI.stopNobleBleScanning(protocol).catch((e: unknown) => {
-            console.debug('[ConnectionPanel] stopNobleBleScanning failed ' + errLikeToLogString(e));
+        if (capabilities.hasGattBleScanning) {
+          void window.electronAPI.stopGattScanning(protocol).catch((e: unknown) => {
+            console.debug('[ConnectionPanel] stopGattScanning failed ' + errLikeToLogString(e));
           });
         }
         // Trigger the actual connection with the peripheral ID
@@ -1591,7 +1578,7 @@ export default function ConnectionPanel({
       onConnect,
       protocol,
       t,
-      capabilities.hasNobleBleScanning,
+      capabilities.hasGattBleScanning,
       clearMeshcoreBleSelectionOnMissingServices,
     ],
   );
@@ -1794,48 +1781,11 @@ export default function ConnectionPanel({
     state.status === 'reconnecting';
   const lastBleIdentity = resolveLastBleIdentity(lastConnection, protocol);
 
-  useEffect(() => {
-    const rfBusy =
-      connecting ||
-      isAutoConnecting ||
-      state.status === 'connecting' ||
-      state.status === 'reconnecting';
-    if (!rfBusy || !isRendererNobleBlePlatform()) return;
-
-    if (nobleBleMutexWait.waitingOnNobleBlePeer) {
-      // Mutex peer wait: show who holds the mutex (`active`), not dual-radio primary.
-      // Using primaryProtocol alone made MeshCore show "Waiting for MeshCore… Meshtastic will
-      // connect" while MeshCore itself was queued behind Meshtastic GATT.
-      const waitingFor =
-        nobleBleMutexWait.waitingForPeer && nobleBleMutexWait.active
-          ? nobleBleMutexWait.active
-          : nobleBleMutexWait.primaryProtocol;
-      if (waitingFor === 'meshtastic') {
-        setConnectionStage(STAGE_WAITING_NOBLE_BLE_MESHTASTIC);
-      } else if (waitingFor === 'meshcore') {
-        setConnectionStage(STAGE_WAITING_NOBLE_BLE_MESHCORE);
-      }
-      return;
-    }
-
-    if (
-      nobleBleMutexWait.active === protocol &&
-      (connectionStage === STAGE_WAITING_NOBLE_BLE_MESHTASTIC ||
-        connectionStage === STAGE_WAITING_NOBLE_BLE_MESHCORE)
-    ) {
-      setConnectionStage('connectionPanel.stageConnecting');
-    }
-  }, [
-    connecting,
-    isAutoConnecting,
-    state.status,
-    protocol,
-    nobleBleMutexWait.waitingOnNobleBlePeer,
-    nobleBleMutexWait.waitingForPeer,
-    nobleBleMutexWait.active,
-    nobleBleMutexWait.primaryProtocol,
-    connectionStage,
-  ]);
+  // ─── Connecting Progress View ───────────────────────────────────
+  const radioUp =
+    state.status === 'configured' || state.status === 'connected' || state.status === 'stale';
+  const showAutoReconnectBanner =
+    state.status === 'reconnecting' || (!radioUp && (isAutoConnecting || connecting));
 
   const handleExitApp = useCallback(
     async (variant: 'connected' | 'idle' | 'connecting') => {
@@ -1893,22 +1843,6 @@ export default function ConnectionPanel({
     );
   };
 
-  // ─── Connecting Progress View ───────────────────────────────────
-  const rfSessionPending =
-    connecting ||
-    isAutoConnecting ||
-    state.status === 'connecting' ||
-    state.status === 'reconnecting';
-  const showNobleBleWaitNotice =
-    nobleBleMutexWait.waitingOnNobleBlePeer && rfSessionPending && isRendererNobleBlePlatform();
-
-  const radioUp =
-    state.status === 'configured' || state.status === 'connected' || state.status === 'stale';
-  const showAutoReconnectBanner =
-    state.status === 'reconnecting' ||
-    (!radioUp &&
-      (isAutoConnecting || connecting || nobleBleMutexWait.waitingForPrimaryAutoConnect));
-
   const renderAutoReconnectBanner = (): ReactNode =>
     showAutoReconnectBanner ? (
       <div
@@ -1921,10 +1855,7 @@ export default function ConnectionPanel({
     ) : null;
 
   let connectingProgressView: ReactNode = null;
-  if (
-    !capabilities.hasReticulumInterfaceConfig &&
-    ((connecting && !isConnected) || (showNobleBleWaitNotice && state.status !== 'configured'))
-  ) {
+  if (!capabilities.hasReticulumInterfaceConfig && connecting && !isConnected) {
     connectingProgressView = (
       <div className="flex w-full flex-col items-center justify-center space-y-6 py-16">
         <div className="w-full">{renderExitActions('connecting')}</div>

@@ -21,6 +21,7 @@
 )]
 
 mod api;
+mod gatt;
 mod stack;
 
 use std::net::SocketAddr;

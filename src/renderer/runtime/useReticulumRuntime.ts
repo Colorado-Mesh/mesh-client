@@ -128,7 +128,6 @@ import {
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { aggregateReticulumLocalRfTxQueue } from '@/renderer/lib/reticulum/reticulumTxQueueAggregate';
-import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
 import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
 import { reconcileRncpListenerFromSidecar } from '@/renderer/lib/rncpListenerApply';
@@ -337,16 +336,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const linkTimeoutBridgeGenerationRef = useRef(0);
   const identityIdRef = useRef(identityId);
   const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
-
-  // Include `connecting`: main suspends Noble at sidecar start before status reaches
-  // configured. Treating only configured/connected/stale as active let the watcher
-  // (and interface snapshot) release the start yield mid-BLE-RNode pair → Event receiver died.
-  const sidecarActiveForBleYield =
-    state.status === 'connecting' ||
-    state.status === 'configured' ||
-    state.status === 'connected' ||
-    state.status === 'stale';
-  useReticulumNobleBleYieldWatcher(sidecarActiveForBleYield);
 
   useEffect(() => {
     stateRef.current = state;

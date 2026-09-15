@@ -4,15 +4,15 @@ import type {
   BlePeripheralOwner,
   BleScanOwner,
   ElectronAPI,
-  LongSessionRestartPayload,
+  GattBleConnectResult,
+  GattBleDevice,
+  GattBleIssuePayload,
+  GattBleLinkRssiPayload,
+  GattBleSessionId,
   MeshNode,
   MeshProtocol,
   MQTTSettings,
   MQTTStatus,
-  NobleBleConnectResult,
-  NobleBleDevice,
-  NobleBleLinkRssiPayload,
-  NobleBleSessionId,
   OutboxEntry,
   OutboxEntryInput,
   OutboxStatus,
@@ -34,7 +34,7 @@ import type {
 import { throwIfReticulumProxyIpcError } from '../shared/reticulumProxyIpcError';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '../shared/tak-types';
 
-export type { NobleBleDevice, NobleBleSessionId, SerialPort };
+export type { GattBleDevice, GattBleSessionId, SerialPort };
 
 /** Unwrap reticulum proxy soft-failure envelopes so renderer catch paths stay the same. */
 async function unwrapReticulumProxy<T = unknown>(result: Promise<unknown>): Promise<T> {
@@ -661,80 +661,81 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getState: () => ipcRenderer.invoke('bleCoexistence:getState'),
     acquireScan: (owner: BleScanOwner) => ipcRenderer.invoke('bleCoexistence:acquireScan', owner),
     releaseScan: (owner: BleScanOwner) => ipcRenderer.invoke('bleCoexistence:releaseScan', owner),
-    pauseNobleScan: () => ipcRenderer.invoke('bleCoexistence:pauseNobleScan'),
-    suspendNobleForReticulumBleConnect: () =>
-      ipcRenderer.invoke('bleCoexistence:suspendNobleForReticulumBleConnect'),
+    suspendForReticulumBleConnect: () =>
+      ipcRenderer.invoke('bleCoexistence:suspendForReticulumBleConnect'),
   },
 
-  // ─── Noble BLE ──────────────────────────────────────────────────
-  onNobleBleAdapterState: (cb: (state: string) => void) => {
+  // ─── GATT BLE (sidecar proxy) ───────────────────────────────────
+  onGattAdapterState: (cb: (state: string) => void) => {
     const handler = (_: unknown, state: string) => {
       cb(state);
     };
-    ipcRenderer.on('noble-ble-adapter-state', handler);
-    return () => ipcRenderer.off('noble-ble-adapter-state', handler);
+    ipcRenderer.on('gatt-adapter-state', handler);
+    return () => ipcRenderer.off('gatt-adapter-state', handler);
   },
-  onNobleBleDeviceDiscovered: (cb: (device: NobleBleDevice) => void) => {
-    const handler = (_: unknown, device: NobleBleDevice) => {
+  onGattDeviceDiscovered: (cb: (device: GattBleDevice) => void) => {
+    const handler = (_: unknown, device: GattBleDevice) => {
       cb(device);
     };
-    ipcRenderer.on('noble-ble-device-discovered', handler);
-    return () => ipcRenderer.off('noble-ble-device-discovered', handler);
+    ipcRenderer.on('gatt-device-discovered', handler);
+    return () => ipcRenderer.off('gatt-device-discovered', handler);
   },
-  onNobleBleLinkRssi: (cb: (payload: NobleBleLinkRssiPayload) => void) => {
-    const handler = (_: unknown, payload: NobleBleLinkRssiPayload) => {
+  onGattLinkRssi: (cb: (payload: GattBleLinkRssiPayload) => void) => {
+    const handler = (_: unknown, payload: GattBleLinkRssiPayload) => {
       cb(payload);
     };
-    ipcRenderer.on('noble-ble-link-rssi', handler);
-    return () => ipcRenderer.off('noble-ble-link-rssi', handler);
+    ipcRenderer.on('gatt-link-rssi', handler);
+    return () => ipcRenderer.off('gatt-link-rssi', handler);
   },
-  onNobleBleConnected: (cb: (sessionId: NobleBleSessionId) => void) => {
-    const handler = (_: unknown, payload: { sessionId: NobleBleSessionId }) => {
+  onGattConnected: (cb: (sessionId: GattBleSessionId) => void) => {
+    const handler = (_: unknown, payload: { sessionId: GattBleSessionId }) => {
       cb(payload.sessionId);
     };
-    ipcRenderer.on('noble-ble-connected', handler);
-    return () => ipcRenderer.off('noble-ble-connected', handler);
+    ipcRenderer.on('gatt-connected', handler);
+    return () => ipcRenderer.off('gatt-connected', handler);
   },
-  onNobleBleDisconnected: (cb: (sessionId: NobleBleSessionId) => void) => {
-    const handler = (_: unknown, payload: { sessionId: NobleBleSessionId }) => {
+  onGattDisconnected: (cb: (sessionId: GattBleSessionId) => void) => {
+    const handler = (_: unknown, payload: { sessionId: GattBleSessionId }) => {
       cb(payload.sessionId);
     };
-    ipcRenderer.on('noble-ble-disconnected', handler);
-    return () => ipcRenderer.off('noble-ble-disconnected', handler);
+    ipcRenderer.on('gatt-disconnected', handler);
+    return () => ipcRenderer.off('gatt-disconnected', handler);
   },
-  onNobleBleConnectAborted: (
-    cb: (payload: { sessionId: NobleBleSessionId; message: string }) => void,
+  onGattConnectAborted: (
+    cb: (payload: { sessionId: GattBleSessionId; message: string }) => void,
   ) => {
-    const handler = (_: unknown, payload: { sessionId: NobleBleSessionId; message: string }) => {
+    const handler = (_: unknown, payload: { sessionId: GattBleSessionId; message: string }) => {
       cb(payload);
     };
-    ipcRenderer.on('noble-ble-connect-aborted', handler);
-    return () => ipcRenderer.off('noble-ble-connect-aborted', handler);
+    ipcRenderer.on('gatt-connect-aborted', handler);
+    return () => ipcRenderer.off('gatt-connect-aborted', handler);
   },
-  onNobleBleFromRadio: (
-    cb: (payload: { sessionId: NobleBleSessionId; bytes: Uint8Array }) => void,
-  ) => {
-    const handler = (_: unknown, payload: { sessionId: NobleBleSessionId; bytes: Uint8Array }) => {
+  onGattFromRadio: (cb: (payload: { sessionId: GattBleSessionId; bytes: Uint8Array }) => void) => {
+    const handler = (_: unknown, payload: { sessionId: GattBleSessionId; bytes: Uint8Array }) => {
       cb(payload);
     };
-    ipcRenderer.on('noble-ble-from-radio', handler);
-    return () => ipcRenderer.off('noble-ble-from-radio', handler);
+    ipcRenderer.on('gatt-from-radio', handler);
+    return () => ipcRenderer.off('gatt-from-radio', handler);
   },
-  startNobleBleScanning: (sessionId: NobleBleSessionId) =>
-    ipcRenderer.invoke('noble-ble-start-scan', sessionId),
-  stopNobleBleScanning: (sessionId: NobleBleSessionId): Promise<void> =>
-    ipcRenderer.invoke('noble-ble-stop-scan', sessionId),
-  connectNobleBle: (
-    sessionId: NobleBleSessionId,
-    peripheralId: string,
-  ): Promise<NobleBleConnectResult> =>
-    ipcRenderer.invoke('noble-ble-connect', sessionId, peripheralId),
-  disconnectNobleBle: (sessionId: NobleBleSessionId): Promise<void> =>
-    ipcRenderer.invoke('noble-ble-disconnect', sessionId),
-  isNobleBleConnected: (sessionId: NobleBleSessionId): Promise<boolean> =>
-    ipcRenderer.invoke('noble-ble-is-connected', sessionId),
-  nobleBleToRadio: (sessionId: NobleBleSessionId, bytes: Uint8Array): Promise<void> =>
-    ipcRenderer.invoke('noble-ble-to-radio', sessionId, bytes),
+  onGattIssue: (cb: (payload: GattBleIssuePayload) => void) => {
+    const handler = (_: unknown, payload: GattBleIssuePayload) => {
+      cb(payload);
+    };
+    ipcRenderer.on('gatt:issue', handler);
+    return () => ipcRenderer.off('gatt:issue', handler);
+  },
+  startGattScanning: (sessionId: GattBleSessionId) =>
+    ipcRenderer.invoke('gatt:start-scan', sessionId),
+  stopGattScanning: (sessionId: GattBleSessionId): Promise<void> =>
+    ipcRenderer.invoke('gatt:stop-scan', sessionId),
+  connectGatt: (sessionId: GattBleSessionId, peripheralId: string): Promise<GattBleConnectResult> =>
+    ipcRenderer.invoke('gatt:connect', sessionId, peripheralId),
+  disconnectGatt: (sessionId: GattBleSessionId): Promise<void> =>
+    ipcRenderer.invoke('gatt:disconnect', sessionId),
+  isGattConnected: (sessionId: GattBleSessionId): Promise<boolean> =>
+    ipcRenderer.invoke('gatt:is-connected', sessionId),
+  gattToRadio: (sessionId: GattBleSessionId, bytes: Uint8Array): Promise<void> =>
+    ipcRenderer.invoke('gatt:to-radio', sessionId, bytes),
 
   // ─── Serial port selection ──────────────────────────────────────
   // Main process intercepts select-serial-port and sends the port
@@ -761,9 +762,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Main process intercepts select-bluetooth-device and sends the device
   // list here. Renderer shows a picker, then calls selectBluetoothDevice.
   onBluetoothDevicesDiscovered: (
-    callback: (devices: NobleBleDevice[], generation?: number) => void,
+    callback: (devices: GattBleDevice[], generation?: number) => void,
   ) => {
-    const handler = (_event: unknown, devices: NobleBleDevice[], generation?: number) => {
+    const handler = (_event: unknown, devices: GattBleDevice[], generation?: number) => {
       callback(devices, generation);
     };
     ipcRenderer.on('bluetooth-devices-discovered', handler);
@@ -939,9 +940,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   notify: {
     show: (title: string, body: string): Promise<void> =>
       ipcRenderer.invoke('notify:message', title, body),
-    longSessionRestart: (opts: LongSessionRestartPayload): Promise<void> =>
-      ipcRenderer.invoke('notify:longSessionRestart', opts),
-    clearLongSessionNudge: (): Promise<void> => ipcRenderer.invoke('notify:clearLongSessionNudge'),
   },
 
   // ─── Safe storage (OS-keychain-backed encryption) ──────────────

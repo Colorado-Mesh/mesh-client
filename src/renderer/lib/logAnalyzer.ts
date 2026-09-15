@@ -192,7 +192,10 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
   },
   {
     id: 'ble-connect-race',
-    patterns: [/disconnect raced ahead of handshake/i, /IpcNobleConnection.*timeout.*onConnected/i],
+    patterns: [
+      /disconnect raced ahead of handshake/i,
+      /IpcSidecarGattConnection.*timeout.*onConnected/i,
+    ],
     severity: 'warning',
     protocols: ['meshcore'],
   },
@@ -303,9 +306,9 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     patterns: [
       /\[useMeshtasticRuntime\]/i,
       /\[iMeshDevice\]/i,
-      /\[TransportNobleIpc\]/i,
-      /\[NobleBleManager\]/i,
-      /\[IpcNobleConnection:meshtastic\]/i,
+      /\[TransportSidecarGatt\]/i,
+      /\[GATT(?:\]|:)/i,
+      /\[IpcSidecarGattConnection:meshtastic\]/i,
     ],
     severity: 'warning',
     protocols: ['meshtastic'],
@@ -317,7 +320,7 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
       /\[useMeshcoreRuntime\]/i,
       /\[MeshcoreMqttAdapter\]/i,
       /\[BLE:meshcore\]/i,
-      /\[IpcNobleConnection:meshcore\]/i,
+      /\[IpcSidecarGattConnection:meshcore\]/i,
     ],
     severity: 'warning',
     protocols: ['meshcore'],

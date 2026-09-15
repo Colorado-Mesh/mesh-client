@@ -1,14 +1,14 @@
 /**
- * Regression guard for MeshCore over Noble IPC (Nordic UART / same as Web Bluetooth).
+ * Regression guard for MeshCore over sidecar GATT (Nordic UART / raw companion bytes).
  *
  * meshcore.js uses two transports:
  * - SerialConnection: USB serial framing (0x3c / 0x3e + length) before companion payloads.
- * - Web Bluetooth + our Noble IPC path: raw companion bytes on NUS (see WebBleConnection).
+ * - Sidecar GATT (and historical Web Bluetooth): raw companion bytes on NUS.
  *
- * If IpcNobleConnection ever subclasses SerialConnection again, the first BLE write would
+ * If IpcSidecarGattConnection ever subclasses SerialConnection again, the first BLE write would
  * pick up 0x3c framing and firmware will not respond — handshake timeout on all OSes.
  *
- * @see useMeshcoreRuntime.ts IpcNobleConnection / NobleOverIpc
+ * @see MeshCoreTransport.ts IpcSidecarGattConnection / GattOverIpc
  * @see node_modules/@liamcottle/meshcore.js/src/connection/web_ble_connection.js
  */
 import { Connection, Constants, SerialConnection } from '@liamcottle/meshcore.js';
@@ -28,7 +28,7 @@ class CaptureSerial extends SerialConnection {
   }
 }
 
-/** Mirrors WebBleConnection / IpcNobleConnection NobleOverIpc send path. */
+/** Mirrors WebBleConnection / IpcSidecarGattConnection GattOverIpc send path. */
 class CaptureNusStyle extends Connection {
   writes: Uint8Array[] = [];
 
@@ -61,7 +61,7 @@ describe('MeshCore BLE (NUS) vs USB serial framing contract', () => {
     expect(first[4]).toBe(Constants.SupportedCompanionProtocolVersion);
   });
 
-  it('Web-BLE-style Connection sends raw companion bytes (no 0x3c prefix) for DeviceQuery', async () => {
+  it('GATT-style Connection sends raw companion bytes (no 0x3c prefix) for DeviceQuery', async () => {
     const conn = new CaptureNusStyle();
     await conn.sendCommandDeviceQuery(Constants.SupportedCompanionProtocolVersion);
 
@@ -74,8 +74,8 @@ describe('MeshCore BLE (NUS) vs USB serial framing contract', () => {
   });
 });
 
-/** Mirrors IpcNobleConnection NobleOverIpc + onNobleBleFromRadio (see MeshCoreTransport.ts). */
-describe('MeshCore Noble IPC TX echo filter contract', () => {
+/** Mirrors IpcSidecarGattConnection GattOverIpc + onGattFromRadio (see MeshCoreTransport.ts). */
+describe('MeshCore GATT TX echo filter contract', () => {
   it('drops inbound NUS frames that echo a recent outbound companion command', () => {
     const filter = new MeshcoreCompanionTxEchoFilter();
     const onFrameReceived = vi.fn();
@@ -84,16 +84,16 @@ describe('MeshCore Noble IPC TX echo filter contract', () => {
     const sendToRadioFrame = (data: Uint8Array) => {
       filter.noteOutbound(data);
     };
-    const onNobleBleFromRadio = (frame: Uint8Array) => {
+    const onGattFromRadio = (frame: Uint8Array) => {
       if (filter.isEcho(frame)) return;
       onFrameReceived(frame);
     };
 
     sendToRadioFrame(cmd);
-    onNobleBleFromRadio(cmd);
+    onGattFromRadio(cmd);
     expect(onFrameReceived).not.toHaveBeenCalled();
 
-    onNobleBleFromRadio(new Uint8Array([0])); // RESP_OK
+    onGattFromRadio(new Uint8Array([0])); // RESP_OK
     expect(onFrameReceived).toHaveBeenCalledTimes(1);
   });
 

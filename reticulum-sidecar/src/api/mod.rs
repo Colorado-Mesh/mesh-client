@@ -2,6 +2,7 @@
 
 mod config;
 mod games;
+mod gatt;
 mod identity;
 mod interfaces;
 mod lxmf;
@@ -98,6 +99,38 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             get(interfaces::ble_availability),
         )
         .route("/api/v1/ble/scan", get(interfaces::ble_scan))
+        // App-wide GATT (Meshtastic / MeshCore) — same process as Reticulum BLE.
+        .route("/api/v1/gatt/availability", get(gatt::gatt_availability))
+        .route("/api/v1/gatt/scan", get(gatt::gatt_scan))
+        .route("/api/v1/gatt/sessions", post(gatt::gatt_create_session))
+        .route(
+            "/api/v1/gatt/sessions/{session_id}",
+            delete(gatt::gatt_delete_session),
+        )
+        .route(
+            "/api/v1/gatt/sessions/{session_id}/write",
+            post(gatt::gatt_write),
+        )
+        .route(
+            "/api/v1/gatt/sessions/{session_id}/rssi",
+            get(gatt::gatt_rssi),
+        )
+        .route(
+            "/api/v1/gatt/sessions/{session_id}/connected",
+            get(gatt::gatt_is_connected),
+        )
+        .route(
+            "/api/v1/gatt/sessions/{session_id}/events",
+            get(gatt::gatt_session_ws),
+        )
+        .route(
+            "/api/v1/gatt/registry/register",
+            post(gatt::gatt_register_external),
+        )
+        .route(
+            "/api/v1/gatt/registry/unregister",
+            post(gatt::gatt_unregister_external),
+        )
         .route("/api/v1/lxmf/send", post(lxmf::lxmf_send))
         .route("/api/v1/lxmf/paper/create", post(lxmf::lxmf_paper_create))
         .route("/api/v1/lxmf/paper/ingest", post(lxmf::lxmf_paper_ingest))

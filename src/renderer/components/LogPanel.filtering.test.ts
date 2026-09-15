@@ -43,10 +43,10 @@ describe('isDeviceEntry — Meshtastic protocol', () => {
     expect(isDeviceEntry(entry('main', '[iMeshDevice] connected'), 'meshtastic')).toBe(true);
   });
 
-  it('classifies [TransportNobleIpc] message as Meshtastic device entry', () => {
-    expect(isDeviceEntry(entry('main', '[TransportNobleIpc] packet received'), 'meshtastic')).toBe(
-      true,
-    );
+  it('classifies [TransportSidecarGatt] message as Meshtastic device entry', () => {
+    expect(
+      isDeviceEntry(entry('main', '[TransportSidecarGatt] packet received'), 'meshtastic'),
+    ).toBe(true);
   });
 
   it('classifies [Meshtastic MQTT] message as app-level (not Meshtastic device entry)', () => {
@@ -58,10 +58,16 @@ describe('isDeviceEntry — Meshtastic protocol', () => {
     ).toBe(false);
   });
 
-  it('classifies [NobleBleManager] message as Meshtastic device entry', () => {
+  it('classifies [GATT:meshtastic] message as Meshtastic device entry', () => {
     expect(
-      isDeviceEntry(entry('main', '[NobleBleManager] startScanning error: timeout'), 'meshtastic'),
+      isDeviceEntry(entry('main', '[GATT:meshtastic] connect_timeout: nope'), 'meshtastic'),
     ).toBe(true);
+  });
+
+  it('classifies [GATT] message as Meshtastic device entry', () => {
+    expect(isDeviceEntry(entry('main', '[GATT] ws parse failed: bad json'), 'meshtastic')).toBe(
+      true,
+    );
   });
 
   it('classifies [BLE:sessionId] message as Meshtastic device entry', () => {
@@ -144,9 +150,9 @@ describe('isDeviceEntry — MeshCore protocol', () => {
     ).toBe(false);
   });
 
-  it('does NOT classify [NobleBleManager] message as MeshCore device entry', () => {
+  it('does NOT classify [GATT:meshtastic] message as MeshCore device entry', () => {
     expect(
-      isDeviceEntry(entry('main', '[NobleBleManager] startScanning error: timeout'), 'meshcore'),
+      isDeviceEntry(entry('main', '[GATT:meshtastic] connect_timeout: nope'), 'meshcore'),
     ).toBe(false);
   });
 
@@ -156,49 +162,49 @@ describe('isDeviceEntry — MeshCore protocol', () => {
     ).toBe(false);
   });
 
-  it('classifies [BLE:meshcore] Noble IPC message as MeshCore device entry', () => {
+  it('classifies [BLE:meshcore] GATT message as MeshCore device entry', () => {
     expect(
       isDeviceEntry(entry('main', '[BLE:meshcore] connect coalesce await failed — x'), 'meshcore'),
     ).toBe(true);
   });
 
-  it('classifies [IpcNobleConnection:meshcore] message as MeshCore device entry', () => {
+  it('classifies [IpcSidecarGattConnection] meshcore message as MeshCore device entry', () => {
     expect(
       isDeviceEntry(
         entry(
           'main',
-          '[IpcNobleConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
+          '[IpcSidecarGattConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
         ),
         'meshcore',
       ),
     ).toBe(true);
   });
 
-  it('does NOT classify [IpcNobleConnection:meshcore] message as Meshtastic device entry', () => {
+  it('does NOT classify [IpcSidecarGattConnection:meshcore] message as Meshtastic device entry', () => {
     expect(
       isDeviceEntry(
         entry(
           'main',
-          '[IpcNobleConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
+          '[IpcSidecarGattConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
         ),
         'meshtastic',
       ),
     ).toBe(false);
   });
 
-  it('classifies [IpcNobleConnection:meshtastic] message as Meshtastic device entry', () => {
+  it('classifies [IpcSidecarGattConnection:meshtastic] message as Meshtastic device entry', () => {
     expect(
       isDeviceEntry(
-        entry('main', '[IpcNobleConnection:meshtastic] peripheral disconnected'),
+        entry('main', '[IpcSidecarGattConnection:meshtastic] peripheral disconnected'),
         'meshtastic',
       ),
     ).toBe(true);
   });
 
-  it('does NOT classify [IpcNobleConnection:meshtastic] message as MeshCore device entry', () => {
+  it('does NOT classify [IpcSidecarGattConnection:meshtastic] message as MeshCore device entry', () => {
     expect(
       isDeviceEntry(
-        entry('main', '[IpcNobleConnection:meshtastic] peripheral disconnected'),
+        entry('main', '[IpcSidecarGattConnection:meshtastic] peripheral disconnected'),
         'meshcore',
       ),
     ).toBe(false);
@@ -328,8 +334,8 @@ describe('dual-mode appEntries guard', () => {
     expect(isAppLogEntry(meshcoreEntry, 'meshtastic')).toBe(false);
   });
 
-  it('[NobleBleManager] entry is excluded from app view', () => {
-    const bleEntry = entry('main', '[NobleBleManager] startScanning error: peripheral lost');
+  it('[GATT] entry is excluded from app view', () => {
+    const bleEntry = entry('main', '[GATT] startScanning error: peripheral lost');
     expect(isAppLogEntry(bleEntry, 'meshtastic')).toBe(false);
   });
 

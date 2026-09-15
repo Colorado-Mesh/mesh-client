@@ -63,7 +63,7 @@ describe('analyzeLogs', () => {
   it('detects BLE connect race/timeout for meshcore', () => {
     const entries: LogEntry[] = [
       makeEntry(
-        '[IpcNobleConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
+        '[IpcSidecarGattConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
         'warn',
       ),
     ];
@@ -77,7 +77,7 @@ describe('analyzeLogs', () => {
   it('does not detect BLE connect race for meshtastic protocol', () => {
     const entries: LogEntry[] = [
       makeEntry(
-        '[IpcNobleConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
+        '[IpcSidecarGattConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
         'warn',
       ),
     ];
@@ -361,9 +361,9 @@ describe('analyzeLogs', () => {
     expect(result.categories.find((c) => c.id === 'serial-reconnect')).toBeUndefined();
   });
 
-  it('classifies IpcNobleConnection:meshtastic under sdk-meshtastic', () => {
+  it('classifies IpcSidecarGattConnection:meshtastic under sdk-meshtastic', () => {
     const result = analyzeLogs(
-      [makeEntry('[IpcNobleConnection:meshtastic] peripheral disconnected', 'warn')],
+      [makeEntry('[IpcSidecarGattConnection:meshtastic] peripheral disconnected', 'warn')],
       'meshtastic',
     );
     const sdk = result.categories.find((c) => c.id === 'sdk-meshtastic');
@@ -371,9 +371,9 @@ describe('analyzeLogs', () => {
     expect(sdk?.count).toBe(1);
   });
 
-  it('classifies IpcNobleConnection:meshcore under sdk-meshcore', () => {
+  it('classifies IpcSidecarGattConnection:meshcore under sdk-meshcore', () => {
     const result = analyzeLogs(
-      [makeEntry('[IpcNobleConnection:meshcore] peripheral disconnected', 'warn')],
+      [makeEntry('[IpcSidecarGattConnection:meshcore] peripheral disconnected', 'warn')],
       'meshcore',
     );
     const sdk = result.categories.find((c) => c.id === 'sdk-meshcore');
@@ -447,7 +447,8 @@ describe('analyzeLogs', () => {
   it('does not flag SDK debug noise for meshtastic', () => {
     const entries: LogEntry[] = [
       makeEntry('[iMeshDevice] debug: heartbeat ok', 'debug'),
-      makeEntry('[TransportNobleIpc] packet received', 'log'),
+      makeEntry('[TransportSidecarGatt] packet received', 'log'),
+      makeEntry('[GATT:meshtastic] connect_timeout: nope', 'log'),
     ];
     const result = analyzeLogs(entries, 'meshtastic');
     expect(result.categories.find((c) => c.id === 'sdk-meshtastic')).toBeUndefined();

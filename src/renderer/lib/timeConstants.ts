@@ -236,13 +236,15 @@ export const MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS = 60 * MS_PER_SECOND;
 
 /**
  * Hard ceiling for one LoRa reconnect open+configure/attach attempt (Meshtastic + MeshCore),
- * applied to every transport (name is historical — BLE was the only transport with a deadline
- * at all until TCP/serial/HTTP reconnects were found hanging indefinitely with none). For BLE,
- * covers darwin dual createBleConnection attempts (~45–50s) + configure/attach margin so
- * deferred Noble disconnect flush always runs instead of stalling retries at edge of range.
+ * applied to every transport. For BLE, covers createBleConnection attempts (~45–50s) +
+ * configure/attach margin so deferred GATT disconnect flush always runs instead of stalling
+ * retries at edge of range.
  */
-export const NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS =
+export const BLE_RECONNECT_ATTEMPT_BUDGET_MS =
   60 * MS_PER_SECOND + MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS;
+
+/** @deprecated Use BLE_RECONNECT_ATTEMPT_BUDGET_MS */
+export const NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS = BLE_RECONNECT_ATTEMPT_BUDGET_MS;
 
 /**
  * Raw packet log: startup (and similar) can deliver two distinct LOG_RX frames for the same node's

@@ -1007,7 +1007,6 @@
       },
       "ble": {
         "adapterWindowsHint": "Проверьте «Настройки» > «Bluetooth и устройства». Если Bluetooth включен, но недоступен, обновите драйвер Bluetooth в диспетчере устройств.",
-        "adapterLinuxHint": "Убедитесь, что Bluetooth включен и установлен экспериментальный флаг Web Bluetooth. Попробуйте: статус systemctl Bluetooth",
         "adapterGenericHint": "Убедитесь, что Bluetooth включен. В Linux запустите: systemctl status bluetooth.",
         "securityPermissionHint": "Разрешение Bluetooth отклонено. Убедитесь, что у приложения есть доступ к устройству Bluetooth.",
         "gattDisconnectedHint": "Соединение GATT разорвано. Попробуйте подойти ближе к устройству и повторно подключиться.",
@@ -1414,8 +1413,6 @@
     "autoConnectingTo": "Автоматическое подключение к {{deviceName}}…",
     "autoReconnectInProgress": "Выполняется автоматическое повторное подключение…",
     "stageAutoConnectingBle": "Подключение к {{deviceName}}…",
-    "stageWaitingNobleBleMeshtastic": "Ожидание завершения работы Meshtastic Bluetooth — MeshCore автоматически подключится к {{deviceName}}, когда это будет сделано…",
-    "stageWaitingNobleBleMeshcore": "Ожидание завершения работы MeshCore Bluetooth — Meshtastic автоматически подключится к {{deviceName}}, когда это будет сделано…",
     "reticulumStats": {
       "interfaces": "{{count}} интерфейсы",
       "peers": "{{count}} одноранговых узлов"
@@ -1548,7 +1545,6 @@
     "linkQuality": "Качество связи:",
     "linkQualityMs": "{{ms}} мс",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Недоступно (веб-Bluetooth)",
     "meshcoreCaBroker": "Брокер MeshCore.CA",
     "meshcoreCaPrimary": "Первичные",
     "meshcoreCaBackup": "Резервное копирование",
@@ -1571,7 +1567,24 @@
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} дБм",
     "bluetoothMac": "Bluetooth MAC",
     "bluetoothId": "Идентификатор Bluetooth",
-    "reticulumAutoResendOnAnnounce": "Повторить неудачные сообщения, когда одноранговый узел объявляет"
+    "reticulumAutoResendOnAnnounce": "Повторить неудачные сообщения, когда одноранговый узел объявляет",
+    "errors": {
+      "ble": {
+        "adapter_missing": "No Bluetooth adapter was found. Enable Bluetooth in system settings and try again.",
+        "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
+        "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
+        "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
+        "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
+        "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
+        "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",
+        "bond_removed": "The Bluetooth bond is no longer valid. Forget the device in system settings, then re-pair.",
+        "write_failed": "Failed to write to the Bluetooth device. Reconnect and try again.",
+        "session_not_found": "The Bluetooth session is no longer available. Disconnect and connect again.",
+        "notified_read_forbidden": "This Bluetooth characteristic cannot be read that way. Reconnect and try again.",
+        "feature_disabled": "Bluetooth GATT support is not available in this build.",
+        "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
+      }
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",
@@ -2349,10 +2362,7 @@
       "bleAlreadyInProgress": "Соединение Bluetooth уже выполняется. Подождите, пока он завершится, или попробуйте вместо этого Serial/USB.",
       "bleMissingServices": "Устройство не поддерживает протокол MeshCore BLE. Убедитесь, что на устройстве установлена ​​прошивка MeshCore.",
       "blePeripheralInUse": "Это устройство уже подключено через Meshtastic BLE. Сначала отключите его, прежде чем подключать как MeshCore.",
-      "bleTimeoutWebBtHandshake": "Тайм-аут рукопожатия MeshCore (веб-Bluetooth). Сначала радиостанции может потребоваться PIN-код для сопряжения с Linux: используйте «Удалить и повторно подключить устройство» и введите PIN-код, отображаемый на устройстве, или выполните сопряжение с bluetoothctl, затем снова нажмите «Подключиться».",
-      "bleTimeoutWebBt": "Время ожидания соединения Bluetooth истекло при открытии MeshCore через Web Bluetooth. Повторите попытку, не отключайте устройство, выключите и включите BLE на радиомодуле или используйте Serial/TCP.",
       "bleTimeoutHandshake": "Bluetooth подключен, но установление связи по протоколу MeshCore не завершилось до отключения/истечения времени ожидания. Повторите попытку, оставьте устройство активным и находящимся поблизости, выключите и включите BLE или используйте Serial/TCP.",
-      "bleTimeoutNoble": "Время ожидания соединения Bluetooth истекло при открытии MeshCore через Noble IPC. Повторите попытку, выключите и включите BLE на устройстве или используйте Serial/TCP.",
       "roomPost": {
         "badState": "Публикация комнаты отклонена (не авторизован на радио). Выйдите из системы, войдите снова и повторите попытку.",
         "illegalArg": "Публикация комнаты отклонена (неверный формат сообщения).",
@@ -2382,7 +2392,8 @@
       "cliDangerNotConfirmed": "Деструктивные команды CLI требуют подтверждения на панели повторителей.",
       "pingFailed": "Ping не удался",
       "floodScopeBusy": "Переопределение области флуда недоступно, пока выполняется администрирование ретранслятора или трассировка. Попробуйте еще раз во время простоя.",
-      "removeContactFailed": "Удалено локально, но радио отклонило removeContact. Контакт может появиться снова после обновления."
+      "removeContactFailed": "Удалено локально, но радио отклонило removeContact. Контакт может появиться снова после обновления.",
+      "bleTimeoutGatt": "Bluetooth connection timed out while opening MeshCore over sidecar GATT. Retry, power-cycle BLE on the device, or use Serial/TCP."
     },
     "mqttHints": {
       "notAuthorized": "Проверьте имя пользователя v1_, подпись токена и аудиторию JWT по сравнению с брокером; см. документы/letsmesh-mqtt-auth.md. При необходимости используйте Custom, чтобы вставить токен, выданный оператором.",
@@ -5955,12 +5966,6 @@
     },
     "drawOfferWaitingBanner": "Предложение ничьей отправлено. Ожидание соперника…",
     "idleExpiryNotice": "Игры истекают после простоя и затем их можно только удалить. Без ответа: 24 часа (все игры). Активные игры: крестики-нолики через 24 часа, шахматы и четыре в ряд через 7 дней."
-  },
-  "longSession": {
-    "title": "Рекомендуется перезапуск",
-    "body": "mesh-client работает уже четыре дня с подключенным Bluetooth-радио. Перезапустите приложение, чтобы снизить риск сбоев при длительных сеансах Noble BLE.",
-    "restart": "Перезапустить",
-    "dismiss": "Пропустить"
   },
   "reticulumSetup": {
     "eyebrow": "Reticulum · НАЧАЛО РАБОТЫ",

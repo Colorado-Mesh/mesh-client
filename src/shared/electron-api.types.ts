@@ -177,34 +177,32 @@ export interface UpdateCheckingPayload {
   notifyOnSettled?: boolean;
 }
 
-/** Renderer → main long-session restart OS notification (Noble BLE day-4 nudge). */
-export interface LongSessionRestartPayload {
-  title: string;
-  body: string;
-  restartLabel: string;
-  laterLabel: string;
-}
-
-export interface NobleBleDevice {
+export interface GattBleDevice {
   deviceId: string;
   deviceName: string;
   /** Advertised / last-seen BLE RSSI in dBm; null when unknown (e.g. Linux Web Bluetooth). */
   rssi?: number | null;
   /**
-   * Hardware BLE MAC when the OS exposes one (Noble `peripheral.address`).
+   * Hardware BLE MAC when the OS exposes one.
    * On macOS this is typically empty until after a prior GATT connect (CoreBluetoothCache).
    */
   address?: string | null;
 }
 
-export type NobleBleSessionId = MeshProtocol;
-export type NobleBleConnectResult = { ok: true } | { ok: false; error: string };
+export type GattBleSessionId = MeshProtocol;
+export type GattBleConnectResult = { ok: true } | { ok: false; error: string; code?: string };
 
-/** Host↔radio BLE RSSI while GATT is connected (Noble updateRssiAsync). */
-export interface NobleBleLinkRssiPayload {
-  sessionId: NobleBleSessionId;
+/** Host↔radio BLE RSSI while GATT is connected. */
+export interface GattBleLinkRssiPayload {
+  sessionId: GattBleSessionId;
   /** RSSI in dBm; null when the last poll failed or returned non-finite. */
   rssi: number | null;
+}
+
+export interface GattBleIssuePayload {
+  sessionId?: GattBleSessionId;
+  code: string;
+  message: string;
 }
 
 export interface SerialPort {
@@ -296,13 +294,14 @@ export interface RendererLivenessSnapshot {
 
 // ─── ElectronAPI interface ────────────────────────────────────────────────────
 
-export type BlePeripheralOwner =
-  'noble:meshtastic' | 'noble:meshcore' | 'webbt:meshtastic' | 'webbt:meshcore' | 'reticulum';
+export type BlePeripheralOwner = 'gatt:meshtastic' | 'gatt:meshcore' | 'reticulum';
 
-export type BleScanOwner = 'noble' | 'reticulum' | 'webbt';
+export type BleScanOwner = 'gatt' | 'reticulum';
 
-export type NobleBleStartScanResult =
-  { ok: true } | { ok: false; code: 'scan_busy'; owner: BleScanOwner };
+export type GattBleStartScanResult =
+  | { ok: true }
+  | { ok: false; code: 'scan_busy'; owner: string }
+  | { ok: false; code: string; error: string };
 
 export interface BleRegisteredConnection {
   mac: string;
@@ -917,31 +916,29 @@ export interface ElectronAPI {
     getState: () => Promise<BleCoexistenceState>;
     acquireScan: (owner: BleScanOwner) => Promise<BleCoexistenceState>;
     releaseScan: (owner: BleScanOwner) => Promise<BleCoexistenceState>;
-    pauseNobleScan: () => Promise<BleCoexistenceState>;
-    suspendNobleForReticulumBleConnect: () => Promise<BleCoexistenceState>;
+    /** Disconnect LoRa GATT sessions and hold scan mutex for Reticulum BLE RNode connect. */
+    suspendForReticulumBleConnect: () => Promise<BleCoexistenceState>;
   };
 
-  // ─── Noble BLE ───────────────────────────────────────────────────────────────
-  onNobleBleAdapterState: (cb: (state: string) => void) => () => void;
-  onNobleBleDeviceDiscovered: (cb: (device: NobleBleDevice) => void) => () => void;
-  onNobleBleLinkRssi: (cb: (payload: NobleBleLinkRssiPayload) => void) => () => void;
-  onNobleBleConnected: (cb: (sessionId: NobleBleSessionId) => void) => () => void;
-  onNobleBleDisconnected: (cb: (sessionId: NobleBleSessionId) => void) => () => void;
-  onNobleBleConnectAborted: (
-    cb: (payload: { sessionId: NobleBleSessionId; message: string }) => void,
+  // ─── GATT BLE (sidecar proxy) ────────────────────────────────────────────────
+  onGattAdapterState: (cb: (state: string) => void) => () => void;
+  onGattDeviceDiscovered: (cb: (device: GattBleDevice) => void) => () => void;
+  onGattLinkRssi: (cb: (payload: GattBleLinkRssiPayload) => void) => () => void;
+  onGattConnected: (cb: (sessionId: GattBleSessionId) => void) => () => void;
+  onGattDisconnected: (cb: (sessionId: GattBleSessionId) => void) => () => void;
+  onGattConnectAborted: (
+    cb: (payload: { sessionId: GattBleSessionId; message: string }) => void,
   ) => () => void;
-  onNobleBleFromRadio: (
-    cb: (payload: { sessionId: NobleBleSessionId; bytes: Uint8Array }) => void,
+  onGattFromRadio: (
+    cb: (payload: { sessionId: GattBleSessionId; bytes: Uint8Array }) => void,
   ) => () => void;
-  startNobleBleScanning: (sessionId: NobleBleSessionId) => Promise<NobleBleStartScanResult>;
-  stopNobleBleScanning: (sessionId: NobleBleSessionId) => Promise<void>;
-  connectNobleBle: (
-    sessionId: NobleBleSessionId,
-    peripheralId: string,
-  ) => Promise<NobleBleConnectResult>;
-  disconnectNobleBle: (sessionId: NobleBleSessionId) => Promise<void>;
-  isNobleBleConnected: (sessionId: NobleBleSessionId) => Promise<boolean>;
-  nobleBleToRadio: (sessionId: NobleBleSessionId, bytes: Uint8Array) => Promise<void>;
+  onGattIssue: (cb: (payload: GattBleIssuePayload) => void) => () => void;
+  startGattScanning: (sessionId: GattBleSessionId) => Promise<GattBleStartScanResult>;
+  stopGattScanning: (sessionId: GattBleSessionId) => Promise<void>;
+  connectGatt: (sessionId: GattBleSessionId, peripheralId: string) => Promise<GattBleConnectResult>;
+  disconnectGatt: (sessionId: GattBleSessionId) => Promise<void>;
+  isGattConnected: (sessionId: GattBleSessionId) => Promise<boolean>;
+  gattToRadio: (sessionId: GattBleSessionId, bytes: Uint8Array) => Promise<void>;
 
   // ─── Serial port selection ───────────────────────────────────────────────────
   onSerialPortsDiscovered: (callback: (ports: SerialPort[]) => void) => () => void;
@@ -950,7 +947,7 @@ export interface ElectronAPI {
 
   // ─── Bluetooth device selection (Linux Web Bluetooth) ────────────────────────
   onBluetoothDevicesDiscovered: (
-    callback: (devices: NobleBleDevice[], generation?: number) => void,
+    callback: (devices: GattBleDevice[], generation?: number) => void,
   ) => () => void;
   selectBluetoothDevice: (deviceId: string) => void;
   /**
@@ -1017,14 +1014,12 @@ export interface ElectronAPI {
   notifyDeviceDisconnected: () => void;
   setTrayUnread: (count: number) => void;
   quitApp: () => Promise<void>;
-  /** Full process relaunch (Noble BLE long-session restart). */
+  /** Full process relaunch. */
   restartApp: () => Promise<void>;
 
   // ─── Native OS notifications ─────────────────────────────────────────────────
   notify: {
     show: (title: string, body: string) => Promise<void>;
-    longSessionRestart: (opts: LongSessionRestartPayload) => Promise<void>;
-    clearLongSessionNudge: () => Promise<void>;
   };
 
   // ─── Safe storage ────────────────────────────────────────────────────────────

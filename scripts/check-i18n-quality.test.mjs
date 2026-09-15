@@ -282,13 +282,12 @@ describe('localeStringQualityIssues', () => {
     expectIssue(issues, 'use Unicode ellipsis (…) instead of ASCII dots');
   });
 
-  it('flags double Unicode ellipsis on Noble BLE wait stage copy', () => {
+  it('flags double Unicode ellipsis on stageAutoConnectingBle copy', () => {
     const issues = localeStringQualityIssues({
       locale: 'zh',
-      flatKey: 'connectionPanel.stageWaitingNobleBleMeshtastic',
-      val: '正在等待 Meshtastic Bluetooth 完成 — 完成后 MeshCore 将自动连接到 {{deviceName}}……',
-      enVal:
-        'Waiting for Meshtastic Bluetooth to finish — MeshCore will connect to {{deviceName}} automatically when it is done…',
+      flatKey: 'connectionPanel.stageAutoConnectingBle',
+      val: '正在自动连接到 {{deviceName}}……',
+      enVal: 'Auto-connecting to {{deviceName}}…',
     });
     expectIssue(issues, 'use a single Unicode ellipsis (…), not repeated');
   });
@@ -1677,64 +1676,6 @@ describe('roomsPanel saved passwords per-key quality', () => {
       enVal: enRnodeCommandTimeout,
     });
     expectIssue(issues, 'close other apps using the serial port');
-  });
-
-  const enLongSessionRestartNudge =
-    'Mesh-client has been running for four days. Restart the app to reduce the risk of crashes on long MeshCore BLE sessions.';
-
-  it('flags lowercase ble in longSessionRestartNudge', () => {
-    const issues = localeStringQualityIssues({
-      locale: 'fr',
-      flatKey: 'toasts.longSessionRestartNudge',
-      val: '... longues sessions ble MeshCore.',
-      enVal: enLongSessionRestartNudge,
-    });
-    expectIssue(issues, 'protocol token "BLE"');
-  });
-
-  it('accepts Mesh-Client casing for mesh-client brand in longSessionRestartNudge', () => {
-    expect(
-      localeStringQualityIssues({
-        locale: 'de',
-        flatKey: 'toasts.longSessionRestartNudge',
-        val: 'Mesh-Client läuft seit vier Tagen. MeshCore BLE-Sitzungen.',
-        enVal: enLongSessionRestartNudge,
-      }),
-    ).toEqual([]);
-  });
-
-  const enLongSessionBody =
-    'mesh-client has been running for four days with Bluetooth radio connected. Restart the app to reduce the risk of crashes on long Noble BLE sessions.';
-
-  it('flags missing BLE in longSession.body', () => {
-    const issues = localeStringQualityIssues({
-      locale: 'de',
-      flatKey: 'longSession.body',
-      val: 'mesh-client läuft seit vier Tagen. Noble Sitzungen.',
-      enVal: enLongSessionBody,
-    });
-    expectIssue(issues, 'protocol token "BLE"');
-  });
-
-  it('flags missing Noble in longSession.body', () => {
-    const issues = localeStringQualityIssues({
-      locale: 'ja',
-      flatKey: 'longSession.body',
-      val: 'mesh-clientは4日間稼働。BLEセッション。',
-      enVal: enLongSessionBody,
-    });
-    expectIssue(issues, 'protocol token "Noble"');
-  });
-
-  it('accepts mesh-client and Noble BLE in longSession.body', () => {
-    expect(
-      localeStringQualityIssues({
-        locale: 'zh',
-        flatKey: 'longSession.body',
-        val: 'mesh-client 已经运行了四天。降低长时间 Noble BLE 会话中崩溃的风险。',
-        enVal: enLongSessionBody,
-      }),
-    ).toEqual([]);
   });
 
   const enMeshcoreOpenWireCompatHint =

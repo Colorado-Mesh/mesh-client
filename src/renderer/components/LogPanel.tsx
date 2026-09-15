@@ -85,11 +85,11 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
       entry.source.includes('meshtastic') ||
       entry.message.includes('[useMeshtasticRuntime]') ||
       entry.message.includes('[iMeshDevice]') ||
-      entry.message.includes('[TransportNobleIpc]') ||
-      entry.message.includes('[NobleBleManager]') ||
+      entry.message.includes('[TransportSidecarGatt]') ||
+      entry.message.includes('[GATT]') ||
+      entry.message.includes('[GATT:') ||
+      entry.message.includes('[IpcSidecarGattConnection:meshtastic]') ||
       entry.message.includes('[BLE:') ||
-      entry.message.includes('[BLE:meshcore]') ||
-      entry.message.includes('[IpcNobleConnection:meshtastic]') ||
       entry.message.includes('[meshtasticSdkRoutingErrorLog]')
     );
   }
@@ -100,7 +100,8 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
       entry.message.includes('[meshcoreConnSideEffects]') ||
       entry.message.includes('[MeshCore MQTT]') ||
       entry.message.includes('[BLE:meshcore]') ||
-      entry.message.includes('[IpcNobleConnection:meshcore]')
+      entry.message.includes('[GATT:meshcore]') ||
+      entry.message.includes('[IpcSidecarGattConnection:meshcore]')
     );
   }
   if (protocol === 'reticulum') {
@@ -128,7 +129,9 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
     entry.message.includes('[useMeshcoreRuntime]') ||
     entry.message.includes('[meshcoreConnSideEffects]') ||
     entry.message.includes('[useReticulumRuntime]') ||
-    entry.message.includes('[TransportNobleIpc]') ||
+    entry.message.includes('[TransportSidecarGatt]') ||
+    entry.message.includes('[GATT]') ||
+    entry.message.includes('[GATT:') ||
     entry.message.includes('[MeshCore MQTT]') ||
     entry.message.includes('[ReticulumSidecar]') ||
     entry.message.includes('[ReticulumNetworkPanel]') ||
@@ -138,10 +141,9 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
     entry.message.includes('[reticulumSidecarReads]') ||
     entry.message.includes('[useReticulumSidecarApi]') ||
     entry.message.includes('[IPC] reticulum') ||
-    entry.message.includes('[NobleBleManager]') ||
     entry.message.includes('[BLE:') ||
     entry.message.includes('[BLE:meshcore]') ||
-    entry.message.includes('[IpcNobleConnection:')
+    entry.message.includes('[IpcSidecarGattConnection:')
   );
 }
 

@@ -49,7 +49,7 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     unsubs = [];
-    window.electronAPI.onNobleBleDisconnected = vi.fn(() => () => {});
+    window.electronAPI.onGattDisconnected = vi.fn(() => () => {});
   });
 
   afterEach(() => {
@@ -71,7 +71,7 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
       onTransportLost,
     );
 
-    expect(window.electronAPI.onNobleBleDisconnected).not.toHaveBeenCalled();
+    expect(window.electronAPI.onGattDisconnected).not.toHaveBeenCalled();
     expect(attachMeshtasticTransportLossWatch).toHaveBeenCalledWith(device, 'ble', onTransportLost);
     vi.advanceTimersByTime(60_000);
     expect(device.heartbeat).toHaveBeenCalledTimes(1);
@@ -87,7 +87,7 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
       onTransportLost,
     );
 
-    expect(window.electronAPI.onNobleBleDisconnected).not.toHaveBeenCalled();
+    expect(window.electronAPI.onGattDisconnected).not.toHaveBeenCalled();
     expect(attachMeshtasticTransportLossWatch).toHaveBeenCalledWith(
       device,
       'serial',
@@ -107,7 +107,7 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
       onTransportLost,
     );
 
-    expect(window.electronAPI.onNobleBleDisconnected).not.toHaveBeenCalled();
+    expect(window.electronAPI.onGattDisconnected).not.toHaveBeenCalled();
     // Regression: HTTP's toDevice must be serialized too, or concurrent SDK
     // getWriter() calls (queue vs. NODEINFO/GetMetadata retries) throw
     // "WritableStream is locked" and silently drop outbound writes/sends.
@@ -130,7 +130,7 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
       onTransportLost,
     );
 
-    expect(window.electronAPI.onNobleBleDisconnected).not.toHaveBeenCalled();
+    expect(window.electronAPI.onGattDisconnected).not.toHaveBeenCalled();
     // TCP is a persistent duplex link like serial/BLE, not a polling link like HTTP,
     // so it gets both the serialized-writer wrap and heartbeat.
     expect(attachMeshtasticTransportLossWatch).toHaveBeenCalledWith(device, 'tcp', onTransportLost);

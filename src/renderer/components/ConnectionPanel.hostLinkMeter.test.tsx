@@ -3,7 +3,7 @@ import { act } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
-import type { NobleBleLinkRssiPayload } from '@/shared/electron-api.types';
+import type { GattBleLinkRssiPayload } from '@/shared/electron-api.types';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import ConnectionPanel from './ConnectionPanel';
@@ -19,8 +19,8 @@ describe('ConnectionPanel host link meter', () => {
     vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue(
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36',
     );
-    let rssiCb: ((p: NobleBleLinkRssiPayload) => void) | null = null;
-    vi.mocked(window.electronAPI.onNobleBleLinkRssi).mockImplementation((cb) => {
+    let rssiCb: ((p: GattBleLinkRssiPayload) => void) | null = null;
+    vi.mocked(window.electronAPI.onGattLinkRssi).mockImplementation((cb) => {
       rssiCb = cb;
       return () => {};
     });
@@ -49,8 +49,17 @@ describe('ConnectionPanel host link meter', () => {
     });
   });
 
-  it('shows Unavailable (Web Bluetooth) for configured BLE on linux', () => {
+  it('shows Signal meter for configured BLE on linux (sidecar GATT)', async () => {
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue(
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    let rssiCb: ((p: GattBleLinkRssiPayload) => void) | null = null;
+    vi.mocked(window.electronAPI.onGattLinkRssi).mockImplementation((cb) => {
+      rssiCb = cb;
+      return () => {};
+    });
+
     render(
       <ConnectionPanel
         state={{
@@ -66,7 +75,14 @@ describe('ConnectionPanel host link meter', () => {
         protocol="meshtastic"
       />,
     );
-    expect(screen.getByText('Unavailable (Web Bluetooth)')).toBeInTheDocument();
+    expect(screen.getByText('Signal')).toBeInTheDocument();
+    expect(screen.queryByText(/Unavailable \(Web Bluetooth\)/i)).not.toBeInTheDocument();
+    act(() => {
+      rssiCb?.({ sessionId: 'meshtastic', rssi: -70 });
+    });
+    await waitFor(() => {
+      expect(screen.getByText('-70 dBm')).toBeInTheDocument();
+    });
   });
 
   it('shows Link quality for configured HTTP on linux', async () => {

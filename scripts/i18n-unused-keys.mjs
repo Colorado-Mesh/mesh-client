@@ -51,6 +51,12 @@ export const DYNAMIC_T_PREFIXES = [
   },
   { prefix: 'connectionPanel.reticulumInterfaces.field.', leafKeys: true },
   { prefix: 'connectionPanel.reticulumInterfaces.fieldOption.', leafKeys: true },
+  // Composed in gattBleErrorI18nKey() then passed to t(key) — no template site to detect.
+  {
+    prefix: 'connectionPanel.errors.ble.',
+    leafKeys: true,
+    alwaysActive: true,
+  },
   { prefix: 'reticulumPropagation.nodeStatus.', leafKeys: true },
   { prefix: 'connectionPanel.bleOwner.', leafKeys: true },
   { prefix: 'reticulumMap.filter.', leafKeys: true },

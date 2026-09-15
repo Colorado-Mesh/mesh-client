@@ -37,7 +37,7 @@ describe('devElectronApiStub', () => {
     await expect(api.mqtt.getClientId()).resolves.toBe('');
     await expect(api.mqtt.getChannelNameToIndex()).resolves.toEqual({});
     expect(api.getPlatform()).toBe('linux');
-    expect(typeof api.onNobleBleDisconnected(() => {})).toBe('function');
+    expect(typeof api.onGattDisconnected(() => {})).toBe('function');
   });
 
   it('cancels native file-transfer pickers in browser development', async () => {

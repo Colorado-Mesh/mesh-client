@@ -52,13 +52,13 @@ import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { ReticulumSidecarStatus } from '../shared/reticulum-types';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
-import { MS_PER_MINUTE, MS_PER_SECOND } from '../shared/timeConstants';
+import { MS_PER_MINUTE } from '../shared/timeConstants';
 import {
   bleCoexistenceCoordinator,
   type BlePeripheralOwner,
-  BleScanBusyError,
   type BleScanOwner,
 } from './ble-coexistence-coordinator';
+import { formatBluetoothctlSpawnError } from './bluetoothctlSpawnError';
 import { ensureCameraAccess, isAllowedCameraPrivacySettingsUrl } from './cameraAccess';
 import {
   assertChatExportMessageSizes,
@@ -110,6 +110,11 @@ import {
 import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from './db-ipc-lifecycle';
 import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fatal-startup-dialog';
 import { fetchLinkPreview } from './fetchLinkPreview';
+import {
+  type GattDiscoveredDevice,
+  type GattSessionProfile,
+  gattSidecarProxy,
+} from './gatt-sidecar-proxy';
 import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
 import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
@@ -122,11 +127,6 @@ import { registerRrcDbIpcHandlers } from './ipc/rrc-db-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import { destroyRegisteredTcpBridgeSockets, registerTcpBridgeIpcHandlers } from './ipc/tcp-bridge';
 import { createIpcRateLimiter } from './ipcRateLimit';
-import { registerLinuxWebBluetoothCancelIpcHandlers } from './linuxWebBluetoothCancelIpc';
-import {
-  formatBluetoothctlSpawnError,
-  linuxWebBluetoothDeviceSelection,
-} from './linuxWebBluetoothDeviceSelection';
 import { listMeshcoreDmPeersFromDb, listMeshtasticDmPeersFromDb } from './listDmPeers';
 import { snapshotLiveSessionMeter } from './live-session-meter';
 import {
@@ -143,18 +143,11 @@ import {
   sanitizeLogMessage,
   setMainWindow,
 } from './log-service';
-import {
-  createLongSessionNudgeController,
-  type LongSessionNudgeController,
-  parseLongSessionRestartPayload,
-} from './longSessionNudge';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
-import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
-import { type NobleBleDevice, NobleBleManager, type NobleSessionId } from './noble-ble-manager';
 import { readFileUpTo } from './readFileUpTo';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
 import { resolveRendererLoadUrl } from './resolveRendererLoadUrl';
@@ -271,8 +264,6 @@ function isWindowStateOnScreen(state: WindowState): boolean {
 
 const mqttManager = new MQTTManager();
 const meshcoreMqttAdapter = new MeshcoreMqttAdapter();
-const nobleBleManager = new NobleBleManager();
-bleCoexistenceCoordinator.setNobleManager(nobleBleManager);
 
 /** TAK status before the lazy-loaded `TakServerManager` module is imported. */
 const IDLE_TAK_STATUS: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
@@ -302,6 +293,14 @@ function ensureReticulumSidecarManager(): ReticulumSidecarManager {
   }
   return reticulumSidecarManager;
 }
+
+gattSidecarProxy.setEnsureSidecar(async () => {
+  const mgr = ensureReticulumSidecarManager();
+  const port = await mgr.ensureForBle();
+  gattSidecarProxy.setPort(port);
+  return port;
+});
+bleCoexistenceCoordinator.setGattProxy(gattSidecarProxy);
 
 function attachTakForwarders(manager: TakServerManager): void {
   manager.on('status', (status) => {
@@ -334,7 +333,7 @@ const MESHCORE_CHAT_STUB_ID_MIN = 0xa0000000 >>> 0;
 /** Max node ID for MeshCore chat stub nodes (derived from meshcoreUtils). */
 const MESHCORE_CHAT_STUB_ID_MAX = 0xafffffff >>> 0;
 /** Max bytes per BLE write IPC (DoS guard). */
-const NOBLE_BLE_TO_RADIO_MAX_BYTES = 512;
+const GATT_TO_RADIO_MAX_BYTES = 512;
 /** Max bytes for Meshtastic Xmodem file upload (DoS guard; matches meshcore:openJsonFile). */
 const MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -354,64 +353,13 @@ let appMenu: Menu | null = null;
 let isConnected = false;
 let isQuitting = false;
 let shutdownDone = false;
-/** Shared quit/relaunch single-flight (app:quit, app:relaunch, OS nudge Restart). */
+/** Shared quit/relaunch single-flight (app:quit, app:relaunch). */
 let quitMainInFlight = false;
-/** Last tray unread count — restore Dock badge after long-session nudge clears. */
+/** Last tray unread count for Dock/taskbar badge. */
 let lastTrayUnreadCount = 0;
-let longSessionNudge: LongSessionNudgeController | null = null;
-
-function getLongSessionNudge(): LongSessionNudgeController {
-  longSessionNudge ??= createLongSessionNudgeController({
-    platform: process.platform,
-    isNotificationSupported: () => Notification.isSupported(),
-    createNotification: (opts) => {
-      const note = new Notification(opts);
-      return {
-        on: (event, listener) => {
-          if (event === 'action') {
-            note.on('action', (...args: unknown[]) => {
-              listener(...args);
-            });
-          } else {
-            note.on('click', (...args: unknown[]) => {
-              listener(...args);
-            });
-          }
-        },
-        show: () => {
-          note.show();
-        },
-        close: () => {
-          note.close();
-        },
-      };
-    },
-    setDockBadge: (badge) => {
-      app.dock?.setBadge(badge);
-    },
-    flashFrame: (flash) => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.flashFrame(flash);
-      }
-    },
-    showAndFocusMainWindow: () => {
-      if (!mainWindow || mainWindow.isDestroyed()) return;
-      mainWindow.show();
-      mainWindow.focus();
-    },
-    relaunchApp: () => {
-      void quitMainProcess({ relaunch: true });
-    },
-    getLastUnreadCount: () => lastTrayUnreadCount,
-    logWarn: (message) => {
-      console.warn(sanitizeLogMessage(message));
-    },
-  });
-  return longSessionNudge;
-}
 
 /**
- * Graceful main-process exit used by app:quit / app:relaunch / OS long-session Restart.
+ * Graceful main-process exit used by app:quit / app:relaunch.
  * Mirrors historical app:quit cleanup; optional relaunch schedules a new instance before exit.
  */
 async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void> {
@@ -421,16 +369,10 @@ async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void>
   isConnected = false;
   try {
     try {
-      getLongSessionNudge().clear();
-    } catch {
-      // catch-no-log-ok best-effort OS cue clear before exit
-    }
-    await nobleBleManager.stopAllScanning();
-    try {
-      await nobleBleManager.disconnectAll();
+      await gattSidecarProxy.disconnectAll();
     } catch (err) {
       console.error(
-        '[main] quitMainProcess BLE disconnectAll failed:',
+        '[main] quitMainProcess GATT disconnectAll failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
     }
@@ -440,7 +382,6 @@ async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void>
     destroyRegisteredTcpBridgeSockets('quitMainProcess TCP socket destroy (ignored)');
     stopPowerSaveBlocker();
 
-    nobleBleManager.releaseNobleProcessHandles();
     tray?.destroy();
     tray = null;
     if (opts.relaunch) {
@@ -577,10 +518,7 @@ function clearPendingSerialSelectionTimer(): void {
 // (empty string always allowed = cancel). Prevents arbitrary id injection from a compromised renderer.
 let lastSerialPortIds = new Set<string>();
 
-// Linux Web Bluetooth device selection session: linuxWebBluetoothDeviceSelection
-// (retain-first callback + device merge — see linuxWebBluetoothDeviceSelection.ts)
-// MeshCore may need bluetoothctl pairing + PIN before resolving requestDevice().
-const BLUETOOTH_DEVICE_SELECTION_TIMEOUT_MS = 300 * MS_PER_SECOND;
+/** Linux Web Bluetooth picker removed — LoRa BLE uses sidecar GATT on all platforms. */
 
 // Bluetooth pairing state (Linux only — setBluetoothPairingHandler)
 // Electron's Response type requires confirmed: boolean, pin is optional
@@ -1130,14 +1068,10 @@ function validateMqttPublishWaypointArgs(args: unknown): void {
   validateOptionalPskBase64(a.pskBase64, 'mqtt:publishWaypoint');
 }
 
-// Enable Web Serial; on Linux also enable Web Bluetooth at the process level
-// (per-webContents enableBlinkFeatures is not enough — Chromium gates WebBluetooth behind this switch).
+// Enable Web Serial at the process level (LoRa BLE uses sidecar btleplug, not Web Bluetooth).
+app.commandLine.appendSwitch('enable-blink-features', 'Serial');
 if (process.platform === 'linux') {
-  app.commandLine.appendSwitch('enable-blink-features', 'Serial,WebBluetooth');
-  app.commandLine.appendSwitch('enable-features', 'WebBluetooth');
   app.commandLine.appendSwitch('enable-experimental-web-platform-features');
-} else {
-  app.commandLine.appendSwitch('enable-blink-features', 'Serial');
 }
 
 // ─── Icon Path Helper ──────────────────────────────────────────────
@@ -1880,37 +1814,14 @@ function createWindow() {
   );
 
   // ─── Web Bluetooth: Device Selection (Linux) ───────────────────────
-  // On Linux, Electron does not show a native Bluetooth chooser. Instead it fires
-  // select-bluetooth-device on the webContents. Without a handler the request is
-  // immediately cancelled ("User cancelled the requestDevice() chooser.").
-  // Chromium multi-fires this event with a new callback each time — retain the first
-  // via linuxWebBluetoothDeviceSelection and merge device lists (do not overwrite).
+  // LoRa BLE uses sidecar GATT on all platforms. Cancel Chromium's chooser so a
+  // stray requestDevice() cannot hang the session.
   mainWindow.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
     event.preventDefault();
-
-    const { isNewRequest, devices, generation } =
-      linuxWebBluetoothDeviceSelection.beginOrMergeDiscovery(deviceList, callback);
-
-    if (isNewRequest) {
-      // 60s was too short and left the session empty so selectBluetoothDevice was ignored.
-      linuxWebBluetoothDeviceSelection.armStaleTimeout(
-        BLUETOOTH_DEVICE_SELECTION_TIMEOUT_MS,
-        () => {
-          console.warn(
-            `[IPC] Bluetooth device selection stale after ${BLUETOOTH_DEVICE_SELECTION_TIMEOUT_MS / MS_PER_SECOND}s — auto-cancelling`,
-          );
-        },
-      );
-    }
-
-    console.debug(`[IPC] select-bluetooth-device: ${deviceList.length} device(s) found`);
-
-    if (!mainWindow || mainWindow.isDestroyed()) {
-      console.warn('[IPC] select-bluetooth-device: mainWindow unavailable — cancelling selection');
-      linuxWebBluetoothDeviceSelection.cancelSelection();
-      return;
-    }
-    mainWindow.webContents.send('bluetooth-devices-discovered', devices, generation);
+    console.debug(
+      `[IPC] select-bluetooth-device: cancelling (${deviceList.length} device(s); Web BT LoRa removed)`,
+    );
+    callback('');
   });
 
   // ─── Web Bluetooth: Pairing Handler (Linux) ───────────────────────────
@@ -2124,7 +2035,6 @@ function createWindow() {
   });
 
   win.on('focus', () => {
-    getLongSessionNudge().onMainWindowFocus();
     refreshUnreadAppBadge();
   });
 
@@ -2148,7 +2058,7 @@ function refreshUnreadAppBadge(): void {
         // https://github.com/electron/electron/blob/v44.1.1/shell/browser/notifications/mac/notification_presenter_mac.mm
         Notification.isSupported();
       },
-      suppressDockBadge: () => getLongSessionNudge().shouldSuppressUnreadDockBadge(),
+      suppressDockBadge: () => false,
       setDockBadge: (text) => {
         app.dock?.setBadge(text);
       },
@@ -2292,7 +2202,6 @@ ipcMain.on('bluetooth-device-selected', (event, deviceId: unknown) => {
 });
 
 // ─── IPC: Cancel Bluetooth selection ────────────────────────────────
-registerLinuxWebBluetoothCancelIpcHandlers();
 
 // ─── IPC: Unpair Bluetooth device (Linux only — bluetoothctl remove) ──
 // Not used on routine disconnect; only ConnectionPanel manual re-pair flow.
@@ -2814,47 +2723,60 @@ ipcMain.on('device-disconnected', (event) => {
   stopPowerSaveBlocker();
 });
 
-// ─── Noble BLE: Forward manager events to renderer ──────────────────
-nobleBleManager.on('adapterState', (state: string) => {
-  mainWindow?.webContents.send('noble-ble-adapter-state', state);
+// ─── GATT BLE: Forward proxy events to renderer ─────────────────────
+gattSidecarProxy.on('adapterState', (state: string) => {
+  mainWindow?.webContents.send('gatt-adapter-state', state);
 });
-nobleBleManager.on('deviceDiscovered', (device: NobleBleDevice) => {
-  mainWindow?.webContents.send('noble-ble-device-discovered', device);
+gattSidecarProxy.on('deviceDiscovered', (device: GattDiscoveredDevice) => {
+  mainWindow?.webContents.send('gatt-device-discovered', device);
 });
-nobleBleManager.on(
+gattSidecarProxy.on(
   'linkRssi',
-  ({ sessionId, rssi }: { sessionId: NobleSessionId; rssi: number | null }) => {
-    mainWindow?.webContents.send('noble-ble-link-rssi', { sessionId, rssi });
+  ({ sessionId, rssi }: { sessionId: GattSessionProfile; rssi: number | null }) => {
+    mainWindow?.webContents.send('gatt-link-rssi', { sessionId, rssi });
   },
 );
-nobleBleManager.on('connected', ({ sessionId }: { sessionId: NobleSessionId }) => {
-  mainWindow?.webContents.send('noble-ble-connected', { sessionId });
+gattSidecarProxy.on('connected', ({ sessionId }: { sessionId: GattSessionProfile }) => {
+  mainWindow?.webContents.send('gatt-connected', { sessionId });
 });
-nobleBleManager.on('disconnected', ({ sessionId }: { sessionId: NobleSessionId }) => {
-  mainWindow?.webContents.send('noble-ble-disconnected', { sessionId });
+gattSidecarProxy.on('disconnected', ({ sessionId }: { sessionId: GattSessionProfile }) => {
+  mainWindow?.webContents.send('gatt-disconnected', { sessionId });
 });
-nobleBleManager.on(
+gattSidecarProxy.on(
   'connect-aborted',
-  ({ sessionId, message }: { sessionId: NobleSessionId; message: string }) => {
-    mainWindow?.webContents.send('noble-ble-connect-aborted', { sessionId, message });
+  ({ sessionId, message }: { sessionId: GattSessionProfile; message: string }) => {
+    mainWindow?.webContents.send('gatt-connect-aborted', { sessionId, message });
   },
 );
-nobleBleManager.on(
+gattSidecarProxy.on(
   'fromRadio',
-  ({ sessionId, bytes }: { sessionId: NobleSessionId; bytes: Uint8Array }) => {
-    mainWindow?.webContents.send('noble-ble-from-radio', { sessionId, bytes });
+  ({ sessionId, bytes }: { sessionId: GattSessionProfile; bytes: Uint8Array }) => {
+    mainWindow?.webContents.send('gatt-from-radio', { sessionId, bytes });
+  },
+);
+gattSidecarProxy.on(
+  'issue',
+  (payload: { sessionId?: GattSessionProfile; code: string; message: string }) => {
+    mainWindow?.webContents.send('gatt:issue', payload);
   },
 );
 
-// ─── Noble BLE: IPC command handlers ────────────────────────────────
+// ─── GATT BLE: IPC command handlers ─────────────────────────────────
 const BLE_PERIPHERAL_OWNERS = new Set<BlePeripheralOwner>([
-  'noble:meshtastic',
-  'noble:meshcore',
-  'webbt:meshtastic',
-  'webbt:meshcore',
+  'gatt:meshtastic',
+  'gatt:meshcore',
   'reticulum',
 ]);
-const BLE_SCAN_OWNERS = new Set<BleScanOwner>(['noble', 'reticulum', 'webbt']);
+const BLE_SCAN_OWNERS = new Set<BleScanOwner>(['gatt', 'reticulum']);
+
+/** Linux Web Bluetooth picker removed — LoRa BLE uses sidecar GATT on all platforms. */
+const linuxWebBluetoothDeviceSelection = {
+  cancelSelection: () => {},
+  hasPendingSelection: () => false,
+  knownDeviceIds: () => new Set<string>(),
+  resolveSelection: (id: string) => id.length < 0,
+  clear: () => {},
+};
 
 ipcMain.handle('bleCoexistence:register', (event, mac: unknown, owner: unknown) => {
   assertIpcSender(event, 'bleCoexistence:register');
@@ -2899,7 +2821,7 @@ ipcMain.handle('bleCoexistence:getState', (event) => {
 ipcMain.handle('bleCoexistence:acquireScan', async (event, owner: unknown) => {
   assertIpcSender(event, 'bleCoexistence:acquireScan');
   if (typeof owner !== 'string' || !BLE_SCAN_OWNERS.has(owner as BleScanOwner)) {
-    throw new Error('bleCoexistence:acquireScan: owner must be noble, reticulum, or webbt');
+    throw new Error('bleCoexistence:acquireScan: owner must be gatt or reticulum');
   }
   try {
     await bleCoexistenceCoordinator.acquireScan(owner as BleScanOwner);
@@ -2915,147 +2837,127 @@ ipcMain.handle('bleCoexistence:acquireScan', async (event, owner: unknown) => {
 ipcMain.handle('bleCoexistence:releaseScan', (event, owner: unknown) => {
   assertIpcSender(event, 'bleCoexistence:releaseScan');
   if (typeof owner !== 'string' || !BLE_SCAN_OWNERS.has(owner as BleScanOwner)) {
-    throw new Error('bleCoexistence:releaseScan: owner must be noble, reticulum, or webbt');
+    throw new Error('bleCoexistence:releaseScan: owner must be gatt or reticulum');
   }
   bleCoexistenceCoordinator.releaseScan(owner as BleScanOwner);
   return bleCoexistenceCoordinator.getState();
 });
-ipcMain.handle('bleCoexistence:pauseNobleScan', async (event) => {
-  assertIpcSender(event, 'bleCoexistence:pauseNobleScan');
-  try {
-    await bleCoexistenceCoordinator.pauseNobleScan();
-    return bleCoexistenceCoordinator.getState();
-  } catch (err) {
-    console.error(
-      '[main] bleCoexistence:pauseNobleScan failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
-  }
-});
-ipcMain.handle('bleCoexistence:suspendNobleForReticulumBleConnect', async (event) => {
-  assertIpcSender(event, 'bleCoexistence:suspendNobleForReticulumBleConnect');
-  try {
-    await bleCoexistenceCoordinator.suspendNobleForReticulumBleConnect();
-    return bleCoexistenceCoordinator.getState();
-  } catch (err) {
-    console.error(
-      '[main] bleCoexistence:suspendNobleForReticulumBleConnect failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
-  }
+ipcMain.handle('bleCoexistence:suspendForReticulumBleConnect', async (event) => {
+  assertIpcSender(event, 'bleCoexistence:suspendForReticulumBleConnect');
+  await bleCoexistenceCoordinator.suspendForReticulumBleConnect();
+  return bleCoexistenceCoordinator.getState();
 });
 
-ipcMain.handle('noble-ble-start-scan', async (event, sessionId: unknown) => {
-  assertIpcSender(event, 'noble-ble-start-scan');
+/** Web Bluetooth chooser cancel — no-op after LoRa BLE moved to sidecar GATT. */
+ipcMain.handle('bluetooth-device-cancel', (event) => {
+  assertIpcSender(event, 'bluetooth-device-cancel');
+  linuxWebBluetoothDeviceSelection.cancelSelection();
+  return { cancelled: false as const };
+});
+
+ipcMain.handle('gatt:start-scan', async (event, sessionId: unknown) => {
+  assertIpcSender(event, 'gatt:start-scan');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('noble-ble-start-scan: sessionId must be meshtastic or meshcore');
-  }
-  if (process.platform === 'linux') {
-    throw new Error(
-      'BLE scanning is not supported on Linux via Noble — use Web Bluetooth in the renderer',
-    );
+    throw new Error('gatt:start-scan: sessionId must be meshtastic or meshcore');
   }
   if (isQuitting) {
-    console.debug('[main] noble-ble-start-scan: ignoring (app is quitting)');
+    console.debug('[main] gatt:start-scan: ignoring (app is quitting)');
     return { ok: true as const };
   }
-  try {
-    await nobleBleManager.startScanning(sessionId);
-    return { ok: true as const };
-  } catch (err) {
-    if (err instanceof BleScanBusyError) {
-      console.debug(
-        `[main] noble-ble-start-scan: scan busy (owner=${err.scanOwner}) session=${sessionId}`,
-      );
-      return { ok: false as const, code: 'scan_busy' as const, owner: err.scanOwner };
-    }
-    throw err;
-  }
+  return gattSidecarProxy.startScan(sessionId);
 });
-ipcMain.handle('noble-ble-stop-scan', async (event, sessionId: unknown) => {
-  assertIpcSender(event, 'noble-ble-stop-scan');
+ipcMain.handle('gatt:stop-scan', async (event, sessionId: unknown) => {
+  assertIpcSender(event, 'gatt:stop-scan');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('noble-ble-stop-scan: sessionId must be meshtastic or meshcore');
+    throw new Error('gatt:stop-scan: sessionId must be meshtastic or meshcore');
   }
   try {
-    await nobleBleManager.stopScanning(sessionId);
+    await gattSidecarProxy.stopScan(sessionId);
   } catch (err) {
     console.error(
-      `[main] noble-ble-stop-scan failed: session=${sessionId} message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
+      `[main] gatt:stop-scan failed: session=${sessionId} message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
     );
     throw err;
   }
 });
-ipcMain.handle('noble-ble-connect', async (event, sessionId: unknown, peripheralId: unknown) => {
-  assertIpcSender(event, 'noble-ble-connect');
+ipcMain.handle('gatt:connect', async (event, sessionId: unknown, peripheralId: unknown) => {
+  assertIpcSender(event, 'gatt:connect');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('noble-ble-connect: sessionId must be meshtastic or meshcore');
+    throw new Error('gatt:connect: sessionId must be meshtastic or meshcore');
   }
   if (typeof peripheralId !== 'string')
-    throw new Error('noble-ble-connect: peripheralId must be a string');
+    throw new Error('gatt:connect: peripheralId must be a string');
   if (isQuitting) {
-    console.debug(`[main] noble-ble-connect: ignoring session=${sessionId} (app is quitting)`);
+    console.debug(`[main] gatt:connect: ignoring session=${sessionId} (app is quitting)`);
     return { ok: false as const, error: 'App is quitting' };
   }
   try {
-    await nobleBleManager.connect(sessionId, peripheralId);
-    return { ok: true as const };
+    return await gattSidecarProxy.connect(sessionId, peripheralId);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.debug(
-      `[main] noble-ble-connect failed: session=${sessionId} peripheral=${peripheralId} message=${sanitizeLogMessage(message)}`,
+      `[main] gatt:connect failed: session=${sessionId} peripheral=${peripheralId} message=${sanitizeLogMessage(message)}`,
     );
     return { ok: false as const, error: sanitizeLogMessage(message) };
   }
 });
-ipcMain.handle('noble-ble-disconnect', async (event, sessionId: unknown) => {
-  assertIpcSender(event, 'noble-ble-disconnect');
+ipcMain.handle('gatt:disconnect', async (event, sessionId: unknown) => {
+  assertIpcSender(event, 'gatt:disconnect');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('noble-ble-disconnect: sessionId must be meshtastic or meshcore');
+    throw new Error('gatt:disconnect: sessionId must be meshtastic or meshcore');
   }
   try {
-    await nobleBleManager.disconnect(sessionId);
+    await gattSidecarProxy.disconnect(sessionId);
   } catch (err) {
     console.error(
-      `[main] noble-ble-disconnect failed: session=${sessionId} message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
+      `[main] gatt:disconnect failed: session=${sessionId} message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
     );
     throw err;
   }
 });
-ipcMain.handle('noble-ble-is-connected', (event, sessionId: unknown) => {
-  assertIpcSender(event, 'noble-ble-is-connected');
+ipcMain.handle('gatt:is-connected', async (event, sessionId: unknown) => {
+  assertIpcSender(event, 'gatt:is-connected');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('noble-ble-is-connected: sessionId must be meshtastic or meshcore');
+    throw new Error('gatt:is-connected: sessionId must be meshtastic or meshcore');
   }
-  return nobleBleManager.isConnected(sessionId);
+  return gattSidecarProxy.isConnected(sessionId);
 });
-ipcMain.handle('noble-ble-to-radio', async (event, sessionId: unknown, bytes: unknown) => {
-  assertIpcSender(event, 'noble-ble-to-radio');
+ipcMain.handle('gatt:to-radio', async (event, sessionId: unknown, bytes: unknown) => {
+  assertIpcSender(event, 'gatt:to-radio');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('noble-ble-to-radio: sessionId must be meshtastic or meshcore');
+    throw new Error('gatt:to-radio: sessionId must be meshtastic or meshcore');
   }
-  const result = await handleNobleBleToRadioWrite({
-    sessionId,
-    bytes,
-    isQuitting,
-    maxBytes: NOBLE_BLE_TO_RADIO_MAX_BYTES,
-    manager: nobleBleManager,
-  });
-  if (result === 'ignored-quitting') {
-    console.debug(`[main] noble-ble-to-radio: ignoring session=${sessionId} (app is quitting)`);
+  if (isQuitting) {
+    console.debug(`[main] gatt:to-radio: ignoring session=${sessionId} (app is quitting)`);
     return;
   }
-  if (result === 'ignored-disconnected') {
-    console.debug(`[main] noble-ble-to-radio: session=${sessionId} not connected, ignoring`);
+  if (!(await gattSidecarProxy.isConnected(sessionId))) {
+    console.debug(`[main] gatt:to-radio: session=${sessionId} not connected, ignoring`);
     return;
   }
-  if (result === 'ignored-expected-disconnect') {
-    console.debug(
-      '[main] noble-ble-to-radio: disconnected during write, ignoring session=',
-      sanitizeLogMessage(sessionId),
+  const buf = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes as Uint8Array);
+  if (buf.length > GATT_TO_RADIO_MAX_BYTES) {
+    throw new Error(
+      `gatt:to-radio: payload exceeds ${GATT_TO_RADIO_MAX_BYTES} bytes (${buf.length})`,
     );
+  }
+  try {
+    await gattSidecarProxy.toRadio(sessionId, buf);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const lower = message.toLowerCase();
+    if (
+      lower.includes('disconnected') ||
+      lower.includes('not connected') ||
+      lower.includes('not currently connected')
+    ) {
+      console.debug(
+        '[main] gatt:to-radio: disconnected during write, ignoring session=',
+        sanitizeLogMessage(sessionId),
+      );
+      return;
+    }
+    throw err;
   }
 });
 
@@ -3618,18 +3520,6 @@ ipcMain.handle('notify:message', (event, title: unknown, body: unknown) => {
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   }
-});
-
-ipcMain.handle('notify:longSessionRestart', (event, payload: unknown) => {
-  assertIpcSender(event, 'notify:longSessionRestart');
-  const parsed = parseLongSessionRestartPayload(payload);
-  if (!parsed) return;
-  getLongSessionNudge().show(parsed);
-});
-
-ipcMain.handle('notify:clearLongSessionNudge', (event) => {
-  assertIpcSender(event, 'notify:clearLongSessionNudge');
-  getLongSessionNudge().clear();
 });
 
 // ─── IPC: Safe storage (OS-keychain-backed encryption) ─────────────
@@ -6669,9 +6559,8 @@ void app
         if (process.uptime() < MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC) return;
         const uptimeSec = Math.floor(process.uptime());
         const mem = process.memoryUsage();
-        const ble = nobleBleManager.getLongSessionHealthSnapshot();
         console.debug(
-          `[main] long-session health uptimeSec=${uptimeSec} rss=${mem.rss} heapUsed=${mem.heapUsed} ble=${JSON.stringify(ble)}`,
+          `[main] long-session health uptimeSec=${uptimeSec} rss=${mem.rss} heapUsed=${mem.heapUsed}`,
         );
       }, MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS).unref();
 
@@ -6759,46 +6648,29 @@ app.on('before-quit', (event) => {
     return;
   }
 
-  if (nobleBleManager.isBleSessionActive()) {
-    event.preventDefault();
-    void (async () => {
-      try {
-        await nobleBleManager.stopAllScanning();
-        await nobleBleManager.disconnectAll();
-      } catch (err) {
-        console.error(
-          '[main] Noble BLE shutdown failed:',
-          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-        );
-      } finally {
-        // quit() must run even if shutdown throws: before-quit was prevented, so an
-        // escaping rejection here would leave the app running with no path to exit.
-        try {
-          await shutdownAppResources();
-        } catch (err) {
-          console.error(
-            '[main] shutdownAppResources failed before quit:',
-            sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-          );
-        }
-        app.quit();
-      }
-    })();
-    return;
-  }
-
   event.preventDefault();
-  void shutdownAppResources()
-    .then(() => {
-      app.quit();
-    })
-    .catch((err: unknown) => {
+  void (async () => {
+    try {
+      await gattSidecarProxy.disconnectAll();
+    } catch (err) {
       console.error(
-        '[main] shutdownAppResources failed before quit:',
+        '[main] GATT shutdown failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
+    } finally {
+      // quit() must run even if shutdown throws: before-quit was prevented, so an
+      // escaping rejection here would leave the app running with no path to exit.
+      try {
+        await shutdownAppResources();
+      } catch (err) {
+        console.error(
+          '[main] shutdownAppResources failed before quit:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+      }
       app.quit();
-    });
+    }
+  })();
 });
 
 app.on('will-quit', (event) => {
@@ -6840,11 +6712,8 @@ app.on('will-quit', (event) => {
     }
     destroyRegisteredTcpBridgeSockets('TCP socket destroy during will-quit (ignored)');
     stopPowerSaveBlocker();
-    nobleBleManager.releaseNobleProcessHandles();
     tray?.destroy();
     tray = null;
-    // releaseNobleProcessHandles() above calls noble._bindings.stop() which releases the native
-    // BLEManager and its CBqueue GCD dispatch queue — without that, the process cannot exit on macOS.
     app.exit(0);
   })();
 });

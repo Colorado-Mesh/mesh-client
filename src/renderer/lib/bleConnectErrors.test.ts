@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   classifyMeshcoreBleTimeoutStage,
+  extractGattBleErrorCode,
+  gattBleErrorI18nKey,
   isMeshcoreMissingServicesErrorMessage,
   isMeshcoreRetryableBleErrorMessage,
   isMeshcoreSetupAbortError,
@@ -10,6 +12,15 @@ import {
   rethrowMeshcoreSetupAbortFromTcpDead,
   shouldClearMeshcoreBleSelectionForError,
 } from './bleConnectErrors';
+
+describe('extractGattBleErrorCode', () => {
+  it('reads code from object and prefixed message', () => {
+    expect(extractGattBleErrorCode({ code: 'mac_conflict' })).toBe('mac_conflict');
+    expect(extractGattBleErrorCode(new Error('write_failed: boom'))).toBe('write_failed');
+    expect(gattBleErrorI18nKey('sidecar_down')).toBe('connectionPanel.errors.ble.sidecar_down');
+    expect(gattBleErrorI18nKey('not_a_code')).toBeNull();
+  });
+});
 
 describe('isMeshcoreMissingServicesErrorMessage', () => {
   it('matches noble missing requested services message', () => {

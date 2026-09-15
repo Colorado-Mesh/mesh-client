@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect -- clear meter when inactive; async Noble/RTT probes update state */
+/* eslint-disable react-hooks/set-state-in-effect -- clear meter when inactive; async GATT/RTT probes update state */
 import { useEffect, useState } from 'react';
 
 import {
@@ -37,7 +37,7 @@ function isConnectedStatus(status: ConnectionStatus): boolean {
 
 /**
  * Host↔radio link meter state for Meshtastic / MeshCore Connection panels.
- * BLE (darwin/win32): Noble link RSSI. BLE (linux): unavailable.
+ * BLE (all platforms): sidecar GATT link RSSI.
  * Live TCP sessions: passive session meter. Meshtastic HTTP: `/json/report` RTT.
  */
 export function useHostLinkMeter(opts: {
@@ -48,7 +48,7 @@ export function useHostLinkMeter(opts: {
   hostAddress: string | null | undefined;
   platform: NodeJS.Platform | null;
 }): HostLinkMeterState {
-  const { protocol, connectionType, status, hostAddress, platform } = opts;
+  const { protocol, connectionType, status, hostAddress } = opts;
   const [rssi, setRssi] = useState<number | null>(null);
   const [rttMs, setRttMs] = useState<number | null>(null);
 
@@ -60,18 +60,14 @@ export function useHostLinkMeter(opts: {
   const liveTcp = isLiveTcpSession(protocol, connectionType);
   const meshtasticHttp = protocol === 'meshtastic' && connectionType === 'http';
 
-  // BLE RSSI via Noble (macOS / Windows)
+  // BLE RSSI via sidecar GATT
   useEffect(() => {
     if (!active || connectionType !== 'ble') {
       setRssi(null);
       return;
     }
-    if (platform === 'linux') {
-      setRssi(null);
-      return;
-    }
     const sessionId = protocol === 'meshcore' ? 'meshcore' : 'meshtastic';
-    const unsub = window.electronAPI.onNobleBleLinkRssi((payload) => {
+    const unsub = window.electronAPI.onGattLinkRssi((payload) => {
       if (payload.sessionId !== sessionId) return;
       setRssi(payload.rssi != null && Number.isFinite(payload.rssi) ? payload.rssi : null);
     });
@@ -79,7 +75,7 @@ export function useHostLinkMeter(opts: {
       unsub();
       setRssi(null);
     };
-  }, [active, connectionType, platform, protocol]);
+  }, [active, connectionType, protocol]);
 
   // HTTP probe or live-TCP session meter
   useEffect(() => {
@@ -126,9 +122,6 @@ export function useHostLinkMeter(opts: {
   if (!active || !connectionType) return IDLE;
 
   if (connectionType === 'ble') {
-    if (platform === 'linux') {
-      return { kind: 'unavailable', rssi: null, rttMs: null, level: null };
-    }
     return { kind: 'ble-rssi', rssi, rttMs: null, level: null };
   }
 

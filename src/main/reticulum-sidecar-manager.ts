@@ -17,9 +17,7 @@ import {
   RETICULUM_WS_MAX_MESSAGE_BYTES,
 } from '../shared/reticulumProxyLimits';
 import { MS_PER_SECOND } from '../shared/timeConstants';
-import { bleCoexistenceCoordinator } from './ble-coexistence-coordinator';
 import { sanitizeLogMessage } from './log-service';
-import { reticulumConfigDirHasEnabledBleRnode } from './reticulum-ble-rnode-config';
 import { disableDecommissionedReticulumHubsInConfigDir } from './reticulum-decommissioned-hubs';
 import {
   assertReticulumProxyPath,
@@ -45,8 +43,6 @@ const PREPARE_STOP_TIMEOUT_MS = 1 * MS_PER_SECOND;
 const STOP_GRACE_MS = 5 * MS_PER_SECOND;
 /** App is exiting: skip the BLE detach drain and SIGKILL quickly so quit stays responsive. */
 const QUIT_STOP_GRACE_MS = 750;
-/** After yielding Noble BLE, allow CoreBluetooth/btleplug to settle before sidecar connect. */
-const RETICULUM_BLE_RNODE_NOBLE_SETTLE_MS = 500;
 
 /** Minimal env for sidecar child processes (start + validate-config). */
 export function sidecarChildEnv(): NodeJS.ProcessEnv {
@@ -303,10 +299,9 @@ export class ReticulumSidecarManager extends EventEmitter {
     return this.startPromise;
   }
 
-  /** Abort in-flight start at await checkpoints (cargo / BLE yield / pre-spawn). */
-  private throwIfStartAborted(releaseNobleYield?: () => void): void {
+  /** Abort in-flight start at await checkpoints (cargo / pre-spawn). */
+  private throwIfStartAborted(): void {
     if (!this.startAbortRequested) return;
-    releaseNobleYield?.();
     throw new Error('RETICULUM_SIDECAR_START_ABORTED: stop requested during start');
   }
 
@@ -344,8 +339,6 @@ export class ReticulumSidecarManager extends EventEmitter {
       );
     }
 
-    const needsBleRnodeNobleYield = reticulumConfigDirHasEnabledBleRnode(configDir);
-
     const port = await findFreePort();
     const binary = this.resolveBinaryPath();
     try {
@@ -365,9 +358,6 @@ export class ReticulumSidecarManager extends EventEmitter {
     }
 
     this.throwIfStartAborted();
-    // Kick Noble yield only after health succeeds (below) so Cancel during cargo/spawn
-    // never suspends Meshtastic/MeshCore, while TCP/API readiness still does not await BLE.
-    const needsBleYieldAfterHealth = needsBleRnodeNobleYield;
     const args = [
       '--headless',
       '--host',
@@ -468,49 +458,21 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.stackSessionTracker.recordStart();
     this.connectWs(port);
     this.startWatchdog();
-    // Mark yield pending before status emit so RF auto-connect does not race fire-and-forget yield.
-    if (needsBleYieldAfterHealth) {
-      bleCoexistenceCoordinator.setNobleYieldDecisionPending(true);
-    } else {
-      bleCoexistenceCoordinator.setNobleYieldDecisionPending(false);
-    }
     this.emit('status', this.getStatus());
-    // Do not await BLE yield — TCP/LXMF/RRC/Nomad are already usable. Start yield only
-    // after health so Cancel during cargo never yanks Meshtastic/MeshCore.
-    if (needsBleYieldAfterHealth) {
-      const yieldGeneration = this.startAttemptGeneration;
-      void this.yieldNobleForEnabledBleRnode()
-        .catch((e: unknown) => {
-          console.warn(
-            '[ReticulumSidecar] background Noble yield for BLE RNode failed:',
-            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-          );
-        })
-        .finally(() => {
-          // Overlapping start/stop: only the current attempt may clear pending.
-          if (yieldGeneration === this.startAttemptGeneration) {
-            bleCoexistenceCoordinator.setNobleYieldDecisionPending(false);
-          }
-        });
-    }
     return this.getStatus();
   }
 
   /**
-   * Yield CoreBluetooth/Noble to the sidecar for BLE RNode (macOS/Windows).
-   * Runs after health so stack TCP features are not gated on BLE.
+   * Ensure the sidecar process is running for LoRa BLE (Meshtastic/MeshCore GATT).
+   * Does not require Reticulum UI Start — HTTP + GATT are ready after health.
+   * Returns the localhost HTTP port.
    */
-  private async yieldNobleForEnabledBleRnode(): Promise<void> {
-    const attemptGeneration = this.startAttemptGeneration;
-    if (this.startAbortRequested) return;
-    await bleCoexistenceCoordinator.suspendNobleForReticulumBleConnect();
-    if (this.startAbortRequested || attemptGeneration !== this.startAttemptGeneration) {
-      if (bleCoexistenceCoordinator.getState().scanOwner === 'reticulum') {
-        bleCoexistenceCoordinator.releaseScan('reticulum');
-      }
-      return;
+  async ensureForBle(): Promise<number> {
+    const status = await this.start({ reuseIfRunning: true });
+    if (!status.running || !status.port) {
+      throw new Error(status.lastError ?? 'reticulum sidecar failed to start for BLE');
     }
-    await new Promise((r) => setTimeout(r, RETICULUM_BLE_RNODE_NOBLE_SETTLE_MS));
+    return status.port;
   }
 
   private startWatchdog(): void {
@@ -550,11 +512,9 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (opts.forQuit) {
       this.quitFastRequested = true;
     }
-    // Abort in-flight start at checkpoints (cargo/BLE) so Cancel does not wait on build.
+    // Abort in-flight start at checkpoints (cargo) so Cancel does not wait on build.
     this.startAbortRequested = true;
     this.startAttemptGeneration += 1;
-    // Invalidate any in-flight yield's finally before a subsequent start can latch pending again.
-    bleCoexistenceCoordinator.setNobleYieldDecisionPending(false);
     if (this.startPromise && !this.proc) {
       // Pre-spawn: do not await cargo — startOnce throws at next checkpoint.
       void this.startPromise.catch(() => {
@@ -585,9 +545,6 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.teardownWs();
     if (!this.quitFastRequested) {
       await this.prepareStopBestEffort();
-    }
-    if (bleCoexistenceCoordinator.getState().scanOwner === 'reticulum') {
-      bleCoexistenceCoordinator.releaseScan('reticulum');
     }
     const proc = this.proc;
     this.proc = null;

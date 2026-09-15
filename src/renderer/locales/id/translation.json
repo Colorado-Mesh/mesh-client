@@ -969,7 +969,6 @@
       },
       "ble": {
         "adapterWindowsHint": "Periksa Pengaturan > Bluetooth & perangkat. Jika Bluetooth aktif tetapi tidak tersedia, perbarui driver Bluetooth Anda di Pengelola Perangkat.",
-        "adapterLinuxHint": "Pastikan Bluetooth diaktifkan dan tanda eksperimental Bluetooth Web disetel. Coba: status sistemctl bluetooth",
         "adapterGenericHint": "Pastikan Bluetooth diaktifkan. Di Linux, jalankan: systemctl status bluetooth",
         "securityPermissionHint": "Izin Bluetooth ditolak. Pastikan aplikasi memiliki akses ke perangkat Bluetooth.",
         "gattDisconnectedHint": "Koneksi GATT terputus. Coba mendekat ke perangkat dan sambungkan kembali.",
@@ -1376,8 +1375,6 @@
     "autoConnectingTo": "Menghubungkan otomatis ke {{deviceName}}…",
     "autoReconnectInProgress": "Sambungan ulang otomatis sedang berlangsung…",
     "stageAutoConnectingBle": "Menghubungkan ke {{deviceName}}…",
-    "stageWaitingNobleBleMeshtastic": "Menunggu Bluetooth Meshtastic selesai — MeshCore akan terhubung ke {{deviceName}} secara otomatis setelah selesai…",
-    "stageWaitingNobleBleMeshcore": "Menunggu Bluetooth MeshCore selesai — Meshtastic akan terhubung ke {{deviceName}} secara otomatis setelah selesai…",
     "reticulumStats": {
       "interfaces": "{{count}} antarmuka",
       "peers": "{{count}} rekan"
@@ -1510,7 +1507,6 @@
     "linkQuality": "Kualitas tautan",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Tidak tersedia (Bluetooth Web)",
     "meshcoreCaBroker": "Broker MeshCore.CA",
     "meshcoreCaPrimary": "Primer",
     "meshcoreCaBackup": "Cadangan",
@@ -1533,7 +1529,24 @@
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
     "bluetoothId": "ID Bluetooth",
-    "reticulumAutoResendOnAnnounce": "Coba lagi pesan yang gagal saat rekan mengumumkan"
+    "reticulumAutoResendOnAnnounce": "Coba lagi pesan yang gagal saat rekan mengumumkan",
+    "errors": {
+      "ble": {
+        "adapter_missing": "No Bluetooth adapter was found. Enable Bluetooth in system settings and try again.",
+        "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
+        "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
+        "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
+        "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
+        "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
+        "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",
+        "bond_removed": "The Bluetooth bond is no longer valid. Forget the device in system settings, then re-pair.",
+        "write_failed": "Failed to write to the Bluetooth device. Reconnect and try again.",
+        "session_not_found": "The Bluetooth session is no longer available. Disconnect and connect again.",
+        "notified_read_forbidden": "This Bluetooth characteristic cannot be read that way. Reconnect and try again.",
+        "feature_disabled": "Bluetooth GATT support is not available in this build.",
+        "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
+      }
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -2297,10 +2310,7 @@
       "bleAlreadyInProgress": "Koneksi Bluetooth sedang berlangsung. Tunggu hingga selesai atau coba Serial/USB saja.",
       "bleMissingServices": "Perangkat tidak mendukung protokol MeshCore BLE. Pastikan perangkat menjalankan firmware MeshCore.",
       "blePeripheralInUse": "Perangkat ini sudah terhubung melalui Meshtastic BLE. Putuskan sambungan terlebih dahulu sebelum menghubungkan sebagai MeshCore.",
-      "bleTimeoutWebBtHandshake": "Waktu jabat tangan MeshCore habis (Web Bluetooth). Radio mungkin memerlukan PIN yang dipasangkan dengan Linux terlebih dahulu: gunakan Hapus & Pasangkan Ulang Perangkat dan masukkan PIN yang ditampilkan pada perangkat, atau pasangkan dengan bluetoothctl, lalu ketuk Hubungkan lagi.",
-      "bleTimeoutWebBt": "Koneksi Bluetooth habis waktu saat membuka MeshCore melalui Web Bluetooth. Coba lagi, biarkan perangkat tetap aktif, matikan BLE di radio, atau gunakan Serial/TCP.",
       "bleTimeoutHandshake": "Bluetooth terhubung tetapi jabat tangan protokol MeshCore tidak selesai sebelum pemutusan/batas waktu. Coba lagi, jaga agar perangkat tetap aktif dan berada di dekatnya, nyalakan BLE, atau gunakan Serial/TCP.",
-      "bleTimeoutNoble": "Koneksi Bluetooth habis waktu saat membuka MeshCore melalui Noble IPC. Coba lagi, matikan BLE pada perangkat, atau gunakan Serial/TCP.",
       "roomPost": {
         "badState": "Postingan ruangan ditolak (tidak login di radio). Keluar, masuk lagi, lalu coba lagi.",
         "illegalArg": "Postingan ruangan ditolak (format pesan tidak valid).",
@@ -2330,7 +2340,8 @@
       "cliDangerNotConfirmed": "Perintah CLI yang merusak memerlukan konfirmasi di panel Repeater.",
       "pingFailed": "Ping gagal",
       "floodScopeBusy": "Penggantian cakupan Flood tidak tersedia saat admin pengulang atau traceroute sedang berlangsung. Coba lagi saat menganggur.",
-      "removeContactFailed": "Dihapus secara lokal, tetapi radio menolak removeContact. Kontak dapat muncul kembali setelah penyegaran."
+      "removeContactFailed": "Dihapus secara lokal, tetapi radio menolak removeContact. Kontak dapat muncul kembali setelah penyegaran.",
+      "bleTimeoutGatt": "Bluetooth connection timed out while opening MeshCore over sidecar GATT. Retry, power-cycle BLE on the device, or use Serial/TCP."
     },
     "mqttHints": {
       "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",
@@ -5861,12 +5872,6 @@
     },
     "drawOfferWaitingBanner": "Tawaran seri terkirim. Menunggu lawan…",
     "idleExpiryNotice": "Permainan kedaluwarsa setelah tidak aktif dan kemudian hanya dapat dihapus. Tantangan tanpa jawaban: 24 jam (semua permainan). Permainan aktif: tic-tac-toe setelah 24 jam, catur dan empat-sebaris setelah 7 hari."
-  },
-  "longSession": {
-    "title": "Mulai ulang direkomendasikan",
-    "body": "mesh-client telah berjalan selama empat hari dengan radio Bluetooth yang terhubung. Mulai ulang aplikasi untuk mengurangi risiko crash pada sesi Noble BLE yang panjang.",
-    "restart": "Start Ulang",
-    "dismiss": "Tutup"
   },
   "reticulumSetup": {
     "eyebrow": "Reticulum · MEMULAI",

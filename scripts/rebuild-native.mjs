@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Rebuilds native Node.js addons (currently @stoprocent/noble) for the
-// installed Electron version using electron-builder install-app-deps.
+// Rebuilds native Node.js addons for the installed Electron version using
+// electron-builder install-app-deps (e.g. serialport bindings when present).
 import { spawnSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
@@ -19,7 +19,7 @@ const electronVersion = JSON.parse(fs.readFileSync(electronPkgPath, 'utf8')).ver
 if (process.env.MESHTASTIC_SKIP_ELECTRON_REBUILD === '1') {
   console.warn(
     'MESHTASTIC_SKIP_ELECTRON_REBUILD=1 — skipping native rebuild. ' +
-      '@stoprocent/noble may not match Electron until you run: pnpm run postinstall',
+      'Native modules may not match Electron until you run: pnpm run postinstall',
   );
   process.exit(0);
 }

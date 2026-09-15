@@ -28,9 +28,9 @@ describe('ConnectionLinkMeter', () => {
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 
-  it('shows Web Bluetooth unavailable phrase', () => {
+  it('shows host signal unavailable when meter kind is unavailable', () => {
     render(<ConnectionLinkMeter kind="unavailable" />);
-    expect(screen.getByText('Unavailable (Web Bluetooth)')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
     expect(screen.getByLabelText('Signal')).toBeInTheDocument();
   });
 });
