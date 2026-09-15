@@ -60,11 +60,15 @@ struct OpenConn {
     from_radio_char: Option<Characteristic>,
     /// True when NUS TX notify is active (MeshCore) — forbids GATT read on TX.
     nus_notify_only: bool,
+    /// Last advertisement / property RSSI (CoreBluetooth often only exposes this at discovery).
+    last_rssi: Option<i16>,
 }
 
 pub struct BtleplugBackend {
     adapter: Adapter,
     open: Mutex<HashMap<String, OpenConn>>,
+    /// RSSI from the most recent advertisement / scan, keyed by normalized connect address.
+    last_seen_rssi: Mutex<HashMap<String, i16>>,
 }
 
 impl BtleplugBackend {
@@ -85,6 +89,7 @@ impl BtleplugBackend {
         Ok(Self {
             adapter,
             open: Mutex::new(HashMap::new()),
+            last_seen_rssi: Mutex::new(HashMap::new()),
         })
     }
 
@@ -176,8 +181,28 @@ impl BtleplugBackend {
             "peripheral not cached — unfiltered scan before connect"
         );
         // Ignore empty Ok; surface hard scan failures so callers do not spin on stale "scan first".
-        self.scan_unfiltered(8).await?;
+        let scanned = self.scan_unfiltered(8).await?;
+        self.remember_scanned_rssi(&scanned);
         self.find_peripheral(address).await
+    }
+
+    fn remember_scanned_rssi(&self, devices: &[ScannedDevice]) {
+        let Ok(mut map) = self.last_seen_rssi.try_lock() else {
+            return;
+        };
+        for d in devices {
+            if let Some(rssi) = d.rssi {
+                map.insert(d.address.to_ascii_lowercase(), rssi);
+            }
+        }
+    }
+
+    fn cached_rssi_for(&self, address: &str) -> Option<i16> {
+        let key = address.to_ascii_lowercase();
+        self.last_seen_rssi
+            .try_lock()
+            .ok()
+            .and_then(|map| map.get(&key).copied())
     }
 }
 
@@ -222,6 +247,7 @@ impl BleBackend for BtleplugBackend {
                     .collect(),
             });
         }
+        self.remember_scanned_rssi(&out);
         Ok(out)
     }
 
@@ -327,18 +353,55 @@ impl BleBackend for BtleplugBackend {
             });
         });
 
+        // Seed from advertisement properties — CoreBluetooth rarely refreshes RSSI after connect
+        // (btleplug has no public readRSSI), so Connection panel meters need this last-known value.
+        let props_rssi = peripheral
+            .properties()
+            .await
+            .ok()
+            .flatten()
+            .and_then(|p| p.rssi);
+        let seed_rssi = props_rssi.or_else(|| self.cached_rssi_for(&key));
+        if let Some(rssi) = seed_rssi {
+            let _ = tx.send(BackendEvent::Rssi(rssi));
+        }
+
         {
             let mut open = self.open.lock().await;
             open.insert(
                 key.clone(),
                 OpenConn {
-                    peripheral,
+                    peripheral: peripheral.clone(),
                     write_char,
                     from_radio_char,
                     nus_notify_only,
+                    last_rssi: seed_rssi,
                 },
             );
         }
+
+        let tx_rssi = tx.clone();
+        tokio::spawn(async move {
+            let mut last = seed_rssi;
+            loop {
+                tokio::time::sleep(Duration::from_secs(4)).await;
+                if let Some(rssi) = peripheral
+                    .properties()
+                    .await
+                    .ok()
+                    .flatten()
+                    .and_then(|p| p.rssi)
+                {
+                    last = Some(rssi);
+                }
+                let Some(rssi) = last else {
+                    continue;
+                };
+                if tx_rssi.send(BackendEvent::Rssi(rssi)).is_err() {
+                    break;
+                }
+            }
+        });
 
         Ok((BackendConnId(key), rx, None))
     }
@@ -395,19 +458,23 @@ impl BleBackend for BtleplugBackend {
     }
 
     async fn rssi(&self, conn: &BackendConnId) -> Result<i16, GattError> {
-        let open = self.open.lock().await;
+        let mut open = self.open.lock().await;
         let session = open
-            .get(&conn.0)
+            .get_mut(&conn.0)
             .ok_or_else(|| GattError::new(GattErrorCode::SessionNotFound, "not connected"))?;
-        let props = session
+        if let Some(rssi) = session
             .peripheral
             .properties()
             .await
             .ok()
             .flatten()
-            .ok_or_else(|| GattError::new(GattErrorCode::Internal, "no peripheral properties"))?;
-        props
-            .rssi
+            .and_then(|p| p.rssi)
+        {
+            session.last_rssi = Some(rssi);
+            return Ok(rssi);
+        }
+        session
+            .last_rssi
             .ok_or_else(|| GattError::new(GattErrorCode::Internal, "rssi unavailable"))
     }
 }

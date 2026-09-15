@@ -2949,7 +2949,10 @@ ipcMain.handle('gatt:to-radio', async (event, sessionId: unknown, bytes: unknown
     if (
       lower.includes('disconnected') ||
       lower.includes('not connected') ||
-      lower.includes('not currently connected')
+      lower.includes('not currently connected') ||
+      lower.includes('fetch failed') ||
+      lower.includes('aborted') ||
+      lower.includes('timeout')
     ) {
       console.debug(
         '[main] gatt:to-radio: disconnected during write, ignoring session=',
@@ -6648,6 +6651,8 @@ app.on('before-quit', (event) => {
     return;
   }
 
+  // Latch before async teardown so late gatt:to-radio / MQTT IPC ignore dead-sidecar races.
+  isQuitting = true;
   event.preventDefault();
   void (async () => {
     try {

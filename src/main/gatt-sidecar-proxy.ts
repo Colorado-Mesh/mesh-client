@@ -29,7 +29,17 @@ interface LiveSession {
   profile: GattSessionProfile;
   address: string;
   ws: WebSocket | null;
+  rssiPoll: ReturnType<typeof setInterval> | null;
 }
+
+/** Match Connection panel host-link meter poll cadence. */
+const GATT_RSSI_POLL_MS = 4_000;
+/** Default HTTP budget — disconnect/quit must not hang behind a long connect/scan. */
+const GATT_HTTP_TIMEOUT_MS = 3_000;
+/** Connect / scan may include an unfiltered discovery sleep (~8s) plus GATT open. */
+const GATT_HTTP_LONG_TIMEOUT_MS = 45_000;
+/** Hard ceiling for quit-time disconnectAll. */
+const GATT_DISCONNECT_ALL_BUDGET_MS = 2_000;
 
 function profileFromSession(sessionId: string): GattSessionProfile {
   if (sessionId === 'meshcore') return 'meshcore';
@@ -83,13 +93,16 @@ export class GattSidecarProxy extends EventEmitter {
   private async jsonFetch(
     path: string,
     init?: RequestInit,
+    opts?: { timeoutMs?: number },
   ): Promise<{ status: number; body: Record<string, unknown> }> {
     const port = await this.ensurePort();
     const headers = new Headers(init?.headers);
     headers.set('content-type', 'application/json');
+    const timeoutMs = opts?.timeoutMs ?? GATT_HTTP_TIMEOUT_MS;
     const res = await fetch(`${this.baseUrl(port)}${path}`, {
       ...init,
       headers,
+      signal: AbortSignal.timeout(timeoutMs),
     });
     let body: Record<string, unknown> = {};
     try {
@@ -108,7 +121,11 @@ export class GattSidecarProxy extends EventEmitter {
 
   async startScan(sessionId: GattSessionProfile): Promise<GattStartScanResult> {
     const mode = profileFromSession(sessionId);
-    const { body } = await this.jsonFetch(`/api/v1/gatt/scan?mode=${mode}&timeout_secs=8`);
+    const { body } = await this.jsonFetch(
+      `/api/v1/gatt/scan?mode=${mode}&timeout_secs=8`,
+      undefined,
+      { timeoutMs: GATT_HTTP_LONG_TIMEOUT_MS },
+    );
     if (body.ok === false) {
       const code = typeof body.code === 'string' ? body.code : 'internal';
       if (code === 'scan_busy') {
@@ -154,10 +171,14 @@ export class GattSidecarProxy extends EventEmitter {
       // catch-no-log-ok: prior session may not exist
     });
     const profile = profileFromSession(sessionId);
-    const { body } = await this.jsonFetch('/api/v1/gatt/sessions', {
-      method: 'POST',
-      body: JSON.stringify({ profile, address: peripheralId }),
-    });
+    const { body } = await this.jsonFetch(
+      '/api/v1/gatt/sessions',
+      {
+        method: 'POST',
+        body: JSON.stringify({ profile, address: peripheralId }),
+      },
+      { timeoutMs: GATT_HTTP_LONG_TIMEOUT_MS },
+    );
     if (body.ok === false || typeof body.sessionId !== 'string') {
       const code = typeof body.code === 'string' ? body.code : 'connect_timeout';
       const error = unknownMessage(body.error, 'connect failed');
@@ -173,9 +194,31 @@ export class GattSidecarProxy extends EventEmitter {
       profile,
       address: peripheralId,
       ws,
+      rssiPoll: null,
     });
+    this.startRssiPoll(sessionId);
     this.emit('connected', { sessionId });
     return { ok: true };
+  }
+
+  private startRssiPoll(sessionId: GattSessionProfile): void {
+    const live = this.sessions.get(sessionId);
+    if (!live || live.rssiPoll) return;
+    const tick = () => {
+      void this.getRssi(sessionId).then((rssi) => {
+        if (rssi == null || !this.sessions.has(sessionId)) return;
+        this.emit('linkRssi', { sessionId, rssi });
+      });
+    };
+    tick();
+    live.rssiPoll = setInterval(tick, GATT_RSSI_POLL_MS);
+  }
+
+  private stopRssiPoll(sessionId: GattSessionProfile): void {
+    const live = this.sessions.get(sessionId);
+    if (!live?.rssiPoll) return;
+    clearInterval(live.rssiPoll);
+    live.rssiPoll = null;
   }
 
   private openSessionWs(
@@ -234,6 +277,7 @@ export class GattSidecarProxy extends EventEmitter {
   }
 
   private clearLocalSession(sessionId: GattSessionProfile): void {
+    this.stopRssiPoll(sessionId);
     const live = this.sessions.get(sessionId);
     if (!live) return;
     this.sessions.delete(sessionId);
@@ -244,21 +288,25 @@ export class GattSidecarProxy extends EventEmitter {
     }
   }
 
-  async disconnect(sessionId: GattSessionProfile): Promise<void> {
+  disconnect(sessionId: GattSessionProfile): Promise<void> {
     const live = this.sessions.get(sessionId);
-    if (!live) return;
-    try {
-      await this.jsonFetch(`/api/v1/gatt/sessions/${live.sidecarSessionId}`, {
-        method: 'DELETE',
-      });
-    } catch (e) {
-      console.warn(
+    if (!live) return Promise.resolve();
+    const sidecarSessionId = live.sidecarSessionId;
+    // Drop local session first so UI Disconnect / quit are not blocked on sidecar BLE teardown.
+    this.clearLocalSession(sessionId);
+    this.emit('disconnected', { sessionId });
+    void this.jsonFetch(
+      `/api/v1/gatt/sessions/${sidecarSessionId}`,
+      { method: 'DELETE' },
+      { timeoutMs: GATT_HTTP_TIMEOUT_MS },
+    ).catch((e: unknown) => {
+      // Sidecar often already exited during quit — keep this quiet.
+      console.debug(
         '[GATT] disconnect request failed:',
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
-    }
-    this.clearLocalSession(sessionId);
-    this.emit('disconnected', { sessionId });
+    });
+    return Promise.resolve();
   }
 
   async isConnected(sessionId: GattSessionProfile): Promise<boolean> {
@@ -267,6 +315,8 @@ export class GattSidecarProxy extends EventEmitter {
     try {
       const { body } = await this.jsonFetch(
         `/api/v1/gatt/sessions/${live.sidecarSessionId}/connected`,
+        undefined,
+        { timeoutMs: GATT_HTTP_TIMEOUT_MS },
       );
       return body.connected === true;
     } catch {
@@ -281,10 +331,14 @@ export class GattSidecarProxy extends EventEmitter {
       throw new Error(`gatt session ${sessionId} not connected`);
     }
     const data_b64 = Buffer.from(bytes).toString('base64');
-    const { body } = await this.jsonFetch(`/api/v1/gatt/sessions/${live.sidecarSessionId}/write`, {
-      method: 'POST',
-      body: JSON.stringify({ data_b64 }),
-    });
+    const { body } = await this.jsonFetch(
+      `/api/v1/gatt/sessions/${live.sidecarSessionId}/write`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ data_b64 }),
+      },
+      { timeoutMs: GATT_HTTP_TIMEOUT_MS },
+    );
     if (body.ok === false) {
       const code = typeof body.code === 'string' ? body.code : 'write_failed';
       const error = unknownMessage(body.error, 'write failed');
@@ -297,7 +351,11 @@ export class GattSidecarProxy extends EventEmitter {
     const live = this.sessions.get(sessionId);
     if (!live) return null;
     try {
-      const { body } = await this.jsonFetch(`/api/v1/gatt/sessions/${live.sidecarSessionId}/rssi`);
+      const { body } = await this.jsonFetch(
+        `/api/v1/gatt/sessions/${live.sidecarSessionId}/rssi`,
+        undefined,
+        { timeoutMs: GATT_HTTP_TIMEOUT_MS },
+      );
       return typeof body.rssi === 'number' ? body.rssi : null;
     } catch {
       // catch-no-log-ok: RSSI is best-effort; missing value is null
@@ -308,7 +366,20 @@ export class GattSidecarProxy extends EventEmitter {
   /** Disconnect all LoRa GATT sessions (app quit). */
   async disconnectAll(): Promise<void> {
     const ids = [...this.sessions.keys()];
-    await Promise.all(ids.map((id) => this.disconnect(id)));
+    if (ids.length === 0) return;
+    await Promise.race([
+      Promise.allSettled(ids.map((id) => this.disconnect(id))),
+      new Promise<void>((resolve) => {
+        setTimeout(resolve, GATT_DISCONNECT_ALL_BUDGET_MS);
+      }),
+    ]);
+    // Ensure polls/WS are gone even if DELETE timed out in the race.
+    for (const id of ids) {
+      if (this.sessions.has(id)) {
+        this.clearLocalSession(id);
+        this.emit('disconnected', { sessionId: id });
+      }
+    }
   }
 }
 

@@ -54,7 +54,9 @@ export function useHostLinkMeter(opts: {
 
   const active =
     protocol !== 'reticulum' &&
-    isConnectedStatus(status) &&
+    (isConnectedStatus(status) ||
+      // DeviceConfiguring maps to connecting — still show BLE host RSSI while NodeDB dumps.
+      (status === 'connecting' && connectionType === 'ble')) &&
     (connectionType === 'ble' || connectionType === 'http' || connectionType === 'tcp');
 
   const liveTcp = isLiveTcpSession(protocol, connectionType);

@@ -2337,7 +2337,8 @@ export function useMeshtasticRuntime() {
           throw new Error('Reconnect superseded after configure');
         }
 
-        // Success
+        // Success — configure() completed; force UI out of Connecting even if DeviceConfigured
+        // status events were missed under dual-radio BLE load.
         console.debug(
           `[useMeshtasticRuntime] Reconnect succeeded on attempt ${reconnectAttemptRef.current}`,
         );
@@ -2351,8 +2352,12 @@ export function useMeshtasticRuntime() {
         meshtasticDeferredReconnectRef.current = false;
         meshtasticRfReconnectRef.current.markSuccess();
         meshtasticBleReconnectExhaustedRef.current.clear();
+        deviceConfiguredRef.current = true;
+        isConfiguringRef.current = false;
+        setMeshtasticConfigurePhase(false);
         setState((s) => ({
           ...s,
+          status: 'configured',
           serialNeedsReselect: false,
           connectionLoss: false,
         }));

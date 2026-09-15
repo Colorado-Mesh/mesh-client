@@ -32,6 +32,19 @@ describe('useHostLinkMeter', () => {
     expect(result.current.kind).toBe('ble-rssi');
   });
 
+  it('returns ble-rssi while status is connecting (Meshtastic DeviceConfiguring)', () => {
+    const { result } = renderHook(() =>
+      useHostLinkMeter({
+        protocol: 'meshcore',
+        connectionType: 'ble',
+        status: 'connecting',
+        hostAddress: null,
+        platform: 'darwin',
+      }),
+    );
+    expect(result.current.kind).toBe('ble-rssi');
+  });
+
   it('returns ble-rssi on darwin and applies GATT RSSI updates', async () => {
     let rssiCb: ((p: GattBleLinkRssiPayload) => void) | null = null;
     vi.mocked(window.electronAPI.onGattLinkRssi).mockImplementation((cb) => {

@@ -24,6 +24,13 @@ describe('GATT BLE disconnect handling (source contract)', () => {
   it('ignores expected disconnect races in gatt:to-radio', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('gatt:to-radio'");
     expect(INDEX_SOURCE).toMatch(/gatt:to-radio: disconnected during write, ignoring session=/);
+    expect(INDEX_SOURCE).toMatch(/lower\.includes\('fetch failed'\)/);
+  });
+
+  it('latches isQuitting before async GATT teardown on before-quit', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /app\.on\('before-quit'[\s\S]{0,800}isQuitting = true;[\s\S]{0,200}event\.preventDefault\(\)/,
+    );
   });
 
   it('resolves meshtastic:tcp-write with no-socket instead of rejecting when the socket is gone', () => {
