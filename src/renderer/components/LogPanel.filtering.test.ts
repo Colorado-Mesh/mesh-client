@@ -112,6 +112,27 @@ describe('isDeviceEntry — Meshtastic protocol', () => {
       false,
     );
   });
+
+  it('does NOT classify [GATT:meshcore] as Meshtastic device entry', () => {
+    expect(
+      isDeviceEntry(entry('main', '[GATT:meshcore] connect_timeout: nope'), 'meshtastic'),
+    ).toBe(false);
+  });
+
+  it('does NOT classify [BLE:meshcore] as Meshtastic device entry', () => {
+    expect(
+      isDeviceEntry(
+        entry('main', '[BLE:meshcore] connect coalesce await failed — x'),
+        'meshtastic',
+      ),
+    ).toBe(false);
+  });
+
+  it('classifies [GATT:all] as Meshtastic device entry', () => {
+    expect(isDeviceEntry(entry('main', '[GATT:all] adapter_missing: no radio'), 'meshtastic')).toBe(
+      true,
+    );
+  });
 });
 
 describe('isDeviceEntry — MeshCore protocol', () => {
@@ -166,6 +187,18 @@ describe('isDeviceEntry — MeshCore protocol', () => {
     expect(
       isDeviceEntry(entry('main', '[BLE:meshcore] connect coalesce await failed — x'), 'meshcore'),
     ).toBe(true);
+  });
+
+  it('classifies [GATT:meshcore] as MeshCore device entry', () => {
+    expect(isDeviceEntry(entry('main', '[GATT:meshcore] connect_timeout: nope'), 'meshcore')).toBe(
+      true,
+    );
+  });
+
+  it('marks [GATT:meshcore] as owned by other protocol on Meshtastic tab', () => {
+    const e = entry('main', '[GATT:meshcore] connect_timeout: nope');
+    expect(isOwnedByOtherProtocol(e, 'meshtastic')).toBe(true);
+    expect(isAppLogEntry(e, 'meshtastic')).toBe(false);
   });
 
   it('classifies [IpcSidecarGattConnection] meshcore message as MeshCore device entry', () => {
@@ -384,5 +417,73 @@ describe('protocol-scoped appEntries — MeshCore tab', () => {
     const mqttEntry = entry('main', '[MeshCore MQTT] PINGRESP received');
     expect(isDeviceEntry(mqttEntry, 'meshcore')).toBe(true);
     expect(isAppLogEntry(mqttEntry, 'meshcore')).toBe(false);
+  });
+
+  it('excludes MeshtasticRemoteAdmin from MeshCore app view', () => {
+    const e = entry('main', '[MeshtasticRemoteAdmin] ROUTING reject requestId=1');
+    expect(isAppLogEntry(e, 'meshcore')).toBe(false);
+    expect(isOwnedByOtherProtocol(e, 'meshcore')).toBe(true);
+  });
+
+  it('excludes Meshtastic SDK routing tag from MeshCore app view', () => {
+    const e = entry('main', '[Meshtastic] SDK routing failure: timeout');
+    expect(isAppLogEntry(e, 'meshcore')).toBe(false);
+  });
+
+  it('keeps Meshtastic exclusive App tags on Meshtastic app view', () => {
+    expect(
+      isAppLogEntry(
+        entry('main', '[MeshtasticRemoteAdmin] writeToRadioWithoutQueue failed x'),
+        'meshtastic',
+      ),
+    ).toBe(true);
+    expect(
+      isAppLogEntry(entry('main', '[Meshtastic] SDK routing failure: timeout'), 'meshtastic'),
+    ).toBe(true);
+  });
+});
+
+describe('protocol-exclusive App tags — cross-protocol', () => {
+  it('excludes MeshCoreTransport from Meshtastic app view', () => {
+    const e = entry('main', '[MeshCoreTransport] GATT BLE attempt 1/3 failed: timeout');
+    expect(isAppLogEntry(e, 'meshtastic')).toBe(false);
+    expect(isOwnedByOtherProtocol(e, 'meshtastic')).toBe(true);
+    expect(isAppLogEntry(e, 'meshcore')).toBe(true);
+  });
+
+  it('excludes MeshCoreProtocol from Meshtastic app view', () => {
+    const e = entry('main', '[MeshCoreProtocol] event 130: non-numeric ackCode');
+    expect(isAppLogEntry(e, 'meshtastic')).toBe(false);
+    expect(isAppLogEntry(e, 'meshcore')).toBe(true);
+  });
+
+  it('excludes meshcoreRoomSession from Meshtastic app view', () => {
+    const e = entry('main', '[meshcoreRoomSession] room login failed timeout');
+    expect(isAppLogEntry(e, 'meshtastic')).toBe(false);
+    expect(isAppLogEntry(e, 'meshcore')).toBe(true);
+  });
+
+  it('excludes meshcoreRepeaterSession from Meshtastic app view', () => {
+    const e = entry('main', '[meshcoreRepeaterSession] repeater login failed timeout');
+    expect(isAppLogEntry(e, 'meshtastic')).toBe(false);
+    expect(isAppLogEntry(e, 'meshcore')).toBe(true);
+  });
+
+  it('excludes main gatt session=meshcore from Meshtastic app view', () => {
+    const e = entry(
+      'main',
+      '[main] gatt:connect failed: session=meshcore peripheral=AA:BB message=timeout',
+    );
+    expect(isAppLogEntry(e, 'meshtastic')).toBe(false);
+    expect(isAppLogEntry(e, 'meshcore')).toBe(true);
+  });
+
+  it('excludes main gatt session=meshtastic from MeshCore app view', () => {
+    const e = entry(
+      'main',
+      '[main] gatt:connect failed: session=meshtastic peripheral=AA:BB message=timeout',
+    );
+    expect(isAppLogEntry(e, 'meshcore')).toBe(false);
+    expect(isAppLogEntry(e, 'meshtastic')).toBe(true);
   });
 });

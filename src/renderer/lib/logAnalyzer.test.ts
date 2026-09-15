@@ -197,6 +197,14 @@ describe('analyzeLogs', () => {
     expect(cat?.count).toBe(1);
   });
 
+  it('skips MeshCore BLE notify watchdog when analyzing meshtastic', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[BLE:meshcore] notify watchdog: no data in 5s on Win32. Pair the radio.', 'warn'),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories.find((c) => c.id === 'ble-meshcore-notify-watchdog')).toBeUndefined();
+  });
+
   it('detects bluetooth pairing PIN timeout', () => {
     const entries: LogEntry[] = [
       makeEntry('bluetooth-pairing: PIN prompt timed out after 120s — aborting', 'warn'),
@@ -474,6 +482,20 @@ describe('analyzeLogs', () => {
     ];
     const result = analyzeLogs(entries, 'meshcore');
     expect(result.categories.find((c) => c.id === 'sdk-meshcore')).toBeUndefined();
+  });
+
+  it('does not classify [GATT:meshcore] under sdk-meshtastic', () => {
+    const entries: LogEntry[] = [makeEntry('[GATT:meshcore] connect_timeout: nope', 'error')];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories.find((c) => c.id === 'sdk-meshtastic')).toBeUndefined();
+  });
+
+  it('classifies [GATT:meshcore] under sdk-meshcore', () => {
+    const entries: LogEntry[] = [makeEntry('[GATT:meshcore] connect_timeout: nope', 'error')];
+    const result = analyzeLogs(entries, 'meshcore');
+    const sdk = result.categories.find((c) => c.id === 'sdk-meshcore');
+    expect(sdk).toBeDefined();
+    expect(sdk?.count).toBe(1);
   });
 
   it('sorts categories by severity then count', () => {

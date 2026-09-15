@@ -115,7 +115,7 @@ export class GattSidecarProxy extends EventEmitter {
 
   private emitIssue(code: string, message: string, sessionId?: GattSessionProfile): void {
     const safe = sanitizeLogMessage(message);
-    console.error(`[GATT:${sessionId ?? 'all'}] ${code}: ${safe}`);
+    console.error(`[GATT:${sessionId ?? 'all'}] ${code}: ${safe}`); // log-filter-ok session-scoped: LogPanel matches [GATT:meshtastic]/[GATT:all]/[GATT:meshcore] explicitly
     this.emit('issue', { sessionId, code, message: safe });
   }
 
