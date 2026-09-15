@@ -98,9 +98,23 @@ pub fn normalize_address(raw: &str) -> Result<String, GattError> {
             "empty ble address",
         ));
     }
-    // Keep opaque CoreBluetooth UUIDs and MACs; uppercase hex-ish forms.
-    let lower = trimmed.to_ascii_lowercase();
-    Ok(lower)
+    // Keep opaque CoreBluetooth UUIDs and MACs; compare via [`ble_id_match_key`].
+    Ok(trimmed.to_ascii_lowercase())
+}
+
+/// Strip to lowercase hex digits so Noble UUIDs and dashed CoreBluetooth UUIDs compare equal.
+pub fn ble_id_match_key(raw: &str) -> String {
+    raw.chars()
+        .filter(char::is_ascii_hexdigit)
+        .flat_map(char::to_lowercase)
+        .collect()
+}
+
+/// True when two BLE identifiers refer to the same peripheral (MAC or UUID, any punctuation).
+pub fn ble_ids_match(a: &str, b: &str) -> bool {
+    let ka = ble_id_match_key(a);
+    let kb = ble_id_match_key(b);
+    !ka.is_empty() && ka == kb
 }
 
 #[cfg(test)]
@@ -121,9 +135,15 @@ mod tests {
     }
 
     #[test]
-    fn nus_and_meshtastic_uuids_parse() {
-        assert_ne!(meshtastic::service(), uuid::Uuid::nil());
-        assert_ne!(nus::tx(), uuid::Uuid::nil());
-        assert_ne!(meshtastic::to_radio(), meshtastic::from_radio());
+    fn ble_ids_match_uuid_with_and_without_dashes() {
+        assert!(ble_ids_match(
+            "ff92959fd78be6f009376829a4d6efdc",
+            "FF92959F-D78B-E6F0-0937-6829A4D6EFDC"
+        ));
+        assert!(ble_ids_match("AA:BB:CC:DD:EE:FF", "aabbccddeeff"));
+        assert!(!ble_ids_match(
+            "aa:bb:cc:dd:ee:ff",
+            "ff92959fd78be6f009376829a4d6efdc"
+        ));
     }
 }

@@ -1,6 +1,10 @@
 import type { GattBleSessionId, GattBleStartScanResult } from '@/shared/electron-api.types';
+import { bleIdsMatch } from '@/shared/normalizeBleMac';
 
-import { isMeshcoreSetupAbortError } from './bleConnectErrors';
+import {
+  isMeshcoreMissingServicesErrorMessage,
+  isMeshcoreSetupAbortError,
+} from './bleConnectErrors';
 import { errLikeToLogString } from './errLikeToLogString';
 import { isBleScanBusyErrorMessage } from './reticulum/reticulumBleAdapterLease';
 import type { MeshProtocol } from './types';
@@ -140,16 +144,29 @@ export async function verifyGattRfLink(
   }
 }
 
+function shouldScanAfterConnectFailure(message: string): boolean {
+  if (isMeshcoreMissingServicesErrorMessage(message)) return false;
+  if (/runtime is not mounted/i.test(message)) return false;
+  // Sidecar / adapter needs discovery before connect (Noble UUID cold start).
+  if (/scan first|not found|unknown peripheral|no such device/i.test(message)) return true;
+  // Transient connect failures may clear after a fresh scan.
+  if (/connect_timeout|timed out|unreachable/i.test(message)) return true;
+  return false;
+}
+
 /**
  * Connect immediately (sidecar may already know the peripheral), then scan until the
  * peripheral appears if connect fails, then retry connect. Serial/HTTP/TCP reconnect use
  * {@link rfReconnectHelper} instead.
+ *
+ * @param matchIds — optional aliases (e.g. stored Noble UUID + bleMac) matched against
+ *   discovered `deviceId` / `address` via hex-normalized equality.
  */
 export async function reconnectBleWithScan(
   protocol: MeshProtocol,
   peripheralId: string,
   connect: () => Promise<void>,
-  opts?: { scanTimeoutMs?: number; scanBusyMaxWaitMs?: number },
+  opts?: { scanTimeoutMs?: number; scanBusyMaxWaitMs?: number; matchIds?: string[] },
 ): Promise<void> {
   // Fast path: connect resolves without a new discovery event.
   try {
@@ -164,8 +181,7 @@ export async function reconnectBleWithScan(
       throw err;
     }
     const message = errLikeToLogString(err);
-    // Session not registered yet — scanning cannot help and steals the BLE mutex from Reticulum.
-    if (message.includes('runtime is not mounted')) {
+    if (!shouldScanAfterConnectFailure(message)) {
       throw err instanceof Error ? err : new Error(message);
     }
     console.debug('[bleReconnectHelper] immediate connect failed — scanning ' + message);
@@ -175,6 +191,14 @@ export async function reconnectBleWithScan(
   const timeoutMs = opts?.scanTimeoutMs ?? BLE_RECONNECT_SCAN_TIMEOUT_MS;
   const scanBusyMaxWaitMs = opts?.scanBusyMaxWaitMs ?? BLE_SCAN_BUSY_MAX_WAIT_MS;
   const scanStartedAt = Date.now();
+  const wantedIds = [peripheralId, ...(opts?.matchIds ?? [])].filter(
+    (id): id is string => typeof id === 'string' && id.trim().length > 0,
+  );
+
+  const deviceMatches = (device: { deviceId: string; address?: string | null }): boolean => {
+    const candidates = [device.deviceId, device.address ?? ''];
+    return wantedIds.some((want) => candidates.some((c) => c && bleIdsMatch(want, c)));
+  };
 
   return new Promise<void>((resolve, reject) => {
     const abortController = new AbortController();
@@ -203,7 +227,7 @@ export async function reconnectBleWithScan(
     signal.addEventListener('abort', cleanup, { once: true });
 
     offDiscovered = window.electronAPI.onGattDeviceDiscovered((device) => {
-      if (signal.aborted || device.deviceId !== peripheralId) return;
+      if (signal.aborted || !deviceMatches(device)) return;
       finish(() => {
         void connect().then(resolve).catch(reject);
       });

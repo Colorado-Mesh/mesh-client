@@ -1629,78 +1629,43 @@ export default function ConnectionPanel({
         isAutoConnectingRef.current = true;
         setIsAutoConnecting(true);
         setConnecting(true);
-        if (isLinux) {
-          // Web Bluetooth path: use onConnect directly (NOT connectAutomatic which skips BLE for MeshCore)
-          // This is a user gesture, so requestDevice() is allowed.
-          setConnectionStage('connectionPanel.stageReconnecting');
-          // Same-tick IPC: discovery may run before setConnectionType('ble') commits; picker gating uses connectionTypeRef.
-          connectionTypeRef.current = 'ble';
-          // Mirror handleConnect: await cancel so a stale chooser cannot merge into the new requestDevice().
-          const priorGeneration = linuxBleChooserGenerationRef.current;
-          linuxBleChooserGenerationRef.current = null;
-          try {
-            await window.electronAPI.cancelBluetoothSelection(priorGeneration);
-          } catch (e: unknown) {
-            console.debug(
-              '[ConnectionPanel] cancelBluetoothSelection failed ' + errLikeToLogString(e),
-            );
-            isAutoConnectingRef.current = false;
-            setIsAutoConnecting(false);
+        const bleDeviceId = lastConnection.bleDeviceId;
+        const matchIds = [bleDeviceId, lastConnection.bleMac].filter(
+          (id): id is string => typeof id === 'string' && id.trim().length > 0,
+        );
+        setConnectionStage('connectionPanel.stageConnecting');
+        try {
+          await reconnectBleWithScan(
+            protocol,
+            bleDeviceId,
+            () => onConnect('ble', undefined, bleDeviceId),
+            { matchIds },
+          );
+          isAutoConnectingRef.current = false;
+          setIsAutoConnecting(false);
+          setConnecting(false);
+          setConnectionStage('');
+        } catch (err: unknown) {
+          // catch-no-log-ok reconnect errors surfaced via setError/humanizeBleError
+          isAutoConnectingRef.current = false;
+          setIsAutoConnecting(false);
+          clearMeshcoreBleSelectionOnMissingServices(err);
+          const bleErrMsg = humanizeBleError(err, t);
+          if (bleErrMsg) setError(bleErrMsg);
+          const isPairingRelatedError = shouldShowLinuxRePairFromBleError(err, bleErrMsg);
+          if (isLinux && isPairingRelatedError) {
+            setShowRePairButton(true);
+            setShowBlePicker(false);
+            setConnectionStage('connectionPanel.stagePairingFailed');
+            setConnecting(false);
+          } else {
             setConnecting(false);
             setConnectionStage('');
-            return;
           }
-          pendingMeshcoreLinuxWbMacRef.current = null;
-          bleLinuxPickerSelectionResolvedRef.current = false;
-          try {
-            await onConnect('ble', undefined);
-            isAutoConnectingRef.current = false;
-            setIsAutoConnecting(false);
-            setConnecting(false);
-            setConnectionStage('');
-          } catch (err: unknown) {
-            // catch-no-log-ok reconnect errors surfaced via setError/humanizeBleError
-            isAutoConnectingRef.current = false;
-            setIsAutoConnecting(false);
-            clearMeshcoreBleSelectionOnMissingServices(err);
-            const bleErrMsg = humanizeBleError(err, t);
-            if (bleErrMsg) setError(bleErrMsg);
-            const isPairingRelatedError = shouldShowLinuxRePairFromBleError(err, bleErrMsg);
-            if (isPairingRelatedError) {
-              setShowRePairButton(true);
-              setShowBlePicker(false);
-              setConnectionStage('connectionPanel.stagePairingFailed');
-              setConnecting(false);
-            } else {
-              setConnecting(false);
-              setConnectionStage('');
-            }
-            if (protocol === 'meshcore' && shouldOfferMeshcoreLinuxManualPinAfterError(bleErrMsg)) {
-              setShowPinPrompt(true);
-              setManualPairingFallback(true);
-              setPinInputValue('');
-            }
-          }
-        } else {
-          const bleDeviceId = lastConnection.bleDeviceId;
-          setConnectionStage('connectionPanel.stageConnecting');
-          try {
-            await reconnectBleWithScan(protocol, bleDeviceId, () =>
-              onConnect('ble', undefined, bleDeviceId),
-            );
-            isAutoConnectingRef.current = false;
-            setIsAutoConnecting(false);
-            setConnecting(false);
-            setConnectionStage('');
-          } catch (err: unknown) {
-            // catch-no-log-ok reconnect errors surfaced via setError/humanizeBleError
-            isAutoConnectingRef.current = false;
-            setIsAutoConnecting(false);
-            clearMeshcoreBleSelectionOnMissingServices(err);
-            const bleErrMsg = humanizeBleError(err, t);
-            if (bleErrMsg) setError(bleErrMsg);
-            setConnecting(false);
-            setConnectionStage('');
+          if (protocol === 'meshcore' && shouldOfferMeshcoreLinuxManualPinAfterError(bleErrMsg)) {
+            setShowPinPrompt(true);
+            setManualPairingFallback(true);
+            setPinInputValue('');
           }
         }
       })();

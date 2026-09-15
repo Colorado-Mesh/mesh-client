@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  bleIdsMatch,
   formatBleDeviceIdForDisplay,
   isTwelveHexBleMac,
   normalizeBleMac,
@@ -54,6 +55,22 @@ describe('isTwelveHexBleMac', () => {
   it('rejects suffixes and unsupported separators', () => {
     expect(isTwelveHexBleMac('aa:bb:cc:dd:ee:ff-extra')).toBe(false);
     expect(isTwelveHexBleMac('aa.bb.cc.dd.ee.ff')).toBe(false);
+  });
+});
+
+describe('bleIdsMatch', () => {
+  it('matches Noble UUID to dashed CoreBluetooth UUID', () => {
+    expect(
+      bleIdsMatch('ff92959fd78be6f009376829a4d6efdc', 'FF92959F-D78B-E6F0-0937-6829A4D6EFDC'),
+    ).toBe(true);
+  });
+
+  it('matches MAC punctuation variants', () => {
+    expect(bleIdsMatch('AA:BB:CC:DD:EE:FF', 'aabbccddeeff')).toBe(true);
+  });
+
+  it('does not match unrelated ids', () => {
+    expect(bleIdsMatch('aa:bb:cc:dd:ee:ff', 'ff92959fd78be6f009376829a4d6efdc')).toBe(false);
   });
 });
 

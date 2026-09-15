@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use super::backend::{BackendConnId, BackendEvent, BleBackend, ScannedDevice};
 use super::error::{GattError, GattErrorCode};
-use super::profile::{self, GattProfile, normalize_address};
+use super::profile::{self, GattProfile, ble_id_match_key, ble_ids_match, normalize_address};
 
 fn connect_timeout() -> Duration {
     if cfg!(target_os = "macos") {
@@ -29,6 +29,28 @@ fn discovery_timeout() -> Duration {
     } else {
         Duration::from_secs(30)
     }
+}
+
+fn is_usable_mac(addr: &str) -> bool {
+    let hex = ble_id_match_key(addr);
+    hex.len() == 12 && hex != "000000000000"
+}
+
+/// Prefer a real MAC when CoreBluetooth/WinRT exposes one; otherwise compact peripheral UUID hex
+/// (matches Noble `lastBleDevice` ids on macOS).
+fn connect_address_for(
+    peripheral: &Peripheral,
+    props: &btleplug::api::PeripheralProperties,
+) -> String {
+    let mac = props.address.to_string();
+    if is_usable_mac(&mac) {
+        return mac.to_ascii_lowercase();
+    }
+    let id_hex = ble_id_match_key(&format!("{:?}", peripheral.id()));
+    if !id_hex.is_empty() {
+        return id_hex;
+    }
+    format!("{:?}", peripheral.id()).to_ascii_lowercase()
 }
 
 struct OpenConn {
@@ -81,12 +103,12 @@ impl BtleplugBackend {
             })?;
         for p in peris {
             let props = p.properties().await.ok().flatten();
+            let id_dbg = format!("{:?}", p.id());
             let addr = props
                 .as_ref()
-                .map(|x| x.address.to_string().to_ascii_lowercase())
+                .map(|x| x.address.to_string())
                 .unwrap_or_default();
-            let id = format!("{:?}", p.id()).to_ascii_lowercase();
-            if addr == key || id.contains(&key) || (!addr.is_empty() && key.contains(&addr)) {
+            if ble_ids_match(&key, &id_dbg) || (!addr.is_empty() && ble_ids_match(&key, &addr)) {
                 return Ok(p);
             }
         }
@@ -94,6 +116,24 @@ impl BtleplugBackend {
             GattErrorCode::ConnectTimeout,
             format!("peripheral {key} not found — scan first"),
         ))
+    }
+
+    async fn find_peripheral_scanning(
+        &self,
+        profile: GattProfile,
+        address: &str,
+    ) -> Result<Peripheral, GattError> {
+        if let Ok(p) = self.find_peripheral(address).await {
+            return Ok(p);
+        }
+        tracing::info!(
+            target: "gatt",
+            address,
+            profile = %profile,
+            "peripheral not cached — scanning before connect"
+        );
+        let _ = self.scan(profile, 4).await;
+        self.find_peripheral(address).await
     }
 }
 
@@ -128,7 +168,7 @@ impl BleBackend for BtleplugBackend {
                 continue;
             };
             out.push(ScannedDevice {
-                address: props.address.to_string(),
+                address: connect_address_for(&p, &props),
                 name: props.local_name,
                 rssi: props.rssi,
                 service_uuids: props
@@ -154,7 +194,7 @@ impl BleBackend for BtleplugBackend {
         GattError,
     > {
         let key = normalize_address(address)?;
-        let peripheral = self.find_peripheral(&key).await?;
+        let peripheral = self.find_peripheral_scanning(profile, &key).await?;
 
         tokio::time::timeout(connect_timeout(), peripheral.connect())
             .await

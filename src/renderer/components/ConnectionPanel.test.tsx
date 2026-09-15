@@ -877,7 +877,7 @@ describe('ConnectionPanel Linux BLE path', () => {
         await user.click(screen.getByRole('button', { name: /^Reconnect$/i }));
 
         await waitFor(() => {
-          expect(onConnect).toHaveBeenCalledWith('ble', undefined);
+          expect(onConnect).toHaveBeenCalledWith('ble', undefined, 'bad-device');
           expect(localStorage.getItem(lastConnKey)).toBeNull();
           expect(localStorage.getItem(lastBleKey)).toBeNull();
         });

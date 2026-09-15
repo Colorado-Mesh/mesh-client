@@ -205,4 +205,38 @@ describe('reconnectBleWithScan', () => {
     );
     expect(window.electronAPI.startGattScanning).not.toHaveBeenCalled();
   });
+
+  it('does not scan after missing-services failures', async () => {
+    const connect = vi.fn().mockRejectedValue(new Error('Could not find all requested services'));
+
+    await expect(reconnectBleWithScan('meshcore', 'bad-device', connect)).rejects.toThrow(
+      /Could not find all requested services/,
+    );
+    expect(window.electronAPI.startGattScanning).not.toHaveBeenCalled();
+  });
+
+  it('matches discovery by hex-normalized UUID / MAC aliases', async () => {
+    const connect = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('not found — scan first'))
+      .mockResolvedValueOnce(undefined);
+    const discovered = vi.fn();
+    vi.mocked(window.electronAPI.onGattDeviceDiscovered).mockImplementation((cb) => {
+      discovered.mockImplementation(cb);
+      return () => {};
+    });
+
+    const pending = reconnectBleWithScan('meshcore', 'ff92959fd78be6f009376829a4d6efdc', connect, {
+      matchIds: ['aa:bb:cc:dd:ee:ff'],
+    });
+    await Promise.resolve();
+    discovered({
+      deviceId: 'AA:BB:CC:DD:EE:FF',
+      deviceName: 'MeshCore',
+      address: 'AA:BB:CC:DD:EE:FF',
+    });
+    await expect(pending).resolves.toBeUndefined();
+    expect(connect).toHaveBeenCalledTimes(2);
+    expect(window.electronAPI.startGattScanning).toHaveBeenCalled();
+  });
 });

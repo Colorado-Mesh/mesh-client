@@ -1,3 +1,5 @@
+import { isTwelveHexBleMac, normalizeBleMac } from '@/shared/normalizeBleMac';
+
 import { parseStoredJson } from './parseStoredJson';
 import { LAST_SERIAL_PORT_KEY } from './serialPortSignature';
 import type { ConnectionType, MeshProtocol } from './types';
@@ -78,7 +80,15 @@ export function notifyBleSelectionCleared(protocol: MeshProtocol): void {
 
 export function resolveLastBlePeripheralId(protocol: MeshProtocol): string | undefined {
   const last = loadLastConnection(protocol);
-  return last?.bleDeviceId ?? loadLastBleDeviceId(protocol) ?? undefined;
+  const deviceId = last?.bleDeviceId ?? loadLastBleDeviceId(protocol) ?? undefined;
+  const mac = last?.bleMac?.trim();
+  // Prefer opaque CoreBluetooth/Noble UUID (32+ hex) — btleplug macOS keys off peripheral id.
+  if (deviceId) {
+    const hexLen = deviceId.replace(/[^0-9a-fA-F]/g, '').length;
+    if (hexLen >= 32) return deviceId;
+  }
+  if (mac && isTwelveHexBleMac(mac)) return normalizeBleMac(mac);
+  return deviceId ?? mac ?? undefined;
 }
 
 /** Meshtastic HTTP/TCP or MeshCore TCP host (stored as `http`/`tcp` connection type). */
