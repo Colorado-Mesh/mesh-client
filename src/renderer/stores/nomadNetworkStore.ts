@@ -1,7 +1,11 @@
 import { create } from 'zustand';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { getNomadImageCache, setNomadImageCache } from '@/renderer/lib/nomad/nomadImageCache';
+import {
+  getNomadImageCache,
+  getNomadImageCacheGeneration,
+  setNomadImageCache,
+} from '@/renderer/lib/nomad/nomadImageCache';
 import {
   resolveReticulumOutboundViaFromInterfaces,
   type ReticulumVia,
@@ -335,6 +339,7 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
         ...(cached.file_name ? { file_name: cached.file_name } : {}),
       };
     }
+    const generation = getNomadImageCacheGeneration();
     const res = await fetchNomadResource<NomadFileResponse>('media', {
       hash,
       path,
@@ -342,7 +347,7 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       forcePathRefresh: opts?.forcePathRefresh,
       requestId: opts?.requestId,
     });
-    if (res.ok && res.content_base64) {
+    if (res.ok && res.content_base64 && generation === getNomadImageCacheGeneration()) {
       setNomadImageCache(
         { hash, mediaPath: path },
         {

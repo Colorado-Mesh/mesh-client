@@ -47,6 +47,12 @@ vi.mock('./NomadPageServerPanel', () => ({
   ),
 }));
 
+const addToast = vi.fn();
+vi.mock('./Toast', () => ({
+  useToast: () => ({ addToast }),
+  pushAppToast: vi.fn(),
+}));
+
 import {
   clearNomadImageCache,
   nomadImageCacheSizeForTests,
@@ -71,6 +77,7 @@ describe('NomadNetworkPanel', () => {
   beforeEach(() => {
     clearNomadPageCache();
     clearNomadImageCache();
+    addToast.mockReset();
     resetNomadPageViewerStoreForTests();
     localStorage.removeItem('mesh-client:nomadPageFitWidth');
     localStorage.removeItem('mesh-client:nomadNodeListCollapsed');
@@ -510,6 +517,7 @@ describe('NomadNetworkPanel', () => {
     await user.click(screen.getByRole('button', { name: 'nomadNetwork.clearBrowserCaches' }));
     expect(nomadPageCacheSizeForTests()).toBe(0);
     expect(nomadImageCacheSizeForTests()).toBe(0);
+    expect(addToast).toHaveBeenCalledWith('nomadNetwork.clearedBrowserCaches', 'success');
   });
 
   it('fetches distinct content for same path with different requestData', async () => {

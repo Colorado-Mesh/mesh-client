@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   clearNomadImageCache,
   getNomadImageCache,
+  getNomadImageCacheGeneration,
   MAX_NOMAD_IMAGE_CACHE_BASE64_CHARS,
   nomadImageCacheSizeForTests,
   setNomadImageCache,
@@ -66,5 +67,16 @@ describe('nomadImageCache', () => {
       getNomadImageCache({ hash: `128`.padStart(32, 'a'), mediaPath: '/media/128.webp' })
         ?.content_base64,
     ).toBe('img-128');
+  });
+
+  it('bumps generation on clear', () => {
+    const before = getNomadImageCacheGeneration();
+    setNomadImageCache(
+      { hash: 'abc1234567890abcdef1234567890ab', mediaPath: '/media/demo.webp' },
+      { content_base64: 'aGVsbG8=' },
+    );
+    clearNomadImageCache();
+    expect(getNomadImageCacheGeneration()).toBe(before + 1);
+    expect(nomadImageCacheSizeForTests()).toBe(0);
   });
 });

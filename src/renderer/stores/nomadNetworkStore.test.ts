@@ -259,6 +259,35 @@ describe('nomadNetworkStore', () => {
     expect(proxyGet).toHaveBeenCalledTimes(2);
   });
 
+  it('does not repopulate image cache when cleared during an in-flight fetch', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
+    let resolveProxy: ((value: unknown) => void) | undefined;
+    proxyGet.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveProxy = resolve;
+        }),
+    );
+
+    const pending = useNomadNetworkStore.getState().fetchNomadMedia('abc', '/media/demo.webp');
+    await vi.waitFor(() => {
+      expect(proxyGet).toHaveBeenCalledTimes(1);
+    });
+
+    clearNomadImageCache();
+    expect(nomadImageCacheSizeForTests()).toBe(0);
+
+    resolveProxy?.({
+      ok: true,
+      file_name: 'demo.webp',
+      content_base64: 'aGVsbG8=',
+    });
+    const res = await pending;
+    expect(res).toEqual({ ok: true, file_name: 'demo.webp', content_base64: 'aGVsbG8=' });
+    expect(nomadImageCacheSizeForTests()).toBe(0);
+  });
+
   it('logs failure warning with link budget when page fetch returns ok:false', async () => {
     const { spy, restore } = mockConsoleWarn();
     try {

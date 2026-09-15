@@ -19,9 +19,17 @@ export interface NomadImageCacheKeyInput {
 
 const cache = new Map<string, NomadImageCacheEntry>();
 
+/** Bumped on every clear so in-flight fetches do not repopulate after clear. */
+let cacheGeneration = 0;
+
 function cacheKey({ hash, mediaPath }: NomadImageCacheKeyInput): string {
   const cleanHash = hash.replace(/[^a-fA-F0-9]/g, '').toLowerCase();
   return `${cleanHash}:${normalizeNomadPagePath(mediaPath)}`;
+}
+
+/** Snapshot for callers that must ignore results after a clear. */
+export function getNomadImageCacheGeneration(): number {
+  return cacheGeneration;
 }
 
 export function getNomadImageCache(
@@ -51,6 +59,7 @@ export function setNomadImageCache(
 
 export function clearNomadImageCache(): void {
   cache.clear();
+  cacheGeneration += 1;
 }
 
 /** @internal test helper */
