@@ -3450,7 +3450,9 @@
     "pageProgressFailoverGeneric": "Essayer un autre itinéraire...",
     "pageProgressNoAlternate": "Aucun autre itinéraire disponible — terminer cette tentative…",
     "downloadFile": "Télécharger",
-    "dismissPreview": "Ignorer"
+    "dismissPreview": "Ignorer",
+    "clearBrowserCaches": "Effacer les caches de pages et d'images",
+    "clearedBrowserCaches": "Caches de pages et d'images Nomad effacés"
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",

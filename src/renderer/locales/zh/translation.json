@@ -3450,7 +3450,9 @@
     "pageProgressFailoverGeneric": "正在尝试其他路线…",
     "pageProgressNoAlternate": "没有其他路线可用—正在完成此尝试…",
     "downloadFile": "下载",
-    "dismissPreview": "解散"
+    "dismissPreview": "解散",
+    "clearBrowserCaches": "清除页面和图像缓存",
+    "clearedBrowserCaches": "Nomad 页面和图像缓存已清除"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",

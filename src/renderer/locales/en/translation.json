@@ -3478,6 +3478,8 @@
     "invalidUrl": "Invalid Nomad page address",
     "homePage": "Home page",
     "reloadPage": "Reload page",
+    "clearBrowserCaches": "Clear page and image caches",
+    "clearedBrowserCaches": "Nomad page and image caches cleared",
     "closeViewer": "Close page viewer",
     "pageLoading": "Loading page…",
     "pageLoadingCountdown": "Loading page… {{time}} left",

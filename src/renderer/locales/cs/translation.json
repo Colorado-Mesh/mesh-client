@@ -3490,7 +3490,9 @@
     "pageProgressNoAlternate": "Žádné jiné trasy nejsou k dispozici — dokončení tohoto pokusu...",
     "hopsAway_few": "{{count}} skoky daleko",
     "downloadFile": "Stáhnout",
-    "dismissPreview": "Zamítnout"
+    "dismissPreview": "Zamítnout",
+    "clearBrowserCaches": "Vymazat mezipaměť stránek a obrázků",
+    "clearedBrowserCaches": "Nomad stránka a mezipaměti obrázků vymazány"
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",

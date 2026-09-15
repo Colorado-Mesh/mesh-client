@@ -3450,7 +3450,9 @@
     "pageProgressFailoverGeneric": "Mencoba rute yang berbeda...",
     "pageProgressNoAlternate": "Tidak ada rute lain yang tersedia — menyelesaikan upaya ini...",
     "downloadFile": "Unduh",
-    "dismissPreview": "Tutup"
+    "dismissPreview": "Tutup",
+    "clearBrowserCaches": "Bersihkan cache halaman dan gambar",
+    "clearedBrowserCaches": "Cache halaman dan gambar Nomad dihapus"
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",

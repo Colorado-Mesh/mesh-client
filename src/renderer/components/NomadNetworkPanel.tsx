@@ -16,6 +16,7 @@ import {
   parseNomadNetworkLinkUrl,
 } from '@/renderer/lib/nomad/micronParser';
 import { downloadNomadFileFromBase64 } from '@/renderer/lib/nomad/nomadFileDownload';
+import { clearNomadImageCache } from '@/renderer/lib/nomad/nomadImageCache';
 import {
   type NomadListTab,
   nomadNetworkActiveTabCount,
@@ -33,6 +34,7 @@ import {
   writeNomadNodeSortPreference,
 } from '@/renderer/lib/nomad/nomadNodeSort';
 import { isNomadLastSeenStale } from '@/renderer/lib/nomad/nomadNodeStale';
+import { clearNomadPageCache } from '@/renderer/lib/nomad/nomadPageCache';
 import {
   humanizeNomadPageError,
   isRetryableNomadPageError,
@@ -57,6 +59,7 @@ import {
 } from '../stores/nomadPageViewerStore';
 import NomadMicronPageView from './NomadMicronPageView';
 import NomadPageServerPanel from './NomadPageServerPanel';
+import { useToast } from './Toast';
 
 interface NomadHistoryEntry {
   hash: string;
@@ -240,6 +243,7 @@ export default function NomadNetworkPanel({
   isActive?: boolean;
 }) {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const nodes = useNomadNetworkStore((s) => s.nodes);
   const lastRefreshAt = useNomadNetworkStore((s) => s.lastRefreshAt);
   const nomadApiAvailable = useNomadNetworkStore((s) => s.nomadApiAvailable);
@@ -580,6 +584,12 @@ export default function NomadNetworkPanel({
     setHistoryIndex(-1);
     setActiveTab('favourites');
   }, [closeViewerStore]);
+
+  const clearBrowserCaches = useCallback(() => {
+    clearNomadPageCache();
+    clearNomadImageCache();
+    addToast(t('nomadNetwork.clearedBrowserCaches'), 'success');
+  }, [addToast, t]);
 
   const handleNodeListToggle = useCallback(() => {
     setNodeListCollapsed((prev) => {
@@ -1044,6 +1054,15 @@ export default function NomadNetworkPanel({
                     }}
                   >
                     ↻
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
+                    aria-label={t('nomadNetwork.clearBrowserCaches')}
+                    title={t('nomadNetwork.clearBrowserCaches')}
+                    onClick={clearBrowserCaches}
+                  >
+                    ⌀
                   </button>
                   <button
                     type="button"

@@ -3528,7 +3528,9 @@
     "hopsAway_few": "На расстоянии {{count}} хопов",
     "hopsAway_many": "На расстоянии {{count}} хопов",
     "downloadFile": "Загрузить",
-    "dismissPreview": "Пропустить"
+    "dismissPreview": "Пропустить",
+    "clearBrowserCaches": "Очистить кэш страниц и изображений",
+    "clearedBrowserCaches": "Кэши страниц и изображений Nomad очищены"
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",

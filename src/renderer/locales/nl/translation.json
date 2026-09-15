@@ -3450,7 +3450,9 @@
     "pageProgressFailoverGeneric": "Probeer een andere route...",
     "pageProgressNoAlternate": "Geen andere routes beschikbaar — deze poging afronden...",
     "downloadFile": "Download",
-    "dismissPreview": "Afwijzen"
+    "dismissPreview": "Afwijzen",
+    "clearBrowserCaches": "Pagina- en afbeeldingscaches wissen",
+    "clearedBrowserCaches": "Nomad pagina- en afbeeldingscaches gewist"
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",

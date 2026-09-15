@@ -3528,7 +3528,9 @@
     "hopsAway_few": "{{count}} przeskoki dalej",
     "hopsAway_many": "{{count}} przeskoków dalej",
     "downloadFile": "Pobierz",
-    "dismissPreview": "Odrzuć"
+    "dismissPreview": "Odrzuć",
+    "clearBrowserCaches": "Wyczyść pamięć podręczną stron i obrazów",
+    "clearedBrowserCaches": "Wyczyszczono pamięć podręczną strony i obrazu Nomad"
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",

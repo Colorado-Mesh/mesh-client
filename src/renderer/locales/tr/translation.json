@@ -3450,7 +3450,9 @@
     "pageProgressFailoverGeneric": "Farklı bir rota deniyor...",
     "pageProgressNoAlternate": "Başka rota yok — bu girişim tamamlanıyor…",
     "downloadFile": "İndir",
-    "dismissPreview": "Yok say"
+    "dismissPreview": "Yok say",
+    "clearBrowserCaches": "Sayfa ve resim önbelleklerini temizle",
+    "clearedBrowserCaches": "Nomad sayfa ve resim önbellekleri temizlendi"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

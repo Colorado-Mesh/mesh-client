@@ -47,7 +47,16 @@ vi.mock('./NomadPageServerPanel', () => ({
   ),
 }));
 
-import { clearNomadPageCache } from '@/renderer/lib/nomad/nomadPageCache';
+import {
+  clearNomadImageCache,
+  nomadImageCacheSizeForTests,
+  setNomadImageCache,
+} from '@/renderer/lib/nomad/nomadImageCache';
+import {
+  clearNomadPageCache,
+  nomadPageCacheSizeForTests,
+  setNomadPageCache,
+} from '@/renderer/lib/nomad/nomadPageCache';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import { resetNomadPageViewerStoreForTests } from '../stores/nomadPageViewerStore';
@@ -61,6 +70,7 @@ async function openAnnouncesNode(user: ReturnType<typeof userEvent.setup>) {
 describe('NomadNetworkPanel', () => {
   beforeEach(() => {
     clearNomadPageCache();
+    clearNomadImageCache();
     resetNomadPageViewerStoreForTests();
     localStorage.removeItem('mesh-client:nomadPageFitWidth');
     localStorage.removeItem('mesh-client:nomadNodeListCollapsed');
@@ -460,6 +470,48 @@ describe('NomadNetworkPanel', () => {
     expect(fetchNomadPage).toHaveBeenCalledTimes(2);
   });
 
+  it('clear browser caches empties page and image LRUs', async () => {
+    const user = userEvent.setup();
+
+    setNomadPageCache({ hash: 'abc1234567890', path: '/page/index.mu' }, { content: 'cached' });
+    setNomadImageCache(
+      { hash: 'abc1234567890', mediaPath: '/media/demo.webp' },
+      { content_base64: 'aGVsbG8=' },
+    );
+    expect(nomadPageCacheSizeForTests()).toBe(1);
+    expect(nomadImageCacheSizeForTests()).toBe(1);
+
+    useNomadNetworkStore.setState({
+      fetchNomadPage: vi.fn().mockResolvedValue({
+        ok: true,
+        content: '`!Hello Nomad:`!',
+        content_type: 'micron',
+      }),
+      nodes: new Map([
+        [
+          'abc1234567890',
+          {
+            destination_hash: 'abc1234567890',
+            display_name: 'Test Node',
+            favorited: false,
+          },
+        ],
+      ]),
+    });
+
+    render(<NomadNetworkPanel />);
+    await openAnnouncesNode(user);
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'nomadNetwork.clearBrowserCaches' }),
+      ).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.clearBrowserCaches' }));
+    expect(nomadPageCacheSizeForTests()).toBe(0);
+    expect(nomadImageCacheSizeForTests()).toBe(0);
+  });
+
   it('fetches distinct content for same path with different requestData', async () => {
     const user = userEvent.setup();
     const fetchNomadPage = vi
@@ -829,6 +881,10 @@ describe('NomadNetworkPanel', () => {
     expect(screen.getByRole('button', { name: 'nomadNetwork.reloadPage' })).toHaveAttribute(
       'title',
       'nomadNetwork.reloadPage',
+    );
+    expect(screen.getByRole('button', { name: 'nomadNetwork.clearBrowserCaches' })).toHaveAttribute(
+      'title',
+      'nomadNetwork.clearBrowserCaches',
     );
     expect(screen.getByRole('button', { name: 'nomadNetwork.sendMessageAria' })).toHaveAttribute(
       'title',
