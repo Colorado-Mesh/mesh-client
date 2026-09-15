@@ -6,7 +6,11 @@
 import { EventEmitter } from 'events';
 import WebSocket from 'ws';
 
-import { sanitizeLogMessage } from './log-service';
+import {
+  sanitizeForConsoleEcho,
+  sanitizeForLogSink,
+  sanitizeLogMessage,
+} from './sanitize-log-message';
 
 export type GattSessionProfile = 'meshtastic' | 'meshcore';
 
@@ -127,9 +131,13 @@ export class GattSidecarProxy extends EventEmitter {
   }
 
   private emitIssue(code: string, message: string, sessionId?: GattSessionProfile): void {
-    const safe = sanitizeLogMessage(message);
-    console.error(`[GATT:${sessionId ?? 'all'}] ${code}: ${safe}`); // log-filter-ok session-scoped: LogPanel matches [GATT:meshtastic]/[GATT:all]/[GATT:meshcore] explicitly
-    this.emit('issue', { sessionId, code, message: safe });
+    // Sidecar WS/HTTP `code`/`message` are untrusted; use CodeQL-recognized barriers.
+    const safeCode = sanitizeForLogSink(code);
+    const safeMessage = sanitizeForLogSink(message);
+    console.error(
+      sanitizeForConsoleEcho(`[GATT:${sessionId ?? 'all'}] ${safeCode}: ${safeMessage}`),
+    ); // log-filter-ok session-scoped: LogPanel matches [GATT:meshtastic]/[GATT:all]/[GATT:meshcore] explicitly
+    this.emit('issue', { sessionId, code: safeCode, message: safeMessage });
   }
 
   async startScan(sessionId: GattSessionProfile): Promise<GattStartScanResult> {
