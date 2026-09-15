@@ -65,14 +65,33 @@ describe('packaging sidecar workflow gates', () => {
     expect(sidecars).not.toMatch(/continue-on-error:/);
   });
 
-  it('downloads only this run’s sidecars and requires both staged architectures', () => {
-    expect(download).toContain('pattern: packaging-sidecar-${{ inputs.platform }}-*');
+  it('downloads only this run’s staged Reticulum binaries and requires both architectures', () => {
+    expect(download).toContain('pattern: ci-reticulum-staged-${{ inputs.platform }}-*');
     expect(download).toContain('merge-multiple: true');
     expect(download).not.toMatch(/run-id:|github-token:|repository:|continue-on-error:/);
     expect(download).toContain(
       'node scripts/verify-reticulum-sidecar-staged.mjs --platform "$SIDECAR_PLATFORM"',
     );
     expect(sidecars).toContain('if-no-files-found: error');
+    expect(sidecars).toContain('name: Stage Reticulum ${{ matrix.platform }} ${{ matrix.arch }}');
+    expect(sidecars).toContain(
+      'name: ci-reticulum-staged-${{ matrix.platform }}-${{ matrix.arch }}',
+    );
+  });
+
+  it('prefixes Build Binaries installer artifacts with test- and keeps Release unprefixed', () => {
+    const build = read('.github/workflows/build.yaml');
+    const release = read('.github/workflows/release.yaml');
+    for (const os of ['macos', 'linux', 'windows']) {
+      expect(build).toContain(`name: test-mesh-client-${os}-\${{ github.sha }}`);
+      expect(build).toContain(`artifact: test-mesh-client-${os}-\${{ github.sha }}`);
+      expect(release).toContain(`name: mesh-client-${os}-\${{ github.sha }}`);
+      expect(release).toContain(`artifact: mesh-client-${os}-\${{ github.sha }}`);
+      expect(release).not.toContain(`test-mesh-client-${os}-`);
+    }
+    expect(build).toContain('name: Stage Reticulum');
+    expect(release).toContain('name: Stage Reticulum');
+    expect(build).toContain('name: Package ${{ matrix.sidecar_platform }}');
   });
 });
 

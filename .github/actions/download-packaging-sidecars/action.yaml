@@ -9,7 +9,7 @@ runs:
   steps:
     - uses: actions/download-artifact@v7
       with:
-        pattern: packaging-sidecar-${{ inputs.platform }}-*
+        pattern: ci-reticulum-staged-${{ inputs.platform }}-*
         path: .sidecar-artifacts
         merge-multiple: true
     # tar preserves Unix execute permissions that artifact uploads otherwise discard.
