@@ -947,7 +947,6 @@
     "stagePairingFailed": "Penyandingan gagal. Harap pasangkan kembali perangkat Anda.",
     "stageCheckingPairing": "Memeriksa penyandingan Bluetooth…",
     "stageEnterPinLinux": "Masukkan PIN yang ditampilkan pada perangkat Anda (pasangkan dengan Linux terlebih dahulu)",
-    "stageReconnecting": "Menyambungkan kembali ke perangkat Bluetooth terakhir…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",

@@ -966,7 +966,6 @@
     "stagePairingFailed": "Párování se nezdařilo. Prosím znovu spárujte své zařízení.",
     "stageCheckingPairing": "Kontrola párování Bluetooth…",
     "stageEnterPinLinux": "Zadejte PIN zobrazený na vašem zařízení (nejprve spárujte s Linuxem)",
-    "stageReconnecting": "Opětovné připojování k poslednímu zařízení Bluetooth…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} – {{hint}}",

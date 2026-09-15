@@ -4715,6 +4715,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(storage_dir);
     }
 
+    #[cfg(feature = "rns-stack")]
     #[test]
     fn validated_known_identity_key_rejects_mismatched_dest() {
         use rns_identity::identity::Identity;

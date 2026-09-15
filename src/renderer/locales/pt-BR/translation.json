@@ -947,7 +947,6 @@
     "stagePairingFailed": "O emparelhamento falhou. Por favor, emparelhe novamente o seu dispositivo.",
     "stageCheckingPairing": "Verificando o emparelhamento Bluetooth…",
     "stageEnterPinLinux": "Digite o PIN mostrado no seu dispositivo (emparelhe primeiro com o Linux)",
-    "stageReconnecting": "Reconectando ao último dispositivo Bluetooth…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",

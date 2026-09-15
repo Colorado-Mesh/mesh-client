@@ -985,7 +985,6 @@
     "stagePairingFailed": "Не вдалося створити пару. Підключіть пристрій повторно.",
     "stageCheckingPairing": "Перевірка з’єднання Bluetooth…",
     "stageEnterPinLinux": "Введіть PIN-код, який відображається на вашому пристрої (спочатку з’єднайте з Linux)",
-    "stageReconnecting": "Повторне підключення до останнього пристрою Bluetooth…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",

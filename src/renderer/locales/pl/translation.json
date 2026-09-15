@@ -983,7 +983,6 @@
     "stagePairingFailed": "Parowanie nie powiodło się. Proszę ponownie sparować urządzenie.",
     "stageCheckingPairing": "Sprawdzam parowanie Bluetooth…",
     "stageEnterPinLinux": "Wprowadź PIN widoczny na Twoim urządzeniu (najpierw sparuj z Linuksem)",
-    "stageReconnecting": "Ponowne łączenie z ostatnim urządzeniem Bluetooth…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",

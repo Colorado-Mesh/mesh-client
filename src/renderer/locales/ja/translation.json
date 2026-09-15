@@ -947,7 +947,6 @@
     "stagePairingFailed": "ペアリングに失敗しました。デバイスを再度ペアリングしてください。",
     "stageCheckingPairing": "Bluetooth のペアリングを確認しています…",
     "stageEnterPinLinux": "デバイスに表示されている PIN を入力します (最初に Linux とペアリングします)",
-    "stageReconnecting": "最後の Bluetooth デバイスに再接続しています…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",

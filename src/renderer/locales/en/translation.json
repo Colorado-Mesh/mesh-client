@@ -1476,7 +1476,6 @@
     "stagePairingFailed": "Pairing failed. Please re-pair your device.",
     "stageCheckingPairing": "Checking Bluetooth pairing…",
     "stageEnterPinLinux": "Enter the PIN shown on your device (pair with Linux first)",
-    "stageReconnecting": "Reconnecting to last Bluetooth device…",
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "Connect",
     "pinPlaceholder": "PIN",

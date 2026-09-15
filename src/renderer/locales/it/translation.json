@@ -945,7 +945,6 @@
     "stagePairingFailed": "Associazione non riuscita. Riassocia il tuo dispositivo.",
     "stageCheckingPairing": "Verifica dell'accoppiamento Bluetooth in corso...",
     "stageEnterPinLinux": "Inserisci il PIN mostrato sul tuo dispositivo (associalo prima a Linux)",
-    "stageReconnecting": "Riconnessione all'ultimo dispositivo Bluetooth…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",

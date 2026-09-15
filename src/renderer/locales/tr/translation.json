@@ -947,7 +947,6 @@
     "stagePairingFailed": "Eşleştirme başarısız oldu. Lütfen cihazınızı yeniden eşleştirin.",
     "stageCheckingPairing": "Bluetooth eşleşmesi kontrol ediliyor…",
     "stageEnterPinLinux": "Cihazınızda gösterilen PIN'i girin (önce Linux ile eşleştirin)",
-    "stageReconnecting": "Son Bluetooth cihazına yeniden bağlanılıyor…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",

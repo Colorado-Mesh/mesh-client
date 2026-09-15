@@ -947,7 +947,6 @@
     "stagePairingFailed": "페어링에 실패했습니다. 장치를 다시 페어링하십시오.",
     "stageCheckingPairing": "블루투스 페어링 확인 중…",
     "stageEnterPinLinux": "장치에 표시된 PIN을 입력하세요(먼저 Linux와 페어링).",
-    "stageReconnecting": "마지막 블루투스 기기에 다시 연결하는 중…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",

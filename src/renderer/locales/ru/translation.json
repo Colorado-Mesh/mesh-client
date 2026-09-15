@@ -985,7 +985,6 @@
     "stagePairingFailed": "Сопряжение не удалось. Пожалуйста, повторно выполните сопряжение вашего устройства.",
     "stageCheckingPairing": "Проверка сопряжения Bluetooth…",
     "stageEnterPinLinux": "Введите PIN-код, указанный на вашем устройстве (сначала выполните сопряжение с Linux).",
-    "stageReconnecting": "Повторное подключение к последнему устройству Bluetooth…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",

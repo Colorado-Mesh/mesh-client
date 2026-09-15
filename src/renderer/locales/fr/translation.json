@@ -946,7 +946,6 @@
     "stagePairingFailed": "Le couplage a échoué. Veuillez réassocier votre appareil.",
     "stageCheckingPairing": "Vérification du couplage Bluetooth…",
     "stageEnterPinLinux": "Entrez le code PIN affiché sur votre appareil (appairez-le d'abord avec Linux)",
-    "stageReconnecting": "Reconnexion au dernier appareil Bluetooth…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",

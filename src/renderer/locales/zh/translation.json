@@ -947,7 +947,6 @@
     "stagePairingFailed": "配对失败。请重新配对您的设备。",
     "stageCheckingPairing": "正在检查蓝牙配对...",
     "stageEnterPinLinux": "输入设备上显示的 PIN（首先与 Linux 配对）",
-    "stageReconnecting": "正在重新连接到最后一个蓝牙设备...",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",

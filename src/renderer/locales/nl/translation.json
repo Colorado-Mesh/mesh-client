@@ -946,7 +946,6 @@
     "stagePairingFailed": "Koppelen is mislukt. Koppel uw apparaat opnieuw.",
     "stageCheckingPairing": "Bluetooth-koppeling controleren…",
     "stageEnterPinLinux": "Voer de pincode in die op uw apparaat wordt weergegeven (eerst koppelen met Linux)",
-    "stageReconnecting": "Opnieuw verbinding maken met het laatste Bluetooth-apparaat…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
