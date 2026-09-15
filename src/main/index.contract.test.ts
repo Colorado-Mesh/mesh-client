@@ -49,6 +49,13 @@ describe('GATT BLE disconnect handling (source contract)', () => {
     expect(INDEX_SOURCE).toContain('gattSidecarProxy.startScan');
     expect(INDEX_SOURCE).toMatch(/gatt:start-scan[\s\S]{0,400}return gattSidecarProxy\.startScan/);
   });
+
+  it('invalidates GATT proxy port when shared sidecar process exits', () => {
+    expect(INDEX_SOURCE).toContain('gattSidecarProxy.invalidateAfterSidecarExit()');
+    expect(INDEX_SOURCE).toMatch(
+      /mgr\.on\('status'[\s\S]{0,200}!status\.running[\s\S]{0,120}invalidateAfterSidecarExit/,
+    );
+  });
 });
 
 describe('MeshCore packet log IPC (source contract)', () => {

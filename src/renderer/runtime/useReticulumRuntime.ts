@@ -2002,19 +2002,21 @@ export function useReticulumRuntime(): ProtocolRuntime {
       }
     }
     connectInFlightRef.current = true;
-    console.warn('[useReticulumRuntime] restarting stack to reload interface config');
+    console.warn('[useReticulumRuntime] soft-restarting live RNS (HTTP + LoRa GATT preserved)');
     const priorSuppress = suppressReconnectRef.current;
     suppressReconnectRef.current = true;
     const flight = (async () => {
       setState((s) => ({ ...s, status: 'connecting', connectionType: null }));
       syncConnectionStore({ status: 'connecting', connectionType: null });
-      unsubEventRef.current?.();
-      unsubEventRef.current = null;
-      unsubVoiceAudioRef.current?.();
-      unsubVoiceAudioRef.current = null;
-      await window.electronAPI.reticulum.stop();
-      await window.electronAPI.reticulum.start({ reuseIfRunning: false });
-      subscribeSidecarEventBridges();
+      // Soft restart keeps the sidecar process (and LoRa GATT sessions) alive —
+      // do not stop()/start() which SIGTERM the binary.
+      const soft = (await window.electronAPI.reticulum.proxyPost('/api/v1/stack/restart', {})) as {
+        ok?: boolean;
+        error?: string;
+      };
+      if (soft?.ok === false) {
+        throw new Error(typeof soft.error === 'string' ? soft.error : 'stack soft restart failed');
+      }
       const lxmfHash = await refreshIdentityFromSidecar();
       const connectedNodeId = lxmfHash ? reticulumHashToNodeId(lxmfHash) : 0;
       await refreshContactsFromSidecar();
@@ -2043,7 +2045,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
       await flight;
     } catch (e) {
       console.error('[useReticulumRuntime] stack restart failed ' + errLikeToLogString(e));
-      tearDownFromSidecarStop();
+      // Soft restart failed with process still up — do not tearDownFromSidecarStop
+      // (that assumes a hard stop). Leave disconnected for a manual Start.
+      setState((s) => ({ ...s, status: 'disconnected', connectionType: null }));
+      syncConnectionStore({ status: 'disconnected', connectionType: null });
       throw e instanceof Error ? e : new Error(String(e));
     } finally {
       suppressReconnectRef.current = priorSuppress;
@@ -2051,7 +2056,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
       connectInFlightDoneRef.current = null;
     }
   }, [
-    subscribeSidecarEventBridges,
     refreshContactsFromSidecar,
     refreshIdentityFromSidecar,
     refreshLocalInterfacesFromSidecar,
@@ -2061,7 +2065,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
     hydrateRawPackets,
     catchUpRecentInboundLxmf,
     identityId,
-    tearDownFromSidecarStop,
     scheduleLocalInterfaceStatusBurst,
   ]);
 

@@ -74,6 +74,7 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
       pid: 1,
     });
     vi.mocked(window.electronAPI.reticulum.stop).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.reticulum.proxyPost).mockResolvedValue({ ok: true });
     vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
       running: true,
       port: 19437,

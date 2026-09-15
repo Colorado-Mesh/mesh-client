@@ -194,4 +194,31 @@ describe('GattSidecarProxy', () => {
     await expect(proxy.isConnected('meshcore')).resolves.toBe(false);
     expect(disconnected).toHaveBeenCalledWith({ sessionId: 'meshcore' });
   });
+
+  it('invalidateAfterSidecarExit clears port and emits disconnected for open sessions', async () => {
+    fetchMock.mockResolvedValue({
+      status: 200,
+      json: () => Promise.resolve({ ok: true, sessionId: 'sidecar-sess-x', rssi: -50 }),
+    });
+    await proxy.connect('meshtastic', 'AA:BB:CC:DD:EE:01');
+    const disconnected = vi.fn();
+    proxy.on('disconnected', disconnected);
+
+    proxy.invalidateAfterSidecarExit();
+
+    expect(disconnected).toHaveBeenCalledWith({ sessionId: 'meshtastic' });
+    await expect(proxy.isConnected('meshtastic')).resolves.toBe(false);
+
+    // Next ensure must re-run (port was cleared) — mock ensure returns a new port.
+    proxy.setEnsureSidecar(() => Promise.resolve(4242));
+    fetchMock.mockResolvedValue({
+      status: 200,
+      json: () => Promise.resolve({ ok: true, sessionId: 'sidecar-sess-y' }),
+    });
+    await proxy.connect('meshtastic', 'AA:BB:CC:DD:EE:02');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://127.0.0.1:4242/api/v1/gatt/sessions',
+      expect.anything(),
+    );
+  });
 });

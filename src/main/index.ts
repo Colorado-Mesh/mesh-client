@@ -302,6 +302,19 @@ gattSidecarProxy.setEnsureSidecar(async () => {
 });
 bleCoexistenceCoordinator.setGattProxy(gattSidecarProxy);
 
+// When the shared sidecar process exits (Stop / Quit / crash), clear GATT's
+// cached port so LoRa reconnect does not hammer a dead HTTP port.
+{
+  const mgr = ensureReticulumSidecarManager();
+  mgr.on('status', (status: { running: boolean; port: number }) => {
+    if (!status.running) {
+      gattSidecarProxy.invalidateAfterSidecarExit();
+    } else if (status.port > 0) {
+      gattSidecarProxy.setPort(status.port);
+    }
+  });
+}
+
 function attachTakForwarders(manager: TakServerManager): void {
   manager.on('status', (status) => {
     if (mainWindow) mainWindow.webContents.send('tak:status', status);

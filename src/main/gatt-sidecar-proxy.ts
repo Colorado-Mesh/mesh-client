@@ -86,6 +86,19 @@ export class GattSidecarProxy extends EventEmitter {
     this.port = port;
   }
 
+  /**
+   * Sidecar process died — drop cached port and local sessions so the next GATT
+   * op re-runs ensureForBle() instead of fetch-failing against a dead port.
+   */
+  invalidateAfterSidecarExit(): void {
+    this.port = 0;
+    const ids = [...this.sessions.keys()];
+    for (const sessionId of ids) {
+      this.clearLocalSession(sessionId);
+      this.emit('disconnected', { sessionId });
+    }
+  }
+
   private baseUrl(port: number): string {
     return `http://127.0.0.1:${port}`;
   }

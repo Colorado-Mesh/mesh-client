@@ -394,6 +394,49 @@ describe('ReticulumSidecarManager', () => {
     );
   });
 
+  it('soft stack restart via proxyPost does not SIGTERM the sidecar process', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    const proc = mockSidecarProc();
+    spawnMock.mockReturnValue(proc);
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => 'application/json' },
+      json: () =>
+        Promise.resolve({
+          status: 'ok',
+          version: '0.1.0',
+          rns_ready: false,
+          lxmf_ready: false,
+          ok: true,
+        }),
+      text: () => Promise.resolve(JSON.stringify({ ok: true })),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const manager = new ReticulumSidecarManager();
+    await manager.start();
+    fetchMock.mockClear();
+    proc.kill.mockClear();
+    fetchMock.mockResolvedValue({
+      ok: true,
+      headers: { get: () => 'application/json' },
+      json: () => Promise.resolve({ ok: true }),
+      text: () => Promise.resolve(JSON.stringify({ ok: true })),
+    });
+
+    await manager.proxyPost('/api/v1/stack/restart', {});
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/v1\/stack\/restart$/),
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(proc.kill).not.toHaveBeenCalled();
+
+    existsSpy.mockRestore();
+    mkdirSpy.mockRestore();
+  });
+
   it('proxyDelete issues DELETE to sidecar', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
