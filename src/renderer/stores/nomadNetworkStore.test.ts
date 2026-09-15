@@ -28,6 +28,7 @@ vi.stubGlobal('window', {
 import {
   clearNomadImageCache,
   nomadImageCacheSizeForTests,
+  setNomadImageCache,
 } from '@/renderer/lib/nomad/nomadImageCache';
 
 import { resetNomadEgressCacheForTests, useNomadNetworkStore } from './nomadNetworkStore';
@@ -237,6 +238,30 @@ describe('nomadNetworkStore', () => {
     const second = await useNomadNetworkStore.getState().fetchNomadMedia('abc', '/media/demo.webp');
     expect(second).toEqual({ ok: true, file_name: 'demo.webp', content_base64: 'aGVsbG8=' });
     expect(proxyGet).toHaveBeenCalledTimes(1);
+  });
+
+  it('fetchNomadMedia bypasses image cache when forcePathRefresh is set', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
+    proxyGet.mockResolvedValue({
+      ok: true,
+      file_name: 'fresh.webp',
+      content_base64: 'ZnJlc2g=',
+    });
+
+    setNomadImageCache(
+      { hash: 'abc', mediaPath: '/media/demo.webp' },
+      { content_base64: 'aGVsbG8=', file_name: 'demo.webp' },
+    );
+
+    const res = await useNomadNetworkStore
+      .getState()
+      .fetchNomadMedia('abc', '/media/demo.webp', { forcePathRefresh: true });
+
+    expect(proxyGet).toHaveBeenCalledWith(
+      '/api/v1/nomadnetwork/media/abc?path=%2Fmedia%2Fdemo.webp&force_path_refresh=true',
+    );
+    expect(res).toEqual({ ok: true, file_name: 'fresh.webp', content_base64: 'ZnJlc2g=' });
   });
 
   it('fetchNomadMedia hits the network again after clearNomadImageCache', async () => {

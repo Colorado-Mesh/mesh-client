@@ -331,7 +331,9 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
     }),
 
   fetchNomadMedia: async (hash, path, opts) => {
-    const cached = getNomadImageCache({ hash, mediaPath: path });
+    const cached = opts?.forcePathRefresh
+      ? undefined
+      : getNomadImageCache({ hash, mediaPath: path });
     if (cached) {
       return {
         ok: true,
