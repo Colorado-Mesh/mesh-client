@@ -99,8 +99,8 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 
 ### BLE and serial
 
-- Meshtastic / MeshCore BLE: sidecar GATT (`gatt-sidecar-proxy.ts`, `transportSidecarGatt.ts`, `gatt:*` IPC) on all platforms. Reticulum BLE RNode/Peer shares the same sidecar (`btleplug`). Coexistence: `ble-coexistence-coordinator.ts` + GATT MAC registry (different MACs only; scan mutex). Serial: `lib/connection.ts`, `serialPortSignature.ts`. Connection panel errors: `lib/connectionPanelErrorHumanize.ts` (`connectionPanel.errors.ble.*`). Reconnect watchdog: `runtime/useMeshtasticRuntime.ts`.
-- **ATT MTU:** Sidecar session WS reports negotiated MTU; writes use `bleAttWriteLimit.ts` (spec min 23).
+- Meshtastic / MeshCore BLE: sidecar GATT (`gatt-sidecar-proxy.ts`, `transportSidecarGatt.ts`, `gatt:*` IPC) on all platforms. Reticulum BLE RNode/Peer runs in the same process with separate BLE centrals managed by rsReticulum. Main-process `ble-coexistence-coordinator.ts` tracks pending/live LoRa connections and configured Reticulum addresses, and serializes app-requested scans and LoRa connection setup. Autonomous rsReticulum discovery/reconnect remains outside that lease. Serial: `lib/connection.ts`, `serialPortSignature.ts`. Connection panel errors: `lib/connectionPanelErrorHumanize.ts` (`connectionPanel.errors.ble.*`). Reconnect watchdog: `runtime/useMeshtasticRuntime.ts`.
+- **GATT writes:** Each Meshtastic ToRadio protobuf or MeshCore command is one characteristic value, capped at 512 bytes. Prefer writes with response when supported; let the OS handle ATT long writes. btleplug 0.11.8 does not expose negotiated MTU, so the sidecar does not infer a 20-byte application frame limit.
 
 ### MQTT
 

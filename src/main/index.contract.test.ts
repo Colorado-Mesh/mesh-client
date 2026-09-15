@@ -21,10 +21,9 @@ describe('IPC payload size limits (source contract)', () => {
 });
 
 describe('GATT BLE disconnect handling (source contract)', () => {
-  it('ignores expected disconnect races in gatt:to-radio', () => {
+  it('routes gatt:to-radio through the tested disconnect-race handler', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('gatt:to-radio'");
-    expect(INDEX_SOURCE).toMatch(/gatt:to-radio: disconnected during write, ignoring session=/);
-    expect(INDEX_SOURCE).toMatch(/lower\.includes\('fetch failed'\)/);
+    expect(INDEX_SOURCE).toContain('await writeGattToRadio(gattSidecarProxy, sessionId, buf)');
   });
 
   it('latches isQuitting before async GATT teardown on before-quit', () => {
@@ -47,13 +46,18 @@ describe('GATT BLE disconnect handling (source contract)', () => {
 
   it('returns scan_busy from gattSidecarProxy.startScan without throwing', () => {
     expect(INDEX_SOURCE).toContain('gattSidecarProxy.startScan');
-    expect(INDEX_SOURCE).toMatch(/gatt:start-scan[\s\S]{0,400}return gattSidecarProxy\.startScan/);
+    const start = INDEX_SOURCE.indexOf("ipcMain.handle('gatt:start-scan'");
+    const end = INDEX_SOURCE.indexOf("ipcMain.handle('gatt:stop-scan'");
+    const handler = INDEX_SOURCE.slice(start, end);
+    expect(handler).toContain("bleCoexistenceCoordinator.withScan('gatt'");
+    expect(handler).toContain('gattSidecarProxy.startScan(sessionId)');
+    expect(handler).toContain("code: 'scan_busy'");
   });
 
   it('invalidates GATT proxy port when shared sidecar process exits', () => {
     expect(INDEX_SOURCE).toContain('gattSidecarProxy.invalidateAfterSidecarExit()');
     expect(INDEX_SOURCE).toMatch(
-      /mgr\.on\('status'[\s\S]{0,200}!status\.running[\s\S]{0,120}invalidateAfterSidecarExit/,
+      /mgr\.on\('status'[\s\S]{0,200}!\(status\.processRunning \?\? status\.running\)[\s\S]{0,120}invalidateAfterSidecarExit/,
     );
   });
 });

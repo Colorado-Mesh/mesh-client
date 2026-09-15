@@ -6,7 +6,10 @@ import { MS_PER_SECOND } from './timeConstants';
 export const RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS = 5 * 60 * MS_PER_SECOND;
 
 export interface ReticulumSidecarStatus {
+  /** Reticulum has been started; a BLE-only sidecar still reports false. */
   running: boolean;
+  /** Shared process liveness when it is running only for LoRa BLE. */
+  processRunning?: boolean;
   port: number;
   pid: number | null;
   lastError?: string;

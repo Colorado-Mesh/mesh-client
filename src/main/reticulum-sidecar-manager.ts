@@ -174,6 +174,8 @@ export class ReticulumSidecarManager extends EventEmitter {
   /** True after the first successful WS open for this sidecar process (reconnects set reconnect=true). */
   private wsEverConnected = false;
   private startPromise: Promise<ReticulumSidecarStatus> | null = null;
+  private bleOnly = false;
+  private startLiveAbort: AbortController | null = null;
   /** In-flight stop — start must await so a fresh spawn does not race SIGTERM exit. */
   private stopPromise: Promise<void> | null = null;
   /**
@@ -182,8 +184,7 @@ export class ReticulumSidecarManager extends EventEmitter {
    */
   private startAbortRequested = false;
   /**
-   * Bumped on stop and each new start so a late Noble yield from an aborted attempt
-   * cannot observe a cleared startAbortRequested from a newer start.
+   * Bumped on stop so late completions cannot revive an aborted start.
    */
   private startAttemptGeneration = 0;
   /** Latched by stop({ forQuit: true }) so an in-flight graceful stop escalates to quit speed. */
@@ -214,6 +215,7 @@ export class ReticulumSidecarManager extends EventEmitter {
   getStatus(): ReticulumSidecarStatus {
     return {
       ...this._status,
+      ...(this.bleOnly ? { running: false, processRunning: this._status.running } : {}),
       autoBeaconAlert: this.autoBeaconTracker.getAlert(),
       interfaceIssueAlert: this.interfaceIssueTracker.getAlert(),
       stackFastFlapSuspected: this.stackSessionTracker.isFastFlapSuspected(),
@@ -269,6 +271,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.stopWatchdog();
     this.stackSessionTracker.recordStop();
     this.clearSidecarTrackers();
+    this.bleOnly = false;
     this._status = { running: false, port: 0, pid: null, healthy: true, unhealthySince: undefined };
     this.emit('status', this.getStatus());
   }
@@ -278,6 +281,13 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   async start(opts: ReticulumSidecarStartOptions = {}): Promise<ReticulumSidecarStatus> {
+    return this.startProcess(opts, false);
+  }
+
+  private async startProcess(
+    opts: ReticulumSidecarStartOptions,
+    bleOnly: boolean,
+  ): Promise<ReticulumSidecarStatus> {
     // After Cancel/stop aborts an in-flight start, do not rejoin that doomed promise —
     // wait for it to clear, then start fresh.
     if (this.startPromise && this.startAbortRequested) {
@@ -288,37 +298,52 @@ export class ReticulumSidecarManager extends EventEmitter {
       }
     }
     if (this.startPromise) {
-      return this.startPromise;
+      const generation = this.startAttemptGeneration;
+      const status = await this.startPromise;
+      if (!bleOnly && this.bleOnly) {
+        this.throwIfStartAborted(generation);
+        return this.startProcess({ reuseIfRunning: true }, false);
+      }
+      return status;
     }
     this.startAbortRequested = false;
     this.quitFastRequested = false;
-    this.startAttemptGeneration += 1;
-    this.startPromise = this.startOnce(opts).finally(() => {
+    this.startPromise = this.startOnce(opts, bleOnly).finally(() => {
       this.startPromise = null;
     });
     return this.startPromise;
   }
 
   /** Abort in-flight start at await checkpoints (cargo / pre-spawn). */
-  private throwIfStartAborted(): void {
-    if (!this.startAbortRequested) return;
+  private throwIfStartAborted(generation = this.startAttemptGeneration): void {
+    if (!this.startAbortRequested && generation === this.startAttemptGeneration) return;
     throw new Error('RETICULUM_SIDECAR_START_ABORTED: stop requested during start');
   }
 
   private async startOnce(
     opts: ReticulumSidecarStartOptions = {},
+    bleOnly = false,
   ): Promise<ReticulumSidecarStatus> {
+    const generation = this.startAttemptGeneration;
     if (this.stopPromise) {
       await this.stopPromise;
     }
-    this.throwIfStartAborted();
-    if (opts.reuseIfRunning && this._status.running && this.proc) {
+    this.throwIfStartAborted(generation);
+    if ((opts.reuseIfRunning || bleOnly || this.bleOnly) && this._status.running && this.proc) {
+      let healthy = false;
       try {
         await pollSidecarHealth(this._status.port);
-        return this.getStatus();
+        healthy = true;
       } catch {
         // catch-no-log-ok: reuseIfRunning health failed — stop stale process and start fresh
         await this.stopProc();
+      }
+      this.throwIfStartAborted(generation);
+      if (healthy) {
+        if (!bleOnly) {
+          await this.startLiveStack(generation);
+        }
+        return this.getStatus();
       }
     }
 
@@ -343,7 +368,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     const binary = this.resolveBinaryPath();
     try {
       await ensureDevSidecarBinary(binary);
-      this.throwIfStartAborted();
+      this.throwIfStartAborted(generation);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this._status = { running: false, port: 0, pid: null, lastError: msg };
@@ -357,7 +382,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       throw new Error(msg);
     }
 
-    this.throwIfStartAborted();
+    this.throwIfStartAborted(generation);
     const args = [
       '--headless',
       '--host',
@@ -369,12 +394,14 @@ export class ReticulumSidecarManager extends EventEmitter {
       '--storage-dir',
       storageDir,
     ];
+    if (bleOnly) args.push('--ble-only');
 
     const proc = spawn(binary, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       env: sidecarChildEnv(),
     });
     this.proc = proc;
+    this.bleOnly = bleOnly;
 
     let stdoutBuffer = '';
     const processStdoutLine = (line: string): void => {
@@ -419,6 +446,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       // across the next spawn.
       this.stopWatchdog();
       this.proc = null;
+      this.bleOnly = false;
       this.stackSessionTracker.recordStop();
       this.clearSidecarTrackers();
       this._status = {
@@ -443,7 +471,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     // poll): kill via stopProc"), so a health response landing just before the kill would
     // otherwise report a dead PID as running, connect a WS to a dead port, and arm a
     // watchdog for a process that is already gone.
-    this.throwIfStartAborted();
+    this.throwIfStartAborted(generation);
     if (this.proc !== proc) {
       throw new Error('RETICULUM_SIDECAR_START_ABORTED: process replaced during start');
     }
@@ -455,8 +483,10 @@ export class ReticulumSidecarManager extends EventEmitter {
       healthy: true,
       unhealthySince: undefined,
     };
-    this.stackSessionTracker.recordStart();
-    this.connectWs(port);
+    if (!bleOnly) {
+      this.stackSessionTracker.recordStart();
+      this.connectWs(port);
+    }
     this.startWatchdog();
     this.emit('status', this.getStatus());
     return this.getStatus();
@@ -468,11 +498,45 @@ export class ReticulumSidecarManager extends EventEmitter {
    * Returns the localhost HTTP port.
    */
   async ensureForBle(): Promise<number> {
-    const status = await this.start({ reuseIfRunning: true });
-    if (!status.running || !status.port) {
+    const status = await this.startProcess({ reuseIfRunning: true }, true);
+    if (!this._status.running || !this.proc || !status.port) {
       throw new Error(status.lastError ?? 'reticulum sidecar failed to start for BLE');
     }
     return status.port;
+  }
+
+  private async startLiveStack(generation: number): Promise<void> {
+    const proc = this.proc;
+    const port = this._status.port;
+    const wasBleOnly = this.bleOnly;
+    const abort = new AbortController();
+    this.startLiveAbort = abort;
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/api/v1/stack/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+        signal: AbortSignal.any([abort.signal, AbortSignal.timeout(HEALTH_POLL_TIMEOUT_MS)]),
+      });
+      const text = await readResponseTextUpTo(res, RETICULUM_PROXY_MAX_RESPONSE_BYTES);
+      const body = text ? (JSON.parse(text) as { ok?: boolean; error?: string }) : {};
+      this.throwIfStartAborted(generation);
+      if (this.proc !== proc) {
+        throw new Error('RETICULUM_SIDECAR_START_ABORTED: process replaced during start');
+      }
+      if (!res.ok || body.ok !== true) {
+        throw new Error(body.error || `Reticulum stack start failed: ${res.status}`);
+      }
+      this.bleOnly = false;
+      this._status = { ...this._status, lastError: undefined };
+      if (wasBleOnly) {
+        this.stackSessionTracker.recordStart();
+        this.connectWs(port);
+      }
+      this.emit('status', this.getStatus());
+    } finally {
+      if (this.startLiveAbort === abort) this.startLiveAbort = null;
+    }
   }
 
   private startWatchdog(): void {
@@ -493,8 +557,9 @@ export class ReticulumSidecarManager extends EventEmitter {
       restartFn: async () => {
         // Hung-only: process still alive but HTTP dead. Renderer owns exit/crash reconnect.
         // Use stop() so stopPromise stays set and concurrent start() awaits the guard.
+        const bleOnly = this.bleOnly;
         await this.stop();
-        await this.start();
+        await this.startProcess({}, bleOnly);
       },
     });
   }
@@ -515,6 +580,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     // Abort in-flight start at checkpoints (cargo) so Cancel does not wait on build.
     this.startAbortRequested = true;
     this.startAttemptGeneration += 1;
+    this.startLiveAbort?.abort();
     if (this.startPromise && !this.proc) {
       // Pre-spawn: do not await cargo — startOnce throws at next checkpoint.
       void this.startPromise.catch(() => {
@@ -624,7 +690,7 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   async proxyGet(apiPath: string): Promise<unknown> {
-    const status = this.getStatus();
+    const status = this._status;
     if (!status.running || status.port <= 0) {
       throw new Error('Reticulum sidecar is not running');
     }
@@ -652,7 +718,7 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   async proxyPost(apiPath: string, body: unknown): Promise<unknown> {
-    const status = this.getStatus();
+    const status = this._status;
     if (!status.running || status.port <= 0) {
       throw new Error('Reticulum sidecar is not running');
     }
@@ -676,7 +742,7 @@ export class ReticulumSidecarManager extends EventEmitter {
 
   /** Dedicated factory-reset POST (blocked on the generic proxy path validator). */
   async factoryReset(): Promise<unknown> {
-    const status = this.getStatus();
+    const status = this._status;
     if (!status.running || status.port <= 0) {
       throw new Error('Reticulum sidecar is not running');
     }
@@ -697,7 +763,7 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   async proxyPut(apiPath: string, body: unknown): Promise<unknown> {
-    const status = this.getStatus();
+    const status = this._status;
     if (!status.running || status.port <= 0) {
       throw new Error('Reticulum sidecar is not running');
     }
@@ -717,7 +783,7 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   async proxyDelete(apiPath: string): Promise<unknown> {
-    const status = this.getStatus();
+    const status = this._status;
     if (!status.running || status.port <= 0) {
       throw new Error('Reticulum sidecar is not running');
     }

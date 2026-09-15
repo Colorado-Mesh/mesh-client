@@ -30,6 +30,9 @@ function isStrictBleMacShape(id: string): boolean {
 export function normalizeBleMac(mac: string): string {
   const trimmed = mac.trim();
   if (!trimmed) return trimmed;
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) {
+    return trimmed.replace(/-/g, '').toLowerCase();
+  }
   if (!isStrictBleMacShape(trimmed)) {
     return trimmed.toLowerCase();
   }

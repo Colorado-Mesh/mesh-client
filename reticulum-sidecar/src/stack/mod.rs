@@ -54,6 +54,8 @@ mod link_task;
 #[cfg(feature = "rns-stack")]
 mod live;
 #[cfg(feature = "rns-stack")]
+mod live_tasks;
+#[cfg(feature = "rns-stack")]
 mod lxmf_delivery;
 #[cfg(feature = "rns-stack")]
 mod nomad_server;
@@ -354,10 +356,15 @@ impl StackHandle {
 
     /// Finish live RNS/LXMF bring-up after the HTTP server is already accepting connections.
     #[cfg(feature = "rns-stack")]
-    pub async fn attach_live(self: &Arc<Self>) {
+    pub async fn attach_live(self: &Arc<Self>) -> Result<(), String> {
         let _attach_guard = self.attach_live_lock.lock().await;
+        self.attach_live_locked().await
+    }
+
+    #[cfg(feature = "rns-stack")]
+    async fn attach_live_locked(self: &Arc<Self>) -> Result<(), String> {
         if self.live_opt().is_some() {
-            return;
+            return Ok(());
         }
         let started = std::time::Instant::now();
         match Box::pin(live::LiveBridge::spawn(
@@ -422,7 +429,7 @@ impl StackHandle {
                                 .unwrap_or(false)
                         };
                         if local_prop_enabled {
-                            tokio::spawn(async move {
+                            bridge.spawn_background(async move {
                                 if let Err(e) = live.wait_propagation_messagestore_loaded().await {
                                     tracing::warn!(
                                         error = %e,
@@ -450,7 +457,7 @@ impl StackHandle {
                     {
                         let live = Arc::clone(&bridge);
                         let config_dir = self.config_dir.clone();
-                        tokio::spawn(async move {
+                        bridge.spawn_background(async move {
                             match config::interfaces_from_config_dir(&config_dir) {
                                 Ok(ifaces) => {
                                     if let Err(e) = live.sync_ble_peer_interfaces(&ifaces).await {
@@ -478,13 +485,15 @@ impl StackHandle {
             }
             Err(e) => {
                 tracing::warn!("live RNS bridge unavailable, using local stack: {e}");
+                return Err(e);
             }
         }
+        Ok(())
     }
 
     #[cfg(not(feature = "rns-stack"))]
-    pub async fn attach_live(self: &Arc<Self>) {
-        let _ = self;
+    pub async fn attach_live(self: &Arc<Self>) -> Result<(), String> {
+        Err("live rns-stack is not enabled in this build".into())
     }
 
     /// Clone the live RNS bridge if attached (GATT / HTTP stay up when this is None).
@@ -498,33 +507,44 @@ impl StackHandle {
 
     /// Detach live RNS/LXMF without stopping HTTP or LoRa GATT sessions.
     #[cfg(feature = "rns-stack")]
-    pub async fn detach_live(&self) {
+    pub async fn detach_live(&self) -> Result<(), String> {
         let _attach_guard = self.attach_live_lock.lock().await;
+        self.detach_live_locked().await
+    }
+
+    #[cfg(feature = "rns-stack")]
+    async fn detach_live_locked(&self) -> Result<(), String> {
         let prior = self
             .live
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .take();
-        if let Some(live) = prior {
+        let stopped = if let Some(live) = prior {
             tracing::info!("detach_live: shutting down RNS bridge (GATT preserved)");
-            live.prepare_stop().await;
-        }
+            live.prepare_stop().await
+        } else {
+            Ok(())
+        };
         {
             let mut inner = self.inner.write().await;
             inner.rns_ready = false;
             inner.lxmf_ready = false;
         }
         self.emit_stats().await;
+        stopped
     }
 
     #[cfg(not(feature = "rns-stack"))]
-    pub async fn detach_live(&self) {}
+    pub async fn detach_live(&self) -> Result<(), String> {
+        Ok(())
+    }
 
     /// Soft-restart live RNS: detach + re-attach while keeping HTTP and LoRa GATT.
     #[cfg(feature = "rns-stack")]
     pub async fn soft_restart(self: &Arc<Self>) -> Result<(), String> {
+        let _attach_guard = self.attach_live_lock.lock().await;
         tracing::info!("soft_restart: reloading live RNS without killing GATT");
-        self.detach_live().await;
+        self.detach_live_locked().await?;
         // Refresh interface rows from on-disk config so re-attach picks up edits.
         {
             let mut inner = self.inner.write().await;
@@ -535,7 +555,7 @@ impl StackHandle {
             inner.lxmf_ready = false;
             let _ = inner.save(&self.config_dir, &self.storage_dir);
         }
-        self.attach_live().await;
+        self.attach_live_locked().await?;
         self.emit_event(
             "stack_restarted",
             serde_json::json!({ "ok": true, "soft": true }),
@@ -546,11 +566,7 @@ impl StackHandle {
 
     #[cfg(not(feature = "rns-stack"))]
     pub async fn soft_restart(self: &Arc<Self>) -> Result<(), String> {
-        self.emit_event(
-            "stack_restarted",
-            serde_json::json!({ "ok": true, "soft": true }),
-        );
-        Ok(())
+        self.attach_live().await
     }
 
     #[allow(clippy::needless_pass_by_value)] // payload is moved into the broadcast frame
@@ -3071,21 +3087,7 @@ impl StackHandle {
 
     /// Graceful RNS shutdown (BLE RNode detach) before the process is SIGTERM'd.
     pub async fn prepare_stop(&self) -> Result<(), String> {
-        #[cfg(feature = "rns-stack")]
-        {
-            let prior = self
-                .live
-                .write()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .take();
-            if let Some(live) = prior {
-                live.prepare_stop().await;
-            }
-            let mut inner = self.inner.write().await;
-            inner.rns_ready = false;
-            inner.lxmf_ready = false;
-        }
-        Ok(())
+        self.detach_live().await
     }
 
     pub async fn factory_reset(&self) -> Result<(), String> {
@@ -4678,7 +4680,7 @@ mod tests {
 
     #[cfg(feature = "rns-stack")]
     #[tokio::test]
-    async fn soft_restart_without_live_bridge_succeeds_and_preserves_gatt_handle() {
+    async fn soft_restart_reports_attach_failure_and_preserves_gatt_handle() {
         let (config_dir, storage_dir) = temp_stack_dirs();
         let (tx, mut rx) = broadcast::channel(16);
         let handle = Arc::new(
@@ -4690,27 +4692,25 @@ mod tests {
             .await,
         );
         let gatt_before = Arc::as_ptr(handle.gatt());
-        handle
+        let error = handle
             .soft_restart()
             .await
-            .expect("soft restart with no live bridge");
+            .expect_err("missing identity must not report a successful restart");
+        assert!(error.contains("identity not configured"), "{error}");
+        assert!(handle.live_opt().is_none());
+        assert!(!handle.rns_ready().await);
+        assert!(!handle.lxmf_ready().await);
         assert_eq!(
             Arc::as_ptr(handle.gatt()),
             gatt_before,
             "GATT manager must survive soft restart"
         );
-        // Wait briefly for stack_restarted event (best-effort; may race).
-        let mut saw_restarted = false;
-        for _ in 0..20 {
-            if let Ok(msg) = rx.try_recv() {
-                if msg.contains("stack_restarted") {
-                    saw_restarted = true;
-                    break;
-                }
-            }
-            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        while let Ok(msg) = rx.try_recv() {
+            assert!(
+                !msg.contains("stack_restarted"),
+                "failed restart emitted success"
+            );
         }
-        assert!(saw_restarted, "expected stack_restarted event");
         let _ = std::fs::remove_dir_all(config_dir);
         let _ = std::fs::remove_dir_all(storage_dir);
     }

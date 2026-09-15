@@ -8,7 +8,7 @@ use base64::engine::general_purpose::STANDARD as B64;
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 use uuid::Uuid;
 
-use super::att::chunk_payload;
+use super::att::validate_write_payload;
 use super::backend::{BackendConnId, BackendEvent, BleBackend, ScannedDevice};
 use super::error::{GattError, GattErrorCode};
 use super::events::GattSessionEvent;
@@ -17,7 +17,7 @@ use super::profile::{GattProfile, normalize_address};
 use super::registry::GattRegistry;
 
 #[cfg(feature = "gatt-ble")]
-use super::btleplug_backend::BtleplugBackend;
+use super::LazyBtleplugBackend;
 
 struct LiveSession {
     #[allow(dead_code)] // retained for diagnostics / future session listing
@@ -26,7 +26,16 @@ struct LiveSession {
     address: String,
     conn: BackendConnId,
     mtu: Option<u16>,
+    closing: Arc<Mutex<()>>,
 }
+
+#[derive(Default)]
+struct PendingEvents {
+    events: Vec<GattSessionEvent>,
+    overflowed: bool,
+}
+
+const MAX_PENDING_EVENTS: usize = 256;
 
 /// Production or test backend selection.
 pub enum GattBackend {
@@ -34,8 +43,9 @@ pub enum GattBackend {
     #[cfg_attr(not(test), allow(dead_code))]
     Fake(FakeBleBackend),
     #[cfg(feature = "gatt-ble")]
-    Btleplug(Arc<BtleplugBackend>),
-    /// Feature not compiled or adapter probe deferred.
+    Btleplug(Arc<LazyBtleplugBackend>),
+    /// Bluetooth support was not compiled into this build.
+    #[cfg(not(feature = "gatt-ble"))]
     Disabled,
 }
 
@@ -45,6 +55,7 @@ impl GattBackend {
         Self::Fake(FakeBleBackend::new())
     }
 
+    #[cfg(not(feature = "gatt-ble"))]
     pub fn disabled() -> Self {
         Self::Disabled
     }
@@ -54,9 +65,10 @@ pub struct GattManager {
     backend: GattBackend,
     registry: Mutex<GattRegistry>,
     sessions: RwLock<HashMap<String, LiveSession>>,
-    /// address → session_id
-    by_address: Mutex<HashMap<String, String>>,
+    /// address → session_id; None reserves an in-progress connect.
+    by_address: Mutex<HashMap<String, Option<String>>>,
     event_tx: broadcast::Sender<GattSessionEvent>,
+    pending_events: std::sync::Mutex<HashMap<String, PendingEvents>>,
 }
 
 impl GattManager {
@@ -68,14 +80,56 @@ impl GattManager {
             sessions: RwLock::new(HashMap::new()),
             by_address: Mutex::new(HashMap::new()),
             event_tx,
+            pending_events: std::sync::Mutex::new(HashMap::new()),
         })
     }
 
-    pub fn subscribe(&self) -> broadcast::Receiver<GattSessionEvent> {
-        self.event_tx.subscribe()
+    pub async fn subscribe_session(
+        &self,
+        session_id: &str,
+    ) -> Result<(broadcast::Receiver<GattSessionEvent>, Vec<GattSessionEvent>), GattError> {
+        let sessions = self.sessions.read().await;
+        if !sessions.contains_key(session_id) {
+            return Err(GattError::new(
+                GattErrorCode::SessionNotFound,
+                "session not connected",
+            ));
+        }
+        let mut pending = self
+            .pending_events
+            .lock()
+            .expect("GATT pending events lock");
+        let queued = pending.remove(session_id).unwrap_or_default();
+        if queued.overflowed {
+            return Err(GattError::new(
+                GattErrorCode::Internal,
+                "GATT events overflowed before subscription",
+            ));
+        }
+        // emit() uses the same lock, leaving no gap between replay and live delivery.
+        Ok((self.event_tx.subscribe(), queued.events))
     }
 
     pub fn emit(&self, event: GattSessionEvent) {
+        let session_id = match &event {
+            GattSessionEvent::Bytes { session_id, .. }
+            | GattSessionEvent::Disconnected { session_id, .. }
+            | GattSessionEvent::Mtu { session_id, .. }
+            | GattSessionEvent::Rssi { session_id, .. } => Some(session_id),
+            GattSessionEvent::Error { session_id, .. } => session_id.as_ref(),
+        };
+        let mut pending = self
+            .pending_events
+            .lock()
+            .expect("GATT pending events lock");
+        if let Some(queued) = session_id.and_then(|id| pending.get_mut(id)) {
+            if queued.events.len() == MAX_PENDING_EVENTS {
+                queued.overflowed = true;
+            } else {
+                queued.events.push(event);
+            }
+            return;
+        }
         let _ = self.event_tx.send(event);
     }
 
@@ -84,6 +138,7 @@ impl GattManager {
             GattBackend::Fake(b) => b.adapter_available().await,
             #[cfg(feature = "gatt-ble")]
             GattBackend::Btleplug(b) => b.adapter_available().await,
+            #[cfg(not(feature = "gatt-ble"))]
             GattBackend::Disabled => Err(GattError::new(
                 GattErrorCode::FeatureDisabled,
                 "gatt ble backend not enabled in this build",
@@ -100,6 +155,7 @@ impl GattManager {
             GattBackend::Fake(b) => b.scan(profile, timeout_secs).await,
             #[cfg(feature = "gatt-ble")]
             GattBackend::Btleplug(b) => b.scan(profile, timeout_secs).await,
+            #[cfg(not(feature = "gatt-ble"))]
             GattBackend::Disabled => Err(GattError::new(
                 GattErrorCode::FeatureDisabled,
                 "gatt ble backend not enabled in this build",
@@ -123,6 +179,7 @@ impl GattManager {
             GattBackend::Fake(b) => b.connect(profile, address).await,
             #[cfg(feature = "gatt-ble")]
             GattBackend::Btleplug(b) => b.connect(profile, address).await,
+            #[cfg(not(feature = "gatt-ble"))]
             GattBackend::Disabled => Err(GattError::new(
                 GattErrorCode::FeatureDisabled,
                 "gatt ble backend not enabled in this build",
@@ -135,58 +192,12 @@ impl GattManager {
             GattBackend::Fake(b) => b.write(conn, payload).await,
             #[cfg(feature = "gatt-ble")]
             GattBackend::Btleplug(b) => b.write(conn, payload).await,
+            #[cfg(not(feature = "gatt-ble"))]
             GattBackend::Disabled => Err(GattError::new(
                 GattErrorCode::FeatureDisabled,
                 "gatt ble backend not enabled in this build",
             )),
         }
-    }
-
-    async fn be_read_from_radio(&self, conn: &BackendConnId) -> Result<Vec<u8>, GattError> {
-        match &self.backend {
-            GattBackend::Fake(b) => b.read_from_radio(conn).await,
-            #[cfg(feature = "gatt-ble")]
-            GattBackend::Btleplug(b) => b.read_from_radio(conn).await,
-            GattBackend::Disabled => Err(GattError::new(
-                GattErrorCode::FeatureDisabled,
-                "gatt ble backend not enabled in this build",
-            )),
-        }
-    }
-
-    /// Drain Meshtastic FromRadio until empty (with empty retries while the mailbox fills).
-    async fn drain_meshtastic_from_radio(&self, session_id: &str, conn: &BackendConnId) -> usize {
-        const MAX_EMPTY_STREAK: u8 = 5;
-        let mut packets = 0usize;
-        let mut empty_streak = 0u8;
-        loop {
-            match self.be_read_from_radio(conn).await {
-                Ok(data) if !data.is_empty() => {
-                    empty_streak = 0;
-                    packets = packets.saturating_add(1);
-                    self.emit(GattSessionEvent::Bytes {
-                        session_id: session_id.to_string(),
-                        profile: GattProfile::Meshtastic,
-                        data_b64: B64.encode(data),
-                    });
-                }
-                Ok(_) => {
-                    empty_streak = empty_streak.saturating_add(1);
-                    if empty_streak >= MAX_EMPTY_STREAK {
-                        break;
-                    }
-                    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-                }
-                Err(e) => {
-                    self.emit(GattSessionEvent::from_error(
-                        Some(session_id.to_string()),
-                        &e,
-                    ));
-                    break;
-                }
-            }
-        }
-        packets
     }
 
     async fn be_disconnect(&self, conn: &BackendConnId) -> Result<(), GattError> {
@@ -194,6 +205,7 @@ impl GattManager {
             GattBackend::Fake(b) => b.disconnect(conn).await,
             #[cfg(feature = "gatt-ble")]
             GattBackend::Btleplug(b) => b.disconnect(conn).await,
+            #[cfg(not(feature = "gatt-ble"))]
             GattBackend::Disabled => Ok(()),
         }
     }
@@ -203,6 +215,7 @@ impl GattManager {
             GattBackend::Fake(b) => b.rssi(conn).await,
             #[cfg(feature = "gatt-ble")]
             GattBackend::Btleplug(b) => b.rssi(conn).await,
+            #[cfg(not(feature = "gatt-ble"))]
             GattBackend::Disabled => Err(GattError::new(
                 GattErrorCode::FeatureDisabled,
                 "gatt ble backend not enabled in this build",
@@ -291,9 +304,21 @@ impl GattManager {
         }
         let key = normalize_address(address)?;
         {
+            let mut addresses = self.by_address.lock().await;
+            if addresses.contains_key(&key) {
+                return Err(GattError::new(
+                    GattErrorCode::MacConflict,
+                    "peripheral already connected or connecting",
+                ));
+            }
+            addresses.insert(key.clone(), None);
+        }
+        {
             let mut reg = self.registry.lock().await;
-            reg.assert_can_connect(&key, profile)?;
-            reg.register(&key, profile)?;
+            if let Err(e) = reg.register(&key, profile) {
+                self.by_address.lock().await.remove(&key);
+                return Err(e);
+            }
         }
 
         let connect_result = self.be_connect(profile, &key).await;
@@ -302,12 +327,17 @@ impl GattManager {
             Err(e) => {
                 let mut reg = self.registry.lock().await;
                 let _ = reg.unregister(&key, profile);
+                self.by_address.lock().await.remove(&key);
                 self.emit(GattSessionEvent::from_error(None, &e));
                 return Err(e);
             }
         };
 
         let session_id = Uuid::new_v4().to_string();
+        self.pending_events
+            .lock()
+            .expect("GATT pending events lock")
+            .insert(session_id.clone(), PendingEvents::default());
         {
             let mut sessions = self.sessions.write().await;
             sessions.insert(
@@ -318,6 +348,7 @@ impl GattManager {
                     address: key.clone(),
                     conn: conn.clone(),
                     mtu,
+                    closing: Arc::new(Mutex::new(())),
                 },
             );
         }
@@ -325,7 +356,7 @@ impl GattManager {
             self.by_address
                 .lock()
                 .await
-                .insert(key.clone(), session_id.clone());
+                .insert(key.clone(), Some(session_id.clone()));
         }
 
         let mgr = Arc::clone(self);
@@ -369,16 +400,6 @@ impl GattManager {
             }
         });
 
-        // Meshtastic: kick an initial fromRadio drain (notify may arrive later).
-        if profile == GattProfile::Meshtastic {
-            let mgr = Arc::clone(self);
-            let sid = session_id.clone();
-            let conn_id = conn;
-            tokio::spawn(async move {
-                let _ = mgr.drain_meshtastic_from_radio(&sid, &conn_id).await;
-            });
-        }
-
         Ok((session_id, mtu))
     }
 
@@ -402,11 +423,29 @@ impl GattManager {
     }
 
     async fn drop_session_internal(&self, session_id: &str) -> Result<(), GattError> {
-        let removed = {
-            let mut sessions = self.sessions.write().await;
-            sessions.remove(session_id)
+        let closing = {
+            let sessions = self.sessions.read().await;
+            let Some(session) = sessions.get(session_id) else {
+                return Ok(());
+            };
+            Arc::clone(&session.closing)
         };
-        if let Some(session) = removed {
+        let _closing = closing.lock().await;
+        let conn = {
+            let sessions = self.sessions.read().await;
+            let Some(session) = sessions.get(session_id) else {
+                return Ok(());
+            };
+            session.conn.clone()
+        };
+        // Keep ownership and status until the OS has completed teardown. Concurrent
+        // DELETEs wait above; errors leave the handle available for a retry.
+        self.be_disconnect(&conn).await?;
+        if let Some(session) = self.sessions.write().await.remove(session_id) {
+            self.pending_events
+                .lock()
+                .expect("GATT pending events lock")
+                .remove(session_id);
             {
                 self.by_address.lock().await.remove(&session.address);
             }
@@ -414,7 +453,6 @@ impl GattManager {
                 let mut reg = self.registry.lock().await;
                 let _ = reg.unregister(&session.address, session.profile);
             }
-            let _ = self.be_disconnect(&session.conn).await;
         }
         Ok(())
     }
@@ -431,7 +469,8 @@ impl GattManager {
     }
 
     pub async fn write(&self, session_id: &str, payload: &[u8]) -> Result<(), GattError> {
-        let (conn, mtu, profile) = {
+        validate_write_payload(payload)?;
+        let conn = {
             let sessions = self.sessions.read().await;
             let session = sessions.get(session_id).ok_or_else(|| {
                 GattError::new(
@@ -439,20 +478,19 @@ impl GattManager {
                     format!("session {session_id} not found"),
                 )
             })?;
-            (session.conn.clone(), session.mtu, session.profile)
+            session.conn.clone()
         };
-        for chunk in chunk_payload(payload, mtu) {
-            self.be_write(&conn, &chunk).await.inspect_err(|e| {
-                self.emit(GattSessionEvent::from_error(
-                    Some(session_id.to_string()),
-                    e,
-                ));
-            })?;
+        if payload.is_empty() {
+            return Ok(());
         }
-        // After Meshtastic write, drain FromRadio until empty (protocol: not a single read).
-        if profile == GattProfile::Meshtastic {
-            let _ = self.drain_meshtastic_from_radio(session_id, &conn).await;
-        }
+        // Both firmware APIs decode one whole command per GATT write. ATT long writes
+        // belong to the OS; splitting here sends independent, truncated commands.
+        self.be_write(&conn, payload).await.inspect_err(|e| {
+            self.emit(GattSessionEvent::from_error(
+                Some(session_id.to_string()),
+                e,
+            ));
+        })?;
         Ok(())
     }
 
@@ -489,6 +527,7 @@ impl GattManager {
             GattBackend::Fake(b) => Some(b),
             #[cfg(feature = "gatt-ble")]
             GattBackend::Btleplug(_) => None,
+            #[cfg(not(feature = "gatt-ble"))]
             GattBackend::Disabled => None,
         }
     }
@@ -551,7 +590,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn write_chunks_and_emits_bytes() {
+    async fn meshtastic_write_preserves_the_complete_protobuf() {
         let mgr = GattManager::new(GattBackend::fake());
         let fake = mgr.fake_backend().unwrap();
         fake.add_device(meshtastic_dev("11:22:33:44:55:66")).await;
@@ -559,10 +598,43 @@ mod tests {
             .connect(GattProfile::Meshtastic, "11:22:33:44:55:66")
             .await
             .unwrap();
-        let payload = vec![1u8; 45];
+        // A ToRadio text-message packet, encoded with the application's protobuf schema.
+        let payload = hex::decode("0a3915ffffffff222d0801122954686973206d657373616765206973206c6f6e676572207468616e207477656e74792062797465732e357b000000").unwrap();
         mgr.write(&sid, &payload).await.unwrap();
         let writes = fake.writes_for("11:22:33:44:55:66").await;
-        assert!(writes.len() >= 2);
+        assert_eq!(writes, vec![payload]);
+    }
+
+    #[tokio::test]
+    async fn meshcore_write_preserves_the_complete_command() {
+        let mgr = GattManager::new(GattBackend::fake());
+        let fake = mgr.fake_backend().unwrap();
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshcore, "11:22:33:44:55:66")
+            .await
+            .unwrap();
+        let mut payload = vec![2, 0, 0, 0, 0, 0];
+        payload.extend_from_slice(b"A MeshCore message longer than twenty bytes");
+        mgr.write(&sid, &payload).await.unwrap();
+        assert_eq!(fake.writes_for("11:22:33:44:55:66").await, vec![payload]);
+    }
+
+    #[tokio::test]
+    async fn oversized_write_is_rejected_without_sending_a_partial_frame() {
+        let mgr = GattManager::new(GattBackend::fake());
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshcore, "11:22:33:44:55:66")
+            .await
+            .unwrap();
+        let err = mgr.write(&sid, &[1; 513]).await.unwrap_err();
+        assert_eq!(err.code, GattErrorCode::WriteFailed);
+        assert!(
+            mgr.fake_backend()
+                .unwrap()
+                .writes_for("11:22:33:44:55:66")
+                .await
+                .is_empty()
+        );
     }
 
     #[tokio::test]
@@ -605,5 +677,150 @@ mod tests {
         mgr.disconnect(&a).await.unwrap();
         assert!(mgr.is_connected(&b).await);
         assert_eq!(mgr.session_count().await, 1);
+    }
+
+    #[tokio::test]
+    async fn connection_aliases_cannot_claim_the_same_peripheral_twice() {
+        let mgr = GattManager::new(GattBackend::fake());
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshtastic, "AA:BB:CC:DD:EE:FF")
+            .await
+            .unwrap();
+        for profile in [GattProfile::Meshtastic, GattProfile::Meshcore] {
+            let error = mgr.connect(profile, "aabbccddeeff").await.unwrap_err();
+            assert_eq!(error.code, GattErrorCode::MacConflict);
+        }
+        assert!(mgr.is_connected(&sid).await);
+        assert_eq!(mgr.session_count().await, 1);
+    }
+
+    #[tokio::test]
+    async fn events_wait_for_the_first_websocket_subscription() {
+        let mgr = GattManager::new(GattBackend::fake());
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshtastic, "AA:BB:CC:DD:EE:FF")
+            .await
+            .unwrap();
+        let packet = |data: &[u8]| GattSessionEvent::Bytes {
+            session_id: sid.clone(),
+            profile: GattProfile::Meshtastic,
+            data_b64: B64.encode(data),
+        };
+        mgr.emit(packet(&[1, 2, 3]));
+        let (mut receiver, pending) = mgr.subscribe_session(&sid).await.unwrap();
+        assert_eq!(pending.len(), 1);
+        assert!(
+            matches!(&pending[0], GattSessionEvent::Bytes { data_b64, .. } if data_b64 == "AQID")
+        );
+        mgr.emit(packet(&[4, 5, 6]));
+        assert!(
+            matches!(receiver.recv().await.unwrap(), GattSessionEvent::Bytes { data_b64, .. } if data_b64 == "BAUG")
+        );
+        assert!(receiver.try_recv().is_err());
+        let (_, replay) = mgr.subscribe_session(&sid).await.unwrap();
+        assert!(replay.is_empty());
+    }
+
+    #[tokio::test]
+    async fn pending_event_overflow_fails_the_subscription() {
+        let mgr = GattManager::new(GattBackend::fake());
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshcore, "AA:BB:CC:DD:EE:FF")
+            .await
+            .unwrap();
+        for _ in 0..=MAX_PENDING_EVENTS {
+            mgr.emit(GattSessionEvent::Bytes {
+                session_id: sid.clone(),
+                profile: GattProfile::Meshcore,
+                data_b64: "AQID".into(),
+            });
+        }
+        let error = mgr.subscribe_session(&sid).await.unwrap_err();
+        assert_eq!(error.code, GattErrorCode::Internal);
+        assert!(error.message.contains("overflowed"));
+    }
+
+    #[tokio::test]
+    async fn disconnect_keeps_ownership_until_backend_teardown_finishes() {
+        let mgr = GattManager::new(GattBackend::fake());
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshtastic, "AA:BB:CC:DD:EE:FF")
+            .await
+            .unwrap();
+        let gate = mgr.fake_backend().unwrap().pause_disconnect().await;
+        let disconnect = tokio::spawn({
+            let mgr = Arc::clone(&mgr);
+            let sid = sid.clone();
+            async move { mgr.disconnect(&sid).await }
+        });
+        mgr.fake_backend()
+            .unwrap()
+            .wait_for_disconnect_start()
+            .await;
+        assert!(mgr.is_connected(&sid).await);
+        assert_eq!(
+            mgr.register_external(GattProfile::Rnode, "aabbccddeeff")
+                .await
+                .unwrap_err()
+                .code,
+            GattErrorCode::MacConflict
+        );
+        assert_eq!(
+            mgr.connect(GattProfile::Meshtastic, "aabbccddeeff")
+                .await
+                .unwrap_err()
+                .code,
+            GattErrorCode::MacConflict
+        );
+        gate.notify_one();
+        disconnect.await.unwrap().unwrap();
+        assert!(!mgr.is_connected(&sid).await);
+        mgr.register_external(GattProfile::Rnode, "aabbccddeeff")
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn failed_disconnect_retains_the_session_for_retry() {
+        let mgr = GattManager::new(GattBackend::fake());
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshtastic, "AA:BB:CC:DD:EE:FF")
+            .await
+            .unwrap();
+        mgr.fake_backend()
+            .unwrap()
+            .set_disconnect_failure(true)
+            .await;
+        assert!(mgr.disconnect(&sid).await.is_err());
+        assert!(mgr.is_connected(&sid).await);
+        assert_eq!(
+            mgr.register_external(GattProfile::Rnode, "aabbccddeeff")
+                .await
+                .unwrap_err()
+                .code,
+            GattErrorCode::MacConflict
+        );
+        mgr.fake_backend()
+            .unwrap()
+            .set_disconnect_failure(false)
+            .await;
+        mgr.disconnect(&sid).await.unwrap();
+        assert!(!mgr.is_connected(&sid).await);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn meshtastic_write_does_not_wait_for_the_receive_queue() {
+        let mgr = GattManager::new(GattBackend::fake());
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshtastic, "AA:BB:CC:DD:EE:FF")
+            .await
+            .unwrap();
+        tokio::time::timeout(
+            std::time::Duration::from_millis(100),
+            mgr.write(&sid, &[1, 2, 3]),
+        )
+        .await
+        .unwrap()
+        .unwrap();
     }
 }

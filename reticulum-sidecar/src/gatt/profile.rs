@@ -98,7 +98,14 @@ pub fn normalize_address(raw: &str) -> Result<String, GattError> {
             "empty ble address",
         ));
     }
-    // Keep opaque CoreBluetooth UUIDs and MACs; compare via [`ble_id_match_key`].
+    let compact = ble_id_match_key(trimmed);
+    if matches!(compact.len(), 12 | 32)
+        && trimmed
+            .chars()
+            .all(|c| c.is_ascii_hexdigit() || matches!(c, ':' | '-'))
+    {
+        return Ok(compact);
+    }
     Ok(trimmed.to_ascii_lowercase())
 }
 
@@ -145,5 +152,17 @@ mod tests {
             "aa:bb:cc:dd:ee:ff",
             "ff92959fd78be6f009376829a4d6efdc"
         ));
+    }
+
+    #[test]
+    fn registry_keys_match_saved_and_scanned_address_formats() {
+        assert_eq!(
+            normalize_address("AA:BB:CC:DD:EE:FF").unwrap(),
+            normalize_address("aabbccddeeff").unwrap()
+        );
+        assert_eq!(
+            normalize_address("FF92959F-D78B-E6F0-0937-6829A4D6EFDC").unwrap(),
+            normalize_address("ff92959fd78be6f009376829a4d6efdc").unwrap()
+        );
     }
 }

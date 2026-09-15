@@ -8,7 +8,7 @@ import { flushSync } from 'react-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
-import type { SerialPort } from '@/shared/electron-api.types';
+import type { GattBleDevice, SerialPort } from '@/shared/electron-api.types';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
@@ -768,6 +768,27 @@ describe('ConnectionPanel Linux BLE auto-connect', () => {
 });
 
 describe('ConnectionPanel Linux BLE path', () => {
+  let discovered: ((device: GattBleDevice) => void) | undefined;
+
+  beforeEach(() => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    vi.mocked(window.electronAPI.startGattScanning).mockReset().mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.bluetoothGetInfo).mockResolvedValue('Paired: yes');
+    vi.mocked(window.electronAPI.onGattDeviceDiscovered).mockImplementation((cb) => {
+      discovered = cb;
+      return () => {};
+    });
+  });
+
+  async function selectBleRadio(user: ReturnType<typeof userEvent.setup>, deviceId: string) {
+    act(() => discovered?.({ deviceId, deviceName: 'Test Radio' }));
+    await user.click(
+      await screen.findByRole('button', {
+        name: (name) => name.startsWith(`Test Radio ${deviceId}`),
+      }),
+    );
+  }
+
   it('keeps MeshCore PIN guidance in Linux BLE pairing-related errors', async () => {
     const user = userEvent.setup();
     vi.mocked(window.electronAPI.startGattScanning).mockClear();
@@ -797,6 +818,7 @@ describe('ConnectionPanel Linux BLE path', () => {
     const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
     expect(radioCard).toBeTruthy();
     await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+    await selectBleRadio(user, 'bad-device');
 
     expect(await screen.findByText(/Bluetooth Companion mode/i)).toBeInTheDocument();
     expect(screen.getByText(/paired with your computer using a PIN/i)).toBeInTheDocument();
@@ -831,9 +853,10 @@ describe('ConnectionPanel Linux BLE path', () => {
         const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
         expect(radioCard).toBeTruthy();
         await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+        await selectBleRadio(user, 'bad-device');
 
         await waitFor(() => {
-          expect(onConnect).toHaveBeenCalledWith('ble', undefined);
+          expect(onConnect).toHaveBeenCalledWith('ble', undefined, 'bad-device');
           expect(localStorage.getItem(lastConnKey)).toBeNull();
           expect(localStorage.getItem(lastBleKey)).toBeNull();
         });
@@ -1917,7 +1940,7 @@ describe('ConnectionPanel Reticulum', () => {
     // handleCancelConnection is shared by Cancel + Disconnect&Quit-while-connecting.
     expect(CONNECTION_PANEL_SOURCE).toMatch(/void onDisconnect\(\)\.catch\(\(e: unknown\) => \{/);
     expect(CONNECTION_PANEL_SOURCE).toMatch(
-      /else if \(capabilities\.hasGattBleScanning\) \{\s*void window\.electronAPI\.stopGattScanning\(protocol\)/,
+      /if \(capabilities\.hasGattBleScanning\) \{\s*void window\.electronAPI\.stopGattScanning\(protocol\)/,
     );
 
     const lastConnKey = 'mesh-client:lastConnection:reticulum';
@@ -2006,15 +2029,9 @@ describe('ConnectionPanel device picker sort', () => {
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
     );
 
-    const discovered = {
-      cb: null as
-        | ((
-            devices: { deviceId: string; deviceName: string; rssi?: number | null }[],
-            generation?: number,
-          ) => void)
-        | null,
-    };
-    vi.mocked(window.electronAPI.onBluetoothDevicesDiscovered).mockImplementation((cb) => {
+    const discovered = { cb: null as ((device: GattBleDevice) => void) | null };
+    vi.mocked(window.electronAPI.startGattScanning).mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.onGattDeviceDiscovered).mockImplementation((cb) => {
       discovered.cb = cb;
       return () => {};
     });
@@ -2044,15 +2061,16 @@ describe('ConnectionPanel device picker sort', () => {
     await waitFor(() => {
       expect(discovered.cb).toBeTruthy();
     });
-    discovered.cb?.(
-      [
+    act(() => {
+      for (const device of [
         { deviceId: 'id-z', deviceName: 'Zulu', rssi: -90 },
         { deviceId: 'id-a', deviceName: 'Alpha', rssi: -40 },
         { deviceId: 'id-m', deviceName: 'Mid', rssi: -70 },
         { deviceId: 'id-n', deviceName: 'NoRssi' },
-      ],
-      1,
-    );
+      ]) {
+        discovered.cb?.(device);
+      }
+    });
 
     const names = () =>
       screen
@@ -2444,15 +2462,9 @@ describe('ConnectionPanel BLE MAC identity', () => {
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
     );
 
-    const discovered = {
-      cb: null as
-        | ((
-            devices: { deviceId: string; deviceName: string; rssi?: number | null }[],
-            generation?: number,
-          ) => void)
-        | null,
-    };
-    vi.mocked(window.electronAPI.onBluetoothDevicesDiscovered).mockImplementation((cb) => {
+    const discovered = { cb: null as ((device: GattBleDevice) => void) | null };
+    vi.mocked(window.electronAPI.startGattScanning).mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.onGattDeviceDiscovered).mockImplementation((cb) => {
       discovered.cb = cb;
       return () => {};
     });
@@ -2482,7 +2494,7 @@ describe('ConnectionPanel BLE MAC identity', () => {
       await waitFor(() => {
         expect(discovered.cb).toBeTruthy();
       });
-      discovered.cb?.([{ deviceId: 'AABBCCDDEEFF', deviceName: 'MeshCore', rssi: -40 }], 1);
+      act(() => discovered.cb?.({ deviceId: 'AABBCCDDEEFF', deviceName: 'MeshCore', rssi: -40 }));
 
       await waitFor(() => {
         expect(screen.getByText('aa:bb:cc:dd:ee:ff')).toBeInTheDocument();

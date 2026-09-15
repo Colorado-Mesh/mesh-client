@@ -8,6 +8,21 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 const cloneScriptPath = fileURLToPath(new URL('./clone-ratspeak-stack.sh', import.meta.url));
 const cloneScript = readFileSync(cloneScriptPath, 'utf8');
+const localGitEnvVars = execFileSync('git', ['rev-parse', '--local-env-vars'], {
+  encoding: 'utf8',
+})
+  .trim()
+  .split('\n');
+
+function fixtureEnv() {
+  return Object.fromEntries(
+    Object.entries({
+      ...process.env,
+      GIT_CONFIG_NOSYSTEM: '1',
+      GIT_CONFIG_GLOBAL: '/dev/null',
+    }).filter(([key]) => !localGitEnvVars.includes(key)),
+  );
+}
 
 const tempDirs = [];
 
@@ -32,7 +47,7 @@ function git(cwd, ...args) {
   return execFileSync('git', args, {
     cwd,
     encoding: 'utf8',
-    env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null' },
+    env: fixtureEnv(),
   }).trim();
 }
 
@@ -62,35 +77,28 @@ function createLocalRemote({ defaultBranch = 'main', pinTag = null } = {}) {
 }
 
 function runEnsureRepo({ remoteUrl, destDir, pinRef = '', env = {}, mergeStderr = false }) {
-  // Plain strings so bash ${...}/$(...) is not JS template interpolation.
-  const ensureCall =
-    'ensure_repo ' +
-    JSON.stringify(destDir) +
-    ' ' +
-    JSON.stringify(remoteUrl) +
-    ' ' +
-    JSON.stringify(pinRef) +
-    " 'rsLXST'" +
-    (mergeStderr ? ' 2>&1' : '');
+  const ensureCall = 'ensure_repo "$2" "$3" "$4" rsLXST' + (mergeStderr ? ' 2>&1' : '');
   const script = [
     'set -euo pipefail',
-    'source ' + JSON.stringify(cloneScriptPath),
+    'source "$1"',
     ensureCall,
     'echo "SELECTED=${ENSURE_REPO_SELECTED_REF}"',
-    'echo "MODE=$(format_repo_mode "${ENSURE_REPO_SELECTED_REF}" ' + JSON.stringify(pinRef) + ')"',
-    'echo "SHA=$(git -C ' + JSON.stringify(destDir) + ' rev-parse HEAD)"',
+    'echo "MODE=$(format_repo_mode "${ENSURE_REPO_SELECTED_REF}" "$4")"',
+    'echo "SHA=$(git -C "$2" rev-parse HEAD)"',
   ].join('\n');
-  return execFileSync('bash', ['-c', script], {
-    encoding: 'utf8',
-    env: {
-      ...process.env,
-      GIT_CONFIG_NOSYSTEM: '1',
-      GIT_CONFIG_GLOBAL: '/dev/null',
-      // Host shells often export RS_STACK_DISCARD_DIRTY=1 while debugging clones.
-      RS_STACK_DISCARD_DIRTY: '',
-      ...env,
+  return execFileSync(
+    'bash',
+    ['-c', script, 'ensure-repo', cloneScriptPath, destDir, remoteUrl, pinRef],
+    {
+      encoding: 'utf8',
+      env: {
+        ...fixtureEnv(),
+        // Host shells often export RS_STACK_DISCARD_DIRTY=1 while debugging clones.
+        RS_STACK_DISCARD_DIRTY: '',
+        ...env,
+      },
     },
-  });
+  );
 }
 
 describe('clone-ratspeak-stack.sh float policy', () => {
@@ -138,6 +146,48 @@ describe('clone-ratspeak-stack.sh float policy', () => {
     expect(out).toContain('MODE=floated origin/main');
     expect(out).toContain(`SHA=${tipSha}`);
     expect(git(dest, 'rev-parse', 'HEAD')).toBe(tipSha);
+  });
+
+  it.each([false, true])('preserves the hook worktree when dependency exists: %s', (existing) => {
+    const { remote, tipSha } = createLocalRemote();
+    const parent = makeTempDir('mesh-hook-parent-');
+    git(parent, 'init', '-b', 'main');
+    git(parent, 'config', 'user.email', 'test@example.com');
+    git(parent, 'config', 'user.name', 'test');
+    writeFileSync(join(parent, 'README'), 'parent repository\n');
+    git(parent, 'add', 'README');
+    git(parent, 'commit', '-m', 'parent');
+    const parentOrigin = join(parent, 'parent-origin');
+    git(parent, 'remote', 'add', 'origin', parentOrigin);
+    const worktree = join(makeTempDir('mesh-hook-worktree-'), 'checkout');
+    git(parent, 'worktree', 'add', '-b', 'review-fixture', worktree);
+    writeFileSync(join(worktree, 'README'), 'staged review fix\n');
+    git(worktree, 'add', 'README');
+    writeFileSync(join(worktree, 'UNTRACKED'), 'keep this work\n');
+    const parentHead = git(worktree, 'rev-parse', 'HEAD');
+    const staged = git(worktree, 'diff', '--cached', '--binary');
+    const dest = join(makeTempDir('mesh-hook-dependency-'), 'rsLXST');
+    if (existing) runEnsureRepo({ remoteUrl: remote, destDir: dest });
+
+    const out = runEnsureRepo({
+      remoteUrl: remote,
+      destDir: dest,
+      env: {
+        GIT_DIR: git(worktree, 'rev-parse', '--absolute-git-dir'),
+        GIT_COMMON_DIR: git(worktree, 'rev-parse', '--git-common-dir'),
+        GIT_INDEX_FILE: git(worktree, 'rev-parse', '--git-path', 'index'),
+        GIT_WORK_TREE: worktree,
+      },
+    });
+
+    expect(out).toContain(`SHA=${tipSha}`);
+    expect(git(dest, 'rev-parse', 'HEAD')).toBe(tipSha);
+    expect(git(worktree, 'rev-parse', 'HEAD')).toBe(parentHead);
+    expect(git(worktree, 'symbolic-ref', '--short', 'HEAD')).toBe('review-fixture');
+    expect(git(parent, 'remote', 'get-url', 'origin')).toBe(parentOrigin);
+    expect(git(worktree, 'diff', '--cached', '--binary')).toBe(staged);
+    expect(readFileSync(join(worktree, 'README'), 'utf8')).toBe('staged review fix\n');
+    expect(readFileSync(join(worktree, 'UNTRACKED'), 'utf8')).toBe('keep this work\n');
   });
 
   it('ensure_repo discards dirty overlay state under .rsstack workspace to float', () => {

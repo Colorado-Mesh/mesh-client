@@ -22,6 +22,13 @@ describe('normalizeBleMac', () => {
     expect(normalizeBleMac('AA-BB-CC-DD-EE-FF')).toBe('aa:bb:cc:dd:ee:ff');
   });
 
+  it('uses the same registry key for Noble and CoreBluetooth UUIDs', () => {
+    const compact = 'ff92959fd78be6f009376829a4d6efdc';
+    expect(normalizeBleMac('FF92959F-D78B-E6F0-0937-6829A4D6EFDC')).toBe(compact);
+    expect(normalizeBleMac(compact)).toBe(compact);
+    expect(normalizeBleMac(`${compact}-extra`)).toBe(`${compact}-extra`);
+  });
+
   it('returns empty string for blank input', () => {
     expect(normalizeBleMac('   ')).toBe('');
   });

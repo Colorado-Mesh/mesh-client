@@ -20,6 +20,7 @@ use serde_json::json;
 use tokio::sync::{RwLock, broadcast, mpsc};
 
 use super::live::parse_hash16;
+use super::live_tasks::LiveTasks;
 
 /// Ratspeak-compatible default profile for outbound calls.
 const DEFAULT_CALL_PROFILE: Profile = Profile::QualityHigh;
@@ -97,6 +98,7 @@ struct ManagerShared {
 
 pub struct VoiceSessionManager {
     shared: Arc<ManagerShared>,
+    tasks: LiveTasks,
 }
 
 impl VoiceSessionManager {
@@ -126,10 +128,11 @@ impl VoiceSessionManager {
                     register_error: None,
                 });
 
-                tokio::spawn(service.run());
+                let tasks = LiveTasks::default();
+                tasks.spawn(service.run());
 
                 let bridge = Arc::clone(&shared);
-                tokio::spawn(async move {
+                tasks.spawn(async move {
                     while let Some(evt) = event_rx.recv().await {
                         bridge_service_event(&bridge, evt).await;
                     }
@@ -138,13 +141,14 @@ impl VoiceSessionManager {
                     st.active_call = None;
                 });
 
-                Self { shared }
+                Self { shared, tasks }
             }
             Err(e) => {
                 let msg = format!("lxst telephony register: {e}");
                 tracing::error!(target: "voice", "{msg}");
                 let (voice_audio_tx, _) = broadcast::channel::<String>(VOICE_AUDIO_BROADCAST_CAP);
                 Self {
+                    tasks: LiveTasks::default(),
                     shared: Arc::new(ManagerShared {
                         control_tx: None,
                         event_tx,
@@ -156,6 +160,16 @@ impl VoiceSessionManager {
                 }
             }
         }
+    }
+
+    pub async fn shutdown(&self) {
+        if let Some(tx) = &self.shared.control_tx {
+            let _ = tx.try_send(TelephonyControl::Shutdown);
+        }
+        self.tasks.finish(Duration::from_secs(2)).await;
+        let mut state = self.shared.state.write().await;
+        state.running = false;
+        state.active_call = None;
     }
 
     /// Subscribe to high-rate `voice.audio` frames (dedicated bus, not shared `/ws`).
@@ -959,6 +973,24 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn shutdown_releases_voice_workers_and_closes_the_old_audio_bus() {
+        let (transport_tx, mut transport_rx) = mpsc::channel::<TransportMessage>(8);
+        tokio::spawn(async move { while transport_rx.recv().await.is_some() {} });
+        let (event_tx, _) = broadcast::channel::<String>(8);
+        let mgr = VoiceSessionManager::spawn(transport_tx, &Identity::new(), event_tx);
+        let mut audio = mgr.subscribe_voice_audio();
+        let old_shared = Arc::downgrade(&mgr.shared);
+        mgr.shutdown().await;
+        assert!(!mgr.shared.state.read().await.running);
+        drop(mgr);
+        assert!(old_shared.upgrade().is_none());
+        assert!(matches!(
+            audio.recv().await,
+            Err(broadcast::error::RecvError::Closed)
+        ));
+    }
+
+    #[tokio::test]
     async fn call_rejects_invalid_hex() {
         let (transport_tx, mut transport_rx) = mpsc::channel::<TransportMessage>(4);
         let identity = Identity::new();
@@ -996,6 +1028,7 @@ mod tests {
     fn disabled_manager(event_tx: broadcast::Sender<String>) -> VoiceSessionManager {
         let (voice_audio_tx, _) = broadcast::channel::<String>(4);
         VoiceSessionManager {
+            tasks: LiveTasks::default(),
             shared: Arc::new(ManagerShared {
                 control_tx: None,
                 event_tx,
@@ -1035,6 +1068,7 @@ mod tests {
         let (event_tx, _) = broadcast::channel::<String>(4);
         let (voice_audio_tx, _) = broadcast::channel::<String>(4);
         VoiceSessionManager {
+            tasks: LiveTasks::default(),
             shared: Arc::new(ManagerShared {
                 control_tx: Some(control_tx),
                 event_tx,
@@ -1328,6 +1362,7 @@ mod tests {
         let (event_tx, _) = broadcast::channel::<String>(4);
         let (voice_audio_tx, _) = broadcast::channel::<String>(4);
         let mgr = VoiceSessionManager {
+            tasks: LiveTasks::default(),
             shared: Arc::new(ManagerShared {
                 control_tx: Some(control_tx),
                 event_tx,
@@ -1369,6 +1404,7 @@ mod tests {
         let (event_tx, _) = broadcast::channel::<String>(4);
         let (voice_audio_tx, _) = broadcast::channel::<String>(4);
         let mgr = VoiceSessionManager {
+            tasks: LiveTasks::default(),
             shared: Arc::new(ManagerShared {
                 control_tx: Some(control_tx),
                 event_tx,

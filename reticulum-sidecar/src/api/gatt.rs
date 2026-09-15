@@ -12,7 +12,7 @@ use base64::Engine;
 use base64::engine::general_purpose::STANDARD as B64;
 use futures_util::StreamExt;
 
-use crate::gatt::{GattProfile, GattSessionEvent};
+use crate::gatt::{GattManager, GattProfile, GattSessionEvent};
 use crate::stack::StackHandle;
 
 #[derive(Debug, serde::Deserialize)]
@@ -180,15 +180,29 @@ pub async fn gatt_session_ws(
     State(stack): State<Arc<StackHandle>>,
     Path(session_id): Path<String>,
 ) -> impl IntoResponse {
-    let rx = stack.gatt().subscribe();
-    ws.on_upgrade(move |socket| handle_gatt_ws(socket, rx, session_id))
+    let manager = Arc::clone(stack.gatt());
+    ws.on_upgrade(move |socket| handle_gatt_ws(socket, manager, session_id))
 }
 
-async fn handle_gatt_ws(
-    mut socket: WebSocket,
-    mut rx: tokio::sync::broadcast::Receiver<GattSessionEvent>,
-    session_id: String,
-) {
+async fn handle_gatt_ws(mut socket: WebSocket, manager: Arc<GattManager>, session_id: String) {
+    let (mut rx, pending) = match manager.subscribe_session(&session_id).await {
+        Ok(subscription) => subscription,
+        Err(e) => {
+            let payload =
+                serde_json::to_string(&GattSessionEvent::from_error(Some(session_id.clone()), &e))
+                    .unwrap_or_else(|_| "{}".into());
+            let _ = socket.send(Message::Text(payload.into())).await;
+            let _ = manager.disconnect(&session_id).await;
+            let _ = socket.send(Message::Close(None)).await;
+            return;
+        }
+    };
+    for event in pending {
+        let payload = serde_json::to_string(&event).unwrap_or_else(|_| "{}".into());
+        if socket.send(Message::Text(payload.into())).await.is_err() {
+            return;
+        }
+    }
     loop {
         tokio::select! {
             evt = rx.recv() => {

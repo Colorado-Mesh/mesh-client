@@ -1987,6 +1987,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   }, [syncConnectionStore]);
 
   const restartStack = useCallback(async () => {
+    const generation = resumeGenerationRef.current;
     if (connectInFlightRef.current) {
       const pending = connectInFlightDoneRef.current;
       if (pending) {
@@ -2001,6 +2002,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         throw new Error('Reticulum stack operation already in progress');
       }
     }
+    if (resumeGenerationRef.current !== generation) return;
     connectInFlightRef.current = true;
     console.warn('[useReticulumRuntime] soft-restarting live RNS (HTTP + LoRa GATT preserved)');
     const priorSuppress = suppressReconnectRef.current;
@@ -2014,21 +2016,30 @@ export function useReticulumRuntime(): ProtocolRuntime {
         ok?: boolean;
         error?: string;
       };
+      if (resumeGenerationRef.current !== generation) return;
       if (soft?.ok === false) {
         throw new Error(typeof soft.error === 'string' ? soft.error : 'stack soft restart failed');
       }
       const lxmfHash = await refreshIdentityFromSidecar();
+      if (resumeGenerationRef.current !== generation) return;
       const connectedNodeId = lxmfHash ? reticulumHashToNodeId(lxmfHash) : 0;
       await refreshContactsFromSidecar();
+      if (resumeGenerationRef.current !== generation) return;
       await refreshLocalInterfacesFromSidecar();
+      if (resumeGenerationRef.current !== generation) return;
       await syncDiagnosticsFromSidecar();
+      if (resumeGenerationRef.current !== generation) return;
       await hydrateRawPackets();
+      if (resumeGenerationRef.current !== generation) return;
       if (identityId) {
         await markStaleReticulumOutboundMessages(identityId, RETICULUM_STALE_OUTBOUND_MS);
+        if (resumeGenerationRef.current !== generation) return;
         markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
         await loadMessagesFromDb('merge');
+        if (resumeGenerationRef.current !== generation) return;
       }
       await catchUpRecentInboundLxmf({ reason: 'restartStack' });
+      if (resumeGenerationRef.current !== generation) return;
       setState({ status: 'configured', myNodeNum: connectedNodeId, connectionType: null });
       syncConnectionStore({
         status: 'configured',
@@ -2044,6 +2055,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     try {
       await flight;
     } catch (e) {
+      if (resumeGenerationRef.current !== generation) return;
       console.error('[useReticulumRuntime] stack restart failed ' + errLikeToLogString(e));
       // Soft restart failed with process still up — do not tearDownFromSidecarStop
       // (that assumes a hard stop). Leave disconnected for a manual Start.
@@ -2051,7 +2063,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
       syncConnectionStore({ status: 'disconnected', connectionType: null });
       throw e instanceof Error ? e : new Error(String(e));
     } finally {
-      suppressReconnectRef.current = priorSuppress;
+      // Stop owns the sticky suppress flag; a sleep-only cancellation still permits wake recovery.
+      if (!isReticulumManualStackStopSuppress()) suppressReconnectRef.current = priorSuppress;
       connectInFlightRef.current = false;
       connectInFlightDoneRef.current = null;
     }

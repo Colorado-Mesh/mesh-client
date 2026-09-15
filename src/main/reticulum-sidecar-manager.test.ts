@@ -77,6 +77,7 @@ import {
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
 import { ensureDevSidecarBinary } from './reticulum-sidecar-path';
 import { SIDECAR_DEFAULT_RUST_LOG } from './reticulumSidecarStderrLog';
+import * as sidecarWatchdog from './reticulumSidecarWatchdog';
 
 const SIDECAR_MANAGER_SOURCE = fs.readFileSync(
   join(import.meta.dirname ?? __dirname, 'reticulum-sidecar-manager.ts'),
@@ -608,7 +609,7 @@ describe('ReticulumSidecarManager', () => {
     expect(wsInstance.handlers.has('error')).toBe(true);
   });
 
-  it('ensureForBle starts the sidecar and returns the HTTP port', async () => {
+  it('ensureForBle starts only HTTP/GATT and returns the HTTP port', async () => {
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
     const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
     const proc = mockSidecarProc();
@@ -621,7 +622,9 @@ describe('ReticulumSidecarManager', () => {
     const port = await manager.ensureForBle();
     expect(port).toBeGreaterThan(0);
     expect(spawnMock).toHaveBeenCalledTimes(1);
-    expect(manager.getStatus().running).toBe(true);
+    expect(manager.getStatus()).toMatchObject({ running: false, processRunning: true });
+    expect(spawnMock.mock.calls[0]?.[1]).toContain('--ble-only');
+    expect(mockWsInstances).toHaveLength(0);
 
     // reuseIfRunning: second ensure does not respawn
     const port2 = await manager.ensureForBle();
@@ -631,6 +634,244 @@ describe('ReticulumSidecarManager', () => {
     await manager.stop();
     existsSpy.mockRestore();
     mkdirSpy.mockRestore();
+  });
+
+  describe('BLE-only process promotion', () => {
+    let manager: ReticulumSidecarManager;
+    let proc: ReturnType<typeof mockSidecarProc>;
+    let watchdogOptions: sidecarWatchdog.SidecarWatchdogOptions;
+    let fetchMock: ReturnType<typeof vi.fn<typeof fetch>>;
+
+    beforeEach(() => {
+      vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+      vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+      vi.spyOn(sidecarWatchdog, 'startSidecarWatchdog').mockImplementation((opts) => {
+        watchdogOptions = opts;
+        return () => {};
+      });
+      proc = mockSidecarProc();
+      proc.kill.mockImplementation(() => {
+        proc.emit('exit', 0, null);
+      });
+      spawnMock.mockReturnValue(proc);
+      fetchMock = vi
+        .fn<typeof fetch>()
+        .mockImplementation((url) =>
+          Promise.resolve(
+            Response.json(
+              typeof url === 'string' && url.endsWith('/api/v1/status')
+                ? { status: 'ok', rns_ready: false, lxmf_ready: false }
+                : { ok: true },
+            ),
+          ),
+        );
+      vi.stubGlobal('fetch', fetchMock);
+      manager = new ReticulumSidecarManager();
+    });
+
+    afterEach(async () => {
+      await manager.stop({ forQuit: true });
+      vi.restoreAllMocks();
+    });
+
+    function startCalls() {
+      return fetchMock.mock.calls.filter(
+        ([url]) => typeof url === 'string' && url.endsWith('/api/v1/stack/start'),
+      );
+    }
+
+    it.each([true, false])(
+      'promotes the same process with reuseIfRunning=%s',
+      async (reuseIfRunning) => {
+        const port = await manager.ensureForBle();
+        const status = await manager.start({ reuseIfRunning });
+
+        expect(status).toMatchObject({ running: true, port, pid: proc.pid });
+        expect(status.processRunning).toBeUndefined();
+        expect(spawnMock).toHaveBeenCalledTimes(1);
+        expect(proc.kill).not.toHaveBeenCalled();
+        expect(startCalls()).toHaveLength(1);
+        expect(mockWsInstances.map((ws) => ws.url)).toContain(`ws://127.0.0.1:${port}/ws`);
+        expect(await manager.ensureForBle()).toBe(port);
+        expect(startCalls()).toHaveLength(1);
+      },
+    );
+
+    it('coalesces BLE ensures and promotes a concurrent explicit Start once', async () => {
+      let releaseCargo!: () => void;
+      vi.mocked(ensureDevSidecarBinary).mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            releaseCargo = resolve;
+          }),
+      );
+      const ble = manager.ensureForBle();
+      const secondBle = manager.ensureForBle();
+      const start = manager.start();
+      const secondStart = manager.start();
+      await vi.waitFor(() => {
+        expect(ensureDevSidecarBinary).toHaveBeenCalledOnce();
+      });
+      releaseCargo();
+      const [port, secondPort, status, secondStatus] = await Promise.all([
+        ble,
+        secondBle,
+        start,
+        secondStart,
+      ]);
+
+      expect(secondPort).toBe(port);
+      expect(status).toMatchObject({ running: true, port });
+      expect(secondStatus).toEqual(status);
+      expect(startCalls()).toHaveLength(1);
+      expect(spawnMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not downgrade an in-flight Reticulum Start when BLE is requested', async () => {
+      const [status, port] = await Promise.all([manager.start(), manager.ensureForBle()]);
+      expect(status).toMatchObject({ running: true, port });
+      expect(manager.getStatus().running).toBe(true);
+      expect(spawnMock.mock.calls[0]?.[1]).not.toContain('--ble-only');
+      expect(startCalls()).toHaveLength(0);
+      expect(spawnMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('retries live attachment on explicit Start after a failed soft restart', async () => {
+      const { port } = await manager.start();
+      const sockets = [...mockWsInstances];
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve(Response.json({ ok: false, error: 'live attach failed' })),
+      );
+      await expect(manager.proxyPost('/api/v1/stack/restart', {})).resolves.toEqual({
+        ok: false,
+        error: 'live attach failed',
+      });
+
+      await expect(manager.start({ reuseIfRunning: true })).resolves.toMatchObject({
+        running: true,
+        port,
+      });
+
+      expect(startCalls()).toHaveLength(1);
+      expect(spawnMock).toHaveBeenCalledTimes(1);
+      expect(proc.kill).not.toHaveBeenCalled();
+      expect(mockWsInstances).toEqual(sockets);
+      for (const socket of sockets) expect(socket.close).not.toHaveBeenCalled();
+    });
+
+    it('opens the first-run setup shell after explicit Start needs an identity', async () => {
+      await manager.ensureForBle();
+      fetchMock.mockImplementation((url) =>
+        Promise.resolve(
+          Response.json(
+            typeof url === 'string' && url.endsWith('/api/v1/stack/start')
+              ? { ok: true, rns_ready: false, identity_required: true }
+              : { status: 'ok', rns_ready: false, lxmf_ready: false },
+          ),
+        ),
+      );
+
+      await expect(manager.start()).resolves.toMatchObject({ running: true });
+      await expect(manager.proxyGet('/api/v1/status')).resolves.toMatchObject({ rns_ready: false });
+      expect(startCalls()).toHaveLength(1);
+      expect(spawnMock).toHaveBeenCalledTimes(1);
+      expect(proc.kill).not.toHaveBeenCalled();
+    });
+
+    it('keeps GATT available and Reticulum stopped when promotion fails', async () => {
+      const port = await manager.ensureForBle();
+      fetchMock.mockImplementation((url) =>
+        Promise.resolve(
+          Response.json(
+            typeof url === 'string' && url.endsWith('/api/v1/stack/start')
+              ? { ok: false, error: 'live attach failed' }
+              : { status: 'ok' },
+          ),
+        ),
+      );
+
+      await expect(manager.start()).rejects.toThrow('live attach failed');
+
+      expect(manager.getStatus()).toMatchObject({ running: false, processRunning: true, port });
+      expect(await manager.ensureForBle()).toBe(port);
+      expect(proc.kill).not.toHaveBeenCalled();
+      expect(mockWsInstances).toHaveLength(0);
+    });
+
+    it('cancels promotion on Stop without a late running status or another spawn', async () => {
+      await manager.ensureForBle();
+      fetchMock.mockImplementation((url, init) => {
+        if (typeof url === 'string' && url.endsWith('/api/v1/stack/start')) {
+          return new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => {
+              reject(new Error('aborted'));
+            });
+          });
+        }
+        return Promise.resolve(Response.json({ status: 'ok' }));
+      });
+      const statuses = vi.fn();
+      manager.on('status', statuses);
+      const start = manager.start();
+      const outcome = expect(start).rejects.toThrow('aborted');
+      await vi.waitFor(() => {
+        expect(startCalls()).toHaveLength(1);
+      });
+      await manager.stop();
+      await outcome;
+
+      expect(manager.getStatus().running).toBe(false);
+      expect(manager.getStatus().processRunning).not.toBe(true);
+      expect(statuses.mock.calls.some(([status]) => status.running)).toBe(false);
+      expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
+      expect(spawnMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not start RNS when Stop cancels an in-flight BLE ensure and Start', async () => {
+      let releaseCargo!: () => void;
+      vi.mocked(ensureDevSidecarBinary).mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            releaseCargo = resolve;
+          }),
+      );
+      const ble = manager.ensureForBle();
+      const start = manager.start();
+      await vi.waitFor(() => {
+        expect(ensureDevSidecarBinary).toHaveBeenCalledOnce();
+      });
+      await manager.stop();
+      releaseCargo();
+
+      const outcomes = await Promise.allSettled([ble, start]);
+      expect(outcomes.map((outcome) => outcome.status)).toEqual(['rejected', 'rejected']);
+      expect(spawnMock).not.toHaveBeenCalled();
+      expect(startCalls()).toHaveLength(0);
+    });
+
+    it('preserves BLE-only mode when the watchdog restarts a hung process', async () => {
+      await manager.ensureForBle();
+      const watchdog = watchdogOptions;
+      expect(watchdog.getPort()).toBeGreaterThan(0);
+      expect(watchdog.isProcessAlive()).toBe(true);
+      await watchdog.restartFn();
+
+      expect(spawnMock).toHaveBeenCalledTimes(2);
+      expect(spawnMock.mock.calls[1]?.[1]).toContain('--ble-only');
+      expect(manager.getStatus()).toMatchObject({ running: false, processRunning: true });
+      expect(startCalls()).toHaveLength(0);
+      expect(mockWsInstances).toHaveLength(0);
+    });
+
+    it('keeps configured HTTP APIs available without starting Reticulum', async () => {
+      await manager.ensureForBle();
+
+      await expect(manager.proxyGet('/api/v1/interfaces')).resolves.toEqual({ ok: true });
+      await expect(manager.proxyPost('/api/v1/config/audit', {})).resolves.toEqual({ ok: true });
+
+      expect(manager.getStatus().running).toBe(false);
+      expect(startCalls()).toHaveLength(0);
+    });
   });
 
   it('does not spawn when sidecar binary ensure fails before spawn', async () => {

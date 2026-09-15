@@ -55,7 +55,9 @@ import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
 import { MS_PER_MINUTE } from '../shared/timeConstants';
 import {
   bleCoexistenceCoordinator,
+  BlePeripheralConflictError,
   type BlePeripheralOwner,
+  BleScanBusyError,
   type BleScanOwner,
 } from './ble-coexistence-coordinator';
 import { formatBluetoothctlSpawnError } from './bluetoothctlSpawnError';
@@ -115,6 +117,7 @@ import {
   type GattSessionProfile,
   gattSidecarProxy,
 } from './gatt-sidecar-proxy';
+import { writeGattToRadio } from './gattIpcWrite';
 import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
 import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
@@ -306,8 +309,8 @@ bleCoexistenceCoordinator.setGattProxy(gattSidecarProxy);
 // cached port so LoRa reconnect does not hammer a dead HTTP port.
 {
   const mgr = ensureReticulumSidecarManager();
-  mgr.on('status', (status: { running: boolean; port: number }) => {
-    if (!status.running) {
+  mgr.on('status', (status: { running: boolean; processRunning?: boolean; port: number }) => {
+    if (!(status.processRunning ?? status.running)) {
       gattSidecarProxy.invalidateAfterSidecarExit();
     } else if (status.port > 0) {
       gattSidecarProxy.setPort(status.port);
@@ -2877,7 +2880,16 @@ ipcMain.handle('gatt:start-scan', async (event, sessionId: unknown) => {
     console.debug('[main] gatt:start-scan: ignoring (app is quitting)');
     return { ok: true as const };
   }
-  return gattSidecarProxy.startScan(sessionId);
+  try {
+    return await bleCoexistenceCoordinator.withScan('gatt', () =>
+      gattSidecarProxy.startScan(sessionId),
+    );
+  } catch (err) {
+    if (err instanceof BleScanBusyError) {
+      return { ok: false as const, code: 'scan_busy' as const, owner: err.scanOwner };
+    }
+    throw err;
+  }
 });
 ipcMain.handle('gatt:stop-scan', async (event, sessionId: unknown) => {
   assertIpcSender(event, 'gatt:stop-scan');
@@ -2905,13 +2917,20 @@ ipcMain.handle('gatt:connect', async (event, sessionId: unknown, peripheralId: u
     return { ok: false as const, error: 'App is quitting' };
   }
   try {
-    return await gattSidecarProxy.connect(sessionId, peripheralId);
+    return await bleCoexistenceCoordinator.withScan('gatt', () =>
+      gattSidecarProxy.connect(sessionId, peripheralId),
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.debug(
       `[main] gatt:connect failed: session=${sessionId} peripheral=${peripheralId} message=${sanitizeLogMessage(message)}`,
     );
-    return { ok: false as const, error: sanitizeLogMessage(message) };
+    return {
+      ok: false as const,
+      error: sanitizeLogMessage(message),
+      ...(err instanceof BleScanBusyError ? { code: 'scan_busy' } : {}),
+      ...(err instanceof BlePeripheralConflictError ? { code: 'mac_conflict' } : {}),
+    };
   }
 });
 ipcMain.handle('gatt:disconnect', async (event, sessionId: unknown) => {
@@ -2944,37 +2963,13 @@ ipcMain.handle('gatt:to-radio', async (event, sessionId: unknown, bytes: unknown
     console.debug(`[main] gatt:to-radio: ignoring session=${sessionId} (app is quitting)`);
     return;
   }
-  if (!(await gattSidecarProxy.isConnected(sessionId))) {
-    console.debug(`[main] gatt:to-radio: session=${sessionId} not connected, ignoring`);
-    return;
-  }
   const buf = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes as Uint8Array);
   if (buf.length > GATT_TO_RADIO_MAX_BYTES) {
     throw new Error(
       `gatt:to-radio: payload exceeds ${GATT_TO_RADIO_MAX_BYTES} bytes (${buf.length})`,
     );
   }
-  try {
-    await gattSidecarProxy.toRadio(sessionId, buf);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    const lower = message.toLowerCase();
-    if (
-      lower.includes('disconnected') ||
-      lower.includes('not connected') ||
-      lower.includes('not currently connected') ||
-      lower.includes('fetch failed') ||
-      lower.includes('aborted') ||
-      lower.includes('timeout')
-    ) {
-      console.debug(
-        '[main] gatt:to-radio: disconnected during write, ignoring session=',
-        sanitizeLogMessage(sessionId),
-      );
-      return;
-    }
-    throw err;
-  }
+  await writeGattToRadio(gattSidecarProxy, sessionId, buf);
 });
 
 // ─── MQTT: Forward manager events to renderer ───────────────────────

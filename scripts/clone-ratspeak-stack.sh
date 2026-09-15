@@ -3,6 +3,12 @@
 # then apply mesh-client overlays for rns-stack sidecar builds.
 set -euo pipefail
 
+# Hooks export their repository/index paths. Nested Git commands must discover
+# each dependency's own metadata instead of changing the caller's checkout.
+while IFS= read -r rs_stack_git_var; do
+  unset "${rs_stack_git_var}"
+done < <(git rev-parse --local-env-vars)
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # Repo-local workspace (gitignored .rsstack/) so upstream mirror checkouts stay clean.

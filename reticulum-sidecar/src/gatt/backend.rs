@@ -62,11 +62,6 @@ pub trait BleBackend: Send + Sync {
         payload: &[u8],
     ) -> impl std::future::Future<Output = Result<(), GattError>> + Send;
 
-    fn read_from_radio(
-        &self,
-        conn: &BackendConnId,
-    ) -> impl std::future::Future<Output = Result<Vec<u8>, GattError>> + Send;
-
     fn disconnect(
         &self,
         conn: &BackendConnId,

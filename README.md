@@ -374,7 +374,7 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 **Transport notes**
 
 - No Meshtastic/MeshCore-style MQTT `ConnectionDriver` path; connect by starting the sidecar, then enabling interfaces
-- **BLE coexistence:** Meshtastic, MeshCore, and Reticulum may each use Bluetooth **simultaneously on different devices** via the shared sidecar `btleplug` central; the app rejects the same MAC for two protocols and serializes scans only
+- **BLE coexistence:** Meshtastic, MeshCore, and Reticulum run Bluetooth in the same sidecar process and can use **different devices** concurrently. The app checks configured device ownership and serializes scans requested through the app; Reticulum's background discovery and reconnect run separately. See [BLE coexistence](docs/agents/ble-serial.md#multi-protocol-ble-coexistence-incl-reticulum).
 - Packaged builds bundle `mesh-client-reticulum` beside the Electron app; dev builds: `pnpm run reticulum:sidecar:build` — see [development-environment.md](docs/development-environment.md#reticulum-sidecar-optional)
 
 ---

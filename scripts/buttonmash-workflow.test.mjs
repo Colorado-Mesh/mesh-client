@@ -41,12 +41,6 @@ describe('Buttonmash CI', () => {
     });
     expect(config.guardrails.billing.mode).toBe('refuse');
     expect(config.detectors.ignorePatterns).toContain(
-      '\\[useMeshtasticRuntime\\] Connection failed: BLE peripheral ID required',
-    );
-    expect(config.detectors.ignorePatterns).toContain(
-      '\\[useMeshcoreRuntime\\] connect error .*BLE peripheral ID required',
-    );
-    expect(config.detectors.ignorePatterns).toContain(
       'controls\\.start\\(\\) should only be called after a component has mounted',
     );
     expect(config.detectors.ignorePatterns).toContain(
@@ -58,5 +52,16 @@ describe('Buttonmash CI', () => {
     );
     expect(config.detectors.ignorePatterns).toContain('Web Bluetooth is not available');
     expect(config.failOn).toBe('high');
+  });
+
+  it.each([
+    '[useMeshtasticRuntime] Connection failed: BLE peripheral ID required',
+    '[useMeshcoreRuntime] connect error BLE peripheral ID required',
+  ])('keeps missing-device wiring failures visible: %s', (message) => {
+    const ignored = config.detectors.ignorePatterns.some((pattern) =>
+      // eslint-disable-next-line security/detect-non-literal-regexp -- Patterns come from the checked-in CI config.
+      new RegExp(pattern).test(message),
+    );
+    expect(ignored).toBe(false);
   });
 });

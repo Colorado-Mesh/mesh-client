@@ -53,17 +53,24 @@ export class BleCoexistenceCoordinator {
   private scanOwnerDepth = 0;
   /** Serializes first-time acquire across concurrent callers. */
   private scanAcquireInFlight: Promise<void> | null = null;
-  /** Retained for API compat; disconnect-all yield is gone (concurrent sessions). */
-  private _gattProxy: GattSidecarProxy | null = null;
+  private gattProxy: Pick<GattSidecarProxy, 'getConnections' | 'setConnectionGuard'> | null = null;
   private nobleYieldDecisionPending = false;
 
-  setGattProxy(proxy: GattSidecarProxy): void {
-    this._gattProxy = proxy;
+  setGattProxy(proxy: Pick<GattSidecarProxy, 'getConnections' | 'setConnectionGuard'>): void {
+    this.gattProxy = proxy;
+    proxy.setConnectionGuard((sessionId, address) => {
+      this.assertCanConnect(`gatt:${sessionId}`, address);
+    });
   }
 
   getState(): BleCoexistenceState {
+    const connections = new Map(this.connections);
+    for (const connection of this.gattProxy?.getConnections() ?? []) {
+      const key = normalizeBleMac(connection.mac);
+      if (key) connections.set(key, connection.owner);
+    }
     return {
-      connections: [...this.connections.entries()].map(([mac, owner]) => ({ mac, owner })),
+      connections: [...connections.entries()].map(([mac, owner]) => ({ mac, owner })),
       scanOwner: this.scanOwner,
       nobleYieldDecisionPending: this.nobleYieldDecisionPending,
     };
@@ -77,7 +84,9 @@ export class BleCoexistenceCoordinator {
   register(mac: string, owner: BlePeripheralOwner): void {
     const key = normalizeBleMac(mac);
     if (!key) return;
-    const existing = this.connections.get(key);
+    const existing = this.getState().connections.find(
+      (connection) => connection.mac === key,
+    )?.owner;
     if (existing && existing !== owner) {
       throw new BlePeripheralConflictError(key, existing);
     }
@@ -93,7 +102,7 @@ export class BleCoexistenceCoordinator {
   }
 
   assertCanConnect(owner: BlePeripheralOwner, mac: string): void {
-    // Reticulum holds CoreBluetooth for BLE RNode connect — LoRa GATTs must wait.
+    // Reticulum discovery/pairing holds the interactive scan lease.
     if (
       this.scanOwner === 'reticulum' &&
       (owner === 'gatt:meshtastic' || owner === 'gatt:meshcore')
@@ -102,7 +111,9 @@ export class BleCoexistenceCoordinator {
     }
     const key = normalizeBleMac(mac);
     if (!key) return;
-    const existing = this.connections.get(key);
+    const existing = this.getState().connections.find(
+      (connection) => connection.mac === key,
+    )?.owner;
     if (existing && existing !== owner) {
       throw new BlePeripheralConflictError(key, existing);
     }
@@ -135,6 +146,15 @@ export class BleCoexistenceCoordinator {
     }
   }
 
+  async withScan<T>(owner: BleScanOwner, operation: () => Promise<T>): Promise<T> {
+    await this.acquireScan(owner);
+    try {
+      return await operation();
+    } finally {
+      this.releaseScan(owner);
+    }
+  }
+
   releaseScan(owner: BleScanOwner): void {
     if (this.scanOwner !== owner) return;
     if (this.scanOwnerDepth > 1) {
@@ -147,8 +167,8 @@ export class BleCoexistenceCoordinator {
 
   /**
    * Legacy yield entry — no longer disconnects LoRa GATT.
-   * Meshtastic/MeshCore/RNode share one sidecar btleplug adapter; MAC conflicts
-   * are enforced in the sidecar registry. Kept as a no-op for API stability.
+   * Meshtastic/MeshCore/RNode use the same sidecar process; the coordinator
+   * checks Reticulum registrations against pending and live LoRa sessions.
    */
   async suspendForReticulumBleConnect(): Promise<void> {
     // No-op: concurrent GATT sessions are supported in-process.

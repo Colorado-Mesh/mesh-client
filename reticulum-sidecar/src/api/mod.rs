@@ -303,6 +303,7 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             post(remote::path_capability),
         )
         .route("/api/v1/remote/identity", get(remote::remote_identity))
+        .route("/api/v1/stack/start", post(system::stack_start))
         .route("/api/v1/stack/restart", post(system::stack_restart))
         .route(
             "/api/v1/stack/prepare-stop",

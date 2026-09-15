@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use tokio::sync::{Mutex, mpsc};
+use tokio::sync::{Mutex, Notify, mpsc};
 
 use super::backend::{BackendConnId, BackendEvent, BleBackend, ScannedDevice};
 use super::error::{GattError, GattErrorCode};
@@ -17,16 +17,17 @@ struct FakeState {
     /// Force next connect/scan to fail with this code.
     fail_code: Option<GattErrorCode>,
     adapter_ok: bool,
-    /// Inbound queue for read_from_radio (Meshtastic pump).
-    from_radio: HashMap<String, Vec<Vec<u8>>>,
     /// Captured writes per address.
     writes: HashMap<String, Vec<Vec<u8>>>,
     mtu: u16,
+    disconnect_gate: Option<Arc<Notify>>,
+    disconnect_fails: bool,
 }
 
 /// Test double implementing [`BleBackend`].
 pub struct FakeBleBackend {
     inner: Arc<Mutex<FakeState>>,
+    disconnect_started: Notify,
 }
 
 impl FakeBleBackend {
@@ -37,6 +38,7 @@ impl FakeBleBackend {
                 mtu: 23,
                 ..FakeState::default()
             })),
+            disconnect_started: Notify::new(),
         }
     }
 
@@ -60,6 +62,23 @@ impl FakeBleBackend {
             .get(&key)
             .cloned()
             .unwrap_or_default()
+    }
+
+    #[cfg(test)]
+    pub async fn pause_disconnect(&self) -> Arc<Notify> {
+        let gate = Arc::new(Notify::new());
+        self.inner.lock().await.disconnect_gate = Some(Arc::clone(&gate));
+        gate
+    }
+
+    #[cfg(test)]
+    pub async fn wait_for_disconnect_start(&self) {
+        self.disconnect_started.notified().await;
+    }
+
+    #[cfg(test)]
+    pub async fn set_disconnect_failure(&self, fail: bool) {
+        self.inner.lock().await.disconnect_fails = fail;
     }
 }
 
@@ -164,18 +183,19 @@ impl BleBackend for FakeBleBackend {
         Ok(())
     }
 
-    async fn read_from_radio(&self, conn: &BackendConnId) -> Result<Vec<u8>, GattError> {
-        let mut guard = self.inner.lock().await;
-        let queue = guard.from_radio.entry(conn.0.clone()).or_default();
-        if queue.is_empty() {
-            Ok(Vec::new())
-        } else {
-            Ok(queue.remove(0))
-        }
-    }
-
     async fn disconnect(&self, conn: &BackendConnId) -> Result<(), GattError> {
+        let gate = self.inner.lock().await.disconnect_gate.take();
+        self.disconnect_started.notify_one();
+        if let Some(gate) = gate {
+            gate.notified().await;
+        }
         let mut guard = self.inner.lock().await;
+        if guard.disconnect_fails {
+            return Err(GattError::new(
+                GattErrorCode::Internal,
+                "forced disconnect failure",
+            ));
+        }
         if let Some(tx) = guard.open.remove(&conn.0) {
             let _ = tx.send(BackendEvent::Disconnected {
                 reason: "local_disconnect".into(),

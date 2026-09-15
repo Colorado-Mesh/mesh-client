@@ -5,10 +5,25 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('ws', () => {
-  class MockWebSocket {
-    on = vi.fn();
-    close = vi.fn();
+vi.mock('ws', async () => {
+  const { EventEmitter } = await import('events');
+  class MockWebSocket extends EventEmitter {
+    static CONNECTING = 0;
+    readyState = 0;
+    close = vi.fn(() => {
+      this.readyState = 3;
+      this.emit('close');
+    });
+    terminate = this.close;
+
+    constructor() {
+      super();
+      queueMicrotask(() => {
+        if (this.readyState !== 0) return;
+        this.readyState = 1;
+        this.emit('open');
+      });
+    }
   }
   return { default: MockWebSocket };
 });
@@ -47,7 +62,9 @@ describe('GattSidecarProxy concurrent sessions', () => {
     vi.stubGlobal('fetch', fetchMock);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await proxy.disconnectAll();
+    proxy.invalidateAfterSidecarExit();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
