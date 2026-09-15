@@ -154,6 +154,41 @@ impl GattManager {
         }
     }
 
+    /// Drain Meshtastic FromRadio until empty (with empty retries while the mailbox fills).
+    async fn drain_meshtastic_from_radio(&self, session_id: &str, conn: &BackendConnId) -> usize {
+        const MAX_EMPTY_STREAK: u8 = 5;
+        let mut packets = 0usize;
+        let mut empty_streak = 0u8;
+        loop {
+            match self.be_read_from_radio(conn).await {
+                Ok(data) if !data.is_empty() => {
+                    empty_streak = 0;
+                    packets = packets.saturating_add(1);
+                    self.emit(GattSessionEvent::Bytes {
+                        session_id: session_id.to_string(),
+                        profile: GattProfile::Meshtastic,
+                        data_b64: B64.encode(data),
+                    });
+                }
+                Ok(_) => {
+                    empty_streak = empty_streak.saturating_add(1);
+                    if empty_streak >= MAX_EMPTY_STREAK {
+                        break;
+                    }
+                    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                }
+                Err(e) => {
+                    self.emit(GattSessionEvent::from_error(
+                        Some(session_id.to_string()),
+                        &e,
+                    ));
+                    break;
+                }
+            }
+        }
+        packets
+    }
+
     async fn be_disconnect(&self, conn: &BackendConnId) -> Result<(), GattError> {
         match &self.backend {
             GattBackend::Fake(b) => b.disconnect(conn).await,
@@ -340,19 +375,7 @@ impl GattManager {
             let sid = session_id.clone();
             let conn_id = conn;
             tokio::spawn(async move {
-                match mgr.be_read_from_radio(&conn_id).await {
-                    Ok(data) if !data.is_empty() => {
-                        mgr.emit(GattSessionEvent::Bytes {
-                            session_id: sid,
-                            profile: GattProfile::Meshtastic,
-                            data_b64: B64.encode(data),
-                        });
-                    }
-                    Ok(_) => {}
-                    Err(e) => {
-                        mgr.emit(GattSessionEvent::from_error(Some(sid), &e));
-                    }
-                }
+                let _ = mgr.drain_meshtastic_from_radio(&sid, &conn_id).await;
             });
         }
 
@@ -426,24 +449,9 @@ impl GattManager {
                 ));
             })?;
         }
-        // After Meshtastic write, drain fromRadio once (parity with Noble post-write pump).
+        // After Meshtastic write, drain FromRadio until empty (protocol: not a single read).
         if profile == GattProfile::Meshtastic {
-            match self.be_read_from_radio(&conn).await {
-                Ok(data) if !data.is_empty() => {
-                    self.emit(GattSessionEvent::Bytes {
-                        session_id: session_id.to_string(),
-                        profile,
-                        data_b64: B64.encode(data),
-                    });
-                }
-                Ok(_) => {}
-                Err(e) => {
-                    self.emit(GattSessionEvent::from_error(
-                        Some(session_id.to_string()),
-                        &e,
-                    ));
-                }
-            }
+            let _ = self.drain_meshtastic_from_radio(session_id, &conn).await;
         }
         Ok(())
     }

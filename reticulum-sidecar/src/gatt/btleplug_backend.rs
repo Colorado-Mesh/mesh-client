@@ -31,6 +31,38 @@ fn discovery_timeout() -> Duration {
     }
 }
 
+/// Meshtastic FromRadio queue: read until empty, with short empty retries while the
+/// radio finishes filling the mailbox (parity with meshtastic-python / Android).
+async fn drain_meshtastic_from_radio(
+    peripheral: &Peripheral,
+    from_radio: &Characteristic,
+    tx: &mpsc::UnboundedSender<BackendEvent>,
+) -> usize {
+    const MAX_EMPTY_STREAK: u8 = 5;
+    let mut packets = 0usize;
+    let mut empty_streak = 0u8;
+    loop {
+        match peripheral.read(from_radio).await {
+            Ok(data) if !data.is_empty() => {
+                empty_streak = 0;
+                packets = packets.saturating_add(1);
+                if tx.send(BackendEvent::Bytes(data)).is_err() {
+                    break;
+                }
+            }
+            Ok(_) => {
+                empty_streak = empty_streak.saturating_add(1);
+                if empty_streak >= MAX_EMPTY_STREAK {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
+            Err(_) => break,
+        }
+    }
+    packets
+}
+
 fn is_usable_mac(addr: &str) -> bool {
     let hex = ble_id_match_key(addr);
     hex.len() == 12 && hex != "000000000000"
@@ -331,20 +363,30 @@ impl BleBackend for BtleplugBackend {
         let from_radio_char =
             from_radio_uuid.and_then(|u| chars.iter().find(|c| c.uuid == u).cloned());
 
-        peripheral.subscribe(&notify_char).await.map_err(|e| {
-            GattError::new(GattErrorCode::GattDiscoverFailed, format!("subscribe: {e}"))
-        })?;
-
         let (tx, rx) = mpsc::unbounded_channel();
+        // Attach the CoreBluetooth broadcast receiver BEFORE enabling CCCD. btleplug's
+        // notifications channel starts with no receivers; FromNum wakes sent in that
+        // window are dropped.
         let mut notifications = peripheral
             .notifications()
             .await
             .map_err(|e| GattError::new(GattErrorCode::Internal, format!("notifications: {e}")))?;
+
         let tx_notify = tx.clone();
         let notify_uuid_copy = notify_uuid;
+        let from_radio_for_notify = from_radio_char.clone();
+        let peripheral_for_notify = peripheral.clone();
         tokio::spawn(async move {
             while let Some(n) = notifications.next().await {
-                if n.uuid == notify_uuid_copy {
+                if n.uuid != notify_uuid_copy {
+                    continue;
+                }
+                if let Some(ref from_radio) = from_radio_for_notify {
+                    // Meshtastic FromNum is a wake signal only — drain FromRadio until empty.
+                    let _ =
+                        drain_meshtastic_from_radio(&peripheral_for_notify, from_radio, &tx_notify)
+                            .await;
+                } else {
                     let _ = tx_notify.send(BackendEvent::Bytes(n.value));
                 }
             }
@@ -352,6 +394,10 @@ impl BleBackend for BtleplugBackend {
                 reason: "notifications_ended".into(),
             });
         });
+
+        peripheral.subscribe(&notify_char).await.map_err(|e| {
+            GattError::new(GattErrorCode::GattDiscoverFailed, format!("subscribe: {e}"))
+        })?;
 
         // Seed from advertisement properties — CoreBluetooth rarely refreshes RSSI after connect
         // (btleplug has no public readRSSI), so Connection panel meters need this last-known value.
@@ -381,11 +427,12 @@ impl BleBackend for BtleplugBackend {
         }
 
         let tx_rssi = tx.clone();
+        let peripheral_rssi = peripheral.clone();
         tokio::spawn(async move {
             let mut last = seed_rssi;
             loop {
                 tokio::time::sleep(Duration::from_secs(4)).await;
-                if let Some(rssi) = peripheral
+                if let Some(rssi) = peripheral_rssi
                     .properties()
                     .await
                     .ok()
@@ -429,22 +476,24 @@ impl BleBackend for BtleplugBackend {
     }
 
     async fn read_from_radio(&self, conn: &BackendConnId) -> Result<Vec<u8>, GattError> {
-        let open = self.open.lock().await;
-        let session = open
-            .get(&conn.0)
-            .ok_or_else(|| GattError::new(GattErrorCode::SessionNotFound, "not connected"))?;
-        if session.nus_notify_only {
-            return Err(GattError::new(
-                GattErrorCode::NotifiedReadForbidden,
-                "nus tx read forbidden while notify active",
-            ));
-        }
-        let Some(from_radio) = session.from_radio_char.as_ref() else {
-            return Ok(Vec::new());
+        let (peripheral, from_radio) = {
+            let open = self.open.lock().await;
+            let session = open
+                .get(&conn.0)
+                .ok_or_else(|| GattError::new(GattErrorCode::SessionNotFound, "not connected"))?;
+            if session.nus_notify_only {
+                return Err(GattError::new(
+                    GattErrorCode::NotifiedReadForbidden,
+                    "nus tx read forbidden while notify active",
+                ));
+            }
+            let Some(from_radio) = session.from_radio_char.clone() else {
+                return Ok(Vec::new());
+            };
+            (session.peripheral.clone(), from_radio)
         };
-        session
-            .peripheral
-            .read(from_radio)
+        peripheral
+            .read(&from_radio)
             .await
             .map_err(|e| GattError::new(GattErrorCode::WriteFailed, format!("read: {e}")))
     }
