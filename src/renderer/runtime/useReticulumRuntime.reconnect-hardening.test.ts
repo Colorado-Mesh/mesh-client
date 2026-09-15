@@ -58,11 +58,14 @@ describe('useReticulumRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).not.toMatch(/const wasActive = stateRef\.current\.status !== 'disconnected'/);
   });
 
-  it('holds Noble BLE yield while sidecar status is connecting', () => {
-    expect(SOURCE).toMatch(
-      /const sidecarActiveForBleYield =[\s\S]*?state\.status === 'connecting'[\s\S]*?state\.status === 'configured'[\s\S]*?state\.status === 'connected'[\s\S]*?state\.status === 'stale'/,
-    );
-    expect(SOURCE).toMatch(/useReticulumNobleBleYieldWatcher\(sidecarActiveForBleYield\)/);
+  it('is concurrent-safe: stack connecting does not disconnect LoRa GATT sessions', () => {
+    // Reticulum stack start/connect must not tear down Meshtastic/MeshCore GATT.
+    // disconnectAll is only for explicit RNode adapter yield (bleCoexistence), not connect().
+    expect(SOURCE).not.toContain('useReticulumNobleBleYieldWatcher');
+    expect(SOURCE).not.toMatch(/disconnectAll\s*\(/);
+    expect(SOURCE).not.toMatch(/disconnectGatt\s*\(/);
+    const connectBody = extractUseCallbackBody(SOURCE, 'connect');
+    expect(connectBody).not.toMatch(/gattSidecarProxy|disconnectAll|disconnectGatt/);
   });
 });
 
@@ -185,7 +188,7 @@ describe('useReticulumRuntime resume-generation cancel (H7)', () => {
     expect(resumeBody).toContain('powerSuspendHadBleRnodeRef.current');
   });
 
-  it('latches bleBondRemoved to release Noble and set bond-desync sticky flag', () => {
+  it('latches bleBondRemoved to release BLE RNode lease and set bond-desync sticky flag', () => {
     expect(SOURCE).toMatch(/setReticulumBleBondDesyncActive\(true\)/);
     expect(SOURCE).toMatch(/releaseReticulumBleRnodeConnect\(\)/);
     expect(SOURCE).toMatch(/status\.interfaceIssueAlert\?\.bleBondRemoved/);

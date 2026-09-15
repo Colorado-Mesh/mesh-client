@@ -2021,7 +2021,7 @@ mod tests {
         );
         assert!(
             by_id_body.contains("if is_local")
-                && by_id_body.contains("let Some(live) = self.live.get() else")
+                && by_id_body.contains("let Some(live) = self.live_opt() else")
                 && by_id_body.contains("PROPAGATION_STACK_NOT_LIVE"),
             "local-prop Sync must return PROPAGATION_STACK_NOT_LIVE when live is None (not Ok+100%)"
         );

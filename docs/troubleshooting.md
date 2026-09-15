@@ -158,7 +158,7 @@ Optional persistent mitigation:
 
 ### "A native module failed to load" dialog on startup
 
-**Cause**: `@stoprocent/noble` (or `@serialport/bindings-cpp`) was compiled for a different Electron ABI; common after an Electron or Node version change.
+**Cause**: A native addon (e.g. `@serialport/bindings-cpp`) was compiled for a different Electron ABI; common after an Electron or Node version change.
 
 **Fix**: Run `pnpm install` (the postinstall script rebuilds native modules for the correct ABI automatically).
 
@@ -562,10 +562,9 @@ The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium ru
 - **Device not discovered**: make sure the device is in advertising/pairing mode and within range. Try stopping and restarting the scan.
 - If BLE is unreliable, prefer Serial (USB) or TCP/HTTP for a stable connection.
 
-#### BLE debug: `mtu=null` and `MTU updated: …` in logs
+#### BLE debug: MTU negotiation in logs
 
-- After **Noble** `connectAsync`, **`mtu=null`** is common until the stack finishes ATT MTU negotiation.
-- A line like **`MTU updated: 20`** comes from the Noble `mtu` event. ATT_MTU must be **≥ 23** per spec; the client **coerces reported values below 23 to 23** for write sizing (treating odd values such as **20** as a Noble/binding quirk, not a literal 20-octet ATT MTU). A **one-time debug** line may note the raw value when that happens (not a warning).
+- After sidecar GATT connect, ATT MTU may still be negotiating; write sizing uses `bleAttWriteLimit.ts` (spec min **23**).
 - **Slow NodeDB / large config sync over BLE** can still be limited by **`@meshtastic/core`** queue timing (hundreds of ms between queued packets), not only GATT MTU. Use **Log → Analyze** for hints, or try **USB serial** / **TCP** if throughput matters.
 
 **Windows-specific:**
@@ -574,23 +573,17 @@ The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium ru
 
 **Linux-specific:**
 
-- The app uses Web Bluetooth (Chromium's built-in BLE API). You still need a working Bluetooth stack (`systemctl status bluetooth`).
-- Linux BLE uses the in-app Bluetooth picker (triggered from a button click); if no picker appears, restart the app and try Connect again.
-- **Immediate "User cancelled the requestDevice() chooser"** on Connect (AppImage / `.deb` / `.rpm`) without dismissing a picker:
-  1. Chromium multi-fires `select-bluetooth-device`; the app must retain the first callback (#749).
-  2. A fire-and-forget cancel-before-connect can also race behind the new chooser and kill it (seen on CachyOS / Arch with 5.25.0). Builds that **await** `cancelBluetoothSelection` before `requestDevice()` fix that race.
-     Upgrade to a release that includes both fixes, then retry Connect. If the picker still never opens, check `systemctl status bluetooth` and `rfkill list`.
-- **Flatpak:** Connect that fails with little or no UI often means the sandbox lacked `--allow=bluetooth` (needed with `--system-talk-name=org.bluez`). Reinstall a Flatpak from a release that includes that finish-arg. If pairing then fails with **bluetoothctl not found**, use the official AppImage/`.deb`/`.rpm`, or pair the radio on the host with `bluetoothctl` and retry.
+- LoRa BLE uses the reticulum-sidecar **btleplug** stack (same as macOS/Windows), not Web Bluetooth. You still need a working Bluetooth stack (`systemctl status bluetooth` / `rfkill list`).
+- **Flatpak:** Ensure the package allows Bluetooth (`--allow=bluetooth` with BlueZ talk-name). If pairing tools are missing in the sandbox, use the official AppImage/`.deb`/`.rpm`, or pair the radio on the host with `bluetoothctl` and retry.
 - If the Bluetooth adapter isn't detected, check: `systemctl status bluetooth` and `rfkill list`.
-- **MeshCore:** After you pick a radio, the app checks `bluetoothctl info <MAC>`. If the device is **not** paired at the OS level, you are prompted for the **PIN shown on the device** and pairing runs via **`bluetooth-pair`** before Web Bluetooth finishes connecting. Meshtastic does not use this gate in the same way (it may use PIN `123456` on the first pairing prompt from Chromium).
-- If device pairing fails with "Connection attempt failed", try the **"Remove & Re-pair Device"** button in the app, or manually remove via `bluetoothctl`:
+- If device pairing fails with `pairing_required` / connection attempt failed, try **"Remove & Re-pair Device"** in the app, or manually remove via `bluetoothctl`:
   ```bash
   bluetoothctl
   # Inside bluetoothctl:
   remove XX:XX:XX:XX:XX:XX # Replace with your device MAC
   # Then re-pair from the app
   ```
-- For **Meshtastic** devices, the first Chromium pairing attempt may use PIN `123456`. For **MeshCore**, always use the PIN shown on the radio (and the pre-connect prompt when BlueZ reports not paired).
+- For **Meshtastic** devices, the first pairing attempt may use PIN `123456`. For **MeshCore**, always use the PIN shown on the radio.
 - If devices won't pair or connect, power-cycle Bluetooth:
   ```bash
   bluetoothctl power off
@@ -600,20 +593,20 @@ The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium ru
 
 ### BLE auto-reconnect: "No previously connected BLE device found"
 
-**Cause**: The reconnect card appeared, but the browser lost the cached device handle; for example, the app was fully quit and relaunched.
+**Cause**: The reconnect card appeared, but no remembered BLE peripheral id was available (for example after Forget device).
 
-**Fix**: Click **Forget this device** on the reconnect card and pair fresh using the Bluetooth picker.
+**Fix**: Click **Forget this device** if shown, then **Connect** and select the radio again.
 
-### Dual-radio Noble BLE startup serialization (macOS/Windows)
+### Dual-radio BLE startup / wake stagger
 
-When both Meshtastic and MeshCore have **different** saved BLE peripherals, startup auto-connect is serialized so two Noble connects do not race:
+When both Meshtastic and MeshCore have **different** saved BLE peripherals, concurrent sidecar GATT sessions are allowed. Startup and wake still **stagger** auto-connect so both stacks do not contend on the adapter at once:
 
-- Coordinator: `meshcoreDualNobleBleInit.ts`; wired from **`App.tsx` `useLayoutEffect`** (not `useEffect` — child ConnectionPanel auto-connect effects must see primary/secondary roles first).
+- Coordinator: `meshcoreDualNobleBleInit.ts` (historical name); wired from **`App.tsx` `useLayoutEffect`**.
 - **Primary** is chosen from `mesh-client:protocol` localStorage (`meshcore` / `meshtastic`; Reticulum or missing → Meshtastic).
-- **Secondary** waits on `awaitNobleBlePrimaryAutoConnectSettled()` (GATT + handshake ready or first attempt settled) — not full device configure.
-- All Noble IPC connects go through `withNobleBleConnectMutex()`.
+- **Secondary** waits for primary GATT + handshake settle (or first attempt failure) — not full device configure.
+- Active scans may return `scan_busy` while another owner holds the scan mutex.
 
-See also wake recovery under [Sleep, wake, and long-running sessions](#sleep-wake-and-long-running-sessions) (Meshtastic-first stagger). For Reticulum BLE RNode vs Noble, see [Reticulum BLE RNode blocks Meshtastic/MeshCore Noble BLE](#reticulum-ble-rnode-blocks-meshtasticmeshcore-noble-ble).
+See also wake recovery under [Sleep, wake, and long-running sessions](#sleep-wake-and-long-running-sessions) (Meshtastic-first stagger). For Reticulum scan contention, see [Reticulum BLE RNode blocks Meshtastic/MeshCore BLE](#reticulum-ble-rnode-blocks-meshtasticmeshcore-ble).
 
 ## USB serial
 
@@ -723,28 +716,28 @@ Local/private targets include RFC1918 IPv4 (`10.x`, `172.16–31.x`, `192.168.x`
 
 ### macOS sleep / wake and auto-reconnect
 
-After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and MQTT I/O until the OS resumes. Recovery is **Meshtastic-first**: expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later. When both protocols use Noble BLE, MeshCore's auto-reconnect additionally waits (up to **30 seconds**) for the Meshtastic BLE link's GATT connection + protocol handshake to settle — not for full device configure — before it starts its own connect.
+After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and MQTT I/O until the OS resumes. Recovery is **Meshtastic-first**: expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later. When both protocols use BLE, MeshCore's auto-reconnect additionally waits (up to **30 seconds**) for the Meshtastic BLE link's GATT connection + protocol handshake to settle — not for full device configure — before it starts its own connect.
 
-- **Noble BLE:** The client tries an immediate connect (main-process peripheral cache) before scanning up to **30 seconds** for a new advertisement.
+- **Sidecar GATT BLE:** The client tries an immediate connect (remembered peripheral) before scanning up to **30 seconds** for a new advertisement. LoRa BLE uses `ensureForBle()` so the sidecar is up without a Reticulum UI Start.
 - **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or quit the app and reconnect manually.
-- **Dual-protocol BLE (Meshtastic + MeshCore):** Auto-reconnect is already staggered Meshtastic-first (see above); manually forcing MeshCore to reconnect before Meshtastic is not necessary and does not match the recovery order. If both protocols are still down after ~30 seconds, use **Connect** on each tab in the same Meshtastic-then-MeshCore order. Concurrent Noble scans from both tabs can block recovery.
-- **BLE stack stuck after wake** (`unknown peripheral`, `connectAsync timed out`, `peripheral not found` in the app log): **Quit mesh-client fully** (Cmd+Q), toggle **Bluetooth off → on** in System Settings (or power-cycle the radios), reopen the app, wait ~5 seconds, then use **Connect** on the Connection tab.
+- **Dual-protocol BLE (Meshtastic + MeshCore):** Auto-reconnect is already staggered Meshtastic-first (see above); manually forcing MeshCore to reconnect before Meshtastic is not necessary and does not match the recovery order. If both protocols are still down after ~30 seconds, use **Connect** on each tab in the same Meshtastic-then-MeshCore order. Concurrent scans from both tabs can return `scan_busy`.
+- **BLE stack stuck after wake** (`connect_timeout`, `adapter_missing`, or peripheral not found in the app log): **Quit mesh-client fully** (Cmd+Q), toggle **Bluetooth off → on** in System Settings (or power-cycle the radios), reopen the app, wait ~5 seconds, then use **Connect** on the Connection tab.
 - **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
 - **Renderer hung after wake:** If the log shows `[main] System resumed` followed by `[main] renderer unresponsive after system resume (no heartbeat within 30s)` and **no** `[usePowerRecovery]` lines, the renderer event loop was already dead before wake recovery ran. **Quit mesh-client fully** and relaunch — do not rely on Disconnect alone.
 
 ### Windows sleep / wake and auto-reconnect
 
-After sleep or hibernate, mesh-client uses the same resume path as macOS: reconnect backoff and MQTT I/O pause until the OS resumes. Recovery is **Meshtastic-first**: expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later. When both protocols use Noble BLE over Noble IPC, MeshCore's auto-reconnect additionally waits (up to **30 seconds**) for the Meshtastic BLE link's GATT connection + protocol handshake to settle — not for full device configure — before it starts its own connect.
+After sleep or hibernate, mesh-client uses the same resume path as macOS: reconnect backoff and MQTT I/O pause until the OS resumes. Recovery is **Meshtastic-first**: expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later. When both protocols use BLE, MeshCore's auto-reconnect additionally waits (up to **30 seconds**) for the Meshtastic BLE link's GATT connection + protocol handshake to settle — not for full device configure — before it starts its own connect.
 
-- **Noble BLE:** Same immediate-connect-then-scan behavior as macOS (peripheral cache, then up to **30 seconds** scanning for a new advertisement).
+- **Sidecar GATT BLE:** Same immediate-connect-then-scan behavior as macOS (remembered peripheral, then up to **30 seconds** scanning for a new advertisement).
 - **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or exit the app fully and reconnect manually.
-- **Dual-protocol BLE (Meshtastic + MeshCore):** Auto-reconnect is already staggered Meshtastic-first (see above); manually forcing MeshCore to reconnect before Meshtastic is not necessary and does not match the recovery order. If both protocols are still down after ~30 seconds, use **Connect** on each tab in the same Meshtastic-then-MeshCore order. Concurrent Noble scans from both tabs can block recovery.
+- **Dual-protocol BLE (Meshtastic + MeshCore):** Auto-reconnect is already staggered Meshtastic-first (see above); manually forcing MeshCore to reconnect before Meshtastic is not necessary and does not match the recovery order. If both protocols are still down after ~30 seconds, use **Connect** on each tab in the same Meshtastic-then-MeshCore order. Concurrent scans from both tabs can return `scan_busy`.
 - **MeshCore pairing after wake:** If BLE appears connected but the MeshCore handshake or GATT notify never completes, confirm the radio is **paired in Settings → Bluetooth & devices** before using **Connect** in mesh-client (MeshCore requires OS-level pairing on Windows).
-- **BLE stuck after wake** (`connectAsync timed out`, `peripheral not found`, or GATT notify watchdog messages in the app log): **Exit mesh-client fully**, toggle **Bluetooth off → on** in **Settings → Bluetooth & devices** (or disable/enable the adapter in **Device Manager**), wait a few seconds, reopen the app, then use **Connect**. If disconnects persist, update the Bluetooth driver in Device Manager.
+- **BLE stuck after wake** (`connect_timeout`, peripheral not found, or GATT session errors in the app log): **Exit mesh-client fully**, toggle **Bluetooth off → on** in **Settings → Bluetooth & devices** (or disable/enable the adapter in **Device Manager**), wait a few seconds, reopen the app, then use **Connect**. If disconnects persist, update the Bluetooth driver in Device Manager.
 - **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
 - **Renderer hung after wake:** Same as macOS — if you see `[main] renderer unresponsive after system resume (no heartbeat within 30s)` without `[usePowerRecovery]` logs, quit fully and relaunch.
 
-**Linux Web Bluetooth:** Manual reconnect from the connection banner still requires a user gesture (Connect / picker). Linux does not use Noble IPC; see **Linux-specific** under [BLE known issues](#ble-known-issues) above for pairing and adapter reset steps.
+**Linux:** Same sidecar GATT path as macOS/Windows; see **Linux-specific** under [BLE known issues](#ble-known-issues) for BlueZ / Flatpak steps.
 
 **Reticulum (all platforms):** On suspend, `onPowerSuspend` clears in-memory rnsh sessions and rncp transfers. On resume, `onPowerResume` restarts the sidecar via `connect()` unless the user disconnected.
 
@@ -752,16 +745,14 @@ After sleep or hibernate, mesh-client uses the same resume path as macOS: reconn
 
 If mesh-client stays open for **days** on a busy mesh (especially **MeshCore BLE-only** with hundreds of repeaters):
 
-- **Restart the app every 1–2 days** to limit main-process uptime (reduces risk of native BLE / V8 edge cases after ~72h).
-- After **4 days** with **Noble BLE connected** on **macOS or Windows**, mesh-client shows a **persistent restart banner** plus an OS notification (Dock badge on macOS, taskbar flash on Windows). Restart relaunches the process; Dismiss hides the nudge for 12 hours. Linux uses Web Bluetooth (different stack) and does not show this prompt. Serial/TCP-only sessions are not prompted.
-- Mid-session `EXC_BREAKPOINT` / SIGTRAP after multi-day Noble BLE is **confirmed on macOS**; the same failure class on Windows is **unconfirmed**, so the day-4 prompt there is precautionary. The mechanism is **suspected** to be a native Noble / Electron main-process teardown race (working hypothesis: a timer tick intersecting V8 GC firing into freed CoreBluetooth state) — not established. What is certain is that it is **outside mesh-client’s JavaScript control** — not a corrupt database and not catchable with `try/catch`. Mitigation is process recycle (restart) and preferring Serial/TCP for always-on desks. Tracked upstream as [stoprocent/noble#140](https://github.com/stoprocent/noble/issues/140) — attach your `.ips` crash report there if you can reproduce it.
+- Prefer **Serial/TCP** for always-on desks when practical.
 - **MeshCore:** default contact cap is **10,000** (App settings); enable **auto-prune by age** if you want SQLite trimmed below that. Avoid bulk repeater status/neighbors refresh when not needed — thousands of `syncNextMessage timed out` lines in the log usually mean the companion radio is overloaded.
 - **Meshtastic:** default node cap is **10,000**; enable **auto-prune** in App settings as needed.
 - **Reticulum:** restart the sidecar/stack periodically on always-on nodes; message retention prunes run at startup and every 6 hours while the app is open.
-- If the app crashes, save **`~/Library/Logs/DiagnosticReports/Mesh-client-*.ips`** (macOS) before relaunching. Main-process crashes often show `EXC_BREAKPOINT` during a timer/GC; include the `.ips` and exported log when reporting.
-- **Reporting a crash or lockup:** Prefer **Export for Developer / GitHub before restart** if the UI still responds. After a forced restart, export anyway — startup preserves the previous session log as `mesh-client.log.1` (also included in support bundles). Note app version, OS, uptime (`[main] long-session health` / snapshot `mainLiveness`), whether MeshCore BLE was connected, and any `[main] renderer heartbeat stalled` / `webContents unresponsive` lines. Upgrade to the latest release when convenient — crashes on very old builds are harder to reproduce.
+- If the app crashes, save **`~/Library/Logs/DiagnosticReports/Mesh-client-*.ips`** (macOS) before relaunching; include the `.ips` and exported log when reporting.
+- **Reporting a crash or lockup:** Prefer **Export for Developer / GitHub before restart** if the UI still responds. After a forced restart, export anyway — startup preserves the previous session log as `mesh-client.log.1` (also included in support bundles). Note app version, OS, uptime (`[main] long-session health` / snapshot `mainLiveness`), whether MeshCore BLE was connected, and any `[main] renderer heartbeat stalled` / `webContents unresponsive` lines.
 
-After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory, per-session BLE timer state, and Noble connection age. While the window is visible, missing renderer heartbeats for ~90s also log `[main] renderer heartbeat stalled`.
+After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory and per-session BLE timer state. While the window is visible, missing renderer heartbeats for ~90s also log `[main] renderer heartbeat stalled`.
 
 ### App shows "disconnected" but device is still on
 
@@ -1161,7 +1152,7 @@ Keep Rust current with `pnpm run update` (runs `rustup update` and rebuilds the 
 
 **Symptoms**: Click **Cancel** during **Start stack** (especially while cargo is building), then **Connect** / **Start** again; UI or logs show `RETICULUM_SIDECAR_START_ABORTED` and the stack never comes up.
 
-**Cause (fixed):** Older builds rejoined the aborted start promise. Current builds set an abort flag and return from **Cancel** without waiting on cargo/BLE; the next **start** waits for the doomed promise to clear, then starts fresh. Noble yield for BLE RNode runs only after health, so Cancel during cargo does not suspend Meshtastic/MeshCore.
+**Cause (fixed):** Older builds rejoined the aborted start promise. Current builds set an abort flag and return from **Cancel** without waiting on cargo/BLE; the next **start** waits for the doomed promise to clear, then starts fresh. Cancel during cargo does not tear down Meshtastic/MeshCore GATT; LoRa BLE uses `ensureForBle()` independently of Reticulum UI Start.
 
 **What to do**: Upgrade to a build with listen-first Cancel fix. If you still see `START_ABORTED` after Cancel+Connect on a current build, quit the app fully and **Start stack** once.
 
@@ -1398,19 +1389,18 @@ TCP/network Nomad Links use path-scaled initiator hops (`link_hops = clamp(path_
 10. **No publish-capable interface** — Auto and outbound TCP client types cannot publish RMAP discovery. Eligible types are RNode / RNode Multi / KISS (with serial), BLE peer, I2P, UDP, and pipe.
 11. **Partial publishing (amber X of Y)** — Connection shows **publishing X of Y** in amber when some but not all eligible interfaces have `discoverable=yes`. TCP hubs never count toward Y. Use Network → **Publish on RMAP v4** (check again while indeterminate) or per-interface **RMAP** toggles on Connection to sync the rest.
 
-### Reticulum BLE RNode blocks Meshtastic/MeshCore Noble BLE
+### Reticulum BLE RNode blocks Meshtastic/MeshCore BLE
 
-**Symptoms**: Reticulum stack is running with an enabled BLE RNode; Meshtastic or MeshCore BLE scan/connect fails with “Bluetooth scan in progress (reticulum)” or Noble sessions stay disconnected.
+**Symptoms**: Reticulum stack is running with an enabled BLE RNode; Meshtastic or MeshCore BLE scan/connect fails with `scan_busy` / “Bluetooth scan in progress (reticulum)” or `mac_conflict`.
 
-**Cause**: On macOS/Windows, sidecar start **yields Noble BLE** so btleplug can pair the RNode. While the yield holds `scanOwner === 'reticulum'`, Meshtastic/MeshCore Noble connect is rejected. After grace, yield stops re-contending so an offline RNode cannot thrash LoRa BLE. mesh-client releases the scan mutex when the RNode connects, the grace window expires, prepare fails closed after Noble disconnect timeout, or the stack stops. When Reticulum **Auto-start** is on, Meshtastic/MeshCore BLE autostart also waits `awaitReticulumBleCoexistenceClear` (default max ~**65 s**).
+**Cause**: The app checks BLE device ownership and serializes app-requested scans and LoRa connection setup. A conflicting configured address or active scan can block Connect. LoRa GATT and Reticulum run in the same sidecar process with separate centrals; Reticulum's autonomous discovery/reconnect does not use the app's scan lease.
 
 **Fix**:
 
-1. Wait up to ~**60s** after stack start for the BLE RNode to connect (Connection tab interface status **up** / **online**) — that matches the OS passkey window (~65 s including the RF autostart buffer).
-2. Stop the Reticulum stack if you need immediate Meshtastic/MeshCore BLE access.
-3. Ensure you are on a current build with watcher-only yield (`useReticulumNobleBleYieldWatcher` — not interface-snapshot release), `reticulumNobleBleYield.ts`, and `ble-coexistence-coordinator.assertCanConnect`.
-4. Check Device logs for `[BleCoexistence]` and `[useReticulumNobleBleYieldWatcher]`.
-5. If CoreBluetooth logs **“Event receiver died”**, Noble connect raced mid-pair — wait for coexistence clear or stop the Reticulum stack before retrying LoRa BLE.
+1. Wait for the Reticulum BLE scan/connect to finish, then retry Meshtastic/MeshCore Connect.
+2. Stop the Reticulum stack or disable the BLE RNode if you need exclusive LoRa BLE access.
+3. Check Device logs for `[BleCoexistence]` / `[GATT]` and sidecar `scan_busy` / `mac_conflict` codes.
+4. Ensure Meshtastic/MeshCore and the RNode use **different** Bluetooth addresses.
 
 ### Reticulum BLE RNode pairing fails (wrong PIN / no PIN on display / not in macOS list)
 

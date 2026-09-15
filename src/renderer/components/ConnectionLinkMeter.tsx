@@ -18,7 +18,7 @@ export interface ConnectionLinkMeterProps {
 
 /**
  * Host↔radio link meter for the Connection panel (not LoRa Telemetry SignalMeter).
- * BLE = RSSI dBm; HTTP/TCP = RTT ms; Linux BLE = Web Bluetooth unavailable phrase.
+ * BLE = RSSI dBm; HTTP/TCP = RTT ms; unavailable = no host signal yet.
  */
 export default function ConnectionLinkMeter({
   kind,
@@ -39,7 +39,7 @@ export default function ConnectionLinkMeter({
         <span className="text-muted">{t('connectionPanel.hostSignal')}</span>
         <span className="inline-flex items-center gap-1.5 text-xs text-gray-400">
           <SignalBars noData className="h-3 w-4" />
-          {t('connectionPanel.signalUnavailableWebBluetooth')}
+          {t('connectionPanel.hostSignalUnavailable')}
         </span>
       </div>
     );

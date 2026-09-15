@@ -39,8 +39,8 @@ export async function reconnectRfFromLastConnection(
       await handlers.connectBleDirect(bleDeviceId);
       return;
     }
-    await reconnectBleWithScan(protocol, bleDeviceId, () =>
-      handlers.connectBleAutomatic(bleDeviceId),
+    await reconnectBleWithScan(protocol, bleDeviceId, (resolvedId) =>
+      handlers.connectBleAutomatic(resolvedId ?? bleDeviceId),
     );
     return;
   }

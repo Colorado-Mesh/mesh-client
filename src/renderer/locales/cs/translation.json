@@ -884,7 +884,6 @@
     "selectSerialPort": "Vyberte Sériový port",
     "noSerialPorts": "Nebyly nalezeny žádné sériové porty. Ujistěte se, že je vaše zařízení zapojeno.",
     "enterPin": "Zadejte PIN zobrazený na vašem zařízení:",
-    "pinExpiring": "{{count}}s – rychle zadejte PIN, okno párování BlueZ se zavírá",
     "submit": "Předložit",
     "rePairDevice": "Odebrat a znovu spárovat zařízení",
     "mqttConnection": "Připojení MQTT",
@@ -954,19 +953,14 @@
     "stageConfiguring": "Konfigurace zařízení…",
     "stageConnecting": "Připojování k zařízení…",
     "stageScanning": "Skenování – vyberte své zařízení, když se zobrazí níže",
-    "stageConnectingSaved": "Připojování k uloženému zařízení Bluetooth…",
-    "stageSelectBluetooth": "Níže vyberte své zařízení Bluetooth",
     "stageEnterPin": "Zadejte PIN zobrazený na vašem zařízení",
     "stageEnterPinPair": "Pro spárování zařízení zadejte PIN",
     "stagePairingBluetooth": "Párování pomocí PIN (bluetoothctl)…",
     "stageRemoving": "Odebírání zařízení…",
     "stagePairingPin": "Párování s PIN…",
-    "stagePairing": "Párování…",
-    "stageSelectBluetoothDots": "Vyberte své zařízení Bluetooth…",
     "stagePairingFailed": "Párování se nezdařilo. Prosím znovu spárujte své zařízení.",
     "stageCheckingPairing": "Kontrola párování Bluetooth…",
     "stageEnterPinLinux": "Zadejte PIN zobrazený na vašem zařízení (nejprve spárujte s Linuxem)",
-    "stageReconnecting": "Opětovné připojování k poslednímu zařízení Bluetooth…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} – {{hint}}",
@@ -988,7 +982,6 @@
       },
       "ble": {
         "adapterWindowsHint": "Zkontrolujte Nastavení > Bluetooth a zařízení. Pokud je Bluetooth zapnuté, ale nedostupné, aktualizujte ovladač Bluetooth ve Správci zařízení.",
-        "adapterLinuxHint": "Ujistěte se, že je povoleno Bluetooth a že je nastaven experimentální příznak Web Bluetooth. Zkuste: systemctl status bluetooth",
         "adapterGenericHint": "Ujistěte se, že je povoleno Bluetooth. V systému Linux spusťte: systemctl status bluetooth",
         "securityPermissionHint": "Povolení Bluetooth odepřeno. Ujistěte se, že aplikace má přístup k zařízení Bluetooth.",
         "gattDisconnectedHint": "Spojení GATT bylo přerušeno. Zkuste se přesunout blíže k zařízení a znovu se připojit.",
@@ -1395,8 +1388,6 @@
     "autoConnectingTo": "Automatické připojení k {{deviceName}}…",
     "autoReconnectInProgress": "Probíhá automatické opětovné připojení…",
     "stageAutoConnectingBle": "Připojení k {{deviceName}}…",
-    "stageWaitingNobleBleMeshtastic": "Čekání na dokončení Meshtastic Bluetooth — MeshCore se po dokončení automaticky připojí k {{deviceName}}…",
-    "stageWaitingNobleBleMeshcore": "Čekání na dokončení MeshCore Bluetooth – Meshtastic se po dokončení automaticky připojí k {{deviceName}}…",
     "reticulumStats": {
       "interfaces": "{{count}} rozhraní",
       "peers": "{{count}} kolegové"
@@ -1530,7 +1521,6 @@
     "linkQuality": "Kvalita spoje",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Nedostupné (webový Bluetooth)",
     "meshcoreCaBroker": "Makléř MeshCore.CA",
     "meshcoreCaPrimary": "Primární",
     "meshcoreCaBackup": "Záloha",
@@ -1553,7 +1543,24 @@
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
     "bluetoothId": "Bluetooth ID",
-    "reticulumAutoResendOnAnnounce": "Opakujte neúspěšné zprávy, když kolega oznámí"
+    "reticulumAutoResendOnAnnounce": "Opakujte neúspěšné zprávy, když kolega oznámí",
+    "errors": {
+      "ble": {
+        "adapter_missing": "No Bluetooth adapter was found. Enable Bluetooth in system settings and try again.",
+        "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
+        "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
+        "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
+        "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
+        "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
+        "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",
+        "bond_removed": "The Bluetooth bond is no longer valid. Forget the device in system settings, then re-pair.",
+        "write_failed": "Failed to write to the Bluetooth device. Reconnect and try again.",
+        "session_not_found": "The Bluetooth session is no longer available. Disconnect and connect again.",
+        "notified_read_forbidden": "This Bluetooth characteristic cannot be read that way. Reconnect and try again.",
+        "feature_disabled": "Bluetooth GATT support is not available in this build.",
+        "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
+      }
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -2324,10 +2331,7 @@
       "bleAlreadyInProgress": "Připojení Bluetooth již probíhá. Počkejte na dokončení nebo zkuste místo toho sériové/USB.",
       "bleMissingServices": "Zařízení nepodporuje protokol MeshCore BLE. Ujistěte se, že v zařízení běží firmware MeshCore.",
       "blePeripheralInUse": "Toto zařízení je již připojeno přes Meshtastic BLE. Před připojením jako MeshCore jej nejprve odpojte.",
-      "bleTimeoutWebBtHandshake": "Vypršel časový limit pro navázání spojení MeshCore (Web Bluetooth). Rádio může nejprve potřebovat PIN spárovaný s Linuxem: použijte Odebrat a znovu spárovat zařízení a zadejte PIN zobrazený na zařízení, nebo spárujte s bluetoothctl a poté znovu klepněte na Připojit.",
-      "bleTimeoutWebBt": "Při otevírání MeshCore přes Web Bluetooth vypršel časový limit připojení Bluetooth. Zkuste to znovu, nechte zařízení v bdělém stavu, vypněte a zapněte BLE na rádiu nebo použijte sériové/TCP.",
       "bleTimeoutHandshake": "Bluetooth je připojeno, ale před odpojením/vypršením časového limitu nebylo dokončeno navázání spojení protokolu MeshCore. Zkuste to znovu, udržujte zařízení v bdělém stavu a poblíž, vypněte a zapněte BLE nebo použijte sériové/TCP.",
-      "bleTimeoutNoble": "Při otevírání MeshCore přes Noble IPC vypršel časový limit připojení Bluetooth. Zkuste to znovu, vypněte a zapněte BLE na zařízení nebo použijte sériové/TCP.",
       "roomPost": {
         "badState": "Pokojový příspěvek zamítnut (nepřihlášen do rádia). Odhlaste se, přihlaste se znovu a zkuste to znovu.",
         "illegalArg": "Příspěvek do místnosti zamítnut (neplatný formát zprávy).",
@@ -2357,7 +2361,8 @@
       "cliDangerNotConfirmed": "Destruktivní příkazy CLI vyžadují potvrzení na panelu Opakovače.",
       "pingFailed": "Ping selhal",
       "floodScopeBusy": "Potlačení rozsahu zaplavení není dostupné, když probíhá správa opakovače nebo traceroute. Zkuste to znovu při nečinnosti.",
-      "removeContactFailed": "Odebráno lokálně, ale rádio odmítlo removeContact. Kontakt se může po obnovení znovu objevit."
+      "removeContactFailed": "Odebráno lokálně, ale rádio odmítlo removeContact. Kontakt se může po obnovení znovu objevit.",
+      "bleTimeoutGatt": "Bluetooth connection timed out while opening MeshCore over sidecar GATT. Retry, power-cycle BLE on the device, or use Serial/TCP."
     },
     "mqttHints": {
       "notAuthorized": "Ověřte uživatelské jméno v1_, podpis tokenu a publikum JWT vs. makléř; viz docs/letsmesh-mqtt-auth.md. V případě potřeby použijte Vlastní k vložení tokenu vydaného operátorem.",
@@ -5909,12 +5914,6 @@
     },
     "drawOfferWaitingBanner": "Nabídka remízy odeslána. Čeká se na soupeře…",
     "idleExpiryNotice": "Hry vyprší po nečinnosti a poté je lze pouze smazat. Nezodpovězené výzvy: 24 hodin (všechny hry). Aktivní hry: piškvorky po 24 hodinách, šachy a čtyři v řadě po 7 dnech."
-  },
-  "longSession": {
-    "title": "Doporučeno restartovat",
-    "body": "mesh-client běží již čtyři dny s připojeným Bluetooth rádiem. Restartujte aplikaci, abyste snížili riziko pádů při dlouhých sezeních Noble BLE.",
-    "restart": "Spustit znovu",
-    "dismiss": "Zamítnout"
   },
   "reticulumSetup": {
     "title": "Vaše první připojení",

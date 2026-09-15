@@ -480,8 +480,6 @@ export const RNODE_TIMEOUT_BAD_UNPLUG_RE = new Map([
   ['cs', /\bpomocí portu/i],
 ]);
 
-export const LONG_SESSION_RESTART_NUDGE_KEY = 'toasts.longSessionRestartNudge';
-
 /** MyMemory/CAT padding with dot runs in short UI labels. */
 export const CAT_DOT_PADDING_RE = /\.{4,}/;
 
@@ -2126,8 +2124,6 @@ export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set([
   'autoConnectingTo',
   'autoReconnectInProgress',
   'stageAutoConnectingBle',
-  'stageWaitingNobleBleMeshtastic',
-  'stageWaitingNobleBleMeshcore',
 ]);
 
 /** connectionPanel.autoReconnectInProgress — must mean reconnect, not initial connect. */
@@ -3110,23 +3106,6 @@ function checkFlasherIssues(ctx) {
     !/\bremoveContact\b/.test(val)
   ) {
     issues.push('meshcore.errors.removeContactFailed must preserve wire token removeContact');
-  }
-
-  if (locale !== 'en' && flatKey === LONG_SESSION_RESTART_NUDGE_KEY && /\bBLE\b/.test(enVal)) {
-    if (!/\bBLE\b/.test(val)) {
-      issues.push('longSessionRestartNudge must preserve protocol token "BLE"');
-    }
-    issues.push(...protectedBrandIssues(enVal, val, ['mesh-client']));
-  }
-
-  if (locale !== 'en' && flatKey === 'longSession.body' && /\bBLE\b/.test(enVal)) {
-    if (!/\bBLE\b/.test(val)) {
-      issues.push('longSession.body must preserve protocol token "BLE"');
-    }
-    if (/\bNoble\b/.test(enVal) && !/\bNoble\b/.test(val)) {
-      issues.push('longSession.body must preserve protocol token "Noble"');
-    }
-    issues.push(...protectedBrandIssues(enVal, val, ['mesh-client']));
   }
 
   return issues;

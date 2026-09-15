@@ -128,7 +128,6 @@ import {
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { aggregateReticulumLocalRfTxQueue } from '@/renderer/lib/reticulum/reticulumTxQueueAggregate';
-import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
 import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
 import { reconcileRncpListenerFromSidecar } from '@/renderer/lib/rncpListenerApply';
@@ -337,16 +336,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const linkTimeoutBridgeGenerationRef = useRef(0);
   const identityIdRef = useRef(identityId);
   const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
-
-  // Include `connecting`: main suspends Noble at sidecar start before status reaches
-  // configured. Treating only configured/connected/stale as active let the watcher
-  // (and interface snapshot) release the start yield mid-BLE-RNode pair → Event receiver died.
-  const sidecarActiveForBleYield =
-    state.status === 'connecting' ||
-    state.status === 'configured' ||
-    state.status === 'connected' ||
-    state.status === 'stale';
-  useReticulumNobleBleYieldWatcher(sidecarActiveForBleYield);
 
   useEffect(() => {
     stateRef.current = state;
@@ -1998,6 +1987,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   }, [syncConnectionStore]);
 
   const restartStack = useCallback(async () => {
+    const generation = resumeGenerationRef.current;
     if (connectInFlightRef.current) {
       const pending = connectInFlightDoneRef.current;
       if (pending) {
@@ -2012,32 +2002,44 @@ export function useReticulumRuntime(): ProtocolRuntime {
         throw new Error('Reticulum stack operation already in progress');
       }
     }
+    if (resumeGenerationRef.current !== generation) return;
     connectInFlightRef.current = true;
-    console.warn('[useReticulumRuntime] restarting stack to reload interface config');
+    console.warn('[useReticulumRuntime] soft-restarting live RNS (HTTP + LoRa GATT preserved)');
     const priorSuppress = suppressReconnectRef.current;
     suppressReconnectRef.current = true;
     const flight = (async () => {
       setState((s) => ({ ...s, status: 'connecting', connectionType: null }));
       syncConnectionStore({ status: 'connecting', connectionType: null });
-      unsubEventRef.current?.();
-      unsubEventRef.current = null;
-      unsubVoiceAudioRef.current?.();
-      unsubVoiceAudioRef.current = null;
-      await window.electronAPI.reticulum.stop();
-      await window.electronAPI.reticulum.start({ reuseIfRunning: false });
-      subscribeSidecarEventBridges();
+      // Soft restart keeps the sidecar process (and LoRa GATT sessions) alive —
+      // do not stop()/start() which SIGTERM the binary.
+      const soft = (await window.electronAPI.reticulum.proxyPost('/api/v1/stack/restart', {})) as {
+        ok?: boolean;
+        error?: string;
+      };
+      if (resumeGenerationRef.current !== generation) return;
+      if (soft?.ok === false) {
+        throw new Error(typeof soft.error === 'string' ? soft.error : 'stack soft restart failed');
+      }
       const lxmfHash = await refreshIdentityFromSidecar();
+      if (resumeGenerationRef.current !== generation) return;
       const connectedNodeId = lxmfHash ? reticulumHashToNodeId(lxmfHash) : 0;
       await refreshContactsFromSidecar();
+      if (resumeGenerationRef.current !== generation) return;
       await refreshLocalInterfacesFromSidecar();
+      if (resumeGenerationRef.current !== generation) return;
       await syncDiagnosticsFromSidecar();
+      if (resumeGenerationRef.current !== generation) return;
       await hydrateRawPackets();
+      if (resumeGenerationRef.current !== generation) return;
       if (identityId) {
         await markStaleReticulumOutboundMessages(identityId, RETICULUM_STALE_OUTBOUND_MS);
+        if (resumeGenerationRef.current !== generation) return;
         markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
         await loadMessagesFromDb('merge');
+        if (resumeGenerationRef.current !== generation) return;
       }
       await catchUpRecentInboundLxmf({ reason: 'restartStack' });
+      if (resumeGenerationRef.current !== generation) return;
       setState({ status: 'configured', myNodeNum: connectedNodeId, connectionType: null });
       syncConnectionStore({
         status: 'configured',
@@ -2053,16 +2055,20 @@ export function useReticulumRuntime(): ProtocolRuntime {
     try {
       await flight;
     } catch (e) {
+      if (resumeGenerationRef.current !== generation) return;
       console.error('[useReticulumRuntime] stack restart failed ' + errLikeToLogString(e));
-      tearDownFromSidecarStop();
+      // Soft restart failed with process still up — do not tearDownFromSidecarStop
+      // (that assumes a hard stop). Leave disconnected for a manual Start.
+      setState((s) => ({ ...s, status: 'disconnected', connectionType: null }));
+      syncConnectionStore({ status: 'disconnected', connectionType: null });
       throw e instanceof Error ? e : new Error(String(e));
     } finally {
-      suppressReconnectRef.current = priorSuppress;
+      // Stop owns the sticky suppress flag; a sleep-only cancellation still permits wake recovery.
+      if (!isReticulumManualStackStopSuppress()) suppressReconnectRef.current = priorSuppress;
       connectInFlightRef.current = false;
       connectInFlightDoneRef.current = null;
     }
   }, [
-    subscribeSidecarEventBridges,
     refreshContactsFromSidecar,
     refreshIdentityFromSidecar,
     refreshLocalInterfacesFromSidecar,
@@ -2072,7 +2078,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
     hydrateRawPackets,
     catchUpRecentInboundLxmf,
     identityId,
-    tearDownFromSidecarStop,
     scheduleLocalInterfaceStatusBurst,
   ]);
 

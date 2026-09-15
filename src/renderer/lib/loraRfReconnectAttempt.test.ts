@@ -8,7 +8,7 @@ import {
 import { createRfReconnectController } from './rfReconnectController';
 import { loadRendererLibSource } from './sourceContractTestHelpers';
 import { setSystemSuspended } from './systemPowerState';
-import { NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS } from './timeConstants';
+import { BLE_RECONNECT_ATTEMPT_BUDGET_MS } from './timeConstants';
 
 vi.mock('./bleReconnectHelper', async (importOriginal) => {
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
@@ -174,7 +174,7 @@ describe('runLoraRfReconnectAttempt', () => {
     expect(runOpenAndAttach).toHaveBeenCalledTimes(1);
     expect(raceWithDeadline).toHaveBeenCalledWith(
       expect.any(Promise),
-      NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS,
+      BLE_RECONNECT_ATTEMPT_BUDGET_MS,
       expect.stringContaining('Reconnect attempt timed out after'),
     );
   });
@@ -295,7 +295,7 @@ describe('loraRfReconnectAttempt source contracts', () => {
   it('owns raceWithDeadline budget and finally schedule flush', () => {
     const source = loadRendererLibSource('loraRfReconnectAttempt.ts');
     expect(source).toContain('raceWithDeadline');
-    expect(source).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
+    expect(source).toContain('BLE_RECONNECT_ATTEMPT_BUDGET_MS');
     expect(source).toContain('Reconnect attempt timed out after');
     expect(source).toContain('createBleReconnectTransportCleanup');
     expect(source).toContain('endAttempt');

@@ -16,10 +16,6 @@ vi.mock('@/renderer/lib/reticulum/fetchRecentInboundLxmf', () => ({
   fetchRecentInboundLxmfDetailed: vi.fn().mockResolvedValue({ messages: [], ringLen: 0 }),
 }));
 
-vi.mock('@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher', () => ({
-  useReticulumNobleBleYieldWatcher: () => {},
-}));
-
 vi.mock('@/renderer/lib/reticulum/useReticulumPropagationAutoSync', () => ({
   useReticulumPropagationAutoSync: () => {},
 }));

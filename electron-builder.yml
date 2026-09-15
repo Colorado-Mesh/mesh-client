@@ -14,7 +14,7 @@ files:
   - package.json
 asarUnpack:
   - 'node_modules/systeminformation/**/*'
-  - 'node_modules/@stoprocent/**/*'
+  # Native BLE moved to reticulum-sidecar (btleplug); @stoprocent/noble removed.
 publish:
   provider: github
   owner: Colorado-Mesh

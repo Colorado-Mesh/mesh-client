@@ -21,6 +21,7 @@
 )]
 
 mod api;
+mod gatt;
 mod stack;
 
 use std::net::SocketAddr;
@@ -47,6 +48,9 @@ struct Cli {
     port: u16,
     #[arg(long)]
     headless: bool,
+    /// Start HTTP/GATT without opening configured Reticulum interfaces or services.
+    #[arg(long)]
+    ble_only: bool,
     #[arg(long)]
     reticulum_config_dir: Option<String>,
     #[arg(long)]
@@ -188,8 +192,23 @@ async fn main() -> ExitCode {
             error!(error = %e, "HTTP server exited with error");
         }
     });
-    // attach_live's future is large (PropagationBridge / LXMF setup); pin to satisfy clippy.
-    Box::pin(stack.attach_live()).await;
+    if !cli.ble_only {
+        // attach_live's future is large (PropagationBridge / LXMF setup).
+        if let Err(e) = Box::pin(stack.attach_live()).await {
+            error!(error = %e, "failed to attach live Reticulum stack");
+        }
+    }
     let _ = serve.await;
     ExitCode::SUCCESS
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ble_only_start_is_explicit() {
+        assert!(!Cli::parse_from(["mesh-client-reticulum"]).ble_only);
+        assert!(Cli::parse_from(["mesh-client-reticulum", "--ble-only"]).ble_only);
+    }
 }

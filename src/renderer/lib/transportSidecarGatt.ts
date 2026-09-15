@@ -1,34 +1,25 @@
 import type { Types } from '@meshtastic/core';
 
-import type { NobleBleSessionId } from './types';
+import type { GattBleSessionId } from './types';
 
 /**
- * IPC-backed Transport implementation for @stoprocent/noble BLE.
- * The actual BLE operations run in the Electron main process via NobleBleManager.
- * This transport bridges the renderer-side MeshDevice to the main-process noble instance
- * using Electron IPC.
- *
- * Usage:
- *   const transport = new TransportNobleIpc();
- *   await window.electronAPI.connectNobleBle(peripheralId); // main process connects
- *   const device = new MeshDevice(transport as any);
- *   device.configure();
+ * Sidecar GATT Transport for Meshtastic MeshDevice.
+ * BLE runs in reticulum-sidecar (btleplug); Electron main proxies via gatt:* IPC.
  */
-export class TransportNobleIpc implements Types.Transport {
-  private readonly sessionId: NobleBleSessionId;
+export class TransportSidecarGatt implements Types.Transport {
+  private readonly sessionId: GattBleSessionId;
   private _fromDeviceController: ReadableStreamDefaultController<Types.DeviceOutput> | null = null;
   private _fromRadioUnsub: (() => void) | null = null;
 
   public readonly toDevice: WritableStream<Uint8Array>;
   public readonly fromDevice: ReadableStream<Types.DeviceOutput>;
 
-  constructor(sessionId: NobleBleSessionId) {
+  constructor(sessionId: GattBleSessionId) {
     this.sessionId = sessionId;
-    // fromDevice: ReadableStream fed by noble-ble-from-radio IPC events from main process
     this.fromDevice = new ReadableStream<Types.DeviceOutput>({
       start: (controller) => {
         this._fromDeviceController = controller;
-        this._fromRadioUnsub = window.electronAPI.onNobleBleFromRadio(({ sessionId, bytes }) => {
+        this._fromRadioUnsub = window.electronAPI.onGattFromRadio(({ sessionId, bytes }) => {
           if (sessionId !== this.sessionId) return;
           if (this._fromDeviceController) {
             this._fromDeviceController.enqueue({ type: 'packet', data: bytes });
@@ -41,10 +32,9 @@ export class TransportNobleIpc implements Types.Transport {
       },
     });
 
-    // toDevice: WritableStream that forwards bytes to noble via IPC
     this.toDevice = new WritableStream<Uint8Array>({
       write: async (chunk) => {
-        await window.electronAPI.nobleBleToRadio(this.sessionId, chunk);
+        await window.electronAPI.gattToRadio(this.sessionId, chunk);
       },
       close: () => {
         this.unsubscribeFromRadio();
@@ -63,7 +53,7 @@ export class TransportNobleIpc implements Types.Transport {
   }
 
   async disconnect(): Promise<void> {
-    await window.electronAPI.disconnectNobleBle(this.sessionId);
+    await window.electronAPI.disconnectGatt(this.sessionId);
     this.unsubscribeFromRadio();
     if (this._fromDeviceController) {
       try {

@@ -41,20 +41,27 @@ describe('Buttonmash CI', () => {
     });
     expect(config.guardrails.billing.mode).toBe('refuse');
     expect(config.detectors.ignorePatterns).toContain(
-      '\\[useMeshtasticRuntime\\] Connection failed: BLE peripheral ID required on Mac/Windows',
-    );
-    expect(config.detectors.ignorePatterns).toContain(
       'controls\\.start\\(\\) should only be called after a component has mounted',
     );
     expect(config.detectors.ignorePatterns).toContain(
       "Cannot read properties of undefined \\(reading '_leaflet_pos'\\)",
     );
-    // Headless CI Chromium exposes no Web Bluetooth; the MeshCore/Meshtastic connect
-    // attempts log console.error, which is environmental rather than a renderer defect.
+    // Headless CI Chromium may still surface legacy Web Bluetooth noise from stubs.
     expect(config.detectors.ignorePatterns).toContain(
       '\\[WebBluetooth\\] navigator\\.bluetooth is UNDEFINED!',
     );
     expect(config.detectors.ignorePatterns).toContain('Web Bluetooth is not available');
     expect(config.failOn).toBe('high');
+  });
+
+  it.each([
+    '[useMeshtasticRuntime] Connection failed: BLE peripheral ID required',
+    '[useMeshcoreRuntime] connect error BLE peripheral ID required',
+  ])('keeps missing-device wiring failures visible: %s', (message) => {
+    const ignored = config.detectors.ignorePatterns.some((pattern) =>
+      // eslint-disable-next-line security/detect-non-literal-regexp -- Patterns come from the checked-in CI config.
+      new RegExp(pattern).test(message),
+    );
+    expect(ignored).toBe(false);
   });
 });

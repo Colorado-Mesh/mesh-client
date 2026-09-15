@@ -1,10 +1,8 @@
-import { sanitizeLogMessage } from './log-service';
-import type { NobleBleManager } from './noble-ble-manager';
+import type { GattSidecarProxy } from './gatt-sidecar-proxy';
 
-export type BlePeripheralOwner =
-  'noble:meshtastic' | 'noble:meshcore' | 'webbt:meshtastic' | 'webbt:meshcore' | 'reticulum';
+export type BlePeripheralOwner = 'gatt:meshtastic' | 'gatt:meshcore' | 'reticulum';
 
-export type BleScanOwner = 'noble' | 'reticulum' | 'webbt';
+export type BleScanOwner = 'gatt' | 'reticulum';
 
 export interface BleRegisteredConnection {
   mac: string;
@@ -51,27 +49,34 @@ export { normalizeBleMac };
 export class BleCoexistenceCoordinator {
   private connections = new Map<string, BlePeripheralOwner>();
   private scanOwner: BleScanOwner | null = null;
-  /** Nested same-owner acquires (e.g. Noble yield + RSSI poll) — release only at 0. */
+  /** Nested same-owner acquires (e.g. RNode yield + RSSI poll) — release only at 0. */
   private scanOwnerDepth = 0;
-  /** Serializes first-time acquire (Noble pause + ownership) across concurrent callers. */
+  /** Serializes first-time acquire across concurrent callers. */
   private scanAcquireInFlight: Promise<void> | null = null;
-  private nobleManager: NobleBleManager | null = null;
-  private nobleScanPausedForExternal = false;
+  private gattProxy: Pick<GattSidecarProxy, 'getConnections' | 'setConnectionGuard'> | null = null;
   private nobleYieldDecisionPending = false;
 
-  setNobleManager(manager: NobleBleManager): void {
-    this.nobleManager = manager;
+  setGattProxy(proxy: Pick<GattSidecarProxy, 'getConnections' | 'setConnectionGuard'>): void {
+    this.gattProxy = proxy;
+    proxy.setConnectionGuard((sessionId, address) => {
+      this.assertCanConnect(`gatt:${sessionId}`, address);
+    });
   }
 
   getState(): BleCoexistenceState {
+    const connections = new Map(this.connections);
+    for (const connection of this.gattProxy?.getConnections() ?? []) {
+      const key = normalizeBleMac(connection.mac);
+      if (key) connections.set(key, connection.owner);
+    }
     return {
-      connections: [...this.connections.entries()].map(([mac, owner]) => ({ mac, owner })),
+      connections: [...connections.entries()].map(([mac, owner]) => ({ mac, owner })),
       scanOwner: this.scanOwner,
       nobleYieldDecisionPending: this.nobleYieldDecisionPending,
     };
   }
 
-  /** Mark that a Reticulum BLE Noble yield is about to run (before status emit / RF unblock). */
+  /** Mark that a Reticulum BLE RNode yield is about to run (before status emit / RF unblock). */
   setNobleYieldDecisionPending(pending: boolean): void {
     this.nobleYieldDecisionPending = pending;
   }
@@ -79,7 +84,9 @@ export class BleCoexistenceCoordinator {
   register(mac: string, owner: BlePeripheralOwner): void {
     const key = normalizeBleMac(mac);
     if (!key) return;
-    const existing = this.connections.get(key);
+    const existing = this.getState().connections.find(
+      (connection) => connection.mac === key,
+    )?.owner;
     if (existing && existing !== owner) {
       throw new BlePeripheralConflictError(key, existing);
     }
@@ -95,16 +102,18 @@ export class BleCoexistenceCoordinator {
   }
 
   assertCanConnect(owner: BlePeripheralOwner, mac: string): void {
-    // Reticulum holds CoreBluetooth for BLE RNode connect — Noble GATTs must wait.
+    // Reticulum discovery/pairing holds the interactive scan lease.
     if (
       this.scanOwner === 'reticulum' &&
-      (owner === 'noble:meshtastic' || owner === 'noble:meshcore')
+      (owner === 'gatt:meshtastic' || owner === 'gatt:meshcore')
     ) {
       throw new BleScanBusyError('reticulum');
     }
     const key = normalizeBleMac(mac);
     if (!key) return;
-    const existing = this.connections.get(key);
+    const existing = this.getState().connections.find(
+      (connection) => connection.mac === key,
+    )?.owner;
     if (existing && existing !== owner) {
       throw new BlePeripheralConflictError(key, existing);
     }
@@ -129,15 +138,20 @@ export class BleCoexistenceCoordinator {
       releaseInFlight = resolve;
     });
     try {
-      if (owner === 'reticulum' && this.nobleManager) {
-        await this.nobleManager.pauseScanningForExternalScan();
-        this.nobleScanPausedForExternal = true;
-      }
       this.scanOwner = owner;
       this.scanOwnerDepth = 1;
     } finally {
       this.scanAcquireInFlight = null;
       releaseInFlight();
+    }
+  }
+
+  async withScan<T>(owner: BleScanOwner, operation: () => Promise<T>): Promise<T> {
+    await this.acquireScan(owner);
+    try {
+      return await operation();
+    } finally {
+      this.releaseScan(owner);
     }
   }
 
@@ -149,50 +163,25 @@ export class BleCoexistenceCoordinator {
     }
     this.scanOwnerDepth = 0;
     this.scanOwner = null;
-    if (owner === 'reticulum' && this.nobleScanPausedForExternal && this.nobleManager) {
-      this.nobleScanPausedForExternal = false;
-      void this.nobleManager.resumeScanningAfterExternalScan().catch((err: unknown) => {
-        console.debug(
-          '[BleCoexistence] resumeScanningAfterExternalScan failed (ignored):',
-          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-        );
-      });
-    }
-  }
-
-  /** Stop Noble scan without disconnecting GATT sessions (Reticulum picker on darwin/win32). */
-  async pauseNobleScan(): Promise<void> {
-    await this.acquireScan('reticulum');
   }
 
   /**
-   * Yield CoreBluetooth to the Reticulum sidecar (btleplug) for BLE RNode connect.
-   * macOS cannot reliably pair/connect via btleplug while Noble holds GATT sessions.
+   * Legacy yield entry — no longer disconnects LoRa GATT.
+   * Meshtastic/MeshCore/RNode use the same sidecar process; the coordinator
+   * checks Reticulum registrations against pending and live LoRa sessions.
    */
+  async suspendForReticulumBleConnect(): Promise<void> {
+    // No-op: concurrent GATT sessions are supported in-process.
+  }
+
+  /** @deprecated Use suspendForReticulumBleConnect */
   async suspendNobleForReticulumBleConnect(): Promise<void> {
-    await this.acquireScan('reticulum');
-    if (this.nobleManager && (process.platform === 'darwin' || process.platform === 'win32')) {
-      const disconnectMs = 30_000;
-      try {
-        await Promise.race([
-          this.nobleManager.disconnectAllSessions(),
-          new Promise<void>((_, reject) => {
-            setTimeout(() => {
-              reject(new Error('Noble disconnectAll timeout'));
-            }, disconnectMs);
-          }),
-        ]);
-      } catch (err) {
-        console.warn(
-          '[BleCoexistence] disconnectAllSessions failed or timed out (failing yield):',
-          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-        );
-        // Failure point: Noble GATT may still be held — do not leave a half-yield.
-        // Fallback: release reticulum scan ownership and surface the error to prepare.
-        this.releaseScan('reticulum');
-        throw err instanceof Error ? err : new Error(String(err));
-      }
-    }
+    await this.suspendForReticulumBleConnect();
+  }
+
+  /** @deprecated Scan pause is no longer required for RNode. */
+  async pauseNobleScan(): Promise<void> {
+    // No-op
   }
 }
 

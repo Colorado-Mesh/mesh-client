@@ -27,6 +27,18 @@ describe('useReticulumRuntime inbound LXMF catch-up wiring (source contract)', (
     expect(restartBody).toContain("await catchUpRecentInboundLxmf({ reason: 'restartStack' })");
   });
 
+  it('restartStack soft-restarts via proxyPost without stop/start SIGTERM', () => {
+    const restartBody = extractUseCallbackBody(SOURCE, 'restartStack');
+    expect(restartBody).toContain("proxyPost('/api/v1/stack/restart'");
+    expect(restartBody).not.toContain('reticulum.stop()');
+    expect(restartBody).not.toContain('reticulum.start(');
+  });
+
+  it('explicit disconnect still SIGTERMs the sidecar process', () => {
+    const disconnectBody = extractUseCallbackBody(SOURCE, 'disconnect');
+    expect(disconnectBody).toContain('reticulum.stop()');
+  });
+
   it('catches up on WS events_lagged and ws_reconnect', () => {
     expect(SOURCE).toMatch(
       /evt\.type === 'events_lagged'[\s\S]*?catchUpRecentInboundLxmf\(\{ reason: 'events_lagged' \}\)/,

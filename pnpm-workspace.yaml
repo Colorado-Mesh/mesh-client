@@ -32,8 +32,6 @@ allowBuilds:
   '@meshtastic/transport-http': true
   '@meshtastic/transport-web-serial': true
   '@serialport/bindings-cpp': true
-  '@stoprocent/bluetooth-hci-socket': true
-  '@stoprocent/noble': true
   electron: true
   electron-winstaller: true
   esbuild: true
@@ -114,4 +112,3 @@ patchedDependencies:
   app-builder-lib@26.15.3: patches/app-builder-lib@26.15.3.patch
   debug@4.4.3: patches/debug@4.4.3.patch
   readable-stream@4.7.0: patches/readable-stream@4.7.0.patch
-  usb@2.18.0: patches/usb@2.18.0.patch

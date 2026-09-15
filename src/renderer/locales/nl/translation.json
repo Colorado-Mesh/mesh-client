@@ -864,7 +864,6 @@
     "selectSerialPort": "Selecteer Seriële poort",
     "noSerialPorts": "Geen seriële poorten gevonden. Zorg ervoor dat uw apparaat is aangesloten.",
     "enterPin": "Voer de pincode in die op uw apparaat wordt weergegeven:",
-    "pinExpiring": "{{count}}s — voer de pincode snel in, het BlueZ-koppelingsvenster wordt gesloten",
     "submit": "Indienen",
     "rePairDevice": "Apparaat verwijderen en opnieuw koppelen",
     "mqttConnection": "MQTT-verbinding",
@@ -934,19 +933,14 @@
     "stageConfiguring": "Apparaat configureren…",
     "stageConnecting": "Verbinding maken met apparaat…",
     "stageScanning": "Scannen — selecteer uw apparaat wanneer het hieronder verschijnt",
-    "stageConnectingSaved": "Verbinding maken met opgeslagen Bluetooth-apparaat…",
-    "stageSelectBluetooth": "Selecteer hieronder uw Bluetooth-apparaat",
     "stageEnterPin": "Voer de pincode in die op uw apparaat wordt weergegeven",
     "stageEnterPinPair": "Voer de pincode in om het apparaat te koppelen",
     "stagePairingBluetooth": "Koppelen met pincode (Bluetoothctl)…",
     "stageRemoving": "Apparaat verwijderen…",
     "stagePairingPin": "Koppelen met pincode…",
-    "stagePairing": "Koppelen…",
-    "stageSelectBluetoothDots": "Selecteer uw Bluetooth-apparaat…",
     "stagePairingFailed": "Koppelen is mislukt. Koppel uw apparaat opnieuw.",
     "stageCheckingPairing": "Bluetooth-koppeling controleren…",
     "stageEnterPinLinux": "Voer de pincode in die op uw apparaat wordt weergegeven (eerst koppelen met Linux)",
-    "stageReconnecting": "Opnieuw verbinding maken met het laatste Bluetooth-apparaat…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
@@ -968,7 +962,6 @@
       },
       "ble": {
         "adapterWindowsHint": "Controleer Instellingen > Bluetooth en apparaten. Als Bluetooth is ingeschakeld maar niet beschikbaar is, update dan uw Bluetooth-stuurprogramma in Apparaatbeheer.",
-        "adapterLinuxHint": "Zorg ervoor dat Bluetooth is ingeschakeld en dat de experimentele vlag Web Bluetooth is ingesteld. Probeer: systemctl status bluetooth",
         "adapterGenericHint": "Zorg ervoor dat Bluetooth is ingeschakeld. Voer op Linux het volgende uit: systemctl status bluetooth",
         "securityPermissionHint": "Bluetooth-toestemming geweigerd. Zorg ervoor dat de app toegang heeft tot het Bluetooth-apparaat.",
         "gattDisconnectedHint": "GATT-verbinding verbroken. Probeer dichter bij het apparaat te komen en opnieuw verbinding te maken.",
@@ -1375,8 +1368,6 @@
     "autoConnectingTo": "Automatisch verbinden met {{deviceName}}…",
     "autoReconnectInProgress": "Automatisch opnieuw verbinden bezig…",
     "stageAutoConnectingBle": "Verbinding maken met {{deviceName}}…",
-    "stageWaitingNobleBleMeshtastic": "Wachten tot Meshtastic Bluetooth is voltooid - MeshCore zal automatisch verbinding maken met {{deviceName}} wanneer dit klaar is…",
-    "stageWaitingNobleBleMeshcore": "Wachten tot MeshCore Bluetooth is voltooid - Meshtastic zal automatisch verbinding maken met {{deviceName}} wanneer dit klaar is…",
     "reticulumStats": {
       "interfaces": "{{count}} interfaces",
       "peers": "{{count}} collega's"
@@ -1510,7 +1501,6 @@
     "linkQuality": "Verbindingskwaliteit",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Niet beschikbaar (Web Bluetooth)",
     "meshcoreCaBroker": "MeshCore.CA-makelaar",
     "meshcoreCaPrimary": "Primair",
     "meshcoreCaBackup": "Back-up",
@@ -1533,7 +1523,24 @@
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
     "bluetoothId": "Bluetooth-ID",
-    "reticulumAutoResendOnAnnounce": "Probeer mislukte berichten opnieuw wanneer een collega aankondigt"
+    "reticulumAutoResendOnAnnounce": "Probeer mislukte berichten opnieuw wanneer een collega aankondigt",
+    "errors": {
+      "ble": {
+        "adapter_missing": "No Bluetooth adapter was found. Enable Bluetooth in system settings and try again.",
+        "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
+        "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
+        "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
+        "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
+        "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
+        "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",
+        "bond_removed": "The Bluetooth bond is no longer valid. Forget the device in system settings, then re-pair.",
+        "write_failed": "Failed to write to the Bluetooth device. Reconnect and try again.",
+        "session_not_found": "The Bluetooth session is no longer available. Disconnect and connect again.",
+        "notified_read_forbidden": "This Bluetooth characteristic cannot be read that way. Reconnect and try again.",
+        "feature_disabled": "Bluetooth GATT support is not available in this build.",
+        "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
+      }
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -2297,10 +2304,7 @@
       "bleAlreadyInProgress": "Er is al een Bluetooth-verbinding actief. Wacht tot het klaar is of probeer in plaats daarvan Serieel/USB.",
       "bleMissingServices": "Apparaat ondersteunt het MeshCore BLE-protocol niet. Zorg ervoor dat het apparaat MeshCore-firmware gebruikt.",
       "blePeripheralInUse": "Dit apparaat is al verbonden via Meshtastic BLE. Koppel deze eerst los voordat u verbinding maakt als MeshCore.",
-      "bleTimeoutWebBtHandshake": "Time-out voor MeshCore-handshake (Web Bluetooth). Mogelijk heeft de radio eerst een pincode nodig die is gekoppeld aan Linux: gebruik Apparaat verwijderen en opnieuw koppelen en voer de pincode in die op het apparaat wordt weergegeven, of koppel met bluetoothctl en tik vervolgens opnieuw op Verbinden.",
-      "bleTimeoutWebBt": "Er is een time-out opgetreden in de Bluetooth-verbinding tijdens het openen van MeshCore via Web Bluetooth. Probeer het opnieuw, houd het apparaat wakker, schakel de BLE op de radio uit en weer in, of gebruik Serieel/TCP.",
       "bleTimeoutHandshake": "Bluetooth verbonden, maar de handshake van het MeshCore-protocol is niet voltooid voordat de verbinding werd verbroken/time-out. Probeer het opnieuw, houd het apparaat wakker en in de buurt, schakel BLE uit en weer in, of gebruik Serieel/TCP.",
-      "bleTimeoutNoble": "Er is een time-out opgetreden in de Bluetooth-verbinding tijdens het openen van MeshCore via Noble IPC. Probeer het opnieuw, schakel BLE op het apparaat uit of gebruik Serieel/TCP.",
       "roomPost": {
         "badState": "Ruimtepost afgewezen (niet ingelogd op de radio). Meld u af, log opnieuw in en probeer het opnieuw.",
         "illegalArg": "Ruimtepost afgewezen (ongeldig berichtformaat).",
@@ -2330,7 +2334,8 @@
       "cliDangerNotConfirmed": "Destructieve CLI-opdrachten moeten worden bevestigd in het paneel Herhalers.",
       "pingFailed": "Ping mislukt",
       "floodScopeBusy": "Het overschrijven van de Floodsscope is niet beschikbaar terwijl repeaterbeheer of traceroute bezig is. Probeer het opnieuw wanneer het apparaat inactief is.",
-      "removeContactFailed": "Lokaal verwijderd, maar de radio heeft removeContact geweigerd. Het contact kan opnieuw verschijnen na een verversing."
+      "removeContactFailed": "Lokaal verwijderd, maar de radio heeft removeContact geweigerd. Het contact kan opnieuw verschijnen na een verversing.",
+      "bleTimeoutGatt": "Bluetooth connection timed out while opening MeshCore over sidecar GATT. Retry, power-cycle BLE on the device, or use Serial/TCP."
     },
     "mqttHints": {
       "notAuthorized": "Controleer v1_ gebruikersnaam, tokenhandtekening en JWT-doelgroep versus makelaar; zie docs/letsmesh-mqtt-auth.md. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",
@@ -5861,12 +5866,6 @@
     },
     "drawOfferWaitingBanner": "Remise-aanbod verzonden. Wachten op tegenstander…",
     "idleExpiryNotice": "Games verlopen bij inactiviteit en kunnen daarna alleen nog worden verwijderd. Onbeantwoorde uitdagingen: 24 uur (alle games). Actieve games: tic-tac-toe na 24 uur, schaken en vier-op-een-rij na 7 dagen."
-  },
-  "longSession": {
-    "title": "Herstart aanbevolen",
-    "body": "mesh-client draait al vier dagen met Bluetooth-radio aangesloten. Start de app opnieuw om het risico op crashes tijdens lange Noble BLE-sessies te verminderen.",
-    "restart": "Herstarten",
-    "dismiss": "Afwijzen"
   },
   "reticulumSetup": {
     "title": "Je eerste verbinding",

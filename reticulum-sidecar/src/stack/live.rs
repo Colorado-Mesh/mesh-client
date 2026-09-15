@@ -49,6 +49,7 @@ use super::announce_ws_coalesce::{
 };
 use super::config;
 use super::games_session::GamesSessionManager;
+use super::live_tasks::LiveTasks;
 use super::local_rnode_primary;
 use super::lxmf_delivery::{
     LXMF_APP, PROPAGATION_SYNC_ANNOUNCE_SETTLE, send_lxmf_delivery_announce,
@@ -143,7 +144,8 @@ pub struct LiveBridge {
     config_dir: PathBuf,
     storage_dir: PathBuf,
     handle: reticulum::ReticulumHandle,
-    _shutdown: ShutdownSignal,
+    _shutdown: LiveRuntimeShutdown,
+    background_tasks: LiveTasks,
     router: Arc<tokio::sync::Mutex<LxmRouter>>,
     identity: Identity,
     lxmf_hash_hex: String,
@@ -206,12 +208,50 @@ struct NomadCachedLink {
     handle: LinkSessionHandle,
 }
 
+struct LiveRuntimeShutdown(ShutdownSignal);
+
+impl Drop for LiveRuntimeShutdown {
+    fn drop(&mut self) {
+        self.0.trigger();
+    }
+}
+
 impl LiveBridge {
-    /// Orderly RNS drain so BLE RNode tasks detach (radio-off) before process kill.
-    pub async fn prepare_stop(&self) {
-        tracing::info!("prepare_stop: shutting down RNS runtime for graceful BLE detach");
-        self.close_nomad_link_session().await;
-        self.handle.shutdown_and_wait().await;
+    /// Stop this generation's services before reusing the process for a new live stack.
+    pub async fn prepare_stop(&self) -> Result<(), String> {
+        tracing::info!("prepare_stop: shutting down live services and RNS runtime");
+        self.background_tasks.stop().await;
+        self.prop_announce.stop();
+        self.prop_serve.stop();
+        self.cancel_propagation_sync().await;
+        let cleanup = tokio::time::timeout(Duration::from_secs(5), async {
+            tokio::join!(
+                self.rrc_session.disconnect(None),
+                self.voice_session.shutdown(),
+                self.rncp_transfer.stop_listener(),
+                self.nomad_server.stop(),
+                self.close_nomad_link_session(),
+            )
+        })
+        .await;
+        if let Ok(((), (), (), Err(error), ())) = &cleanup {
+            tracing::warn!(error = %error, "Nomad shutdown failed");
+        }
+        // Always start the runtime-owned drain, even when an application service stalls.
+        tokio::time::timeout(Duration::from_secs(10), self.handle.shutdown_and_wait())
+            .await
+            .map_err(|_| "RNS shutdown timed out; restart was not applied".to_string())?;
+        let ((), (), (), nomad_stopped, ()) = cleanup
+            .map_err(|_| "live service shutdown timed out; restart was not applied".to_string())?;
+        nomad_stopped?;
+        Ok(())
+    }
+
+    pub(super) fn spawn_background(
+        &self,
+        future: impl std::future::Future<Output = ()> + Send + 'static,
+    ) {
+        self.background_tasks.spawn(future);
     }
 
     fn primary_local_serial_id(&self) -> Option<String> {
@@ -307,7 +347,19 @@ impl LiveBridge {
             .to_str()
             .ok_or("invalid config dir path")?
             .to_string();
+        let identity_path = crate::stack::identity_apply::identity_file_path(&config_dir);
+        let identity_configured = inner.read().await.identity.configured;
+        let identity = if identity_path.exists() {
+            crate::stack::identity_apply::load_identity_from_path(&identity_path)?
+        } else if identity_configured {
+            return Err("identity file missing; re-import or generate identity".into());
+        } else {
+            return Err("identity not configured for live stack".into());
+        };
+
         let shutdown = ShutdownSignal::new();
+        let shutdown_guard = LiveRuntimeShutdown(shutdown.clone());
+        let background_tasks = LiveTasks::default();
         let is_foreground = Arc::new(AtomicBool::new(true));
         let handle = reticulum::init(Some(&config_str), None, shutdown.clone(), is_foreground)
             .await
@@ -324,7 +376,7 @@ impl LiveBridge {
         let packet_log_tap = packet_log.clone();
         // Keep PacketLogBuffer for GET /api/v1/packets + egress evidence, but do NOT emit
         // wire_packet on the shared event bus — that starves lxmf_message under large meshes.
-        tokio::spawn(async move {
+        background_tasks.spawn(async move {
             loop {
                 match tap_rx.recv().await {
                     Ok(evt) => {
@@ -336,16 +388,6 @@ impl LiveBridge {
                 }
             }
         });
-
-        let identity_path = crate::stack::identity_apply::identity_file_path(&config_dir);
-        let identity_configured = inner.read().await.identity.configured;
-        let identity = if identity_path.exists() {
-            crate::stack::identity_apply::load_identity_from_path(&identity_path)?
-        } else if identity_configured {
-            return Err("identity file missing; re-import or generate identity".into());
-        } else {
-            return Err("identity not configured for live stack".into());
-        };
 
         let lxmf_dest_hash =
             Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
@@ -383,7 +425,11 @@ impl LiveBridge {
             lxmf_hash_hex.clone(),
             event_tx.clone(),
         ));
-        spawn_games_lxmf_outbound_bridge(games_session.clone(), event_tx.subscribe());
+        spawn_games_lxmf_outbound_bridge(
+            &background_tasks,
+            games_session.clone(),
+            event_tx.subscribe(),
+        );
 
         let cache_for_cb = peer_via_cache.clone();
         let name_cache_for_cb = display_name_cache.clone();
@@ -462,6 +508,7 @@ impl LiveBridge {
 
         let router = Arc::new(tokio::sync::Mutex::new(router));
         spawn_lxmf_inbound_receiver(
+            &background_tasks,
             handle.transport_tx.clone(),
             &identity,
             lxmf_dest_hash,
@@ -469,6 +516,7 @@ impl LiveBridge {
         );
         let last_lxmf_announce_at = Arc::new(Mutex::new(None));
         spawn_lxmf_announce_loop(
+            &background_tasks,
             handle.transport_tx.clone(),
             identity.clone(),
             lxmf_dest_hash,
@@ -484,7 +532,7 @@ impl LiveBridge {
             let event_tx_ble = event_tx.clone();
             let (ble_evt_tx, mut ble_evt_rx) = tokio::sync::mpsc::channel(64);
             rns_interface::ble_peer::install_event_dispatcher(ble_evt_tx);
-            tokio::spawn(async move {
+            background_tasks.spawn(async move {
                 while let Some(evt) = ble_evt_rx.recv().await {
                     let payload = serde_json::to_value(&evt).unwrap_or(serde_json::json!({}));
                     let msg = serde_json::json!({ "type": "ble_peer", "payload": payload });
@@ -499,6 +547,7 @@ impl LiveBridge {
         let mut outbound_driver =
             LxmfOutboundDriver::new(handle.transport_tx.clone(), &identity, &lxmf_hash_hex);
         outbound_driver.set_inbound_packet_sender(spawn_lxmf_outbound_backchannel(
+            &background_tasks,
             lxmf_dest_hash,
             router.clone(),
         ));
@@ -511,7 +560,8 @@ impl LiveBridge {
             config_dir: config_dir.clone(),
             storage_dir: storage_dir.clone(),
             handle: handle.clone(),
-            _shutdown: shutdown,
+            _shutdown: shutdown_guard,
+            background_tasks,
             router,
             identity: identity.clone(),
             lxmf_hash_hex: lxmf_hash_hex.clone(),
@@ -2171,7 +2221,7 @@ impl LiveBridge {
         let transport_tx = self.handle.transport_tx.clone();
         let event_tx = self.event_tx.clone();
         let our_identity_hash = self.identity_hash_hex();
-        tokio::spawn(async move {
+        self.background_tasks.spawn(async move {
             let (callback_tx, mut callback_rx) =
                 tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
             if transport_tx
@@ -2231,7 +2281,7 @@ impl LiveBridge {
     ) {
         let transport_tx = self.handle.transport_tx.clone();
         let event_tx = self.event_tx.clone();
-        tokio::spawn(async move {
+        self.background_tasks.spawn(async move {
             let (callback_tx, mut callback_rx) =
                 tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
             if transport_tx
@@ -2295,7 +2345,7 @@ impl LiveBridge {
         let persisted = Arc::clone(&self.persisted);
         let peer_via_cache = Arc::clone(&self.peer_via_cache);
         let config_dir = self.config_dir.clone();
-        tokio::spawn(async move {
+        self.background_tasks.spawn(async move {
             let (callback_tx, mut callback_rx) =
                 tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
             if transport_tx
@@ -2882,7 +2932,7 @@ impl LiveBridge {
         let discovered_propagation = self.discovered_propagation.clone();
         let persisted = self.persisted.clone();
         let pn_hosting_policy = self.pn_hosting_policy.clone();
-        tokio::spawn(async move {
+        self.background_tasks.spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(2));
             let mut known_path_hashes: HashSet<String> = HashSet::new();
             let mut prev_peer_by_hash: HashMap<String, PeerRow> = HashMap::new();
@@ -3293,7 +3343,7 @@ impl LiveBridge {
         let event_tx = self.event_tx.clone();
         let display_name_cache = self.display_name_cache.clone();
         let voice_session = self.voice_session.clone();
-        tokio::spawn(async move {
+        self.background_tasks.spawn(async move {
             let (callback_tx, mut callback_rx) =
                 tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(256);
             if transport_tx
@@ -3672,7 +3722,7 @@ impl LiveBridge {
     /// Poll DiscoveryStore and emit `rmap.discovery` WebSocket events when the set changes.
     pub fn register_rmap_discovery_watcher(&self, event_tx: broadcast::Sender<String>) {
         let handle = self.handle.clone();
-        tokio::spawn(async move {
+        self.background_tasks.spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(10));
             let mut last_fingerprint = String::new();
             loop {
@@ -6391,10 +6441,11 @@ fn parse_optional_reply_to_hash(hex_str: Option<&str>) -> Option<[u8; 32]> {
 
 /// Bridge `lxmf_outbound_status` WS frames into Games session `delivery_state`.
 fn spawn_games_lxmf_outbound_bridge(
+    tasks: &LiveTasks,
     games: Arc<GamesSessionManager>,
     mut rx: broadcast::Receiver<String>,
 ) {
-    tokio::spawn(async move {
+    tasks.spawn(async move {
         loop {
             match rx.recv().await {
                 Ok(frame) => {
@@ -7173,6 +7224,52 @@ fn classify_propagation_target_name_hashes(
         return "other";
     }
     "unknown"
+}
+
+#[cfg(test)]
+mod lifecycle_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn soft_restart_releases_old_lxmf_and_games_state_and_keeps_gatt() {
+        let dir = tempfile::tempdir().expect("temp stack");
+        let config_dir = dir.path().join("config");
+        let storage_dir = dir.path().join("storage");
+        std::fs::create_dir_all(&config_dir).expect("config directory");
+        std::fs::write(
+            config_dir.join("config"),
+            "[reticulum]\n  share_instance = No\n  enable_transport = No\n[interfaces]\n",
+        )
+        .expect("isolated config");
+        let (events, _) = broadcast::channel(256);
+        let stack =
+            Arc::new(Box::pin(StackHandle::bootstrap(config_dir, storage_dir, events)).await);
+        stack
+            .identity_generate(None, false)
+            .await
+            .expect("identity");
+        stack.attach_live().await.expect("first stack");
+        let original = stack.live_opt().expect("attached");
+        let old_router = Arc::downgrade(&original.router);
+        let old_games = Arc::downgrade(&original.games_session);
+        let gatt = Arc::clone(stack.gatt());
+        drop(original);
+
+        stack.soft_restart().await.expect("restart");
+
+        assert!(
+            old_router.upgrade().is_none(),
+            "old LXMF loop retained its router"
+        );
+        assert!(
+            old_games.upgrade().is_none(),
+            "old Games subscriber survived restart"
+        );
+        assert!(Arc::ptr_eq(&gatt, stack.gatt()));
+        assert!(stack.rns_ready().await);
+        assert!(stack.lxmf_ready().await);
+        stack.detach_live().await.expect("cleanup live stack");
+    }
 }
 
 #[cfg(test)]

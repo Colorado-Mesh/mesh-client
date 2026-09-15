@@ -70,27 +70,22 @@ describe('navigation and window-open security', () => {
 });
 
 describe('Linux Web Bluetooth device selection', () => {
-  it('imports and uses linuxWebBluetoothDeviceSelection for retain-first multi-fire', () => {
-    expect(INDEX_SOURCE).toContain("from './linuxWebBluetoothDeviceSelection'");
-    expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.beginOrMergeDiscovery');
-    expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.resolveSelection');
-    expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.cancelSelection');
-    expect(INDEX_SOURCE).toContain('linuxWebBluetoothDeviceSelection.armStaleTimeout');
-    // Awaitable cancel before requestDevice() — fire-and-forget send raced the new chooser.
-    expect(INDEX_SOURCE).toContain('registerLinuxWebBluetoothCancelIpcHandlers');
-    expect(INDEX_SOURCE).toContain("from './linuxWebBluetoothCancelIpc'");
-    // Must not overwrite pending callback on every select-bluetooth-device event
+  it('cancels Chromium select-bluetooth-device (LoRa BLE uses sidecar GATT)', () => {
+    expect(INDEX_SOURCE).not.toContain("from './linuxWebBluetoothDeviceSelection'");
+    expect(INDEX_SOURCE).not.toContain("from './linuxWebBluetoothCancelIpc'");
+    expect(INDEX_SOURCE).not.toContain('beginOrMergeDiscovery');
+    expect(INDEX_SOURCE).not.toContain('armStaleTimeout');
     const handlerIdx = INDEX_SOURCE.indexOf("on('select-bluetooth-device'");
     expect(handlerIdx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1200);
-    expect(body).toContain('beginOrMergeDiscovery');
-    expect(body).toContain('armStaleTimeout');
-    expect(body).not.toMatch(/pendingBluetoothCallback\s*=\s*callback/);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 500);
+    expect(body).toContain("callback('')");
+    expect(body).toContain('Web BT LoRa removed');
   });
 
-  it('enables WebBluetooth blink features on Linux', () => {
-    expect(INDEX_SOURCE).toContain("'Serial,WebBluetooth'");
-    expect(INDEX_SOURCE).toContain("appendSwitch('enable-features', 'WebBluetooth')");
+  it('enables Web Serial blink features without WebBluetooth', () => {
+    expect(INDEX_SOURCE).toContain("appendSwitch('enable-blink-features', 'Serial')");
+    expect(INDEX_SOURCE).not.toContain("'Serial,WebBluetooth'");
+    expect(INDEX_SOURCE).not.toContain("appendSwitch('enable-features', 'WebBluetooth')");
   });
 });
 

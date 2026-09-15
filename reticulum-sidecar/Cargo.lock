@@ -1566,6 +1566,7 @@ dependencies = [
  "argon2",
  "axum",
  "base64",
+ "btleplug",
  "bytes",
  "ciborium",
  "clap",

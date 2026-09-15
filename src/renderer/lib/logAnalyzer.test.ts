@@ -63,7 +63,7 @@ describe('analyzeLogs', () => {
   it('detects BLE connect race/timeout for meshcore', () => {
     const entries: LogEntry[] = [
       makeEntry(
-        '[IpcNobleConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
+        '[IpcSidecarGattConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
         'warn',
       ),
     ];
@@ -77,7 +77,7 @@ describe('analyzeLogs', () => {
   it('does not detect BLE connect race for meshtastic protocol', () => {
     const entries: LogEntry[] = [
       makeEntry(
-        '[IpcNobleConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
+        '[IpcSidecarGattConnection:meshcore] disconnect raced ahead of handshake — will fail immediately',
         'warn',
       ),
     ];
@@ -195,6 +195,14 @@ describe('analyzeLogs', () => {
     const cat = result.categories.find((c) => c.id === 'ble-meshcore-notify-watchdog');
     expect(cat).toBeDefined();
     expect(cat?.count).toBe(1);
+  });
+
+  it('skips MeshCore BLE notify watchdog when analyzing meshtastic', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[BLE:meshcore] notify watchdog: no data in 5s on Win32. Pair the radio.', 'warn'),
+    ];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories.find((c) => c.id === 'ble-meshcore-notify-watchdog')).toBeUndefined();
   });
 
   it('detects bluetooth pairing PIN timeout', () => {
@@ -361,9 +369,9 @@ describe('analyzeLogs', () => {
     expect(result.categories.find((c) => c.id === 'serial-reconnect')).toBeUndefined();
   });
 
-  it('classifies IpcNobleConnection:meshtastic under sdk-meshtastic', () => {
+  it('classifies IpcSidecarGattConnection:meshtastic under sdk-meshtastic', () => {
     const result = analyzeLogs(
-      [makeEntry('[IpcNobleConnection:meshtastic] peripheral disconnected', 'warn')],
+      [makeEntry('[IpcSidecarGattConnection:meshtastic] peripheral disconnected', 'warn')],
       'meshtastic',
     );
     const sdk = result.categories.find((c) => c.id === 'sdk-meshtastic');
@@ -371,9 +379,9 @@ describe('analyzeLogs', () => {
     expect(sdk?.count).toBe(1);
   });
 
-  it('classifies IpcNobleConnection:meshcore under sdk-meshcore', () => {
+  it('classifies IpcSidecarGattConnection:meshcore under sdk-meshcore', () => {
     const result = analyzeLogs(
-      [makeEntry('[IpcNobleConnection:meshcore] peripheral disconnected', 'warn')],
+      [makeEntry('[IpcSidecarGattConnection:meshcore] peripheral disconnected', 'warn')],
       'meshcore',
     );
     const sdk = result.categories.find((c) => c.id === 'sdk-meshcore');
@@ -447,7 +455,8 @@ describe('analyzeLogs', () => {
   it('does not flag SDK debug noise for meshtastic', () => {
     const entries: LogEntry[] = [
       makeEntry('[iMeshDevice] debug: heartbeat ok', 'debug'),
-      makeEntry('[TransportNobleIpc] packet received', 'log'),
+      makeEntry('[TransportSidecarGatt] packet received', 'log'),
+      makeEntry('[GATT:meshtastic] connect_timeout: nope', 'log'),
     ];
     const result = analyzeLogs(entries, 'meshtastic');
     expect(result.categories.find((c) => c.id === 'sdk-meshtastic')).toBeUndefined();
@@ -473,6 +482,20 @@ describe('analyzeLogs', () => {
     ];
     const result = analyzeLogs(entries, 'meshcore');
     expect(result.categories.find((c) => c.id === 'sdk-meshcore')).toBeUndefined();
+  });
+
+  it('does not classify [GATT:meshcore] under sdk-meshtastic', () => {
+    const entries: LogEntry[] = [makeEntry('[GATT:meshcore] connect_timeout: nope', 'error')];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories.find((c) => c.id === 'sdk-meshtastic')).toBeUndefined();
+  });
+
+  it('classifies [GATT:meshcore] under sdk-meshcore', () => {
+    const entries: LogEntry[] = [makeEntry('[GATT:meshcore] connect_timeout: nope', 'error')];
+    const result = analyzeLogs(entries, 'meshcore');
+    const sdk = result.categories.find((c) => c.id === 'sdk-meshcore');
+    expect(sdk).toBeDefined();
+    expect(sdk?.count).toBe(1);
   });
 
   it('sorts categories by severity then count', () => {

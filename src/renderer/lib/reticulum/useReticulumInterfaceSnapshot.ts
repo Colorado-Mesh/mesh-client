@@ -200,10 +200,9 @@ export function useReticulumInterfaceSnapshot({
       setInterfacesHydrated(false);
       burstCancelRef.current?.();
       burstCancelRef.current = null;
-      // Noble BLE yield + shared grace clock are owned by useReticulumNobleBleYieldWatcher.
-      // Do not clear grace or release yield here while the sidecar is still up during
-      // connecting — a mid-pair clear leaves release/renew stuck (CoreBluetooth Event
-      // receiver died).
+      // Shared BLE connect grace clock is module-owned (reticulumBleConnectGrace).
+      // Do not clear grace here while the sidecar is still up during connecting —
+      // a mid-pair clear leaves release/renew stuck (CoreBluetooth Event receiver died).
       return;
     }
     beginBleConnectGrace();

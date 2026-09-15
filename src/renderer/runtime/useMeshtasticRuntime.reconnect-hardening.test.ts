@@ -50,8 +50,8 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).toMatch(/reconnectGenerationRef\.current \+= 1/);
   });
 
-  it('verifies Noble BLE link after configure, not before open (disconnect must allow fresh connect)', () => {
-    expect(SOURCE).toContain('verifyNobleBleRfLink');
+  it('verifies GATT RF link after configure, not before open (disconnect must allow fresh connect)', () => {
+    expect(SOURCE).toContain('verifyGattRfLink');
     expect(SOURCE).toContain('RF link lost after reconnect configure');
     expect(SOURCE).not.toContain('RF link not ready before reconnect open');
   });
@@ -71,7 +71,7 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).toContain('captureSerialIdentityForRediscovery');
   });
 
-  it('latches BLE reconnect exhausted; late lost skips; yield release clears for one nudge', () => {
+  it('latches BLE reconnect exhausted; late lost skips; lease release clears for one nudge', () => {
     const latch = createBleReconnectExhaustLatch();
     latch.markExhausted();
     expect(
@@ -123,27 +123,28 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).toContain('meshtasticExplicitDisconnectRef');
   });
 
-  it('rehydrates connection params from storage on Noble BLE disconnect when ref is empty', () => {
-    expect(SOURCE).toContain('onNobleBleDisconnected');
+  it('rehydrates connection params from storage on GATT disconnect when ref is empty', () => {
+    expect(SOURCE).toContain('onGattDisconnected');
     expect(SOURCE).toMatch(
-      /onNobleBleDisconnected[\s\S]*?rehydrateMeshtasticConnectionParamsFromStorage[\s\S]*?handleConnectionLostRef\.current\(\)/,
+      /onGattDisconnected[\s\S]*?rehydrateMeshtasticConnectionParamsFromStorage[\s\S]*?handleConnectionLostRef\.current\(\)/,
     );
   });
 
-  it('logs at debug when Noble yield release nudges reconnect', () => {
+  it('logs at debug when BLE adapter lease release nudges reconnect', () => {
     expect(SOURCE).toMatch(/nobleYieldReconnectNudgeRef\.current = true/);
+    expect(SOURCE).toContain('BLE_ADAPTER_LEASE_RELEASED_EVENT');
     expect(SOURCE).toMatch(
-      /afterNobleYieldRelease[\s\S]*?Noble BLE yield released — initiating Meshtastic reconnect/,
+      /onBleLeaseReleased[\s\S]*?Noble BLE yield released — nudging Meshtastic reconnect/,
     );
   });
 
-  it('skips Noble yield nudge when Meshtastic is configured and connected', () => {
+  it('skips lease-release nudge when Meshtastic is configured and connected', () => {
     expect(SOURCE).toMatch(
-      /onNobleYieldReleased[\s\S]*?meshtasticDriverConnectedRef\.current && deviceConfiguredRef\.current[\s\S]*?return;/,
+      /onBleLeaseReleased[\s\S]*?meshtasticDriverConnectedRef\.current && deviceConfiguredRef\.current[\s\S]*?return;/,
     );
   });
 
-  it('skips Noble yield nudge when reconnect is already in progress', () => {
+  it('skips lease-release nudge when reconnect is already in progress', () => {
     expect(SOURCE).toMatch(
       /prepareNobleYieldReleasedReconnectNudge\(\{[\s\S]*?isReconnecting: isReconnectingRef\.current[\s\S]*?bleConnectInProgress: bleConnectInProgressRef\.current/,
     );
@@ -152,31 +153,29 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     );
   });
 
-  it('defers Noble disconnect reconnect while intentional BLE connect is in progress', () => {
+  it('defers GATT disconnect reconnect while intentional BLE connect is in progress', () => {
     expect(SOURCE).toContain('bleConnectInProgressRef');
     expect(SOURCE).toMatch(
-      /onNobleBleDisconnected[\s\S]*?bleConnectInProgressRef\.current[\s\S]*?defer reconnect until connect settles/,
+      /onGattDisconnected[\s\S]*?bleConnectInProgressRef\.current[\s\S]*?defer reconnect until connect settles/,
     );
   });
 
-  it('defers Noble disconnect during reconnect open/configure (single-flight)', () => {
+  it('defers GATT disconnect during reconnect open/configure (single-flight)', () => {
     expect(SOURCE).toContain('reconnectConnectInFlightRef');
     expect(SOURCE).toMatch(
-      /onNobleBleDisconnected[\s\S]*?reconnectConnectInFlightRef\.current[\s\S]*?defer reconnect until connect settles/,
+      /onGattDisconnected[\s\S]*?reconnectConnectInFlightRef\.current[\s\S]*?defer reconnect until connect settles/,
     );
   });
 
-  it('wraps BLE reconnect open in withNobleBleConnectMutex (MeshCore parity)', () => {
+  it('reconnect open uses connectInFlight single-flight guards (MeshCore parity)', () => {
     const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
-    expect(reconnectBody).toContain("withNobleBleConnectMutex('meshtastic'");
     expect(reconnectBody).toContain('connectInFlight:');
     expect(ATTEMPT_RUNNER).toContain('connectInFlight.set(true)');
     expect(ATTEMPT_RUNNER).toContain('skip overlapping open');
   });
 
-  it('bounds every reconnect open+configure with NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS', () => {
-    // Shared runner applies the budget to every transport (constant name is historical).
-    expect(ATTEMPT_RUNNER).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
+  it('bounds every reconnect open+configure with BLE_RECONNECT_ATTEMPT_BUDGET_MS', () => {
+    expect(ATTEMPT_RUNNER).toContain('BLE_RECONNECT_ATTEMPT_BUDGET_MS');
     expect(ATTEMPT_RUNNER).toContain('raceWithDeadline');
     expect(ATTEMPT_RUNNER).toContain('Reconnect attempt timed out after');
     expect(ATTEMPT_RUNNER).toContain('attemptActive');
@@ -436,7 +435,7 @@ describe('useMeshtasticRuntime manual disconnect must not auto-reconnect', () =>
 
   it('Noble BLE disconnect handler respects explicit user disconnect before rehydrate', () => {
     expect(SOURCE).toMatch(
-      /onNobleBleDisconnected[\s\S]*?meshtasticExplicitDisconnectRef\.current[\s\S]*?skip reconnect \(user disconnect\)/,
+      /onGattDisconnected[\s\S]*?meshtasticExplicitDisconnectRef\.current[\s\S]*?skip reconnect \(user disconnect\)/,
     );
   });
 

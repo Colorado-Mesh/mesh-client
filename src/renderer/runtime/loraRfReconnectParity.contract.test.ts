@@ -64,7 +64,7 @@ describe('LoRa RF reconnect parity (MeshCore ↔ Meshtastic)', () => {
 
   it('shared attempt runner owns budget + deferred finally flush for both protocols', () => {
     expect(ATTEMPT_RUNNER).toContain('raceWithDeadline');
-    expect(ATTEMPT_RUNNER).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
+    expect(ATTEMPT_RUNNER).toContain('BLE_RECONNECT_ATTEMPT_BUDGET_MS');
     expect(ATTEMPT_RUNNER).toContain('delayUnlessSuspended');
     expect(ATTEMPT_RUNNER).toContain('createBleReconnectTransportCleanup');
     expect(ATTEMPT_RUNNER).toMatch(

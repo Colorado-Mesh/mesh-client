@@ -25,6 +25,7 @@ use rns_wire::header::PacketHeader;
 use tokio::sync::{Mutex as TokioMutex, RwLock, mpsc};
 
 use super::config;
+use super::live_tasks::LiveTasks;
 use super::persistence::PersistedState;
 
 pub const LXMF_APP: &str = "lxmf.delivery";
@@ -141,6 +142,7 @@ fn resolve_announce_display_name(state: &PersistedState) -> Option<String> {
 
 /// Startup announce (after a short interface settle) + periodic announces from `announce_interval_sec`.
 pub fn spawn_lxmf_announce_loop(
+    tasks: &LiveTasks,
     transport_tx: mpsc::Sender<TransportMessage>,
     identity: Identity,
     lxmf_dest_hash: [u8; 16],
@@ -148,7 +150,7 @@ pub fn spawn_lxmf_announce_loop(
     inner: Arc<RwLock<PersistedState>>,
     last_announce_at: Arc<Mutex<Option<Instant>>>,
 ) {
-    tokio::spawn(async move {
+    tasks.spawn(async move {
         // Brief settle so interfaces can come online (lxmd waits up to 30s; we announce after 2s).
         tokio::time::sleep(Duration::from_secs(2)).await;
         {
@@ -214,6 +216,7 @@ fn read_announce_interval_sec(config_dir: &Path) -> u32 {
 /// opportunistic packets from Python clients (Sideband, Columba) are not dropped after
 /// LinkManager decrypts/proves them.
 pub fn spawn_lxmf_inbound_receiver(
+    tasks: &LiveTasks,
     transport_tx: mpsc::Sender<TransportMessage>,
     identity: &Identity,
     lxmf_dest_hash: [u8; 16],
@@ -241,11 +244,11 @@ pub fn spawn_lxmf_inbound_receiver(
     link_mgr.set_resource_completed_channel(resource_tx);
     link_mgr.set_inbound_raw_channel(inbound_raw_tx);
 
-    tokio::spawn(async move {
+    tasks.spawn(async move {
         link_mgr.run().await;
     });
 
-    tokio::spawn(async move {
+    tasks.spawn(async move {
         loop {
             tokio::select! {
                 Some((plaintext, link_id)) = link_packet_rx.recv() => {
@@ -285,13 +288,14 @@ pub fn spawn_lxmf_inbound_receiver(
 /// LinkDeliveryManager requires [`mpsc::UnboundedSender`]; we bridge into a bounded worker
 /// queue and drop newest on saturation (same policy as opportunistic inbound raw).
 pub fn spawn_lxmf_outbound_backchannel(
+    tasks: &LiveTasks,
     lxmf_dest_hash: [u8; 16],
     router: Arc<TokioMutex<LxmRouter>>,
 ) -> mpsc::UnboundedSender<(Vec<u8>, [u8; 16])> {
     let (outer_tx, mut outer_rx) = mpsc::unbounded_channel::<(Vec<u8>, [u8; 16])>();
     let (inner_tx, mut inner_rx) =
         mpsc::channel::<(Vec<u8>, [u8; 16])>(OUTBOUND_BACKCHANNEL_CAPACITY);
-    tokio::spawn(async move {
+    tasks.spawn(async move {
         while let Some(pkt) = outer_rx.recv().await {
             if let Err(e) = inner_tx.try_send(pkt) {
                 match e {
@@ -306,7 +310,7 @@ pub fn spawn_lxmf_outbound_backchannel(
             }
         }
     });
-    tokio::spawn(async move {
+    tasks.spawn(async move {
         while let Some((plaintext, link_id)) = inner_rx.recv().await {
             tracing::debug!(
                 link_id = %hex::encode(link_id),
@@ -747,7 +751,8 @@ mod tests {
                 .push(msg.content.clone());
         });
 
-        let backchannel_tx = spawn_lxmf_outbound_backchannel(lxmf_hash, router);
+        let tasks = LiveTasks::default();
+        let backchannel_tx = spawn_lxmf_outbound_backchannel(&tasks, lxmf_hash, router);
         let link_id = [0xBC; 16];
 
         for content in ["backchannel reply 1", "backchannel reply 2"] {

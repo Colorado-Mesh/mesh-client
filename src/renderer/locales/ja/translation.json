@@ -864,7 +864,6 @@
     "selectSerialPort": "シリアルポートの選択",
     "noSerialPorts": "シリアルポートが見つかりません。デバイスが接続されていることを確認してください。",
     "enterPin": "デバイスに表示されている PIN を入力します。",
-    "pinExpiring": "{{count}}s — PIN をすぐに入力してください。BlueZ ペアリング ウィンドウが閉じます",
     "submit": "提出する",
     "rePairDevice": "デバイスの削除と再ペアリング",
     "mqttConnection": "MQTT接続",
@@ -935,19 +934,14 @@
     "stageConfiguring": "デバイスを構成中…",
     "stageConnecting": "デバイスに接続中…",
     "stageScanning": "スキャン中 — 下に表示されたらデバイスを選択します",
-    "stageConnectingSaved": "保存されている Bluetooth デバイスに接続中…",
-    "stageSelectBluetooth": "以下から Bluetooth デバイスを選択してください",
     "stageEnterPin": "デバイスに表示されている PIN を入力してください",
     "stageEnterPinPair": "PINを入力してデバイスをペアリングします",
     "stagePairingBluetooth": "PIN (bluetoothctl) でペアリング中…",
     "stageRemoving": "デバイスを削除しています…",
     "stagePairingPin": "PIN でペアリング中…",
-    "stagePairing": "ペアリング中…",
-    "stageSelectBluetoothDots": "Bluetooth デバイスを選択してください…",
     "stagePairingFailed": "ペアリングに失敗しました。デバイスを再度ペアリングしてください。",
     "stageCheckingPairing": "Bluetooth のペアリングを確認しています…",
     "stageEnterPinLinux": "デバイスに表示されている PIN を入力します (最初に Linux とペアリングします)",
-    "stageReconnecting": "最後の Bluetooth デバイスに再接続しています…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
@@ -969,7 +963,6 @@
       },
       "ble": {
         "adapterWindowsHint": "[設定] > [Bluetooth とデバイス] を確認します。 Bluetooth がオンになっているが利用できない場合は、デバイス マネージャーで Bluetooth ドライバーを更新します。",
-        "adapterLinuxHint": "Bluetooth が有効になっていて、Web Bluetooth 実験フラグが設定されていることを確認してください。試してください：systemctlステータスBluetooth",
         "adapterGenericHint": "Bluetooth が有効になっていることを確認してください。 Linux では、systemctl status bluetooth を実行します。",
         "securityPermissionHint": "Bluetooth の許可が拒否されました。アプリが Bluetooth デバイスにアクセスできることを確認します。",
         "gattDisconnectedHint": "GATT 接続が切断されました。デバイスに近づいて再接続してみてください。",
@@ -1376,8 +1369,6 @@
     "autoConnectingTo": "{{deviceName}} に自動接続中…",
     "autoReconnectInProgress": "自動再接続中です…",
     "stageAutoConnectingBle": "{{deviceName}} に接続中…",
-    "stageWaitingNobleBleMeshtastic": "Meshtastic Bluetooth が完了するのを待っています — 完了すると、MeshCore は自動的に {{deviceName}} に接続します…",
-    "stageWaitingNobleBleMeshcore": "MeshCore Bluetooth が完了するのを待っています — 完了すると、Meshtastic は自動的に {{deviceName}} に接続します…",
     "reticulumStats": {
       "interfaces": "{{count}}インターフェース",
       "peers": "{{count}}同僚"
@@ -1510,7 +1501,6 @@
     "linkQuality": "リンクの品質",
     "linkQualityMs": "{{ms}}ミリ秒",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "利用できません（ Web Bluetooth ）",
     "meshcoreCaBroker": "MeshCore.CAブローカー",
     "meshcoreCaPrimary": "第一",
     "meshcoreCaBackup": "バックアップ",
@@ -1533,7 +1523,24 @@
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}、{{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
     "bluetoothId": "Bluetooth ID",
-    "reticulumAutoResendOnAnnounce": "ピアがアナウンスしたときに失敗したメッセージを再試行する"
+    "reticulumAutoResendOnAnnounce": "ピアがアナウンスしたときに失敗したメッセージを再試行する",
+    "errors": {
+      "ble": {
+        "adapter_missing": "No Bluetooth adapter was found. Enable Bluetooth in system settings and try again.",
+        "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
+        "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
+        "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
+        "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
+        "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
+        "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",
+        "bond_removed": "The Bluetooth bond is no longer valid. Forget the device in system settings, then re-pair.",
+        "write_failed": "Failed to write to the Bluetooth device. Reconnect and try again.",
+        "session_not_found": "The Bluetooth session is no longer available. Disconnect and connect again.",
+        "notified_read_forbidden": "This Bluetooth characteristic cannot be read that way. Reconnect and try again.",
+        "feature_disabled": "Bluetooth GATT support is not available in this build.",
+        "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
+      }
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -2297,10 +2304,7 @@
       "bleAlreadyInProgress": "Bluetooth 接続はすでに進行中です。完了するまで待つか、代わりにシリアル/USB を試してください。",
       "bleMissingServices": "デバイスは MeshCore BLE プロトコルをサポートしていません。デバイスが MeshCore ファームウェアを実行していることを確認してください。",
       "blePeripheralInUse": "このデバイスはすでに Meshtastic BLE 経由で接続されています。 MeshCore として接続する前に、まず切断してください。",
-      "bleTimeoutWebBtHandshake": "MeshCore ハンドシェイクがタイムアウトしました (Web Bluetooth)。無線機では、最初に Linux とペアリングする PIN が必要な場合があります。[デバイスの削除と再ペアリング] を使用して、デバイスに表示されている PIN を入力するか、bluetoothctl とペアリングして、[接続] を再度タップします。",
-      "bleTimeoutWebBt": "Web Bluetooth 経由で MeshCore を開いているときに Bluetooth 接続がタイムアウトしました。再試行するか、デバイスを起動したままにするか、無線で BLE の電源を入れ直すか、シリアル/TCP を使用します。",
       "bleTimeoutHandshake": "Bluetooth は接続されましたが、切断/タイムアウトになる前に MeshCore プロトコルのハンドシェイクが完了しませんでした。再試行するか、デバイスを起動した状態で近くに置くか、BLE の電源を入れ直すか、シリアル/TCP を使用してください。",
-      "bleTimeoutNoble": "Noble IPC 経由で MeshCore を開いているときに Bluetooth 接続がタイムアウトしました。再試行するか、デバイスの BLE の電源を入れ直すか、シリアル/TCP を使用します。",
       "roomPost": {
         "badState": "ルームの投稿が拒否されました (ラジオにログインしていません)。ログアウトし、再度ログインして、再試行してください。",
         "illegalArg": "ルームの投稿が拒否されました (無効なメッセージ形式)。",
@@ -2330,7 +2334,8 @@
       "cliDangerNotConfirmed": "破壊的なCLIコマンドは、リピーターパネルで確認する必要があります。",
       "pingFailed": "Ping 失敗",
       "floodScopeBusy": "リピーター管理またはトレースルートの進行中は、フラッド スコープのオーバーライドは使用できません。アイドル状態のときに再試行してください。",
-      "removeContactFailed": "ローカルに削除されましたが、無線がremoveContactを拒否しました。更新後に連絡先が再表示される場合があります。"
+      "removeContactFailed": "ローカルに削除されましたが、無線がremoveContactを拒否しました。更新後に連絡先が再表示される場合があります。",
+      "bleTimeoutGatt": "Bluetooth connection timed out while opening MeshCore over sidecar GATT. Retry, power-cycle BLE on the device, or use Serial/TCP."
     },
     "mqttHints": {
       "notAuthorized": "v1_ ユーザー名、トークン署名、JWT オーディエンスとブローカーを検証します。 docs/letsmesh-mqtt-auth.md を参照してください。必要に応じて、カスタムを使用してオペレーター発行のトークンを貼り付けます。",
@@ -5861,12 +5866,6 @@
     },
     "drawOfferWaitingBanner": "引き分けを提案しました。相手の応答を待っています…",
     "idleExpiryNotice": "ゲームは無操作で期限切れになり、その後は削除のみできます。未応答の挑戦: 24時間（全ゲーム）。進行中: 三目並べは24時間、チェスと四目並べは7日。"
-  },
-  "longSession": {
-    "title": "再起動をお勧めします",
-    "body": "mesh-clientは、Bluetooth無線接続で4日間稼働しています。アプリを再起動して、長時間のNoble BLEセッションでクラッシュするリスクを減らしましょう。",
-    "restart": "再始動",
-    "dismiss": "却下"
   },
   "reticulumSetup": {
     "eyebrow": "Reticulum · はじめに",

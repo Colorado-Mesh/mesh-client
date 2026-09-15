@@ -5,11 +5,11 @@ import { MESHCORE_SETUP_ABORT_MESSAGE } from './bleConnectErrors';
 import {
   BLE_SCAN_BUSY_MAX_WAIT_MS,
   BLE_SCAN_BUSY_RETRY_INTERVAL_MS,
-  connectNobleBleWithScanBusyRetry,
+  connectGattWithScanBusyRetry,
   raceWithDeadline,
   reconnectBleWithScan,
-  startNobleBleScanningWithRetry,
-  verifyNobleBleRfLink,
+  startGattScanningWithRetry,
+  verifyGattRfLink,
 } from './bleReconnectHelper';
 
 describe('raceWithDeadline', () => {
@@ -33,69 +33,69 @@ describe('raceWithDeadline', () => {
   });
 });
 
-describe('verifyNobleBleRfLink', () => {
+describe('verifyGattRfLink', () => {
   beforeEach(() => {
     vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh)' });
     window.electronAPI = {
       ...window.electronAPI,
-      isNobleBleConnected: vi.fn().mockResolvedValue(true),
+      isGattConnected: vi.fn().mockResolvedValue(true),
     };
   });
 
   it('returns true for non-BLE transports', async () => {
-    await expect(verifyNobleBleRfLink('serial', 'meshtastic')).resolves.toBe(true);
-    await expect(verifyNobleBleRfLink('tcp', 'meshcore')).resolves.toBe(true);
+    await expect(verifyGattRfLink('serial', 'meshtastic')).resolves.toBe(true);
+    await expect(verifyGattRfLink('tcp', 'meshcore')).resolves.toBe(true);
   });
 
-  it('queries Noble IPC for BLE on darwin', async () => {
-    await expect(verifyNobleBleRfLink('ble', 'meshcore')).resolves.toBe(true);
-    expect(window.electronAPI.isNobleBleConnected).toHaveBeenCalledWith('meshcore');
+  it('queries GATT IPC for BLE on darwin', async () => {
+    await expect(verifyGattRfLink('ble', 'meshcore')).resolves.toBe(true);
+    expect(window.electronAPI.isGattConnected).toHaveBeenCalledWith('meshcore');
   });
 
-  it('returns true on Linux without querying Noble', async () => {
+  it('queries GATT IPC for BLE on Linux', async () => {
     vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64)' });
-    await expect(verifyNobleBleRfLink('ble', 'meshtastic')).resolves.toBe(true);
-    expect(window.electronAPI.isNobleBleConnected).not.toHaveBeenCalled();
+    await expect(verifyGattRfLink('ble', 'meshtastic')).resolves.toBe(true);
+    expect(window.electronAPI.isGattConnected).toHaveBeenCalledWith('meshtastic');
   });
 
-  it('returns false when Noble IPC throws', async () => {
-    vi.mocked(window.electronAPI.isNobleBleConnected).mockRejectedValue(new Error('ipc down'));
-    await expect(verifyNobleBleRfLink('ble', 'meshtastic')).resolves.toBe(false);
+  it('returns false when GATT IPC throws', async () => {
+    vi.mocked(window.electronAPI.isGattConnected).mockRejectedValue(new Error('ipc down'));
+    await expect(verifyGattRfLink('ble', 'meshtastic')).resolves.toBe(false);
   });
 });
 
-describe('startNobleBleScanningWithRetry', () => {
+describe('startGattScanningWithRetry', () => {
   beforeEach(() => {
     vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh)' });
     window.electronAPI = {
       ...window.electronAPI,
       getPlatform: vi.fn().mockReturnValue('darwin'),
-      startNobleBleScanning: vi.fn().mockResolvedValue({ ok: true }),
+      startGattScanning: vi.fn().mockResolvedValue({ ok: true }),
     };
   });
 
   it('retries when scan is busy then succeeds', async () => {
     vi.useFakeTimers();
-    vi.mocked(window.electronAPI.startNobleBleScanning)
+    vi.mocked(window.electronAPI.startGattScanning)
       .mockResolvedValueOnce({ ok: false, code: 'scan_busy', owner: 'reticulum' })
       .mockResolvedValueOnce({ ok: true });
 
-    const pending = startNobleBleScanningWithRetry('meshcore');
+    const pending = startGattScanningWithRetry('meshcore');
     await vi.advanceTimersByTimeAsync(BLE_SCAN_BUSY_RETRY_INTERVAL_MS);
     await expect(pending).resolves.toBeUndefined();
-    expect(window.electronAPI.startNobleBleScanning).toHaveBeenCalledTimes(2);
+    expect(window.electronAPI.startGattScanning).toHaveBeenCalledTimes(2);
     vi.useRealTimers();
   });
 
   it('fails after max wait when scan stays busy', async () => {
     vi.useFakeTimers();
-    vi.mocked(window.electronAPI.startNobleBleScanning).mockResolvedValue({
+    vi.mocked(window.electronAPI.startGattScanning).mockResolvedValue({
       ok: false,
       code: 'scan_busy',
       owner: 'reticulum',
     });
 
-    const pending = startNobleBleScanningWithRetry('meshcore');
+    const pending = startGattScanningWithRetry('meshcore');
     const rejection = expect(pending).rejects.toThrow(/Bluetooth scan in progress \(reticulum\)/);
     await vi.advanceTimersByTimeAsync(BLE_SCAN_BUSY_MAX_WAIT_MS + BLE_SCAN_BUSY_RETRY_INTERVAL_MS);
     await rejection;
@@ -103,67 +103,67 @@ describe('startNobleBleScanningWithRetry', () => {
   });
 });
 
-describe('connectNobleBleWithScanBusyRetry', () => {
+describe('connectGattWithScanBusyRetry', () => {
   beforeEach(() => {
     window.electronAPI = {
       ...window.electronAPI,
-      connectNobleBle: vi.fn().mockResolvedValue({ ok: true }),
+      connectGatt: vi.fn().mockResolvedValue({ ok: true }),
     };
   });
 
   it('retries when connect is rejected for reticulum scan yield then succeeds', async () => {
     vi.useFakeTimers();
-    vi.mocked(window.electronAPI.connectNobleBle)
+    vi.mocked(window.electronAPI.connectGatt)
       .mockResolvedValueOnce({
         ok: false,
         error: 'Bluetooth scan in progress (reticulum)',
       })
       .mockResolvedValueOnce({ ok: true });
 
-    const pending = connectNobleBleWithScanBusyRetry('meshtastic', 'periph-1');
+    const pending = connectGattWithScanBusyRetry('meshtastic', 'periph-1');
     await vi.advanceTimersByTimeAsync(BLE_SCAN_BUSY_RETRY_INTERVAL_MS);
     await expect(pending).resolves.toBeUndefined();
-    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
-    expect(window.electronAPI.connectNobleBle).toHaveBeenNthCalledWith(1, 'meshtastic', 'periph-1');
+    expect(window.electronAPI.connectGatt).toHaveBeenCalledTimes(2);
+    expect(window.electronAPI.connectGatt).toHaveBeenNthCalledWith(1, 'meshtastic', 'periph-1');
     vi.useRealTimers();
   });
 
   it('retries when another scan owner holds the mutex (not only reticulum)', async () => {
     vi.useFakeTimers();
-    vi.mocked(window.electronAPI.connectNobleBle)
+    vi.mocked(window.electronAPI.connectGatt)
       .mockResolvedValueOnce({
         ok: false,
         error: 'Bluetooth scan in progress (noble)',
       })
       .mockResolvedValueOnce({ ok: true });
 
-    const pending = connectNobleBleWithScanBusyRetry('meshcore', 'periph-2');
+    const pending = connectGattWithScanBusyRetry('meshcore', 'periph-2');
     await vi.advanceTimersByTimeAsync(BLE_SCAN_BUSY_RETRY_INTERVAL_MS);
     await expect(pending).resolves.toBeUndefined();
-    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
+    expect(window.electronAPI.connectGatt).toHaveBeenCalledTimes(2);
     vi.useRealTimers();
   });
 
   it('fails immediately on non-scan-busy connect errors', async () => {
-    vi.mocked(window.electronAPI.connectNobleBle).mockResolvedValue({
+    vi.mocked(window.electronAPI.connectGatt).mockResolvedValue({
       ok: false,
       error: 'Bluetooth adapter is not available',
     });
 
-    await expect(connectNobleBleWithScanBusyRetry('meshtastic', 'periph-1')).rejects.toThrow(
+    await expect(connectGattWithScanBusyRetry('meshtastic', 'periph-1')).rejects.toThrow(
       'Bluetooth adapter is not available',
     );
-    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.connectGatt).toHaveBeenCalledTimes(1);
   });
 
   it('fails after max wait when scan yield never releases', async () => {
     vi.useFakeTimers();
-    vi.mocked(window.electronAPI.connectNobleBle).mockResolvedValue({
+    vi.mocked(window.electronAPI.connectGatt).mockResolvedValue({
       ok: false,
       error: 'Bluetooth scan in progress (reticulum)',
     });
 
-    const pending = connectNobleBleWithScanBusyRetry('meshtastic', 'periph-1');
+    const pending = connectGattWithScanBusyRetry('meshtastic', 'periph-1');
     const rejection = expect(pending).rejects.toThrow(/Bluetooth scan in progress \(reticulum\)/);
     await vi.advanceTimersByTimeAsync(BLE_SCAN_BUSY_MAX_WAIT_MS + BLE_SCAN_BUSY_RETRY_INTERVAL_MS);
     await rejection;
@@ -177,9 +177,9 @@ describe('reconnectBleWithScan', () => {
     window.electronAPI = {
       ...window.electronAPI,
       getPlatform: vi.fn().mockReturnValue('darwin'),
-      startNobleBleScanning: vi.fn().mockResolvedValue({ ok: true }),
-      stopNobleBleScanning: vi.fn().mockResolvedValue(undefined),
-      onNobleBleDeviceDiscovered: vi.fn().mockReturnValue(() => {}),
+      startGattScanning: vi.fn().mockResolvedValue({ ok: true }),
+      stopGattScanning: vi.fn().mockResolvedValue(undefined),
+      onGattDeviceDiscovered: vi.fn().mockReturnValue(() => {}),
     };
   });
 
@@ -192,7 +192,7 @@ describe('reconnectBleWithScan', () => {
       name: 'AbortError',
       message: MESHCORE_SETUP_ABORT_MESSAGE,
     });
-    expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
+    expect(window.electronAPI.startGattScanning).not.toHaveBeenCalled();
   });
 
   it('does not scan when protocol runtime session is not mounted yet', async () => {
@@ -203,6 +203,42 @@ describe('reconnectBleWithScan', () => {
     await expect(reconnectBleWithScan('meshtastic', 'abc', connect)).rejects.toThrow(
       /runtime is not mounted/,
     );
-    expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
+    expect(window.electronAPI.startGattScanning).not.toHaveBeenCalled();
+  });
+
+  it('does not scan after missing-services failures', async () => {
+    const connect = vi.fn().mockRejectedValue(new Error('Could not find all requested services'));
+
+    await expect(reconnectBleWithScan('meshcore', 'bad-device', connect)).rejects.toThrow(
+      /Could not find all requested services/,
+    );
+    expect(window.electronAPI.startGattScanning).not.toHaveBeenCalled();
+  });
+
+  it('matches discovery by hex-normalized UUID / MAC aliases', async () => {
+    const connect = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('not found — scan first'))
+      .mockResolvedValueOnce(undefined);
+    const discovered = vi.fn();
+    vi.mocked(window.electronAPI.onGattDeviceDiscovered).mockImplementation((cb) => {
+      discovered.mockImplementation(cb);
+      return () => {};
+    });
+
+    const pending = reconnectBleWithScan('meshcore', 'ff92959fd78be6f009376829a4d6efdc', connect, {
+      matchIds: ['aa:bb:cc:dd:ee:ff'],
+    });
+    await Promise.resolve();
+    discovered({
+      deviceId: 'AA:BB:CC:DD:EE:FF',
+      deviceName: 'MeshCore',
+      address: 'AA:BB:CC:DD:EE:FF',
+    });
+    await expect(pending).resolves.toBeUndefined();
+    expect(connect).toHaveBeenCalledTimes(2);
+    expect(connect).toHaveBeenNthCalledWith(1);
+    expect(connect).toHaveBeenNthCalledWith(2, 'AA:BB:CC:DD:EE:FF');
+    expect(window.electronAPI.startGattScanning).toHaveBeenCalled();
   });
 });

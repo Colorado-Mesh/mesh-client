@@ -5,27 +5,24 @@ import {
   WebSerialConnection,
 } from '@liamcottle/meshcore.js';
 
-import { isPairingRelatedError } from '@/shared/blePairingError';
 import { formatHostForSocket } from '@/shared/connectHost';
 
 import { withTimeout } from '../../../../shared/withTimeout';
 import { isMeshcoreRetryableBleErrorMessage } from '../../bleConnectErrors';
-import { connectNobleBleWithScanBusyRetry } from '../../bleReconnectHelper';
+import { connectGattWithScanBusyRetry } from '../../bleReconnectHelper';
 import { closeSerialPortIfOpen } from '../../connection';
 import {
   isMeshcoreTcpOpenHopDeadAccepted,
   notifyMeshcoreTcpWriteDead,
 } from '../../meshcore/meshcoreTcpInitBurst';
 import { patchMeshcoreCompanionTxEchoFilter } from '../../meshcoreCompanionTxEchoFilter';
-import { notifyNobleBlePrimaryRfLinkReady } from '../../meshcoreDualNobleBleInit';
-import { MeshcoreWebBluetoothConnection } from '../../meshcoreWebBluetoothConnection';
+import { notifyBlePrimaryRfLinkReady } from '../../meshcoreDualNobleBleInit';
 import { createSerializedWritableStream } from '../../meshtastic/meshtasticTransportLossDetection';
 import { parseTcpAddress } from '../../parseTcpAddress';
 import { openSerialPortWithTimeout } from '../../serialPortRecovery';
 import { persistSerialPortIdentity, selectGrantedSerialPort } from '../../serialPortSignature';
 import { MESHCORE_BLE_DEVICE_QUERY_TIMEOUT_MS } from '../../timeConstants';
-import { TransportWebBluetoothIpc } from '../../transportWebBluetoothIpc';
-import type { NobleBleSessionId } from '../../types';
+import type { GattBleSessionId } from '../../types';
 
 // ─── Public params type ───────────────────────────────────────────────────────
 
@@ -34,7 +31,7 @@ export type MeshCoreTransportParams =
   | { transport: 'tcp'; host: string }
   | { transport: 'serial' };
 
-/** Drain and invoke IPC unsubscribe fns (idempotent). Shared by TCP/Noble wrappers. */
+/** Drain and invoke IPC unsubscribe fns (idempotent). Shared by TCP/GATT wrappers. */
 function releaseIpcCleanupFns(cleanupFns: (() => void)[]): void {
   const fns = cleanupFns.splice(0, cleanupFns.length);
   for (const fn of fns) fn();
@@ -51,10 +48,8 @@ export async function createMeshCoreConnection(
 ): Promise<Connection> {
   if (params.transport === 'tcp') return connectTcp(params.host);
   if (params.transport === 'serial') return connectSerial();
-  // BLE: Linux uses Web Bluetooth renderer-side; Mac/Windows use Noble IPC
-  if (rendererLikelyLinux()) return connectBleWebBluetooth();
   if (!params.blePeripheralId) throw new Error('BLE peripheral ID required');
-  return connectBleNoble(params.blePeripheralId);
+  return connectBleGatt(params.blePeripheralId);
 }
 
 // ─── Platform detection ───────────────────────────────────────────────────────
@@ -91,25 +86,23 @@ function rendererLikelyLinux(): boolean {
 
 // ─── Timeouts / retry limits ──────────────────────────────────────────────────
 
-const NOBLE_IPC_CONNECT_TIMEOUT_MS = 120_000;
+const GATT_IPC_CONNECT_TIMEOUT_MS = 120_000;
 
 /** WinRT + companion handshake can be slower than CoreBluetooth. */
-const NOBLE_IPC_HANDSHAKE_TIMEOUT_MS = rendererLikelyWin32()
+const GATT_IPC_HANDSHAKE_TIMEOUT_MS = rendererLikelyWin32()
   ? 45_000
   : rendererLikelyLinux()
     ? 60_000
     : 20_000;
 
-const NOBLE_IPC_CONNECT_MAX_ATTEMPTS = 2;
-const WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS = 2;
-const WEB_BLUETOOTH_CONNECT_RETRY_DELAY_MS = 1_500;
+const GATT_IPC_CONNECT_MAX_ATTEMPTS = 2;
 
 // ─── Internal type shims ──────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface SerialConnectionInstance extends InstanceType<typeof SerialConnection> {}
 
-interface NobleIpcMeshcoreConnectionInstance {
+interface GattIpcMeshcoreConnectionInstance {
   emit(event: string | number, ...args: unknown[]): void;
   onConnected(): Promise<void>;
   onDisconnected(): void;
@@ -117,8 +110,7 @@ interface NobleIpcMeshcoreConnectionInstance {
   onFrameReceived(frame: Uint8Array): void;
 }
 
-const MeshcoreConnectionBase =
-  Connection as unknown as new () => NobleIpcMeshcoreConnectionInstance;
+const MeshcoreConnectionBase = Connection as unknown as new () => GattIpcMeshcoreConnectionInstance;
 
 // ─── TCP ──────────────────────────────────────────────────────────────────────
 
@@ -280,18 +272,18 @@ export async function reconnectMeshcoreSerial(lastPortId?: string | null): Promi
   return openSerialPort(port);
 }
 
-// ─── BLE: Noble IPC (Mac / Windows) ──────────────────────────────────────────
+// ─── BLE: sidecar GATT (all platforms) ───────────────────────────────────────
 
-class IpcNobleConnection {
-  /** Serialises concurrent meshcore Noble connects to avoid adapter contention. */
+class IpcSidecarGattConnection {
+  /** Serialises concurrent meshcore GATT connects to avoid adapter contention. */
   private static meshcoreConnectChain = Promise.resolve();
 
   private readonly peripheralId: string;
-  private readonly sessionId: NobleBleSessionId;
-  private inner: NobleIpcMeshcoreConnectionInstance | null = null;
+  private readonly sessionId: GattBleSessionId;
+  private inner: GattIpcMeshcoreConnectionInstance | null = null;
   private cleanupFns: (() => void)[] = [];
 
-  constructor(peripheralId: string, sessionId: NobleBleSessionId = 'meshcore') {
+  constructor(peripheralId: string, sessionId: GattBleSessionId = 'meshcore') {
     this.peripheralId = peripheralId;
     this.sessionId = sessionId;
   }
@@ -308,8 +300,8 @@ class IpcNobleConnection {
         this.releaseIpcListeners();
       };
 
-      class NobleOverIpc extends MeshcoreConnectionBase {
-        constructor(private readonly session: NobleBleSessionId) {
+      class GattOverIpc extends MeshcoreConnectionBase {
+        constructor(private readonly session: GattBleSessionId) {
           super();
         }
         async onConnected() {
@@ -327,15 +319,15 @@ class IpcNobleConnection {
           await this.write(data);
         }
         async write(bytes: Uint8Array) {
-          await window.electronAPI.nobleBleToRadio(this.session, bytes);
+          await window.electronAPI.gattToRadio(this.session, bytes);
         }
         async close() {
           releaseListeners();
-          await window.electronAPI.disconnectNobleBle(this.session);
+          await window.electronAPI.disconnectGatt(this.session);
         }
       }
 
-      const instance = new NobleOverIpc(sessionId) as unknown as NobleIpcMeshcoreConnectionInstance;
+      const instance = new GattOverIpc(sessionId) as unknown as GattIpcMeshcoreConnectionInstance;
       patchMeshcoreCompanionTxEchoFilter(instance);
       this.inner = instance;
 
@@ -345,14 +337,14 @@ class IpcNobleConnection {
       });
       disconnectAbortsHandshake.catch(() => {});
 
-      const offData = window.electronAPI.onNobleBleFromRadio(({ sessionId: sid, bytes }) => {
+      const offData = window.electronAPI.onGattFromRadio(({ sessionId: sid, bytes }) => {
         if (sid !== sessionId) return;
         const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
         instance.onFrameReceived(frame);
       });
-      const offDisc = window.electronAPI.onNobleBleDisconnected((sid) => {
+      const offDisc = window.electronAPI.onGattDisconnected((sid) => {
         if (sid !== sessionId) return;
-        console.warn(`[IpcNobleConnection:${sessionId}] peripheral disconnected`);
+        console.warn(`[IpcSidecarGattConnection:${sessionId}] peripheral disconnected`);
         releaseListeners();
         instance.onDisconnected();
         const r = rejectHandshakeOnDisconnect;
@@ -363,28 +355,26 @@ class IpcNobleConnection {
           ),
         );
       });
-      const offAbort = window.electronAPI.onNobleBleConnectAborted(
-        ({ sessionId: sid, message }) => {
-          if (sid !== sessionId) return;
-          console.warn(`[IpcNobleConnection:${sessionId}] connect aborted by main: ${message}`);
-          releaseListeners();
-          const r = rejectHandshakeOnDisconnect;
-          rejectHandshakeOnDisconnect = undefined;
-          r?.(new Error(message));
-        },
-      );
+      const offAbort = window.electronAPI.onGattConnectAborted(({ sessionId: sid, message }) => {
+        if (sid !== sessionId) return;
+        console.warn(`[IpcSidecarGattConnection:${sessionId}] connect aborted by main: ${message}`);
+        releaseListeners();
+        const r = rejectHandshakeOnDisconnect;
+        rejectHandshakeOnDisconnect = undefined;
+        r?.(new Error(message));
+      });
       this.cleanupFns = [offData, offDisc, offAbort];
 
       try {
         await withTimeout(
-          connectNobleBleWithScanBusyRetry(sessionId, this.peripheralId),
-          NOBLE_IPC_CONNECT_TIMEOUT_MS,
+          connectGattWithScanBusyRetry(sessionId, this.peripheralId),
+          GATT_IPC_CONNECT_TIMEOUT_MS,
           'MeshCore BLE IPC open',
         );
 
         if (rejectHandshakeOnDisconnect === undefined) {
           console.warn(
-            `[IpcNobleConnection:${sessionId}] disconnect raced ahead of handshake — will fail immediately`,
+            `[IpcSidecarGattConnection:${sessionId}] disconnect raced ahead of handshake — will fail immediately`,
           );
         }
 
@@ -393,21 +383,21 @@ class IpcNobleConnection {
           Promise.race([
             instance.onConnected().then(() => {
               rejectHandshakeOnDisconnect = undefined;
-              notifyNobleBlePrimaryRfLinkReady(sessionId);
+              notifyBlePrimaryRfLinkReady(sessionId);
               console.info(
-                `[IpcNobleConnection:${sessionId}] onConnected() resolved after ${
+                `[IpcSidecarGattConnection:${sessionId}] onConnected() resolved after ${
                   Date.now() - handshakeStart
                 }ms`,
               );
             }),
             disconnectAbortsHandshake,
           ]),
-          NOBLE_IPC_HANDSHAKE_TIMEOUT_MS,
+          GATT_IPC_HANDSHAKE_TIMEOUT_MS,
           'MeshCore BLE protocol handshake',
         );
       } catch (err) {
         try {
-          await window.electronAPI.disconnectNobleBle(sessionId);
+          await window.electronAPI.disconnectGatt(sessionId);
         } catch {
           // catch-no-log-ok best-effort disconnect after connect failure
         }
@@ -422,9 +412,9 @@ class IpcNobleConnection {
       return;
     }
 
-    const prev = IpcNobleConnection.meshcoreConnectChain;
+    const prev = IpcSidecarGattConnection.meshcoreConnectChain;
     let releaseChain!: () => void;
-    IpcNobleConnection.meshcoreConnectChain = new Promise<void>((resolve) => {
+    IpcSidecarGattConnection.meshcoreConnectChain = new Promise<void>((resolve) => {
       releaseChain = resolve;
     });
     await prev;
@@ -436,78 +426,37 @@ class IpcNobleConnection {
   }
 
   get connection(): Connection {
-    if (!this.inner) throw new Error('IpcNobleConnection not connected');
+    if (!this.inner) throw new Error('IpcSidecarGattConnection not connected');
     return this.inner as unknown as Connection;
   }
 
   cleanup(): void {
     this.releaseIpcListeners();
-    void window.electronAPI.disconnectNobleBle(this.sessionId).catch((e: unknown) => {
-      console.debug('[MeshCoreTransport] Noble cleanup disconnect ' + String(e));
+    void window.electronAPI.disconnectGatt(this.sessionId).catch((e: unknown) => {
+      console.debug('[MeshCoreTransport] GATT cleanup disconnect ' + String(e));
     });
   }
 }
 
-async function connectBleNoble(blePeripheralId: string): Promise<Connection> {
+async function connectBleGatt(blePeripheralId: string): Promise<Connection> {
   let lastError: unknown = null;
-  for (let attempt = 1; attempt <= NOBLE_IPC_CONNECT_MAX_ATTEMPTS; attempt++) {
-    const nobleConn = new IpcNobleConnection(blePeripheralId);
+  for (let attempt = 1; attempt <= GATT_IPC_CONNECT_MAX_ATTEMPTS; attempt++) {
+    const gattConn = new IpcSidecarGattConnection(blePeripheralId);
     try {
-      await nobleConn.connect();
-      return nobleConn.connection;
+      await gattConn.connect();
+      return gattConn.connection;
     } catch (err) {
       lastError = err;
       const msg = err instanceof Error ? err.message : String(err);
       const isRetryable = isMeshcoreRetryableBleErrorMessage(msg);
       console.warn(
-        `[MeshCoreTransport] Noble BLE attempt ${attempt}/${NOBLE_IPC_CONNECT_MAX_ATTEMPTS} failed: ${msg}`,
+        `[MeshCoreTransport] GATT BLE attempt ${attempt}/${GATT_IPC_CONNECT_MAX_ATTEMPTS} failed: ${msg}`,
       );
-      nobleConn.cleanup();
-      if (!isRetryable || attempt >= NOBLE_IPC_CONNECT_MAX_ATTEMPTS) throw err;
+      gattConn.cleanup();
+      if (!isRetryable || attempt >= GATT_IPC_CONNECT_MAX_ATTEMPTS) throw err;
       await new Promise<void>((r) => setTimeout(r, 1500));
     }
   }
   if (lastError instanceof Error) throw lastError;
   throw new Error('BLE connect failed');
-}
-
-// ─── BLE: Web Bluetooth (Linux) ───────────────────────────────────────────────
-
-async function connectBleWebBluetooth(): Promise<Connection> {
-  window.electronAPI.resetBlePairingRetryCount('meshcore');
-  let reuseDeviceId: string | null = null;
-
-  for (let attempt = 1; attempt <= WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS; attempt++) {
-    const transport = new TransportWebBluetoothIpc('meshcore');
-    try {
-      const conn = new MeshcoreWebBluetoothConnection(transport);
-      await conn.connect(reuseDeviceId ?? undefined);
-      return conn;
-    } catch (err) {
-      const deviceInfo = transport.getDeviceInfo();
-      reuseDeviceId = deviceInfo?.deviceId ?? transport.getLastGrantedDeviceId() ?? reuseDeviceId;
-      try {
-        await transport.disconnect();
-      } catch {
-        // catch-no-log-ok Web Bluetooth cleanup on failed attempt
-      }
-
-      const msg = err instanceof Error ? err.message : String(err);
-      const isTimeout = msg.includes('timed out');
-      const isPairingError = isPairingRelatedError(err);
-
-      console.warn(
-        `[MeshCoreTransport] Web Bluetooth attempt ${attempt}/${WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS} failed: ${msg}`,
-      );
-
-      if (isPairingError || !isTimeout || attempt >= WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS) throw err;
-      if (!reuseDeviceId) {
-        throw new Error(
-          'Bluetooth connection timed out before a device could be reused. Tap Connect again to retry.',
-        );
-      }
-      await new Promise<void>((r) => setTimeout(r, WEB_BLUETOOTH_CONNECT_RETRY_DELAY_MS));
-    }
-  }
-  throw new Error('BLE connect failed after all attempts');
 }

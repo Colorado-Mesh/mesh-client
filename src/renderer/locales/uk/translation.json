@@ -902,7 +902,6 @@
     "selectSerialPort": "Виберіть послідовний порт",
     "noSerialPorts": "Послідовних портів не знайдено. Переконайтеся, що ваш пристрій підключено до мережі.",
     "enterPin": "Введіть PIN-код, який відображається на вашому пристрої:",
-    "pinExpiring": "{{count}}s — швидко введіть PIN-код, вікно сполучення BlueZ закривається",
     "submit": "Надіслати",
     "rePairDevice": "Видалити та повторно підключити пристрій",
     "mqttConnection": "Підключення MQTT",
@@ -973,19 +972,14 @@
     "stageConfiguring": "Налаштування пристрою…",
     "stageConnecting": "Підключення до пристрою…",
     "stageScanning": "Сканування — виберіть свій пристрій, коли він з’явиться нижче",
-    "stageConnectingSaved": "Підключення до збереженого пристрою Bluetooth…",
-    "stageSelectBluetooth": "Виберіть свій пристрій Bluetooth нижче",
     "stageEnterPin": "Введіть PIN-код, який відображається на вашому пристрої",
     "stageEnterPinPair": "Введіть PIN-код, щоб з’єднати пристрій",
     "stagePairingBluetooth": "Сполучення за допомогою PIN-коду (bluetoothctl)…",
     "stageRemoving": "Видалення пристрою…",
     "stagePairingPin": "Сполучення з PIN-кодом…",
-    "stagePairing": "Створення пари…",
-    "stageSelectBluetoothDots": "Виберіть свій пристрій Bluetooth…",
     "stagePairingFailed": "Не вдалося створити пару. Підключіть пристрій повторно.",
     "stageCheckingPairing": "Перевірка з’єднання Bluetooth…",
     "stageEnterPinLinux": "Введіть PIN-код, який відображається на вашому пристрої (спочатку з’єднайте з Linux)",
-    "stageReconnecting": "Повторне підключення до останнього пристрою Bluetooth…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
@@ -1007,7 +1001,6 @@
       },
       "ble": {
         "adapterWindowsHint": "Перевірте Налаштування > Bluetooth і пристрої. Якщо Bluetooth увімкнено, але він недоступний, оновіть драйвер Bluetooth у диспетчері пристроїв.",
-        "adapterLinuxHint": "Переконайтеся, що Bluetooth увімкнено та встановлено прапорець експерименту Web Bluetooth. Спробуйте: systemctl status bluetooth",
         "adapterGenericHint": "Переконайтеся, що Bluetooth увімкнено. У Linux запустіть: systemctl status bluetooth",
         "securityPermissionHint": "У дозволі Bluetooth відмовлено. Переконайтеся, що програма має доступ до пристрою Bluetooth.",
         "gattDisconnectedHint": "З’єднання GATT розірвано. Спробуйте підійти ближче до пристрою та повторно підключитися.",
@@ -1414,8 +1407,6 @@
     "autoConnectingTo": "Автоматичне підключення до {{deviceName}}…",
     "autoReconnectInProgress": "Триває автоматичне повторне підключення…",
     "stageAutoConnectingBle": "Підключення до {{deviceName}}…",
-    "stageWaitingNobleBleMeshtastic": "Очікування завершення Meshtastic Bluetooth — MeshCore автоматично підключиться до {{deviceName}}, коли це буде зроблено…",
-    "stageWaitingNobleBleMeshcore": "Очікування завершення MeshCore Bluetooth — Meshtastic автоматично підключиться до {{deviceName}}, коли це буде зроблено…",
     "reticulumStats": {
       "interfaces": "{{count}} інтерфейси",
       "peers": "{{count}} однолітків"
@@ -1548,7 +1539,6 @@
     "linkQuality": "Якість зв'язку",
     "linkQualityMs": "{{ms}} мс",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Недоступно (веб Bluetooth)",
     "meshcoreCaBroker": "Брокер MeshCore.CA",
     "meshcoreCaPrimary": "Осн.",
     "meshcoreCaBackup": "Заднім ходом",
@@ -1571,7 +1561,24 @@
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} дБм",
     "bluetoothMac": "Bluetooth MAC",
     "bluetoothId": "Ідентифікатор Bluetooth",
-    "reticulumAutoResendOnAnnounce": "Повторіть невдалі повідомлення, коли вузол оголошує"
+    "reticulumAutoResendOnAnnounce": "Повторіть невдалі повідомлення, коли вузол оголошує",
+    "errors": {
+      "ble": {
+        "adapter_missing": "No Bluetooth adapter was found. Enable Bluetooth in system settings and try again.",
+        "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
+        "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
+        "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
+        "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
+        "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
+        "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",
+        "bond_removed": "The Bluetooth bond is no longer valid. Forget the device in system settings, then re-pair.",
+        "write_failed": "Failed to write to the Bluetooth device. Reconnect and try again.",
+        "session_not_found": "The Bluetooth session is no longer available. Disconnect and connect again.",
+        "notified_read_forbidden": "This Bluetooth characteristic cannot be read that way. Reconnect and try again.",
+        "feature_disabled": "Bluetooth GATT support is not available in this build.",
+        "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
+      }
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",
@@ -2349,10 +2356,7 @@
       "bleAlreadyInProgress": "З’єднання Bluetooth уже встановлено. Зачекайте, доки він закінчиться, або спробуйте натомість послідовний порт/USB.",
       "bleMissingServices": "Пристрій не підтримує протокол MeshCore BLE. Переконайтеся, що на пристрої встановлено прошивку MeshCore.",
       "blePeripheralInUse": "Цей пристрій уже підключено через Meshtastic BLE. Перш ніж підключатися як MeshCore, від’єднайте його.",
-      "bleTimeoutWebBtHandshake": "Час очікування рукостискання MeshCore минув (Web Bluetooth). Радіо може спершу потребувати PIN-коду, сполученого з Linux: скористайтеся командою «Видалити та повторно з’єднати пристрій» і введіть PIN-код, який відображається на пристрої, або з’єднайте з bluetoothctl, а потім знову торкніться «Підключити».",
-      "bleTimeoutWebBt": "Час очікування підключення Bluetooth закінчився під час відкриття MeshCore через Web Bluetooth. Повторіть спробу, залиште пристрій активним, увімкніть BLE на радіо або скористайтеся послідовним портом/TCP.",
       "bleTimeoutHandshake": "Bluetooth підключено, але рукостискання протоколу MeshCore не завершилося до відключення/часу очікування. Повторіть спробу, залиште пристрій активним і тримайте його поблизу, увімкніть живлення BLE або використовуйте послідовний порт/TCP.",
-      "bleTimeoutNoble": "Час очікування підключення Bluetooth закінчився під час відкриття MeshCore через Noble IPC. Повторіть спробу, увімкніть живлення BLE на пристрої або скористайтеся послідовним портом/TCP.",
       "roomPost": {
         "badState": "Повідомлення в кімнаті відхилено (не ввійшов на радіо). Вийдіть, увійдіть знову та повторіть спробу.",
         "illegalArg": "Публікацію кімнати відхилено (недійсний формат повідомлення).",
@@ -2382,7 +2386,8 @@
       "cliDangerNotConfirmed": "Деструктивні команди CLI вимагають підтвердження на панелі повторювачів.",
       "pingFailed": "Ping не вдався",
       "floodScopeBusy": "Перевизначення обсягу затоплення недоступне, поки виконується адміністрування повторювача або трасування. Повторіть спробу під час очікування.",
-      "removeContactFailed": "Видалено локально, але радіо відхилило removeContact. Контакт може знову з’явитися після оновлення."
+      "removeContactFailed": "Видалено локально, але радіо відхилило removeContact. Контакт може знову з’явитися після оновлення.",
+      "bleTimeoutGatt": "Bluetooth connection timed out while opening MeshCore over sidecar GATT. Retry, power-cycle BLE on the device, or use Serial/TCP."
     },
     "mqttHints": {
       "notAuthorized": "Перевірте ім’я користувача v1_, підпис маркера та аудиторію JWT проти брокера; див. docs/letsmesh-mqtt-auth.md. За потреби вставте маркер, виданий оператором, за допомогою Custom.",
@@ -5955,12 +5960,6 @@
     },
     "drawOfferWaitingBanner": "Пропозицію нічиєї надіслано. Очікування суперника…",
     "idleExpiryNotice": "Ігри закінчуються після простою і тоді їх можна лише видалити. Виклики без відповіді: 24 години (усі ігри). Активні ігри: хрестики-нулики через 24 години, шахи та чотири в ряд через 7 днів."
-  },
-  "longSession": {
-    "title": "Рекомендовано перезапустити",
-    "body": "mesh-client працює протягом чотирьох днів з підключеним Bluetooth-радіо. Перезапустіть додаток, щоб зменшити ризик аварій під час тривалих сеансів Noble BLE.",
-    "restart": "Перезапуск",
-    "dismiss": "Відпустити"
   },
   "reticulumSetup": {
     "eyebrow": "Reticulum · ПОЧАТОК РОБОТИ",

@@ -24,8 +24,7 @@ const PRELOAD_FILE = path.join(ROOT, 'src', 'preload', 'index.ts');
 const MAIN_FILES = [
   path.join(ROOT, 'src', 'main', 'index.ts'),
   path.join(ROOT, 'src', 'main', 'updater.ts'),
-  // Linux Web Bluetooth cancel handlers live beside the session helper (not under ipc/).
-  path.join(ROOT, 'src', 'main', 'linuxWebBluetoothCancelIpc.ts'),
+  path.join(ROOT, 'src', 'main', 'gatt-sidecar-proxy.ts'),
   ...collectIpcHandlerFiles(path.join(ROOT, 'src', 'main', 'ipc')),
 ];
 

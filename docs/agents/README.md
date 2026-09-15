@@ -5,7 +5,7 @@ Deep, file-level subsystem detail for AI assistants, split out of [`AGENTS.md`](
 | When working on…                                                                                         | Read                                           |
 | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | Reticulum sidecar, LXMF, propagation, Remote/rnsh/rncp, Nomad, RRC, voice, games                         | [reticulum.md](reticulum.md)                   |
-| LoRa BLE/serial, Noble reconnect, dual-radio startup, BLE coexistence                                    | [ble-serial.md](ble-serial.md)                 |
+| LoRa BLE/serial, sidecar GATT reconnect, dual-radio wake stagger, BLE coexistence                        | [ble-serial.md](ble-serial.md)                 |
 | Renderer hooks/runtimes/stores, protocol entry points, DB, tab wiring                                    | [renderer-hooks.md](renderer-hooks.md)         |
 | Meshtastic config apply, admin, channel URLs, Store & Forward, remote admin, GPS                         | [meshtastic.md](meshtastic.md)                 |
 | MQTT ingest, channel key mapping, sticky BLE suppress                                                    | [mqtt.md](mqtt.md)                             |

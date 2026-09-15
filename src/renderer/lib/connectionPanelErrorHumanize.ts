@@ -7,7 +7,11 @@ import {
 } from '@/shared/connectHost';
 import type { BlePeripheralOwner } from '@/shared/electron-api.types';
 
-import { isMeshcoreSetupAbortError } from './bleConnectErrors';
+import {
+  extractGattBleErrorCode,
+  gattBleErrorI18nKey,
+  isMeshcoreSetupAbortError,
+} from './bleConnectErrors';
 import { isMeshcoreI18nKey } from './meshcore/meshcoreMessageI18n';
 import {
   bleOwnerI18nKey,
@@ -145,12 +149,17 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
   if (isMeshcoreI18nKey(msg)) {
     return t(msg);
   }
+  const gattCode = extractGattBleErrorCode(err) ?? extractGattBleErrorCode(msg);
+  if (gattCode) {
+    const key = gattBleErrorI18nKey(gattCode);
+    if (key) return t(key);
+  }
   const platform = runtimePlatform();
   const isWindows = platform === 'win32';
   const isLinux = platform === 'linux';
   const isDarwin = platform === 'darwin';
   if (isBleScanBusyErrorMessage(msg)) {
-    return t('connectionPanel.humanize.ble.scanBusy');
+    return t('connectionPanel.errors.ble.scan_busy');
   }
   if (isBlePeripheralConflictErrorMessage(msg)) {
     const ownerMatch = /already in use by (\S+)/i.exec(msg);
@@ -162,9 +171,7 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
   if (msg.includes('Bluetooth adapter not found') || msg.includes('adapter is not available')) {
     const hint = isWindows
       ? t('connectionPanel.humanize.ble.adapterWindowsHint')
-      : isLinux
-        ? t('connectionPanel.humanize.ble.adapterLinuxHint')
-        : t('connectionPanel.humanize.ble.adapterGenericHint');
+      : t('connectionPanel.humanize.ble.adapterGenericHint');
     return t('connectionPanel.humanize.prefixedHint', { message: msg, hint });
   }
   if (/User cancelled the requestDevice\(\) chooser/i.test(msg)) {

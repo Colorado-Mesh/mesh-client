@@ -1,11 +1,10 @@
 import { MeshDevice } from '@meshtastic/core';
 import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 
-import { isPairingRelatedError } from '@/shared/blePairingError';
 import { formatHostForSocket, formatHostForUrl, parseConnectHostPort } from '@/shared/connectHost';
 
 import { isMainProcessBleTimeoutMessage } from './bleConnectErrors';
-import { connectNobleBleWithScanBusyRetry } from './bleReconnectHelper';
+import { connectGattWithScanBusyRetry } from './bleReconnectHelper';
 import {
   assertMeshtasticSerialWebStreamsAvailable,
   assertTransportReadyForMeshDevice,
@@ -13,7 +12,7 @@ import {
   getMeshtasticStreamsDiagnostics,
   logMeshtasticSerialStreamDiagnostics,
 } from './connectionWebStreams';
-import { notifyNobleBlePrimaryRfLinkReady } from './meshcoreDualNobleBleInit';
+import { notifyBlePrimaryRfLinkReady } from './meshcoreDualNobleBleInit';
 import { armMeshtasticLateConfigureRetryableSwallow } from './meshtastic/meshtasticConfigureRetry';
 import { sendMeshtasticPhoneApiDisconnect } from './meshtastic/meshtasticPhoneApiDisconnect';
 import { parseMeshtasticTcpAddress } from './parseMeshtasticTcpAddress';
@@ -28,10 +27,9 @@ import {
   selectGrantedSerialPort,
 } from './serialPortSignature';
 import { TransportHttpIpc } from './transportHttpIpc';
-import { TransportNobleIpc } from './transportNobleIpc';
+import { TransportSidecarGatt } from './transportSidecarGatt';
 import { TransportTcpIpc } from './transportTcpIpc';
-import { TransportWebBluetoothIpc } from './transportWebBluetoothIpc';
-import type { ConnectionType, NobleBleSessionId } from './types';
+import type { ConnectionType, GattBleSessionId } from './types';
 
 // HTTP base connection: timeouts and retries to avoid hanging on slow mDNS or flaky networks.
 const HTTP_CONNECT_TIMEOUT_MS = 15_000;
@@ -71,26 +69,26 @@ async function connectTransportWithTimeout(
   }
 }
 
-/** Serialize Noble BLE connects per session so overlapping attempts do not emit spurious disconnects. */
-const nobleBleConnectLocks = new Map<NobleBleSessionId, Promise<void>>();
+/** Serialize GATT connects per session so overlapping attempts do not emit spurious disconnects. */
+const gattConnectLocks = new Map<GattBleSessionId, Promise<void>>();
 
-async function withNobleBleConnectLock<T>(
-  sessionId: NobleBleSessionId,
+async function withGattConnectLock<T>(
+  sessionId: GattBleSessionId,
   fn: () => Promise<T>,
 ): Promise<T> {
-  const previous = nobleBleConnectLocks.get(sessionId) ?? Promise.resolve();
+  const previous = gattConnectLocks.get(sessionId) ?? Promise.resolve();
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
-  nobleBleConnectLocks.set(sessionId, gate);
+  gattConnectLocks.set(sessionId, gate);
   await previous;
   try {
     return await fn();
   } finally {
     release();
-    if (nobleBleConnectLocks.get(sessionId) === gate) {
-      nobleBleConnectLocks.delete(sessionId);
+    if (gattConnectLocks.get(sessionId) === gate) {
+      gattConnectLocks.delete(sessionId);
     }
   }
 }
@@ -118,124 +116,33 @@ function rethrowIfTransportWebSerialPipeToFailed(err: unknown, phase: string): n
 }
 
 /**
- * Create a BLE connection to a Meshtastic device.
- *
- * On Mac/Windows: The main process NobleBleManager must have already discovered the peripheral
- * (via startNobleBleScanning) before this is called.
- *
- * On Linux: Uses Web Bluetooth directly in the renderer.
+ * Create a BLE connection to a Meshtastic device via sidecar GATT (all platforms).
+ * Sidecar ensure runs inside the main-process GATT proxy on connect/scan.
  */
 export async function createBleConnection(
   peripheralId?: string,
-  sessionId: NobleBleSessionId = 'meshtastic',
-  onLinkHealthy?: () => void,
+  sessionId: GattBleSessionId = 'meshtastic',
 ): Promise<MeshDevice> {
-  const isLinux = navigator.userAgent.toLowerCase().includes('linux');
   const connectStartedAt = Date.now();
   console.debug(
-    `[connection] createBleConnection start peripheralId=${peripheralId ?? 'none'} sessionId=${sessionId} isLinux=${isLinux}`,
+    `[connection] createBleConnection start peripheralId=${peripheralId ?? 'none'} sessionId=${sessionId}`,
   );
 
-  if (isLinux) {
-    // Reset the pairing retry count so the first attempt uses the default PIN
-    window.electronAPI.resetBlePairingRetryCount();
-
-    let lastError: unknown = null;
-    for (let attempt = 1; attempt <= BLE_CONNECT_MAX_ATTEMPTS; attempt++) {
-      const attemptStartedAt = Date.now();
-      const transport = new TransportWebBluetoothIpc(sessionId);
-      console.debug(
-        `[connection] createBleConnection: using Web Bluetooth transport on Linux ${formatJsonForRendererLog(
-          { attempt, maxAttempts: BLE_CONNECT_MAX_ATTEMPTS },
-        )}`,
-      );
-
-      // On Linux, requestDevice() must be called with a user gesture
-      // If no peripheralId provided, initiate device selection now
-      let deviceId = peripheralId;
-      try {
-        if (!deviceId) {
-          console.debug('[connection] createBleConnection: requesting device selection (Linux)');
-          const deviceInfo = await transport.requestDevice();
-          deviceId = deviceInfo.deviceId;
-          const deviceName = deviceInfo.deviceName;
-          console.debug('[connection] createBleConnection: device selected', deviceId, deviceName);
-        } else {
-          console.debug(
-            `[connection] createBleConnection: reusing granted device ${deviceId} (Linux)`,
-          );
-          await transport.requestGrantedDevice(deviceId);
-        }
-
-        // Now connect to the device
-        await transport.connect(onLinkHealthy);
-        if (attempt > 1) {
-          console.info(
-            `[connection] createBleConnection recovered on retry ${formatJsonForRendererLog({
-              sessionId,
-              deviceId,
-              attempt,
-              maxAttempts: BLE_CONNECT_MAX_ATTEMPTS,
-              totalElapsedMs: Date.now() - connectStartedAt,
-            })}`,
-          );
-        }
-        console.debug('[connection] createBleConnection: connected on Linux');
-        assertTransportReadyForMeshDevice(transport, 'Meshtastic BLE (Linux Web Bluetooth)');
-        return new MeshDevice(transport);
-      } catch (err) {
-        lastError = err;
-        // Clean up transport on failure before retry
-        try {
-          await transport.disconnect();
-        } catch (cleanupErr) {
-          console.debug(
-            `[connection] createBleConnection: cleanup error on failure ${cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)}`,
-          );
-        }
-
-        const message = err instanceof Error ? err.message : String(err);
-        const isTimeout = /timed out/i.test(message);
-        const isPairingError = isPairingRelatedError(err);
-        console.warn(
-          `[connection] createBleConnection attempt failed ${formatJsonForRendererLog({
-            sessionId,
-            deviceId,
-            attempt,
-            maxAttempts: BLE_CONNECT_MAX_ATTEMPTS,
-            isTimeout,
-            isPairingError,
-            attemptElapsedMs: Date.now() - attemptStartedAt,
-            totalElapsedMs: Date.now() - connectStartedAt,
-            message,
-          })}`,
-        );
-        // Don't retry on pairing errors (user needs to fix pairing, not retry)
-        if (isPairingError || !isTimeout || attempt >= BLE_CONNECT_MAX_ATTEMPTS) {
-          break;
-        }
-        await new Promise<void>((r) => setTimeout(r, BLE_CONNECT_RETRY_DELAY_MS));
-      }
-    }
-    throw lastError instanceof Error ? lastError : new Error('BLE connection failed');
+  if (!peripheralId) {
+    throw new Error('BLE peripheral ID required');
   }
-
-  // Mac/Windows: use Noble IPC transport
   // Subscribe to IPC events before telling main to connect, so no fromRadio
   // packets emitted during the initial drain are dropped.
-  if (!peripheralId) {
-    throw new Error('BLE peripheral ID required on Mac/Windows');
-  }
-  const transport = new TransportNobleIpc(sessionId);
+  const transport = new TransportSidecarGatt(sessionId);
   let lastError: unknown = null;
-  return withNobleBleConnectLock(sessionId, async () => {
+  return withGattConnectLock(sessionId, async () => {
     for (let attempt = 1; attempt <= BLE_CONNECT_MAX_ATTEMPTS; attempt++) {
       const attemptStartedAt = Date.now();
       try {
-        // Waits out short Reticulum Noble yields (BLE RNode) instead of hard-failing;
+        // Waits out short Reticulum BLE RNode yields instead of hard-failing;
         // peripheral conflict and other errors still fail immediately.
-        await connectNobleBleWithScanBusyRetry(sessionId, peripheralId);
-        notifyNobleBlePrimaryRfLinkReady(sessionId);
+        await connectGattWithScanBusyRetry(sessionId, peripheralId);
+        notifyBlePrimaryRfLinkReady(sessionId);
         if (attempt > 1) {
           console.info(
             `[connection] createBleConnection recovered on retry ${formatJsonForRendererLog({
@@ -249,7 +156,7 @@ export async function createBleConnection(
         }
         console.debug('[connection] createBleConnection connected', peripheralId);
         console.debug('[connection] createBleConnection elapsedMs', Date.now() - connectStartedAt);
-        assertTransportReadyForMeshDevice(transport, 'Meshtastic BLE (Noble)');
+        assertTransportReadyForMeshDevice(transport, 'Meshtastic BLE (sidecar GATT)');
         return new MeshDevice(transport);
       } catch (err) {
         lastError = err;
@@ -428,11 +335,9 @@ export function getSerialPortFromMeshTransport(transport: unknown): SerialPort |
 }
 
 /**
- * Resolve the Linux Web Bluetooth device id a gesture-based connect actually landed on.
- * `createBleConnection`'s Linux picker flow may run without a caller-supplied peripheralId
- * (e.g. ConnectionPanel's Reconnect button), so this backfills reconnect state afterward —
- * otherwise a later automatic reconnect has no id and falls back to `requestDevice()`, which
- * Chromium refuses to run without a live user gesture.
+ * Resolve a BLE peripheral id from a MeshDevice transport when available.
+ * Sidecar GATT transports do not expose a picker backfill helper; callers must
+ * pass peripheralId into createBleConnection.
  */
 export function getBlePeripheralIdFromMeshTransport(transport: unknown): string | null {
   const candidate = transport as { getConnectedDeviceId?: () => string | null } | null | undefined;

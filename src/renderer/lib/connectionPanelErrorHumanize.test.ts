@@ -178,12 +178,32 @@ describe('humanizeBleError', () => {
 
   it.each([
     ['win32 adapter', 'win32', 'Bluetooth adapter is not available', 'adapterWindowsHint'],
-    ['linux adapter', 'linux', 'Bluetooth adapter not found', 'adapterLinuxHint'],
+    ['linux adapter', 'linux', 'Bluetooth adapter not found', 'adapterGenericHint'],
     ['darwin adapter', 'darwin', 'adapter is not available', 'adapterGenericHint'],
   ] as const)('%s', (_label, platform, message, hintKey) => {
     mockPlatform(platform);
     const result = humanizeBleError(new Error(message), t);
     expect(result).toContain(`connectionPanel.humanize.ble.${hintKey}`);
+  });
+
+  it('maps sidecar GATT error codes to connectionPanel.errors.ble.*', () => {
+    mockPlatform('darwin');
+    expect(humanizeBleError(new Error('adapter_missing: no bluetooth adapter'), t)).toBe(
+      'connectionPanel.errors.ble.adapter_missing',
+    );
+    expect(humanizeBleError(new Error('connect_timeout: connect timed out'), t)).toBe(
+      'connectionPanel.errors.ble.connect_timeout',
+    );
+    expect(humanizeBleError({ code: 'pairing_required', message: 'need pin' }, t)).toBe(
+      'connectionPanel.errors.ble.pairing_required',
+    );
+  });
+
+  it('maps scan_busy messages to connectionPanel.errors.ble.scan_busy', () => {
+    mockPlatform('darwin');
+    expect(humanizeBleError(new Error('Bluetooth scan in progress (reticulum)'), t)).toBe(
+      'connectionPanel.errors.ble.scan_busy',
+    );
   });
 
   it('handles SecurityError in message', () => {
@@ -241,13 +261,35 @@ describe('humanizeBleError', () => {
     expect(result).toContain('meshcoreHandshakeWindowsExtra');
   });
 
-  it('handles Noble IPC timeout with Windows extra', () => {
+  it('handles MeshCore GATT timeout with Windows extra', () => {
     mockPlatform('win32');
     const result = humanizeBleError(
       new Error('Bluetooth connection timed out while opening MeshCore over Noble IPC'),
       t,
     );
     expect(result).toContain('meshcoreHandshakeWindowsExtra');
+  });
+
+  it('surfaces GATT Server disconnected with reconnect hint', () => {
+    mockPlatform('darwin');
+    const result = humanizeBleError(new Error('GATT Server is disconnected'), t);
+    expect(result).toContain('gattDisconnectedHint');
+  });
+
+  it('surfaces GATT Not supported with pairing guidance', () => {
+    mockPlatform('linux');
+    const result = humanizeBleError(new Error('GATT Error: Not supported'), t);
+    expect(result).toContain('gattNotSupportedBase');
+    expect(result).toContain('gattNotSupportedLinuxPin');
+  });
+
+  it('humanizes same-device conflict with GATT owner label', () => {
+    mockPlatform('darwin');
+    const result = humanizeBleError(
+      new Error('BLE peripheral aa:bb:cc:dd:ee:ff already in use by gatt:meshcore'),
+      t,
+    );
+    expect(result).toContain('sameDeviceConflict');
   });
 
   it('adds dual-protocol contention hint for already-in-progress BLE errors', () => {
