@@ -121,6 +121,7 @@ jobs:
           echo "include=$include" >> "$GITHUB_OUTPUT"
 
   sidecars:
+    name: Stage Reticulum
     needs: resolve-release-matrix
     permissions:
       contents: read

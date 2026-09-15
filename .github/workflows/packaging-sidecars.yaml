@@ -29,7 +29,7 @@ jobs:
           echo "include=$include" >> "$GITHUB_OUTPUT"
 
   build:
-    name: Sidecar ${{ matrix.platform }} ${{ matrix.arch }}
+    name: Stage Reticulum ${{ matrix.platform }} ${{ matrix.arch }}
     needs: matrix
     runs-on: ${{ matrix.os }}
     strategy:
@@ -66,7 +66,7 @@ jobs:
       - name: Upload staged sidecar
         uses: actions/upload-artifact@v7
         with:
-          name: packaging-sidecar-${{ matrix.platform }}-${{ matrix.arch }}
+          name: ci-reticulum-staged-${{ matrix.platform }}-${{ matrix.arch }}
           path: sidecar-${{ matrix.platform }}-${{ matrix.arch }}.tar
           if-no-files-found: error
           retention-days: 7
