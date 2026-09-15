@@ -90,4 +90,30 @@ describe('GattSidecarProxy', () => {
       message: 'nope',
     });
   });
+
+  it('startScan emits discovered devices without synthesizing poweredOn', async () => {
+    const discovered = vi.fn();
+    const adapterState = vi.fn();
+    proxy.on('deviceDiscovered', discovered);
+    proxy.on('adapterState', adapterState);
+    fetchMock.mockResolvedValueOnce({
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          ok: true,
+          devices: [{ address: 'ff92959fd78be6f009376829a4d6efdc', name: 'MeshCore', rssi: -60 }],
+        }),
+    });
+
+    const result = await proxy.startScan('meshcore');
+
+    expect(result).toEqual({ ok: true });
+    expect(discovered).toHaveBeenCalledWith({
+      deviceId: 'ff92959fd78be6f009376829a4d6efdc',
+      deviceName: 'MeshCore',
+      rssi: -60,
+      address: 'ff92959fd78be6f009376829a4d6efdc',
+    });
+    expect(adapterState).not.toHaveBeenCalled();
+  });
 });

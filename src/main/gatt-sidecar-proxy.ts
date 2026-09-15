@@ -136,7 +136,8 @@ export class GattSidecarProxy extends EventEmitter {
       };
       this.emit('deviceDiscovered', device);
     }
-    this.emit('adapterState', 'poweredOn');
+    // Do not synthesize adapterState here — every reconnect scan was resetting MeshCore's
+    // BLE reconnect budget (poweredOn → handleConnectionLost) into an infinite retry loop.
     return { ok: true };
   }
 

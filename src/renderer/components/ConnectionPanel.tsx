@@ -1638,7 +1638,7 @@ export default function ConnectionPanel({
           await reconnectBleWithScan(
             protocol,
             bleDeviceId,
-            () => onConnect('ble', undefined, bleDeviceId),
+            (resolvedId) => onConnect('ble', undefined, resolvedId ?? bleDeviceId),
             { matchIds },
           );
           isAutoConnectingRef.current = false;

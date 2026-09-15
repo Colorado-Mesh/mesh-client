@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
   dualNobleBleBothRadiosConfigured: vi.fn(),
   getNobleBleDualRadioPrimaryProtocol: vi.fn(),
   isNobleBleDualRadioSecondary: vi.fn(),
-  isRendererNobleBlePlatform: vi.fn(),
+  isRendererGattBlePlatform: vi.fn(),
   meshcoreTargetsSharedMeshtasticBlePeripheral: vi.fn(),
   notifyNobleBlePrimaryAutoConnectSettled: vi.fn(),
   awaitNobleBlePrimaryAutoConnectSettled: vi.fn(),
@@ -46,7 +46,7 @@ vi.mock('@/renderer/lib/meshcoreDualNobleBleInit', () => ({
   dualNobleBleBothRadiosConfigured: mocks.dualNobleBleBothRadiosConfigured,
   getNobleBleDualRadioPrimaryProtocol: mocks.getNobleBleDualRadioPrimaryProtocol,
   isNobleBleDualRadioSecondary: mocks.isNobleBleDualRadioSecondary,
-  isRendererNobleBlePlatform: mocks.isRendererNobleBlePlatform,
+  isRendererGattBlePlatform: mocks.isRendererGattBlePlatform,
   meshcoreTargetsSharedMeshtasticBlePeripheral: mocks.meshcoreTargetsSharedMeshtasticBlePeripheral,
   notifyNobleBlePrimaryAutoConnectSettled: mocks.notifyNobleBlePrimaryAutoConnectSettled,
 }));
@@ -81,7 +81,7 @@ describe('useProtocolRfAutoConnect cold-start skip paths', () => {
     mocks.dualNobleBleBothRadiosConfigured.mockReturnValue(false);
     mocks.getNobleBleDualRadioPrimaryProtocol.mockReturnValue(null);
     mocks.isNobleBleDualRadioSecondary.mockReturnValue(false);
-    mocks.isRendererNobleBlePlatform.mockReturnValue(true);
+    mocks.isRendererGattBlePlatform.mockReturnValue(true);
     mocks.meshcoreTargetsSharedMeshtasticBlePeripheral.mockReturnValue(false);
     mocks.tryGetMeshtasticSession.mockReturnValue({ connectAutomatic: vi.fn() });
     mocks.tryGetMeshcoreSession.mockReturnValue({ connectAutomatic: vi.fn() });
@@ -236,7 +236,7 @@ describe('useProtocolRfAutoConnect cold-start TCP/HTTP', () => {
     mocks.dualNobleBleBothRadiosConfigured.mockReturnValue(false);
     mocks.getNobleBleDualRadioPrimaryProtocol.mockReturnValue(null);
     mocks.isNobleBleDualRadioSecondary.mockReturnValue(false);
-    mocks.isRendererNobleBlePlatform.mockReturnValue(true);
+    mocks.isRendererGattBlePlatform.mockReturnValue(true);
     mocks.meshcoreTargetsSharedMeshtasticBlePeripheral.mockReturnValue(false);
     mocks.tryGetMeshtasticSession.mockReturnValue({ connectAutomatic: vi.fn() });
     mocks.tryGetMeshcoreSession.mockReturnValue({ connectAutomatic: vi.fn() });
@@ -414,7 +414,7 @@ describe('useProtocolRfAutoConnect cold-start serial + BLE', () => {
     mocks.dualNobleBleBothRadiosConfigured.mockReturnValue(false);
     mocks.getNobleBleDualRadioPrimaryProtocol.mockReturnValue(null);
     mocks.isNobleBleDualRadioSecondary.mockReturnValue(false);
-    mocks.isRendererNobleBlePlatform.mockReturnValue(true);
+    mocks.isRendererGattBlePlatform.mockReturnValue(true);
     mocks.meshcoreTargetsSharedMeshtasticBlePeripheral.mockReturnValue(false);
     mocks.tryGetMeshtasticSession.mockReturnValue({ connectAutomatic: vi.fn() });
     mocks.tryGetMeshcoreSession.mockReturnValue({ connectAutomatic: vi.fn() });

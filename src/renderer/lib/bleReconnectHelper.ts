@@ -161,11 +161,13 @@ function shouldScanAfterConnectFailure(message: string): boolean {
  *
  * @param matchIds — optional aliases (e.g. stored Noble UUID + bleMac) matched against
  *   discovered `deviceId` / `address` via hex-normalized equality.
+ * @param connect — optional `resolvedPeripheralId` is the discovered id when scan matched
+ *   via an alias (MAC / alternate UUID); omit to use the original stored id.
  */
 export async function reconnectBleWithScan(
   protocol: MeshProtocol,
   peripheralId: string,
-  connect: () => Promise<void>,
+  connect: (resolvedPeripheralId?: string) => Promise<void>,
   opts?: { scanTimeoutMs?: number; scanBusyMaxWaitMs?: number; matchIds?: string[] },
 ): Promise<void> {
   // Fast path: connect resolves without a new discovery event.
@@ -228,8 +230,9 @@ export async function reconnectBleWithScan(
 
     offDiscovered = window.electronAPI.onGattDeviceDiscovered((device) => {
       if (signal.aborted || !deviceMatches(device)) return;
+      const resolvedId = device.deviceId.trim() || peripheralId;
       finish(() => {
-        void connect().then(resolve).catch(reject);
+        void connect(resolvedId).then(resolve).catch(reject);
       });
     });
 

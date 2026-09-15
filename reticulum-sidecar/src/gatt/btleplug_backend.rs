@@ -46,11 +46,12 @@ fn connect_address_for(
     if is_usable_mac(&mac) {
         return mac.to_ascii_lowercase();
     }
-    let id_hex = ble_id_match_key(&format!("{:?}", peripheral.id()));
+    let id_str = format!("{}", peripheral.id());
+    let id_hex = ble_id_match_key(&id_str);
     if !id_hex.is_empty() {
         return id_hex;
     }
-    format!("{:?}", peripheral.id()).to_ascii_lowercase()
+    ble_id_match_key(&format!("{:?}", peripheral.id()))
 }
 
 struct OpenConn {
@@ -95,6 +96,16 @@ impl BtleplugBackend {
         }
     }
 
+    fn peripheral_id_str(peripheral: &Peripheral) -> String {
+        // Prefer Display (bare UUID / MAC) over Debug (`PeripheralId(...)`) so hex keys match
+        // stored Noble / CoreBluetooth ids without wrapper noise.
+        let display = format!("{}", peripheral.id());
+        if !ble_id_match_key(&display).is_empty() {
+            return display;
+        }
+        format!("{:?}", peripheral.id())
+    }
+
     async fn find_peripheral(&self, address: &str) -> Result<Peripheral, GattError> {
         let key = normalize_address(address)?;
         let peris =
@@ -103,12 +114,12 @@ impl BtleplugBackend {
             })?;
         for p in peris {
             let props = p.properties().await.ok().flatten();
-            let id_dbg = format!("{:?}", p.id());
+            let id_str = Self::peripheral_id_str(&p);
             let addr = props
                 .as_ref()
                 .map(|x| x.address.to_string())
                 .unwrap_or_default();
-            if ble_ids_match(&key, &id_dbg) || (!addr.is_empty() && ble_ids_match(&key, &addr)) {
+            if ble_ids_match(&key, &id_str) || (!addr.is_empty() && ble_ids_match(&key, &addr)) {
                 return Ok(p);
             }
         }
@@ -116,6 +127,38 @@ impl BtleplugBackend {
             GattErrorCode::ConnectTimeout,
             format!("peripheral {key} not found — scan first"),
         ))
+    }
+
+    /// Unfiltered scan so connect-by-id works when the radio does not advertise its GATT
+    /// service UUID (common for MeshCore / some RNodes — filtered UI scans still use NUS).
+    async fn scan_unfiltered(&self, timeout_secs: u64) -> Result<Vec<ScannedDevice>, GattError> {
+        self.adapter
+            .start_scan(ScanFilter::default())
+            .await
+            .map_err(|e| GattError::new(GattErrorCode::Internal, format!("start_scan: {e}")))?;
+        tokio::time::sleep(Duration::from_secs(timeout_secs.max(1))).await;
+        let _ = self.adapter.stop_scan().await;
+        let peris =
+            self.adapter.peripherals().await.map_err(|e| {
+                GattError::new(GattErrorCode::Internal, format!("peripherals: {e}"))
+            })?;
+        let mut out = Vec::new();
+        for p in peris {
+            let Some(props) = p.properties().await.ok().flatten() else {
+                continue;
+            };
+            out.push(ScannedDevice {
+                address: connect_address_for(&p, &props),
+                name: props.local_name,
+                rssi: props.rssi,
+                service_uuids: props
+                    .services
+                    .iter()
+                    .map(std::string::ToString::to_string)
+                    .collect(),
+            });
+        }
+        Ok(out)
     }
 
     async fn find_peripheral_scanning(
@@ -130,9 +173,10 @@ impl BtleplugBackend {
             target: "gatt",
             address,
             profile = %profile,
-            "peripheral not cached — scanning before connect"
+            "peripheral not cached — unfiltered scan before connect"
         );
-        let _ = self.scan(profile, 4).await;
+        // Ignore empty Ok; surface hard scan failures so callers do not spin on stale "scan first".
+        self.scan_unfiltered(8).await?;
         self.find_peripheral(address).await
     }
 }

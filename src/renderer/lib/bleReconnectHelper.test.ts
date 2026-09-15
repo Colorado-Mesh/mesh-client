@@ -237,6 +237,8 @@ describe('reconnectBleWithScan', () => {
     });
     await expect(pending).resolves.toBeUndefined();
     expect(connect).toHaveBeenCalledTimes(2);
+    expect(connect).toHaveBeenNthCalledWith(1);
+    expect(connect).toHaveBeenNthCalledWith(2, 'AA:BB:CC:DD:EE:FF');
     expect(window.electronAPI.startGattScanning).toHaveBeenCalled();
   });
 });
