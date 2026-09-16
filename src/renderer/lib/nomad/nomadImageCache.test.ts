@@ -54,6 +54,22 @@ describe('nomadImageCache', () => {
     ).toBeUndefined();
   });
 
+  it('accepts Nomad banner-sized base64 under the raised cap', () => {
+    // Runtime evidence: Zeva colorado-mesh-banner.webp was 638416 base64 chars.
+    const bannerSized = 'x'.repeat(638416);
+    setNomadImageCache(
+      { hash: 'abc1234567890abcdef1234567890ab', mediaPath: '/media/img/banner.webp' },
+      { content_base64: bannerSized },
+    );
+    expect(nomadImageCacheSizeForTests()).toBe(1);
+    expect(
+      getNomadImageCache({
+        hash: 'abc1234567890abcdef1234567890ab',
+        mediaPath: '/media/img/banner.webp',
+      })?.content_base64.length,
+    ).toBe(638416);
+  });
+
   it('evicts oldest entries when over capacity', () => {
     for (let i = 0; i < 129; i++) {
       const hash = `${i}`.padStart(32, 'a');

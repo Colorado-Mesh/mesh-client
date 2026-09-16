@@ -3530,7 +3530,8 @@
     "downloadFile": "Pobierz",
     "dismissPreview": "Odrzuć",
     "clearBrowserCaches": "Wyczyść pamięć podręczną stron i obrazów",
-    "clearedBrowserCaches": "Wyczyszczono pamięć podręczną strony i obrazu Nomad"
+    "clearedBrowserCaches": "Wyczyszczono pamięć podręczną strony i obrazu Nomad",
+    "clearBrowserCachesHint": "Wyczyść pamięć strony Nomad i pamięci podręczne obrazów. Pamięci podręczne nie są zapisywane na dysku. Obrazy większe niż 2 MiB (base64) nigdy nie są buforowane."
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",

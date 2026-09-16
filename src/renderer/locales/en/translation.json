@@ -3479,6 +3479,7 @@
     "homePage": "Home page",
     "reloadPage": "Reload page",
     "clearBrowserCaches": "Clear page and image caches",
+    "clearBrowserCachesHint": "Clear in-memory Nomad page and image caches. Caches are not saved to disk. Images larger than 2 MiB (base64) are never cached.",
     "clearedBrowserCaches": "Nomad page and image caches cleared",
     "closeViewer": "Close page viewer",
     "pageLoading": "Loading page…",

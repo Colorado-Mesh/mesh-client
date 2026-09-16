@@ -3452,7 +3452,8 @@
     "downloadFile": "ダウンロード",
     "dismissPreview": "却下",
     "clearBrowserCaches": "ページと画像のキャッシュをクリアする",
-    "clearedBrowserCaches": "Nomadページと画像のキャッシュをクリアしました"
+    "clearedBrowserCaches": "Nomadページと画像のキャッシュをクリアしました",
+    "clearBrowserCachesHint": "メモリ内のNomadページと画像キャッシュをクリアします。キャッシュはディスクに保存されません。2 MiB （ base 64 ）を超える画像はキャッシュされません。"
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",

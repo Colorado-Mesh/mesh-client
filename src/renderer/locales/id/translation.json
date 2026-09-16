@@ -3452,7 +3452,8 @@
     "downloadFile": "Unduh",
     "dismissPreview": "Tutup",
     "clearBrowserCaches": "Bersihkan cache halaman dan gambar",
-    "clearedBrowserCaches": "Cache halaman dan gambar Nomad dihapus"
+    "clearedBrowserCaches": "Cache halaman dan gambar Nomad dihapus",
+    "clearBrowserCachesHint": "Hapus halaman Nomad dalam memori dan cache gambar. Cache tidak disimpan ke disk. Gambar yang lebih besar dari 2 MiB (base64) tidak pernah di - cache."
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",

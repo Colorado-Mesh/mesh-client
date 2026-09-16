@@ -3452,7 +3452,8 @@
     "downloadFile": "Download",
     "dismissPreview": "Ignora",
     "clearBrowserCaches": "Cancella cache di pagine e immagini",
-    "clearedBrowserCaches": "Cache di immagini e pagine Nomad cancellate"
+    "clearedBrowserCaches": "Cache di immagini e pagine Nomad cancellate",
+    "clearBrowserCachesHint": "Cancella la pagina Nomad in memoria e le cache delle immagini. Le cache non vengono salvate su disco. Le immagini più grandi di 2 MiB (base64) non vengono mai memorizzate nella cache."
   },
   "packetDistribution": {
     "overallDistribution": "Distribuzione complessiva",

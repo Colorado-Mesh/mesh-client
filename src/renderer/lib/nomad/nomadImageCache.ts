@@ -1,7 +1,9 @@
 import { normalizeNomadPagePath } from './micronParser';
 
-/** Cap cached media base64 length (in-memory browser image cache). */
-export const MAX_NOMAD_IMAGE_CACHE_BASE64_CHARS = 512 * 1024;
+/** Cap cached media base64 length (in-memory browser image cache).
+ * NomadNet `/media` WebP (≤1200px, q85) often exceeds 512KiB base64 — observed
+ * banners ~638KiB were silently dropped under the old cap. */
+export const MAX_NOMAD_IMAGE_CACHE_BASE64_CHARS = 2 * 1024 * 1024;
 
 const MAX_NOMAD_IMAGE_CACHE_ENTRIES = 128;
 

@@ -3530,7 +3530,8 @@
     "downloadFile": "Загрузить",
     "dismissPreview": "Пропустить",
     "clearBrowserCaches": "Очистить кэш страниц и изображений",
-    "clearedBrowserCaches": "Кэши страниц и изображений Nomad очищены"
+    "clearedBrowserCaches": "Кэши страниц и изображений Nomad очищены",
+    "clearBrowserCachesHint": "Очистка кэша страниц и изображений Nomad в памяти. Кэши не сохраняются на диск. Изображения размером более 2 МБ (base64) никогда не кэшируются."
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",

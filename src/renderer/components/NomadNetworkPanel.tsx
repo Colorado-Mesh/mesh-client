@@ -1059,7 +1059,7 @@ export default function NomadNetworkPanel({
                     type="button"
                     className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
                     aria-label={t('nomadNetwork.clearBrowserCaches')}
-                    title={t('nomadNetwork.clearBrowserCaches')}
+                    title={t('nomadNetwork.clearBrowserCachesHint')}
                     onClick={clearBrowserCaches}
                   >
                     ⌀

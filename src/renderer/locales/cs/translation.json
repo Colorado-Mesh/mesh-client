@@ -3492,7 +3492,8 @@
     "downloadFile": "Stáhnout",
     "dismissPreview": "Zamítnout",
     "clearBrowserCaches": "Vymazat mezipaměť stránek a obrázků",
-    "clearedBrowserCaches": "Nomad stránka a mezipaměti obrázků vymazány"
+    "clearedBrowserCaches": "Nomad stránka a mezipaměti obrázků vymazány",
+    "clearBrowserCachesHint": "Vymazat stránku Nomad v paměti a mezipaměti obrázků. Mezipaměti nejsou uloženy na disk. Obrázky větší než 2 MiB (base64) se nikdy neukládají do mezipaměti."
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",

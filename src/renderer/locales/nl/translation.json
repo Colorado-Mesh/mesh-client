@@ -3452,7 +3452,8 @@
     "downloadFile": "Download",
     "dismissPreview": "Afwijzen",
     "clearBrowserCaches": "Pagina- en afbeeldingscaches wissen",
-    "clearedBrowserCaches": "Nomad pagina- en afbeeldingscaches gewist"
+    "clearedBrowserCaches": "Nomad pagina- en afbeeldingscaches gewist",
+    "clearBrowserCachesHint": "Wis in-memory Nomad-pagina en afbeeldingscaches. Caches worden niet op schijf opgeslagen. Afbeeldingen groter dan 2 MiB (base64) worden nooit gecached."
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",

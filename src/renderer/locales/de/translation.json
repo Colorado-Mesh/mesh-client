@@ -3452,7 +3452,8 @@
     "downloadFile": "Herunterladen",
     "dismissPreview": "Ablehnen",
     "clearBrowserCaches": "Seiten- und Bildcaches löschen",
-    "clearedBrowserCaches": "Nomad Seiten- und Bildcaches geleert"
+    "clearedBrowserCaches": "Nomad Seiten- und Bildcaches geleert",
+    "clearBrowserCachesHint": "In-Memory-Nomad-Seite und Bild-Caches löschen. Caches werden nicht auf der Festplatte gespeichert. Bilder, die größer als 2 MiB (base64) sind, werden niemals zwischengespeichert."
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",
