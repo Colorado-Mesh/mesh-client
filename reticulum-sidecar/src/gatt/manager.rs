@@ -461,7 +461,9 @@ impl GattManager {
             }
             Some(_) => Ok(()),
             None => {
-                // by_address points at a session that is already gone — free the MAC.
+                // by_address points at a session that is already gone — free the MAC
+                // only if this exact sid is still reserved (a newer connect may have
+                // replaced it between our unlocked reads).
                 tracing::warn!(
                     target: "gatt",
                     profile = %profile,
@@ -469,9 +471,15 @@ impl GattManager {
                     session_id = %sid,
                     "clearing dangling GATT address reservation before reconnect"
                 );
-                self.by_address.lock().await.remove(key);
-                let mut reg = self.registry.lock().await;
-                let _ = reg.unregister(key, profile);
+                let mut addresses = self.by_address.lock().await;
+                let still_stale =
+                    matches!(addresses.get(key), Some(Some(current)) if current == &sid);
+                if still_stale {
+                    addresses.remove(key);
+                    drop(addresses);
+                    let mut reg = self.registry.lock().await;
+                    let _ = reg.unregister(key, profile);
+                }
                 Ok(())
             }
         }
