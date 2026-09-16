@@ -498,8 +498,9 @@ export class GattSidecarProxy extends EventEmitter {
       );
     }
     if (!this.reservations.has(id)) return;
-    // Dead peripheral (power loss): DELETE/probe can hang forever. Cap retries so
-    // the MAC is released and reconnect is not stuck on mac_conflict.
+    // Dead peripheral (power loss): DELETE/probe can hang. Cap retries so the
+    // main-process MAC reservation is released. Sidecar same-profile reclaim on
+    // the next connect clears any orphaned session that survived failed DELETEs.
     if (reservation.cleanupAttempts >= GATT_CLEANUP_MAX_ATTEMPTS) {
       console.warn(
         '[GATT] abandoning remote cleanup after',
