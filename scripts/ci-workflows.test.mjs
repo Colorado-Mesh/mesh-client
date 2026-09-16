@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
+import { load } from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -330,6 +331,63 @@ describe('CI workflow contracts', () => {
     );
     expect(ciWorkflow.match(/persist-credentials: false/g)).toHaveLength(7);
     expect(testsWorkflow.match(/persist-credentials: false/g)).toHaveLength(4);
+  });
+});
+
+describe('full-stack sidecar cache', () => {
+  const workflow = load(read('.github/workflows/reticulum-sidecar.yaml'));
+  const job = workflow.jobs['build-rns-stack'];
+  const cacheIndex = job.steps.findIndex((step) => step.uses?.startsWith('Swatinem/rust-cache@'));
+
+  it('restores dependencies after fresh upstream sources and the selected toolchain', () => {
+    const cloneIndex = job.steps.findIndex((step) =>
+      step.run?.includes('bash scripts/clone-ratspeak-stack.sh'),
+    );
+    const toolchainIndex = job.steps.findIndex((step) =>
+      step.uses?.startsWith('dtolnay/rust-toolchain@'),
+    );
+    expect(cloneIndex).toBeGreaterThanOrEqual(0);
+    expect(toolchainIndex).toBeGreaterThanOrEqual(0);
+    expect(cacheIndex).toBeGreaterThan(cloneIndex);
+    expect(cacheIndex).toBeGreaterThan(toolchainIndex);
+    expect(job.steps[cacheIndex].uses).toMatch(/^Swatinem\/rust-cache@[0-9a-f]{40}$/);
+    expect(job.steps[cacheIndex].with).toMatchObject({
+      workspaces: 'reticulum-sidecar -> target',
+      'cache-bin': false,
+      'cache-workspace-crates': false,
+    });
+  });
+
+  it('isolates matrix targets and retains the action’s job/toolchain cache keys', () => {
+    const inputs = job.steps[cacheIndex].with;
+    expect(inputs.key).toBe('${{ matrix.target }}');
+    const targets = job.strategy.matrix.include.map((row) => row.target);
+    expect(new Set(targets).size).toBe(targets.length);
+    expect(inputs['shared-key']).toBeUndefined();
+    expect(inputs['add-job-id-key']).not.toBe(false);
+    expect(inputs['add-rust-environment-hash-key']).not.toBe(false);
+  });
+
+  it('always tests and rebuilds before uploading, including on a cache hit', () => {
+    const testIndex = job.steps.findIndex((step) =>
+      step.run?.startsWith('cargo test --features rns-stack,rns-ble,rns-rnode-tcp'),
+    );
+    const buildIndex = job.steps.findIndex((step) =>
+      step.run?.startsWith('cargo build --release --target'),
+    );
+    const uploadIndex = job.steps.findIndex((step) =>
+      step.uses?.startsWith('actions/upload-artifact@'),
+    );
+    expect(testIndex).toBeGreaterThan(cacheIndex);
+    expect(buildIndex).toBeGreaterThan(testIndex);
+    expect(uploadIndex).toBeGreaterThan(buildIndex);
+    for (const step of job.steps.filter((step) => step.run?.includes('cargo '))) {
+      expect(step.if).toBeUndefined();
+      expect(step['continue-on-error']).toBeUndefined();
+      expect(step['working-directory']).toBe('reticulum-sidecar');
+    }
+    expect(job.if).toBeUndefined();
+    expect(job['continue-on-error']).toBeUndefined();
   });
 });
 
