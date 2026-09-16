@@ -3450,7 +3450,9 @@
     "pageProgressFailoverGeneric": "別のルートを試しています…",
     "pageProgressNoAlternate": "他に利用可能なルートはありません—この試みを終了しています…",
     "downloadFile": "ダウンロード",
-    "dismissPreview": "却下"
+    "dismissPreview": "却下",
+    "clearBrowserCaches": "ページと画像のキャッシュをクリアする",
+    "clearedBrowserCaches": "Nomadページと画像のキャッシュをクリアしました"
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",

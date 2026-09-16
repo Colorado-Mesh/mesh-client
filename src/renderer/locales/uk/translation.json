@@ -3528,7 +3528,9 @@
     "hopsAway_few": "за {{count}} хопи",
     "hopsAway_many": "за {{count}} хопів",
     "downloadFile": "Завантаження",
-    "dismissPreview": "Відпустити"
+    "dismissPreview": "Відпустити",
+    "clearBrowserCaches": "Очистити кеш сторінок і зображень",
+    "clearedBrowserCaches": "Кеш сторінок і зображень Nomad очищено"
   },
   "packetDistribution": {
     "overallDistribution": "Загальний розподіл",

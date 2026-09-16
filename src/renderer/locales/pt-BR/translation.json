@@ -3450,7 +3450,9 @@
     "pageProgressFailoverGeneric": "Tentando uma rota diferente...",
     "pageProgressNoAlternate": "Não há outras rotas disponíveis — concluindo esta tentativa...",
     "downloadFile": "Download",
-    "dismissPreview": "Dispensar"
+    "dismissPreview": "Dispensar",
+    "clearBrowserCaches": "Limpar caches de página e imagem",
+    "clearedBrowserCaches": "Página Nomad e caches de imagem limpos"
   },
   "packetDistribution": {
     "overallDistribution": "Distribuição Geral",

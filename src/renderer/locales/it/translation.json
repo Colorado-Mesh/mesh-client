@@ -3450,7 +3450,9 @@
     "pageProgressFailoverGeneric": "Sto provando un percorso diverso...",
     "pageProgressNoAlternate": "Nessun altro percorso disponibile — terminare questo tentativo...",
     "downloadFile": "Download",
-    "dismissPreview": "Ignora"
+    "dismissPreview": "Ignora",
+    "clearBrowserCaches": "Cancella cache di pagine e immagini",
+    "clearedBrowserCaches": "Cache di immagini e pagine Nomad cancellate"
   },
   "packetDistribution": {
     "overallDistribution": "Distribuzione complessiva",

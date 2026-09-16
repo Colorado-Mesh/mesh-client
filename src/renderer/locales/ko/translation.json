@@ -3450,7 +3450,9 @@
     "pageProgressFailoverGeneric": "다른 경로로 시도 중...",
     "pageProgressNoAlternate": "사용 가능한 다른 경로가 없습니다. 이 시도를 완료하는 중...",
     "downloadFile": "다운로드",
-    "dismissPreview": "무시하기"
+    "dismissPreview": "무시하기",
+    "clearBrowserCaches": "페이지 및 이미지 캐시 지우기",
+    "clearedBrowserCaches": "Nomad 페이지 및 이미지 캐시 지워짐"
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",
