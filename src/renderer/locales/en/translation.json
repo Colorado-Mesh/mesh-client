@@ -1529,7 +1529,7 @@
         "adapter_missing": "No Bluetooth adapter was found. Enable Bluetooth in system settings and try again.",
         "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
         "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
-        "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
+        "mac_conflict": "This Bluetooth device is already in use or still releasing a previous connection. Disconnect it from the other protocol tab if needed, then try again.",
         "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
         "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
         "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",

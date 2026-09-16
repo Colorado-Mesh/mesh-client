@@ -656,7 +656,7 @@ impl BleBackend for BtleplugBackend {
             session.event_task.abort();
             session.peripheral.clone()
         };
-        tokio::time::timeout(Duration::from_secs(5), async {
+        let result = tokio::time::timeout(Duration::from_secs(5), async {
             if !peripheral.is_connected().await? {
                 return Ok(());
             }
@@ -666,9 +666,11 @@ impl BleBackend for BtleplugBackend {
         .map_err(|_| GattError::new(GattErrorCode::Internal, "disconnect timed out"))?
         .map_err(|e: btleplug::Error| {
             GattError::new(GattErrorCode::Internal, format!("disconnect: {e}"))
-        })?;
+        });
+        // Always drop the backend slot so a failed/timed-out teardown cannot
+        // block same-profile reconnect after peripheral power loss.
         self.open.lock().await.remove(&conn.0);
-        Ok(())
+        result
     }
 
     async fn rssi(&self, conn: &BackendConnId) -> Result<i16, GattError> {

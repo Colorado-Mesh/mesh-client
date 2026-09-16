@@ -303,6 +303,9 @@ impl GattManager {
             ));
         }
         let key = normalize_address(address)?;
+        // Power loss / abandoned DELETE can leave the MAC reserved for this same
+        // profile. Reclaim so reconnect is not stuck on mac_conflict forever.
+        self.reclaim_stale_same_profile(&key, profile).await?;
         {
             let mut addresses = self.by_address.lock().await;
             if addresses.contains_key(&key) {
@@ -378,7 +381,9 @@ impl GattManager {
                             profile: prof,
                             reason,
                         });
-                        let _ = mgr.drop_session_internal(&sid).await;
+                        // Peripheral is already gone — force-forget even if OS
+                        // disconnect fails/times out so reconnect can reclaim.
+                        let _ = mgr.drop_session_internal(&sid, true).await;
                         break;
                     }
                     BackendEvent::Mtu(mtu) => {
@@ -422,7 +427,57 @@ impl GattManager {
         reg.unregister(address, profile)
     }
 
-    async fn drop_session_internal(&self, session_id: &str) -> Result<(), GattError> {
+    /// Drop a same-profile orphan left by power loss or failed DELETE cleanup.
+    async fn reclaim_stale_same_profile(
+        &self,
+        key: &str,
+        profile: GattProfile,
+    ) -> Result<(), GattError> {
+        let existing = {
+            let addresses = self.by_address.lock().await;
+            addresses.get(key).cloned()
+        };
+        let Some(maybe_sid) = existing else {
+            return Ok(());
+        };
+        let Some(sid) = maybe_sid else {
+            // Another connect is in flight for this MAC.
+            return Ok(());
+        };
+        let existing_profile = {
+            let sessions = self.sessions.read().await;
+            sessions.get(&sid).map(|s| s.profile)
+        };
+        match existing_profile {
+            Some(owner) if owner == profile => {
+                tracing::warn!(
+                    target: "gatt",
+                    profile = %profile,
+                    address = %key,
+                    session_id = %sid,
+                    "reclaiming stale same-profile GATT session before reconnect"
+                );
+                self.drop_session_internal(&sid, true).await
+            }
+            Some(_) => Ok(()),
+            None => {
+                // by_address points at a session that is already gone — free the MAC.
+                tracing::warn!(
+                    target: "gatt",
+                    profile = %profile,
+                    address = %key,
+                    session_id = %sid,
+                    "clearing dangling GATT address reservation before reconnect"
+                );
+                self.by_address.lock().await.remove(key);
+                let mut reg = self.registry.lock().await;
+                let _ = reg.unregister(key, profile);
+                Ok(())
+            }
+        }
+    }
+
+    async fn drop_session_internal(&self, session_id: &str, force: bool) -> Result<(), GattError> {
         let closing = {
             let sessions = self.sessions.read().await;
             let Some(session) = sessions.get(session_id) else {
@@ -438,9 +493,21 @@ impl GattManager {
             };
             session.conn.clone()
         };
-        // Keep ownership and status until the OS has completed teardown. Concurrent
-        // DELETEs wait above; errors leave the handle available for a retry.
-        self.be_disconnect(&conn).await?;
+        // Keep ownership until OS teardown completes. Explicit DELETE retries on
+        // error; force=true (physical disconnect / same-profile reclaim) frees
+        // the MAC even when disconnect fails so power-loss reconnect works.
+        let disconnect_result = self.be_disconnect(&conn).await;
+        if let Err(ref e) = disconnect_result {
+            if !force {
+                return Err(e.clone());
+            }
+            tracing::warn!(
+                target: "gatt",
+                session_id,
+                error = %e.message,
+                "force-forgetting GATT session after disconnect failure"
+            );
+        }
         if let Some(session) = self.sessions.write().await.remove(session_id) {
             self.pending_events
                 .lock()
@@ -454,7 +521,7 @@ impl GattManager {
                 let _ = reg.unregister(&session.address, session.profile);
             }
         }
-        Ok(())
+        if force { Ok(()) } else { disconnect_result }
     }
 
     pub async fn disconnect(&self, session_id: &str) -> Result<(), GattError> {
@@ -465,7 +532,7 @@ impl GattManager {
                 format!("session {session_id} not found"),
             ));
         }
-        self.drop_session_internal(session_id).await
+        self.drop_session_internal(session_id, false).await
     }
 
     pub async fn write(&self, session_id: &str, payload: &[u8]) -> Result<(), GattError> {
@@ -686,11 +753,24 @@ mod tests {
             .connect(GattProfile::Meshtastic, "AA:BB:CC:DD:EE:FF")
             .await
             .unwrap();
-        for profile in [GattProfile::Meshtastic, GattProfile::Meshcore] {
-            let error = mgr.connect(profile, "aabbccddeeff").await.unwrap_err();
-            assert_eq!(error.code, GattErrorCode::MacConflict);
-        }
+        assert_eq!(
+            mgr.connect(GattProfile::Meshcore, "aabbccddeeff")
+                .await
+                .unwrap_err()
+                .code,
+            GattErrorCode::MacConflict
+        );
         assert!(mgr.is_connected(&sid).await);
+        assert_eq!(mgr.session_count().await, 1);
+
+        // Same-profile reconnect reclaims (power-loss / abandoned cleanup path).
+        let (sid2, _) = mgr
+            .connect(GattProfile::Meshtastic, "aabbccddeeff")
+            .await
+            .unwrap();
+        assert_ne!(sid, sid2);
+        assert!(!mgr.is_connected(&sid).await);
+        assert!(mgr.is_connected(&sid2).await);
         assert_eq!(mgr.session_count().await, 1);
     }
 
@@ -765,8 +845,9 @@ mod tests {
                 .code,
             GattErrorCode::MacConflict
         );
+        // Other LoRa profile must not steal the MAC mid-teardown.
         assert_eq!(
-            mgr.connect(GattProfile::Meshtastic, "aabbccddeeff")
+            mgr.connect(GattProfile::Meshcore, "aabbccddeeff")
                 .await
                 .unwrap_err()
                 .code,
@@ -806,6 +887,51 @@ mod tests {
             .await;
         mgr.disconnect(&sid).await.unwrap();
         assert!(!mgr.is_connected(&sid).await);
+    }
+
+    #[tokio::test]
+    async fn same_profile_reconnect_reclaims_after_failed_disconnect() {
+        let mgr = GattManager::new(GattBackend::fake());
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshcore, "AA:BB:CC:DD:EE:01")
+            .await
+            .unwrap();
+        mgr.fake_backend()
+            .unwrap()
+            .set_disconnect_failure(true)
+            .await;
+        assert!(mgr.disconnect(&sid).await.is_err());
+        assert!(mgr.is_connected(&sid).await);
+
+        // Simulate Electron abandoning DELETE cleanup while the sidecar still
+        // holds the MAC — same-profile reconnect must reclaim, not mac_conflict.
+        mgr.fake_backend()
+            .unwrap()
+            .set_disconnect_failure(false)
+            .await;
+        let (sid2, _) = mgr
+            .connect(GattProfile::Meshcore, "AA:BB:CC:DD:EE:01")
+            .await
+            .unwrap();
+        assert_ne!(sid, sid2);
+        assert!(!mgr.is_connected(&sid).await);
+        assert!(mgr.is_connected(&sid2).await);
+    }
+
+    #[tokio::test]
+    async fn other_profile_still_conflicts_while_session_held() {
+        let mgr = GattManager::new(GattBackend::fake());
+        let (_sid, _) = mgr
+            .connect(GattProfile::Meshcore, "AA:BB:CC:DD:EE:02")
+            .await
+            .unwrap();
+        assert_eq!(
+            mgr.connect(GattProfile::Meshtastic, "AA:BB:CC:DD:EE:02")
+                .await
+                .unwrap_err()
+                .code,
+            GattErrorCode::MacConflict
+        );
     }
 
     #[tokio::test(start_paused = true)]

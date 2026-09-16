@@ -190,18 +190,25 @@ impl BleBackend for FakeBleBackend {
             gate.notified().await;
         }
         let mut guard = self.inner.lock().await;
-        if guard.disconnect_fails {
-            return Err(GattError::new(
+        let result = if guard.disconnect_fails {
+            Err(GattError::new(
                 GattErrorCode::Internal,
                 "forced disconnect failure",
-            ));
+            ))
+        } else {
+            if let Some(tx) = guard.open.remove(&conn.0) {
+                let _ = tx.send(BackendEvent::Disconnected {
+                    reason: "local_disconnect".into(),
+                });
+            }
+            Ok(())
+        };
+        if result.is_err() {
+            // Match production: free the backend slot even when disconnect fails
+            // so same-profile reclaim can open a new connection.
+            let _ = guard.open.remove(&conn.0);
         }
-        if let Some(tx) = guard.open.remove(&conn.0) {
-            let _ = tx.send(BackendEvent::Disconnected {
-                reason: "local_disconnect".into(),
-            });
-        }
-        Ok(())
+        result
     }
 
     async fn rssi(&self, conn: &BackendConnId) -> Result<i16, GattError> {
