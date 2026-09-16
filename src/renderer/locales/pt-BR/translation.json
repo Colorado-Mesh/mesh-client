@@ -3452,7 +3452,8 @@
     "downloadFile": "Download",
     "dismissPreview": "Dispensar",
     "clearBrowserCaches": "Limpar caches de página e imagem",
-    "clearedBrowserCaches": "Página Nomad e caches de imagem limpos"
+    "clearedBrowserCaches": "Página Nomad e caches de imagem limpos",
+    "clearBrowserCachesHint": "Limpe a página do Nomad na memória e os caches de imagem. Os caches não são salvos no disco. Imagens maiores que 2 MiB (base64) nunca são armazenadas em cache."
   },
   "packetDistribution": {
     "overallDistribution": "Distribuição Geral",

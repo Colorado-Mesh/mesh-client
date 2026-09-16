@@ -3452,7 +3452,8 @@
     "downloadFile": "下载",
     "dismissPreview": "解散",
     "clearBrowserCaches": "清除页面和图像缓存",
-    "clearedBrowserCaches": "Nomad 页面和图像缓存已清除"
+    "clearedBrowserCaches": "Nomad 页面和图像缓存已清除",
+    "clearBrowserCachesHint": "清除内存中的Nomad页面和图像缓存。缓存未保存到磁盘。大于2 MiB （ base64 ）的图像永远不会被缓存。"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",

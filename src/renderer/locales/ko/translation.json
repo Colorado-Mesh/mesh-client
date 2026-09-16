@@ -3452,7 +3452,8 @@
     "downloadFile": "다운로드",
     "dismissPreview": "무시하기",
     "clearBrowserCaches": "페이지 및 이미지 캐시 지우기",
-    "clearedBrowserCaches": "Nomad 페이지 및 이미지 캐시 지워짐"
+    "clearedBrowserCaches": "Nomad 페이지 및 이미지 캐시 지워짐",
+    "clearBrowserCachesHint": "인메모리 Nomad 페이지 및 이미지 캐시를 지웁니다. 캐시는 디스크에 저장되지 않습니다. 2 MiB (base64) 보다 큰 이미지는 절대로 캐시되지 않습니다."
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",

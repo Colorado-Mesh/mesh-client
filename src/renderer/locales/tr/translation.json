@@ -3452,7 +3452,8 @@
     "downloadFile": "İndir",
     "dismissPreview": "Yok say",
     "clearBrowserCaches": "Sayfa ve resim önbelleklerini temizle",
-    "clearedBrowserCaches": "Nomad sayfa ve resim önbellekleri temizlendi"
+    "clearedBrowserCaches": "Nomad sayfa ve resim önbellekleri temizlendi",
+    "clearBrowserCachesHint": "Bellek içi Nomad sayfasını ve resim önbelleklerini temizleyin. Önbellekler diske kaydedilmez. 2 MB'tan (base64) büyük görüntüler asla önbelleğe alınmaz."
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

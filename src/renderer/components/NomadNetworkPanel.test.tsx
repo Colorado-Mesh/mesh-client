@@ -892,7 +892,7 @@ describe('NomadNetworkPanel', () => {
     );
     expect(screen.getByRole('button', { name: 'nomadNetwork.clearBrowserCaches' })).toHaveAttribute(
       'title',
-      'nomadNetwork.clearBrowserCaches',
+      'nomadNetwork.clearBrowserCachesHint',
     );
     expect(screen.getByRole('button', { name: 'nomadNetwork.sendMessageAria' })).toHaveAttribute(
       'title',
