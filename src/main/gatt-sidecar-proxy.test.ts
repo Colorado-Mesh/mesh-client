@@ -637,4 +637,90 @@ describe('GattSidecarProxy', () => {
     expect(deletes).toBe(2);
     expect(proxy.getConnections()).toEqual([]);
   });
+
+  it('abandons remote cleanup after max attempts when DELETE always times out', async () => {
+    vi.useFakeTimers();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    let deletes = 0;
+    fetchMock.mockImplementation((url, init) => {
+      const href = typeof url === 'string' ? url : '';
+      if (href.includes('/rssi')) {
+        return Promise.resolve({
+          status: 200,
+          json: () => Promise.resolve({ ok: true, rssi: -70 }),
+        });
+      }
+      if (init?.method === 'POST') {
+        return Promise.resolve({
+          status: 200,
+          json: () => Promise.resolve({ ok: true, sessionId: 'dead-peripheral' }),
+        });
+      }
+      if (init?.method === 'DELETE') {
+        deletes += 1;
+        return Promise.reject(new Error('The operation was aborted due to timeout'));
+      }
+      // connected probe also hangs like a dead radio
+      return Promise.reject(new Error('The operation was aborted due to timeout'));
+    });
+    await proxy.connect('meshcore', 'aa:bb:cc:dd:ee:99');
+
+    await proxy.disconnect('meshcore');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(deletes).toBe(1);
+    expect(proxy.getConnections()).toEqual([{ mac: 'aa:bb:cc:dd:ee:99', owner: 'gatt:meshcore' }]);
+
+    // Attempts 2–8 each wait GATT_RSSI_POLL_MS (4s) after the previous failure.
+    for (let attempt = 2; attempt <= 8; attempt++) {
+      await vi.advanceTimersByTimeAsync(4_000);
+      expect(deletes).toBe(attempt);
+    }
+    expect(proxy.getConnections()).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(
+      '[GATT] abandoning remote cleanup after',
+      8,
+      'attempts:',
+      expect.stringContaining('meshcore'),
+    );
+    // No further DELETE after abandon.
+    await vi.advanceTimersByTimeAsync(4_000);
+    expect(deletes).toBe(8);
+    warn.mockRestore();
+    debug.mockRestore();
+  });
+
+  it('releases on mid-retry DELETE success before cleanup budget is exhausted', async () => {
+    vi.useFakeTimers();
+    let deletes = 0;
+    fetchMock.mockImplementation((_url, init) =>
+      Promise.resolve({
+        status: 200,
+        json: () =>
+          Promise.resolve(
+            init?.method === 'DELETE'
+              ? { ok: ++deletes >= 3 }
+              : { ok: true, sessionId: 'mid-retry', connected: true },
+          ),
+      }),
+    );
+    await proxy.connect('meshcore', 'aa:bb:cc:dd:ee:02');
+
+    await proxy.disconnect('meshcore');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(deletes).toBe(1);
+    expect(proxy.getConnections()).toHaveLength(1);
+
+    await vi.advanceTimersByTimeAsync(4_000);
+    expect(deletes).toBe(2);
+    expect(proxy.getConnections()).toHaveLength(1);
+
+    await vi.advanceTimersByTimeAsync(4_000);
+    expect(deletes).toBe(3);
+    expect(proxy.getConnections()).toEqual([]);
+
+    // Would have been attempts 4–8 if still reserved — budget not forced.
+    await vi.advanceTimersByTimeAsync(4_000 * 5);
+    expect(deletes).toBe(3);
+  });
 });
