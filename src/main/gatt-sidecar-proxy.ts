@@ -44,6 +44,7 @@ interface ConnectionReservation {
   port: number;
   sidecarSessionId: string | null;
   cleaningUp: boolean;
+  cleanupAttempts: number;
   cleanupTimer: ReturnType<typeof setTimeout> | null;
 }
 
@@ -55,6 +56,11 @@ const GATT_HTTP_TIMEOUT_MS = 3_000;
 const GATT_HTTP_LONG_TIMEOUT_MS = 45_000;
 /** Hard ceiling for quit-time disconnectAll. */
 const GATT_DISCONNECT_ALL_BUDGET_MS = 2_000;
+/**
+ * Cap remote DELETE/probe retries when the peripheral is gone (power loss).
+ * Without a bound, MAC stays reserved forever and reconnect hits mac_conflict.
+ */
+const GATT_CLEANUP_MAX_ATTEMPTS = 8;
 
 function profileFromSession(sessionId: string): GattSessionProfile {
   if (sessionId === 'meshcore') return 'meshcore';
@@ -236,6 +242,7 @@ export class GattSidecarProxy extends EventEmitter {
       port: 0,
       sidecarSessionId: null,
       cleaningUp: false,
+      cleanupAttempts: 0,
       cleanupTimer: null,
     };
     this.reservations.set(attempt, reservation);
@@ -450,6 +457,7 @@ export class GattSidecarProxy extends EventEmitter {
   private async reconcileRemoteSession(id: symbol): Promise<void> {
     const reservation = this.reservations.get(id);
     if (!reservation?.sidecarSessionId) return;
+    reservation.cleanupAttempts += 1;
     const { port, sidecarSessionId } = reservation;
     // Pin teardown to the process that created the session; cleanup must not start
     // a new sidecar or send an old session id to a replacement process.
@@ -490,6 +498,18 @@ export class GattSidecarProxy extends EventEmitter {
       );
     }
     if (!this.reservations.has(id)) return;
+    // Dead peripheral (power loss): DELETE/probe can hang forever. Cap retries so
+    // the MAC is released and reconnect is not stuck on mac_conflict.
+    if (reservation.cleanupAttempts >= GATT_CLEANUP_MAX_ATTEMPTS) {
+      console.warn(
+        '[GATT] abandoning remote cleanup after',
+        reservation.cleanupAttempts,
+        'attempts:',
+        sanitizeLogMessage(`${reservation.profile} ${reservation.address}`),
+      );
+      this.releaseReservation(id);
+      return;
+    }
     // Keep the MAC reserved until teardown is confirmed; another protocol must
     // not claim a peripheral whose OS connection is still being released.
     reservation.cleanupTimer = setTimeout(() => {
