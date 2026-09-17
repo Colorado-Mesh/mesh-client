@@ -1371,7 +1371,9 @@
       "profilesRename": "Rename",
       "profilesSaveRename": "Save",
       "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}"
+      "profilesRenameAria": "Rename profile {{name}}",
+      "bootstrapOnly": "Tylko bootstrap",
+      "bootstrapOnlyHint": "Odłącz ten interfejs, gdy wystarczająco dużo odkrytych serwerów szkieletowych/TCP automatycznie się połączy (wymaga limitu → sieciowego automatycznego połączenia > 0)."
     },
     "reticulumPeers": {
       "hops": "Skoki",
@@ -2900,7 +2902,23 @@
       "pathMediumRf": "RF (RNode)",
       "pathMediumPreferenceAria": "Globalna preferowana ścieżka medium",
       "pathMediumPreferenceSaved": "Zapisano preferencję medium ścieżki.",
-      "pathMediumPreferenceSaveFailed": "Nie udało się zapisać preferencji medium ścieżki."
+      "pathMediumPreferenceSaveFailed": "Nie udało się zapisać preferencji medium ścieżki.",
+      "discoveryConsumeTitle": "Odkryte interfejsy (zużycie)",
+      "discoveryConsumeHint": "Słuchanie jest zawsze włączone. Autoconnect pozostaje wyłączony (0), chyba że się zdecydujesz — odkryto, że serwery szkieletowe/TCP są wybierane przez rsReticulum, a nie przez mesh-client.",
+      "autoconnectDiscovered": "Limit automatycznego połączenia",
+      "autoconnectDiscoveredAria": "Maksymalna liczba wykrytych interfejsów do automatycznego łączenia",
+      "autoconnectDiscoveredHint": "0 = nigdy nie wybieraj automatycznie. Wartości powyżej 0 pozwalają Reticulum przywołać efemerycznych klientów z ogłoszeń Discovery.",
+      "requiredDiscoveryValue": "Pieczęć minimalnego odkrycia",
+      "requiredDiscoveryValueAria": "Minimalna wartość znaczka kryptograficznego dla zaakceptowanych zgłoszeń odkrycia",
+      "discoverySources": "Zaufane źródła odkryć",
+      "discoverySourcesAria": "Hasze sieci oddzielone przecinkami lub tożsamości transportowej",
+      "discoverySourcesPlaceholder": "Hasze 32-heksowe, oddzielone przecinkami (puste = zaakceptuj dowolne)",
+      "discoverySourcesHint": "Po ustawieniu akceptowane są tylko powiadomienia z tych tożsamości (nadal podlegają wartości stempla).",
+      "discoverySourcesInvalid": "Każde źródło odkrycia musi być 32-znakowym skrótem tożsamości szesnastkowej.",
+      "networkIdentity": "Identyfikacja sieciowa",
+      "networkIdentityAria": "Ścieżka do pliku identyfikacyjnego sieci do szyfrowania i odszyfrowywania wykrywania",
+      "networkIdentityPlaceholder": "~/.reticulum/przechowywanie/tożsamości/my_network",
+      "networkIdentityHint": "Opcjonalnie. Wymagane do odszyfrowania zaszyfrowanych ogłoszeń o wykryciu (i do zaszyfrowania podczas publikowania za pomocą discovery_encrypt)."
     },
     "reticulumConfigImport": {
       "title": "Importuj config Reticulum",
@@ -5347,7 +5365,16 @@
       "noDiscoveries": "Nie słychać jeszcze interfejsów wykrywania RMAP.",
       "filterEmpty": "Żaden interfejs nie pasuje do tego filtra.",
       "hint": "Węzły pojawiają się tylko wtedy, gdy operatorzy włączają wykrywalne=tak. Ścieżki LoRa wymagają koncentratora TCP (na przykład rmap.world:4242) do przekazywania komunikatów. Aby uzyskać dostęp do danych na całym świecie, skorzystaj z łącza do globalnej mapy."
-    }
+    },
+    "stampStatus": "Pieczątka {{stamp}} · {{status}} · {{hops}} hopów",
+    "addAsInterface": "Dodaj jako interfejs",
+    "addAsInterfaceBusy": "Dodanie",
+    "addAsInterfaceAria": "Dodaj {{name}} jako trwały interfejs szkieletowy",
+    "addAsInterfaceSuccess": "Dodano {{name}} do → interfejsów połączeń. Zrestartuj stos, jeśli się nie pojawi.",
+    "addAsInterfaceFailed": "Nie można dodać interfejsu: {{error}}",
+    "addAsInterfaceNotAddable": "Nie można dodać tego wiersza wykrywania (wymaga adresu serwera szkieletowego lub TCP).",
+    "addAsInterfaceAdded": "Dodano",
+    "addAsInterfaceAddedAria": "{{name}} już dodano jako interfejs połączenia"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

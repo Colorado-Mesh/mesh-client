@@ -29,6 +29,11 @@ import {
   type ReticulumMapMarkerRow,
   type RmapInterfaceFilter,
 } from '@/renderer/lib/reticulum/reticulumDiscoveryMapLayout';
+import {
+  addRmapDiscoveredAsInterface,
+  canAddRmapDiscoveredAsInterface,
+  formatRmapDiscoveredEndpoint,
+} from '@/renderer/lib/reticulum/reticulumRmapAddDiscovered';
 import { RMAP_GLOBAL_MAP_URL } from '@/renderer/lib/reticulum/reticulumRmapDiscovery';
 import {
   fetchReticulumRmapDiscovered,
@@ -39,6 +44,8 @@ import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
 import { useReticulumDiscoveryMapStore } from '@/renderer/stores/reticulumDiscoveryMapStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
+
+import { useToast } from './Toast';
 
 const REFRESH_MS = 30_000;
 const DEFAULT_CENTER: [number, number] = [20, 0];
@@ -117,6 +124,7 @@ export default function ReticulumMapPanel({
   onOpenAppGpsSettings,
 }: ReticulumMapPanelProps) {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const basemapId = useMapLayerStore((s) => s.basemapId);
   const basemap = MAP_BASEMAPS[basemapId] ?? MAP_BASEMAPS[DEFAULT_MAP_BASEMAP_ID];
@@ -134,6 +142,11 @@ export default function ReticulumMapPanel({
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const [flyTarget, setFlyTarget] = useState<MapFlyTarget | null>(null);
   const [selectedHash, setSelectedHash] = useState<string | null>(null);
+  const [addBusyHash, setAddBusyHash] = useState<string | null>(null);
+  /** Successful Add-as-interface hashes for this panel session (prevents re-submit). */
+  const [addedDiscoveryHashes, setAddedDiscoveryHashes] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const [showScrollTopButton, setShowScrollTopButton] = useState(false);
   const listScrollRef = useRef<HTMLUListElement>(null);
   const refreshGenerationRef = useRef(0);
@@ -239,6 +252,37 @@ export default function ReticulumMapPanel({
       });
     }
   }, []);
+
+  const handleAddAsInterface = useCallback(
+    async (row: ReticulumMapMarkerRow) => {
+      if (addBusyHash || addedDiscoveryHashes.has(row.discovery_hash)) return;
+      setAddBusyHash(row.discovery_hash);
+      try {
+        const result = await addRmapDiscoveredAsInterface(row);
+        if (result.ok) {
+          setAddedDiscoveryHashes((prev) => {
+            const next = new Set(prev);
+            next.add(row.discovery_hash);
+            return next;
+          });
+          addToast(
+            t('reticulumMap.addAsInterfaceSuccess', { name: row.discovery_name }),
+            'success',
+          );
+        } else if (result.reason === 'not_addable') {
+          addToast(t('reticulumMap.addAsInterfaceNotAddable'), 'error');
+        } else {
+          addToast(
+            t('reticulumMap.addAsInterfaceFailed', { error: result.error ?? 'unknown' }),
+            'error',
+          );
+        }
+      } finally {
+        setAddBusyHash(null);
+      }
+    },
+    [addBusyHash, addedDiscoveryHashes, addToast, t],
+  );
 
   const updateListScrollTopButton = useCallback(() => {
     const scrollTop = listScrollRef.current?.scrollTop ?? 0;
@@ -419,6 +463,18 @@ export default function ReticulumMapPanel({
                   <div className="text-sm">
                     <div className="font-semibold">{row.discovery_name}</div>
                     <div className="text-xs">{row.interface_type}</div>
+                    {formatRmapDiscoveredEndpoint(row) ? (
+                      <div className="mt-1 font-mono text-xs text-slate-700">
+                        {formatRmapDiscoveredEndpoint(row)}
+                      </div>
+                    ) : null}
+                    <div className="mt-1 text-xs text-slate-600">
+                      {t('reticulumMap.stampStatus', {
+                        stamp: row.stamp_value,
+                        status: row.status,
+                        hops: row.hops,
+                      })}
+                    </div>
                     {row.reachable ? (
                       <div className="mt-1 text-xs text-green-700">
                         {t('reticulumMap.reachable')}
@@ -526,7 +582,50 @@ export default function ReticulumMapPanel({
                         {row.interface_type}
                         {!hasCoords ? ` · ${t('reticulumMap.noCoords')}` : ''}
                       </div>
+                      {formatRmapDiscoveredEndpoint(row) ? (
+                        <div className="truncate pl-3 font-mono text-[10px] leading-tight text-slate-400">
+                          {formatRmapDiscoveredEndpoint(row)}
+                        </div>
+                      ) : null}
+                      <div className="truncate pl-3 text-[10px] leading-tight text-slate-500">
+                        {t('reticulumMap.stampStatus', {
+                          stamp: row.stamp_value,
+                          status: row.status,
+                          hops: row.hops,
+                        })}
+                      </div>
                     </button>
+                    {canAddRmapDiscoveredAsInterface(row) ? (
+                      <div className="px-2 pb-1.5 pl-5">
+                        <button
+                          type="button"
+                          disabled={
+                            addBusyHash === row.discovery_hash ||
+                            addedDiscoveryHashes.has(row.discovery_hash)
+                          }
+                          className="rounded border border-cyan-700/60 px-1.5 py-0.5 text-[10px] text-cyan-300 hover:bg-cyan-950/40 disabled:opacity-50"
+                          aria-label={
+                            addedDiscoveryHashes.has(row.discovery_hash)
+                              ? t('reticulumMap.addAsInterfaceAddedAria', {
+                                  name: row.discovery_name,
+                                })
+                              : t('reticulumMap.addAsInterfaceAria', {
+                                  name: row.discovery_name,
+                                })
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleAddAsInterface(row);
+                          }}
+                        >
+                          {addBusyHash === row.discovery_hash
+                            ? t('reticulumMap.addAsInterfaceBusy')
+                            : addedDiscoveryHashes.has(row.discovery_hash)
+                              ? t('reticulumMap.addAsInterfaceAdded')
+                              : t('reticulumMap.addAsInterface')}
+                        </button>
+                      </div>
+                    ) : null}
                   </li>
                 );
               })

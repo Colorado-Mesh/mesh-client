@@ -744,8 +744,10 @@ target_port = 4242
             passphrase: None,
             flow_control: None,
             ignore_config_warnings: None,
+            bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         });
         let settings = StackSettings {

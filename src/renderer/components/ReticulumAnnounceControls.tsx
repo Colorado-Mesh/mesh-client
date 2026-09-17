@@ -7,6 +7,7 @@ import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSid
 import {
   DEFAULT_ANNOUNCE_INTERVAL_SEC,
   parseReticulumStackSettingsPayload,
+  patchReticulumStackSettings,
 } from '@/renderer/lib/reticulum/reticulumStackSettings';
 
 import { useToast } from './Toast';
@@ -57,13 +58,9 @@ export function ReticulumAnnounceControls({
         addToast(t('reticulumIdentity.announceSaveSidecarStopped'), 'error');
         return;
       }
-      const current = parseReticulumStackSettingsPayload(
-        await window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings'),
-      );
-      const res = (await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
-        ...current,
+      const res = await patchReticulumStackSettings({
         announce_interval_sec: clampAnnounceIntervalSec(announceInterval),
-      })) as { ok?: boolean; error?: string };
+      });
       if (res?.ok === false) {
         const message = t('reticulumIdentity.announceSaveFailed', {
           error: res.error ?? t('common.error'),

@@ -84,7 +84,9 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-pub use config::{ImportMode, ImportResult, StackSettings, UpdateInterfacePatch};
+pub use config::{
+    ImportMode, ImportResult, StackSettings, StackSettingsPatch, UpdateInterfacePatch,
+};
 use lxmf_inbound_log::{LxmfInboundBuffer, MAX_LXMF_INBOUND_LOG};
 use packet_log::{MAX_WIRE_PACKET_LOG, PacketLogBuffer, WirePacketRow};
 pub use path_medium::{PathMediumPreferenceSetting, PathMediumSetting};
@@ -191,6 +193,8 @@ pub struct StackHandle {
     identity_op_lock: Mutex<()>,
     /// Serializes path-medium preference/pin persist → live-apply → rollback sequences.
     path_medium_op_lock: Mutex<()>,
+    /// Serializes rnsd config file read-modify-write (stack settings, full config put/import).
+    config_op_lock: Mutex<()>,
     /// App-wide BLE GATT sessions (Meshtastic / MeshCore) + MAC registry.
     gatt: Arc<crate::gatt::GattManager>,
     #[cfg(feature = "rns-stack")]
@@ -326,6 +330,7 @@ impl StackHandle {
             contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
             identity_op_lock: Mutex::new(()),
             path_medium_op_lock: Mutex::new(()),
+            config_op_lock: Mutex::new(()),
             gatt,
             live: std::sync::RwLock::new(None),
             attach_live_lock: Mutex::new(()),
@@ -344,6 +349,7 @@ impl StackHandle {
             contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
             identity_op_lock: Mutex::new(()),
             path_medium_op_lock: Mutex::new(()),
+            config_op_lock: Mutex::new(()),
             gatt,
             #[cfg(test)]
             test_path_medium_apply_error: Mutex::new(None),
@@ -1055,7 +1061,10 @@ impl StackHandle {
                 return Err("identity not configured".into());
             }
         }
-        let row = config::add_interface_to_config(&self.config_dir, &req)?;
+        let row = {
+            let _guard = self.config_op_lock.lock().await;
+            config::add_interface_to_config(&self.config_dir, &req)?
+        };
         self.sync_interfaces_from_config().await;
         self.emit_event("interface.state", serde_json::json!({ "action": "added" }));
         #[cfg(feature = "rns-stack")]
@@ -1070,7 +1079,10 @@ impl StackHandle {
         id: &str,
         patch: UpdateInterfacePatch,
     ) -> Result<InterfaceRow, String> {
-        let row = config::update_interface_in_config(&self.config_dir, id, &patch)?;
+        let row = {
+            let _guard = self.config_op_lock.lock().await;
+            config::update_interface_in_config(&self.config_dir, id, &patch)?
+        };
         self.sync_interfaces_from_config().await;
         self.emit_event(
             "interface.state",
@@ -1129,7 +1141,10 @@ impl StackHandle {
 
     pub async fn delete_interface(&self, id: &str) -> Result<(), String> {
         let iface_name = self.interface_name_for_id(id).await;
-        config::delete_interface_from_config(&self.config_dir, id)?;
+        {
+            let _guard = self.config_op_lock.lock().await;
+            config::delete_interface_from_config(&self.config_dir, id)?;
+        }
         self.sync_interfaces_from_config().await;
         self.reconcile_primary_after_interface_change().await;
         self.emit_event(
@@ -1152,7 +1167,10 @@ impl StackHandle {
         } else {
             self.interface_name_for_id(id).await
         };
-        config::set_interface_enabled_in_config(&self.config_dir, id, enabled)?;
+        {
+            let _guard = self.config_op_lock.lock().await;
+            config::set_interface_enabled_in_config(&self.config_dir, id, enabled)?;
+        }
         self.sync_interfaces_from_config().await;
         self.reconcile_primary_after_interface_change().await;
         self.emit_event(
@@ -1170,7 +1188,10 @@ impl StackHandle {
     }
 
     pub async fn put_config_content(&self, content: &str) -> Result<(), String> {
-        config::write_config(&self.config_dir, content)?;
+        {
+            let _guard = self.config_op_lock.lock().await;
+            config::write_config(&self.config_dir, content)?;
+        }
         self.sync_interfaces_from_config().await;
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
@@ -1184,7 +1205,10 @@ impl StackHandle {
         content: &str,
         mode: ImportMode,
     ) -> Result<ImportResult, String> {
-        let result = config::import_config(&self.config_dir, content, mode)?;
+        let result = {
+            let _guard = self.config_op_lock.lock().await;
+            config::import_config(&self.config_dir, content, mode)?
+        };
         self.sync_interfaces_from_config().await;
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
@@ -1193,9 +1217,10 @@ impl StackHandle {
         Ok(result)
     }
 
-    #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle settings API awaited by HTTP handlers
-    pub async fn set_stack_settings(&self, settings: &StackSettings) -> Result<(), String> {
-        config::set_stack_settings(&self.config_dir, settings)
+    pub async fn patch_stack_settings(&self, patch: &StackSettingsPatch) -> Result<(), String> {
+        let _guard = self.config_op_lock.lock().await;
+        let _: StackSettings = config::apply_stack_settings_patch(&self.config_dir, patch)?;
+        Ok(())
     }
 
     pub async fn list_contacts(&self) -> Vec<ContactRow> {

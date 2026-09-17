@@ -233,6 +233,7 @@ export function ReticulumInterfacesPanel({
   // RF interfaces default flow control on (TX ready-gate). BLE releases the
   // permit after a short READY wait so FC paces without freezing.
   const [addFlowControl, setAddFlowControl] = useState(true);
+  const [addBootstrapOnly, setAddBootstrapOnly] = useState(false);
   const [auditByInterfaceId, setAuditByInterfaceId] = useState<
     Map<string, ReticulumConfigAuditIssue[]>
   >(() => new Map());
@@ -482,6 +483,7 @@ export function ReticulumInterfacesPanel({
           .filter(Boolean);
         body.seed_addresses = seeds;
       }
+      body.bootstrap_only = addBootstrapOnly;
       if (ifaceType === 'rnode' || ifaceType === 'rnode_multi') {
         if (!ifaceCallsign.trim()) {
           setInterfaceError(t('connectionPanel.reticulumInterfaces.callsignRequired'));
@@ -1028,6 +1030,8 @@ export function ReticulumInterfacesPanel({
         onCatalogFieldChange={handleCatalogFieldChange}
         addFlowControl={addFlowControl}
         onAddFlowControlChange={setAddFlowControl}
+        addBootstrapOnly={addBootstrapOnly}
+        onAddBootstrapOnlyChange={setAddBootstrapOnly}
         onIfaceTypeChange={handleIfaceTypeChange}
         onIfaceModeChange={setIfaceMode}
         onIfaceHostChange={setIfaceHost}
@@ -1302,6 +1306,7 @@ function buildInterfaceEditPatch(draft: {
   networkName: string;
   passphrase: string;
   flowControl: boolean;
+  bootstrapOnly: boolean;
   extraConfig: Record<string, string>;
   catalogFieldValues: Readonly<Record<string, string>>;
   rf: RnodeRfFieldValues;
@@ -1335,6 +1340,7 @@ function buildInterfaceEditPatch(draft: {
       .map((s) => s.trim())
       .filter(Boolean);
   }
+  body.bootstrap_only = draft.bootstrapOnly;
   if (draft.type === 'rnode' || draft.type === 'rnode_multi') {
     appendRnodeRfFieldsToBody(body, {
       preset: draft.preset,
@@ -1669,6 +1675,7 @@ function InterfaceEditPanel({
   const [showPassphrase, setShowPassphrase] = useState(false);
   // RF-only TX ready-gate; default on when the stored row omits the key.
   const [flowControl, setFlowControl] = useState<boolean>(() => iface.flow_control ?? true);
+  const [bootstrapOnly, setBootstrapOnly] = useState<boolean>(() => iface.bootstrap_only === true);
   const [advancedText, setAdvancedText] = useState(() =>
     formatInterfaceExtraConfig(iface.extra_config ?? undefined),
   );
@@ -1943,6 +1950,21 @@ function InterfaceEditPanel({
             setShowPassphrase((prev) => !prev);
           }}
         />
+        <label className="flex items-center gap-2 text-xs text-gray-400">
+          <input
+            type="checkbox"
+            checked={bootstrapOnly}
+            onChange={(e) => {
+              setBootstrapOnly(e.target.checked);
+            }}
+            className="h-3.5 w-3.5"
+            aria-label={t('connectionPanel.reticulumInterfaces.bootstrapOnly')}
+          />
+          {t('connectionPanel.reticulumInterfaces.bootstrapOnly')}
+        </label>
+        <p className="text-[10px] leading-snug text-gray-500">
+          {t('connectionPanel.reticulumInterfaces.bootstrapOnlyHint')}
+        </p>
       </div>
       <ReticulumInterfaceModeDescription mode={mode} />
       <details className="group mt-3 rounded border border-gray-700 bg-slate-950/40 p-2">
@@ -1997,6 +2019,7 @@ function InterfaceEditPanel({
               networkName,
               passphrase,
               flowControl,
+              bootstrapOnly,
               extraConfig: parsedExtra.extraConfig,
               catalogFieldValues,
               rf: rfFields,
@@ -2069,6 +2092,8 @@ function InterfacesSection({
   seedAddresses,
   addFlowControl,
   onAddFlowControlChange,
+  addBootstrapOnly,
+  onAddBootstrapOnlyChange,
   onIfaceTypeChange,
   onIfaceModeChange,
   onIfaceHostChange,
@@ -2140,6 +2165,8 @@ function InterfacesSection({
   onCatalogFieldChange: (key: string, value: string) => void;
   addFlowControl: boolean;
   onAddFlowControlChange: (v: boolean) => void;
+  addBootstrapOnly: boolean;
+  onAddBootstrapOnlyChange: (v: boolean) => void;
   onIfaceTypeChange: (v: ReticulumIfaceUiType) => void;
   onIfaceModeChange: (v: string) => void;
   onIfaceHostChange: (v: string) => void;
@@ -2605,6 +2632,22 @@ function InterfacesSection({
             onPassphraseChange={onIfacePassphraseChange}
             onToggleShowPassphrase={onToggleShowAddPassphrase}
           />
+          <label className="flex items-center gap-2 text-xs text-gray-400">
+            <input
+              type="checkbox"
+              checked={addBootstrapOnly}
+              disabled={actionsDisabled}
+              onChange={(e) => {
+                onAddBootstrapOnlyChange(e.target.checked);
+              }}
+              className="h-3.5 w-3.5"
+              aria-label={t('connectionPanel.reticulumInterfaces.bootstrapOnly')}
+            />
+            {t('connectionPanel.reticulumInterfaces.bootstrapOnly')}
+          </label>
+          <p className="text-[10px] leading-snug text-gray-500">
+            {t('connectionPanel.reticulumInterfaces.bootstrapOnlyHint')}
+          </p>
         </div>
         <ReticulumInterfaceModeDescription mode={ifaceMode} />
         <div className="mt-2">

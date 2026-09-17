@@ -297,8 +297,10 @@ impl PersistedState {
                 .flow_control
                 .or_else(|| super::config::default_flow_control_for_iface_type(&req.iface_type)),
             ignore_config_warnings: req.ignore_config_warnings,
+            bootstrap_only: req.bootstrap_only,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: req.extra_config,
         };
         self.interfaces.push(row.clone());

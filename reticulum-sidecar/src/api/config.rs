@@ -5,7 +5,7 @@ use axum::extract::{Path, State};
 use serde::Deserialize;
 
 use crate::stack::config;
-use crate::stack::{ImportMode, StackHandle, StackSettings, UpdateInterfacePatch};
+use crate::stack::{ImportMode, StackHandle, StackSettingsPatch, UpdateInterfacePatch};
 
 #[derive(Debug, Deserialize)]
 pub struct ConfigBody {
@@ -70,9 +70,11 @@ pub async fn get_stack_settings(State(stack): State<Arc<StackHandle>>) -> Json<s
 
 pub async fn put_stack_settings(
     State(stack): State<Arc<StackHandle>>,
-    Json(body): Json<StackSettings>,
+    Json(body): Json<StackSettingsPatch>,
 ) -> Json<serde_json::Value> {
-    match stack.set_stack_settings(&body).await {
+    // Partial body merges under config_op_lock so concurrent PUTs cannot clobber
+    // omitted fields (e.g. RMAP enabling transport while Network saves discovery knobs).
+    match stack.patch_stack_settings(&body).await {
         Ok(()) => Json(serde_json::json!({ "ok": true })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }

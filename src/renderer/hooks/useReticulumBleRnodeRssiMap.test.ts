@@ -62,6 +62,52 @@ describe('rssiForReticulumBleRnodeRow', () => {
       ),
     ).toBe(-70);
   });
+
+  it('prefers iface.host_rssi over the scan map', () => {
+    const map = new Map([['aa:bb:cc:dd:ee:ff', -70]]);
+    expect(
+      rssiForReticulumBleRnodeRow(
+        {
+          id: '1',
+          enabled: true,
+          type: 'rnode',
+          serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+          host_rssi: -55,
+        },
+        map,
+      ),
+    ).toBe(-55);
+  });
+
+  it('uses host_rssi when the scan map is empty', () => {
+    expect(
+      rssiForReticulumBleRnodeRow(
+        {
+          id: '1',
+          enabled: true,
+          type: 'rnode',
+          serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+          host_rssi: -62,
+        },
+        new Map(),
+      ),
+    ).toBe(-62);
+  });
+
+  it('looks up name-based ble:// targets in the scan map', () => {
+    const map = new Map([['rnode 0bb2', -48]]);
+    expect(
+      rssiForReticulumBleRnodeRow(
+        {
+          id: '1',
+          enabled: true,
+          type: 'rnode',
+          serial_port: 'ble://RNode 0BB2',
+        },
+        map,
+      ),
+    ).toBe(-48);
+  });
 });
 
 describe('useReticulumBleRnodeRssiMap', () => {
@@ -125,6 +171,45 @@ describe('useReticulumBleRnodeRssiMap', () => {
     );
     expect(result.current.size).toBe(0);
     expect(window.electronAPI.reticulum.proxyGet).not.toHaveBeenCalled();
+  });
+
+  it('matches scan devices by friendly name for ble:// name targets', async () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/ble/availability') {
+        return Promise.resolve({ available: true });
+      }
+      if (path.startsWith('/api/v1/ble/scan')) {
+        return Promise.resolve({
+          devices: [
+            {
+              address: 'eccf2847-e1fd-3f5f-0811-064db1639a3d',
+              name: 'RNode 0BB2',
+              rssi: -47,
+              kind: 'rnode',
+            },
+          ],
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    const { result } = renderHook(() =>
+      useReticulumBleRnodeRssiMap(
+        [
+          {
+            id: '1',
+            enabled: true,
+            type: 'rnode',
+            serial_port: 'ble://RNode 0BB2',
+          },
+        ],
+        true,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(result.current.get('rnode 0bb2')).toBe(-47);
+    });
   });
 
   it('does not scan when there are no enabled BLE RNode targets', () => {

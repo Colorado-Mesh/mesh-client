@@ -77,10 +77,17 @@ export interface ReticulumInterfaceRow {
    * configured mode. Sidecar-derived; not edited in the UI form.
    */
   ignore_config_warnings?: boolean | null;
+  /** Tear down once discovered-interface autoconnect quota is filled. */
+  bootstrap_only?: boolean | null;
   /** Host outbound TX mpsc fill from live sidecar stats. */
   tx_queue_used?: number | null;
   /** Host outbound TX mpsc capacity from live sidecar stats. */
   tx_queue_max?: number | null;
+  /**
+   * Host↔BLE RNode link RSSI (dBm) from sidecar connect/scan cache.
+   * Prefer this over live advertisement scans once the interface is up.
+   */
+  host_rssi?: number | null;
   /** Unknown INI keys preserved by the sidecar across CRUD. */
   extra_config?: Record<string, string> | null;
 }

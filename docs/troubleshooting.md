@@ -698,7 +698,7 @@ IPv6 addresses work for Meshtastic Wi‑Fi, MeshCore TCP, and Reticulum RNode Wi
 
 ### Connection panel Link quality (TCP) shows "—" or unexpected latency
 
-**Cause:** For **Meshtastic WiFi/TCP** and **MeshCore TCP/IP OpenHop**, the Connection panel signal bars reflect **live-session responsiveness** — an EWMA of write→first-data delay on the already-open TCP socket — not a separate connect probe. Bars may show **"—"** until traffic has produced a sample, or after ~2 minutes without a completed sample (covers idle heartbeat gaps). Meshtastic **WiFi/HTTP** still uses a `/json/report` RTT probe (separate from the TCP session). **Reticulum** hub rows use a short-lived TCP connect probe **only while the sidecar is starting** (before RNS owns the session); once the stack is ready, probes stop so a second raw connect cannot collide with the sidecar link.
+**Cause:** For **Meshtastic WiFi/TCP** and **MeshCore TCP/IP OpenHop**, the Connection panel signal bars reflect **live-session responsiveness** — an EWMA of write→first-data delay on the already-open TCP socket — not a separate connect probe. Bars may show **"—"** until traffic has produced a sample, or after ~2 minutes without a completed sample (covers idle heartbeat gaps). Meshtastic **WiFi/HTTP** still uses a `/json/report` RTT probe (separate from the TCP session). **Reticulum** hub rows use a short-lived TCP connect probe while the sidecar is **starting**, and a short **seed burst after ready** only when no finite RTT sample exists yet (shared across Interfaces / stack panels). Continuous probes stop once seeded so a second raw connect cannot keep colliding with the sidecar link.
 
 **Why not a second TCP connect?** Probing the same `host:port` as the live session every few seconds can RST ESP32/lwIP-class devices (see PR discussion around competing connections).
 
@@ -1344,9 +1344,9 @@ TCP/network Nomad Links use path-scaled initiator hops (`link_hops = clamp(path_
 
 **Symptoms**: You set an announce interval on the Network tab, then saved **Stack settings** (transport / log level) and the interval returned to **0**.
 
-**Cause**: `PUT /api/v1/stack/settings` replaces all four fields (`enable_transport`, `share_instance`, `loglevel`, `announce_interval_sec`). A partial JSON body omits `announce_interval_sec`, which deserializes as **0**. `GET /api/v1/stack/settings` and missing keys in rnsd config default to **3600** s (1 h) after bootstrap migration — a value of **0** in the UI usually means an explicit setting or a partial PUT, not the new GET default.
+**Cause**: Older sidecars treated `PUT /api/v1/stack/settings` as a full replace. A partial JSON body omitted `announce_interval_sec`, which deserialized as **0**.
 
-**Fix**: Current Network UI merge-reads settings before PUT. If you hit this on an older build, re-save the announce interval after stack settings changes.
+**Fix**: Current builds merge omitted fields on the sidecar under a config lock. Clients should PUT only the fields they intend to change. `GET /api/v1/stack/settings` and missing keys in rnsd config default to **3600** s (1 h) after bootstrap migration — a value of **0** in the UI means an explicit setting.
 
 ### Clear announces does not empty the Peers tab under rns-stack
 
