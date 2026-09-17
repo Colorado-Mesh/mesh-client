@@ -1205,7 +1205,8 @@
         "i2p": "Szkielet I2P za pośrednictwem routera na tym komputerze. Włącz mostek aplikacji SAM (127.0.0.1:7656) — nie proxy HTTP/HTTPS I2PTunnel (4444/4445). Uruchom ponownie I2P po włączeniu SAM, aby mostek nasłuchiwał, a następnie uruchom ponownie stos Reticulum, jeśli ten interfejs pozostanie wyłączony.",
         "serial": "Ogólne łącze szeregowe do TNC, modemu lub innego hosta przez kabel. Ustaw parametry linii tak, aby pasowały do końca.",
         "ax25kiss": "Radio pakietowe AX.25 przez TNC KISS. Wymagany jest Twój znak wywoławczy i identyfikator SSID (0-15) identyfikujący tę stację.",
-        "local": "Współdzielone gniazdo instancji na tej maszynie. Inne narzędzia lokalne (rnsd, Nomad Network, rnsh) mogą być podłączone do tego stosu za jego pośrednictwem. Ścieżka gniazda pochodzi od nazwy tego interfejsu, więc zmiana jego nazwy zmienia adres, którego muszą używać inne narzędzia."
+        "local": "Współdzielone gniazdo instancji na tej maszynie. Inne narzędzia lokalne (rnsd, Nomad Network, rnsh) mogą być podłączone do tego stosu za jego pośrednictwem. Ścieżka gniazda pochodzi od nazwy tego interfejsu, więc zmiana jego nazwy zmienia adres, którego muszą używać inne narzędzia.",
+        "backbone": "Publiczny nasłuchiwacz szkieletowy TCP (scenariusz A). Publikuje bramę, z którą partnerzy mogą się automatycznie łączyć, gdy funkcja wykrywania RMAP jest włączona — ustaw funkcję reachable_on na publiczną nazwę hosta lub adres IP."
       },
       "rfProfile": {
         "coordinated": "Skoordynowane regionalnie",
@@ -1343,7 +1344,9 @@
         "preamble": "Preambuła (ms)",
         "txtail": "Końcówka TX (ms)",
         "persistence": "Persistence (Trwałość)",
-        "slottime": "Czas szczeliny (ms)"
+        "slottime": "Czas szczeliny (ms)",
+        "listen_on": "Adres nasłuchiwania",
+        "target_host": "Host zdalny (tryb klienta)"
       },
       "fieldOption": {
         "parity": {
@@ -1882,7 +1885,8 @@
         "rmap_transport_disabled": "Wykrywalne interfejsy są skonfigurowane, ale tryb transportu jest wyłączony.",
         "rmap_i2p_not_connectable": "Interfejs I2P „{{name}}” można wykryć, ale nie można go podłączyć.",
         "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
-        "rmap_mode_autocorrect": "Interfejs „{{name}}” można wykryć w trybie innym niż AP/Gateway — Reticulum uruchomi go jako punkt dostępu, chyba że ustawiono ignore_config_warnings. Edytuj interfejs lub uruchom ponownie stos, aby klient-siatka mógł stemplować opt-out (mesh-client)."
+        "rmap_mode_autocorrect": "Interfejs „{{name}}” można wykryć w trybie innym niż AP/Gateway — Reticulum uruchomi go jako punkt dostępu, chyba że ustawiono ignore_config_warnings. Edytuj interfejs lub uruchom ponownie stos, aby klient-siatka mógł stemplować opt-out (mesh-client).",
+        "rmap_missing_reachable_on": "Interfejs szkieletowy „{{name}}” jest wykrywalny, ale brakuje funkcji reachable_on."
       },
       "runtime": {
         "rnsNotReady": "Stos RNS nie jest gotowy",
@@ -4866,14 +4870,25 @@
     "reachableOnError": {
       "invalid": "Nieprawidłowy osiągalny na wartości.",
       "invalidHost": "Nieprawidłowa nazwa hosta dla dostępnego dnia.",
-      "tooLong": "Wartość osiągalna jest zbyt długa."
+      "tooLong": "Wartość osiągalna jest zbyt długa.",
+      "required": "Publikacja w sieci szkieletowej wymaga dostępnej nazwy hosta, adresu IP lub skryptu rozdzielczości."
     },
     "openGlobalMap": "Otwórz mapę globalną",
     "openGlobalMapAria": "Otwórz globalną mapę RMAP v4 na rmap.world",
     "applyPartialSuccess": "Ustawienia RMAP zastosowane do {{applied}} z interfejsów {{total}}.",
     "disablePartialSuccess": "Publikowanie RMAP wyłączone na {{applied}} z interfejsów {{total}}.",
     "hint": "Umożliwia publikowanie RMAP i współrzędne GPS aplikacji na wszystkich włączonych interfejsach obsługujących RMAP (RNode/Multi, KISS, BLE peer, I2P, UDP, potok). Pole wyboru jest włączone tylko wtedy, gdy publikuje każdy kwalifikujący się interfejs; stan częściowy jest nieokreślony — sprawdź ponownie, aby zsynchronizować resztę. Użyj przełączników RMAP dla poszczególnych interfejsów w obszarze Połączenie, aby uzyskać precyzyjną kontrolę. Ścieżki LoRa umożliwiają także transport i hub rmap.world.",
-    "disabledShareOff": "Włącz opcję Udostępnij moją lokalizację w aplikacji → GPS / Lokalizacja, aby opublikować ją w RMAP."
+    "disabledShareOff": "Włącz opcję Udostępnij moją lokalizację w aplikacji → GPS / Lokalizacja, aby opublikować ją w RMAP.",
+    "reachableOnRequired": "Dostępny w dniu (wymagany w przypadku sieci szkieletowej)",
+    "discoveryLxmfAddress": "Adres operatora LXMF (opcjonalnie hex)",
+    "discoveryStampValue": "Wartość pieczątki odkrywczej",
+    "discoveryEncrypt": "Szyfruj ogłoszenia o wykryciu",
+    "publishIfac": "Opublikuj poświadczenia IFAC",
+    "advancedHint": "Opcje szyfrowania i IFAC są przeznaczone dla sieci prywatnych, które mają wspólną tożsamość sieciową. Pozostaw je wyłączone do publicznej publikacji RMAP.",
+    "lxmfAddressError": {
+      "invalid": "Adres LXMF operatora musi być sześciokątem równej długości.",
+      "tooLong": "Adres operatora LXMF jest zbyt długi."
+    }
   },
   "reticulumTopology": {
     "title": "Topologia sieci",

@@ -30,6 +30,7 @@ describe('reticulumInterfaceMode', () => {
     expect(defaultModeForIfaceType('tcp')).toBe('boundary');
     expect(defaultModeForIfaceType('udp')).toBe('boundary');
     expect(defaultModeForIfaceType('i2p')).toBe(RETICULUM_HUB_INTERFACE_MODE);
+    expect(defaultModeForIfaceType('backbone')).toBe('gateway');
     expect(defaultModeForIfaceType('rnode')).toBe('access_point');
     expect(defaultModeForIfaceType('rnode_multi')).toBe('access_point');
     expect(defaultModeForIfaceType('auto')).toBeNull();

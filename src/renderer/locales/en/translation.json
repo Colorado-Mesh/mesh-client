@@ -1316,7 +1316,8 @@
         "generic": "Reticulum network interface.",
         "serial": "Generic serial link to a TNC, modem, or another host over a wire. Set the line parameters to match the far end.",
         "ax25kiss": "AX.25 packet radio through a KISS TNC. Requires your callsign and an SSID (0-15) identifying this station.",
-        "local": "Shared-instance socket on this machine. Other local tools (rnsd, Nomad Network, rnsh) can attach to this stack through it. The socket path is derived from this interface's name, so renaming it changes the address other tools must use."
+        "local": "Shared-instance socket on this machine. Other local tools (rnsd, Nomad Network, rnsh) can attach to this stack through it. The socket path is derived from this interface's name, so renaming it changes the address other tools must use.",
+        "backbone": "Public TCP backbone listener (Scenario A). Publishes a gateway peers can auto-connect to when RMAP discoverable is on — set reachable_on to your public hostname or IP."
       },
       "rfProfile": {
         "coordinated": "Coordinated regional",
@@ -1341,7 +1342,9 @@
         "preamble": "Preamble (ms)",
         "txtail": "TX tail (ms)",
         "persistence": "Persistence",
-        "slottime": "Slot time (ms)"
+        "slottime": "Slot time (ms)",
+        "listen_on": "Listen address",
+        "target_host": "Remote host (client mode)"
       },
       "fieldOption": {
         "parity": {
@@ -1902,6 +1905,7 @@
         "rmap_no_tcp_hub": "Discoverable local RNode has no enabled TCP client hub for internet reachability.",
         "rmap_transport_disabled": "Discoverable interfaces are configured but transport mode is off.",
         "rmap_i2p_not_connectable": "I2P interface \"{{name}}\" is discoverable but connectable is not yes.",
+        "rmap_missing_reachable_on": "Backbone interface \"{{name}}\" is discoverable but reachable_on is missing.",
         "rmap_mode_autocorrect": "Interface \"{{name}}\" is discoverable with a non-AP/Gateway mode — Reticulum will run it as Access Point unless ignore_config_warnings is set. Edit the interface or restart the stack so mesh-client can stamp the opt-out."
       }
     }
@@ -5215,12 +5219,18 @@
     "sectionTitle": "RMAP v4 discovery",
     "publishToggle": "Publish on RMAP v4",
     "disabledShareOff": "Enable Share my location in App → GPS / Location to publish on RMAP.",
-    "hint": "Enables RMAP publishing and App GPS coordinates on all enabled RMAP-capable interfaces (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). The checkbox is on only when every eligible interface is publishing; a partial state is indeterminate — check again to sync the rest. Use per-interface RMAP toggles on Connection for fine control. LoRa paths also enable transport and the rmap.world hub.",
+    "hint": "Enables RMAP publishing and App GPS coordinates on all enabled RMAP-capable interfaces (RNode, KISS, AX.25 KISS, I2P, Backbone). The checkbox is on only when every eligible interface is publishing; a partial state is indeterminate — check again to sync the rest. Use per-interface RMAP toggles on Connection for fine control. LoRa paths also enable transport and the rmap.world hub. Backbone publish requires reachable_on.",
     "coordsStatus": "Map coordinates: {{lat}}, {{lon}} (from App → GPS / Location)",
     "gpsMissingWarning": "Set static GPS in App → GPS / Location before publishing on RMAP.",
     "announceIntervalMin": "Announce interval (minutes)",
     "heightMeters": "Height above sea level (m, optional)",
     "reachableOn": "Reachable on (hostname or script, optional)",
+    "reachableOnRequired": "Reachable on (required for Backbone)",
+    "discoveryLxmfAddress": "Operator LXMF address (optional hex)",
+    "discoveryStampValue": "Discovery stamp value",
+    "discoveryEncrypt": "Encrypt discovery announces",
+    "publishIfac": "Publish IFAC credentials",
+    "advancedHint": "Encrypt and IFAC options are for private networks that share a network identity. Leave them off for public RMAP publishing.",
     "helpLink": "RMAP guide",
     "openGlobalMap": "Open global map",
     "openGlobalMapAria": "Open RMAP v4 global map on rmap.world",
@@ -5232,7 +5242,7 @@
     "disableSuccess": "RMAP publishing disabled on local interfaces.",
     "disablePartialSuccess": "RMAP publishing disabled on {{applied}} of {{total}} interfaces.",
     "applyFailed": "Failed to apply RMAP settings: {{error}}",
-    "noPublishTargets": "No enabled RMAP-capable interfaces. Enable an RNode, KISS, BLE peer, I2P, UDP, or pipe interface first.",
+    "noPublishTargets": "No enabled RMAP-capable interfaces. Enable an RNode, KISS, AX.25 KISS, I2P, or Backbone interface first.",
     "restartTitle": "Restart Reticulum stack?",
     "restartBody": "Interface and transport changes require a stack restart to take effect.",
     "restartConfirm": "Restart now",
@@ -5240,7 +5250,12 @@
     "reachableOnError": {
       "invalid": "Invalid reachable on value.",
       "invalidHost": "Invalid hostname for reachable on.",
-      "tooLong": "Reachable on value is too long."
+      "tooLong": "Reachable on value is too long.",
+      "required": "Backbone publish requires a reachable on hostname, IP, or resolution script."
+    },
+    "lxmfAddressError": {
+      "invalid": "Operator LXMF address must be even-length hex.",
+      "tooLong": "Operator LXMF address is too long."
     }
   },
   "reticulumTopology": {

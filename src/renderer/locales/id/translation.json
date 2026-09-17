@@ -1169,7 +1169,8 @@
         "i2p": "Backbone I2P melalui router pada mesin ini. Aktifkan jembatan aplikasi SAM (127.0.0.1:7656) — bukan proxy HTTP/https I2PTunnel (4444/4445). Mulai ulang I2P setelah mengaktifkan SAM sehingga bridge mendengarkan, lalu mulai ulang tumpukan Reticulum jika antarmuka ini tetap down.",
         "serial": "Tautan serial umum ke TNC, modem, atau host lain melalui kabel. Atur parameter garis agar sesuai dengan ujung.",
         "ax25kiss": "Radio paket AX.25 melalui TNC KISS. Memerlukan tanda panggil Anda dan SSID (0 -15) yang mengidentifikasi stasiun ini.",
-        "local": "Soket instansi bersama pada mesin ini. Alat lokal lainnya (rnsd, Nomad Network, rnsh) dapat dilampirkan ke tumpukan ini melaluinya. Jalur soket berasal dari nama antarmuka ini, jadi mengganti namanya mengubah alamat yang harus digunakan alat lain."
+        "local": "Soket instansi bersama pada mesin ini. Alat lokal lainnya (rnsd, Nomad Network, rnsh) dapat dilampirkan ke tumpukan ini melaluinya. Jalur soket berasal dari nama antarmuka ini, jadi mengganti namanya mengubah alamat yang harus digunakan alat lain.",
+        "backbone": "Pendengar backbone TCP publik (Skenario A). Memublikasikan rekan gateway yang dapat terhubung secara otomatis ke saat RMAP dapat ditemukan aktif — atur REACHABLE_ON ke nama host atau IP publik Anda."
       },
       "rfProfile": {
         "coordinated": "Daerah yang terkoordinasi",
@@ -1307,7 +1308,9 @@
         "preamble": "Pembukaan",
         "txtail": "TX tail (ms)",
         "persistence": "Pantang menyerah",
-        "slottime": "Waktu slot (ms)"
+        "slottime": "Waktu slot (ms)",
+        "listen_on": "Dengarkan alamat",
+        "target_host": "Host jarak jauh (mode klien)"
       },
       "fieldOption": {
         "parity": {
@@ -1842,7 +1845,8 @@
         "rmap_transport_disabled": "Antarmuka yang dapat ditemukan dikonfigurasi tetapi mode transportasi tidak aktif.",
         "rmap_i2p_not_connectable": "Antarmuka I2P \"{{name}}\" dapat ditemukan tetapi terhubung bukan ya.",
         "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
-        "rmap_mode_autocorrect": "Antarmuka \"{{name}}\" dapat ditemukan dengan mode non — AP/Gateway — Reticulum akan menjalankannya sebagai Access Point kecuali jika ignore_config_warnings ditetapkan. Edit antarmuka atau mulai ulang tumpukan sehingga mesh-client dapat mencap opt - out."
+        "rmap_mode_autocorrect": "Antarmuka \"{{name}}\" dapat ditemukan dengan mode non — AP/Gateway — Reticulum akan menjalankannya sebagai Access Point kecuali jika ignore_config_warnings ditetapkan. Edit antarmuka atau mulai ulang tumpukan sehingga mesh-client dapat mencap opt - out.",
+        "rmap_missing_reachable_on": "Antarmuka backbone \"{{name}}\" dapat ditemukan tetapi REACHABLE_ON hilang."
       },
       "runtime": {
         "rnsNotReady": "Tumpukan RNS belum siap",
@@ -4786,14 +4790,25 @@
     "reachableOnError": {
       "invalid": "Nilai dapat dijangkau tidak valid.",
       "invalidHost": "Nama host tidak valid untuk dapat dihubungi pada.",
-      "tooLong": "Nilai Reachable on terlalu panjang."
+      "tooLong": "Nilai Reachable on terlalu panjang.",
+      "required": "Publikasi backbone memerlukan skrip hostname, IP, atau resolusi yang dapat dijangkau."
     },
     "openGlobalMap": "Buka peta global",
     "openGlobalMapAria": "Buka peta global RMAP v4 di rmap.world",
     "applyPartialSuccess": "Pengaturan RMAP diterapkan ke {{applied}} dari antarmuka {{total}}.",
     "disablePartialSuccess": "Penerbitan RMAP dinonaktifkan pada {{applied}} dari antarmuka {{total}}.",
     "hint": "Mengaktifkan penerbitan RMAP dan koordinat GPS Aplikasi pada semua antarmuka berkemampuan RMAP yang diaktifkan (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). Kotak centang hanya aktif ketika setiap antarmuka yang memenuhi syarat dipublikasikan; sebagian keadaan tidak dapat ditentukan — periksa lagi untuk menyinkronkan sisanya. Gunakan tombol RMAP per antarmuka pada Koneksi untuk kontrol yang baik. Jalur LoRa juga mengaktifkan transportasi dan hub rmap.world.",
-    "disabledShareOff": "Aktifkan Bagikan lokasi saya di Aplikasi → GPS / Lokasi untuk dipublikasikan di RMAP."
+    "disabledShareOff": "Aktifkan Bagikan lokasi saya di Aplikasi → GPS / Lokasi untuk dipublikasikan di RMAP.",
+    "reachableOnRequired": "Dapat dijangkau pada (diperlukan untuk Backbone)",
+    "discoveryLxmfAddress": "Alamat LXMF operator (hex opsional)",
+    "discoveryStampValue": "Nilai stempel penemuan",
+    "discoveryEncrypt": "Enkripsi penemuan mengumumkan",
+    "publishIfac": "Publikasikan kredensial IFAC",
+    "advancedHint": "Opsi enkripsi dan IFAC adalah untuk jaringan pribadi yang berbagi identitas jaringan. Lepaskan untuk publikasi RMAP publik.",
+    "lxmfAddressError": {
+      "invalid": "Alamat LXMF operator harus sama panjangnya dengan hex.",
+      "tooLong": "Alamat LXMF operator terlalu panjang."
+    }
   },
   "reticulumTopology": {
     "title": "Topologi jaringan",

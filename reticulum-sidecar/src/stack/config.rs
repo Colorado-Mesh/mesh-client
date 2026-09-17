@@ -76,6 +76,12 @@ const KNOWN_IFACE_CONFIG_KEYS: &[&str] = &[
     "announce_interval",
     "connectable",
     "reachable_on",
+    "discovery_lxmf_address",
+    "discovery_stamp_value",
+    "discovery_encrypt",
+    "publish_ifac",
+    "discovery_publish_ifac",
+    "stamp_value",
     "network_name",
     "passphrase",
     "flow_control",
@@ -478,6 +484,15 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         announce_interval_min: block.get("announce_interval").and_then(|v| v.parse().ok()),
         connectable: block.get_bool("connectable"),
         reachable_on: block.get("reachable_on").map(str::to_string),
+        discovery_lxmf_address: block.get("discovery_lxmf_address").map(str::to_string),
+        discovery_stamp_value: block
+            .get("discovery_stamp_value")
+            .or_else(|| block.get("stamp_value"))
+            .and_then(|v| v.parse().ok()),
+        discovery_encrypt: block.get_bool("discovery_encrypt"),
+        publish_ifac: block
+            .get_bool("publish_ifac")
+            .or_else(|| block.get_bool("discovery_publish_ifac")),
         network_name: nonempty_opt_string(block.get("network_name")),
         passphrase: nonempty_opt_string(block.get("passphrase")),
         // Only RF types honor flow control; non-RF blocks keep it unset so a
@@ -664,6 +679,18 @@ fn write_discovery_fields(block: &mut IniBlock, row: &InterfaceRow) {
     }
     if let Some(v) = &row.reachable_on {
         block.set("reachable_on", v);
+    }
+    if let Some(v) = &row.discovery_lxmf_address {
+        block.set("discovery_lxmf_address", v);
+    }
+    if let Some(v) = row.discovery_stamp_value {
+        block.set("discovery_stamp_value", &v.to_string());
+    }
+    if let Some(v) = row.discovery_encrypt {
+        block.set("discovery_encrypt", &bool_to_ini(v));
+    }
+    if let Some(v) = row.publish_ifac {
+        block.set("publish_ifac", &bool_to_ini(v));
     }
 }
 
@@ -853,6 +880,34 @@ fn apply_discovery_patch(
         }
         row.reachable_on = patch.reachable_on.clone();
     }
+    if patch.discovery_lxmf_address.is_some() {
+        row.discovery_lxmf_address = nonempty_opt_string(patch.discovery_lxmf_address.as_deref());
+    }
+    if patch.discovery_stamp_value.is_some() {
+        row.discovery_stamp_value = patch.discovery_stamp_value;
+    }
+    if patch.discovery_encrypt.is_some() {
+        row.discovery_encrypt = patch.discovery_encrypt;
+    }
+    if patch.publish_ifac.is_some() {
+        row.publish_ifac = patch.publish_ifac;
+    }
+    if let Some(freq) = patch.discovery_frequency {
+        row.extra_config
+            .insert("discovery_frequency".into(), freq.to_string());
+    }
+    if let Some(bw) = patch.discovery_bandwidth {
+        row.extra_config
+            .insert("discovery_bandwidth".into(), bw.to_string());
+    }
+    if let Some(sf) = patch.discovery_spreading_factor {
+        row.extra_config
+            .insert("discovery_spreading_factor".into(), sf.to_string());
+    }
+    if let Some(cr) = patch.discovery_coding_rate {
+        row.extra_config
+            .insert("discovery_coding_rate".into(), cr.to_string());
+    }
     if row.discoverable == Some(true) {
         if let (Some(lat), Some(lon)) = (row.latitude, row.longitude) {
             validate_lat_lon(lat, lon)?;
@@ -1010,6 +1065,10 @@ pub fn add_interface_to_config(
         announce_interval_min: req.announce_interval_min,
         connectable: req.connectable,
         reachable_on: req.reachable_on.clone(),
+        discovery_lxmf_address: nonempty_opt_string(req.discovery_lxmf_address.as_deref()),
+        discovery_stamp_value: req.discovery_stamp_value,
+        discovery_encrypt: req.discovery_encrypt,
+        publish_ifac: req.publish_ifac,
         network_name: nonempty_opt_string(req.network_name.as_deref()),
         passphrase: nonempty_opt_string(req.passphrase.as_deref()),
         // RF interfaces default flow control on unless the request overrides it.
@@ -1241,6 +1300,15 @@ pub struct UpdateInterfacePatch {
     pub announce_interval_min: Option<u32>,
     pub connectable: Option<bool>,
     pub reachable_on: Option<String>,
+    pub discovery_lxmf_address: Option<String>,
+    pub discovery_stamp_value: Option<u8>,
+    pub discovery_encrypt: Option<bool>,
+    pub publish_ifac: Option<bool>,
+    /// KISS / AX.25 discovery radio params (written into `extra_config`).
+    pub discovery_frequency: Option<u64>,
+    pub discovery_bandwidth: Option<u64>,
+    pub discovery_spreading_factor: Option<u8>,
+    pub discovery_coding_rate: Option<u8>,
     pub network_name: Option<String>,
     pub passphrase: Option<String>,
     /// RNode/KISS TX ready-gate toggle. `None` leaves the current value.
@@ -2704,6 +2772,76 @@ loglevel = 4
     }
 
     #[test]
+    fn add_backbone_interface_round_trips_listen_on_and_port() {
+        let dir = test_config_dir("backbone-add");
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "backbone".into(),
+                name: Some("Public Gateway".into()),
+                port: Some(4242),
+                discoverable: Some(true),
+                latitude: Some(40.0),
+                longitude: Some(-105.0),
+                reachable_on: Some("mesh.example.com".into()),
+                discovery_stamp_value: Some(22),
+                discovery_encrypt: Some(false),
+                publish_ifac: Some(false),
+                discovery_lxmf_address: Some("aabbccddeeff0011".into()),
+                extra_config: {
+                    let mut m = std::collections::HashMap::new();
+                    m.insert("listen_on".into(), "0.0.0.0".into());
+                    m
+                },
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(row.iface_type, "backbone");
+        assert_eq!(row.port, Some(4242));
+        assert_eq!(row.mode.as_deref(), Some("gateway"));
+        assert_eq!(
+            row.extra_config.get("listen_on").map(String::as_str),
+            Some("0.0.0.0")
+        );
+        assert_eq!(row.reachable_on.as_deref(), Some("mesh.example.com"));
+        assert_eq!(row.discovery_stamp_value, Some(22));
+        assert_eq!(
+            row.discovery_lxmf_address.as_deref(),
+            Some("aabbccddeeff0011")
+        );
+
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("type = BackboneInterface"), "{content}");
+        assert!(content.contains("listen_on = 0.0.0.0"), "{content}");
+        assert!(content.contains("port = 4242"), "{content}");
+        assert!(content.contains("mode = gateway"), "{content}");
+        assert!(
+            content.contains("reachable_on = mesh.example.com"),
+            "{content}"
+        );
+        assert!(content.contains("discovery_stamp_value = 22"), "{content}");
+        assert!(
+            content.contains("discovery_lxmf_address = aabbccddeeff0011"),
+            "{content}"
+        );
+
+        let reparsed = interfaces_from_config_dir(&dir).unwrap();
+        let parsed = reparsed
+            .iter()
+            .find(|i| i.name == "Public Gateway")
+            .unwrap();
+        assert_eq!(parsed.port, Some(4242));
+        assert_eq!(
+            parsed.extra_config.get("listen_on").map(String::as_str),
+            Some("0.0.0.0")
+        );
+        assert_eq!(parsed.discovery_stamp_value, Some(22));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn local_interface_port_accepts_omission() {
         let dir = test_config_dir("local-default");
         let row = add_interface_to_config(
@@ -3068,6 +3206,10 @@ target_port = 4242
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,
@@ -3798,6 +3940,10 @@ ignore_config_warnings = Yes
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: Some(true),
@@ -4091,6 +4237,10 @@ longitude = -105.0
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,
@@ -4133,6 +4283,10 @@ longitude = -105.0
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,

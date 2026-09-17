@@ -10,7 +10,10 @@ import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulum
 import {
   applyReticulumRmapDiscovery,
   clampRmapAnnounceIntervalMin,
+  clampRmapDiscoveryStampValue,
   disableReticulumRmapDiscovery,
+  isReticulumRmapServerDiscoveryRow,
+  listReticulumRmapDiscoveryCapable,
   persistRmapUiPrefs,
   readRmapPublishPartial,
   readRmapPublishState,
@@ -18,8 +21,12 @@ import {
   ReticulumRmapGpsRequiredError,
   ReticulumRmapValidationError,
   RMAP_ANNOUNCE_INTERVAL_DEFAULT_MIN,
+  RMAP_DISCOVERY_STAMP_DEFAULT,
+  RMAP_DISCOVERY_STAMP_MAX,
+  RMAP_DISCOVERY_STAMP_MIN,
   RMAP_GLOBAL_MAP_URL,
   RMAP_SETTINGS_KEYS,
+  validateRmapDiscoveryLxmfAddress,
   validateRmapReachableOn,
 } from '@/renderer/lib/reticulum/reticulumRmapDiscovery';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
@@ -55,6 +62,11 @@ export function ReticulumRmapDiscoveryControls({
   const [heightMeters, setHeightMeters] = useState('');
   const [reachableOn, setReachableOn] = useState('');
   const [reachableOnError, setReachableOnError] = useState<string | null>(null);
+  const [discoveryLxmfAddress, setDiscoveryLxmfAddress] = useState('');
+  const [lxmfAddressError, setLxmfAddressError] = useState<string | null>(null);
+  const [discoveryStampValue, setDiscoveryStampValue] = useState(RMAP_DISCOVERY_STAMP_DEFAULT);
+  const [discoveryEncrypt, setDiscoveryEncrypt] = useState(false);
+  const [publishIfac, setPublishIfac] = useState(false);
   const [busy, setBusy] = useState(false);
   const [showGpsPrompt, setShowGpsPrompt] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
@@ -76,6 +88,22 @@ export function ReticulumRmapDiscoveryControls({
     if (parsed?.[RMAP_SETTINGS_KEYS.heightMeters] != null) {
       setHeightMeters(String(parsed[RMAP_SETTINGS_KEYS.heightMeters]));
     }
+    if (typeof parsed?.[RMAP_SETTINGS_KEYS.discoveryLxmfAddress] === 'string') {
+      setDiscoveryLxmfAddress(parsed[RMAP_SETTINGS_KEYS.discoveryLxmfAddress] as string);
+    }
+    if (parsed?.[RMAP_SETTINGS_KEYS.discoveryStampValue] != null) {
+      setDiscoveryStampValue(
+        clampRmapDiscoveryStampValue(Number(parsed[RMAP_SETTINGS_KEYS.discoveryStampValue])),
+      );
+    }
+    setDiscoveryEncrypt(
+      parsed?.[RMAP_SETTINGS_KEYS.discoveryEncrypt] === true ||
+        parsed?.[RMAP_SETTINGS_KEYS.discoveryEncrypt] === 'true',
+    );
+    setPublishIfac(
+      parsed?.[RMAP_SETTINGS_KEYS.publishIfac] === true ||
+        parsed?.[RMAP_SETTINGS_KEYS.publishIfac] === 'true',
+    );
   }, []);
 
   const refreshInterfaces = useCallback(async () => {
@@ -185,14 +213,24 @@ export function ReticulumRmapDiscoveryControls({
     }
   }, [shareMyLocationLive, publishOn, sidecarApiReady, disableRmapPublish]);
 
+  const hasServerPublishTarget = useMemo(
+    () => listReticulumRmapDiscoveryCapable(interfaces).some(isReticulumRmapServerDiscoveryRow),
+    [interfaces],
+  );
+
   const persistAndApply = async (enable: boolean) => {
     setBusy(true);
     setReachableOnError(null);
+    setLxmfAddressError(null);
     try {
       if (enable) {
         const currentCoords = resolveRmapCoordinates();
         if (!currentCoords) {
           setShowGpsPrompt(true);
+          return;
+        }
+        if (hasServerPublishTarget && !reachableOn.trim()) {
+          setReachableOnError(t('reticulumRmapDiscovery.reachableOnError.required'));
           return;
         }
         const reachableErr = reachableOn.trim() ? validateRmapReachableOn(reachableOn) : null;
@@ -206,7 +244,26 @@ export function ReticulumRmapDiscoveryControls({
           setReachableOnError(t(key));
           return;
         }
-        persistRmapUiPrefs({ announceIntervalMin, reachableOn, heightMeters });
+        const lxmfErr = validateRmapDiscoveryLxmfAddress(discoveryLxmfAddress);
+        if (lxmfErr) {
+          setLxmfAddressError(
+            t(
+              lxmfErr === 'too_long'
+                ? 'reticulumRmapDiscovery.lxmfAddressError.tooLong'
+                : 'reticulumRmapDiscovery.lxmfAddressError.invalid',
+            ),
+          );
+          return;
+        }
+        persistRmapUiPrefs({
+          announceIntervalMin,
+          reachableOn,
+          heightMeters,
+          discoveryLxmfAddress,
+          discoveryStampValue,
+          discoveryEncrypt,
+          publishIfac,
+        });
         const stackRaw = (await window.electronAPI.reticulum.proxyGet(
           '/api/v1/stack/settings',
         )) as Record<string, unknown>;
@@ -220,6 +277,10 @@ export function ReticulumRmapDiscoveryControls({
               ? heightParsed
               : null,
           reachableOn: reachableOn.trim() || null,
+          discoveryLxmfAddress: discoveryLxmfAddress.trim() || null,
+          discoveryStampValue,
+          discoveryEncrypt,
+          publishIfac,
           stackSettings: parseReticulumStackSettingsPayload(stackRaw),
         });
         if (result.errors.length > 0) {
@@ -251,6 +312,8 @@ export function ReticulumRmapDiscoveryControls({
       if (e instanceof ReticulumRmapValidationError) {
         if (e.message === 'no_publish_targets') {
           addToast(t('reticulumRmapDiscovery.noPublishTargets'), 'error');
+        } else if (e.message === 'reachable_on_required') {
+          setReachableOnError(t('reticulumRmapDiscovery.reachableOnError.required'));
         } else {
           addToast(t('reticulumRmapDiscovery.applyFailed', { error: e.message }), 'error');
         }
@@ -361,12 +424,18 @@ export function ReticulumRmapDiscoveryControls({
           </label>
         </div>
         <label className="block text-xs text-gray-400">
-          {t('reticulumRmapDiscovery.reachableOn')}
+          {hasServerPublishTarget
+            ? t('reticulumRmapDiscovery.reachableOnRequired')
+            : t('reticulumRmapDiscovery.reachableOn')}
           <input
             type="text"
             value={reachableOn}
             disabled={controlsDisabled}
-            aria-label={t('reticulumRmapDiscovery.reachableOn')}
+            aria-label={
+              hasServerPublishTarget
+                ? t('reticulumRmapDiscovery.reachableOnRequired')
+                : t('reticulumRmapDiscovery.reachableOn')
+            }
             aria-invalid={reachableOnError != null}
             className="bg-deep-black mt-1 w-full rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
             onChange={(e) => {
@@ -378,6 +447,68 @@ export function ReticulumRmapDiscoveryControls({
             <span className="mt-1 block text-xs text-red-400">{reachableOnError}</span>
           ) : null}
         </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block text-xs text-gray-400">
+            {t('reticulumRmapDiscovery.discoveryLxmfAddress')}
+            <input
+              type="text"
+              value={discoveryLxmfAddress}
+              disabled={controlsDisabled}
+              aria-label={t('reticulumRmapDiscovery.discoveryLxmfAddress')}
+              aria-invalid={lxmfAddressError != null}
+              className="bg-deep-black mt-1 w-full rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+              onChange={(e) => {
+                setDiscoveryLxmfAddress(e.target.value);
+                setLxmfAddressError(null);
+              }}
+            />
+            {lxmfAddressError ? (
+              <span className="mt-1 block text-xs text-red-400">{lxmfAddressError}</span>
+            ) : null}
+          </label>
+          <label className="block text-xs text-gray-400">
+            {t('reticulumRmapDiscovery.discoveryStampValue')}
+            <input
+              type="number"
+              min={RMAP_DISCOVERY_STAMP_MIN}
+              max={RMAP_DISCOVERY_STAMP_MAX}
+              value={discoveryStampValue}
+              disabled={controlsDisabled}
+              aria-label={t('reticulumRmapDiscovery.discoveryStampValue')}
+              className="bg-deep-black mt-1 w-full rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+              onChange={(e) => {
+                setDiscoveryStampValue(clampRmapDiscoveryStampValue(Number(e.target.value)));
+              }}
+            />
+          </label>
+        </div>
+        <div className="flex flex-wrap gap-4">
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-gray-300">
+            <input
+              type="checkbox"
+              checked={discoveryEncrypt}
+              disabled={controlsDisabled}
+              aria-label={t('reticulumRmapDiscovery.discoveryEncrypt')}
+              onChange={(e) => {
+                setDiscoveryEncrypt(e.target.checked);
+              }}
+            />
+            <span>{t('reticulumRmapDiscovery.discoveryEncrypt')}</span>
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-gray-300">
+            <input
+              type="checkbox"
+              checked={publishIfac}
+              disabled={controlsDisabled}
+              aria-label={t('reticulumRmapDiscovery.publishIfac')}
+              onChange={(e) => {
+                setPublishIfac(e.target.checked);
+              }}
+            />
+            <span>{t('reticulumRmapDiscovery.publishIfac')}</span>
+          </label>
+        </div>
+        <p className="text-muted text-xs">{t('reticulumRmapDiscovery.advancedHint')}</p>
       </div>
 
       {showGpsPrompt ? (

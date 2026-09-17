@@ -125,9 +125,9 @@ The **Map** tab shows **local** RMAP v4 discovery data — interfaces your stack
 
 **Publish (appear on maps):** Network → **RMAP v4 discovery** or per-interface **RMAP** toggles on Connection. Requires App → GPS coordinates for map markers. LoRa-only stacks need an enabled TCP hub (for example `rmap.world:4242`) so discovery announces reach the wider network — see config audit `rmap_no_tcp_hub`.
 
-**Eligible publish interfaces:** enabled RNode / RNode Multi / KISS (with serial port), BLE peer, I2P, UDP, and pipe. **Not eligible:** Auto, outbound TCP client hubs (including community presets), and system-managed shared-instance rows.
+**Eligible publish interfaces:** enabled RNode / KISS / AX.25 KISS (with serial port), I2P, and **Backbone** (Scenario A public gateway). Aligned with rsReticulum advertizable types. **Not eligible:** Auto, outbound TCP client hubs (including community presets), RNode Multi, BLE peer, UDP, pipe, and system-managed shared-instance rows. **Share instance** remains local multi-app IPC — it is not a discoverable public gateway.
 
-**Network → Publish on RMAP v4:** enables `discoverable` on **all** eligible enabled interfaces (plus LoRa/BLE transport + `rmap.world` hub when needed). The checkbox is checked only when every eligible interface is publishing; a partial set is indeterminate — check again to sync the rest. Uncheck clears discoverable on all eligible rows.
+**Network → Publish on RMAP v4:** enables `discoverable` on **all** eligible enabled interfaces (plus LoRa transport + `rmap.world` hub when needed). The checkbox is checked only when every eligible interface is publishing; a partial set is indeterminate — check again to sync the rest. Uncheck clears discoverable on all eligible rows. Backbone publish requires `reachable_on` (public hostname/IP or resolution script).
 
 **Connection status:** shows **publishing X of Y** (eligible interfaces only; TCP hubs do not count toward Y). Amber when `0 < X < Y`, brand green when `X === Y`, gray when not publishing.
 
@@ -137,7 +137,7 @@ The **Map** tab shows **local** RMAP v4 discovery data — interfaces your stack
 
 **Refresh model:** Map tab polls `GET /api/v1/rmap/discovered` every **30s** while mounted; sidecar also pushes WebSocket `rmap.discovery` every **10s** when the discovery fingerprint changes (runtime updates store even when Map tab is hidden).
 
-**Publish settings (Network → RMAP v4 discovery):** announce interval **60–1440 min** (default **360**); optional height (meters) and `reachable_on` (max 256 chars). LoRa/BLE publish auto-enables `enable_transport` and the **`rmap.world:4242`** hub. Stack restart confirm after enabling publish.
+**Publish settings (Network → RMAP v4 discovery):** announce interval **60–1440 min** (default **360**); optional height (meters); `reachable_on` (required when a Backbone interface is among publish targets); optional operator LXMF address, stamp value, encrypt, and publish-IFAC. LoRa publish auto-enables `enable_transport` and the **`rmap.world:4242`** hub. Stack restart confirm after enabling publish.
 
 **Performance / memory:** Renderer mirrors discovery rows in `reticulumDiscoveryMapStore` (in-memory only; capped at **2,000** newest rows with client-side 7-day `last_heard` eviction). Peers tab opens use the sidecar’s soft cached peer read; manual **Refresh** forces live `GET /api/v1/peers?refresh=1`. Path-table peers apply **incremental** `peers_updated` / announce patches (50ms batch); full dumps run on connect, manual Refresh, stack restart, exceptional `peers_updated` events, and a slow safety poll (30s, or 60s above 2,000 peers). In-memory hard ceiling **100,000**; App tab destination cap defaults to **10,000** (max **50,000**) and age prune for SQLite contact meta. The sidecar selects at most **2,000** peers before topology graph construction; the renderer feeds at most **800** path-table rows into Topology after hop filters (and RF-only when enabled). The **drawn** graph uses the same visible-node cap as Meshtastic/MeshCore Graph: **400** after hop filters (force layout switches to grid repulsion above **400**). Topology also has an **RF only** filter (RNode / KISS / BLE RNode / BLE Peer; hides TCP / I2P / Auto hubs and their peers). Hop and RF-only filters run before the 800 last-seen ingest slice. Topology auto-refresh pauses above the large-mesh threshold. Leaflet uses `preferCanvas`; tile layer `keepBuffer={1}`. Stores clear on disconnect and unexpected sidecar stop.
 
@@ -145,7 +145,7 @@ The **Map** tab shows **local** RMAP v4 discovery data — interfaces your stack
 
 Reticulum destination age prune is enabled by default at **30 days** and affects only non-favorited destinations. The destination count cap is also enabled by default at **10,000** (maximum **50,000**); favorites are preserved. Reticulum message retention is independently configurable and defaults to keeping the newest **4,000** messages. RRC room history retention is independently enabled by default (newest **10,000** messages; **30-day** age prune) and is controlled from App → Retention (`rrcMessageRetentionEnabled` / `rrcMessageRetentionCount`). Per-room UI hydrate loads at most **500** newest rows (`RRC_ROOM_HISTORY_LOAD_COUNT` via `rrcRoomHistory.ts`) — older retained SQLite rows stay on disk until prune.
 
-**Config audit kinds:** `rmap_missing_coordinates`, `rmap_no_tcp_hub`, `rmap_transport_disabled`, `rmap_i2p_not_connectable`.
+**Config audit kinds:** `rmap_missing_coordinates`, `rmap_no_tcp_hub`, `rmap_transport_disabled`, `rmap_i2p_not_connectable`, `rmap_missing_reachable_on`.
 
 **Implementation:** `ReticulumMapPanel.tsx`, `reticulumDiscoveryMapStore.ts`, `reticulumDiscoveryMapLayout.ts`, `reticulumRmapDiscovery.ts` (capable gate, Network all-eligible checked state, X-of-Y tone), `ReticulumRmapDiscoveryControls` / `ReticulumRmapConnectionStatus`, `useReticulumRuntime.ts` (WS `rmap.discovery`).
 
@@ -307,7 +307,7 @@ Turning publish off clears `ignore_config_warnings` when it is no longer needed.
 
 `point_to_point` is omitted from the official Reticulum manual’s interface-modes section but is defined in RNS (`MODE_POINT_TO_POINT`) and included in mesh-client’s mode catalog.
 
-Inbound “other apps / nodes connect to me” on this machine uses **Share instance** under **Network → stack settings** (runtime `SharedInstanceServer`), not a separate TCP server interface type. See also [diagnostics.md](diagnostics.md) SharedInstance notes.
+Inbound “other apps / nodes connect to me” on this machine uses **Share instance** under **Network → stack settings** (runtime `SharedInstanceServer`), not a separate TCP server interface type. To publish a **public** Internet entrypoint that remote peers can auto-connect to, add a **Backbone** interface (Connection → Interfaces) and enable RMAP discoverable with `reachable_on`. See also [diagnostics.md](diagnostics.md) SharedInstance notes.
 
 Defaults for new/incomplete configs: `share_instance = No` and `instance_name = mesh-client` (avoids attaching as a client on system `\0rns/default`, which would skip spawning local TCP hubs). Existing installs that already have `share_instance = Yes` / `instance_name = default` are **not** auto-migrated — use the Connection banner, Network → **Share Reticulum instance**, or Diagnostics **Turn off Share instance** repair, then restart. **Network → Check config** runs an offline parse/audit of `userData/reticulum/config` via the bundled sidecar (`validate-config`) on macOS, Windows, and Linux. Maintainers can run the same lint from the CLI: `pnpm run reticulum:config:check` (optional `MESH_CLIENT_RETICULUM_CONFIG_DIR`).
 

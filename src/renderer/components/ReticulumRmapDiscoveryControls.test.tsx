@@ -76,6 +76,12 @@ describe('ReticulumRmapDiscoveryControls', () => {
     expect(screen.getByLabelText('reticulumRmapDiscovery.announceIntervalMin')).toBeInTheDocument();
     expect(screen.getByLabelText('reticulumRmapDiscovery.heightMeters')).toBeInTheDocument();
     expect(screen.getByLabelText('reticulumRmapDiscovery.reachableOn')).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('reticulumRmapDiscovery.discoveryLxmfAddress'),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('reticulumRmapDiscovery.discoveryStampValue')).toBeInTheDocument();
+    expect(screen.getByLabelText('reticulumRmapDiscovery.discoveryEncrypt')).toBeInTheDocument();
+    expect(screen.getByLabelText('reticulumRmapDiscovery.publishIfac')).toBeInTheDocument();
     expect(screen.getByText('reticulumRmapDiscovery.helpLink')).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: 'reticulumRmapDiscovery.openGlobalMapAria' }),
@@ -129,11 +135,12 @@ describe('ReticulumRmapDiscoveryControls', () => {
               discoverable: false,
             },
             {
-              id: 'ble-1',
-              name: 'BLE',
-              type: 'ble_peer',
+              id: 'kiss-1',
+              name: 'KISS',
+              type: 'kiss',
               enabled: true,
               status: 'up',
+              serial_port: '/dev/kiss0',
               discoverable: false,
             },
             {
@@ -178,7 +185,7 @@ describe('ReticulumRmapDiscoveryControls', () => {
       );
     });
     expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
-      '/api/v1/interfaces/ble-1',
+      '/api/v1/interfaces/kiss-1',
       expect.objectContaining({ discoverable: true }),
     );
     expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
@@ -206,9 +213,9 @@ describe('ReticulumRmapDiscoveryControls', () => {
               discoverable: true,
             },
             {
-              id: 'ble-1',
-              name: 'BLE',
-              type: 'ble_peer',
+              id: 'i2p-1',
+              name: 'I2P',
+              type: 'i2p',
               enabled: true,
               status: 'up',
               discoverable: false,

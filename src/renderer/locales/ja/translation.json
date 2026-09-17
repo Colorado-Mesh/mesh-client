@@ -1169,7 +1169,8 @@
         "i2p": "このマシン上のルーター経由の I2P バックボーン。SAM アプリケーションブリッジ（127.0.0.1:7656）を有効にしてください — HTTP/HTTPS の I2PTunnel プロキシ（4444/4445）ではありません。SAM を有効にしたあと I2P を再起動してブリッジが待ち受けるようにし、このインターフェースがダウンのままなら Reticulum スタックも再起動してください。",
         "serial": "TNC、モデム、または他のホストへの一般的なシリアルリンク。遠端に一致するようにラインパラメータを設定します。",
         "ax25kiss": "KISS TNCを介したAX.25パケットラジオ。このステーションを識別するコールサインとSSID （ 0 -15 ）が必要です。",
-        "local": "このマシン上の共有インスタンスソケット。他のローカルツール（ rnsd、Nomad Network、rnsh ）は、このスタックを介してこのスタックに接続できます。ソケットパスはこのインターフェイスの名前から派生しているため、名前を変更すると、他のツールが使用しなければならないアドレスが変更されます。"
+        "local": "このマシン上の共有インスタンスソケット。他のローカルツール（ rnsd、Nomad Network、rnsh ）は、このスタックを介してこのスタックに接続できます。ソケットパスはこのインターフェイスの名前から派生しているため、名前を変更すると、他のツールが使用しなければならないアドレスが変更されます。",
+        "backbone": "パブリックTCPバックボーンリスナー（シナリオA ）。RMAP検出可能がオンになっているときにピアが自動接続できるゲートウェイを公開します。パブリックホスト名またはIPにreachable_onを設定します。"
       },
       "rfProfile": {
         "coordinated": "地域連携",
@@ -1307,7 +1308,9 @@
         "preamble": "プリアンブル（ミリ秒）",
         "txtail": "TXテール（ミリ秒）",
         "persistence": "永続 化",
-        "slottime": "スロットタイム（ミリ秒）"
+        "slottime": "スロットタイム（ミリ秒）",
+        "listen_on": "リッスン アドレス",
+        "target_host": "リモートホスト（クライアントモード）"
       },
       "fieldOption": {
         "parity": {
@@ -1842,7 +1845,8 @@
         "rmap_transport_disabled": "検出可能なインターフェイスが設定されていますが、トランスポートモードはオフです。",
         "rmap_i2p_not_connectable": "I2Pインターフェース「{{name}}」は検出可能ですが、接続可能ではありません。",
         "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
-        "rmap_mode_autocorrect": "インターフェース「{{name}}」は、非AP/ゲートウェイモードで検出可能です。Reticulumは、ignore_config_warningsが設定されていない限り、アクセスポイントとして実行します。mesh-clientがオプトアウトをスタンプできるように、インターフェースを編集するか、スタックを再起動します。"
+        "rmap_mode_autocorrect": "インターフェース「{{name}}」は、非AP/ゲートウェイモードで検出可能です。Reticulumは、ignore_config_warningsが設定されていない限り、アクセスポイントとして実行します。mesh-clientがオプトアウトをスタンプできるように、インターフェースを編集するか、スタックを再起動します。",
+        "rmap_missing_reachable_on": "バックボーンインターフェース「{{name}}」は検出可能ですが、reachable_onが見つかりません。"
       },
       "runtime": {
         "rnsNotReady": "RNS スタックの準備ができていません",
@@ -4786,14 +4790,25 @@
     "reachableOnError": {
       "invalid": "値に無効な到達可能です。",
       "invalidHost": "に到達可能なホスト名が無効です。",
-      "tooLong": "値で到達可能な時間が長すぎます。"
+      "tooLong": "値で到達可能な時間が長すぎます。",
+      "required": "バックボーンパブリッシュには、ホスト名、IP、または解決スクリプトで到達可能なものが必要です。"
     },
     "openGlobalMap": "グローバルマップを開く",
     "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く",
     "applyPartialSuccess": "RMAP設定は、{{total}}インターフェイスの{{applied}}に適用されます。",
     "disablePartialSuccess": "RMAPの公開は、{{total}}インターフェイスの{{applied}}で無効になっています。",
     "hint": "すべての有効な RMAP 対応インターフェイス (RNode/Multi、KISS、BLE ピア、I2P、UDP、パイプ) で RMAP 公開とアプリ GPS 座標を有効にします。このチェックボックスは、対象となるすべてのインターフェイスが公開されている場合にのみオンになります。部分的な状態は不定です。残りを同期するにはもう一度確認してください。細かく制御するには、インターフェイスごとの RMAP の [接続] 切り替えを使用します。 LoRa パスにより、トランスポートと rmap.world ハブも有効になります。",
-    "disabledShareOff": "[アプリの→GPS/位置情報で位置情報を共有]を有効にして、RMAPで公開します。"
+    "disabledShareOff": "[アプリの→GPS/位置情報で位置情報を共有]を有効にして、RMAPで公開します。",
+    "reachableOnRequired": "に到達可能（バックボーンに必要）",
+    "discoveryLxmfAddress": "オペレータLXMFアドレス（オプションの16進数）",
+    "discoveryStampValue": "ディスカバリースタンプの価値",
+    "discoveryEncrypt": "暗号化の発見が発表されました",
+    "publishIfac": "IFACの資格情報を公開する",
+    "advancedHint": "暗号化とIFACオプションは、ネットワークIDを共有するプライベートネットワーク用です。公開されているRMAPを公開しないでください。",
+    "lxmfAddressError": {
+      "invalid": "オペレータLXMFアドレスは偶数長の16進数でなければなりません。",
+      "tooLong": "オペレータLXMFアドレスが長すぎます。"
+    }
   },
   "reticulumTopology": {
     "title": "ネットワーク・トポロジー",

@@ -287,6 +287,10 @@ impl PersistedState {
             announce_interval_min: req.announce_interval_min,
             connectable: req.connectable,
             reachable_on: req.reachable_on,
+            discovery_lxmf_address: req.discovery_lxmf_address,
+            discovery_stamp_value: req.discovery_stamp_value,
+            discovery_encrypt: req.discovery_encrypt,
+            publish_ifac: req.publish_ifac,
             network_name: req.network_name,
             passphrase: req.passphrase,
             flow_control: req

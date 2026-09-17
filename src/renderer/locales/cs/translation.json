@@ -1188,7 +1188,8 @@
         "i2p": "I2P páteř přes router na tomto stroji. Povolte most aplikace SAM (127.0.0.1:7656) — ne http/HTTPS I2PTunnel proxy (4444/4445). Restartujte I2P po povolení SAM, aby most poslouchal, a poté restartujte zásobník Reticulum, pokud toto rozhraní zůstane mimo provoz.",
         "serial": "Generický sériový odkaz na TNC, modem nebo jiného hostitele přes drát. Nastavte parametry linky tak, aby odpovídaly vzdálenému konci.",
         "ax25kiss": "Paketové rádio AX.25 prostřednictvím KISS TNC. Vyžaduje vaši volací značku a SSID (0-15) identifikující tuto stanici.",
-        "local": "Zásuvka sdílené instance na tomto stroji. K tomuto zásobníku se mohou připojit další místní nástroje (rnsd, Nomad Network, rnsh). Cesta soketu je odvozena od názvu tohoto rozhraní, takže přejmenováním změníte adresu, kterou musí ostatní nástroje použít."
+        "local": "Zásuvka sdílené instance na tomto stroji. K tomuto zásobníku se mohou připojit další místní nástroje (rnsd, Nomad Network, rnsh). Cesta soketu je odvozena od názvu tohoto rozhraní, takže přejmenováním změníte adresu, kterou musí ostatní nástroje použít.",
+        "backbone": "Veřejný TCP páteřní posluchač (scénář A). Publikuje bránu, ke které se mohou vrstevníci automaticky připojit, když je zapnutý RMAP — nastavte reachable_on na svůj veřejný název hostitele nebo IP adresu."
       },
       "rfProfile": {
         "coordinated": "Koordinované regionální",
@@ -1326,7 +1327,9 @@
         "preamble": "Preambule (ms)",
         "txtail": "TX tail (ms)",
         "persistence": "Perzistence:",
-        "slottime": "Čas otvoru (ms)"
+        "slottime": "Čas otvoru (ms)",
+        "listen_on": "Adresa pro poslech",
+        "target_host": "Vzdálený hostitel (klientský režim)"
       },
       "fieldOption": {
         "parity": {
@@ -1863,7 +1866,8 @@
         "rmap_transport_disabled": "Detekovatelná rozhraní jsou nakonfigurována, ale režim přenosu je vypnutý.",
         "rmap_i2p_not_connectable": "Rozhraní I2P „{{name}}“ je zjistitelné, ale připojitelné není ano.",
         "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
-        "rmap_mode_autocorrect": "Rozhraní „{{name}}“ je zjistitelné s režimem non-AP/Gateway — Reticulum jej spustí jako přístupový bod, pokud není nastaveno ignore_config_warnings. Upravte rozhraní nebo restartujte zásobník, aby mesh-client mohl orazítkovat odhlášení."
+        "rmap_mode_autocorrect": "Rozhraní „{{name}}“ je zjistitelné s režimem non-AP/Gateway — Reticulum jej spustí jako přístupový bod, pokud není nastaveno ignore_config_warnings. Upravte rozhraní nebo restartujte zásobník, aby mesh-client mohl orazítkovat odhlášení.",
+        "rmap_missing_reachable_on": "Rozhraní páteřní sítě „{{name}}“ je zjistitelné, ale chybí reachable_on."
       },
       "runtime": {
         "rnsNotReady": "Zásobník RNS není připraven",
@@ -4827,14 +4831,25 @@
     "reachableOnError": {
       "invalid": "Neplatná dosažitelná hodnota.",
       "invalidHost": "Neplatné jméno hostitele pro dosažitelné dne.",
-      "tooLong": "Dosažitelná hodnota je příliš dlouhá."
+      "tooLong": "Dosažitelná hodnota je příliš dlouhá.",
+      "required": "Publikování páteře vyžaduje dostupný skript hostname, IP nebo rozlišení."
     },
     "openGlobalMap": "Otevřít globální mapu",
     "openGlobalMapAria": "Otevřete globální mapu RMAP v4 na rmap.world",
     "applyPartialSuccess": "Nastavení RMAP použito pro {{applied}} z {{total}} rozhraní.",
     "disablePartialSuccess": "Publikování RMAP je zakázáno na {{applied}} z {{total}} rozhraní.",
     "hint": "Umožňuje publikování RMAP a souřadnice App GPS na všech povolených rozhraních podporujících RMAP (RNode/Multi, KISS, BLE peer, I2P, UDP, potrubí). Zaškrtávací políčko je zapnuto pouze v případě, že každé způsobilé rozhraní publikuje; částečný stav je neurčitý – zaškrtněte znovu pro synchronizaci zbytku. Pro jemné ovládání použijte přepínače RMAP pro jednotlivá rozhraní na Připojení. LoRa cesty také umožňují dopravu a rmap.world hub.",
-    "disabledShareOff": "Povolte Sdílení mé polohy v aplikaci → GPS / Umístění pro publikování na RMAP."
+    "disabledShareOff": "Povolte Sdílení mé polohy v aplikaci → GPS / Umístění pro publikování na RMAP.",
+    "reachableOnRequired": "Dosažitelné (vyžadováno pro páteř)",
+    "discoveryLxmfAddress": "Adresa operátora LXMF (volitelně HEX)",
+    "discoveryStampValue": "Hodnota objevného razítka",
+    "discoveryEncrypt": "Šifrovat oznámení o objevení",
+    "publishIfac": "Publikovat pověření IFAC",
+    "advancedHint": "Možnosti Encrypt a IFAC jsou pro privátní sítě, které sdílejí síťovou identitu. Nechte je pro veřejné publikování RMAP.",
+    "lxmfAddressError": {
+      "invalid": "Adresa operátora LXMF musí být hexadecimální s rovnoměrnou délkou.",
+      "tooLong": "Adresa operátora LXMF je příliš dlouhá."
+    }
   },
   "reticulumTopology": {
     "title": "topologie sítě",

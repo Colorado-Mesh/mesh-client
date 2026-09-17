@@ -62,6 +62,10 @@ export interface ReticulumInterfaceRow {
   announce_interval_min?: number | null;
   connectable?: boolean | null;
   reachable_on?: string | null;
+  discovery_lxmf_address?: string | null;
+  discovery_stamp_value?: number | null;
+  discovery_encrypt?: boolean | null;
+  publish_ifac?: boolean | null;
   /** IFAC virtual network name. */
   network_name?: string | null;
   /** IFAC authentication passphrase. */

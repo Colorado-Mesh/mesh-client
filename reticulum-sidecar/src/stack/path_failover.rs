@@ -288,6 +288,10 @@ mod tests {
             announce_interval_min,
             connectable,
             reachable_on,
+            discovery_lxmf_address,
+            discovery_stamp_value,
+            discovery_encrypt,
+            publish_ifac,
         ) = interface_discovery_defaults();
         InterfaceRow {
             id: name.to_lowercase().replace(' ', "-"),
@@ -317,6 +321,10 @@ mod tests {
             announce_interval_min,
             connectable,
             reachable_on,
+            discovery_lxmf_address,
+            discovery_stamp_value,
+            discovery_encrypt,
+            publish_ifac,
             network_name: None,
             passphrase: None,
             flow_control: None,

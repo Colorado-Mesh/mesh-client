@@ -56,6 +56,18 @@ pub struct InterfaceRow {
     pub connectable: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reachable_on: Option<String>,
+    /// Operator LXMF address for discovered-interface contact (Python RNS / manual).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub discovery_lxmf_address: Option<String>,
+    /// Proof-of-work stamp difficulty for discovery announces (`discovery_stamp_value`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub discovery_stamp_value: Option<u8>,
+    /// Encrypt discovery announce payload (`discovery_encrypt`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub discovery_encrypt: Option<bool>,
+    /// Include IFAC credentials in the discovery announce (`publish_ifac`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub publish_ifac: Option<bool>,
     /// IFAC virtual network name (common interface option).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub network_name: Option<String>,
@@ -93,8 +105,14 @@ pub fn interface_discovery_defaults() -> (
     Option<u32>,
     Option<bool>,
     Option<String>,
+    Option<String>,
+    Option<u8>,
+    Option<bool>,
+    Option<bool>,
 ) {
-    (None, None, None, None, None, None, None, None)
+    (
+        None, None, None, None, None, None, None, None, None, None, None, None,
+    )
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -280,6 +298,14 @@ pub struct AddInterfaceRequest {
     #[serde(default)]
     pub reachable_on: Option<String>,
     #[serde(default)]
+    pub discovery_lxmf_address: Option<String>,
+    #[serde(default)]
+    pub discovery_stamp_value: Option<u8>,
+    #[serde(default)]
+    pub discovery_encrypt: Option<bool>,
+    #[serde(default)]
+    pub publish_ifac: Option<bool>,
+    #[serde(default)]
     pub network_name: Option<String>,
     #[serde(default)]
     pub passphrase: Option<String>,
@@ -366,6 +392,10 @@ mod tx_queue_serde_tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,

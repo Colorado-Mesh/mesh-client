@@ -77,10 +77,12 @@ describe('reticulumInterfaceCatalog', () => {
     }
   });
 
-  it('adds serial, ax25kiss and local', () => {
+  it('adds serial, ax25kiss, local and backbone', () => {
     expect(RETICULUM_INTERFACE_CATALOG.serial.configType).toBe('SerialInterface');
     expect(RETICULUM_INTERFACE_CATALOG.ax25kiss.configType).toBe('AX25KISSInterface');
     expect(RETICULUM_INTERFACE_CATALOG.local.configType).toBe('LocalInterface');
+    expect(RETICULUM_INTERFACE_CATALOG.backbone.configType).toBe('BackboneInterface');
+    expect(RETICULUM_INTERFACE_CATALOG.backbone.defaultMode).toBe('gateway');
   });
 
   it('only sets a flow-control default on types that support it', () => {
