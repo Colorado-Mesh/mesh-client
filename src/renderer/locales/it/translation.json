@@ -5296,7 +5296,8 @@
     "hubsTitle": "RRC Hubs",
     "hubs": {
       "favourites": "Favourites",
-      "discovered": "Discovered"
+      "discovered": "Discovered",
+      "connected": "Connesso"
     },
     "searchHubs": "Search hubs…",
     "searchRooms": "Search rooms…",
@@ -5444,7 +5445,8 @@
     },
     "roomNameLimit": {
       "overMax": "Nome della stanza troppo lungo — il limite dell'hub è di {{limit}} byte"
-    }
+    },
+    "noConnectedHubs": "Nessun hub RRC collegato. Connettiti da Preferiti, Scoperto o tramite hash."
   },
   "signalMeter": {
     "rssi": "RSSI",
