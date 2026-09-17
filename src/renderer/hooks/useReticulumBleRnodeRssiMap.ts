@@ -23,6 +23,8 @@ export interface ReticulumBleRssiInterfaceRow {
   enabled: boolean;
   type: string;
   serial_port?: string | null;
+  /** Sidecar connect/scan cache — prefer over advertisement map when set. */
+  host_rssi?: number | null;
 }
 
 function enabledBleRnodeAddresses(interfaces: readonly ReticulumBleRssiInterfaceRow[]): string[] {
@@ -164,7 +166,7 @@ export function useReticulumBleRnodeRssiMap(
         const body = (await window.electronAPI.reticulum.proxyGet(
           `/api/v1/ble/scan?timeout_secs=${RETICULUM_BLE_RSSI_SCAN_TIMEOUT_SECS}&mode=rnode`,
         )) as {
-          devices?: { address?: string; rssi?: number | null }[];
+          devices?: { address?: string; name?: string; rssi?: number | null }[];
           error?: string;
           ok?: boolean;
         };
@@ -172,14 +174,18 @@ export function useReticulumBleRnodeRssiMap(
 
         const next = new Map<string, number>();
         for (const device of body.devices ?? []) {
+          if (device.rssi == null || !Number.isFinite(device.rssi)) continue;
           const addr = typeof device.address === 'string' ? normalizeBleMac(device.address) : '';
-          if (!addr) continue;
-          if (
-            device.rssi != null &&
-            Number.isFinite(device.rssi) &&
-            enabledBleTargets.includes(addr)
-          ) {
+          const nameKey =
+            typeof device.name === 'string' && device.name.trim()
+              ? normalizeBleMac(device.name.trim())
+              : '';
+          // Match configured ble:// targets by scan address and/or friendly name.
+          if (addr && enabledBleTargets.includes(addr)) {
             next.set(addr, device.rssi);
+          }
+          if (nameKey && enabledBleTargets.includes(nameKey)) {
+            next.set(nameKey, device.rssi);
           }
         }
         // Preserve previous readings for addresses missing from this scan.
@@ -221,6 +227,9 @@ export function rssiForReticulumBleRnodeRow(
   rssiByAddress: ReadonlyMap<string, number>,
 ): number | null {
   if (!iface.enabled || !isReticulumBleRnodeInterfaceRow(iface)) return null;
+  if (iface.host_rssi != null && Number.isFinite(iface.host_rssi)) {
+    return iface.host_rssi;
+  }
   const raw = parseBleMacFromReticulumSerialPort(iface.serial_port ?? '');
   if (!raw) return null;
   const rssi = rssiByAddress.get(normalizeBleMac(raw));

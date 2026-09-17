@@ -306,6 +306,7 @@ mod tests {
             ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         }
     }
@@ -440,6 +441,7 @@ mod tests {
             ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         }];
         assert_eq!(resolve_outbound_sent_via(&ifaces), "rf");
@@ -485,6 +487,7 @@ mod tests {
             ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let live = vec![InterfaceRow {
@@ -525,6 +528,7 @@ mod tests {
             ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
@@ -578,6 +582,7 @@ mod tests {
                 ignore_config_warnings: None,
                 tx_queue_used: None,
                 tx_queue_max: None,
+                host_rssi: None,
                 extra_config: std::collections::HashMap::new(),
             },
             InterfaceRow {
@@ -618,6 +623,7 @@ mod tests {
                 ignore_config_warnings: None,
                 tx_queue_used: None,
                 tx_queue_max: None,
+                host_rssi: None,
                 extra_config: std::collections::HashMap::new(),
             },
         ];
@@ -669,6 +675,7 @@ mod tests {
             ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
@@ -720,6 +727,7 @@ mod tests {
             ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: extra.clone(),
         }];
         let live = vec![InterfaceRow {
@@ -760,6 +768,7 @@ mod tests {
             ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);

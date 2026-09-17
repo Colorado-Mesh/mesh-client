@@ -315,6 +315,7 @@ mod tests {
             ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: HashMap::default(),
         }
     }

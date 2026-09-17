@@ -3000,6 +3000,7 @@ impl LiveBridge {
                                     ignore_config_warnings: None,
                                     tx_queue_used,
                                     tx_queue_max,
+                                    host_rssi: None,
                                     extra_config: std::collections::HashMap::new(),
                                 }
                             })
@@ -3008,6 +3009,8 @@ impl LiveBridge {
                     } else {
                         config_rows
                     };
+                    let mut merged = merged;
+                    super::ble::attach_ble_rnode_host_rssi(&mut merged);
                     if let Ok(mut driver) = outbound.lock() {
                         driver.update_interfaces(merged);
                     }
@@ -4720,7 +4723,9 @@ impl LiveBridge {
             .await;
         let Some(TransportQueryResponse::InterfaceStats(stats)) = resp else {
             tracing::debug!("live fetch_interfaces unavailable, using config rows");
-            return Ok(config_rows);
+            let mut rows = config_rows;
+            super::ble::attach_ble_rnode_host_rssi(&mut rows);
+            return Ok(rows);
         };
         let live_rows: Vec<InterfaceRow> = stats
             .iter()
@@ -4766,11 +4771,14 @@ impl LiveBridge {
                     ignore_config_warnings: None,
                     tx_queue_used,
                     tx_queue_max,
+                    host_rssi: None,
                     extra_config: std::collections::HashMap::new(),
                 }
             })
             .collect();
-        Ok(merge_live_interfaces_with_config(&config_rows, live_rows))
+        let mut merged = merge_live_interfaces_with_config(&config_rows, live_rows);
+        super::ble::attach_ble_rnode_host_rssi(&mut merged);
+        Ok(merged)
     }
 
     /// Snapshot of LXMF / Nomad announce display names (labels only — not contacts).
@@ -8005,6 +8013,7 @@ mod nomad_private_first_failover_tests {
             ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::default(),
         }
     }

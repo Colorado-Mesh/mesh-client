@@ -525,6 +525,7 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         ignore_config_warnings: block.get_bool("ignore_config_warnings"),
         tx_queue_used: None,
         tx_queue_max: None,
+        host_rssi: None,
         extra_config: {
             let mut extras = HashMap::new();
             for key in &block.order {
@@ -1150,6 +1151,7 @@ pub fn add_interface_to_config(
         ignore_config_warnings: req.ignore_config_warnings,
         tx_queue_used: None,
         tx_queue_max: None,
+        host_rssi: None,
         extra_config: req.extra_config.clone(),
     };
 
@@ -3371,6 +3373,7 @@ target_port = 4242
             ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: {
                 let mut m = HashMap::new();
                 m.insert("ok".into(), "1".into());
@@ -4105,6 +4108,7 @@ ignore_config_warnings = Yes
             ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: HashMap::new(),
         };
         reconcile_ignore_config_warnings(&mut row);
@@ -4402,6 +4406,7 @@ longitude = -105.0
             ignore_config_warnings: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: HashMap::new(),
         };
         reconcile_ignore_config_warnings(&mut row);
@@ -4448,6 +4453,7 @@ longitude = -105.0
             ignore_config_warnings: Some(true),
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: HashMap::new(),
         };
         reconcile_ignore_config_warnings(&mut row);

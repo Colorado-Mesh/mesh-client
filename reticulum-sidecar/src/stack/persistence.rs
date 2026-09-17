@@ -299,6 +299,7 @@ impl PersistedState {
             ignore_config_warnings: req.ignore_config_warnings,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: req.extra_config,
         };
         self.interfaces.push(row.clone());

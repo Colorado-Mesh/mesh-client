@@ -319,6 +319,51 @@ describe('ReticulumInterfacesPanel', () => {
     });
   });
 
+  it('shows BLE RSSI from iface.host_rssi when scan map is empty', () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/ble/availability') {
+        return Promise.resolve({ available: true });
+      }
+      if (typeof path === 'string' && path.startsWith('/api/v1/ble/scan')) {
+        return Promise.resolve({ devices: [] });
+      }
+      if (path === '/api/v1/serial/ports') return Promise.resolve({ ports: [] });
+      if (path === '/api/v1/rnode/presets') return Promise.resolve({ presets: [] });
+      if (path === '/api/v1/config/audit') return Promise.resolve({ issues: [] });
+      if (path === '/api/v1/stack/settings') {
+        return Promise.resolve({
+          enable_transport: true,
+          share_instance: false,
+          loglevel: 4,
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'rnode-ble',
+            name: 'RNode BLE',
+            type: 'rnode',
+            enabled: true,
+            status: 'up',
+            serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+            host_rssi: -54,
+          },
+        ]}
+      />,
+    );
+
+    const meter = screen.getByTestId('reticulum-ble-signal-rnode-ble');
+    expect(within(meter).getByText('connectionPanel.bleRssiDbm')).toBeInTheDocument();
+    expect(
+      within(meter).queryByText('connectionPanel.hostSignalUnavailable'),
+    ).not.toBeInTheDocument();
+  });
+
   it('seeds BLE RSSI while sidecar is running during connecting (api not ready)', async () => {
     window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
       if (path === '/api/v1/ble/availability') {

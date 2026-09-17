@@ -639,6 +639,29 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 
 When upstream rsReticulum lands equivalent BLE READY timeout / non-blocking FC, remove this patch and the apply step.
 
+## rsReticulum-ble-rnode-host-rssi-cache.patch
+
+Cache advertisement / resolve-time host↔RNode RSSI so mesh-client Interface **Signal** meters can show a seed after GATT connect stops advertising (CoreBluetooth leaves `PeripheralProperties.rssi` unset while connected).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | floated rsReticulum `origin/main` after other rsReticulum overlays (incl. flow-control READY timeout) |
+| **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsReticulum) |
+
+**Touches:** `crates/rns-interface/src/ble_rnode.rs` — `remember_host_rssi` / `cached_host_rssi`, fill on `scan_ble_devices` + `resolve_ble_target`
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-ble-rnode-host-rssi-cache.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`. Sidecar `attach_ble_rnode_host_rssi` copies cache values onto online `ble://` `InterfaceRow.host_rssi`.
+
+### Sunset
+
+When upstream rsReticulum exposes equivalent host-RSSI caching for connected BLE RNodes, remove this patch and the apply step.
+
 ## rsReticulum-response-resource-window-fast.patch
 
 Promote inbound **response** Resources to `WINDOW_MAX_FAST` (75) when Link RTT is ≤ 1s. `grow()` only leaves `WINDOW_MAX_SLOW` (10) after four rounds above `RATE_FAST` (6250 B/s). A 2-hop TCP hub at ~200–300ms RTT stays around 8–20 KB/s, so a ~480 KB Nomad `/media` Resource crawls ~16–20s. Jumping the window matches the observed TCP-class path without changing RF slow-start.

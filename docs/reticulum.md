@@ -272,7 +272,7 @@ Config lives under `userData/reticulum/config/` (rnsd INI). The Connection tab s
     ```
 
     Save, **enable** the interface (default backbones are added disabled), and restart the stack. On the I2P router, configure SAM to listen on the LAN address (or `0.0.0.0`), not only `127.0.0.1`, and confirm reachability from the mesh-client host (e.g. `nc -z 192.168.1.86 7656`).
-- **RNode:** USB serial, **Bluetooth** (`ble://…`), or **Wi‑Fi** (`tcp://host[:7633]`, default **7633**), LoRa preset, callsign. Enabled **Bluetooth** RNode rows show **Signal** bars + dBm from sidecar BLE scans (`useReticulumBleRnodeRssiMap`): polling starts while the sidecar is **running** (including during `connecting`) with a short burst until the first sample, then steadies; disabling all BLE RNodes stops scans immediately.
+- **RNode:** USB serial, **Bluetooth** (`ble://…`), or **Wi‑Fi** (`tcp://host[:7633]`, default **7633**), LoRa preset, callsign. Enabled **Bluetooth** RNode rows show **Signal** bars + dBm from sidecar connect/scan host-RSSI cache (`InterfaceRow.host_rssi`) with advertisement-scan fallback (`useReticulumBleRnodeRssiMap`): polling starts while the sidecar is **running** (including during `connecting`) with a short burst until the first sample, then steadies; disabling all BLE RNodes stops scans immediately. After GATT connect, CoreBluetooth stops advertising — meters keep the last seeded dBm rather than flipping to “—”.
 - **BLE Peer mesh:** optional seed peer addresses
 - **Auto:** name only (link-local discovery)
 

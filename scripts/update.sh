@@ -265,6 +265,7 @@ check_ratspeak_patches() {
     'rsReticulum-interface-tx-queue-stats.patch|ratspeak/rsReticulum||rsReticulum interface TX queue stats|'
     'rsReticulum-announce-rebroadcast-exclude-rf.patch|ratspeak/rsReticulum||rsReticulum announce rebroadcast exclude RF sinks (ratspeak/rsReticulum#24)|https://github.com/ratspeak/rsReticulum/issues/24'
     'rsReticulum-ble-rnode-flow-control-ready-timeout.patch|ratspeak/rsReticulum||rsReticulum BLE RNode flow-control READY timeout|'
+    'rsReticulum-ble-rnode-host-rssi-cache.patch|ratspeak/rsReticulum||rsReticulum BLE RNode host-RSSI cache for Interface Signal meters|'
     'rsReticulum-response-resource-window-fast.patch|ratspeak/rsReticulum||rsReticulum response Resource WINDOW_MAX_FAST on sub-second RTT|'
     'rsLXMF-file-attachments-list.patch|ratspeak/rsLXMF|7|rsLXMF multi-file attachment APIs|https://github.com/ratspeak/rsLXMF/pull/7'
     'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF|4|rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF/pull/4'

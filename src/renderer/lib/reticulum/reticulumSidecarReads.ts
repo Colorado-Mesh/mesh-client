@@ -126,6 +126,8 @@ export interface ReticulumSidecarInterfaceRow {
   ignore_config_warnings?: boolean | null;
   tx_queue_used?: number | null;
   tx_queue_max?: number | null;
+  /** Host↔BLE RNode link RSSI (dBm) from connect/scan cache. */
+  host_rssi?: number | null;
   extra_config?: Record<string, string> | null;
 }
 
