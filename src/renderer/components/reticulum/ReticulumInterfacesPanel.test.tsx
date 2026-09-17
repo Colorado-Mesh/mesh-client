@@ -36,6 +36,8 @@ vi.mock('@/renderer/lib/sessions/reticulumSession', () => ({
   }),
 }));
 
+import { resetReticulumTcpLinkQualityStickyCacheForTests } from '@/renderer/hooks/useReticulumTcpLinkQualityMap';
+
 import { ReticulumInterfacesPanel } from './ReticulumInterfacesPanel';
 
 const defaultProps = {
@@ -71,6 +73,7 @@ const rmapWorldHub: ReticulumInterfaceRow = {
 
 describe('ReticulumInterfacesPanel', () => {
   beforeEach(() => {
+    resetReticulumTcpLinkQualityStickyCacheForTests();
     addToastMock.mockClear();
     restartStackMock.mockClear();
     localStorage.removeItem(GPS_SETTINGS_STORAGE_KEY);
@@ -429,6 +432,18 @@ describe('ReticulumInterfacesPanel', () => {
 
     const meter = screen.getByTestId('reticulum-tcp-link-rmap-world');
     expect(meter).toBeInTheDocument();
+    await waitFor(() => {
+      expect(within(meter).getByText('connectionPanel.linkQualityMs')).toBeInTheDocument();
+    });
+    expect(window.electronAPI.hostLink.probeTcpRtt).toHaveBeenCalledWith('rmap.world', 4242);
+  });
+
+  it('seeds Link quality when sidecar is already ready and cache is empty', async () => {
+    render(
+      <ReticulumInterfacesPanel {...defaultProps} sidecarApiReady interfaces={[rmapWorldHub]} />,
+    );
+
+    const meter = screen.getByTestId('reticulum-tcp-link-rmap-world');
     await waitFor(() => {
       expect(within(meter).getByText('connectionPanel.linkQualityMs')).toBeInTheDocument();
     });

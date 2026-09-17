@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { formatHostForSocket } from '@/shared/connectHost';
 
 import { HOST_LINK_QUALITY_POLL_MS } from '../lib/hostLinkQuality';
+import { RETICULUM_TCP_RECOVERY_STARTUP_GRACE_MS } from '../lib/reticulum/reticulumTcpInterfaceRecovery';
 
 export interface ReticulumTcpLinkQualityRow {
   id: string;
@@ -17,6 +18,14 @@ interface TcpProbeTarget {
   id: string;
   host: string;
   port: number;
+}
+
+/** Shared across ReticulumStackPanel + ReticulumInterfacesPanel hook instances. */
+const stickyRttById = new Map<string, number | null>();
+
+/** Test-only: clear sticky seeds between cases. */
+export function resetReticulumTcpLinkQualityStickyCacheForTests(): void {
+  stickyRttById.clear();
 }
 
 function isEnabledTcpClientRow(iface: ReticulumTcpLinkQualityRow): boolean {
@@ -51,22 +60,54 @@ function decodeTcpProbeTargetKey(targetKey: string): TcpProbeTarget[] {
   });
 }
 
+function isFiniteRtt(value: number | null | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function mapFromSticky(targets: readonly TcpProbeTarget[]): Map<string, number | null> {
+  const next = new Map<string, number | null>();
+  for (const t of targets) {
+    if (stickyRttById.has(t.id)) {
+      next.set(t.id, stickyRttById.get(t.id) ?? null);
+    }
+  }
+  return next;
+}
+
+function allTargetsHaveFiniteRtt(targets: readonly TcpProbeTarget[]): boolean {
+  return targets.every((t) => isFiniteRtt(stickyRttById.get(t.id)));
+}
+
+function targetsNeedingSeed(targets: readonly TcpProbeTarget[]): TcpProbeTarget[] {
+  return targets.filter((t) => !isFiniteRtt(stickyRttById.get(t.id)));
+}
+
+function rememberProbeResults(entries: Iterable<readonly [string, number | null]>): void {
+  for (const [id, rtt] of entries) {
+    stickyRttById.set(id, rtt);
+  }
+}
+
 /**
  * Map of interface id → last TCP connect RTT (ms) for enabled Reticulum TCP Client rows.
- * Probes run only while the sidecar is **not** ready — once RNS owns the TCP session,
- * raw host:port connects can collide with the sidecar link. The last pre-ready RTT
- * map is kept so TCP recovery can consume that evidence without starting new probes.
+ *
+ * Probes run while the sidecar is **not** ready. Once ready, raw host:port connects can
+ * collide with the RNS session — so we only **burst-seed** targets that still lack a
+ * finite RTT (shared sticky cache across hook instances), then hold. Continuous
+ * post-ready probing stays disabled.
  */
 export function useReticulumTcpLinkQualityMap(
   interfaces: readonly ReticulumTcpLinkQualityRow[],
   sidecarReady: boolean,
 ): ReadonlyMap<string, number | null> {
-  const [rttById, setRttById] = useState<ReadonlyMap<string, number | null>>(() => new Map());
-
   // Content key only — do not depend on `interfaces` array identity (inline props re-render loop).
   const targetKey = useMemo(
     () => encodeTcpProbeTargetKey(tcpProbeTargets(interfaces)),
     [interfaces],
+  );
+
+  const [rttById, setRttById] = useState<ReadonlyMap<string, number | null>>(() =>
+    mapFromSticky(decodeTcpProbeTargetKey(targetKey)),
   );
 
   useEffect(() => {
@@ -75,16 +116,28 @@ export function useReticulumTcpLinkQualityMap(
       setRttById(new Map());
       return;
     }
-    if (sidecarReady) {
+
+    setRttById(mapFromSticky(targets));
+
+    const needsSeed = !allTargetsHaveFiniteRtt(targets);
+    if (sidecarReady && !needsSeed) {
       return;
     }
 
     let cancelled = false;
     let timer: ReturnType<typeof setInterval> | null = null;
     let inflight = false;
+    const burstStartedAt = Date.now();
 
-    const poll = async () => {
+    const applyStickyToState = () => {
+      if (!cancelled) setRttById(mapFromSticky(targets));
+    };
+
+    const poll = async (onlyMissing: boolean) => {
       if (cancelled || inflight) return;
+      const batch = onlyMissing ? targetsNeedingSeed(targets) : targets;
+      if (batch.length === 0) return;
+
       inflight = true;
       const probe = window.electronAPI?.hostLink?.probeTcpRtt;
       if (typeof probe !== 'function') {
@@ -94,7 +147,7 @@ export function useReticulumTcpLinkQualityMap(
       try {
         const next = new Map<string, number | null>();
         await Promise.all(
-          targets.map(async (t) => {
+          batch.map(async (t) => {
             try {
               const rtt = await probe(t.host, t.port);
               const normalized = typeof rtt === 'number' && Number.isFinite(rtt) ? rtt : null;
@@ -108,16 +161,48 @@ export function useReticulumTcpLinkQualityMap(
             }
           }),
         );
-        if (!cancelled) setRttById(next);
+        rememberProbeResults(next);
+        applyStickyToState();
       } finally {
         inflight = false;
       }
     };
 
-    void poll();
-    timer = setInterval(() => {
-      void poll();
-    }, HOST_LINK_QUALITY_POLL_MS);
+    if (!sidecarReady) {
+      void poll(false);
+      timer = setInterval(() => {
+        void poll(false);
+      }, HOST_LINK_QUALITY_POLL_MS);
+    } else {
+      // Ready but missing finite seeds — burst until seeded or grace expires.
+      const tick = async () => {
+        if (cancelled) return;
+        if (allTargetsHaveFiniteRtt(targets)) {
+          if (timer) {
+            clearInterval(timer);
+            timer = null;
+          }
+          return;
+        }
+        if (Date.now() - burstStartedAt >= RETICULUM_TCP_RECOVERY_STARTUP_GRACE_MS) {
+          if (timer) {
+            clearInterval(timer);
+            timer = null;
+          }
+          return;
+        }
+        await poll(true);
+        if (cancelled) return;
+        if (allTargetsHaveFiniteRtt(targets) && timer) {
+          clearInterval(timer);
+          timer = null;
+        }
+      };
+      void tick();
+      timer = setInterval(() => {
+        void tick();
+      }, HOST_LINK_QUALITY_POLL_MS);
+    }
 
     return () => {
       cancelled = true;
