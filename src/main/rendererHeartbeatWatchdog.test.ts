@@ -150,6 +150,83 @@ describe('createRendererHeartbeatWatchdog', () => {
     expect(watchdog.getLivenessSnapshot().rendererUnresponsiveSeen).toBe(true);
   });
 
+  it('does not flag an occluded document while BrowserWindow remains visible', async () => {
+    const warn = vi.fn();
+    const watchdog = createRendererHeartbeatWatchdog(warn);
+    watchdog.recordHeartbeat(Date.now(), false);
+    watchdog.startStallWatchdog(() => true);
+    watchdog.recordHeartbeat(Date.now(), true);
+    watchdog.startResumeWatchdog(() => true);
+
+    await vi.advanceTimersByTimeAsync(5 * RENDERER_HEARTBEAT_STALL_MS);
+    expect(warn).not.toHaveBeenCalled();
+    expect(watchdog.getLivenessSnapshot().rendererUnresponsiveSeen).toBe(false);
+
+    // A visibility transition gets a fresh stall window even with an old timestamp.
+    watchdog.recordHeartbeat(Date.now() - 60_000, false);
+    await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_STALL_MS - 1);
+    expect(warn).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(warn).toHaveBeenCalledTimes(1);
+    watchdog.stopStallWatchdog();
+  });
+
+  it('reports a hang after refocusing a renderer that last reported hidden', async () => {
+    const warn = vi.fn();
+    const watchdog = createRendererHeartbeatWatchdog(warn);
+    watchdog.recordHeartbeat(Date.now(), true);
+    watchdog.startStallWatchdog(() => true);
+    await vi.advanceTimersByTimeAsync(5 * RENDERER_HEARTBEAT_STALL_MS);
+    watchdog.expectVisibleHeartbeat();
+    await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_STALL_MS - 1);
+    expect(warn).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(watchdog.getLivenessSnapshot().rendererUnresponsiveSeen).toBe(true);
+    watchdog.stopStallWatchdog();
+  });
+
+  it('still records Electron unresponsive events for hidden documents', () => {
+    const warn = vi.fn();
+    const watchdog = createRendererHeartbeatWatchdog(warn);
+    watchdog.recordHeartbeat(Date.now(), true);
+    watchdog.markRendererUnresponsive();
+    expect(warn).toHaveBeenCalledWith('[main] renderer webContents unresponsive');
+    expect(watchdog.getLivenessSnapshot().rendererUnresponsiveSeen).toBe(true);
+  });
+
+  it('ignores a queued hidden heartbeat from before the window was refocused', async () => {
+    const warn = vi.fn();
+    const watchdog = createRendererHeartbeatWatchdog(warn);
+    const hiddenAt = Date.now();
+    watchdog.recordHeartbeat(hiddenAt, true);
+    await vi.advanceTimersByTimeAsync(1000);
+    watchdog.expectVisibleHeartbeat();
+    watchdog.startStallWatchdog(() => true);
+    watchdog.startResumeWatchdog(() => true);
+    watchdog.recordHeartbeat(hiddenAt, true);
+    await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS);
+    expect(warn).toHaveBeenCalledWith(
+      '[main] renderer unresponsive after system resume (no heartbeat within 30s)',
+    );
+    await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_STALL_MS);
+    expect(warn).toHaveBeenCalledWith(
+      '[main] renderer heartbeat stalled (no heartbeat while window visible)',
+    );
+    watchdog.stopStallWatchdog();
+  });
+
+  it('gives a newly focused window a full grace period when resume was already pending', async () => {
+    const warn = vi.fn();
+    const watchdog = createRendererHeartbeatWatchdog(warn);
+    watchdog.recordHeartbeat(Date.now(), true);
+    watchdog.startResumeWatchdog(() => true);
+    await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS - 1);
+    watchdog.expectVisibleHeartbeat();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it('does not warn for resume when the window is not actively visible', async () => {
     const warn = vi.fn();
     const watchdog = createRendererHeartbeatWatchdog(warn);

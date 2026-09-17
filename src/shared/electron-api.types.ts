@@ -1067,7 +1067,7 @@ export interface ElectronAPI {
   onSpellcheckReplace: (cb: (payload: SpellcheckReplacePayload) => void) => () => void;
 
   /** Renderer liveness ping for hang detection (resume + visible-window stall). */
-  sendRendererHeartbeat: (payload?: { ts: number }) => Promise<void>;
+  sendRendererHeartbeat: (payload?: { ts: number; hidden?: boolean }) => Promise<void>;
   /** Main-process uptime in seconds (for long-session restart nudge). */
   getProcessUptimeSec: () => Promise<number>;
   /**

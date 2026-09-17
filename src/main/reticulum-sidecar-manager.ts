@@ -38,8 +38,10 @@ import { ReticulumStackSessionTracker } from './reticulumStackSessionTracker';
 
 const HEALTH_POLL_INTERVAL_MS = 250;
 const HEALTH_POLL_TIMEOUT_MS = 30 * MS_PER_SECOND;
-/** Wait for BLE RNode detach via POST /api/v1/stack/prepare-stop before SIGTERM. */
+/** Bound normal Stop's state flush and BLE detach before SIGTERM. */
 const PREPARE_STOP_TIMEOUT_MS = 1 * MS_PER_SECOND;
+/** Large state files need more time to serialize and synchronize during Quit. */
+const FLUSH_STATE_TIMEOUT_MS = 5 * MS_PER_SECOND;
 const STOP_GRACE_MS = 5 * MS_PER_SECOND;
 /** App is exiting: skip the BLE detach drain and SIGKILL quickly so quit stays responsive. */
 const QUIT_STOP_GRACE_MS = 750;
@@ -570,7 +572,8 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   /**
-   * Stop the sidecar. `forQuit` skips the BLE detach drain and shortens the SIGTERM grace —
+   * Stop the sidecar. `forQuit` only flushes pending state, skips the BLE detach drain,
+   * and shortens the SIGTERM grace —
    * the app is exiting, so the OS reclaims the child and no other stack reuses the adapter.
    */
   async stop(opts: { forQuit?: boolean } = {}): Promise<void> {
@@ -609,7 +612,12 @@ export class ReticulumSidecarManager extends EventEmitter {
   private async stopProc(): Promise<void> {
     this.stopWatchdog();
     this.teardownWs();
-    if (!this.quitFastRequested) {
+    const startedForQuit = this.quitFastRequested;
+    await this.prepareStopBestEffort();
+    if (!startedForQuit && this.quitFastRequested) {
+      // Quit may cancel prepare-stop before its save finishes. Give persistence
+      // its own bounded request before terminating the process.
+      // The sidecar holds its state lock through each write, even after HTTP abort.
       await this.prepareStopBestEffort();
     }
     const proc = this.proc;
@@ -655,37 +663,47 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.finalizeStopped();
   }
 
-  /** Ask the sidecar to detach BLE RNode before process kill (best-effort). */
+  /** Flush pending discoveries before kill; normal Stop also asks BLE RNode to detach. */
   private async prepareStopBestEffort(): Promise<void> {
     const status = this.getStatus();
     if (!status.running || status.port <= 0 || !this.proc) {
       return;
     }
+    const operation = this.quitFastRequested ? 'flush-state' : 'prepare-stop';
+    const timeoutMs =
+      operation === 'flush-state' ? FLUSH_STATE_TIMEOUT_MS : PREPARE_STOP_TIMEOUT_MS;
     const abort = new AbortController();
-    this.stopPrepareAbort = abort;
+    // Repeated Quit requests may cancel the BLE drain, but not the bounded flush.
+    if (operation === 'prepare-stop') this.stopPrepareAbort = abort;
+    let timedOut = false;
     const timeoutTimer = setTimeout(() => {
+      timedOut = true;
       abort.abort();
-    }, PREPARE_STOP_TIMEOUT_MS);
+    }, timeoutMs);
     try {
-      const res = await fetch(`http://127.0.0.1:${status.port}/api/v1/stack/prepare-stop`, {
+      const res = await fetch(`http://127.0.0.1:${status.port}/api/v1/stack/${operation}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: '{}',
         signal: abort.signal,
       });
       if (!res.ok) {
-        console.debug(
-          `[ReticulumSidecar] prepare-stop HTTP ${res.status} — continuing with SIGTERM`,
-        );
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const body: unknown = await res.json();
+      if (!body || typeof body !== 'object' || !('ok' in body) || body.ok !== true) {
+        throw new Error('Sidecar did not confirm state flush');
       }
     } catch (e: unknown) {
       console.debug(
-        '[ReticulumSidecar] prepare-stop failed — continuing with SIGTERM:',
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        `[ReticulumSidecar] ${operation} failed — continuing with SIGTERM:`,
+        timedOut
+          ? `Timed out after ${timeoutMs}ms`
+          : sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
     } finally {
       clearTimeout(timeoutTimer);
-      this.stopPrepareAbort = null;
+      if (this.stopPrepareAbort === abort) this.stopPrepareAbort = null;
     }
   }
 

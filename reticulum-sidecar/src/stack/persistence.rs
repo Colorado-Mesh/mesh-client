@@ -1,5 +1,7 @@
 use std::fs;
+use std::io::Write;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use uuid::Uuid;
@@ -19,6 +21,13 @@ const STATE_FILE: &str = "mesh_client_stack.json";
 
 #[allow(clippy::struct_excessive_bools)] // persisted flags mirror independent user prefs
 pub struct PersistedState {
+    /// Transient announce updates, covered by any successful full-state save.
+    #[cfg(feature = "rns-stack")]
+    discovery_dirty: AtomicBool,
+    /// The JSON was replaced, but its directory entry still needs synchronization.
+    directory_sync_pending: AtomicBool,
+    #[cfg(all(test, unix))]
+    pub(super) fail_next_directory_sync: AtomicBool,
     pub identity: StackIdentity,
     pub interfaces: Vec<InterfaceRow>,
     pub contacts: Vec<ContactRow>,
@@ -79,6 +88,11 @@ impl PersistedState {
 
     pub(crate) fn default_empty() -> Self {
         Self {
+            #[cfg(feature = "rns-stack")]
+            discovery_dirty: AtomicBool::new(false),
+            directory_sync_pending: AtomicBool::new(false),
+            #[cfg(all(test, unix))]
+            fail_next_directory_sync: AtomicBool::new(false),
             identity: StackIdentity::default(),
             interfaces: Vec::new(),
             contacts: Vec::new(),
@@ -239,7 +253,80 @@ impl PersistedState {
             identity.remove("mnemonic");
         }
         let raw = serde_json::to_string_pretty(&value).map_err(|e| e.to_string())?;
-        fs::write(path, raw).map_err(|e| e.to_string())
+        // A bounded shutdown may terminate the sidecar during a large save. Keep
+        // the previous JSON intact until its complete replacement is ready.
+        // Use normal file attributes and std's rename: its Windows fallback can
+        // replace a destination with open readers, unlike tempfile::persist.
+        let mut file = tempfile::Builder::new()
+            .make_in(storage_dir, |path| {
+                let mut options = fs::OpenOptions::new();
+                options.write(true).create_new(true);
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::OpenOptionsExt;
+                    options.mode(0o600);
+                }
+                options.open(path)
+            })
+            .map_err(|e| e.to_string())?;
+        file.write_all(raw.as_bytes()).map_err(|e| e.to_string())?;
+        file.as_file().sync_all().map_err(|e| e.to_string())?;
+        // Close the writer before rename, retaining automatic cleanup on failure.
+        let temp_path = file.into_temp_path();
+        fs::rename(&temp_path, path).map_err(|e| e.to_string())?;
+        // Rename commits the mutation. Returning an error afterward would let
+        // callers roll back memory even though disk already contains the change.
+        #[cfg(feature = "rns-stack")]
+        self.discovery_dirty.store(false, Ordering::Relaxed);
+        self.directory_sync_pending.store(true, Ordering::Relaxed);
+        if let Err(error) = self.sync_directory(storage_dir) {
+            tracing::warn!(%error, "state file replaced but directory sync failed; durability retry pending");
+        }
+        Ok(())
+    }
+
+    pub(super) fn sync_directory(&self, storage_dir: &Path) -> Result<(), String> {
+        #[cfg(all(test, unix))]
+        if self.fail_next_directory_sync.swap(false, Ordering::Relaxed) {
+            return Err("injected directory sync failure".into());
+        }
+        // Windows has no portable directory fsync through std; file contents are
+        // synchronized there, but rename durability still depends on the OS.
+        #[cfg(unix)]
+        fs::File::open(storage_dir)
+            .and_then(|directory| directory.sync_all())
+            .map_err(|e| e.to_string())?;
+        #[cfg(not(unix))]
+        let _ = storage_dir;
+        self.directory_sync_pending.store(false, Ordering::Relaxed);
+        Ok(())
+    }
+
+    pub(super) fn directory_sync_pending(&self) -> bool {
+        self.directory_sync_pending.load(Ordering::Relaxed)
+    }
+
+    #[cfg(feature = "rns-stack")]
+    pub(super) fn persistence_pending(&self) -> bool {
+        self.discovery_dirty() || self.directory_sync_pending()
+    }
+
+    #[cfg(feature = "rns-stack")]
+    pub(super) fn discovery_dirty(&self) -> bool {
+        self.discovery_dirty.load(Ordering::Relaxed)
+    }
+
+    /// JSON snapshots omit runtime bookkeeping. A failed user save must not erase
+    /// pending discovery or durability retries when its changes are rolled back.
+    pub(super) fn restore_after_failed_save(&mut self, restored: Self) {
+        restored
+            .directory_sync_pending
+            .store(self.directory_sync_pending(), Ordering::Relaxed);
+        #[cfg(feature = "rns-stack")]
+        restored
+            .discovery_dirty
+            .store(self.discovery_dirty(), Ordering::Relaxed);
+        *self = restored;
     }
 
     fn now_secs() -> u64 {
@@ -435,6 +522,8 @@ impl PersistedState {
         display_name: Option<String>,
         hops: Option<u8>,
     ) {
+        #[cfg(feature = "rns-stack")]
+        self.discovery_dirty.store(true, Ordering::Relaxed);
         let key = hash.to_lowercase();
         let now = Self::now_secs();
         if let Some(node) = self
@@ -508,6 +597,8 @@ impl PersistedState {
         source: &str,
         name_source: Option<&str>,
     ) {
+        #[cfg(feature = "rns-stack")]
+        self.discovery_dirty.store(true, Ordering::Relaxed);
         let key = hash.to_lowercase();
         let now = Self::now_secs();
         let recommended = super::rrc_defaults::RRC_DEFAULT_HUBS
@@ -918,6 +1009,11 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
         }
         let raw = Raw::deserialize(deserializer)?;
         Ok(Self {
+            #[cfg(feature = "rns-stack")]
+            discovery_dirty: AtomicBool::new(false),
+            directory_sync_pending: AtomicBool::new(false),
+            #[cfg(all(test, unix))]
+            fail_next_directory_sync: AtomicBool::new(false),
             identity: raw.identity,
             interfaces: raw.interfaces,
             contacts: raw.contacts,
@@ -972,6 +1068,48 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
 mod tests {
     use super::*;
     use std::collections::HashMap;
+    use std::io::Read;
+
+    #[test]
+    fn save_atomically_replaces_state_without_persisting_mnemonic() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(STATE_FILE);
+        let mut state = PersistedState::default_empty();
+        state.identity.mnemonic = Some("test-only secret".into());
+        state.save(dir.path(), dir.path()).unwrap();
+        let original = fs::read_to_string(&path).unwrap();
+        let mut previous_reader = fs::File::open(&path).unwrap();
+        state.upsert_nomad_node(
+            "00112233445566778899aabbccddeeff",
+            None,
+            Some("new".into()),
+            Some(1),
+        );
+        state.save(dir.path(), dir.path()).unwrap();
+
+        let mut old_contents = String::new();
+        previous_reader.read_to_string(&mut old_contents).unwrap();
+        assert_eq!(
+            old_contents, original,
+            "an existing reader must see the intact previous file"
+        );
+        let updated = fs::read_to_string(&path).unwrap();
+        assert!(!updated.contains("test-only secret"));
+        assert!(!updated.contains("discovery_dirty"));
+        assert!(!updated.contains("directory_sync_pending"));
+        assert_eq!(
+            serde_json::from_str::<PersistedState>(&updated)
+                .unwrap()
+                .nomad_nodes
+                .len(),
+            1
+        );
+        assert_eq!(
+            fs::read_dir(dir.path()).unwrap().count(),
+            1,
+            "successful saves leave no temp files"
+        );
+    }
 
     fn peer(hash: &str, name: &str) -> PeerRow {
         PeerRow {

@@ -305,6 +305,7 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/remote/identity", get(remote::remote_identity))
         .route("/api/v1/stack/start", post(system::stack_start))
         .route("/api/v1/stack/restart", post(system::stack_restart))
+        .route("/api/v1/stack/flush-state", post(system::stack_flush_state))
         .route(
             "/api/v1/stack/prepare-stop",
             post(system::stack_prepare_stop),

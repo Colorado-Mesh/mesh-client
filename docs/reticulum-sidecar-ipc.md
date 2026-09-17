@@ -17,6 +17,16 @@ Electron main validates proxy paths: must start with `/api/v1/` (no `..` segment
 
 **Listen-first / ready flags:** `status: "ok"` means the HTTP server is accepting connections (Electron health poll succeeds). Cold start clears persisted ready bits; `rns_ready` / `lxmf_ready` stay `false` until `attach_live` finishes (RNS/LXMF bridge up). TCP/API clients can hit `/api/v1/status` and identity routes while live attach (path table, BLE Peer, PN messagestore) continues in the background.
 
+### Discovery persistence and shutdown
+
+Nomad and RRC announces update the in-memory lists and WebSocket events immediately. Their cached metadata is saved together at most once per minute; idle intervals do not write. Explicit user changes still save immediately and include pending discoveries. State saves synchronize file contents and close the temporary writer before replacing the complete JSON atomically, then synchronize the containing directory on POSIX systems. Windows has no portable directory synchronization through Rust's standard library, so rename durability across power loss depends on the OS; complete-file replacement still protects against process interruption.
+
+`POST /api/v1/stack/flush-state` returns `{ ok: true }` after saving pending discoveries, or `{ ok: false, error }` on failure. It leaves the live stack and GATT sessions running. Electron uses it before Quit with a five-second deadline to allow large state files to serialize and synchronize, then continues terminating the process even if persistence fails. Timeout logs identify the endpoint and its elapsed budget. A crash, forced kill, or failed flush can lose discoveries since the last successful save; user settings retain their existing immediate-save behavior.
+
+`POST /api/v1/stack/prepare-stop` flushes before transport teardown and again after stopping producers. Electron's normal Stop request keeps a one-second deadline. Quit can abort that request and issue a separate flush; the sidecar's shared write lock orders saves even if the original HTTP request is canceled. Soft restart uses the same detach path. Failed periodic saves retain pending state and retry at the next interval.
+
+Failures before file replacement still return an error so callers can roll back their in-memory mutation. Once replacement succeeds, a directory synchronization failure leaves the change committed in memory and on disk, logs a durability warning, and retains a pending retry. The live stack retries directory synchronization at the next persistence interval or shutdown flush without rewriting unchanged JSON; a subsequent user save also retries. Until synchronization succeeds, power-loss durability remains uncertain.
+
 ### Identity
 
 | Method | Path                              | Body / notes                                                                                                                  | Response                                                                                                                                  |

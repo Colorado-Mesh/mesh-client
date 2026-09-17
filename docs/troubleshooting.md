@@ -752,7 +752,7 @@ If mesh-client stays open for **days** on a busy mesh (especially **MeshCore BLE
 - If the app crashes, save **`~/Library/Logs/DiagnosticReports/Mesh-client-*.ips`** (macOS) before relaunching; include the `.ips` and exported log when reporting.
 - **Reporting a crash or lockup:** Prefer **Export for Developer / GitHub before restart** if the UI still responds. After a forced restart, export anyway — startup preserves the previous session log as `mesh-client.log.1` (also included in support bundles). Note app version, OS, uptime (`[main] long-session health` / snapshot `mainLiveness`), whether MeshCore BLE was connected, and any `[main] renderer heartbeat stalled` / `webContents unresponsive` lines.
 
-After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory and per-session BLE timer state. While the window is visible, missing renderer heartbeats for ~90s also log `[main] renderer heartbeat stalled`.
+After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory and per-session BLE timer state. While the window and renderer document are visible, missing renderer heartbeats for ~90s also log `[main] renderer heartbeat stalled`. Heartbeats intentionally pause for hidden documents, including windows fully covered by another window on macOS; the renderer reports that pause to the watchdog. Refocusing the app rearms detection. A heartbeat warning alone does not establish a renderer hang or a system-wide freeze.
 
 ### App shows "disconnected" but device is still on
 
