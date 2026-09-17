@@ -169,6 +169,7 @@ describe('reticulumRmapDiscovery', () => {
   });
 
   it('buildRmapDiscoveryPatch sets discovery fields and I2P connectable', () => {
+    const lxmf32 = 'aabbccddeeff00112233445566778899';
     const rnodePatch = buildRmapDiscoveryPatch(row({ id: 'r', type: 'rnode' }), {
       coords: { lat: 40, lon: -105 },
       discoveryName: 'Node A',
@@ -176,7 +177,7 @@ describe('reticulumRmapDiscovery', () => {
       heightMeters: 1600,
       reachableOn: 'mesh.example.com',
       discoverable: true,
-      discoveryLxmfAddress: 'aabb',
+      discoveryLxmfAddress: lxmf32,
       discoveryStampValue: 20,
       discoveryEncrypt: true,
       publishIfac: true,
@@ -184,7 +185,7 @@ describe('reticulumRmapDiscovery', () => {
     expect(rnodePatch.discoverable).toBe(true);
     expect(rnodePatch.latitude).toBe(40);
     expect(rnodePatch.announce_interval_min).toBe(90);
-    expect(rnodePatch.discovery_lxmf_address).toBe('aabb');
+    expect(rnodePatch.discovery_lxmf_address).toBe(lxmf32);
     expect(rnodePatch.discovery_stamp_value).toBe(20);
     expect(rnodePatch.discovery_encrypt).toBe(true);
     expect(rnodePatch.publish_ifac).toBe(true);
@@ -199,6 +200,31 @@ describe('reticulumRmapDiscovery', () => {
       discoverable: true,
     });
     expect(i2pPatch.connectable).toBe(true);
+    expect(i2pPatch.discovery_encrypt).toBe(false);
+    expect(i2pPatch.publish_ifac).toBe(false);
+  });
+
+  it('buildRmapDiscoveryPatch clears encrypt and IFAC when prefs are disabled', () => {
+    const iface = row({ id: 'r', type: 'rnode' });
+    const enabled = buildRmapDiscoveryPatch(iface, {
+      coords: { lat: 40, lon: -105 },
+      announceIntervalMin: 360,
+      discoverable: true,
+      discoveryEncrypt: true,
+      publishIfac: true,
+    });
+    expect(enabled.discovery_encrypt).toBe(true);
+    expect(enabled.publish_ifac).toBe(true);
+
+    const cleared = buildRmapDiscoveryPatch(iface, {
+      coords: { lat: 40, lon: -105 },
+      announceIntervalMin: 360,
+      discoverable: true,
+      discoveryEncrypt: false,
+      publishIfac: false,
+    });
+    expect(cleared.discovery_encrypt).toBe(false);
+    expect(cleared.publish_ifac).toBe(false);
   });
 
   it('buildRmapDiscoveryPatch copies KISS radio params into discovery_*', () => {
@@ -277,7 +303,8 @@ describe('reticulumRmapDiscovery', () => {
     expect(clampRmapDiscoveryStampValue(40)).toBe(32);
     expect(clampRmapDiscoveryStampValue(16)).toBe(16);
     expect(validateRmapDiscoveryLxmfAddress('')).toBeNull();
-    expect(validateRmapDiscoveryLxmfAddress('aabb')).toBeNull();
+    expect(validateRmapDiscoveryLxmfAddress('aabb')).toBe('invalid');
+    expect(validateRmapDiscoveryLxmfAddress('aabbccddeeff00112233445566778899')).toBeNull();
     expect(validateRmapDiscoveryLxmfAddress('xyz')).toBe('invalid');
   });
 

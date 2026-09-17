@@ -273,7 +273,7 @@
           "key": "listen_on",
           "kind": "text",
           "default": "0.0.0.0",
-          "required": true
+          "required": false
         },
         {
           "key": "port",

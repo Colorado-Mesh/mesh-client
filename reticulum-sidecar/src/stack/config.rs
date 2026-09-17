@@ -396,6 +396,26 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
             block.get("target_host").map(str::to_string),
             block.get("target_port").and_then(|p| p.parse::<u16>().ok()),
         )
+    } else if iface_type == "backbone" {
+        // Remote Backbone uses target_host + target_port (or legacy `port`);
+        // listener rows use listen_on + `port`.
+        let host = block
+            .get("target_host")
+            .map(str::trim)
+            .filter(|h| !h.is_empty())
+            .map(str::to_string);
+        let port = if host.is_some() {
+            block
+                .get("target_port")
+                .or_else(|| block.get("port"))
+                .and_then(|p| p.parse::<u16>().ok())
+        } else {
+            block
+                .get("port")
+                .or_else(|| block.get("target_port"))
+                .and_then(|p| p.parse::<u16>().ok())
+        };
+        (host, port)
     } else if iface_type == "i2p" {
         (
             block
@@ -578,7 +598,22 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
         }
     }
 
-    if iface_type_uses_numeric_port(&row.iface_type) {
+    if row.iface_type == "backbone" {
+        // Remote: target_host only with matching target_port. Listener: plain `port`.
+        match row.host.as_deref().map(str::trim).filter(|h| !h.is_empty()) {
+            Some(host) => {
+                if let Some(port) = row.port {
+                    block.set("target_host", host);
+                    block.set("target_port", &port.to_string());
+                }
+            }
+            None => {
+                if let Some(port) = row.port {
+                    block.set("port", &port.to_string());
+                }
+            }
+        }
+    } else if iface_type_uses_numeric_port(&row.iface_type) {
         if let Some(port) = row.port {
             block.set("port", &port.to_string());
         }
@@ -590,6 +625,18 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
     // needs no new write branch here.
     for field in catalog_fields(&row.iface_type) {
         if block.values.contains_key(&field.key) {
+            continue;
+        }
+        // Backbone remotes map InterfaceRow::port → target_port (handled above);
+        // do not also emit catalog `port` / orphan `target_host`.
+        if row.iface_type == "backbone"
+            && (field.key == "port" || field.key == "target_host")
+            && row
+                .host
+                .as_deref()
+                .map(str::trim)
+                .is_some_and(|h| !h.is_empty())
+        {
             continue;
         }
         if let Some(value) = catalog_field_value(row, field) {
@@ -881,6 +928,12 @@ fn apply_discovery_patch(
         row.reachable_on = patch.reachable_on.clone();
     }
     if patch.discovery_lxmf_address.is_some() {
+        if let Some(ref value) = patch.discovery_lxmf_address {
+            let trimmed = value.trim();
+            if !trimmed.is_empty() {
+                validate_ini_scalar("discovery_lxmf_address", trimmed)?;
+            }
+        }
         row.discovery_lxmf_address = nonempty_opt_string(patch.discovery_lxmf_address.as_deref());
     }
     if patch.discovery_stamp_value.is_some() {
@@ -1019,6 +1072,12 @@ pub fn add_interface_to_config(
     }
     if let Some(ref passphrase) = req.passphrase {
         validate_ini_scalar("passphrase", passphrase)?;
+    }
+    if let Some(ref lxmf) = req.discovery_lxmf_address {
+        let trimmed = lxmf.trim();
+        if !trimmed.is_empty() {
+            validate_ini_scalar("discovery_lxmf_address", trimmed)?;
+        }
     }
     validate_extra_config(&req.extra_config)?;
     let id = Uuid::new_v4().to_string();
@@ -2838,6 +2897,83 @@ loglevel = 4
             Some("0.0.0.0")
         );
         assert_eq!(parsed.discovery_stamp_value, Some(22));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn add_backbone_remote_round_trips_target_host_and_target_port() {
+        let dir = test_config_dir("backbone-remote");
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "backbone".into(),
+                name: Some("Remote Backbone".into()),
+                host: Some("backbone.example.com".into()),
+                port: Some(4242),
+                extra_config: HashMap::new(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(row.host.as_deref(), Some("backbone.example.com"));
+        assert_eq!(row.port, Some(4242));
+
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("type = BackboneInterface"), "{content}");
+        assert!(
+            content.contains("target_host = backbone.example.com"),
+            "{content}"
+        );
+        assert!(content.contains("target_port = 4242"), "{content}");
+        assert!(
+            !content.contains("\nport = 4242"),
+            "remote backbone must not write listener port key: {content}"
+        );
+        assert!(
+            !content.contains("listen_on"),
+            "remote backbone must not invent listen_on: {content}"
+        );
+
+        let reparsed = interfaces_from_config_dir(&dir).unwrap();
+        let parsed = reparsed
+            .iter()
+            .find(|i| i.name == "Remote Backbone")
+            .unwrap();
+        assert_eq!(parsed.host.as_deref(), Some("backbone.example.com"));
+        assert_eq!(parsed.port, Some(4242));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn backbone_orphan_target_host_rewrite_requires_port() {
+        let dir = test_config_dir("backbone-orphan-host");
+        write_config(
+            &dir,
+            "[interfaces]\n\
+             [[Orphan Remote]]\n\
+             type = BackboneInterface\n\
+             enabled = Yes\n\
+             target_host = orphan.example.com\n",
+        )
+        .unwrap();
+
+        let rows = interfaces_from_config_dir(&dir).unwrap();
+        let row = rows.iter().find(|i| i.name == "Orphan Remote").unwrap();
+        assert_eq!(row.host.as_deref(), Some("orphan.example.com"));
+        assert_eq!(row.port, None);
+
+        let err = set_interface_enabled_in_config(&dir, &row.id, false).unwrap_err();
+        assert!(
+            err.contains("port required"),
+            "expected catalog port required, got {err}"
+        );
+        // Writer never emits target_host without target_port; incomplete rows fail closed.
+        let content = read_config(&dir).unwrap();
+        assert!(
+            content.contains("target_host = orphan.example.com"),
+            "{content}"
+        );
         let _ = fs::remove_dir_all(&dir);
     }
 

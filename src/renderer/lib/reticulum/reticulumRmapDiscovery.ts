@@ -130,7 +130,8 @@ export function validateRmapDiscoveryLxmfAddress(value: string): string | null {
   if (trimmed.length > RMAP_DISCOVERY_LXMF_ADDRESS_MAX_LEN) {
     return 'too_long';
   }
-  if (!/^[0-9a-fA-F]+$/.test(trimmed) || trimmed.length % 2 !== 0) {
+  // Canonical lxmf.delivery destination hash: 16 bytes → 32 hex chars.
+  if (!/^[0-9a-fA-F]{32}$/.test(trimmed)) {
     return 'invalid';
   }
   return null;
@@ -457,12 +458,9 @@ export function buildRmapDiscoveryPatch(
     if (opts.discoveryStampValue != null && Number.isFinite(opts.discoveryStampValue)) {
       patch.discovery_stamp_value = clampRmapDiscoveryStampValue(opts.discoveryStampValue);
     }
-    if (opts.discoveryEncrypt === true) {
-      patch.discovery_encrypt = true;
-    }
-    if (opts.publishIfac === true) {
-      patch.publish_ifac = true;
-    }
+    // Always persist explicit booleans so disabling clears a prior Yes in config.
+    patch.discovery_encrypt = opts.discoveryEncrypt === true;
+    patch.publish_ifac = opts.publishIfac === true;
     // KISS / AX.25 need explicit discovery_* radio params; RNode auto-fills upstream.
     if (type === 'kiss' || type === 'ax25kiss') {
       if (row.frequency != null && Number.isFinite(row.frequency) && row.frequency > 0) {
