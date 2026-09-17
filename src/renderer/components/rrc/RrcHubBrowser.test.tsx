@@ -44,6 +44,7 @@ function renderBrowser(
       onHubSearchChange={() => {}}
       nickname="tester"
       onNicknameChange={() => {}}
+      connected={[]}
       favourites={[hubA, hubB]}
       discovered={[hubC]}
       hubDestHash={hubA.destination_hash}
@@ -65,6 +66,18 @@ function renderBrowser(
 }
 
 describe('RrcHubBrowser', () => {
+  it('shows connected hubs only on the Connected tab', () => {
+    renderBrowser({
+      hubTab: 'connected',
+      connected: [hubA],
+      favourites: [hubB],
+      discovered: [hubC],
+    });
+    expect(screen.getByRole('button', { name: /Select hub Hub A/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Select hub Hub B/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Select hub Hub C/i })).not.toBeInTheDocument();
+  });
+
   it('shows favourites on the Favourites tab and not discovered hubs', () => {
     renderBrowser();
     expect(screen.getByRole('button', { name: /Select hub Hub A/i })).toBeInTheDocument();
@@ -78,12 +91,25 @@ describe('RrcHubBrowser', () => {
     expect(screen.queryByRole('button', { name: /Select hub Hub A/i })).not.toBeInTheDocument();
   });
 
+  it('requests Connected tab via onHubTabChange', async () => {
+    const user = userEvent.setup();
+    const onHubTabChange = vi.fn();
+    renderBrowser({ onHubTabChange });
+    await user.click(screen.getByRole('button', { name: 'Connected' }));
+    expect(onHubTabChange).toHaveBeenCalledWith('connected');
+  });
+
   it('requests Discovered tab via onHubTabChange', async () => {
     const user = userEvent.setup();
     const onHubTabChange = vi.fn();
     renderBrowser({ onHubTabChange });
     await user.click(screen.getByRole('button', { name: 'Discovered' }));
     expect(onHubTabChange).toHaveBeenCalledWith('discovered');
+  });
+
+  it('shows empty Connected copy when there are no linked hubs', () => {
+    renderBrowser({ hubTab: 'connected', connected: [] });
+    expect(screen.getByText(/No RRC hubs connected/i)).toBeInTheDocument();
   });
 
   it('shows empty Favourites copy when there are no starred hubs', () => {

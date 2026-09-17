@@ -5380,7 +5380,8 @@
     "hubsTitle": "RRC Hubs",
     "hubs": {
       "favourites": "Favourites",
-      "discovered": "Discovered"
+      "discovered": "Discovered",
+      "connected": "Połączono"
     },
     "searchHubs": "Search hubs…",
     "searchRooms": "Search rooms…",
@@ -5534,7 +5535,8 @@
     },
     "roomNameLimit": {
       "overMax": "Nazwa pokoju jest zbyt długa — limit koncentratora wynosi {{limit}} bajtów"
-    }
+    },
+    "noConnectedHubs": "Brak podłączonych koncentratorów RRC. Połącz z Ulubionymi, Odkrytymi lub za pomocą skrótu."
   },
   "signalMeter": {
     "rssi": "RSSI",

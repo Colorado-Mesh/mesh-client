@@ -5339,7 +5339,8 @@
     "hubsTitle": "RRC Hubs",
     "hubs": {
       "favourites": "Favourites",
-      "discovered": "Discovered"
+      "discovered": "Discovered",
+      "connected": "Připojeno"
     },
     "searchHubs": "Search hubs…",
     "searchRooms": "Search rooms…",
@@ -5490,7 +5491,8 @@
     },
     "roomNameLimit": {
       "overMax": "Název místnosti je příliš dlouhý — limit rozbočovače je {{limit}} bajtů"
-    }
+    },
+    "noConnectedHubs": "Nejsou připojeny žádné rozbočovače RRC. Připojte se z oblíbených, objevených nebo pomocí hash."
   },
   "signalMeter": {
     "rssi": "\"RSSI\"",

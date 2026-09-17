@@ -179,7 +179,7 @@ export default function RrcPanel({
   const [nickListCollapsed, setNickListCollapsed] = useState(() =>
     readCollapsed(NICK_LIST_COLLAPSED_KEY),
   );
-  const [hubTab, setHubTab] = useState<'favourites' | 'discovered'>('favourites');
+  const [hubTab, setHubTab] = useState<'connected' | 'favourites' | 'discovered'>('connected');
   const [hubSearch, setHubSearch] = useState('');
   const [roomSearch, setRoomSearch] = useState('');
   const [manualHash, setManualHash] = useState('');
@@ -431,8 +431,22 @@ export default function RrcPanel({
     const discovered = all.filter(
       (h) => !h.favorited && (h.source === 'discovered' || h.source === 'manual' || h.hops != null),
     );
-    return { favourites, discovered };
-  }, [hubs, hubSearch]);
+    const connected: RrcHubInfo[] = [];
+    for (const [hash, session] of sessionsByHub) {
+      if (!isRrcHubLinked(session.status)) continue;
+      const catalog = hubs.get(hash);
+      const hub: RrcHubInfo = catalog
+        ? { ...catalog }
+        : {
+            destination_hash: hash,
+            display_name: session.hubName,
+            source: 'manual',
+          };
+      if (!hubMatchesSearch(hub, hubSearch)) continue;
+      connected.push(hub);
+    }
+    return { connected, favourites, discovered };
+  }, [hubs, hubSearch, sessionsByHub]);
 
   const roomList = useMemo(() => {
     const list = [...rooms.values()];
@@ -1195,6 +1209,7 @@ export default function RrcPanel({
           }
         }}
         maxNickBytes={limits.max_nick_bytes}
+        connected={hubList.connected}
         favourites={hubList.favourites}
         discovered={hubList.discovered}
         hubDestHash={hubDestHash}
