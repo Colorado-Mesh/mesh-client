@@ -26,6 +26,7 @@ import {
   clampRequiredDiscoveryValue,
   parseReticulumStackSettingsPayload,
   patchReticulumStackSettings,
+  type ReticulumStackSettingsPatch,
   validateInterfaceDiscoverySources,
 } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { showReticulumQrIngestToast } from '@/renderer/lib/reticulum/showReticulumQrIngestToast';
@@ -190,6 +191,8 @@ export function ReticulumNetworkPanel({
     interface_discovery_sources: '',
     network_identity: '',
   });
+  /** Last GET snapshot — save only sends keys that differ so concurrent patches are preserved. */
+  const stackSettingsBaselineRef = useRef<typeof stackSettings | null>(null);
   const [discoverySourcesError, setDiscoverySourcesError] = useState<string | null>(null);
   const [pathMediumPreference, setPathMediumPreferenceState] =
     useState<PathMediumPreference>('lowest');
@@ -204,7 +207,7 @@ export function ReticulumNetworkPanel({
       const body = parseReticulumStackSettingsPayload(
         await window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings'),
       );
-      setStackSettings({
+      const next = {
         enable_transport: body.enable_transport,
         share_instance: body.share_instance,
         loglevel: body.loglevel,
@@ -212,7 +215,9 @@ export function ReticulumNetworkPanel({
         required_discovery_value: body.required_discovery_value,
         interface_discovery_sources: body.interface_discovery_sources,
         network_identity: body.network_identity,
-      });
+      };
+      setStackSettings(next);
+      stackSettingsBaselineRef.current = next;
       setDiscoverySourcesError(null);
       const pref = await fetchPathMediumPreference();
       if (pref.ok) setPathMediumPreferenceState(pref.preference);
@@ -658,19 +663,37 @@ export function ReticulumNetworkPanel({
     }
     setDiscoverySourcesError(null);
     try {
-      const res = await patchReticulumStackSettings({
-        enable_transport: stackSettings.enable_transport,
-        share_instance: stackSettings.share_instance,
-        loglevel: stackSettings.loglevel,
-        autoconnect_discovered_interfaces: clampAutoconnectDiscoveredInterfaces(
-          stackSettings.autoconnect_discovered_interfaces,
-        ),
-        required_discovery_value: clampRequiredDiscoveryValue(
-          stackSettings.required_discovery_value,
-        ),
-        interface_discovery_sources: stackSettings.interface_discovery_sources,
-        network_identity: stackSettings.network_identity,
-      });
+      const baseline = stackSettingsBaselineRef.current;
+      const autoconnect = clampAutoconnectDiscoveredInterfaces(
+        stackSettings.autoconnect_discovered_interfaces,
+      );
+      const required = clampRequiredDiscoveryValue(stackSettings.required_discovery_value);
+      const patch: ReticulumStackSettingsPatch = {};
+      if (baseline?.enable_transport !== stackSettings.enable_transport) {
+        patch.enable_transport = stackSettings.enable_transport;
+      }
+      if (baseline?.share_instance !== stackSettings.share_instance) {
+        patch.share_instance = stackSettings.share_instance;
+      }
+      if (baseline?.loglevel !== stackSettings.loglevel) {
+        patch.loglevel = stackSettings.loglevel;
+      }
+      if (baseline?.autoconnect_discovered_interfaces !== autoconnect) {
+        patch.autoconnect_discovered_interfaces = autoconnect;
+      }
+      if (baseline?.required_discovery_value !== required) {
+        patch.required_discovery_value = required;
+      }
+      if (baseline?.interface_discovery_sources !== stackSettings.interface_discovery_sources) {
+        patch.interface_discovery_sources = stackSettings.interface_discovery_sources;
+      }
+      if (baseline?.network_identity !== stackSettings.network_identity) {
+        patch.network_identity = stackSettings.network_identity;
+      }
+      if (Object.keys(patch).length === 0) {
+        return;
+      }
+      const res = await patchReticulumStackSettings(patch);
       if (res?.ok === false) {
         setIdentityError(res.error ?? t('networkPanel.reticulumStackSettings.saveFailed'));
         return;

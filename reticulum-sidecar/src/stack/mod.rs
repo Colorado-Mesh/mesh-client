@@ -1061,7 +1061,10 @@ impl StackHandle {
                 return Err("identity not configured".into());
             }
         }
-        let row = config::add_interface_to_config(&self.config_dir, &req)?;
+        let row = {
+            let _guard = self.config_op_lock.lock().await;
+            config::add_interface_to_config(&self.config_dir, &req)?
+        };
         self.sync_interfaces_from_config().await;
         self.emit_event("interface.state", serde_json::json!({ "action": "added" }));
         #[cfg(feature = "rns-stack")]
@@ -1076,7 +1079,10 @@ impl StackHandle {
         id: &str,
         patch: UpdateInterfacePatch,
     ) -> Result<InterfaceRow, String> {
-        let row = config::update_interface_in_config(&self.config_dir, id, &patch)?;
+        let row = {
+            let _guard = self.config_op_lock.lock().await;
+            config::update_interface_in_config(&self.config_dir, id, &patch)?
+        };
         self.sync_interfaces_from_config().await;
         self.emit_event(
             "interface.state",
@@ -1135,7 +1141,10 @@ impl StackHandle {
 
     pub async fn delete_interface(&self, id: &str) -> Result<(), String> {
         let iface_name = self.interface_name_for_id(id).await;
-        config::delete_interface_from_config(&self.config_dir, id)?;
+        {
+            let _guard = self.config_op_lock.lock().await;
+            config::delete_interface_from_config(&self.config_dir, id)?;
+        }
         self.sync_interfaces_from_config().await;
         self.reconcile_primary_after_interface_change().await;
         self.emit_event(
@@ -1158,7 +1167,10 @@ impl StackHandle {
         } else {
             self.interface_name_for_id(id).await
         };
-        config::set_interface_enabled_in_config(&self.config_dir, id, enabled)?;
+        {
+            let _guard = self.config_op_lock.lock().await;
+            config::set_interface_enabled_in_config(&self.config_dir, id, enabled)?;
+        }
         self.sync_interfaces_from_config().await;
         self.reconcile_primary_after_interface_change().await;
         self.emit_event(
