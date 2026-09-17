@@ -3958,6 +3958,108 @@ mod tests {
         assert_eq!(saved.rrc_hubs[0].display_name.as_deref(), Some("pending"));
     }
 
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn propagation_changes_stay_committed_after_directory_sync_failure() {
+        use std::sync::atomic::Ordering;
+
+        let dir = tempfile::tempdir().unwrap();
+        let config_dir = dir.path().join("config");
+        let storage_dir = dir.path().join("storage");
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+        let node_id = {
+            let mut state = handle.inner.write().await;
+            let node = state
+                .add_propagation_node("00112233445566778899aabbccddeeff", Some("original".into()))
+                .unwrap();
+            state.preferred_propagation_id = Some(node.id.clone());
+            state.save(&config_dir, &storage_dir).unwrap();
+            state
+                .fail_next_directory_sync
+                .store(true, Ordering::Relaxed);
+            node.id
+        };
+
+        handle
+            .rename_propagation_node(&node_id, "committed")
+            .await
+            .unwrap();
+        let saved = PersistedState::load(&config_dir, &storage_dir);
+        assert_eq!(
+            saved
+                .propagation
+                .iter()
+                .find(|p| p.id == node_id)
+                .unwrap()
+                .name,
+            "committed"
+        );
+        {
+            let state = handle.inner.read().await;
+            assert_eq!(
+                state
+                    .propagation
+                    .iter()
+                    .find(|p| p.id == node_id)
+                    .unwrap()
+                    .name,
+                "committed"
+            );
+            assert!(state.directory_sync_pending());
+        }
+
+        // A later pre-rename failure must still roll back that mutation without
+        // forgetting the previous committed save's pending directory sync.
+        let path = storage_dir.join("mesh_client_stack.json");
+        let backup = storage_dir.join("committed.json");
+        fs::rename(&path, &backup).unwrap();
+        fs::create_dir(&path).unwrap();
+        assert!(
+            handle
+                .rename_propagation_node(&node_id, "uncommitted")
+                .await
+                .is_err()
+        );
+        {
+            let state = handle.inner.read().await;
+            assert_eq!(
+                state
+                    .propagation
+                    .iter()
+                    .find(|p| p.id == node_id)
+                    .unwrap()
+                    .name,
+                "committed"
+            );
+            assert!(state.directory_sync_pending());
+        }
+        fs::remove_dir(&path).unwrap();
+        fs::rename(&backup, &path).unwrap();
+
+        handle
+            .inner
+            .read()
+            .await
+            .fail_next_directory_sync
+            .store(true, Ordering::Relaxed);
+        handle.remove_propagation_node(&node_id).await.unwrap();
+        let saved = PersistedState::load(&config_dir, &storage_dir);
+        assert!(saved.propagation.iter().all(|p| p.id != node_id));
+        assert!(saved.preferred_propagation_id.is_none());
+        let state = handle.inner.read().await;
+        assert!(state.propagation.iter().all(|p| p.id != node_id));
+        assert!(state.preferred_propagation_id.is_none());
+        assert!(state.directory_sync_pending());
+        state.save(&config_dir, &storage_dir).unwrap();
+        assert!(!state.directory_sync_pending());
+    }
+
     #[cfg(feature = "rns-stack")]
     #[tokio::test]
     async fn prepare_stop_flushes_pending_discovery_and_retries_failed_detach_save() {

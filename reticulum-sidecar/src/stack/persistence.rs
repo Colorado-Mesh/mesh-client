@@ -1,7 +1,6 @@
 use std::fs;
 use std::io::Write;
 use std::path::Path;
-#[cfg(feature = "rns-stack")]
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -25,6 +24,10 @@ pub struct PersistedState {
     /// Transient announce updates, covered by any successful full-state save.
     #[cfg(feature = "rns-stack")]
     discovery_dirty: AtomicBool,
+    /// The JSON was replaced, but its directory entry still needs synchronization.
+    directory_sync_pending: AtomicBool,
+    #[cfg(all(test, unix))]
+    pub(super) fail_next_directory_sync: AtomicBool,
     pub identity: StackIdentity,
     pub interfaces: Vec<InterfaceRow>,
     pub contacts: Vec<ContactRow>,
@@ -87,6 +90,9 @@ impl PersistedState {
         Self {
             #[cfg(feature = "rns-stack")]
             discovery_dirty: AtomicBool::new(false),
+            directory_sync_pending: AtomicBool::new(false),
+            #[cfg(all(test, unix))]
+            fail_next_directory_sync: AtomicBool::new(false),
             identity: StackIdentity::default(),
             interfaces: Vec::new(),
             contacts: Vec::new(),
@@ -268,15 +274,41 @@ impl PersistedState {
         // Close the writer before rename, retaining automatic cleanup on failure.
         let temp_path = file.into_temp_path();
         fs::rename(&temp_path, path).map_err(|e| e.to_string())?;
+        // Rename commits the mutation. Returning an error afterward would let
+        // callers roll back memory even though disk already contains the change.
+        #[cfg(feature = "rns-stack")]
+        self.discovery_dirty.store(false, Ordering::Relaxed);
+        self.directory_sync_pending.store(true, Ordering::Relaxed);
+        if let Err(error) = self.sync_directory(storage_dir) {
+            tracing::warn!(%error, "state file replaced but directory sync failed; durability retry pending");
+        }
+        Ok(())
+    }
+
+    pub(super) fn sync_directory(&self, storage_dir: &Path) -> Result<(), String> {
+        #[cfg(all(test, unix))]
+        if self.fail_next_directory_sync.swap(false, Ordering::Relaxed) {
+            return Err("injected directory sync failure".into());
+        }
         // Windows has no portable directory fsync through std; file contents are
         // synchronized there, but rename durability still depends on the OS.
         #[cfg(unix)]
         fs::File::open(storage_dir)
             .and_then(|directory| directory.sync_all())
             .map_err(|e| e.to_string())?;
-        #[cfg(feature = "rns-stack")]
-        self.discovery_dirty.store(false, Ordering::Relaxed);
+        #[cfg(not(unix))]
+        let _ = storage_dir;
+        self.directory_sync_pending.store(false, Ordering::Relaxed);
         Ok(())
+    }
+
+    pub(super) fn directory_sync_pending(&self) -> bool {
+        self.directory_sync_pending.load(Ordering::Relaxed)
+    }
+
+    #[cfg(feature = "rns-stack")]
+    pub(super) fn persistence_pending(&self) -> bool {
+        self.discovery_dirty() || self.directory_sync_pending()
     }
 
     #[cfg(feature = "rns-stack")]
@@ -285,8 +317,11 @@ impl PersistedState {
     }
 
     /// JSON snapshots omit runtime bookkeeping. A failed user save must not erase
-    /// the pending discovery retry when its in-memory changes are rolled back.
+    /// pending discovery or durability retries when its changes are rolled back.
     pub(super) fn restore_after_failed_save(&mut self, restored: Self) {
+        restored
+            .directory_sync_pending
+            .store(self.directory_sync_pending(), Ordering::Relaxed);
         #[cfg(feature = "rns-stack")]
         restored
             .discovery_dirty
@@ -976,6 +1011,9 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
         Ok(Self {
             #[cfg(feature = "rns-stack")]
             discovery_dirty: AtomicBool::new(false),
+            directory_sync_pending: AtomicBool::new(false),
+            #[cfg(all(test, unix))]
+            fail_next_directory_sync: AtomicBool::new(false),
             identity: raw.identity,
             interfaces: raw.interfaces,
             contacts: raw.contacts,
@@ -1058,6 +1096,7 @@ mod tests {
         let updated = fs::read_to_string(&path).unwrap();
         assert!(!updated.contains("test-only secret"));
         assert!(!updated.contains("discovery_dirty"));
+        assert!(!updated.contains("directory_sync_pending"));
         assert_eq!(
             serde_json::from_str::<PersistedState>(&updated)
                 .unwrap()

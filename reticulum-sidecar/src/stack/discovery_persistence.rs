@@ -25,20 +25,25 @@ pub(super) async fn run(
 
 /// Keep the lock through the write so a deferred snapshot cannot overwrite a newer
 /// user save. Serialization and filesystem I/O run off the async runtime threads.
-/// `save` clears the dirty flag only on success, including saves by user actions.
+/// A committed save clears discovery updates; directory synchronization failures
+/// retain a separate retry that does not rewrite the JSON.
 pub(super) async fn flush(
     inner: &Arc<RwLock<PersistedState>>,
     config_dir: &Path,
     storage_dir: &Path,
 ) -> Result<bool, String> {
     let state = Arc::clone(inner).write_owned().await;
-    if !state.discovery_dirty() {
+    if !state.persistence_pending() {
         return Ok(false);
     }
     let config_dir = config_dir.to_path_buf();
     let storage_dir = storage_dir.to_path_buf();
     tokio::task::spawn_blocking(move || {
-        state.save(&config_dir, &storage_dir)?;
+        if state.discovery_dirty() {
+            state.save(&config_dir, &storage_dir)?;
+        } else {
+            state.sync_directory(&storage_dir)?;
+        }
         Ok(true)
     })
     .await
@@ -191,6 +196,37 @@ mod tests {
             assert!(saved.nomad_nodes[0].favorited);
             assert!(!inner.read().await.discovery_dirty());
         });
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn directory_sync_retries_without_rewriting_committed_state() {
+        use std::os::unix::fs::MetadataExt;
+        use std::sync::atomic::Ordering;
+
+        let dir = tempfile::tempdir().unwrap();
+        let state = PersistedState::default_empty();
+        state
+            .fail_next_directory_sync
+            .store(true, Ordering::Relaxed);
+        state.save(dir.path(), dir.path()).unwrap();
+        assert!(!state.discovery_dirty());
+        assert!(state.directory_sync_pending());
+        let path = dir.path().join(STATE_FILE);
+        let committed_inode = fs::metadata(&path).unwrap().ino();
+        let inner = Arc::new(RwLock::new(state));
+
+        inner
+            .read()
+            .await
+            .fail_next_directory_sync
+            .store(true, Ordering::Relaxed);
+        assert!(flush(&inner, dir.path(), dir.path()).await.is_err());
+        assert!(inner.read().await.directory_sync_pending());
+        assert!(flush(&inner, dir.path(), dir.path()).await.unwrap());
+        assert!(!inner.read().await.persistence_pending());
+        assert_eq!(fs::metadata(&path).unwrap().ino(), committed_inode);
+        assert!(!flush(&inner, dir.path(), dir.path()).await.unwrap());
     }
 
     #[tokio::test]

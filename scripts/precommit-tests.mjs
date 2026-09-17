@@ -264,6 +264,7 @@ export function resolveVitestCli(root = ROOT) {
  *   spawnSyncFn?: typeof spawnSync,
  *   vitestCli?: string,
  *   execPath?: string,
+ *   platform?: NodeJS.Platform,
  * }} [opts]
  * @returns {number}
  */
@@ -285,9 +286,14 @@ export function runVitestArgv(args, opts = {}) {
     );
     return 1;
   }
-  const localNames = new Set(localEnvVars.stdout.trim().split(/\r?\n/));
+  // OS-specific: Windows environment names are case-insensitive, including Git's.
+  const normalizeEnvName = (name) =>
+    (opts.platform ?? process.platform) === 'win32' ? name.toUpperCase() : name;
+  const localNames = new Set(localEnvVars.stdout.trim().split(/\r?\n/).map(normalizeEnvName));
   const env = Object.fromEntries(
-    Object.entries(opts.env ?? process.env).filter(([key]) => !localNames.has(key)),
+    Object.entries(opts.env ?? process.env).filter(
+      ([key]) => !localNames.has(normalizeEnvName(key)),
+    ),
   );
   // Shell-free: staged paths must stay literal argv (Windows cmd metacharacters).
   const result = spawnSyncFn(execPath, [vitestCli, ...args], {

@@ -25,6 +25,8 @@ Nomad and RRC announces update the in-memory lists and WebSocket events immediat
 
 `POST /api/v1/stack/prepare-stop` flushes before transport teardown and again after stopping producers. Electron's normal Stop request keeps a one-second deadline. Quit can abort that request and issue a separate flush; the sidecar's shared write lock orders saves even if the original HTTP request is canceled. Soft restart uses the same detach path. Failed periodic saves retain pending state and retry at the next interval.
 
+Failures before file replacement still return an error so callers can roll back their in-memory mutation. Once replacement succeeds, a directory synchronization failure leaves the change committed in memory and on disk, logs a durability warning, and retains a pending retry. The live stack retries directory synchronization at the next persistence interval or shutdown flush without rewriting unchanged JSON; a subsequent user save also retries. Until synchronization succeeds, power-loss durability remains uncertain.
+
 ### Identity
 
 | Method | Path                              | Body / notes                                                                                                                  | Response                                                                                                                                  |
