@@ -610,7 +610,13 @@ export class ReticulumSidecarManager extends EventEmitter {
   private async stopProc(): Promise<void> {
     this.stopWatchdog();
     this.teardownWs();
+    const startedForQuit = this.quitFastRequested;
     await this.prepareStopBestEffort();
+    if (!startedForQuit && this.quitFastRequested) {
+      // Quit may cancel prepare-stop before its save finishes. Give persistence
+      // its own bounded request before terminating the process.
+      await this.prepareStopBestEffort();
+    }
     const proc = this.proc;
     this.proc = null;
     if (!proc) {
@@ -660,12 +666,13 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (!status.running || status.port <= 0 || !this.proc) {
       return;
     }
+    const operation = this.quitFastRequested ? 'flush-state' : 'prepare-stop';
     const abort = new AbortController();
-    this.stopPrepareAbort = abort;
+    // Repeated Quit requests may cancel the BLE drain, but not the bounded flush.
+    if (operation === 'prepare-stop') this.stopPrepareAbort = abort;
     const timeoutTimer = setTimeout(() => {
       abort.abort();
     }, PREPARE_STOP_TIMEOUT_MS);
-    const operation = this.quitFastRequested ? 'flush-state' : 'prepare-stop';
     try {
       const res = await fetch(`http://127.0.0.1:${status.port}/api/v1/stack/${operation}`, {
         method: 'POST',
@@ -687,7 +694,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       );
     } finally {
       clearTimeout(timeoutTimer);
-      this.stopPrepareAbort = null;
+      if (this.stopPrepareAbort === abort) this.stopPrepareAbort = null;
     }
   }
 

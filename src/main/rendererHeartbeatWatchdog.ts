@@ -60,6 +60,8 @@ export function createRendererHeartbeatWatchdog(
   };
 
   const recordHeartbeat = (ts?: number, hidden = false): void => {
+    // IPC can deliver an old hidden notification after the native focus event.
+    if (hidden && ts != null && Number.isFinite(ts) && ts < visibleSince) return;
     lastRendererHeartbeatAt = clampRendererHeartbeatTs(ts);
     if (rendererHidden && !hidden) visibleSince = Date.now();
     rendererHidden = hidden;

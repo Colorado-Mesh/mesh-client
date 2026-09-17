@@ -19,7 +19,7 @@ Electron main validates proxy paths: must start with `/api/v1/` (no `..` segment
 
 ### Discovery persistence and shutdown
 
-Nomad and RRC announces update the in-memory lists and WebSocket events immediately. Their cached metadata is saved together at most once per minute; idle intervals do not write. Explicit user changes still save immediately and include pending discoveries. State saves replace the complete JSON file atomically.
+Nomad and RRC announces update the in-memory lists and WebSocket events immediately. Their cached metadata is saved together at most once per minute; idle intervals do not write. Explicit user changes still save immediately and include pending discoveries. State saves synchronize file contents before replacing the complete JSON atomically, then synchronize the containing directory on POSIX systems. Windows has no portable directory synchronization through Rust's standard library, so rename durability across power loss depends on the OS; complete-file replacement still protects against process interruption.
 
 `POST /api/v1/stack/flush-state` returns `{ ok: true }` after saving pending discoveries, or `{ ok: false, error }` on failure. It leaves the live stack and GATT sessions running. Electron uses it before Quit with a one-second deadline, then continues terminating the process even if persistence fails. A crash, forced kill, or failed flush can lose discoveries since the last successful save; user settings retain their existing immediate-save behavior.
 

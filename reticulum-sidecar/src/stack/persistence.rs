@@ -249,9 +249,29 @@ impl PersistedState {
         let raw = serde_json::to_string_pretty(&value).map_err(|e| e.to_string())?;
         // A bounded shutdown may terminate the sidecar during a large save. Keep
         // the previous JSON intact until its complete replacement is ready.
-        let mut file = tempfile::NamedTempFile::new_in(storage_dir).map_err(|e| e.to_string())?;
+        // Use normal file attributes and std's rename: its Windows fallback can
+        // replace a destination with open readers, unlike tempfile::persist.
+        let mut file = tempfile::Builder::new()
+            .make_in(storage_dir, |path| {
+                let mut options = fs::OpenOptions::new();
+                options.write(true).create_new(true);
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::OpenOptionsExt;
+                    options.mode(0o600);
+                }
+                options.open(path)
+            })
+            .map_err(|e| e.to_string())?;
         file.write_all(raw.as_bytes()).map_err(|e| e.to_string())?;
-        file.persist(path).map_err(|e| e.to_string())?;
+        file.as_file().sync_all().map_err(|e| e.to_string())?;
+        fs::rename(file.path(), path).map_err(|e| e.to_string())?;
+        // Windows has no portable directory fsync through std; file contents are
+        // synchronized there, but rename durability still depends on the OS.
+        #[cfg(unix)]
+        fs::File::open(storage_dir)
+            .and_then(|directory| directory.sync_all())
+            .map_err(|e| e.to_string())?;
         #[cfg(feature = "rns-stack")]
         self.discovery_dirty.store(false, Ordering::Relaxed);
         Ok(())

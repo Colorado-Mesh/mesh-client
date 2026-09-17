@@ -1125,59 +1125,93 @@ describe('ReticulumSidecarManager', () => {
     },
   );
 
-  it('quit stop aborts an in-flight graceful prepare-stop instead of waiting', async () => {
-    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
-    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
-    const proc = mockSidecarProc();
-    proc.kill.mockImplementation(() => {
-      proc.emit('exit', 0, null);
-    });
-    spawnMock.mockReturnValue(proc);
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          status: 'ok',
-          version: '0.1.0',
-          rns_ready: false,
-          lxmf_ready: false,
-        }),
-      text: () => Promise.resolve('ok'),
-    });
-    vi.stubGlobal('fetch', fetchMock);
+  it.each([true, false])(
+    'quit escalation waits for the state flush before SIGTERM (ok=%s)',
+    async (flushOk) => {
+      const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+      const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+      const proc = mockSidecarProc();
+      proc.kill.mockImplementation(() => {
+        proc.emit('exit', 0, null);
+      });
+      spawnMock.mockReturnValue(proc);
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            status: 'ok',
+            version: '0.1.0',
+            rns_ready: false,
+            lxmf_ready: false,
+          }),
+        text: () => Promise.resolve('ok'),
+      });
+      vi.stubGlobal('fetch', fetchMock);
 
-    const manager = new ReticulumSidecarManager();
-    await manager.start();
+      const manager = new ReticulumSidecarManager();
+      await manager.start();
 
-    // prepare-stop hangs until the caller aborts (sidecar RNS drain is unbounded).
-    let prepareAborted = false;
-    let prepareStarted!: () => void;
-    const prepareReached = new Promise<void>((resolve) => {
-      prepareStarted = resolve;
-    });
-    fetchMock.mockImplementation((url: unknown, init?: { signal?: AbortSignal }) => {
-      if (typeof url === 'string' && url.includes('/api/v1/stack/prepare-stop')) {
-        prepareStarted();
-        return new Promise((_resolve, reject) => {
-          init?.signal?.addEventListener('abort', () => {
-            prepareAborted = true;
-            reject(new Error('aborted'));
+      // prepare-stop hangs until the caller aborts (sidecar RNS drain is unbounded).
+      let prepareAborted = false;
+      let prepareStarted!: () => void;
+      const prepareReached = new Promise<void>((resolve) => {
+        prepareStarted = resolve;
+      });
+      let flushStarted!: () => void;
+      const flushReached = new Promise<void>((resolve) => {
+        flushStarted = resolve;
+      });
+      let confirmFlush!: () => void;
+      let flushAborted = false;
+      const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+      fetchMock.mockImplementation((url: unknown, init?: { signal?: AbortSignal }) => {
+        if (typeof url === 'string' && url.includes('/api/v1/stack/prepare-stop')) {
+          prepareStarted();
+          return new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => {
+              prepareAborted = true;
+              reject(new Error('aborted'));
+            });
           });
-        });
+        }
+        if (typeof url === 'string' && url.includes('/api/v1/stack/flush-state')) {
+          flushStarted();
+          return new Promise((resolve, reject) => {
+            confirmFlush = () => {
+              resolve({ ok: true, json: () => Promise.resolve({ ok: flushOk }) });
+            };
+            init?.signal?.addEventListener('abort', () => {
+              flushAborted = true;
+              reject(new Error('flush aborted'));
+            });
+          });
+        }
+        return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve('{}') });
+      });
+
+      const gracefulStop = manager.stop();
+      await prepareReached;
+
+      const quitStop = manager.stop({ forQuit: true });
+      await flushReached;
+      const repeatedQuit = manager.stop({ forQuit: true });
+      expect(proc.kill).not.toHaveBeenCalled();
+      expect(flushAborted).toBe(false);
+      confirmFlush();
+      await Promise.all([gracefulStop, quitStop, repeatedQuit]);
+
+      expect(prepareAborted).toBe(true);
+      expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
+      if (!flushOk) {
+        expect(debug).toHaveBeenCalledWith(
+          '[ReticulumSidecar] flush-state failed — continuing with SIGTERM:',
+          expect.any(String),
+        );
       }
-      return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve('{}') });
-    });
 
-    const gracefulStop = manager.stop();
-    await prepareReached;
-
-    await manager.stop({ forQuit: true });
-    await gracefulStop;
-
-    expect(prepareAborted).toBe(true);
-    expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
-
-    existsSpy.mockRestore();
-    mkdirSpy.mockRestore();
-  });
+      debug.mockRestore();
+      existsSpy.mockRestore();
+      mkdirSpy.mockRestore();
+    },
+  );
 });

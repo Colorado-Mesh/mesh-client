@@ -195,6 +195,27 @@ describe('createRendererHeartbeatWatchdog', () => {
     expect(watchdog.getLivenessSnapshot().rendererUnresponsiveSeen).toBe(true);
   });
 
+  it('ignores a queued hidden heartbeat from before the window was refocused', async () => {
+    const warn = vi.fn();
+    const watchdog = createRendererHeartbeatWatchdog(warn);
+    const hiddenAt = Date.now();
+    watchdog.recordHeartbeat(hiddenAt, true);
+    await vi.advanceTimersByTimeAsync(1000);
+    watchdog.expectVisibleHeartbeat();
+    watchdog.startStallWatchdog(() => true);
+    watchdog.startResumeWatchdog(() => true);
+    watchdog.recordHeartbeat(hiddenAt, true);
+    await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS);
+    expect(warn).toHaveBeenCalledWith(
+      '[main] renderer unresponsive after system resume (no heartbeat within 30s)',
+    );
+    await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_STALL_MS);
+    expect(warn).toHaveBeenCalledWith(
+      '[main] renderer heartbeat stalled (no heartbeat while window visible)',
+    );
+    watchdog.stopStallWatchdog();
+  });
+
   it('gives a newly focused window a full grace period when resume was already pending', async () => {
     const warn = vi.fn();
     const watchdog = createRendererHeartbeatWatchdog(warn);
