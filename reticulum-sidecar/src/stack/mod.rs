@@ -5,6 +5,8 @@ mod auto_path_policy;
 mod ble;
 pub mod config;
 pub mod config_audit;
+#[cfg(feature = "rns-stack")]
+mod discovery_persistence;
 mod identity_apply;
 #[cfg(feature = "rns-stack")]
 mod identity_backup;
@@ -389,16 +391,8 @@ impl StackHandle {
                         tracing::warn!("identity reconcile after live spawn failed: {e}");
                     }
                 }
-                bridge.register_nomad_announce_handler(
-                    self.inner.clone(),
-                    self.config_dir.clone(),
-                    self.storage_dir.clone(),
-                );
-                bridge.register_rrc_announce_handler(
-                    self.inner.clone(),
-                    self.config_dir.clone(),
-                    self.storage_dir.clone(),
-                );
+                bridge.register_nomad_announce_handler(self.inner.clone());
+                bridge.register_rrc_announce_handler(self.inner.clone());
                 bridge.register_propagation_announce_handler();
                 bridge.register_lxmf_identity_announce_handler();
                 bridge.register_rmap_discovery_watcher(self.event_tx.clone());
@@ -514,6 +508,11 @@ impl StackHandle {
 
     #[cfg(feature = "rns-stack")]
     async fn detach_live_locked(&self) -> Result<(), String> {
+        // The host bounds prepare-stop to one second; save before the longer
+        // transport/BLE drain, then again after producers stop if needed.
+        if let Err(error) = self.flush_discovery_state().await {
+            tracing::warn!(%error, "discovery state persist failed before detach");
+        }
         let prior = self
             .live
             .write()
@@ -531,7 +530,15 @@ impl StackHandle {
             inner.lxmf_ready = false;
         }
         self.emit_stats().await;
-        stopped
+        // Producers and the periodic writer have stopped. Flush even after a
+        // failed detach, or when retrying a previous flush with no live bridge.
+        let saved = self.flush_discovery_state().await.map_err(|error| {
+            tracing::warn!(%error, "discovery state persist failed during detach");
+            error
+        });
+        stopped?;
+        saved?;
+        Ok(())
     }
 
     #[cfg(not(feature = "rns-stack"))]
@@ -1960,7 +1967,7 @@ impl StackHandle {
             if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
                 if let Some(snap) = snapshot {
                     if let Ok(restored) = serde_json::from_value::<PersistedState>(snap) {
-                        *inner = restored;
+                        inner.restore_after_failed_save(restored);
                     }
                 }
                 return Err(e);
@@ -1987,7 +1994,7 @@ impl StackHandle {
         if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
             if let Some(snap) = snapshot {
                 if let Ok(restored) = serde_json::from_value::<PersistedState>(snap) {
-                    *inner = restored;
+                    inner.restore_after_failed_save(restored);
                 }
             }
             return Err(e);
@@ -3090,6 +3097,13 @@ impl StackHandle {
         self.detach_live().await
     }
 
+    /// Save cached discoveries without waiting for transport teardown during app quit.
+    pub async fn flush_discovery_state(&self) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        discovery_persistence::flush(&self.inner, &self.config_dir, &self.storage_dir).await?;
+        Ok(())
+    }
+
     pub async fn factory_reset(&self) -> Result<(), String> {
         let mut inner = self.inner.write().await;
         inner.factory_reset_state()?;
@@ -3888,6 +3902,72 @@ mod tests {
         (config, storage)
     }
 
+    #[cfg(feature = "rns-stack")]
+    #[tokio::test]
+    async fn quit_flush_persists_discovery_without_detaching_the_stack() {
+        let dir = tempfile::tempdir().unwrap();
+        let config_dir = dir.path().join("config");
+        let storage_dir = dir.path().join("storage");
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+        {
+            let mut state = handle.inner.write().await;
+            state.rns_ready = true;
+            state.lxmf_ready = true;
+            state.upsert_rrc_hub(
+                "00112233445566778899aabbccddeeff",
+                None,
+                Some("pending".into()),
+                Some(1),
+                "discovered",
+            );
+        }
+        handle.flush_discovery_state().await.unwrap();
+        let saved = PersistedState::load(&config_dir, &storage_dir);
+        assert!(saved.rns_ready && saved.lxmf_ready);
+        assert_eq!(saved.rrc_hubs[0].display_name.as_deref(), Some("pending"));
+    }
+
+    #[cfg(feature = "rns-stack")]
+    #[tokio::test]
+    async fn prepare_stop_flushes_pending_discovery_and_retries_failed_detach_save() {
+        let dir = tempfile::tempdir().unwrap();
+        let config_dir = dir.path().join("config");
+        let storage_dir = dir.path().join("storage");
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+        handle.inner.write().await.upsert_nomad_node(
+            "00112233445566778899aabbccddeeff",
+            None,
+            Some("pending".into()),
+            Some(1),
+        );
+        let path = storage_dir.join("mesh_client_stack.json");
+        fs::create_dir(&path).unwrap();
+        assert!(handle.prepare_stop().await.is_err());
+        assert!(handle.inner.read().await.discovery_dirty());
+        fs::remove_dir(&path).unwrap();
+        handle.prepare_stop().await.unwrap();
+        assert!(!handle.inner.read().await.discovery_dirty());
+        let saved = PersistedState::load(&config_dir, &storage_dir);
+        assert_eq!(
+            saved.nomad_nodes[0].display_name.as_deref(),
+            Some("pending")
+        );
+        assert!(!saved.rns_ready);
+        assert!(!saved.lxmf_ready);
+    }
+
     #[test]
     fn local_propagation_status_reports_loading_only_while_enabled_and_unloaded() {
         assert_eq!(local_propagation_status(true, false, true), "active");
@@ -4541,11 +4621,10 @@ mod tests {
     }
 
     #[tokio::test]
-    #[cfg(unix)]
     async fn set_propagation_mode_rolls_back_when_save_fails() {
-        use std::os::unix::fs::PermissionsExt;
-
-        let (config_dir, storage_dir) = temp_stack_dirs();
+        let dir = tempfile::tempdir().unwrap();
+        let config_dir = dir.path().join("config");
+        let storage_dir = dir.path().join("storage");
         let (tx, _) = broadcast::channel(8);
         let handle = Box::pin(StackHandle::bootstrap(
             config_dir.clone(),
@@ -4556,13 +4635,12 @@ mod tests {
         handle.set_propagation_mode("auto").await.expect("set auto");
         assert_eq!(handle.list_propagation().await["propagation_mode"], "auto");
 
-        // Directory 555 still allows rewriting an existing writable file; lock the state file.
+        // A read-only file can still be atomically replaced on Unix. A directory
+        // at the target path reliably fails replacement on every platform.
         let state_path = storage_dir.join("mesh_client_stack.json");
-        let mut perms = std::fs::metadata(&state_path)
-            .expect("state meta")
-            .permissions();
-        perms.set_mode(0o444);
-        std::fs::set_permissions(&state_path, perms).expect("lock state file");
+        let previous_path = storage_dir.join("previous-state.json");
+        fs::rename(&state_path, &previous_path).unwrap();
+        fs::create_dir(&state_path).unwrap();
 
         let err = handle
             .set_propagation_mode("manual")
@@ -4575,13 +4653,9 @@ mod tests {
             "in-memory mode must roll back when save fails"
         );
 
-        let mut restore = std::fs::metadata(&state_path)
-            .expect("state meta")
-            .permissions();
-        restore.set_mode(0o644);
-        std::fs::set_permissions(&state_path, restore).expect("unlock state file");
-        let _ = std::fs::remove_dir_all(config_dir);
-        let _ = std::fs::remove_dir_all(storage_dir);
+        let previous: serde_json::Value =
+            serde_json::from_slice(&fs::read(previous_path).unwrap()).unwrap();
+        assert_eq!(previous["propagation_mode"], "auto");
     }
 
     #[tokio::test]

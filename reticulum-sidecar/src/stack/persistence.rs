@@ -1,5 +1,8 @@
 use std::fs;
+use std::io::Write;
 use std::path::Path;
+#[cfg(feature = "rns-stack")]
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use uuid::Uuid;
@@ -19,6 +22,9 @@ const STATE_FILE: &str = "mesh_client_stack.json";
 
 #[allow(clippy::struct_excessive_bools)] // persisted flags mirror independent user prefs
 pub struct PersistedState {
+    /// Transient announce updates, covered by any successful full-state save.
+    #[cfg(feature = "rns-stack")]
+    discovery_dirty: AtomicBool,
     pub identity: StackIdentity,
     pub interfaces: Vec<InterfaceRow>,
     pub contacts: Vec<ContactRow>,
@@ -79,6 +85,8 @@ impl PersistedState {
 
     pub(crate) fn default_empty() -> Self {
         Self {
+            #[cfg(feature = "rns-stack")]
+            discovery_dirty: AtomicBool::new(false),
             identity: StackIdentity::default(),
             interfaces: Vec::new(),
             contacts: Vec::new(),
@@ -239,7 +247,29 @@ impl PersistedState {
             identity.remove("mnemonic");
         }
         let raw = serde_json::to_string_pretty(&value).map_err(|e| e.to_string())?;
-        fs::write(path, raw).map_err(|e| e.to_string())
+        // A bounded shutdown may terminate the sidecar during a large save. Keep
+        // the previous JSON intact until its complete replacement is ready.
+        let mut file = tempfile::NamedTempFile::new_in(storage_dir).map_err(|e| e.to_string())?;
+        file.write_all(raw.as_bytes()).map_err(|e| e.to_string())?;
+        file.persist(path).map_err(|e| e.to_string())?;
+        #[cfg(feature = "rns-stack")]
+        self.discovery_dirty.store(false, Ordering::Relaxed);
+        Ok(())
+    }
+
+    #[cfg(feature = "rns-stack")]
+    pub(super) fn discovery_dirty(&self) -> bool {
+        self.discovery_dirty.load(Ordering::Relaxed)
+    }
+
+    /// JSON snapshots omit runtime bookkeeping. A failed user save must not erase
+    /// the pending discovery retry when its in-memory changes are rolled back.
+    pub(super) fn restore_after_failed_save(&mut self, restored: Self) {
+        #[cfg(feature = "rns-stack")]
+        restored
+            .discovery_dirty
+            .store(self.discovery_dirty(), Ordering::Relaxed);
+        *self = restored;
     }
 
     fn now_secs() -> u64 {
@@ -433,6 +463,8 @@ impl PersistedState {
         display_name: Option<String>,
         hops: Option<u8>,
     ) {
+        #[cfg(feature = "rns-stack")]
+        self.discovery_dirty.store(true, Ordering::Relaxed);
         let key = hash.to_lowercase();
         let now = Self::now_secs();
         if let Some(node) = self
@@ -506,6 +538,8 @@ impl PersistedState {
         source: &str,
         name_source: Option<&str>,
     ) {
+        #[cfg(feature = "rns-stack")]
+        self.discovery_dirty.store(true, Ordering::Relaxed);
         let key = hash.to_lowercase();
         let now = Self::now_secs();
         let recommended = super::rrc_defaults::RRC_DEFAULT_HUBS
@@ -916,6 +950,8 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
         }
         let raw = Raw::deserialize(deserializer)?;
         Ok(Self {
+            #[cfg(feature = "rns-stack")]
+            discovery_dirty: AtomicBool::new(false),
             identity: raw.identity,
             interfaces: raw.interfaces,
             contacts: raw.contacts,
@@ -970,6 +1006,47 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
 mod tests {
     use super::*;
     use std::collections::HashMap;
+    use std::io::Read;
+
+    #[test]
+    fn save_atomically_replaces_state_without_persisting_mnemonic() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(STATE_FILE);
+        let mut state = PersistedState::default_empty();
+        state.identity.mnemonic = Some("test-only secret".into());
+        state.save(dir.path(), dir.path()).unwrap();
+        let original = fs::read_to_string(&path).unwrap();
+        let mut previous_reader = fs::File::open(&path).unwrap();
+        state.upsert_nomad_node(
+            "00112233445566778899aabbccddeeff",
+            None,
+            Some("new".into()),
+            Some(1),
+        );
+        state.save(dir.path(), dir.path()).unwrap();
+
+        let mut old_contents = String::new();
+        previous_reader.read_to_string(&mut old_contents).unwrap();
+        assert_eq!(
+            old_contents, original,
+            "an existing reader must see the intact previous file"
+        );
+        let updated = fs::read_to_string(&path).unwrap();
+        assert!(!updated.contains("test-only secret"));
+        assert!(!updated.contains("discovery_dirty"));
+        assert_eq!(
+            serde_json::from_str::<PersistedState>(&updated)
+                .unwrap()
+                .nomad_nodes
+                .len(),
+            1
+        );
+        assert_eq!(
+            fs::read_dir(dir.path()).unwrap().count(),
+            1,
+            "successful saves leave no temp files"
+        );
+    }
 
     fn peer(hash: &str, name: &str) -> PeerRow {
         PeerRow {

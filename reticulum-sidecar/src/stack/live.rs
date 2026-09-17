@@ -646,6 +646,11 @@ impl LiveBridge {
         };
 
         bridge.spawn_maintenance(event_tx);
+        bridge.spawn_background(super::discovery_persistence::run(
+            inner.clone(),
+            config_dir.clone(),
+            storage_dir.clone(),
+        ));
 
         // Local-prop serve/announce is deferred until messagestore load finishes
         // (see StackHandle::attach_live) so we do not advertise an empty PN.
@@ -2212,12 +2217,7 @@ impl LiveBridge {
     }
 
     /// Register handler for Nomad Network node announces (`nomadnetwork.node`).
-    pub fn register_nomad_announce_handler(
-        &self,
-        inner: Arc<RwLock<PersistedState>>,
-        config_dir: PathBuf,
-        storage_dir: PathBuf,
-    ) {
+    pub fn register_nomad_announce_handler(&self, inner: Arc<RwLock<PersistedState>>) {
         let transport_tx = self.handle.transport_tx.clone();
         let event_tx = self.event_tx.clone();
         let our_identity_hash = self.identity_hash_hex();
@@ -2258,9 +2258,6 @@ impl LiveBridge {
                         display_name.clone(),
                         hops,
                     );
-                    if let Err(e) = state.save(&config_dir, &storage_dir) {
-                        tracing::warn!("nomad node persist failed: {e}");
-                    }
                     serde_json::json!({
                         "destination_hash": hash_hex,
                         "display_name": display_name,
@@ -2273,12 +2270,7 @@ impl LiveBridge {
         });
     }
 
-    pub fn register_rrc_announce_handler(
-        &self,
-        inner: Arc<RwLock<PersistedState>>,
-        config_dir: PathBuf,
-        storage_dir: PathBuf,
-    ) {
+    pub fn register_rrc_announce_handler(&self, inner: Arc<RwLock<PersistedState>>) {
         let transport_tx = self.handle.transport_tx.clone();
         let event_tx = self.event_tx.clone();
         self.background_tasks.spawn(async move {
@@ -2311,9 +2303,6 @@ impl LiveBridge {
                         hops,
                         "discovered",
                     );
-                    if let Err(e) = state.save(&config_dir, &storage_dir) {
-                        tracing::warn!("rrc hub persist failed: {e}");
-                    }
                     serde_json::json!({
                         "destination_hash": hash_hex,
                         "identity_hash": identity_hash_hex,

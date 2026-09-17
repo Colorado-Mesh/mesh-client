@@ -38,7 +38,7 @@ import { ReticulumStackSessionTracker } from './reticulumStackSessionTracker';
 
 const HEALTH_POLL_INTERVAL_MS = 250;
 const HEALTH_POLL_TIMEOUT_MS = 30 * MS_PER_SECOND;
-/** Wait for BLE RNode detach via POST /api/v1/stack/prepare-stop before SIGTERM. */
+/** Bound the pending-state flush (and, outside app quit, BLE detach) before SIGTERM. */
 const PREPARE_STOP_TIMEOUT_MS = 1 * MS_PER_SECOND;
 const STOP_GRACE_MS = 5 * MS_PER_SECOND;
 /** App is exiting: skip the BLE detach drain and SIGKILL quickly so quit stays responsive. */
@@ -570,7 +570,8 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   /**
-   * Stop the sidecar. `forQuit` skips the BLE detach drain and shortens the SIGTERM grace —
+   * Stop the sidecar. `forQuit` only flushes pending state, skips the BLE detach drain,
+   * and shortens the SIGTERM grace —
    * the app is exiting, so the OS reclaims the child and no other stack reuses the adapter.
    */
   async stop(opts: { forQuit?: boolean } = {}): Promise<void> {
@@ -609,9 +610,7 @@ export class ReticulumSidecarManager extends EventEmitter {
   private async stopProc(): Promise<void> {
     this.stopWatchdog();
     this.teardownWs();
-    if (!this.quitFastRequested) {
-      await this.prepareStopBestEffort();
-    }
+    await this.prepareStopBestEffort();
     const proc = this.proc;
     this.proc = null;
     if (!proc) {
@@ -655,7 +654,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.finalizeStopped();
   }
 
-  /** Ask the sidecar to detach BLE RNode before process kill (best-effort). */
+  /** Flush pending discoveries before kill; normal Stop also asks BLE RNode to detach. */
   private async prepareStopBestEffort(): Promise<void> {
     const status = this.getStatus();
     if (!status.running || status.port <= 0 || !this.proc) {
@@ -666,21 +665,24 @@ export class ReticulumSidecarManager extends EventEmitter {
     const timeoutTimer = setTimeout(() => {
       abort.abort();
     }, PREPARE_STOP_TIMEOUT_MS);
+    const operation = this.quitFastRequested ? 'flush-state' : 'prepare-stop';
     try {
-      const res = await fetch(`http://127.0.0.1:${status.port}/api/v1/stack/prepare-stop`, {
+      const res = await fetch(`http://127.0.0.1:${status.port}/api/v1/stack/${operation}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: '{}',
         signal: abort.signal,
       });
       if (!res.ok) {
-        console.debug(
-          `[ReticulumSidecar] prepare-stop HTTP ${res.status} — continuing with SIGTERM`,
-        );
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const body: unknown = await res.json();
+      if (!body || typeof body !== 'object' || !('ok' in body) || body.ok !== true) {
+        throw new Error('Sidecar did not confirm state flush');
       }
     } catch (e: unknown) {
       console.debug(
-        '[ReticulumSidecar] prepare-stop failed — continuing with SIGTERM:',
+        `[ReticulumSidecar] ${operation} failed — continuing with SIGTERM:`,
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
     } finally {

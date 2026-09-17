@@ -17,6 +17,14 @@ Electron main validates proxy paths: must start with `/api/v1/` (no `..` segment
 
 **Listen-first / ready flags:** `status: "ok"` means the HTTP server is accepting connections (Electron health poll succeeds). Cold start clears persisted ready bits; `rns_ready` / `lxmf_ready` stay `false` until `attach_live` finishes (RNS/LXMF bridge up). TCP/API clients can hit `/api/v1/status` and identity routes while live attach (path table, BLE Peer, PN messagestore) continues in the background.
 
+### Discovery persistence and shutdown
+
+Nomad and RRC announces update the in-memory lists and WebSocket events immediately. Their cached metadata is saved together at most once per minute; idle intervals do not write. Explicit user changes still save immediately and include pending discoveries. State saves replace the complete JSON file atomically.
+
+`POST /api/v1/stack/flush-state` returns `{ ok: true }` after saving pending discoveries, or `{ ok: false, error }` on failure. It leaves the live stack and GATT sessions running. Electron uses it before Quit with a one-second deadline, then continues terminating the process even if persistence fails. A crash, forced kill, or failed flush can lose discoveries since the last successful save; user settings retain their existing immediate-save behavior.
+
+`POST /api/v1/stack/prepare-stop` flushes before transport teardown and again after stopping producers. Soft restart uses the same detach path. Failed periodic saves retain pending state and retry at the next interval.
+
 ### Identity
 
 | Method | Path                              | Body / notes                                                                                                                  | Response                                                                                                                                  |

@@ -18,7 +18,9 @@ export interface RendererHeartbeatLivenessSnapshot {
 }
 
 export interface RendererHeartbeatWatchdog {
-  recordHeartbeat: (ts?: number) => void;
+  recordHeartbeat: (ts?: number, hidden?: boolean) => void;
+  /** Rearm after window creation/focus, even if a previously hidden renderer is hung. */
+  expectVisibleHeartbeat: () => void;
   /**
    * After system resume: warn if no heartbeat within 30s while the main window is
    * actively visible (renderer pauses heartbeats while `document.hidden`).
@@ -47,6 +49,8 @@ export function createRendererHeartbeatWatchdog(
   let stallPollTimer: ReturnType<typeof setInterval> | null = null;
   let rendererUnresponsiveSeen = false;
   let stallEpisodeActive = false;
+  let rendererHidden = false;
+  let visibleSince = 0;
 
   const clearResumeWatchdog = (): void => {
     if (rendererResumeWatchdogTimer) {
@@ -55,9 +59,18 @@ export function createRendererHeartbeatWatchdog(
     }
   };
 
-  const recordHeartbeat = (ts?: number): void => {
+  const recordHeartbeat = (ts?: number, hidden = false): void => {
     lastRendererHeartbeatAt = clampRendererHeartbeatTs(ts);
+    if (rendererHidden && !hidden) visibleSince = Date.now();
+    rendererHidden = hidden;
     clearResumeWatchdog();
+    stallEpisodeActive = false;
+  };
+
+  const expectVisibleHeartbeat = (): void => {
+    clearResumeWatchdog();
+    rendererHidden = false;
+    visibleSince = Date.now();
     stallEpisodeActive = false;
   };
 
@@ -67,6 +80,7 @@ export function createRendererHeartbeatWatchdog(
     rendererResumeWatchdogTimer = setTimeout(() => {
       rendererResumeWatchdogTimer = null;
       if (lastRendererHeartbeatAt >= resumeAt) return;
+      if (rendererHidden) return;
       // Hidden/minimized windows pause renderer heartbeats — do not sticky-flag a false hang.
       if (isWindowActivelyVisible && !isWindowActivelyVisible()) return;
       rendererUnresponsiveSeen = true;
@@ -95,9 +109,11 @@ export function createRendererHeartbeatWatchdog(
   const startStallWatchdog = (isWindowActivelyVisible: () => boolean): void => {
     stopStallWatchdog();
     stallPollTimer = setInterval(() => {
+      if (rendererHidden) return;
       if (!isWindowActivelyVisible()) return;
-      if (lastRendererHeartbeatAt <= 0) return;
-      const ageMs = Date.now() - lastRendererHeartbeatAt;
+      const expectedSince = Math.max(lastRendererHeartbeatAt, visibleSince);
+      if (expectedSince <= 0) return;
+      const ageMs = Date.now() - expectedSince;
       if (ageMs < RENDERER_HEARTBEAT_STALL_MS) return;
       if (stallEpisodeActive) return;
       stallEpisodeActive = true;
@@ -118,6 +134,7 @@ export function createRendererHeartbeatWatchdog(
 
   return {
     recordHeartbeat,
+    expectVisibleHeartbeat,
     startResumeWatchdog,
     clearResumeWatchdog,
     markRendererUnresponsive,

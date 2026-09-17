@@ -1657,6 +1657,7 @@ function openExternalHttpOrHttpsIfExternal(currentUrl: string, targetUrl: string
 }
 
 function createWindow() {
+  rendererHeartbeatWatchdog.expectVisibleHeartbeat();
   const savedState = loadWindowState();
   const bounds = isWindowStateOnScreen(savedState) ? savedState : DEFAULT_WINDOW_STATE;
   const center = bounds === DEFAULT_WINDOW_STATE;
@@ -2051,6 +2052,7 @@ function createWindow() {
   });
 
   win.on('focus', () => {
+    rendererHeartbeatWatchdog.expectVisibleHeartbeat();
     refreshUnreadAppBadge();
   });
 
@@ -3698,10 +3700,10 @@ function appSettingsMaxValueLengthForKey(key: string): number {
   return APP_SETTINGS_MAX_VALUE_LENGTH;
 }
 
-ipcMain.handle('app:rendererHeartbeat', (event, payload?: { ts?: number }) => {
+ipcMain.handle('app:rendererHeartbeat', (event, payload?: { ts?: number; hidden?: boolean }) => {
   if (!validateIpcSender(event)) return;
-  if (!mainWindow) return;
-  rendererHeartbeatWatchdog.recordHeartbeat(payload?.ts);
+  if (event.sender !== mainWindow?.webContents) return;
+  rendererHeartbeatWatchdog.recordHeartbeat(payload?.ts, payload?.hidden === true);
 });
 
 ipcMain.handle('appSettings:get', (event) => {

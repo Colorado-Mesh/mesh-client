@@ -1002,6 +1002,7 @@ describe('ReticulumSidecarManager', () => {
       ok: true,
       status: 200,
       text: () => Promise.resolve('{"ok":true}'),
+      json: () => Promise.resolve({ ok: true }),
     });
 
     await manager.stop();
@@ -1022,7 +1023,7 @@ describe('ReticulumSidecarManager', () => {
     mkdirSpy.mockRestore();
   });
 
-  it('stop({ forQuit: true }) skips prepare-stop and still SIGTERMs', async () => {
+  it('quit flushes pending state before SIGTERM without waiting for BLE detach', async () => {
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
     const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
     const proc = mockSidecarProc();
@@ -1047,7 +1048,23 @@ describe('ReticulumSidecarManager', () => {
     await manager.start();
     fetchMock.mockClear();
 
-    await manager.stop({ forQuit: true });
+    let confirmFlush!: () => void;
+    fetchMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          confirmFlush = () => {
+            resolve({ ok: true, json: () => Promise.resolve({ ok: true }) });
+          };
+        }),
+    );
+    const stopping = manager.stop({ forQuit: true });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/stack/flush-state'),
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(proc.kill).not.toHaveBeenCalled();
+    confirmFlush();
+    await stopping;
 
     expect(
       fetchMock.mock.calls.some(
@@ -1059,6 +1076,54 @@ describe('ReticulumSidecarManager', () => {
     existsSpy.mockRestore();
     mkdirSpy.mockRestore();
   });
+
+  it.each(['timeout', 'failure'] as const)(
+    'quit still terminates the process after state flush %s',
+    async (outcome) => {
+      const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+      const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+      const proc = mockSidecarProc();
+      proc.kill.mockImplementation(() => {
+        proc.emit('exit', 0, null);
+      });
+      spawnMock.mockReturnValue(proc);
+      const manager = new ReticulumSidecarManager();
+      await manager.start();
+      vi.useFakeTimers();
+      const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+      try {
+        vi.stubGlobal(
+          'fetch',
+          vi.fn((_url: string, init: RequestInit) => {
+            if (outcome === 'failure') {
+              return Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({ ok: false, error: 'disk full' }),
+              });
+            }
+            return new Promise((_resolve, reject) => {
+              init.signal?.addEventListener('abort', () => {
+                reject(new Error('aborted'));
+              });
+            });
+          }),
+        );
+        const stopping = manager.stop({ forQuit: true });
+        await vi.advanceTimersByTimeAsync(1000);
+        await stopping;
+        expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
+        expect(debug).toHaveBeenCalledWith(
+          '[ReticulumSidecar] flush-state failed — continuing with SIGTERM:',
+          expect.any(String),
+        );
+      } finally {
+        vi.useRealTimers();
+        debug.mockRestore();
+        existsSpy.mockRestore();
+        mkdirSpy.mockRestore();
+      }
+    },
+  );
 
   it('quit stop aborts an in-flight graceful prepare-stop instead of waiting', async () => {
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);

@@ -36,6 +36,13 @@ pub async fn stack_prepare_stop(State(stack): State<Arc<StackHandle>>) -> Json<s
     }
 }
 
+pub async fn stack_flush_state(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
+    match stack.flush_discovery_state().await {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
 pub async fn factory_reset(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
     match stack.factory_reset().await {
         Ok(()) => Json(serde_json::json!({ "ok": true })),

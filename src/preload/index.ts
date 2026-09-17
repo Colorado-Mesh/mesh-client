@@ -976,7 +976,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('power:resume', handler);
     return () => ipcRenderer.off('power:resume', handler);
   },
-  sendRendererHeartbeat: (payload?: { ts: number }) =>
+  sendRendererHeartbeat: (payload?: { ts: number; hidden?: boolean }) =>
     ipcRenderer.invoke('app:rendererHeartbeat', payload),
   getProcessUptimeSec: (): Promise<number> => ipcRenderer.invoke('app:getProcessUptimeSec'),
   app: {
