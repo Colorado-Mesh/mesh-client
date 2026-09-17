@@ -1169,7 +1169,8 @@
         "i2p": "Bu makinedeki bir yönlendirici aracılığıyla I2P omurgası. HTTP/https I2PTunnel proxy'leri (4444/4445) değil, SAM uygulama köprüsünü (127.0.0.1:7656) etkinleştirin. Köprünün dinlemesi için SAM'İ etkinleştirdikten sonra I2P'yi yeniden başlatın, ardından bu arayüz kapalı kalırsa Reticulum yığınını yeniden başlatın.",
         "serial": "Bir tel üzerinden bir TNC, modem veya başka bir ana bilgisayara genel seri bağlantı. Hat parametrelerini uzak uca uyacak şekilde ayarlayın.",
         "ax25kiss": "KİSS TNC aracılığıyla AX.25 paket radyo. Çağrı işaretinizi ve bu istasyonu tanımlayan bir SSID (0 -15) gerektirir.",
-        "local": "Bu makinede paylaşılan örnek soketi. Diğer yerel araçlar (rnsd, Nomad Network, rnsh) bu yığına onun üzerinden bağlanabilir. Soket yolu bu arabirimin adından türetilmiştir, bu nedenle yeniden adlandırılması diğer araçların kullanması gereken adresi değiştirir."
+        "local": "Bu makinede paylaşılan örnek soketi. Diğer yerel araçlar (rnsd, Nomad Network, rnsh) bu yığına onun üzerinden bağlanabilir. Soket yolu bu arabirimin adından türetilmiştir, bu nedenle yeniden adlandırılması diğer araçların kullanması gereken adresi değiştirir.",
+        "backbone": "Genel TCP omurga dinleyicisi (Senaryo A). RMAP bulunabilir açık olduğunda eşlerin otomatik olarak bağlanabileceği bir ağ geçidi yayınlar — REACHABLE_ON'u herkese açık ana bilgisayar adınıza veya IP'nize ayarlayın."
       },
       "rfProfile": {
         "coordinated": "Koordineli bölgesel",
@@ -1307,7 +1308,9 @@
         "preamble": "Giriş (msn)",
         "txtail": "TX kuyruk (msn)",
         "persistence": "Kararlılık",
-        "slottime": "Slot süresi (ms)"
+        "slottime": "Slot süresi (ms)",
+        "listen_on": "Dinleme adresi",
+        "target_host": "Uzak ana bilgisayar (istemci modu)"
       },
       "fieldOption": {
         "parity": {
@@ -1842,7 +1845,8 @@
         "rmap_transport_disabled": "Bulunabilir arayüzler yapılandırılmış ancak taşıma modu kapalı.",
         "rmap_i2p_not_connectable": "\"{{name}}\" I2P arayüzü keşfedilebilir ancak bağlanılabilir evet değildir.",
         "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
-        "rmap_mode_autocorrect": "\"{{name}}\" arayüzü, AP/Ağ Geçidi olmayan bir modda bulunabilir — Reticulum, ignore_config_warnings ayarlanmadığı sürece bunu Erişim Noktası olarak çalıştıracaktır. Arayüzü düzenleyin veya yığını yeniden başlatın, böylece mesh istemcisi devre dışı bırakma işlemini damgalayabilir (mesh-client)."
+        "rmap_mode_autocorrect": "\"{{name}}\" arayüzü, AP/Ağ Geçidi olmayan bir modda bulunabilir — Reticulum, ignore_config_warnings ayarlanmadığı sürece bunu Erişim Noktası olarak çalıştıracaktır. Arayüzü düzenleyin veya yığını yeniden başlatın, böylece mesh istemcisi devre dışı bırakma işlemini damgalayabilir (mesh-client).",
+        "rmap_missing_reachable_on": "\"{{name}}\" omurga arayüzü keşfedilebilir ancak REACHABLE_ON eksik."
       },
       "runtime": {
         "rnsNotReady": "RNS yığını hazır değil",
@@ -4786,14 +4790,25 @@
     "reachableOnError": {
       "invalid": "Değerde geçersiz erişilebilir.",
       "invalidHost": "Tarihinde erişilebilen için geçersiz ana bilgisayar adı.",
-      "tooLong": "Değerde ulaşılabilirlik çok uzun."
+      "tooLong": "Değerde ulaşılabilirlik çok uzun.",
+      "required": "Omurga yayınlama, ana bilgisayar adı, IP veya çözünürlük komut dosyasında erişilebilir olmasını gerektirir."
     },
     "openGlobalMap": "Küresel haritayı aç",
     "openGlobalMapAria": "RMAP v4 global haritasını rmap.world'de açın",
     "applyPartialSuccess": "{{total}} arabirimlerinin {{applied}} öğesine uygulanan RMAP ayarları.",
     "disablePartialSuccess": "{{total}} arayüzlerinin {{applied}} üzerinde RMAP yayınlama devre dışı bırakıldı.",
     "hint": "Etkinleştirilen tüm RMAP özellikli arayüzlerde (RNode/Multi, KISS, BLE eş, I2P, UDP, pipe) RMAP yayınlamayı ve Uygulama GPS koordinatlarını etkinleştirir. Onay kutusu yalnızca tüm uygun arayüzler yayınlanırken açıktır; kısmi bir durum belirsizdir; geri kalanını senkronize etmek için tekrar kontrol edin. Hassas kontrol için her arayüz için RMAP geçişlerini Bağlantı üzerinde kullanın. LoRa yolları aynı zamanda ulaşımı ve rmap.world merkezini de mümkün kılar.",
-    "disabledShareOff": "RMAP'te yayınlamak için Uygulama → GPS / Konumunda konumumu paylaş'ı etkinleştirin."
+    "disabledShareOff": "RMAP'te yayınlamak için Uygulama → GPS / Konumunda konumumu paylaş'ı etkinleştirin.",
+    "reachableOnRequired": "Erişilebilir (Omurga için gereklidir)",
+    "discoveryLxmfAddress": "Operatör LXMF adresi (isteğe bağlı Hex)",
+    "discoveryStampValue": "Keşif damgası değeri",
+    "discoveryEncrypt": "Keşif duyurularını şifrele",
+    "publishIfac": "IFAC kimlik bilgilerini yayınlayın",
+    "advancedHint": "Şifrele ve IFAC seçenekleri, bir ağ kimliğini paylaşan özel ağlar içindir. Herkese açık RMAP yayıncılığı için bunları kapalı bırakın.",
+    "lxmfAddressError": {
+      "invalid": "Operatör LXMF adresi çift uzunlukta onaltılık olmalıdır.",
+      "tooLong": "Operatör LXMF adresi çok uzun."
+    }
   },
   "reticulumTopology": {
     "title": "Ağ topolojisi",

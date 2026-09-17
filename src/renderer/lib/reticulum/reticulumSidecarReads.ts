@@ -116,6 +116,10 @@ export interface ReticulumSidecarInterfaceRow {
   announce_interval_min?: number | null;
   connectable?: boolean | null;
   reachable_on?: string | null;
+  discovery_lxmf_address?: string | null;
+  discovery_stamp_value?: number | null;
+  discovery_encrypt?: boolean | null;
+  publish_ifac?: boolean | null;
   network_name?: string | null;
   passphrase?: string | null;
   flow_control?: boolean | null;

@@ -1167,7 +1167,8 @@
         "i2p": "Dorsale I2P tramite un router su questa macchina. Abilitare il bridge dell'applicazione SAM (127.0.0.1:7656) — non i proxy HTTP/HTTPS I2PTunnel (4444/4445). Riavviare I2P dopo aver abilitato SAM in modo che il bridge ascolti, quindi riavviare lo stack Reticulum se questa interfaccia rimane inattiva.",
         "serial": "Collegamento seriale generico a un TNC, modem o altro host su un cavo. Impostare i parametri della linea in modo che corrispondano all'estremità.",
         "ax25kiss": "AX.25 packet radio attraverso un KISS TNC. Richiede il tuo nominativo e un SSID (0-15) che identifichi questa stazione.",
-        "local": "Presa a istanza condivisa su questa macchina. Altri strumenti locali (rnsd, Nomad Network, rnsh) possono collegarsi a questo stack attraverso di esso. Il percorso del socket deriva dal nome di questa interfaccia, quindi rinominarlo cambia l'indirizzo che gli altri strumenti devono utilizzare."
+        "local": "Presa a istanza condivisa su questa macchina. Altri strumenti locali (rnsd, Nomad Network, rnsh) possono collegarsi a questo stack attraverso di esso. Il percorso del socket deriva dal nome di questa interfaccia, quindi rinominarlo cambia l'indirizzo che gli altri strumenti devono utilizzare.",
+        "backbone": "Listener backbone TCP pubblico (Scenario A). Pubblica un gateway a cui i peer possono connettersi automaticamente quando è attivo il rilevamento RMAP: imposta REACHABLE_ON sul tuo nome host o IP pubblico."
       },
       "rfProfile": {
         "coordinated": "Coordinamento regionale",
@@ -1305,7 +1306,9 @@
         "preamble": "Premessa (ms)",
         "txtail": "Coda TX (ms)",
         "persistence": "Persistenza",
-        "slottime": "Tempo slot (ms)"
+        "slottime": "Tempo slot (ms)",
+        "listen_on": "Indirizzo di ascolto",
+        "target_host": "Host remoto (modalità client)"
       },
       "fieldOption": {
         "parity": {
@@ -1842,7 +1845,8 @@
         "rmap_transport_disabled": "Le interfacce individuabili sono configurate ma la modalità di trasporto è disattivata.",
         "rmap_i2p_not_connectable": "L'interfaccia I2P \"{{name}}\" è rilevabile ma collegabile non è sì.",
         "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
-        "rmap_mode_autocorrect": "L'interfaccia \"{{name}}\" è rilevabile con una modalità non AP/Gateway: Reticulum la eseguirà come punto di accesso a meno che non sia impostato ignore_config_warnings. Modificare l'interfaccia o riavviare lo stack in modo che il client mesh possa timbrare l'opt-out (mesh-client)."
+        "rmap_mode_autocorrect": "L'interfaccia \"{{name}}\" è rilevabile con una modalità non AP/Gateway: Reticulum la eseguirà come punto di accesso a meno che non sia impostato ignore_config_warnings. Modificare l'interfaccia o riavviare lo stack in modo che il client mesh possa timbrare l'opt-out (mesh-client).",
+        "rmap_missing_reachable_on": "L'interfaccia backbone \"{{name}}\" è rilevabile, ma manca REACHABLE_on."
       },
       "runtime": {
         "rnsNotReady": "Lo stack RNS non è pronto",
@@ -4786,14 +4790,25 @@
     "reachableOnError": {
       "invalid": "Raggiungibile non valido sul valore.",
       "invalidHost": "Nome host non valido per essere raggiunto il.",
-      "tooLong": "Il valore raggiungibile è troppo lungo."
+      "tooLong": "Il valore raggiungibile è troppo lungo.",
+      "required": "La pubblicazione backbone richiede un nome host, un IP o uno script di risoluzione raggiungibile."
     },
     "openGlobalMap": "Apri la mappa globale",
     "openGlobalMapAria": "Apri la mappa globale RMAP v4 su rmap.world",
     "applyPartialSuccess": "Impostazioni RMAP applicate alle interfacce {{applied}} di {{total}}.",
     "disablePartialSuccess": "Pubblicazione RMAP disabilitata sulle interfacce {{applied}} di {{total}}.",
     "hint": "Abilita la pubblicazione RMAP e le coordinate GPS dell'app su tutte le interfacce abilitate con funzionalità RMAP (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). La casella di controllo è attiva solo quando tutte le interfacce idonee sono in fase di pubblicazione; uno stato parziale è indeterminato: ricontrolla per sincronizzare il resto. Utilizza RMAP per interfaccia su Connessione per un controllo accurato. I percorsi LoRa consentono anche il trasporto e l'hub rmap.world.",
-    "disabledShareOff": "Abilita Condividi la mia posizione nell'app → GPS / Posizione per pubblicare su RMAP."
+    "disabledShareOff": "Abilita Condividi la mia posizione nell'app → GPS / Posizione per pubblicare su RMAP.",
+    "reachableOnRequired": "Raggiungibile su (richiesto per Backbone)",
+    "discoveryLxmfAddress": "Indirizzo LXMF dell'operatore (esadecimale opzionale)",
+    "discoveryStampValue": "Valore del bollo di scoperta",
+    "discoveryEncrypt": "Encrypt Discovery annuncia",
+    "publishIfac": "Pubblica credenziali IFAC",
+    "advancedHint": "Le opzioni Encrypt e IFAC sono per reti private che condividono un'identità di rete. Lasciali fuori per la pubblicazione pubblica RMAP.",
+    "lxmfAddressError": {
+      "invalid": "L'indirizzo LXMF dell'operatore deve essere esadecimale di lunghezza pari.",
+      "tooLong": "L'indirizzo LXMF dell'operatore è troppo lungo."
+    }
   },
   "reticulumTopology": {
     "title": "Topologia di rete.",

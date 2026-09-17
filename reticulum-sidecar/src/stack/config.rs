@@ -76,6 +76,12 @@ const KNOWN_IFACE_CONFIG_KEYS: &[&str] = &[
     "announce_interval",
     "connectable",
     "reachable_on",
+    "discovery_lxmf_address",
+    "discovery_stamp_value",
+    "discovery_encrypt",
+    "publish_ifac",
+    "discovery_publish_ifac",
+    "stamp_value",
     "network_name",
     "passphrase",
     "flow_control",
@@ -390,6 +396,26 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
             block.get("target_host").map(str::to_string),
             block.get("target_port").and_then(|p| p.parse::<u16>().ok()),
         )
+    } else if iface_type == "backbone" {
+        // Remote Backbone uses target_host + target_port (or legacy `port`);
+        // listener rows use listen_on + `port`.
+        let host = block
+            .get("target_host")
+            .map(str::trim)
+            .filter(|h| !h.is_empty())
+            .map(str::to_string);
+        let port = if host.is_some() {
+            block
+                .get("target_port")
+                .or_else(|| block.get("port"))
+                .and_then(|p| p.parse::<u16>().ok())
+        } else {
+            block
+                .get("port")
+                .or_else(|| block.get("target_port"))
+                .and_then(|p| p.parse::<u16>().ok())
+        };
+        (host, port)
     } else if iface_type == "i2p" {
         (
             block
@@ -478,6 +504,15 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         announce_interval_min: block.get("announce_interval").and_then(|v| v.parse().ok()),
         connectable: block.get_bool("connectable"),
         reachable_on: block.get("reachable_on").map(str::to_string),
+        discovery_lxmf_address: block.get("discovery_lxmf_address").map(str::to_string),
+        discovery_stamp_value: block
+            .get("discovery_stamp_value")
+            .or_else(|| block.get("stamp_value"))
+            .and_then(|v| v.parse().ok()),
+        discovery_encrypt: block.get_bool("discovery_encrypt"),
+        publish_ifac: block
+            .get_bool("publish_ifac")
+            .or_else(|| block.get_bool("discovery_publish_ifac")),
         network_name: nonempty_opt_string(block.get("network_name")),
         passphrase: nonempty_opt_string(block.get("passphrase")),
         // Only RF types honor flow control; non-RF blocks keep it unset so a
@@ -563,7 +598,22 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
         }
     }
 
-    if iface_type_uses_numeric_port(&row.iface_type) {
+    if row.iface_type == "backbone" {
+        // Remote: target_host only with matching target_port. Listener: plain `port`.
+        match row.host.as_deref().map(str::trim).filter(|h| !h.is_empty()) {
+            Some(host) => {
+                if let Some(port) = row.port {
+                    block.set("target_host", host);
+                    block.set("target_port", &port.to_string());
+                }
+            }
+            None => {
+                if let Some(port) = row.port {
+                    block.set("port", &port.to_string());
+                }
+            }
+        }
+    } else if iface_type_uses_numeric_port(&row.iface_type) {
         if let Some(port) = row.port {
             block.set("port", &port.to_string());
         }
@@ -575,6 +625,18 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
     // needs no new write branch here.
     for field in catalog_fields(&row.iface_type) {
         if block.values.contains_key(&field.key) {
+            continue;
+        }
+        // Backbone remotes map InterfaceRow::port → target_port (handled above);
+        // do not also emit catalog `port` / orphan `target_host`.
+        if row.iface_type == "backbone"
+            && (field.key == "port" || field.key == "target_host")
+            && row
+                .host
+                .as_deref()
+                .map(str::trim)
+                .is_some_and(|h| !h.is_empty())
+        {
             continue;
         }
         if let Some(value) = catalog_field_value(row, field) {
@@ -664,6 +726,18 @@ fn write_discovery_fields(block: &mut IniBlock, row: &InterfaceRow) {
     }
     if let Some(v) = &row.reachable_on {
         block.set("reachable_on", v);
+    }
+    if let Some(v) = &row.discovery_lxmf_address {
+        block.set("discovery_lxmf_address", v);
+    }
+    if let Some(v) = row.discovery_stamp_value {
+        block.set("discovery_stamp_value", &v.to_string());
+    }
+    if let Some(v) = row.discovery_encrypt {
+        block.set("discovery_encrypt", &bool_to_ini(v));
+    }
+    if let Some(v) = row.publish_ifac {
+        block.set("publish_ifac", &bool_to_ini(v));
     }
 }
 
@@ -794,6 +868,19 @@ fn validate_ini_scalar(field: &str, value: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Optional operator LXMF address: empty clears; non-empty must be 32 hex chars.
+fn validate_discovery_lxmf_address(value: &str) -> Result<(), String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Ok(());
+    }
+    validate_ini_scalar("discovery_lxmf_address", trimmed)?;
+    if trimmed.len() != 32 || !trimmed.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("invalid discovery_lxmf_address".into());
+    }
+    Ok(())
+}
+
 fn validate_extra_config(extra: &HashMap<String, String>) -> Result<(), String> {
     for (key, value) in extra {
         if key.trim().is_empty() || ini_scalar_has_control_chars(key) {
@@ -852,6 +939,37 @@ fn apply_discovery_patch(
             }
         }
         row.reachable_on = patch.reachable_on.clone();
+    }
+    if patch.discovery_lxmf_address.is_some() {
+        if let Some(ref value) = patch.discovery_lxmf_address {
+            validate_discovery_lxmf_address(value)?;
+        }
+        row.discovery_lxmf_address = nonempty_opt_string(patch.discovery_lxmf_address.as_deref());
+    }
+    if patch.discovery_stamp_value.is_some() {
+        row.discovery_stamp_value = patch.discovery_stamp_value;
+    }
+    if patch.discovery_encrypt.is_some() {
+        row.discovery_encrypt = patch.discovery_encrypt;
+    }
+    if patch.publish_ifac.is_some() {
+        row.publish_ifac = patch.publish_ifac;
+    }
+    if let Some(freq) = patch.discovery_frequency {
+        row.extra_config
+            .insert("discovery_frequency".into(), freq.to_string());
+    }
+    if let Some(bw) = patch.discovery_bandwidth {
+        row.extra_config
+            .insert("discovery_bandwidth".into(), bw.to_string());
+    }
+    if let Some(sf) = patch.discovery_spreading_factor {
+        row.extra_config
+            .insert("discovery_spreading_factor".into(), sf.to_string());
+    }
+    if let Some(cr) = patch.discovery_coding_rate {
+        row.extra_config
+            .insert("discovery_coding_rate".into(), cr.to_string());
     }
     if row.discoverable == Some(true) {
         if let (Some(lat), Some(lon)) = (row.latitude, row.longitude) {
@@ -965,6 +1083,15 @@ pub fn add_interface_to_config(
     if let Some(ref passphrase) = req.passphrase {
         validate_ini_scalar("passphrase", passphrase)?;
     }
+    if let Some(ref host) = req.host {
+        let trimmed = host.trim();
+        if !trimmed.is_empty() {
+            validate_ini_scalar("host", trimmed)?;
+        }
+    }
+    if let Some(ref lxmf) = req.discovery_lxmf_address {
+        validate_discovery_lxmf_address(lxmf)?;
+    }
     validate_extra_config(&req.extra_config)?;
     let id = Uuid::new_v4().to_string();
     let name = req
@@ -1010,6 +1137,10 @@ pub fn add_interface_to_config(
         announce_interval_min: req.announce_interval_min,
         connectable: req.connectable,
         reachable_on: req.reachable_on.clone(),
+        discovery_lxmf_address: nonempty_opt_string(req.discovery_lxmf_address.as_deref()),
+        discovery_stamp_value: req.discovery_stamp_value,
+        discovery_encrypt: req.discovery_encrypt,
+        publish_ifac: req.publish_ifac,
         network_name: nonempty_opt_string(req.network_name.as_deref()),
         passphrase: nonempty_opt_string(req.passphrase.as_deref()),
         // RF interfaces default flow control on unless the request overrides it.
@@ -1072,6 +1203,12 @@ pub fn update_interface_in_config(
         row.status = if v { "up" } else { "down" }.into();
     }
     if patch.host.is_some() {
+        if let Some(ref host) = patch.host {
+            let trimmed = host.trim();
+            if !trimmed.is_empty() {
+                validate_ini_scalar("host", trimmed)?;
+            }
+        }
         if row.iface_type == "i2p" {
             if let Some(ref host) = patch.host {
                 validate_i2p_peers(host)?;
@@ -1241,6 +1378,15 @@ pub struct UpdateInterfacePatch {
     pub announce_interval_min: Option<u32>,
     pub connectable: Option<bool>,
     pub reachable_on: Option<String>,
+    pub discovery_lxmf_address: Option<String>,
+    pub discovery_stamp_value: Option<u8>,
+    pub discovery_encrypt: Option<bool>,
+    pub publish_ifac: Option<bool>,
+    /// KISS / AX.25 discovery radio params (written into `extra_config`).
+    pub discovery_frequency: Option<u64>,
+    pub discovery_bandwidth: Option<u64>,
+    pub discovery_spreading_factor: Option<u8>,
+    pub discovery_coding_rate: Option<u8>,
     pub network_name: Option<String>,
     pub passphrase: Option<String>,
     /// RNode/KISS TX ready-gate toggle. `None` leaves the current value.
@@ -2704,6 +2850,153 @@ loglevel = 4
     }
 
     #[test]
+    fn add_backbone_interface_round_trips_listen_on_and_port() {
+        let dir = test_config_dir("backbone-add");
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "backbone".into(),
+                name: Some("Public Gateway".into()),
+                port: Some(4242),
+                discoverable: Some(true),
+                latitude: Some(40.0),
+                longitude: Some(-105.0),
+                reachable_on: Some("mesh.example.com".into()),
+                discovery_stamp_value: Some(22),
+                discovery_encrypt: Some(false),
+                publish_ifac: Some(false),
+                discovery_lxmf_address: Some("aabbccddeeff00112233445566778899".into()),
+                extra_config: {
+                    let mut m = std::collections::HashMap::new();
+                    m.insert("listen_on".into(), "0.0.0.0".into());
+                    m
+                },
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(row.iface_type, "backbone");
+        assert_eq!(row.port, Some(4242));
+        assert_eq!(row.mode.as_deref(), Some("gateway"));
+        assert_eq!(
+            row.extra_config.get("listen_on").map(String::as_str),
+            Some("0.0.0.0")
+        );
+        assert_eq!(row.reachable_on.as_deref(), Some("mesh.example.com"));
+        assert_eq!(row.discovery_stamp_value, Some(22));
+        assert_eq!(
+            row.discovery_lxmf_address.as_deref(),
+            Some("aabbccddeeff00112233445566778899")
+        );
+
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("type = BackboneInterface"), "{content}");
+        assert!(content.contains("listen_on = 0.0.0.0"), "{content}");
+        assert!(content.contains("port = 4242"), "{content}");
+        assert!(content.contains("mode = gateway"), "{content}");
+        assert!(
+            content.contains("reachable_on = mesh.example.com"),
+            "{content}"
+        );
+        assert!(content.contains("discovery_stamp_value = 22"), "{content}");
+        assert!(
+            content.contains("discovery_lxmf_address = aabbccddeeff00112233445566778899"),
+            "{content}"
+        );
+
+        let reparsed = interfaces_from_config_dir(&dir).unwrap();
+        let parsed = reparsed
+            .iter()
+            .find(|i| i.name == "Public Gateway")
+            .unwrap();
+        assert_eq!(parsed.port, Some(4242));
+        assert_eq!(
+            parsed.extra_config.get("listen_on").map(String::as_str),
+            Some("0.0.0.0")
+        );
+        assert_eq!(parsed.discovery_stamp_value, Some(22));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn add_backbone_remote_round_trips_target_host_and_target_port() {
+        let dir = test_config_dir("backbone-remote");
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "backbone".into(),
+                name: Some("Remote Backbone".into()),
+                host: Some("backbone.example.com".into()),
+                port: Some(4242),
+                extra_config: HashMap::new(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(row.host.as_deref(), Some("backbone.example.com"));
+        assert_eq!(row.port, Some(4242));
+
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("type = BackboneInterface"), "{content}");
+        assert!(
+            content.contains("target_host = backbone.example.com"),
+            "{content}"
+        );
+        assert!(content.contains("target_port = 4242"), "{content}");
+        assert!(
+            !content.contains("\nport = 4242"),
+            "remote backbone must not write listener port key: {content}"
+        );
+        assert!(
+            !content.contains("listen_on"),
+            "remote backbone must not invent listen_on: {content}"
+        );
+
+        let reparsed = interfaces_from_config_dir(&dir).unwrap();
+        let parsed = reparsed
+            .iter()
+            .find(|i| i.name == "Remote Backbone")
+            .unwrap();
+        assert_eq!(parsed.host.as_deref(), Some("backbone.example.com"));
+        assert_eq!(parsed.port, Some(4242));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn backbone_orphan_target_host_rewrite_requires_port() {
+        let dir = test_config_dir("backbone-orphan-host");
+        write_config(
+            &dir,
+            "[interfaces]\n\
+             [[Orphan Remote]]\n\
+             type = BackboneInterface\n\
+             enabled = Yes\n\
+             target_host = orphan.example.com\n",
+        )
+        .unwrap();
+
+        let rows = interfaces_from_config_dir(&dir).unwrap();
+        let row = rows.iter().find(|i| i.name == "Orphan Remote").unwrap();
+        assert_eq!(row.host.as_deref(), Some("orphan.example.com"));
+        assert_eq!(row.port, None);
+
+        let err = set_interface_enabled_in_config(&dir, &row.id, false).unwrap_err();
+        assert!(
+            err.contains("port required"),
+            "expected catalog port required, got {err}"
+        );
+        // Writer never emits target_host without target_port; incomplete rows fail closed.
+        let content = read_config(&dir).unwrap();
+        assert!(
+            content.contains("target_host = orphan.example.com"),
+            "{content}"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn local_interface_port_accepts_omission() {
         let dir = test_config_dir("local-default");
         let row = add_interface_to_config(
@@ -3068,6 +3361,10 @@ target_port = 4242
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,
@@ -3798,6 +4095,10 @@ ignore_config_warnings = Yes
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: Some(true),
@@ -4091,6 +4392,10 @@ longitude = -105.0
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,
@@ -4133,6 +4438,10 @@ longitude = -105.0
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,

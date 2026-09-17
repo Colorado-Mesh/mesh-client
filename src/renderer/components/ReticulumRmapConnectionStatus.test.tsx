@@ -56,7 +56,7 @@ describe('ReticulumRmapConnectionStatus', () => {
         sidecarApiReady
         interfaces={[
           iface({ id: 'r1', type: 'rnode', serial_port: '/dev/ttyUSB0', discoverable: true }),
-          iface({ id: 'r2', type: 'ble_peer', discoverable: false }),
+          iface({ id: 'r2', type: 'i2p', discoverable: false }),
           iface({ id: 't', type: 'tcp', host: 'rmap.world', port: 4242 }),
         ]}
       />,
@@ -79,17 +79,16 @@ describe('ReticulumRmapConnectionStatus', () => {
         sidecarApiReady
         interfaces={[
           iface({ id: 'r1', type: 'rnode', serial_port: '/dev/ttyUSB0', discoverable: true }),
-          iface({ id: 'r2', type: 'ble_peer', discoverable: true }),
           iface({ id: 'i', type: 'i2p', discoverable: true }),
         ]}
       />,
     );
     const status = screen.getByRole('status');
     expect(
-      screen.getByText('connectionPanel.reticulumRmap.publishingOf:{"current":3,"total":3}'),
+      screen.getByText('connectionPanel.reticulumRmap.publishingOf:{"current":2,"total":2}'),
     ).toHaveClass('text-brand-green');
     expect(
-      screen.getByText('connectionPanel.reticulumRmap.publishingOf:{"current":3,"total":3}'),
+      screen.getByText('connectionPanel.reticulumRmap.publishingOf:{"current":2,"total":2}'),
     ).not.toHaveClass('text-amber-300');
     hydrateAxeThemeColors(status);
     expect(await axe(status)).toHaveNoViolations();

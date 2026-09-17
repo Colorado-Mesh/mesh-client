@@ -257,6 +257,40 @@
           "max": 65535
         }
       ]
+    },
+    "backbone": {
+      "configType": "BackboneInterface",
+      "label": "Backbone",
+      "defaultMode": "gateway",
+      "classify": "tcp",
+      "requiresStackRestart": true,
+      "usesSerialPort": false,
+      "supportsFlowControl": false,
+      "defaultFlowControl": null,
+      "purposeKey": "backbone",
+      "fields": [
+        {
+          "key": "listen_on",
+          "kind": "text",
+          "default": "0.0.0.0",
+          "required": false
+        },
+        {
+          "key": "port",
+          "kind": "number",
+          "bind": "port",
+          "required": true,
+          "default": 4242,
+          "min": 1,
+          "max": 65535
+        },
+        {
+          "key": "target_host",
+          "kind": "text",
+          "bind": "host",
+          "advanced": true
+        }
+      ]
     }
   }
 }

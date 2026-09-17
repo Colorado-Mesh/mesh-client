@@ -1168,7 +1168,8 @@
         "i2p": "I2P-backbone via een router op deze machine. Schakel de SAM-toepassingsbrug (127.0.0.1:7656) in — niet HTTP/HTTPS I2PTunnel-proxy's (4444/4445). Start I2P opnieuw op nadat SAM is ingeschakeld, zodat de brug luistert, en start vervolgens de Reticulum-stack opnieuw als deze interface niet werkt.",
         "serial": "Generieke seriële link naar een TNC, modem of andere host via een kabel. Stel de lijnparameters zo in dat ze overeenkomen met het uiteinde.",
         "ax25kiss": "AX.25 pakketradio via een KUS TNC. Vereist uw roepnaam en een SSID (0-15) die dit station identificeren.",
-        "local": "Socket met gedeelde instantie op deze machine. Andere lokale tools (rnsd, Nomad Network, rnsh) kunnen via deze stack aan deze stack worden gekoppeld. Het socketpad is afgeleid van de naam van deze interface, dus het hernoemen ervan verandert het adres dat andere tools moeten gebruiken."
+        "local": "Socket met gedeelde instantie op deze machine. Andere lokale tools (rnsd, Nomad Network, rnsh) kunnen via deze stack aan deze stack worden gekoppeld. Het socketpad is afgeleid van de naam van deze interface, dus het hernoemen ervan verandert het adres dat andere tools moeten gebruiken.",
+        "backbone": "Openbare TCP-backbone-luisteraar (scenario A). Publiceert een gateway waarmee peers automatisch verbinding kunnen maken wanneer RMAP-detecteerbaar is ingeschakeld — stel reachable_on in op je openbare hostnaam of IP-adres."
       },
       "rfProfile": {
         "coordinated": "Regionaal gecoördineerd",
@@ -1306,7 +1307,9 @@
         "preamble": "Preambule (ms)",
         "txtail": "TX staart (ms)",
         "persistence": "Persistentie",
-        "slottime": "Slottijd (ms)"
+        "slottime": "Slottijd (ms)",
+        "listen_on": "Luisteradres",
+        "target_host": "Host op afstand (clientmodus)"
       },
       "fieldOption": {
         "parity": {
@@ -1842,7 +1845,8 @@
         "rmap_transport_disabled": "Ontdekbare interfaces zijn geconfigureerd, maar de transportmodus is uitgeschakeld.",
         "rmap_i2p_not_connectable": "I2P-interface \"{{name}}\" is detecteerbaar, maar aansluitbaar is niet ja.",
         "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
-        "rmap_mode_autocorrect": "Interface \"{{name}}\" is detecteerbaar met een niet-AP/Gateway-modus — Reticulum zal het als toegangspunt uitvoeren, tenzij ignore_config_warnings is ingesteld. Bewerk de interface of start de stack opnieuw, zodat de mesh-client de opt-out kan afstempelen."
+        "rmap_mode_autocorrect": "Interface \"{{name}}\" is detecteerbaar met een niet-AP/Gateway-modus — Reticulum zal het als toegangspunt uitvoeren, tenzij ignore_config_warnings is ingesteld. Bewerk de interface of start de stack opnieuw, zodat de mesh-client de opt-out kan afstempelen.",
+        "rmap_missing_reachable_on": "Backbone-interface \"{{name}}\" is detecteerbaar, maar reachable_on ontbreekt."
       },
       "runtime": {
         "rnsNotReady": "RNS-stack is niet gereed",
@@ -4786,14 +4790,25 @@
     "reachableOnError": {
       "invalid": "Ongeldig bereikbaar op waarde.",
       "invalidHost": "Ongeldige hostnaam voor bereikbaar op.",
-      "tooLong": "Bereikbaar op waarde is te lang."
+      "tooLong": "Bereikbaar op waarde is te lang.",
+      "required": "Voor backbone-publicatie is een bereikbaar hostnaam-, IP- of resolutiescript vereist."
     },
     "openGlobalMap": "Globale kaart openen",
     "openGlobalMapAria": "Open RMAP v4 globale kaart op rmap.world",
     "applyPartialSuccess": "RMAP-instellingen toegepast op {{applied}} van {{total}} interfaces.",
     "disablePartialSuccess": "RMAP-publicatie uitgeschakeld op {{applied}} van {{total}} interfaces.",
     "hint": "Maakt RMAP-publicatie en app-GPS-coördinaten mogelijk op alle ingeschakelde RMAP-compatibele interfaces (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). Het selectievakje is alleen ingeschakeld als elke in aanmerking komende interface publiceert; een gedeeltelijke status is onbepaald. Controleer opnieuw om de rest te synchroniseren. Gebruik per interface RMAP-schakelaars op Verbinding voor nauwkeurige controle. LoRa-paden maken ook transport en de rmap.world-hub mogelijk.",
-    "disabledShareOff": "Schakel Mijn locatie delen in app → GPS / locatie in om op RMAP te publiceren."
+    "disabledShareOff": "Schakel Mijn locatie delen in app → GPS / locatie in om op RMAP te publiceren.",
+    "reachableOnRequired": "Bereikbaar op (vereist voor Backbone)",
+    "discoveryLxmfAddress": "Operator LXMF-adres (optioneel hex)",
+    "discoveryStampValue": "Waarde ontdekkingszegel",
+    "discoveryEncrypt": "Encrypt discovery kondigt aan",
+    "publishIfac": "IFAC-inloggegevens publiceren",
+    "advancedHint": "Encrypt- en IFAC-opties zijn voor privé-netwerken die een netwerkidentiteit delen. Laat ze uit voor openbare RMAP-publicaties.",
+    "lxmfAddressError": {
+      "invalid": "Het LXMF-adres van de operator moet even lang zijn.",
+      "tooLong": "Het LXMF-adres van de operator is te lang."
+    }
   },
   "reticulumTopology": {
     "title": "Netwerktopologie",

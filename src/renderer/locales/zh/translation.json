@@ -1169,7 +1169,8 @@
         "i2p": "通过此机器上的路由器的I2P骨干网。启用SAM应用程序桥(127.0.0.1: 7656) —而不是HTTP/HTTPS I2P隧道代理(4444/4445)。在启用SAM后重新启动I2P ，以便桥接器侦听，然后如果此接口保持关闭状态，则重新启动Reticulum堆栈。",
         "serial": "通过有线连接到TNC、调制解调器或其他主机的通用串行链路。设置线路参数以匹配远端。",
         "ax25kiss": "通过KISS TNC的AX.25分组无线电。需要您的呼号以及标识此电台的SSID (0-15)。",
-        "local": "此机器上的共享实例套接字。其他本地工具（ rnsd、Nomad Network、rnsh ）可以通过它连接到此堆栈。套接字路径派生自此接口的名称，因此重命名它会更改其他工具必须使用的地址。"
+        "local": "此机器上的共享实例套接字。其他本地工具（ rnsd、Nomad Network、rnsh ）可以通过它连接到此堆栈。套接字路径派生自此接口的名称，因此重命名它会更改其他工具必须使用的地址。",
+        "backbone": "公共TCP骨干侦听器（场景A ）。当RMAP可发现处于打开状态时，发布对等体可以自动连接到的网关—将reachable_on设置为您的公共主机名或IP。"
       },
       "rfProfile": {
         "coordinated": "区域协调",
@@ -1307,7 +1308,9 @@
         "preamble": "前言（毫秒）",
         "txtail": "TX尾部(ms)",
         "persistence": "一致性",
-        "slottime": "时隙时间（毫秒）"
+        "slottime": "时隙时间（毫秒）",
+        "listen_on": "侦听地址",
+        "target_host": "远程主机（客户端模式）"
       },
       "fieldOption": {
         "parity": {
@@ -1842,7 +1845,8 @@
         "rmap_transport_disabled": "已配置可发现的接口，但传输模式已关闭。",
         "rmap_i2p_not_connectable": "I2P接口“{{name}}”是可发现的，但不是可连接的。",
         "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
-        "rmap_mode_autocorrect": "接口“{{name}}”可通过非AP/网关模式发现—除非设置ignore_config_warnings ，否则Reticulum将作为接入点运行。编辑界面或重新启动堆栈，以便mesh-client可以标记选择退出。"
+        "rmap_mode_autocorrect": "接口“{{name}}”可通过非AP/网关模式发现—除非设置ignore_config_warnings ，否则Reticulum将作为接入点运行。编辑界面或重新启动堆栈，以便mesh-client可以标记选择退出。",
+        "rmap_missing_reachable_on": "主干接口“{{name}}”是可发现的，但缺少reachable_on。"
       },
       "runtime": {
         "rnsNotReady": "RNS 堆栈尚未准备好",
@@ -4786,14 +4790,25 @@
     "reachableOnError": {
       "invalid": "值上的可访问性无效。",
       "invalidHost": "上可访问的主机名无效。",
-      "tooLong": "可触及的值太长。"
+      "tooLong": "可触及的值太长。",
+      "required": "主干发布需要在主机名、IP或解析脚本上可访问。"
     },
     "openGlobalMap": "全球测绘",
     "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图",
     "applyPartialSuccess": "RMAP设置已应用于{{applied}}/{{total}}接口。",
     "disablePartialSuccess": "在{{applied}}/{{total}}接口上禁用RMAP发布。",
     "hint": "在所有启用的支持 RMAP 的接口（RNode/Multi、KISS、BLE 对等、I2P、UDP、管道）上启用 RMAP 发布和应用程序 GPS 坐标。仅当每个符合条件的接口都在发布时，该复选框才会打开；部分状态是不确定的——再次检查以同步其余部分。使用连接上的每个接口 RMAP 切换进行精细控制。 LoRa 路径还支持传输和 rmap.world 中心。",
-    "disabledShareOff": "启用在应用程序→GPS/位置中共享我的位置以在RMAP上发布。"
+    "disabledShareOff": "启用在应用程序→GPS/位置中共享我的位置以在RMAP上发布。",
+    "reachableOnRequired": "可到达于（骨干网必需）",
+    "discoveryLxmfAddress": "操作员LXMF地址（可选十六进制）",
+    "discoveryStampValue": "发现印章价值",
+    "discoveryEncrypt": "加密发现宣布",
+    "publishIfac": "发布IFAC证书",
+    "advancedHint": "加密和IFAC选项适用于共享网络身份的私有网络。将它们留给公开的RMAP发布。",
+    "lxmfAddressError": {
+      "invalid": "操作员LXMF地址必须是偶数长度的十六进制。",
+      "tooLong": "操作员LXMF地址太长。"
+    }
   },
   "reticulumTopology": {
     "title": "网络拓扑图",

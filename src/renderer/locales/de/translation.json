@@ -1167,7 +1167,8 @@
         "i2p": "I2P-Backbone über einen Router auf dieser Maschine. Aktivieren SIE die SAM-Anwendungsbrücke (127.0.0.1:7656) — nicht HTTP/HTTPS-I2PTunnel-Proxys (4444/4445). Starten Sie I2P neu, nachdem Sie SAM aktiviert haben, damit die Brücke zuhört, und starten Sie dann den Reticulum-Stack neu, wenn diese Schnittstelle ausgeschaltet bleibt.",
         "serial": "Generische serielle Verbindung zu einem TNC, Modem oder einem anderen Host über eine Leitung. Stellen Sie die Linienparameter so ein, dass sie mit dem fernen Ende übereinstimmen.",
         "ax25kiss": "AX.25 Paketradio durch einen KISS TNC. Erfordert Ihr Rufzeichen und eine SSID (0-15), die diese Station identifiziert.",
-        "local": "Shared-Instance-Buchse auf dieser Maschine. Andere lokale Tools (rnsd, Nomad Network, rnsh) können über diesen Stack angeschlossen werden. Der Socket-Pfad leitet sich vom Namen dieser Schnittstelle ab, sodass die Umbenennung die Adresse ändert, die andere Tools verwenden müssen."
+        "local": "Shared-Instance-Buchse auf dieser Maschine. Andere lokale Tools (rnsd, Nomad Network, rnsh) können über diesen Stack angeschlossen werden. Der Socket-Pfad leitet sich vom Namen dieser Schnittstelle ab, sodass die Umbenennung die Adresse ändert, die andere Tools verwenden müssen.",
+        "backbone": "Öffentlicher TCP-Backbone-Listener (Szenario A). Veröffentlicht ein Gateway, mit dem sich Peers automatisch verbinden können, wenn RMAP Discoverable eingeschaltet ist — setze reachable_on auf deinen öffentlichen Hostnamen oder deine öffentliche IP-Adresse."
       },
       "rfProfile": {
         "coordinated": "Regional koordiniert",
@@ -1305,7 +1306,9 @@
         "preamble": "Präambel (ms)",
         "txtail": "TX Tail (ms)",
         "persistence": "Beharrlichkeit sagt",
-        "slottime": "Zeit (ms):"
+        "slottime": "Zeit (ms):",
+        "listen_on": "Adresse zuhören",
+        "target_host": "Remote-Host (Client-Modus)"
       },
       "fieldOption": {
         "parity": {
@@ -1842,7 +1845,8 @@
         "rmap_transport_disabled": "Erkennbare Schnittstellen sind konfiguriert, aber der Transportmodus ist ausgeschaltet.",
         "rmap_i2p_not_connectable": "Die I2P-Schnittstelle \"{{name}}\" ist auffindbar, aber anschließbar ist nicht ja.",
         "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
-        "rmap_mode_autocorrect": "Die Schnittstelle „{{name}}“ ist mit einem Nicht-AP-/Gateway-Modus auffindbar — Reticulum führt sie als Access Point aus, es sei denn, ignore_config_warnings ist festgelegt. Bearbeiten Sie die Schnittstelle oder starten Sie den Stack neu, damit der mesh-client das Opt-Out stempeln kann."
+        "rmap_mode_autocorrect": "Die Schnittstelle „{{name}}“ ist mit einem Nicht-AP-/Gateway-Modus auffindbar — Reticulum führt sie als Access Point aus, es sei denn, ignore_config_warnings ist festgelegt. Bearbeiten Sie die Schnittstelle oder starten Sie den Stack neu, damit der mesh-client das Opt-Out stempeln kann.",
+        "rmap_missing_reachable_on": "Die Backbone-Schnittstelle \"{{name}}\" ist auffindbar, aber reachable_on fehlt."
       },
       "runtime": {
         "rnsNotReady": "Der RNS-Stack ist nicht bereit",
@@ -4786,14 +4790,25 @@
     "reachableOnError": {
       "invalid": "Ungültiger erreichbarer Wert.",
       "invalidHost": "Ungültiger Hostname für erreichbar am.",
-      "tooLong": "Der erreichbare Wert ist zu lang."
+      "tooLong": "Der erreichbare Wert ist zu lang.",
+      "required": "Backbone Publish erfordert ein erreichbares Skript für Hostname, IP oder Auflösung."
     },
     "openGlobalMap": "Globale Karte öffnen",
     "openGlobalMapAria": "RMAP v4 Global Map auf rmap.world öffnen",
     "applyPartialSuccess": "RMAP-Einstellungen wurden auf {{applied}} von {{total}} Schnittstellen angewendet.",
     "disablePartialSuccess": "Die RMAP-Veröffentlichung ist auf {{applied}} von {{total}} Schnittstellen deaktiviert.",
     "hint": "Ermöglicht RMAP-Veröffentlichung und App-GPS-Koordinaten auf allen aktivierten RMAP-fähigen Schnittstellen (RNode/Multi, KISS, BLE-Peer, I2P, UDP, Pipe). Das Kontrollkästchen ist nur aktiviert, wenn jede geeignete Schnittstelle veröffentlicht. Ein Teilzustand ist unbestimmt – überprüfen Sie ihn erneut, um den Rest zu synchronisieren. Verwenden Sie zur Feinsteuerung die RMAP-Umschaltung pro Schnittstelle für die Verbindung. LoRa-Pfade ermöglichen auch den Transport und den rmap.world-Hub.",
-    "disabledShareOff": "Aktivieren Sie Meinen Standort in der App → GPS / Standort freigeben, um ihn auf RMAP zu veröffentlichen."
+    "disabledShareOff": "Aktivieren Sie Meinen Standort in der App → GPS / Standort freigeben, um ihn auf RMAP zu veröffentlichen.",
+    "reachableOnRequired": "Erreichbar am (erforderlich für Backbone)",
+    "discoveryLxmfAddress": "Operator LXMF-Adresse (optional Hex)",
+    "discoveryStampValue": "Erkennungsstempelwert",
+    "discoveryEncrypt": "Encrypt Discovery kündigt an",
+    "publishIfac": "IFAC-Anmeldeinformationen veröffentlichen",
+    "advancedHint": "Verschlüsselungs- und IFAC-Optionen gelten für private Netzwerke, die eine gemeinsame Netzwerkidentität haben. Lassen Sie sie für die öffentliche RMAP-Veröffentlichung aus.",
+    "lxmfAddressError": {
+      "invalid": "Die LXMF-Adresse des Betreibers muss eine Hexadezimaladresse gerader Länge sein.",
+      "tooLong": "Operator-LXMF-Adresse ist zu lang."
+    }
   },
   "reticulumTopology": {
     "title": "Netzwerk-Topologie",

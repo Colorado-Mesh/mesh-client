@@ -2060,21 +2060,19 @@ describe('ReticulumInterfacesPanel', () => {
         serial_port: '/dev/ttyUSB0',
       },
       {
-        id: 'rnode-multi-1',
-        name: 'RNode Multi',
-        type: 'rnode_multi',
-        serial_port: '/dev/ttyUSB1',
-      },
-      {
         id: 'kiss-1',
         name: 'KISS',
         type: 'kiss',
         serial_port: '/dev/kiss',
       },
-      { id: 'ble-1', name: 'BLE Peer', type: 'ble_peer' },
+      {
+        id: 'ax25-1',
+        name: 'AX.25',
+        type: 'ax25kiss',
+        serial_port: '/dev/ax25',
+      },
       { id: 'i2p-1', name: 'I2P', type: 'i2p' },
-      { id: 'udp-1', name: 'UDP', type: 'udp' },
-      { id: 'pipe-1', name: 'Pipe', type: 'pipe' },
+      { id: 'backbone-1', name: 'Public Gateway', type: 'backbone' },
     ] as const)('shows RMAP checkbox for eligible $type', (partial) => {
       render(
         <ReticulumInterfacesPanel
@@ -2089,7 +2087,7 @@ describe('ReticulumInterfacesPanel', () => {
       ).toBeInTheDocument();
     });
 
-    it('hides RMAP checkbox for tcp hubs and system-managed rows', () => {
+    it('hides RMAP checkbox for tcp hubs, system-managed, and non-advertizable types', () => {
       render(
         <ReticulumInterfacesPanel
           {...defaultProps}
@@ -2109,6 +2107,17 @@ describe('ReticulumInterfacesPanel', () => {
               type: 'auto',
               enabled: true,
               status: 'up',
+            },
+            { id: 'ble-1', name: 'BLE Peer', type: 'ble_peer', enabled: true, status: 'up' },
+            { id: 'udp-1', name: 'UDP', type: 'udp', enabled: true, status: 'up' },
+            { id: 'pipe-1', name: 'Pipe', type: 'pipe', enabled: true, status: 'up' },
+            {
+              id: 'multi-1',
+              name: 'RNode Multi',
+              type: 'rnode_multi',
+              enabled: true,
+              status: 'up',
+              serial_port: '/dev/ttyUSB1',
             },
           ]}
         />,

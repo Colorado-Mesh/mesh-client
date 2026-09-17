@@ -1168,7 +1168,8 @@
         "i2p": "Backbone I2P via un routeur sur cette machine. Activez le pont d'application SAM (127.0.0.1:7656) — pas les proxys HTTP/HTTPS I2PTunnel (4444/4445). Redémarrez I2P après avoir activé SAM pour que le pont écoute, puis redémarrez la pile Reticulum si cette interface reste en panne.",
         "serial": "Lien série générique vers un TNC, un modem ou un autre hôte via un fil. Définissez les paramètres de ligne pour qu'ils correspondent à l'extrémité éloignée.",
         "ax25kiss": "Radio par paquets AX.25 via un TNC KISS. Nécessite votre indicatif d'appel et un SSID (0-15) identifiant cette station.",
-        "local": "Prise en instance partagée sur cette machine. D'autres outils locaux (rnsd, Nomad Network, rnsh) peuvent s'attacher à cette pile à travers elle. Le chemin du socket est dérivé du nom de cette interface, donc le renommer change l'adresse que les autres outils doivent utiliser."
+        "local": "Prise en instance partagée sur cette machine. D'autres outils locaux (rnsd, Nomad Network, rnsh) peuvent s'attacher à cette pile à travers elle. Le chemin du socket est dérivé du nom de cette interface, donc le renommer change l'adresse que les autres outils doivent utiliser.",
+        "backbone": "Écouteur TCP Backbone public (scénario A). Publie une passerelle à laquelle les pairs peuvent se connecter automatiquement lorsque RMAP découvrable est activé — définissez reachable_on sur votre nom d'hôte public ou votre adresse IP."
       },
       "rfProfile": {
         "coordinated": "Coordination régionale",
@@ -1306,7 +1307,9 @@
         "preamble": "Préambule (ms)",
         "txtail": "TX queue (ms)",
         "persistence": "Persistance",
-        "slottime": "Temps de créneau (ms)"
+        "slottime": "Temps de créneau (ms)",
+        "listen_on": "Adresse IP d’écoute",
+        "target_host": "Hôte distant (mode client)"
       },
       "fieldOption": {
         "parity": {
@@ -1842,7 +1845,8 @@
         "rmap_transport_disabled": "Les interfaces détectables sont configurées mais le mode de transport est désactivé.",
         "rmap_i2p_not_connectable": "L'interface I2P « {{name}} » est détectable mais connectable n'est pas oui.",
         "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
-        "rmap_mode_autocorrect": "L'interface \"{{name}}\" est détectable avec un mode non-AP/Gateway — Reticulum l'exécutera en tant que point d'accès sauf si ignore_config_warnings est défini. Modifiez l'interface ou redémarrez la pile afin que mesh-client puisse estampiller l'opt-out."
+        "rmap_mode_autocorrect": "L'interface \"{{name}}\" est détectable avec un mode non-AP/Gateway — Reticulum l'exécutera en tant que point d'accès sauf si ignore_config_warnings est défini. Modifiez l'interface ou redémarrez la pile afin que mesh-client puisse estampiller l'opt-out.",
+        "rmap_missing_reachable_on": "L'interface principale « {{name}} » est détectable mais accessible_sur est manquante."
       },
       "runtime": {
         "rnsNotReady": "La pile RNS n'est pas prête",
@@ -4786,14 +4790,25 @@
     "reachableOnError": {
       "invalid": "Accessible non valide sur la valeur.",
       "invalidHost": "Nom d'hôte non valide pour joignable le.",
-      "tooLong": "La valeur atteignable est trop longue."
+      "tooLong": "La valeur atteignable est trop longue.",
+      "required": "La publication Backbone nécessite un nom d'hôte, une adresse IP ou un script de résolution accessible."
     },
     "openGlobalMap": "Carte mondiale",
     "openGlobalMapAria": "Ouvrez la carte globale RMAP v4 sur rmap.world",
     "applyPartialSuccess": "Paramètres RMAP appliqués à {{applied}} des interfaces {{total}}.",
     "disablePartialSuccess": "Publication RMAP désactivée sur {{applied}} des interfaces {{total}}.",
     "hint": "Permet la publication RMAP et les coordonnées GPS de l'application sur toutes les interfaces compatibles RMAP activées (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). La case à cocher est activée uniquement lorsque chaque interface éligible publie ; un état partiel est indéterminé – vérifiez à nouveau pour synchroniser le reste. Utilisez les bascules RMAP par interface sur Connexion pour un contrôle précis. Les chemins LoRa permettent également le transport et le hub rmap.world.",
-    "disabledShareOff": "Activez Partager ma position dans l'application → GPS / Localisation pour publier sur RMAP."
+    "disabledShareOff": "Activez Partager ma position dans l'application → GPS / Localisation pour publier sur RMAP.",
+    "reachableOnRequired": "Accessible sur (requis pour Backbone)",
+    "discoveryLxmfAddress": "Adresse LXMF de l'opérateur (hexadécimal facultatif)",
+    "discoveryStampValue": "Valeur du timbre Découverte",
+    "discoveryEncrypt": "La découverte de chiffrement annonce",
+    "publishIfac": "Publier les informations d'identification IFAC",
+    "advancedHint": "Les options de chiffrement et IFAC sont destinées aux réseaux privés qui partagent une identité réseau. Laissez-les pour la publication publique du RMAP.",
+    "lxmfAddressError": {
+      "invalid": "L'adresse LXMF de l'opérateur doit être hexagonale de longueur paire.",
+      "tooLong": "L'adresse LXMF de l'opérateur est trop longue."
+    }
   },
   "reticulumTopology": {
     "title": "Topologie de réseau",

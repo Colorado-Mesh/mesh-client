@@ -19,11 +19,20 @@ export const RMAP_ANNOUNCE_INTERVAL_DEFAULT_MIN = 360;
 export const RMAP_ANNOUNCE_INTERVAL_MIN_MIN = 60;
 export const RMAP_ANNOUNCE_INTERVAL_MIN_MAX = 1440;
 export const RMAP_REACHABLE_ON_MAX_LEN = 256;
+/** Upstream rsReticulum DEFAULT_STAMP_VALUE (manual text still cites 14). */
+export const RMAP_DISCOVERY_STAMP_DEFAULT = 16;
+export const RMAP_DISCOVERY_STAMP_MIN = 8;
+export const RMAP_DISCOVERY_STAMP_MAX = 32;
+export const RMAP_DISCOVERY_LXMF_ADDRESS_MAX_LEN = 64;
 
 export const RMAP_SETTINGS_KEYS = {
   announceIntervalMin: 'reticulumRmapAnnounceIntervalMin',
   reachableOn: 'reticulumRmapReachableOn',
   heightMeters: 'reticulumRmapHeightMeters',
+  discoveryLxmfAddress: 'reticulumRmapDiscoveryLxmfAddress',
+  discoveryStampValue: 'reticulumRmapDiscoveryStampValue',
+  discoveryEncrypt: 'reticulumRmapDiscoveryEncrypt',
+  publishIfac: 'reticulumRmapPublishIfac',
 } as const;
 
 export interface RmapCoordinates {
@@ -38,6 +47,10 @@ export interface RmapDiscoveryPatchOptions {
   heightMeters?: number | null;
   reachableOn?: string | null;
   discoverable: boolean;
+  discoveryLxmfAddress?: string | null;
+  discoveryStampValue?: number | null;
+  discoveryEncrypt?: boolean | null;
+  publishIfac?: boolean | null;
 }
 
 export interface ReticulumRmapDiscoveryPatch {
@@ -49,6 +62,14 @@ export interface ReticulumRmapDiscoveryPatch {
   announce_interval_min?: number;
   connectable?: boolean;
   reachable_on?: string;
+  discovery_lxmf_address?: string;
+  discovery_stamp_value?: number;
+  discovery_encrypt?: boolean;
+  publish_ifac?: boolean;
+  discovery_frequency?: number;
+  discovery_bandwidth?: number;
+  discovery_spreading_factor?: number;
+  discovery_coding_rate?: number;
 }
 
 export class ReticulumRmapGpsRequiredError extends Error {
@@ -93,13 +114,60 @@ export function validateRmapReachableOn(value: string): string | null {
   return null;
 }
 
-/** Interface types mesh-client can mark discoverable for RMAP v4 (see rmap.world/info.html). */
-const RMAP_DISCOVERY_EXCLUDED_TYPES = new Set(['auto', 'tcp']);
+export function clampRmapDiscoveryStampValue(value: number): number {
+  if (!Number.isFinite(value)) {
+    return RMAP_DISCOVERY_STAMP_DEFAULT;
+  }
+  return Math.min(RMAP_DISCOVERY_STAMP_MAX, Math.max(RMAP_DISCOVERY_STAMP_MIN, Math.round(value)));
+}
+
+/** Optional operator LXMF address shown on discovered-interface details (manual). */
+export function validateRmapDiscoveryLxmfAddress(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (trimmed.length > RMAP_DISCOVERY_LXMF_ADDRESS_MAX_LEN) {
+    return 'too_long';
+  }
+  // Canonical lxmf.delivery destination hash: 16 bytes → 32 hex chars.
+  if (!/^[0-9a-fA-F]{32}$/.test(trimmed)) {
+    return 'invalid';
+  }
+  return null;
+}
+
+/**
+ * Server entrypoints (Backbone) need a public hostname/IP or resolution script
+ * so remote peers can dial in. Empty is invalid when publishing Backbone.
+ */
+export function requireRmapReachableOnForServer(
+  row: Pick<ReticulumInterfaceRow, 'type'>,
+  reachableOn: string | null | undefined,
+): string | null {
+  if (!isReticulumRmapServerDiscoveryRow(row)) {
+    return null;
+  }
+  const trimmed = reachableOn?.trim() ?? '';
+  if (!trimmed) {
+    return 'required';
+  }
+  return validateRmapReachableOn(trimmed);
+}
+
+/**
+ * UI types whose upstream factory arms emit discovery announces
+ * (`DISCOVERABLE_INTERFACE_TYPES` / `discovery_config_for_interface` in rsReticulum).
+ * Excludes Auto (LAN), outbound TCP client hubs (only kiss-framed TCP clients
+ * announce, which mesh-client does not expose), Weave (not in catalog), and
+ * types that silently no-op when discoverable (udp/pipe/ble_peer/rnode_multi).
+ */
+const RMAP_DISCOVERY_CAPABLE_TYPES = new Set(['rnode', 'kiss', 'ax25kiss', 'i2p', 'backbone']);
 
 /**
  * Enabled interfaces that support per-interface discoverable=yes in rnsd config.
- * Excludes Auto (LAN), outbound TCP client hubs, and system-managed shared-instance
- * rows — Scenario A server/backbone interfaces are not CRUD-managed in mesh-client today.
+ * Aligned with rsReticulum advertizable types. Excludes system-managed
+ * shared-instance rows.
  */
 export function isReticulumRmapDiscoveryCapable(
   row: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port'> &
@@ -119,16 +187,14 @@ export function isReticulumRmapDiscoveryCapable(
     return false;
   }
   const type = row.type.trim().toLowerCase();
-  if (RMAP_DISCOVERY_EXCLUDED_TYPES.has(type)) {
+  if (!RMAP_DISCOVERY_CAPABLE_TYPES.has(type)) {
     return false;
   }
-  if (type === 'i2p' || type === 'ble_peer' || type === 'pipe' || type === 'udp') {
+  if (type === 'i2p' || type === 'backbone') {
     return true;
   }
-  if (type === 'kiss' || type === 'rnode_multi' || type === 'rnode') {
-    return Boolean(row.serial_port?.trim());
-  }
-  return false;
+  // rnode / kiss / ax25kiss need a configured port (USB, ble://, or tcp://).
+  return Boolean(row.serial_port?.trim());
 }
 
 export function listReticulumRmapDiscoveryCapable(
@@ -162,16 +228,27 @@ export function readRmapPublishPartial(interfaces: readonly ReticulumInterfaceRo
   return discoverableCount > 0 && discoverableCount < targets.length;
 }
 
-/** LoRa/BLE paths that need a TCP transport bridge to reach RMAP (Scenario B). */
+/** LoRa paths that need a TCP transport bridge to reach RMAP (Scenario B). */
 export function isReticulumRmapLoRaDiscoveryRow(row: Pick<ReticulumInterfaceRow, 'type'>): boolean {
   const type = row.type.trim().toLowerCase();
-  return type === 'rnode' || type === 'kiss' || type === 'rnode_multi' || type === 'ble_peer';
+  return type === 'rnode' || type === 'kiss' || type === 'ax25kiss';
+}
+
+/** Server-style entrypoints that need reachable_on for remote peers (Scenario A). */
+export function isReticulumRmapServerDiscoveryRow(
+  row: Pick<ReticulumInterfaceRow, 'type'>,
+): boolean {
+  return row.type.trim().toLowerCase() === 'backbone';
 }
 
 export interface RmapUiPrefs {
   announceIntervalMin: number;
   reachableOn: string;
   heightMeters: number | null;
+  discoveryLxmfAddress: string;
+  discoveryStampValue: number;
+  discoveryEncrypt: boolean;
+  publishIfac: boolean;
 }
 
 export function readRmapUiPrefs(): RmapUiPrefs {
@@ -181,6 +258,7 @@ export function readRmapUiPrefs(): RmapUiPrefs {
   );
   const announceRaw = parsed?.[RMAP_SETTINGS_KEYS.announceIntervalMin];
   const heightRaw = parsed?.[RMAP_SETTINGS_KEYS.heightMeters];
+  const stampRaw = parsed?.[RMAP_SETTINGS_KEYS.discoveryStampValue];
   let heightMeters: number | null = null;
   if (heightRaw != null) {
     const parsedHeight = Number(heightRaw);
@@ -198,6 +276,20 @@ export function readRmapUiPrefs(): RmapUiPrefs {
         ? (parsed[RMAP_SETTINGS_KEYS.reachableOn] as string)
         : '',
     heightMeters,
+    discoveryLxmfAddress:
+      typeof parsed?.[RMAP_SETTINGS_KEYS.discoveryLxmfAddress] === 'string'
+        ? (parsed[RMAP_SETTINGS_KEYS.discoveryLxmfAddress] as string)
+        : '',
+    discoveryStampValue:
+      stampRaw != null
+        ? clampRmapDiscoveryStampValue(Number(stampRaw))
+        : RMAP_DISCOVERY_STAMP_DEFAULT,
+    discoveryEncrypt:
+      parsed?.[RMAP_SETTINGS_KEYS.discoveryEncrypt] === true ||
+      parsed?.[RMAP_SETTINGS_KEYS.discoveryEncrypt] === 'true',
+    publishIfac:
+      parsed?.[RMAP_SETTINGS_KEYS.publishIfac] === true ||
+      parsed?.[RMAP_SETTINGS_KEYS.publishIfac] === 'true',
   };
 }
 
@@ -279,6 +371,10 @@ export async function syncReticulumRmapDiscoveryToInterface(
   }
   const prefs = readRmapUiPrefs();
   const reachable = prefs.reachableOn.trim();
+  if (requireRmapReachableOnForServer(iface, reachable)) {
+    console.debug('[reticulumRmapDiscovery] sync skipped: backbone needs reachable_on');
+    return false;
+  }
   if (reachable) {
     const err = validateRmapReachableOn(reachable);
     if (err) {
@@ -293,6 +389,10 @@ export async function syncReticulumRmapDiscoveryToInterface(
     heightMeters: prefs.heightMeters,
     reachableOn: reachable || null,
     discoverable: true,
+    discoveryLxmfAddress: prefs.discoveryLxmfAddress || null,
+    discoveryStampValue: prefs.discoveryStampValue,
+    discoveryEncrypt: prefs.discoveryEncrypt,
+    publishIfac: prefs.publishIfac,
   });
   await window.electronAPI.reticulum.proxyPut(`/api/v1/interfaces/${iface.id}`, patch);
   return true;
@@ -324,7 +424,10 @@ export function resolveRmapCoordinates(): RmapCoordinates | null {
 }
 
 export function buildRmapDiscoveryPatch(
-  row: Pick<ReticulumInterfaceRow, 'type'>,
+  row: Pick<
+    ReticulumInterfaceRow,
+    'type' | 'frequency' | 'bandwidth' | 'spreading_factor' | 'coding_rate'
+  >,
   opts: RmapDiscoveryPatchOptions,
 ): ReticulumRmapDiscoveryPatch {
   const patch: ReticulumRmapDiscoveryPatch = {
@@ -344,8 +447,37 @@ export function buildRmapDiscoveryPatch(
     if (reachable) {
       patch.reachable_on = reachable;
     }
-    if (row.type.trim().toLowerCase() === 'i2p') {
+    const type = row.type.trim().toLowerCase();
+    if (type === 'i2p') {
       patch.connectable = true;
+    }
+    const lxmf = opts.discoveryLxmfAddress?.trim() ?? '';
+    // Empty string clears a previously stored address (sidecar nonempty_opt_string).
+    patch.discovery_lxmf_address = lxmf;
+    if (opts.discoveryStampValue != null && Number.isFinite(opts.discoveryStampValue)) {
+      patch.discovery_stamp_value = clampRmapDiscoveryStampValue(opts.discoveryStampValue);
+    }
+    // Always persist explicit booleans so disabling clears a prior Yes in config.
+    patch.discovery_encrypt = opts.discoveryEncrypt === true;
+    patch.publish_ifac = opts.publishIfac === true;
+    // KISS / AX.25 need explicit discovery_* radio params; RNode auto-fills upstream.
+    if (type === 'kiss' || type === 'ax25kiss') {
+      if (row.frequency != null && Number.isFinite(row.frequency) && row.frequency > 0) {
+        patch.discovery_frequency = Math.round(row.frequency);
+      }
+      if (row.bandwidth != null && Number.isFinite(row.bandwidth) && row.bandwidth > 0) {
+        patch.discovery_bandwidth = Math.round(row.bandwidth);
+      }
+      if (
+        row.spreading_factor != null &&
+        Number.isFinite(row.spreading_factor) &&
+        row.spreading_factor > 0
+      ) {
+        patch.discovery_spreading_factor = Math.round(row.spreading_factor);
+      }
+      if (row.coding_rate != null && Number.isFinite(row.coding_rate) && row.coding_rate > 0) {
+        patch.discovery_coding_rate = Math.round(row.coding_rate);
+      }
     }
   }
   return patch;
@@ -359,6 +491,10 @@ export function persistRmapUiPrefs(prefs: {
   announceIntervalMin: number;
   reachableOn: string;
   heightMeters: string;
+  discoveryLxmfAddress?: string;
+  discoveryStampValue?: number;
+  discoveryEncrypt?: boolean;
+  publishIfac?: boolean;
 }): void {
   mergeAppSetting(
     RMAP_SETTINGS_KEYS.announceIntervalMin,
@@ -381,6 +517,22 @@ export function persistRmapUiPrefs(prefs: {
       );
     }
   }
+  const lxmf = (prefs.discoveryLxmfAddress ?? '').trim();
+  mergeAppSetting(RMAP_SETTINGS_KEYS.discoveryLxmfAddress, lxmf, 'reticulumRmapDiscovery persist');
+  const stamp = clampRmapDiscoveryStampValue(
+    prefs.discoveryStampValue ?? RMAP_DISCOVERY_STAMP_DEFAULT,
+  );
+  mergeAppSetting(RMAP_SETTINGS_KEYS.discoveryStampValue, stamp, 'reticulumRmapDiscovery persist');
+  mergeAppSetting(
+    RMAP_SETTINGS_KEYS.discoveryEncrypt,
+    prefs.discoveryEncrypt === true,
+    'reticulumRmapDiscovery persist',
+  );
+  mergeAppSetting(
+    RMAP_SETTINGS_KEYS.publishIfac,
+    prefs.publishIfac === true,
+    'reticulumRmapDiscovery persist',
+  );
   void window.electronAPI.appSettings
     .set(
       RMAP_SETTINGS_KEYS.announceIntervalMin,
@@ -401,6 +553,26 @@ export function persistRmapUiPrefs(prefs: {
         console.warn('[reticulumRmapDiscovery] persist heightMeters ' + errLikeToLogString(e));
       });
   }
+  void window.electronAPI.appSettings
+    .set(RMAP_SETTINGS_KEYS.discoveryLxmfAddress, lxmf)
+    .catch((e: unknown) => {
+      console.warn('[reticulumRmapDiscovery] persist lxmfAddress ' + errLikeToLogString(e));
+    });
+  void window.electronAPI.appSettings
+    .set(RMAP_SETTINGS_KEYS.discoveryStampValue, String(stamp))
+    .catch((e: unknown) => {
+      console.warn('[reticulumRmapDiscovery] persist stampValue ' + errLikeToLogString(e));
+    });
+  void window.electronAPI.appSettings
+    .set(RMAP_SETTINGS_KEYS.discoveryEncrypt, prefs.discoveryEncrypt === true ? 'true' : 'false')
+    .catch((e: unknown) => {
+      console.warn('[reticulumRmapDiscovery] persist encrypt ' + errLikeToLogString(e));
+    });
+  void window.electronAPI.appSettings
+    .set(RMAP_SETTINGS_KEYS.publishIfac, prefs.publishIfac === true ? 'true' : 'false')
+    .catch((e: unknown) => {
+      console.warn('[reticulumRmapDiscovery] persist publishIfac ' + errLikeToLogString(e));
+    });
 }
 
 async function ensureRmapWorldHubEnabled(
@@ -433,6 +605,10 @@ export interface ApplyReticulumRmapDiscoveryArgs {
   announceIntervalMin: number;
   heightMeters?: number | null;
   reachableOn?: string | null;
+  discoveryLxmfAddress?: string | null;
+  discoveryStampValue?: number | null;
+  discoveryEncrypt?: boolean | null;
+  publishIfac?: boolean | null;
   stackSettings: { enable_transport: boolean; share_instance: boolean; loglevel: number };
 }
 
@@ -463,6 +639,18 @@ export async function applyReticulumRmapDiscovery(
     throw new ReticulumRmapValidationError('no_publish_targets');
   }
 
+  if (targets.some(isReticulumRmapServerDiscoveryRow) && !reachable) {
+    throw new ReticulumRmapValidationError('reachable_on_required');
+  }
+
+  const lxmf = args.discoveryLxmfAddress?.trim() ?? '';
+  if (lxmf) {
+    const lxmfErr = validateRmapDiscoveryLxmfAddress(lxmf);
+    if (lxmfErr) {
+      throw new ReticulumRmapValidationError(`lxmf_${lxmfErr}`);
+    }
+  }
+
   const errors: string[] = [];
   let applied = 0;
 
@@ -488,6 +676,10 @@ export async function applyReticulumRmapDiscovery(
         heightMeters: args.heightMeters,
         reachableOn: reachable || null,
         discoverable: true,
+        discoveryLxmfAddress: lxmf || null,
+        discoveryStampValue: args.discoveryStampValue,
+        discoveryEncrypt: args.discoveryEncrypt,
+        publishIfac: args.publishIfac,
       });
       await window.electronAPI.reticulum.proxyPut(`/api/v1/interfaces/${row.id}`, patch);
       applied++;
@@ -546,6 +738,12 @@ export async function setReticulumRmapDiscoverableForInterface(
   );
   const heightMeters = args.heightMeters ?? prefs.heightMeters;
   const reachable = (args.reachableOn ?? prefs.reachableOn).trim();
+  const reachableErr = requireRmapReachableOnForServer(iface, reachable);
+  if (reachableErr) {
+    throw new ReticulumRmapValidationError(
+      reachableErr === 'required' ? 'reachable_on_required' : reachableErr,
+    );
+  }
   if (reachable) {
     const err = validateRmapReachableOn(reachable);
     if (err) {
@@ -570,6 +768,10 @@ export async function setReticulumRmapDiscoverableForInterface(
     heightMeters,
     reachableOn: reachable || null,
     discoverable: true,
+    discoveryLxmfAddress: prefs.discoveryLxmfAddress || null,
+    discoveryStampValue: prefs.discoveryStampValue,
+    discoveryEncrypt: prefs.discoveryEncrypt,
+    publishIfac: prefs.publishIfac,
   });
   await window.electronAPI.reticulum.proxyPut(`/api/v1/interfaces/${iface.id}`, patch);
 }
