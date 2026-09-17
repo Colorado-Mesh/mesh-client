@@ -1335,7 +1335,9 @@
       "profilesRename": "Rename",
       "profilesSaveRename": "Save",
       "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}"
+      "profilesRenameAria": "Rename profile {{name}}",
+      "bootstrapOnly": "仅Bootstrap",
+      "bootstrapOnlyHint": "断开此接口，一旦发现足够多的骨干/TCP服务器自动连接（需要网络→自动连接限制> 0 ）。"
     },
     "reticulumPeers": {
       "hops": "跳数",
@@ -2844,7 +2846,23 @@
       "pathMediumRf": "RF (RNode)",
       "pathMediumPreferenceAria": "全局首选路径介质",
       "pathMediumPreferenceSaved": "路径介质首选项已保存。",
-      "pathMediumPreferenceSaveFailed": "保存路径介质首选项失败。"
+      "pathMediumPreferenceSaveFailed": "保存路径介质首选项失败。",
+      "discoveryConsumeTitle": "发现的接口（消耗）",
+      "discoveryConsumeHint": "聆听始终在开启。除非您选择加入，否则自动连接将保持关闭（ 0 ） —发现骨干/TCP服务器由rsReticulum拨号，而不是由mesh-client拨号。",
+      "autoconnectDiscovered": "自动连接限制",
+      "autoconnectDiscoveredAria": "要自动连接的最大已发现接口数",
+      "autoconnectDiscoveredHint": "0 =从不自动拨号。大于0的值让Reticulum从DISCOVERY公告中引入短暂的骨干客户端。",
+      "requiredDiscoveryValue": "最小发现印章",
+      "requiredDiscoveryValueAria": "接受的发现公告的最小加密戳值",
+      "discoverySources": "可信的发现来源",
+      "discoverySourcesAria": "逗号分隔的网络或传输标识哈希",
+      "discoverySourcesPlaceholder": "32个十六进制哈希，逗号分隔（空=接受任何）",
+      "discoverySourcesHint": "设置后，仅接受来自这些身份的声明（仍受印章价值的约束）。",
+      "discoverySourcesInvalid": "每个发现源必须是32个字符的十六进制标识哈希。",
+      "networkIdentity": "網路識別",
+      "networkIdentityAria": "用于发现加密和解密的网络身份文件的路径",
+      "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
+      "networkIdentityHint": "可选。需要对加密的发现公告进行解密（并在使用DISCOVERY_ENCRYPT发布时进行加密）。"
     },
     "reticulumConfigImport": {
       "title": "导入 Reticulum config",
@@ -5263,7 +5281,16 @@
       "noDiscoveries": "尚未听到RMAP发现接口。",
       "filterEmpty": "没有与此筛选器匹配的接口。",
       "hint": "只有当操作员启用RMAP发布时，节点才会出现。LoRa路径需要TCP集线器（例如rmap.world:4242）来中继通告。如需覆盖全球，请使用全球地图链接。"
-    }
+    },
+    "stampStatus": "邮票{{stamp}} · {{status}} · {{hops}}跃点",
+    "addAsInterface": "添加为接口",
+    "addAsInterfaceBusy": "增加",
+    "addAsInterfaceAria": "添加{{name}}作为永久骨干接口",
+    "addAsInterfaceSuccess": "已将{{name}}添加到连接→接口。如果堆栈未出现，请重新启动。",
+    "addAsInterfaceFailed": "无法添加接口： {{error}}",
+    "addAsInterfaceNotAddable": "无法添加此发现行（需要主干或TCP服务器地址）。",
+    "addAsInterfaceAdded": "加入物",
+    "addAsInterfaceAddedAria": "{{name}}已添加为连接接口"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

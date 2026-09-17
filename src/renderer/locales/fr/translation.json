@@ -1334,7 +1334,9 @@
       "profilesRename": "Rename",
       "profilesSaveRename": "Save",
       "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}"
+      "profilesRenameAria": "Rename profile {{name}}",
+      "bootstrapOnly": "(bootstrap uniquement)",
+      "bootstrapOnlyHint": "Détachez cette interface une fois que suffisamment de serveurs Backbone/TCP découverts se connectent automatiquement (nécessite une limite d'→autoconnexion réseau > 0)."
     },
     "reticulumPeers": {
       "hops": "Sauts",
@@ -2844,7 +2846,23 @@
       "pathMediumRf": "RF (RNode)",
       "pathMediumPreferenceAria": "Milieu de chemin privilégié global",
       "pathMediumPreferenceSaved": "Préférence de support de chemin enregistrée.",
-      "pathMediumPreferenceSaveFailed": "Échec de l'enregistrement de la préférence de support de chemin."
+      "pathMediumPreferenceSaveFailed": "Échec de l'enregistrement de la préférence de support de chemin.",
+      "discoveryConsumeTitle": "Interfaces découvertes (consommer)",
+      "discoveryConsumeHint": "L'écoute est toujours active. La connexion automatique reste désactivée (0) à moins que vous ne vous inscriviez — les serveurs Backbone/TCP découverts sont composés par rsReticulum, et non par mesh-client.",
+      "autoconnectDiscovered": "Limite de connexion automatique",
+      "autoconnectDiscoveredAria": "Nombre maximal d'interfaces découvertes pour la connexion automatique",
+      "autoconnectDiscoveredHint": "0 = jamais de numérotation automatique. Les valeurs supérieures à 0 permettent à Reticulum de faire apparaître les clients éphémères de l'épine dorsale à partir des annonces de découverte.",
+      "requiredDiscoveryValue": "Cachet de découverte minimum",
+      "requiredDiscoveryValueAria": "Valeur minimale du timbre cryptographique pour les annonces de découverte acceptées",
+      "discoverySources": "Sources de découverte fiables",
+      "discoverySourcesAria": "Hachages d'identité de réseau ou de transport séparés par des virgules",
+      "discoverySourcesPlaceholder": "32 hachages hexagonaux, séparés par des virgules (vide = accepter tout)",
+      "discoverySourcesHint": "Lorsqu'elles sont définies, seules les annonces de ces identités sont acceptées (toujours sous réserve de la valeur du timbre).",
+      "discoverySourcesInvalid": "Chaque source de découverte doit être un hachage d'identité hexadécimal de 32 caractères.",
+      "networkIdentity": "Identité réseau",
+      "networkIdentityAria": "Chemin vers le fichier d'identité réseau pour la découverte chiffrer et déchiffrer",
+      "networkIdentityPlaceholder": "~/.reticulum/stockage/identités/mon_réseau",
+      "networkIdentityHint": "Facultatif. Obligatoire pour déchiffrer les annonces de découverte chiffrées (et pour chiffrer lors de la publication avec discovery_encrypt)."
     },
     "reticulumConfigImport": {
       "title": "Importer la configuration du Reticulum",
@@ -5263,7 +5281,16 @@
       "noDiscoveries": "Aucune interface de découverte RMAP n'a encore été entendue.",
       "filterEmpty": "Aucune interface ne correspond à ce filtre.",
       "hint": "Les nœuds n'apparaissent que lorsque les opérateurs activent découvrable=oui. Les chemins LoRa nécessitent un concentrateur TCP (par exemple rmap.world :4242) pour relayer les annonces. Pour une couverture mondiale, utilisez le lien de la carte mondiale."
-    }
+    },
+    "stampStatus": "Timbre {{stamp}} · {{status}} · {{hops}} sauts",
+    "addAsInterface": "Ajouter comme interface",
+    "addAsInterfaceBusy": "Ajout en cours…",
+    "addAsInterfaceAria": "Ajouter {{name}} comme interface dorsale persistante",
+    "addAsInterfaceSuccess": "Ajout de {{name}} aux → interfaces de connexion. Redémarrez la pile si elle ne s'élève pas.",
+    "addAsInterfaceFailed": "Impossible d'ajouter l'interface : {{error}}",
+    "addAsInterfaceNotAddable": "Cette ligne de découverte ne peut pas être ajoutée (nécessite une adresse de serveur Backbone ou TCP).",
+    "addAsInterfaceAdded": "Ajouté",
+    "addAsInterfaceAddedAria": "{{name}} déjà ajouté en tant qu'interface de connexion"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

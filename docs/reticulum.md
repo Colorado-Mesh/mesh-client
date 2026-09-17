@@ -133,6 +133,21 @@ The **Map** tab shows **local** RMAP v4 discovery data — interfaces your stack
 
 **Consume (Map tab):** Sidecar bootstrap migrations in rnsd config: `discover_interfaces = Yes` so the stack listens for discovery announces; when `announce_interval_sec` is absent, writes **3600** (explicit **0** is preserved). Markers show GPS when coordinates were included in the announce; interfaces without coords appear in the sidebar list only. **Reachable** badges join discovery rows with the RNS path table (Peers tab) by matching `transport_id` against peer `destination_hash` or `via_hash`.
 
+**Map detail / Add:** Sidebar and marker popups show `reachable_on:port`, stamp value, status, and hops when present. Wire rows also carry `network_id` and IFAC (`ifac_netname` / `ifac_netkey`) for Add. Backbone / TCPServer discoveries with a concrete host and port can be **Add as interface** → persistent remote Backbone on Connection (stack restart may be required). Script-style `reachable_on` paths are not addable.
+
+**Consume stack knobs (Network → Stack settings):** Opt-in only — defaults stay safe (`autoconnect_discovered_interfaces = 0`). Exposed for rsReticulum runtime (mesh-client does not reimplement autoconnect):
+
+| Setting               | Config key                          | Default               |
+| --------------------- | ----------------------------------- | --------------------- |
+| Autoconnect limit     | `autoconnect_discovered_interfaces` | `0` (never auto-dial) |
+| Minimum stamp         | `required_discovery_value`          | `16`                  |
+| Trusted sources       | `interface_discovery_sources`       | empty (any source)    |
+| Network identity path | `network_identity`                  | empty                 |
+
+**`bootstrap_only`:** Per-interface checkbox on Connection → Interfaces. When set, rsReticulum tears the interface down once the autoconnect quota is filled (useful for an expensive LoRa/TCP bridge). Requires autoconnect limit > 0.
+
+**Upstream library gaps (do not reimplement in mesh-client):** `autoconnect_interface_mode` and `autoconnect_announces_to_internal` are documented in the Reticulum Discovering Interfaces chapter but are **not** implemented in rsReticulum yet (autoconnect mode is derived from `enable_transport`). Track in Ratspeak/rsReticulum; mesh-client only writes keys the library already honors.
+
 **UI:** Leaflet map with 280px sidebar list; filter pills (All, LoRa, Backbone, I2P, TCP, Other); basemap switcher and Locate Me (App GPS); manual Refresh; marker click opens peer detail when the node is in the path table. List row click flies to coordinates at zoom 14.
 
 **Refresh model:** Map tab polls `GET /api/v1/rmap/discovered` every **30s** while mounted; sidecar also pushes WebSocket `rmap.discovery` every **10s** when the discovery fingerprint changes (runtime updates store even when Map tab is hidden).
@@ -272,7 +287,7 @@ Config lives under `userData/reticulum/config/` (rnsd INI). The Connection tab s
     ```
 
     Save, **enable** the interface (default backbones are added disabled), and restart the stack. On the I2P router, configure SAM to listen on the LAN address (or `0.0.0.0`), not only `127.0.0.1`, and confirm reachability from the mesh-client host (e.g. `nc -z 192.168.1.86 7656`).
-- **RNode:** USB serial, **Bluetooth** (`ble://…`), or **Wi‑Fi** (`tcp://host[:7633]`, default **7633**), LoRa preset, callsign. Enabled **Bluetooth** RNode rows show **Signal** bars + dBm from sidecar BLE scans (`useReticulumBleRnodeRssiMap`): polling starts while the sidecar is **running** (including during `connecting`) with a short burst until the first sample, then steadies; disabling all BLE RNodes stops scans immediately.
+- **RNode:** USB serial, **Bluetooth** (`ble://…`), or **Wi‑Fi** (`tcp://host[:7633]`, default **7633**), LoRa preset, callsign. Enabled **Bluetooth** RNode rows show **Signal** bars + dBm from sidecar connect/scan host-RSSI cache (`InterfaceRow.host_rssi`) with advertisement-scan fallback (`useReticulumBleRnodeRssiMap`): polling starts while the sidecar is **running** (including during `connecting`) with a short burst until the first sample, then steadies; disabling all BLE RNodes stops scans immediately. After GATT connect, CoreBluetooth stops advertising — meters keep the last seeded dBm rather than flipping to “—”.
 - **BLE Peer mesh:** optional seed peer addresses
 - **Auto:** name only (link-local discovery)
 
@@ -349,7 +364,7 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 - **Peer fingerprint verification:** Peer detail can mark a contact verified (pins `verified_identity_hash` + `verified_at` in SQLite via `db:setReticulumDestinationVerified`) and warns on mismatch when the live announce hash drifts.
 - **Header self label:** when configured, the app header shows your Network **display name** (`reticulumSelfNodeLabel.ts`) — not a hash-prefix stub; omit the `Node:` label when no real name is set
 - **Identity vault:** optional passcode (minimum 8 characters) to encrypt a local copy of the last exported `.rsi` JSON in the main process; unlock is rate-limited. Portable backup is the `.rsi` / raw identity file, not the vault alone.
-- **Stack settings:** `enable_transport`, `share_instance`, `loglevel` via `PUT /api/v1/stack/settings` (UI merge-reads so `announce_interval_sec` is not cleared accidentally); missing `share_instance` defaults to **off**
+- **Stack settings:** `enable_transport`, `share_instance`, `loglevel`, announce interval, and discovery consume knobs via `PUT /api/v1/stack/settings` (partial body merges atomically on the sidecar; omitted fields keep on-disk values); missing `share_instance` defaults to **off**
 - **Config validate:** Electron IPC `reticulum:validateConfig` → one-shot sidecar `validate-config --json` against `userData/reticulum/config`
 - **Announces:** interval (`announce_interval_sec`, 0–86400; default **3600** s / 1 h when unset; `0` = startup-only) persisted in rnsd config. The live sidecar sends an **LXMF delivery** announce shortly after stack start and on that interval (Ratspeak/lxmd parity). **Announce now** (`POST /api/v1/announces`) forces an immediate delivery announce. **Clear announces** (`DELETE /api/v1/announces`) clears the stub peer cache; the live path table may refill on the next peer refresh. Per-interface `announce_interval_min` (RMAP/discoverable interfaces) is separate.
 - **Inbound LXMF:** the sidecar registers `lxmf.delivery` with the transport (`RegisterDestination` + `LinkManager`) and feeds decrypted link/resource payloads into the delivery callback (WS `lxmf_message`). Without this registration, peer DMs never appear in Chat even when paths exist.

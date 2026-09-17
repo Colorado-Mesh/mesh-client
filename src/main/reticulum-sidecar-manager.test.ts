@@ -1023,7 +1023,7 @@ describe('ReticulumSidecarManager', () => {
     mkdirSpy.mockRestore();
   });
 
-  it('quit flushes pending state before SIGTERM without waiting for BLE detach', async () => {
+  it.each([0, 3500])('quit waits for a %ims state flush before SIGTERM', async (flushDelayMs) => {
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
     const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
     const proc = mockSidecarProc();
@@ -1047,39 +1047,51 @@ describe('ReticulumSidecarManager', () => {
     const manager = new ReticulumSidecarManager();
     await manager.start();
     fetchMock.mockClear();
+    vi.useFakeTimers();
 
-    let confirmFlush!: () => void;
-    fetchMock.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          confirmFlush = () => {
-            resolve({ ok: true, json: () => Promise.resolve({ ok: true }) });
-          };
-        }),
-    );
-    const stopping = manager.stop({ forQuit: true });
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/stack/flush-state'),
-      expect.objectContaining({ method: 'POST' }),
-    );
-    expect(proc.kill).not.toHaveBeenCalled();
-    confirmFlush();
-    await stopping;
+    try {
+      let confirmFlush!: () => void;
+      fetchMock.mockImplementation(
+        (_url: string, init: RequestInit) =>
+          new Promise((resolve, reject) => {
+            confirmFlush = () => {
+              resolve({ ok: true, json: () => Promise.resolve({ ok: true }) });
+            };
+            init.signal?.addEventListener('abort', () => {
+              reject(new Error('aborted'));
+            });
+          }),
+      );
+      const stopping = manager.stop({ forQuit: true });
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/stack/flush-state'),
+        expect.objectContaining({ method: 'POST' }),
+      );
+      await vi.advanceTimersByTimeAsync(flushDelayMs);
+      expect(proc.kill).not.toHaveBeenCalled();
+      confirmFlush();
+      await stopping;
 
-    expect(
-      fetchMock.mock.calls.some(
-        (args) => typeof args[0] === 'string' && args[0].includes('/api/v1/stack/prepare-stop'),
-      ),
-    ).toBe(false);
-    expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
-
-    existsSpy.mockRestore();
-    mkdirSpy.mockRestore();
+      expect(
+        fetchMock.mock.calls.some(
+          (args) => typeof args[0] === 'string' && args[0].includes('/api/v1/stack/prepare-stop'),
+        ),
+      ).toBe(false);
+      expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
+    } finally {
+      vi.useRealTimers();
+      existsSpy.mockRestore();
+      mkdirSpy.mockRestore();
+    }
   });
 
-  it.each(['timeout', 'failure'] as const)(
-    'quit still terminates the process after state flush %s',
-    async (outcome) => {
+  it.each([
+    { forQuit: true, operation: 'flush-state', outcome: 'timeout', budgetMs: 5000 },
+    { forQuit: true, operation: 'flush-state', outcome: 'failure', budgetMs: 5000 },
+    { forQuit: false, operation: 'prepare-stop', outcome: 'timeout', budgetMs: 1000 },
+  ])(
+    '$operation still terminates the process after $outcome',
+    async ({ forQuit, operation, outcome, budgetMs }) => {
       const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
       const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
       const proc = mockSidecarProc();
@@ -1108,13 +1120,19 @@ describe('ReticulumSidecarManager', () => {
             });
           }),
         );
-        const stopping = manager.stop({ forQuit: true });
-        await vi.advanceTimersByTimeAsync(1000);
+        const stopping = manager.stop({ forQuit });
+        if (outcome === 'timeout') {
+          await vi.advanceTimersByTimeAsync(budgetMs - 1);
+          expect(proc.kill).not.toHaveBeenCalled();
+          await vi.advanceTimersByTimeAsync(1);
+        }
         await stopping;
         expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
         expect(debug).toHaveBeenCalledWith(
-          '[ReticulumSidecar] flush-state failed — continuing with SIGTERM:',
-          expect.any(String),
+          `[ReticulumSidecar] ${operation} failed — continuing with SIGTERM:`,
+          outcome === 'timeout'
+            ? `Timed out after ${budgetMs}ms`
+            : 'Sidecar did not confirm state flush',
         );
       } finally {
         vi.useRealTimers();

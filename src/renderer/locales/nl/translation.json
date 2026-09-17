@@ -1334,7 +1334,9 @@
       "profilesRename": "Rename",
       "profilesSaveRename": "Save",
       "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}"
+      "profilesRenameAria": "Rename profile {{name}}",
+      "bootstrapOnly": "Alleen bootstrap",
+      "bootstrapOnlyHint": "Koppel deze interface los zodra er voldoende ontdekt is dat Backbone/TCP-servers automatisch verbinding maken (vereist Netwerk → Autoconnect limiet > 0)."
     },
     "reticulumPeers": {
       "hops": "Hop",
@@ -2844,7 +2846,23 @@
       "pathMediumRf": "RF (RNode)",
       "pathMediumPreferenceAria": "Globaal voorkeurspadmedium",
       "pathMediumPreferenceSaved": "Pad medium voorkeur opgeslagen.",
-      "pathMediumPreferenceSaveFailed": "Kan pad mediumvoorkeur niet opslaan."
+      "pathMediumPreferenceSaveFailed": "Kan pad mediumvoorkeur niet opslaan.",
+      "discoveryConsumeTitle": "Ontdekte interfaces (consumeren)",
+      "discoveryConsumeHint": "Luisteren staat altijd aan. Autoconnect blijft uit (0) tenzij u zich aanmeldt — ontdekte Backbone/TCP-servers worden gebeld door rsReticulum, niet door mesh-client.",
+      "autoconnectDiscovered": "Limiet voor automatisch verbinden",
+      "autoconnectDiscoveredAria": "Maximaal ontdekte interfaces om automatisch verbinding te maken",
+      "autoconnectDiscoveredHint": "0 = nooit automatisch kiezen. Waarden boven 0 laten Reticulum kortstondige Backbone-clients van discovery aankondigen.",
+      "requiredDiscoveryValue": "Minimaal ontdekkingsstempel",
+      "requiredDiscoveryValueAria": "Minimale cryptografische stempelwaarde voor geaccepteerde ontdekkingsaankondigingen",
+      "discoverySources": "Vertrouwde detectiebronnen",
+      "discoverySourcesAria": "Door komma's gescheiden netwerk- of transportidentiteitshashes",
+      "discoverySourcesPlaceholder": "32-hex hashes, door komma's gescheiden (leeg = accepteer elke)",
+      "discoverySourcesHint": "Wanneer ingesteld, worden alleen aankondigingen van deze identiteiten geaccepteerd (nog steeds onderhevig aan stempelwaarde).",
+      "discoverySourcesInvalid": "Elke detectiebron moet een hex-identiteitshash van 32 tekens zijn.",
+      "networkIdentity": "Netwerkidentiteit",
+      "networkIdentityAria": "Pad naar netwerkidentiteitsbestand voor detectie versleutelen en ontsleutelen",
+      "networkIdentityPlaceholder": "~/.reticulum/opslag/identiteiten/mijn_netwerk",
+      "networkIdentityHint": "Optioneel. Vereist om versleutelde ontdekkingsaankondigingen te decoderen (en te coderen bij publicatie met discovery_encrypt)."
     },
     "reticulumConfigImport": {
       "title": "Importeer Reticulum-configuratie",
@@ -5263,7 +5281,16 @@
       "noDiscoveries": "Nog geen RMAP-detectie-interfaces gehoord.",
       "filterEmpty": "Er komen geen interfaces overeen met dit filter.",
       "hint": "Knooppunten worden alleen weergegeven wanneer operators detecteerbaar inschakelen =ja. LoRa-paden hebben een TCP-hub nodig (bijvoorbeeld rmap.world:4242) om aankondigingen door te geven. Gebruik de wereldwijde kaartlink voor wereldwijde dekking."
-    }
+    },
+    "stampStatus": "Stempel {{stamp}} · {{status}} · {{hops}} hop",
+    "addAsInterface": "Toevoegen als interface",
+    "addAsInterfaceBusy": "Toevoegen…",
+    "addAsInterfaceAria": "Voeg {{name}} toe als een permanente backbone-interface",
+    "addAsInterfaceSuccess": "{{name}} toegevoegd aan → verbindingsinterfaces. Start de stapel opnieuw als deze niet omhoog komt.",
+    "addAsInterfaceFailed": "Kan interface niet toevoegen: {{error}}",
+    "addAsInterfaceNotAddable": "Deze ontdekkingsrij kan niet worden toegevoegd (heeft een Backbone- of TCP-serveradres nodig).",
+    "addAsInterfaceAdded": "Toegevoegd",
+    "addAsInterfaceAddedAria": "{{name}} is al toegevoegd als verbindingsinterface"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

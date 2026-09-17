@@ -2843,8 +2843,17 @@ ipcMain.handle('bleCoexistence:acquireScan', async (event, owner: unknown) => {
   }
   try {
     await bleCoexistenceCoordinator.acquireScan(owner as BleScanOwner);
-    return bleCoexistenceCoordinator.getState();
+    return { ok: true as const, ...bleCoexistenceCoordinator.getState() };
   } catch (err) {
+    if (err instanceof BleScanBusyError) {
+      console.debug('[main] bleCoexistence:acquireScan busy:', sanitizeLogMessage(err.message));
+      return {
+        ok: false as const,
+        code: 'scan_busy' as const,
+        owner: err.scanOwner,
+        ...bleCoexistenceCoordinator.getState(),
+      };
+    }
     console.error(
       '[main] bleCoexistence:acquireScan failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),

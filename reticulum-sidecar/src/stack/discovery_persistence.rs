@@ -145,6 +145,54 @@ mod tests {
         assert!(PersistedState::load(dir.path(), dir.path()).nomad_nodes[0].favorited);
     }
 
+    #[test]
+    fn canceled_flush_keeps_its_write_order_until_blocking_save_finishes() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .max_blocking_threads(1)
+            .build()
+            .unwrap();
+        runtime.block_on(async {
+            let dir = tempfile::tempdir().unwrap();
+            let inner = Arc::new(RwLock::new(PersistedState::default_empty()));
+            announce(&mut *inner.write().await, "before abort");
+
+            // Occupy the blocking worker so the first save stays pending while
+            // its HTTP caller is canceled and the replacement flush is queued.
+            let (release, wait_for_release) = std::sync::mpsc::channel::<()>();
+            let (started, wait_for_start) = tokio::sync::oneshot::channel();
+            let blocker = tokio::task::spawn_blocking(move || {
+                started.send(()).unwrap();
+                let _ = wait_for_release.recv();
+            });
+            wait_for_start.await.unwrap();
+            let mut canceled = Box::pin(flush(&inner, dir.path(), dir.path()));
+            assert!(futures_util::poll!(&mut canceled).is_pending());
+            drop(canceled);
+            assert!(inner.try_write().is_err());
+
+            let mut next_update = Box::pin(inner.write());
+            assert!(futures_util::poll!(&mut next_update).is_pending());
+            let mut quit_flush = Box::pin(flush(&inner, dir.path(), dir.path()));
+            assert!(futures_util::poll!(&mut quit_flush).is_pending());
+            release.send(()).unwrap();
+            blocker.await.unwrap();
+
+            let mut state = next_update.await;
+            announce(&mut state, "after abort");
+            state.set_nomad_favorite(NODE, true);
+            drop(state);
+            assert!(quit_flush.await.unwrap());
+            let saved = PersistedState::load(dir.path(), dir.path());
+            assert_eq!(
+                saved.nomad_nodes[0].display_name.as_deref(),
+                Some("after abort")
+            );
+            assert!(saved.nomad_nodes[0].favorited);
+            assert!(!inner.read().await.discovery_dirty());
+        });
+    }
+
     #[tokio::test]
     async fn failed_save_keeps_pending_updates_for_retry() {
         let dir = tempfile::tempdir().unwrap();

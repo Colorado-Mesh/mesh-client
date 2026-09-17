@@ -38,8 +38,10 @@ import { ReticulumStackSessionTracker } from './reticulumStackSessionTracker';
 
 const HEALTH_POLL_INTERVAL_MS = 250;
 const HEALTH_POLL_TIMEOUT_MS = 30 * MS_PER_SECOND;
-/** Bound the pending-state flush (and, outside app quit, BLE detach) before SIGTERM. */
+/** Bound normal Stop's state flush and BLE detach before SIGTERM. */
 const PREPARE_STOP_TIMEOUT_MS = 1 * MS_PER_SECOND;
+/** Large state files need more time to serialize and synchronize during Quit. */
+const FLUSH_STATE_TIMEOUT_MS = 5 * MS_PER_SECOND;
 const STOP_GRACE_MS = 5 * MS_PER_SECOND;
 /** App is exiting: skip the BLE detach drain and SIGKILL quickly so quit stays responsive. */
 const QUIT_STOP_GRACE_MS = 750;
@@ -615,6 +617,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (!startedForQuit && this.quitFastRequested) {
       // Quit may cancel prepare-stop before its save finishes. Give persistence
       // its own bounded request before terminating the process.
+      // The sidecar holds its state lock through each write, even after HTTP abort.
       await this.prepareStopBestEffort();
     }
     const proc = this.proc;
@@ -667,12 +670,16 @@ export class ReticulumSidecarManager extends EventEmitter {
       return;
     }
     const operation = this.quitFastRequested ? 'flush-state' : 'prepare-stop';
+    const timeoutMs =
+      operation === 'flush-state' ? FLUSH_STATE_TIMEOUT_MS : PREPARE_STOP_TIMEOUT_MS;
     const abort = new AbortController();
     // Repeated Quit requests may cancel the BLE drain, but not the bounded flush.
     if (operation === 'prepare-stop') this.stopPrepareAbort = abort;
+    let timedOut = false;
     const timeoutTimer = setTimeout(() => {
+      timedOut = true;
       abort.abort();
-    }, PREPARE_STOP_TIMEOUT_MS);
+    }, timeoutMs);
     try {
       const res = await fetch(`http://127.0.0.1:${status.port}/api/v1/stack/${operation}`, {
         method: 'POST',
@@ -690,7 +697,9 @@ export class ReticulumSidecarManager extends EventEmitter {
     } catch (e: unknown) {
       console.debug(
         `[ReticulumSidecar] ${operation} failed — continuing with SIGTERM:`,
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        timedOut
+          ? `Timed out after ${timeoutMs}ms`
+          : sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
     } finally {
       clearTimeout(timeoutTimer);

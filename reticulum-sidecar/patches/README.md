@@ -32,6 +32,15 @@ git -C .rsstack/rsReticulum status --short
 
 If a patch is skipped or conflicts after an upstream bump, CI/`ensure-rsReticulum-patches.sh` will fail. Rebase the overlay, regenerate the `.patch` file per the section below, then re-run the apply script.
 
+## Upstream tracking (no mesh-client overlay yet)
+
+Discovering Interfaces keys documented in the Reticulum manual but **not** implemented in rsReticulum — do not invent behavior in mesh-client:
+
+- `autoconnect_interface_mode`
+- `autoconnect_announces_to_internal`
+
+mesh-client already exposes library-supported consume knobs (`autoconnect_discovered_interfaces`, `required_discovery_value`, `interface_discovery_sources`, `network_identity`, `bootstrap_only`). When Ratspeak adds the missing keys, extend Network stack settings — do not reimplement autoconnect in the sidecar.
+
 ## rsReticulum-reply-file-query-metadata.patch
 
 Carry [ratspeak/rsReticulum#26](https://github.com/ratspeak/rsReticulum/pull/26) on floated `origin/main`: `RequestOutcome::ReplyFile`, `pack_file_name_metadata`, 4-arg `set_request_handler_ex` (remote identity), and `LinkClient::query` Resource metadata. Required for Colorado-Mesh/rsNomad NomadNet `/file` and `/media` response Resources.
@@ -484,7 +493,7 @@ Ranked multi-path slots (up to 3 per destination) plus global / per-peer RF-vs-n
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `199eeb4` (`ratspeak/rsReticulum` `origin/main`) + prior mesh-client overlays through discovery-announce-egress |
+| **Base commit** | `306eaa8` (`ratspeak/rsReticulum` `origin/main`) + prior mesh-client overlays through discovery-announce-egress |
 | **Upstream PR** | none yet (mesh-client-local) |
 
 **Touches:** `constants.rs`, `path_table.rs`, `messages.rs`, `actor/{inbound,mod,rpc,outbound,persistence}.rs`
@@ -638,6 +647,29 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 ### Sunset
 
 When upstream rsReticulum lands equivalent BLE READY timeout / non-blocking FC, remove this patch and the apply step.
+
+## rsReticulum-ble-rnode-host-rssi-cache.patch
+
+Cache advertisement / resolve-time host↔RNode RSSI so mesh-client Interface **Signal** meters can show a seed after GATT connect stops advertising (CoreBluetooth leaves `PeripheralProperties.rssi` unset while connected).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | floated rsReticulum `origin/main` after other rsReticulum overlays (incl. flow-control READY timeout) |
+| **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsReticulum) |
+
+**Touches:** `crates/rns-interface/src/ble_rnode.rs` — `remember_host_rssi` / `cached_host_rssi`, fill on `scan_ble_devices` + `resolve_ble_target`
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-ble-rnode-host-rssi-cache.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`. Sidecar `attach_ble_rnode_host_rssi` copies cache values onto online `ble://` `InterfaceRow.host_rssi`.
+
+### Sunset
+
+When upstream rsReticulum exposes equivalent host-RSSI caching for connected BLE RNodes, remove this patch and the apply step.
 
 ## rsReticulum-response-resource-window-fast.patch
 

@@ -272,10 +272,27 @@ export function runVitestArgv(args, opts = {}) {
   const cwd = opts.cwd ?? ROOT;
   const vitestCli = opts.vitestCli ?? resolveVitestCli(cwd);
   const execPath = opts.execPath ?? process.execPath;
+  // Hooks export repository locations. Git fixtures must discover their own
+  // repositories instead of modifying the committing worktree and its index.
+  const localEnvVars = spawnSync('git', ['rev-parse', '--local-env-vars'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+  if (localEnvVars.error || localEnvVars.status !== 0) {
+    console.error(
+      'precommit-tests: failed to identify Git environment variables:',
+      localEnvVars.error?.message ?? localEnvVars.stderr,
+    );
+    return 1;
+  }
+  const localNames = new Set(localEnvVars.stdout.trim().split(/\r?\n/));
+  const env = Object.fromEntries(
+    Object.entries(opts.env ?? process.env).filter(([key]) => !localNames.has(key)),
+  );
   // Shell-free: staged paths must stay literal argv (Windows cmd metacharacters).
   const result = spawnSyncFn(execPath, [vitestCli, ...args], {
     cwd,
-    env: opts.env ?? process.env,
+    env,
     stdio: 'inherit',
     shell: false,
   });

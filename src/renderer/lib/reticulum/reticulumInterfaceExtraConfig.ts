@@ -43,6 +43,7 @@ export const KNOWN_IFACE_UI_KEYS: ReadonlySet<string> = new Set([
   'passphrase',
   'flow_control',
   'ignore_config_warnings',
+  'bootstrap_only',
 ]);
 
 export function isKnownIfaceUiKey(key: string): boolean {

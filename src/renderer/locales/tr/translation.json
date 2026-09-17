@@ -1335,7 +1335,9 @@
       "profilesRename": "Rename",
       "profilesSaveRename": "Save",
       "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}"
+      "profilesRenameAria": "Rename profile {{name}}",
+      "bootstrapOnly": "Yalnızca önyükleme",
+      "bootstrapOnlyHint": "Omurga/TCP sunucularının otomatik olarak bağlanması (Ağ → Otomatik Bağlantı sınırının > 0 olması gerekir) yeterli sayıda keşfedildiğinde bu arayüzü çıkarın."
     },
     "reticulumPeers": {
       "hops": "Hop",
@@ -2844,7 +2846,23 @@
       "pathMediumRf": "RF (RNode)",
       "pathMediumPreferenceAria": "Küresel tercih edilen yol ortamı",
       "pathMediumPreferenceSaved": "Yol ortamı tercihi kaydedildi.",
-      "pathMediumPreferenceSaveFailed": "Yol ortamı tercihi kaydedilemedi."
+      "pathMediumPreferenceSaveFailed": "Yol ortamı tercihi kaydedilemedi.",
+      "discoveryConsumeTitle": "Keşfedilen arayüzler (tüket)",
+      "discoveryConsumeHint": "Dinleme her zaman açıktır. Seçmediğiniz sürece Autoconnect kapalı kalır (0) — keşfedilen Omurga/TCP sunucuları mesh-client tarafından değil, rsReticulum tarafından aranır.",
+      "autoconnectDiscovered": "Otomatik bağlantı sınırı",
+      "autoconnectDiscoveredAria": "Otomatik bağlantı için keşfedilen maksimum arayüz",
+      "autoconnectDiscoveredHint": "0 = asla otomatik arama. 0 'ın üzerindeki değerler, Reticulum'un keşif duyurularından geçici Omurga istemcilerini ortaya çıkarmasına izin verir.",
+      "requiredDiscoveryValue": "Minimum keşif damgası",
+      "requiredDiscoveryValueAria": "Kabul edilen keşif duyuruları için minimum şifreleme damgası değeri",
+      "discoverySources": "Güvenilir keşif kaynakları",
+      "discoverySourcesAria": "Virgülle ayrılmış ağ veya taşıma kimliği karmaları",
+      "discoverySourcesPlaceholder": "32 altıgen karma, virgülle ayrılmış (boş = herhangi birini kabul et)",
+      "discoverySourcesHint": "Ayarlandığında, yalnızca bu kimliklerden yapılan duyurular kabul edilir (hala damga değerine tabidir).",
+      "discoverySourcesInvalid": "Her keşif kaynağı 32 karakterlik bir hex özdeşlik karması olmalıdır.",
+      "networkIdentity": "Ağ kimliği yolu",
+      "networkIdentityAria": "Keşif şifrelemesi ve şifresinin çözülmesi için ağ kimlik dosyasının yolu",
+      "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
+      "networkIdentityHint": "İsteğe bağlı. Şifrelenmiş keşif duyurularının şifresini çözmek (ve DISCOVERY_CRYPT ile yayınlarken şifrelemek) için gereklidir."
     },
     "reticulumConfigImport": {
       "title": "Reticulum yapılandırmasını içe aktar",
@@ -5263,7 +5281,16 @@
       "noDiscoveries": "Henüz hiçbir RMAP keşif arayüzü duyulmadı.",
       "filterEmpty": "Bu filtreyle eşleşen arabirim yok.",
       "hint": "Düğümler yalnızca operatörler bulunabilir=evet'i etkinleştirdiğinde görünür. LoRa yolları, duyuruları aktarmak için bir TCP hub'ına (örneğin rmap.world:4242) ihtiyaç duyar. Dünya çapında kapsama alanı için küresel harita bağlantısını kullanın."
-    }
+    },
+    "stampStatus": "Kaşe {{stamp}} · {{status}} · {{hops}} hop",
+    "addAsInterface": "Arabirim olarak ekle",
+    "addAsInterfaceBusy": "Ekleniyor…",
+    "addAsInterfaceAria": "Kalıcı Omurga arayüzü olarak {{name}} ekleyin",
+    "addAsInterfaceSuccess": "Bağlantı → Arayüzlerine {{name}} eklendi. Çıkmazsa yığını yeniden başlat.",
+    "addAsInterfaceFailed": "Arabirim eklenemedi: {{error}}",
+    "addAsInterfaceNotAddable": "Bu keşif satırı eklenemez (bir Omurga veya TCP sunucu adresi gerekir).",
+    "addAsInterfaceAdded": "Eklendi",
+    "addAsInterfaceAddedAria": "{{name}} zaten bir Bağlantı arayüzü olarak eklendi"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

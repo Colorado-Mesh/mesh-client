@@ -23,6 +23,8 @@ export interface ReticulumBleRssiInterfaceRow {
   enabled: boolean;
   type: string;
   serial_port?: string | null;
+  /** Sidecar connect/scan cache — prefer over advertisement map when set. */
+  host_rssi?: number | null;
 }
 
 function enabledBleRnodeAddresses(interfaces: readonly ReticulumBleRssiInterfaceRow[]): string[] {
@@ -47,6 +49,18 @@ function hasBleRnodeRows(interfaces: readonly ReticulumBleRssiInterfaceRow[]): b
   return interfaces.some((iface) => isReticulumBleRnodeInterfaceRow(iface));
 }
 
+/** True when every enabled BLE RNode already has connect-time host_rssi (no advert scan needed). */
+function allEnabledHaveHostRssi(interfaces: readonly ReticulumBleRssiInterfaceRow[]): boolean {
+  let count = 0;
+  for (const iface of interfaces) {
+    if (!iface.enabled || !isReticulumBleRnodeInterfaceRow(iface)) continue;
+    if (!parseBleMacFromReticulumSerialPort(iface.serial_port ?? '')) continue;
+    count += 1;
+    if (iface.host_rssi == null || !Number.isFinite(iface.host_rssi)) return false;
+  }
+  return count > 0;
+}
+
 /**
  * Map of normalized BLE address → last scan RSSI for enabled Reticulum BLE RNode rows.
  * Uses sidecar `/api/v1/ble/scan` without disabling interfaces (picker pause is skipped).
@@ -54,7 +68,8 @@ function hasBleRnodeRows(interfaces: readonly ReticulumBleRssiInterfaceRow[]): b
  * Gate on sidecar **running** (not `sidecarApiReady`) so the first-start advertising
  * window can seed a reading before GATT connect stops adverts. Bursts until each
  * target has a sample (or grace expires), then steadies at 15s. Empty scans preserve
- * the last good reading.
+ * the last good reading. Skips the advert scan loop entirely when every enabled
+ * RNode already has connect-time `host_rssi`.
  */
 export function useReticulumBleRnodeRssiMap(
   interfaces: readonly ReticulumBleRssiInterfaceRow[],
@@ -75,6 +90,7 @@ export function useReticulumBleRnodeRssiMap(
     [interfaces],
   );
   const hasAnyBleRnodeKey = useMemo(() => (hasBleRnodeRows(interfaces) ? '1' : '0'), [interfaces]);
+  const hostRssiSeeded = useMemo(() => allEnabledHaveHostRssi(interfaces), [interfaces]);
 
   useEffect(() => {
     if (!sidecarRunning) {
@@ -82,6 +98,11 @@ export function useReticulumBleRnodeRssiMap(
       stickyIdleExpiresAtRef.current = 0;
       rssiByAddressRef.current = new Map();
       setRssiByAddress(new Map());
+      return;
+    }
+
+    // Connect-time host_rssi already covers the meter — avoid competing with LoRa GATT scans.
+    if (hostRssiSeeded) {
       return;
     }
 
@@ -164,7 +185,7 @@ export function useReticulumBleRnodeRssiMap(
         const body = (await window.electronAPI.reticulum.proxyGet(
           `/api/v1/ble/scan?timeout_secs=${RETICULUM_BLE_RSSI_SCAN_TIMEOUT_SECS}&mode=rnode`,
         )) as {
-          devices?: { address?: string; rssi?: number | null }[];
+          devices?: { address?: string; name?: string; rssi?: number | null }[];
           error?: string;
           ok?: boolean;
         };
@@ -172,14 +193,18 @@ export function useReticulumBleRnodeRssiMap(
 
         const next = new Map<string, number>();
         for (const device of body.devices ?? []) {
+          if (device.rssi == null || !Number.isFinite(device.rssi)) continue;
           const addr = typeof device.address === 'string' ? normalizeBleMac(device.address) : '';
-          if (!addr) continue;
-          if (
-            device.rssi != null &&
-            Number.isFinite(device.rssi) &&
-            enabledBleTargets.includes(addr)
-          ) {
+          const nameKey =
+            typeof device.name === 'string' && device.name.trim()
+              ? normalizeBleMac(device.name.trim())
+              : '';
+          // Match configured ble:// targets by scan address and/or friendly name.
+          if (addr && enabledBleTargets.includes(addr)) {
             next.set(addr, device.rssi);
+          }
+          if (nameKey && enabledBleTargets.includes(nameKey)) {
+            next.set(nameKey, device.rssi);
           }
         }
         // Preserve previous readings for addresses missing from this scan.
@@ -210,7 +235,7 @@ export function useReticulumBleRnodeRssiMap(
       if (timer) clearTimeout(timer);
       if (idleClearTimer) clearTimeout(idleClearTimer);
     };
-  }, [sidecarRunning, enabledKey, hasAnyBleRnodeKey]);
+  }, [sidecarRunning, enabledKey, hasAnyBleRnodeKey, hostRssiSeeded]);
 
   return rssiByAddress;
 }
@@ -221,6 +246,9 @@ export function rssiForReticulumBleRnodeRow(
   rssiByAddress: ReadonlyMap<string, number>,
 ): number | null {
   if (!iface.enabled || !isReticulumBleRnodeInterfaceRow(iface)) return null;
+  if (iface.host_rssi != null && Number.isFinite(iface.host_rssi)) {
+    return iface.host_rssi;
+  }
   const raw = parseBleMacFromReticulumSerialPort(iface.serial_port ?? '');
   if (!raw) return null;
   const rssi = rssiByAddress.get(normalizeBleMac(raw));

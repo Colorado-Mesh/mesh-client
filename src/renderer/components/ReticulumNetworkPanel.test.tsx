@@ -156,46 +156,64 @@ describe('ReticulumNetworkPanel', () => {
     expect(await screen.findByText('reticulumRmapDiscovery.sectionTitle')).toBeInTheDocument();
   });
 
-  it('preserves announce_interval_sec when saving stack settings', async () => {
+  it('saves only dirty stack-settings fields without announce_interval_sec', async () => {
     const user = userEvent.setup();
     render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
 
-    await user.click(screen.getByText('networkPanel.reticulumStackSettings.save'));
+    const enableTransport = await screen.findByRole('checkbox', {
+      name: 'networkPanel.reticulumStackSettings.enableTransport',
+    });
+    const saveBtn = await screen.findByRole('button', {
+      name: 'networkPanel.reticulumStackSettings.save',
+    });
+    await waitFor(() => {
+      expect(saveBtn).not.toBeDisabled();
+    });
+    await user.click(enableTransport);
+    await user.click(saveBtn);
 
     await waitFor(() => {
       expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/stack/settings', {
-        enable_transport: true,
-        share_instance: true,
-        loglevel: 3,
-        announce_interval_sec: 600,
+        enable_transport: false,
       });
     });
+    const putArg = vi
+      .mocked(window.electronAPI.reticulum.proxyPut)
+      .mock.calls.find((c) => c[0] === '/api/v1/stack/settings')?.[1] as Record<string, unknown>;
+    expect(putArg).not.toHaveProperty('announce_interval_sec');
+    expect(putArg).not.toHaveProperty('share_instance');
   });
 
-  it('defaults announce_interval_sec to 3600 when saving stack settings without the field', async () => {
+  it('skips stack settings PUT when the form is unchanged', async () => {
     const user = userEvent.setup();
-    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
-      if (path === '/api/v1/stack/settings') {
-        return Promise.resolve({
-          enable_transport: true,
-          share_instance: true,
-          loglevel: 3,
-        });
-      }
-      return Promise.resolve({});
-    });
     render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
 
-    await user.click(screen.getByText('networkPanel.reticulumStackSettings.save'));
-
-    await waitFor(() => {
-      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/stack/settings', {
-        enable_transport: true,
-        share_instance: true,
-        loglevel: 3,
-        announce_interval_sec: 3600,
-      });
+    const saveBtn = await screen.findByRole('button', {
+      name: 'networkPanel.reticulumStackSettings.save',
     });
+    await waitFor(() => {
+      expect(saveBtn).not.toBeDisabled();
+    });
+    vi.mocked(window.electronAPI.reticulum.proxyPut).mockClear();
+    await user.click(saveBtn);
+
+    expect(window.electronAPI.reticulum.proxyPut).not.toHaveBeenCalledWith(
+      '/api/v1/stack/settings',
+      expect.anything(),
+    );
+  });
+
+  it('keeps Save disabled while stack-settings baseline has not loaded', () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/stack/settings') {
+        return new Promise(() => {
+          /* never resolves — baseline stays unset */
+        });
+      }
+      return Promise.resolve({ ok: true, preference: 'lowest', pins: {} });
+    });
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+    expect(screen.getByText('networkPanel.reticulumStackSettings.save')).toBeDisabled();
   });
 
   it('renders private key and backup import controls when identity is configured', async () => {

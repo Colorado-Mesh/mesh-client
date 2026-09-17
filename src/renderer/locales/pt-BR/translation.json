@@ -1335,7 +1335,9 @@
       "profilesRename": "Rename",
       "profilesSaveRename": "Save",
       "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}"
+      "profilesRenameAria": "Rename profile {{name}}",
+      "bootstrapOnly": "Apenas bootstrap",
+      "bootstrapOnlyHint": "Desconecte esta interface assim que descobrir a conexão automática dos servidores Backbone/TCP (requer limite de → Conexão Automática de Rede > 0)."
     },
     "reticulumPeers": {
       "hops": "Saltos",
@@ -2844,7 +2846,23 @@
       "pathMediumRf": "RF (RNode)",
       "pathMediumPreferenceAria": "Meio de caminho preferido global",
       "pathMediumPreferenceSaved": "Preferência média do caminho salva.",
-      "pathMediumPreferenceSaveFailed": "Falha ao salvar a preferência do meio do caminho."
+      "pathMediumPreferenceSaveFailed": "Falha ao salvar a preferência do meio do caminho.",
+      "discoveryConsumeTitle": "Interfaces descobertas (consumir)",
+      "discoveryConsumeHint": "Ouvir está sempre ligado. A conexão automática permanece desativada (0), a menos que você opte por participar — os servidores Backbone/TCP descobertos são discados por rsReticulum, não por mesh-client.",
+      "autoconnectDiscovered": "Limite de conexão automática",
+      "autoconnectDiscoveredAria": "Máximo de interfaces descobertas para conexão automática",
+      "autoconnectDiscoveredHint": "0 = nunca marcar automaticamente. Valores acima de 0 permitem que a Reticulum traga clientes de Backbone efêmeros dos anúncios de descoberta.",
+      "requiredDiscoveryValue": "Carimbo mínimo de descoberta",
+      "requiredDiscoveryValueAria": "Valor mínimo de carimbo criptográfico para anúncios de descoberta aceitos",
+      "discoverySources": "Fontes de descoberta confiáveis",
+      "discoverySourcesAria": "Rede separada por vírgulas ou hashes de identidade de transporte",
+      "discoverySourcesPlaceholder": "hashes de 32 hexadecimais, separados por vírgulas (vazio = aceitar qualquer)",
+      "discoverySourcesHint": "Quando definido, apenas anúncios dessas identidades são aceitos (ainda sujeitos a valor de carimbo).",
+      "discoverySourcesInvalid": "Cada fonte de descoberta deve ser um hash de identidade hexadecimal de 32 caracteres.",
+      "networkIdentity": "Caminho de identidade de rede",
+      "networkIdentityAria": "Caminho para o arquivo de identidade de rede para descoberta criptografar e descriptografar",
+      "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
+      "networkIdentityHint": "Opcional. Necessário para descriptografar anúncios de descoberta criptografados (e criptografar ao publicar com discovery_encrypt)."
     },
     "reticulumConfigImport": {
       "title": "Importar config Reticulum",
@@ -5263,7 +5281,16 @@
       "noDiscoveries": "Nenhuma interface de descoberta RMAP ouvida ainda.",
       "filterEmpty": "Nenhuma interface corresponde a este filtro.",
       "hint": "Os nós aparecem apenas quando os operadores ativam a publicação RMAP. Os caminhos LoRa precisam de um hub TCP (por exemplo, rmap.world:4242) para retransmitir anúncios. Para cobertura mundial, use o link do mapa global."
-    }
+    },
+    "stampStatus": "Carimbo {{stamp}} · {{status}} · {{hops}} saltos",
+    "addAsInterface": "Adicionar como interface",
+    "addAsInterfaceBusy": "Adicionando",
+    "addAsInterfaceAria": "Adicionar {{name}} como uma interface de backbone persistente",
+    "addAsInterfaceSuccess": "Adicionamos {{name}} às → Interfaces de Conexão. Reinicie a pilha se ela não aparecer.",
+    "addAsInterfaceFailed": "Não foi possível adicionar a interface: {{error}}",
+    "addAsInterfaceNotAddable": "Esta linha de descoberta não pode ser adicionada (precisa de um endereço de servidor Backbone ou TCP).",
+    "addAsInterfaceAdded": "Adicionado",
+    "addAsInterfaceAddedAria": "{{name}} já adicionado como interface de Conexão"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

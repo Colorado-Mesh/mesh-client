@@ -11,6 +11,7 @@ import {
   pickProjects,
   planPrecommitTests,
   runPrecommitTests,
+  runVitestArgv,
   shouldForceFullSuite,
 } from './precommit-tests.mjs';
 
@@ -128,6 +129,40 @@ describe('precommit-tests related planning', () => {
 });
 
 describe('precommit-tests runPrecommitTests', () => {
+  it('keeps Git fixtures out of the committing repository', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'precommit-git-env-'));
+    try {
+      const fixture = path.join(root, 'fixture');
+      fs.mkdirSync(fixture);
+      const callerGitDir = path.join(root, 'committing.git');
+      const callerIndex = path.join(root, 'index');
+      fs.writeFileSync(callerIndex, 'preserve the caller index');
+      const child = path.join(root, 'fixture.cjs');
+      fs.writeFileSync(
+        child,
+        `const { spawnSync } = require('node:child_process');
+const result = spawnSync('git', ['init'], { cwd: process.argv[2], encoding: 'utf8' });
+process.exit(result.status ?? 1);
+`,
+      );
+      const status = runVitestArgv([fixture], {
+        vitestCli: child,
+        env: {
+          ...process.env,
+          GIT_DIR: callerGitDir,
+          GIT_WORK_TREE: root,
+          GIT_INDEX_FILE: callerIndex,
+        },
+      });
+      expect(status).toBe(0);
+      expect(fs.existsSync(path.join(fixture, '.git', 'HEAD'))).toBe(true);
+      expect(fs.existsSync(callerGitDir)).toBe(false);
+      expect(fs.readFileSync(callerIndex, 'utf8')).toBe('preserve the caller index');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('skips spawn when docs-only', () => {
     const spawnSyncFn = vi.fn();
     const logs = [];

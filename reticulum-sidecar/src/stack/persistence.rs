@@ -265,7 +265,9 @@ impl PersistedState {
             .map_err(|e| e.to_string())?;
         file.write_all(raw.as_bytes()).map_err(|e| e.to_string())?;
         file.as_file().sync_all().map_err(|e| e.to_string())?;
-        fs::rename(file.path(), path).map_err(|e| e.to_string())?;
+        // Close the writer before rename, retaining automatic cleanup on failure.
+        let temp_path = file.into_temp_path();
+        fs::rename(&temp_path, path).map_err(|e| e.to_string())?;
         // Windows has no portable directory fsync through std; file contents are
         // synchronized there, but rename durability still depends on the OS.
         #[cfg(unix)]
@@ -347,8 +349,10 @@ impl PersistedState {
                 .flow_control
                 .or_else(|| super::config::default_flow_control_for_iface_type(&req.iface_type)),
             ignore_config_warnings: req.ignore_config_warnings,
+            bootstrap_only: req.bootstrap_only,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: req.extra_config,
         };
         self.interfaces.push(row.clone());

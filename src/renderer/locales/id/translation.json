@@ -1335,7 +1335,9 @@
       "profilesRename": "Rename",
       "profilesSaveRename": "Save",
       "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}"
+      "profilesRenameAria": "Rename profile {{name}}",
+      "bootstrapOnly": "Bootstrap saja",
+      "bootstrapOnlyHint": "Lepaskan antarmuka ini setelah cukup menemukan koneksi otomatis server Backbone/TCP (memerlukan batas → Koneksi Otomatis Jaringan > 0)."
     },
     "reticulumPeers": {
       "hops": "Hop",
@@ -2844,7 +2846,23 @@
       "pathMediumRf": "RF (RNode)",
       "pathMediumPreferenceAria": "Media jalur global yang disukai",
       "pathMediumPreferenceSaved": "Preferensi media jalur disimpan.",
-      "pathMediumPreferenceSaveFailed": "Gagal menyimpan preferensi media jalur."
+      "pathMediumPreferenceSaveFailed": "Gagal menyimpan preferensi media jalur.",
+      "discoveryConsumeTitle": "Antarmuka yang ditemukan (konsumsi)",
+      "discoveryConsumeHint": "Mendengarkan selalu aktif. Sambungkan otomatis tidak aktif (0) kecuali Anda ikut serta — server Backbone/TCP yang ditemukan dihubungi oleh rsReticulum, bukan oleh mesh-client.",
+      "autoconnectDiscovered": "Batas koneksi otomatis",
+      "autoconnectDiscoveredAria": "Antarmuka maksimum yang ditemukan untuk terhubung secara otomatis",
+      "autoconnectDiscoveredHint": "0 = jangan pernah auto - dial. Nilai di atas 0 biarkan Reticulum memunculkan klien Backbone sementara dari pengumuman penemuan.",
+      "requiredDiscoveryValue": "Stempel penemuan minimum",
+      "requiredDiscoveryValueAria": "Nilai stempel kriptografi minimum untuk pengumuman penemuan yang diterima",
+      "discoverySources": "Sumber penemuan tepercaya",
+      "discoverySourcesAria": "Jaringan yang dipisahkan koma atau hash identitas transportasi",
+      "discoverySourcesPlaceholder": "Hash 32 - hex, dipisahkan koma (kosong = terima apapun)",
+      "discoverySourcesHint": "Ketika ditetapkan, hanya pengumuman dari identitas ini yang diterima (masih tunduk pada nilai stempel).",
+      "discoverySourcesInvalid": "Setiap sumber penemuan harus berupa hash identitas hex 32 karakter.",
+      "networkIdentity": "Jalur identitas jaringan",
+      "networkIdentityAria": "Jalur ke file identitas jaringan untuk enkripsi dan dekripsi penemuan",
+      "networkIdentityPlaceholder": "~/.reticulum/storage/identity/my_network",
+      "networkIdentityHint": "Opsional. Diperlukan untuk mendekripsi pengumuman penemuan terenkripsi (dan untuk mengenkripsi saat dipublikasikan dengan discovery_encrypt)."
     },
     "reticulumConfigImport": {
       "title": "Impor config Reticulum",
@@ -5263,7 +5281,16 @@
       "noDiscoveries": "Belum ada antarmuka penemuan RMAP yang terdengar.",
       "filterEmpty": "Tidak ada antarmuka yang cocok dengan filter ini.",
       "hint": "Node hanya muncul ketika operator mengaktifkan publikasi RMAP. Jalur LoRa membutuhkan hub TCP (misalnya rmap.world:4242) untuk menyampaikan pengumuman. Untuk cakupan di seluruh dunia, gunakan tautan peta global."
-    }
+    },
+    "stampStatus": "Stempel {{stamp}} · {{status}} · {{hops}} hop",
+    "addAsInterface": "Tambahkan sebagai antarmuka",
+    "addAsInterfaceBusy": "Menambah",
+    "addAsInterfaceAria": "Tambahkan {{name}} sebagai antarmuka Backbone yang persisten",
+    "addAsInterfaceSuccess": "Menambahkan {{name}} ke → Antarmuka Koneksi. Mulai ulang tumpukan jika tidak muncul.",
+    "addAsInterfaceFailed": "Tidak dapat menambahkan antarmuka: {{error}}",
+    "addAsInterfaceNotAddable": "Baris penemuan ini tidak dapat ditambahkan (memerlukan alamat server Backbone atau TCP).",
+    "addAsInterfaceAdded": "Baru",
+    "addAsInterfaceAddedAria": "{{name}} sudah ditambahkan sebagai antarmuka Koneksi"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

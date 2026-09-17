@@ -397,6 +397,7 @@ export function createElectronAPIMock(): ElectronAPI {
         nobleYieldDecisionPending: false,
       }),
       acquireScan: vi.fn().mockResolvedValue({
+        ok: true,
         connections: [],
         scanOwner: 'reticulum',
         nobleYieldDecisionPending: false,
