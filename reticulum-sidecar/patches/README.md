@@ -493,7 +493,7 @@ Ranked multi-path slots (up to 3 per destination) plus global / per-peer RF-vs-n
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `199eeb4` (`ratspeak/rsReticulum` `origin/main`) + prior mesh-client overlays through discovery-announce-egress |
+| **Base commit** | `306eaa8` (`ratspeak/rsReticulum` `origin/main`) + prior mesh-client overlays through discovery-announce-egress |
 | **Upstream PR** | none yet (mesh-client-local) |
 
 **Touches:** `constants.rs`, `path_table.rs`, `messages.rs`, `actor/{inbound,mod,rpc,outbound,persistence}.rs`
