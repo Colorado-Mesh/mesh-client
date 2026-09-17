@@ -13,15 +13,33 @@ export interface RrcParsedWhoMember {
   nickname?: string | null;
 }
 
+/**
+ * Ratspeak `push_notice_entries` may send `/list` as many NOTICE packets:
+ * header alone, then one indented room row per packet, optionally `(+N more)`.
+ */
+export type RrcListNoticeParse =
+  | { action: 'replace'; rooms: RrcListedRoom[] }
+  | { action: 'begin' }
+  | { action: 'append'; rooms: RrcListedRoom[] }
+  | { action: 'end' };
+
 const WHO_LINE = /^members in\s+(\S+)\s*:\s*(.+)$/i;
 const TOPIC_LINE = /^topic for\s+(\S+)\s*(?:is now)?\s*:\s*(.+)$/i;
 const JOIN_INFO_TOPIC = /^room\s+(\S+)\s*:.*\btopic=([^\n;]+)/i;
+/** Ratspeak single-packet `/list` budget footer: `(+17 more)`. */
+const LIST_OMITTED_MORE = /^\(\+\d+\s+more\)$/i;
+const LIST_HEADER = /^registered public rooms:?$/i;
 
-/** Parse one rrcd `/list` indented line: `  room` or `  room - topic`. */
+/**
+ * Parse one `/list` room line after the header.
+ * rrcd uses two leading spaces; Ratspeak uses one. Validate indent on the
+ * original line before trim so unindented footers (e.g. "End of list.") are
+ * not treated as room names.
+ */
 function parseListRoomLine(line: string): RrcListedRoom | null {
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
-  if (!line.startsWith('  ') || line[2] === ' ' || line[2] === undefined) return null;
+  if (!/^ {1,2}\S/.test(line)) return null;
   const trimmed = line.trim();
+  if (!trimmed || LIST_OMITTED_MORE.test(trimmed)) return null;
   const sep = trimmed.indexOf(' - ');
   if (sep === -1) {
     const name = normalizeListedRoomName(trimmed);
@@ -33,35 +51,63 @@ function parseListRoomLine(line: string): RrcListedRoom | null {
   return topic && topic !== '(none)' ? { name, topic } : { name };
 }
 
-/** Parse rrcd `/list` NOTICE body into room rows. */
-export function parseRrcListNotice(body: string): RrcListedRoom[] | null {
-  const text = body.trim();
-  if (!text) return null;
-  if (/^no public rooms registered$/i.test(text)) return [];
+function isOmittedMoreLine(line: string): boolean {
+  return LIST_OMITTED_MORE.test(line.trim());
+}
+
+/**
+ * Parse rrcd / Ratspeak `/list` NOTICE body.
+ * Do not trim leading whitespace on the whole body — chunked room rows keep
+ * their 1–2 space indent on a single-line NOTICE.
+ */
+export function parseRrcListNotice(body: string): RrcListNoticeParse | null {
+  // Trim end only so a lone indented room row keeps its leading spaces.
+  const text = body.replace(/\s+$/u, '');
+  if (!text.trim()) return null;
+  if (/^no public rooms registered$/i.test(text.trim())) {
+    return { action: 'replace', rooms: [] };
+  }
 
   const rooms: RrcListedRoom[] = [];
   const lines = text.split(/\r?\n/);
   let sawHeader = false;
+  let sawOmittedFooter = false;
   for (const raw of lines) {
     const line = raw.trimEnd();
     if (!line.trim()) continue;
-    if (/^registered public rooms:?$/i.test(line.trim())) {
+    if (LIST_HEADER.test(line.trim())) {
       sawHeader = true;
       continue;
     }
     if (/^no public rooms registered$/i.test(line.trim())) {
-      return [];
+      return { action: 'replace', rooms: [] };
     }
-    const parsed = parseListRoomLine(line);
-    if (!parsed?.name) continue;
-    rooms.push(parsed);
+    if (isOmittedMoreLine(line)) {
+      sawOmittedFooter = true;
+      continue;
+    }
+    // Multi-line directory: rooms only after header. Chunked rows: no header in body.
+    if (sawHeader || lines.length === 1) {
+      const parsed = parseListRoomLine(line);
+      if (!parsed?.name) continue;
+      rooms.push(parsed);
+    }
   }
 
-  if (rooms.length === 0) {
-    return sawHeader ? [] : null;
+  if (sawHeader && rooms.length === 0 && !sawOmittedFooter) {
+    // Header-only packet (Ratspeak chunk start) — open accumulation; do not wipe via replace.
+    return { action: 'begin' };
   }
-  if (!sawHeader) return null;
-  return rooms;
+  if (sawHeader) {
+    return { action: 'replace', rooms };
+  }
+  if (rooms.length > 0) {
+    return { action: 'append', rooms };
+  }
+  if (sawOmittedFooter) {
+    return { action: 'end' };
+  }
+  return null;
 }
 
 /** Parse rrcd `/who` NOTICE: `members in #lobby: nick (hashprefix), …`. */

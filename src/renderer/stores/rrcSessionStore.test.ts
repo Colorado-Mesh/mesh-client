@@ -416,6 +416,23 @@ describe('rrcSessionStore', () => {
     expect(useRrcSessionStore.getState().rooms.get('#lobby')?.topic).toBe('updated');
   });
 
+  it('accumulates chunked /list header then room-row notices', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.beginListedRoomsDirectory(hub);
+    expect(store.isListedRoomsDirectoryOpen(hub)).toBe(true);
+    expect(useRrcSessionStore.getState().listedRooms).toEqual([]);
+    store.appendListedRooms([{ name: 'catfacts', topic: 'Cat Facts!' }], hub);
+    store.appendListedRooms([{ name: 'general' }], hub);
+    expect(useRrcSessionStore.getState().listedRooms).toEqual([
+      { name: 'catfacts', topic: 'Cat Facts!' },
+      { name: 'general' },
+    ]);
+    store.endListedRoomsDirectory(hub);
+    expect(useRrcSessionStore.getState().isListedRoomsDirectoryOpen(hub)).toBe(false);
+  });
+
   it('distinguishes forced part from voluntary part intent', () => {
     const store = useRrcSessionStore.getState();
     store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
@@ -809,5 +826,44 @@ describe('rrcSessionStore', () => {
     store.reserveWhoTranscriptForce('general');
     store.releaseWhoTranscriptForce('general');
     expect(useRrcSessionStore.getState().consumeWhoTranscriptSlot('general')).toBe(false);
+  });
+
+  it('tracks whoReplyPending mark/clear/has with room-key tolerance', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('general');
+    expect(store.hasWhoReplyPending('general')).toBe(false);
+    store.markWhoReplyPending('general');
+    expect(store.hasWhoReplyPending('general')).toBe(true);
+    expect(store.hasWhoReplyPending('#general')).toBe(true);
+    store.markWhoReplyPending('general'); // idempotent
+    store.clearWhoReplyPending('#general');
+    expect(useRrcSessionStore.getState().hasWhoReplyPending('general')).toBe(false);
+  });
+
+  it('clears whoReplyPending on part', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('general');
+    store.markWhoReplyPending('general');
+    store.roomParted('general');
+    expect(useRrcSessionStore.getState().hasWhoReplyPending('general')).toBe(false);
+  });
+
+  it('resets whoReplyPending on re-handshake so a re-armed auto /who can mark again', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('general');
+    store.markWhoReplyPending('general');
+    expect(store.hasWhoReplyPending('general')).toBe(true);
+    store.applyStatus('reconnecting', hub);
+    store.applyStatus('awaiting_welcome', hub);
+    store.applyStatus('active', hub, 'Community');
+    expect(useRrcSessionStore.getState().hasWhoReplyPending('general')).toBe(false);
+    useRrcSessionStore.getState().markWhoReplyPending('general');
+    expect(useRrcSessionStore.getState().hasWhoReplyPending('general')).toBe(true);
   });
 });

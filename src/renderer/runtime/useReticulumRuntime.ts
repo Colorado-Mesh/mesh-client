@@ -1259,7 +1259,20 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
           if (kind === 'notice') {
             const listed = parseRrcListNotice(p.body);
-            if (listed) session.setListedRooms(listed, hubDestHash);
+            if (listed?.action === 'begin') {
+              session.beginListedRoomsDirectory(hubDestHash);
+            } else if (listed?.action === 'replace') {
+              session.setListedRooms(listed.rooms, hubDestHash);
+            } else if (listed?.action === 'append') {
+              if (session.isListedRoomsDirectoryOpen(hubDestHash)) {
+                session.appendListedRooms(listed.rooms, hubDestHash);
+              }
+            } else if (listed?.action === 'end') {
+              session.endListedRoomsDirectory(hubDestHash);
+            } else if (session.isListedRoomsDirectoryOpen(hubDestHash) && !/^[ \t]/.test(p.body)) {
+              // Non-directory notice (join-info, /who, greeting) closes chunked /list.
+              session.endListedRoomsDirectory(hubDestHash);
+            }
             const hubKey = hubDestHash?.toLowerCase();
             const hubSession = hubKey ? session.sessionsByHub.get(hubKey) : undefined;
             // Materialize Map.keys() — one-shot iterators must not be re-walked.
@@ -1273,6 +1286,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
               },
               consumeWhoTranscriptSlot: (whoRoom, hub) =>
                 session.consumeWhoTranscriptSlot(whoRoom, hub),
+              clearWhoReplyPending: (whoRoom, hub) => {
+                session.clearWhoReplyPending(whoRoom, hub);
+              },
             });
             const topic = parseRrcTopicNotice(p.body);
             if (topic) session.setRoomTopic(topic.room, topic.topic || null, hubDestHash);

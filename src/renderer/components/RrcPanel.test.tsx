@@ -26,6 +26,7 @@ import { saveRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { resetRrcNickCacheHydrationForTests } from '@/renderer/lib/rrcNickCacheHydrate';
 import { clearRrcOpenDms, loadRrcOpenDms, upsertRrcOpenDm } from '@/renderer/lib/rrcOpenDms';
 import { hydrateRrcRoomMessages, resetRrcRoomHistoryForTests } from '@/renderer/lib/rrcRoomHistory';
+import { applyRrcWhoInboundNotice } from '@/renderer/lib/rrcWhoInbound';
 import { RRC_WHO_REPLY_TIMEOUT_MS } from '@/renderer/lib/timeConstants';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import { selectRrcActiveRoomMessages, useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
@@ -698,6 +699,120 @@ describe('RrcPanel', () => {
         const messages = selectRrcActiveRoomMessages(useRrcSessionStore.getState());
         expect(messages.some((m) => m.body.startsWith('No member list from the hub'))).toBe(true);
       });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('notes a dropped auto /who even when join-info seeded self into the roster', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const selfHash = 'dddddddddddddddddddddddddddddddd';
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hubA, 'Hub A');
+      // Mimic join-info seeding self while the hub silently drops the full /who reply.
+      store.roomJoined('general', [{ identity_hash: selfHash, nickname: 'Me' }]);
+      store.setActiveRoom('general');
+      vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+      render(<RrcPanel isActive />);
+      await waitFor(() => {
+        expect(whoSendCalls()).toHaveLength(1);
+      });
+      expect(useRrcSessionStore.getState().hasWhoReplyPending('general', hubA)).toBe(true);
+      expect(useRrcSessionStore.getState().rooms.get('general')?.members?.length).toBeGreaterThan(
+        0,
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(RRC_WHO_REPLY_TIMEOUT_MS + 100);
+      });
+      await waitFor(() => {
+        const messages = selectRrcActiveRoomMessages(useRrcSessionStore.getState());
+        expect(messages.some((m) => m.body.startsWith('No member list from the hub'))).toBe(true);
+      });
+      expect(useRrcSessionStore.getState().hasWhoReplyPending('general', hubA)).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('still records whoReplyMissing for hub A after focusing hub B before timeout', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hubA, 'Hub A');
+      store.roomJoined('general', undefined, hubA);
+      store.setFocusedHub(hubA);
+      store.setActiveRoom('general', hubA);
+      vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+      render(<RrcPanel isActive />);
+      await waitFor(() => {
+        expect(whoSendCalls()).toHaveLength(1);
+        expect(whoSendCalls()[0]?.[0]).toMatchObject({
+          hub_dest_hash: hubA,
+          body: '/who general',
+        });
+      });
+      expect(useRrcSessionStore.getState().hasWhoReplyPending('general', hubA)).toBe(true);
+
+      // Focus another active hub before the watchdog fires — must not skip hub A.
+      store.applyStatus('active', hubB, 'Hub B');
+      store.roomJoined('lobby', undefined, hubB);
+      store.setFocusedHub(hubB);
+      expect(useRrcSessionStore.getState().hubDestHash).toBe(hubB);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(RRC_WHO_REPLY_TIMEOUT_MS + 100);
+      });
+      expect(useRrcSessionStore.getState().hasWhoReplyPending('general', hubA)).toBe(false);
+      const key = useRrcSessionStore.getState().roomMessageKey('general', hubA);
+      const messages = key ? (useRrcSessionStore.getState().messages.get(key) ?? []) : [];
+      expect(messages.some((m) => m.body.startsWith('No member list from the hub'))).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not add whoReplyMissing after a parsed empty /who clears pending', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hubA, 'Hub A');
+      store.roomJoined('general');
+      store.setActiveRoom('general');
+      vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+      render(<RrcPanel isActive />);
+      await waitFor(() => {
+        expect(whoSendCalls()).toHaveLength(1);
+      });
+      expect(useRrcSessionStore.getState().hasWhoReplyPending('general', hubA)).toBe(true);
+
+      // Hub replied with an empty roster — pending must clear so the watchdog is quiet.
+      applyRrcWhoInboundNotice(
+        'members in general: (none)',
+        useRrcSessionStore.getState().sessionsByHub.get(hubA)?.rooms.keys() ?? [],
+        {
+          hubDestHash: hubA,
+          mergeRoomMembers: (room, members, mode, hubHash) => {
+            useRrcSessionStore.getState().mergeRoomMembers(room, members, mode, hubHash);
+          },
+          consumeWhoTranscriptSlot: (room, hubHash) =>
+            useRrcSessionStore.getState().consumeWhoTranscriptSlot(room, hubHash),
+          clearWhoReplyPending: (room, hubHash) => {
+            useRrcSessionStore.getState().clearWhoReplyPending(room, hubHash);
+          },
+        },
+      );
+      expect(useRrcSessionStore.getState().hasWhoReplyPending('general', hubA)).toBe(false);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(RRC_WHO_REPLY_TIMEOUT_MS + 100);
+      });
+      const messages = selectRrcActiveRoomMessages(useRrcSessionStore.getState());
+      expect(messages.some((m) => m.body.startsWith('No member list from the hub'))).toBe(false);
     } finally {
       vi.useRealTimers();
     }
