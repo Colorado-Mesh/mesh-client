@@ -156,28 +156,30 @@ describe('ReticulumNetworkPanel', () => {
     expect(await screen.findByText('reticulumRmapDiscovery.sectionTitle')).toBeInTheDocument();
   });
 
-  it('preserves announce_interval_sec when saving stack settings', async () => {
+  it('saves stack settings as a partial PUT without announce_interval_sec', async () => {
     const user = userEvent.setup();
     render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
 
     await user.click(screen.getByText('networkPanel.reticulumStackSettings.save'));
 
     await waitFor(() => {
-      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
-        '/api/v1/stack/settings',
-        expect.objectContaining({
-          enable_transport: true,
-          share_instance: true,
-          loglevel: 3,
-          announce_interval_sec: 600,
-          autoconnect_discovered_interfaces: 0,
-          required_discovery_value: 16,
-        }),
-      );
+      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/stack/settings', {
+        enable_transport: true,
+        share_instance: true,
+        loglevel: 3,
+        autoconnect_discovered_interfaces: 0,
+        required_discovery_value: 16,
+        interface_discovery_sources: '',
+        network_identity: '',
+      });
     });
+    const putArg = vi
+      .mocked(window.electronAPI.reticulum.proxyPut)
+      .mock.calls.find((c) => c[0] === '/api/v1/stack/settings')?.[1] as Record<string, unknown>;
+    expect(putArg).not.toHaveProperty('announce_interval_sec');
   });
 
-  it('defaults announce_interval_sec to 3600 when saving stack settings without the field', async () => {
+  it('omits announce_interval_sec from stack settings PUT when GET lacked the field', async () => {
     const user = userEvent.setup();
     window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
       if (path === '/api/v1/stack/settings') {
@@ -200,11 +202,14 @@ describe('ReticulumNetworkPanel', () => {
           enable_transport: true,
           share_instance: true,
           loglevel: 3,
-          announce_interval_sec: 3600,
           autoconnect_discovered_interfaces: 0,
         }),
       );
     });
+    const putArg = vi
+      .mocked(window.electronAPI.reticulum.proxyPut)
+      .mock.calls.find((c) => c[0] === '/api/v1/stack/settings')?.[1] as Record<string, unknown>;
+    expect(putArg).not.toHaveProperty('announce_interval_sec');
   });
 
   it('renders private key and backup import controls when identity is configured', async () => {

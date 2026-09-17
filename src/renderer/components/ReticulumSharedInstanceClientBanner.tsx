@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
-import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
+import { patchReticulumStackSettings } from '@/renderer/lib/reticulum/reticulumStackSettings';
 
 export interface ReticulumSharedInstanceClientBannerProps {
   /** Optional external restart; must settle before banner clears busy. */
@@ -70,13 +70,7 @@ export function ReticulumSharedInstanceClientBanner({
 
   const disableShareAndRestart = () =>
     withBusy(async () => {
-      const current = parseReticulumStackSettingsPayload(
-        await window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings'),
-      );
-      const res = (await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
-        ...current,
-        share_instance: false,
-      })) as { ok?: boolean; error?: string };
+      const res = await patchReticulumStackSettings({ share_instance: false });
       if (res?.ok === false) {
         setActionError(res.error ?? t('connectionPanel.reticulumSharedInstance.disableFailed'));
         return;

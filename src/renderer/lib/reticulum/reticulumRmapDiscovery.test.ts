@@ -412,15 +412,9 @@ describe('reticulumRmapDiscovery', () => {
     expect(result.applied).toBe(1);
     expect(result.errors).toEqual([]);
 
-    expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
-      '/api/v1/stack/settings',
-      expect.objectContaining({
-        enable_transport: true,
-        share_instance: true,
-        loglevel: 4,
-        autoconnect_discovered_interfaces: 0,
-      }),
-    );
+    expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/stack/settings', {
+      enable_transport: true,
+    });
     expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
       '/api/v1/interfaces/r',
       expect.objectContaining({ discoverable: true, latitude: 40, announce_interval_min: 60 }),
@@ -594,15 +588,9 @@ describe('reticulumRmapDiscovery', () => {
         stackSettings: { enable_transport: false, share_instance: true, loglevel: 4 },
       },
     );
-    expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
-      '/api/v1/stack/settings',
-      expect.objectContaining({
-        enable_transport: true,
-        share_instance: true,
-        loglevel: 4,
-        autoconnect_discovered_interfaces: 0,
-      }),
-    );
+    expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/stack/settings', {
+      enable_transport: true,
+    });
     expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalled();
     expect(isReticulumRmapLoRaDiscoveryRow(row({ id: 'r1', type: 'rnode' }))).toBe(true);
   });

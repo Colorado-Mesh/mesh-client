@@ -127,3 +127,32 @@ export function parseReticulumStackSettingsPayload(raw: unknown): ReticulumStack
     network_identity: typeof obj.network_identity === 'string' ? obj.network_identity : '',
   };
 }
+
+export type ReticulumStackSettingsPatch = Partial<ReticulumStackSettingsPayload>;
+
+/** PUT only changed stack-settings fields; sidecar merges omitted keys atomically. */
+export async function patchReticulumStackSettings(
+  patch: ReticulumStackSettingsPatch,
+): Promise<{ ok?: boolean; error?: string }> {
+  const body: Record<string, unknown> = {};
+  if (patch.enable_transport !== undefined) body.enable_transport = patch.enable_transport;
+  if (patch.share_instance !== undefined) body.share_instance = patch.share_instance;
+  if (patch.loglevel !== undefined) body.loglevel = patch.loglevel;
+  if (patch.announce_interval_sec !== undefined) {
+    body.announce_interval_sec = patch.announce_interval_sec;
+  }
+  if (patch.autoconnect_discovered_interfaces !== undefined) {
+    body.autoconnect_discovered_interfaces = patch.autoconnect_discovered_interfaces;
+  }
+  if (patch.required_discovery_value !== undefined) {
+    body.required_discovery_value = patch.required_discovery_value;
+  }
+  if (patch.interface_discovery_sources !== undefined) {
+    body.interface_discovery_sources = patch.interface_discovery_sources;
+  }
+  if (patch.network_identity !== undefined) body.network_identity = patch.network_identity;
+  return (await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', body)) as {
+    ok?: boolean;
+    error?: string;
+  };
+}

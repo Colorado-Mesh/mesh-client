@@ -10,7 +10,7 @@ import {
 import { getReticulumInterfaceHelp } from '@/renderer/lib/reticulum/reticulumInterfaceHelp';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import {
-  parseReticulumStackSettingsPayload,
+  patchReticulumStackSettings,
   type ReticulumStackSettingsPayload,
 } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
@@ -626,17 +626,14 @@ export interface RmapBatchApplyResult {
   errors: string[];
 }
 
-/** Merge a stack-settings patch onto the live GET so partial callers cannot wipe consume knobs. */
+/** Sidecar merges omitted stack-settings fields atomically — send only the patch. */
 async function putReticulumStackSettingsMerged(
   patch: Partial<ReticulumStackSettingsPayload>,
 ): Promise<void> {
-  const current = parseReticulumStackSettingsPayload(
-    await window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings'),
-  );
-  await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
-    ...current,
-    ...patch,
-  });
+  const res = await patchReticulumStackSettings(patch);
+  if (res.ok === false) {
+    throw new Error(res.error ?? 'stack_settings_put_failed');
+  }
 }
 
 export async function applyReticulumRmapDiscovery(

@@ -232,6 +232,19 @@ fn default_required_discovery_value() -> u8 {
     16
 }
 
+/// Partial stack-settings update. Omitted fields keep their on-disk values.
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+pub struct StackSettingsPatch {
+    pub enable_transport: Option<bool>,
+    pub share_instance: Option<bool>,
+    pub loglevel: Option<i32>,
+    pub announce_interval_sec: Option<u32>,
+    pub autoconnect_discovered_interfaces: Option<u32>,
+    pub required_discovery_value: Option<u8>,
+    pub interface_discovery_sources: Option<String>,
+    pub network_identity: Option<String>,
+}
+
 #[derive(Debug, Clone)]
 pub struct ImportResult {
     pub warnings: Vec<String>,
@@ -279,6 +292,41 @@ pub fn get_stack_settings(config_dir: &Path) -> Result<StackSettings, String> {
     let content = read_config(config_dir)?;
     let parsed = parse_config(&content)?;
     Ok(stack_settings_from_parsed(&parsed))
+}
+
+/// Atomically merge a partial patch onto current stack settings and persist.
+/// Callers that need cross-request serialization should hold `StackHandle`'s config lock.
+pub fn apply_stack_settings_patch(
+    config_dir: &Path,
+    patch: &StackSettingsPatch,
+) -> Result<StackSettings, String> {
+    let mut settings = get_stack_settings(config_dir)?;
+    if let Some(v) = patch.enable_transport {
+        settings.enable_transport = v;
+    }
+    if let Some(v) = patch.share_instance {
+        settings.share_instance = v;
+    }
+    if let Some(v) = patch.loglevel {
+        settings.loglevel = v;
+    }
+    if let Some(v) = patch.announce_interval_sec {
+        settings.announce_interval_sec = v;
+    }
+    if let Some(v) = patch.autoconnect_discovered_interfaces {
+        settings.autoconnect_discovered_interfaces = v;
+    }
+    if let Some(v) = patch.required_discovery_value {
+        settings.required_discovery_value = v;
+    }
+    if let Some(ref v) = patch.interface_discovery_sources {
+        settings.interface_discovery_sources = v.clone();
+    }
+    if let Some(ref v) = patch.network_identity {
+        settings.network_identity = v.clone();
+    }
+    set_stack_settings(config_dir, &settings)?;
+    Ok(settings)
 }
 
 pub fn set_stack_settings(config_dir: &Path, settings: &StackSettings) -> Result<(), String> {
@@ -3619,14 +3667,54 @@ loglevel = 4
             content.contains("network_identity = /tmp/mesh-net.id"),
             "{content}"
         );
-        let got = get_stack_settings(&dir).unwrap();
-        assert_eq!(got.autoconnect_discovered_interfaces, 2);
-        assert_eq!(got.required_discovery_value, 18);
+        let loaded = get_stack_settings(&dir).unwrap();
+        assert_eq!(loaded.autoconnect_discovered_interfaces, 2);
+        assert_eq!(loaded.required_discovery_value, 18);
         assert_eq!(
-            got.interface_discovery_sources,
+            loaded.interface_discovery_sources,
             "521c87a83afb8f29e4455e77930b973b"
         );
-        assert_eq!(got.network_identity, "/tmp/mesh-net.id");
+        assert_eq!(loaded.network_identity, "/tmp/mesh-net.id");
+    }
+
+    #[test]
+    fn apply_stack_settings_patch_preserves_omitted_fields() {
+        let dir = test_config_dir("stack-patch");
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = No
+share_instance = Yes
+announce_interval_sec = 600
+autoconnect_discovered_interfaces = 3
+required_discovery_value = 18
+interface_discovery_sources = 521c87a83afb8f29e4455e77930b973b
+network_identity = /tmp/mesh-net.id
+
+[logging]
+loglevel = 4
+"#,
+        )
+        .unwrap();
+        let updated = apply_stack_settings_patch(
+            &dir,
+            &StackSettingsPatch {
+                enable_transport: Some(true),
+                ..StackSettingsPatch::default()
+            },
+        )
+        .unwrap();
+        assert!(updated.enable_transport);
+        assert!(updated.share_instance);
+        assert_eq!(updated.announce_interval_sec, 600);
+        assert_eq!(updated.autoconnect_discovered_interfaces, 3);
+        assert_eq!(updated.required_discovery_value, 18);
+        assert_eq!(
+            updated.interface_discovery_sources,
+            "521c87a83afb8f29e4455e77930b973b"
+        );
+        assert_eq!(updated.network_identity, "/tmp/mesh-net.id");
+        assert_eq!(updated.loglevel, 4);
         let _ = fs::remove_dir_all(&dir);
     }
 

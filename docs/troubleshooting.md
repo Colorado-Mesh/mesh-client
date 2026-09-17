@@ -1344,9 +1344,9 @@ TCP/network Nomad Links use path-scaled initiator hops (`link_hops = clamp(path_
 
 **Symptoms**: You set an announce interval on the Network tab, then saved **Stack settings** (transport / log level) and the interval returned to **0**.
 
-**Cause**: `PUT /api/v1/stack/settings` replaces all four fields (`enable_transport`, `share_instance`, `loglevel`, `announce_interval_sec`). A partial JSON body omits `announce_interval_sec`, which deserializes as **0**. `GET /api/v1/stack/settings` and missing keys in rnsd config default to **3600** s (1 h) after bootstrap migration — a value of **0** in the UI usually means an explicit setting or a partial PUT, not the new GET default.
+**Cause**: Older sidecars treated `PUT /api/v1/stack/settings` as a full replace. A partial JSON body omitted `announce_interval_sec`, which deserialized as **0**.
 
-**Fix**: Current Network UI merge-reads settings before PUT. If you hit this on an older build, re-save the announce interval after stack settings changes.
+**Fix**: Current builds merge omitted fields on the sidecar under a config lock. Clients should PUT only the fields they intend to change. `GET /api/v1/stack/settings` and missing keys in rnsd config default to **3600** s (1 h) after bootstrap migration — a value of **0** in the UI means an explicit setting.
 
 ### Clear announces does not empty the Peers tab under rns-stack
 

@@ -25,6 +25,7 @@ import {
   clampAutoconnectDiscoveredInterfaces,
   clampRequiredDiscoveryValue,
   parseReticulumStackSettingsPayload,
+  patchReticulumStackSettings,
   validateInterfaceDiscoverySources,
 } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { showReticulumQrIngestToast } from '@/renderer/lib/reticulum/showReticulumQrIngestToast';
@@ -657,20 +658,19 @@ export function ReticulumNetworkPanel({
     }
     setDiscoverySourcesError(null);
     try {
-      const current = parseReticulumStackSettingsPayload(
-        await window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings'),
-      );
-      const res = (await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
-        ...current,
-        ...stackSettings,
+      const res = await patchReticulumStackSettings({
+        enable_transport: stackSettings.enable_transport,
+        share_instance: stackSettings.share_instance,
+        loglevel: stackSettings.loglevel,
         autoconnect_discovered_interfaces: clampAutoconnectDiscoveredInterfaces(
           stackSettings.autoconnect_discovered_interfaces,
         ),
         required_discovery_value: clampRequiredDiscoveryValue(
           stackSettings.required_discovery_value,
         ),
-        announce_interval_sec: current.announce_interval_sec,
-      })) as { ok?: boolean; error?: string };
+        interface_discovery_sources: stackSettings.interface_discovery_sources,
+        network_identity: stackSettings.network_identity,
+      });
       if (res?.ok === false) {
         setIdentityError(res.error ?? t('networkPanel.reticulumStackSettings.saveFailed'));
         return;
