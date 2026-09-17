@@ -20,7 +20,11 @@ export function isBlePeripheralConflictErrorMessage(message: string): boolean {
 
 export async function acquireReticulumBleScan(): Promise<boolean> {
   try {
-    await window.electronAPI.bleCoexistence.acquireScan('reticulum');
+    const result = await window.electronAPI.bleCoexistence.acquireScan('reticulum');
+    if (!result.ok) {
+      console.debug('[Reticulum] bleCoexistence acquireScan busy:', result.owner);
+      return false;
+    }
     return true;
   } catch (err) {
     console.warn('[Reticulum] bleCoexistence acquireScan failed:', err);
@@ -40,7 +44,11 @@ export async function releaseReticulumBleScan(): Promise<void> {
 export async function prepareReticulumBleRnodeConnect(): Promise<boolean> {
   try {
     // Scan lease only — LoRa GATT sessions stay up (single sidecar adapter owner).
-    await window.electronAPI.bleCoexistence.acquireScan('reticulum');
+    const result = await window.electronAPI.bleCoexistence.acquireScan('reticulum');
+    if (!result.ok) {
+      console.debug('[Reticulum] prepareReticulumBleRnodeConnect busy:', result.owner);
+      return false;
+    }
     return true;
   } catch (err) {
     console.warn('[Reticulum] prepareReticulumBleRnodeConnect failed:', err);

@@ -345,6 +345,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
         nobleYieldDecisionPending: false,
       }),
       acquireScan: async () => ({
+        ok: true as const,
         connections: [],
         scanOwner: null,
         nobleYieldDecisionPending: false,
