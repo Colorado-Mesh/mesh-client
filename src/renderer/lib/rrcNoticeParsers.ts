@@ -16,12 +16,16 @@ export interface RrcParsedWhoMember {
 const WHO_LINE = /^members in\s+(\S+)\s*:\s*(.+)$/i;
 const TOPIC_LINE = /^topic for\s+(\S+)\s*(?:is now)?\s*:\s*(.+)$/i;
 const JOIN_INFO_TOPIC = /^room\s+(\S+)\s*:.*\btopic=([^\n;]+)/i;
+/** Ratspeak single-packet `/list` budget footer: `(+17 more)`. */
+const LIST_OMITTED_MORE = /^\(\+\d+\s+more\)$/i;
 
-/** Parse one rrcd `/list` indented line: `  room` or `  room - topic`. */
+/**
+ * Parse one `/list` room line after the header.
+ * rrcd uses two leading spaces; Ratspeak uses one — trim then parse either.
+ */
 function parseListRoomLine(line: string): RrcListedRoom | null {
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
-  if (!line.startsWith('  ') || line[2] === ' ' || line[2] === undefined) return null;
   const trimmed = line.trim();
+  if (!trimmed || LIST_OMITTED_MORE.test(trimmed)) return null;
   const sep = trimmed.indexOf(' - ');
   if (sep === -1) {
     const name = normalizeListedRoomName(trimmed);
@@ -33,7 +37,7 @@ function parseListRoomLine(line: string): RrcListedRoom | null {
   return topic && topic !== '(none)' ? { name, topic } : { name };
 }
 
-/** Parse rrcd `/list` NOTICE body into room rows. */
+/** Parse rrcd / Ratspeak `/list` NOTICE body into room rows. */
 export function parseRrcListNotice(body: string): RrcListedRoom[] | null {
   const text = body.trim();
   if (!text) return null;
@@ -52,6 +56,8 @@ export function parseRrcListNotice(body: string): RrcListedRoom[] | null {
     if (/^no public rooms registered$/i.test(line.trim())) {
       return [];
     }
+    // Room rows only appear after the directory header (avoid greetings / other notices).
+    if (!sawHeader) continue;
     const parsed = parseListRoomLine(line);
     if (!parsed?.name) continue;
     rooms.push(parsed);
@@ -60,7 +66,6 @@ export function parseRrcListNotice(body: string): RrcListedRoom[] | null {
   if (rooms.length === 0) {
     return sawHeader ? [] : null;
   }
-  if (!sawHeader) return null;
   return rooms;
 }
 

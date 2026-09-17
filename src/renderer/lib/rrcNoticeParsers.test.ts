@@ -23,8 +23,38 @@ describe('parseRrcListNotice', () => {
     ]);
   });
 
+  it('parses Ratspeak one-space /list NOTICE', () => {
+    const body = [
+      'Registered public rooms:',
+      ' catfacts - Cat Facts! Type !catfact for a fact about cats!',
+      ' chat-hispano',
+      ' general',
+      ' linux',
+      ' n2ycr - sunday 16:00 EDT weekly net - ham radio club',
+    ].join('\n');
+    expect(parseRrcListNotice(body)).toEqual([
+      { name: 'catfacts', topic: 'Cat Facts! Type !catfact for a fact about cats!' },
+      { name: 'chat-hispano' },
+      { name: 'general' },
+      { name: 'linux' },
+      { name: 'n2ycr', topic: 'sunday 16:00 EDT weekly net - ham radio club' },
+    ]);
+  });
+
+  it('ignores Ratspeak (+N more) omission footer', () => {
+    const body = ['Registered public rooms:', ' alpha - First', ' bravo', ' (+17 more)'].join('\n');
+    expect(parseRrcListNotice(body)).toEqual([
+      { name: 'alpha', topic: 'First' },
+      { name: 'bravo' },
+    ]);
+  });
+
   it('returns empty list when hub reports none', () => {
     expect(parseRrcListNotice('No public rooms registered')).toEqual([]);
+  });
+
+  it('returns empty list for header with no room rows', () => {
+    expect(parseRrcListNotice('Registered public rooms:')).toEqual([]);
   });
 
   it('returns null for unrelated NOTICE text', () => {
