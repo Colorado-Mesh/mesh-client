@@ -868,6 +868,19 @@ fn validate_ini_scalar(field: &str, value: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Optional operator LXMF address: empty clears; non-empty must be 32 hex chars.
+fn validate_discovery_lxmf_address(value: &str) -> Result<(), String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Ok(());
+    }
+    validate_ini_scalar("discovery_lxmf_address", trimmed)?;
+    if trimmed.len() != 32 || !trimmed.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("invalid discovery_lxmf_address".into());
+    }
+    Ok(())
+}
+
 fn validate_extra_config(extra: &HashMap<String, String>) -> Result<(), String> {
     for (key, value) in extra {
         if key.trim().is_empty() || ini_scalar_has_control_chars(key) {
@@ -929,10 +942,7 @@ fn apply_discovery_patch(
     }
     if patch.discovery_lxmf_address.is_some() {
         if let Some(ref value) = patch.discovery_lxmf_address {
-            let trimmed = value.trim();
-            if !trimmed.is_empty() {
-                validate_ini_scalar("discovery_lxmf_address", trimmed)?;
-            }
+            validate_discovery_lxmf_address(value)?;
         }
         row.discovery_lxmf_address = nonempty_opt_string(patch.discovery_lxmf_address.as_deref());
     }
@@ -1073,11 +1083,14 @@ pub fn add_interface_to_config(
     if let Some(ref passphrase) = req.passphrase {
         validate_ini_scalar("passphrase", passphrase)?;
     }
-    if let Some(ref lxmf) = req.discovery_lxmf_address {
-        let trimmed = lxmf.trim();
+    if let Some(ref host) = req.host {
+        let trimmed = host.trim();
         if !trimmed.is_empty() {
-            validate_ini_scalar("discovery_lxmf_address", trimmed)?;
+            validate_ini_scalar("host", trimmed)?;
         }
+    }
+    if let Some(ref lxmf) = req.discovery_lxmf_address {
+        validate_discovery_lxmf_address(lxmf)?;
     }
     validate_extra_config(&req.extra_config)?;
     let id = Uuid::new_v4().to_string();
@@ -1190,6 +1203,12 @@ pub fn update_interface_in_config(
         row.status = if v { "up" } else { "down" }.into();
     }
     if patch.host.is_some() {
+        if let Some(ref host) = patch.host {
+            let trimmed = host.trim();
+            if !trimmed.is_empty() {
+                validate_ini_scalar("host", trimmed)?;
+            }
+        }
         if row.iface_type == "i2p" {
             if let Some(ref host) = patch.host {
                 validate_i2p_peers(host)?;
@@ -2846,7 +2865,7 @@ loglevel = 4
                 discovery_stamp_value: Some(22),
                 discovery_encrypt: Some(false),
                 publish_ifac: Some(false),
-                discovery_lxmf_address: Some("aabbccddeeff0011".into()),
+                discovery_lxmf_address: Some("aabbccddeeff00112233445566778899".into()),
                 extra_config: {
                     let mut m = std::collections::HashMap::new();
                     m.insert("listen_on".into(), "0.0.0.0".into());
@@ -2868,7 +2887,7 @@ loglevel = 4
         assert_eq!(row.discovery_stamp_value, Some(22));
         assert_eq!(
             row.discovery_lxmf_address.as_deref(),
-            Some("aabbccddeeff0011")
+            Some("aabbccddeeff00112233445566778899")
         );
 
         let content = read_config(&dir).unwrap();
@@ -2882,7 +2901,7 @@ loglevel = 4
         );
         assert!(content.contains("discovery_stamp_value = 22"), "{content}");
         assert!(
-            content.contains("discovery_lxmf_address = aabbccddeeff0011"),
+            content.contains("discovery_lxmf_address = aabbccddeeff00112233445566778899"),
             "{content}"
         );
 

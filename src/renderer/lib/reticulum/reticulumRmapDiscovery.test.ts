@@ -206,25 +206,30 @@ describe('reticulumRmapDiscovery', () => {
 
   it('buildRmapDiscoveryPatch clears encrypt and IFAC when prefs are disabled', () => {
     const iface = row({ id: 'r', type: 'rnode' });
+    const lxmf32 = 'aabbccddeeff00112233445566778899';
     const enabled = buildRmapDiscoveryPatch(iface, {
       coords: { lat: 40, lon: -105 },
       announceIntervalMin: 360,
       discoverable: true,
+      discoveryLxmfAddress: lxmf32,
       discoveryEncrypt: true,
       publishIfac: true,
     });
     expect(enabled.discovery_encrypt).toBe(true);
     expect(enabled.publish_ifac).toBe(true);
+    expect(enabled.discovery_lxmf_address).toBe(lxmf32);
 
     const cleared = buildRmapDiscoveryPatch(iface, {
       coords: { lat: 40, lon: -105 },
       announceIntervalMin: 360,
       discoverable: true,
+      discoveryLxmfAddress: '',
       discoveryEncrypt: false,
       publishIfac: false,
     });
     expect(cleared.discovery_encrypt).toBe(false);
     expect(cleared.publish_ifac).toBe(false);
+    expect(cleared.discovery_lxmf_address).toBe('');
   });
 
   it('buildRmapDiscoveryPatch copies KISS radio params into discovery_*', () => {

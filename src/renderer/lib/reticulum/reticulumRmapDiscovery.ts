@@ -451,10 +451,9 @@ export function buildRmapDiscoveryPatch(
     if (type === 'i2p') {
       patch.connectable = true;
     }
-    const lxmf = opts.discoveryLxmfAddress?.trim();
-    if (lxmf) {
-      patch.discovery_lxmf_address = lxmf;
-    }
+    const lxmf = opts.discoveryLxmfAddress?.trim() ?? '';
+    // Empty string clears a previously stored address (sidecar nonempty_opt_string).
+    patch.discovery_lxmf_address = lxmf;
     if (opts.discoveryStampValue != null && Number.isFinite(opts.discoveryStampValue)) {
       patch.discovery_stamp_value = clampRmapDiscoveryStampValue(opts.discoveryStampValue);
     }
