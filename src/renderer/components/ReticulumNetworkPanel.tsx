@@ -193,6 +193,7 @@ export function ReticulumNetworkPanel({
   });
   /** Last GET snapshot — save only sends keys that differ so concurrent patches are preserved. */
   const stackSettingsBaselineRef = useRef<typeof stackSettings | null>(null);
+  const [stackSettingsBaselineReady, setStackSettingsBaselineReady] = useState(false);
   const [discoverySourcesError, setDiscoverySourcesError] = useState<string | null>(null);
   const [pathMediumPreference, setPathMediumPreferenceState] =
     useState<PathMediumPreference>('lowest');
@@ -218,12 +219,19 @@ export function ReticulumNetworkPanel({
       };
       setStackSettings(next);
       stackSettingsBaselineRef.current = next;
+      setStackSettingsBaselineReady(true);
       setDiscoverySourcesError(null);
       const pref = await fetchPathMediumPreference();
       if (pref.ok) setPathMediumPreferenceState(pref.preference);
     } catch (e) {
       console.debug('[ReticulumNetworkPanel] stack settings ' + errLikeToLogString(e));
     }
+  }, [sidecarApiReady]);
+
+  useEffect(() => {
+    if (sidecarApiReady) return;
+    stackSettingsBaselineRef.current = null;
+    setStackSettingsBaselineReady(false);
   }, [sidecarApiReady]);
 
   const savePathMediumPreference = async (preference: PathMediumPreference) => {
@@ -655,6 +663,8 @@ export function ReticulumNetworkPanel({
   };
 
   const saveStackSettings = async () => {
+    const baseline = stackSettingsBaselineRef.current;
+    if (!baseline) return;
     const sourcesErr = validateInterfaceDiscoverySources(stackSettings.interface_discovery_sources);
     if (sourcesErr) {
       setDiscoverySourcesError(sourcesErr);
@@ -663,31 +673,30 @@ export function ReticulumNetworkPanel({
     }
     setDiscoverySourcesError(null);
     try {
-      const baseline = stackSettingsBaselineRef.current;
       const autoconnect = clampAutoconnectDiscoveredInterfaces(
         stackSettings.autoconnect_discovered_interfaces,
       );
       const required = clampRequiredDiscoveryValue(stackSettings.required_discovery_value);
       const patch: ReticulumStackSettingsPatch = {};
-      if (baseline?.enable_transport !== stackSettings.enable_transport) {
+      if (baseline.enable_transport !== stackSettings.enable_transport) {
         patch.enable_transport = stackSettings.enable_transport;
       }
-      if (baseline?.share_instance !== stackSettings.share_instance) {
+      if (baseline.share_instance !== stackSettings.share_instance) {
         patch.share_instance = stackSettings.share_instance;
       }
-      if (baseline?.loglevel !== stackSettings.loglevel) {
+      if (baseline.loglevel !== stackSettings.loglevel) {
         patch.loglevel = stackSettings.loglevel;
       }
-      if (baseline?.autoconnect_discovered_interfaces !== autoconnect) {
+      if (baseline.autoconnect_discovered_interfaces !== autoconnect) {
         patch.autoconnect_discovered_interfaces = autoconnect;
       }
-      if (baseline?.required_discovery_value !== required) {
+      if (baseline.required_discovery_value !== required) {
         patch.required_discovery_value = required;
       }
-      if (baseline?.interface_discovery_sources !== stackSettings.interface_discovery_sources) {
+      if (baseline.interface_discovery_sources !== stackSettings.interface_discovery_sources) {
         patch.interface_discovery_sources = stackSettings.interface_discovery_sources;
       }
-      if (baseline?.network_identity !== stackSettings.network_identity) {
+      if (baseline.network_identity !== stackSettings.network_identity) {
         patch.network_identity = stackSettings.network_identity;
       }
       if (Object.keys(patch).length === 0) {
@@ -888,7 +897,7 @@ export function ReticulumNetworkPanel({
           </div>
           <button
             type="button"
-            disabled={!sidecarApiReady}
+            disabled={!sidecarApiReady || !stackSettingsBaselineReady}
             onClick={() => {
               void saveStackSettings();
             }}

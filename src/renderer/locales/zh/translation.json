@@ -5288,7 +5288,9 @@
     "addAsInterfaceAria": "添加{{name}}作为永久骨干接口",
     "addAsInterfaceSuccess": "已将{{name}}添加到连接→接口。如果堆栈未出现，请重新启动。",
     "addAsInterfaceFailed": "无法添加接口： {{error}}",
-    "addAsInterfaceNotAddable": "无法添加此发现行（需要主干或TCP服务器地址）。"
+    "addAsInterfaceNotAddable": "无法添加此发现行（需要主干或TCP服务器地址）。",
+    "addAsInterfaceAdded": "加入物",
+    "addAsInterfaceAddedAria": "{{name}}已添加为连接接口"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

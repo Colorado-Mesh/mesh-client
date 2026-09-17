@@ -5288,7 +5288,9 @@
     "addAsInterfaceAria": "Ajouter {{name}} comme interface dorsale persistante",
     "addAsInterfaceSuccess": "Ajout de {{name}} aux → interfaces de connexion. Redémarrez la pile si elle ne s'élève pas.",
     "addAsInterfaceFailed": "Impossible d'ajouter l'interface : {{error}}",
-    "addAsInterfaceNotAddable": "Cette ligne de découverte ne peut pas être ajoutée (nécessite une adresse de serveur Backbone ou TCP)."
+    "addAsInterfaceNotAddable": "Cette ligne de découverte ne peut pas être ajoutée (nécessite une adresse de serveur Backbone ou TCP).",
+    "addAsInterfaceAdded": "Ajouté",
+    "addAsInterfaceAddedAria": "{{name}} déjà ajouté en tant qu'interface de connexion"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

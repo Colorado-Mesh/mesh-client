@@ -249,4 +249,77 @@ describe('useReticulumTcpLinkQualityMap', () => {
     expect(vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mock.calls.length).toBe(afterGrace);
     vi.useRealTimers();
   });
+
+  it('re-probes when the same id changes host/port (sticky is endpoint-keyed)', async () => {
+    const { result, rerender } = renderHook(
+      ({ host }: { host: string }) =>
+        useReticulumTcpLinkQualityMap(
+          [{ id: 'hub', enabled: true, type: 'tcp', host, port: 4242 }],
+          false,
+        ),
+      { initialProps: { host: 'rmap.world' } },
+    );
+    await waitFor(() => {
+      expect(result.current.get('hub')).toBe(42);
+    });
+    vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mockResolvedValue(99);
+    rerender({ host: 'other.example' });
+    await waitFor(() => {
+      expect(result.current.get('hub')).toBe(99);
+    });
+    expect(window.electronAPI.hostLink.probeTcpRtt).toHaveBeenCalledWith('other.example', 4242);
+  });
+
+  it('concurrent StackPanel + InterfacesPanel mounts share one in-flight probe', async () => {
+    let resolveProbe: (rtt: number) => void = () => {};
+    const probePromise = new Promise<number>((resolve) => {
+      resolveProbe = resolve;
+    });
+    vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mockImplementation(() => probePromise);
+
+    const interfaces = [
+      { id: 'hub', enabled: true, type: 'tcp', host: 'rmap.world', port: 4242 },
+    ] as const;
+
+    const stack = renderHook(() => useReticulumTcpLinkQualityMap(interfaces, true));
+    const interfacesPanel = renderHook(() => useReticulumTcpLinkQualityMap(interfaces, true));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(vi.mocked(window.electronAPI.hostLink.probeTcpRtt)).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveProbe(77);
+      await probePromise;
+    });
+    await waitFor(() => {
+      expect(stack.result.current.get('hub')).toBe(77);
+      expect(interfacesPanel.result.current.get('hub')).toBe(77);
+    });
+
+    stack.unmount();
+    interfacesPanel.unmount();
+  });
+
+  it('does not overwrite a finite sticky RTT with a later probe failure', async () => {
+    const interfaces = [
+      { id: 'hub', enabled: true, type: 'tcp', host: 'rmap.world', port: 4242 },
+    ] as const;
+
+    const first = renderHook(() => useReticulumTcpLinkQualityMap(interfaces, true));
+    await waitFor(() => {
+      expect(first.result.current.get('hub')).toBe(42);
+    });
+    first.unmount();
+
+    vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mockRejectedValue(new Error('timeout'));
+    // ready=false forces a poll of all targets; failure must keep sticky 42.
+    const second = renderHook(() => useReticulumTcpLinkQualityMap(interfaces, false));
+    await waitFor(() => {
+      expect(second.result.current.get('hub')).toBe(42);
+    });
+    expect(window.electronAPI.hostLink.probeTcpRtt).toHaveBeenCalled();
+    second.unmount();
+  });
 });

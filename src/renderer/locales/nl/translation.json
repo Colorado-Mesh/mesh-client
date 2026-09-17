@@ -5288,7 +5288,9 @@
     "addAsInterfaceAria": "Voeg {{name}} toe als een permanente backbone-interface",
     "addAsInterfaceSuccess": "{{name}} toegevoegd aan → verbindingsinterfaces. Start de stapel opnieuw als deze niet omhoog komt.",
     "addAsInterfaceFailed": "Kan interface niet toevoegen: {{error}}",
-    "addAsInterfaceNotAddable": "Deze ontdekkingsrij kan niet worden toegevoegd (heeft een Backbone- of TCP-serveradres nodig)."
+    "addAsInterfaceNotAddable": "Deze ontdekkingsrij kan niet worden toegevoegd (heeft een Backbone- of TCP-serveradres nodig).",
+    "addAsInterfaceAdded": "Toegevoegd",
+    "addAsInterfaceAddedAria": "{{name}} is al toegevoegd als verbindingsinterface"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

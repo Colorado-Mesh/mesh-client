@@ -5288,7 +5288,9 @@
     "addAsInterfaceAria": "Aggiungi {{name}} come interfaccia Backbone persistente",
     "addAsInterfaceSuccess": "Aggiunto {{name}} alle → interfacce di connessione. Riavviare la pila se non si presenta.",
     "addAsInterfaceFailed": "Impossibile aggiungere l'interfaccia: {{error}}",
-    "addAsInterfaceNotAddable": "Impossibile aggiungere questa riga di rilevamento (richiede un indirizzo server Backbone o TCP)."
+    "addAsInterfaceNotAddable": "Impossibile aggiungere questa riga di rilevamento (richiede un indirizzo server Backbone o TCP).",
+    "addAsInterfaceAdded": "Aggiunto",
+    "addAsInterfaceAddedAria": "{{name}} già aggiunto come interfaccia di connessione"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

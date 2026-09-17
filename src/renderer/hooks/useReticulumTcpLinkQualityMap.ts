@@ -20,12 +20,20 @@ interface TcpProbeTarget {
   port: number;
 }
 
-/** Shared across ReticulumStackPanel + ReticulumInterfacesPanel hook instances. */
-const stickyRttById = new Map<string, number | null>();
+/** Sticky cache key: id + host + port so endpoint edits do not reuse a prior RTT. */
+function stickyTargetKey(t: Pick<TcpProbeTarget, 'id' | 'host' | 'port'>): string {
+  return `${t.id}\0${t.host}\0${t.port}`;
+}
 
-/** Test-only: clear sticky seeds between cases. */
+/** Shared across ReticulumStackPanel + ReticulumInterfacesPanel hook instances. */
+const stickyRttByTargetKey = new Map<string, number | null>();
+/** In-flight probes keyed like sticky — concurrent hooks reuse the same Promise. */
+const inflightProbeByTargetKey = new Map<string, Promise<number | null>>();
+
+/** Test-only: clear sticky seeds and in-flight probes between cases. */
 export function resetReticulumTcpLinkQualityStickyCacheForTests(): void {
-  stickyRttById.clear();
+  stickyRttByTargetKey.clear();
+  inflightProbeByTargetKey.clear();
 }
 
 function isEnabledTcpClientRow(iface: ReticulumTcpLinkQualityRow): boolean {
@@ -47,7 +55,7 @@ function tcpProbeTargets(interfaces: readonly ReticulumTcpLinkQualityRow[]): Tcp
 /** Encode/decode probe targets so the effect can depend on a content string only. */
 function encodeTcpProbeTargetKey(targets: readonly TcpProbeTarget[]): string {
   return targets
-    .map((t) => `${t.id}\0${t.host}\0${t.port}`)
+    .map((t) => stickyTargetKey(t))
     .sort()
     .join('|');
 }
@@ -64,28 +72,77 @@ function isFiniteRtt(value: number | null | undefined): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+function stickyGet(t: TcpProbeTarget): number | null | undefined {
+  const key = stickyTargetKey(t);
+  return stickyRttByTargetKey.has(key) ? (stickyRttByTargetKey.get(key) ?? null) : undefined;
+}
+
 function mapFromSticky(targets: readonly TcpProbeTarget[]): Map<string, number | null> {
   const next = new Map<string, number | null>();
   for (const t of targets) {
-    if (stickyRttById.has(t.id)) {
-      next.set(t.id, stickyRttById.get(t.id) ?? null);
+    const cached = stickyGet(t);
+    if (cached !== undefined) {
+      next.set(t.id, cached);
     }
   }
   return next;
 }
 
 function allTargetsHaveFiniteRtt(targets: readonly TcpProbeTarget[]): boolean {
-  return targets.every((t) => isFiniteRtt(stickyRttById.get(t.id)));
+  return targets.every((t) => isFiniteRtt(stickyGet(t)));
 }
 
 function targetsNeedingSeed(targets: readonly TcpProbeTarget[]): TcpProbeTarget[] {
-  return targets.filter((t) => !isFiniteRtt(stickyRttById.get(t.id)));
+  return targets.filter((t) => !isFiniteRtt(stickyGet(t)));
 }
 
-function rememberProbeResults(entries: Iterable<readonly [string, number | null]>): void {
-  for (const [id, rtt] of entries) {
-    stickyRttById.set(id, rtt);
+/**
+ * Probe one target, sharing an in-flight Promise across hook instances.
+ * A later null/failure does not overwrite an existing finite sticky RTT.
+ */
+async function probeTcpTargetShared(
+  t: TcpProbeTarget,
+  probe: (host: string, port: number) => Promise<number | null>,
+): Promise<number | null> {
+  const key = stickyTargetKey(t);
+  const existing = inflightProbeByTargetKey.get(key);
+  if (existing) {
+    return existing;
   }
+
+  // Register the Promise synchronously so concurrent callers share it before any await.
+  let settle!: (value: number | null) => void;
+  const pending = new Promise<number | null>((resolve) => {
+    settle = resolve;
+  });
+  inflightProbeByTargetKey.set(key, pending);
+
+  void (async () => {
+    try {
+      let normalized: number | null = null;
+      try {
+        const rtt = await probe(t.host, t.port);
+        normalized = typeof rtt === 'number' && Number.isFinite(rtt) ? rtt : null;
+      } catch (err) {
+        console.debug(
+          '[Reticulum] TCP link-quality probe failed:',
+          err instanceof Error ? err.message : String(err),
+        );
+        normalized = null;
+      }
+      const prev = stickyRttByTargetKey.get(key);
+      if (isFiniteRtt(normalized)) {
+        stickyRttByTargetKey.set(key, normalized);
+      } else if (!isFiniteRtt(prev)) {
+        stickyRttByTargetKey.set(key, null);
+      }
+      settle(stickyRttByTargetKey.get(key) ?? null);
+    } finally {
+      inflightProbeByTargetKey.delete(key);
+    }
+  })();
+
+  return pending;
 }
 
 /**
@@ -145,23 +202,7 @@ export function useReticulumTcpLinkQualityMap(
         return;
       }
       try {
-        const next = new Map<string, number | null>();
-        await Promise.all(
-          batch.map(async (t) => {
-            try {
-              const rtt = await probe(t.host, t.port);
-              const normalized = typeof rtt === 'number' && Number.isFinite(rtt) ? rtt : null;
-              next.set(t.id, normalized);
-            } catch (err) {
-              console.debug(
-                '[Reticulum] TCP link-quality probe failed:',
-                err instanceof Error ? err.message : String(err),
-              );
-              next.set(t.id, null);
-            }
-          }),
-        );
-        rememberProbeResults(next);
+        await Promise.all(batch.map((t) => probeTcpTargetShared(t, probe)));
         applyStickyToState();
       } finally {
         inflight = false;

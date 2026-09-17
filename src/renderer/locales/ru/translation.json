@@ -5372,7 +5372,9 @@
     "addAsInterfaceAria": "Добавьте {{name}} в качестве постоянного магистрального интерфейса",
     "addAsInterfaceSuccess": "Добавлен {{name}} к → интерфейсам подключения. Перезапустите стек, если он не поднимается.",
     "addAsInterfaceFailed": "Не удалось добавить интерфейс: {{error}}",
-    "addAsInterfaceNotAddable": "Невозможно добавить эту строку обнаружения (требуется адрес магистрали или TCP-сервера)."
+    "addAsInterfaceNotAddable": "Невозможно добавить эту строку обнаружения (требуется адрес магистрали или TCP-сервера).",
+    "addAsInterfaceAdded": "Добавлено",
+    "addAsInterfaceAddedAria": "{{name}} уже добавлен в качестве интерфейса подключения"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

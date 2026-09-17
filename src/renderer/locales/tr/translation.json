@@ -5288,7 +5288,9 @@
     "addAsInterfaceAria": "Kalıcı Omurga arayüzü olarak {{name}} ekleyin",
     "addAsInterfaceSuccess": "Bağlantı → Arayüzlerine {{name}} eklendi. Çıkmazsa yığını yeniden başlat.",
     "addAsInterfaceFailed": "Arabirim eklenemedi: {{error}}",
-    "addAsInterfaceNotAddable": "Bu keşif satırı eklenemez (bir Omurga veya TCP sunucu adresi gerekir)."
+    "addAsInterfaceNotAddable": "Bu keşif satırı eklenemez (bir Omurga veya TCP sunucu adresi gerekir).",
+    "addAsInterfaceAdded": "Eklendi",
+    "addAsInterfaceAddedAria": "{{name}} zaten bir Bağlantı arayüzü olarak eklendi"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

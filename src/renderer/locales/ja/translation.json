@@ -5288,7 +5288,9 @@
     "addAsInterfaceAria": "{{name}}を永続的なバックボーンインターフェイスとして追加する",
     "addAsInterfaceSuccess": "接続→ インターフェースに{{name}}を追加しました。スタックが表示されない場合は、スタックを再起動します。",
     "addAsInterfaceFailed": "インターフェースを追加できませんでした： {{error}}",
-    "addAsInterfaceNotAddable": "この検出行は追加できません（バックボーンまたはTCPサーバーアドレスが必要です）。"
+    "addAsInterfaceNotAddable": "この検出行は追加できません（バックボーンまたはTCPサーバーアドレスが必要です）。",
+    "addAsInterfaceAdded": "追加",
+    "addAsInterfaceAddedAria": "{{name}}は既に接続インターフェースとして追加されています"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

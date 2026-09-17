@@ -5288,7 +5288,9 @@
     "addAsInterfaceAria": "{{name}} 을 (를) 영구 백본 인터페이스로 추가",
     "addAsInterfaceSuccess": "연결 → 인터페이스에 {{name}} 이 (가) 추가되었습니다. 스택이 나타나지 않으면 스택을 다시 시작하십시오.",
     "addAsInterfaceFailed": "인터페이스를 추가할 수 없음: {{error}}",
-    "addAsInterfaceNotAddable": "이 검색 행을 추가할 수 없습니다 (백본 또는 TCP 서버 주소 필요)."
+    "addAsInterfaceNotAddable": "이 검색 행을 추가할 수 없습니다 (백본 또는 TCP 서버 주소 필요).",
+    "addAsInterfaceAdded": "추가됨",
+    "addAsInterfaceAddedAria": "{{name}} 이 (가) 이미 연결 인터페이스로 추가되었습니다."
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

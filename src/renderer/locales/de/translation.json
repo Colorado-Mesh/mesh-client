@@ -5288,7 +5288,9 @@
     "addAsInterfaceAria": "{{name}} als persistente Backbone-Schnittstelle hinzufügen",
     "addAsInterfaceSuccess": "{{name}} zu Verbindungsschnittstellen hinzugefügt→. Starten Sie den Stapel neu, wenn er nicht auftaucht.",
     "addAsInterfaceFailed": "Schnittstelle konnte nicht hinzugefügt werden: {{error}}",
-    "addAsInterfaceNotAddable": "Diese Erkennungszeile kann nicht hinzugefügt werden (erfordert eine Backbone- oder TCP-Serveradresse)."
+    "addAsInterfaceNotAddable": "Diese Erkennungszeile kann nicht hinzugefügt werden (erfordert eine Backbone- oder TCP-Serveradresse).",
+    "addAsInterfaceAdded": "Hinzugefügt",
+    "addAsInterfaceAddedAria": "{{name}} bereits als Verbindungsschnittstelle hinzugefügt"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

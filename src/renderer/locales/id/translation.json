@@ -5288,7 +5288,9 @@
     "addAsInterfaceAria": "Tambahkan {{name}} sebagai antarmuka Backbone yang persisten",
     "addAsInterfaceSuccess": "Menambahkan {{name}} ke → Antarmuka Koneksi. Mulai ulang tumpukan jika tidak muncul.",
     "addAsInterfaceFailed": "Tidak dapat menambahkan antarmuka: {{error}}",
-    "addAsInterfaceNotAddable": "Baris penemuan ini tidak dapat ditambahkan (memerlukan alamat server Backbone atau TCP)."
+    "addAsInterfaceNotAddable": "Baris penemuan ini tidak dapat ditambahkan (memerlukan alamat server Backbone atau TCP).",
+    "addAsInterfaceAdded": "Baru",
+    "addAsInterfaceAddedAria": "{{name}} sudah ditambahkan sebagai antarmuka Koneksi"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

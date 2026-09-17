@@ -143,6 +143,10 @@ export default function ReticulumMapPanel({
   const [flyTarget, setFlyTarget] = useState<MapFlyTarget | null>(null);
   const [selectedHash, setSelectedHash] = useState<string | null>(null);
   const [addBusyHash, setAddBusyHash] = useState<string | null>(null);
+  /** Successful Add-as-interface hashes for this panel session (prevents re-submit). */
+  const [addedDiscoveryHashes, setAddedDiscoveryHashes] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const [showScrollTopButton, setShowScrollTopButton] = useState(false);
   const listScrollRef = useRef<HTMLUListElement>(null);
   const refreshGenerationRef = useRef(0);
@@ -251,11 +255,16 @@ export default function ReticulumMapPanel({
 
   const handleAddAsInterface = useCallback(
     async (row: ReticulumMapMarkerRow) => {
-      if (addBusyHash) return;
+      if (addBusyHash || addedDiscoveryHashes.has(row.discovery_hash)) return;
       setAddBusyHash(row.discovery_hash);
       try {
         const result = await addRmapDiscoveredAsInterface(row);
         if (result.ok) {
+          setAddedDiscoveryHashes((prev) => {
+            const next = new Set(prev);
+            next.add(row.discovery_hash);
+            return next;
+          });
           addToast(
             t('reticulumMap.addAsInterfaceSuccess', { name: row.discovery_name }),
             'success',
@@ -272,7 +281,7 @@ export default function ReticulumMapPanel({
         setAddBusyHash(null);
       }
     },
-    [addBusyHash, addToast, t],
+    [addBusyHash, addedDiscoveryHashes, addToast, t],
   );
 
   const updateListScrollTopButton = useCallback(() => {
@@ -590,11 +599,20 @@ export default function ReticulumMapPanel({
                       <div className="px-2 pb-1.5 pl-5">
                         <button
                           type="button"
-                          disabled={addBusyHash === row.discovery_hash}
+                          disabled={
+                            addBusyHash === row.discovery_hash ||
+                            addedDiscoveryHashes.has(row.discovery_hash)
+                          }
                           className="rounded border border-cyan-700/60 px-1.5 py-0.5 text-[10px] text-cyan-300 hover:bg-cyan-950/40 disabled:opacity-50"
-                          aria-label={t('reticulumMap.addAsInterfaceAria', {
-                            name: row.discovery_name,
-                          })}
+                          aria-label={
+                            addedDiscoveryHashes.has(row.discovery_hash)
+                              ? t('reticulumMap.addAsInterfaceAddedAria', {
+                                  name: row.discovery_name,
+                                })
+                              : t('reticulumMap.addAsInterfaceAria', {
+                                  name: row.discovery_name,
+                                })
+                          }
                           onClick={(e) => {
                             e.stopPropagation();
                             void handleAddAsInterface(row);
@@ -602,7 +620,9 @@ export default function ReticulumMapPanel({
                         >
                           {addBusyHash === row.discovery_hash
                             ? t('reticulumMap.addAsInterfaceBusy')
-                            : t('reticulumMap.addAsInterface')}
+                            : addedDiscoveryHashes.has(row.discovery_hash)
+                              ? t('reticulumMap.addAsInterfaceAdded')
+                              : t('reticulumMap.addAsInterface')}
                         </button>
                       </div>
                     ) : null}

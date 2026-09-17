@@ -232,6 +232,7 @@ pub fn merge_live_interfaces_with_config(
             live_row.passphrase = cfg.passphrase.clone();
             live_row.flow_control = cfg.flow_control;
             live_row.ignore_config_warnings = cfg.ignore_config_warnings;
+            live_row.bootstrap_only = cfg.bootstrap_only;
             live_row.extra_config = cfg.extra_config.clone();
             live_row.seed_addresses = cfg.seed_addresses.clone();
             // Config INI is the source of truth for user enable/disable; live stats only
@@ -732,7 +733,7 @@ mod tests {
             passphrase: Some("resistance202606".into()),
             flow_control: None,
             ignore_config_warnings: None,
-            bootstrap_only: None,
+            bootstrap_only: Some(true),
             tx_queue_used: None,
             tx_queue_max: None,
             host_rssi: None,
@@ -794,6 +795,7 @@ mod tests {
             row.extra_config.get("forward_interval").map(String::as_str),
             Some("300")
         );
+        assert_eq!(row.bootstrap_only, Some(true));
         assert_eq!(row.seed_addresses, vec!["AA:BB:CC:DD:EE:FF".to_string()]);
     }
 

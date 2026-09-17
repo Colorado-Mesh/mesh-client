@@ -5372,7 +5372,9 @@
     "addAsInterfaceAria": "Додайте {{name}} як постійний магістральний інтерфейс",
     "addAsInterfaceSuccess": "Додано {{name}} до → інтерфейсів з'єднання. Перезапустіть стек, якщо він не піднімається.",
     "addAsInterfaceFailed": "Не вдалося додати інтерфейс: {{error}}",
-    "addAsInterfaceNotAddable": "Цей рядок виявлення не можна додати (потрібна магістральна адреса або адреса сервера TCP)."
+    "addAsInterfaceNotAddable": "Цей рядок виявлення не можна додати (потрібна магістральна адреса або адреса сервера TCP).",
+    "addAsInterfaceAdded": "Додано",
+    "addAsInterfaceAddedAria": "{{name}} вже додано як інтерфейс підключення"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

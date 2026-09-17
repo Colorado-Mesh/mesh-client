@@ -5288,7 +5288,9 @@
     "addAsInterfaceAria": "Añadir {{name}} como interfaz de backbone persistente",
     "addAsInterfaceSuccess": "Se ha añadido {{name}} a las → interfaces de conexión. Reinicie la pila si no aparece.",
     "addAsInterfaceFailed": "No se ha podido añadir la interfaz: {{error}}",
-    "addAsInterfaceNotAddable": "Esta fila de descubrimiento no se puede añadir (necesita una dirección de servidor Backbone o TCP)."
+    "addAsInterfaceNotAddable": "Esta fila de descubrimiento no se puede añadir (necesita una dirección de servidor Backbone o TCP).",
+    "addAsInterfaceAdded": "Agregado",
+    "addAsInterfaceAddedAria": "{{name}} ya se ha añadido como interfaz de conexión"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

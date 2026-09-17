@@ -163,8 +163,14 @@ describe('ReticulumNetworkPanel', () => {
     const enableTransport = await screen.findByRole('checkbox', {
       name: 'networkPanel.reticulumStackSettings.enableTransport',
     });
+    const saveBtn = await screen.findByRole('button', {
+      name: 'networkPanel.reticulumStackSettings.save',
+    });
+    await waitFor(() => {
+      expect(saveBtn).not.toBeDisabled();
+    });
     await user.click(enableTransport);
-    await user.click(screen.getByText('networkPanel.reticulumStackSettings.save'));
+    await user.click(saveBtn);
 
     await waitFor(() => {
       expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/stack/settings', {
@@ -182,16 +188,32 @@ describe('ReticulumNetworkPanel', () => {
     const user = userEvent.setup();
     render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
 
-    await screen.findByRole('checkbox', {
-      name: 'networkPanel.reticulumStackSettings.enableTransport',
+    const saveBtn = await screen.findByRole('button', {
+      name: 'networkPanel.reticulumStackSettings.save',
+    });
+    await waitFor(() => {
+      expect(saveBtn).not.toBeDisabled();
     });
     vi.mocked(window.electronAPI.reticulum.proxyPut).mockClear();
-    await user.click(screen.getByText('networkPanel.reticulumStackSettings.save'));
+    await user.click(saveBtn);
 
     expect(window.electronAPI.reticulum.proxyPut).not.toHaveBeenCalledWith(
       '/api/v1/stack/settings',
       expect.anything(),
     );
+  });
+
+  it('keeps Save disabled while stack-settings baseline has not loaded', () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/stack/settings') {
+        return new Promise(() => {
+          /* never resolves — baseline stays unset */
+        });
+      }
+      return Promise.resolve({ ok: true, preference: 'lowest', pins: {} });
+    });
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+    expect(screen.getByText('networkPanel.reticulumStackSettings.save')).toBeDisabled();
   });
 
   it('renders private key and backup import controls when identity is configured', async () => {

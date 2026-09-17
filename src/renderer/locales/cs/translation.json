@@ -5331,7 +5331,9 @@
     "addAsInterfaceAria": "Přidat {{name}} jako trvalé rozhraní páteře",
     "addAsInterfaceSuccess": "Přidáno {{name}} do → rozhraní připojení. Restartujte zásobník, pokud se neobjeví.",
     "addAsInterfaceFailed": "Nelze přidat rozhraní: {{error}}",
-    "addAsInterfaceNotAddable": "Tento řádek zjišťování nelze přidat (vyžaduje adresu páteřního nebo TCP serveru)."
+    "addAsInterfaceNotAddable": "Tento řádek zjišťování nelze přidat (vyžaduje adresu páteřního nebo TCP serveru).",
+    "addAsInterfaceAdded": "Přidáno",
+    "addAsInterfaceAddedAria": "{{name}} je již přidáno jako rozhraní připojení"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",
