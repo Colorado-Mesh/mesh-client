@@ -16,11 +16,14 @@ describe('parseRrcListNotice', () => {
       '  general',
       '  #ops - operator lounge',
     ].join('\n');
-    expect(parseRrcListNotice(body)).toEqual([
-      { name: 'lobby', topic: 'welcome to the lobby' },
-      { name: 'general' },
-      { name: '#ops', topic: 'operator lounge' },
-    ]);
+    expect(parseRrcListNotice(body)).toEqual({
+      action: 'replace',
+      rooms: [
+        { name: 'lobby', topic: 'welcome to the lobby' },
+        { name: 'general' },
+        { name: '#ops', topic: 'operator lounge' },
+      ],
+    });
   });
 
   it('parses Ratspeak one-space /list NOTICE', () => {
@@ -32,21 +35,24 @@ describe('parseRrcListNotice', () => {
       ' linux',
       ' n2ycr - sunday 16:00 EDT weekly net - ham radio club',
     ].join('\n');
-    expect(parseRrcListNotice(body)).toEqual([
-      { name: 'catfacts', topic: 'Cat Facts! Type !catfact for a fact about cats!' },
-      { name: 'chat-hispano' },
-      { name: 'general' },
-      { name: 'linux' },
-      { name: 'n2ycr', topic: 'sunday 16:00 EDT weekly net - ham radio club' },
-    ]);
+    expect(parseRrcListNotice(body)).toEqual({
+      action: 'replace',
+      rooms: [
+        { name: 'catfacts', topic: 'Cat Facts! Type !catfact for a fact about cats!' },
+        { name: 'chat-hispano' },
+        { name: 'general' },
+        { name: 'linux' },
+        { name: 'n2ycr', topic: 'sunday 16:00 EDT weekly net - ham radio club' },
+      ],
+    });
   });
 
   it('ignores Ratspeak (+N more) omission footer', () => {
     const body = ['Registered public rooms:', ' alpha - First', ' bravo', ' (+17 more)'].join('\n');
-    expect(parseRrcListNotice(body)).toEqual([
-      { name: 'alpha', topic: 'First' },
-      { name: 'bravo' },
-    ]);
+    expect(parseRrcListNotice(body)).toEqual({
+      action: 'replace',
+      rooms: [{ name: 'alpha', topic: 'First' }, { name: 'bravo' }],
+    });
   });
 
   it('ignores unindented post-header footers such as End of list.', () => {
@@ -56,15 +62,36 @@ describe('parseRrcListNotice', () => {
       'End of list.',
       '  (+17 more)',
     ].join('\n');
-    expect(parseRrcListNotice(body)).toEqual([{ name: 'lobby', topic: 'welcome' }]);
+    expect(parseRrcListNotice(body)).toEqual({
+      action: 'replace',
+      rooms: [{ name: 'lobby', topic: 'welcome' }],
+    });
   });
 
-  it('returns empty list when hub reports none', () => {
-    expect(parseRrcListNotice('No public rooms registered')).toEqual([]);
+  it('returns empty replace when hub reports none', () => {
+    expect(parseRrcListNotice('No public rooms registered')).toEqual({
+      action: 'replace',
+      rooms: [],
+    });
   });
 
-  it('returns empty list for header with no room rows', () => {
-    expect(parseRrcListNotice('Registered public rooms:')).toEqual([]);
+  it('returns begin for header-only chunk start', () => {
+    expect(parseRrcListNotice('Registered public rooms:')).toEqual({ action: 'begin' });
+  });
+
+  it('returns append for a single indented room-row chunk', () => {
+    expect(parseRrcListNotice(' catfacts - Cat Facts!')).toEqual({
+      action: 'append',
+      rooms: [{ name: 'catfacts', topic: 'Cat Facts!' }],
+    });
+    expect(parseRrcListNotice('  general')).toEqual({
+      action: 'append',
+      rooms: [{ name: 'general' }],
+    });
+  });
+
+  it('returns end for a lone (+N more) footer chunk', () => {
+    expect(parseRrcListNotice(' (+17 more)')).toEqual({ action: 'end' });
   });
 
   it('returns null for unrelated NOTICE text', () => {

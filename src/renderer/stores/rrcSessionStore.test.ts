@@ -416,6 +416,23 @@ describe('rrcSessionStore', () => {
     expect(useRrcSessionStore.getState().rooms.get('#lobby')?.topic).toBe('updated');
   });
 
+  it('accumulates chunked /list header then room-row notices', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.beginListedRoomsDirectory(hub);
+    expect(store.isListedRoomsDirectoryOpen(hub)).toBe(true);
+    expect(useRrcSessionStore.getState().listedRooms).toEqual([]);
+    store.appendListedRooms([{ name: 'catfacts', topic: 'Cat Facts!' }], hub);
+    store.appendListedRooms([{ name: 'general' }], hub);
+    expect(useRrcSessionStore.getState().listedRooms).toEqual([
+      { name: 'catfacts', topic: 'Cat Facts!' },
+      { name: 'general' },
+    ]);
+    store.endListedRoomsDirectory(hub);
+    expect(useRrcSessionStore.getState().isListedRoomsDirectoryOpen(hub)).toBe(false);
+  });
+
   it('distinguishes forced part from voluntary part intent', () => {
     const store = useRrcSessionStore.getState();
     store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');

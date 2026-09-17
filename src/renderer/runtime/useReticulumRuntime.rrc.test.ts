@@ -138,6 +138,13 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
     expect(SOURCE).toMatch(/whoResult\.action === 'transcript'[\s\S]*?room = whoResult\.room/);
   });
 
+  it('accumulates Ratspeak chunked /list notices into listedRooms', () => {
+    expect(SOURCE).toContain('beginListedRoomsDirectory');
+    expect(SOURCE).toContain('appendListedRooms');
+    expect(SOURCE).toMatch(/listed\?\.action === 'begin'/);
+    expect(SOURCE).toMatch(/listed\?\.action === 'append'/);
+  });
+
   it('routes direct NOTICE into per-peer @hash DMs via applyRrcDirectMessageRoom', () => {
     expect(SOURCE).toContain('applyRrcDirectMessageRoom');
     expect(SOURCE).toMatch(/applyRrcDirectMessageRoom\(\{[\s\S]*?openDm:/);

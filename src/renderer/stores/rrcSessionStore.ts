@@ -156,6 +156,11 @@ export interface RrcHubSessionState {
   limits: RrcHubLimits;
   rooms: Map<string, RrcRoomInfo>;
   listedRooms: RrcListedRoom[];
+  /**
+   * True after a Ratspeak chunked `/list` header NOTICE until replace/end
+   * or a non-list notice closes the directory stream.
+   */
+  listedRoomsDirectoryOpen: boolean;
   activeRoom: string | null;
   lastError: string | null;
   /** Sticky moderation / remote-takedown banner. */
@@ -187,6 +192,7 @@ export function emptyHubSession(): RrcHubSessionState {
     limits: {},
     rooms: new Map(),
     listedRooms: [],
+    listedRoomsDirectoryOpen: false,
     activeRoom: null,
     lastError: null,
     moderationBanner: null,
@@ -389,6 +395,14 @@ interface RrcSessionStoreState {
   setCapabilities: (caps: RrcHubCapabilities, hubHash?: string) => void;
   setLimits: (limits: RrcHubLimits, hubHash?: string) => void;
   setListedRooms: (rooms: RrcListedRoom[], hubHash?: string) => void;
+  /** Clear listed rooms and open chunked `/list` accumulation for this hub. */
+  beginListedRoomsDirectory: (hubHash?: string) => void;
+  /** Append rooms while a chunked `/list` directory is open. */
+  appendListedRooms: (rooms: RrcListedRoom[], hubHash?: string) => void;
+  /** Stop accepting chunked `/list` room-row notices. */
+  endListedRoomsDirectory: (hubHash?: string) => void;
+  /** True while waiting for Ratspeak chunked `/list` room-row notices. */
+  isListedRoomsDirectoryOpen: (hubHash?: string) => boolean;
   setRoomTopic: (room: string, topic: string | null, hubHash?: string) => void;
   mergeRoomMembers: (
     room: string,
@@ -580,7 +594,62 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   setListedRooms: (rooms, hubHash) => {
-    set((s) => mutateHubSession(s, hubHash, (session) => ({ ...session, listedRooms: rooms })));
+    set((s) =>
+      mutateHubSession(s, hubHash, (session) => ({
+        ...session,
+        listedRooms: rooms,
+        listedRoomsDirectoryOpen: false,
+      })),
+    );
+  },
+
+  beginListedRoomsDirectory: (hubHash) => {
+    set((s) =>
+      mutateHubSession(s, hubHash, (session) => ({
+        ...session,
+        listedRooms: [],
+        listedRoomsDirectoryOpen: true,
+      })),
+    );
+  },
+
+  appendListedRooms: (rooms, hubHash) => {
+    if (rooms.length === 0) return;
+    set((s) =>
+      mutateHubSession(s, hubHash, (session) => {
+        const byKey = new Map(
+          session.listedRooms.map((r) => [rrcRoomMatchKey(r.name), r] as const),
+        );
+        for (const room of rooms) {
+          const key = rrcRoomMatchKey(room.name);
+          if (!key) continue;
+          const prev = byKey.get(key);
+          byKey.set(key, prev ? { ...prev, ...room, name: prev.name || room.name } : room);
+        }
+        return {
+          ...session,
+          listedRooms: [...byKey.values()],
+          listedRoomsDirectoryOpen: true,
+        };
+      }),
+    );
+  },
+
+  endListedRoomsDirectory: (hubHash) => {
+    set((s) =>
+      mutateHubSession(s, hubHash, (session) =>
+        session.listedRoomsDirectoryOpen
+          ? { ...session, listedRoomsDirectoryOpen: false }
+          : session,
+      ),
+    );
+  },
+
+  isListedRoomsDirectoryOpen: (hubHash) => {
+    const s = get();
+    const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
+    if (!hub) return false;
+    return Boolean(s.sessionsByHub.get(hub)?.listedRoomsDirectoryOpen);
   },
 
   setRoomTopic: (room, topic, hubHash) => {
