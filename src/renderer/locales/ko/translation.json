@@ -1335,7 +1335,9 @@
       "profilesRename": "Rename",
       "profilesSaveRename": "Save",
       "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}"
+      "profilesRenameAria": "Rename profile {{name}}",
+      "bootstrapOnly": "부트스트랩만 해당",
+      "bootstrapOnlyHint": "백본/TCP 서버 자동 연결이 충분히 발견되면 이 인터페이스를 분리합니다 (네트워크 자동 → 연결 제한 > 0 필요)."
     },
     "reticulumPeers": {
       "hops": "홉",
@@ -2844,7 +2846,23 @@
       "pathMediumRf": "RF (RNode)",
       "pathMediumPreferenceAria": "글로벌 선호 경로 매체",
       "pathMediumPreferenceSaved": "경로 중간 환경설정이 저장되었습니다.",
-      "pathMediumPreferenceSaveFailed": "경로 중간 환경설정을 저장하지 못했습니다."
+      "pathMediumPreferenceSaveFailed": "경로 중간 환경설정을 저장하지 못했습니다.",
+      "discoveryConsumeTitle": "발견된 인터페이스 (소비)",
+      "discoveryConsumeHint": "경청은 항상 켜져 있습니다. 백본/TCP 서버가 mesh-client가 아닌 rsReticulum에 의해 다이얼링되는 것을 발견하지 않으면 자동 연결이 꺼집니다 (0).",
+      "autoconnectDiscovered": "자동 연결 제한",
+      "autoconnectDiscoveredAria": "자동 연결할 최대 검색 인터페이스",
+      "autoconnectDiscoveredHint": "0 = 자동 다이얼이 아님. 0 이상의 값은 Reticulum이 DISCOVERY 발표에서 임시 Backbone 클라이언트를 불러올 수 있도록 합니다.",
+      "requiredDiscoveryValue": "최소 발견 스탬프",
+      "requiredDiscoveryValueAria": "허용된 검색 발표에 대한 최소 암호화 스탬프 값",
+      "discoverySources": "신뢰할 수 있는 검색 소스",
+      "discoverySourcesAria": "쉼표로 구분된 네트워크 또는 전송 ID 해시",
+      "discoverySourcesPlaceholder": "32-hex 해시, 쉼표로 구분 (비어 있음 = 아무것이나 허용)",
+      "discoverySourcesHint": "설정하면 이러한 ID의 공지만 허용됩니다 (여전히 스탬프 값이 적용됨).",
+      "discoverySourcesInvalid": "각 검색 소스는 32자 16진수 ID 해시여야 합니다.",
+      "networkIdentity": "네트워크 ID",
+      "networkIdentityAria": "검색 암호화 및 암호 해독을 위한 네트워크 ID 파일 경로",
+      "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
+      "networkIdentityHint": "선택 사항. 암호화된 검색 알림을 해독하고 discovery_encrypt로 게시할 때 암호화해야 합니다."
     },
     "reticulumConfigImport": {
       "title": "Reticulum config 가져오기",
@@ -5263,7 +5281,14 @@
       "noDiscoveries": "아직 RMAP 검색 인터페이스가 들리지 않았습니다.",
       "filterEmpty": "이 필터와 일치하는 인터페이스가 없습니다.",
       "hint": "노드는 작업자가 검색 가능 = 예 를 사용하도록 설정한 경우에만 나타납니다. LoRa 경로는 알림을 릴레이하려면 TCP 허브 (예: rmap.world: 4242) 가 필요합니다. 전 세계에 적용하려면 전 세계 지도 링크를 사용하세요."
-    }
+    },
+    "stampStatus": "스탬프 {{stamp}} · {{status}} · {{hops}} 홉",
+    "addAsInterface": "인터페이스로 추가",
+    "addAsInterfaceBusy": "추가하기",
+    "addAsInterfaceAria": "{{name}} 을 (를) 영구 백본 인터페이스로 추가",
+    "addAsInterfaceSuccess": "연결 → 인터페이스에 {{name}} 이 (가) 추가되었습니다. 스택이 나타나지 않으면 스택을 다시 시작하십시오.",
+    "addAsInterfaceFailed": "인터페이스를 추가할 수 없음: {{error}}",
+    "addAsInterfaceNotAddable": "이 검색 행을 추가할 수 없습니다 (백본 또는 TCP 서버 주소 필요)."
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

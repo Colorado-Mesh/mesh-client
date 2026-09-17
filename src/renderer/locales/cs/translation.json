@@ -1354,7 +1354,9 @@
       "profilesRename": "Rename",
       "profilesSaveRename": "Save",
       "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}"
+      "profilesRenameAria": "Rename profile {{name}}",
+      "bootstrapOnly": "Pouze bootstrap",
+      "bootstrapOnlyHint": "Odpojte toto rozhraní, jakmile bude dostatek objevených páteřních/TCP serverů pro automatické připojení (vyžaduje limit → automatického připojení k síti > 0)."
     },
     "reticulumPeers": {
       "hops": "Skoky",
@@ -2873,7 +2875,23 @@
       "pathMediumRf": "RF (RNode)",
       "pathMediumPreferenceAria": "Globální preferované médium cesty",
       "pathMediumPreferenceSaved": "Předvolba média cesty uložena.",
-      "pathMediumPreferenceSaveFailed": "Uložení předvolby média cesty se nezdařilo."
+      "pathMediumPreferenceSaveFailed": "Uložení předvolby média cesty se nezdařilo.",
+      "discoveryConsumeTitle": "Objevená rozhraní (konzumace)",
+      "discoveryConsumeHint": "Poslech je vždy zapnutý. Automatické připojení zůstane vypnuto (0), pokud se nepřihlásíte — objevené páteřní/TCP servery jsou volány rsReticulum, nikoli mesh-client.",
+      "autoconnectDiscovered": "Limit automatického připojení",
+      "autoconnectDiscoveredAria": "Maximální počet nalezených rozhraní pro automatické připojení",
+      "autoconnectDiscoveredHint": "0 = nikdy automatické vytáčení. Hodnoty nad 0 umožňují společnosti Reticulum vyvolat pomíjivé páteřní klienty z oznámení Discovery.",
+      "requiredDiscoveryValue": "Razítko minimálního nálezu",
+      "requiredDiscoveryValueAria": "Minimální hodnota kryptografického razítka pro oznámení přijatých objevů",
+      "discoverySources": "Důvěryhodné zdroje objevů",
+      "discoverySourcesAria": "Čárkami oddělené hashe sítě nebo transportní identity",
+      "discoverySourcesPlaceholder": "32-hex hashů, oddělených čárkami (prázdný = přijmout jakýkoli)",
+      "discoverySourcesHint": "Při nastavení jsou přijímána pouze oznámení z těchto identit (stále podléhá hodnotě razítka).",
+      "discoverySourcesInvalid": "Každý zdroj zjišťování musí být hash hexadecimální identity o 32 znacích.",
+      "networkIdentity": "Síťová identita",
+      "networkIdentityAria": "Cesta k souboru síťové identity pro šifrování a dešifrování zjišťování",
+      "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
+      "networkIdentityHint": "Volitelné. Vyžadováno k dešifrování šifrovaných oznámení o objevení (a k šifrování při publikování pomocí Discovery_Encrypt)."
     },
     "reticulumConfigImport": {
       "title": "Import konfigurace Reticulum",
@@ -5306,7 +5324,14 @@
       "noDiscoveries": "Dosud nebylo slyšeno žádné rozhraní pro zjišťování RMAP.",
       "filterEmpty": "Tomuto filtru neodpovídají žádná rozhraní.",
       "hint": "Uzly se zobrazují pouze tehdy, když operátoři povolují rozpoznatelnost =ano. Cesty LoRa potřebují TCP hub (například rmap.world:4242) pro přenos oznámení. Pro celosvětové pokrytí použij globální odkaz na mapu."
-    }
+    },
+    "stampStatus": "Razítko {{stamp}} · {{status}} · {{hops}} skoků",
+    "addAsInterface": "Přidat jako rozhraní",
+    "addAsInterfaceBusy": "Přidávání",
+    "addAsInterfaceAria": "Přidat {{name}} jako trvalé rozhraní páteře",
+    "addAsInterfaceSuccess": "Přidáno {{name}} do → rozhraní připojení. Restartujte zásobník, pokud se neobjeví.",
+    "addAsInterfaceFailed": "Nelze přidat rozhraní: {{error}}",
+    "addAsInterfaceNotAddable": "Tento řádek zjišťování nelze přidat (vyžaduje adresu páteřního nebo TCP serveru)."
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

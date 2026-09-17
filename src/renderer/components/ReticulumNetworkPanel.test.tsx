@@ -163,12 +163,17 @@ describe('ReticulumNetworkPanel', () => {
     await user.click(screen.getByText('networkPanel.reticulumStackSettings.save'));
 
     await waitFor(() => {
-      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/stack/settings', {
-        enable_transport: true,
-        share_instance: true,
-        loglevel: 3,
-        announce_interval_sec: 600,
-      });
+      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
+        '/api/v1/stack/settings',
+        expect.objectContaining({
+          enable_transport: true,
+          share_instance: true,
+          loglevel: 3,
+          announce_interval_sec: 600,
+          autoconnect_discovered_interfaces: 0,
+          required_discovery_value: 16,
+        }),
+      );
     });
   });
 
@@ -189,12 +194,16 @@ describe('ReticulumNetworkPanel', () => {
     await user.click(screen.getByText('networkPanel.reticulumStackSettings.save'));
 
     await waitFor(() => {
-      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/stack/settings', {
-        enable_transport: true,
-        share_instance: true,
-        loglevel: 3,
-        announce_interval_sec: 3600,
-      });
+      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
+        '/api/v1/stack/settings',
+        expect.objectContaining({
+          enable_transport: true,
+          share_instance: true,
+          loglevel: 3,
+          announce_interval_sec: 3600,
+          autoconnect_discovered_interfaces: 0,
+        }),
+      );
     });
   });
 

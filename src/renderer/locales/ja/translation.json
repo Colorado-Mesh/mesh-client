@@ -1335,7 +1335,9 @@
       "profilesRename": "Rename",
       "profilesSaveRename": "Save",
       "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}"
+      "profilesRenameAria": "Rename profile {{name}}",
+      "bootstrapOnly": "ブートストラップのみ",
+      "bootstrapOnlyHint": "十分に検出されたバックボーン/TCPサーバーを自動接続すると、このインターフェイスを切り離します（ネットワーク→自動接続制限> 0が必要です）。"
     },
     "reticulumPeers": {
       "hops": "ホップ",
@@ -2844,7 +2846,23 @@
       "pathMediumRf": "RF (RNode)",
       "pathMediumPreferenceAria": "グローバル優先パスメディア",
       "pathMediumPreferenceSaved": "パスのメディア設定が保存されました。",
-      "pathMediumPreferenceSaveFailed": "パスのメディア設定を保存できませんでした。"
+      "pathMediumPreferenceSaveFailed": "パスのメディア設定を保存できませんでした。",
+      "discoveryConsumeTitle": "検出されたインターフェイス（消費）",
+      "discoveryConsumeHint": "リスニングは常にオンになっています。オプトインしない限り、自動接続はオフ（ 0 ）のままです。検出されたバックボーン/TCPサーバーは、mesh-clientではなくrsReticulumによってダイヤルされます。",
+      "autoconnectDiscovered": "自動接続の制限",
+      "autoconnectDiscoveredAria": "自動接続する検出されたインターフェイスの最大数",
+      "autoconnectDiscoveredHint": "0 =自動ダイヤルしない。0を超える値は、Reticulumがディスカバリーアナウンスから一時的なバックボーンクライアントを持ち出すことを可能にします。",
+      "requiredDiscoveryValue": "最小ディスカバリースタンプ",
+      "requiredDiscoveryValueAria": "承認された発見の最小暗号スタンプ値が発表されます",
+      "discoverySources": "信頼できる検出ソース",
+      "discoverySourcesAria": "カンマ区切りのネットワークまたはトランスポートIDハッシュ",
+      "discoverySourcesPlaceholder": "32 - hexハッシュ、カンマ区切り（空=任意を受け入れる）",
+      "discoverySourcesHint": "設定すると、これらのIDからのアナウンスのみが受け入れられます（まだスタンプ値の対象となります）。",
+      "discoverySourcesInvalid": "各検出ソースは、32文字の16進数のアイデンティティハッシュでなければなりません。",
+      "networkIdentity": "ネットワーク ID",
+      "networkIdentityAria": "検出のためのネットワークIDファイルへのパスの暗号化と復号化",
+      "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
+      "networkIdentityHint": "オプション。暗号化された検出アナウンスを復号化する必要があります(およびDISCOVERY_ENCRYPTを使用して発行するときに暗号化する必要があります)。"
     },
     "reticulumConfigImport": {
       "title": "Reticulum 構成をインポートする",
@@ -5263,7 +5281,14 @@
       "noDiscoveries": "RMAP検出インターフェースはまだ聴取されていません。",
       "filterEmpty": "このフィルターに一致するインターフェースはありません。",
       "hint": "ノードは、オペレータがRMAP公開を有効にした場合にのみ表示されます。LoRaパスは、アナウンスをリレーするためにTCPハブ（例えば、rmap.world:4242）を必要とします。全世界をカバーするには、グローバルマップリンクを使用してください。"
-    }
+    },
+    "stampStatus": "スタンプ{{stamp}} · {{status}} · {{hops}}ホップ",
+    "addAsInterface": "インターフェースとして追加",
+    "addAsInterfaceBusy": "追加中…",
+    "addAsInterfaceAria": "{{name}}を永続的なバックボーンインターフェイスとして追加する",
+    "addAsInterfaceSuccess": "接続→ インターフェースに{{name}}を追加しました。スタックが表示されない場合は、スタックを再起動します。",
+    "addAsInterfaceFailed": "インターフェースを追加できませんでした： {{error}}",
+    "addAsInterfaceNotAddable": "この検出行は追加できません（バックボーンまたはTCPサーバーアドレスが必要です）。"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

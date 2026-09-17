@@ -21,7 +21,12 @@ import {
   type ReticulumSidecarIdentityRow,
   switchReticulumIdentity,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
-import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
+import {
+  clampAutoconnectDiscoveredInterfaces,
+  clampRequiredDiscoveryValue,
+  parseReticulumStackSettingsPayload,
+  validateInterfaceDiscoverySources,
+} from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { showReticulumQrIngestToast } from '@/renderer/lib/reticulum/showReticulumQrIngestToast';
 import {
   type ReticulumIdentityStatus,
@@ -179,7 +184,12 @@ export function ReticulumNetworkPanel({
     enable_transport: false,
     share_instance: false,
     loglevel: 4,
+    autoconnect_discovered_interfaces: 0,
+    required_discovery_value: 16,
+    interface_discovery_sources: '',
+    network_identity: '',
   });
+  const [discoverySourcesError, setDiscoverySourcesError] = useState<string | null>(null);
   const [pathMediumPreference, setPathMediumPreferenceState] =
     useState<PathMediumPreference>('lowest');
   const [pathMediumBusy, setPathMediumBusy] = useState(false);
@@ -190,14 +200,19 @@ export function ReticulumNetworkPanel({
   const refreshStackSettings = useCallback(async () => {
     if (!sidecarApiReady) return;
     try {
-      const body = (await window.electronAPI.reticulum.proxyGet(
-        '/api/v1/stack/settings',
-      )) as typeof stackSettings;
+      const body = parseReticulumStackSettingsPayload(
+        await window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings'),
+      );
       setStackSettings({
         enable_transport: body.enable_transport,
         share_instance: body.share_instance,
-        loglevel: typeof body.loglevel === 'number' ? body.loglevel : 4,
+        loglevel: body.loglevel,
+        autoconnect_discovered_interfaces: body.autoconnect_discovered_interfaces,
+        required_discovery_value: body.required_discovery_value,
+        interface_discovery_sources: body.interface_discovery_sources,
+        network_identity: body.network_identity,
       });
+      setDiscoverySourcesError(null);
       const pref = await fetchPathMediumPreference();
       if (pref.ok) setPathMediumPreferenceState(pref.preference);
     } catch (e) {
@@ -634,12 +649,26 @@ export function ReticulumNetworkPanel({
   };
 
   const saveStackSettings = async () => {
+    const sourcesErr = validateInterfaceDiscoverySources(stackSettings.interface_discovery_sources);
+    if (sourcesErr) {
+      setDiscoverySourcesError(sourcesErr);
+      setIdentityError(t('networkPanel.reticulumStackSettings.discoverySourcesInvalid'));
+      return;
+    }
+    setDiscoverySourcesError(null);
     try {
       const current = parseReticulumStackSettingsPayload(
         await window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings'),
       );
       const res = (await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
+        ...current,
         ...stackSettings,
+        autoconnect_discovered_interfaces: clampAutoconnectDiscoveredInterfaces(
+          stackSettings.autoconnect_discovered_interfaces,
+        ),
+        required_discovery_value: clampRequiredDiscoveryValue(
+          stackSettings.required_discovery_value,
+        ),
         announce_interval_sec: current.announce_interval_sec,
       })) as { ok?: boolean; error?: string };
       if (res?.ok === false) {
@@ -740,6 +769,100 @@ export function ReticulumNetworkPanel({
               {t('networkPanel.reticulumStackSettings.pathMediumPreferenceHint')}
             </span>
           </label>
+          <div className="border-t border-gray-700/60 pt-3">
+            <p className="text-xs font-medium text-gray-300">
+              {t('networkPanel.reticulumStackSettings.discoveryConsumeTitle')}
+            </p>
+            <p className="mt-1 text-[11px] text-gray-500">
+              {t('networkPanel.reticulumStackSettings.discoveryConsumeHint')}
+            </p>
+            <label className="mt-2 block text-xs text-gray-400">
+              {t('networkPanel.reticulumStackSettings.autoconnectDiscovered')}
+              <input
+                type="number"
+                min={0}
+                max={32}
+                value={stackSettings.autoconnect_discovered_interfaces}
+                disabled={!sidecarApiReady}
+                onChange={(e) => {
+                  setStackSettings((s) => ({
+                    ...s,
+                    autoconnect_discovered_interfaces: clampAutoconnectDiscoveredInterfaces(
+                      Number(e.target.value),
+                    ),
+                  }));
+                }}
+                className="mt-1 block w-24 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm text-gray-100"
+                aria-label={t('networkPanel.reticulumStackSettings.autoconnectDiscoveredAria')}
+              />
+              <span className="mt-1 block text-[11px] text-gray-500">
+                {t('networkPanel.reticulumStackSettings.autoconnectDiscoveredHint')}
+              </span>
+            </label>
+            <label className="mt-2 block text-xs text-gray-400">
+              {t('networkPanel.reticulumStackSettings.requiredDiscoveryValue')}
+              <input
+                type="number"
+                min={1}
+                max={32}
+                value={stackSettings.required_discovery_value}
+                disabled={!sidecarApiReady}
+                onChange={(e) => {
+                  setStackSettings((s) => ({
+                    ...s,
+                    required_discovery_value: clampRequiredDiscoveryValue(Number(e.target.value)),
+                  }));
+                }}
+                className="mt-1 block w-24 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm text-gray-100"
+                aria-label={t('networkPanel.reticulumStackSettings.requiredDiscoveryValueAria')}
+              />
+            </label>
+            <label className="mt-2 block text-xs text-gray-400">
+              {t('networkPanel.reticulumStackSettings.discoverySources')}
+              <textarea
+                value={stackSettings.interface_discovery_sources}
+                disabled={!sidecarApiReady}
+                rows={2}
+                onChange={(e) => {
+                  setStackSettings((s) => ({
+                    ...s,
+                    interface_discovery_sources: e.target.value,
+                  }));
+                  setDiscoverySourcesError(validateInterfaceDiscoverySources(e.target.value));
+                }}
+                className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1 font-mono text-xs text-gray-100"
+                aria-label={t('networkPanel.reticulumStackSettings.discoverySourcesAria')}
+                aria-invalid={discoverySourcesError != null}
+                placeholder={t('networkPanel.reticulumStackSettings.discoverySourcesPlaceholder')}
+              />
+              {discoverySourcesError ? (
+                <span className="mt-1 block text-[11px] text-red-400">
+                  {t('networkPanel.reticulumStackSettings.discoverySourcesInvalid')}
+                </span>
+              ) : (
+                <span className="mt-1 block text-[11px] text-gray-500">
+                  {t('networkPanel.reticulumStackSettings.discoverySourcesHint')}
+                </span>
+              )}
+            </label>
+            <label className="mt-2 block text-xs text-gray-400">
+              {t('networkPanel.reticulumStackSettings.networkIdentity')}
+              <input
+                type="text"
+                value={stackSettings.network_identity}
+                disabled={!sidecarApiReady}
+                onChange={(e) => {
+                  setStackSettings((s) => ({ ...s, network_identity: e.target.value }));
+                }}
+                className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1 font-mono text-xs text-gray-100"
+                aria-label={t('networkPanel.reticulumStackSettings.networkIdentityAria')}
+                placeholder={t('networkPanel.reticulumStackSettings.networkIdentityPlaceholder')}
+              />
+              <span className="mt-1 block text-[11px] text-gray-500">
+                {t('networkPanel.reticulumStackSettings.networkIdentityHint')}
+              </span>
+            </label>
+          </div>
           <button
             type="button"
             disabled={!sidecarApiReady}

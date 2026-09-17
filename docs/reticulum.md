@@ -133,6 +133,21 @@ The **Map** tab shows **local** RMAP v4 discovery data — interfaces your stack
 
 **Consume (Map tab):** Sidecar bootstrap migrations in rnsd config: `discover_interfaces = Yes` so the stack listens for discovery announces; when `announce_interval_sec` is absent, writes **3600** (explicit **0** is preserved). Markers show GPS when coordinates were included in the announce; interfaces without coords appear in the sidebar list only. **Reachable** badges join discovery rows with the RNS path table (Peers tab) by matching `transport_id` against peer `destination_hash` or `via_hash`.
 
+**Map detail / Add:** Sidebar and marker popups show `reachable_on:port`, stamp value, status, and hops when present. Wire rows also carry `network_id` and IFAC (`ifac_netname` / `ifac_netkey`) for Add. Backbone / TCPServer discoveries with a concrete host and port can be **Add as interface** → persistent remote Backbone on Connection (stack restart may be required). Script-style `reachable_on` paths are not addable.
+
+**Consume stack knobs (Network → Stack settings):** Opt-in only — defaults stay safe (`autoconnect_discovered_interfaces = 0`). Exposed for rsReticulum runtime (mesh-client does not reimplement autoconnect):
+
+| Setting               | Config key                          | Default               |
+| --------------------- | ----------------------------------- | --------------------- |
+| Autoconnect limit     | `autoconnect_discovered_interfaces` | `0` (never auto-dial) |
+| Minimum stamp         | `required_discovery_value`          | `16`                  |
+| Trusted sources       | `interface_discovery_sources`       | empty (any source)    |
+| Network identity path | `network_identity`                  | empty                 |
+
+**`bootstrap_only`:** Per-interface checkbox on Connection → Interfaces. When set, rsReticulum tears the interface down once the autoconnect quota is filled (useful for an expensive LoRa/TCP bridge). Requires autoconnect limit > 0.
+
+**Upstream library gaps (do not reimplement in mesh-client):** `autoconnect_interface_mode` and `autoconnect_announces_to_internal` are documented in the Reticulum Discovering Interfaces chapter but are **not** implemented in rsReticulum yet (autoconnect mode is derived from `enable_transport`). Track in Ratspeak/rsReticulum; mesh-client only writes keys the library already honors.
+
 **UI:** Leaflet map with 280px sidebar list; filter pills (All, LoRa, Backbone, I2P, TCP, Other); basemap switcher and Locate Me (App GPS); manual Refresh; marker click opens peer detail when the node is in the path table. List row click flies to coordinates at zoom 14.
 
 **Refresh model:** Map tab polls `GET /api/v1/rmap/discovered` every **30s** while mounted; sidecar also pushes WebSocket `rmap.discovery` every **10s** when the discovery fingerprint changes (runtime updates store even when Map tab is hidden).

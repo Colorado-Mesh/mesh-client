@@ -1333,7 +1333,9 @@
       "profilesRename": "Rename",
       "profilesSaveRename": "Save",
       "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}"
+      "profilesRenameAria": "Rename profile {{name}}",
+      "bootstrapOnly": "Solo bootstrap",
+      "bootstrapOnlyHint": "Scollega questa interfaccia una volta rilevato un numero sufficiente di server Backbone/TCP con connessione automatica (richiede il limite di → connessione automatica di rete > 0)."
     },
     "reticulumPeers": {
       "hops": "Salti",
@@ -2844,7 +2846,23 @@
       "pathMediumRf": "RF (RNode)",
       "pathMediumPreferenceAria": "Mezzo percorso preferito globale",
       "pathMediumPreferenceSaved": "Preferenza media del percorso salvata.",
-      "pathMediumPreferenceSaveFailed": "Impossibile salvare la preferenza media del percorso."
+      "pathMediumPreferenceSaveFailed": "Impossibile salvare la preferenza media del percorso.",
+      "discoveryConsumeTitle": "Interfacce scoperte (consuma)",
+      "discoveryConsumeHint": "L'ascolto è sempre attivo. La connessione automatica rimane disattivata (0) a meno che non si opti per l'attivazione: i server Backbone/TCP scoperti vengono composti da rsReticulum, non da mesh-client.",
+      "autoconnectDiscovered": "Limite di connessione automatica",
+      "autoconnectDiscoveredAria": "Numero massimo di interfacce scoperte per la connessione automatica",
+      "autoconnectDiscoveredHint": "0 = mai comporre automaticamente. Valori superiori a 0 consentono a Reticulum di far apparire clienti Backbone effimeri dagli annunci di scoperta.",
+      "requiredDiscoveryValue": "Timbro di scoperta minimo",
+      "requiredDiscoveryValueAria": "Il valore minimo del timbro crittografico per la scoperta accettata annuncia",
+      "discoverySources": "Fonti di discovery attendibili",
+      "discoverySourcesAria": "Hash di identità di rete o di trasporto separati da virgole",
+      "discoverySourcesPlaceholder": "32 hash esadecimali, separati da virgola (vuoto = accetta qualsiasi)",
+      "discoverySourcesHint": "Quando impostato, solo gli annunci di queste identità sono accettati (ancora soggetti al valore del timbro).",
+      "discoverySourcesInvalid": "Ogni origine di rilevamento deve essere un hash di identità esadecimale di 32 caratteri.",
+      "networkIdentity": "Percorso identità di rete",
+      "networkIdentityAria": "Percorso del file di identità di rete per la crittografia e la decrittografia del rilevamento",
+      "networkIdentityPlaceholder": "~/.reticulum/storage/identità/my_network",
+      "networkIdentityHint": "Facoltativo. Obbligatorio per decrittografare annunci di discovery crittografati (e per crittografare durante la pubblicazione con discovery_encrypt)."
     },
     "reticulumConfigImport": {
       "title": "Importa configurazione Reticulum",
@@ -5263,7 +5281,14 @@
       "noDiscoveries": "Nessuna interfaccia di rilevamento RMAP ancora sentita.",
       "filterEmpty": "Nessuna interfaccia corrisponde a questo filtro.",
       "hint": "I nodi appaiono solo quando gli operatori abilitano la pubblicazione RMAP. I percorsi LoRa necessitano di un hub TCP (ad esempio rmap.world:4242) per trasmettere gli annunci. Per la copertura in tutto il mondo, utilizzare il link della mappa globale."
-    }
+    },
+    "stampStatus": "Timbro {{stamp}} · {{status}} · {{hops}} hop",
+    "addAsInterface": "Aggiungi come interfaccia",
+    "addAsInterfaceBusy": "Inserimento",
+    "addAsInterfaceAria": "Aggiungi {{name}} come interfaccia Backbone persistente",
+    "addAsInterfaceSuccess": "Aggiunto {{name}} alle → interfacce di connessione. Riavviare la pila se non si presenta.",
+    "addAsInterfaceFailed": "Impossibile aggiungere l'interfaccia: {{error}}",
+    "addAsInterfaceNotAddable": "Impossibile aggiungere questa riga di rilevamento (richiede un indirizzo server Backbone o TCP)."
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

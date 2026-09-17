@@ -32,6 +32,15 @@ git -C .rsstack/rsReticulum status --short
 
 If a patch is skipped or conflicts after an upstream bump, CI/`ensure-rsReticulum-patches.sh` will fail. Rebase the overlay, regenerate the `.patch` file per the section below, then re-run the apply script.
 
+## Upstream tracking (no mesh-client overlay yet)
+
+Discovering Interfaces keys documented in the Reticulum manual but **not** implemented in rsReticulum — do not invent behavior in mesh-client:
+
+- `autoconnect_interface_mode`
+- `autoconnect_announces_to_internal`
+
+mesh-client already exposes library-supported consume knobs (`autoconnect_discovered_interfaces`, `required_discovery_value`, `interface_discovery_sources`, `network_identity`, `bootstrap_only`). When Ratspeak adds the missing keys, extend Network stack settings — do not reimplement autoconnect in the sidecar.
+
 ## rsReticulum-reply-file-query-metadata.patch
 
 Carry [ratspeak/rsReticulum#26](https://github.com/ratspeak/rsReticulum/pull/26) on floated `origin/main`: `RequestOutcome::ReplyFile`, `pack_file_name_metadata`, 4-arg `set_request_handler_ex` (remote identity), and `LinkClient::query` Resource metadata. Required for Colorado-Mesh/rsNomad NomadNet `/file` and `/media` response Resources.

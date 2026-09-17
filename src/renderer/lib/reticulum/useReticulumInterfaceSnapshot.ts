@@ -77,6 +77,8 @@ export interface ReticulumInterfaceRow {
    * configured mode. Sidecar-derived; not edited in the UI form.
    */
   ignore_config_warnings?: boolean | null;
+  /** Tear down once discovered-interface autoconnect quota is filled. */
+  bootstrap_only?: boolean | null;
   /** Host outbound TX mpsc fill from live sidecar stats. */
   tx_queue_used?: number | null;
   /** Host outbound TX mpsc capacity from live sidecar stats. */

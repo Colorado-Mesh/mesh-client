@@ -208,6 +208,8 @@ export interface ReticulumContactWireRow {
 export interface ReticulumRmapDiscoveredWireRow {
   discovery_hash: string;
   transport_id: string;
+  /** Announcing network / transport identity (32-hex). */
+  network_id?: string;
   discovery_name: string;
   interface_type: string;
   latitude: number;
@@ -216,6 +218,10 @@ export interface ReticulumRmapDiscoveredWireRow {
   transport_enabled: boolean;
   reachable_on?: string | null;
   port?: number | null;
+  /** IFAC virtual-network name when the announce published credentials. */
+  ifac_netname?: string | null;
+  /** IFAC passphrase when the announce published credentials. */
+  ifac_netkey?: string | null;
   frequency?: number | null;
   bandwidth?: number | null;
   spreading_factor?: number | null;

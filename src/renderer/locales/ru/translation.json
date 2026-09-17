@@ -1373,7 +1373,9 @@
       "profilesRename": "Rename",
       "profilesSaveRename": "Save",
       "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}"
+      "profilesRenameAria": "Rename profile {{name}}",
+      "bootstrapOnly": "(только бутстрап)",
+      "bootstrapOnlyHint": "Отсоедините этот интерфейс, как только будет обнаружено достаточное количество серверов магистрали/TCP-автоподключения (требуется ограничение → автоподключения к сети > 0)."
     },
     "reticulumPeers": {
       "hops": "Хопы",
@@ -2900,7 +2902,23 @@
       "pathMediumRf": "RF (RNode)",
       "pathMediumPreferenceAria": "Глобальная предпочтительная среда пути",
       "pathMediumPreferenceSaved": "Предпочтение среды пути сохранено.",
-      "pathMediumPreferenceSaveFailed": "Не удалось сохранить настройки среды пути."
+      "pathMediumPreferenceSaveFailed": "Не удалось сохранить настройки среды пути.",
+      "discoveryConsumeTitle": "Обнаруженные интерфейсы (потребление)",
+      "discoveryConsumeHint": "Слушание всегда включено. Autoconnect остается выключенным (0), если вы не включите его — обнаруженные магистральные/TCP-серверы набираются rsReticulum, а не mesh-client.",
+      "autoconnectDiscovered": "Ограничение автоподключения",
+      "autoconnectDiscoveredAria": "Максимальное количество обнаруженных интерфейсов для автоматического подключения",
+      "autoconnectDiscoveredHint": "0 = никогда не набирать номер автоматически. Значения выше 0 позволяют Reticulum выводить эфемерные магистральные клиенты из объявлений об обнаружении.",
+      "requiredDiscoveryValue": "Минимальная марка обнаружения",
+      "requiredDiscoveryValueAria": "Минимальное значение криптографического штампа для принятых объявлений об обнаружении",
+      "discoverySources": "Доверенные источники обнаружения",
+      "discoverySourcesAria": "Хеши сетевых или транспортных идентификаторов, разделенные запятыми",
+      "discoverySourcesPlaceholder": "32-х шестнадцатеричные хэши, разделенные запятыми (empty = accept any)",
+      "discoverySourcesHint": "Когда установлено, принимаются только объявления от этих идентификаторов (все еще подлежит номиналу штампа).",
+      "discoverySourcesInvalid": "Каждый источник обнаружения должен быть 32-символьным шестнадцатеричным хешем удостоверения.",
+      "networkIdentity": "Сетевая идентификация",
+      "networkIdentityAria": "Путь к сетевому файлу идентификации для шифрования и дешифрования обнаружения",
+      "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
+      "networkIdentityHint": "Необязательно. Требуется для расшифровки зашифрованных объявлений обнаружения (и для шифрования при публикации с помощью discovery_encrypt)."
     },
     "reticulumConfigImport": {
       "title": "Импортировать конфигурацию Reticulum",
@@ -5347,7 +5365,14 @@
       "noDiscoveries": "Интерфейсы обнаружения RMAP еще не прослушаны.",
       "filterEmpty": "Нет интерфейсов, соответствующих этому фильтру.",
       "hint": "Узлы появляются только тогда, когда операторы включают публикацию RMAP. Пути LoRa нуждаются в концентраторе TCP (например, rmap.world:4242) для ретрансляции объявлений. Для глобального охвата воспользуйтесь ссылкой на глобальную карту."
-    }
+    },
+    "stampStatus": "Штамп {{stamp}} · {{status}} · {{hops}} хопов",
+    "addAsInterface": "Добавить в качестве интерфейса",
+    "addAsInterfaceBusy": "Добавление…",
+    "addAsInterfaceAria": "Добавьте {{name}} в качестве постоянного магистрального интерфейса",
+    "addAsInterfaceSuccess": "Добавлен {{name}} к → интерфейсам подключения. Перезапустите стек, если он не поднимается.",
+    "addAsInterfaceFailed": "Не удалось добавить интерфейс: {{error}}",
+    "addAsInterfaceNotAddable": "Невозможно добавить эту строку обнаружения (требуется адрес магистрали или TCP-сервера)."
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

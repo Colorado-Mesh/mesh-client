@@ -1333,7 +1333,9 @@
       "profilesRename": "Rename",
       "profilesSaveRename": "Save",
       "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}"
+      "profilesRenameAria": "Rename profile {{name}}",
+      "bootstrapOnly": "Nur Bootstrap",
+      "bootstrapOnlyHint": "Trennen Sie diese Schnittstelle, sobald genügend erkannte Backbone-/TCP-Server automatisch verbunden sind (→Netzwerkautoverbindungslimit > 0 erforderlich)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -2844,7 +2846,23 @@
       "pathMediumRf": "RF (RNode)",
       "pathMediumPreferenceAria": "Global bevorzugtes Pfadmedium",
       "pathMediumPreferenceSaved": "Pfad Medium Präferenz gespeichert.",
-      "pathMediumPreferenceSaveFailed": "Pfad-Medium-Präferenz konnte nicht gespeichert werden."
+      "pathMediumPreferenceSaveFailed": "Pfad-Medium-Präferenz konnte nicht gespeichert werden.",
+      "discoveryConsumeTitle": "Schnittstellen entdeckt (konsumieren)",
+      "discoveryConsumeHint": "Zuhören ist immer möglich. Die automatische Verbindung bleibt deaktiviert (0), es sei denn, Sie entscheiden sich dafür — entdeckte Backbone-/TCP-Server werden von rsReticulum und nicht vom Mesh-Client gewählt.",
+      "autoconnectDiscovered": "Autoconnect-Limit",
+      "autoconnectDiscoveredAria": "Maximal entdeckte Schnittstellen für die automatische Verbindung",
+      "autoconnectDiscoveredHint": "0 = Niemals automatisch wählen. Werte über 0 lassen Reticulum kurzlebige Backbone-Clients von Discovery Announces aufrufen.",
+      "requiredDiscoveryValue": "Minimaler Entdeckungsstempel",
+      "requiredDiscoveryValueAria": "Minimaler kryptografischer Stempelwert für akzeptierte Entdeckungsansagen",
+      "discoverySources": "Vertrauenswürdige Entdeckungsquellen",
+      "discoverySourcesAria": "Kommagetrennte Netzwerk- oder Transportidentitäts-Hashes",
+      "discoverySourcesPlaceholder": "32-Hex-Hashes, durch Kommas getrennt (leer = beliebige akzeptieren)",
+      "discoverySourcesHint": "Wenn gesetzt, werden nur Ansagen von diesen Identitäten akzeptiert (immer noch abhängig vom Stempelwert).",
+      "discoverySourcesInvalid": "Jede Discovery-Quelle muss ein 32-stelliger Hex-Identitäts-Hash sein.",
+      "networkIdentity": "Netzwerkidentitätspfad",
+      "networkIdentityAria": "Pfad zur Netzwerkidentitätsdatei zur Erkennung, Verschlüsselung und Entschlüsselung",
+      "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
+      "networkIdentityHint": "Optional. Erforderlich, um verschlüsselte Discovery-Ankündigungen zu entschlüsseln (und beim Veröffentlichen mit discovery_encrypt zu verschlüsseln)."
     },
     "reticulumConfigImport": {
       "title": "Reticulum-Konfiguration importieren",
@@ -5263,7 +5281,14 @@
       "noDiscoveries": "Noch keine RMAP-Erkennungsschnittstellen zu hören.",
       "filterEmpty": "Keine Schnittstellen entsprechen diesem Filter.",
       "hint": "Knoten werden nur angezeigt, wenn die Bediener die Option \"auffindbar\" = \"ja\" aktivieren. LoRa-Pfade benötigen einen TCP-Hub (zum Beispiel rmap.world:4242), um Ansagen weiterzuleiten. Für eine weltweite Abdeckung verwenden Sie den globalen Kartenlink."
-    }
+    },
+    "stampStatus": "Stempel {{stamp}} · {{status}} · {{hops}} Hops",
+    "addAsInterface": "AS-Interface",
+    "addAsInterfaceBusy": "Hinzufügen…",
+    "addAsInterfaceAria": "{{name}} als persistente Backbone-Schnittstelle hinzufügen",
+    "addAsInterfaceSuccess": "{{name}} zu Verbindungsschnittstellen hinzugefügt→. Starten Sie den Stapel neu, wenn er nicht auftaucht.",
+    "addAsInterfaceFailed": "Schnittstelle konnte nicht hinzugefügt werden: {{error}}",
+    "addAsInterfaceNotAddable": "Diese Erkennungszeile kann nicht hinzugefügt werden (erfordert eine Backbone- oder TCP-Serveradresse)."
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

@@ -86,6 +86,7 @@ const KNOWN_IFACE_CONFIG_KEYS: &[&str] = &[
     "passphrase",
     "flow_control",
     "ignore_config_warnings",
+    "bootstrap_only",
 ];
 
 fn is_known_iface_config_key(key: &str) -> bool {
@@ -213,6 +214,22 @@ pub struct StackSettings {
     pub loglevel: i32,
     #[serde(default)]
     pub announce_interval_sec: u32,
+    /// Max discovered Backbone/TCPServer interfaces to auto-connect (0 = off).
+    #[serde(default)]
+    pub autoconnect_discovered_interfaces: u32,
+    /// Minimum discovery stamp value to accept (Python `required_discovery_value`).
+    #[serde(default = "default_required_discovery_value")]
+    pub required_discovery_value: u8,
+    /// Comma-separated 32-hex network/transport identity allowlist (empty = any).
+    #[serde(default)]
+    pub interface_discovery_sources: String,
+    /// Path to network identity file for discovery encrypt/decrypt.
+    #[serde(default)]
+    pub network_identity: String,
+}
+
+fn default_required_discovery_value() -> u8 {
+    16
 }
 
 #[derive(Debug, Clone)]
@@ -280,6 +297,60 @@ pub fn set_stack_settings(config_dir: &Path, settings: &StackSettings) -> Result
         "announce_interval_sec",
         &settings.announce_interval_sec.to_string(),
     );
+    parsed.reticulum.set(
+        "autoconnect_discovered_interfaces",
+        &settings.autoconnect_discovered_interfaces.to_string(),
+    );
+    let stamp = settings.required_discovery_value.max(1);
+    parsed
+        .reticulum
+        .set("required_discovery_value", &stamp.to_string());
+    // Prefer the Python/manual key; drop the legacy alias so one source of truth remains.
+    if parsed
+        .reticulum
+        .values
+        .contains_key("discover_interfaces_required_value")
+    {
+        parsed
+            .reticulum
+            .values
+            .remove("discover_interfaces_required_value");
+        parsed
+            .reticulum
+            .order
+            .retain(|k| k != "discover_interfaces_required_value");
+    }
+    let sources = normalize_discovery_sources(&settings.interface_discovery_sources)?;
+    if sources.is_empty() {
+        if parsed
+            .reticulum
+            .values
+            .contains_key("interface_discovery_sources")
+        {
+            parsed
+                .reticulum
+                .values
+                .remove("interface_discovery_sources");
+            parsed
+                .reticulum
+                .order
+                .retain(|k| k != "interface_discovery_sources");
+        }
+    } else {
+        parsed
+            .reticulum
+            .set("interface_discovery_sources", &sources);
+    }
+    let network_identity = settings.network_identity.trim();
+    if network_identity.is_empty() {
+        if parsed.reticulum.values.contains_key("network_identity") {
+            parsed.reticulum.values.remove("network_identity");
+            parsed.reticulum.order.retain(|k| k != "network_identity");
+        }
+    } else {
+        validate_ini_scalar("network_identity", network_identity)?;
+        parsed.reticulum.set("network_identity", network_identity);
+    }
     write_config(config_dir, &serialize_config(&parsed))
 }
 
@@ -369,7 +440,47 @@ fn stack_settings_from_parsed(parsed: &ParsedConfig) -> StackSettings {
             .get("announce_interval_sec")
             .and_then(|v| v.parse().ok())
             .unwrap_or(DEFAULT_ANNOUNCE_INTERVAL_SEC),
+        autoconnect_discovered_interfaces: parsed
+            .reticulum
+            .get("autoconnect_discovered_interfaces")
+            .or_else(|| parsed.reticulum.get("discover_interfaces_autoconnect"))
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0),
+        required_discovery_value: parsed
+            .reticulum
+            .get("required_discovery_value")
+            .or_else(|| parsed.reticulum.get("discover_interfaces_required_value"))
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(default_required_discovery_value()),
+        interface_discovery_sources: parsed
+            .reticulum
+            .get("interface_discovery_sources")
+            .map(str::to_string)
+            .unwrap_or_default(),
+        network_identity: parsed
+            .reticulum
+            .get("network_identity")
+            .map(str::to_string)
+            .unwrap_or_default(),
     }
+}
+
+/// Normalize comma/whitespace-separated 32-hex identity hashes for discovery sources.
+fn normalize_discovery_sources(raw: &str) -> Result<String, String> {
+    let mut out = Vec::new();
+    for part in raw.split(|c: char| c == ',' || c.is_whitespace()) {
+        let trimmed = part.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if trimmed.len() != 32 || !trimmed.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err(format!(
+                "invalid interface_discovery_sources entry (need 32 hex chars): {trimmed}"
+            ));
+        }
+        out.push(trimmed.to_ascii_lowercase());
+    }
+    Ok(out.join(", "))
 }
 
 fn interfaces_from_parsed(parsed: &ParsedConfig) -> Vec<InterfaceRow> {
@@ -523,6 +634,7 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
             None
         },
         ignore_config_warnings: block.get_bool("ignore_config_warnings"),
+        bootstrap_only: block.get_bool("bootstrap_only"),
         tx_queue_used: None,
         tx_queue_max: None,
         host_rssi: None,
@@ -679,6 +791,9 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
     }
     if let Some(v) = row.ignore_config_warnings {
         block.set("ignore_config_warnings", &bool_to_ini(v));
+    }
+    if let Some(v) = row.bootstrap_only {
+        block.set("bootstrap_only", &bool_to_ini(v));
     }
 
     // Preserve unknown keys; typed fields take priority on key collision.
@@ -1149,6 +1264,7 @@ pub fn add_interface_to_config(
             .flow_control
             .or_else(|| default_flow_control_for_iface_type(&req.iface_type)),
         ignore_config_warnings: req.ignore_config_warnings,
+        bootstrap_only: req.bootstrap_only,
         tx_queue_used: None,
         tx_queue_max: None,
         host_rssi: None,
@@ -1268,6 +1384,9 @@ pub fn update_interface_in_config(
     }
     if patch.flow_control.is_some() {
         row.flow_control = patch.flow_control;
+    }
+    if patch.bootstrap_only.is_some() {
+        row.bootstrap_only = patch.bootstrap_only;
     }
     if let Some(ref extra) = patch.extra_config {
         validate_extra_config(extra)?;
@@ -1394,6 +1513,9 @@ pub struct UpdateInterfacePatch {
     /// RNode/KISS TX ready-gate toggle. `None` leaves the current value.
     #[serde(default)]
     pub flow_control: Option<bool>,
+    /// Tear down once discovered-interface autoconnect quota is filled.
+    #[serde(default)]
+    pub bootstrap_only: Option<bool>,
     /// When `Some`, replaces the interface's preserved unknown keys.
     /// When `None` (omitted), existing `extra_config` is kept.
     #[serde(default)]
@@ -3371,6 +3493,7 @@ target_port = 4242
             passphrase: None,
             flow_control: None,
             ignore_config_warnings: None,
+            bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
             host_rssi: None,
@@ -3447,6 +3570,87 @@ share_instance = Yes
         let content = read_config(&dir).unwrap();
         assert!(content.contains("discover_interfaces = Yes"));
         assert!(!ensure_discover_interfaces_enabled(&dir).unwrap());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn stack_settings_round_trips_discovery_consume_knobs() {
+        let dir = test_config_dir("stack-consume");
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = Yes
+share_instance = No
+announce_interval_sec = 3600
+
+[logging]
+loglevel = 4
+"#,
+        )
+        .unwrap();
+        set_stack_settings(
+            &dir,
+            &StackSettings {
+                enable_transport: true,
+                share_instance: false,
+                loglevel: 4,
+                announce_interval_sec: 3600,
+                autoconnect_discovered_interfaces: 2,
+                required_discovery_value: 18,
+                interface_discovery_sources: "521c87a83afb8f29e4455e77930b973b".into(),
+                network_identity: "/tmp/mesh-net.id".into(),
+            },
+        )
+        .unwrap();
+        let content = read_config(&dir).unwrap();
+        assert!(
+            content.contains("autoconnect_discovered_interfaces = 2"),
+            "{content}"
+        );
+        assert!(
+            content.contains("required_discovery_value = 18"),
+            "{content}"
+        );
+        assert!(
+            content.contains("interface_discovery_sources = 521c87a83afb8f29e4455e77930b973b"),
+            "{content}"
+        );
+        assert!(
+            content.contains("network_identity = /tmp/mesh-net.id"),
+            "{content}"
+        );
+        let got = get_stack_settings(&dir).unwrap();
+        assert_eq!(got.autoconnect_discovered_interfaces, 2);
+        assert_eq!(got.required_discovery_value, 18);
+        assert_eq!(
+            got.interface_discovery_sources,
+            "521c87a83afb8f29e4455e77930b973b"
+        );
+        assert_eq!(got.network_identity, "/tmp/mesh-net.id");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn bootstrap_only_round_trips_as_typed_field() {
+        let dir = test_config_dir("bootstrap-only");
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "tcp".into(),
+                name: Some("Bootstrap Hub".into()),
+                host: Some("hub.example.com".into()),
+                port: Some(4242),
+                bootstrap_only: Some(true),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(row.bootstrap_only, Some(true));
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("bootstrap_only = Yes"), "{content}");
+        let reparsed = interfaces_from_config_dir(&dir).unwrap();
+        assert_eq!(reparsed[0].bootstrap_only, Some(true));
+        assert!(!reparsed[0].extra_config.contains_key("bootstrap_only"));
         let _ = fs::remove_dir_all(&dir);
     }
 
@@ -4047,6 +4251,7 @@ ignore_config_warnings = Yes
                     latitude: Some(40.0),
                     longitude: Some(-105.0),
                     ignore_config_warnings: Some(value),
+                    bootstrap_only: None,
                     ..Default::default()
                 },
             )
@@ -4106,6 +4311,7 @@ ignore_config_warnings = Yes
             passphrase: None,
             flow_control: Some(true),
             ignore_config_warnings: None,
+            bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
             host_rssi: None,
@@ -4404,6 +4610,7 @@ longitude = -105.0
             passphrase: None,
             flow_control: None,
             ignore_config_warnings: None,
+            bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
             host_rssi: None,
@@ -4451,6 +4658,7 @@ longitude = -105.0
             passphrase: None,
             flow_control: None,
             ignore_config_warnings: Some(true),
+            bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
             host_rssi: None,

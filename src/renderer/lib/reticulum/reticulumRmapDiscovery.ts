@@ -9,6 +9,10 @@ import {
 } from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
 import { getReticulumInterfaceHelp } from '@/renderer/lib/reticulum/reticulumInterfaceHelp';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import {
+  parseReticulumStackSettingsPayload,
+  type ReticulumStackSettingsPayload,
+} from '@/renderer/lib/reticulum/reticulumStackSettings';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { isValidConnectHost } from '@/shared/connectHost';
 import { isValidLatLon } from '@/shared/geoCoords';
@@ -609,13 +613,30 @@ export interface ApplyReticulumRmapDiscoveryArgs {
   discoveryStampValue?: number | null;
   discoveryEncrypt?: boolean | null;
   publishIfac?: boolean | null;
-  stackSettings: { enable_transport: boolean; share_instance: boolean; loglevel: number };
+  stackSettings: Pick<
+    ReticulumStackSettingsPayload,
+    'enable_transport' | 'share_instance' | 'loglevel'
+  > &
+    Partial<ReticulumStackSettingsPayload>;
 }
 
 export interface RmapBatchApplyResult {
   applied: number;
   total: number;
   errors: string[];
+}
+
+/** Merge a stack-settings patch onto the live GET so partial callers cannot wipe consume knobs. */
+async function putReticulumStackSettingsMerged(
+  patch: Partial<ReticulumStackSettingsPayload>,
+): Promise<void> {
+  const current = parseReticulumStackSettingsPayload(
+    await window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings'),
+  );
+  await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
+    ...current,
+    ...patch,
+  });
 }
 
 export async function applyReticulumRmapDiscovery(
@@ -657,8 +678,7 @@ export async function applyReticulumRmapDiscovery(
   const needsTransportBridge = targets.some(isReticulumRmapLoRaDiscoveryRow);
   if (needsTransportBridge && !args.stackSettings.enable_transport) {
     try {
-      await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
-        ...args.stackSettings,
+      await putReticulumStackSettingsMerged({
         enable_transport: true,
       });
     } catch (e) {
@@ -707,7 +727,11 @@ export interface SetReticulumRmapDiscoverableArgs {
   heightMeters?: number | null;
   reachableOn?: string | null;
   interfaces: readonly ReticulumInterfaceRow[];
-  stackSettings: { enable_transport: boolean; share_instance: boolean; loglevel: number };
+  stackSettings: Pick<
+    ReticulumStackSettingsPayload,
+    'enable_transport' | 'share_instance' | 'loglevel'
+  > &
+    Partial<ReticulumStackSettingsPayload>;
 }
 
 /** Enable or disable RMAP discovery on a single capable interface. */
@@ -753,8 +777,7 @@ export async function setReticulumRmapDiscoverableForInterface(
 
   if (isReticulumRmapLoRaDiscoveryRow(iface)) {
     if (!args.stackSettings.enable_transport) {
-      await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
-        ...args.stackSettings,
+      await putReticulumStackSettingsMerged({
         enable_transport: true,
       });
     }

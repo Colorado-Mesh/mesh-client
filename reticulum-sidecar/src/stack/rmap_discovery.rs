@@ -8,6 +8,8 @@ use rns_transport::discovery::{DiscoveredInterface, DiscoveryStatus};
 pub struct RmapDiscoveredWireRow {
     pub discovery_hash: String,
     pub transport_id: String,
+    /// Announcing network / transport identity (`DiscoveredInterface.network_id`).
+    pub network_id: String,
     pub discovery_name: String,
     pub interface_type: String,
     pub latitude: f64,
@@ -16,6 +18,12 @@ pub struct RmapDiscoveredWireRow {
     pub transport_enabled: bool,
     pub reachable_on: Option<String>,
     pub port: Option<u16>,
+    /// IFAC virtual-network name from the discovery announce (when published).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ifac_netname: Option<String>,
+    /// IFAC passphrase from the discovery announce (when `publish_ifac`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ifac_netkey: Option<String>,
     pub frequency: Option<u64>,
     pub bandwidth: Option<u64>,
     pub spreading_factor: Option<u8>,
@@ -40,6 +48,7 @@ pub fn wire_row_from_discovered(row: &DiscoveredInterface) -> RmapDiscoveredWire
     RmapDiscoveredWireRow {
         discovery_hash: row.filename(),
         transport_id: hex::encode(info.transport_id),
+        network_id: hex::encode(row.network_id),
         discovery_name: info.name.clone(),
         interface_type: info.interface_type.clone(),
         latitude: lat,
@@ -48,6 +57,8 @@ pub fn wire_row_from_discovered(row: &DiscoveredInterface) -> RmapDiscoveredWire
         transport_enabled: info.transport_enabled,
         reachable_on: info.reachable_on.clone(),
         port: info.port,
+        ifac_netname: info.ifac_netname.clone(),
+        ifac_netkey: info.ifac_netkey.clone(),
         frequency: info.frequency,
         bandwidth: info.bandwidth,
         spreading_factor: info.spreading_factor,
@@ -144,6 +155,41 @@ mod tests {
         assert_eq!(wire.frequency, Some(869_525_000));
         assert_eq!(wire.status, "available");
         assert_eq!(wire.hops, 2);
+        assert_eq!(wire.network_id, hex::encode([0xCDu8; 16]));
+        assert!(wire.ifac_netname.is_none());
+    }
+
+    #[cfg(feature = "rns-stack")]
+    #[test]
+    fn wire_row_includes_ifac_when_present() {
+        use rns_transport::discovery::app_data::DiscoveryInfo;
+
+        let row = DiscoveredInterface {
+            info: DiscoveryInfo {
+                name: "Private Hub".into(),
+                transport_id: [0x11; 16],
+                interface_type: "BackboneInterface".into(),
+                transport_enabled: true,
+                reachable_on: Some("hub.example.com".into()),
+                port: Some(4242),
+                ifac_netname: Some("internal_1".into()),
+                ifac_netkey: Some("secret".into()),
+                ..Default::default()
+            },
+            network_id: [0x22; 16],
+            hops: 1,
+            stamp_value: 16,
+            stamp: vec![],
+            discovered: 1,
+            last_heard: 2,
+            heard_count: 1,
+            status: Some(DiscoveryStatus::Available),
+        };
+        let wire = wire_row_from_discovered(&row);
+        assert_eq!(wire.ifac_netname.as_deref(), Some("internal_1"));
+        assert_eq!(wire.ifac_netkey.as_deref(), Some("secret"));
+        assert_eq!(wire.reachable_on.as_deref(), Some("hub.example.com"));
+        assert_eq!(wire.port, Some(4242));
     }
 
     #[cfg(feature = "rns-stack")]

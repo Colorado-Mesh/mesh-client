@@ -757,6 +757,7 @@ describe('ReticulumInterfacesPanel', () => {
         callsign: 'NV0N',
         name: '192.168.1.10',
         mode: 'access_point',
+        bootstrap_only: false,
       });
     });
   });
