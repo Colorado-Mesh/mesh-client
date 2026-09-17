@@ -82,7 +82,7 @@ describe('BLE concurrent sessions (mocked electronAPI)', () => {
             scanOwner: null,
           }),
         ),
-        acquireScan: vi.fn(() => Promise.resolve(emptyState())),
+        acquireScan: vi.fn(() => Promise.resolve({ ok: true as const, ...emptyState() })),
         releaseScan: vi.fn(() => Promise.resolve(emptyState())),
         assertCanConnect: vi.fn(() => Promise.resolve(emptyState())),
         suspendForReticulumBleConnect: vi.fn(() => Promise.resolve(emptyState())),

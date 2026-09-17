@@ -83,7 +83,11 @@ describe('ReticulumInterfacesPanel', () => {
     window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.reticulum.proxyDelete = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.hostLink.probeTcpRtt = vi.fn().mockResolvedValue(42);
-    window.electronAPI.bleCoexistence.acquireScan = vi.fn().mockResolvedValue({});
+    window.electronAPI.bleCoexistence.acquireScan = vi.fn().mockResolvedValue({
+      ok: true,
+      connections: [],
+      scanOwner: 'reticulum',
+    });
     window.electronAPI.bleCoexistence.releaseScan = vi.fn().mockResolvedValue({});
     hydrateAxeThemeColors(document.documentElement);
     window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {

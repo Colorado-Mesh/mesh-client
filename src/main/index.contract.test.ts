@@ -54,6 +54,16 @@ describe('GATT BLE disconnect handling (source contract)', () => {
     expect(handler).toContain("code: 'scan_busy'");
   });
 
+  it('returns scan_busy from bleCoexistence:acquireScan without throwing', () => {
+    const start = INDEX_SOURCE.indexOf("ipcMain.handle('bleCoexistence:acquireScan'");
+    const end = INDEX_SOURCE.indexOf("ipcMain.handle('bleCoexistence:releaseScan'");
+    const handler = INDEX_SOURCE.slice(start, end);
+    expect(handler).toContain('BleScanBusyError');
+    expect(handler).toContain("code: 'scan_busy'");
+    expect(handler).toContain('ok: false as const');
+    expect(handler).toMatch(/console\.debug\([\s\S]*bleCoexistence:acquireScan busy/);
+  });
+
   it('invalidates GATT proxy port when shared sidecar process exits', () => {
     expect(INDEX_SOURCE).toContain('gattSidecarProxy.invalidateAfterSidecarExit()');
     expect(INDEX_SOURCE).toMatch(

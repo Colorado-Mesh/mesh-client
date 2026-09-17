@@ -11,6 +11,7 @@ describe('useReticulumInterfaceDevicePicker', () => {
     vi.mocked(window.electronAPI.bleCoexistence.acquireScan).mockReset();
     vi.mocked(window.electronAPI.bleCoexistence.releaseScan).mockReset();
     vi.mocked(window.electronAPI.bleCoexistence.acquireScan).mockResolvedValue({
+      ok: true,
       connections: [],
       scanOwner: 'reticulum',
     });
@@ -69,9 +70,13 @@ describe('useReticulumInterfaceDevicePicker', () => {
   });
 
   it('surfaces scan_busy when another scan holds the lease', async () => {
-    vi.mocked(window.electronAPI.bleCoexistence.acquireScan).mockRejectedValue(
-      new Error('Bluetooth scan in progress (webbt)'),
-    );
+    vi.mocked(window.electronAPI.bleCoexistence.acquireScan).mockResolvedValue({
+      ok: false,
+      code: 'scan_busy',
+      owner: 'gatt',
+      connections: [],
+      scanOwner: 'gatt',
+    });
 
     const { result } = renderHook(() => useReticulumInterfaceDevicePicker());
 

@@ -1395,7 +1395,7 @@ TCP/network Nomad Links use path-scaled initiator hops (`link_hops = clamp(path_
 
 **Symptoms**: Reticulum stack is running with an enabled BLE RNode; Meshtastic or MeshCore BLE scan/connect fails with `scan_busy` / “Bluetooth scan in progress (reticulum)” or `mac_conflict`.
 
-**Cause**: The app checks BLE device ownership and serializes app-requested scans and LoRa connection setup. A conflicting configured address or active scan can block Connect. LoRa GATT and Reticulum run in the same sidecar process with separate centrals; Reticulum's autonomous discovery/reconnect does not use the app's scan lease.
+**Cause**: The app checks BLE device ownership and serializes app-requested scans and LoRa connection setup. A conflicting configured address or active scan can block Connect. LoRa GATT and Reticulum run in the same sidecar process with separate centrals; Reticulum's autonomous discovery/reconnect does not use the app's scan lease. The inverse is also normal: RNode Signal meter advertisement polls may see `scan_busy (gatt)` while Meshtastic/MeshCore GATT connect holds the scan mutex — that is expected contention (logged at debug), not a stuck lease; meters already seeded from connect-time `host_rssi` skip those polls.
 
 **Fix**:
 

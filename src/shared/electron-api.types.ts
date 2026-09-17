@@ -319,6 +319,11 @@ export interface BleCoexistenceState {
   nobleYieldDecisionPending?: boolean;
 }
 
+/** Result of bleCoexistence:acquireScan — busy is a normal Result, not an IPC throw. */
+export type BleCoexistenceAcquireScanResult =
+  | ({ ok: true } & BleCoexistenceState)
+  | ({ ok: false; code: 'scan_busy'; owner: BleScanOwner } & BleCoexistenceState);
+
 export interface ElectronAPI {
   // ─── Database operations ────────────────────────────────────────────────────
   db: {
@@ -914,7 +919,7 @@ export interface ElectronAPI {
     unregister: (mac: string, owner: BlePeripheralOwner) => Promise<BleCoexistenceState>;
     assertCanConnect: (owner: BlePeripheralOwner, mac: string) => Promise<BleCoexistenceState>;
     getState: () => Promise<BleCoexistenceState>;
-    acquireScan: (owner: BleScanOwner) => Promise<BleCoexistenceState>;
+    acquireScan: (owner: BleScanOwner) => Promise<BleCoexistenceAcquireScanResult>;
     releaseScan: (owner: BleScanOwner) => Promise<BleCoexistenceState>;
     /** Disconnect LoRa GATT sessions and hold scan mutex for Reticulum BLE RNode connect. */
     suspendForReticulumBleConnect: () => Promise<BleCoexistenceState>;
