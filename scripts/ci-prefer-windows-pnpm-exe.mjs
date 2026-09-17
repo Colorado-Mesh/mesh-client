@@ -150,18 +150,48 @@ export function discoverWindowsPnpmExes(pnpmHome, opts = {}) {
 /**
  * @param {string} exe
  * @param {typeof spawnSync} spawnSyncFn
+ * @param {{ shell?: boolean }} [opts]
  * @returns {string | null}
  */
-export function probePnpmExeVersion(exe, spawnSyncFn = spawnSync) {
+export function probePnpmExeVersion(exe, spawnSyncFn = spawnSync, opts = {}) {
   // Probe outside the repo so a stale bootstrap does not attempt packageManager
   // engine install into package-manager-store (the CI failure mode on Windows).
+  // Windows .cmd shims need shell:true; native .exe probes stay shell:false.
   const result = spawnSyncFn(exe, ['--version'], {
     encoding: 'utf8',
-    shell: false,
+    shell: opts.shell ?? false,
     cwd: os.tmpdir(),
   });
   if (result.error || result.status !== 0) return null;
   return parsePnpmVersionOutput(String(result.stdout ?? ''));
+}
+
+/**
+ * Find a refreshed PNPM_HOME (.cmd) shim that reports the packageManager pin.
+ * Prefer PNPM_HOME/bin, then PNPM_HOME (action-setup may place shims in either).
+ *
+ * @param {string} pnpmHome
+ * @param {string} pinned
+ * @param {{
+ *   existsSync?: (p: string) => boolean
+ *   spawnSyncFn?: typeof spawnSync
+ * }} [opts]
+ * @returns {{ shim: string, dir: string, version: string } | null}
+ */
+export function findPinnedPnpmHomeShim(pnpmHome, pinned, opts = {}) {
+  const existsSync = opts.existsSync ?? fs.existsSync;
+  const spawnSyncFn = opts.spawnSyncFn ?? spawnSync;
+  for (const dir of [path.join(pnpmHome, 'bin'), pnpmHome]) {
+    for (const name of ['pnpm.cmd', 'pnpm.CMD']) {
+      const shim = path.join(dir, name);
+      if (!existsSync(shim)) continue;
+      const version = probePnpmExeVersion(shim, spawnSyncFn, { shell: true });
+      if (version === pinned) {
+        return { shim, dir, version };
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -280,15 +310,22 @@ export function preferWindowsPnpmExe(opts = {}) {
   // action-setup self-update refreshes PNPM_HOME .cmd shims to the packageManager
   // pin, but leaves the bootstrap node_modules/pnpm/pnpm.exe stale. Preferring that
   // exe caused "installed pnpm wrapper is missing". With .ps1 removed, PowerShell
-  // uses the refreshed .cmd — prepend PNPM_HOME (and bin/) so those shims win.
+  // uses the refreshed .cmd — but only prepend PNPM_HOME (and bin/) after a shim
+  // there actually reports the pin via --version.
   if (pinned && selected && selected.version !== pinned) {
+    const verified = findPinnedPnpmHomeShim(pnpmHome, pinned, { existsSync, spawnSyncFn });
+    if (!verified) {
+      throw new Error(
+        `[ci-prefer-windows-pnpm-exe] stale pnpm.exe ${selected.version} at ${selected.exe}; no PNPM_HOME/.cmd shim matches packageManager ${pinned}`,
+      );
+    }
     appendFileSync(githubPath, `${pnpmHome}\n`);
     const binDir = path.join(pnpmHome, 'bin');
     if (existsSync(binDir)) {
       appendFileSync(githubPath, `${binDir}\n`);
     }
     log(
-      `[ci-prefer-windows-pnpm-exe] skipped stale pnpm.exe ${selected.version} at ${selected.exe}; prepended PNPM_HOME for packageManager ${pinned}`,
+      `[ci-prefer-windows-pnpm-exe] skipped stale pnpm.exe ${selected.version} at ${selected.exe}; prepended PNPM_HOME for packageManager ${pinned} (verified ${verified.shim})`,
     );
     return {
       skipped: false,

@@ -108,7 +108,7 @@ describe('ci-prefer-windows-pnpm-exe', () => {
     expect(logs[0]).toContain('12.4.2');
   });
 
-  it('skips a version-mismatched bootstrap and prepends PNPM_HOME for refreshed cmd shims', () => {
+  it('fails when a version-mismatched bootstrap has no pinned PNPM_HOME cmd shim', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-pnpm-mismatch-'));
     tempDirs.push(root);
     const bin = path.join(root, 'node_modules', '.bin');
@@ -117,6 +117,47 @@ describe('ci-prefer-windows-pnpm-exe', () => {
     fs.mkdirSync(stalePkg, { recursive: true });
     const staleExe = path.join(stalePkg, 'pnpm.exe');
     fs.writeFileSync(staleExe, '');
+    const ps1 = path.join(bin, 'pnpm.ps1');
+    fs.writeFileSync(ps1, 'exit 0');
+    const githubPath = path.join(root, 'github_path');
+    fs.writeFileSync(githubPath, '');
+    const packageJsonPath = path.join(root, 'package.json');
+    fs.writeFileSync(
+      packageJsonPath,
+      JSON.stringify({ packageManager: 'pnpm@12.4.2+sha512.deadbeef' }),
+    );
+
+    expect(() =>
+      preferWindowsPnpmExe({
+        platform: 'win32',
+        pnpmHome: bin,
+        githubPath,
+        packageJsonPath,
+        spawnSyncFn: (cmd) => {
+          if (cmd === staleExe) {
+            return { status: 0, stdout: '12.3.4\n', stderr: '', error: undefined };
+          }
+          return { status: 1, stdout: '', stderr: '', error: undefined };
+        },
+        log: () => {},
+      }),
+    ).toThrow(/no PNPM_HOME\/\.cmd shim matches packageManager 12\.4\.2/);
+
+    expect(fs.existsSync(ps1)).toBe(false);
+    expect(fs.readFileSync(githubPath, 'utf8')).toBe('');
+  });
+
+  it('skips a stale bootstrap when a PNPM_HOME cmd shim reports the packageManager pin', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-pnpm-shim-ok-'));
+    tempDirs.push(root);
+    const bin = path.join(root, 'node_modules', '.bin');
+    const stalePkg = path.join(root, 'node_modules', 'pnpm');
+    fs.mkdirSync(bin, { recursive: true });
+    fs.mkdirSync(stalePkg, { recursive: true });
+    const staleExe = path.join(stalePkg, 'pnpm.exe');
+    fs.writeFileSync(staleExe, '');
+    const cmdShim = path.join(bin, 'pnpm.cmd');
+    fs.writeFileSync(cmdShim, '@echo 12.4.2\r\n');
     const ps1 = path.join(bin, 'pnpm.ps1');
     fs.writeFileSync(ps1, 'exit 0');
     const githubPath = path.join(root, 'github_path');
@@ -138,6 +179,9 @@ describe('ci-prefer-windows-pnpm-exe', () => {
         if (cmd === staleExe) {
           return { status: 0, stdout: '12.3.4\n', stderr: '', error: undefined };
         }
+        if (cmd === cmdShim) {
+          return { status: 0, stdout: '12.4.2\n', stderr: '', error: undefined };
+        }
         return { status: 1, stdout: '', stderr: '', error: undefined };
       },
       log: (msg) => logs.push(msg),
@@ -145,9 +189,10 @@ describe('ci-prefer-windows-pnpm-exe', () => {
 
     expect(result.reason).toBe('stale-bootstrap-skipped');
     expect(result.exeDir).toBe(bin);
+    expect(result.version).toBe('12.4.2');
     expect(fs.existsSync(ps1)).toBe(false);
     expect(fs.readFileSync(githubPath, 'utf8')).toBe(`${bin}\n`);
-    expect(logs.some((l) => l.includes('skipped stale'))).toBe(true);
+    expect(logs.some((l) => l.includes('skipped stale') && l.includes(cmdShim))).toBe(true);
   });
 
   it('selects the pinned version when multiple exes probe successfully', () => {
