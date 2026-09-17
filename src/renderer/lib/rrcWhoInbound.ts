@@ -21,6 +21,8 @@ export interface ApplyRrcWhoInboundOpts {
     hubHash?: string,
   ) => void;
   consumeWhoTranscriptSlot: (room: string, hubHash?: string) => boolean;
+  /** Cleared on any successful `/who` parse (including empty roster / unjoined). */
+  clearWhoReplyPending?: (room: string, hubHash?: string) => void;
 }
 
 /**
@@ -38,6 +40,8 @@ export function applyRrcWhoInboundNotice(
   const joined = [...joinedRoomNames];
   const who = parseRrcWhoNotice(body);
   if (!who) return { action: 'skip' };
+  // Reply arrived (even empty `(none)` or for an unjoined room) — drop detection is done.
+  opts.clearWhoReplyPending?.(who.room, opts.hubDestHash);
   const whoRoom = rrcWhoNoticeJoinedRoom(who.room, joined);
   if (!whoRoom) return { action: 'unjoined' };
   opts.mergeRoomMembers(whoRoom, who.members, 'replace', opts.hubDestHash);

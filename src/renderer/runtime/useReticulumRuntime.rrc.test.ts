@@ -131,6 +131,7 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
 
   it('routes /who notices through applyRrcWhoInboundNotice and drops unmatched rooms', () => {
     expect(SOURCE).toContain('applyRrcWhoInboundNotice');
+    expect(SOURCE).toContain('clearWhoReplyPending');
     expect(SOURCE).toMatch(
       /whoResult\.action === 'unjoined' \|\| whoResult\.action === 'nicklist-only'[\s\S]*?return;/,
     );

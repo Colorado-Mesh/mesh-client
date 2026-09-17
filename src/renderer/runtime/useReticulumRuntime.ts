@@ -1273,6 +1273,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
               },
               consumeWhoTranscriptSlot: (whoRoom, hub) =>
                 session.consumeWhoTranscriptSlot(whoRoom, hub),
+              clearWhoReplyPending: (whoRoom, hub) => {
+                session.clearWhoReplyPending(whoRoom, hub);
+              },
             });
             const topic = parseRrcTopicNotice(p.body);
             if (topic) session.setRoomTopic(topic.room, topic.topic || null, hubDestHash);

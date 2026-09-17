@@ -285,25 +285,18 @@ export default function RrcPanel({
    * Stock rrcd `/who` uses emit_notice → a single Packet.send (no chunk/resource),
    * so busy rooms exceed the Link MDU (~431) and the hub drops the reply silently.
    * Leave one system line instead of letting the command look ignored.
+   * Detection is reply-arrival based (not roster size): join-info may seed self
+   * into the nicklist even when the full `/who` roster was dropped.
    */
   const scheduleWhoReplyWatchdog = useCallback(
-    (room: string, opts: { forced: boolean }) => {
+    (room: string) => {
       if (!hubDestHash) return;
       const hub = hubDestHash.toLowerCase();
       window.setTimeout(() => {
         const s = useRrcSessionStore.getState();
         if (s.status !== 'active' || s.hubDestHash?.toLowerCase() !== hub) return;
-        if (opts.forced) {
-          // A displayed reply consumes the reservation; still pending means nothing arrived.
-          if (!s.hasWhoTranscriptForce(room, hub)) return;
-        } else {
-          const session = s.sessionsByHub.get(hub);
-          const info = session
-            ? [...session.rooms.values()].find((r) => rrcRoomsMatch(r.name, room))
-            : undefined;
-          if (!info) return;
-          if ((info.members?.length ?? 0) > 0) return;
-        }
+        if (!s.hasWhoReplyPending(room, hub)) return;
+        s.clearWhoReplyPending(room, hub);
         s.addMessage(
           {
             id: `who-miss-${hub.slice(0, 8)}-${rrcRoomMatchKey(room)}-${Date.now()}`,
@@ -338,7 +331,9 @@ export default function RrcPanel({
           ? activeRoom
           : undefined);
       if (whoForceRoom) {
-        useRrcSessionStore.getState().reserveWhoTranscriptForce(whoForceRoom, hubDestHash);
+        const store = useRrcSessionStore.getState();
+        store.reserveWhoTranscriptForce(whoForceRoom, hubDestHash);
+        store.markWhoReplyPending(whoForceRoom, hubDestHash);
       }
       try {
         const res = await rrcSendBounded({
@@ -348,13 +343,17 @@ export default function RrcPanel({
           type: 'msg',
         });
         if (!res.ok && whoForceRoom) {
-          useRrcSessionStore.getState().releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
+          const store = useRrcSessionStore.getState();
+          store.releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
+          store.clearWhoReplyPending(whoForceRoom, hubDestHash);
         } else if (res.ok && whoForceRoom) {
-          scheduleWhoReplyWatchdog(whoForceRoom, { forced: true });
+          scheduleWhoReplyWatchdog(whoForceRoom);
         }
       } catch (e: unknown) {
         if (whoForceRoom) {
-          useRrcSessionStore.getState().releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
+          const store = useRrcSessionStore.getState();
+          store.releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
+          store.clearWhoReplyPending(whoForceRoom, hubDestHash);
         }
         const msg = errLikeToLogString(e);
         console.debug('[RrcPanel] sendHubCommand failed ' + msg);
@@ -382,6 +381,7 @@ export default function RrcPanel({
         session.markWhoRequested(room, hubDestHash);
         session.reserveWhoTranscriptForce(room, hubDestHash);
       }
+      session.markWhoReplyPending(room, hubDestHash);
       // Python rrc-web always sets K_ROOM on MSG (including /who). Roomless /who
       // works on some hubs but not others; slash commands are handled before
       // forward so K_ROOM does not turn this into room chat.
@@ -396,13 +396,15 @@ export default function RrcPanel({
           if (!res.ok) {
             const next = useRrcSessionStore.getState();
             next.releaseWhoRequested(room, hubDestHash);
+            next.clearWhoReplyPending(room, hubDestHash);
             if (force) next.releaseWhoTranscriptForce(room, hubDestHash);
           } else {
-            scheduleWhoReplyWatchdog(room, { forced: force });
+            scheduleWhoReplyWatchdog(room);
           }
         } catch (e: unknown) {
           const next = useRrcSessionStore.getState();
           next.releaseWhoRequested(room, hubDestHash);
+          next.clearWhoReplyPending(room, hubDestHash);
           if (force) next.releaseWhoTranscriptForce(room, hubDestHash);
           console.debug('[RrcPanel] /who ' + errLikeToLogString(e));
         }
@@ -1028,7 +1030,9 @@ export default function RrcPanel({
               )
             : null;
           if (whoForceRoom) {
-            useRrcSessionStore.getState().reserveWhoTranscriptForce(whoForceRoom, hubDestHash);
+            const store = useRrcSessionStore.getState();
+            store.reserveWhoTranscriptForce(whoForceRoom, hubDestHash);
+            store.markWhoReplyPending(whoForceRoom, hubDestHash);
           }
           const commandRoom =
             (isWho ? whoForceRoom : null) ??
@@ -1045,18 +1049,22 @@ export default function RrcPanel({
             });
           } catch (e) {
             if (whoForceRoom) {
-              useRrcSessionStore.getState().releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
+              const store = useRrcSessionStore.getState();
+              store.releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
+              store.clearWhoReplyPending(whoForceRoom, hubDestHash);
             }
             throw e;
           }
           if (!res.ok) {
             if (whoForceRoom) {
-              useRrcSessionStore.getState().releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
+              const store = useRrcSessionStore.getState();
+              store.releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
+              store.clearWhoReplyPending(whoForceRoom, hubDestHash);
             }
             setRrcSendError(res.error ?? t('rrc.sendFailed'));
             return;
           }
-          if (whoForceRoom) scheduleWhoReplyWatchdog(whoForceRoom, { forced: true });
+          if (whoForceRoom) scheduleWhoReplyWatchdog(whoForceRoom);
           appendSystemLines([t('rrc.slash.commandSent', { cmd: expanded })]);
           return;
         }
