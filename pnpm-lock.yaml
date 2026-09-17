@@ -399,7 +399,7 @@ importers:
         specifier: ^9.2.4
         version: 9.2.4
       electron:
-        specifier: ^44.1.0
+        specifier: ^44.1.1
         version: 44.4.1(supports-color@8.1.1)
       electron-builder:
         specifier: ^26.16.1
