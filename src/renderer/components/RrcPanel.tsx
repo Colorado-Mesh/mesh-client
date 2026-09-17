@@ -294,7 +294,10 @@ export default function RrcPanel({
       const hub = hubDestHash.toLowerCase();
       window.setTimeout(() => {
         const s = useRrcSessionStore.getState();
-        if (s.status !== 'active' || s.hubDestHash?.toLowerCase() !== hub) return;
+        // Resolve the request hub from sessionsByHub — focused mirror fields
+        // (status / hubDestHash) must not gate clearing pending or whoReplyMissing.
+        const session = s.sessionsByHub.get(hub);
+        if (session?.status !== 'active') return;
         if (!s.hasWhoReplyPending(room, hub)) return;
         s.clearWhoReplyPending(room, hub);
         s.addMessage(

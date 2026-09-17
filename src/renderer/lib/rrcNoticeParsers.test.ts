@@ -49,6 +49,16 @@ describe('parseRrcListNotice', () => {
     ]);
   });
 
+  it('ignores unindented post-header footers such as End of list.', () => {
+    const body = [
+      'Registered public rooms:',
+      '  lobby - welcome',
+      'End of list.',
+      '  (+17 more)',
+    ].join('\n');
+    expect(parseRrcListNotice(body)).toEqual([{ name: 'lobby', topic: 'welcome' }]);
+  });
+
   it('returns empty list when hub reports none', () => {
     expect(parseRrcListNotice('No public rooms registered')).toEqual([]);
   });

@@ -21,9 +21,12 @@ const LIST_OMITTED_MORE = /^\(\+\d+\s+more\)$/i;
 
 /**
  * Parse one `/list` room line after the header.
- * rrcd uses two leading spaces; Ratspeak uses one — trim then parse either.
+ * rrcd uses two leading spaces; Ratspeak uses one. Validate indent on the
+ * original line before trim so unindented footers (e.g. "End of list.") are
+ * not treated as room names.
  */
 function parseListRoomLine(line: string): RrcListedRoom | null {
+  if (!/^ {1,2}\S/.test(line)) return null;
   const trimmed = line.trim();
   if (!trimmed || LIST_OMITTED_MORE.test(trimmed)) return null;
   const sep = trimmed.indexOf(' - ');

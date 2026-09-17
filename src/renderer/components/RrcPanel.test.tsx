@@ -737,6 +737,44 @@ describe('RrcPanel', () => {
     }
   });
 
+  it('still records whoReplyMissing for hub A after focusing hub B before timeout', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hubA, 'Hub A');
+      store.roomJoined('general', undefined, hubA);
+      store.setFocusedHub(hubA);
+      store.setActiveRoom('general', hubA);
+      vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+
+      render(<RrcPanel isActive />);
+      await waitFor(() => {
+        expect(whoSendCalls()).toHaveLength(1);
+        expect(whoSendCalls()[0]?.[0]).toMatchObject({
+          hub_dest_hash: hubA,
+          body: '/who general',
+        });
+      });
+      expect(useRrcSessionStore.getState().hasWhoReplyPending('general', hubA)).toBe(true);
+
+      // Focus another active hub before the watchdog fires — must not skip hub A.
+      store.applyStatus('active', hubB, 'Hub B');
+      store.roomJoined('lobby', undefined, hubB);
+      store.setFocusedHub(hubB);
+      expect(useRrcSessionStore.getState().hubDestHash).toBe(hubB);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(RRC_WHO_REPLY_TIMEOUT_MS + 100);
+      });
+      expect(useRrcSessionStore.getState().hasWhoReplyPending('general', hubA)).toBe(false);
+      const key = useRrcSessionStore.getState().roomMessageKey('general', hubA);
+      const messages = key ? (useRrcSessionStore.getState().messages.get(key) ?? []) : [];
+      expect(messages.some((m) => m.body.startsWith('No member list from the hub'))).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('does not add whoReplyMissing after a parsed empty /who clears pending', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
