@@ -131,10 +131,18 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
 
   it('routes /who notices through applyRrcWhoInboundNotice and drops unmatched rooms', () => {
     expect(SOURCE).toContain('applyRrcWhoInboundNotice');
+    expect(SOURCE).toContain('clearWhoReplyPending');
     expect(SOURCE).toMatch(
       /whoResult\.action === 'unjoined' \|\| whoResult\.action === 'nicklist-only'[\s\S]*?return;/,
     );
     expect(SOURCE).toMatch(/whoResult\.action === 'transcript'[\s\S]*?room = whoResult\.room/);
+  });
+
+  it('accumulates Ratspeak chunked /list notices into listedRooms', () => {
+    expect(SOURCE).toContain('beginListedRoomsDirectory');
+    expect(SOURCE).toContain('appendListedRooms');
+    expect(SOURCE).toMatch(/listed\?\.action === 'begin'/);
+    expect(SOURCE).toMatch(/listed\?\.action === 'append'/);
   });
 
   it('routes direct NOTICE into per-peer @hash DMs via applyRrcDirectMessageRoom', () => {

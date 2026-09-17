@@ -19,6 +19,7 @@ export interface RrcHubBrowserProps {
   onNicknameChange: (v: string) => void;
   /** Hub WELCOME max_nick_bytes when known. */
   maxNickBytes?: number | null;
+  connected: RrcHubInfo[];
   favourites: RrcHubInfo[];
   discovered: RrcHubInfo[];
   hubDestHash: string | null;
@@ -30,8 +31,8 @@ export interface RrcHubBrowserProps {
   isHubAutoJoin: (hubHash: string) => boolean;
   manualHash: string;
   onManualHashChange: (v: string) => void;
-  hubTab: 'favourites' | 'discovered';
-  onHubTabChange: (tab: 'favourites' | 'discovered') => void;
+  hubTab: 'connected' | 'favourites' | 'discovered';
+  onHubTabChange: (tab: 'connected' | 'favourites' | 'discovered') => void;
   onRefresh: () => void;
   onConnect: (hash: string) => void;
   onToggleFavorite: (hash: string, favorited: boolean) => void;
@@ -206,6 +207,7 @@ export function RrcHubBrowser({
   nickname,
   onNicknameChange,
   maxNickBytes = null,
+  connected,
   favourites,
   discovered,
   hubDestHash,
@@ -223,7 +225,8 @@ export function RrcHubBrowser({
   onManualConnect,
 }: RrcHubBrowserProps) {
   const { t } = useTranslation();
-  const rows = hubTab === 'favourites' ? favourites : discovered;
+  const rows =
+    hubTab === 'connected' ? connected : hubTab === 'favourites' ? favourites : discovered;
 
   return (
     <aside
@@ -268,6 +271,20 @@ export function RrcHubBrowser({
           )}
           <p className="text-muted px-1 text-[10px] leading-snug">{t('rrc.hubLegend')}</p>
           <div className="flex gap-1 rounded border border-gray-700 p-0.5 text-[10px]">
+            <button
+              type="button"
+              className={`flex-1 rounded px-1 py-1 ${
+                hubTab === 'connected'
+                  ? 'bg-readable-green text-white'
+                  : 'border border-gray-600 text-gray-300 hover:bg-gray-800/60'
+              }`}
+              aria-label={t('rrc.hubs.connected')}
+              onClick={() => {
+                onHubTabChange('connected');
+              }}
+            >
+              {t('rrc.hubs.connected')}
+            </button>
             <button
               type="button"
               className={`flex-1 rounded px-1 py-1 ${
@@ -338,7 +355,11 @@ export function RrcHubBrowser({
             />
           ) : (
             <p className="text-muted px-2 text-xs">
-              {hubTab === 'favourites' ? t('rrc.noFavouriteHubs') : t('rrc.noDiscoveredHubs')}
+              {hubTab === 'connected'
+                ? t('rrc.noConnectedHubs')
+                : hubTab === 'favourites'
+                  ? t('rrc.noFavouriteHubs')
+                  : t('rrc.noDiscoveredHubs')}
             </p>
           )}
           <div className="mt-auto space-y-1 border-t border-gray-700 pt-2">

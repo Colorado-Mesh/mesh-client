@@ -5510,9 +5510,11 @@
     "addressChoiceNomad": "Nomad page",
     "addressChoiceDm": "Direct message",
     "hubs": {
+      "connected": "Connected",
       "favourites": "Favourites",
       "discovered": "Discovered"
     },
+    "noConnectedHubs": "No RRC hubs connected. Connect from Favourites, Discovered, or by hash.",
     "noFavouriteHubs": "No favourite RRC hubs yet. Star a hub from Discovered or after connecting by hash.",
     "searchHubs": "Search hubs…",
     "searchRooms": "Search rooms…",

@@ -156,6 +156,11 @@ export interface RrcHubSessionState {
   limits: RrcHubLimits;
   rooms: Map<string, RrcRoomInfo>;
   listedRooms: RrcListedRoom[];
+  /**
+   * True after a Ratspeak chunked `/list` header NOTICE until replace/end
+   * or a non-list notice closes the directory stream.
+   */
+  listedRoomsDirectoryOpen: boolean;
   activeRoom: string | null;
   lastError: string | null;
   /** Sticky moderation / remote-takedown banner. */
@@ -171,6 +176,11 @@ export interface RrcHubSessionState {
   whoTranscriptShownRooms: Set<string>;
   /** Soft room keys whose next `/who` NOTICE should appear (Refresh / composer). */
   whoTranscriptForceRooms: Set<string>;
+  /**
+   * Soft room keys waiting for a `/who` NOTICE after send (auto or forced).
+   * Cleared on reply arrival or when the drop-detection watchdog fires.
+   */
+  whoReplyPendingRooms: Set<string>;
 }
 
 export function emptyHubSession(): RrcHubSessionState {
@@ -182,6 +192,7 @@ export function emptyHubSession(): RrcHubSessionState {
     limits: {},
     rooms: new Map(),
     listedRooms: [],
+    listedRoomsDirectoryOpen: false,
     activeRoom: null,
     lastError: null,
     moderationBanner: null,
@@ -191,6 +202,7 @@ export function emptyHubSession(): RrcHubSessionState {
     whoRequestedRooms: new Set(),
     whoTranscriptShownRooms: new Set(),
     whoTranscriptForceRooms: new Set(),
+    whoReplyPendingRooms: new Set(),
   };
 }
 
@@ -383,6 +395,14 @@ interface RrcSessionStoreState {
   setCapabilities: (caps: RrcHubCapabilities, hubHash?: string) => void;
   setLimits: (limits: RrcHubLimits, hubHash?: string) => void;
   setListedRooms: (rooms: RrcListedRoom[], hubHash?: string) => void;
+  /** Clear listed rooms and open chunked `/list` accumulation for this hub. */
+  beginListedRoomsDirectory: (hubHash?: string) => void;
+  /** Append rooms while a chunked `/list` directory is open. */
+  appendListedRooms: (rooms: RrcListedRoom[], hubHash?: string) => void;
+  /** Stop accepting chunked `/list` room-row notices. */
+  endListedRoomsDirectory: (hubHash?: string) => void;
+  /** True while waiting for Ratspeak chunked `/list` room-row notices. */
+  isListedRoomsDirectoryOpen: (hubHash?: string) => boolean;
   setRoomTopic: (room: string, topic: string | null, hubHash?: string) => void;
   mergeRoomMembers: (
     room: string,
@@ -455,6 +475,12 @@ interface RrcSessionStoreState {
   hasWhoTranscriptForce: (room: string, hubHash?: string) => boolean;
   /** Drop a forced transcript reservation after a failed `/who` send. */
   releaseWhoTranscriptForce: (room: string, hubHash?: string) => void;
+  /** Mark a room as waiting for a `/who` NOTICE (auto or forced send). */
+  markWhoReplyPending: (room: string, hubHash?: string) => void;
+  /** Clear the pending `/who` reply marker (reply arrived or watchdog fired). */
+  clearWhoReplyPending: (room: string, hubHash?: string) => void;
+  /** True while a `/who` send is still waiting for a parsed hub NOTICE. */
+  hasWhoReplyPending: (room: string, hubHash?: string) => boolean;
   /**
    * Record nick sightings for a hub (chat sender, `/who` row, JOINED advisory).
    * Persists new/changed entries so names survive transcript clears and restarts.
@@ -568,7 +594,62 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   setListedRooms: (rooms, hubHash) => {
-    set((s) => mutateHubSession(s, hubHash, (session) => ({ ...session, listedRooms: rooms })));
+    set((s) =>
+      mutateHubSession(s, hubHash, (session) => ({
+        ...session,
+        listedRooms: rooms,
+        listedRoomsDirectoryOpen: false,
+      })),
+    );
+  },
+
+  beginListedRoomsDirectory: (hubHash) => {
+    set((s) =>
+      mutateHubSession(s, hubHash, (session) => ({
+        ...session,
+        listedRooms: [],
+        listedRoomsDirectoryOpen: true,
+      })),
+    );
+  },
+
+  appendListedRooms: (rooms, hubHash) => {
+    if (rooms.length === 0) return;
+    set((s) =>
+      mutateHubSession(s, hubHash, (session) => {
+        const byKey = new Map(
+          session.listedRooms.map((r) => [rrcRoomMatchKey(r.name), r] as const),
+        );
+        for (const room of rooms) {
+          const key = rrcRoomMatchKey(room.name);
+          if (!key) continue;
+          const prev = byKey.get(key);
+          byKey.set(key, prev ? { ...prev, ...room, name: prev.name || room.name } : room);
+        }
+        return {
+          ...session,
+          listedRooms: [...byKey.values()],
+          listedRoomsDirectoryOpen: true,
+        };
+      }),
+    );
+  },
+
+  endListedRoomsDirectory: (hubHash) => {
+    set((s) =>
+      mutateHubSession(s, hubHash, (session) =>
+        session.listedRoomsDirectoryOpen
+          ? { ...session, listedRoomsDirectoryOpen: false }
+          : session,
+      ),
+    );
+  },
+
+  isListedRoomsDirectoryOpen: (hubHash) => {
+    const s = get();
+    const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
+    if (!hub) return false;
+    return Boolean(s.sessionsByHub.get(hub)?.listedRoomsDirectoryOpen);
   },
 
   setRoomTopic: (room, topic, hubHash) => {
@@ -803,6 +884,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         generation: nextRrcHubGeneration(targetHub, existing.generation),
         hubName: hubName !== undefined ? hubName : existing.hubName,
         whoRequestedRooms: reHandshake ? new Set() : existing.whoRequestedRooms,
+        whoReplyPendingRooms: reHandshake ? new Set() : existing.whoReplyPendingRooms,
       };
       const sessionsByHub = new Map(s.sessionsByHub);
       sessionsByHub.set(targetHub, nextSession);
@@ -913,6 +995,10 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         existing.whoTranscriptForceRooms ?? new Set<string>(),
         room,
       );
+      const whoReplyPendingRooms = dropMatchingWhoKeys(
+        existing.whoReplyPendingRooms ?? new Set<string>(),
+        room,
+      );
       const activeGone = existing.activeRoom != null && rrcRoomsMatch(existing.activeRoom, room);
       const nextSession: RrcHubSessionState = {
         ...existing,
@@ -922,6 +1008,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         whoRequestedRooms,
         whoTranscriptShownRooms,
         whoTranscriptForceRooms,
+        whoReplyPendingRooms,
         activeRoom: activeGone ? null : existing.activeRoom,
       };
       const sessionsByHub = new Map(s.sessionsByHub);
@@ -1248,5 +1335,45 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         ),
       })),
     );
+  },
+
+  markWhoReplyPending: (room, hubHash) => {
+    set((s) => {
+      const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
+      if (!hub) return {};
+      const existing = s.sessionsByHub.get(hub);
+      if (!existing) return {};
+      const key = rrcRoomMatchKey(room);
+      if (!key) return {};
+      if (existing.whoReplyPendingRooms?.has(key)) return {};
+      const whoReplyPendingRooms = new Set(existing.whoReplyPendingRooms ?? []);
+      whoReplyPendingRooms.add(key);
+      const nextSession: RrcHubSessionState = { ...existing, whoReplyPendingRooms };
+      const sessionsByHub = new Map(s.sessionsByHub);
+      sessionsByHub.set(hub, nextSession);
+      const mirror = hub === s.focusedHubHash ? mirrorFromSession(hub, nextSession) : {};
+      return { sessionsByHub, ...mirror };
+    });
+  },
+
+  clearWhoReplyPending: (room, hubHash) => {
+    set((s) =>
+      mutateHubSession(s, hubHash, (session) => ({
+        ...session,
+        whoReplyPendingRooms: dropMatchingWhoKeys(
+          session.whoReplyPendingRooms ?? new Set<string>(),
+          room,
+        ),
+      })),
+    );
+  },
+
+  hasWhoReplyPending: (room, hubHash) => {
+    const s = get();
+    const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
+    if (!hub) return false;
+    const pending = s.sessionsByHub.get(hub)?.whoReplyPendingRooms;
+    if (!pending) return false;
+    return [...pending].some((k) => rrcRoomsMatch(k, room));
   },
 }));
