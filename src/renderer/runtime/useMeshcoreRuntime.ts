@@ -8217,6 +8217,12 @@ export function useMeshcoreRuntime() {
       finalizeDriverDisconnect,
       connectAutomatic,
       getDestinationPubKey: (nodeId) => pubKeyMapRef.current.get(nodeId),
+      getSelfName: (nodeId) => {
+        const self = selfInfoRef.current;
+        return self && nodeId > 0 && pubkeyToNodeId(self.publicKey) === nodeId
+          ? self.name
+          : undefined;
+      },
       ensureTcpLiveForUserTx,
       runMeshcoreUserTxWithLiveTcp,
     });

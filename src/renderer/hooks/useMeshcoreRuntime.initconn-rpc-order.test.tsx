@@ -7,13 +7,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { touch } from '@/shared/touch';
 
+import { pubkeyToNodeId } from '../lib/meshcoreUtils';
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
+import { getMeshcoreSession } from '../lib/sessions/meshcoreSession';
 
 const getSelfInfoMock = vi.fn();
 const getContactsMock = vi.fn();
 const getChannelsMock = vi.fn();
 
 const SELF_PUBKEY = new Uint8Array(32).fill(0xab);
+SELF_PUBKEY[0] = 0xcd;
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -340,6 +343,8 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     await waitFor(() => {
       expect(callOrder).toContain('getSelfInfo:start');
     });
+    const selfNodeId = pubkeyToNodeId(SELF_PUBKEY);
+    expect(getMeshcoreSession().getSelfName?.(selfNodeId)).toBeUndefined();
 
     gates.selfInfoGate.resolve(undefined);
     await waitFor(() => {
@@ -348,6 +353,10 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
       expect(callOrder).toContain('getContacts:start');
     });
     expect(callOrder).not.toContain('getChannels:start');
+    // Sending can use the radio name before the contact dump hydrates the node store.
+    expect(getMeshcoreSession().getSelfName?.(selfNodeId)).toBe(selfInfoPayload.name);
+    expect(getMeshcoreSession().getSelfName?.(selfNodeId + 1)).toBeUndefined();
+    expect(getMeshcoreSession().getSelfName?.(0)).toBeUndefined();
 
     gates.contactsGate.resolve(undefined);
     await waitFor(() => {

@@ -27,6 +27,8 @@ export interface MeshcoreSessionApi {
   ) => Promise<void>;
   /** RF contact pubkey for DM send when nodeStore has not been hydrated yet. */
   getDestinationPubKey?: (nodeId: number) => Uint8Array | undefined;
+  /** RF self name for this node when nodeStore has not been hydrated yet. */
+  getSelfName?: (nodeId: number) => string | undefined;
   /**
    * OpenHop: when the TCP bridge was accepted dead after contacts FIN, reopen a live
    * socket and resolve once the OpenHop user TX live window is ready (first-RPC path).
