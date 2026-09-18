@@ -191,6 +191,8 @@ export function useSendMessage(
       const record = {
         id: provisionalId,
         from: myNodeNum,
+        // Incoming MeshCore @[Name] replies resolve against this live record.
+        ...(isMeshcore ? { senderName: meshcoreSenderName } : {}),
         to: destination ?? 0xffffffff,
         payload: resolvedOutbound.displayPayload,
         channelIndex,
