@@ -5,6 +5,15 @@ import { mergeAppSetting } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { resetHeardRepeatWindowsForTests } from '../lib/meshcore/heardRepeatTracker';
 import { setMeshcoreTcpOpenHopDeadAccepted } from '../lib/meshcore/meshcoreTcpInitBurst';
+import {
+  meshcoreChatMessagesForDisplay,
+  parseMeshcoreDmIncomingFromThread,
+} from '../lib/meshcoreChannelText';
+import {
+  ingestMeshcoreChannelMessage,
+  listChatMessagesFromStore,
+  upsertMeshcoreMessageWithDedup,
+} from '../lib/meshcoreStoreDedup';
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
 import { reticulumProtocol } from '../lib/protocols/ReticulumProtocol';
@@ -23,7 +32,7 @@ import { mockConsoleWarn } from '../lib/vitestConsoleMock';
 import { setConnection } from '../stores/connectionStore';
 import { addIdentity, useIdentityStore } from '../stores/identityStore';
 import { addMessage, useMessageStore } from '../stores/messageStore';
-import { upsertNode } from '../stores/nodeStore';
+import { upsertNode, useNodeStore } from '../stores/nodeStore';
 
 const ID_MC_FAIL = 'id-send-mc-fail';
 const ID_MC_DM = 'id-send-mc-dm';
@@ -73,6 +82,7 @@ describe('useSendMessage', () => {
     setMeshcoreTcpOpenHopDeadAccepted(false);
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
     useMessageStore.setState({ messages: {} });
+    useNodeStore.setState({ nodes: {} });
     useRelayCoverageStore.setState({ coverage: {} });
     resetHeardRepeatWindowsForTests();
     vi.mocked(connectionDriver.getHandle).mockReturnValue(null);
@@ -304,6 +314,113 @@ describe('useSendMessage', () => {
     expect(outbound?.payload).toBe('reply test');
     expect(outbound?.replyTo).toBe('99');
     sendSpy.mockRestore();
+  });
+
+  describe.each(['linux', 'darwin', 'win32'] as const)('MeshCore replies on %s', (platform) => {
+    describe.each(['node', 'session', 'blank node'] as const)(
+      'sender name from %s',
+      (nameSource) => {
+        it.each([
+          { kind: 'channel reply', channel: 0, body: 'oh wow congratulations!' },
+          { kind: 'channel tapback', channel: 0, body: '🎉' },
+          { kind: 'DM reply', channel: -1, body: 'oh wow congratulations!' },
+        ])('matches an incoming $kind to a newly sent message', async ({ channel, body }) => {
+          const platformSpy = vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue(platform);
+          const selfName = '👻 NØCALL 03';
+          const peerId = 10;
+          const destination = channel === -1 ? peerId : undefined;
+          const sendSpy = vi
+            .spyOn(meshcoreProtocol, 'sendMessage')
+            .mockResolvedValue(destination != null ? { packetId: 0xabcd } : {});
+          vi.mocked(connectionDriver.getHandle).mockReturnValue({ kind: 'rf' });
+          addIdentity({
+            id: ID_MC,
+            protocol: meshcoreProtocol,
+            signature: 'sig-mc',
+            transports: [],
+            createdAt: 1,
+            lastSeenAt: 1,
+          });
+          setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
+          registerMeshcoreSession(
+            createMeshcoreSessionStub({
+              getSelfName: (nodeId) =>
+                nodeId === 7 ? (nameSource === 'node' ? 'Session fallback' : selfName) : undefined,
+            }),
+          );
+          if (nameSource !== 'session') {
+            upsertNode(ID_MC, { nodeId: 7, longName: nameSource === 'node' ? selfName : ' ' });
+          }
+          upsertNode(ID_MC, {
+            nodeId: peerId,
+            longName: 'Peer',
+            publicKey: new Uint8Array(32).fill(3),
+          });
+          addMessage(ID_MC, {
+            id: 'older-message',
+            from: 7,
+            senderName: selfName,
+            to: destination ?? 0xffffffff,
+            payload: 'keeping it to one cup of coffee',
+            channelIndex: channel,
+            timestamp: Date.now() - 60_000,
+            status: 'acked',
+          });
+
+          const payload = 'my baby slept through the night';
+          const { result } = renderHook(() => useSendMessage(ID_MC));
+          result.current(payload, channel, destination);
+
+          const receiveReply = () => {
+            const prior = listChatMessagesFromStore(ID_MC);
+            const sent = prior.find((m) => m.payload === payload)!;
+            const opts = {
+              senderId: peerId,
+              displayName: 'Peer',
+              timestamp: sent.timestamp + 60_000,
+              receivedVia: 'rf' as const,
+            };
+            const reply =
+              destination != null
+                ? parseMeshcoreDmIncomingFromThread(prior, {
+                    ...opts,
+                    rawText: `@[${selfName}] ${body}`,
+                    peerNodeId: peerId,
+                    myNodeId: 7,
+                    to: 7,
+                  })
+                : ingestMeshcoreChannelMessage(ID_MC, {
+                    ...opts,
+                    rawText: `Peer: @[${selfName}] ${body}`,
+                    channel,
+                  });
+            expect(reply.replyId).toBe(sent.packetId ?? sent.timestamp);
+            if (body !== '🎉') {
+              expect(reply.replyPreviewText).toBe(payload);
+              expect(reply.replyPreviewSender).toBe(selfName);
+            }
+            return reply;
+          };
+
+          // The sender must be available before the asynchronous send finishes, too.
+          receiveReply();
+          await vi.waitFor(() => {
+            expect(
+              listChatMessagesFromStore(ID_MC).find((m) => m.payload === payload)?.status,
+            ).toBe('acked');
+          });
+          const reply = receiveReply();
+          upsertMeshcoreMessageWithDedup(ID_MC, reply);
+          const displayed = meshcoreChatMessagesForDisplay(listChatMessagesFromStore(ID_MC));
+          expect(displayed.find((m) => m.payload === body)?.replyId).toBe(reply.replyId);
+          expect(window.electronAPI.db.saveMeshcoreMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ payload, sender_name: selfName }),
+          );
+          sendSpy.mockRestore();
+          platformSpy.mockRestore();
+        });
+      },
+    );
   });
 
   it('does not open heard-repeat window for MeshCore DMs', async () => {
@@ -592,6 +709,7 @@ describe('useSendMessage', () => {
           payload: 'persist meshcore',
           channel_idx: 6,
           sender_id: 7,
+          sender_name: 'Me',
           status: 'acked',
         }),
       );

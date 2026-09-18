@@ -173,7 +173,9 @@ export function useSendMessage(
       const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
       const meshcoreSenderName =
         identity.protocol.type === 'meshcore'
-          ? (useNodeStore.getState().nodes[identityId]?.[myNodeNum]?.longName ?? 'Me')
+          ? useNodeStore.getState().nodes[identityId]?.[myNodeNum]?.longName?.trim() ||
+            tryGetMeshcoreSession()?.getSelfName?.(myNodeNum)?.trim() ||
+            'Me'
           : 'Me';
       const isMeshcore = identity.protocol.type === 'meshcore';
       const openWireCompat = isMeshcore && isMeshcoreOpenWireCompatEnabled();
@@ -191,6 +193,8 @@ export function useSendMessage(
       const record = {
         id: provisionalId,
         from: myNodeNum,
+        // Incoming MeshCore @[Name] replies resolve against this live record.
+        ...(isMeshcore ? { senderName: meshcoreSenderName } : {}),
         to: destination ?? 0xffffffff,
         payload: resolvedOutbound.displayPayload,
         channelIndex,
