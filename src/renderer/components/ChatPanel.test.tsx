@@ -1568,6 +1568,62 @@ describe('ChatPanel scroll pinning', () => {
     },
   );
 
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'hides Jump to Latest on reaching the bottom before the virtualizer catches up on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      mockIsAtEnd = false;
+      const { container } = render(
+        <ToastProvider>
+          <ChatPanel {...baseProps} protocol="meshcore" messages={[makeMsg(0), makeMsg(1)]} />
+        </ToastProvider>,
+      );
+      const stream = container.querySelector<HTMLDivElement>('div.overflow-y-auto')!;
+      Object.defineProperties(stream, {
+        scrollHeight: { value: 2000, configurable: true },
+        clientHeight: { value: 400, configurable: true },
+        scrollTop: { value: 1000, writable: true, configurable: true },
+      });
+      fireEvent.scroll(stream);
+      expect(await screen.findByRole('button', { name: 'Jump to Latest' })).toBeInTheDocument();
+
+      // React's scroll handler can run before the virtualizer updates its cached offset.
+      stream.scrollTop = 1600;
+      fireEvent.scroll(stream);
+      await waitFor(() => {
+        expect(screen.queryByRole('button', { name: 'Jump to Latest' })).not.toBeInTheDocument();
+      });
+    },
+  );
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'clears a stale Jump to Latest button when clicking at the bottom causes no scroll event on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      mockIsAtEnd = false;
+      const { container } = render(
+        <ToastProvider>
+          <ChatPanel {...baseProps} protocol="meshcore" messages={[makeMsg(0), makeMsg(1)]} />
+        </ToastProvider>,
+      );
+      const stream = container.querySelector<HTMLDivElement>('div.overflow-y-auto')!;
+      Object.defineProperties(stream, {
+        scrollHeight: { value: 2000, configurable: true },
+        clientHeight: { value: 400, configurable: true },
+        scrollTop: { value: 1000, writable: true, configurable: true },
+      });
+      fireEvent.scroll(stream);
+      const jump = await screen.findByRole('button', { name: 'Jump to Latest' });
+      stream.scrollTop = 1600;
+      mockScrollToEnd.mockClear();
+      fireEvent.click(jump);
+      expect(mockScrollToEnd).toHaveBeenCalledWith({ behavior: 'smooth' });
+      await waitFor(() => {
+        expect(screen.queryByRole('button', { name: 'Jump to Latest' })).not.toBeInTheDocument();
+      });
+    },
+  );
+
   it('shows Jump to Latest when virtualizer reports not at end', async () => {
     mockIsAtEnd = false;
     const longMessages = Array.from({ length: 20 }, (_, idx) => makeMsg(idx));
@@ -1642,6 +1698,8 @@ describe('ChatPanel scroll pinning', () => {
     );
 
     const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
+    Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(scrollContainer, 'scrollTop', {
       value: 500,
       writable: true,
