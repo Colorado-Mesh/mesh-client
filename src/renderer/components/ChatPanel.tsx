@@ -1406,19 +1406,6 @@ function ChatPanel({
     );
   }, []);
 
-  const computeIsAtChatEnd = useCallback(() => {
-    const inner = scrollContainerRef.current;
-    if (!inner) return false;
-    const virtualAtEnd = messageVirtualizerRef.current.isAtEnd(CHAT_SCROLL_END_THRESHOLD);
-    const outerDist = getDistFromChatBottom(
-      inner,
-      messagesEndRef.current,
-      outerScrollMetricsRootRef?.current ?? null,
-    );
-    if (outerDist != null && outerDist > CHAT_SCROLL_END_THRESHOLD) return false;
-    return virtualAtEnd;
-  }, [outerScrollMetricsRootRef]);
-
   const viewKey = useMemo(() => {
     if (viewMode === 'dm' && activeDmNode != null) return `dm:${activeDmNode}`;
     return `ch:${channel}`;
@@ -1525,17 +1512,18 @@ function ChatPanel({
   ]);
 
   const updateScrollButtonVisibility = useCallback(() => {
-    const atEnd = computeIsAtChatEnd();
-    isPinnedToBottomRef.current = atEnd;
-    setShowScrollButton(!atEnd);
     const distFromBottom = getDistFromChatBottom(
       scrollContainerRef.current,
       messagesEndRef.current,
       outerScrollMetricsRootRef?.current ?? null,
     );
     if (distFromBottom == null) return undefined;
+    // React's scroll handler can run before the virtualizer updates its cached offset.
+    const atEnd = distFromBottom <= CHAT_SCROLL_END_THRESHOLD;
+    isPinnedToBottomRef.current = atEnd;
+    setShowScrollButton(!atEnd);
     return distFromBottom;
-  }, [computeIsAtChatEnd, outerScrollMetricsRootRef]);
+  }, [outerScrollMetricsRootRef]);
 
   const applyNearBottomReadState = useCallback(
     (distFromBottom: number) => {
@@ -1750,8 +1738,16 @@ function ChatPanel({
     } else {
       messageVirtualizerRef.current.scrollToEnd({ behavior: 'smooth' });
       isPinnedToBottomRef.current = true;
+      // Already at the bottom: a no-op scroll will not emit an event to clear the button.
+      const dist = updateScrollButtonVisibility();
+      if (dist !== undefined) applyNearBottomReadState(dist);
     }
-  }, [applyNearBottomReadState, outerScrollMetricsRootRef, unreadStartIndex]);
+  }, [
+    applyNearBottomReadState,
+    outerScrollMetricsRootRef,
+    unreadStartIndex,
+    updateScrollButtonVisibility,
+  ]);
 
   const scrollToQuotedParent = useCallback(
     (replyKey: number) => {
