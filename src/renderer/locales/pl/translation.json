@@ -803,7 +803,16 @@
       "bleUnavailable": "Bluetooth nie jest gotowy. Połącz się ponownie i spróbuj ponownie.",
       "roomSessionExpired": "Sesja w pokoju wygasła — zaloguj się ponownie, aby opublikować.",
       "noSavedRoomCredential": "Brak zapisanego hasła do pokoju. Najpierw zaloguj się do pokoju."
-    }
+    },
+    "reticulumDmDestHashesAria": "Docelowy LXMF i skróty tożsamości",
+    "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
+    "reticulumDmIdentityPrefix": "ID {{prefix}}…",
+    "reticulumDmCopyLxmfAria": "Skopiuj skrót LXMF zaczynający się od {{prefix}}",
+    "reticulumDmCopyIdentityAria": "Kopiuj skrót tożsamości zaczynający się od {{prefix}}",
+    "reticulumDmStaleAlternateAria": "Możliwe różne miejsca docelowe LXMF dla tego partnera",
+    "reticulumDmStaleAlternate": "Ten czat to LXMF {{openPrefix}}…. Masz również inny LXMF {{alternatePrefix}}… który może być tą samą osobą w innej aplikacji. Potwierdź → wiadomość sieciową LXMF/ Peers lub ogłoś teraz po obu stronach.",
+    "reticulumDmStaleAlternateNamed": "Ten czat to LXMF {{openPrefix}}…. Inna LXMF {{alternatePrefix}}… ({{name}}) może być tą samą osobą w innej aplikacji. Otwórz → wiadomość rówieśniczą na tym haszu lub ogłoś teraz po obu stronach.",
+    "reticulumDmStaleAlternateDismissAria": "Odrzuć ostrzeżenie o miejscu docelowym"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -3697,7 +3706,11 @@
     "pathMediumTitle": "Czynnik aktywnej ścieżki: {{medium}}",
     "chatNeedsLxmfDelivery": "Brak adresu dostawy LXMF dla tego partnera. Poczekaj na ogłoszenie LXMF lub otwórz czat z 32-znakowym hashem LXMF — miejsca docelowe głosowe (lxst.telefonia) nie mogą odbierać czatu.",
     "voiceAspectBadge": "Głos",
-    "voiceAspectTitle": "Ten wiersz tabeli ścieżek jest miejscem docelowym telefonii LXST. Czat ponownie mapuje do hasza dostawy LXMF rówieśnika, gdy jest znany."
+    "voiceAspectTitle": "Ten wiersz tabeli ścieżek jest miejscem docelowym telefonii LXST. Czat ponownie mapuje do hasza dostawy LXMF rówieśnika, gdy jest znany.",
+    "heardViaTcpHub": "Koncentrator TCP",
+    "heardViaTcpHubTitle": "Aktywna ścieżka przebiega przez TCP/węzeł transportowy ({{interface}}). Preferuj RF lub wyłącz koncentratory podczas testowania czatu tylko RF.",
+    "staleAlternateToast": "Czat otwarty na LXMF {{openPrefix}}…. Inna LXMF {{alternatePrefix}}… może być tą samą osobą w innej aplikacji — potwierdź Network LXMF przed poleganiem na Delivered.",
+    "staleAlternateToastNamed": "Czat otwarty na LXMF {{openPrefix}}…. Inna LXMF {{alternatePrefix}}… ({{name}}) może być tą samą osobą w innej aplikacji — potwierdź Network LXMF, zanim skorzystasz z Delivered."
   },
   "radioPanel": {
     "offloadedContacts": "Przeniesiono kontakty {{count}} do bazy danych.",

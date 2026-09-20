@@ -765,7 +765,16 @@
       "bleUnavailable": "蓝牙尚未准备就绪。请重新连接并重试。",
       "roomSessionExpired": "聊天室会话已过期—请重新登录以发布。",
       "noSavedRoomCredential": "未保存房间密码。请先登录房间。"
-    }
+    },
+    "reticulumDmDestHashesAria": "目标LXMF和身份哈希",
+    "reticulumDmLxmfPrefix": "LXMF {{prefix}} …",
+    "reticulumDmIdentityPrefix": "ID {{prefix}} …",
+    "reticulumDmCopyLxmfAria": "复制以{{prefix}}开头的LXMF哈希",
+    "reticulumDmCopyIdentityAria": "复制以{{prefix}}开头的身份哈希",
+    "reticulumDmStaleAlternateAria": "此对等方可能有不同的LXMF目标",
+    "reticulumDmStaleAlternate": "此聊天是LXMF {{openPrefix}} ……。您还有另一个LXMF {{alternatePrefix}} ……在不同的应用程序上可能是同一个人。确认网络LXMF/对等→消息，或立即在双方宣布。",
+    "reticulumDmStaleAlternateNamed": "此聊天是LXMF {{openPrefix}} ……。另一个LXMF {{alternatePrefix}} … ({{name}})可能是不同应用程序上的同一人。在该哈希上打开同行→消息，或立即在双方宣布。",
+    "reticulumDmStaleAlternateDismissAria": "忽略目的地警告"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -3617,7 +3626,11 @@
     "pathMediumTitle": "活动路径介质： {{medium}}",
     "chatNeedsLxmfDelivery": "此同行尚无LXMF交货地址。等待LXMF公告，或使用32个字符的LXMF哈希打开聊天—语音（ lxst.telephony ）目的地无法接收聊天。",
     "voiceAspectBadge": "语音",
-    "voiceAspectTitle": "此路径表行是LXST电话目标。在已知的情况下，聊天会重新映射到对方的LXMF交付哈希。"
+    "voiceAspectTitle": "此路径表行是LXST电话目标。在已知的情况下，聊天会重新映射到对方的LXMF交付哈希。",
+    "heardViaTcpHub": "TCP HUB",
+    "heardViaTcpHubTitle": "活动路径通过TCP/传输中心（ {{interface}} ）。测试仅射频聊天时，首选射频或禁用集线器。",
+    "staleAlternateToast": "在LXMF {{openPrefix}}上打开的聊天。另一个LXMF {{alternatePrefix}} …可能是不同应用程序上的同一人—在依靠Delivered之前，请确认Network LXMF。",
+    "staleAlternateToastNamed": "在LXMF {{openPrefix}}上打开的聊天。另一个LXMF {{alternatePrefix}} …… （ {{name}} ）可能是另一个应用程序上的同一人—在依赖Delivered之前，请确认Network LXMF。"
   },
   "radioPanel": {
     "offloadedContacts": "已将{{count}}个联系人卸载到数据库。",

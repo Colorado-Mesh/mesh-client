@@ -765,7 +765,16 @@
       "bleUnavailable": "Bluetooth hazır değil. Yeniden bağlanın ve tekrar deneyin.",
       "roomSessionExpired": "Oda oturumunun süresi doldu — yayınlamak için tekrar giriş yapın.",
       "noSavedRoomCredential": "Kaydedilmiş oda şifresi yok. Önce odaya giriş yapın."
-    }
+    },
+    "reticulumDmDestHashesAria": "Hedef LXMF ve kimlik karmaları",
+    "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
+    "reticulumDmIdentityPrefix": "ID {{prefix}}…",
+    "reticulumDmCopyLxmfAria": "{{prefix}} ile başlayan LXMF karmasını kopyala",
+    "reticulumDmCopyIdentityAria": "{{prefix}} ile başlayan kimlik karmasını kopyala",
+    "reticulumDmStaleAlternateAria": "Bu akran için olası farklı LXMF hedefi",
+    "reticulumDmStaleAlternate": "Bu sohbet LXMF {{openPrefix}}…. Ayrıca farklı bir uygulamada aynı kişi olabilecek başka bir LXMF {{alternatePrefix}}… var. Ağ LXMF/ Akran → Mesajını Onaylayın veya Şimdi her iki tarafı da Duyurun.",
+    "reticulumDmStaleAlternateNamed": "Bu sohbet LXMF {{openPrefix}}…. Başka bir LXMF {{alternatePrefix}} … ({{name}}) farklı bir uygulamada aynı kişi olabilir. Bu karmadaki Eşler → Mesajını açın veya her iki tarafta da Şimdi duyurun.",
+    "reticulumDmStaleAlternateDismissAria": "Varış noktası uyarısını kapat"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -3617,7 +3626,11 @@
     "pathMediumTitle": "Aktif yol ortamı: {{medium}}",
     "chatNeedsLxmfDelivery": "Bu iş ortağı için henüz LXMF teslimat adresi yok. Bir LXMF duyurusu bekleyin veya 32 karakterlik LXMF karma — Ses (lxst.telephony) hedefleriyle Sohbet'i açın, Sohbet'i alamaz.",
     "voiceAspectBadge": "Ses",
-    "voiceAspectTitle": "Bu yol tablosu satırı bir LXST telefon hedefidir. Bilindiğinde, sohbet eşinin LXMF dağıtım karması ile yeniden eşlenir."
+    "voiceAspectTitle": "Bu yol tablosu satırı bir LXST telefon hedefidir. Bilindiğinde, sohbet eşinin LXMF dağıtım karması ile yeniden eşlenir.",
+    "heardViaTcpHub": "TCP Hub",
+    "heardViaTcpHubTitle": "Aktif yol bir TCP/ulaşım merkezi ({{interface}}) üzerindendir. Yalnızca RF Sohbetini test ederken RF'yi tercih edin veya hub'ları devre dışı bırakın.",
+    "staleAlternateToast": "Sohbet LXMF {{openPrefix}}… tarihinde açıldı. Başka bir LXMF {{alternatePrefix}}… farklı bir uygulamada aynı kişi olabilir — Teslim Edildi'ye güvenmeden önce Ağ LXMF'sini onaylayın.",
+    "staleAlternateToastNamed": "Sohbet LXMF {{openPrefix}}… tarihinde açıldı. Başka bir LXMF {{alternatePrefix}}… ({{name}}) farklı bir uygulamada aynı kişi olabilir. Teslim Edildi'ye güvenmeden önce Ağ LXMF'sini onaylayın."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kişi veritabanına aktarıldı.",

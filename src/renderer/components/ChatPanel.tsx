@@ -54,6 +54,7 @@ import {
   formatReticulumViaBadgeLabel,
   parseReticulumViaAtoms,
 } from '@/renderer/lib/reticulum/classifyReticulumVia';
+import { collectReticulumChatOutboundDestStats } from '@/renderer/lib/reticulum/collectReticulumChatOutboundDestStats';
 import { normalizeReticulumNodeId } from '@/renderer/lib/reticulum/destHash';
 import { parseReticulumAttachmentPayload } from '@/renderer/lib/reticulum/parseReticulumAttachmentPayload';
 import {
@@ -66,6 +67,7 @@ import {
   isReticulumTelephonyOnlyDestination,
   resolveReticulumChatLxmfDestination,
 } from '@/renderer/lib/reticulum/resolveReticulumChatLxmfDest';
+import { resolveReticulumStaleChatDest } from '@/renderer/lib/reticulum/resolveReticulumStaleChatDest';
 import { reticulumMessageMatchesDmPeer } from '@/renderer/lib/reticulum/reticulumChatDmFilter';
 import {
   resolveReticulumDmBoundDestinationHash,
@@ -182,6 +184,7 @@ import { MessageStatusBadge } from './MessageStatusBadge';
 import { RelayCoverageLine, relayCoverageMessageKey } from './RelayCoverageLine';
 import { ChatDmRncpControl } from './remote/ChatDmRncpControl';
 import { ChatDmRncpOfferBanner } from './remote/ChatDmRncpOfferBanner';
+import { ReticulumDmDestIdentityBar } from './reticulum/ReticulumDmDestIdentityBar';
 import { ReticulumGameChallengeButton } from './reticulum/ReticulumGameChallengeButton';
 import { ReticulumVoiceCallButton } from './reticulum/ReticulumVoiceCallButton';
 import { ReticulumAttachmentLine } from './ReticulumAttachmentLine';
@@ -2181,6 +2184,65 @@ function ChatPanel({
     return s.getPeer(keyHash)?.identity_hash ?? null;
   });
 
+  const reticulumDmResolvedIdentityHash = useMemo(() => {
+    if (protocol !== 'reticulum') return null;
+    if (reticulumDmIdentityHash) return reticulumDmIdentityHash;
+    const keyHash = reticulumDmDestinationHash ?? reticulumDmBoundHash;
+    if (!keyHash) return null;
+    const rows = reticulumIdentityActivityByDestination.get(
+      keyHash.replace(/[^0-9a-f]/gi, '').toLowerCase(),
+    );
+    for (const row of rows ?? []) {
+      const id = row.identity_hash?.replace(/[^0-9a-f]/gi, '').toLowerCase();
+      if (id?.length === 32) return id;
+    }
+    return null;
+  }, [
+    protocol,
+    reticulumDmBoundHash,
+    reticulumDmDestinationHash,
+    reticulumDmIdentityHash,
+    reticulumIdentityActivityByDestination,
+  ]);
+
+  const reticulumOutboundDestStats = useMemo(() => {
+    if (protocol !== 'reticulum') {
+      return {
+        failedOutboundHashes: new Set<string>(),
+        deliveredOutboundHashes: new Set<string>(),
+      };
+    }
+    return collectReticulumChatOutboundDestStats(messages, ownNodeIdSet);
+  }, [messages, ownNodeIdSet, protocol]);
+
+  const reticulumDmStaleHint = useMemo(() => {
+    if (protocol !== 'reticulum' || !reticulumDmDestinationHash) {
+      return { status: 'ok' as const };
+    }
+    const peerStore = useReticulumPeerStore.getState();
+    const peers = [
+      ...peerStore.peers.values(),
+      ...peerStore.contacts.values(),
+      ...peerStore.history.values(),
+    ];
+    const openNorm = reticulumDmDestinationHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+    return resolveReticulumStaleChatDest({
+      openHash: reticulumDmDestinationHash,
+      activityByDestination: reticulumIdentityActivityByDestination,
+      peers,
+      failedOutboundHashes: reticulumOutboundDestStats.failedOutboundHashes,
+      openHasDelivered: reticulumOutboundDestStats.deliveredOutboundHashes.has(openNorm),
+    });
+    // reticulumPeersRevision: recompute when peer/contact display names update
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- peersRevision intentionally gates getState() reads
+  }, [
+    protocol,
+    reticulumDmDestinationHash,
+    reticulumIdentityActivityByDestination,
+    reticulumOutboundDestStats,
+    reticulumPeersRevision,
+  ]);
+
   const reticulumDmPassiveHops = useMemo(() => {
     if (reticulumDmPeerHops != null) return reticulumDmPeerHops;
     if (activeDmNode == null) return null;
@@ -2730,7 +2792,7 @@ function ChatPanel({
               <ReticulumVoiceCallButton
                 key={`dm-voice-${reticulumDmVoiceDialHash}`}
                 lxmfPeerHash={reticulumDmVoiceDialHash}
-                identityHash={reticulumDmIdentityHash}
+                identityHash={reticulumDmResolvedIdentityHash}
                 disabled={!reticulumStackLive}
                 className={RETICULUM_DM_HEADER_ACTION_CLASS}
               />
@@ -2783,21 +2845,34 @@ function ChatPanel({
             !voiceCallControl &&
             !gamesChallengeControl &&
             !paperShareControl &&
-            !peerDetailsControl
+            !peerDetailsControl &&
+            !reticulumDmDestinationHash
           ) {
             return null;
           }
-          // Order: path status → last heard → peer details → Probe/Path → Call → Challenge → Paper → Send file.
+          const destIdentityBar =
+            protocol === 'reticulum' && reticulumDmDestinationHash != null ? (
+              <ReticulumDmDestIdentityBar
+                key={`dm-dest-${reticulumDmDestinationHash}`}
+                lxmfHash={reticulumDmDestinationHash}
+                identityHash={reticulumDmResolvedIdentityHash}
+                staleHint={reticulumDmStaleHint}
+              />
+            ) : null;
+          // Order: path status → dest hashes → last heard → peer details → Probe/Path → Call → Challenge → Paper → Send file.
           return (
-            <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
-              {pathBadge}
-              {dmNode ? <DmPeerInfoBar dmNode={dmNode} nowMs={nowMs} t={t} /> : null}
-              {peerDetailsControl}
-              {pathActions}
-              {voiceCallControl}
-              {gamesChallengeControl}
-              {paperShareControl}
-              {rncpControl}
+            <div className="mb-2 flex min-w-0 flex-col gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                {pathBadge}
+                {dmNode ? <DmPeerInfoBar dmNode={dmNode} nowMs={nowMs} t={t} /> : null}
+                {peerDetailsControl}
+                {pathActions}
+                {voiceCallControl}
+                {gamesChallengeControl}
+                {paperShareControl}
+                {rncpControl}
+              </div>
+              {destIdentityBar}
             </div>
           );
         })()}

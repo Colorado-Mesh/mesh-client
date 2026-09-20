@@ -765,7 +765,16 @@
       "bleUnavailable": "Bluetooth n'est pas prêt. Reconnectez-vous et réessayez.",
       "roomSessionExpired": "La session de la salle a expiré — reconnectez-vous pour publier.",
       "noSavedRoomCredential": "Aucun mot de passe de salle enregistré. Connectez-vous d'abord à la salle."
-    }
+    },
+    "reticulumDmDestHashesAria": "Hachages LXMF et d'identité de destination",
+    "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
+    "reticulumDmIdentityPrefix": "ID {{prefix}}…",
+    "reticulumDmCopyLxmfAria": "Copier le hachage LXMF commençant par {{prefix}}",
+    "reticulumDmCopyIdentityAria": "Copier le hachage d'identité commençant par {{prefix}}",
+    "reticulumDmStaleAlternateAria": "Destination LXMF différente possible pour ce pair",
+    "reticulumDmStaleAlternate": "Ce chat est LXMF {{openPrefix}}…. Vous avez également un autre LXMF {{alternatePrefix}}… qui peut être la même personne sur une application différente. Confirmez le → message LXMF/ Peers du réseau ou annoncez-le maintenant des deux côtés.",
+    "reticulumDmStaleAlternateNamed": "Ce chat est LXMF {{openPrefix}}…. Un autre LXMF {{alternatePrefix}}… ({{name}}) peut être la même personne sur une application différente. Ouvrez le → message des pairs sur ce hachage, ou Annoncez maintenant des deux côtés.",
+    "reticulumDmStaleAlternateDismissAria": "Ignorer l'avertissement de destination"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -3617,7 +3626,11 @@
     "pathMediumTitle": "Milieu du chemin actif : {{medium}}",
     "chatNeedsLxmfDelivery": "Aucune adresse de livraison LXMF pour ce pair pour le moment. Attendez une annonce LXMF ou ouvrez Chat avec leur hachage LXMF à 32 caractères - Les destinations vocales (lxst.telephony) ne peuvent pas recevoir de chat.",
     "voiceAspectBadge": "Vocal",
-    "voiceAspectTitle": "Cette ligne de table de chemin est une destination de téléphonie LXST. Le chat remappe le hachage de livraison LXMF de l'homologue lorsqu'il est connu."
+    "voiceAspectTitle": "Cette ligne de table de chemin est une destination de téléphonie LXST. Le chat remappe le hachage de livraison LXMF de l'homologue lorsqu'il est connu.",
+    "heardViaTcpHub": "Hub TCP",
+    "heardViaTcpHubTitle": "Le chemin actif se fait via un concentrateur TCP/transport ({{interface}}). Préférez RF ou désactivez les concentrateurs lorsque vous testez le chat RF uniquement.",
+    "staleAlternateToast": "Chat ouvert sur LXMF {{openPrefix}}…. Un autre LXMF {{alternatePrefix}}… peut être la même personne sur une autre application. Confirmez le réseau LXMF avant de compter sur Livré.",
+    "staleAlternateToastNamed": "Chat ouvert sur LXMF {{openPrefix}}…. Un autre LXMF {{alternatePrefix}}… ({{name}}) peut être la même personne sur une application différente. Confirmez le réseau LXMF avant de compter sur Livré."
   },
   "radioPanel": {
     "offloadedContacts": "Déchargement des contacts {{count}} dans la base de données.",

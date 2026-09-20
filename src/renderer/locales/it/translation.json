@@ -765,7 +765,16 @@
       "bleUnavailable": "Il Bluetooth non è pronto. Riconnettiti e riprova.",
       "roomSessionExpired": "Sessione room scaduta — accedi di nuovo per pubblicare.",
       "noSavedRoomCredential": "Nessuna password della stanza salvata. Accedi prima alla stanza."
-    }
+    },
+    "reticulumDmDestHashesAria": "Destinazione LXMF e hash di identità",
+    "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
+    "reticulumDmIdentityPrefix": "ID {{prefix}}…",
+    "reticulumDmCopyLxmfAria": "Copia hash LXMF che inizia con {{prefix}}",
+    "reticulumDmCopyIdentityAria": "Copia hash dell'identità che inizia con {{prefix}}",
+    "reticulumDmStaleAlternateAria": "Possibile diversa destinazione LXMF per questo peer",
+    "reticulumDmStaleAlternate": "Questa chat è LXMF {{openPrefix}}…. Ha anche un altro LXMF {{alternatePrefix}}... che potrebbe essere la stessa persona su un'altra app. Conferma il → messaggio di rete LXMF/ Peers o annuncia ora su entrambi i lati.",
+    "reticulumDmStaleAlternateNamed": "Questa chat è LXMF {{openPrefix}}…. Un altro LXMF {{alternatePrefix}}… ({{name}}) potrebbe essere la stessa persona su un'altra app. Apri il → messaggio peer su quell' hash o annuncia ora su entrambi i lati.",
+    "reticulumDmStaleAlternateDismissAria": "Ignora avviso di destinazione"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -3617,7 +3626,11 @@
     "pathMediumTitle": "Mezzo percorso attivo: {{medium}}",
     "chatNeedsLxmfDelivery": "Nessun indirizzo di consegna LXMF per questo peer. Attendi un annuncio LXMF o apri la chat con il loro hash LXMF di 32 caratteri: le destinazioni Voice (lxst.telephony) non possono ricevere la chat.",
     "voiceAspectBadge": "Voce",
-    "voiceAspectTitle": "Questa riga di tabella dei percorsi è una destinazione di telefonia LXST. La chat viene rimappata all'hash di consegna LXMF del peer quando noto."
+    "voiceAspectTitle": "Questa riga di tabella dei percorsi è una destinazione di telefonia LXST. La chat viene rimappata all'hash di consegna LXMF del peer quando noto.",
+    "heardViaTcpHub": "Hub TCP",
+    "heardViaTcpHubTitle": "Il percorso attivo avviene tramite un hub TCP/di trasporto ({{interface}}). Preferisci la RF o disabilita gli hub durante il test della chat solo RF.",
+    "staleAlternateToast": "Chat aperta su LXMF {{openPrefix}}…. Un altro LXMF {{alternatePrefix}}... potrebbe essere la stessa persona su un'app diversa: conferma Network LXMF prima di affidarti a Delivered.",
+    "staleAlternateToastNamed": "Chat aperta su LXMF {{openPrefix}}…. Un altro LXMF {{alternatePrefix}}… ({{name}}) potrebbe essere la stessa persona su un'app diversa: conferma Network LXMF prima di fare affidamento su Delivered."
   },
   "radioPanel": {
     "offloadedContacts": "Contatti {{count}} scaricati nel database.",

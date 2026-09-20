@@ -785,7 +785,16 @@
       "bleUnavailable": "Bluetooth není připraven. Připojte se znovu a zkuste to znovu.",
       "roomSessionExpired": "Relace místnosti vypršela — pro zveřejnění se znovu přihlaste.",
       "noSavedRoomCredential": "Žádné uložené heslo místnosti. Nejprve se přihlaste do místnosti."
-    }
+    },
+    "reticulumDmDestHashesAria": "Cílový LXMF a hash identity",
+    "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
+    "reticulumDmIdentityPrefix": "ID {{prefix}}…",
+    "reticulumDmCopyLxmfAria": "Kopírovat hash LXMF začínající na {{prefix}}",
+    "reticulumDmCopyIdentityAria": "Kopírovat hash identity začínající na {{prefix}}",
+    "reticulumDmStaleAlternateAria": "Možný jiný cíl LXMF pro tohoto kolegu",
+    "reticulumDmStaleAlternate": "Tento chat je LXMF {{openPrefix}}…. Máte také další LXMF {{alternatePrefix}}… což může být stejná osoba v jiné aplikaci. Potvrďte → zprávu Network LXMF/ Peers nebo oznamte nyní na obou stranách.",
+    "reticulumDmStaleAlternateNamed": "Tento chat je LXMF {{openPrefix}}…. Další LXMF {{alternatePrefix}}… ({{name}}) může být stejná osoba v jiné aplikaci. Otevřete → zprávu kolegů na tomto hash, nebo oznamte nyní na obou stranách.",
+    "reticulumDmStaleAlternateDismissAria": "Zavřít varování o cíli"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -3658,7 +3667,11 @@
     "pathMediumTitle": "Aktivní médium cesty: {{medium}}",
     "chatNeedsLxmfDelivery": "Pro tohoto partnera zatím neexistuje doručovací adresa LXMF. Počkejte na oznámení LXMF nebo otevřete Chat s jejich 32místným hashem LXMF — Hlasové (lxst.telephony) cíle nemohou přijímat Chat.",
     "voiceAspectBadge": "Hlas",
-    "voiceAspectTitle": "Tento řádek tabulky cesty je cílem telefonie LXST. Chat se přemapuje na hash doručení LXMF kolegy, pokud je znám."
+    "voiceAspectTitle": "Tento řádek tabulky cesty je cílem telefonie LXST. Chat se přemapuje na hash doručení LXMF kolegy, pokud je znám.",
+    "heardViaTcpHub": "Centrum TCP",
+    "heardViaTcpHubTitle": "Aktivní cesta je přes TCP/transportní rozbočovač ({{interface}}). Při testování chatu pouze s RF upřednostňujte RF nebo deaktivujte rozbočovače.",
+    "staleAlternateToast": "Chat otevřen na LXMF {{openPrefix}}…. Další LXMF {{alternatePrefix}}… může být stejná osoba v jiné aplikaci — než se spolehnete na Doručeno, potvrďte Network LXMF.",
+    "staleAlternateToastNamed": "Chat otevřen na LXMF {{openPrefix}}…. Další LXMF {{alternatePrefix}}… ({{name}}) může být stejná osoba v jiné aplikaci — než se spolehneš na Doručeno, potvrď Network LXMF."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kontaktů bylo přesunuto do databáze.",

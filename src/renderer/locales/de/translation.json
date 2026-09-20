@@ -765,7 +765,16 @@
       "bleUnavailable": "Bluetooth ist nicht bereit. Verbinden Sie sich erneut und versuchen Sie es erneut.",
       "roomSessionExpired": "Die Raumsitzung ist abgelaufen - melden Sie sich erneut an, um zu posten.",
       "noSavedRoomCredential": "Kein gespeichertes Raumpasswort. Logge dich zuerst in den Raum ein."
-    }
+    },
+    "reticulumDmDestHashesAria": "Ziel-LXMF und Identitäts-Hashes",
+    "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
+    "reticulumDmIdentityPrefix": "ID {{prefix}}…",
+    "reticulumDmCopyLxmfAria": "LXMF-Hash beginnend mit {{prefix}} kopieren",
+    "reticulumDmCopyIdentityAria": "Identitäts-Hash beginnend mit {{prefix}} kopieren",
+    "reticulumDmStaleAlternateAria": "Möglicherweise unterschiedliches LXMF-Ziel für diesen Peer",
+    "reticulumDmStaleAlternate": "Dieser Chat ist LXMF {{openPrefix}}…. Du hast auch einen anderen LXMF {{alternatePrefix}}…, bei dem es sich möglicherweise um dieselbe Person in einer anderen App handelt. Bestätigen Sie die Netzwerk-LXMF / Peers-Nachricht → oder kündigen Sie sie jetzt auf beiden Seiten an.",
+    "reticulumDmStaleAlternateNamed": "Dieser Chat ist LXMF {{openPrefix}}…. Ein anderer LXMF {{alternatePrefix}}… ({{name}}) kann dieselbe Person in einer anderen App sein. Öffnen Sie die → Peers-Nachricht auf diesem Hash oder kündigen Sie sie jetzt auf beiden Seiten an.",
+    "reticulumDmStaleAlternateDismissAria": "Zielwarnung ausblenden"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -3617,7 +3626,11 @@
     "pathMediumTitle": "Aktives Pfadmedium: {{medium}}",
     "chatNeedsLxmfDelivery": "Noch keine LXMF-Lieferadresse für diesen Peer. Warten Sie auf eine LXMF-Ankündigung oder öffnen Sie den Chat mit ihren 32-stelligen LXMF-Hash — Voice (lxst.telephony) -Zielen kann den Chat nicht empfangen.",
     "voiceAspectBadge": "Stimme",
-    "voiceAspectTitle": "Diese Pfad-Tabellenzeile ist ein LXST-Telefonieziel. Chat-Remaps zum LXMF-Delivery-Hash des Peers, wenn bekannt."
+    "voiceAspectTitle": "Diese Pfad-Tabellenzeile ist ein LXST-Telefonieziel. Chat-Remaps zum LXMF-Delivery-Hash des Peers, wenn bekannt.",
+    "heardViaTcpHub": "TCP-Hub",
+    "heardViaTcpHubTitle": "Aktiver Pfad ist über einen TCP/Transport Hub ({{interface}}). Bevorzugen Sie RF oder deaktivieren Sie Hubs, wenn Sie nur RF-Chat testen.",
+    "staleAlternateToast": "Chat geöffnet auf LXMF {{openPrefix}}…. Ein anderer LXMF {{alternatePrefix}}… kann dieselbe Person in einer anderen App sein — bestätige Network LXMF, bevor du dich auf „Geliefert“ verlässt.",
+    "staleAlternateToastNamed": "Chat geöffnet auf LXMF {{openPrefix}}…. Ein anderer LXMF {{alternatePrefix}}… ({{name}}) kann dieselbe Person in einer anderen App sein — bestätige Network LXMF, bevor du dich auf „Geliefert“ verlässt."
   },
   "radioPanel": {
     "offloadedContacts": "Entladen von {{count}} Kontakten in die Datenbank.",
