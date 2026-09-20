@@ -11,7 +11,9 @@ pub enum BleBondError {
     #[error("BLE unbond is not supported on this platform build")]
     #[allow(dead_code)] // used on non linux/macos/windows cfgs
     Unsupported,
+    /// Constructed on macOS (`blueutil`) and Linux (`bluetoothctl`) when the helper is absent.
     #[error("BLE unbond tool missing: {0}")]
+    #[cfg_attr(not(any(target_os = "macos", target_os = "linux")), allow(dead_code))]
     ToolMissing(String),
     #[error("BLE unbond failed: {0}")]
     Failed(String),
@@ -124,24 +126,37 @@ pub async fn unbond_device_named(
 
 #[cfg(target_os = "linux")]
 async fn unbond_linux(id: &str) -> Result<(), BleBondError> {
-    use std::str::FromStr;
+    // Prefer bluetoothctl over bluer so stub Linux CI builds do not need libdbus-1-dev.
+    let id_owned = id.to_string();
+    tokio::task::spawn_blocking(move || run_bluetoothctl_remove(&id_owned))
+        .await
+        .map_err(|e| BleBondError::Failed(format!("bluetoothctl join: {e}")))?
+}
 
-    use bluer::{Address, Session};
+#[cfg(target_os = "linux")]
+fn run_bluetoothctl_remove(id: &str) -> Result<(), BleBondError> {
+    use std::process::Command;
 
-    let addr =
-        Address::from_str(id).map_err(|e| BleBondError::InvalidIdentifier(format!("{id}: {e}")))?;
-    let session = Session::new()
-        .await
-        .map_err(|e| BleBondError::Failed(format!("bluer session: {e}")))?;
-    let adapter = session
-        .default_adapter()
-        .await
-        .map_err(|e| BleBondError::Failed(format!("bluer adapter: {e}")))?;
-    adapter
-        .remove_device(addr)
-        .await
-        .map_err(|e| BleBondError::Failed(format!("bluer remove_device: {e}")))?;
-    tracing::warn!(%id, "ble: removed BlueZ device bond (LTK desync recovery)");
+    let output = match Command::new("bluetoothctl").args(["remove", id]).output() {
+        Ok(o) => o,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            return Err(BleBondError::ToolMissing(
+                "bluetoothctl not found — Forget the device in system Bluetooth settings".into(),
+            ));
+        }
+        Err(e) => return Err(BleBondError::Failed(format!("bluetoothctl: {e}"))),
+    };
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        return Err(BleBondError::Failed(format!(
+            "bluetoothctl remove {id:?} failed (status={}): {} {}",
+            output.status,
+            stdout.trim(),
+            stderr.trim()
+        )));
+    }
+    tracing::warn!(%id, "ble: bluetoothctl remove ok (LTK desync recovery)");
     Ok(())
 }
 
@@ -426,6 +441,15 @@ fn run_blueutil_unpair(id: &str, display_name: Option<&str>) -> Result<(), BleBo
 
 #[cfg(target_os = "windows")]
 async fn unbond_windows(id: &str) -> Result<(), BleBondError> {
+    // windows 0.58 IAsyncOperation is not a Future — block via `.get()` off the async runtime.
+    let id_owned = id.to_string();
+    tokio::task::spawn_blocking(move || unbond_windows_blocking(&id_owned))
+        .await
+        .map_err(|e| BleBondError::Failed(format!("Windows unbond join: {e}")))?
+}
+
+#[cfg(target_os = "windows")]
+fn unbond_windows_blocking(id: &str) -> Result<(), BleBondError> {
     use windows::Devices::Bluetooth::BluetoothDevice;
     use windows::core::HSTRING;
 
@@ -433,13 +457,13 @@ async fn unbond_windows(id: &str) -> Result<(), BleBondError> {
     let device = if let Some(addr) = parse_bt_address_u64(id) {
         BluetoothDevice::FromBluetoothAddressAsync(addr)
             .map_err(|e| BleBondError::Failed(format!("FromBluetoothAddressAsync: {e}")))?
-            .await
+            .get()
             .map_err(|e| BleBondError::Failed(format!("FromBluetoothAddress: {e}")))?
     } else {
         let id_h = HSTRING::from(id);
         BluetoothDevice::FromIdAsync(&id_h)
             .map_err(|e| BleBondError::Failed(format!("BluetoothDevice::FromIdAsync: {e}")))?
-            .await
+            .get()
             .map_err(|e| BleBondError::Failed(format!("BluetoothDevice FromId: {e}")))?
     };
     let pairing = device
@@ -450,8 +474,8 @@ async fn unbond_windows(id: &str) -> Result<(), BleBondError> {
     let result = pairing
         .UnpairAsync()
         .map_err(|e| BleBondError::Failed(format!("UnpairAsync: {e}")))?
-        .await
-        .map_err(|e| BleBondError::Failed(format!("Unpair await: {e}")))?;
+        .get()
+        .map_err(|e| BleBondError::Failed(format!("Unpair get: {e}")))?;
     let status = result
         .Status()
         .map_err(|e| BleBondError::Failed(format!("Unpair status: {e}")))?;

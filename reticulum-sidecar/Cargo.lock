@@ -1664,7 +1664,6 @@ dependencies = [
  "argon2",
  "axum",
  "base64",
- "bluer",
  "btleplug",
  "bytes",
  "ciborium",
