@@ -765,7 +765,16 @@
       "bleUnavailable": "Bluetoothの準備ができていません。再接続してもう一度お試しください。",
       "roomSessionExpired": "ルームセッションの有効期限が切れました。再度ログインして投稿してください。",
       "noSavedRoomCredential": "保存されたルームのパスワードはありません。まずルームにログインします。"
-    }
+    },
+    "reticulumDmDestHashesAria": "宛先LXMFとIDハッシュ",
+    "reticulumDmLxmfPrefix": "LXMF {{prefix}} …",
+    "reticulumDmIdentityPrefix": "ID {{prefix}} …",
+    "reticulumDmCopyLxmfAria": "{{prefix}}で始まるLXMFハッシュをコピー",
+    "reticulumDmCopyIdentityAria": "{{prefix}}で始まるIDハッシュをコピー",
+    "reticulumDmStaleAlternateAria": "このピアに異なる可能性のあるLXMF宛先",
+    "reticulumDmStaleAlternate": "こちらのチャットはLXMF {{openPrefix}} …です。また、別のアプリに同じ人物である可能性のある別のLXMF {{alternatePrefix}}があります。ネットワークLXMF/ピアメッセージを確認→するか、両側で今すぐアナウンスします。",
+    "reticulumDmStaleAlternateNamed": "こちらのチャットはLXMF {{openPrefix}} …です。別のLXMF {{alternatePrefix}} … （ {{name}} ）は、別のアプリで同じ人物である可能性があります。→そのハッシュのピアメッセージを開くか、両側で今すぐアナウンスします。",
+    "reticulumDmStaleAlternateDismissAria": "行き先に関する警告を非表示にする"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -3617,7 +3626,11 @@
     "pathMediumTitle": "アクティブパスメディア： {{medium}}",
     "chatNeedsLxmfDelivery": "このピアのLXMF配信アドレスはまだありません。LXMFの発表を待つか、32文字のLXMFハッシュを持つチャットを開きます—音声（ lxst.telephony ）の宛先はチャットを受信できません。",
     "voiceAspectBadge": "音声",
-    "voiceAspectTitle": "このパステーブル行は、LXSTテレフォニーの宛先です。知られている場合、チャットはピアのLXMF配信ハッシュにリマップします。"
+    "voiceAspectTitle": "このパステーブル行は、LXSTテレフォニーの宛先です。知られている場合、チャットはピアのLXMF配信ハッシュにリマップします。",
+    "heardViaTcpHub": "TCPハブ",
+    "heardViaTcpHubTitle": "アクティブなパスはTCP/トランスポートハブ（ {{interface}} ）を介しています。RFのみのチャットをテストする場合は、RFを優先するか、ハブを無効にします。",
+    "staleAlternateToast": "チャットはLXMF {{openPrefix}} …で開始されました。別のLXMF {{alternatePrefix}} …は、別のアプリで同じ人物である可能性があります。配信に依存する前に、ネットワークLXMFを確認してください。",
+    "staleAlternateToastNamed": "チャットはLXMF {{openPrefix}} …で開始されました。別のLXMF {{alternatePrefix}} … （ {{name}} ）が別のアプリで同じ人物である可能性があります。配信に依存する前にネットワークLXMFを確認してください。"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} 連絡先をデータベースにオフロードしました。",

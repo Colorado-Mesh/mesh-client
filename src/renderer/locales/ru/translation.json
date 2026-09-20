@@ -803,7 +803,16 @@
       "bleUnavailable": "Bluetooth не готов. Подключитесь заново и повторите попытку.",
       "roomSessionExpired": "Сессия комнаты истекла — войдите снова, чтобы опубликовать.",
       "noSavedRoomCredential": "Нет сохраненного пароля комнаты. Сначала войдите в комнату."
-    }
+    },
+    "reticulumDmDestHashesAria": "Целевой LXMF и хэши удостоверений",
+    "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
+    "reticulumDmIdentityPrefix": "ID {{prefix}}…",
+    "reticulumDmCopyLxmfAria": "Скопировать хэш LXMF, начиная с {{prefix}}",
+    "reticulumDmCopyIdentityAria": "Скопируйте хэш удостоверения, начиная с {{prefix}}",
+    "reticulumDmStaleAlternateAria": "Возможный другой пункт назначения LXMF для этого однорангового узла",
+    "reticulumDmStaleAlternate": "Этот чат - LXMF {{openPrefix}}…. У вас также есть другой LXMF {{alternatePrefix}}…, который может быть тем же человеком в другом приложении. Подтвердите → сообщение Network LXMF/ Peers или объявите сейчас с обеих сторон.",
+    "reticulumDmStaleAlternateNamed": "Этот чат - LXMF {{openPrefix}}…. Другой пользователь LXMF {{alternatePrefix}} … ({{name}}) может находиться в другом приложении. Открыть одноранговое → сообщение по этому хэшу или объявить сейчас с обеих сторон.",
+    "reticulumDmStaleAlternateDismissAria": "Отклонить предупреждение о месте назначения"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -3697,7 +3706,11 @@
     "pathMediumTitle": "Активная среда пути: {{medium}}",
     "chatNeedsLxmfDelivery": "Для этого узла еще нет адреса доставки LXMF. Дождитесь объявления LXMF или откройте чат с 32-символьным хешем LXMF — адресаты Voice (lxst.telephony) не могут получать чат.",
     "voiceAspectBadge": "Голос",
-    "voiceAspectTitle": "Эта строка таблицы путей является пунктом назначения LXST-телефонии. Переадресация чата на хэш доставки LXMF однорангового узла, когда он известен."
+    "voiceAspectTitle": "Эта строка таблицы путей является пунктом назначения LXST-телефонии. Переадресация чата на хэш доставки LXMF однорангового узла, когда он известен.",
+    "heardViaTcpHub": "TCP Hub",
+    "heardViaTcpHubTitle": "Активный путь проходит через TCP/транспортный узел ({{interface}}). Предпочитайте радиочастоты или отключите концентраторы при тестировании чата только для радиочастот.",
+    "staleAlternateToast": "Чат открыт на LXMF {{openPrefix}}…. Другой LXMF {{alternatePrefix}}… может быть тем же человеком в другом приложении — подтвердите Network LXMF, прежде чем полагаться на Delivered.",
+    "staleAlternateToastNamed": "Чат открыт на LXMF {{openPrefix}}…. Другой LXMF {{alternatePrefix}}… ({{name}}) может быть тем же человеком в другом приложении. Подтвердите, что Network LXMF, прежде чем полагаться на «Доставлено»."
   },
   "radioPanel": {
     "offloadedContacts": "Контакты {{count}} выгружены в базу данных.",

@@ -42,6 +42,10 @@ vi.mock('react-i18next', () => ({
       if (opts && 'count' in opts) return `${key}:${String(opts.count)}`;
       if (opts && 'error' in opts) return `${key}:${String(opts.error)}`;
       if (opts && 'hops' in opts) return `${key}:${String(opts.hops)}`;
+      if (opts && 'openPrefix' in opts) {
+        return `${key}:${String(opts.openPrefix)}:${String(opts.alternatePrefix ?? '')}:${String(opts.name ?? '')}`;
+      }
+      if (opts && 'interface' in opts) return `${key}:${String(opts.interface)}`;
       return key;
     },
   }),
@@ -738,6 +742,132 @@ describe('ReticulumPeerListPanel', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'peerListPanel.openChat' })).not.toBeDisabled();
     });
+  });
+
+  it('shows TCP hub cue for transport-hub paths and not for RNode', () => {
+    const hub = 'd010ea4417f71ff4fd15a6182747aaec';
+    const rf = 'e3359f1314aff4fb6261400a8202149b';
+    useReticulumPeerStore.setState({
+      peers: new Map([
+        [
+          hub,
+          {
+            destination_hash: hub,
+            display_name: 'Ceorl-wired',
+            hops: 2,
+            last_seen: Date.now() / 1000,
+            interface: 'RNS_Transport_US-East',
+          },
+        ],
+        [
+          rf,
+          {
+            destination_hash: rf,
+            display_name: 'Ceorl-test',
+            hops: 1,
+            last_seen: Date.now() / 1000,
+            interface: 'RNodeInterface',
+          },
+        ],
+      ]),
+      contacts: new Map(),
+      history: new Map(),
+      peersRevision: 1,
+    });
+    render(
+      <ToastProvider>
+        <ReticulumPeerListPanel isConnected onPeerClick={vi.fn()} onSendMessage={vi.fn()} />
+      </ToastProvider>,
+    );
+    expect(screen.getByText('peerListPanel.heardViaTcpHub')).toBeInTheDocument();
+    expect(
+      screen.getByTitle(/peerListPanel.heardViaTcpHubTitle:RNS_Transport_US-East/),
+    ).toBeInTheDocument();
+  });
+
+  it('toasts stale-alternate hint when opening Chat on a name-family MeshChatX-era dest', async () => {
+    const user = userEvent.setup();
+    const wired = 'd010ea4417f71ff4fd15a6182747aaec';
+    const wiredId = '098c1ee916253f73459dda7ced773c60';
+    const testLxmf = 'e3359f1314aff4fb6261400a8202149b';
+    const testId = '0f79468863d76b3ba574baa92606ffcb';
+    useReticulumPeerStore.setState({
+      peers: new Map([
+        [
+          wired,
+          {
+            destination_hash: wired,
+            display_name: 'Ceorl-wired',
+            identity_hash: wiredId,
+            hops: 2,
+            last_seen: Date.now() / 1000,
+            interface: 'RNS_Transport_US-East',
+          },
+        ],
+        [
+          testLxmf,
+          {
+            destination_hash: testLxmf,
+            display_name: 'Ceorl-test',
+            identity_hash: testId,
+            hops: 1,
+            last_seen: Date.now() / 1000,
+            interface: 'RNodeInterface',
+          },
+        ],
+      ]),
+      contacts: new Map(),
+      history: new Map(),
+      peersRevision: 2,
+    });
+    useReticulumIdentityActivityStore.setState({
+      byDestination: new Map([
+        [
+          wired,
+          [
+            {
+              destination_hash: wired,
+              aspect: 'lxmf.delivery',
+              identity_hash: wiredId,
+              last_seen: 100,
+            },
+          ],
+        ],
+        [
+          testLxmf,
+          [
+            {
+              destination_hash: testLxmf,
+              aspect: 'lxmf.delivery',
+              identity_hash: testId,
+              last_seen: 200,
+            },
+          ],
+        ],
+      ]),
+    });
+    const onSendMessage = vi.fn();
+    render(
+      <ToastProvider>
+        <ReticulumPeerListPanel isConnected onPeerClick={vi.fn()} onSendMessage={onSendMessage} />
+      </ToastProvider>,
+    );
+    const chatButtons = screen.getAllByRole('button', { name: 'peerListPanel.openChat' });
+    // First row is Ceorl-test (lexicographic / prepare order may vary) — click the wired peer's chat.
+    // Find by row: open chat on the peer that shows TCP hub badge's row.
+    const hubBadge = screen.getByText('peerListPanel.heardViaTcpHub');
+    const row = hubBadge.closest('tr');
+    expect(row).toBeTruthy();
+    const chatBtn = row!.querySelector('button[aria-label="peerListPanel.openChat"]');
+    expect(chatBtn).toBeTruthy();
+    await user.click(chatBtn!);
+    expect(onSendMessage).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(
+        screen.getByText(/peerListPanel.staleAlternateToastNamed:d010ea44:e3359f13:Ceorl-test/),
+      ).toBeInTheDocument();
+    });
+    expect(chatButtons.length).toBeGreaterThanOrEqual(1);
   });
 
   it('has no serious axe violations', async () => {

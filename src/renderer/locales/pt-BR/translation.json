@@ -765,7 +765,16 @@
       "bleUnavailable": "O Bluetooth não está pronto. Reconecte-se e tente novamente.",
       "roomSessionExpired": "A sessão da sala expirou — inicie sessão novamente para publicar.",
       "noSavedRoomCredential": "Nenhuma senha de sala salva. Faça login no sala primeiro."
-    }
+    },
+    "reticulumDmDestHashesAria": "LXMF de destino e hashes de identidade",
+    "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
+    "reticulumDmIdentityPrefix": "ID {{prefix}}…",
+    "reticulumDmCopyLxmfAria": "Copiar hash LXMF começando com {{prefix}}",
+    "reticulumDmCopyIdentityAria": "Copiar hash de identidade começando com {{prefix}}",
+    "reticulumDmStaleAlternateAria": "Possível destino LXMF diferente para este par",
+    "reticulumDmStaleAlternate": "Este chat é LXMF {{openPrefix}}…. Você também tem outra LXMF {{alternatePrefix}}... que pode ser a mesma pessoa em um aplicativo diferente. Confirme a → mensagem LXMF / Pares da rede ou anuncie agora em ambos os lados.",
+    "reticulumDmStaleAlternateNamed": "Este chat é LXMF {{openPrefix}}…. Outra LXMF {{alternatePrefix}}… ({{name}}) pode ser a mesma pessoa em um aplicativo diferente. Abra a → Mensagem dos Pares nesse hash ou Anuncie agora em ambos os lados.",
+    "reticulumDmStaleAlternateDismissAria": "Ignorar aviso de destino"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -3617,7 +3626,11 @@
     "pathMediumTitle": "Meio de caminho ativo: {{medium}}",
     "chatNeedsLxmfDelivery": "Nenhum endereço de entrega LXMF para este par ainda. Aguarde um anúncio LXMF ou abra o Chat com seu hash LXMF de 32 caracteres - Os destinos de voz (lxst.telephony) não podem receber o Chat.",
     "voiceAspectBadge": "Voz",
-    "voiceAspectTitle": "Esta linha path-table é um destino de telefonia LXST. O bate-papo é remapeado para o hash de entrega LXMF do colega quando conhecido."
+    "voiceAspectTitle": "Esta linha path-table é um destino de telefonia LXST. O bate-papo é remapeado para o hash de entrega LXMF do colega quando conhecido.",
+    "heardViaTcpHub": "Hub TCP",
+    "heardViaTcpHubTitle": "O caminho ativo é através de um hub TCP/transporte ({{interface}}). Prefira RF ou desative os hubs ao testar o Chat somente de RF.",
+    "staleAlternateToast": "Chat aberto em LXMF {{openPrefix}}…. Outra LXMF {{alternatePrefix}}... pode ser a mesma pessoa em um aplicativo diferente — confirme a Rede LXMF antes de confiar na Entrega.",
+    "staleAlternateToastNamed": "Chat aberto em LXMF {{openPrefix}}…. Outra LXMF {{alternatePrefix}}… ({{name}}) pode ser a mesma pessoa em um aplicativo diferente — confirme a Rede LXMF antes de confiar na Entrega."
   },
   "radioPanel": {
     "offloadedContacts": "Transferiu contatos {{count}} para o banco de dados.",

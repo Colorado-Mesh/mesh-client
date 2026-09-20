@@ -765,7 +765,16 @@
       "bleUnavailable": "Bluetooth is niet gereed. Maak opnieuw verbinding en probeer het opnieuw.",
       "roomSessionExpired": "Roomsessie verlopen — log opnieuw in om te posten.",
       "noSavedRoomCredential": "Geen opgeslagen ruimtewachtwoord. Log eerst in op de ruimte."
-    }
+    },
+    "reticulumDmDestHashesAria": "Bestemming LXMF en identiteitshashes",
+    "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
+    "reticulumDmIdentityPrefix": "ID {{prefix}}…",
+    "reticulumDmCopyLxmfAria": "Kopieer LXMF-hash die begint met {{prefix}}",
+    "reticulumDmCopyIdentityAria": "Identiteitshash kopiëren die begint met {{prefix}}",
+    "reticulumDmStaleAlternateAria": "Mogelijke verschillende LXMF-bestemmingen voor deze peer",
+    "reticulumDmStaleAlternate": "Deze chat is LXMF {{openPrefix}}…. Je hebt ook een andere LXMF {{alternatePrefix}}… die mogelijk dezelfde persoon is in een andere app. Bevestig het netwerk LXMF/→Peers-bericht of kondig het nu aan beide kanten aan.",
+    "reticulumDmStaleAlternateNamed": "Deze chat is LXMF {{openPrefix}}…. Een andere LXMF {{alternatePrefix}}… ({{name}}) kan dezelfde persoon zijn in een andere app. Open het → bericht van collega's op die hash of kondig nu aan beide kanten aan.",
+    "reticulumDmStaleAlternateDismissAria": "Bestemmingswaarschuwing negeren"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -3617,7 +3626,11 @@
     "pathMediumTitle": "Actief padmedium: {{medium}}",
     "chatNeedsLxmfDelivery": "Nog geen LXMF-bezorgadres voor deze peer. Wacht op een LXMF-aankondiging of open Chat met hun 32-karakter LXMF-hash - Voice (lxst.telephony) -bestemmingen kunnen geen Chat ontvangen.",
     "voiceAspectBadge": "Stem",
-    "voiceAspectTitle": "Deze rij met padtabellen is een LXST-telefoniebestemming. Chat opnieuw naar de LXMF-bezorgingshash van de peer wanneer deze bekend is."
+    "voiceAspectTitle": "Deze rij met padtabellen is een LXST-telefoniebestemming. Chat opnieuw naar de LXMF-bezorgingshash van de peer wanneer deze bekend is.",
+    "heardViaTcpHub": "TCP-hub",
+    "heardViaTcpHubTitle": "Het actieve pad loopt via een TCP/transporthub ({{interface}}). Geef de voorkeur aan RF of schakel hubs uit bij het testen van alleen RF-chat.",
+    "staleAlternateToast": "Chat geopend op LXMF {{openPrefix}}…. Een andere LXMF {{alternatePrefix}}… kan dezelfde persoon zijn in een andere app. Bevestig Network LXMF voordat je vertrouwt op Delivered.",
+    "staleAlternateToastNamed": "Chat geopend op LXMF {{openPrefix}}…. Een andere LXMF {{alternatePrefix}}… ({{name}}) kan dezelfde persoon zijn in een andere app. Bevestig Network LXMF voordat je vertrouwt op Delivered."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} contacten naar de database overgebracht.",

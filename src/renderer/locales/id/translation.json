@@ -765,7 +765,16 @@
       "bleUnavailable": "Bluetooth belum siap. Sambungkan kembali dan coba lagi.",
       "roomSessionExpired": "Sesi ruangan kedaluwarsa — masuk lagi untuk memposting.",
       "noSavedRoomCredential": "Tidak ada kata sandi ruangan yang disimpan. Masuk ke ruangan terlebih dahulu."
-    }
+    },
+    "reticulumDmDestHashesAria": "Tujuan LXMF dan hash identitas",
+    "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
+    "reticulumDmIdentityPrefix": "ID {{prefix}}…",
+    "reticulumDmCopyLxmfAria": "Salin hash LXMF yang dimulai dengan {{prefix}}",
+    "reticulumDmCopyIdentityAria": "Salin hash identitas yang dimulai dengan {{prefix}}",
+    "reticulumDmStaleAlternateAria": "Kemungkinan tujuan LXMF yang berbeda untuk rekan ini",
+    "reticulumDmStaleAlternate": "Obrolan ini adalah LXMF {{openPrefix}}…. Anda juga memiliki LXMF {{alternatePrefix}} lainnya… yang mungkin orang yang sama di aplikasi lain. Konfirmasi → Pesan LXMF / Peers Jaringan, atau Umumkan sekarang di kedua sisi.",
+    "reticulumDmStaleAlternateNamed": "Obrolan ini adalah LXMF {{openPrefix}}…. LXMF {{alternatePrefix}} lainnya… ({{name}}) mungkin orang yang sama di aplikasi lain. Buka → Pesan Rekan pada hash itu, atau Umumkan sekarang di kedua sisi.",
+    "reticulumDmStaleAlternateDismissAria": "Abaikan peringatan tujuan"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -3617,7 +3626,11 @@
     "pathMediumTitle": "Media jalur aktif: {{medium}}",
     "chatNeedsLxmfDelivery": "Belum ada alamat pengiriman LXMF untuk rekan ini. Tunggu pengumuman LXMF, atau buka Obrolan dengan hash LXMF 32 karakter mereka — Destinasi Voice (lxst.telephony) tidak dapat menerima Obrolan.",
     "voiceAspectBadge": "Suara",
-    "voiceAspectTitle": "Baris tabel jalur ini adalah tujuan telepon LXST. Memetakan ulang obrolan ke hash pengiriman LXMF rekan saat diketahui."
+    "voiceAspectTitle": "Baris tabel jalur ini adalah tujuan telepon LXST. Memetakan ulang obrolan ke hash pengiriman LXMF rekan saat diketahui.",
+    "heardViaTcpHub": "Hub TCP",
+    "heardViaTcpHubTitle": "Jalur aktif adalah melalui TCP/hub transportasi ({{interface}}). Lebih suka RF atau nonaktifkan hub saat menguji Obrolan khusus RF.",
+    "staleAlternateToast": "Obrolan dibuka di LXMF {{openPrefix}}…. LXMF {{alternatePrefix}} lainnya... mungkin orang yang sama di aplikasi lain — konfirmasikan Network LXMF sebelum mengandalkan Delivered.",
+    "staleAlternateToastNamed": "Obrolan dibuka di LXMF {{openPrefix}}…. LXMF {{alternatePrefix}} lainnya… ({{name}}) mungkin orang yang sama di aplikasi lain — konfirmasikan Network LXMF sebelum mengandalkan Delivered."
   },
   "radioPanel": {
     "offloadedContacts": "Membongkar {{count}} kontak ke database.",

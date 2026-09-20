@@ -765,7 +765,16 @@
       "bleUnavailable": "El Bluetooth no está listo. Vuelve a conectarte e inténtalo de nuevo.",
       "roomSessionExpired": "La sesión de la sala ha caducado. Vuelve a iniciar sesión para publicar.",
       "noSavedRoomCredential": "No se ha guardado la contraseña de la sala. Inicie sesión en la sala primero."
-    }
+    },
+    "reticulumDmDestHashesAria": "LXMF de destino y hashes de identidad",
+    "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
+    "reticulumDmIdentityPrefix": "ID {{prefix}}…",
+    "reticulumDmCopyLxmfAria": "Copiar hash LXMF a partir de {{prefix}}",
+    "reticulumDmCopyIdentityAria": "Copia el hash de identidad que comienza con {{prefix}}",
+    "reticulumDmStaleAlternateAria": "Posible destino LXMF diferente para este compañero",
+    "reticulumDmStaleAlternate": "Este chat es LXMF {{openPrefix}}…. También tienes otro LXMF {{alternatePrefix}}... que puede ser la misma persona en una aplicación diferente. Confirme el → mensaje de Network LXMF/ Peers, o Anúncielo ahora en ambos lados.",
+    "reticulumDmStaleAlternateNamed": "Este chat es LXMF {{openPrefix}}…. Otro LXMF {{alternatePrefix}}… ({{name}}) puede ser la misma persona en una aplicación diferente. Abra el → mensaje de pares en ese hash, o Anúncielo ahora en ambos lados.",
+    "reticulumDmStaleAlternateDismissAria": "Descartar advertencia de destino"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -3617,7 +3626,11 @@
     "pathMediumTitle": "Medio de ruta activa: {{medium}}",
     "chatNeedsLxmfDelivery": "Aún no hay una dirección de entrega LXMF para este compañero. Espere un anuncio de LXMF o abra el chat con su hash LXMF de 32 caracteres: los destinos de voz (lxst.telephony) no pueden recibir chat.",
     "voiceAspectBadge": "Voz",
-    "voiceAspectTitle": "Esta fila de la tabla de rutas es un destino de telefonía LXST. El chat se reasigna al hash de entrega LXMF del compañero cuando se conoce."
+    "voiceAspectTitle": "Esta fila de la tabla de rutas es un destino de telefonía LXST. El chat se reasigna al hash de entrega LXMF del compañero cuando se conoce.",
+    "heardViaTcpHub": "Concentrador TCP",
+    "heardViaTcpHubTitle": "La ruta activa es a través de un centro de TCP/transporte ({{interface}}). Prefiera RF o deshabilite los concentradores cuando pruebe el chat solo por RF.",
+    "staleAlternateToast": "El chat se abrió el LXMF {{openPrefix}}…. Otro LXMF {{alternatePrefix}}... puede ser la misma persona en una aplicación diferente. Confirma Network LXMF antes de confiar en Delivered.",
+    "staleAlternateToastNamed": "El chat se abrió el LXMF {{openPrefix}}…. Otro LXMF {{alternatePrefix}}… ({{name}}) puede ser la misma persona en una aplicación diferente. Confirma Network LXMF antes de confiar en Delivered."
   },
   "radioPanel": {
     "offloadedContacts": "Se han descargado {{count}} contactos a la base de datos.",
