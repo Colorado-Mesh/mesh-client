@@ -20,7 +20,7 @@ vi.mock('@/renderer/lib/reticulum/reticulumBleAdapterConflict', () => ({
 vi.mock('@/renderer/lib/reticulum/reticulumBleAdapterLease', () => ({}));
 
 vi.mock('@/renderer/lib/reticulum/reticulumLocalInterfaceLogging', () => ({
-  logReticulumLocalInterfaceHealthChanges: vi.fn(),
+  logReticulumLocalInterfaceHealthChanges: vi.fn().mockReturnValue([]),
 }));
 
 vi.mock('@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh', () => ({

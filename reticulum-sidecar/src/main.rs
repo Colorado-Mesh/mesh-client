@@ -21,6 +21,7 @@
 )]
 
 mod api;
+mod ble;
 mod gatt;
 mod stack;
 

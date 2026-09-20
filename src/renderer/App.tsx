@@ -84,6 +84,7 @@ import {
   chatChannelsFromRuntimeChannels,
   traceRouteHopLabels,
 } from '@/renderer/lib/protocolRuntimeAdapters';
+import { requestReticulumAdminBluetoothFocus } from '@/renderer/lib/reticulum/reticulumAdminBluetoothFocus';
 import { useReticulumRawPacketPoll } from '@/renderer/lib/reticulum/useReticulumRawPacketPoll';
 import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
 import { resolveReticulumOwnNodeIdSet } from '@/renderer/lib/reticulumOwnNodeIds';
@@ -3334,6 +3335,7 @@ function AppContent() {
                                     );
                                     if (adminTabIdx >= 0) {
                                       setActiveTab(adminTabIdx);
+                                      requestReticulumAdminBluetoothFocus();
                                     }
                                   }
                                 : undefined

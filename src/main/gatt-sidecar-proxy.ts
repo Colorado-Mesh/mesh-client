@@ -91,6 +91,9 @@ export class GattSidecarProxy extends EventEmitter {
   private readonly reservations = new Map<symbol, ConnectionReservation>();
   private ensureFn: (() => Promise<number>) | null = null;
   private connectionGuard: ((sessionId: GattSessionProfile, address: string) => void) | null = null;
+  /** While true, LoRa GATT scan/connect are blocked so RNode owns CoreBluetooth alone. */
+  private rnodeBondRecoveryExclusive = false;
+  private rnodeBondRecoveryExclusiveTimer: ReturnType<typeof setTimeout> | null = null;
 
   /** Wire ensure callback (starts sidecar for BLE-light, returns HTTP port). */
   setEnsureSidecar(fn: () => Promise<number>): void {
@@ -99,6 +102,56 @@ export class GattSidecarProxy extends EventEmitter {
 
   setConnectionGuard(guard: (sessionId: GattSessionProfile, address: string) => void): void {
     this.connectionGuard = guard;
+  }
+
+  /**
+   * Block LoRa GATT scan/connect while RNode recovers from CoreBluetooth Peer-removed
+   * or while an RNode BLE link is online (macOS cannot safely host two CBCentralManagers).
+   * Auto-clears after 10 minutes so a stuck latch cannot brick MeshCore/Meshtastic forever.
+   */
+  setRnodeBondRecoveryExclusive(active: boolean): void {
+    if (this.rnodeBondRecoveryExclusiveTimer) {
+      clearTimeout(this.rnodeBondRecoveryExclusiveTimer);
+      this.rnodeBondRecoveryExclusiveTimer = null;
+    }
+    this.rnodeBondRecoveryExclusive = active;
+    if (active) {
+      this.rnodeBondRecoveryExclusiveTimer = setTimeout(() => {
+        this.rnodeBondRecoveryExclusiveTimer = null;
+        this.rnodeBondRecoveryExclusive = false;
+        void this.clearSidecarBondRecoveryHold();
+        console.debug('[GATT] rnodeBondRecoveryExclusive auto-cleared after 10m');
+      }, 10 * 60_000);
+    } else {
+      void this.clearSidecarBondRecoveryHold();
+    }
+  }
+
+  /**
+   * Best-effort clear of the sidecar bond-recovery hold.
+   * Never starts the sidecar — during quit `port` is already 0 and ensurePort would
+   * respawn reticulum mid-exit (Disconnect & Quit appears to hang).
+   */
+  private async clearSidecarBondRecoveryHold(): Promise<void> {
+    if (this.port <= 0) {
+      return;
+    }
+    try {
+      await this.jsonFetch(
+        '/api/v1/gatt/clear-bond-recovery',
+        { method: 'POST', body: '{}' },
+        { timeoutMs: GATT_HTTP_TIMEOUT_MS, port: this.port },
+      );
+    } catch (err) {
+      console.debug(
+        '[GATT] clearSidecarBondRecoveryHold failed:',
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+  }
+
+  isRnodeBondRecoveryExclusive(): boolean {
+    return this.rnodeBondRecoveryExclusive;
   }
 
   getConnections(): { mac: string; owner: `gatt:${GattSessionProfile}` }[] {
@@ -185,6 +238,9 @@ export class GattSidecarProxy extends EventEmitter {
   }
 
   async startScan(sessionId: GattSessionProfile): Promise<GattStartScanResult> {
+    if (this.rnodeBondRecoveryExclusive) {
+      return { ok: false, code: 'scan_busy', owner: 'rnode_bond_recovery' };
+    }
     const mode = profileFromSession(sessionId);
     const { status, body } = await this.jsonFetch(
       `/api/v1/gatt/scan?mode=${mode}&timeout_secs=8`,
@@ -232,6 +288,13 @@ export class GattSidecarProxy extends EventEmitter {
   }
 
   async connect(sessionId: GattSessionProfile, peripheralId: string): Promise<GattConnectResult> {
+    if (this.rnodeBondRecoveryExclusive) {
+      return {
+        ok: false,
+        error: 'RNode bond recovery holds the Bluetooth adapter',
+        code: 'rnode_bond_recovery',
+      };
+    }
     this.connectionGuard?.(sessionId, peripheralId);
     void this.disconnect(sessionId);
     const attempt = Symbol();
@@ -590,6 +653,37 @@ export class GattSidecarProxy extends EventEmitter {
         this.clearLocalSession(id);
         this.emit('disconnected', { sessionId: id });
       }
+    }
+  }
+
+  /**
+   * Drop LoRa sessions and the sidecar btleplug CBCentralManager so RNode bond
+   * recovery is the only CoreBluetooth central in-process.
+   */
+  async releaseBleCentral(): Promise<void> {
+    const alreadyExclusive = this.rnodeBondRecoveryExclusive;
+    this.setRnodeBondRecoveryExclusive(true);
+    // Refreshing the exclusive timer while already holding must not thrash disconnectAll.
+    if (alreadyExclusive) {
+      return;
+    }
+    await this.disconnectAll();
+    // Do not ensurePort() — during quit the sidecar is already stopped (port=0) and
+    // starting it again blocks Disconnect & Quit.
+    if (this.port <= 0) {
+      return;
+    }
+    try {
+      await this.jsonFetch(
+        '/api/v1/gatt/release-central',
+        { method: 'POST', body: '{}' },
+        { timeoutMs: GATT_HTTP_LONG_TIMEOUT_MS, port: this.port },
+      );
+    } catch (err) {
+      console.debug(
+        '[GATT] releaseBleCentral failed:',
+        err instanceof Error ? err.message : String(err),
+      );
     }
   }
 }

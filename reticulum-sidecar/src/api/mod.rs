@@ -99,9 +99,21 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             get(interfaces::ble_availability),
         )
         .route("/api/v1/ble/scan", get(interfaces::ble_scan))
+        .route(
+            "/api/v1/ble/handle-ltk-desync",
+            post(interfaces::ble_handle_ltk_desync),
+        )
         // App-wide GATT (Meshtastic / MeshCore) — same process as Reticulum BLE.
         .route("/api/v1/gatt/availability", get(gatt::gatt_availability))
         .route("/api/v1/gatt/scan", get(gatt::gatt_scan))
+        .route(
+            "/api/v1/gatt/release-central",
+            post(gatt::gatt_release_central),
+        )
+        .route(
+            "/api/v1/gatt/clear-bond-recovery",
+            post(gatt::gatt_clear_bond_recovery),
+        )
         .route("/api/v1/gatt/sessions", post(gatt::gatt_create_session))
         .route(
             "/api/v1/gatt/sessions/{session_id}",

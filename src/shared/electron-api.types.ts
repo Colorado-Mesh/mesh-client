@@ -942,6 +942,10 @@ export interface ElectronAPI {
   stopGattScanning: (sessionId: GattBleSessionId) => Promise<void>;
   connectGatt: (sessionId: GattBleSessionId, peripheralId: string) => Promise<GattBleConnectResult>;
   disconnectGatt: (sessionId: GattBleSessionId) => Promise<void>;
+  /** Drop LoRa GATT sessions + sidecar CBCentralManager for RNode bond recovery. */
+  releaseGattBleCentral: () => Promise<void>;
+  /** End exclusive RNode bond-recovery hold so LoRa GATT may scan/connect again. */
+  clearGattBondRecoveryExclusive: () => Promise<void>;
   isGattConnected: (sessionId: GattBleSessionId) => Promise<boolean>;
   gattToRadio: (sessionId: GattBleSessionId, bytes: Uint8Array) => Promise<void>;
 
@@ -1198,6 +1202,13 @@ export interface ElectronAPI {
     getStatus: () => Promise<ReticulumSidecarStatus>;
     /** Drop latched TCP/TX issues for interfaces not in the enabled set; returns updated status. */
     syncInterfaceIssueScope: (enabledInterfaceNames: string[]) => Promise<ReticulumSidecarStatus>;
+    /**
+     * Clear BLE bond-removed / pairing-timeout latches after named interfaces report online.
+     * Returns updated sidecar status (emits onStatus when the alert changes).
+     */
+    clearBleBondIssuesForOnlineInterfaces: (
+      onlineInterfaceNames: string[],
+    ) => Promise<ReticulumSidecarStatus>;
     proxyGet: (apiPath: string) => Promise<unknown>;
     proxyPost: (apiPath: string, body: unknown) => Promise<unknown>;
     proxyPut: (apiPath: string, body: unknown) => Promise<unknown>;

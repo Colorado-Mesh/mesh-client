@@ -298,6 +298,9 @@ function ensureReticulumSidecarManager(): ReticulumSidecarManager {
 }
 
 gattSidecarProxy.setEnsureSidecar(async () => {
+  if (isQuitting) {
+    throw new Error('gatt sidecar ensure blocked: app is quitting');
+  }
   const mgr = ensureReticulumSidecarManager();
   const port = await mgr.ensureForBle();
   gattSidecarProxy.setPort(port);
@@ -383,6 +386,8 @@ async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void>
   quitMainInFlight = true;
   isQuitting = true;
   isConnected = false;
+  // Drop exclusive hold locally without HTTP so quit never ensurePort()-respawns sidecar.
+  gattSidecarProxy.setRnodeBondRecoveryExclusive(false);
   try {
     try {
       await gattSidecarProxy.disconnectAll();
@@ -2928,6 +2933,13 @@ ipcMain.handle('gatt:connect', async (event, sessionId: unknown, peripheralId: u
     return { ok: false as const, error: 'App is quitting' };
   }
   try {
+    if (gattSidecarProxy.isRnodeBondRecoveryExclusive()) {
+      return {
+        ok: false as const,
+        error: 'RNode bond recovery holds the Bluetooth adapter',
+        code: 'rnode_bond_recovery' as const,
+      };
+    }
     return await bleCoexistenceCoordinator.withScan('gatt', () =>
       gattSidecarProxy.connect(sessionId, peripheralId),
     );
@@ -2957,6 +2969,29 @@ ipcMain.handle('gatt:disconnect', async (event, sessionId: unknown) => {
     );
     throw err;
   }
+});
+ipcMain.handle('gatt:release-ble-central', async (event) => {
+  assertIpcSender(event, 'gatt:release-ble-central');
+  if (isQuitting) {
+    console.debug('[main] gatt:release-ble-central: ignoring (app is quitting)');
+    return;
+  }
+  try {
+    await gattSidecarProxy.releaseBleCentral();
+  } catch (err) {
+    console.error(
+      `[main] gatt:release-ble-central failed: message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
+    );
+    throw err;
+  }
+});
+ipcMain.handle('gatt:clear-bond-recovery-exclusive', (event) => {
+  assertIpcSender(event, 'gatt:clear-bond-recovery-exclusive');
+  if (isQuitting) {
+    console.debug('[main] gatt:clear-bond-recovery-exclusive: ignoring (app is quitting)');
+    return;
+  }
+  gattSidecarProxy.setRnodeBondRecoveryExclusive(false);
 });
 ipcMain.handle('gatt:is-connected', async (event, sessionId: unknown) => {
   assertIpcSender(event, 'gatt:is-connected');

@@ -53,11 +53,14 @@ function logHealthTransition(
   );
 }
 
-/** Emit debug-log lines when local interface health changes (deduped per interface id). */
+/** Emit debug-log lines when local interface health changes (deduped per interface id).
+ * Returns BLE RNode display names that newly transitioned to online (for bond-alert clear).
+ */
 export function logReticulumLocalInterfaceHealthChanges(
   interfaces: readonly ReticulumLocalInterfaceInput[],
   osSerialPorts: readonly string[],
-): void {
+): string[] {
+  const newlyOnlineBleNames: string[] = [];
   const seenIds = new Set<string>();
   for (const iface of interfaces) {
     seenIds.add(iface.id);
@@ -68,12 +71,22 @@ export function logReticulumLocalInterfaceHealthChanges(
     }
     healthSnapshot.set(iface.id, health);
     logHealthTransition(iface, health, prev);
+    if (
+      health === 'online' &&
+      prev != null &&
+      prev !== 'online' &&
+      reticulumLocalOfflineDisplayKind(iface) === 'ble' &&
+      iface.name.trim()
+    ) {
+      newlyOnlineBleNames.push(iface.name.trim());
+    }
   }
   for (const id of healthSnapshot.keys()) {
     if (!seenIds.has(id)) {
       healthSnapshot.delete(id);
     }
   }
+  return newlyOnlineBleNames;
 }
 
 export function formatReticulumInterfaceStateEvent(payload: unknown): string {

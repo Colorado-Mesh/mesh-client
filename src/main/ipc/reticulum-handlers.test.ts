@@ -135,6 +135,9 @@ function createManagerStub() {
     stop: vi.fn().mockResolvedValue(undefined),
     getStatus: vi.fn().mockReturnValue({ running: true, port: 8080, pid: 123 }),
     syncInterfaceIssueScope: vi.fn().mockReturnValue({ running: true, port: 8080, pid: 123 }),
+    clearBleBondIssuesForOnlineInterfaces: vi
+      .fn()
+      .mockReturnValue({ running: true, port: 8080, pid: 123 }),
     proxyGet: vi.fn().mockResolvedValue({ ok: true }),
     proxyPost: vi.fn().mockResolvedValue({ ok: true }),
     proxyPut: vi.fn().mockResolvedValue({ ok: true }),
@@ -183,6 +186,7 @@ describe('registerReticulumIpcHandlers', () => {
         'reticulum:stop',
         'reticulum:getStatus',
         'reticulum:syncInterfaceIssueScope',
+        'reticulum:clearBleBondIssuesForOnlineInterfaces',
         'reticulum:proxyGet',
         'reticulum:proxyPost',
         'reticulum:voiceSendAudio',
@@ -349,6 +353,25 @@ describe('registerReticulumIpcHandlers', () => {
       expect(() =>
         handlers.get('reticulum:syncInterfaceIssueScope')?.(event, 'not-an-array'),
       ).toThrow('enabledInterfaceNames must be an array of strings');
+    });
+  });
+
+  describe('reticulum:clearBleBondIssuesForOnlineInterfaces', () => {
+    it('parses names and delegates to manager.clearBleBondIssuesForOnlineInterfaces', () => {
+      const result = handlers.get('reticulum:clearBleBondIssuesForOnlineInterfaces')?.(event, [
+        'RNode 41F4',
+        '  ',
+      ]);
+      expect(manager.clearBleBondIssuesForOnlineInterfaces).toHaveBeenCalledWith(['RNode 41F4']);
+      expect(result).toEqual({ running: true, port: 8080, pid: 123 });
+    });
+
+    it('returns idleStatus when there is no manager', () => {
+      getManagerResult = null;
+      const result = handlers.get('reticulum:clearBleBondIssuesForOnlineInterfaces')?.(event, [
+        'RNode',
+      ]);
+      expect(result).toBe(IDLE_STATUS);
     });
   });
 

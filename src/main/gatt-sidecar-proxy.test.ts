@@ -59,6 +59,10 @@ describe('GattSidecarProxy', () => {
     proxy = new GattSidecarProxy();
     proxy.setPort(9876);
     fetchMock = vi.fn<(url?: unknown, init?: RequestInit) => Promise<FetchResult>>();
+    fetchMock.mockResolvedValue({
+      status: 200,
+      json: () => Promise.resolve({ ok: true }),
+    });
     vi.stubGlobal('fetch', fetchMock);
   });
 
@@ -722,5 +726,29 @@ describe('GattSidecarProxy', () => {
     // Would have been attempts 4–8 if still reserved — budget not forced.
     await vi.advanceTimersByTimeAsync(4_000 * 5);
     expect(deletes).toBe(3);
+  });
+
+  it('clearing bond-recovery exclusive with port 0 does not ensure/start sidecar', async () => {
+    const ensure = vi.fn(() => Promise.resolve(5555));
+    proxy.setEnsureSidecar(ensure);
+    proxy.invalidateAfterSidecarExit();
+    proxy.setRnodeBondRecoveryExclusive(true);
+    proxy.setRnodeBondRecoveryExclusive(false);
+    await vi.waitFor(() => {
+      expect(ensure).not.toHaveBeenCalled();
+    });
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/gatt/clear-bond-recovery'),
+      expect.anything(),
+    );
+  });
+
+  it('releaseBleCentral with port 0 disconnects locally without ensure/start', async () => {
+    const ensure = vi.fn(() => Promise.resolve(5555));
+    proxy.setEnsureSidecar(ensure);
+    proxy.invalidateAfterSidecarExit();
+    await proxy.releaseBleCentral();
+    expect(ensure).not.toHaveBeenCalled();
+    expect(proxy.isRnodeBondRecoveryExclusive()).toBe(true);
   });
 });

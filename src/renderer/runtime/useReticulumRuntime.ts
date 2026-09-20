@@ -40,6 +40,7 @@ import {
   resolveReticulumOutboundViaFromPath,
   reticulumViaToMessageTransport,
 } from '@/renderer/lib/reticulum/classifyReticulumVia';
+import { clearReticulumBleBondIssuesForOnlineInterfaces } from '@/renderer/lib/reticulum/clearReticulumBleBondIssuesForOnlineInterfaces';
 import { clearReticulumSessionStores } from '@/renderer/lib/reticulum/clearReticulumSessionStores';
 import {
   resolveReticulumDestinationHash,
@@ -58,9 +59,18 @@ import {
 } from '@/renderer/lib/reticulum/reticulumAnnounceIfaceAttribution';
 import { cacheReticulumInboundAttachment } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
 import { cacheReticulumInboundAudio } from '@/renderer/lib/reticulum/reticulumAudioAttachmentCache';
-import { isReticulumBleRnodeInterfaceRow } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
-import { releaseReticulumBleRnodeConnect } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
-import { setReticulumBleBondDesyncActive } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
+import {
+  isReticulumBleRnodeInterfaceRow,
+  isReticulumBleRnodeOnline,
+} from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
+import {
+  prepareReticulumBleRnodeConnect,
+  releaseReticulumBleRnodeConnect,
+} from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
+import {
+  getReticulumBleBondDesyncActive,
+  setReticulumBleBondDesyncActive,
+} from '@/renderer/lib/reticulum/reticulumBleBondDesync';
 import { fetchReticulumConfigAudit } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import { RETICULUM_CONFIGURED_EVENT } from '@/renderer/lib/reticulum/reticulumConfiguredEvent';
 import { maybeNotifyInboundGamesChallenge } from '@/renderer/lib/reticulum/reticulumGamesNotifications';
@@ -313,6 +323,19 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const suppressReconnectRef = useRef(false);
   /** Set on power-suspend when an enabled BLE RNode was configured — wake must not reuseIfRunning. */
   const powerSuspendHadBleRnodeRef = useRef(false);
+  /** True while we are holding LoRa GATT exclusive for an online BLE RNode. */
+  const rnodeBleOnlineLoRaHoldRef = useRef(false);
+  /**
+   * True once this recovery episode has run releaseGattBleCentral + scan-lease hold.
+   * Distinct from {@link getReticulumBleBondDesyncActive}: `BleLtkDesync` can set the
+   * shared flag before `onStatus` arrives, which must not skip the hold setup.
+   */
+  const bondRecoveryHoldAppliedRef = useRef(false);
+  /**
+   * Bumped when bond recovery clears / disconnect / teardown so a stale recovery IIFE
+   * cannot reacquire the Reticulum scan lease after release.
+   */
+  const bondRecoveryGenerationRef = useRef(0);
   /**
    * Bumped on every power-suspend so a `connect()` flight started before an earlier suspend
    * (and still in flight when a *later* suspend/resume pair fires) can detect it has been
@@ -503,7 +526,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
       return { interfaces, osSerialPorts };
     }
     localInterfacesRef.current = interfaces;
-    logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
+    const newlyOnlineBle = logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
+    if (newlyOnlineBle.length > 0) {
+      void clearReticulumBleBondIssuesForOnlineInterfaces(newlyOnlineBle);
+    }
     setQueueStatus(aggregateReticulumLocalRfTxQueue(interfaces));
     return { interfaces, osSerialPorts };
   }, []);
@@ -1497,6 +1523,21 @@ export function useReticulumRuntime(): ProtocolRuntime {
           void refreshGamesSessions();
         }
       }
+      if (evt.type === 'BleLtkDesync' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          device_address?: string;
+          bond_purged?: boolean;
+          message?: string;
+        };
+        setReticulumBleBondDesyncActive(true);
+        pushAppToast(
+          p.bond_purged === true
+            ? i18n.t('connectionPanel.reticulumSidecarIssues.bleLtkDesyncPurged')
+            : i18n.t('connectionPanel.reticulumSidecarIssues.bleLtkDesyncManualForget'),
+          'error',
+          12_000,
+        );
+      }
       if (evt.type === 'rncp.progress' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { transfer_id?: string; progress?: number };
         if (p.transfer_id && typeof p.progress === 'number') {
@@ -1687,6 +1728,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
     propagationHydratedForBridgeRef.current = false;
     linkTimeoutBridgeGenerationRef.current += 1;
     setReticulumBleBondDesyncActive(false);
+    bondRecoveryHoldAppliedRef.current = false;
+    bondRecoveryGenerationRef.current += 1;
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
@@ -1695,12 +1738,60 @@ export function useReticulumRuntime(): ProtocolRuntime {
   useEffect(() => {
     const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
       const bondRemoved = status.interfaceIssueAlert?.bleBondRemoved ?? [];
-      // Sticky: set true when latched; clear only on sidecar stop / tearDown (not empty alert).
+      // Peer-removed recovery needs exclusive adapter time on macOS. Dual LoRa GATT
+      // centrals in the same sidecar precipitate repeated CBError 14 — pause LoRa BLE
+      // instead of releasing the lease (which nudges MeshCore/Meshtastic to reconnect).
       if (bondRemoved.length > 0) {
+        const firstLatch = !bondRecoveryHoldAppliedRef.current;
         setReticulumBleBondDesyncActive(true);
+        // Only dispose once per episode — re-entrant status updates were recreating
+        // the LoRa CBCentralManager between RNode retries (had_backend:true again).
+        if (firstLatch) {
+          bondRecoveryHoldAppliedRef.current = true;
+          const recoveryGeneration = bondRecoveryGenerationRef.current;
+          void (async () => {
+            try {
+              await window.electronAPI.releaseGattBleCentral();
+            } catch (e: unknown) {
+              console.debug(
+                '[useReticulumRuntime] releaseGattBleCentral during bond recovery ' +
+                  errLikeToLogString(e),
+              );
+            }
+            if (bondRecoveryGenerationRef.current !== recoveryGeneration) {
+              return;
+            }
+            try {
+              await prepareReticulumBleRnodeConnect();
+            } catch (e: unknown) {
+              console.debug(
+                '[useReticulumRuntime] hold scan lease during bond recovery ' +
+                  errLikeToLogString(e),
+              );
+              return;
+            }
+            if (bondRecoveryGenerationRef.current !== recoveryGeneration) {
+              void releaseReticulumBleRnodeConnect({ notify: false }).catch((e: unknown) => {
+                console.debug(
+                  '[useReticulumRuntime] release stale bond-recovery lease ' +
+                    errLikeToLogString(e),
+                );
+              });
+            }
+          })();
+        }
+      } else if (getReticulumBleBondDesyncActive()) {
+        setReticulumBleBondDesyncActive(false);
+        bondRecoveryHoldAppliedRef.current = false;
+        bondRecoveryGenerationRef.current += 1;
+        void window.electronAPI.clearGattBondRecoveryExclusive().catch((e: unknown) => {
+          console.debug(
+            '[useReticulumRuntime] clearGattBondRecoveryExclusive ' + errLikeToLogString(e),
+          );
+        });
         void releaseReticulumBleRnodeConnect().catch((e: unknown) => {
           console.debug(
-            '[useReticulumRuntime] release Noble after bleBondRemoved ' + errLikeToLogString(e),
+            '[useReticulumRuntime] release lease after bond recovery ' + errLikeToLogString(e),
           );
         });
       }
@@ -1997,6 +2088,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
     propagationHydratedForBridgeRef.current = false;
     linkTimeoutBridgeGenerationRef.current += 1;
     setReticulumBleBondDesyncActive(false);
+    bondRecoveryHoldAppliedRef.current = false;
+    bondRecoveryGenerationRef.current += 1;
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
@@ -2232,7 +2325,29 @@ export function useReticulumRuntime(): ProtocolRuntime {
           return;
         }
         localInterfacesRef.current = interfaces;
-        logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
+        const newlyOnlineBle = logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
+        if (newlyOnlineBle.length > 0) {
+          void clearReticulumBleBondIssuesForOnlineInterfaces(newlyOnlineBle);
+        }
+        // macOS: two CBCentralManagers in one sidecar can invalidate the RNode bond.
+        // While any BLE RNode is online, keep LoRa GATT disposed/exclusive.
+        const rnodeBleOnline = interfaces.some((row) => isReticulumBleRnodeOnline(row));
+        if (rnodeBleOnline) {
+          rnodeBleOnlineLoRaHoldRef.current = true;
+          void window.electronAPI.releaseGattBleCentral().catch((e: unknown) => {
+            console.debug(
+              '[useReticulumRuntime] releaseGattBleCentral while RNode BLE online ' +
+                errLikeToLogString(e),
+            );
+          });
+        } else if (rnodeBleOnlineLoRaHoldRef.current && !getReticulumBleBondDesyncActive()) {
+          rnodeBleOnlineLoRaHoldRef.current = false;
+          void window.electronAPI.clearGattBondRecoveryExclusive().catch((e: unknown) => {
+            console.debug(
+              '[useReticulumRuntime] clearGattBondRecoveryExclusive ' + errLikeToLogString(e),
+            );
+          });
+        }
         const queueAgg = aggregateReticulumLocalRfTxQueue(interfaces);
         setQueueStatus(queueAgg);
         const health = { interfaces, osSerialPorts };

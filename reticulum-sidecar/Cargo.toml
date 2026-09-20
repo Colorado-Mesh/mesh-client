@@ -162,3 +162,6 @@ cast_lossless = "allow"
 assigning_clones = "allow"
 map_unwrap_or = "allow"
 case_sensitive_file_extension_comparisons = "allow"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.58", features = ["Devices_Bluetooth", "Devices_Enumeration", "Foundation"] }

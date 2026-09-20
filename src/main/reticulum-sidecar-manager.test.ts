@@ -309,6 +309,21 @@ describe('ReticulumSidecarManager', () => {
     expect(statuses.length).toBe(1);
   });
 
+  it('clearBleBondIssuesForOnlineInterfaces clears bond latch and emits status', () => {
+    const manager = new ReticulumSidecarManager();
+    const tracker = getIssueTracker(manager);
+    tracker.recordLine(
+      'BLE RNode bond removed — retrying with existing OS bond name = RNode 41F4 error = Peer removed pairing information',
+      Date.now(),
+    );
+    expect(manager.getStatus().interfaceIssueAlert?.bleBondRemoved).toEqual(['RNode 41F4']);
+    const statuses: unknown[] = [];
+    manager.on('status', (s) => statuses.push(s));
+    const status = manager.clearBleBondIssuesForOnlineInterfaces(['RNode 41F4']);
+    expect(status.interfaceIssueAlert?.bleBondRemoved ?? []).toEqual([]);
+    expect(statuses.length).toBe(1);
+  });
+
   it('syncInterfaceIssueScope does not emit when scope is unchanged', () => {
     const manager = new ReticulumSidecarManager();
     const tracker = getIssueTracker(manager);

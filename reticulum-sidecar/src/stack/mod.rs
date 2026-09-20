@@ -583,7 +583,7 @@ impl StackHandle {
     }
 
     #[allow(clippy::needless_pass_by_value)] // payload is moved into the broadcast frame
-    fn emit_event(&self, event_type: &str, payload: serde_json::Value) {
+    pub fn emit_event(&self, event_type: &str, payload: serde_json::Value) {
         let msg = serde_json::json!({ "type": event_type, "payload": payload });
         let _ = self.event_tx.send(msg.to_string());
     }

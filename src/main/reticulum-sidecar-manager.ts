@@ -246,12 +246,109 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   private recordSidecarOutputLine(text: string): void {
+    const beforeBond = new Set(this.interfaceIssueTracker.peekAlert()?.bleBondRemoved ?? []);
     this.mutateInterfaceIssues(
       () => {
         this.interfaceIssueTracker.recordLine(text);
       },
       { alwaysEmitAfterMs: 5_000 },
     );
+    const afterBond = this.interfaceIssueTracker.peekAlert()?.bleBondRemoved ?? [];
+    const newlyLatchedBond = afterBond.find((name) => !beforeBond.has(name));
+    // Dispose LoRa CBCentralManager as soon as stderr latches Peer-removed —
+    // do not wait for the renderer round-trip (bond-removed retries in ~3s).
+    if (newlyLatchedBond) {
+      void this.handleBleLtkDesyncLatch(newlyLatchedBond, text).catch((err: unknown) => {
+        console.debug(
+          '[ReticulumSidecar] LTK desync latch handler failed:',
+          err instanceof Error ? err.message : String(err),
+        );
+      });
+    }
+  }
+
+  /**
+   * Peer-removed / LTK desync: pause LoRa GATT, purge the OS bond when possible,
+   * and let the sidecar emit `BleLtkDesync` for the renderer toast / re-pair UX.
+   */
+  private async handleBleLtkDesyncLatch(interfaceName: string, line: string): Promise<void> {
+    try {
+      const { gattSidecarProxy } = await import('./gatt-sidecar-proxy');
+      await gattSidecarProxy.releaseBleCentral();
+    } catch (err: unknown) {
+      console.debug(
+        '[ReticulumSidecar] releaseBleCentral on bond latch failed:',
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+
+    let address = '';
+    let deviceName = '';
+    try {
+      const listed = (await this.proxyGet('/api/v1/interfaces')) as {
+        interfaces?: { name?: string; serial_port?: string | null }[];
+      };
+      for (const row of listed.interfaces ?? []) {
+        if (row.name === interfaceName && row.serial_port) {
+          address = row.serial_port;
+          deviceName = row.name;
+          break;
+        }
+      }
+    } catch (err: unknown) {
+      console.debug(
+        '[ReticulumSidecar] LTK desync interface lookup failed:',
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+    if (!address) {
+      console.debug('[ReticulumSidecar] LTK desync: no ble:// address for purge');
+      return;
+    }
+
+    try {
+      const result = (await this.proxyPost('/api/v1/ble/handle-ltk-desync', {
+        address,
+        ...(deviceName ? { name: deviceName } : {}),
+        error: line,
+      })) as {
+        ok?: boolean;
+        bond_purged?: boolean;
+        message?: string;
+        purge_error?: string | null;
+      };
+      console.debug(
+        `[ReticulumSidecar] LTK desync handle ok=${String(result.ok)} purged=${String(result.bond_purged)} err=${result.purge_error ?? result.message ?? ''}`,
+      );
+      // blueutil --unpair is EXPERIMENTAL and often a no-op on modern macOS; open
+      // System Settings → Bluetooth so the user can Forget when auto-purge fails.
+      if (result.ok === true && result.bond_purged !== true) {
+        try {
+          const { openOsBluetoothSettings, isAllowedBluetoothSettingsUrl } =
+            await import('./bluetoothSettings');
+          const { shell } = await import('electron');
+          await openOsBluetoothSettings({
+            platform: process.platform,
+            openExternal: async (url) => {
+              if (!isAllowedBluetoothSettingsUrl(url)) {
+                throw new Error('Blocked unexpected Bluetooth settings URL');
+              }
+              await shell.openExternal(url);
+            },
+          });
+        } catch (openErr: unknown) {
+          console.debug(
+            '[ReticulumSidecar] open Bluetooth settings failed:',
+            openErr instanceof Error ? openErr.message : String(openErr),
+          );
+        }
+      }
+    } catch (err: unknown) {
+      console.debug(
+        '[ReticulumSidecar] handle-ltk-desync failed:',
+        err instanceof Error ? err.message : String(err),
+      );
+    }
   }
 
   /**
@@ -261,6 +358,20 @@ export class ReticulumSidecarManager extends EventEmitter {
   syncInterfaceIssueScope(enabledInterfaceNames: readonly string[]): ReticulumSidecarStatus {
     return this.mutateInterfaceIssues(() => {
       this.interfaceIssueTracker.retainInterfaces(new Set(enabledInterfaceNames));
+    });
+  }
+
+  /**
+   * Clear BLE bond-removed / pairing-timeout banners after a named interface
+   * reconnects successfully (renderer reports health online).
+   */
+  clearBleBondIssuesForOnlineInterfaces(
+    onlineInterfaceNames: readonly string[],
+  ): ReticulumSidecarStatus {
+    return this.mutateInterfaceIssues(() => {
+      this.interfaceIssueTracker.clearBleBondIssuesForOnlineInterfaces(
+        new Set(onlineInterfaceNames),
+      );
     });
   }
 

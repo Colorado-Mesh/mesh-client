@@ -20,6 +20,7 @@ import {
   isBlePeripheralConflictErrorMessage,
   isBleScanBusyErrorMessage,
 } from './reticulum/reticulumBleAdapterLease';
+import { getReticulumBleBondDesyncActive } from './reticulum/reticulumBleBondDesync';
 import { SERIAL_OPEN_TIMEOUT_MS, withSerialTransportTimeout } from './serialPortRecovery';
 import {
   getPortSignature,
@@ -141,7 +142,9 @@ export async function createBleConnection(
       try {
         // Waits out short Reticulum BLE RNode yields instead of hard-failing;
         // peripheral conflict and other errors still fail immediately.
-        await connectGattWithScanBusyRetry(sessionId, peripheralId);
+        await connectGattWithScanBusyRetry(sessionId, peripheralId, {
+          shouldAbort: () => getReticulumBleBondDesyncActive(),
+        });
         notifyBlePrimaryRfLinkReady(sessionId);
         if (attempt > 1) {
           console.info(

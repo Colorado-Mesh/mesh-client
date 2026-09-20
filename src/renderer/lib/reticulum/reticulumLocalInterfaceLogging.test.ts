@@ -40,6 +40,23 @@ describe('reticulumLocalInterfaceLogging', () => {
     expect(warn.mock.calls[0]?.[0]).toContain('ble://aa:bb:cc:dd:ee:ff');
   });
 
+  it('returns BLE RNode names that newly transitioned to online', () => {
+    const bleRnode = {
+      ...heltec,
+      id: 'rnode-ble',
+      name: 'RNode 41F4',
+      serial_port: 'ble://aa:bb:cc:dd:ee:ff',
+      status: 'down',
+    };
+    expect(logReticulumLocalInterfaceHealthChanges([bleRnode], [])).toEqual([]);
+    expect(logReticulumLocalInterfaceHealthChanges([{ ...bleRnode, status: 'up' }], [])).toEqual([
+      'RNode 41F4',
+    ]);
+    expect(logReticulumLocalInterfaceHealthChanges([{ ...bleRnode, status: 'up' }], [])).toEqual(
+      [],
+    );
+  });
+
   it('logs recovery at debug and stale USB ports at warn', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});

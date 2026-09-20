@@ -60,7 +60,8 @@ export interface ReticulumInterfaceIssueAlert {
   linkDeliveryTimeouts: ReticulumLinkDeliveryTimeout[];
   /**
    * BLE RNode interface names where CoreBluetooth reported
-   * "Peer removed pairing information" (OS still shows Paired; bond keys are stale).
+   * "Peer removed pairing information" (OS may still show Paired). Sidecar keeps
+   * retrying with the existing OS bond; banner clears after the stale window or recovery.
    */
   bleBondRemoved: string[];
   /**

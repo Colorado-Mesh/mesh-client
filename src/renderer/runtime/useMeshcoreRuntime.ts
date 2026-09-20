@@ -21,6 +21,7 @@ import {
   throwIfMeshcoreOffloadAborted,
 } from '@/renderer/lib/meshcoreOffload';
 import { BLE_ADAPTER_LEASE_RELEASED_EVENT } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
+import { getReticulumBleBondDesyncActive } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
 import { touch } from '@/shared/touch';
 
 import { bytesToHex } from '../../shared/hexBytes';
@@ -2197,6 +2198,12 @@ export function useMeshcoreRuntime() {
     const onBleLeaseReleased = () => {
       if (meshcoreConnectionParamsRef.current?.rfType !== 'ble') return;
       if (meshcoreExplicitDisconnectRef.current) return;
+      if (getReticulumBleBondDesyncActive()) {
+        console.debug(
+          '[useMeshcoreRuntime] Noble BLE yield released — skip nudge (RNode bond recovery)',
+        );
+        return;
+      }
       if (meshcoreDriverConnectedRef.current || connRef.current) {
         return;
       }
@@ -3719,6 +3726,18 @@ export function useMeshcoreRuntime() {
 
   const scheduleMeshcoreReconnectAttempt = useCallback(() => {
     meshcoreRfReconnectRef.current.scheduleOwner(() => {
+      if (
+        meshcoreConnectionParamsRef.current?.rfType === 'ble' &&
+        getReticulumBleBondDesyncActive()
+      ) {
+        console.debug(
+          '[useMeshcoreRuntime] abort reconnect schedule — RNode bond recovery holds the adapter',
+        );
+        meshcoreIsReconnectingRef.current = false;
+        meshcoreDeferredReconnectRef.current = false;
+        meshcoreRfReconnectRef.current.endAttempt();
+        return;
+      }
       if (!meshcoreIsReconnectingRef.current || meshcoreExplicitDisconnectRef.current) {
         return;
       }
@@ -3737,6 +3756,15 @@ export function useMeshcoreRuntime() {
   const handleMeshcoreConnectionLost = useCallback(() => {
     if (meshcoreExplicitDisconnectRef.current) {
       console.debug('[useMeshcoreRuntime] skip reconnect (user disconnect)');
+      return;
+    }
+    if (
+      meshcoreConnectionParamsRef.current?.rfType === 'ble' &&
+      getReticulumBleBondDesyncActive()
+    ) {
+      console.debug(
+        '[useMeshcoreRuntime] skip BLE reconnect — RNode bond recovery holds the adapter',
+      );
       return;
     }
     if (

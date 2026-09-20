@@ -81,7 +81,7 @@ export async function startGattScanningWithRetry(
 export async function connectGattWithScanBusyRetry(
   sessionId: GattBleSessionId,
   peripheralId: string,
-  opts?: { maxWaitMs?: number; retryIntervalMs?: number },
+  opts?: { maxWaitMs?: number; retryIntervalMs?: number; shouldAbort?: () => boolean },
 ): Promise<void> {
   const maxWaitMs = opts?.maxWaitMs ?? BLE_SCAN_BUSY_MAX_WAIT_MS;
   const retryIntervalMs = opts?.retryIntervalMs ?? BLE_SCAN_BUSY_RETRY_INTERVAL_MS;
@@ -89,6 +89,9 @@ export async function connectGattWithScanBusyRetry(
   let lastError = 'BLE connect failed';
 
   while (Date.now() < deadline) {
+    if (opts?.shouldAbort?.()) {
+      throw new Error('RNode bond recovery holds the Bluetooth adapter');
+    }
     const result = await window.electronAPI.connectGatt(sessionId, peripheralId);
     if (result.ok) {
       return;
@@ -96,6 +99,9 @@ export async function connectGattWithScanBusyRetry(
     const message = result.error || 'BLE connect failed';
     const code = 'code' in result && typeof result.code === 'string' ? result.code : undefined;
     lastError = code && code !== 'scan_busy' ? `${code}: ${message}` : message;
+    if (code === 'rnode_bond_recovery' || /RNode bond recovery/i.test(message)) {
+      throw new Error(lastError);
+    }
     if (!isBleScanBusyErrorMessage(message) && code !== 'scan_busy') {
       throw new Error(lastError);
     }
