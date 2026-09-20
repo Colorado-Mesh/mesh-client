@@ -430,6 +430,10 @@ The sidecars reach the packaging jobs as tar archives from the same workflow run
 
 Local `node scripts/build-reticulum-sidecar-release.mjs --platform win32|linux|darwin` still runs host tests and builds both architectures. `--arch x64|arm64` selects one target; CI uses `--skip-tests` only for the cross-build whose host tests run in the native job. Parallel jobs reduce elapsed build time but need more concurrent runners; queue delays can reduce the gain.
 
+Packaging sidecars cache Cargo dependencies with `Swatinem/rust-cache`, separately by target triple, runner OS/architecture, and Rust toolchain. The packaging key is separate from validation jobs. The sidecar workspace crate and Cargo-installed tools are excluded. Every run still clones the current Ratspeak sources, applies overlays, runs the native host tests, and builds/stages the selected target; a cache hit never skips those steps. Missing caches fall back to a normal build.
+
+To test sidecar staging or compare cold and warm cache timings without building installers or publishing a release, run **Packaging sidecars** manually and select `all`, `mac`, `linux`, or `win`. It uses the same jobs as Build Binaries and Release and uploads only the staged sidecar artifacts.
+
 ### Build channel stamp (test vs release)
 
 **Build Binaries** (`build.yaml`), **Release** (`release.yaml`), and **Build Flatpak** (`flatpak.yaml`) run `scripts/ci-write-build-info-env.mjs` before packaging. That writes a JSON `MESH_CLIENT_BUILD_INFO` blob into `$GITHUB_ENV`, which `scripts/esbuild-main-build.mjs` embeds via esbuild `--define` into the main process. Flatpak also writes `flatpak/ci-build-info.json` (gitignored) so the sandbox `pnpm run build` sees the same env.

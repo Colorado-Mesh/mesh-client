@@ -117,6 +117,30 @@ describe('sidecar release target selection', () => {
 });
 
 describe.skipIf(process.platform === 'win32')('sidecar build subprocesses', () => {
+  it.each(['win32', 'linux', 'darwin'])(
+    'still tests and rebuilds %s when a previous target binary exists',
+    (platform) => {
+      const root = fixture();
+      const target = PLATFORM_TARGETS[platform][0];
+      const binary = path.join(
+        root,
+        'reticulum-sidecar/target',
+        target.cargoTarget,
+        'release',
+        `mesh-client-reticulum${platform === 'win32' ? '.exe' : ''}`,
+      );
+      mkdirSync(path.dirname(binary), { recursive: true });
+      writeFileSync(binary, Buffer.alloc(1024 * 1024, 123));
+
+      const result = build(root, ['--platform', platform, '--arch', target.archKey]);
+      expect(result.status, result.stderr).toBe(0);
+      expect(calls(root).map(([command]) => command)).toEqual(['test', 'build']);
+      expect(readFileSync(stagedSidecarPath(root, platform, target.archKey))).toEqual(
+        Buffer.alloc(1024 * 1024),
+      );
+    },
+  );
+
   it.each(['win32', 'linux', 'darwin'])('tests once and stages both %s binaries', (platform) => {
     const root = fixture();
     const result = build(root, ['--platform', platform]);

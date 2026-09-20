@@ -1,6 +1,13 @@
 name: Packaging sidecars
 
 on:
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: Platforms to build
+        type: choice
+        options: [all, mac, linux, win]
+        default: all
   workflow_call:
     inputs:
       platforms:
@@ -48,6 +55,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           targets: ${{ matrix.target }}
+      # Swatinem/rust-cache v2.9.2; isolate packaging from the validation workflow.
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+        with:
+          workspaces: reticulum-sidecar -> target
+          key: packaging-${{ matrix.target }}
+          cache-bin: false
+          cache-workspace-crates: false
       # Each OS runs host tests once, in its native architecture job.
       - name: Build and stage sidecar
         env:
