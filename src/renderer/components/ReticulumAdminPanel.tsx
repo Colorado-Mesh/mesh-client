@@ -1,10 +1,15 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
+import {
+  consumeReticulumAdminBluetoothFocus,
+  peekReticulumAdminBluetoothFocusPending,
+  subscribeReticulumAdminBluetoothFocus,
+} from '@/renderer/lib/reticulum/reticulumAdminBluetoothFocus';
 import { isReticulumUsbSerialRnodeInterface } from '@/renderer/lib/reticulum/reticulumRnodeTransport';
 import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
 
@@ -37,6 +42,9 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
   const [interfaces, setInterfaces] = useState<ReticulumInterfaceRow[]>([]);
   const [showFactoryResetConfirm, setShowFactoryResetConfirm] = useState(false);
   const [resetInFlight, setResetInFlight] = useState(false);
+  const [bluetoothFocusNonce, setBluetoothFocusNonce] = useState(0);
+  const flasherDetailsRef = useRef<HTMLDetailsElement>(null);
+  const bluetoothSectionRef = useRef<HTMLDivElement>(null);
 
   const refreshInterfaces = useCallback(async () => {
     if (!sidecarApiReady) return;
@@ -57,6 +65,26 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
     }
     void refreshInterfaces();
   }, [sidecarApiReady, refreshInterfaces]);
+
+  const applyBluetoothFocus = useCallback(() => {
+    if (!consumeReticulumAdminBluetoothFocus()) return;
+    if (flasherDetailsRef.current) {
+      flasherDetailsRef.current.open = true;
+    }
+    setBluetoothFocusNonce((n) => n + 1);
+    requestAnimationFrame(() => {
+      bluetoothSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (peekReticulumAdminBluetoothFocusPending()) {
+      applyBluetoothFocus();
+    }
+    return subscribeReticulumAdminBluetoothFocus(() => {
+      applyBluetoothFocus();
+    });
+  }, [applyBluetoothFocus]);
 
   const flasherPortBlocked =
     sidecarApiReady && interfaces.some((iface) => isReticulumUsbSerialRnodeInterface(iface));
@@ -97,13 +125,17 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
       ) : null}
 
       {capabilities.hasRNodeFlasher ? (
-        <details className="group rounded-lg border border-orange-900">
+        <details ref={flasherDetailsRef} className="group rounded-lg border border-orange-900">
           <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-orange-400 transition-colors hover:bg-gray-800">
             <span>{t('flasher.title')}</span>
             <DetailsChevron />
           </summary>
           <div className="space-y-2 px-4 pb-4">
-            <RNodeFlasherSection portBlocked={flasherPortBlocked} />
+            <RNodeFlasherSection
+              portBlocked={flasherPortBlocked}
+              focusBluetoothNonce={bluetoothFocusNonce}
+              bluetoothSectionRef={bluetoothSectionRef}
+            />
           </div>
         </details>
       ) : null}

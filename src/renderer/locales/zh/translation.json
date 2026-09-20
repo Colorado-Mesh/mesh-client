@@ -1376,7 +1376,7 @@
       "tcpUnreachableHint": "远程 Reticulum 实例可能处于离线状态或正在阻止连接。请禁用此接口或验证主机和端口。频繁重启 mesh-client 或协议栈可能导致 Reticulum 1.4.0+ 枢纽将您的 IP 封锁 12 小时 — 请等待，不要再次重启。",
       "connectingHintBle": "堆栈启动后，BLE RNode 链接可能需要长达 60 秒的时间（操作系统密钥窗口）。如果出现提示，请输入当前的 RNode PIN — 切勿输入 123456。这是正常现象，不是错误。成功绑定后，该设备可能不会出现在系统设置中。",
       "offlineHintBle": "要清除此错误，您可能需要删除此接口并重新添加（选择设备），以刷新已保存的蓝牙 ID，然后重新启动堆栈。操作系统可能会提示输入 6 位蓝牙 PIN（macOS、Windows 或 Linux）。RNode 每次配对都会生成新代码——切勿使用 123456（那是 Meshtastic 的默认值，不是 RNode）。在此应用连接之前，RNode 不必出现在系统设置 → 蓝牙中；堆栈配对时会出现操作系统对话框。无显示屏的电台：连接 USB → Reticulum Admin → 蓝牙 → 开始配对 → 将管理面板中显示的 PIN（不是电台屏幕上的）输入到操作系统对话框。有显示屏的电台：在 Heltec 设备上按住按钮约 7 秒（时间因机型而异；许多板上约 10 秒会启用 Wi‑Fi AP），读取屏幕上的 PIN，然后输入到操作系统对话框。重试前请在操作系统蓝牙设置中清除失败的绑定。",
-      "offlineHintBleBondStale": "macOS 仍将此 RNode 显示为已配对，但蓝牙密钥不再匹配（对等方已删除配对信息）。在系统设置 → 蓝牙中忘记该设备，将 RNode 置于配对模式（管理 → 蓝牙 → 开始配对，或按住按钮约 7 秒），然后删除并重新添加此接口（选择设备），重新启动堆栈，并在提示时输入新的 6 位 PIN。",
+      "offlineHintBleBondStale": "macOS 仍显示 Paired，但 Bluetooth 拒绝了绑定（Peer removed pairing information）。在系统设置 → 蓝牙中忘记此 RNode，然后重新配对：USB → Reticulum Admin → Bluetooth → Clear paired / Start pairing，并输入新的 PIN。若需立即在线，请优先使用 USB 串口或 Wi-Fi（tcp://）。",
       "tcpFastFlap": "{{name}} ： HUB可能在频繁重启堆栈后阻止了您的IP （ {{host}}: {{port}} ）",
       "tcpFastFlapHint": "Reticulum 1.4.0+ 公共枢纽会在 12 小时内五次短 TCP 会话后封锁 IP。快速重启 mesh-client 或协议栈会计入。请禁用此枢纽并等待最多 12 小时 — 再次重启会延长封锁。"
     },
@@ -1455,7 +1455,7 @@
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
       "shareInstanceHint": "共享实例已启用—在重试DM之前，完全退出其他Reticulum应用程序（ MeshChatX、Ratspeak、独立rnsd ）并重新启动此堆栈。",
       "bleBondRemoved": "{{name}}：蓝牙绑定已过时（操作系统仍显示已配对）",
-      "bleBondRemovedHint": "请先在系统设置 → 蓝牙中忘记此 RNode（macOS 不会自动清除“已配对”）。尽量优先使用 USB 串口或 Wi‑Fi（tcp://）以避免 BLE 绑定。然后：管理 → 蓝牙 → 清除已配对设备（USB，ESP32，如可用）、开始配对、移除此 BLE 接口并重新添加（选择设备）、重启协议栈，并输入新的 6 位 PIN。",
+      "bleBondRemovedHint": "自动 exclusive reconnect 无法修复此绑定。在系统设置 → 蓝牙中忘记 RNode，然后 Admin → Clear paired / Start pairing 并输入新的 PIN。重新配对前请优先使用 USB 串口或 Wi-Fi（tcp://）。此 RNode 使用 Bluetooth 时，LoRa BLE（MeshCore/Meshtastic）保持暂停。",
       "blePairingTimedOut": "{{name}}：蓝牙密钥交换超时",
       "blePairingTimedOutHint": "停止堆栈，再次开始配对（管理 → 蓝牙在面板中显示 PIN — 无线电显示屏可能保持空白 — 或按住按钮约 7 秒以获取屏幕上的 PIN），重新启动堆栈一次，然后在约 60 秒内在操作系统对话框中输入该 PIN。切勿使用 123456（Meshtastic 默认值）。",
       "bleBondRemovedStopStack": "停止堆栈",
@@ -1465,7 +1465,9 @@
       "txQueueDropsHintNeutral": "此接口TX通道已满。检查该接口的链接健康状况（或禁用它）以停止丢弃。",
       "txQueueDropsHintBleFlowControl": "无线电忙时主机TX队列背压（流量控制开启）。在射频拥塞下预期—不是卡住的链路。减少出站负载或等待通话时间。",
       "tcpResetByPeer": "{{name}} ：集线器重置TCP会话（对等体重置连接）",
-      "tcpReadEof": "{{name}} ：集线器已干净关闭TCP （信息： TCP读取： EOF ）"
+      "tcpReadEof": "{{name}} ：集线器已干净关闭TCP （信息： TCP读取： EOF ）",
+      "bleLtkDesyncPurged": "加密密钥不匹配（ LTK取消同步） —已删除过时的操作系统绑定。重新配对：管理员→蓝牙→开始配对，然后输入新的PIN码。",
+      "bleLtkDesyncManualForget": "加密密钥不匹配（ LTK取消同步）。在系统设置→蓝牙中忘记此RNode ，然后管理员→开始配对。安装blueutil （ BREW安装blueutil ） ，以便在macOS上自动取消配对。"
     },
     "reticulumSidecarBundledMissing": "此安装缺少捆绑的 Reticulum sidecar。升级到较新的版本或报告问题 - 在打包安装中无法从源代码构建。",
     "radioMqttRootDivergesWarning": "无线电MQTT根主题为{{radioRoot}} ，但此面板订阅了{{appPrefix}}。匹配无线电以限制全国节点流量—更新主题前缀并重新连接MQTT。",

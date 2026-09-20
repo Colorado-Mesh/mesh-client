@@ -115,11 +115,13 @@ describe('ReticulumLocalInterfaceAlertsBlock', () => {
 });
 
 describe('Reticulum BLE offline hint copy', () => {
-  it('tells users to remove and re-add a stale BLE RNode interface', () => {
+  it('tells users to Forget and re-pair a stale BLE RNode bond via Admin Bluetooth', () => {
     const hint = en.connectionPanel.reticulumLocalInterfaces.offlineHintBle;
     expect(hint).toMatch(/remove this interface and add it back/i);
     expect(hint).toMatch(/Pick device/);
     const stale = en.connectionPanel.reticulumLocalInterfaces.offlineHintBleBondStale;
-    expect(stale).toMatch(/remove and re-add this interface/i);
+    expect(stale).toMatch(/Forget this RNode/i);
+    expect(stale).toMatch(/Reticulum Admin/);
+    expect(stale).toMatch(/Clear paired \/ Start pairing/);
   });
 });

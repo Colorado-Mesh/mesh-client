@@ -543,6 +543,29 @@ impl GattManager {
         self.drop_session_internal(session_id, false).await
     }
 
+    /// Disconnect every LoRa GATT session and drop the btleplug CBCentralManager
+    /// so an RNode bond-recovery connect is the only CoreBluetooth central.
+    pub async fn release_ble_central(&self) -> Result<usize, GattError> {
+        let ids: Vec<String> = self.sessions.read().await.keys().cloned().collect();
+        let count = ids.len();
+        for id in &ids {
+            let _ = self.drop_session_internal(id, true).await;
+        }
+        #[cfg(feature = "gatt-ble")]
+        if let GattBackend::Btleplug(lazy) = &self.backend {
+            lazy.dispose_adapter().await;
+        }
+        Ok(count)
+    }
+
+    /// Allow LoRa GATT to create a CBCentralManager again after RNode bond recovery.
+    pub fn clear_bond_recovery_hold(&self) {
+        #[cfg(feature = "gatt-ble")]
+        if let GattBackend::Btleplug(lazy) = &self.backend {
+            lazy.set_bond_recovery_hold(false);
+        }
+    }
+
     pub async fn write(&self, session_id: &str, payload: &[u8]) -> Result<(), GattError> {
         validate_write_payload(payload)?;
         let conn = {

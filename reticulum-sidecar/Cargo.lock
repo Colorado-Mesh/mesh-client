@@ -1664,6 +1664,7 @@ dependencies = [
  "argon2",
  "axum",
  "base64",
+ "bluer",
  "btleplug",
  "bytes",
  "ciborium",
@@ -1700,6 +1701,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+ "windows 0.58.0",
  "zeroize",
 ]
 

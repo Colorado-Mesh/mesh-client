@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useNowMs } from '@/renderer/hooks/useNowMs';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { clearReticulumBleBondIssuesForOnlineInterfaces } from '@/renderer/lib/reticulum/clearReticulumBleBondIssuesForOnlineInterfaces';
 import { syncReticulumBleRegistry } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
 import {
   beginReticulumBleConnectGrace,
@@ -163,7 +164,10 @@ export function useReticulumInterfaceSnapshot({
       setEffectivePrimaryLocalSerialInterfaceId(
         getCachedReticulumEffectivePrimaryLocalSerialInterfaceId(),
       );
-      logReticulumLocalInterfaceHealthChanges(rows, paths);
+      const newlyOnlineBle = logReticulumLocalInterfaceHealthChanges(rows, paths);
+      if (newlyOnlineBle.length > 0) {
+        void clearReticulumBleBondIssuesForOnlineInterfaces(newlyOnlineBle);
+      }
       await syncReticulumBleRegistry(rows);
       return { interfaces: rows, paths };
     } catch (e) {

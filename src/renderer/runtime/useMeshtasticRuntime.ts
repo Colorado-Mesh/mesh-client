@@ -58,6 +58,7 @@ import {
 } from '@/renderer/lib/meshtasticMqttPublish';
 import { readMeshtasticMqttSettingsFromStorage } from '@/renderer/lib/meshtasticMqttSettingsStorage';
 import { BLE_ADAPTER_LEASE_RELEASED_EVENT } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
+import { getReticulumBleBondDesyncActive } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
 import {
   meshtasticDeviceRoleFromConfigSlice,
   resolveAppliedMeshtasticDeviceRole,
@@ -2057,6 +2058,12 @@ export function useMeshtasticRuntime() {
       console.debug('[useMeshtasticRuntime] skip reconnect (user disconnect)');
       return;
     }
+    if (connectionParamsRef.current?.type === 'ble' && getReticulumBleBondDesyncActive()) {
+      console.debug(
+        '[useMeshtasticRuntime] skip BLE reconnect — RNode bond recovery holds the adapter',
+      );
+      return;
+    }
     if (
       connectionParamsRef.current?.type === 'ble' &&
       shouldSkipBleReconnectAfterExhaustion({
@@ -2479,6 +2486,12 @@ export function useMeshtasticRuntime() {
     const onBleLeaseReleased = () => {
       if (connectionParamsRef.current?.type !== 'ble') return;
       if (meshtasticExplicitDisconnectRef.current) return;
+      if (getReticulumBleBondDesyncActive()) {
+        console.debug(
+          '[useMeshtasticRuntime] Noble BLE yield released — skip nudge (RNode bond recovery)',
+        );
+        return;
+      }
       if (meshtasticDriverConnectedRef.current && deviceConfiguredRef.current) {
         return;
       }

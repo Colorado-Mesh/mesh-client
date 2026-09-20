@@ -194,6 +194,8 @@ export function createElectronAPIMock(): ElectronAPI {
     stopGattScanning: vi.fn().mockResolvedValue(undefined),
     connectGatt: vi.fn().mockResolvedValue({ ok: true }),
     disconnectGatt: vi.fn().mockResolvedValue(undefined),
+    releaseGattBleCentral: vi.fn().mockResolvedValue(undefined),
+    clearGattBondRecoveryExclusive: vi.fn().mockResolvedValue(undefined),
     isGattConnected: vi.fn().mockResolvedValue(true),
     gattToRadio: vi.fn().mockResolvedValue(undefined),
     onSerialPortsDiscovered: vi.fn().mockReturnValue(() => {}),
@@ -418,6 +420,9 @@ export function createElectronAPIMock(): ElectronAPI {
       stop: vi.fn().mockResolvedValue(undefined),
       getStatus: vi.fn().mockResolvedValue({ running: false, port: 0, pid: null }),
       syncInterfaceIssueScope: vi.fn().mockResolvedValue({ running: false, port: 0, pid: null }),
+      clearBleBondIssuesForOnlineInterfaces: vi
+        .fn()
+        .mockResolvedValue({ running: false, port: 0, pid: null }),
       proxyGet: vi.fn().mockResolvedValue({ status: 'ok' }),
       proxyPost: vi.fn().mockResolvedValue({ ok: true }),
       proxyPut: vi.fn().mockResolvedValue({ ok: true }),

@@ -60,12 +60,15 @@ describe('useReticulumRuntime reconnect hardening (regression)', () => {
 
   it('is concurrent-safe: stack connecting does not disconnect LoRa GATT sessions', () => {
     // Reticulum stack start/connect must not tear down Meshtastic/MeshCore GATT.
-    // disconnectAll is only for explicit RNode adapter yield (bleCoexistence), not connect().
+    // releaseGattBleCentral is reserved for bleBondRemoved recovery (dual-central pause).
     expect(SOURCE).not.toContain('useReticulumNobleBleYieldWatcher');
     expect(SOURCE).not.toMatch(/disconnectAll\s*\(/);
-    expect(SOURCE).not.toMatch(/disconnectGatt\s*\(/);
     const connectBody = extractUseCallbackBody(SOURCE, 'connect');
-    expect(connectBody).not.toMatch(/gattSidecarProxy|disconnectAll|disconnectGatt/);
+    expect(connectBody).not.toMatch(
+      /gattSidecarProxy|disconnectAll|disconnectGatt|releaseGattBleCentral/,
+    );
+    // Bond-recovery path may pause LoRa GATT; keep it out of connect().
+    expect(SOURCE).toMatch(/bleBondRemoved[\s\S]*?releaseGattBleCentral\(\)/);
   });
 });
 
@@ -188,9 +191,10 @@ describe('useReticulumRuntime resume-generation cancel (H7)', () => {
     expect(resumeBody).toContain('powerSuspendHadBleRnodeRef.current');
   });
 
-  it('latches bleBondRemoved to release BLE RNode lease and set bond-desync sticky flag', () => {
+  it('latches bleBondRemoved to pause LoRa GATT and set bond-desync sticky flag', () => {
     expect(SOURCE).toMatch(/setReticulumBleBondDesyncActive\(true\)/);
-    expect(SOURCE).toMatch(/releaseReticulumBleRnodeConnect\(\)/);
+    expect(SOURCE).toMatch(/releaseGattBleCentral\(\)/);
+    expect(SOURCE).toMatch(/prepareReticulumBleRnodeConnect\(\)/);
     expect(SOURCE).toMatch(/status\.interfaceIssueAlert\?\.bleBondRemoved/);
   });
 

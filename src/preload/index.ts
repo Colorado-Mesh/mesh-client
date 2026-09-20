@@ -732,6 +732,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('gatt:connect', sessionId, peripheralId),
   disconnectGatt: (sessionId: GattBleSessionId): Promise<void> =>
     ipcRenderer.invoke('gatt:disconnect', sessionId),
+  releaseGattBleCentral: (): Promise<void> => ipcRenderer.invoke('gatt:release-ble-central'),
+  clearGattBondRecoveryExclusive: (): Promise<void> =>
+    ipcRenderer.invoke('gatt:clear-bond-recovery-exclusive'),
   isGattConnected: (sessionId: GattBleSessionId): Promise<boolean> =>
     ipcRenderer.invoke('gatt:is-connected', sessionId),
   gattToRadio: (sessionId: GattBleSessionId, bytes: Uint8Array): Promise<void> =>
@@ -1120,6 +1123,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getStatus: (): Promise<ReticulumSidecarStatus> => ipcRenderer.invoke('reticulum:getStatus'),
     syncInterfaceIssueScope: (enabledInterfaceNames: string[]): Promise<ReticulumSidecarStatus> =>
       ipcRenderer.invoke('reticulum:syncInterfaceIssueScope', enabledInterfaceNames),
+    clearBleBondIssuesForOnlineInterfaces: (
+      onlineInterfaceNames: string[],
+    ): Promise<ReticulumSidecarStatus> =>
+      ipcRenderer.invoke('reticulum:clearBleBondIssuesForOnlineInterfaces', onlineInterfaceNames),
     proxyGet: (apiPath: string): Promise<unknown> =>
       unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyGet', apiPath)),
     proxyPost: (apiPath: string, body: unknown): Promise<unknown> =>

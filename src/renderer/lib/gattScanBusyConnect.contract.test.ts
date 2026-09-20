@@ -29,7 +29,7 @@ describe('GATT scan-busy connect retry (regression)', () => {
       "import { connectGattWithScanBusyRetry } from './bleReconnectHelper';",
     );
     expect(CONNECTION_SOURCE).toMatch(
-      /await connectGattWithScanBusyRetry\(sessionId, peripheralId\);/,
+      /await connectGattWithScanBusyRetry\(sessionId, peripheralId,\s*\{[\s\S]*shouldAbort:/,
     );
     // Must not go back to a one-shot connect that hard-fails on reticulum scan lease.
     expect(CONNECTION_SOURCE).not.toMatch(
@@ -43,7 +43,7 @@ describe('GATT scan-busy connect retry (regression)', () => {
     );
     expect(MESHCORE_TRANSPORT_SOURCE).toContain('class IpcSidecarGattConnection');
     expect(MESHCORE_TRANSPORT_SOURCE).toMatch(
-      /connectGattWithScanBusyRetry\(sessionId, this\.peripheralId\)/,
+      /connectGattWithScanBusyRetry\(sessionId, this\.peripheralId,\s*\{[\s\S]*shouldAbort:/,
     );
   });
 });

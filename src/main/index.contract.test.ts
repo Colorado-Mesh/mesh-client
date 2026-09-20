@@ -353,6 +353,9 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:stop'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:getStatus'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain("'reticulum:syncInterfaceIssueScope'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain(
+      "'reticulum:clearBleBondIssuesForOnlineInterfaces'",
+    );
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyGet'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain('settleReticulumProxyFailure');
     expect(RETICULUM_HANDLERS_SOURCE).toContain('reticulumProxyIpcErrorEnvelope');

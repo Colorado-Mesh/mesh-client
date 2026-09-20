@@ -245,6 +245,17 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     return m.syncInterfaceIssueScope(names);
   });
 
+  ipcMain.handle(
+    'reticulum:clearBleBondIssuesForOnlineInterfaces',
+    (event, onlineInterfaceNames: unknown) => {
+      assertIpcSender(event, 'reticulum:clearBleBondIssuesForOnlineInterfaces');
+      const names = parseEnabledInterfaceNames(onlineInterfaceNames);
+      const m = getManager();
+      if (!m) return idleStatus;
+      return m.clearBleBondIssuesForOnlineInterfaces(names);
+    },
+  );
+
   ipcMain.handle('reticulum:proxyGet', async (event, apiPath: unknown) => {
     assertIpcSender(event, 'reticulum:proxyGet');
     const pathArg = assertProxyApiPath(apiPath);

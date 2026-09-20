@@ -245,7 +245,7 @@ When [ratspeak/rsReticulum#20](https://github.com/ratspeak/rsReticulum/pull/20) 
 
 ## rsReticulum-ble-rnode-bond-desync.patch
 
-Halt BLE RNode reconnect when CoreBluetooth reports **Peer removed pairing information**, and skip the TX-char SMP probe on reconnect after a successful session in the same task (fall back to pairing if subscribe fails with auth). Apply **after** the pairing-transition debounce overlay.
+Detect CoreBluetooth **Peer removed pairing information**, skip the TX-char SMP probe when an OS bond may already exist (optimistic on Apple/Windows; fall back to pairing if subscribe fails with auth), and **keep retrying** while mesh-client pauses LoRa GATT / attempts OS unbond (`POST /api/v1/ble/handle-ltk-desync`). Apply **after** the pairing-transition debounce overlay.
 
 | Field | Value |
 | ----- | ----- |
@@ -256,7 +256,7 @@ The upstream PR is **standalone off `main`** (independent of [#20](https://githu
 
 **Modifies (1 file):**
 
-- `crates/rns-interface/src/ble_rnode.rs` — `is_bond_removed_error`, `session_already_bonded`, reconnect halt
+- `crates/rns-interface/src/ble_rnode.rs` — `is_bond_removed_error`, optimistic `session_already_bonded`, bond-removed retry (no permanent halt)
 
 ### Apply locally
 

@@ -13,7 +13,7 @@ const LINK_DELIVERY_TIMEOUT_MARKER = 'link delivery timed out';
 const LXMF_PATH_REQUEST_SATURATED_MARKER = 'failed to queue path request for LXMF delivery';
 const SLOW_TRANSPORT_QUERY_MARKER = 'transport query slow or failed';
 const BLE_BOND_REMOVED_MARKER = 'Peer removed pairing information';
-/** rsReticulum bond-desync overlay: halt reconnect loop (tracing::warn). */
+/** rsReticulum bond-desync overlay: Peer removed pairing (tracing::warn; reconnect keeps retrying). */
 const BLE_BOND_REMOVED_STOP_MARKER = 'BLE RNode bond removed';
 const BLE_PAIRING_TIMED_OUT_MARKER = 'BLE pairing timed out';
 
@@ -115,8 +115,8 @@ function parseBleBondRemovedIface(line: string): string | null {
     const fromConnectFailed = parseBleRNodeConnectFailedIfaceName(plain);
     if (fromConnectFailed) return fromConnectFailed;
   }
-  // Overlay halt path: "BLE RNode bond removed — stopping reconnect… name=… error=…"
-  // (no longer emits the connect-failed prefix when exiting the reconnect loop).
+  // Overlay path: "BLE RNode bond removed — … name=… error=…"
+  // (reconnect keeps retrying; message no longer says "stopping").
   if (plain.includes(BLE_BOND_REMOVED_STOP_MARKER)) {
     return parseSidecarIfaceNameField(plain);
   }
@@ -334,6 +334,24 @@ export class ReticulumSidecarInterfaceIssueTracker {
     retainMapKeys(this.tcpReadEof, enabledNames);
   }
 
+  /**
+   * Clear BLE bond-desync / pairing-timeout latches after a successful reconnect
+   * (interface reported online). Does not affect TCP/TX maps.
+   */
+  clearBleBondIssuesForOnlineInterfaces(onlineNames: ReadonlySet<string>): void {
+    if (onlineNames.size === 0) return;
+    for (const name of [...this.bleBondRemoved.keys()]) {
+      if (onlineNames.has(name)) {
+        this.bleBondRemoved.delete(name);
+      }
+    }
+    for (const name of [...this.blePairingTimedOut.keys()]) {
+      if (onlineNames.has(name)) {
+        this.blePairingTimedOut.delete(name);
+      }
+    }
+  }
+
   clear(): void {
     this.tcpConnectFailed.clear();
     this.txQueueDrops.clear();
@@ -361,8 +379,9 @@ export class ReticulumSidecarInterfaceIssueTracker {
     pruneStaleMap(this.tcpConnectFailed, nowMs, (atMs) => atMs);
     pruneStaleMap(this.txQueueDrops, nowMs, (entry) => entry.atMs);
     pruneStaleMap(this.linkDeliveryTimeouts, nowMs, (entry) => entry.atMs);
-    // bleBondRemoved is sticky until stack stop / retainInterfaces / clear — sidecar has
-    // halted BLE reconnect for that interface; a 5‑min log TTL must not clear UI/Noble yield.
+    // Bond-removed no longer halts sidecar reconnect permanently — use the same
+    // stale window as other interface issues so recovery clears the banner.
+    pruneStaleMap(this.bleBondRemoved, nowMs, (atMs) => atMs);
     pruneStaleMap(this.blePairingTimedOut, nowMs, (atMs) => atMs);
     pruneStaleMap(this.tcpResetByPeer, nowMs, (atMs) => atMs);
     pruneStaleMap(this.tcpReadEof, nowMs, (atMs) => atMs);

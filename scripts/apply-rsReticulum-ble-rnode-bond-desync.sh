@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Apply mesh-client rsReticulum BLE RNode bond-desync overlay (after pairing-transition debounce).
-# - Halt reconnect when CoreBluetooth reports "Peer removed pairing information"
-# - Skip TX-char SMP probe on reconnect after a successful session in this task
+# - Detect CoreBluetooth "Peer removed pairing information"
+# - Skip TX-char SMP probe when an OS bond may already exist (optimistic on Apple/Windows)
+# - Keep retrying on bond-removed (do not permanently halt / require Forget)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

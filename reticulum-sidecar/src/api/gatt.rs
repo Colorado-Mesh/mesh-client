@@ -76,6 +76,27 @@ pub async fn gatt_scan(
     }
 }
 
+/// Drop LoRa GATT sessions + btleplug CBCentralManager for RNode bond recovery.
+pub async fn gatt_release_central(
+    State(stack): State<Arc<StackHandle>>,
+) -> Json<serde_json::Value> {
+    match stack.gatt().release_ble_central().await {
+        Ok(sessions_closed) => Json(serde_json::json!({
+            "ok": true,
+            "sessions_closed": sessions_closed,
+        })),
+        Err(e) => Json(e.to_json()),
+    }
+}
+
+/// Clear the LoRa GATT bond-recovery hold so MeshCore/Meshtastic may recreate a central.
+pub async fn gatt_clear_bond_recovery(
+    State(stack): State<Arc<StackHandle>>,
+) -> Json<serde_json::Value> {
+    stack.gatt().clear_bond_recovery_hold();
+    Json(serde_json::json!({ "ok": true }))
+}
+
 pub async fn gatt_create_session(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<CreateSessionBody>,
