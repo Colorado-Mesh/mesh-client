@@ -289,6 +289,7 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).toContain('meshtasticRfReconnectRef');
     const scheduleBody = extractUseCallbackBody(SOURCE, 'scheduleMeshtasticReconnectAttempt');
     expect(scheduleBody).toContain('scheduleOwner');
+    expect(scheduleBody).toContain('getReticulumBleBondDesyncActive()');
     expect(scheduleBody).toContain('attemptReconnectRef.current()');
     expect(SOURCE).toMatch(
       /useLayoutEffect\(\(\) => \{\s*scheduleMeshtasticReconnectAttemptRef\.current = scheduleMeshtasticReconnectAttempt;\s*\}, \[scheduleMeshtasticReconnectAttempt\]\)/,

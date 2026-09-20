@@ -246,18 +246,19 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   private recordSidecarOutputLine(text: string): void {
-    const beforeBond = this.interfaceIssueTracker.peekAlert()?.bleBondRemoved?.length ?? 0;
+    const beforeBond = new Set(this.interfaceIssueTracker.peekAlert()?.bleBondRemoved ?? []);
     this.mutateInterfaceIssues(
       () => {
         this.interfaceIssueTracker.recordLine(text);
       },
       { alwaysEmitAfterMs: 5_000 },
     );
-    const afterBond = this.interfaceIssueTracker.peekAlert()?.bleBondRemoved?.length ?? 0;
+    const afterBond = this.interfaceIssueTracker.peekAlert()?.bleBondRemoved ?? [];
+    const newlyLatchedBond = afterBond.find((name) => !beforeBond.has(name));
     // Dispose LoRa CBCentralManager as soon as stderr latches Peer-removed —
     // do not wait for the renderer round-trip (bond-removed retries in ~3s).
-    if (afterBond > beforeBond) {
-      void this.handleBleLtkDesyncLatch(text).catch((err: unknown) => {
+    if (newlyLatchedBond) {
+      void this.handleBleLtkDesyncLatch(newlyLatchedBond, text).catch((err: unknown) => {
         console.debug(
           '[ReticulumSidecar] LTK desync latch handler failed:',
           err instanceof Error ? err.message : String(err),
@@ -270,7 +271,7 @@ export class ReticulumSidecarManager extends EventEmitter {
    * Peer-removed / LTK desync: pause LoRa GATT, purge the OS bond when possible,
    * and let the sidecar emit `BleLtkDesync` for the renderer toast / re-pair UX.
    */
-  private async handleBleLtkDesyncLatch(line: string): Promise<void> {
+  private async handleBleLtkDesyncLatch(interfaceName: string, line: string): Promise<void> {
     try {
       const { gattSidecarProxy } = await import('./gatt-sidecar-proxy');
       await gattSidecarProxy.releaseBleCentral();
@@ -287,10 +288,8 @@ export class ReticulumSidecarManager extends EventEmitter {
       const listed = (await this.proxyGet('/api/v1/interfaces')) as {
         interfaces?: { name?: string; serial_port?: string | null }[];
       };
-      const alert = this.interfaceIssueTracker.peekAlert();
-      const names = new Set(alert?.bleBondRemoved ?? []);
       for (const row of listed.interfaces ?? []) {
-        if (typeof row.name === 'string' && names.has(row.name) && row.serial_port) {
+        if (row.name === interfaceName && row.serial_port) {
           address = row.serial_port;
           deviceName = row.name;
           break;

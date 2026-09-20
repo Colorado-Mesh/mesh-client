@@ -2525,6 +2525,15 @@ export function useMeshtasticRuntime() {
 
   const scheduleMeshtasticReconnectAttempt = useCallback(() => {
     meshtasticRfReconnectRef.current.scheduleOwner(() => {
+      if (connectionParamsRef.current?.type === 'ble' && getReticulumBleBondDesyncActive()) {
+        console.debug(
+          '[useMeshtasticRuntime] abort reconnect schedule — RNode bond recovery holds the adapter',
+        );
+        isReconnectingRef.current = false;
+        meshtasticDeferredReconnectRef.current = false;
+        meshtasticRfReconnectRef.current.endAttempt();
+        return;
+      }
       if (!isReconnectingRef.current || meshtasticExplicitDisconnectRef.current) {
         return;
       }

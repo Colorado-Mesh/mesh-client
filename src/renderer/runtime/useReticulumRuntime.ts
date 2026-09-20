@@ -326,6 +326,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
   /** True while we are holding LoRa GATT exclusive for an online BLE RNode. */
   const rnodeBleOnlineLoRaHoldRef = useRef(false);
   /**
+   * True once this recovery episode has run releaseGattBleCentral + scan-lease hold.
+   * Distinct from {@link getReticulumBleBondDesyncActive}: `BleLtkDesync` can set the
+   * shared flag before `onStatus` arrives, which must not skip the hold setup.
+   */
+  const bondRecoveryHoldAppliedRef = useRef(false);
+  /**
    * Bumped on every power-suspend so a `connect()` flight started before an earlier suspend
    * (and still in flight when a *later* suspend/resume pair fires) can detect it has been
    * superseded and skip finalizing a stale "configured" state. Independent of `suppressReconnectRef`
@@ -1717,6 +1723,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     propagationHydratedForBridgeRef.current = false;
     linkTimeoutBridgeGenerationRef.current += 1;
     setReticulumBleBondDesyncActive(false);
+    bondRecoveryHoldAppliedRef.current = false;
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
@@ -1729,11 +1736,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
       // centrals in the same sidecar precipitate repeated CBError 14 — pause LoRa BLE
       // instead of releasing the lease (which nudges MeshCore/Meshtastic to reconnect).
       if (bondRemoved.length > 0) {
-        const firstLatch = !getReticulumBleBondDesyncActive();
+        const firstLatch = !bondRecoveryHoldAppliedRef.current;
         setReticulumBleBondDesyncActive(true);
         // Only dispose once per episode — re-entrant status updates were recreating
         // the LoRa CBCentralManager between RNode retries (had_backend:true again).
         if (firstLatch) {
+          bondRecoveryHoldAppliedRef.current = true;
           void (async () => {
             try {
               await window.electronAPI.releaseGattBleCentral();
@@ -1755,6 +1763,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         }
       } else if (getReticulumBleBondDesyncActive()) {
         setReticulumBleBondDesyncActive(false);
+        bondRecoveryHoldAppliedRef.current = false;
         void window.electronAPI.clearGattBondRecoveryExclusive().catch((e: unknown) => {
           console.debug(
             '[useReticulumRuntime] clearGattBondRecoveryExclusive ' + errLikeToLogString(e),
@@ -2059,6 +2068,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     propagationHydratedForBridgeRef.current = false;
     linkTimeoutBridgeGenerationRef.current += 1;
     setReticulumBleBondDesyncActive(false);
+    bondRecoveryHoldAppliedRef.current = false;
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
