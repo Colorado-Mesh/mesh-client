@@ -43,6 +43,7 @@ export function buildCiVitestArgs({ mode, project, relatedPaths = [], shard = ''
       '--coverage',
       '--coverage.clean=false',
       ...shardArgs,
+      '--reporter=default',
       '--reporter=blob',
       `--outputFile.blob=.vitest-reports/blob-${project}${reportSuffix}.json`,
     ];

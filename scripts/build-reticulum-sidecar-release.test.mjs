@@ -135,9 +135,8 @@ describe.skipIf(process.platform === 'win32')('sidecar build subprocesses', () =
       const result = build(root, ['--platform', platform, '--arch', target.archKey]);
       expect(result.status, result.stderr).toBe(0);
       expect(calls(root).map(([command]) => command)).toEqual(['test', 'build']);
-      expect(readFileSync(stagedSidecarPath(root, platform, target.archKey))).toEqual(
-        Buffer.alloc(1024 * 1024),
-      );
+      const staged = readFileSync(stagedSidecarPath(root, platform, target.archKey));
+      expect(staged.equals(Buffer.alloc(1024 * 1024))).toBe(true);
     },
   );
 
