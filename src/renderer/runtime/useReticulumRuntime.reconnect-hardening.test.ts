@@ -196,6 +196,9 @@ describe('useReticulumRuntime resume-generation cancel (H7)', () => {
     expect(SOURCE).toMatch(/releaseGattBleCentral\(\)/);
     expect(SOURCE).toMatch(/prepareReticulumBleRnodeConnect\(\)/);
     expect(SOURCE).toMatch(/status\.interfaceIssueAlert\?\.bleBondRemoved/);
+    // Hold application is tracked separately so BleLtkDesync WS cannot skip the lease.
+    expect(SOURCE).toContain('bondRecoveryHoldAppliedRef');
+    expect(SOURCE).toMatch(/const firstLatch = !bondRecoveryHoldAppliedRef\.current/);
   });
 
   it('wires LXMF send rekey with replacesMessageHash for pending orphan cleanup', () => {
