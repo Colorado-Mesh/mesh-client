@@ -31,6 +31,43 @@ function runBlock(source, step) {
 }
 
 describe('packaging sidecar workflow gates', () => {
+  it('restores target-specific dependencies without skipping fresh builds or tests', () => {
+    const workflow = yaml.load(sidecars);
+    const steps = workflow.jobs.build.steps;
+    const cache = steps.findIndex((step) => step.uses?.startsWith('Swatinem/rust-cache@'));
+    const toolchain = steps.findIndex((step) => step.uses?.startsWith('dtolnay/rust-toolchain@'));
+    const build = steps.findIndex((step) => step.name === 'Build and stage sidecar');
+    expect(toolchain).toBeGreaterThanOrEqual(0);
+    expect(cache).toBeGreaterThan(toolchain);
+    expect(build).toBeGreaterThan(cache);
+    expect(steps[cache].with).toMatchObject({
+      workspaces: 'reticulum-sidecar -> target',
+      key: 'packaging-${{ matrix.target }}',
+      'cache-bin': false,
+      'cache-workspace-crates': false,
+    });
+    expect(steps[cache].with['shared-key']).toBeUndefined();
+    expect(steps[cache].with['cache-on-failure']).toBeUndefined();
+    expect(steps[build].if).toBeUndefined();
+    expect(steps[build].run).toContain('node scripts/build-reticulum-sidecar-release.mjs');
+    expect(steps[build].run).toContain("${{ !matrix.run_tests && '--skip-tests' || '' }}");
+    expect(steps[build].env.WORKSPACE_ROOT).toBe('${{ github.workspace }}/.rsstack');
+  });
+
+  it('allows isolated sidecar builds with the same platform input as reusable packaging', () => {
+    const workflow = yaml.load(sidecars);
+    expect(workflow.on.workflow_dispatch.inputs.platforms.options).toEqual([
+      'all',
+      'mac',
+      'linux',
+      'win',
+    ]);
+    expect(workflow.on.workflow_dispatch.inputs.platforms.default).toBe(
+      workflow.on.workflow_call.inputs.platforms.default,
+    );
+    expect(workflow.permissions).toEqual({ contents: 'read' });
+  });
+
   it.each(['build', 'release'])('blocks %s packaging until the sidecars succeed', (file) => {
     const workflow = read(`.github/workflows/${file}.yaml`);
     const job = workflow.split(`\n  ${file}:\n`)[1].split(/\n {2}[\w-]+:\n/)[0];
