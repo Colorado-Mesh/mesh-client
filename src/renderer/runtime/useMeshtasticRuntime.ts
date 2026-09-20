@@ -2303,7 +2303,13 @@ export function useMeshtasticRuntime() {
       },
       runOpenAndAttach: async (ctx, params) => {
         const { generation, attemptActive, lateTransport } = ctx;
-        if (reconnectGenerationRef.current !== generation || !attemptActive()) {
+        const bleBondRecoveryBlocks = () =>
+          params.type === 'ble' && getReticulumBleBondDesyncActive();
+        const isSuperseded = () =>
+          reconnectGenerationRef.current !== generation ||
+          !attemptActive() ||
+          bleBondRecoveryBlocks();
+        if (isSuperseded()) {
           throw new Error('Reconnect superseded before open');
         }
         const opened = await openMeshtasticTransport(params.type, {
@@ -2312,7 +2318,7 @@ export function useMeshtasticRuntime() {
           lastSerialPortId: params.lastSerialPortId,
         });
         openedDriverIdentityId = opened.driverIdentityId;
-        if (reconnectGenerationRef.current !== generation || !attemptActive()) {
+        if (isSuperseded()) {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('Reconnect superseded after open');
         }
@@ -2320,7 +2326,7 @@ export function useMeshtasticRuntime() {
         wireSubscriptions(opened.device, params.type, {
           driverIdentityId: opened.driverIdentityId,
         });
-        if (reconnectGenerationRef.current !== generation || !attemptActive()) {
+        if (isSuperseded()) {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('Reconnect superseded before configure');
         }
@@ -2331,7 +2337,7 @@ export function useMeshtasticRuntime() {
           logTag: 'useMeshtasticRuntime reconnect',
         });
 
-        if (reconnectGenerationRef.current !== generation || !attemptActive()) {
+        if (isSuperseded()) {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('Reconnect superseded during configure');
         }
@@ -2339,7 +2345,7 @@ export function useMeshtasticRuntime() {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('RF link lost after reconnect configure');
         }
-        if (!attemptActive() || reconnectGenerationRef.current !== generation) {
+        if (isSuperseded()) {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('Reconnect superseded after configure');
         }
@@ -2529,9 +2535,12 @@ export function useMeshtasticRuntime() {
         console.debug(
           '[useMeshtasticRuntime] abort reconnect schedule — RNode bond recovery holds the adapter',
         );
+        // cancel() bumps controller generation; sync reconnectGenerationRef so an in-flight
+        // runOpenAndAttach sees supersession (endAttempt alone leaves generation unchanged).
+        meshtasticRfReconnectRef.current.cancel();
+        reconnectGenerationRef.current = meshtasticRfReconnectRef.current.generation;
         isReconnectingRef.current = false;
         meshtasticDeferredReconnectRef.current = false;
-        meshtasticRfReconnectRef.current.endAttempt();
         return;
       }
       if (!isReconnectingRef.current || meshtasticExplicitDisconnectRef.current) {

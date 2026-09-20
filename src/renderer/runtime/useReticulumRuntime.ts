@@ -332,6 +332,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
    */
   const bondRecoveryHoldAppliedRef = useRef(false);
   /**
+   * Bumped when bond recovery clears / disconnect / teardown so a stale recovery IIFE
+   * cannot reacquire the Reticulum scan lease after release.
+   */
+  const bondRecoveryGenerationRef = useRef(0);
+  /**
    * Bumped on every power-suspend so a `connect()` flight started before an earlier suspend
    * (and still in flight when a *later* suspend/resume pair fires) can detect it has been
    * superseded and skip finalizing a stale "configured" state. Independent of `suppressReconnectRef`
@@ -1724,6 +1729,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     linkTimeoutBridgeGenerationRef.current += 1;
     setReticulumBleBondDesyncActive(false);
     bondRecoveryHoldAppliedRef.current = false;
+    bondRecoveryGenerationRef.current += 1;
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
@@ -1742,6 +1748,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         // the LoRa CBCentralManager between RNode retries (had_backend:true again).
         if (firstLatch) {
           bondRecoveryHoldAppliedRef.current = true;
+          const recoveryGeneration = bondRecoveryGenerationRef.current;
           void (async () => {
             try {
               await window.electronAPI.releaseGattBleCentral();
@@ -1751,6 +1758,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
                   errLikeToLogString(e),
               );
             }
+            if (bondRecoveryGenerationRef.current !== recoveryGeneration) {
+              return;
+            }
             try {
               await prepareReticulumBleRnodeConnect();
             } catch (e: unknown) {
@@ -1758,12 +1768,22 @@ export function useReticulumRuntime(): ProtocolRuntime {
                 '[useReticulumRuntime] hold scan lease during bond recovery ' +
                   errLikeToLogString(e),
               );
+              return;
+            }
+            if (bondRecoveryGenerationRef.current !== recoveryGeneration) {
+              void releaseReticulumBleRnodeConnect({ notify: false }).catch((e: unknown) => {
+                console.debug(
+                  '[useReticulumRuntime] release stale bond-recovery lease ' +
+                    errLikeToLogString(e),
+                );
+              });
             }
           })();
         }
       } else if (getReticulumBleBondDesyncActive()) {
         setReticulumBleBondDesyncActive(false);
         bondRecoveryHoldAppliedRef.current = false;
+        bondRecoveryGenerationRef.current += 1;
         void window.electronAPI.clearGattBondRecoveryExclusive().catch((e: unknown) => {
           console.debug(
             '[useReticulumRuntime] clearGattBondRecoveryExclusive ' + errLikeToLogString(e),
@@ -2069,6 +2089,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     linkTimeoutBridgeGenerationRef.current += 1;
     setReticulumBleBondDesyncActive(false);
     bondRecoveryHoldAppliedRef.current = false;
+    bondRecoveryGenerationRef.current += 1;
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
