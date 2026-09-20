@@ -744,7 +744,7 @@ describe('ReticulumPeerListPanel', () => {
     });
   });
 
-  it('shows TCP hub cue for transport-hub paths and not for RNode', () => {
+  it('shows TCP hub cue for transport-hub paths and not for RNode', async () => {
     const hub = 'd010ea4417f71ff4fd15a6182747aaec';
     const rf = 'e3359f1314aff4fb6261400a8202149b';
     useReticulumPeerStore.setState({
@@ -774,7 +774,7 @@ describe('ReticulumPeerListPanel', () => {
       history: new Map(),
       peersRevision: 1,
     });
-    render(
+    const { container } = render(
       <ToastProvider>
         <ReticulumPeerListPanel isConnected onPeerClick={vi.fn()} onSendMessage={vi.fn()} />
       </ToastProvider>,
@@ -783,6 +783,8 @@ describe('ReticulumPeerListPanel', () => {
     expect(
       screen.getByTitle(/peerListPanel.heardViaTcpHubTitle:RNS_Transport_US-East/),
     ).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('toasts stale-alternate hint when opening Chat on a name-family MeshChatX-era dest', async () => {

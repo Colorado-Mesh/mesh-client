@@ -66,6 +66,11 @@ describe('reticulumDisplayNamesShareFamily', () => {
   it('matches leading token prefix of length >= 4', () => {
     expect(reticulumDisplayNamesShareFamily('ceorl', 'ceorltest')).toBe(true);
   });
+
+  it('preserves Unicode letters so accented name families match', () => {
+    expect(reticulumDisplayNamesShareFamily('José-wired', 'José-test')).toBe(true);
+    expect(reticulumDisplayNameFamilyTokens('José-wired')).toEqual(['josé', 'wired']);
+  });
 });
 
 describe('isReticulumPeerHeardViaTcpHub', () => {

@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
 import { ReticulumDmDestIdentityBar } from '@/renderer/components/reticulum/ReticulumDmDestIdentityBar';
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import type { ResolveReticulumStaleChatDestResult } from '@/renderer/lib/reticulum/resolveReticulumStaleChatDest';
 
 const WIRED = 'd010ea4417f71ff4fd15a6182747aaec';
@@ -44,7 +46,7 @@ describe('ReticulumDmDestIdentityBar', () => {
 
   it('shows LXMF and identity prefixes with copy controls', async () => {
     const user = userEvent.setup();
-    render(
+    const { container } = render(
       <ReticulumDmDestIdentityBar
         lxmfHash={WIRED}
         identityHash={WIRED_ID}
@@ -54,6 +56,8 @@ describe('ReticulumDmDestIdentityBar', () => {
     expect(screen.getByText('LXMF d010ea44…')).toBeInTheDocument();
     expect(screen.getByText('ID 098c1ee9…')).toBeInTheDocument();
     expect(screen.queryByLabelText('Stale alternate')).not.toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
 
     await user.click(screen.getByRole('button', { name: 'Copy LXMF d010ea44' }));
     expect(writeTextMock).toHaveBeenCalledWith(WIRED);
@@ -80,12 +84,14 @@ describe('ReticulumDmDestIdentityBar', () => {
       alternateDisplayName: 'Ceorl-test',
       reason: 'name_family',
     };
-    render(
+    const { container } = render(
       <ReticulumDmDestIdentityBar lxmfHash={WIRED} identityHash={WIRED_ID} staleHint={staleHint} />,
     );
     expect(screen.getByLabelText('Stale alternate')).toHaveTextContent(
       'open d010ea44 alt e3359f13 name Ceorl-test',
     );
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
     await user.click(screen.getByRole('button', { name: 'Dismiss warning' }));
     expect(screen.queryByLabelText('Stale alternate')).not.toBeInTheDocument();
   });

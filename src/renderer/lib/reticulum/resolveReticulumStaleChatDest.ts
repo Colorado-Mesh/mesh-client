@@ -62,7 +62,7 @@ function normalizeHash(hash: string): string {
 export function reticulumDisplayNameFamilyTokens(name: string): string[] {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim()
     .split(/\s+/)
     .filter(Boolean);
