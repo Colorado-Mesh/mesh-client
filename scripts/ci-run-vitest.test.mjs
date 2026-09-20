@@ -17,6 +17,7 @@ describe('ci-run-vitest', () => {
       '--project',
       'main',
       '--passWithNoTests',
+      '--reporter=default',
       '--reporter=blob',
       '--outputFile.blob=.vitest-reports/blob-main.json',
     ]);
@@ -40,10 +41,10 @@ describe('ci-run-vitest', () => {
       });
       expect(args).toContain(`--shard=${shard}`);
       expect(args.includes('--coverage')).toBe(mode === 'full');
+      expect(args).toContain('--reporter=default');
       expect(args).toContain(`--reporter=${reporter}`);
       if (mode === 'related') {
         expect(args).toContain('src/renderer/App.tsx');
-        expect(args).toContain('--reporter=default');
         expect(args).not.toContain('--reporter=blob');
       }
       return args.find((arg) => arg.startsWith(`--outputFile.${reporter}=`));
