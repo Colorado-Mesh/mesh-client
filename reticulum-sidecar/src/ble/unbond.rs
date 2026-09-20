@@ -479,8 +479,10 @@ fn unbond_windows_blocking(id: &str) -> Result<(), BleBondError> {
     let status = result
         .Status()
         .map_err(|e| BleBondError::Failed(format!("Unpair status: {e}")))?;
-    // DeviceUnpairingResultStatus::Unpaired == 1
-    if i32::from(status) != 1 {
+    use windows::Devices::Enumeration::DeviceUnpairingResultStatus;
+    if status != DeviceUnpairingResultStatus::Unpaired
+        && status != DeviceUnpairingResultStatus::AlreadyUnpaired
+    {
         return Err(BleBondError::Failed(format!(
             "Windows Unpair status={status:?} (expected Unpaired)"
         )));
