@@ -59,10 +59,7 @@ import {
 } from '@/renderer/lib/reticulum/reticulumAnnounceIfaceAttribution';
 import { cacheReticulumInboundAttachment } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
 import { cacheReticulumInboundAudio } from '@/renderer/lib/reticulum/reticulumAudioAttachmentCache';
-import {
-  isReticulumBleRnodeInterfaceRow,
-  isReticulumBleRnodeOnline,
-} from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
+import { isReticulumBleRnodeInterfaceRow } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
 import {
   prepareReticulumBleRnodeConnect,
   releaseReticulumBleRnodeConnect,
@@ -323,12 +320,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const suppressReconnectRef = useRef(false);
   /** Set on power-suspend when an enabled BLE RNode was configured — wake must not reuseIfRunning. */
   const powerSuspendHadBleRnodeRef = useRef(false);
-  /** True while we are holding LoRa GATT exclusive for an online BLE RNode. */
-  const rnodeBleOnlineLoRaHoldRef = useRef(false);
   /**
    * True once this recovery episode has run releaseGattBleCentral + scan-lease hold.
    * Distinct from {@link getReticulumBleBondDesyncActive}: `BleLtkDesync` can set the
    * shared flag before `onStatus` arrives, which must not skip the hold setup.
+   * Exclusive LoRa GATT dispose is only for bleBondRemoved / LTK desync recovery — not
+   * while a healthy BLE RNode is online (that blocked MeshCore/Meshtastic BLE coexistence).
    */
   const bondRecoveryHoldAppliedRef = useRef(false);
   /**
@@ -2328,25 +2325,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
         const newlyOnlineBle = logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
         if (newlyOnlineBle.length > 0) {
           void clearReticulumBleBondIssuesForOnlineInterfaces(newlyOnlineBle);
-        }
-        // macOS: two CBCentralManagers in one sidecar can invalidate the RNode bond.
-        // While any BLE RNode is online, keep LoRa GATT disposed/exclusive.
-        const rnodeBleOnline = interfaces.some((row) => isReticulumBleRnodeOnline(row));
-        if (rnodeBleOnline) {
-          rnodeBleOnlineLoRaHoldRef.current = true;
-          void window.electronAPI.releaseGattBleCentral().catch((e: unknown) => {
-            console.debug(
-              '[useReticulumRuntime] releaseGattBleCentral while RNode BLE online ' +
-                errLikeToLogString(e),
-            );
-          });
-        } else if (rnodeBleOnlineLoRaHoldRef.current && !getReticulumBleBondDesyncActive()) {
-          rnodeBleOnlineLoRaHoldRef.current = false;
-          void window.electronAPI.clearGattBondRecoveryExclusive().catch((e: unknown) => {
-            console.debug(
-              '[useReticulumRuntime] clearGattBondRecoveryExclusive ' + errLikeToLogString(e),
-            );
-          });
         }
         const queueAgg = aggregateReticulumLocalRfTxQueue(interfaces);
         setQueueStatus(queueAgg);
