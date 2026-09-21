@@ -556,8 +556,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('mqtt:getClientId', protocol),
     getCachedNodes: () => ipcRenderer.invoke('mqtt:getCachedNodes'),
     getChannelNameToIndex: () => ipcRenderer.invoke('mqtt:getChannelNameToIndex'),
-    updateChannelKeys: (args: { entries: { name: string; pskBase64: string; index?: number }[] }) =>
-      ipcRenderer.invoke('mqtt:updateChannelKeys', args),
+    updateChannelKeys: (args: {
+      entries: { name: string; pskBase64: string; index?: number }[];
+      radioSessionId?: string;
+    }) => ipcRenderer.invoke('mqtt:updateChannelKeys', args),
     updateTopicPrefix: (args: { topicPrefix: string }) =>
       ipcRenderer.invoke('mqtt:updateTopicPrefix', args),
     publish: (args: {

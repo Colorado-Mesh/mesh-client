@@ -143,6 +143,7 @@ import {
   markMeshtasticBroadcastPending,
 } from '../lib/meshtastic/meshtasticHeardRepeat';
 import type { ModulePortEvent, PaxCounterPoint } from '../lib/meshtastic/meshtasticModuleEvents';
+import { createDebouncedMqttChannelKeysPush } from '../lib/meshtastic/meshtasticMqttChannelKeysDebounce';
 import { normalizeMeshtasticMqttChatMessage } from '../lib/meshtastic/meshtasticMqttChatNormalize';
 import { MeshtasticMqttClientProxyBridge } from '../lib/meshtastic/meshtasticMqttClientProxy';
 import {
@@ -248,6 +249,7 @@ import {
   waypointEventsToMeshWaypointMap,
 } from '../lib/storeRecordAdapters';
 import {
+  MESHTASTIC_MQTT_CHANNEL_KEYS_DEBOUNCE_MS,
   MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES,
   MESHTASTIC_PACKET_DEDUP_TTL_MS,
   MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS,
@@ -723,13 +725,21 @@ export function useMeshtasticRuntime() {
 
   const pushMqttChannelKeys = useCallback(() => {
     if (mqttStatusRef.current !== 'connected') return;
-    let entries = meshtasticMqttChannelKeyEntries(channelConfigsRef.current);
-    if (entries.length === 0) {
+    const radioSessionId =
+      myNodeNumRef.current > 0 && deviceRef.current != null
+        ? `rf:${myNodeNumRef.current >>> 0}`
+        : 'rf:none';
+    let entries =
+      radioSessionId === 'rf:none'
+        ? meshtasticMqttChannelKeyEntriesFromManual()
+        : meshtasticMqttChannelKeyEntries(channelConfigsRef.current);
+    if (radioSessionId !== 'rf:none' && entries.length === 0) {
       entries = meshtasticMqttChannelKeyEntriesFromManual();
     }
-    if (entries.length === 0) return;
+    // Allow empty entries with rf:none so RF disconnect clears prior radio maps while MQTT stays up.
+    if (entries.length === 0 && radioSessionId !== 'rf:none') return;
     void window.electronAPI.mqtt
-      .updateChannelKeys({ entries })
+      .updateChannelKeys({ entries, radioSessionId })
       .then(() => window.electronAPI.mqtt.getChannelNameToIndex())
       .then((map) => {
         setDebugSnapshotMeshtasticContext({ mqttChannelNameToIndex: map });
@@ -739,6 +749,26 @@ export function useMeshtasticRuntime() {
           '[useMeshtasticRuntime] mqtt.updateChannelKeys failed ' + errLikeToLogString(e),
         );
       });
+  }, []);
+
+  const mqttChannelKeysPushLatestRef = useRef(pushMqttChannelKeys);
+  mqttChannelKeysPushLatestRef.current = pushMqttChannelKeys;
+
+  const mqttChannelKeysDebouncerRef = useRef(
+    createDebouncedMqttChannelKeysPush(() => {
+      mqttChannelKeysPushLatestRef.current();
+    }, MESHTASTIC_MQTT_CHANNEL_KEYS_DEBOUNCE_MS),
+  );
+
+  const schedulePushMqttChannelKeys = useCallback(() => {
+    mqttChannelKeysDebouncerRef.current.schedule();
+  }, []);
+
+  useEffect(() => {
+    const debouncer = mqttChannelKeysDebouncerRef.current;
+    return () => {
+      debouncer.cancel();
+    };
   }, []);
 
   useEffect(() => {
@@ -2117,6 +2147,9 @@ export function useMeshtasticRuntime() {
       stopWatchdog();
       stopGpsInterval();
       deviceRef.current = null;
+      myNodeNumRef.current = 0;
+      // MQTT may stay up across RF link-loss; drop prior radio topic→index / PSKs (rf:none).
+      pushMqttChannelKeys();
       meshtasticDriverConnectedRef.current = false;
       meshtasticPendingDriverIdentityRef.current = null;
       if (staleDevice) {
@@ -2158,6 +2191,7 @@ export function useMeshtasticRuntime() {
     stopWatchdog,
     stopGpsInterval,
     clearPostCommitRebootRecovery,
+    pushMqttChannelKeys,
   ]);
 
   // Keep the ref in sync
@@ -2765,8 +2799,10 @@ export function useMeshtasticRuntime() {
         batteryPercent: undefined,
         batteryCharging: undefined,
       });
+      myNodeNumRef.current = 0;
+      pushMqttChannelKeys();
     },
-    [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog],
+    [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog, pushMqttChannelKeys],
   );
 
   const finalizeDriverDisconnect = useCallback(
@@ -2815,6 +2851,9 @@ export function useMeshtasticRuntime() {
         batteryPercent: undefined,
         batteryCharging: undefined,
       });
+      myNodeNumRef.current = 0;
+      // Drop prior radio topic→index / PSKs while MQTT may stay connected across RF swaps.
+      pushMqttChannelKeys();
       setConfigureTargetNodeNumState(null);
       configureTargetNodeNumRef.current = null;
       configureTargetPersistRestoredRef.current = false;
@@ -2830,6 +2869,7 @@ export function useMeshtasticRuntime() {
       stopGpsInterval,
       clearConfigureTimeout,
       clearPostCommitRebootRecovery,
+      pushMqttChannelKeys,
     ],
   );
   const connect = useCallback(
@@ -4543,10 +4583,12 @@ export function useMeshtasticRuntime() {
   // ref MQTT uplink reads must follow the resolved list (store first, hook state
   // for MQTT-only presets) rather than the hook state alone. Re-push topic→index
   // when RF channels land after a cold-start MQTT connect (LongFast may be non-0).
+  // Debounce while channels stream one-by-one; main-process updateChannelKeys is
+  // also merge-safe so a partial OnTrail-only push cannot wipe LongFast@1.
   useEffect(() => {
     channelConfigsRef.current = resolvedChannelConfigs;
-    pushMqttChannelKeys();
-  }, [resolvedChannelConfigs, pushMqttChannelKeys]);
+    schedulePushMqttChannelKeys();
+  }, [resolvedChannelConfigs, schedulePushMqttChannelKeys]);
 
   const resolvedModuleConfigs = useMemo(() => {
     if (!meshtasticIdentityId) return moduleConfigs;

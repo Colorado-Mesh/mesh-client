@@ -949,6 +949,12 @@ function validateMqttUpdateChannelKeysArgs(args: unknown): void {
       }
     }
   }
+  if (a.radioSessionId !== undefined) {
+    if (typeof a.radioSessionId !== 'string')
+      throw new Error('mqtt:updateChannelKeys: radioSessionId must be a string');
+    if (a.radioSessionId.length > 64)
+      throw new Error('mqtt:updateChannelKeys: radioSessionId too long');
+  }
 }
 
 function validateMqttUpdateTopicPrefixArgs(args: unknown): void {
@@ -3252,8 +3258,13 @@ ipcMain.handle('mqtt:updateChannelKeys', (event, args) => {
   try {
     console.debug('[IPC] mqtt:updateChannelKeys');
     validateMqttUpdateChannelKeysArgs(args);
-    const a = args as { entries: { name: string; pskBase64: string }[] };
-    mqttManager.updateChannelKeys(a.entries);
+    const a = args as {
+      entries: { name: string; pskBase64: string; index?: number }[];
+      radioSessionId?: string;
+    };
+    mqttManager.updateChannelKeys(a.entries, {
+      radioSessionId: a.radioSessionId,
+    });
   } catch (err) {
     console.error(
       '[IPC] mqtt:updateChannelKeys failed:',

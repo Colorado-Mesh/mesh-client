@@ -233,6 +233,19 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(cleanupIdx).toBeGreaterThan(safeDisconnectIdx);
   });
 
+  it('handleConnectionLost clears MQTT radio session after deviceRef null (rf:none)', () => {
+    // MQTT often stays connected across BLE/serial link-loss; without rf:none the prior
+    // radio's channelNameToIndex / PSKs can mis-file LongFast until the next configure.
+    const lostBody = extractUseCallbackBody(SOURCE, 'handleConnectionLost');
+    const deviceNullIdx = lostBody.indexOf('deviceRef.current = null');
+    const myNodeClearIdx = lostBody.indexOf('myNodeNumRef.current = 0');
+    const pushIdx = lostBody.indexOf('pushMqttChannelKeys()');
+    expect(deviceNullIdx).toBeGreaterThanOrEqual(0);
+    expect(myNodeClearIdx).toBeGreaterThan(deviceNullIdx);
+    expect(pushIdx).toBeGreaterThan(myNodeClearIdx);
+    expect(pushIdx).toBeLessThan(lostBody.indexOf('cleanupSubscriptions()'));
+  });
+
   it('flushes deferred reconnects after non-BLE reconnect attempts settle', () => {
     expect(ATTEMPT_RUNNER).toContain('bleConnectInProgress?.set(false)');
     expect(ATTEMPT_RUNNER).toContain('deferredReconnect.get()');
@@ -481,12 +494,16 @@ describe('useMeshtasticRuntime Linux BLE reconnect peripheral id backfill', () =
   it('re-pushes MQTT channel keys when resolvedChannelConfigs change (RF after cold-start MQTT)', () => {
     // PacketRouter → deviceStore channel configs must re-sync topic→index after MQTT
     // connects with empty/MQTT-only maps (Colorado public LongFast on non-0 slot).
+    // Debounced while RF channels stream; main updateChannelKeys is merge-safe.
     expect(SOURCE).toMatch(
-      /channelConfigsRef\.current = resolvedChannelConfigs;\s*pushMqttChannelKeys\(\);/,
+      /channelConfigsRef\.current = resolvedChannelConfigs;\s*schedulePushMqttChannelKeys\(\);/,
     );
-    expect(SOURCE).toMatch(/\[resolvedChannelConfigs, pushMqttChannelKeys\]/);
+    expect(SOURCE).toMatch(/\[resolvedChannelConfigs, schedulePushMqttChannelKeys\]/);
+    expect(SOURCE).toMatch(/createDebouncedMqttChannelKeysPush/);
+    expect(SOURCE).toMatch(/MESHTASTIC_MQTT_CHANNEL_KEYS_DEBOUNCE_MS/);
+    expect(SOURCE).toMatch(/radioSessionId/);
     expect(SOURCE).toMatch(/meshtasticMqttChannelKeyEntries\(channelConfigsRef\.current\)/);
-    expect(SOURCE).toMatch(/updateChannelKeys\(\{\s*entries\s*\}\)/);
+    expect(SOURCE).toMatch(/updateChannelKeys\(\{/);
     // Hook-state channelConfigs alone must not be the only push trigger (stays empty on RF path).
     expect(SOURCE).not.toMatch(
       /pushMqttChannelKeys\(\);\s*\}, \[channelConfigs, mqttStatus, pushMqttChannelKeys\]/,

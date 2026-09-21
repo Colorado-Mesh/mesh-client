@@ -830,6 +830,7 @@ export interface ElectronAPI {
     getChannelNameToIndex: () => Promise<Record<string, number>>;
     updateChannelKeys: (args: {
       entries: { name: string; pskBase64: string; index?: number }[];
+      radioSessionId?: string;
     }) => Promise<void>;
     updateTopicPrefix: (args: { topicPrefix: string }) => Promise<void>;
     publish: (args: {

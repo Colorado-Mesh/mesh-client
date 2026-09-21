@@ -1743,7 +1743,7 @@ On **Windows**, unread messages use a red taskbar overlay. On **Linux**, launche
 
 MQTT ingest must map inbound text to the **receiver's** local channel slot using the MQTT topic channel name (`LongFast`, regional names, etc.) via `channelNameToIndex`. `MeshPacket.channel` in the ServiceEnvelope is the **sender's** local RF slot and must not drive attribution — remote gateways often use a different slot layout (e.g. LongFast on slot 1 while you use slot 0).
 
-Mis-filed messages also occur when `channelNameToIndex` is stale or incomplete: unnamed default-public on slot 1 without radio sync, MQTT-only without `ChannelName@index=` manual PSK lines, or MQTT connecting before RF channel configs arrive (cold-start empty map).
+Mis-filed messages also occur when `channelNameToIndex` is stale or incomplete: unnamed default-public on slot 1 without radio sync, MQTT-only without `ChannelName@index=` manual PSK lines, MQTT connecting before RF channel configs arrive (cold-start empty map), or (fixed in current builds) a mid-stream radio sync that temporarily wiped `LongFast` while channel packets arrived one-by-one after cycling radios — topic→index and radio PSKs are now merge-safe so a partial `OnTrail=0` push cannot drop `LongFast=1` or private decrypt keys, and `radioSessionId` clears prior radio maps when the RF identity changes.
 
 **Fix**
 
