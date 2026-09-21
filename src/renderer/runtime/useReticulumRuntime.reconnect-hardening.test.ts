@@ -69,6 +69,10 @@ describe('useReticulumRuntime reconnect hardening (regression)', () => {
     );
     // Bond-recovery path may pause LoRa GATT; keep it out of connect().
     expect(SOURCE).toMatch(/bleBondRemoved[\s\S]*?releaseGattBleCentral\(\)/);
+    // Healthy online BLE RNode must not permanently exclusive-hold LoRa GATT
+    // (that blocked MeshCore BLE coexistence after #1034).
+    expect(SOURCE).not.toContain('rnodeBleOnlineLoRaHoldRef');
+    expect(SOURCE).not.toMatch(/isReticulumBleRnodeOnline[\s\S]*?releaseGattBleCentral/);
   });
 });
 

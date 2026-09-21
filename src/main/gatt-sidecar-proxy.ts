@@ -105,8 +105,9 @@ export class GattSidecarProxy extends EventEmitter {
   }
 
   /**
-   * Block LoRa GATT scan/connect while RNode recovers from CoreBluetooth Peer-removed
-   * or while an RNode BLE link is online (macOS cannot safely host two CBCentralManagers).
+   * Block LoRa GATT scan/connect while RNode recovers from CoreBluetooth Peer-removed /
+   * LTK desync (exclusive dual-central pause). Healthy online RNode must NOT hold this —
+   * MeshCore/Meshtastic BLE coexist on different MACs in the same sidecar.
    * Auto-clears after 10 minutes so a stuck latch cannot brick MeshCore/Meshtastic forever.
    */
   setRnodeBondRecoveryExclusive(active: boolean): void {
