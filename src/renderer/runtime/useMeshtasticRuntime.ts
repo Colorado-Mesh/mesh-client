@@ -143,6 +143,7 @@ import {
   markMeshtasticBroadcastPending,
 } from '../lib/meshtastic/meshtasticHeardRepeat';
 import type { ModulePortEvent, PaxCounterPoint } from '../lib/meshtastic/meshtasticModuleEvents';
+import { createDebouncedMqttChannelKeysPush } from '../lib/meshtastic/meshtasticMqttChannelKeysDebounce';
 import { normalizeMeshtasticMqttChatMessage } from '../lib/meshtastic/meshtasticMqttChatNormalize';
 import { MeshtasticMqttClientProxyBridge } from '../lib/meshtastic/meshtasticMqttClientProxy';
 import {
@@ -724,13 +725,21 @@ export function useMeshtasticRuntime() {
 
   const pushMqttChannelKeys = useCallback(() => {
     if (mqttStatusRef.current !== 'connected') return;
-    let entries = meshtasticMqttChannelKeyEntries(channelConfigsRef.current);
-    if (entries.length === 0) {
+    const radioSessionId =
+      myNodeNumRef.current > 0 && deviceRef.current != null
+        ? `rf:${myNodeNumRef.current >>> 0}`
+        : 'rf:none';
+    let entries =
+      radioSessionId === 'rf:none'
+        ? meshtasticMqttChannelKeyEntriesFromManual()
+        : meshtasticMqttChannelKeyEntries(channelConfigsRef.current);
+    if (radioSessionId !== 'rf:none' && entries.length === 0) {
       entries = meshtasticMqttChannelKeyEntriesFromManual();
     }
-    if (entries.length === 0) return;
+    // Allow empty entries with rf:none so RF disconnect clears prior radio maps while MQTT stays up.
+    if (entries.length === 0 && radioSessionId !== 'rf:none') return;
     void window.electronAPI.mqtt
-      .updateChannelKeys({ entries })
+      .updateChannelKeys({ entries, radioSessionId })
       .then(() => window.electronAPI.mqtt.getChannelNameToIndex())
       .then((map) => {
         setDebugSnapshotMeshtasticContext({ mqttChannelNameToIndex: map });
@@ -742,23 +751,23 @@ export function useMeshtasticRuntime() {
       });
   }, []);
 
-  const mqttChannelKeysDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mqttChannelKeysPushLatestRef = useRef(pushMqttChannelKeys);
+  mqttChannelKeysPushLatestRef.current = pushMqttChannelKeys;
+
+  const mqttChannelKeysDebouncerRef = useRef(
+    createDebouncedMqttChannelKeysPush(() => {
+      mqttChannelKeysPushLatestRef.current();
+    }, MESHTASTIC_MQTT_CHANNEL_KEYS_DEBOUNCE_MS),
+  );
+
   const schedulePushMqttChannelKeys = useCallback(() => {
-    if (mqttChannelKeysDebounceRef.current != null) {
-      clearTimeout(mqttChannelKeysDebounceRef.current);
-    }
-    mqttChannelKeysDebounceRef.current = setTimeout(() => {
-      mqttChannelKeysDebounceRef.current = null;
-      pushMqttChannelKeys();
-    }, MESHTASTIC_MQTT_CHANNEL_KEYS_DEBOUNCE_MS);
-  }, [pushMqttChannelKeys]);
+    mqttChannelKeysDebouncerRef.current.schedule();
+  }, []);
 
   useEffect(() => {
+    const debouncer = mqttChannelKeysDebouncerRef.current;
     return () => {
-      if (mqttChannelKeysDebounceRef.current != null) {
-        clearTimeout(mqttChannelKeysDebounceRef.current);
-        mqttChannelKeysDebounceRef.current = null;
-      }
+      debouncer.cancel();
     };
   }, []);
 
@@ -2786,8 +2795,10 @@ export function useMeshtasticRuntime() {
         batteryPercent: undefined,
         batteryCharging: undefined,
       });
+      myNodeNumRef.current = 0;
+      pushMqttChannelKeys();
     },
-    [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog],
+    [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog, pushMqttChannelKeys],
   );
 
   const finalizeDriverDisconnect = useCallback(
@@ -2836,6 +2847,9 @@ export function useMeshtasticRuntime() {
         batteryPercent: undefined,
         batteryCharging: undefined,
       });
+      myNodeNumRef.current = 0;
+      // Drop prior radio topic→index / PSKs while MQTT may stay connected across RF swaps.
+      pushMqttChannelKeys();
       setConfigureTargetNodeNumState(null);
       configureTargetNodeNumRef.current = null;
       configureTargetPersistRestoredRef.current = false;
@@ -2851,6 +2865,7 @@ export function useMeshtasticRuntime() {
       stopGpsInterval,
       clearConfigureTimeout,
       clearPostCommitRebootRecovery,
+      pushMqttChannelKeys,
     ],
   );
   const connect = useCallback(

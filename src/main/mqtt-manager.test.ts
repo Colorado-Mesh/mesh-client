@@ -1676,6 +1676,95 @@ describe('updateChannelKeys', () => {
     expect(manager.getChannelNameToIndex().LongFast).toBe(1);
   });
 
+  it('radioSessionId change clears prior radio topic names before merge', () => {
+    const manager = new MQTTManager();
+    stubMqttConnect(manager);
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys(
+      [
+        { name: 'OnTrail', pskBase64: Buffer.alloc(16, 1).toString('base64'), index: 0 },
+        { name: 'LongFast', pskBase64: 'AQ==', index: 1 },
+        { name: 'cm-west-slp', pskBase64: Buffer.alloc(16, 2).toString('base64'), index: 2 },
+      ],
+      { radioSessionId: 'rf:111' },
+    );
+    expect(manager.getChannelNameToIndex()['cm-west-slp']).toBe(2);
+
+    // Replacement radio: only primary so far — must not keep prior radio's cm-west-slp.
+    manager.updateChannelKeys(
+      [{ name: 'Primary', pskBase64: Buffer.alloc(16, 9).toString('base64'), index: 0 }],
+      { radioSessionId: 'rf:222' },
+    );
+    expect(manager.getChannelNameToIndex()).toEqual({ Primary: 0 });
+    expect(manager.getChannelNameToIndex().LongFast).toBeUndefined();
+    expect(manager.getChannelNameToIndex()['cm-west-slp']).toBeUndefined();
+  });
+
+  it('partial push keeps private-channel PSK so inbound decrypt still works', () => {
+    const manager = new MQTTManager();
+    const access = mqttChannelTestAccess(manager);
+    stubMqttConnect(manager);
+    const privatePsk = Buffer.alloc(16, 0xab);
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/US/CO/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys([
+      { name: 'OnTrail', pskBase64: privatePsk.toString('base64'), index: 0 },
+      { name: 'LongFast', pskBase64: 'AQ==', index: 1 },
+    ]);
+
+    // Mid-stream: only LongFast arrives again — OnTrail PSK must remain decryptable.
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 1 }]);
+    expect(access.channelKeysByName.get('OnTrail')?.equals(privatePsk)).toBe(true);
+    expect(
+      (manager as unknown as { allDecryptKeys: Buffer[] }).allDecryptKeys.some((k) =>
+        k.equals(privatePsk),
+      ),
+    ).toBe(true);
+
+    const nodeId = 0x11223344;
+    const packetId = 0x00000077;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('private after partial'),
+      }),
+    );
+    const payload = buildEnvelope({
+      nodeId,
+      packetId,
+      dataBytes,
+      psk: privatePsk,
+      channelName: 'OnTrail',
+      channel: 0,
+    });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    access.onMessage('msh/US/CO/2/e/OnTrail/!11223344', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { payload: string; channel: number }).payload).toBe(
+      'private after partial',
+    );
+    expect((messages[0] as { channel: number }).channel).toBe(0);
+  });
+
   it('Nathan/Colorado: radio LongFast@1 overrides manual LongFast@0 for topic attribution', () => {
     const manager = new MQTTManager();
     const access = mqttChannelTestAccess(manager);
