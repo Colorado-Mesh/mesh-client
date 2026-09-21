@@ -2147,6 +2147,9 @@ export function useMeshtasticRuntime() {
       stopWatchdog();
       stopGpsInterval();
       deviceRef.current = null;
+      myNodeNumRef.current = 0;
+      // MQTT may stay up across RF link-loss; drop prior radio topic→index / PSKs (rf:none).
+      pushMqttChannelKeys();
       meshtasticDriverConnectedRef.current = false;
       meshtasticPendingDriverIdentityRef.current = null;
       if (staleDevice) {
@@ -2188,6 +2191,7 @@ export function useMeshtasticRuntime() {
     stopWatchdog,
     stopGpsInterval,
     clearPostCommitRebootRecovery,
+    pushMqttChannelKeys,
   ]);
 
   // Keep the ref in sync
