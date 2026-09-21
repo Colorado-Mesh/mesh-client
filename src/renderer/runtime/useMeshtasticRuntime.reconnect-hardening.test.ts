@@ -481,10 +481,12 @@ describe('useMeshtasticRuntime Linux BLE reconnect peripheral id backfill', () =
   it('re-pushes MQTT channel keys when resolvedChannelConfigs change (RF after cold-start MQTT)', () => {
     // PacketRouter → deviceStore channel configs must re-sync topic→index after MQTT
     // connects with empty/MQTT-only maps (Colorado public LongFast on non-0 slot).
+    // Debounced while RF channels stream; main updateChannelKeys is merge-safe.
     expect(SOURCE).toMatch(
-      /channelConfigsRef\.current = resolvedChannelConfigs;\s*pushMqttChannelKeys\(\);/,
+      /channelConfigsRef\.current = resolvedChannelConfigs;\s*schedulePushMqttChannelKeys\(\);/,
     );
-    expect(SOURCE).toMatch(/\[resolvedChannelConfigs, pushMqttChannelKeys\]/);
+    expect(SOURCE).toMatch(/\[resolvedChannelConfigs, schedulePushMqttChannelKeys\]/);
+    expect(SOURCE).toMatch(/MESHTASTIC_MQTT_CHANNEL_KEYS_DEBOUNCE_MS/);
     expect(SOURCE).toMatch(/meshtasticMqttChannelKeyEntries\(channelConfigsRef\.current\)/);
     expect(SOURCE).toMatch(/updateChannelKeys\(\{\s*entries\s*\}\)/);
     // Hook-state channelConfigs alone must not be the only push trigger (stays empty on RF path).

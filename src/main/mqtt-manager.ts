@@ -305,6 +305,12 @@ export class MQTTManager extends EventEmitter {
   private channelKeysByName = new Map<string, Buffer>();
   /** MQTT topic channel name → RF channel index for inbound message attribution. */
   private channelNameToIndex = new Map<string, number>();
+  /**
+   * Topic→index last applied from radio `updateChannelKeys` (merged across partial RF
+   * channel streams). Kept separately so a mid-stream push of only slot 0 does not wipe
+   * LongFast@1 / other slots from {@link channelNameToIndex}.
+   */
+  private radioTopicIndexByName = new Map<string, number>();
   /** Names registered by the last updateChannelKeys (radio); cleared on next sync. */
   private radioChannelKeyNames = new Set<string>();
   /** Connection panel channel PSK lines from last connect (re-applied after radio sync). */
@@ -344,6 +350,7 @@ export class MQTTManager extends EventEmitter {
     this.currentSettings = settings;
     this.channelKeysByName.clear();
     this.channelNameToIndex.clear();
+    this.radioTopicIndexByName.clear();
     this.radioChannelKeyNames.clear();
     this.manualChannelPskLines = settings.channelPsks ?? [];
     this.manualChannelKeyNames.clear();
@@ -355,13 +362,19 @@ export class MQTTManager extends EventEmitter {
     this._doConnect(settings);
   }
 
-  /** Merge channel PSKs from connected radio (Android-like); replaces prior radio sync. */
+  /**
+   * Merge channel PSKs / topic→index from the connected radio.
+   * PSK material from the prior radio sync is replaced each call; topic→index is
+   * merge-safe across incremental RF channel packets so a partial push (e.g. only
+   * OnTrail@0) does not drop LongFast@1 and mis-file public MQTT traffic onto slot 0.
+   */
   updateChannelKeys(entries: MqttChannelKeyEntry[]): void {
+    // Decrypt keys: replace prior radio PSKs (attribution map is merge-safe below).
     for (const name of this.radioChannelKeyNames) {
       this.channelKeysByName.delete(name);
-      this.channelNameToIndex.delete(name);
     }
     this.radioChannelKeyNames.clear();
+
     const radioTopicIndices = new Map<string, number>();
     for (const entry of entries) {
       const name = entry.name.trim();
@@ -371,9 +384,6 @@ export class MQTTManager extends EventEmitter {
         const idx = entry.index >>> 0;
         if (idx <= 7) {
           radioTopicIndices.set(name, idx);
-          // Radio local slot is source of truth for topic→index attribution (even when a
-          // manual LongFast@0= line exists — Colorado / non-primary public layouts).
-          this.channelNameToIndex.set(name, idx);
         }
       }
       if (this.manualChannelKeyNames.has(name)) continue;
@@ -388,10 +398,43 @@ export class MQTTManager extends EventEmitter {
       this.channelKeysByName.set(name, psk);
       this.radioChannelKeyNames.add(name);
     }
-    this.applyManualChannelPskLines(this.manualChannelPskLines);
-    // Manual lines may reset LongFast→0 (bare LongFast= or LongFast@0=). Re-apply radio
-    // topic indices so local RF layout wins for inbound MQTT channel attribution.
+
+    const priorRadio = new Map(this.radioTopicIndexByName);
+    const priorIndexes = new Set(priorRadio.values());
+    const newIndexes = new Set(radioTopicIndices.values());
+
     for (const [name, idx] of radioTopicIndices) {
+      // Slot takeover: another name must not keep this local RF slot for attribution.
+      for (const [otherName, otherIdx] of this.channelNameToIndex) {
+        if (otherIdx === idx && otherName !== name) {
+          this.channelNameToIndex.delete(otherName);
+        }
+      }
+      for (const [otherName, otherIdx] of this.radioTopicIndexByName) {
+        if (otherIdx === idx && otherName !== name) {
+          this.radioTopicIndexByName.delete(otherName);
+        }
+      }
+      this.radioTopicIndexByName.set(name, idx);
+      this.channelNameToIndex.set(name, idx);
+    }
+
+    // Evict radio names absent from this push only when every prior radio slot is covered
+    // (full replace). Partial streams (OnTrail only) keep LongFast@1 / siblings.
+    const coversPrior = priorIndexes.size > 0 && [...priorIndexes].every((i) => newIndexes.has(i));
+    if (coversPrior) {
+      for (const oldName of priorRadio.keys()) {
+        if (!radioTopicIndices.has(oldName)) {
+          this.radioTopicIndexByName.delete(oldName);
+          this.channelNameToIndex.delete(oldName);
+        }
+      }
+    }
+
+    this.applyManualChannelPskLines(this.manualChannelPskLines);
+    // Manual lines may reset LongFast→0 (bare LongFast= or LongFast@0=). Re-apply the
+    // merged radio topic map so local RF layout wins for inbound MQTT attribution.
+    for (const [name, idx] of this.radioTopicIndexByName) {
       this.channelNameToIndex.set(name, idx);
     }
     this.rebuildAllDecryptKeys();

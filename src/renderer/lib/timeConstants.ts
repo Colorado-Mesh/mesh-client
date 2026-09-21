@@ -235,6 +235,12 @@ export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS = 30 * MS_PER_SECO
 export const MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS = 120 * MS_PER_SECOND;
 
 /**
+ * Coalesce `mqtt.updateChannelKeys` while RF channel configs stream in one-by-one.
+ * Main-process topic→index is also merge-safe; this cuts IPC churn during configure.
+ */
+export const MESHTASTIC_MQTT_CHANNEL_KEYS_DEBOUNCE_MS = 300;
+
+/**
  * Hard ceiling for one LoRa reconnect open+configure/attach attempt (Meshtastic + MeshCore),
  * applied to every transport. For BLE, covers createBleConnection attempts (~45–50s) +
  * configure/attach margin so deferred GATT disconnect flush always runs instead of stalling

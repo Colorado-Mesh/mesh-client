@@ -248,6 +248,7 @@ import {
   waypointEventsToMeshWaypointMap,
 } from '../lib/storeRecordAdapters';
 import {
+  MESHTASTIC_MQTT_CHANNEL_KEYS_DEBOUNCE_MS,
   MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES,
   MESHTASTIC_PACKET_DEDUP_TTL_MS,
   MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS,
@@ -739,6 +740,26 @@ export function useMeshtasticRuntime() {
           '[useMeshtasticRuntime] mqtt.updateChannelKeys failed ' + errLikeToLogString(e),
         );
       });
+  }, []);
+
+  const mqttChannelKeysDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const schedulePushMqttChannelKeys = useCallback(() => {
+    if (mqttChannelKeysDebounceRef.current != null) {
+      clearTimeout(mqttChannelKeysDebounceRef.current);
+    }
+    mqttChannelKeysDebounceRef.current = setTimeout(() => {
+      mqttChannelKeysDebounceRef.current = null;
+      pushMqttChannelKeys();
+    }, MESHTASTIC_MQTT_CHANNEL_KEYS_DEBOUNCE_MS);
+  }, [pushMqttChannelKeys]);
+
+  useEffect(() => {
+    return () => {
+      if (mqttChannelKeysDebounceRef.current != null) {
+        clearTimeout(mqttChannelKeysDebounceRef.current);
+        mqttChannelKeysDebounceRef.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -4543,10 +4564,12 @@ export function useMeshtasticRuntime() {
   // ref MQTT uplink reads must follow the resolved list (store first, hook state
   // for MQTT-only presets) rather than the hook state alone. Re-push topic→index
   // when RF channels land after a cold-start MQTT connect (LongFast may be non-0).
+  // Debounce while channels stream one-by-one; main-process updateChannelKeys is
+  // also merge-safe so a partial OnTrail-only push cannot wipe LongFast@1.
   useEffect(() => {
     channelConfigsRef.current = resolvedChannelConfigs;
-    pushMqttChannelKeys();
-  }, [resolvedChannelConfigs, pushMqttChannelKeys]);
+    schedulePushMqttChannelKeys();
+  }, [resolvedChannelConfigs, schedulePushMqttChannelKeys]);
 
   const resolvedModuleConfigs = useMemo(() => {
     if (!meshtasticIdentityId) return moduleConfigs;
