@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -16,27 +16,99 @@ import {
 
 const SEVERITY_ORDER: Severity[] = [0, 1, 2, 3];
 
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Increment an existing `Npax` token, or append `1pax`. */
+export function bumpMecpPaxFreetext(prev: string): string {
+  if (/(\d+)pax/.test(prev)) {
+    return prev.replace(/(\d+)pax/, (_, n: string) => `${Number(n) + 1}pax`);
+  }
+  const trimmed = prev.trim();
+  return trimmed ? `${trimmed} 1pax` : '1pax';
+}
+
 interface MecpComposeModalProps {
   open: boolean;
   onClose: () => void;
   onSend: (mecpString: string) => void | Promise<void>;
+  /** App GPS waterfall (device → static → browser → IP). Prefer over raw geolocation. */
+  resolveGps?: () => Promise<{ lat: number; lon: number } | null>;
 }
 
-export function MecpComposeModal({ open, onClose, onSend }: MecpComposeModalProps) {
+export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComposeModalProps) {
   const { t, i18n } = useTranslation();
-  const [severity, setSeverity] = useState<Severity>(0);
+  const [severity, setSeverity] = useState<Severity>(3);
   const [category, setCategory] = useState<CategoryLetter>('M');
-  const [codes, setCodes] = useState<string[]>([]);
+  const [codes, setCodes] = useState<string[]>(['D01']);
   const [freetext, setFreetext] = useState('');
-  const [drill, setDrill] = useState(false);
   const [langFile, setLangFile] = useState(() =>
     getCachedMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')),
   );
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     void loadMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')).then(setLangFile);
   }, [i18n.language]);
+
+  useEffect(() => {
+    if (!open) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    previouslyFocusedRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const focusables = () =>
+      [...panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].filter(
+        (el) => el.offsetParent !== null || el === document.activeElement,
+      );
+
+    focusables()[0]?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      const nodes = focusables();
+      if (nodes.length === 0) return;
+
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement;
+
+      if (e.shiftKey) {
+        if (active === first || !panel.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !panel.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      const prev = previouslyFocusedRef.current;
+      if (prev && document.contains(prev)) {
+        prev.focus();
+      }
+    };
+  }, [open]);
 
   const codesForCategory = useMemo(() => {
     return Object.keys(langFile.codes)
@@ -44,62 +116,93 @@ export function MecpComposeModal({ open, onClose, onSend }: MecpComposeModalProp
       .sort();
   }, [langFile.codes, category]);
 
-  const effectiveCodes = useMemo(() => {
-    const list = [...codes];
-    if (drill && !list.includes('D01')) list.unshift('D01');
-    return list;
-  }, [codes, drill]);
-
   const encoded = useMemo(
-    () => encode(severity, effectiveCodes, freetext.trim() || undefined),
-    [severity, effectiveCodes, freetext],
+    () => encode(severity, codes, freetext.trim() || undefined),
+    [severity, codes, freetext],
   );
 
   const byteLen = encoded.byteLength || getByteLength(encoded.message);
-  const canSend = effectiveCodes.length > 0 && !encoded.overLimit && !sending;
+  const canSend = codes.length > 0 && !encoded.overLimit && !sending;
 
-  const toggleCode = useCallback((code: string) => {
-    setCodes((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
+  const clearError = useCallback(() => {
+    setError(null);
   }, []);
 
-  const attachGps = useCallback(() => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const gps = `${pos.coords.latitude.toFixed(5)},${pos.coords.longitude.toFixed(5)}`;
-        setFreetext((prev) => (prev.trim() ? `${prev.trim()} ${gps}` : gps));
-      },
-      (err) => {
-        console.warn('[MecpComposeModal] GPS failed', err.message);
-      },
-      { enableHighAccuracy: true, timeout: 10_000 },
-    );
-  }, []);
+  const toggleCode = useCallback(
+    (code: string) => {
+      clearError();
+      setCodes((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
+    },
+    [clearError],
+  );
+
+  const attachGps = useCallback(async () => {
+    clearError();
+    try {
+      let pos: { lat: number; lon: number } | null = null;
+      if (resolveGps) {
+        pos = await resolveGps();
+      } else if (typeof navigator !== 'undefined' && navigator.geolocation) {
+        pos = await new Promise<{ lat: number; lon: number } | null>((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (p) => {
+              resolve({ lat: p.coords.latitude, lon: p.coords.longitude });
+            },
+            () => {
+              resolve(null);
+            },
+            { enableHighAccuracy: true, timeout: 10_000 },
+          );
+        });
+      }
+      if (!pos) {
+        setError(t('mecp.compose.gpsFailed'));
+        return;
+      }
+      const gps = `${pos.lat.toFixed(5)},${pos.lon.toFixed(5)}`;
+      setFreetext((prev) => (prev.trim() ? `${prev.trim()} ${gps}` : gps));
+    } catch (e) {
+      console.warn('[MecpComposeModal] GPS failed', e instanceof Error ? e.message : e);
+      setError(t('mecp.compose.gpsFailed'));
+    }
+  }, [clearError, resolveGps, t]);
 
   const handleSend = useCallback(async () => {
     if (!canSend) return;
+    clearError();
     setSending(true);
     try {
       await onSend(encoded.message);
       onClose();
-      setCodes([]);
+      setCodes(['D01']);
       setFreetext('');
-      setDrill(false);
+      setSeverity(3);
+    } catch (e) {
+      console.warn('[MecpComposeModal] send failed', e instanceof Error ? e.message : e);
+      const msg = e instanceof Error && e.message.trim() ? e.message : t('mecp.compose.sendFailed');
+      setError(msg);
     } finally {
       setSending(false);
     }
-  }, [canSend, encoded.message, onClose, onSend]);
+  }, [canSend, clearError, encoded.message, onClose, onSend, t]);
 
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t('mecp.compose.title')}
-    >
-      <div className="bg-deep-black max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-red-700/50 p-4 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <button
+        type="button"
+        aria-label={t('common.cancel')}
+        className="absolute inset-0 cursor-pointer border-0 bg-transparent p-0"
+        onClick={onClose}
+      />
+      <div
+        ref={panelRef}
+        className="bg-deep-black relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-red-700/50 p-4 shadow-xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('mecp.compose.title')}
+      >
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-red-200">{t('mecp.compose.title')}</h2>
           <button
@@ -121,6 +224,7 @@ export function MecpComposeModal({ open, onClose, onSend }: MecpComposeModalProp
               aria-label={t(severityLabelKey(s))}
               aria-pressed={severity === s}
               onClick={() => {
+                clearError();
                 setSeverity(s);
               }}
               className={`rounded px-2 py-1 text-xs font-semibold ${
@@ -149,6 +253,7 @@ export function MecpComposeModal({ open, onClose, onSend }: MecpComposeModalProp
               aria-pressed={category === letter}
               aria-label={langFile.categories[letter]?.name ?? letter}
               onClick={() => {
+                clearError();
                 setCategory(letter);
               }}
               className={`rounded px-1 py-1 text-[10px] ${
@@ -203,6 +308,7 @@ export function MecpComposeModal({ open, onClose, onSend }: MecpComposeModalProp
           id="mecp-freetext"
           value={freetext}
           onChange={(e) => {
+            clearError();
             setFreetext(e.target.value);
           }}
           rows={2}
@@ -214,7 +320,8 @@ export function MecpComposeModal({ open, onClose, onSend }: MecpComposeModalProp
             type="button"
             className="rounded border border-gray-600 px-2 py-0.5 text-xs text-gray-300"
             onClick={() => {
-              setFreetext((p) => (p.trim() ? `${p.trim()} 1pax` : '1pax'));
+              clearError();
+              setFreetext(bumpMecpPaxFreetext);
             }}
             aria-label={t('mecp.compose.addPax')}
           >
@@ -224,23 +331,12 @@ export function MecpComposeModal({ open, onClose, onSend }: MecpComposeModalProp
             type="button"
             className="rounded border border-gray-600 px-2 py-0.5 text-xs text-gray-300"
             onClick={() => {
-              attachGps();
+              void attachGps();
             }}
             aria-label={t('mecp.compose.attachGps')}
           >
             {t('mecp.compose.attachGps')}
           </button>
-          <label className="flex items-center gap-1 text-xs text-gray-300">
-            <input
-              type="checkbox"
-              checked={drill}
-              onChange={(e) => {
-                setDrill(e.target.checked);
-              }}
-              aria-label={t('mecp.compose.drill')}
-            />
-            {t('mecp.compose.drill')}
-          </label>
         </div>
 
         <p className="mb-1 font-mono text-xs break-all text-gray-300">{encoded.message || '—'}</p>
@@ -250,6 +346,12 @@ export function MecpComposeModal({ open, onClose, onSend }: MecpComposeModalProp
         >
           {t('mecp.compose.byteBudget', { used: byteLen, max: MAX_MESSAGE_BYTES })}
         </p>
+
+        {error ? (
+          <p className="mb-3 text-xs text-red-400" role="alert">
+            {error}
+          </p>
+        ) : null}
 
         <div className="flex justify-end gap-2">
           <button

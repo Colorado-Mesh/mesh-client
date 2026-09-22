@@ -49,7 +49,10 @@ function parseEndpoint(raw: unknown): MecpRebroadcastEndpoint | null {
   const o = raw as Record<string, unknown>;
   if (o.protocol !== 'meshtastic' && o.protocol !== 'meshcore') return null;
   if (typeof o.channelIndex !== 'number' || !Number.isFinite(o.channelIndex)) return null;
-  return { protocol: o.protocol, channelIndex: Math.trunc(o.channelIndex) };
+  const channelIndex = Math.trunc(o.channelIndex);
+  // Match mqtt-manager MeshPacket.channel wire range (0–7).
+  if (channelIndex < 0 || channelIndex > 7) return null;
+  return { protocol: o.protocol, channelIndex };
 }
 
 function pruneFingerprints(now: number): void {

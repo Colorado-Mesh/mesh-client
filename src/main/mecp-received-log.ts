@@ -87,23 +87,25 @@ export function formatMecpReceivedLogLine(entry: MecpReceivedLogEntry): string {
   return `${JSON.stringify(record)}\n`;
 }
 
-export function appendMecpReceivedLog(entry: MecpReceivedLogEntry): void {
+export function appendMecpReceivedLog(entry: MecpReceivedLogEntry): Promise<void> {
   const filePath = getMecpReceivedLogPath();
   const line = formatMecpReceivedLogLine(entry);
-  appendChain = appendChain
-    .then(async () => {
-      rotateIfNeeded(filePath);
-      await fs.promises.appendFile(filePath, line, 'utf8');
-    })
-    .catch((e: unknown) => {
-      console.warn(
-        '[mecp-received-log] append failed',
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-      );
-    });
+  const write = appendChain.then(async () => {
+    rotateIfNeeded(filePath);
+    await fs.promises.appendFile(filePath, line, 'utf8');
+  });
+  // Keep the chain alive after failures so later appends still run.
+  appendChain = write.catch((e: unknown) => {
+    console.warn(
+      '[mecp-received-log] append failed',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+  });
+  return write;
 }
 
 export async function readMecpReceivedLogForExport(): Promise<string> {
+  await appendChain.catch(() => undefined);
   const filePath = getMecpReceivedLogPath();
   const backup = path.join(path.dirname(filePath), MECP_RECEIVED_LOG_BACKUP_FILENAME);
   const parts: string[] = [];

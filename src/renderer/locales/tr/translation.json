@@ -6041,9 +6041,10 @@
       "freetext": "Free text (pax, GPS, notes)",
       "addPax": "Add 1pax",
       "attachGps": "Attach GPS",
-      "drill": "Drill (D01 — no alerts)",
       "byteBudget": "{{used}} / {{max}} bytes",
-      "send": "Send MECP"
+      "send": "Send MECP",
+      "gpsFailed": "GPS düzeltmesi alınamadı",
+      "sendFailed": "MECP raporu gönderilemedi"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6056,6 +6057,14 @@
       "endpointB": "Forward / destination (B)",
       "protocol": "Protocol",
       "channelIndex": "Channel index"
+    },
+    "exportLogSuccess": "MECP günlüğü dışa aktarıldı",
+    "exportLogSuccessPath": "MECP günlüğü {{path}} 'a dışa aktarıldı",
+    "exportLogFailed": "MECP günlüğü dışa aktarılamadı",
+    "section": {
+      "title": "MECP",
+      "hint": "Mesh Acil Durum İletişim Protokolü — Sohbetten raporlar oluşturun, Meshtastic ve MeshCore arasında RF'yi burada köprüleyin ve dayanıklı alınan denetim günlüğünü dışa aktarın.",
+      "learnMore": "MECP nasıl çalışır?"
     }
   }
 }

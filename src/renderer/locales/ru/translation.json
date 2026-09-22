@@ -6135,9 +6135,10 @@
       "freetext": "Free text (pax, GPS, notes)",
       "addPax": "Add 1pax",
       "attachGps": "Attach GPS",
-      "drill": "Drill (D01 — no alerts)",
       "byteBudget": "{{used}} / {{max}} bytes",
-      "send": "Send MECP"
+      "send": "Send MECP",
+      "gpsFailed": "Не удалось получить исправление GPS",
+      "sendFailed": "Не удалось отправить отчет"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6150,6 +6151,14 @@
       "endpointB": "Forward / destination (B)",
       "protocol": "Protocol",
       "channelIndex": "Channel index"
+    },
+    "exportLogSuccess": "Журнал MECP экспортирован",
+    "exportLogSuccessPath": "Журнал MECP экспортирован в {{path}}",
+    "exportLogFailed": "Не удалось экспортировать журнал",
+    "section": {
+      "title": "MECP",
+      "hint": "Mesh Emergency Communication Protocol — составляйте отчеты из чата, соединяйте RF между Meshtastic и MeshCore здесь и экспортируйте долговечный полученный журнал аудита.",
+      "learnMore": "Как работает MECP"
     }
   }
 }

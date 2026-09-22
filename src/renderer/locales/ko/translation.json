@@ -6041,9 +6041,10 @@
       "freetext": "Free text (pax, GPS, notes)",
       "addPax": "Add 1pax",
       "attachGps": "Attach GPS",
-      "drill": "Drill (D01 — no alerts)",
       "byteBudget": "{{used}} / {{max}} bytes",
-      "send": "Send MECP"
+      "send": "Send MECP",
+      "gpsFailed": "GPS 수정을 받을 수 없습니다",
+      "sendFailed": "MECP 보고서 전송 실패"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6056,6 +6057,14 @@
       "endpointB": "Forward / destination (B)",
       "protocol": "Protocol",
       "channelIndex": "Channel index"
+    },
+    "exportLogSuccess": "MECP 로그 내보내기 완료",
+    "exportLogSuccessPath": "{{path}} 로 내보낸 MECP 로그",
+    "exportLogFailed": "MECP 로그 내보내기 실패",
+    "section": {
+      "title": "MECP",
+      "hint": "메시 비상 통신 프로토콜 — 채팅에서 보고서를 작성하고, Meshtastic과 MeshCore 간에 RF를 연결하고, 수신된 내구성 있는 감사 로그를 내보냅니다.",
+      "learnMore": "MECP 이용 방법"
     }
   }
 }

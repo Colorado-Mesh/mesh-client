@@ -1160,7 +1160,11 @@ export interface ElectronAPI {
       bidirectional?: boolean;
       messageId?: string;
     }) => Promise<{ ok: true }>;
-    exportReceivedLog: () => Promise<{ success: boolean; path?: string; reason?: 'empty' }>;
+    exportReceivedLog: () => Promise<{
+      success: boolean;
+      path?: string;
+      reason?: 'empty' | 'cancelled' | 'error';
+    }>;
   };
 
   // ─── Chat export ─────────────────────────────────────────────────────────────

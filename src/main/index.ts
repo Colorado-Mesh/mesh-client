@@ -4870,19 +4870,19 @@ ipcMain.handle('chat:export', async (event, messages: unknown) => {
   }
 });
 
-ipcMain.handle('mecp:appendReceived', (event, entry: unknown) => {
+ipcMain.handle('mecp:appendReceived', async (event, entry: unknown) => {
   if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
   if (!isValidMecpAppendPayload(entry)) {
     throw new Error('mecp:appendReceived: invalid entry');
   }
-  appendMecpReceivedLog(entry);
+  await appendMecpReceivedLog(entry);
   return { ok: true as const };
 });
 
 ipcMain.handle('mecp:exportReceivedLog', async (event) => {
   if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
   exportIpcRateLimit.checkOrThrow();
-  if (!mainWindow) return { success: false as const };
+  if (!mainWindow) return { success: false as const, reason: 'error' as const };
   try {
     const text = await readMecpReceivedLogForExport();
     if (!text.trim()) return { success: false as const, reason: 'empty' as const };
@@ -4894,7 +4894,9 @@ ipcMain.handle('mecp:exportReceivedLog', async (event) => {
         { name: 'JSON Lines', extensions: ['jsonl'] },
       ],
     });
-    if (result.canceled || !result.filePath) return { success: false as const };
+    if (result.canceled || !result.filePath) {
+      return { success: false as const, reason: 'cancelled' as const };
+    }
     await fs.promises.writeFile(result.filePath, text, 'utf8');
     return { success: true as const, path: result.filePath };
   } catch (err) {

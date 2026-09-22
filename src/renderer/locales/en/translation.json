@@ -6030,6 +6030,14 @@
     "incomingToast": "{{severity}} MECP from {{sender}}",
     "notificationTitle": "MECP alert",
     "exportLog": "Export MECP log",
+    "exportLogSuccess": "MECP log exported",
+    "exportLogSuccessPath": "MECP log exported to {{path}}",
+    "exportLogFailed": "Failed to export MECP log",
+    "section": {
+      "title": "MECP",
+      "hint": "Mesh Emergency Communication Protocol — compose reports from Chat, bridge RF between Meshtastic and MeshCore here, and export the durable received audit log.",
+      "learnMore": "How MECP works"
+    },
     "compose": {
       "title": "Compose MECP report",
       "button": "MECP",
@@ -6041,12 +6049,13 @@
       "freetext": "Free text (pax, GPS, notes)",
       "addPax": "Add 1pax",
       "attachGps": "Attach GPS",
-      "drill": "Drill (D01 — no alerts)",
+      "gpsFailed": "Could not get a GPS fix",
+      "sendFailed": "Failed to send MECP report",
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP"
     },
     "rebroadcast": {
-      "title": "MECP RF rebroadcast",
+      "title": "RF rebroadcast bridge",
       "hint": "Optionally bridge MECP heard on one protocol channel to another. Off by default. Enable Bidirectional to also reverse the path.",
       "add": "Add bridge rule",
       "remove": "Remove bridge rule",

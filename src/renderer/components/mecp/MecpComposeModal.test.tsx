@@ -5,21 +5,38 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 
-import { MecpComposeModal } from './MecpComposeModal';
+import { bumpMecpPaxFreetext, MecpComposeModal } from './MecpComposeModal';
 import { MecpSeverityBadge } from './MecpSeverityBadge';
 
+describe('bumpMecpPaxFreetext', () => {
+  it('appends then increments pax counts', () => {
+    expect(bumpMecpPaxFreetext('')).toBe('1pax');
+    expect(bumpMecpPaxFreetext('note')).toBe('note 1pax');
+    expect(bumpMecpPaxFreetext('note 1pax')).toBe('note 2pax');
+    expect(bumpMecpPaxFreetext('3pax west')).toBe('4pax west');
+  });
+});
+
 describe('MecpComposeModal', () => {
-  it('encodes and sends when codes selected', async () => {
+  it('defaults to routine drill and sends MECP/3/D01', async () => {
     const user = userEvent.setup();
     const onSend = vi.fn();
     render(<MecpComposeModal open onClose={() => {}} onSend={onSend} />);
-    const injury = screen.queryByRole('button', { name: /M01/i });
-    if (injury) {
-      await user.click(injury);
-      await user.click(screen.getByRole('button', { name: /send mecp/i }));
-      expect(onSend).toHaveBeenCalled();
-      expect(String(onSend.mock.calls[0]?.[0])).toMatch(/^MECP\/0\//);
-    }
+    await user.click(screen.getByRole('button', { name: /send mecp/i }));
+    expect(onSend).toHaveBeenCalled();
+    expect(String(onSend.mock.calls[0]?.[0])).toMatch(/^MECP\/3\/D01/);
+  });
+
+  it('encodes and sends when an M01 code is selected', async () => {
+    const user = userEvent.setup();
+    const onSend = vi.fn();
+    render(<MecpComposeModal open onClose={() => {}} onSend={onSend} />);
+    const injury = screen.getByRole('button', { name: /M01/i });
+    await user.click(injury);
+    await user.click(screen.getByRole('button', { name: /send mecp/i }));
+    expect(onSend).toHaveBeenCalled();
+    expect(String(onSend.mock.calls[0]?.[0])).toMatch(/^MECP\/3\//);
+    expect(String(onSend.mock.calls[0]?.[0])).toMatch(/M01/);
   });
 
   it('has no axe violations', async () => {

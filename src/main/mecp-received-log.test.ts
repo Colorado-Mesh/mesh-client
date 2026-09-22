@@ -30,7 +30,7 @@ describe('mecp-received-log', () => {
     const logPath = path.join(workDir, 'mecp-received.log');
     mod.setMecpReceivedLogPathForTests(logPath);
 
-    mod.appendMecpReceivedLog({
+    await mod.appendMecpReceivedLog({
       protocol: 'meshtastic',
       severity: 0,
       drill: false,
@@ -39,8 +39,6 @@ describe('mecp-received-log', () => {
       decoded: 'Injury',
     });
 
-    // Wait for append chain
-    await new Promise((r) => setTimeout(r, 50));
     const text = await mod.readMecpReceivedLogForExport();
     expect(text).toContain('MECP/0/M01');
     expect(text).toContain('"severity":0');

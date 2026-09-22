@@ -112,8 +112,8 @@ describe('useMecpAlertWatcher', () => {
 
     await vi.waitFor(() => {
       expect(appendReceived).toHaveBeenCalled();
+      // drill: triggerMecpAlert is called but returns early inside — still invoked
+      expect(triggerMecpAlert).toHaveBeenCalledWith(expect.objectContaining({ isDrill: true }));
     });
-    // drill: triggerMecpAlert is called but returns early inside — still invoked
-    expect(triggerMecpAlert).toHaveBeenCalledWith(expect.objectContaining({ isDrill: true }));
   });
 });

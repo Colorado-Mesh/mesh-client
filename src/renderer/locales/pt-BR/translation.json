@@ -6041,9 +6041,10 @@
       "freetext": "Texto livre (pax, GPS, notas)",
       "addPax": "Adicionar 1 pax",
       "attachGps": "Anexar GPS",
-      "drill": "Simulado (D01 — sem alertas)",
       "byteBudget": "{{used}} / {{max}} bytes",
-      "send": "Enviar MECP"
+      "send": "Enviar MECP",
+      "gpsFailed": "Não foi possível obter uma correção de GPS",
+      "sendFailed": "Falha ao enviar relatório MECP"
     },
     "rebroadcast": {
       "title": "Retransmissão MECP RF",
@@ -6056,6 +6057,14 @@
       "endpointB": "Encaminhamento / destino (B)",
       "protocol": "Protocolo",
       "channelIndex": "Índice de canais"
+    },
+    "exportLogSuccess": "Registro MECP exportado",
+    "exportLogSuccessPath": "Registro MECP exportado para {{path}}",
+    "exportLogFailed": "Falha ao exportar registro MECP",
+    "section": {
+      "title": "MECP",
+      "hint": "Protocolo de Comunicação de Emergência Mesh — componha relatórios do Chat, faça a ponte de RF entre o Meshtastic e o MeshCore aqui e exporte o registro de auditoria recebido durável.",
+      "learnMore": "Como funciona o MECP"
     }
   }
 }

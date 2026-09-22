@@ -1998,7 +1998,7 @@ Inbound MECP messages are appended to a durable audit file under the app `userDa
 - Windows: `%APPDATA%\mesh-client\mecp-received.log`
 - Linux: `~/.config/mesh-client/mecp-received.log`
 
-Use **Chat → Export MECP log**, or open a GitHub/Developer support bundle (includes the file when non-empty). Agent reference: [`docs/agents/mecp.md`](agents/mecp.md).
+Use **App → MECP → Export MECP log**, or open a GitHub/Developer support bundle (includes the file when non-empty). Agent reference: [`docs/agents/mecp.md`](agents/mecp.md).
 
 **MAYDAY/URGENT alerts ignore mute**
 

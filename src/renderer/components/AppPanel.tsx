@@ -2143,7 +2143,60 @@ export default function AppPanel({
         )}
       </div>
 
-      <MecpRebroadcastSettings />
+      <section
+        className="space-y-3 rounded-lg border border-red-900/40 bg-red-950/10 p-4"
+        aria-label={t('mecp.section.title')}
+      >
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-red-200">{t('mecp.section.title')}</h3>
+          <p className="text-muted text-xs leading-relaxed">{t('mecp.section.hint')}</p>
+          <a
+            href="https://github.com/xiang-dev-1/MECP"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-green inline-block text-xs underline-offset-2 hover:underline"
+            aria-label={t('mecp.section.learnMore')}
+          >
+            {t('mecp.section.learnMore')}
+          </a>
+        </div>
+        <button
+          type="button"
+          className="rounded-lg border border-gray-600 bg-slate-900/60 px-3 py-2 text-sm text-gray-200 hover:bg-slate-800"
+          aria-label={t('mecp.exportLog')}
+          onClick={() => {
+            void window.electronAPI.mecp
+              .exportReceivedLog()
+              .then((res) => {
+                if (res.success) {
+                  addToast(
+                    res.path
+                      ? t('mecp.exportLogSuccessPath', { path: res.path })
+                      : t('mecp.exportLogSuccess'),
+                    'success',
+                  );
+                  return;
+                }
+                if (res.reason === 'empty') {
+                  console.debug('[AppPanel] MECP log empty');
+                  return;
+                }
+                if (res.reason === 'cancelled') return;
+                addToast(t('mecp.exportLogFailed'), 'error');
+              })
+              .catch((err: unknown) => {
+                console.warn(
+                  '[AppPanel] MECP export failed',
+                  err instanceof Error ? err.message : err,
+                );
+                addToast(t('mecp.exportLogFailed'), 'error');
+              });
+          }}
+        >
+          {t('mecp.exportLog')}
+        </button>
+        <MecpRebroadcastSettings />
+      </section>
 
       {/* Danger Zone — collapsible; same pattern as Appearance → Color scheme */}
       <div className="space-y-2">

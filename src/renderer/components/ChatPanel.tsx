@@ -144,6 +144,7 @@ import {
 import { applyControlledEditableValue } from '../lib/controlledEditableValue';
 import {
   getCachedMecpLanguage,
+  loadMecpLanguage,
   localizeMecpCodes,
   mecpLanguageForAppLocale,
   tryParseMecp,
@@ -914,6 +915,19 @@ function ChatPanel({
   } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [mecpComposeOpen, setMecpComposeOpen] = useState(false);
+  const [mecpLang, setMecpLang] = useState(() =>
+    getCachedMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')),
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')).then((lang) => {
+      if (!cancelled) setMecpLang(lang);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [i18n.language]);
   const [pickerOpenFor, setPickerOpenFor] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
@@ -3359,9 +3373,6 @@ function ChatPanel({
                               {(() => {
                                 const mecp = tryParseMecp(msg.payload);
                                 if (mecp?.severity == null) return null;
-                                const lang = getCachedMecpLanguage(
-                                  mecpLanguageForAppLocale(i18n.language || 'en'),
-                                );
                                 return (
                                   <div className="mt-1 flex flex-col gap-0.5">
                                     <MecpSeverityBadge
@@ -3369,7 +3380,7 @@ function ChatPanel({
                                       pulse={!isOwn && mecp.severity <= 1 && !mecp.isDrill}
                                     />
                                     <p className="text-[10px] font-normal text-red-200/90">
-                                      {localizeMecpCodes(mecp, lang)}
+                                      {localizeMecpCodes(mecp, mecpLang)}
                                     </p>
                                   </div>
                                 );
@@ -3762,28 +3773,19 @@ function ChatPanel({
         >
           {t('mecp.compose.button')}
         </button>
-        <button
-          type="button"
-          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800"
-          aria-label={t('mecp.exportLog')}
-          onClick={() => {
-            void window.electronAPI.mecp.exportReceivedLog().then((res) => {
-              if (!res.success && res.reason === 'empty') {
-                // soft: nothing to export
-                console.debug('[ChatPanel] MECP log empty');
-              }
-            });
-          }}
-        >
-          {t('mecp.exportLog')}
-        </button>
       </div>
       <MecpComposeModal
         open={mecpComposeOpen}
         onClose={() => {
           setMecpComposeOpen(false);
         }}
+        resolveGps={resolveShareLocation}
         onSend={async (text) => {
+          if (viewMode === 'dm' && activeDmNode == null) {
+            const message = t('chatPanel.selectDmFirst');
+            setChatActionError({ message, viewKey });
+            throw new Error(message);
+          }
           await handleSendChunk(text);
         }}
       />

@@ -1597,7 +1597,7 @@ export class MQTTManager extends EventEmitter {
       return;
     }
 
-    if (typeLower === 'text') {
+    if (typeLower === 'text' || typeLower === 'alert') {
       this.handleJsonText(json, topic);
       return;
     }

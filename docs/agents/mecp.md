@@ -30,16 +30,17 @@ MECP/<severity>/<codes> [freetext]
 - File: `mecp-received.log` (+ `.1` size rotate) under Electron `userData` — **not** session `mesh-client.log`
 - IPC: `mecp:appendReceived`, `mecp:exportReceivedLog` (Save dialog)
 - Included in support bundles
-- Chat UI: **Export MECP log** next to MECP compose
+- App → MECP section: **Export MECP log** (Save dialog) alongside RF bridge settings and a link to upstream docs
 
 ## Send path
 
-- Chat **MECP** button → `MecpComposeModal` → encode → existing `handleSendChunk` / `useSendMessage` (follows open DM/channel)
+- Chat **MECP** button → `MecpComposeModal` (defaults: ROUTINE + `D01` drill) → encode → existing `handleSendChunk` / `useSendMessage` (follows open DM/channel)
+- Attach GPS uses the app share-location waterfall (`resolveShareLocation`), not raw `navigator.geolocation` alone
 - Meshtastic outbound uses normal text (`TEXT_MESSAGE_APP`), not ALERT_APP
 
 ## RF rebroadcast (default off)
 
-- App → MECP settings: rules `{ enabled, bidirectional, endpointA, endpointB }` (Meshtastic/MeshCore channel indices)
+- App → MECP section: rules `{ enabled, bidirectional, endpointA, endpointB }` (Meshtastic/MeshCore channel indices 0–7)
 - One-way **A→B** by default; **Bidirectional** toggle enables B→A
 - Trigger: new inbound MECP with `receivedVia` `rf`/`both` (not mqtt-only); skip own/history/drill
 - Loop guard: payload+dest fingerprint TTL

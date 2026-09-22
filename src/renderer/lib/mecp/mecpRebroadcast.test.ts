@@ -173,4 +173,18 @@ describe('mecpRebroadcast', () => {
       ]),
     ).toHaveLength(1);
   });
+
+  it('rejects out-of-range channelIndex on parse', () => {
+    expect(
+      parseMecpRebroadcastRules([
+        {
+          id: 'bad',
+          enabled: true,
+          bidirectional: false,
+          endpointA: { protocol: 'meshtastic', channelIndex: 8 },
+          endpointB: { protocol: 'meshcore', channelIndex: 0 },
+        },
+      ]),
+    ).toEqual([]);
+  });
 });

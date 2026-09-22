@@ -6041,9 +6041,10 @@
       "freetext": "自由文本（可容纳人次、GPS、备注）",
       "addPax": "新增1人",
       "attachGps": "附加GPS",
-      "drill": "钻孔（ D01 —无警报）",
       "byteBudget": "{{used}}/{{max}}字节",
-      "send": "发送MECP"
+      "send": "发送MECP",
+      "gpsFailed": "无法获取GPS修复",
+      "sendFailed": "无法发送报告文件"
     },
     "rebroadcast": {
       "title": "MECP射频重播",
@@ -6056,6 +6057,14 @@
       "endpointB": "转发/目的地（ B ）",
       "protocol": "研究方案(protocol)",
       "channelIndex": "声道索引："
+    },
+    "exportLogSuccess": "MECP日志已导出",
+    "exportLogSuccessPath": "MECP日志导出到{{path}}",
+    "exportLogFailed": "导出MECP日志失败",
+    "section": {
+      "title": "MECP",
+      "hint": "网格紧急通信协议—从聊天中撰写报告，在此处连接Meshtastic和MeshCore之间的射频，并导出持久收到的审计日志。",
+      "learnMore": "MECP的工作原理"
     }
   }
 }

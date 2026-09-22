@@ -53,12 +53,9 @@ export function MecpRebroadcastSettings() {
   }, []);
 
   return (
-    <section
-      className="mt-4 rounded-lg border border-gray-700/60 p-3"
-      aria-label={t('mecp.rebroadcast.title')}
-    >
-      <h3 className="mb-1 text-sm font-semibold text-gray-200">{t('mecp.rebroadcast.title')}</h3>
-      <p className="mb-3 text-xs text-gray-400">{t('mecp.rebroadcast.hint')}</p>
+    <div className="space-y-2" aria-label={t('mecp.rebroadcast.title')}>
+      <h4 className="text-sm font-semibold text-gray-200">{t('mecp.rebroadcast.title')}</h4>
+      <p className="text-xs text-gray-400">{t('mecp.rebroadcast.hint')}</p>
       <ul className="flex flex-col gap-3">
         {rules.map((rule) => (
           <li
@@ -142,7 +139,7 @@ export function MecpRebroadcastSettings() {
       >
         {t('mecp.rebroadcast.add')}
       </button>
-    </section>
+    </div>
   );
 }
 
@@ -181,7 +178,7 @@ function EndpointEditors({
         className="w-full rounded border border-gray-700 bg-slate-950 px-1 py-0.5"
         value={channelIndex}
         onChange={(e) => {
-          onChannel(Math.max(0, Math.trunc(Number(e.target.value) || 0)));
+          onChannel(Math.min(7, Math.max(0, Math.trunc(Number(e.target.value) || 0))));
         }}
         aria-label={t('mecp.rebroadcast.channelIndex')}
       />

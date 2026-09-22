@@ -1373,7 +1373,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('mecp:exportReceivedLog') as Promise<{
         success: boolean;
         path?: string;
-        reason?: 'empty';
+        reason?: 'empty' | 'cancelled' | 'error';
       }>,
   },
 
