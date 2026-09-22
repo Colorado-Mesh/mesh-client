@@ -7,7 +7,7 @@ Living matrix for [issue #773](https://github.com/Colorado-Mesh/mesh-client/issu
 
 Update this file when Games PRs land. `pnpm run update` warns only when a **published** Ratspeak GitHub Release is newer than the `reviewed-ref` pin on the `games-parity` entry in `scripts/update.sh` (bump that pin after review). Tags, `main`, and RCs without a GitHub Release are ignored.
 
-**Last review:** 2026-08-28 (Ratspeak v1.0.31 — voice message reliability; no Games API or `games_tab.js` delta vs v1.0.30. **Four in a Row UI landed in mesh-client**: `FourInARowBoard` + optimistic column drop, so the last outstanding Games parity gap is closed). Prior: 2026-08-26 (Ratspeak v1.0.30 — message reactions/replies/selection + BLE RNode reconnect/mobile pairing; no Games API delta vs v1.0.28).
+**Last review:** 2026-09-22 (Ratspeak v1.0.32 — Android sharing / Network Ownership / voice + LoRa routing; **no Games API delta** (`games.rs` unchanged). `games_tab.js` only adds `openGameSession(sessionId, isCurrent)` stale-open cancellation; mesh-client already refreshes-then-selects via `openReticulumGameSession`. Update-script “includes Four in a Row” line was a false positive from a renamed `test_four_in_a_row_view.js` path. Four in a Row UI remains `done`; wire-interop rows still `todo` until a live gold test). Prior: 2026-08-28 (Ratspeak v1.0.31 — voice message reliability; no Games API or `games_tab.js` delta vs v1.0.30. **Four in a Row UI landed in mesh-client**: `FourInARowBoard` + optimistic column drop).
 
 Status: `done` | `partial` | `wontfix` | `todo`
 
