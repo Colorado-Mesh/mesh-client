@@ -6065,7 +6065,10 @@
       "title": "MECP",
       "hint": "Mesh Emergency Communication Protocol — stel hier rapporten op van Chat, overbrug RF tussen Meshtastic en MeshCore en exporteer het duurzaam ontvangen auditlogboek.",
       "learnMore": "Hoe MECP werkt",
-      "protocolSource": "Protocolbron op GitHub"
-    }
+      "protocolSource": "Protocolbron op GitHub",
+      "showComposeButton": "Toon de MECP-knop in de chat",
+      "showComposeButtonHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een MECP-knop om noodrapporten samen te stellen en te verzenden."
+    },
+    "exportLogEmpty": "Nog geen MECP-berichten in het ontvangen logboek"
   }
 }

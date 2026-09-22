@@ -6065,7 +6065,10 @@
       "title": "MECP",
       "hint": "Protokol Komunikasi Darurat Mesh — menulis laporan dari Chat, menjembatani RF antara Meshtastic dan MeshCore di sini, dan mengekspor log audit yang diterima tahan lama.",
       "learnMore": "Cara kerja MECP",
-      "protocolSource": "Sumber protokol di GitHub"
-    }
+      "protocolSource": "Sumber protokol di GitHub",
+      "showComposeButton": "Tampilkan tombol MECP di Obrolan",
+      "showComposeButtonHint": "Mati secara default. Saat diaktifkan, Obrolan menampilkan tombol MECP untuk menyusun dan mengirim laporan darurat."
+    },
+    "exportLogEmpty": "Belum ada pesan MECP di log yang diterima"
   }
 }

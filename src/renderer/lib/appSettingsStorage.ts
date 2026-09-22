@@ -95,6 +95,15 @@ export function isRrcUnreadAllRoomMessagesEnabled(): boolean {
     : DEFAULT_APP_SETTINGS_SHARED.rrcUnreadAllRoomMessages;
 }
 
+/** Whether Chat shows the MECP compose button (App → MECP; default off). */
+export function isMecpComposeEnabled(): boolean {
+  const parsed = parseStoredJson<{ mecpComposeEnabled?: boolean }>(
+    getAppSettingsRaw(),
+    'isMecpComposeEnabled',
+  );
+  return parsed?.mecpComposeEnabled ?? DEFAULT_APP_SETTINGS_SHARED.mecpComposeEnabled;
+}
+
 /** Whether the Reticulum sidecar should start when the Reticulum connection panel mounts. */
 export function isReticulumAutostartEnabled(): boolean {
   const parsed = parseStoredJson<{ reticulumAutostart?: boolean }>(

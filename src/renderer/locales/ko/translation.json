@@ -6065,7 +6065,10 @@
       "title": "MECP",
       "hint": "메시 비상 통신 프로토콜 — 채팅에서 보고서를 작성하고, Meshtastic과 MeshCore 간에 RF를 연결하고, 수신된 내구성 있는 감사 로그를 내보냅니다.",
       "learnMore": "MECP 이용 방법",
-      "protocolSource": "GitHub의 프로토콜 소스"
-    }
+      "protocolSource": "GitHub의 프로토콜 소스",
+      "showComposeButton": "채팅에 MECP 버튼 표시",
+      "showComposeButtonHint": "기본적으로 꺼짐. 활성화되면 채팅에 MECP 버튼이 표시되어 비상 보고서를 작성하고 전송할 수 있습니다."
+    },
+    "exportLogEmpty": "아직 수신된 로그에 MECP 메시지가 없습니다"
   }
 }

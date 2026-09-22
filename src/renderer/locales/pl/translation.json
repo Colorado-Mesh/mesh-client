@@ -6159,7 +6159,10 @@
       "title": "MECP",
       "hint": "Protokół Siatkowej Komunikacji Awaryjnej — twórz raporty z Czatu, łącz tutaj RF między Meshtastic i MeshCore i eksportuj trwały otrzymany dziennik audytu.",
       "learnMore": "Jak działa MECP",
-      "protocolSource": "Źródło protokołu na GitHub"
-    }
+      "protocolSource": "Źródło protokołu na GitHub",
+      "showComposeButton": "Pokaż przycisk MECP na czacie",
+      "showComposeButtonHint": "Domyślnie wyłączone. Po włączeniu Czat pokazuje przycisk MECP do tworzenia i wysyłania raportów awaryjnych."
+    },
+    "exportLogEmpty": "Brak komunikatów MECP w otrzymanym dzienniku"
   }
 }

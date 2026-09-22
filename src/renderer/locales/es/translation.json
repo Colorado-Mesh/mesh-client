@@ -6065,7 +6065,10 @@
       "title": "MECP",
       "hint": "Protocolo de comunicación de emergencia de malla: redacte informes de chat, cree un puente de RF entre Meshtastic y MeshCore aquí y exporte el registro de auditoría recibido duradero.",
       "learnMore": "Cómo funciona MECP",
-      "protocolSource": "Fuente del protocolo en GitHub"
-    }
+      "protocolSource": "Fuente del protocolo en GitHub",
+      "showComposeButton": "Mostrar botón MECP en el chat",
+      "showComposeButtonHint": "Desactivado de forma predeterminada. Cuando está habilitado, el chat muestra un botón MECP para redactar y enviar informes de emergencia."
+    },
+    "exportLogEmpty": "Aún no hay mensajes MECP en el registro recibido"
   }
 }

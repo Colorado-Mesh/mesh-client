@@ -37,6 +37,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { isMecpComposeEnabled } from '@/renderer/lib/appSettingsStorage';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -915,9 +916,24 @@ function ChatPanel({
   } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [mecpComposeOpen, setMecpComposeOpen] = useState(false);
+  const [mecpComposeEnabled, setMecpComposeEnabled] = useState(() => isMecpComposeEnabled());
   const [mecpLang, setMecpLang] = useState(() =>
     getCachedMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')),
   );
+
+  useEffect(() => {
+    const sync = () => {
+      setMecpComposeEnabled(isMecpComposeEnabled());
+    };
+    window.addEventListener('mesh-client:appSettings', sync);
+    return () => {
+      window.removeEventListener('mesh-client:appSettings', sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mecpComposeEnabled) setMecpComposeOpen(false);
+  }, [mecpComposeEnabled]);
 
   useEffect(() => {
     let cancelled = false;
@@ -3762,33 +3778,37 @@ function ChatPanel({
       {protocol === 'reticulum' && hasLxmfPaper ? (
         <ChatPaperScanControl sidecarRunning={reticulumStackLive} />
       ) : null}
-      <div className="mt-1 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          className="rounded border border-red-600/70 bg-red-950/50 px-2 py-1 text-xs font-semibold text-red-200 hover:bg-red-900/60"
-          aria-label={t('mecp.compose.open')}
-          onClick={() => {
-            setMecpComposeOpen(true);
+      {mecpComposeEnabled ? (
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="rounded border border-red-600/70 bg-red-950/50 px-2 py-1 text-xs font-semibold text-red-200 hover:bg-red-900/60"
+            aria-label={t('mecp.compose.open')}
+            onClick={() => {
+              setMecpComposeOpen(true);
+            }}
+          >
+            {t('mecp.compose.button')}
+          </button>
+        </div>
+      ) : null}
+      {mecpComposeEnabled ? (
+        <MecpComposeModal
+          open={mecpComposeOpen}
+          onClose={() => {
+            setMecpComposeOpen(false);
           }}
-        >
-          {t('mecp.compose.button')}
-        </button>
-      </div>
-      <MecpComposeModal
-        open={mecpComposeOpen}
-        onClose={() => {
-          setMecpComposeOpen(false);
-        }}
-        resolveGps={resolveShareLocation}
-        onSend={async (text) => {
-          if (viewMode === 'dm' && activeDmNode == null) {
-            const message = t('chatPanel.selectDmFirst');
-            setChatActionError({ message, viewKey });
-            throw new Error(message);
-          }
-          await handleSendChunk(text);
-        }}
-      />
+          resolveGps={resolveShareLocation}
+          onSend={async (text) => {
+            if (viewMode === 'dm' && activeDmNode == null) {
+              const message = t('chatPanel.selectDmFirst');
+              setChatActionError({ message, viewKey });
+              throw new Error(message);
+            }
+            await handleSendChunk(text);
+          }}
+        />
+      ) : null}
       <ChatComposer
         className="mt-1"
         protocol={protocol}

@@ -35,7 +35,8 @@ MECP/<severity>/<codes> [freetext]
 
 ## Send path
 
-- Chat **MECP** button → `MecpComposeModal` (defaults: ROUTINE + `D01` drill) → encode → existing `handleSendChunk` / `useSendMessage` (follows open DM/channel)
+- App → MECP → **Show MECP button in Chat** (default **off**) gates the Chat compose control
+- When enabled: Chat **MECP** button → `MecpComposeModal` (defaults: ROUTINE + `D01` drill) → encode → existing `handleSendChunk` / `useSendMessage` (follows open DM/channel)
 - Attach GPS uses the app share-location waterfall (`resolveShareLocation`), not raw `navigator.geolocation` alone
 - Meshtastic outbound uses normal text (`TEXT_MESSAGE_APP`), not ALERT_APP
 

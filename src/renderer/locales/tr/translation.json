@@ -6065,7 +6065,10 @@
       "title": "MECP",
       "hint": "Mesh Acil Durum İletişim Protokolü — Sohbetten raporlar oluşturun, Meshtastic ve MeshCore arasında RF'yi burada köprüleyin ve dayanıklı alınan denetim günlüğünü dışa aktarın.",
       "learnMore": "MECP nasıl çalışır?",
-      "protocolSource": "GitHub'daki protokol kaynağı"
-    }
+      "protocolSource": "GitHub'daki protokol kaynağı",
+      "showComposeButton": "Sohbette MECP düğmesini göster",
+      "showComposeButtonHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet acil durum raporları oluşturmak ve göndermek için bir MECP düğmesi gösterir."
+    },
+    "exportLogEmpty": "Alınan günlükte henüz MECP mesajı yok"
   }
 }

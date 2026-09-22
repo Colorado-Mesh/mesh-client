@@ -6033,11 +6033,14 @@
     "exportLogSuccess": "MECP log exported",
     "exportLogSuccessPath": "MECP log exported to {{path}}",
     "exportLogFailed": "Failed to export MECP log",
+    "exportLogEmpty": "No MECP messages in the received log yet",
     "section": {
       "title": "MECP",
       "hint": "Mesh Emergency Communication Protocol — compose reports from Chat, bridge RF between Meshtastic and MeshCore here, and export the durable received audit log.",
       "learnMore": "How MECP works (site & video)",
-      "protocolSource": "Protocol source on GitHub"
+      "protocolSource": "Protocol source on GitHub",
+      "showComposeButton": "Show MECP button in Chat",
+      "showComposeButtonHint": "Off by default. When enabled, Chat shows a MECP button to compose and send emergency reports."
     },
     "compose": {
       "title": "Compose MECP report",

@@ -9,6 +9,7 @@ import {
   getCachedMecpLanguage,
   localizeMecpCodes,
   mecpLanguageForAppLocale,
+  type MecpParsed,
   tryParseMecp,
 } from '@/renderer/lib/mecp/mecpMessages';
 import {
@@ -42,6 +43,21 @@ function isOwnMessage(
   return false;
 }
 
+/** Own / history / S&F / tapback / invalid severity — neither audit nor alert. */
+function shouldSkipMecpInboundHandling(
+  msg: MessageRecord,
+  parsed: MecpParsed,
+  own: boolean,
+): boolean {
+  return (
+    own ||
+    Boolean(msg.isHistory) ||
+    Boolean(msg.viaStoreForward) ||
+    Boolean(msg.tapback) ||
+    parsed.severity == null
+  );
+}
+
 function loadRules() {
   try {
     const raw = getAppSettingsRaw();
@@ -71,6 +87,33 @@ async function appendAudit(entry: {
   await window.electronAPI.mecp.appendReceived(entry);
 }
 
+function fireAlert(
+  slice: MecpWatcherProtocolSlice,
+  msg: MessageRecord,
+  parsed: MecpParsed,
+  mutedViews: ReadonlySet<string>,
+): void {
+  if (parsed.severity == null) return;
+  const viewKey = chatViewKeyForMessage(
+    {
+      channel: msg.channelIndex,
+      to: msg.to,
+      sender_id: msg.from,
+      reticulum_sender_hash: msg.reticulumSenderHash,
+    },
+    slice.protocol,
+    slice.ownNodeIds,
+  );
+  triggerMecpAlert({
+    severity: parsed.severity,
+    isDrill: parsed.isDrill,
+    senderLabel: msg.senderName ?? String(msg.from),
+    viewKey,
+    mutedViews,
+    notifyHiddenWindow: true,
+  });
+}
+
 async function processNewMessages(
   seen: Set<string>,
   alerted: Set<string>,
@@ -90,81 +133,40 @@ async function processNewMessages(
     }
 
     const own = isOwnMessage(msg, slice.ownNodeIds, slice.ownSenderId);
+    if (shouldSkipMecpInboundHandling(msg, parsed, own)) {
+      seen.add(key);
+      continue;
+    }
+
     const decoded = localizeMecpCodes(parsed, lang);
 
-    if (!own) {
-      try {
-        await appendAudit({
-          protocol: slice.protocol,
-          severity: parsed.severity,
-          drill: parsed.isDrill,
-          from: msg.senderName ?? String(msg.from),
-          channel: msg.channelIndex,
-          payload: msg.payload,
-          decoded,
-          direction: 'received',
-          messageId: msg.id,
-        });
-      } catch (e) {
-        console.warn('[useMecpAlertWatcher] appendReceived failed', e);
-        // Leave out of `seen` so audit can retry; alert at most once.
-        if (
-          !alerted.has(key) &&
-          !msg.isHistory &&
-          !msg.viaStoreForward &&
-          !msg.tapback &&
-          parsed.severity != null
-        ) {
-          alerted.add(key);
-          const viewKey = chatViewKeyForMessage(
-            {
-              channel: msg.channelIndex,
-              to: msg.to,
-              sender_id: msg.from,
-              reticulum_sender_hash: msg.reticulumSenderHash,
-            },
-            slice.protocol,
-            slice.ownNodeIds,
-          );
-          triggerMecpAlert({
-            severity: parsed.severity,
-            isDrill: parsed.isDrill,
-            senderLabel: msg.senderName ?? String(msg.from),
-            viewKey,
-            mutedViews,
-            notifyHiddenWindow: true,
-          });
-        }
-        continue;
+    try {
+      await appendAudit({
+        protocol: slice.protocol,
+        severity: parsed.severity,
+        drill: parsed.isDrill,
+        from: msg.senderName ?? String(msg.from),
+        channel: msg.channelIndex,
+        payload: msg.payload,
+        decoded,
+        direction: 'received',
+        messageId: msg.id,
+      });
+    } catch (e) {
+      console.warn('[useMecpAlertWatcher] appendReceived failed', e);
+      // Leave out of `seen` so audit can retry; alert at most once.
+      if (!alerted.has(key)) {
+        alerted.add(key);
+        fireAlert(slice, msg, parsed, mutedViews);
       }
+      continue;
     }
 
     seen.add(key);
 
-    if (own || msg.isHistory || msg.viaStoreForward || msg.tapback || parsed.severity == null) {
-      continue;
-    }
-
     if (!alerted.has(key)) {
       alerted.add(key);
-      const viewKey = chatViewKeyForMessage(
-        {
-          channel: msg.channelIndex,
-          to: msg.to,
-          sender_id: msg.from,
-          reticulum_sender_hash: msg.reticulumSenderHash,
-        },
-        slice.protocol,
-        slice.ownNodeIds,
-      );
-      triggerMecpAlert({
-        severity: parsed.severity,
-        isDrill: parsed.isDrill,
-        senderLabel: msg.senderName ?? String(msg.from),
-        viewKey,
-        mutedViews,
-        notifyHiddenWindow: true,
-      });
+      fireAlert(slice, msg, parsed, mutedViews);
     }
 
     if (slice.protocol === 'meshtastic' || slice.protocol === 'meshcore') {

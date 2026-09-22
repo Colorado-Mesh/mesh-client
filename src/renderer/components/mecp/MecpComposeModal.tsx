@@ -77,6 +77,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
+        e.stopPropagation();
         onCloseRef.current();
         return;
       }
@@ -100,9 +101,9 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
       }
     };
 
-    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keydown', onKeyDown, true);
     return () => {
-      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('keydown', onKeyDown, true);
       const prev = previouslyFocusedRef.current;
       if (prev && document.contains(prev)) {
         prev.focus();

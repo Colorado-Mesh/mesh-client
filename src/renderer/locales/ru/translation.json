@@ -6159,7 +6159,10 @@
       "title": "MECP",
       "hint": "Mesh Emergency Communication Protocol — составляйте отчеты из чата, соединяйте RF между Meshtastic и MeshCore здесь и экспортируйте долговечный полученный журнал аудита.",
       "learnMore": "Как работает MECP",
-      "protocolSource": "Источник протокола на GitHub"
-    }
+      "protocolSource": "Источник протокола на GitHub",
+      "showComposeButton": "Показать кнопку MECP в чате",
+      "showComposeButtonHint": "По умолчанию выключено. Если включено, в чате отображается кнопка MECP для создания и отправки отчетов о чрезвычайных ситуациях."
+    },
+    "exportLogEmpty": "В полученном журнале пока нет сообщений MECP"
   }
 }
