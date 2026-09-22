@@ -916,6 +916,7 @@ function ChatPanel({
   } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [mecpComposeOpen, setMecpComposeOpen] = useState(false);
+  const [mecpComposeSession, setMecpComposeSession] = useState(0);
   const [mecpComposeEnabled, setMecpComposeEnabled] = useState(() => isMecpComposeEnabled());
   const [mecpLang, setMecpLang] = useState(() =>
     getCachedMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')),
@@ -3785,6 +3786,7 @@ function ChatPanel({
             className="rounded border border-red-600/70 bg-red-950/50 px-2 py-1 text-xs font-semibold text-red-200 hover:bg-red-900/60"
             aria-label={t('mecp.compose.open')}
             onClick={() => {
+              setMecpComposeSession((n) => n + 1);
               setMecpComposeOpen(true);
             }}
           >
@@ -3794,6 +3796,7 @@ function ChatPanel({
       ) : null}
       {mecpComposeEnabled ? (
         <MecpComposeModal
+          key={mecpComposeSession}
           open={mecpComposeOpen}
           onClose={() => {
             setMecpComposeOpen(false);

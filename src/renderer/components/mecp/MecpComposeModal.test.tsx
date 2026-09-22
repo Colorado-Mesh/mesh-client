@@ -18,21 +18,30 @@ describe('bumpMecpPaxFreetext', () => {
 });
 
 describe('MecpComposeModal', () => {
-  it('defaults to routine drill and sends MECP/3/D01', async () => {
+  it('defaults to ROUTINE, Drill category, and D02', async () => {
     const user = userEvent.setup();
     const onSend = vi.fn();
     render(<MecpComposeModal open onClose={() => {}} onSend={onSend} />);
+    expect(screen.getByRole('button', { name: 'ROUTINE' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Drill / Test' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: /D02 This is a test/i })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     await user.click(screen.getByRole('button', { name: /send mecp/i }));
     expect(onSend).toHaveBeenCalled();
-    expect(String(onSend.mock.calls[0]?.[0])).toMatch(/^MECP\/3\/D01/);
+    expect(String(onSend.mock.calls[0]?.[0])).toMatch(/^MECP\/3\/D02$/);
   });
 
   it('encodes and sends when an M01 code is selected', async () => {
     const user = userEvent.setup();
     const onSend = vi.fn();
     render(<MecpComposeModal open onClose={() => {}} onSend={onSend} />);
-    const injury = screen.getByRole('button', { name: /M01/i });
-    await user.click(injury);
+    await user.click(screen.getByRole('button', { name: 'Medical' }));
+    await user.click(screen.getByRole('button', { name: /M01 /i }));
     await user.click(screen.getByRole('button', { name: /send mecp/i }));
     expect(onSend).toHaveBeenCalled();
     expect(String(onSend.mock.calls[0]?.[0])).toMatch(/^MECP\/3\//);

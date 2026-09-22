@@ -36,11 +36,15 @@ interface MecpComposeModalProps {
   resolveGps?: () => Promise<{ lat: number; lon: number } | null>;
 }
 
+const DEFAULT_MECP_SEVERITY: Severity = 3;
+const DEFAULT_MECP_CATEGORY: CategoryLetter = 'D';
+const DEFAULT_MECP_CODES: string[] = ['D02'];
+
 export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComposeModalProps) {
   const { t, i18n } = useTranslation();
-  const [severity, setSeverity] = useState<Severity>(3);
-  const [category, setCategory] = useState<CategoryLetter>('M');
-  const [codes, setCodes] = useState<string[]>(['D01']);
+  const [severity, setSeverity] = useState<Severity>(DEFAULT_MECP_SEVERITY);
+  const [category, setCategory] = useState<CategoryLetter>(DEFAULT_MECP_CATEGORY);
+  const [codes, setCodes] = useState<string[]>(() => [...DEFAULT_MECP_CODES]);
   const [freetext, setFreetext] = useState('');
   const [langFile, setLangFile] = useState(() =>
     getCachedMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')),
@@ -175,9 +179,10 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
     try {
       await onSend(encoded.message);
       onClose();
-      setCodes(['D01']);
+      setCodes([...DEFAULT_MECP_CODES]);
+      setCategory(DEFAULT_MECP_CATEGORY);
       setFreetext('');
-      setSeverity(3);
+      setSeverity(DEFAULT_MECP_SEVERITY);
     } catch (e) {
       console.warn('[MecpComposeModal] send failed', e instanceof Error ? e.message : e);
       const msg = e instanceof Error && e.message.trim() ? e.message : t('mecp.compose.sendFailed');
