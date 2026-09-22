@@ -13,6 +13,7 @@ MECP/<severity>/<codes> [freetext]
 - Max **200** UTF-8 bytes (`MAX_MESSAGE_BYTES`)
 - Vendored engine: [`src/renderer/lib/mecp/engine/`](../../src/renderer/lib/mecp/engine/) from [xiang-dev-1/MECP](https://github.com/xiang-dev-1/MECP) (GPLv3)
 - Language packs: [`src/renderer/lib/mecp/languages/`](../../src/renderer/lib/mecp/languages/) (CC BY 4.0)
+- Overview / video: [mecp.radio](https://mecp.radio/)
 - App wrappers: `mecpMessages.ts` (`MECP_REGEX`, `tryParseMecp`), `mecpAlert.ts`, `mecpRebroadcast.ts`
 
 ## Receive path

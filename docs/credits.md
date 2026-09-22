@@ -32,7 +32,7 @@ We were inspired by features from these projects:
 - [Mesh Monitor](https://meshmonitor.org/): Web-based mesh network monitoring dashboard
 - [CoreScope](https://github.com/Kpa-clawbot/CoreScope): Self-hosted MeshCore network analyzer with RF analytics, packet visualization, and topology tools
 - [Ratspeak](https://github.com/ratspeak/Ratspeak): Primary reference for the Reticulum/rsReticulum/rsLXMF stack, sidecar IPC patterns, and peer interop ([rsReticulum](https://github.com/ratspeak/rsReticulum), [rsLXMF](https://github.com/ratspeak/rsLXMF))
-- [MECP](https://github.com/xiang-dev-1/MECP): Mesh Emergency Communication Protocol — structured emergency text for LoRa mesh (engine GPLv3; language packs CC BY 4.0)
+- [MECP](https://mecp.radio/) ([GitHub](https://github.com/xiang-dev-1/MECP)): Mesh Emergency Communication Protocol — structured emergency text for LoRa mesh (engine GPLv3; language packs CC BY 4.0)
 
 ### Bundled binaries
 

@@ -6112,7 +6112,8 @@
     "section": {
       "title": "MECP",
       "hint": "Mesh Emergency Communication Protocol — sestavte zprávy z chatu, přemostěte RF mezi Meshtastic a MeshCore zde a exportujte trvanlivý přijatý protokol auditu.",
-      "learnMore": "Jak MECP funguje"
+      "learnMore": "Jak MECP funguje",
+      "protocolSource": "Zdroj protokolu na GitHub"
     }
   }
 }

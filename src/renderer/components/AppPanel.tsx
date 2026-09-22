@@ -2150,15 +2150,26 @@ export default function AppPanel({
         <div className="space-y-1">
           <h3 className="text-sm font-semibold text-red-200">{t('mecp.section.title')}</h3>
           <p className="text-muted text-xs leading-relaxed">{t('mecp.section.hint')}</p>
-          <a
-            href="https://github.com/xiang-dev-1/MECP"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-brand-green inline-block text-xs underline-offset-2 hover:underline"
-            aria-label={t('mecp.section.learnMore')}
-          >
-            {t('mecp.section.learnMore')}
-          </a>
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            <a
+              href="https://mecp.radio/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-green text-xs underline-offset-2 hover:underline"
+              aria-label={t('mecp.section.learnMore')}
+            >
+              {t('mecp.section.learnMore')}
+            </a>
+            <a
+              href="https://github.com/xiang-dev-1/MECP"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted text-xs underline-offset-2 hover:underline"
+              aria-label={t('mecp.section.protocolSource')}
+            >
+              {t('mecp.section.protocolSource')}
+            </a>
+          </div>
         </div>
         <button
           type="button"

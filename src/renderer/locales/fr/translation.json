@@ -6064,7 +6064,8 @@
     "section": {
       "title": "MECP",
       "hint": "Protocole de communication d'urgence Mesh — composez des rapports à partir de Chat, créez un pont RF entre Meshtastic et MeshCore ici, et exportez le journal d'audit reçu durable.",
-      "learnMore": "Fonctionnement du MECP"
+      "learnMore": "Fonctionnement du MECP",
+      "protocolSource": "Source du protocole sur GitHub"
     }
   }
 }

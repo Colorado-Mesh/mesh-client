@@ -6064,7 +6064,8 @@
     "section": {
       "title": "MECP",
       "hint": "网格紧急通信协议—从聊天中撰写报告，在此处连接Meshtastic和MeshCore之间的射频，并导出持久收到的审计日志。",
-      "learnMore": "MECP的工作原理"
+      "learnMore": "MECP的工作原理",
+      "protocolSource": "GitHub上的协议源"
     }
   }
 }

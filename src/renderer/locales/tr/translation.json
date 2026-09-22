@@ -6064,7 +6064,8 @@
     "section": {
       "title": "MECP",
       "hint": "Mesh Acil Durum İletişim Protokolü — Sohbetten raporlar oluşturun, Meshtastic ve MeshCore arasında RF'yi burada köprüleyin ve dayanıklı alınan denetim günlüğünü dışa aktarın.",
-      "learnMore": "MECP nasıl çalışır?"
+      "learnMore": "MECP nasıl çalışır?",
+      "protocolSource": "GitHub'daki protokol kaynağı"
     }
   }
 }

@@ -6064,7 +6064,8 @@
     "section": {
       "title": "MECP",
       "hint": "Protokol Komunikasi Darurat Mesh — menulis laporan dari Chat, menjembatani RF antara Meshtastic dan MeshCore di sini, dan mengekspor log audit yang diterima tahan lama.",
-      "learnMore": "Cara kerja MECP"
+      "learnMore": "Cara kerja MECP",
+      "protocolSource": "Sumber protokol di GitHub"
     }
   }
 }

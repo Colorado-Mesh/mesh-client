@@ -6158,7 +6158,8 @@
     "section": {
       "title": "MECP",
       "hint": "Protokół Siatkowej Komunikacji Awaryjnej — twórz raporty z Czatu, łącz tutaj RF między Meshtastic i MeshCore i eksportuj trwały otrzymany dziennik audytu.",
-      "learnMore": "Jak działa MECP"
+      "learnMore": "Jak działa MECP",
+      "protocolSource": "Źródło protokołu na GitHub"
     }
   }
 }

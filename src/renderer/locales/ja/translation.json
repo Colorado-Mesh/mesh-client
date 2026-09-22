@@ -6064,7 +6064,8 @@
     "section": {
       "title": "MECP",
       "hint": "メッシュ緊急通信プロトコル—チャットからレポートを作成し、ここでMeshtasticとMeshCoreの間のRFをブリッジし、耐久性のある受信監査ログをエクスポートします。",
-      "learnMore": "MECPの仕組み"
+      "learnMore": "MECPの仕組み",
+      "protocolSource": "GitHub上のプロトコルソース"
     }
   }
 }

@@ -6064,7 +6064,8 @@
     "section": {
       "title": "MECP",
       "hint": "Mesh Emergency Communication Protocol — Erstellen Sie Berichte aus dem Chat, überbrücken Sie RF zwischen Meshtastic und MeshCore hier und exportieren Sie das dauerhaft empfangene Auditprotokoll.",
-      "learnMore": "So funktioniert MECP"
+      "learnMore": "So funktioniert MECP",
+      "protocolSource": "Protokollquelle auf GitHub"
     }
   }
 }

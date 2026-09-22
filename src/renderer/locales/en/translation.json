@@ -6036,7 +6036,8 @@
     "section": {
       "title": "MECP",
       "hint": "Mesh Emergency Communication Protocol — compose reports from Chat, bridge RF between Meshtastic and MeshCore here, and export the durable received audit log.",
-      "learnMore": "How MECP works"
+      "learnMore": "How MECP works (site & video)",
+      "protocolSource": "Protocol source on GitHub"
     },
     "compose": {
       "title": "Compose MECP report",
