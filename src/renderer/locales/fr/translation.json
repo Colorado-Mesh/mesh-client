@@ -6019,5 +6019,43 @@
     "interfacesUnavailable": "Impossible de lire vos connexions. Vérifiez que Reticulum est en cours d'exécution, puis réessayez.",
     "identitySaveFailed": "Impossible d'enregistrer vos paramètres d'identité. Essayer à nouveau.",
     "interfaceSaveFailed": "Impossible d'enregistrer cette connexion. Vérifiez vos paramètres de connexion et réessayez."
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "Mayday",
+      "urgent": "URGENT",
+      "safety": "SÉCURITÉ",
+      "routine": "ROUTINE"
+    },
+    "incomingToast": "{{severity}} MECP de {{sender}}",
+    "notificationTitle": "Alerte MECP",
+    "exportLog": "Exporter le journal MECP",
+    "compose": {
+      "title": "Composer le rapport MECP",
+      "button": "MECP",
+      "open": "Ouvrir MECP compose",
+      "severity": "Sévérité (%)",
+      "category": "Catégorie",
+      "codes": "Codes",
+      "removeCode": "Supprimer le code {{code}}",
+      "freetext": "Texte libre (pax, GPS, notes)",
+      "addPax": "Ajouter 1pax",
+      "attachGps": "Joindre un GPS",
+      "drill": "Perceuse (D01 — pas d'alertes)",
+      "byteBudget": "{{used}} / {{max}} octets",
+      "send": "Envoyer le MECP"
+    },
+    "rebroadcast": {
+      "title": "Rediffusion MECP RF",
+      "hint": "En option, faire le pont entre le MECP entendu sur un canal de protocole et un autre. Désactivé par défaut. Activez Bidirectionnel pour inverser également le chemin.",
+      "add": "Ajouter une règle de pont",
+      "remove": "Enlever le pont",
+      "enableRule": "Activée",
+      "bidirectional": "Bidirectionnel",
+      "endpointA": "Écouter / source (A)",
+      "endpointB": "Transfert / destination (B)",
+      "protocol": "Protocole",
+      "channelIndex": "Index des canaux"
+    }
   }
 }

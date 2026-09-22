@@ -143,6 +143,12 @@ import {
 } from '../lib/chatUnreadCounts';
 import { applyControlledEditableValue } from '../lib/controlledEditableValue';
 import {
+  getCachedMecpLanguage,
+  localizeMecpCodes,
+  mecpLanguageForAppLocale,
+  tryParseMecp,
+} from '../lib/mecp/mecpMessages';
+import {
   findMeshcoreParentMessageForReply,
   meshcoreChatMessagesForDisplay,
   meshcorePayloadIsTapbackEmojiOnly,
@@ -179,6 +185,8 @@ import { ChatDmPaperShareControl, ChatPaperScanControl } from './ChatDmPaperCont
 import { ChatPayloadText } from './ChatPayloadText';
 import { ChatRfHopLabel } from './ChatRfHopLabel';
 import { HelpTooltip } from './HelpTooltip';
+import { MecpComposeModal } from './mecp/MecpComposeModal';
+import { MecpSeverityBadge } from './mecp/MecpSeverityBadge';
 import MeshcoreChatChannelManager from './MeshcoreChatChannelManager';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { RelayCoverageLine, relayCoverageMessageKey } from './RelayCoverageLine';
@@ -639,7 +647,7 @@ function ChatPanel({
   resolveShareLocation,
   onSendLocationWaypoint,
 }: ChatPanelProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const capabilities = useRadioProvider(protocol);
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const parentIconTrigger = useParentIconTrigger();
@@ -905,6 +913,7 @@ function ChatPanel({
     viewKey: string;
   } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [mecpComposeOpen, setMecpComposeOpen] = useState(false);
   const [pickerOpenFor, setPickerOpenFor] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
@@ -3075,8 +3084,14 @@ function ChatPanel({
                         >
                           {/* Message bubble */}
                           <div
-                            className={`min-w-0 rounded-2xl px-3 ${compactMode ? 'py-1' : 'py-2'} ${
-                              compactMerged
+                            className={`min-w-0 rounded-2xl px-3 ${compactMode ? 'py-1' : 'py-2'} ${(() => {
+                              const mecp = tryParseMecp(msg.payload);
+                              if (mecp) {
+                                return isOwn
+                                  ? 'border border-red-400/70 bg-red-900/30 font-semibold'
+                                  : 'border border-dashed border-red-500 bg-red-950/40 font-semibold';
+                              }
+                              return compactMerged
                                 ? `${compactStackTop ? 'rounded-t-none border-t-0' : ''} ${compactStackBottom ? 'rounded-b-none border-b-0' : ''} ${
                                     isDm
                                       ? isOwn
@@ -3092,8 +3107,8 @@ function ChatPanel({
                                     : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border border-purple-600/30 bg-purple-700/20${isContinuation ? 'rounded-tl-sm' : ''}`
                                   : isOwn
                                     ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-blue-500/30 bg-blue-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
-                                    : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border-chat-incoming-border border bg-chat-incoming-bg${isContinuation ? 'rounded-tl-sm' : ''}`
-                            }`}
+                                    : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border-chat-incoming-border border bg-chat-incoming-bg${isContinuation ? 'rounded-tl-sm' : ''}`;
+                            })()}`}
                           >
                             {/* Header: sender name (clickable) + DM indicator + time */}
                             {!isContinuation &&
@@ -3341,6 +3356,24 @@ function ChatPanel({
                                   }}
                                 />
                               )}
+                              {(() => {
+                                const mecp = tryParseMecp(msg.payload);
+                                if (mecp?.severity == null) return null;
+                                const lang = getCachedMecpLanguage(
+                                  mecpLanguageForAppLocale(i18n.language || 'en'),
+                                );
+                                return (
+                                  <div className="mt-1 flex flex-col gap-0.5">
+                                    <MecpSeverityBadge
+                                      severity={mecp.severity}
+                                      pulse={!isOwn && mecp.severity <= 1 && !mecp.isDrill}
+                                    />
+                                    <p className="text-[10px] font-normal text-red-200/90">
+                                      {localizeMecpCodes(mecp, lang)}
+                                    </p>
+                                  </div>
+                                );
+                              })()}
                             </div>
 
                             {/* Transport + RF hop count (incoming) */}
@@ -3718,6 +3751,42 @@ function ChatPanel({
       {protocol === 'reticulum' && hasLxmfPaper ? (
         <ChatPaperScanControl sidecarRunning={reticulumStackLive} />
       ) : null}
+      <div className="mt-1 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          className="rounded border border-red-600/70 bg-red-950/50 px-2 py-1 text-xs font-semibold text-red-200 hover:bg-red-900/60"
+          aria-label={t('mecp.compose.open')}
+          onClick={() => {
+            setMecpComposeOpen(true);
+          }}
+        >
+          {t('mecp.compose.button')}
+        </button>
+        <button
+          type="button"
+          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800"
+          aria-label={t('mecp.exportLog')}
+          onClick={() => {
+            void window.electronAPI.mecp.exportReceivedLog().then((res) => {
+              if (!res.success && res.reason === 'empty') {
+                // soft: nothing to export
+                console.debug('[ChatPanel] MECP log empty');
+              }
+            });
+          }}
+        >
+          {t('mecp.exportLog')}
+        </button>
+      </div>
+      <MecpComposeModal
+        open={mecpComposeOpen}
+        onClose={() => {
+          setMecpComposeOpen(false);
+        }}
+        onSend={async (text) => {
+          await handleSendChunk(text);
+        }}
+      />
       <ChatComposer
         className="mt-1"
         protocol={protocol}

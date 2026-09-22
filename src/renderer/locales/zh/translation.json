@@ -6019,5 +6019,43 @@
     "identitySaveFailed": "无法保存您的身份设置。再试一次。",
     "interfacesUnavailable": "无法读取您的连接。检查 Reticulum 是否正在运行，然后重试。",
     "interfaceSaveFailed": "无法保存此连接。检查您的连接设置并重试。"
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "飞机陷落",
+      "urgent": "紧急",
+      "safety": "安全性",
+      "routine": "常规"
+    },
+    "incomingToast": "{{severity}} MECP来自{{sender}}",
+    "notificationTitle": "MECP警报",
+    "exportLog": "导出MECP日志",
+    "compose": {
+      "title": "撰写MECP报告",
+      "button": "MECP",
+      "open": "打开MECP撰写",
+      "severity": "严重性",
+      "category": "类别",
+      "codes": "Codes",
+      "removeCode": "删除代码{{code}}",
+      "freetext": "自由文本（可容纳人次、GPS、备注）",
+      "addPax": "新增1人",
+      "attachGps": "附加GPS",
+      "drill": "钻孔（ D01 —无警报）",
+      "byteBudget": "{{used}}/{{max}}字节",
+      "send": "发送MECP"
+    },
+    "rebroadcast": {
+      "title": "MECP射频重播",
+      "hint": "可选地将一个协议通道上听到的MECP桥接到另一个协议通道。默认情况下关闭。启用双向也可以反转路径。",
+      "add": "添加桥接规则",
+      "remove": "删除桥接规则",
+      "enableRule": "已启用",
+      "bidirectional": "双向",
+      "endpointA": "聆听/来源（ A ）",
+      "endpointB": "转发/目的地（ B ）",
+      "protocol": "研究方案(protocol)",
+      "channelIndex": "声道索引："
+    }
   }
 }

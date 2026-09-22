@@ -6113,5 +6113,43 @@
     "interfaceSaveFailed": "Не удалось сохранить это соединение. Проверьте настройки подключения и повторите попытку.",
     "interfacesUnavailable": "Не удалось прочитать ваши соединения. Убедитесь, что Reticulum запущен, затем повторите попытку.",
     "identitySaveFailed": "Не удалось сохранить настройки идентификации. Попробуйте еще раз."
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "MAYDAY",
+      "urgent": "URGENT",
+      "safety": "SAFETY",
+      "routine": "ROUTINE"
+    },
+    "incomingToast": "{{severity}} MECP from {{sender}}",
+    "notificationTitle": "MECP alert",
+    "exportLog": "Export MECP log",
+    "compose": {
+      "title": "Compose MECP report",
+      "button": "MECP",
+      "open": "Open MECP compose",
+      "severity": "Severity",
+      "category": "Category",
+      "codes": "Codes",
+      "removeCode": "Remove code {{code}}",
+      "freetext": "Free text (pax, GPS, notes)",
+      "addPax": "Add 1pax",
+      "attachGps": "Attach GPS",
+      "drill": "Drill (D01 — no alerts)",
+      "byteBudget": "{{used}} / {{max}} bytes",
+      "send": "Send MECP"
+    },
+    "rebroadcast": {
+      "title": "MECP RF rebroadcast",
+      "hint": "Optionally bridge MECP heard on one protocol channel to another. Off by default. Enable Bidirectional to also reverse the path.",
+      "add": "Add bridge rule",
+      "remove": "Remove bridge rule",
+      "enableRule": "Enabled",
+      "bidirectional": "Bidirectional",
+      "endpointA": "Listen / source (A)",
+      "endpointB": "Forward / destination (B)",
+      "protocol": "Protocol",
+      "channelIndex": "Channel index"
+    }
   }
 }

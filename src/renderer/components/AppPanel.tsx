@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { MecpRebroadcastSettings } from '@/renderer/components/mecp/MecpRebroadcastSettings';
 import { copyDebugSnapshotToClipboard } from '@/renderer/lib/debugSnapshot';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { exportSupportBundleToDisk } from '@/renderer/lib/exportSupportBundle';
@@ -2141,6 +2142,8 @@ export default function AppPanel({
           </div>
         )}
       </div>
+
+      <MecpRebroadcastSettings />
 
       {/* Danger Zone — collapsible; same pattern as Appearance → Color scheme */}
       <div className="space-y-2">

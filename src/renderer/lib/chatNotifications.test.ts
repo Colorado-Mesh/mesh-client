@@ -93,6 +93,57 @@ describe('playMessageNotification', () => {
     expect(oscillatorFrequencies).toEqual([587.33, 783.99]);
   });
 
+  it('plays triple pulses for mecp notifications', () => {
+    playMessageNotification('mecp');
+    expect(oscillatorCount).toBe(3);
+    expect(oscillatorFrequencies).toEqual([659, 784, 988]);
+  });
+
+  it('plays a multi-cycle siren for mecpSiren at elevated gain', () => {
+    const gainLevels: number[] = [];
+    class MockAudioContextWithGainCapture {
+      destination = {};
+      currentTime = 0;
+      get state() {
+        return 'running' as AudioContextState;
+      }
+      resume = vi.fn(() => Promise.resolve());
+      createOscillator() {
+        oscillatorCount += 1;
+        const frequency = {
+          value: 0,
+          setValueAtTime: vi.fn(),
+          linearRampToValueAtTime: vi.fn(),
+        };
+        return {
+          type: 'sine',
+          connect: vi.fn(),
+          frequency,
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+      }
+      createGain() {
+        return {
+          connect: vi.fn(),
+          gain: {
+            setValueAtTime: (v: number) => {
+              gainLevels.push(v);
+            },
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+        };
+      }
+    }
+    resetChatNotificationAudioContextForTests();
+    vi.stubGlobal('AudioContext', MockAudioContextWithGainCapture);
+    oscillatorCount = 0;
+    playMessageNotification('mecpSiren');
+    // 4 cycles × 1 oscillator each
+    expect(oscillatorCount).toBe(4);
+    expect(gainLevels.some((g) => g >= 0.5)).toBe(true);
+  });
+
   it('defaults to channel profile when type is omitted', () => {
     playMessageNotification();
     expect(oscillatorCount).toBe(1);

@@ -626,6 +626,13 @@ describe('privileged IPC sender validation (source contract)', () => {
     expect(body).toContain('isValidHttpHostname(s.server.trim())');
   });
 
+  it('mecp:appendReceived validates entry shape', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('mecp:appendReceived'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 500);
+    expect(body).toContain('isValidMecpAppendPayload');
+  });
+
   it('chat:export caps message array length', () => {
     expect(INDEX_SOURCE).toContain('CHAT_EXPORT_MAX_MESSAGES');
   });
@@ -650,6 +657,7 @@ describe('privileged IPC sender validation (source contract)', () => {
       'support:exportBundle',
       'storage:encrypt',
       'storage:decrypt',
+      'mecp:exportReceivedLog',
     ] as const) {
       const handlerIdx = INDEX_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
       expect(handlerIdx).toBeGreaterThan(-1);

@@ -284,6 +284,9 @@ const NOTIFICATION_TYPE_PRIORITY: Record<ChatNotificationType, number> = {
   channel: 0,
   dm: 1,
   reply: 2,
+  // MECP tones are owned by useMecpAlertWatcher — not selected here
+  mecp: -1,
+  mecpSiren: -1,
 };
 
 export function resolveChatNotificationType(

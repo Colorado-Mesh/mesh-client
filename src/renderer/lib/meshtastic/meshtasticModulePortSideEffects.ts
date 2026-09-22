@@ -150,7 +150,7 @@ function handleModulePort(
     // Portnums added in protobufs 2.8.0 with no dedicated panel yet. They are labeled
     // here and reach the Sniffer through the raw packet stream; listing them keeps the
     // switch an accurate record of what the app knows about.
-    case 'alert':
+    // ALERT_APP is decoded as text_message in MeshtasticProtocol (MECP / critical alerts).
     case 'keyVerification':
     case 'remoteShell':
     case 'nodeStatus':

@@ -1366,6 +1366,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
         reason?: 'empty' | 'cancelled' | 'no_db' | 'no_window';
       }>,
   },
+  mecp: {
+    appendReceived: (entry: unknown) =>
+      ipcRenderer.invoke('mecp:appendReceived', entry) as Promise<{ ok: true }>,
+    exportReceivedLog: () =>
+      ipcRenderer.invoke('mecp:exportReceivedLog') as Promise<{
+        success: boolean;
+        path?: string;
+        reason?: 'empty';
+      }>,
+  },
+
   chat: {
     export: (messages: unknown[]) =>
       ipcRenderer.invoke('chat:export', messages) as Promise<{ success: boolean; path?: string }>,

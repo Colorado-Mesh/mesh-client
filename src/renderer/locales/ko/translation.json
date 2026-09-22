@@ -6019,5 +6019,43 @@
     "identityUnavailable": "귀하의 신원을 읽을 수 없습니다. Reticulum이 실행 중인지 확인한 후 다시 시도하세요.",
     "interfaceSaveFailed": "이 연결을 저장할 수 없습니다. 연결 설정을 확인하고 다시 시도하세요.",
     "identitySaveFailed": "ID 설정을 저장할 수 없습니다. 다시 시도해 보세요."
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "MAYDAY",
+      "urgent": "URGENT",
+      "safety": "SAFETY",
+      "routine": "ROUTINE"
+    },
+    "incomingToast": "{{severity}} MECP from {{sender}}",
+    "notificationTitle": "MECP alert",
+    "exportLog": "Export MECP log",
+    "compose": {
+      "title": "Compose MECP report",
+      "button": "MECP",
+      "open": "Open MECP compose",
+      "severity": "Severity",
+      "category": "Category",
+      "codes": "Codes",
+      "removeCode": "Remove code {{code}}",
+      "freetext": "Free text (pax, GPS, notes)",
+      "addPax": "Add 1pax",
+      "attachGps": "Attach GPS",
+      "drill": "Drill (D01 — no alerts)",
+      "byteBudget": "{{used}} / {{max}} bytes",
+      "send": "Send MECP"
+    },
+    "rebroadcast": {
+      "title": "MECP RF rebroadcast",
+      "hint": "Optionally bridge MECP heard on one protocol channel to another. Off by default. Enable Bidirectional to also reverse the path.",
+      "add": "Add bridge rule",
+      "remove": "Remove bridge rule",
+      "enableRule": "Enabled",
+      "bidirectional": "Bidirectional",
+      "endpointA": "Listen / source (A)",
+      "endpointB": "Forward / destination (B)",
+      "protocol": "Protocol",
+      "channelIndex": "Channel index"
+    }
   }
 }

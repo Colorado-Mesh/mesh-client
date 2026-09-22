@@ -6019,5 +6019,43 @@
     "identityUnavailable": "No se pudo leer tu identidad. Compruebe que Reticulum se esté ejecutando y vuelva a intentarlo.",
     "interfaceSaveFailed": "No se pudo guardar esta conexión. Verifique la configuración de su conexión e inténtelo nuevamente.",
     "identitySaveFailed": "No se pudo guardar su configuración de identidad. Intentar otra vez."
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "MEIDEI",
+      "urgent": "URGENTE",
+      "safety": "SEGURIDAD",
+      "routine": "LOW TOUCH"
+    },
+    "incomingToast": "{{severity}} MECP de {{sender}}",
+    "notificationTitle": "Alerta MECP",
+    "exportLog": "Exportar registro MECP",
+    "compose": {
+      "title": "Redactar informe MECP",
+      "button": "MECP",
+      "open": "Abrir composición MECP",
+      "severity": "Gravedad",
+      "category": "Categoria",
+      "codes": "Códigos",
+      "removeCode": "Eliminar código {{code}}",
+      "freetext": "Texto libre (pax, GPS, notas)",
+      "addPax": "Añadir 1pax",
+      "attachGps": "Adjuntar GPS",
+      "drill": "Simulacro (D01 — sin alertas)",
+      "byteBudget": "{{used}} / {{max}} bytes",
+      "send": "Enviar MECP"
+    },
+    "rebroadcast": {
+      "title": "Retransmisión MECP RF",
+      "hint": "Opcionalmente puente MECP escuchado en un canal de protocolo a otro. Desactivado de forma predeterminada. Habilite Bidireccional para invertir también la ruta.",
+      "add": "Añadir puente",
+      "remove": "Eliminar puente",
+      "enableRule": "Habilitado",
+      "bidirectional": "Bidireccional",
+      "endpointA": "Escuchar / fuente (A)",
+      "endpointB": "Adelante / destino (B)",
+      "protocol": "Protocolo",
+      "channelIndex": "Índice del canal"
+    }
   }
 }

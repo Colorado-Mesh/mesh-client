@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
-type ToastType = 'success' | 'error' | 'warning' | 'info';
+type ToastType = 'success' | 'error' | 'warning' | 'info' | 'emergency';
 
 export interface ToastAction {
   label: string;
@@ -134,6 +134,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
     error: '✗',
     warning: '⚠',
     info: 'ℹ',
+    emergency: '!',
   }[toast.type];
 
   const colors = {
@@ -141,6 +142,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
     error: 'bg-red-900/90 border-red-600 text-red-200',
     warning: 'bg-yellow-900/90 border-yellow-600 text-yellow-200',
     info: 'bg-deep-black/90 border-gray-600 text-gray-200',
+    emergency: 'bg-red-900/95 border-red-500 text-red-100',
   }[toast.type];
 
   return (

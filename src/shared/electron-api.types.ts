@@ -1144,6 +1144,25 @@ export interface ElectronAPI {
     }>;
   };
 
+  // ─── MECP received audit log ─────────────────────────────────────────────────
+  mecp: {
+    appendReceived: (entry: {
+      protocol: string;
+      severity: number | null;
+      drill: boolean;
+      from?: string;
+      channel?: number | string;
+      payload: string;
+      decoded?: string;
+      direction?: 'received' | 'rebroadcast';
+      toProtocol?: string;
+      toChannel?: number | string;
+      bidirectional?: boolean;
+      messageId?: string;
+    }) => Promise<{ ok: true }>;
+    exportReceivedLog: () => Promise<{ success: boolean; path?: string; reason?: 'empty' }>;
+  };
+
   // ─── Chat export ─────────────────────────────────────────────────────────────
   chat: {
     export: (messages: ChatExportMessage[]) => Promise<{ success: boolean; path?: string }>;

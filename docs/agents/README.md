@@ -15,6 +15,7 @@ Deep, file-level subsystem detail for AI assistants, split out of [`AGENTS.md`](
 | Diagnostics engines, rows, tab scoping                                                                   | [diagnostics.md](diagnostics.md)               |
 | i18n / localization workflow, auto-translate, language selector                                          | [i18n.md](i18n.md)                             |
 | Connection panel helpers (error hints, rehydrate, storage migrations)                                    | [connection-panel.md](connection-panel.md)     |
+| MECP emergency reports, siren alerts, audit log, ALERT_APP, RF rebroadcast                               | [mecp.md](mecp.md)                             |
 | Symptom → where-to-check index                                                                           | [common-issues.md](common-issues.md)           |
 
 For human-facing deep dives, see the top-level docs (e.g. [../reticulum.md](../reticulum.md), [../diagnostics.md](../diagnostics.md), [../meshcore-meshtastic-parity.md](../meshcore-meshtastic-parity.md), [../troubleshooting.md](../troubleshooting.md)).

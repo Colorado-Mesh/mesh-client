@@ -1015,8 +1015,8 @@ export class MQTTManager extends EventEmitter {
     };
 
     try {
-      if (portnum === PortNum.TEXT_MESSAGE_APP) {
-        body.type = 'text';
+      if (portnum === PortNum.TEXT_MESSAGE_APP || portnum === PortNum.ALERT_APP) {
+        body.type = portnum === PortNum.ALERT_APP ? 'alert' : 'text';
         const textBytes = rawData.payload ?? new Uint8Array();
         const textStr = new TextDecoder().decode(textBytes);
         let payloadVal: unknown;
@@ -1984,13 +1984,16 @@ export class MQTTManager extends EventEmitter {
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
         this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
       }
-    } else if (portnum === PortNum.TEXT_MESSAGE_APP && (payload?.length || data.emoji)) {
+    } else if (
+      (portnum === PortNum.TEXT_MESSAGE_APP || portnum === PortNum.ALERT_APP) &&
+      (payload?.length || data.emoji)
+    ) {
       try {
         const payloadBytes = payload ?? new Uint8Array();
         const resolved = resolveMeshtasticTextMessagePayload(payloadBytes);
         if (!resolved) {
           console.debug(
-            `[Meshtastic MQTT] Dropped non-readable TEXT_MESSAGE from node ${nodeId} len=${payloadBytes.length}`,
+            `[Meshtastic MQTT] Dropped non-readable ${portnum === PortNum.ALERT_APP ? 'ALERT_APP' : 'TEXT_MESSAGE'} from node ${nodeId} len=${payloadBytes.length}`,
           ); // log-filter-ok Meshtastic MQTT logs → App log panel
           this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
           this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
@@ -2211,7 +2214,7 @@ export class MQTTManager extends EventEmitter {
       return false;
     }
 
-    if (portnum === PortNum.TEXT_MESSAGE_APP) {
+    if (portnum === PortNum.TEXT_MESSAGE_APP || portnum === PortNum.ALERT_APP) {
       if (data.emoji === MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG) return true;
       if (!payload?.length && !data.emoji) return false;
       return resolveMeshtasticTextMessagePayload(payload ?? new Uint8Array()) !== null;

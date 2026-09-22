@@ -6019,5 +6019,43 @@
     "interfacesUnavailable": "Ihre Verbindungen konnten nicht gelesen werden. Überprüfen Sie, ob Reticulum ausgeführt wird, und versuchen Sie es dann erneut.",
     "interfaceSaveFailed": "Diese Verbindung konnte nicht gespeichert werden. Überprüfen Sie Ihre Verbindungseinstellungen und versuchen Sie es erneut.",
     "identityUnavailable": "Ihre Identität konnte nicht gelesen werden. Überprüfen Sie, ob Reticulum ausgeführt wird, und versuchen Sie es dann erneut."
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "Mayday",
+      "urgent": "DRINGEND",
+      "safety": "SICHERHEIT",
+      "routine": "ROUTINE"
+    },
+    "incomingToast": "{{severity}} MECP von {{sender}}",
+    "notificationTitle": "MECP-Alarm",
+    "exportLog": "MECP-Protokoll exportieren",
+    "compose": {
+      "title": "MECP-Bericht erstellen",
+      "button": "MECP",
+      "open": "Öffnen Sie MECP Compose",
+      "severity": "Schweregrad",
+      "category": "Kategorie",
+      "codes": "Code",
+      "removeCode": "Code {{code}} entfernen",
+      "freetext": "Freitext (Pax, GPS, Notizen)",
+      "addPax": "1 Person hinzufügen",
+      "attachGps": "GPS anhängen",
+      "drill": "Bohrer (D01 — keine Warnungen)",
+      "byteBudget": "{{used}} / {{max}} Bytes",
+      "send": "MECP senden"
+    },
+    "rebroadcast": {
+      "title": "MECP RF Rebroadcast",
+      "hint": "Optional kann MECP, das auf einem Protokollkanal gehört wird, zu einem anderen überbrückt werden. Standardmäßig aus. Aktivieren Sie Bidirektional, um den Pfad auch umzukehren.",
+      "add": "Brückenregel hinzufügen",
+      "remove": "Brückenregel entfernen",
+      "enableRule": "Aktiviert",
+      "bidirectional": "Bidirektional",
+      "endpointA": "Hören / Quelle (A)",
+      "endpointB": "Weiterleitung / Ziel (B)",
+      "protocol": "Protokoll",
+      "channelIndex": "Kanalindex"
+    }
   }
 }
