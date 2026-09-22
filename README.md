@@ -317,7 +317,7 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 | LXMF DMs, paper, propagation | rsLXMF                                              | Chat, Network                   |
 | Nomad pages                  | [rsNomad](https://github.com/Colorado-Mesh/rsNomad) | Nomad Network                   |
 | Live voice                   | [rsLXST](https://github.com/ratspeak/rsLXST)        | Call on Peers / Chat DM         |
-| Games (TTT / Chess)          | [lrgp-rs](https://github.com/ratspeak/lrgp-rs)      | **Games** tab + Challenge       |
+| Games (TTT / Chess / FIAR)   | [lrgp-rs](https://github.com/ratspeak/lrgp-rs)      | **Games** tab + Challenge       |
 | Relay chat / Remote          | rsReticulum + sidecar                               | **RRC**, **Remote** (rnsh/rncp) |
 
 Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity: [docs/reticulum-games-parity.md](docs/reticulum-games-parity.md).
@@ -345,7 +345,7 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 
 **Games (LRGP)**
 
-- **Games** tab (Reticulum-only): **Tic-Tac-Toe** and **Chess** over [LRGP](https://github.com/ratspeak/lrgp-rs), wire-compatible with Ratspeak — challenge, accept, play, draw/resign, session list + unread badge (sidebar; **not** folded into the amber protocol-pill total)
+- **Games** tab (Reticulum-only): **Tic-Tac-Toe**, **Chess**, and **Four in a Row** over [LRGP](https://github.com/ratspeak/lrgp-rs), wire-compatible with Ratspeak — challenge, accept, play, draw/resign, session list + unread badge (sidebar; **not** folded into the amber protocol-pill total)
 - **Challenge** from Peers rows and Chat DM headers; deep links `lrgp:<session>` and `lxm://game/<id>` open the Games tab to that session
 - See [Games parity checklist](docs/reticulum-games-parity.md) for command/UI interop status vs Ratspeak
 
@@ -503,7 +503,7 @@ All three protocols can run at the same time. Use the **Meshtastic / MeshCore / 
 2. Open the **Connection** tab and click **Start stack** (enable **Auto-start** to skip this on future launches)
 3. On **Network**, generate or import your LXMF identity (the sidecar must be running)
 4. On **Connection → Interfaces**, add transports (TCP hub, Auto, or RNode over USB/BLE/Wi‑Fi) and enable them; restart the stack after interface changes when using the full `rns-stack` build
-5. Use **Chat** for LXMF DMs (and **Share as paper** / **Scan paper** for offline encrypted handoff); **Games** for Tic-Tac-Toe / Chess (or Challenge from Peers / Chat); **Call** for LXST voice; **Remote** for rnsh/rncp; **RRC** for hub rooms; **Peers** and **Topology** for path-table visibility; **Nomad Network** for browse + **My Pages** watched-folder hosting
+5. Use **Chat** for LXMF DMs (and **Share as paper** / **Scan paper** for offline encrypted handoff); **Games** for Tic-Tac-Toe / Chess / Four in a Row (or Challenge from Peers / Chat); **Call** for LXST voice; **Remote** for rnsh/rncp; **RRC** for hub rooms; **Peers** and **Topology** for path-table visibility; **Nomad Network** for browse + **My Pages** watched-folder hosting
 
 Dev builds need the sidecar binary once: `pnpm run reticulum:sidecar:build`. Packaged releases include it automatically. See [docs/reticulum.md](docs/reticulum.md) and [Troubleshooting — Reticulum](docs/troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out).
 
