@@ -148,11 +148,21 @@ test('rejects a long compressed recording before allocating decoded audio', asyn
       dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: [filePath] });
     }, file);
     await launched.page.evaluate(() => {
-      const scope = window as unknown as { notificationDecodeCalls: number };
-      scope.notificationDecodeCalls = 0;
+      const scope = window as unknown as {
+        notificationAudioProbe: { decodeCalls: number; durations: number[] };
+      };
+      scope.notificationAudioProbe = { decodeCalls: 0, durations: [] };
+      window.Audio = class extends Audio {
+        constructor(src?: string) {
+          super(src);
+          this.addEventListener('loadedmetadata', () => {
+            scope.notificationAudioProbe.durations.push(this.duration);
+          });
+        }
+      };
       const decode = AudioContext.prototype.decodeAudioData;
       AudioContext.prototype.decodeAudioData = function (...args) {
-        scope.notificationDecodeCalls++;
+        scope.notificationAudioProbe.decodeCalls++;
         return decode.apply(this, args);
       };
     });
@@ -165,11 +175,16 @@ test('rejects a long compressed recording before allocating decoded audio', asyn
     await expect(
       launched.page.getByRole('combobox', { name: 'Tone for Direct messages' }),
     ).toHaveValue('default');
-    expect(
-      await launched.page.evaluate(
-        () => (window as unknown as { notificationDecodeCalls: number }).notificationDecodeCalls,
-      ),
-    ).toBe(0);
+    const probe = await launched.page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            notificationAudioProbe: { decodeCalls: number; durations: number[] };
+          }
+        ).notificationAudioProbe,
+    );
+    expect(probe.durations).toEqual([expect.closeTo(60, 3)]);
+    expect(probe.decodeCalls).toBe(0);
   } finally {
     await teardownApp(launched);
   }
