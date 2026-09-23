@@ -23,7 +23,8 @@ MECP/<severity>/<codes> [freetext]
 3. `useMecpAlertWatcher` (mounted once from `App.tsx`):
    - Seeds a dedup set at mount (no alert/audit on hydration)
    - New inbound MECP → durable audit append (`mecp:appendReceived`)
-   - Alerts: sev **0–1** loud `'mecpSiren'` + emergency toast (**ignore** mutes); sev **2–3** `'mecp'` tone when unmuted; drills never alert
+   - Alerts: sev **0–1** loud `'mecpSiren'` + emergency toast (**ignore** mutes; **always** including focused chat); sev **2–3** loud repeated `'mecp'` burst when unmuted; drills never alert
+   - Focused Chat still alerts via `ChatPanel` → `triggerMecpAlert` (deduped with the watcher)
    - Optional RF rebroadcast (§ below)
 
 ## Durable audit log
@@ -36,7 +37,7 @@ MECP/<severity>/<codes> [freetext]
 ## Send path
 
 - App → MECP → **Show MECP button in Chat** (default **off**) gates the Chat compose control
-- When enabled: Chat **MECP** button → `MecpComposeModal` (defaults: ROUTINE + Drill category + `D02`) → encode → existing `handleSendChunk` / `useSendMessage` (follows open DM/channel)
+- When enabled: Chat **MECP** button → `MecpComposeModal` (defaults: ROUTINE + Drill category, no codes selected) → encode → existing `handleSendChunk` / `useSendMessage` (follows open DM/channel)
 - Attach GPS uses the app share-location waterfall (`resolveShareLocation`), not raw `navigator.geolocation` alone
 - Meshtastic outbound uses normal text (`TEXT_MESSAGE_APP`), not ALERT_APP
 

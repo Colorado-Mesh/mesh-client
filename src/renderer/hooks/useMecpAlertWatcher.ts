@@ -111,6 +111,7 @@ function fireAlert(
     viewKey,
     mutedViews,
     notifyHiddenWindow: true,
+    dedupeKey: messageDedupKey(slice.protocol, msg.id),
   });
 }
 

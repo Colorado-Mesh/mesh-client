@@ -634,6 +634,11 @@ describe('pickAudibleNotificationType', () => {
     expect(pickAudibleNotificationType(messages, 'meshtastic', new Set(), ownNodes)).toBe(null);
   });
 
+  it('skips MECP payloads (owned by triggerMecpAlert)', () => {
+    const messages = [msg({ channel: 0, payload: 'MECP/0/M01', timestamp: 2000 })];
+    expect(pickAudibleNotificationType(messages, 'meshtastic', new Set(), ownNodes)).toBe(null);
+  });
+
   it('resolves reply parents from allMessages when batch only contains the reply', () => {
     const parent = msg({ channel: 0, sender_id: 1, packetId: 100, timestamp: 500 });
     const reply = msg({ channel: 0, sender_id: 2, replyId: 100, timestamp: 1000 });

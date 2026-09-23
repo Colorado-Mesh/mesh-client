@@ -22,7 +22,7 @@ describe('bumpMecpPaxFreetext', () => {
 });
 
 describe('MecpComposeModal', () => {
-  it('defaults to ROUTINE, Drill category, and D02', async () => {
+  it('defaults to ROUTINE and Drill category with no codes selected', async () => {
     const user = userEvent.setup();
     const onSend = vi.fn();
     render(<MecpComposeModal open onClose={() => {}} onSend={onSend} />);
@@ -33,11 +33,11 @@ describe('MecpComposeModal', () => {
     );
     expect(screen.getByRole('button', { name: /D02 This is a test/i })).toHaveAttribute(
       'aria-pressed',
-      'true',
+      'false',
     );
+    expect(screen.getByRole('button', { name: /send mecp/i })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: /send mecp/i }));
-    expect(onSend).toHaveBeenCalled();
-    expect(String(onSend.mock.calls[0]?.[0])).toMatch(/^MECP\/3\/D02$/);
+    expect(onSend).not.toHaveBeenCalled();
   });
 
   it('encodes and sends when an M01 code is selected', async () => {

@@ -35,6 +35,9 @@ type SoundProfile =
       dur: number;
       gap: number;
       gain?: number;
+      /** Play the rising triple this many times (MECP 2–3 needs to cut through chat). */
+      repeats?: number;
+      repeatGap?: number;
     }
   | {
       kind: 'siren';
@@ -49,7 +52,15 @@ const SOUND_PROFILES: Record<ChatNotificationType, SoundProfile> = {
   channel: { kind: 'single', freq: 880, dur: 0.15 },
   dm: { kind: 'dual', pulse1Freq: 587.33, pulse2Freq: 783.99, dur: 0.05, gap: 0.035 },
   reply: { kind: 'dual', pulse1Freq: 587.33, pulse2Freq: 783.99, dur: 0.05, gap: 0.035 },
-  mecp: { kind: 'triple', freqs: [659, 784, 988], dur: 0.07, gap: 0.04, gain: 0.35 },
+  mecp: {
+    kind: 'triple',
+    freqs: [784, 988, 1175],
+    dur: 0.12,
+    gap: 0.05,
+    gain: 0.5,
+    repeats: 2,
+    repeatGap: 0.18,
+  },
   mecpSiren: {
     kind: 'siren',
     lowFreq: 800,
@@ -116,10 +127,15 @@ function scheduleMessageNotification(ctx: AudioContext, type: ChatNotificationTy
   }
   if (profile.kind === 'triple') {
     const g = profile.gain ?? 0.3;
+    const repeats = profile.repeats ?? 1;
+    const repeatGap = profile.repeatGap ?? 0.15;
     let t = now;
-    for (const freq of profile.freqs) {
-      playTonePulse(ctx, freq, profile.dur, t, g);
-      t += profile.dur + profile.gap;
+    for (let r = 0; r < repeats; r++) {
+      if (r > 0) t += repeatGap;
+      for (const freq of profile.freqs) {
+        playTonePulse(ctx, freq, profile.dur, t, g);
+        t += profile.dur + profile.gap;
+      }
     }
     return;
   }

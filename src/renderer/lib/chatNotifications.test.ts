@@ -93,10 +93,11 @@ describe('playMessageNotification', () => {
     expect(oscillatorFrequencies).toEqual([587.33, 783.99]);
   });
 
-  it('plays triple pulses for mecp notifications', () => {
+  it('plays a repeated rising burst for mecp notifications', () => {
     playMessageNotification('mecp');
-    expect(oscillatorCount).toBe(3);
-    expect(oscillatorFrequencies).toEqual([659, 784, 988]);
+    // 2 repeats × 3 pulses
+    expect(oscillatorCount).toBe(6);
+    expect(oscillatorFrequencies).toEqual([784, 988, 1175, 784, 988, 1175]);
   });
 
   it('plays a multi-cycle siren for mecpSiren at elevated gain', () => {

@@ -1,5 +1,6 @@
 import { isMeshcoreRoomChatMessage } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
 import type { ChatNotificationType } from '@/renderer/lib/chatNotifications';
+import { isMecpMessage } from '@/renderer/lib/mecp/mecpMessages';
 import {
   clampReadWatermarkMs,
   effectiveMessageTimestampMs,
@@ -299,6 +300,8 @@ export function resolveChatNotificationType(
   if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return null;
   if (msg.emoji && msg.replyId) return null;
   if (ownNodeIds.has(msg.sender_id)) return null;
+  // MECP siren/tone owned by triggerMecpAlert (watcher + focused ChatPanel) — never channel/dm beep
+  if (isMecpMessage(msg.payload)) return null;
 
   if (msg.replyId != null) {
     const parent =

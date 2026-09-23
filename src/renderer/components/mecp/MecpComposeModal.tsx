@@ -40,7 +40,7 @@ interface MecpComposeModalProps {
 
 const DEFAULT_MECP_SEVERITY: Severity = 3;
 const DEFAULT_MECP_CATEGORY: CategoryLetter = 'D';
-const DEFAULT_MECP_CODES: string[] = ['D02'];
+const DEFAULT_MECP_CODES: string[] = [];
 
 export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComposeModalProps) {
   const { t, i18n } = useTranslation();

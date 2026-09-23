@@ -143,6 +143,7 @@ import {
   resolveChatDmPeer,
 } from '../lib/chatUnreadCounts';
 import { applyControlledEditableValue } from '../lib/controlledEditableValue';
+import { triggerMecpAlert } from '../lib/mecp/mecpAlert';
 import {
   getCachedMecpLanguage,
   loadMecpLanguage,
@@ -1519,13 +1520,38 @@ function ChatPanel({
     saveStarred(protocol, starred);
   }, [protocol, starred]);
 
-  // Sound notification: plays when a new message arrives on a view the user is not reading.
+  // Sound notification: regular channel/DM tones for other views; MECP always (incl. open view).
   useEffect(() => {
     const prevLen = prevMessagesLengthRef.current;
     prevMessagesLengthRef.current = messages.length;
-    if (localStorage.getItem('mesh-client:notifMuted') === '1' || messages.length <= prevLen)
-      return;
+    if (messages.length <= prevLen) return;
     const newMsgs = messages.slice(prevLen);
+
+    // MECP: audible even when focused on the receiving conversation (0–1 mute-bypass inside).
+    if (isActive && !isAppWindowInactive()) {
+      for (const msg of newMsgs) {
+        if (isOwnNode(msg.sender_id) || msg.isHistory) continue;
+        const mecp = tryParseMecp(msg.payload);
+        if (mecp?.severity == null) continue;
+        const peer = resolveDmPeer(msg);
+        const msgViewKey = peer != null ? `dm:${peer}` : `ch:${msg.channel}`;
+        const dedupeId =
+          msg.storeId ??
+          (msg.packetId != null ? String(msg.packetId) : undefined) ??
+          (msg.id != null ? String(msg.id) : undefined) ??
+          `${msg.timestamp}:${msg.payload}`;
+        triggerMecpAlert({
+          severity: mecp.severity,
+          isDrill: mecp.isDrill,
+          senderLabel: msg.sender_name || String(msg.sender_id),
+          viewKey: msgViewKey,
+          mutedViews,
+          dedupeKey: `${protocol}:${dedupeId}`,
+        });
+      }
+    }
+
+    if (localStorage.getItem('mesh-client:notifMuted') === '1') return;
     const gated = newMsgs.filter((msg) => {
       if (isOwnNode(msg.sender_id) || msg.isHistory) return false;
       const peer = resolveDmPeer(msg);
