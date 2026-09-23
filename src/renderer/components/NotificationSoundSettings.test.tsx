@@ -136,6 +136,30 @@ describe('NotificationSoundSettings', () => {
     );
   });
 
+  it('keeps the imported record when the custom option is reselected', async () => {
+    vi.mocked(window.electronAPI.notificationSounds.choose).mockResolvedValueOnce({
+      name: 'glass.wav',
+      dataBase64: 'bytes',
+    });
+    open();
+    const choose = screen.getByRole('button', { name: 'Choose audio file for Direct messages' });
+    fireEvent.click(choose);
+    const custom = { id: 'a'.repeat(64), name: 'glass.wav' };
+    await waitFor(() => {
+      expect(getNotificationSoundSettings().dm.sound).toEqual(custom);
+      expect(choose).toBeEnabled();
+    });
+    vi.mocked(window.electronAPI.appSettings.set).mockClear();
+    const selector = screen.getByRole('combobox', { name: 'Tone for Direct messages' });
+    await act(async () => {
+      fireEvent.change(selector, { target: { value: 'custom' } });
+      await Promise.resolve();
+    });
+    expect(getNotificationSoundSettings().dm.sound).toEqual(custom);
+    expect(selector).toHaveValue('custom');
+    expect(window.electronAPI.appSettings.set).not.toHaveBeenCalled();
+  });
+
   it('preserves settings when the chooser is cancelled or audio validation fails', async () => {
     open();
     const choose = screen.getByRole('button', { name: 'Choose audio file for Channel messages' });

@@ -41,6 +41,8 @@ Each row offers the original sound, four additional presets, **Choose file**, **
 
 The native file chooser starts in the installed sound directory when it exists: `/System/Library/Sounds` on macOS, `%WINDIR%/Media` on Windows, `/usr/share/sounds` on Linux. Linux portal versions below 4 may ignore the starting directory. Users can navigate to any accessible audio file. This imports a copy; it neither changes OS sound settings nor tracks later sound-theme changes.
 
+Prefer WAV, Ogg, FLAC, or MP3 for portable custom tones. The Linux chooser offers these formats; it omits AAC and M4A because decoding support varies between Linux Chromium builds. Windows and macOS still offer AAC/M4A, subject to import validation.
+
 Imports are limited to 2 MiB and 10 seconds. Chromium decodes WAV, MP3, Ogg, FLAC, and other supported audio; the extension alone is not proof of a valid recording. macOS AIFF is converted to WAV with the OS's `afconvert` utility. Unreadable saved audio falls back to that event's original tone during incoming notifications; Preview reports failure so the selection can be repaired.
 
 Before full Web Audio decoding, a local media element reads duration metadata with a five-second timeout. Unknown or excessive duration is rejected, and the probe releases its media source and blob URL on every exit. This prevents a small compressed recording from allocating a long PCM buffer before the duration check. The decoded duration is checked again. See the [HTML media preload specification](https://html.spec.whatwg.org/multipage/media.html#attr-media-preload) and [Web Audio decoding specification](https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata).

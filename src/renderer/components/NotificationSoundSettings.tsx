@@ -147,6 +147,7 @@ export default function NotificationSoundSettings() {
                 <select
                   value={typeof setting.sound === 'string' ? setting.sound : 'custom'}
                   onChange={(e) => {
+                    if (e.target.value === 'custom') return;
                     void change(event, {
                       ...setting,
                       sound: e.target.value as NotificationSoundSetting['sound'],

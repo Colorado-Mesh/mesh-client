@@ -51,7 +51,14 @@ describe('notification sound IPC', () => {
         vi.mocked(dialog.showOpenDialog).mock.calls[0] as unknown[]
       )[1] as OpenDialogOptions;
       expect(options).toMatchObject({ properties: ['openFile'] });
-      expect(options?.filters?.[0]?.extensions.includes('aiff')).toBe(platform === 'darwin');
+      expect(options?.filters?.[0]?.extensions).toEqual([
+        'wav',
+        'mp3',
+        'ogg',
+        'flac',
+        ...(platform === 'linux' ? [] : ['m4a', 'aac']),
+        ...(platform === 'darwin' ? ['aiff', 'aif'] : []),
+      ]);
       expect(assertIpcSender).toHaveBeenCalledWith(event, 'notificationSounds:choose');
     },
   );

@@ -51,8 +51,8 @@ export function registerNotificationSoundHandlers(): void {
               'mp3',
               'ogg',
               'flac',
-              'm4a',
-              'aac',
+              // OS-specific: Linux Chromium builds do not reliably decode AAC/M4A.
+              ...(process.platform === 'linux' ? [] : ['m4a', 'aac']),
               ...(process.platform === 'darwin' ? ['aiff', 'aif'] : []),
             ],
           },
