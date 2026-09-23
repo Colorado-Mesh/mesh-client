@@ -4,6 +4,7 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import {
+  clearNotificationSoundCache,
   previewNotificationSound,
   stopNotificationSoundPreview,
   validateNotificationSound,
@@ -13,6 +14,7 @@ import { getNotificationSoundSettings } from '../lib/notificationSoundSettings';
 import NotificationSoundSettings from './NotificationSoundSettings';
 
 vi.mock('../lib/chatNotifications', () => ({
+  clearNotificationSoundCache: vi.fn(),
   previewNotificationSound: vi.fn().mockResolvedValue(undefined),
   stopNotificationSoundPreview: vi.fn(),
   validateNotificationSound: vi.fn().mockResolvedValue(undefined),
@@ -85,6 +87,35 @@ describe('NotificationSoundSettings', () => {
     });
   });
 
+  it('keeps controls focusable during a save without accepting an unsaved volume edit', async () => {
+    let finish!: (value: { changes: number }) => void;
+    vi.mocked(window.electronAPI.appSettings.set).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    open();
+    const slider = screen.getByRole('slider', { name: 'Volume for Direct messages' });
+    slider.focus();
+    fireEvent.change(slider, { target: { value: '40' } });
+    fireEvent.keyUp(slider, { key: 'ArrowLeft' });
+    await waitFor(() => {
+      expect(window.electronAPI.appSettings.set).toHaveBeenCalledOnce();
+    });
+    expect(slider).toBeEnabled();
+    expect(slider).toHaveFocus();
+    expect(slider).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('combobox', { name: 'Tone for Direct messages' })).toBeEnabled();
+    fireEvent.change(slider, { target: { value: '20' } });
+    expect(slider).toHaveValue('40');
+    await act(async () => {
+      finish({ changes: 1 });
+      await Promise.resolve();
+    });
+    expect(getNotificationSoundSettings().dm.volume).toBe(40);
+    expect(slider).toHaveAttribute('aria-disabled', 'false');
+  });
+
   it('validates and copies a selected file before saving its reference', async () => {
     const imported = { name: 'glass.wav', dataBase64: 'bytes' };
     vi.mocked(window.electronAPI.notificationSounds.choose).mockResolvedValueOnce(imported);
@@ -97,6 +128,7 @@ describe('NotificationSoundSettings', () => {
       });
     });
     expect(validateNotificationSound).toHaveBeenCalledWith('bytes');
+    expect(clearNotificationSoundCache).toHaveBeenCalledWith('dm');
     expect(window.electronAPI.notificationSounds.save).toHaveBeenCalledWith(
       'dm',
       imported,

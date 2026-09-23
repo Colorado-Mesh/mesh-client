@@ -27,7 +27,7 @@ function wave(): Buffer {
   return bytes;
 }
 
-test('custom notification tone survives source deletion and a process restart', async () => {
+test('custom notification tone survives restart and can repair a missing saved copy', async () => {
   test.setTimeout(120_000);
   const directory = mkdtempSync(path.join(tmpdir(), 'mesh-sound-e2e-'));
   const file = path.join(directory, 'test-tone.wav');
@@ -71,6 +71,29 @@ test('custom notification tone survives source deletion and a process restart', 
       launched.page.getByRole('button', { name: 'Preview Direct messages' }),
     ).toBeVisible();
     await expect(launched.page.getByRole('alert')).toHaveCount(0);
+    await closeApp(launched);
+    rmSync(path.join(profile, 'notification-sounds', 'dm.json'));
+    launched = await launchApp({ userDataDir: profile, retainUserData: true });
+    await launched.app.evaluate(({ BrowserWindow, dialog }, filePath) => {
+      for (const window of BrowserWindow.getAllWindows()) window.webContents.setAudioMuted(true);
+      dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: [filePath] });
+    }, file);
+    await openAppTab(launched.page);
+    await launched.page.getByText('Notification tones', { exact: true }).click();
+    await launched.page.getByRole('button', { name: 'Preview Direct messages' }).click();
+    await expect(launched.page.getByRole('alert')).toHaveText(/Could not play/);
+    writeFileSync(file, wave());
+    await launched.page
+      .getByRole('button', { name: 'Choose audio file for Direct messages' })
+      .click();
+    await expect(
+      launched.page.getByRole('button', { name: 'Preview Direct messages' }),
+    ).toBeEnabled();
+    await launched.page.getByRole('button', { name: 'Preview Direct messages' }).click();
+    await expect(
+      launched.page.getByRole('button', { name: 'Preview Direct messages' }),
+    ).toBeVisible();
+    await expect(launched.page.getByRole('alert')).toHaveCount(0);
     await launched.page
       .getByRole('combobox', { name: 'Tone for MECP SAFETY' })
       .selectOption('alert');
@@ -80,10 +103,38 @@ test('custom notification tone survives source deletion and a process restart', 
     ).toHaveValue('default');
     await launched.page.screenshot({ path: test.info().outputPath('notification-sounds.png') });
     await launched.page.getByRole('button', { name: 'Reset Direct messages' }).click();
-    await expect(restored).toHaveValue('default');
+    await expect(
+      launched.page.getByRole('combobox', { name: 'Tone for Direct messages' }),
+    ).toHaveValue('default');
   } finally {
     await teardownApp(launched);
     await disposeUserData(profile);
     rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('notification tone and volume controls retain keyboard focus after saving', async () => {
+  const launched = await launchApp();
+  try {
+    await openAppTab(launched.page);
+    await launched.page.getByText('Notification tones', { exact: true }).click();
+    const tone = launched.page.getByRole('combobox', { name: 'Tone for Direct messages' });
+    const reset = launched.page.getByRole('button', { name: 'Reset Direct messages' });
+    await tone.focus();
+    await tone.selectOption('chime');
+    await expect(reset).toBeEnabled();
+    await expect(tone).toBeFocused();
+    const volume = launched.page.getByRole('slider', { name: 'Volume for Direct messages' });
+    await volume.focus();
+    await volume.press('ArrowLeft');
+    await expect(reset).toBeEnabled();
+    await expect(volume).toHaveValue('95');
+    await expect(volume).toBeFocused();
+    await volume.press('ArrowLeft');
+    await expect(reset).toBeEnabled();
+    await expect(volume).toHaveValue('90');
+    await expect(volume).toBeFocused();
+  } finally {
+    await teardownApp(launched);
   }
 });

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { NotificationSoundEvent } from '@/shared/notificationSounds';
 
 import {
+  clearNotificationSoundCache,
   previewNotificationSound,
   stopNotificationSoundPreview,
   validateNotificationSound,
@@ -86,6 +87,7 @@ export default function NotificationSoundSettings() {
           sound,
           typeof setting.sound === 'object' ? setting.sound.id : undefined,
         );
+        clearNotificationSoundCache(event);
         setting = { ...setting, sound: record };
       }
       if (!mounted.current) return;
@@ -139,7 +141,7 @@ export default function NotificationSoundSettings() {
           const setting = settings[event];
           const label = t(EVENT_LABELS[event]);
           return (
-            <fieldset key={event} disabled={busy} className="py-3">
+            <fieldset key={event} aria-busy={busy} className="py-3">
               <legend className="text-sm font-medium text-gray-300">{label}</legend>
               <div className="flex flex-wrap items-center gap-2">
                 <select
@@ -151,6 +153,7 @@ export default function NotificationSoundSettings() {
                     });
                   }}
                   aria-label={t('notificationSounds.toneFor', { event: label })}
+                  aria-disabled={busy}
                   className="bg-deep-black min-w-0 flex-1 rounded border border-gray-600 px-2 py-1 text-sm text-gray-300"
                 >
                   {BUILTIN_NOTIFICATION_SOUNDS.map((preset) => (
@@ -167,7 +170,7 @@ export default function NotificationSoundSettings() {
                   onClick={() => {
                     void playPreview(event);
                   }}
-                  disabled={setting.volume === 0}
+                  disabled={busy || setting.volume === 0}
                   aria-label={t(
                     preview === event
                       ? 'notificationSounds.stopFor'
@@ -184,6 +187,7 @@ export default function NotificationSoundSettings() {
                     void change(event, setting, true);
                   }}
                   aria-label={t('notificationSounds.chooseFor', { event: label })}
+                  disabled={busy}
                   className={buttonClass}
                 >
                   {t('notificationSounds.choose')}
@@ -194,6 +198,7 @@ export default function NotificationSoundSettings() {
                     void change(event, { sound: 'default', volume: 100 });
                   }}
                   aria-label={t('notificationSounds.resetFor', { event: label })}
+                  disabled={busy}
                   className={buttonClass}
                 >
                   {t('notificationSounds.reset')}
@@ -208,6 +213,7 @@ export default function NotificationSoundSettings() {
                   step={5}
                   value={setting.volume}
                   onChange={(e) => {
+                    if (pending.current) return;
                     const volume = Number(e.target.value);
                     stopPreview();
                     setSettings((current) => ({
@@ -225,6 +231,7 @@ export default function NotificationSoundSettings() {
                     saveVolume(event, Number(e.currentTarget.value));
                   }}
                   aria-label={t('notificationSounds.volumeFor', { event: label })}
+                  aria-disabled={busy}
                   className="accent-brand-green min-w-0 flex-1"
                 />
                 <span className="w-9 text-right tabular-nums">{setting.volume}%</span>

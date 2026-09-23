@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { mergeAppSetting } from './appSettingsStorage';
 import {
+  clearNotificationSoundCache,
   playMessageNotification,
   previewNotificationSound,
   resetChatNotificationAudioContextForTests,
@@ -126,6 +127,37 @@ describe('configured notification playback', () => {
     await expect(validateNotificationSound(samples)).rejects.toThrow('bad codec');
     decode.mockResolvedValueOnce({ duration: 10.1 });
     await expect(validateNotificationSound(samples)).rejects.toThrow('10 seconds');
+  });
+
+  it('retries the same custom sound after its imported copy is repaired', async () => {
+    const setting = { sound: { id, name: 'repaired.wav' }, volume: 100 };
+    vi.mocked(window.electronAPI.notificationSounds.read).mockResolvedValueOnce(null);
+    mergeAppSetting('notificationSounds', { dm: setting }, 'test');
+    playMessageNotification('dm');
+    await vi.waitFor(() => {
+      expect(createOscillator).toHaveBeenCalledTimes(2);
+    });
+    clearNotificationSoundCache('dm');
+    const preview = previewNotificationSound('dm', setting);
+    await vi.waitFor(() => {
+      expect(createBufferSource).toHaveBeenCalledOnce();
+    });
+    sources[2].onended?.();
+    await preview;
+    expect(window.electronAPI.notificationSounds.read).toHaveBeenCalledTimes(2);
+  });
+
+  it('allows an explicit preview retry after a transient read failure', async () => {
+    const setting = { sound: { id, name: 'retry.wav' }, volume: 100 };
+    vi.mocked(window.electronAPI.notificationSounds.read).mockRejectedValueOnce(new Error('IPC'));
+    await expect(previewNotificationSound('dm', setting)).rejects.toThrow('IPC');
+    const preview = previewNotificationSound('dm', setting);
+    await vi.waitFor(() => {
+      expect(createBufferSource).toHaveBeenCalledOnce();
+    });
+    sources[0].onended?.();
+    await preview;
+    expect(window.electronAPI.notificationSounds.read).toHaveBeenCalledTimes(2);
   });
 
   it('cancels a preview while resuming audio without scheduling it later', async () => {

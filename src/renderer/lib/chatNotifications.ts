@@ -274,6 +274,10 @@ const audioBuffers = new Map<ChatNotificationType, { id: string; buffer: Promise
 let previewVersion = 0;
 let previewPlayback: Playback | null = null;
 
+export function clearNotificationSoundCache(event: ChatNotificationType): void {
+  audioBuffers.delete(event);
+}
+
 async function decodeSound(ctx: AudioContext, dataBase64: string): Promise<AudioBuffer> {
   if (!dataBase64 || dataBase64.length > Math.ceil(MAX_NOTIFICATION_SOUND_BYTES / 3) * 4) {
     throw new Error('Sound exceeds size limit');
@@ -309,7 +313,7 @@ function loadCustomSound(
     return decodeSound(ctx, data);
   });
   audioBuffers.set(event, { id, buffer });
-  // Retain failures until the selection changes, avoiding repeated I/O on every incoming message.
+  // Retain failures until another import or sound ID, avoiding I/O on every incoming message.
   return buffer;
 }
 
@@ -383,10 +387,17 @@ export async function previewNotificationSound(
   const ctx = getSharedAudioContext();
   if (!ctx) throw new Error('Audio is unavailable');
   if (ctx.state === 'suspended') await ctx.resume();
-  const buffer =
-    typeof setting.sound === 'object'
-      ? await loadCustomSound(ctx, event, setting.sound.id)
-      : undefined;
+  let buffer: AudioBuffer | undefined;
+  if (typeof setting.sound === 'object') {
+    const loading = loadCustomSound(ctx, event, setting.sound.id);
+    try {
+      buffer = await loading;
+    } catch (error) {
+      // An explicit retry should re-read; do not clear a newer import or preview's cache.
+      if (audioBuffers.get(event)?.buffer === loading) clearNotificationSoundCache(event);
+      throw error;
+    }
+  }
   if (version !== previewVersion) return;
   const playback = scheduleSelected(ctx, event, setting, buffer);
   previewPlayback = playback;
