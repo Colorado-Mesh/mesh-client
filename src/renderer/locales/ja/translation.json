@@ -6019,5 +6019,56 @@
     "identitySaveFailed": "ID 設定を保存できませんでした。もう一度やり直してください。",
     "interfaceSaveFailed": "この接続を保存できませんでした。接続設定を確認して、もう一度試してください。",
     "interfacesUnavailable": "接続を読み取れませんでした。 Reticulum が実行されていることを確認してから、再試行してください。"
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "MAYDAY",
+      "urgent": "URGENT",
+      "safety": "SAFETY",
+      "routine": "ROUTINE"
+    },
+    "incomingToast": "{{severity}} MECP from {{sender}}",
+    "notificationTitle": "MECP alert",
+    "exportLog": "Export MECP log",
+    "compose": {
+      "title": "Compose MECP report",
+      "button": "MECP",
+      "open": "Open MECP compose",
+      "severity": "Severity",
+      "category": "Category",
+      "codes": "Codes",
+      "removeCode": "Remove code {{code}}",
+      "freetext": "Free text (pax, GPS, notes)",
+      "addPax": "Add 1pax",
+      "attachGps": "Attach GPS",
+      "byteBudget": "{{used}} / {{max}} bytes",
+      "send": "Send MECP",
+      "gpsFailed": "GPS修正を取得できませんでした",
+      "sendFailed": "MECPレポートの送信に失敗しました"
+    },
+    "rebroadcast": {
+      "title": "MECP RF rebroadcast",
+      "hint": "Optionally bridge MECP heard on one protocol channel to another. Off by default. Enable Bidirectional to also reverse the path.",
+      "add": "Add bridge rule",
+      "remove": "Remove bridge rule",
+      "enableRule": "Enabled",
+      "bidirectional": "Bidirectional",
+      "endpointA": "Listen / source (A)",
+      "endpointB": "Forward / destination (B)",
+      "protocol": "Protocol",
+      "channelIndex": "Channel index"
+    },
+    "exportLogSuccess": "MECPログがエクスポートされました",
+    "exportLogSuccessPath": "MECPログを{{path}}にエクスポートしました",
+    "exportLogFailed": "MECPログのエクスポートに失敗しました",
+    "section": {
+      "title": "MECP",
+      "hint": "メッシュ緊急通信プロトコル—チャットからレポートを作成し、ここでMeshtasticとMeshCoreの間のRFをブリッジし、耐久性のある受信監査ログをエクスポートします。",
+      "learnMore": "MECPの仕組み",
+      "protocolSource": "GitHub上のプロトコルソース",
+      "showComposeButton": "チャットにMECPボタンを表示する",
+      "showComposeButtonHint": "デフォルトではオフになっています。有効にすると、チャットに緊急レポートを作成して送信するためのMECPボタンが表示されます。"
+    },
+    "exportLogEmpty": "受信したログにMECPメッセージはまだありません"
   }
 }

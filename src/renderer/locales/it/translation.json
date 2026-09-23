@@ -6019,5 +6019,56 @@
     "identitySaveFailed": "Impossibile salvare le impostazioni dell'identità. Riprova.",
     "interfaceSaveFailed": "Impossibile salvare questa connessione. Controlla le impostazioni di connessione e riprova.",
     "interfacesUnavailable": "Impossibile leggere le tue connessioni. Controlla che Reticulum sia in esecuzione, quindi riprova."
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "MAYDAY",
+      "urgent": "URGENT",
+      "safety": "SAFETY",
+      "routine": "ROUTINE"
+    },
+    "incomingToast": "{{severity}} MECP from {{sender}}",
+    "notificationTitle": "MECP alert",
+    "exportLog": "Export MECP log",
+    "compose": {
+      "title": "Compose MECP report",
+      "button": "MECP",
+      "open": "Open MECP compose",
+      "severity": "Severity",
+      "category": "Category",
+      "codes": "Codes",
+      "removeCode": "Remove code {{code}}",
+      "freetext": "Free text (pax, GPS, notes)",
+      "addPax": "Add 1pax",
+      "attachGps": "Attach GPS",
+      "byteBudget": "{{used}} / {{max}} bytes",
+      "send": "Send MECP",
+      "gpsFailed": "Impossibile ottenere una correzione GPS",
+      "sendFailed": "Non è stato possibile inviare il report"
+    },
+    "rebroadcast": {
+      "title": "MECP RF rebroadcast",
+      "hint": "Optionally bridge MECP heard on one protocol channel to another. Off by default. Enable Bidirectional to also reverse the path.",
+      "add": "Add bridge rule",
+      "remove": "Remove bridge rule",
+      "enableRule": "Enabled",
+      "bidirectional": "Bidirectional",
+      "endpointA": "Listen / source (A)",
+      "endpointB": "Forward / destination (B)",
+      "protocol": "Protocol",
+      "channelIndex": "Channel index"
+    },
+    "exportLogSuccess": "Registro MeCP esportato",
+    "exportLogSuccessPath": "Registro MeCP esportato in {{path}}",
+    "exportLogFailed": "Impossibile esportare il registro MeCP",
+    "section": {
+      "title": "MeCP",
+      "hint": "Protocollo di comunicazione di emergenza Mesh — componi report da Chat, collega RF tra Meshtastic e MeshCore qui ed esporta il registro di controllo durevole ricevuto.",
+      "learnMore": "Come funziona MeCP",
+      "protocolSource": "Fonte del protocollo su GitHub",
+      "showComposeButton": "Mostra pulsante MeCP in chat",
+      "showComposeButtonHint": "OFF per impostazione predefinita. Se abilitata, la chat mostra un pulsante MeCP per comporre e inviare i rapporti di emergenza."
+    },
+    "exportLogEmpty": "Nessun messaggio MeCP nel registro ricevuto"
   }
 }

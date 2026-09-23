@@ -37,6 +37,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { isMecpComposeEnabled } from '@/renderer/lib/appSettingsStorage';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -142,6 +143,14 @@ import {
   resolveChatDmPeer,
 } from '../lib/chatUnreadCounts';
 import { applyControlledEditableValue } from '../lib/controlledEditableValue';
+import { triggerMecpAlert } from '../lib/mecp/mecpAlert';
+import {
+  getCachedMecpLanguage,
+  loadMecpLanguage,
+  localizeMecpCodes,
+  mecpLanguageForAppLocale,
+  tryParseMecp,
+} from '../lib/mecp/mecpMessages';
 import {
   findMeshcoreParentMessageForReply,
   meshcoreChatMessagesForDisplay,
@@ -179,6 +188,8 @@ import { ChatDmPaperShareControl, ChatPaperScanControl } from './ChatDmPaperCont
 import { ChatPayloadText } from './ChatPayloadText';
 import { ChatRfHopLabel } from './ChatRfHopLabel';
 import { HelpTooltip } from './HelpTooltip';
+import { MecpComposeModal } from './mecp/MecpComposeModal';
+import { mecpChatBubbleToneClasses, MecpSeverityBadge } from './mecp/MecpSeverityBadge';
 import MeshcoreChatChannelManager from './MeshcoreChatChannelManager';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { RelayCoverageLine, relayCoverageMessageKey } from './RelayCoverageLine';
@@ -639,7 +650,7 @@ function ChatPanel({
   resolveShareLocation,
   onSendLocationWaypoint,
 }: ChatPanelProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const capabilities = useRadioProvider(protocol);
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const parentIconTrigger = useParentIconTrigger();
@@ -905,6 +916,36 @@ function ChatPanel({
     viewKey: string;
   } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [mecpComposeOpen, setMecpComposeOpen] = useState(false);
+  const [mecpComposeSession, setMecpComposeSession] = useState(0);
+  const [mecpComposeEnabled, setMecpComposeEnabled] = useState(() => isMecpComposeEnabled());
+  const [mecpLang, setMecpLang] = useState(() =>
+    getCachedMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')),
+  );
+
+  useEffect(() => {
+    const sync = () => {
+      setMecpComposeEnabled(isMecpComposeEnabled());
+    };
+    window.addEventListener('mesh-client:appSettings', sync);
+    return () => {
+      window.removeEventListener('mesh-client:appSettings', sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mecpComposeEnabled) setMecpComposeOpen(false);
+  }, [mecpComposeEnabled]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')).then((lang) => {
+      if (!cancelled) setMecpLang(lang);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [i18n.language]);
   const [pickerOpenFor, setPickerOpenFor] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
@@ -1479,13 +1520,38 @@ function ChatPanel({
     saveStarred(protocol, starred);
   }, [protocol, starred]);
 
-  // Sound notification: plays when a new message arrives on a view the user is not reading.
+  // Sound notification: regular channel/DM tones for other views; MECP always (incl. open view).
   useEffect(() => {
     const prevLen = prevMessagesLengthRef.current;
     prevMessagesLengthRef.current = messages.length;
-    if (localStorage.getItem('mesh-client:notifMuted') === '1' || messages.length <= prevLen)
-      return;
+    if (messages.length <= prevLen) return;
     const newMsgs = messages.slice(prevLen);
+
+    // MECP: audible even when focused on the receiving conversation (0–1 mute-bypass inside).
+    if (isActive && !isAppWindowInactive()) {
+      for (const msg of newMsgs) {
+        if (isOwnNode(msg.sender_id) || msg.isHistory) continue;
+        const mecp = tryParseMecp(msg.payload);
+        if (mecp?.severity == null) continue;
+        const peer = resolveDmPeer(msg);
+        const msgViewKey = peer != null ? `dm:${peer}` : `ch:${msg.channel}`;
+        const dedupeId =
+          msg.storeId ??
+          (msg.packetId != null ? String(msg.packetId) : undefined) ??
+          (msg.id != null ? String(msg.id) : undefined) ??
+          `${msg.timestamp}:${msg.payload}`;
+        triggerMecpAlert({
+          severity: mecp.severity,
+          isDrill: mecp.isDrill,
+          senderLabel: msg.sender_name || String(msg.sender_id),
+          viewKey: msgViewKey,
+          mutedViews,
+          dedupeKey: `${protocol}:${dedupeId}`,
+        });
+      }
+    }
+
+    if (localStorage.getItem('mesh-client:notifMuted') === '1') return;
     const gated = newMsgs.filter((msg) => {
       if (isOwnNode(msg.sender_id) || msg.isHistory) return false;
       const peer = resolveDmPeer(msg);
@@ -3075,8 +3141,12 @@ function ChatPanel({
                         >
                           {/* Message bubble */}
                           <div
-                            className={`min-w-0 rounded-2xl px-3 ${compactMode ? 'py-1' : 'py-2'} ${
-                              compactMerged
+                            className={`min-w-0 rounded-2xl px-3 ${compactMode ? 'py-1' : 'py-2'} ${(() => {
+                              const mecp = tryParseMecp(msg.payload);
+                              if (mecp?.severity != null) {
+                                return mecpChatBubbleToneClasses(mecp.severity, isOwn);
+                              }
+                              return compactMerged
                                 ? `${compactStackTop ? 'rounded-t-none border-t-0' : ''} ${compactStackBottom ? 'rounded-b-none border-b-0' : ''} ${
                                     isDm
                                       ? isOwn
@@ -3092,8 +3162,8 @@ function ChatPanel({
                                     : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border border-purple-600/30 bg-purple-700/20${isContinuation ? 'rounded-tl-sm' : ''}`
                                   : isOwn
                                     ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-blue-500/30 bg-blue-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
-                                    : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border-chat-incoming-border border bg-chat-incoming-bg${isContinuation ? 'rounded-tl-sm' : ''}`
-                            }`}
+                                    : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border-chat-incoming-border border bg-chat-incoming-bg${isContinuation ? 'rounded-tl-sm' : ''}`;
+                            })()}`}
                           >
                             {/* Header: sender name (clickable) + DM indicator + time */}
                             {!isContinuation &&
@@ -3341,6 +3411,21 @@ function ChatPanel({
                                   }}
                                 />
                               )}
+                              {(() => {
+                                const mecp = tryParseMecp(msg.payload);
+                                if (mecp?.severity == null) return null;
+                                return (
+                                  <div className="mt-1 flex flex-col gap-0.5">
+                                    <MecpSeverityBadge
+                                      severity={mecp.severity}
+                                      pulse={!isOwn && mecp.severity <= 1 && !mecp.isDrill}
+                                    />
+                                    <p className="text-[10px] font-normal text-red-200/90">
+                                      {localizeMecpCodes(mecp, mecpLang)}
+                                    </p>
+                                  </div>
+                                );
+                              })()}
                             </div>
 
                             {/* Transport + RF hop count (incoming) */}
@@ -3717,6 +3802,39 @@ function ChatPanel({
       ) : null}
       {protocol === 'reticulum' && hasLxmfPaper ? (
         <ChatPaperScanControl sidecarRunning={reticulumStackLive} />
+      ) : null}
+      {mecpComposeEnabled ? (
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="rounded border border-red-600/70 bg-red-950/50 px-2 py-1 text-xs font-semibold text-red-200 hover:bg-red-900/60"
+            aria-label={t('mecp.compose.open')}
+            onClick={() => {
+              setMecpComposeSession((n) => n + 1);
+              setMecpComposeOpen(true);
+            }}
+          >
+            {t('mecp.compose.button')}
+          </button>
+        </div>
+      ) : null}
+      {mecpComposeEnabled ? (
+        <MecpComposeModal
+          key={mecpComposeSession}
+          open={mecpComposeOpen}
+          onClose={() => {
+            setMecpComposeOpen(false);
+          }}
+          resolveGps={resolveShareLocation}
+          onSend={async (text) => {
+            if (viewMode === 'dm' && activeDmNode == null) {
+              const message = t('chatPanel.selectDmFirst');
+              setChatActionError({ message, viewKey });
+              throw new Error(message);
+            }
+            await handleSendChunk(text);
+          }}
+        />
       ) : null}
       <ChatComposer
         className="mt-1"

@@ -283,6 +283,10 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
         onDisconnected: noopUnsub,
       },
     },
+    mecp: {
+      appendReceived: async () => ({ ok: true as const }),
+      exportReceivedLog: async () => ({ success: false }),
+    },
     chat: {
       export: async () => ({ success: false }),
       saveReticulumAttachment: async () => ({ success: false }),

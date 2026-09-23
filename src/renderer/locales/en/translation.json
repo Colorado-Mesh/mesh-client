@@ -6019,5 +6019,56 @@
     "identityUnavailable": "Could not read your identity. Check that Reticulum is running, then try again.",
     "interfaceSaveFailed": "Could not save this connection. Check your connection settings and try again.",
     "identitySaveFailed": "Could not save your identity settings. Try again."
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "MAYDAY",
+      "urgent": "URGENT",
+      "safety": "SAFETY",
+      "routine": "ROUTINE"
+    },
+    "incomingToast": "{{severity}} MECP from {{sender}}",
+    "notificationTitle": "MECP alert",
+    "exportLog": "Export MECP log",
+    "exportLogSuccess": "MECP log exported",
+    "exportLogSuccessPath": "MECP log exported to {{path}}",
+    "exportLogFailed": "Failed to export MECP log",
+    "exportLogEmpty": "No MECP messages in the received log yet",
+    "section": {
+      "title": "MECP",
+      "hint": "Mesh Emergency Communication Protocol — compose reports from Chat, bridge RF between Meshtastic and MeshCore here, and export the durable received audit log.",
+      "learnMore": "How MECP works (site & video)",
+      "protocolSource": "Protocol source on GitHub",
+      "showComposeButton": "Show MECP button in Chat",
+      "showComposeButtonHint": "Off by default. When enabled, Chat shows a MECP button to compose and send emergency reports."
+    },
+    "compose": {
+      "title": "Compose MECP report",
+      "button": "MECP",
+      "open": "Open MECP compose",
+      "severity": "Severity",
+      "category": "Category",
+      "codes": "Codes",
+      "removeCode": "Remove code {{code}}",
+      "freetext": "Free text (pax, GPS, notes)",
+      "addPax": "Add 1pax",
+      "attachGps": "Attach GPS",
+      "gpsFailed": "Could not get a GPS fix",
+      "sendFailed": "Failed to send MECP report",
+      "byteBudget": "{{used}} / {{max}} bytes",
+      "send": "Send MECP"
+    },
+    "rebroadcast": {
+      "title": "RF rebroadcast bridge",
+      "hint": "Optionally bridge MECP heard on one protocol channel to another. Off by default. Enable Bidirectional to also reverse the path.",
+      "add": "Add bridge rule",
+      "remove": "Remove bridge rule",
+      "enableRule": "Enabled",
+      "bidirectional": "Bidirectional",
+      "endpointA": "Listen / source (A)",
+      "endpointB": "Forward / destination (B)",
+      "protocol": "Protocol",
+      "channelIndex": "Channel index"
+    }
   }
 }

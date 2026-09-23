@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { MecpRebroadcastSettings } from '@/renderer/components/mecp/MecpRebroadcastSettings';
 import { copyDebugSnapshotToClipboard } from '@/renderer/lib/debugSnapshot';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { exportSupportBundleToDisk } from '@/renderer/lib/exportSupportBundle';
@@ -169,6 +170,7 @@ interface AppSettings {
   meshcoreOpenWireCompatEnabled: boolean;
   meshcorePathHashMode: 0 | 1 | 2;
   rrcUnreadAllRoomMessages: boolean;
+  mecpComposeEnabled: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -258,6 +260,7 @@ export default function AppPanel({
   const [supportBundleExporting, setSupportBundleExporting] = useState<SupportBundleMode | null>(
     null,
   );
+  const [mecpExportBusy, setMecpExportBusy] = useState(false);
   const { addToast } = useToast();
   const { t } = useTranslation();
   const resolveNodes = useCallback(
@@ -2141,6 +2144,98 @@ export default function AppPanel({
           </div>
         )}
       </div>
+
+      <section
+        className="space-y-3 rounded-lg border border-red-900/40 bg-red-950/10 p-4"
+        aria-label={t('mecp.section.title')}
+      >
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-red-200">{t('mecp.section.title')}</h3>
+          <p className="text-muted text-xs leading-relaxed">{t('mecp.section.hint')}</p>
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            <a
+              href="https://mecp.radio/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-green text-xs underline-offset-2 hover:underline"
+              aria-label={t('mecp.section.learnMore')}
+            >
+              {t('mecp.section.learnMore')}
+            </a>
+            <a
+              href="https://github.com/xiang-dev-1/MECP"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted text-xs underline-offset-2 hover:underline"
+              aria-label={t('mecp.section.protocolSource')}
+            >
+              {t('mecp.section.protocolSource')}
+            </a>
+          </div>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="mecpComposeEnabled"
+              checked={settings.mecpComposeEnabled}
+              onChange={(e) => {
+                updateSetting('mecpComposeEnabled', e.target.checked);
+              }}
+              aria-label={t('mecp.section.showComposeButton')}
+              className="accent-brand-green h-4 w-4 rounded"
+            />
+            <label htmlFor="mecpComposeEnabled" className="cursor-pointer text-sm text-gray-300">
+              {t('mecp.section.showComposeButton')}
+            </label>
+          </div>
+          <p className="text-muted pl-7 text-xs leading-relaxed">
+            {t('mecp.section.showComposeButtonHint')}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={mecpExportBusy}
+          className="rounded-lg border border-gray-600 bg-slate-900/60 px-3 py-2 text-sm text-gray-200 hover:bg-slate-800 disabled:opacity-50"
+          aria-label={t('mecp.exportLog')}
+          onClick={() => {
+            if (mecpExportBusy) return;
+            setMecpExportBusy(true);
+            void window.electronAPI.mecp
+              .exportReceivedLog()
+              .then((res) => {
+                if (res.success) {
+                  addToast(
+                    res.path
+                      ? t('mecp.exportLogSuccessPath', { path: res.path })
+                      : t('mecp.exportLogSuccess'),
+                    'success',
+                  );
+                  return;
+                }
+                if (res.reason === 'empty') {
+                  addToast(t('mecp.exportLogEmpty'), 'info');
+                  return;
+                }
+                if (res.reason === 'cancelled') return;
+                addToast(t('mecp.exportLogFailed'), 'error');
+              })
+              .catch((err: unknown) => {
+                console.warn(
+                  '[AppPanel] MECP export failed',
+                  err instanceof Error ? err.message : err,
+                );
+                addToast(t('mecp.exportLogFailed'), 'error');
+              })
+              .finally(() => {
+                setMecpExportBusy(false);
+              });
+          }}
+        >
+          {t('mecp.exportLog')}
+        </button>
+        <MecpRebroadcastSettings />
+      </section>
 
       {/* Danger Zone — collapsible; same pattern as Appearance → Color scheme */}
       <div className="space-y-2">

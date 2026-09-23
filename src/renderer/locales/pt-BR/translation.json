@@ -6019,5 +6019,56 @@
     "identityUnavailable": "Não foi possível ler sua identidade. Verifique se o Reticulum está funcionando e tente novamente.",
     "interfacesUnavailable": "Não foi possível ler suas conexões. Verifique se o Reticulum está funcionando e tente novamente.",
     "identitySaveFailed": "Não foi possível salvar suas configurações de identidade. Tente novamente."
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "MAYDAY",
+      "urgent": "URGENTE",
+      "safety": "SEGURANÇA",
+      "routine": "ROTINA"
+    },
+    "incomingToast": "{{severity}} MECP de {{sender}}",
+    "notificationTitle": "Alerta MECP",
+    "exportLog": "Exportar registro MECP",
+    "compose": {
+      "title": "Redigir relatório MECP",
+      "button": "MECP",
+      "open": "Abrir composição MECP",
+      "severity": "Gravidade",
+      "category": "Categoria",
+      "codes": "Códigos",
+      "removeCode": "Remover código {{code}}",
+      "freetext": "Texto livre (pax, GPS, notas)",
+      "addPax": "Adicionar 1 pax",
+      "attachGps": "Anexar GPS",
+      "byteBudget": "{{used}} / {{max}} bytes",
+      "send": "Enviar MECP",
+      "gpsFailed": "Não foi possível obter uma correção de GPS",
+      "sendFailed": "Falha ao enviar relatório MECP"
+    },
+    "rebroadcast": {
+      "title": "Retransmissão MECP RF",
+      "hint": "Opcionalmente, ligue o MECP ouvido em um canal de protocolo a outro. Desativado por padrão. Ative o bidirecional para também reverter o caminho.",
+      "add": "Adicionar ponte",
+      "remove": "Remover regra da ponte",
+      "enableRule": "Habilitado",
+      "bidirectional": "Bidirecional",
+      "endpointA": "Ouvir / fonte (A)",
+      "endpointB": "Encaminhamento / destino (B)",
+      "protocol": "Protocolo",
+      "channelIndex": "Índice de canais"
+    },
+    "exportLogSuccess": "Registro MECP exportado",
+    "exportLogSuccessPath": "Registro MECP exportado para {{path}}",
+    "exportLogFailed": "Falha ao exportar registro MECP",
+    "section": {
+      "title": "MECP",
+      "hint": "Protocolo de Comunicação de Emergência Mesh — componha relatórios do Chat, faça a ponte de RF entre o Meshtastic e o MeshCore aqui e exporte o registro de auditoria recebido durável.",
+      "learnMore": "Como funciona o MECP",
+      "protocolSource": "Origem do protocolo no GitHub",
+      "showComposeButton": "Mostrar botão MECP no Chat",
+      "showComposeButtonHint": "Desligado por padrão. Quando ativado, o Chat mostra um botão MECP para compor e enviar relatórios de emergência."
+    },
+    "exportLogEmpty": "Nenhuma mensagem MECP no registro recebido ainda"
   }
 }

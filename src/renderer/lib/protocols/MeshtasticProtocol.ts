@@ -53,7 +53,6 @@ const { PortNum } = Portnums;
  */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access -- PortNum comes from the untyped generated enum barrel. */
 const UNTYPED_MODULE_PORTS = new Map<number, string>([
-  [PortNum.ALERT_APP, 'alert'],
   [PortNum.KEY_VERIFICATION_APP, 'keyVerification'],
   [PortNum.REMOTE_SHELL_APP, 'remoteShell'],
   [PortNum.NODE_STATUS_APP, 'nodeStatus'],
@@ -291,7 +290,7 @@ export class MeshtasticProtocol implements Protocol {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
           const portnum = packet.payloadVariant.value.portnum;
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
-          if (portnum === PortNum.TEXT_MESSAGE_APP) {
+          if (portnum === PortNum.TEXT_MESSAGE_APP || portnum === PortNum.ALERT_APP) {
             fire(this.decodeTextMessage(packet));
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
           } else if (portnum === PortNum.TRACEROUTE_APP) {

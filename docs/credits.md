@@ -32,6 +32,7 @@ We were inspired by features from these projects:
 - [Mesh Monitor](https://meshmonitor.org/): Web-based mesh network monitoring dashboard
 - [CoreScope](https://github.com/Kpa-clawbot/CoreScope): Self-hosted MeshCore network analyzer with RF analytics, packet visualization, and topology tools
 - [Ratspeak](https://github.com/ratspeak/Ratspeak): Primary reference for the Reticulum/rsReticulum/rsLXMF stack, sidecar IPC patterns, and peer interop ([rsReticulum](https://github.com/ratspeak/rsReticulum), [rsLXMF](https://github.com/ratspeak/rsLXMF))
+- [MECP](https://mecp.radio/) ([GitHub](https://github.com/xiang-dev-1/MECP)): Mesh Emergency Communication Protocol — structured emergency text for LoRa mesh (engine GPLv3; language packs CC BY 4.0)
 
 ### Bundled binaries
 
@@ -49,9 +50,11 @@ Application source (Electron main / preload / renderer) is **GPL-3.0-or-later**;
 
 ### Vendored
 
-| Source / file      | License | Role                                |
-| ------------------ | ------- | ----------------------------------- |
-| `micron-parser-js` | MIT     | Nomad Micron (.mu) → HTML (RFnexus) |
+| Source / file                                                                             | License   | Role                                                                    |
+| ----------------------------------------------------------------------------------------- | --------- | ----------------------------------------------------------------------- |
+| `micron-parser-js`                                                                        | MIT       | Nomad Micron (.mu) → HTML (RFnexus)                                     |
+| `src/renderer/lib/mecp/engine/` ([xiang-dev-1/MECP](https://github.com/xiang-dev-1/MECP)) | GPLv3     | MECP encode/decode engine                                               |
+| `src/renderer/lib/mecp/languages/*.json`                                                  | CC BY 4.0 | MECP localized code/category strings (see upstream `LICENSE-LANGUAGES`) |
 
 ## Third-party licenses
 

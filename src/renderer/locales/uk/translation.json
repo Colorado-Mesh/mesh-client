@@ -6113,5 +6113,56 @@
     "interfaceSaveFailed": "Не вдалося зберегти це підключення. Перевірте налаштування підключення та повторіть спробу.",
     "interfacesUnavailable": "Не вдалося прочитати ваші підключення. Переконайтеся, що Reticulum запущено, а потім повторіть спробу.",
     "identitySaveFailed": "Не вдалося зберегти налаштування ідентифікації. Спробуйте знову."
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "MAYDAY",
+      "urgent": "ТЕРМІНОВО",
+      "safety": "БЕЗПЕКА",
+      "routine": "ЗВИЧАЙНЕ"
+    },
+    "incomingToast": "{{severity}} MECP від {{sender}}",
+    "notificationTitle": "Сповіщення MECP",
+    "exportLog": "Експортувати журнал MECP",
+    "compose": {
+      "title": "Скласти звіт MECP",
+      "button": "MECP",
+      "open": "Відкрити складання MECP",
+      "severity": "Серйозність",
+      "category": "Категорія",
+      "codes": "Коди",
+      "removeCode": "Видалити код {{code}}",
+      "freetext": "Вільний текст (pax, GPS, нотатки)",
+      "addPax": "Додати 1pax",
+      "attachGps": "Додати GPS",
+      "byteBudget": "{{used}} / {{max}} байт",
+      "send": "Надіслати MECP",
+      "gpsFailed": "Не вдалося отримати виправлення GPS",
+      "sendFailed": "Не вдалося надіслати звіт MECP"
+    },
+    "rebroadcast": {
+      "title": "Повторна передача MECP RF",
+      "hint": "За бажанням пересилати MECP з каналу одного протоколу на інший. Типово вимкнено. Увімкніть двосторонній режим, щоб також зворотний шлях.",
+      "add": "Додати правило мосту",
+      "remove": "Видалити правило мосту",
+      "enableRule": "Увімкнено",
+      "bidirectional": "Двосторонній",
+      "endpointA": "Слухати / джерело (A)",
+      "endpointB": "Пересилати / призначення (B)",
+      "protocol": "Протокол",
+      "channelIndex": "Індекс каналу"
+    },
+    "exportLogSuccess": "Журнал MECP експортовано",
+    "exportLogSuccessPath": "Журнал MECP експортовано до {{path}}",
+    "exportLogFailed": "Не вдалося експортувати журнал MECP",
+    "section": {
+      "title": "MECP",
+      "hint": "Mesh Emergency Communication Protocol — складайте звіти з чату, об'єднуйте RF між Meshtastic та MeshCore тут та експортуйте довговічний отриманий журнал аудиту.",
+      "learnMore": "Як працює MECP",
+      "protocolSource": "Джерело протоколу на GitHub",
+      "showComposeButton": "Показати кнопку MECP в чаті",
+      "showComposeButtonHint": "Вимкнено за замовчуванням. Якщо ввімкнено, у чаті відображається кнопка MECP для створення та надсилання звітів про надзвичайні ситуації."
+    },
+    "exportLogEmpty": "У отриманому журналі ще немає повідомлень MECP"
   }
 }

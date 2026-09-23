@@ -42,6 +42,8 @@ describe('preload bridge contract', () => {
 
   it('preload invokes chat export IPC', () => {
     expect(PRELOAD_SOURCE).toContain("'chat:export'");
+    expect(PRELOAD_SOURCE).toContain("'mecp:appendReceived'");
+    expect(PRELOAD_SOURCE).toContain("'mecp:exportReceivedLog'");
   });
 
   it('preload exposes readReticulumAttachmentAsDataUrl and linkPreview kind', () => {

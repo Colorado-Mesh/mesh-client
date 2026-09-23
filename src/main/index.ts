@@ -146,6 +146,11 @@ import {
   sanitizeLogMessage,
   setMainWindow,
 } from './log-service';
+import {
+  appendMecpReceivedLog,
+  isValidMecpAppendPayload,
+  readMecpReceivedLogForExport,
+} from './mecp-received-log';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
@@ -4859,6 +4864,44 @@ ipcMain.handle('chat:export', async (event, messages: unknown) => {
   } catch (err) {
     console.error(
       '[IPC] chat:export failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('mecp:appendReceived', async (event, entry: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  if (!isValidMecpAppendPayload(entry)) {
+    throw new Error('mecp:appendReceived: invalid entry');
+  }
+  await appendMecpReceivedLog(entry);
+  return { ok: true as const };
+});
+
+ipcMain.handle('mecp:exportReceivedLog', async (event) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  exportIpcRateLimit.checkOrThrow();
+  if (!mainWindow) return { success: false as const, reason: 'error' as const };
+  try {
+    const text = await readMecpReceivedLogForExport();
+    if (!text.trim()) return { success: false as const, reason: 'empty' as const };
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export MECP received log',
+      defaultPath: `mecp-received-${new Date().toISOString().slice(0, 10)}.txt`,
+      filters: [
+        { name: 'Text file', extensions: ['txt'] },
+        { name: 'JSON Lines', extensions: ['jsonl'] },
+      ],
+    });
+    if (result.canceled || !result.filePath) {
+      return { success: false as const, reason: 'cancelled' as const };
+    }
+    await fs.promises.writeFile(result.filePath, text, 'utf8');
+    return { success: true as const, path: result.filePath };
+  } catch (err) {
+    console.error(
+      '[IPC] mecp:exportReceivedLog failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

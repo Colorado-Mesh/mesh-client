@@ -6019,5 +6019,56 @@
     "identitySaveFailed": "Kimlik ayarlarınız kaydedilemedi. Tekrar deneyin.",
     "interfacesUnavailable": "Bağlantılarınız okunamadı. Reticulum'un çalıştığını kontrol edin ve tekrar deneyin.",
     "interfaceSaveFailed": "Bu bağlantı kaydedilemedi. Bağlantı ayarlarınızı kontrol edip tekrar deneyin."
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "MAYDAY",
+      "urgent": "URGENT",
+      "safety": "SAFETY",
+      "routine": "ROUTINE"
+    },
+    "incomingToast": "{{severity}} MECP from {{sender}}",
+    "notificationTitle": "MECP alert",
+    "exportLog": "Export MECP log",
+    "compose": {
+      "title": "Compose MECP report",
+      "button": "MECP",
+      "open": "Open MECP compose",
+      "severity": "Severity",
+      "category": "Category",
+      "codes": "Codes",
+      "removeCode": "Remove code {{code}}",
+      "freetext": "Free text (pax, GPS, notes)",
+      "addPax": "Add 1pax",
+      "attachGps": "Attach GPS",
+      "byteBudget": "{{used}} / {{max}} bytes",
+      "send": "Send MECP",
+      "gpsFailed": "GPS düzeltmesi alınamadı",
+      "sendFailed": "MECP raporu gönderilemedi"
+    },
+    "rebroadcast": {
+      "title": "MECP RF rebroadcast",
+      "hint": "Optionally bridge MECP heard on one protocol channel to another. Off by default. Enable Bidirectional to also reverse the path.",
+      "add": "Add bridge rule",
+      "remove": "Remove bridge rule",
+      "enableRule": "Enabled",
+      "bidirectional": "Bidirectional",
+      "endpointA": "Listen / source (A)",
+      "endpointB": "Forward / destination (B)",
+      "protocol": "Protocol",
+      "channelIndex": "Channel index"
+    },
+    "exportLogSuccess": "MECP günlüğü dışa aktarıldı",
+    "exportLogSuccessPath": "MECP günlüğü {{path}} 'a dışa aktarıldı",
+    "exportLogFailed": "MECP günlüğü dışa aktarılamadı",
+    "section": {
+      "title": "MECP",
+      "hint": "Mesh Acil Durum İletişim Protokolü — Sohbetten raporlar oluşturun, Meshtastic ve MeshCore arasında RF'yi burada köprüleyin ve dayanıklı alınan denetim günlüğünü dışa aktarın.",
+      "learnMore": "MECP nasıl çalışır?",
+      "protocolSource": "GitHub'daki protokol kaynağı",
+      "showComposeButton": "Sohbette MECP düğmesini göster",
+      "showComposeButtonHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet acil durum raporları oluşturmak ve göndermek için bir MECP düğmesi gösterir."
+    },
+    "exportLogEmpty": "Alınan günlükte henüz MECP mesajı yok"
   }
 }

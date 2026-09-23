@@ -6019,5 +6019,56 @@
     "interfacesUnavailable": "Ihre Verbindungen konnten nicht gelesen werden. Überprüfen Sie, ob Reticulum ausgeführt wird, und versuchen Sie es dann erneut.",
     "interfaceSaveFailed": "Diese Verbindung konnte nicht gespeichert werden. Überprüfen Sie Ihre Verbindungseinstellungen und versuchen Sie es erneut.",
     "identityUnavailable": "Ihre Identität konnte nicht gelesen werden. Überprüfen Sie, ob Reticulum ausgeführt wird, und versuchen Sie es dann erneut."
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "Mayday",
+      "urgent": "DRINGEND",
+      "safety": "SICHERHEIT",
+      "routine": "ROUTINE"
+    },
+    "incomingToast": "{{severity}} MECP von {{sender}}",
+    "notificationTitle": "MECP-Alarm",
+    "exportLog": "MECP-Protokoll exportieren",
+    "compose": {
+      "title": "MECP-Bericht erstellen",
+      "button": "MECP",
+      "open": "Öffnen Sie MECP Compose",
+      "severity": "Schweregrad",
+      "category": "Kategorie",
+      "codes": "Code",
+      "removeCode": "Code {{code}} entfernen",
+      "freetext": "Freitext (Pax, GPS, Notizen)",
+      "addPax": "1 Person hinzufügen",
+      "attachGps": "GPS anhängen",
+      "byteBudget": "{{used}} / {{max}} Bytes",
+      "send": "MECP senden",
+      "gpsFailed": "Konnte keine GPS-Fixierung erhalten",
+      "sendFailed": "Senden des Berichts fehlgeschlagen"
+    },
+    "rebroadcast": {
+      "title": "MECP RF Rebroadcast",
+      "hint": "Optional kann MECP, das auf einem Protokollkanal gehört wird, zu einem anderen überbrückt werden. Standardmäßig aus. Aktivieren Sie Bidirektional, um den Pfad auch umzukehren.",
+      "add": "Brückenregel hinzufügen",
+      "remove": "Brückenregel entfernen",
+      "enableRule": "Aktiviert",
+      "bidirectional": "Bidirektional",
+      "endpointA": "Hören / Quelle (A)",
+      "endpointB": "Weiterleitung / Ziel (B)",
+      "protocol": "Protokoll",
+      "channelIndex": "Kanalindex"
+    },
+    "exportLogSuccess": "MECP-Protokoll exportiert",
+    "exportLogSuccessPath": "MECP-Protokoll exportiert nach {{path}}",
+    "exportLogFailed": "Fehler beim Exportieren des MECP-Protokolls",
+    "section": {
+      "title": "MECP",
+      "hint": "Mesh Emergency Communication Protocol — Erstellen Sie Berichte aus dem Chat, überbrücken Sie RF zwischen Meshtastic und MeshCore hier und exportieren Sie das dauerhaft empfangene Auditprotokoll.",
+      "learnMore": "So funktioniert MECP",
+      "protocolSource": "Protokollquelle auf GitHub",
+      "showComposeButton": "MECP-Schaltfläche im Chat anzeigen",
+      "showComposeButtonHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt Chat eine MECP-Schaltfläche zum Erstellen und Senden von Notfallberichten an."
+    },
+    "exportLogEmpty": "Noch keine MECP-Nachrichten im empfangenen Protokoll"
   }
 }

@@ -61,7 +61,7 @@ Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data
 | `meshcore.orphanRoomMessageCount`                                       | number                    | Room posts whose `room_server_id` is not in current contacts                                               |
 | `meshcore.roomNodeCount` / `roomMessageCount` / `roomsLastReadKeyCount` | numbers                   | Rooms triage counts                                                                                        |
 
-Zip contents also include **`mesh-client.log.1`** when present (prior session preserved on restart, or size-rotated backup; export may tail-cap large backups).
+Zip contents also include **`mesh-client.log.1`** when present (prior session preserved on restart, or size-rotated backup; export may tail-cap large backups). When present, support bundles also include **`mecp-received.log`** / **`mecp-received.log.1`** (durable MECP emergency audit trail — separate from the session app log).
 
 The top-level **`legend`** explains that ids like `offline-meshcore` are **internal hydration-slot store keys**, not “disconnected.” When connect reuses that slot (`hydrationSlotIsLiveSession: true`), the id still contains `offline-` while BLE/MQTT are up — that is **expected**.
 
@@ -1987,6 +1987,24 @@ The app functions fully offline; this is not a critical error. If "Update check 
 **Footer shows vX.Y.Z then Update error after Cut release:** The GitHub release may have been published with an `untagged-*` tag instead of `vX.Y.Z` (draft-fork race). On GitHub → Releases, confirm the latest release tag is `vX.Y.Z`. Repair with `GH_TOKEN=YOUR_ADMIN_PAT node scripts/repair-published-release-tag.mjs --tag vX.Y.Z`, or edit the release in the GitHub UI. Future releases are blocked at CI verify when the draft tag is wrong.
 
 ### Language and Translations
+
+## MECP (emergency reports)
+
+**Where is the MECP received log?**
+
+Inbound MECP messages are appended to a durable audit file under the app `userData` folder (not the rotating session `mesh-client.log`):
+
+- macOS: `~/Library/Application Support/mesh-client/mecp-received.log` (rotated backup `mecp-received.log.1`)
+- Windows: `%APPDATA%\mesh-client\mecp-received.log`
+- Linux: `~/.config/mesh-client/mecp-received.log`
+
+Use **App → MECP → Export MECP log**, or open a GitHub/Developer support bundle (includes the file when non-empty). Agent reference: [`docs/agents/mecp.md`](agents/mecp.md).
+
+**MAYDAY/URGENT alerts ignore mute**
+
+Severity 0 MECP alerts play a sweeping siren; severity 1 plays a US EAS-style 853+960 Hz attention tone. Both ignore mute and still fire while Chat is focused on that conversation. Severity 2–3 play a loud repeated tone when unmuted (also while focused). Drill codes (D01/D02) never alert. Configure Meshtastic↔MeshCore RF bridging under **App → MECP RF rebroadcast** (default off; optional bidirectional).
+
+## Language / i18n
 
 **How do I change the language?**
 

@@ -18,6 +18,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
+import { useMecpAlertWatcher } from '@/renderer/hooks/useMecpAlertWatcher';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { resolveInactiveChatNotificationType } from '@/renderer/lib/chatInactiveNotifications';
 import {
@@ -1292,6 +1293,35 @@ function AppContent() {
       }),
     [reticulumIdentity, reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum],
   );
+
+  const mecpMeshtasticSlice = useMemo(
+    () => ({
+      protocol: 'meshtastic' as const,
+      messages: meshtasticStoreMessages,
+      ownNodeIds: meshtasticOwnNodeIdSet,
+      ownSenderId: meshtasticRuntime.state.myNodeNum,
+    }),
+    [meshtasticStoreMessages, meshtasticOwnNodeIdSet, meshtasticRuntime.state.myNodeNum],
+  );
+  const mecpMeshcoreSlice = useMemo(
+    () => ({
+      protocol: 'meshcore' as const,
+      messages: meshcoreStoreMessages,
+      ownNodeIds: meshcoreOwnNodeIdSet,
+      ownSenderId: meshcoreRuntime.selfNodeId,
+    }),
+    [meshcoreStoreMessages, meshcoreOwnNodeIdSet, meshcoreRuntime.selfNodeId],
+  );
+  const mecpReticulumSlice = useMemo(
+    () => ({
+      protocol: 'reticulum' as const,
+      messages: reticulumStoreMessages,
+      ownNodeIds: reticulumOwnNodeIdSet,
+      ownSenderId: reticulumRuntime.state.myNodeNum,
+    }),
+    [reticulumStoreMessages, reticulumOwnNodeIdSet, reticulumRuntime.state.myNodeNum],
+  );
+  useMecpAlertWatcher(mecpMeshtasticSlice, mecpMeshcoreSlice, mecpReticulumSlice);
 
   useEffect(() => {
     if (!reticulumIdentityId || reticulumLastReadSanitizedRef.current) return;

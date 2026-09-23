@@ -6019,5 +6019,56 @@
     "identityUnavailable": "Tidak dapat membaca identitas Anda. Periksa apakah Reticulum sedang berjalan, lalu coba lagi.",
     "interfacesUnavailable": "Tidak dapat membaca koneksi Anda. Periksa apakah Reticulum sedang berjalan, lalu coba lagi.",
     "interfaceSaveFailed": "Tidak dapat menyimpan koneksi ini. Periksa pengaturan koneksi Anda dan coba lagi."
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "MAYDAY",
+      "urgent": "URGENT",
+      "safety": "SAFETY",
+      "routine": "ROUTINE"
+    },
+    "incomingToast": "{{severity}} MECP from {{sender}}",
+    "notificationTitle": "MECP alert",
+    "exportLog": "Export MECP log",
+    "compose": {
+      "title": "Compose MECP report",
+      "button": "MECP",
+      "open": "Open MECP compose",
+      "severity": "Severity",
+      "category": "Category",
+      "codes": "Codes",
+      "removeCode": "Remove code {{code}}",
+      "freetext": "Free text (pax, GPS, notes)",
+      "addPax": "Add 1pax",
+      "attachGps": "Attach GPS",
+      "byteBudget": "{{used}} / {{max}} bytes",
+      "send": "Send MECP",
+      "gpsFailed": "Tidak bisa mendapatkan perbaikan GPS",
+      "sendFailed": "Gagal mengirim laporan MECP"
+    },
+    "rebroadcast": {
+      "title": "MECP RF rebroadcast",
+      "hint": "Optionally bridge MECP heard on one protocol channel to another. Off by default. Enable Bidirectional to also reverse the path.",
+      "add": "Add bridge rule",
+      "remove": "Remove bridge rule",
+      "enableRule": "Enabled",
+      "bidirectional": "Bidirectional",
+      "endpointA": "Listen / source (A)",
+      "endpointB": "Forward / destination (B)",
+      "protocol": "Protocol",
+      "channelIndex": "Channel index"
+    },
+    "exportLogSuccess": "Log MECP diekspor",
+    "exportLogSuccessPath": "Log MECP diekspor ke {{path}}",
+    "exportLogFailed": "Gagal mengekspor log MECP",
+    "section": {
+      "title": "MECP",
+      "hint": "Protokol Komunikasi Darurat Mesh — menulis laporan dari Chat, menjembatani RF antara Meshtastic dan MeshCore di sini, dan mengekspor log audit yang diterima tahan lama.",
+      "learnMore": "Cara kerja MECP",
+      "protocolSource": "Sumber protokol di GitHub",
+      "showComposeButton": "Tampilkan tombol MECP di Obrolan",
+      "showComposeButtonHint": "Mati secara default. Saat diaktifkan, Obrolan menampilkan tombol MECP untuk menyusun dan mengirim laporan darurat."
+    },
+    "exportLogEmpty": "Belum ada pesan MECP di log yang diterima"
   }
 }

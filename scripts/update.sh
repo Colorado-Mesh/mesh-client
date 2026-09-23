@@ -576,6 +576,13 @@ RATSPEAK_RELEASE_WATCH_ENTRIES=(
   'ratspeak/Ratspeak||Ratspeak identity vault (vendored in sidecar)|file:crates/ratspeak-runtime/src/vault.rs@19e2a0d19202d4c7562adba79ac706ec352fdb86'
 )
 
+# Non-Ratspeak vendored upstreams (same file:<path>@<sha> reviewed-ref format).
+# Keep in sync when re-vendoring MECP engine/languages from https://github.com/xiang-dev-1/MECP
+MECP_UPSTREAM_WATCH_ENTRIES=(
+  'xiang-dev-1/MECP||MECP engine (vendored in renderer)|file:engine/src@1441c5d13bd777e8dac8e12567bbd144b1a73e16'
+  'xiang-dev-1/MECP||MECP language packs (vendored in renderer)|file:languages@ee17ef3d58d372d8c5157407c036f846869ab251'
+)
+
 RATSPEAK_KNOWN_ORG_REPOS=(
   '.github'
   'C6-Reticulum-ASM'
@@ -610,6 +617,64 @@ print_ratspeak_upstream_catalog() {
   for entry in "${RATSPEAK_KNOWN_ORG_REPOS[@]}"; do
     echo "  ${entry}"
   done
+  echo 'MECP_UPSTREAM_WATCH_ENTRIES:'
+  for entry in "${MECP_UPSTREAM_WATCH_ENTRIES[@]}"; do
+    echo "  ${entry}"
+  done
+}
+
+# Shared file:<path>@<sha> watch used by Ratspeak + MECP vendored upstreams.
+# Returns: 0 = current/skipped, 2 = drift warning emitted, 1 = not a file: ref.
+check_vendored_file_watch_entry() {
+  local repo="$1" label="$2" reviewed="$3"
+  local file_spec file_path file_sha latest_sha short_pin short_latest
+
+  if [[ "${reviewed}" != file:* ]]; then
+    return 1
+  fi
+  file_spec="${reviewed#file:}"
+  file_path="${file_spec%@*}"
+  file_sha="${file_spec##*@}"
+  if [ -z "${file_path}" ] || [ -z "${file_sha}" ] || [ "${file_path}" = "${file_spec}" ]; then
+    return 0
+  fi
+  latest_sha="$(github_file_latest_commit "${repo}" "${file_path}")"
+  if [ -z "${latest_sha}" ]; then
+    return 0
+  fi
+  short_pin="${file_sha:0:12}"
+  short_latest="${latest_sha:0:12}"
+  if commit_shas_equal "${latest_sha}" "${file_sha}"; then
+    echo "  ${label}: ${file_path} @ ${short_pin} (reviewed; current)"
+    return 0
+  fi
+  warn_box "${label}" "${short_pin}" "${short_latest}" \
+    "https://github.com/${repo}/commits?path=${file_path}"
+  echo "  Reason tracked: vendored ${file_path} changed — compare with mesh-client vendored copy"
+  HAS_WARNING=1
+  return 2
+}
+
+check_mecp_upstream() {
+  local entry repo stub label reviewed
+  local has_upstream_warning=0
+  local file_rc
+
+  echo ''
+  echo 'Checking MECP upstream vendored engine/languages...'
+
+  for entry in "${MECP_UPSTREAM_WATCH_ENTRIES[@]}"; do
+    IFS='|' read -r repo stub label reviewed <<< "${entry}"
+    file_rc=0
+    check_vendored_file_watch_entry "${repo}" "${label}" "${reviewed}" || file_rc=$?
+    if [ "${file_rc}" -eq 2 ]; then
+      has_upstream_warning=1
+    fi
+  done
+
+  if [ "${has_upstream_warning}" -eq 0 ]; then
+    echo '  MECP upstream watch complete (reviewed baselines current).'
+  fi
 }
 
 # Surface new Ratspeak library releases and brand-new org repos (stack floats via clone).
@@ -628,27 +693,11 @@ check_ratspeak_upstream() {
     url="https://github.com/${repo}/releases"
 
     if [[ "${reviewed}" == file:* ]]; then
-      file_spec="${reviewed#file:}"
-      file_path="${file_spec%@*}"
-      file_sha="${file_spec##*@}"
-      if [ -z "${file_path}" ] || [ -z "${file_sha}" ] || [ "${file_path}" = "${file_spec}" ]; then
-        continue
+      local file_rc=0
+      check_vendored_file_watch_entry "${repo}" "${label}" "${reviewed}" || file_rc=$?
+      if [ "${file_rc}" -eq 2 ]; then
+        has_upstream_warning=1
       fi
-      latest_sha="$(github_file_latest_commit "${repo}" "${file_path}")"
-      if [ -z "${latest_sha}" ]; then
-        continue
-      fi
-      short_pin="${file_sha:0:12}"
-      short_latest="${latest_sha:0:12}"
-      if commit_shas_equal "${latest_sha}" "${file_sha}"; then
-        echo "  ${label}: ${file_path} @ ${short_pin} (reviewed; current)"
-        continue
-      fi
-      warn_box "${label}" "${short_pin}" "${short_latest}" \
-        "https://github.com/${repo}/commits?path=${file_path}"
-      echo "  Reason tracked: vendored ${file_path} changed — compare with src/renderer/lib/reticulum/lxmface.ts"
-      has_upstream_warning=1
-      HAS_WARNING=1
       continue
     fi
 
@@ -860,6 +909,7 @@ done
 check_pinned_majors
 check_ratspeak_patches
 check_ratspeak_upstream
+check_mecp_upstream
 
 if [ "${HAS_WARNING}" -eq 0 ]; then
   echo 'No updates to watched packages — safe to proceed.'

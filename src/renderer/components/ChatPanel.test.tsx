@@ -54,7 +54,11 @@ async function waitForComposer(): Promise<HTMLTextAreaElement> {
   return textarea;
 }
 
-vi.mock('../lib/chatNotifications', () => ({ playMessageNotification: vi.fn() }));
+vi.mock('../lib/chatNotifications', () => ({
+  playMessageNotification: vi.fn(),
+  playMecpSiren: vi.fn(),
+  playMecpEasAttention: vi.fn(),
+}));
 
 let mockIsAtEnd = true;
 let mockScrollDirection: 'forward' | 'backward' | null = 'forward';
@@ -4246,9 +4250,13 @@ describe('ChatPanel — channel selection restored across reconnect', () => {
 
 describe('ChatPanel — notification sound on new messages', () => {
   const playMock = vi.mocked(chatNotifications.playMessageNotification);
+  const sirenMock = vi.mocked(chatNotifications.playMecpSiren);
+  const easMock = vi.mocked(chatNotifications.playMecpEasAttention);
 
   beforeEach(() => {
     playMock.mockClear();
+    sirenMock.mockClear();
+    easMock.mockClear();
     localStorage.removeItem('mesh-client:notifMuted');
   });
 
@@ -4385,6 +4393,95 @@ describe('ChatPanel — notification sound on new messages', () => {
 
     await waitForComposer();
     expect(playMock).not.toHaveBeenCalled();
+  });
+
+  it('plays MECP siren when focused on the receiving chat for severity 0', async () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[]} isActive />
+      </ToastProvider>,
+    );
+
+    await waitForComposer();
+    playMock.mockClear();
+    sirenMock.mockClear();
+
+    const mecpMsg = makeMsg({
+      sender_id: 2,
+      channel: 0,
+      payload: 'MECP/0/M01',
+      packetId: 9001,
+      isHistory: undefined,
+    });
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[mecpMsg]} isActive />
+      </ToastProvider>,
+    );
+
+    await waitForComposer();
+    expect(sirenMock).toHaveBeenCalledOnce();
+    expect(playMock).not.toHaveBeenCalled();
+  });
+
+  it('plays EAS attention tone when focused on the receiving chat for severity 1', async () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[]} isActive />
+      </ToastProvider>,
+    );
+
+    await waitForComposer();
+    playMock.mockClear();
+    sirenMock.mockClear();
+    easMock.mockClear();
+
+    const mecpMsg = makeMsg({
+      sender_id: 2,
+      channel: 0,
+      payload: 'MECP/1/T04',
+      packetId: 9003,
+      isHistory: undefined,
+    });
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[mecpMsg]} isActive />
+      </ToastProvider>,
+    );
+
+    await waitForComposer();
+    expect(easMock).toHaveBeenCalledOnce();
+    expect(sirenMock).not.toHaveBeenCalled();
+    expect(playMock).not.toHaveBeenCalled();
+  });
+
+  it('plays noticeable mecp tone when focused on the receiving chat for severity 3', async () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[]} isActive />
+      </ToastProvider>,
+    );
+
+    await waitForComposer();
+    playMock.mockClear();
+    sirenMock.mockClear();
+
+    const mecpMsg = makeMsg({
+      sender_id: 2,
+      channel: 0,
+      payload: 'MECP/3/L01',
+      packetId: 9002,
+      isHistory: undefined,
+    });
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[mecpMsg]} isActive />
+      </ToastProvider>,
+    );
+
+    await waitForComposer();
+    expect(playMock).toHaveBeenCalledWith('mecp');
+    expect(sirenMock).not.toHaveBeenCalled();
   });
 });
 

@@ -70,4 +70,6 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
    * DMs + @mentions only.
    */
   rrcUnreadAllRoomMessages: true,
+  /** When true, show the Chat MECP compose button (default off). */
+  mecpComposeEnabled: false,
 };

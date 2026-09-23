@@ -545,5 +545,9 @@ export function createElectronAPIMock(): ElectronAPI {
     gps: {
       exportGpx: vi.fn().mockResolvedValue({ success: false, reason: 'cancelled' }),
     },
+    mecp: {
+      appendReceived: vi.fn().mockResolvedValue({ ok: true }),
+      exportReceivedLog: vi.fn().mockResolvedValue({ success: false }),
+    },
   } satisfies ElectronAPI;
 }

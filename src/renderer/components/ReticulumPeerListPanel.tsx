@@ -60,6 +60,7 @@ import {
   probeReticulumPeer,
   requestReticulumPeerPath,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { isReticulumStaleAlternateDismissed } from '@/renderer/lib/reticulum/reticulumStaleAlternateDismiss';
 import type { ReticulumPeer } from '@/shared/reticulum-types';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
@@ -668,6 +669,7 @@ export default function ReticulumPeerListPanel({
         openHasDelivered: stats.deliveredOutboundHashes.has(openNorm),
       });
       if (hint.status !== 'stale_alternate') return;
+      if (isReticulumStaleAlternateDismissed(hint.openHash, hint.alternateHash)) return;
       const openPrefix = openNorm.slice(0, 8);
       const alternatePrefix = hint.alternateHash.slice(0, 8);
       addToast(

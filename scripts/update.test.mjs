@@ -580,7 +580,7 @@ exit 0
     expect(result.stdout).toContain('WARNING:');
     expect(result.stdout).toContain('308a729d5bf9');
     expect(result.stdout).toContain('aaaaaaaaaaaa');
-    expect(result.stdout).toContain('src/renderer/lib/reticulum/lxmface.ts');
+    expect(result.stdout).toContain('compare with mesh-client vendored copy');
   });
 
   it('runs cargo clean after a successful rebuild when CLEAN_SIDECAR_TARGET=1', () => {
