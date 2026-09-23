@@ -95,6 +95,10 @@ vi.mock('../stores/reticulumPeerStore', async (importOriginal) => {
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { reticulumHashToNodeId } from '../lib/reticulum/destHash';
+import {
+  dismissReticulumStaleAlternate,
+  resetReticulumStaleAlternateDismissForTests,
+} from '../lib/reticulum/reticulumStaleAlternateDismiss';
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
@@ -123,6 +127,7 @@ function fillLargePeerMap(count: number, buried?: { hash: string; name: string }
 
 describe('ReticulumPeerListPanel', () => {
   beforeEach(() => {
+    resetReticulumStaleAlternateDismissForTests();
     reticulumSidecarMocks.isReticulumSidecarRunning.mockResolvedValue(true);
     reticulumSidecarMocks.requestReticulumPeerPath.mockReset();
     reticulumSidecarMocks.probeReticulumPeer.mockReset();
@@ -870,6 +875,84 @@ describe('ReticulumPeerListPanel', () => {
       ).toBeInTheDocument();
     });
     expect(chatButtons.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('skips stale-alternate toast when that pair was already dismissed', async () => {
+    const user = userEvent.setup();
+    const wired = 'd010ea4417f71ff4fd15a6182747aaec';
+    const wiredId = '098c1ee916253f73459dda7ced773c60';
+    const testLxmf = 'e3359f1314aff4fb6261400a8202149b';
+    const testId = '0f79468863d76b3ba574baa92606ffcb';
+    dismissReticulumStaleAlternate(wired, testLxmf);
+    useReticulumPeerStore.setState({
+      peers: new Map([
+        [
+          wired,
+          {
+            destination_hash: wired,
+            display_name: 'Ceorl-wired',
+            identity_hash: wiredId,
+            hops: 2,
+            last_seen: Date.now() / 1000,
+            interface: 'RNS_Transport_US-East',
+          },
+        ],
+        [
+          testLxmf,
+          {
+            destination_hash: testLxmf,
+            display_name: 'Ceorl-test',
+            identity_hash: testId,
+            hops: 1,
+            last_seen: Date.now() / 1000,
+            interface: 'RNodeInterface',
+          },
+        ],
+      ]),
+      contacts: new Map(),
+      history: new Map(),
+      peersRevision: 3,
+    });
+    useReticulumIdentityActivityStore.setState({
+      byDestination: new Map([
+        [
+          wired,
+          [
+            {
+              destination_hash: wired,
+              aspect: 'lxmf.delivery',
+              identity_hash: wiredId,
+              last_seen: 100,
+            },
+          ],
+        ],
+        [
+          testLxmf,
+          [
+            {
+              destination_hash: testLxmf,
+              aspect: 'lxmf.delivery',
+              identity_hash: testId,
+              last_seen: 200,
+            },
+          ],
+        ],
+      ]),
+    });
+    const onSendMessage = vi.fn();
+    render(
+      <ToastProvider>
+        <ReticulumPeerListPanel isConnected onPeerClick={vi.fn()} onSendMessage={onSendMessage} />
+      </ToastProvider>,
+    );
+    const hubBadge = screen.getByText('peerListPanel.heardViaTcpHub');
+    const row = hubBadge.closest('tr');
+    expect(row).toBeTruthy();
+    const chatBtn = row!.querySelector('button[aria-label="peerListPanel.openChat"]');
+    expect(chatBtn).toBeTruthy();
+    await user.click(chatBtn!);
+    expect(onSendMessage).toHaveBeenCalled();
+    expect(screen.queryByText(/peerListPanel.staleAlternateToastNamed/)).not.toBeInTheDocument();
   });
 
   it('has no serious axe violations', async () => {

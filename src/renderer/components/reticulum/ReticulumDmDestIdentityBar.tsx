@@ -1,9 +1,15 @@
 import { Copy, X } from 'lucide-react-motion';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { ResolveReticulumStaleChatDestResult } from '@/renderer/lib/reticulum/resolveReticulumStaleChatDest';
+import {
+  dismissReticulumStaleAlternate,
+  getReticulumStaleAlternateDismissVersion,
+  isReticulumStaleAlternateDismissed,
+  subscribeReticulumStaleAlternateDismiss,
+} from '@/renderer/lib/reticulum/reticulumStaleAlternateDismiss';
 import { RETICULUM_DM_HEADER_STATUS_CLASS } from '@/renderer/lib/reticulumDmHeaderActions';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 
@@ -29,8 +35,12 @@ export function ReticulumDmDestIdentityBar({
   staleHint,
 }: ReticulumDmDestIdentityBarProps) {
   const { t } = useTranslation();
-  const [dismissed, setDismissed] = useState(false);
   const [copied, setCopied] = useState<'lxmf' | 'identity' | null>(null);
+  useSyncExternalStore(
+    subscribeReticulumStaleAlternateDismiss,
+    getReticulumStaleAlternateDismissVersion,
+    () => 0,
+  );
 
   const copyHash = useCallback(async (kind: 'lxmf' | 'identity', value: string) => {
     try {
@@ -46,7 +56,10 @@ export function ReticulumDmDestIdentityBar({
 
   const lxmfPrefix = shortHashPrefix(lxmfHash);
   const identityPrefix = identityHash ? shortHashPrefix(identityHash) : null;
-  const showBanner = !dismissed && staleHint.status === 'stale_alternate';
+  const staleDismissed =
+    staleHint.status === 'stale_alternate' &&
+    isReticulumStaleAlternateDismissed(staleHint.openHash, staleHint.alternateHash);
+  const showBanner = !staleDismissed && staleHint.status === 'stale_alternate';
   const alternatePrefix =
     staleHint.status === 'stale_alternate' ? shortHashPrefix(staleHint.alternateHash) : null;
 
@@ -113,7 +126,7 @@ export function ReticulumDmDestIdentityBar({
             className="shrink-0 rounded p-0.5 text-amber-200/80 hover:bg-amber-900/50 hover:text-amber-50"
             aria-label={t('chatPanel.reticulumDmStaleAlternateDismissAria')}
             onClick={() => {
-              setDismissed(true);
+              dismissReticulumStaleAlternate(staleHint.openHash, staleHint.alternateHash);
             }}
           >
             <X className="h-3.5 w-3.5" aria-hidden />
