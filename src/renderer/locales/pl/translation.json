@@ -6164,5 +6164,37 @@
       "showComposeButtonHint": "Domyślnie wyłączone. Po włączeniu Czat pokazuje przycisk MECP do tworzenia i wysyłania raportów awaryjnych."
     },
     "exportLogEmpty": "Brak komunikatów MECP w otrzymanym dzienniku"
+  },
+  "notificationSounds": {
+    "title": "Dźwięki powiadomień",
+    "hint": "Wybierz ton dla każdego wydarzenia lub zaimportuj plik audio do 10 sekund i 2 MB. Wybór pliku rozpoczyna się w folderze dźwięków systemowych, gdy jest dostępny. Zaimportowane dźwięki są kopiowane do Twojego profilu; ustawienia systemowe pozostają niezmienione.",
+    "emergencyHint": "MAYDAY i URGENT są odtwarzane nawet po wyciszeniu powiadomień, z głośnością co najmniej 10%. SAFETY i ROUTINE przestrzegają zwykłych ustawień wyciszenia. Podgląd dźwięku działa również przy wyciszonych powiadomieniach.",
+    "channel": "Wiadomości na kanale",
+    "dm": "Bezpośrednie wiadomości",
+    "reply": "Odpowiedzi i wzmianki",
+    "mecp": "MECP ROUTINE",
+    "mecpSafety": "MECP SAFETY",
+    "mecpEas": "MECP URGENT",
+    "mecpSiren": "MECP MAYDAY",
+    "default": "Oryginalny ton",
+    "chime": "Dźwięcznik",
+    "bell": "Dzwon",
+    "ping": "Podwójny ping",
+    "alert": "Rosnąca czujność",
+    "toneFor": "Ton dla {{event}}",
+    "preview": "Podgląd",
+    "stop": "Stop",
+    "choose": "Wybierz plik",
+    "reset": "Zresetuj",
+    "volume": "Wolumen",
+    "volumeFor": "Objętość dla {{event}}",
+    "previewFor": "Podgląd {{event}}",
+    "stopFor": "Zatrzymaj podgląd dla {{event}}",
+    "chooseFor": "Wybierz plik audio dla {{event}}",
+    "resetFor": "Zresetuj {{event}}",
+    "saving": "Zapisywanie ustawień dźwięku…",
+    "importFailed": "Nie można zaimportować tego dźwięku. Wybierz obsługiwany plik audio nie dłuższy niż 10 sekund i nie większy niż 2 MB.",
+    "saveFailed": "Nie można zapisać ustawień dźwięku. Twój poprzedni wybór pozostaje niezmieniony.",
+    "previewFailed": "Nie można odtworzyć tego dźwięku. Spróbuj użyć innego pliku lub zresetuj do oryginalnego tonu."
   }
 }

@@ -6070,5 +6070,37 @@
       "showComposeButtonHint": "Mati secara default. Saat diaktifkan, Obrolan menampilkan tombol MECP untuk menyusun dan mengirim laporan darurat."
     },
     "exportLogEmpty": "Belum ada pesan MECP di log yang diterima"
+  },
+  "notificationSounds": {
+    "title": "Nada notifikasi",
+    "hint": "Pilih nada untuk setiap acara, atau impor file audio hingga 10 detik dan 2 MiB. Pemilih file dimulai di folder suara sistem bila tersedia. Suara yang diimpor disalin ke profil Anda; pengaturan sistem tidak berubah.",
+    "emergencyHint": "MAYDAY dan URGENT tetap berbunyi meskipun notifikasi dibisukan, dengan volume minimum 10%. SAFETY dan ROUTINE mengikuti pengaturan bisu biasa. Pratinjau suara tetap diputar meskipun notifikasi dibisukan.",
+    "channel": "Pesan saluran",
+    "dm": "Pesan langsung",
+    "reply": "Balasan dan penyebutan",
+    "mecp": "MECP ROUTINE",
+    "mecpSafety": "MECP SAFETY",
+    "mecpEas": "MECP URGENT",
+    "mecpSiren": "MECP MAYDAY",
+    "default": "Nada asli",
+    "chime": "Chime",
+    "bell": "Bel",
+    "ping": "Ping ganda",
+    "alert": "Peringatan yang meningkat",
+    "toneFor": "Nada untuk {{event}}",
+    "preview": "Lihat preview",
+    "stop": "Berhenti",
+    "choose": "Pilih File",
+    "reset": "Atur ulang",
+    "volume": "Volume",
+    "volumeFor": "Volume untuk {{event}}",
+    "previewFor": "Pratinjau {{event}}",
+    "stopFor": "Hentikan pratinjau untuk {{event}}",
+    "chooseFor": "Pilih file audio untuk {{event}}",
+    "resetFor": "Atur Ulang {{event}}",
+    "saving": "Menyimpan pengaturan suara…",
+    "importFailed": "Tidak dapat mengimpor suara ini. Pilih file audio yang didukung tidak lebih dari 10 detik dan tidak lebih besar dari 2 MiB.",
+    "saveFailed": "Tidak dapat menyimpan pengaturan suara. Pilihan Anda sebelumnya tidak berubah.",
+    "previewFailed": "Tidak dapat memutar suara ini. Coba file lain atau atur ulang ke nada asli."
   }
 }

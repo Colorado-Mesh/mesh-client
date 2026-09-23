@@ -70,6 +70,7 @@ import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
+import NotificationSoundSettings from './NotificationSoundSettings';
 import { useToast } from './Toast';
 
 /** Sentinel for "clear all channels" so MeshCore DM (`channel_idx === -1`) does not collide with "All". */
@@ -2118,6 +2119,7 @@ export default function AppPanel({
             {t('appPanel.soundNotifications')}
           </label>
         </div>
+        <NotificationSoundSettings />
         {hasRrcPanel && (
           <div className="space-y-1">
             <div className="flex items-center gap-3">

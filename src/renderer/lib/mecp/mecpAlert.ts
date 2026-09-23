@@ -67,7 +67,7 @@ export function triggerMecpAlert(ctx: MecpAlertContext): void {
   } else if (ctx.severity === 1) {
     playMecpEasAttention();
   } else {
-    playMessageNotification('mecp');
+    playMessageNotification(ctx.severity === 2 ? 'mecpSafety' : 'mecp');
   }
 
   const severityLabel = i18n.t(

@@ -250,6 +250,7 @@ import {
 import { shouldAutoLaunchMeshcoreMqttAtStartup, tryAutoLaunchMqtt } from './lib/mqttAutoLaunch';
 import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
 import { OPEN_NOMAD_PAGE_EVENT, type OpenNomadPageDetail } from './lib/nomad/openNomadPageFromLink';
+import { loadNotificationSoundSettings } from './lib/notificationSoundSettings';
 import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities';
 import { OPEN_RRC_HUB_EVENT } from './lib/openRrcHubFromLink';
 import { parseStoredJson } from './lib/parseStoredJson';
@@ -552,6 +553,12 @@ function AppContent() {
       window.removeEventListener('mesh-client:rncp-offer', onOffer);
     };
   }, [addToast, t]);
+
+  useEffect(() => {
+    void loadNotificationSoundSettings().catch((error: unknown) => {
+      console.warn('[App] notification sounds hydrate failed ' + errLikeToLogString(error));
+    });
+  }, []);
 
   // Reconcile 24h clock from SQLite early — AppPanel is lazy and Chat reads the store first.
   useEffect(() => {

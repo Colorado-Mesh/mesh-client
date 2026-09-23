@@ -6118,5 +6118,37 @@
       "showComposeButtonHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazuje tlačítko MECP pro vytváření a odesílání nouzových zpráv."
     },
     "exportLogEmpty": "V přijatém protokolu zatím nejsou žádné zprávy MECP"
+  },
+  "notificationSounds": {
+    "title": "Tóny oznámení",
+    "hint": "Vyberte tón pro každou událost nebo importujte zvukový soubor do 10 sekund a 2 MiB. Výběr souboru se spustí ve složce Zvuky systému, pokud je k dispozici. Importované zvuky se zkopírují do vašeho profilu; nastavení systému se nemění.",
+    "emergencyHint": "MAYDAY a URGENT znějí i při ztlumených oznámeních, s minimální hlasitostí 10 %. SAFETY a ROUTINE respektují běžná nastavení ztlumení. Zvuková ukázka se přehraje i při ztlumených oznámeních.",
+    "channel": "Zprávy kanálu",
+    "dm": "Přímé zprávy",
+    "reply": "Odpovědi a zmínky",
+    "mecp": "MECP ROUTINE",
+    "mecpSafety": "MECP SAFETY",
+    "mecpEas": "MECP URGENT",
+    "mecpSiren": "MECP MAYDAY",
+    "default": "Původní tón",
+    "chime": "Zvonění",
+    "bell": "Zvonek",
+    "ping": "Dvojitý ping",
+    "alert": "Stoupající výstraha",
+    "toneFor": "Tón pro {{event}}",
+    "preview": "Náhled",
+    "stop": "Zastavit",
+    "choose": "Vyberte soubor…",
+    "reset": "Obnovit",
+    "volume": "Objem",
+    "volumeFor": "Objem pro {{event}}",
+    "previewFor": "Náhled {{event}}",
+    "stopFor": "Zastavit náhled pro {{event}}",
+    "chooseFor": "Vyberte zvukový soubor pro {{event}}",
+    "resetFor": "Reset {{event}}",
+    "saving": "Ukládání nastavení zvuku…",
+    "importFailed": "Tento zvuk nelze importovat. Vyberte podporovaný zvukový soubor ne delší než 10 sekund a ne větší než 2 MiB.",
+    "saveFailed": "Nelze uložit nastavení zvuku. Váš předchozí výběr se nezměnil.",
+    "previewFailed": "Tento zvuk nelze přehrát. Zkuste jiný soubor nebo obnovte původní tón."
   }
 }

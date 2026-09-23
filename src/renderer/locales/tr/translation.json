@@ -6070,5 +6070,37 @@
       "showComposeButtonHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet acil durum raporları oluşturmak ve göndermek için bir MECP düğmesi gösterir."
     },
     "exportLogEmpty": "Alınan günlükte henüz MECP mesajı yok"
+  },
+  "notificationSounds": {
+    "title": "Bildirim tonları",
+    "hint": "Her etkinlik için bir ton seçin veya 10 saniyeye ve 2 MB'a kadar bir ses dosyasını içe aktarın. Dosya seçici, mevcut olduğunda sistem sesleri klasöründe başlar. İçe aktarılan sesler profilinize kopyalanır; sistem ayarları değiştirilmez.",
+    "emergencyHint": "MAYDAY ve URGENT, bildirimler sessize alınsa bile en az %10 ses düzeyinde çalar. SAFETY ve ROUTINE normal sessize alma ayarlarını izler. Bildirimler sessizdeyken de ses önizlemesi oynatılır.",
+    "channel": "Kanal mesajları",
+    "dm": "Direkt Mesajlar",
+    "reply": "Yanıtlar ve bahsetmeler",
+    "mecp": "MECP ROUTINE",
+    "mecpSafety": "MECP SAFETY",
+    "mecpEas": "MECP URGENT",
+    "mecpSiren": "MECP MAYDAY",
+    "default": "Orijinal ton",
+    "chime": "Çan Sesi",
+    "bell": "Zil",
+    "ping": "Çift ping",
+    "alert": "Yükselen alarm",
+    "toneFor": "{{event}} için ton",
+    "preview": "Önizleme",
+    "stop": "Durdurma",
+    "choose": "Dosya seçin",
+    "reset": "Sıfırla",
+    "volume": "Hacim",
+    "volumeFor": "{{event}} için hacim",
+    "previewFor": "Önizleme {{event}}",
+    "stopFor": "{{event}} için ön izlemeyi durdur",
+    "chooseFor": "{{event}} için ses dosyası seçin",
+    "resetFor": "Sıfırla {{event}}",
+    "saving": "Ses ayarları kaydediliyor...",
+    "importFailed": "Bu ses içe aktarılamadı. 10 saniyeden uzun olmayan ve 2 MB'den büyük olmayan desteklenen bir ses dosyası seçin.",
+    "saveFailed": "Ses ayarları kaydedilemedi. Önceki seçiminiz değişmedi.",
+    "previewFailed": "Bu ses çalınamadı. Başka bir dosya deneyin veya orijinal tona sıfırlayın."
   }
 }

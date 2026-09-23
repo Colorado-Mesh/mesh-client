@@ -27,6 +27,11 @@ import type {
   UpdateCheckingPayload,
 } from '../shared/electron-api.types';
 import type {
+  NotificationSoundEvent,
+  NotificationSoundImport,
+  NotificationSoundRecord,
+} from '../shared/notificationSounds';
+import type {
   ReticulumSidecarEvent,
   ReticulumSidecarStartOptions,
   ReticulumSidecarStatus,
@@ -945,6 +950,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   notify: {
     show: (title: string, body: string): Promise<void> =>
       ipcRenderer.invoke('notify:message', title, body),
+  },
+
+  notificationSounds: {
+    choose: (): Promise<NotificationSoundImport | null> =>
+      ipcRenderer.invoke('notificationSounds:choose'),
+    save: (
+      event: NotificationSoundEvent,
+      sound: NotificationSoundImport,
+      previousId?: string,
+    ): Promise<NotificationSoundRecord> =>
+      ipcRenderer.invoke('notificationSounds:save', event, sound, previousId),
+    read: (event: NotificationSoundEvent, id: string): Promise<string | null> =>
+      ipcRenderer.invoke('notificationSounds:read', event, id),
   },
 
   // ─── Safe storage (OS-keychain-backed encryption) ──────────────

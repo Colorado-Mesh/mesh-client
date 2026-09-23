@@ -7,6 +7,13 @@ const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
 const PRELOAD_SOURCE = readFileSync(join(__dirname, '../preload/index.ts'), 'utf-8');
 const TCP_BRIDGE_SOURCE = readFileSync(join(__dirname, 'ipc/tcp-bridge.ts'), 'utf-8');
 
+describe('notification audio metadata CSP', () => {
+  it('permits local blob metadata probes without allowing remote media', () => {
+    const html = readFileSync(join(__dirname, '../renderer/index.html'), 'utf-8');
+    expect(/media-src\s+([^;]+)/.exec(html)?.[1]).toBe("'self' blob:");
+  });
+});
+
 describe('IPC payload size limits (source contract)', () => {
   it('defines meshcore tcp-write, http:write, and gatt to-radio limits and uses them in handlers', () => {
     expect(TCP_BRIDGE_SOURCE).toContain('export const TCP_BRIDGE_WRITE_MAX_BYTES = 256 * 1024');
@@ -645,5 +652,16 @@ describe('Native Electron call guards (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(
       /ipcMain\.handle\('app:getProcessUptimeSec'[\s\S]*?assertIpcSender\(event, 'app:getProcessUptimeSec'\)/,
     );
+  });
+});
+
+describe('notification sound preferences', () => {
+  it('registers the sound boundary and gives only its bounded settings blob a larger limit', () => {
+    expect(INDEX_SOURCE).toContain('registerNotificationSoundHandlers();');
+    expect(INDEX_SOURCE).toContain("  'notificationSounds',");
+    expect(INDEX_SOURCE).toContain("if (key === 'notificationSounds') return 4096;");
+    expect(INDEX_SOURCE).toContain('const APP_SETTINGS_MAX_VALUE_LENGTH = 256;');
+    expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('notificationSounds:choose')");
+    expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('notificationSounds:read', event, id)");
   });
 });

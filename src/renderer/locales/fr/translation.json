@@ -6070,5 +6070,37 @@
       "showComposeButtonHint": "Désactivé par défaut. Lorsqu'il est activé, Chat affiche un bouton MECP pour composer et envoyer des rapports d'urgence."
     },
     "exportLogEmpty": "Aucun message MECP dans le journal reçu pour le moment"
+  },
+  "notificationSounds": {
+    "title": "Tonalités de notification",
+    "hint": "Choisissez une tonalité pour chaque événement, ou importez un fichier audio jusqu'à 10 secondes et 2 Mo. Le sélecteur de fichiers démarre dans le dossier des sons du système lorsqu'il est disponible. Les sons importés sont copiés dans votre profil ; les paramètres système sont inchangés.",
+    "emergencyHint": "MAYDAY et URGENT restent audibles lorsque les notifications sont en sourdine, avec un volume minimal de 10 %. SAFETY et ROUTINE respectent les réglages habituels de mise en sourdine. L’aperçu sonore est joué même lorsque les notifications sont en sourdine.",
+    "channel": "Messages de canal",
+    "dm": "Messages directs",
+    "reply": "Réponses et mentions",
+    "mecp": "MECP ROUTINE",
+    "mecpSafety": "MECP SAFETY",
+    "mecpEas": "MECP URGENT",
+    "mecpSiren": "MECP MAYDAY",
+    "default": "Son original",
+    "chime": "Carillon",
+    "bell": "Sonnette",
+    "ping": "Double ping",
+    "alert": "Alerte de hausse",
+    "toneFor": "Tonalité pour {{event}}",
+    "preview": "Aperçu",
+    "stop": "Arrêter",
+    "choose": "Choisir un fichier",
+    "reset": "Réinitialiser",
+    "volume": "Volume",
+    "volumeFor": "Volume pour {{event}}",
+    "previewFor": "Aperçu {{event}}",
+    "stopFor": "Arrêter l'aperçu pour {{event}}",
+    "chooseFor": "Choisissez le fichier audio pour {{event}}",
+    "resetFor": "Réinitialiser {{event}}",
+    "saving": "Enregistrement des paramètres de son...",
+    "importFailed": "Impossible d'importer ce son. Choisissez un fichier audio pris en charge ne dépassant pas 10 secondes et ne dépassant pas 2 MiB.",
+    "saveFailed": "Impossible d'enregistrer les paramètres de son. Votre sélection précédente est inchangée.",
+    "previewFailed": "Impossible de jouer ce son. Essayez un autre fichier ou réinitialisez la tonalité d'origine."
   }
 }

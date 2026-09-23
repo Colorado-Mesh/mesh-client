@@ -251,6 +251,11 @@ export function createElectronAPIMock(): ElectronAPI {
       decrypt: vi.fn().mockResolvedValue(null),
       isAvailable: vi.fn().mockResolvedValue(false),
     },
+    notificationSounds: {
+      choose: vi.fn().mockResolvedValue(null),
+      save: vi.fn().mockResolvedValue({ id: 'a'.repeat(64), name: 'tone.wav' }),
+      read: vi.fn().mockResolvedValue(null),
+    },
     appSettings: {
       getLoginItem: vi.fn().mockResolvedValue({ openAtLogin: false }),
       setLoginItem: vi.fn().mockResolvedValue(undefined),

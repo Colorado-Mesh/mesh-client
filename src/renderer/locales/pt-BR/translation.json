@@ -6070,5 +6070,37 @@
       "showComposeButtonHint": "Desligado por padrão. Quando ativado, o Chat mostra um botão MECP para compor e enviar relatórios de emergência."
     },
     "exportLogEmpty": "Nenhuma mensagem MECP no registro recebido ainda"
+  },
+  "notificationSounds": {
+    "title": "Tons de notificação",
+    "hint": "Escolha um tom para cada evento ou importe um arquivo de áudio de até 10 segundos e 2 MiB. O seletor de arquivos é iniciado na pasta de sons do sistema, quando disponível. Os sons importados são copiados para o seu perfil; as configurações do sistema permanecem inalteradas.",
+    "emergencyHint": "MAYDAY e URGENT soam mesmo com as notificações silenciadas, com volume mínimo de 10%. SAFETY e ROUTINE respeitam as configurações normais de silenciamento. A prévia é reproduzida mesmo com as notificações silenciadas.",
+    "channel": "Mensagens do canal",
+    "dm": "Mensagens diretas",
+    "reply": "Respostas e menções",
+    "mecp": "MECP ROUTINE",
+    "mecpSafety": "MECP SAFETY",
+    "mecpEas": "MECP URGENT",
+    "mecpSiren": "MECP MAYDAY",
+    "default": "Tom original",
+    "chime": "Carrilhão",
+    "bell": "Sino",
+    "ping": "Double ping",
+    "alert": "Alerta crescente",
+    "toneFor": "Tom para {{event}}",
+    "preview": "Visualizar",
+    "stop": "Parar",
+    "choose": "Escolher arquivo",
+    "reset": "Redefinir",
+    "volume": "Volume",
+    "volumeFor": "Volume para {{event}}",
+    "previewFor": "Pré-visualizar {{event}}",
+    "stopFor": "Parar a pré-visualização de {{event}}",
+    "chooseFor": "Escolha o arquivo de áudio para {{event}}",
+    "resetFor": "Redefinir {{event}}",
+    "saving": "A guardar definições de som...",
+    "importFailed": "Não foi possível importar este som. Escolha um arquivo de áudio compatível com no máximo 10 segundos e no máximo 2 MiB.",
+    "saveFailed": "Não foi possível salvar as configurações de som. Sua seleção anterior permanece inalterada.",
+    "previewFailed": "Não foi possível reproduzir este som. Tente outro arquivo ou redefina para o tom original."
   }
 }
