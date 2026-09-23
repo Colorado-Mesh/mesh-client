@@ -6070,5 +6070,37 @@
       "showComposeButtonHint": "Desactivado de forma predeterminada. Cuando está habilitado, el chat muestra un botón MECP para redactar y enviar informes de emergencia."
     },
     "exportLogEmpty": "Aún no hay mensajes MECP en el registro recibido"
+  },
+  "notificationSounds": {
+    "title": "Tonos de notificación",
+    "hint": "Elige un tono para cada evento o importa un archivo de audio de hasta 10 segundos y 2 MB. El selector de archivos se inicia en la carpeta de sonidos del sistema cuando está disponible. Los sonidos importados se copian en su perfil; la configuración del sistema no cambia.",
+    "emergencyHint": "MAYDAY y URGENT siempre suenan aunque las notificaciones estén silenciadas, con un volumen mínimo del 10%. SAFETY y ROUTINE respetan los ajustes de silencio habituales. La vista previa se reproduce incluso con las notificaciones silenciadas.",
+    "channel": "Mensajes de canal",
+    "dm": "Mensajes directos",
+    "reply": "Respuestas y menciones",
+    "mecp": "MECP ROUTINE",
+    "mecpSafety": "MECP SAFETY",
+    "mecpEas": "MECP URGENT",
+    "mecpSiren": "MECP MAYDAY",
+    "default": "Tono original",
+    "chime": "Campanilla",
+    "bell": "Campana",
+    "ping": "Doble ping",
+    "alert": "Alerta creciente",
+    "toneFor": "Tono para {{event}}",
+    "preview": "Vista previa",
+    "stop": "Parada",
+    "choose": "Elegir archivo",
+    "reset": "Restablecimiento",
+    "volume": "Volumen",
+    "volumeFor": "Volumen para {{event}}",
+    "previewFor": "Vista previa {{event}}",
+    "stopFor": "Detener vista previa para {{event}}",
+    "chooseFor": "Elige un archivo de audio para {{event}}",
+    "resetFor": "Restablecer {{event}}",
+    "saving": "Guardando ajustes de sonido...",
+    "importFailed": "No se ha podido importar este sonido. Elige un archivo de audio compatible que no supere los 10 segundos ni los 2 MB.",
+    "saveFailed": "No se han podido guardar los ajustes de sonido. Su selección anterior no ha cambiado.",
+    "previewFailed": "No se ha podido reproducir este sonido. Prueba con otro archivo o restablece el tono original."
   }
 }

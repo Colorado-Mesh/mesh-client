@@ -6070,5 +6070,37 @@
       "protocol": "Protocol",
       "channelIndex": "Channel index"
     }
+  },
+  "notificationSounds": {
+    "title": "Notification tones",
+    "hint": "Choose a tone for each event, or import an audio file up to 10 seconds and 2 MiB. The file chooser starts in the system sounds folder when available. Imported sounds are copied into your profile; system settings are unchanged.",
+    "emergencyHint": "MAYDAY and URGENT always bypass notification mutes and have a minimum volume of 10%. SAFETY and ROUTINE follow the usual mute settings. Preview plays even when notifications are muted.",
+    "channel": "Channel messages",
+    "dm": "Direct messages",
+    "reply": "Replies and mentions",
+    "mecp": "MECP ROUTINE",
+    "mecpSafety": "MECP SAFETY",
+    "mecpEas": "MECP URGENT",
+    "mecpSiren": "MECP MAYDAY",
+    "default": "Original tone",
+    "chime": "Chime",
+    "bell": "Bell",
+    "ping": "Double ping",
+    "alert": "Rising alert",
+    "toneFor": "Tone for {{event}}",
+    "preview": "Preview",
+    "stop": "Stop",
+    "choose": "Choose file…",
+    "reset": "Reset",
+    "volume": "Volume",
+    "volumeFor": "Volume for {{event}}",
+    "previewFor": "Preview {{event}}",
+    "stopFor": "Stop preview for {{event}}",
+    "chooseFor": "Choose audio file for {{event}}",
+    "resetFor": "Reset {{event}}",
+    "saving": "Saving sound settings…",
+    "importFailed": "Could not import this sound. Choose a supported audio file no longer than 10 seconds and no larger than 2 MiB.",
+    "saveFailed": "Could not save sound settings. Your previous selection is unchanged.",
+    "previewFailed": "Could not play this sound. Try another file or reset to the original tone."
   }
 }

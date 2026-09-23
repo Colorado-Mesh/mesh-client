@@ -86,6 +86,17 @@ describe('triggerMecpAlert', () => {
     expect(chatNotifications.playMecpEasAttention).not.toHaveBeenCalled();
   });
 
+  it('selects the separate SAFETY tone for severity 2', () => {
+    triggerMecpAlert({
+      severity: 2,
+      isDrill: false,
+      senderLabel: 'node',
+      viewKey: 'ch0',
+      mutedViews: new Set(),
+    });
+    expect(chatNotifications.playMessageNotification).toHaveBeenCalledWith('mecpSafety');
+  });
+
   it('skips severity 2–3 when view muted', () => {
     triggerMecpAlert({
       severity: 2,

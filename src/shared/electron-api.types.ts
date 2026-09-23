@@ -10,6 +10,7 @@ import type {
   GamesStatusResponse,
 } from './games-types';
 import type { MeshProtocol } from './meshProtocol';
+import type { NotificationSoundsApi } from './notificationSounds';
 import type {
   PathCapability,
   RemoteAddressBookRow,
@@ -1031,6 +1032,8 @@ export interface ElectronAPI {
   notify: {
     show: (title: string, body: string) => Promise<void>;
   };
+
+  notificationSounds: NotificationSoundsApi;
 
   // ─── Safe storage ────────────────────────────────────────────────────────────
   safeStorage: {

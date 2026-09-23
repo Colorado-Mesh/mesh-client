@@ -6070,5 +6070,37 @@
       "showComposeButtonHint": "デフォルトではオフになっています。有効にすると、チャットに緊急レポートを作成して送信するためのMECPボタンが表示されます。"
     },
     "exportLogEmpty": "受信したログにMECPメッセージはまだありません"
+  },
+  "notificationSounds": {
+    "title": "通知トーン",
+    "hint": "各イベントのトーンを選択するか、最大10秒と2 MiBのオーディオファイルをインポートします。ファイル選択は、利用可能な場合、システムサウンドフォルダで開始されます。インポートされたサウンドはプロファイルにコピーされ、システム設定は変更されません。",
+    "emergencyHint": "MAYDAY と URGENT は通知のミュート設定にかかわらず、最低 10% の音量で鳴ります。SAFETY と ROUTINE は通常のミュート設定に従います。通知をミュートしていても試聴は再生されます。",
+    "channel": "チャンネルメッセージ",
+    "dm": "ダイレクトメッセージ",
+    "reply": "返信とメンション",
+    "mecp": "MECP ROUTINE",
+    "mecpSafety": "MECP SAFETY",
+    "mecpEas": "MECP URGENT",
+    "mecpSiren": "MECP MAYDAY",
+    "default": "元のトーン",
+    "chime": "チャイム",
+    "bell": "ベル",
+    "ping": "ダブルping",
+    "alert": "ライジングアラート",
+    "toneFor": "{{event}}のトーン",
+    "preview": "プレビュー",
+    "stop": "停止",
+    "choose": "ファイルを選択",
+    "reset": "リセット",
+    "volume": "ボリューム",
+    "volumeFor": "{{event}}の音量",
+    "previewFor": "{{event}}をプレビュー",
+    "stopFor": "{{event}}のプレビューを停止",
+    "chooseFor": "{{event}}のオーディオファイルを選択してください",
+    "resetFor": "{{event}}をリセット",
+    "saving": "サウンド設定を保存しています…",
+    "importFailed": "このサウンドをインポートできませんでした。サポートされているオーディオファイルを10秒以内、2 MiB以内で選択してください。",
+    "saveFailed": "サウンド設定を保存できませんでした。以前の選択は変更されていません。",
+    "previewFailed": "このサウンドを再生できませんでした。別のファイルを試すか、元のトーンにリセットしてください。"
   }
 }

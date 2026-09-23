@@ -6070,5 +6070,37 @@
       "showComposeButtonHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een MECP-knop om noodrapporten samen te stellen en te verzenden."
     },
     "exportLogEmpty": "Nog geen MECP-berichten in het ontvangen logboek"
+  },
+  "notificationSounds": {
+    "title": "Meldingstonen",
+    "hint": "Kies een toon voor elke gebeurtenis of importeer een audiobestand tot 10 seconden en 2 MiB. De bestandskiezer start in de map met systeemgeluiden, indien beschikbaar. Geïmporteerde geluiden worden naar uw profiel gekopieerd; de systeeminstellingen zijn ongewijzigd.",
+    "emergencyHint": "MAYDAY en URGENT klinken ook als meldingen gedempt zijn, met een volume van minimaal 10%. SAFETY en ROUTINE volgen de gebruikelijke dempinstellingen. Het geluidsvoorbeeld speelt ook als meldingen gedempt zijn.",
+    "channel": "Kanaalberichten",
+    "dm": "Directe berichten",
+    "reply": "Antwoorden en vermeldingen",
+    "mecp": "MECP ROUTINE",
+    "mecpSafety": "MECP SAFETY",
+    "mecpEas": "MECP URGENT",
+    "mecpSiren": "MECP MAYDAY",
+    "default": "Originele toon",
+    "chime": "Gong in",
+    "bell": "Bel",
+    "ping": "Dubbele ping",
+    "alert": "Stijgend alarm",
+    "toneFor": "Toon voor {{event}}",
+    "preview": "Voorbeeld",
+    "stop": "Stop",
+    "choose": "Bestand kiezen",
+    "reset": "Resetten",
+    "volume": "Volume",
+    "volumeFor": "Volume voor {{event}}",
+    "previewFor": "Voorbeeld {{event}}",
+    "stopFor": "Voorbeeld stoppen voor {{event}}",
+    "chooseFor": "Kies audiobestand voor {{event}}",
+    "resetFor": "Reset {{event}}",
+    "saving": "Geluidsinstellingen opslaan...",
+    "importFailed": "Kan dit geluid niet importeren. Kies een ondersteund audiobestand niet langer dan 10 seconden en niet groter dan 2 MiB.",
+    "saveFailed": "Kon geluidsinstellingen niet opslaan. Uw vorige selectie is ongewijzigd.",
+    "previewFailed": "Kan dit geluid niet afspelen. Probeer een ander bestand of zet de oorspronkelijke toon terug."
   }
 }

@@ -647,3 +647,14 @@ describe('Native Electron call guards (source contract)', () => {
     );
   });
 });
+
+describe('notification sound preferences', () => {
+  it('registers the sound boundary and gives only its bounded settings blob a larger limit', () => {
+    expect(INDEX_SOURCE).toContain('registerNotificationSoundHandlers();');
+    expect(INDEX_SOURCE).toContain("  'notificationSounds',");
+    expect(INDEX_SOURCE).toContain("if (key === 'notificationSounds') return 4096;");
+    expect(INDEX_SOURCE).toContain('const APP_SETTINGS_MAX_VALUE_LENGTH = 256;');
+    expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('notificationSounds:choose')");
+    expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('notificationSounds:read', event, id)");
+  });
+});

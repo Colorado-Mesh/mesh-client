@@ -490,7 +490,8 @@ describe('AppPanel: font size control', () => {
       </ToastProvider>,
     );
 
-    expect(await screen.findByText('150%')).toBeInTheDocument();
+    const fontSizeLabel = await screen.findByText('150%');
+    expect(fontSizeLabel).toBeInTheDocument();
 
     act(() => {
       fireEvent.click(screen.getByRole('button', { name: /reset font size/i }));
@@ -498,7 +499,7 @@ describe('AppPanel: font size control', () => {
 
     expect(localStorage.getItem(FONT_SCALE_STORAGE_KEY)).toBeNull();
     expect(document.documentElement.style.fontSize).toBe('100%');
-    expect(screen.getByText('100%')).toBeInTheDocument();
+    expect(fontSizeLabel).toHaveTextContent('100%');
   });
 
   it('has no axe violations at the maximum scale', async () => {

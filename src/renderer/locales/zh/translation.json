@@ -6070,5 +6070,37 @@
       "showComposeButtonHint": "默认情况下关闭。启用时，聊天显示一个MECP按钮，用于撰写和发送紧急报告。"
     },
     "exportLogEmpty": "收到的日志中还没有MECP消息"
+  },
+  "notificationSounds": {
+    "title": "通知提示音",
+    "hint": "为每个事件选择音调，或导入长达10秒和2 MiB的音频文件。文件选择器在系统声音文件夹中启动（如果可用）。导入的声音将复制到您的个人资料中；系统设置保持不变。",
+    "emergencyHint": "MAYDAY 和 URGENT 不受通知静音设置影响，最低音量为 10%。SAFETY 和 ROUTINE 遵循通常的静音设置。即使通知已静音，试听仍会播放声音。",
+    "channel": "频道消息",
+    "dm": "私信",
+    "reply": "回复和提及",
+    "mecp": "MECP ROUTINE",
+    "mecpSafety": "MECP SAFETY",
+    "mecpEas": "MECP URGENT",
+    "mecpSiren": "MECP MAYDAY",
+    "default": "原声",
+    "chime": "磬声",
+    "bell": "圣诞铃铛",
+    "ping": "双ping",
+    "alert": "上升警报",
+    "toneFor": "{{event}}的铃声",
+    "preview": "制作预览",
+    "stop": "停止",
+    "choose": "选择文件",
+    "reset": "一键复原",
+    "volume": "音量键",
+    "volumeFor": "{{event}}的音量",
+    "previewFor": "预览{{event}}",
+    "stopFor": "停止{{event}}的预览",
+    "chooseFor": "为{{event}}选择音频文件",
+    "resetFor": "重置{{event}}",
+    "saving": "正在保存声音设置…",
+    "importFailed": "无法导入此声音。选择不超过10秒且不超过2 MiB的受支持音频文件。",
+    "saveFailed": "无法保存声音设置。您之前的选择保持不变。",
+    "previewFailed": "无法播放此声音。尝试其他文件或重置为原始音调。"
   }
 }

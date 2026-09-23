@@ -6070,5 +6070,37 @@
       "showComposeButtonHint": "OFF per impostazione predefinita. Se abilitata, la chat mostra un pulsante MeCP per comporre e inviare i rapporti di emergenza."
     },
     "exportLogEmpty": "Nessun messaggio MeCP nel registro ricevuto"
+  },
+  "notificationSounds": {
+    "title": "Toni di notifica",
+    "hint": "Scegli un tono per ogni evento o importa un file audio fino a 10 secondi e 2 MiB. Il selettore di file si avvia nella cartella dei suoni di sistema quando disponibile. I suoni importati vengono copiati nel tuo profilo; le impostazioni di sistema rimangono invariate.",
+    "emergencyHint": "MAYDAY e URGENT suonano anche con le notifiche silenziate, con un volume minimo del 10%. SAFETY e ROUTINE rispettano le normali impostazioni di silenziamento. L’anteprima viene riprodotta anche quando le notifiche sono silenziate.",
+    "channel": "Messaggi del canale",
+    "dm": "Messaggi diretti",
+    "reply": "Risposte e menzioni",
+    "mecp": "MECP ROUTINE",
+    "mecpSafety": "MECP SAFETY",
+    "mecpEas": "MECP URGENT",
+    "mecpSiren": "MECP MAYDAY",
+    "default": "Tono originale",
+    "chime": "Chime",
+    "bell": "Campanello",
+    "ping": "Doppio ping",
+    "alert": "Allarme crescente",
+    "toneFor": "Tono per {{event}}",
+    "preview": "Anteprima",
+    "stop": "Stop",
+    "choose": "Scegli file...",
+    "reset": "Reset",
+    "volume": "Volume",
+    "volumeFor": "Volume per {{event}}",
+    "previewFor": "Anteprima {{event}}",
+    "stopFor": "Interrompi anteprima per {{event}}",
+    "chooseFor": "Scegli il file audio per {{event}}",
+    "resetFor": "Reset {{event}}",
+    "saving": "Salvataggio delle impostazioni audio in corso...",
+    "importFailed": "Impossibile importare questo suono. Scegli un file audio supportato non più lungo di 10 secondi e non più grande di 2 MiB.",
+    "saveFailed": "Impossibile salvare le impostazioni audio. La selezione precedente è invariata.",
+    "previewFailed": "Impossibile riprodurre questo suono. Prova un altro file o ripristina il tono originale."
   }
 }

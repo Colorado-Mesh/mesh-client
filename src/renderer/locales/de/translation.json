@@ -6070,5 +6070,37 @@
       "showComposeButtonHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt Chat eine MECP-Schaltfläche zum Erstellen und Senden von Notfallberichten an."
     },
     "exportLogEmpty": "Noch keine MECP-Nachrichten im empfangenen Protokoll"
+  },
+  "notificationSounds": {
+    "title": "Benachrichtigungstöne",
+    "hint": "Wählen Sie einen Ton für jedes Ereignis oder importieren Sie eine Audiodatei bis zu 10 Sekunden und 2 MiB. Die Dateiauswahl startet im System-Sound-Ordner, wenn verfügbar. Importierte Sounds werden in Ihr Profil kopiert; Systemeinstellungen bleiben unverändert.",
+    "emergencyHint": "MAYDAY und URGENT ertönen auch bei stummgeschalteten Benachrichtigungen mit mindestens 10 % Lautstärke. SAFETY und ROUTINE beachten die üblichen Stummschaltungen. Die Hörprobe wird auch bei stummgeschalteten Benachrichtigungen abgespielt.",
+    "channel": "Kanalnachrichten",
+    "dm": "Direktnachrichten",
+    "reply": "Antworten und Erwähnungen",
+    "mecp": "MECP ROUTINE",
+    "mecpSafety": "MECP SAFETY",
+    "mecpEas": "MECP URGENT",
+    "mecpSiren": "MECP MAYDAY",
+    "default": "Originalton",
+    "chime": "Signalton",
+    "bell": "Klingel",
+    "ping": "Doppelter Ping",
+    "alert": "Steigende Warnung",
+    "toneFor": "Ton für {{event}}",
+    "preview": "Vorschau",
+    "stop": "Stopp",
+    "choose": "Datei auswählen ...",
+    "reset": "Zurücksetzen",
+    "volume": "Volumen",
+    "volumeFor": "Volumen für {{event}}",
+    "previewFor": "Vorschau {{event}}",
+    "stopFor": "Vorschau für {{event}} beenden",
+    "chooseFor": "Audiodatei für {{event}} auswählen",
+    "resetFor": "{{event}} zurücksetzen",
+    "saving": "Soundeinstellungen werden gespeichert...",
+    "importFailed": "Dieser Ton konnte nicht importiert werden. Wählen Sie eine unterstützte Audiodatei, die nicht länger als 10 Sekunden und nicht größer als 2 MiB ist.",
+    "saveFailed": "Soundeinstellungen konnten nicht gespeichert werden. Ihre vorherige Auswahl ist unverändert.",
+    "previewFailed": "Dieser Sound konnte nicht abgespielt werden. Versuchen Sie es mit einer anderen Datei oder setzen Sie sie auf den ursprünglichen Ton zurück."
   }
 }

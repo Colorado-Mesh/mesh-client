@@ -123,6 +123,7 @@ import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
+import { registerNotificationSoundHandlers } from './ipc/notification-sound-handlers';
 import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
 import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './ipc/reticulum-handlers';
 import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-handlers';
@@ -3576,6 +3577,7 @@ ipcMain.handle('mqtt:publishWaypoint', (event, args) => {
 });
 
 registerGpsIpcHandlers();
+registerNotificationSoundHandlers();
 
 // ─── IPC: Force quit (disconnect all, then quit) ────────────────────
 // ─── IPC: Native OS notification ───────────────────────────────────
@@ -3727,6 +3729,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'storeForwardAutoFetchHistory',
   'reduceMotion',
   'use24HourTime',
+  'notificationSounds',
   'alwaysShowMessageActions',
   'reticulumAutostart',
   'reticulumAutoResendOnAnnounce',
@@ -3751,6 +3754,7 @@ function isAppSettingsKeyAllowed(key: string): boolean {
 }
 
 function appSettingsMaxValueLengthForKey(key: string): number {
+  if (key === 'notificationSounds') return 4096;
   if (
     key.startsWith(MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX) ||
     key.startsWith(MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX)
