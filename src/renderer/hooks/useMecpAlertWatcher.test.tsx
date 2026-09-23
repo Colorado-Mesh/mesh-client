@@ -116,4 +116,49 @@ describe('useMecpAlertWatcher', () => {
       expect(triggerMecpAlert).toHaveBeenCalledWith(expect.objectContaining({ isDrill: true }));
     });
   });
+
+  it('claims in-flight messages so concurrent updates alert and audit once', async () => {
+    let resolveAppend: ((value: { ok: true }) => void) | undefined;
+    appendReceived.mockImplementationOnce(
+      () =>
+        new Promise<{ ok: true }>((resolve) => {
+          resolveAppend = resolve;
+        }),
+    );
+
+    const emptyOwn = new Set<number>([1]);
+    const mecpMsg = msg({ id: 'slow', payload: 'MECP/0/M01', from: 9, senderName: 'Ada' });
+    const { rerender } = renderHook(
+      ({ messages }) => {
+        useMecpAlertWatcher(
+          {
+            protocol: 'meshtastic',
+            messages,
+            ownNodeIds: emptyOwn,
+            ownSenderId: 1,
+          },
+          { protocol: 'meshcore', messages: [], ownNodeIds: emptyOwn },
+          { protocol: 'reticulum', messages: [], ownNodeIds: emptyOwn },
+        );
+      },
+      { initialProps: { messages: [] as MessageRecord[] } },
+    );
+
+    rerender({ messages: [mecpMsg] });
+    await vi.waitFor(() => {
+      expect(triggerMecpAlert).toHaveBeenCalledTimes(1);
+      expect(appendReceived).toHaveBeenCalledTimes(1);
+    });
+
+    // Same message still pending audit — a second effect pass must not re-alert/re-append.
+    rerender({ messages: [mecpMsg] });
+    await Promise.resolve();
+    expect(triggerMecpAlert).toHaveBeenCalledTimes(1);
+    expect(appendReceived).toHaveBeenCalledTimes(1);
+
+    resolveAppend?.({ ok: true });
+    await vi.waitFor(() => {
+      expect(appendReceived).toHaveBeenCalledTimes(1);
+    });
+  });
 });

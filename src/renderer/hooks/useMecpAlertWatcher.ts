@@ -117,6 +117,7 @@ function fireAlert(
 async function processNewMessages(
   seen: Set<string>,
   alerted: Set<string>,
+  inFlight: Set<string>,
   slice: MecpWatcherProtocolSlice,
 ): Promise<void> {
   const lang = getCachedMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en'));
@@ -124,7 +125,7 @@ async function processNewMessages(
 
   for (const msg of slice.messages) {
     const key = messageDedupKey(slice.protocol, msg.id);
-    if (seen.has(key)) continue;
+    if (seen.has(key) || inFlight.has(key)) continue;
 
     const parsed = tryParseMecp(msg.payload);
     if (!parsed) {
@@ -140,6 +141,14 @@ async function processNewMessages(
 
     const decoded = localizeMecpCodes(parsed, lang);
 
+    // Claim before any await so concurrent effect runs cannot double-process.
+    inFlight.add(key);
+
+    if (!alerted.has(key)) {
+      alerted.add(key);
+      fireAlert(slice, msg, parsed, mutedViews);
+    }
+
     try {
       await appendAudit({
         protocol: slice.protocol,
@@ -154,20 +163,13 @@ async function processNewMessages(
       });
     } catch (e) {
       console.warn('[useMecpAlertWatcher] appendReceived failed', e);
-      // Leave out of `seen` so audit can retry; alert at most once.
-      if (!alerted.has(key)) {
-        alerted.add(key);
-        fireAlert(slice, msg, parsed, mutedViews);
-      }
+      // Drop claim so a later store update can retry the audit (alert already fired once).
+      inFlight.delete(key);
       continue;
     }
 
+    inFlight.delete(key);
     seen.add(key);
-
-    if (!alerted.has(key)) {
-      alerted.add(key);
-      fireAlert(slice, msg, parsed, mutedViews);
-    }
 
     if (slice.protocol === 'meshtastic' || slice.protocol === 'meshcore') {
       void executeMecpRebroadcast(
@@ -219,6 +221,7 @@ export function useMecpAlertWatcher(
 ): void {
   const seenRef = useRef<Set<string> | null>(null);
   const alertedRef = useRef<Set<string>>(new Set());
+  const inFlightRef = useRef<Set<string>>(new Set());
   const seededRef = useRef(false);
 
   // Seed once from the current snapshot so hydration does not alert/audit.
@@ -238,10 +241,11 @@ export function useMecpAlertWatcher(
     const seen = seenRef.current;
     if (!seen || !seededRef.current) return;
     const alerted = alertedRef.current;
+    const inFlight = inFlightRef.current;
     void (async () => {
-      await processNewMessages(seen, alerted, meshtastic);
-      await processNewMessages(seen, alerted, meshcore);
-      await processNewMessages(seen, alerted, reticulum);
+      await processNewMessages(seen, alerted, inFlight, meshtastic);
+      await processNewMessages(seen, alerted, inFlight, meshcore);
+      await processNewMessages(seen, alerted, inFlight, reticulum);
     })();
   }, [meshtastic.messages, meshcore.messages, reticulum.messages, meshtastic, meshcore, reticulum]);
 }
