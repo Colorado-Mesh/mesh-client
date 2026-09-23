@@ -23,6 +23,7 @@ vi.mock('@/renderer/lib/mecp/mecpRebroadcast', async () => {
 
 vi.mock('@/renderer/lib/mecp/sendMecpRebroadcast', () => ({
   sendMecpRebroadcastOnProtocol: vi.fn(),
+  resolveMecpSourceChannelName: () => 'LongFast',
 }));
 
 beforeEach(() => {

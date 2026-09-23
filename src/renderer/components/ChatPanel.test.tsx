@@ -57,6 +57,7 @@ async function waitForComposer(): Promise<HTMLTextAreaElement> {
 vi.mock('../lib/chatNotifications', () => ({
   playMessageNotification: vi.fn(),
   playMecpSiren: vi.fn(),
+  playMecpEasAttention: vi.fn(),
 }));
 
 let mockIsAtEnd = true;
@@ -4250,10 +4251,12 @@ describe('ChatPanel — channel selection restored across reconnect', () => {
 describe('ChatPanel — notification sound on new messages', () => {
   const playMock = vi.mocked(chatNotifications.playMessageNotification);
   const sirenMock = vi.mocked(chatNotifications.playMecpSiren);
+  const easMock = vi.mocked(chatNotifications.playMecpEasAttention);
 
   beforeEach(() => {
     playMock.mockClear();
     sirenMock.mockClear();
+    easMock.mockClear();
     localStorage.removeItem('mesh-client:notifMuted');
   });
 
@@ -4392,7 +4395,7 @@ describe('ChatPanel — notification sound on new messages', () => {
     expect(playMock).not.toHaveBeenCalled();
   });
 
-  it('plays MECP siren when focused on the receiving chat for severity 0–1', async () => {
+  it('plays MECP siren when focused on the receiving chat for severity 0', async () => {
     const { rerender } = render(
       <ToastProvider>
         <ChatPanel {...baseProps} messages={[]} isActive />
@@ -4418,6 +4421,37 @@ describe('ChatPanel — notification sound on new messages', () => {
 
     await waitForComposer();
     expect(sirenMock).toHaveBeenCalledOnce();
+    expect(playMock).not.toHaveBeenCalled();
+  });
+
+  it('plays EAS attention tone when focused on the receiving chat for severity 1', async () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[]} isActive />
+      </ToastProvider>,
+    );
+
+    await waitForComposer();
+    playMock.mockClear();
+    sirenMock.mockClear();
+    easMock.mockClear();
+
+    const mecpMsg = makeMsg({
+      sender_id: 2,
+      channel: 0,
+      payload: 'MECP/1/T04',
+      packetId: 9003,
+      isHistory: undefined,
+    });
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[mecpMsg]} isActive />
+      </ToastProvider>,
+    );
+
+    await waitForComposer();
+    expect(easMock).toHaveBeenCalledOnce();
+    expect(sirenMock).not.toHaveBeenCalled();
     expect(playMock).not.toHaveBeenCalled();
   });
 

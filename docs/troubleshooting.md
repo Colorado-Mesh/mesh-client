@@ -2002,7 +2002,7 @@ Use **App → MECP → Export MECP log**, or open a GitHub/Developer support bun
 
 **MAYDAY/URGENT alerts ignore mute**
 
-Severity 0–1 MECP alerts play a loud siren and emergency toast even when global or conversation mute is on, including while Chat is focused on that conversation. Severity 2–3 play a loud repeated tone when unmuted (also while focused). Drill codes (D01/D02) never alert. Configure Meshtastic↔MeshCore RF bridging under **App → MECP RF rebroadcast** (default off; optional bidirectional).
+Severity 0 MECP alerts play a sweeping siren; severity 1 plays a US EAS-style 853+960 Hz attention tone. Both ignore mute and still fire while Chat is focused on that conversation. Severity 2–3 play a loud repeated tone when unmuted (also while focused). Drill codes (D01/D02) never alert. Configure Meshtastic↔MeshCore RF bridging under **App → MECP RF rebroadcast** (default off; optional bidirectional).
 
 ## Language / i18n
 

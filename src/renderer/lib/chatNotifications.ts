@@ -17,7 +17,14 @@ export function resetChatNotificationAudioContextForTests(): void {
   sharedAudioContext = null;
 }
 
-export type ChatNotificationType = 'channel' | 'dm' | 'reply' | 'mecp' | 'mecpSiren';
+export type ChatNotificationType =
+  | 'channel'
+  | 'dm'
+  | 'reply'
+  | 'mecp'
+  | 'mecpSiren'
+  /** US EAS-style attention signal (853+960 Hz) for MECP severity 1 URGENT. */
+  | 'mecpEas';
 
 type SoundProfile =
   | { kind: 'single'; freq: number; dur: number; gain?: number }
@@ -46,6 +53,13 @@ type SoundProfile =
       sweepMs: number;
       cycles: number;
       gain: number;
+    }
+  | {
+      /** Simultaneous dual tones (US EAS attention signal: 853 Hz + 960 Hz). */
+      kind: 'eas';
+      freqs: [number, number];
+      dur: number;
+      gain: number;
     };
 
 const SOUND_PROFILES: Record<ChatNotificationType, SoundProfile> = {
@@ -69,6 +83,8 @@ const SOUND_PROFILES: Record<ChatNotificationType, SoundProfile> = {
     cycles: 4,
     gain: 0.55,
   },
+  // FCC EAS attention signal frequencies; shortened from the full ~8s broadcast tone.
+  mecpEas: { kind: 'eas', freqs: [853, 960], dur: 5, gain: 0.4 },
 };
 
 function playTonePulse(
@@ -112,6 +128,25 @@ function scheduleSiren(ctx: AudioContext, profile: Extract<SoundProfile, { kind:
   }
 }
 
+function scheduleEas(ctx: AudioContext, profile: Extract<SoundProfile, { kind: 'eas' }>): void {
+  const now = ctx.currentTime;
+  const fadeSec = 0.08;
+  // Two simultaneous carriers — the dissonant interval is the recognizable EAS signature.
+  for (const freq of profile.freqs) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(profile.gain, now);
+    gain.gain.setValueAtTime(profile.gain, now + Math.max(0, profile.dur - fadeSec));
+    gain.gain.exponentialRampToValueAtTime(0.001, now + profile.dur);
+    osc.start(now);
+    osc.stop(now + profile.dur);
+  }
+}
+
 function scheduleMessageNotification(ctx: AudioContext, type: ChatNotificationType): void {
   const profile = SOUND_PROFILES[type];
   const now = ctx.currentTime;
@@ -139,6 +174,10 @@ function scheduleMessageNotification(ctx: AudioContext, type: ChatNotificationTy
     }
     return;
   }
+  if (profile.kind === 'eas') {
+    scheduleEas(ctx, profile);
+    return;
+  }
   scheduleSiren(ctx, profile);
 }
 
@@ -164,7 +203,12 @@ export function playMessageNotification(type: ChatNotificationType = 'channel'):
   run();
 }
 
-/** Loud unique siren for MECP severity 0–1. */
+/** Sweeping siren for MECP severity 0 (MAYDAY). */
 export function playMecpSiren(): void {
   playMessageNotification('mecpSiren');
+}
+
+/** US EAS-style 853+960 Hz attention signal for MECP severity 1 (URGENT). */
+export function playMecpEasAttention(): void {
+  playMessageNotification('mecpEas');
 }

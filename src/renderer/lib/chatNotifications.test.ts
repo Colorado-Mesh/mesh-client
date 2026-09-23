@@ -100,6 +100,12 @@ describe('playMessageNotification', () => {
     expect(oscillatorFrequencies).toEqual([784, 988, 1175, 784, 988, 1175]);
   });
 
+  it('plays simultaneous 853+960 Hz EAS attention tones for mecpEas', () => {
+    playMessageNotification('mecpEas');
+    expect(oscillatorCount).toBe(2);
+    expect(oscillatorFrequencies).toEqual([853, 960]);
+  });
+
   it('plays a multi-cycle siren for mecpSiren at elevated gain', () => {
     const gainLevels: number[] = [];
     class MockAudioContextWithGainCapture {

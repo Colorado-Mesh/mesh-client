@@ -1,6 +1,7 @@
 import { connectionDriver } from '@/renderer/lib/drivers/ConnectionDriver';
 import type { MecpRebroadcastSendFn } from '@/renderer/lib/mecp/mecpRebroadcast';
 import { tryGetMeshtasticSession } from '@/renderer/lib/sessions/meshtasticSession';
+import { getDevice } from '@/renderer/stores/deviceStore';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
 
 function findIdentityForProtocol(protocol: 'meshtastic' | 'meshcore') {
@@ -9,6 +10,30 @@ function findIdentityForProtocol(protocol: 'meshtastic' | 'meshcore') {
       (i) => i.protocol.type === protocol,
     ) ?? null
   );
+}
+
+/**
+ * Resolve a human channel name for the source endpoint (never emit a bare index).
+ */
+export function resolveMecpSourceChannelName(
+  protocol: 'meshtastic' | 'meshcore',
+  channelIndex: number,
+): string {
+  const identity = findIdentityForProtocol(protocol);
+  if (!identity) {
+    return protocol === 'meshtastic' && channelIndex === 0 ? 'Primary' : 'unnamed';
+  }
+  const device = getDevice(identity.id);
+  if (protocol === 'meshtastic') {
+    const fromChannels = device.channels.find((c) => c.index === channelIndex)?.name.trim();
+    const fromConfigs = device.channelConfigs.find((c) => c.index === channelIndex)?.name.trim();
+    const named = fromChannels || fromConfigs;
+    if (named) return named;
+    return channelIndex === 0 ? 'Primary' : 'unnamed';
+  }
+  const named = device.meshcoreChannels?.find((c) => c.index === channelIndex)?.name.trim();
+  if (named) return named;
+  return 'unnamed';
 }
 
 /**

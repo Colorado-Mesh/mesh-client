@@ -10,6 +10,7 @@ vi.mock('@/renderer/components/Toast', () => ({
 
 vi.mock('@/renderer/lib/chatNotifications', () => ({
   playMecpSiren: vi.fn(),
+  playMecpEasAttention: vi.fn(),
   playMessageNotification: vi.fn(),
 }));
 
@@ -37,6 +38,7 @@ describe('triggerMecpAlert', () => {
     resetMecpAlertDedupeForTests();
     memoryStore.clear();
     vi.mocked(chatNotifications.playMecpSiren).mockClear();
+    vi.mocked(chatNotifications.playMecpEasAttention).mockClear();
     vi.mocked(chatNotifications.playMessageNotification).mockClear();
   });
 
@@ -44,7 +46,7 @@ describe('triggerMecpAlert', () => {
     memoryStore.clear();
   });
 
-  it('plays siren for severity 0–1 even when muted', () => {
+  it('plays siren for severity 0 even when muted', () => {
     memoryStore.set(CHAT_NOTIF_MUTED_STORAGE_KEY, '1');
     triggerMecpAlert({
       severity: 0,
@@ -54,7 +56,21 @@ describe('triggerMecpAlert', () => {
       mutedViews: new Set(['ch:0']),
     });
     expect(chatNotifications.playMecpSiren).toHaveBeenCalledOnce();
+    expect(chatNotifications.playMecpEasAttention).not.toHaveBeenCalled();
     expect(chatNotifications.playMessageNotification).not.toHaveBeenCalled();
+  });
+
+  it('plays EAS attention tone for severity 1 even when muted', () => {
+    memoryStore.set(CHAT_NOTIF_MUTED_STORAGE_KEY, '1');
+    triggerMecpAlert({
+      severity: 1,
+      isDrill: false,
+      senderLabel: 'Ada',
+      viewKey: 'ch:0',
+      mutedViews: new Set(['ch:0']),
+    });
+    expect(chatNotifications.playMecpEasAttention).toHaveBeenCalledOnce();
+    expect(chatNotifications.playMecpSiren).not.toHaveBeenCalled();
   });
 
   it('plays noticeable mecp tone for severity 2–3 when unmuted', () => {
@@ -67,6 +83,7 @@ describe('triggerMecpAlert', () => {
     });
     expect(chatNotifications.playMessageNotification).toHaveBeenCalledWith('mecp');
     expect(chatNotifications.playMecpSiren).not.toHaveBeenCalled();
+    expect(chatNotifications.playMecpEasAttention).not.toHaveBeenCalled();
   });
 
   it('skips severity 2–3 when view muted', () => {
@@ -79,6 +96,7 @@ describe('triggerMecpAlert', () => {
     });
     expect(chatNotifications.playMessageNotification).not.toHaveBeenCalled();
     expect(chatNotifications.playMecpSiren).not.toHaveBeenCalled();
+    expect(chatNotifications.playMecpEasAttention).not.toHaveBeenCalled();
   });
 
   it('never alerts for drills', () => {
@@ -90,6 +108,7 @@ describe('triggerMecpAlert', () => {
       mutedViews: new Set(),
     });
     expect(chatNotifications.playMecpSiren).not.toHaveBeenCalled();
+    expect(chatNotifications.playMecpEasAttention).not.toHaveBeenCalled();
   });
 
   it('dedupes by key so ChatPanel + watcher do not double-play', () => {
@@ -103,6 +122,6 @@ describe('triggerMecpAlert', () => {
     };
     triggerMecpAlert(ctx);
     triggerMecpAlert(ctx);
-    expect(chatNotifications.playMecpSiren).toHaveBeenCalledOnce();
+    expect(chatNotifications.playMecpEasAttention).toHaveBeenCalledOnce();
   });
 });

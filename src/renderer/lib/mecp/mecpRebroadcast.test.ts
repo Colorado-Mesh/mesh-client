@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { MECP_REGEX } from './mecpMessages';
 import {
   clearMecpRebroadcastFingerprintsForTests,
   executeMecpRebroadcast,
+  formatMecpRebroadcastNotice,
   type MecpRebroadcastRule,
   parseMecpRebroadcastRules,
   resolveMecpRebroadcastTargets,
@@ -15,6 +17,34 @@ const baseRule: MecpRebroadcastRule = {
   endpointA: { protocol: 'meshtastic', channelIndex: 0 },
   endpointB: { protocol: 'meshcore', channelIndex: 0 },
 };
+
+describe('formatMecpRebroadcastNotice', () => {
+  it('includes sender, protocol label, and channel name (not index)', () => {
+    expect(
+      formatMecpRebroadcastNotice({
+        senderLabel: 'Alice',
+        fromProtocol: 'meshtastic',
+        fromChannelName: 'LongFast',
+      }),
+    ).toBe('MECP from Alice via Meshtastic (LongFast)');
+    expect(
+      formatMecpRebroadcastNotice({
+        senderLabel: 'Bob',
+        fromProtocol: 'meshcore',
+        fromChannelName: 'Public',
+      }),
+    ).toBe('MECP from Bob via MeshCore (Public)');
+  });
+
+  it('does not match MECP wire regex (no rebroadcast loop)', () => {
+    const notice = formatMecpRebroadcastNotice({
+      senderLabel: 'Ada',
+      fromProtocol: 'meshtastic',
+      fromChannelName: 'Primary',
+    });
+    expect(MECP_REGEX.test(notice)).toBe(false);
+  });
+});
 
 describe('mecpRebroadcast', () => {
   beforeEach(() => {
@@ -135,6 +165,8 @@ describe('mecpRebroadcast', () => {
         receivedVia: 'rf',
         isOwn: false,
         isDrill: false,
+        senderLabel: 'Ada',
+        sourceChannelName: 'LongFast',
       },
       [{ ...baseRule, bidirectional: true }],
       (t, payload) => {
@@ -142,7 +174,10 @@ describe('mecpRebroadcast', () => {
         return Promise.resolve();
       },
     );
-    expect(sends).toEqual(['meshcore:MECP/0/M01']);
+    expect(sends).toEqual([
+      'meshcore:MECP/0/M01',
+      'meshcore:MECP from Ada via Meshtastic (LongFast)',
+    ]);
 
     // Same payload to same dest fingerprint-blocked
     const again = resolveMecpRebroadcastTargets(

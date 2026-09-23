@@ -17,7 +17,10 @@ import {
   MECP_REBROADCAST_SETTINGS_KEY,
   parseMecpRebroadcastRules,
 } from '@/renderer/lib/mecp/mecpRebroadcast';
-import { sendMecpRebroadcastOnProtocol } from '@/renderer/lib/mecp/sendMecpRebroadcast';
+import {
+  resolveMecpSourceChannelName,
+  sendMecpRebroadcastOnProtocol,
+} from '@/renderer/lib/mecp/sendMecpRebroadcast';
 import type { MeshProtocol } from '@/renderer/lib/types';
 import type { MessageRecord } from '@/renderer/stores/messageStore';
 
@@ -183,10 +186,14 @@ async function processNewMessages(
           isDrill: parsed.isDrill,
           isHistory: msg.isHistory,
           viaStoreForward: msg.viaStoreForward,
+          senderLabel: msg.senderName ?? String(msg.from),
+          sourceChannelName: resolveMecpSourceChannelName(slice.protocol, msg.channelIndex),
         },
         loadRules(),
         async (target, payload) => {
           await sendMecpRebroadcastOnProtocol(target, payload);
+          // Follow-up bridge notice is plain text — audit only the MECP wire payload.
+          if (!tryParseMecp(payload)) return;
           try {
             await appendAudit({
               protocol: slice.protocol,

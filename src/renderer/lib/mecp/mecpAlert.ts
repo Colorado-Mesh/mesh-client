@@ -1,6 +1,10 @@
 import { pushAppToast } from '@/renderer/components/Toast';
 import { CHAT_NOTIF_MUTED_STORAGE_KEY } from '@/renderer/lib/chatInactiveNotifications';
-import { playMecpSiren, playMessageNotification } from '@/renderer/lib/chatNotifications';
+import {
+  playMecpEasAttention,
+  playMecpSiren,
+  playMessageNotification,
+} from '@/renderer/lib/chatNotifications';
 import i18n from '@/renderer/lib/i18n';
 import type { MecpParsed } from '@/renderer/lib/mecp/mecpMessages';
 
@@ -58,8 +62,10 @@ export function triggerMecpAlert(ctx: MecpAlertContext): void {
   const highSeverity = ctx.severity <= 1;
   if (!highSeverity && (globalMuted || viewMuted)) return;
 
-  if (highSeverity) {
+  if (ctx.severity === 0) {
     playMecpSiren();
+  } else if (ctx.severity === 1) {
+    playMecpEasAttention();
   } else {
     playMessageNotification('mecp');
   }

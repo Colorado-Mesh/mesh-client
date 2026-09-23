@@ -79,6 +79,10 @@ export interface MecpRebroadcastCandidate {
   isDrill: boolean;
   isHistory?: boolean;
   viaStoreForward?: boolean;
+  /** Display name / node id for the follow-up bridge notice. */
+  senderLabel?: string;
+  /** Human channel name on the source protocol (never the numeric index). */
+  sourceChannelName?: string;
 }
 
 export interface MecpRebroadcastSendTarget {
@@ -94,6 +98,31 @@ export type MecpRebroadcastSendFn = (
   target: MecpRebroadcastSendTarget,
   payload: string,
 ) => Promise<void>;
+
+const NOTICE_TOKEN_MAX = 48;
+
+function sanitizeNoticeToken(value: string, maxLen = NOTICE_TOKEN_MAX): string {
+  return value
+    .replace(/[\r\n\t]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLen);
+}
+
+/**
+ * Short follow-up after a cross-protocol MECP rebroadcast (wire English).
+ * Must not match {@link MECP_REGEX} (`MECP/<0-3>/…`) so it cannot loop.
+ */
+export function formatMecpRebroadcastNotice(args: {
+  senderLabel: string;
+  fromProtocol: 'meshtastic' | 'meshcore';
+  fromChannelName: string;
+}): string {
+  const sender = sanitizeNoticeToken(args.senderLabel) || 'unknown';
+  const channel = sanitizeNoticeToken(args.fromChannelName) || 'unnamed';
+  const protocolLabel = args.fromProtocol === 'meshtastic' ? 'Meshtastic' : 'MeshCore';
+  return `MECP from ${sender} via ${protocolLabel} (${channel})`;
+}
 
 /**
  * Decide whether / where to rebroadcast. Returns targets to send (usually 0–1).
@@ -152,12 +181,32 @@ export async function executeMecpRebroadcast(
   sendFn: MecpRebroadcastSendFn,
 ): Promise<MecpRebroadcastSendTarget[]> {
   const targets = resolveMecpRebroadcastTargets(candidate, rules);
+  if (targets.length === 0) return targets;
+
+  const fromProtocol = candidate.protocol === 'meshcore' ? 'meshcore' : ('meshtastic' as const);
+  const notice = formatMecpRebroadcastNotice({
+    senderLabel: candidate.senderLabel ?? 'unknown',
+    fromProtocol,
+    fromChannelName: candidate.sourceChannelName ?? 'unnamed',
+  });
+
   for (const target of targets) {
     try {
       await sendFn(target, candidate.payload);
     } catch (e) {
       console.warn(
         '[mecp-rebroadcast] send failed',
+        target.protocol,
+        target.channelIndex,
+        e instanceof Error ? e.message : e,
+      );
+      continue;
+    }
+    try {
+      await sendFn(target, notice);
+    } catch (e) {
+      console.warn(
+        '[mecp-rebroadcast] notice send failed',
         target.protocol,
         target.channelIndex,
         e instanceof Error ? e.message : e,

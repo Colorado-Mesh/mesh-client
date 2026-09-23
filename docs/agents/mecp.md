@@ -23,7 +23,7 @@ MECP/<severity>/<codes> [freetext]
 3. `useMecpAlertWatcher` (mounted once from `App.tsx`):
    - Seeds a dedup set at mount (no alert/audit on hydration)
    - New inbound MECP → durable audit append (`mecp:appendReceived`)
-   - Alerts: sev **0–1** loud `'mecpSiren'` + emergency toast (**ignore** mutes; **always** including focused chat); sev **2–3** loud repeated `'mecp'` burst when unmuted; drills never alert
+   - Alerts: sev **0** `'mecpSiren'` + emergency toast; sev **1** US EAS-style 853+960 Hz `'mecpEas'` + toast (**ignore** mutes; **always** including focused chat); sev **2–3** loud repeated `'mecp'` burst when unmuted; drills never alert
    - Focused Chat still alerts via `ChatPanel` → `triggerMecpAlert` (deduped with the watcher)
    - Optional RF rebroadcast (§ below)
 
@@ -47,6 +47,7 @@ MECP/<severity>/<codes> [freetext]
 - One-way **A→B** by default; **Bidirectional** toggle enables B→A
 - Trigger: new inbound MECP with `receivedVia` `rf`/`both` (not mqtt-only); skip own/history/drill
 - Loop guard: payload+dest fingerprint TTL
+- After each successful bridge send: short follow-up notice `MECP from <sender> via <Meshtastic|MeshCore> (<channel name>)` (not a wire MECP; channel **name**, not index)
 - Implementation: `mecpRebroadcast.ts` + `sendMecpRebroadcast.ts`
 
 ## Out of scope (follow-ups)
