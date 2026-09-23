@@ -138,3 +138,39 @@ test('notification tone and volume controls retain keyboard focus after saving',
     await teardownApp(launched);
   }
 });
+
+test('rejects a long compressed recording before allocating decoded audio', async () => {
+  const launched = await launchApp();
+  try {
+    // Synthetic 60-second mono FLAC: encoded size alone does not bound decoded duration.
+    const file = path.resolve('e2e/fixtures/notification-long.flac');
+    await launched.app.evaluate(({ dialog }, filePath) => {
+      dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: [filePath] });
+    }, file);
+    await launched.page.evaluate(() => {
+      const scope = window as unknown as { notificationDecodeCalls: number };
+      scope.notificationDecodeCalls = 0;
+      const decode = AudioContext.prototype.decodeAudioData;
+      AudioContext.prototype.decodeAudioData = function (...args) {
+        scope.notificationDecodeCalls++;
+        return decode.apply(this, args);
+      };
+    });
+    await openAppTab(launched.page);
+    await launched.page.getByText('Notification tones', { exact: true }).click();
+    await launched.page
+      .getByRole('button', { name: 'Choose audio file for Direct messages' })
+      .click();
+    await expect(launched.page.getByRole('alert')).toHaveText(/Could not import this sound/);
+    await expect(
+      launched.page.getByRole('combobox', { name: 'Tone for Direct messages' }),
+    ).toHaveValue('default');
+    expect(
+      await launched.page.evaluate(
+        () => (window as unknown as { notificationDecodeCalls: number }).notificationDecodeCalls,
+      ),
+    ).toBe(0);
+  } finally {
+    await teardownApp(launched);
+  }
+});

@@ -23,6 +23,10 @@ describe('configured notification playback', () => {
   const createOscillator = vi.fn();
   const createBufferSource = vi.fn();
   const resume = vi.fn();
+  const releaseMetadata = vi.fn();
+  const revokeUrl = vi.fn();
+  let metadataDuration: number;
+  let metadataResult: 'loaded' | 'error' | 'timeout';
   let state: AudioContextState;
   const makeSource = () => {
     const source = {
@@ -42,6 +46,38 @@ describe('configured notification playback', () => {
     sources.length = 0;
     levels.length = 0;
     state = 'running';
+    metadataDuration = 0.2;
+    metadataResult = 'loaded';
+    releaseMetadata.mockClear();
+    revokeUrl.mockClear();
+    vi.stubGlobal(
+      'URL',
+      class extends URL {
+        static createObjectURL() {
+          return 'blob:notification-sound';
+        }
+        static revokeObjectURL = revokeUrl;
+      },
+    );
+    vi.stubGlobal(
+      'Audio',
+      class {
+        onloadedmetadata: (() => void) | null = null;
+        onerror: (() => void) | null = null;
+        preload = '';
+        get duration() {
+          return metadataDuration;
+        }
+        set src(_url: string) {
+          void Promise.resolve().then(() => {
+            if (metadataResult === 'loaded') this.onloadedmetadata?.();
+            else if (metadataResult === 'error') this.onerror?.();
+          });
+        }
+        removeAttribute = vi.fn();
+        load = releaseMetadata;
+      },
+    );
     decode.mockReset().mockResolvedValue({ duration: 0.2 });
     createOscillator.mockReset().mockImplementation(makeSource);
     createBufferSource.mockReset().mockImplementation(makeSource);
@@ -77,6 +113,7 @@ describe('configured notification playback', () => {
   });
   afterEach(() => {
     resetChatNotificationAudioContextForTests();
+    vi.useRealTimers();
   });
 
   it('plays the selected preset at its volume and honors a muted ordinary event', () => {
@@ -127,6 +164,56 @@ describe('configured notification playback', () => {
     await expect(validateNotificationSound(samples)).rejects.toThrow('bad codec');
     decode.mockResolvedValueOnce({ duration: 10.1 });
     await expect(validateNotificationSound(samples)).rejects.toThrow('10 seconds');
+  });
+
+  it.each([0, NaN, Infinity, 3600])(
+    'rejects metadata duration %s before full decoding',
+    async (duration) => {
+      metadataDuration = duration;
+      await expect(validateNotificationSound(samples)).rejects.toThrow('10 seconds');
+      expect(decode).not.toHaveBeenCalled();
+      expect(releaseMetadata).toHaveBeenCalledOnce();
+      expect(revokeUrl).toHaveBeenCalledWith('blob:notification-sound');
+    },
+  );
+
+  it('cleans up unsupported and stalled metadata probes without decoding', async () => {
+    metadataResult = 'error';
+    await expect(validateNotificationSound(samples)).rejects.toThrow('Unsupported audio metadata');
+    metadataResult = 'timeout';
+    vi.useFakeTimers();
+    const failed = expect(validateNotificationSound(samples)).rejects.toThrow('timed out');
+    await vi.advanceTimersByTimeAsync(5000);
+    await failed;
+    expect(decode).not.toHaveBeenCalled();
+    expect(releaseMetadata).toHaveBeenCalledTimes(2);
+    expect(revokeUrl).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries an incoming sound after a cooldown without repeatedly reading failed audio', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(0);
+    vi.mocked(window.electronAPI.notificationSounds.read).mockRejectedValueOnce(new Error('IPC'));
+    mergeAppSetting(
+      'notificationSounds',
+      { dm: { sound: { id, name: 'retry.wav' }, volume: 100 } },
+      'test',
+    );
+    playMessageNotification('dm');
+    await vi.waitFor(() => {
+      expect(createOscillator).toHaveBeenCalledTimes(2);
+    });
+    now.mockReturnValue(59_999);
+    playMessageNotification('dm');
+    await vi.waitFor(() => {
+      expect(createOscillator).toHaveBeenCalledTimes(4);
+    });
+    expect(window.electronAPI.notificationSounds.read).toHaveBeenCalledOnce();
+    now.mockReturnValue(60_000);
+    playMessageNotification('dm');
+    await vi.waitFor(() => {
+      expect(createBufferSource).toHaveBeenCalledOnce();
+    });
+    expect(window.electronAPI.notificationSounds.read).toHaveBeenCalledTimes(2);
   });
 
   it('retries the same custom sound after its imported copy is repaired', async () => {

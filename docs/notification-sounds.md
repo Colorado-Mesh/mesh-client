@@ -43,6 +43,10 @@ The native file chooser starts in the installed sound directory when it exists: 
 
 Imports are limited to 2 MiB and 10 seconds. Chromium decodes WAV, MP3, Ogg, FLAC, and other supported audio; the extension alone is not proof of a valid recording. macOS AIFF is converted to WAV with the OS's `afconvert` utility. Unreadable saved audio falls back to that event's original tone during incoming notifications; Preview reports failure so the selection can be repaired.
 
+Before full Web Audio decoding, a local media element reads duration metadata with a five-second timeout. Unknown or excessive duration is rejected, and the probe releases its media source and blob URL on every exit. This prevents a small compressed recording from allocating a long PCM buffer before the duration check. The decoded duration is checked again. See the [HTML media preload specification](https://html.spec.whatwg.org/multipage/media.html#attr-media-preload) and [Web Audio decoding specification](https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata).
+
+Failed incoming sound loads retry after one minute; successful loads stay cached. Explicit Preview retries and re-imports can recover immediately.
+
 Preferences live in SQLite with a local startup cache. Audio is stored in bounded per-event records under the profile's `notification-sounds` directory. Import uses atomic replacement and retains the previously selected recording until its replacement preference is saved. A cancelled chooser, failed validation, or failed settings write must leave the prior selection usable.
 
 ## Verification plan

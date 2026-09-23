@@ -2,6 +2,7 @@ import {
   MAX_NOTIFICATION_SOUND_BYTES,
   MAX_NOTIFICATION_SOUND_SECONDS,
 } from '@/shared/notificationSounds';
+import { MS_PER_MINUTE, MS_PER_SECOND } from '@/shared/timeConstants';
 
 import {
   getNotificationSoundSettings,
@@ -270,12 +271,49 @@ function scheduleProfile(ctx: AudioContext, playback: Playback, profile: SoundPr
   scheduleSiren(ctx, playback, profile);
 }
 
-const audioBuffers = new Map<ChatNotificationType, { id: string; buffer: Promise<AudioBuffer> }>();
+const audioBuffers = new Map<
+  ChatNotificationType,
+  { id: string; buffer: Promise<AudioBuffer>; retryAt: number }
+>();
 let previewVersion = 0;
 let previewPlayback: Playback | null = null;
 
 export function clearNotificationSoundCache(event: ChatNotificationType): void {
   audioBuffers.delete(event);
+}
+
+async function validateSoundMetadata(bytes: ArrayBuffer): Promise<void> {
+  const audio = new Audio();
+  const url = URL.createObjectURL(new Blob([bytes]));
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await new Promise<void>((resolve, reject) => {
+      timeout = setTimeout(() => {
+        reject(new Error('Audio metadata timed out'));
+      }, 5 * MS_PER_SECOND);
+      audio.onloadedmetadata = () => {
+        if (
+          !Number.isFinite(audio.duration) ||
+          audio.duration <= 0 ||
+          audio.duration > MAX_NOTIFICATION_SOUND_SECONDS
+        ) {
+          reject(new Error('Sound must be no longer than 10 seconds'));
+        } else resolve();
+      };
+      audio.onerror = () => {
+        reject(new Error('Unsupported audio metadata'));
+      };
+      audio.preload = 'metadata';
+      audio.src = url;
+    });
+  } finally {
+    clearTimeout(timeout);
+    audio.onloadedmetadata = null;
+    audio.onerror = null;
+    audio.removeAttribute('src');
+    audio.load();
+    URL.revokeObjectURL(url);
+  }
 }
 
 async function decodeSound(ctx: AudioContext, dataBase64: string): Promise<AudioBuffer> {
@@ -284,6 +322,8 @@ async function decodeSound(ctx: AudioContext, dataBase64: string): Promise<Audio
   }
   const bytes = Uint8Array.from(atob(dataBase64), (char) => char.charCodeAt(0));
   if (bytes.length > MAX_NOTIFICATION_SOUND_BYTES) throw new Error('Sound exceeds size limit');
+  // Probe duration without allocating a full PCM buffer for a long compressed recording.
+  await validateSoundMetadata(bytes.buffer);
   const buffer = await ctx.decodeAudioData(bytes.buffer);
   if (
     !Number.isFinite(buffer.duration) ||
@@ -307,13 +347,17 @@ function loadCustomSound(
   id: string,
 ): Promise<AudioBuffer> {
   const cached = audioBuffers.get(event);
-  if (cached?.id === id) return cached.buffer;
+  if (cached?.id === id && Date.now() < cached.retryAt) return cached.buffer;
   const buffer = window.electronAPI.notificationSounds.read(event, id).then((data) => {
     if (!data) throw new Error('Saved sound is unavailable');
     return decodeSound(ctx, data);
   });
-  audioBuffers.set(event, { id, buffer });
-  // Retain failures until another import or sound ID, avoiding I/O on every incoming message.
+  const entry = { id, buffer, retryAt: Infinity };
+  audioBuffers.set(event, entry);
+  void buffer.catch(() => {
+    // catch-no-log-ok: callers handle fallback/errors; retry failures at most once per minute.
+    entry.retryAt = Date.now() + MS_PER_MINUTE;
+  });
   return buffer;
 }
 
