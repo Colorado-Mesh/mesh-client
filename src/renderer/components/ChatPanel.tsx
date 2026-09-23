@@ -188,7 +188,7 @@ import { ChatPayloadText } from './ChatPayloadText';
 import { ChatRfHopLabel } from './ChatRfHopLabel';
 import { HelpTooltip } from './HelpTooltip';
 import { MecpComposeModal } from './mecp/MecpComposeModal';
-import { MecpSeverityBadge } from './mecp/MecpSeverityBadge';
+import { mecpChatBubbleToneClasses, MecpSeverityBadge } from './mecp/MecpSeverityBadge';
 import MeshcoreChatChannelManager from './MeshcoreChatChannelManager';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { RelayCoverageLine, relayCoverageMessageKey } from './RelayCoverageLine';
@@ -3117,10 +3117,8 @@ function ChatPanel({
                           <div
                             className={`min-w-0 rounded-2xl px-3 ${compactMode ? 'py-1' : 'py-2'} ${(() => {
                               const mecp = tryParseMecp(msg.payload);
-                              if (mecp) {
-                                return isOwn
-                                  ? 'border border-red-400/70 bg-red-900/30 font-semibold'
-                                  : 'border border-dashed border-red-500 bg-red-950/40 font-semibold';
+                              if (mecp?.severity != null) {
+                                return mecpChatBubbleToneClasses(mecp.severity, isOwn);
                               }
                               return compactMerged
                                 ? `${compactStackTop ? 'rounded-t-none border-t-0' : ''} ${compactStackBottom ? 'rounded-b-none border-b-0' : ''} ${

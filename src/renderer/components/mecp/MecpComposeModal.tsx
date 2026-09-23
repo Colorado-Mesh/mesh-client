@@ -14,6 +14,8 @@ import {
   severityLabelKey,
 } from '@/renderer/lib/mecp/mecpMessages';
 
+import { MECP_SEVERITY_BADGE_CLASSES } from './MecpSeverityBadge';
+
 const SEVERITY_ORDER: Severity[] = [0, 1, 2, 3];
 
 const FOCUSABLE_SELECTOR =
@@ -234,15 +236,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
                 setSeverity(s);
               }}
               className={`rounded px-2 py-1 text-xs font-semibold ${
-                severity === s
-                  ? s === 0
-                    ? 'bg-red-700 text-white'
-                    : s === 1
-                      ? 'bg-orange-700 text-white'
-                      : s === 2
-                        ? 'bg-amber-700 text-white'
-                        : 'bg-slate-600 text-white'
-                  : 'bg-slate-800 text-gray-300'
+                severity === s ? MECP_SEVERITY_BADGE_CLASSES[s] : 'bg-slate-800 text-gray-300'
               }`}
             >
               {t(severityLabelKey(s))}
