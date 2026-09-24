@@ -1,5 +1,7 @@
 /** Shared-location wire helpers for chat (plain text + OSM link; locale-independent parse). */
 
+import { latLonToTile as sharedLatLonToTile } from '@/shared/offlineMaps/tileMath';
+
 export interface ParsedLocationMessage {
   lat: number;
   lon: number;
@@ -160,22 +162,13 @@ function parseOsmMlatMlon(url: string): { lat: number; lon: number } | null {
 
 /** Standard Web Mercator tiling math for static tile URL. */
 export function latLonToTile(lat: number, lon: number, zoom = 14): WebMercatorTile {
-  const z = Math.max(0, Math.min(19, Math.floor(zoom)));
-  const latRad = (lat * Math.PI) / 180;
-  const n = 2 ** z;
-  const x = Math.floor(((lon + 180) / 360) * n);
-  const y = Math.floor(((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n);
-  return {
-    x: Math.max(0, Math.min(n - 1, x)),
-    y: Math.max(0, Math.min(n - 1, y)),
-    z,
-  };
+  return sharedLatLonToTile(lat, lon, zoom);
 }
 
-/** OSM tile URL for a static preview (no API key; OSM tile usage policy applies). */
+/** OSM tile URL for a static preview via the mesh-tiles disk cache. */
 export function buildStaticTileUrl(lat: number, lon: number, zoom = 14): string {
   const { x, y, z } = latLonToTile(lat, lon, zoom);
-  return `https://tile.openstreetmap.org/${z}/${x}/${y}.png`;
+  return `mesh-tiles://osm/${z}/${x}/${y}.png`;
 }
 
 function formatCoord(n: number): string {

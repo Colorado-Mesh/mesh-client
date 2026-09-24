@@ -50,6 +50,7 @@ import {
   LocateMeControl,
   MapViewportSaver,
 } from './map/leafletMapControls';
+import { OfflineMapsSection } from './map/OfflineMapsSection';
 import { useToast } from './Toast';
 
 const WAYPOINT_MARKER_ICON = L.divIcon({
@@ -541,6 +542,7 @@ function MapLayerControl({
               setCongestionHalosEnabled,
             )}
           </div>
+          <OfflineMapsSection />
         </div>
       )}
     </div>

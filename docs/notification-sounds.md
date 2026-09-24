@@ -9,14 +9,24 @@ Surveyed against `c63bccf3` (Electron 44.1.1), September 23, 2026.
 | Channel message                          | 880 Hz, 150 ms pulse                                       | `chatNotifications.ts`                       |
 | DM                                       | 587/784 Hz double pulse, 135 ms overall                    | Same                                         |
 | Reply or mention                         | Same sound as DM                                           | Same                                         |
-| MECP ROUTINE / SAFETY                    | Repeated rising triple pulse                               | Same, selected by `mecpAlert.ts`             |
+| MECP ROUTINE                             | Repeated rising triple pulse                               | Same, selected by `mecpAlert.ts`             |
+| MECP SAFETY                              | Short–long (dit–dah) pairs × 6, piercing square (~4.4s)    | Same                                         |
 | MECP URGENT                              | 853+960 Hz attention tone, 5 seconds                       | Same                                         |
-| MECP MAYDAY                              | Four sweeping siren cycles, 2.8 seconds                    | Same                                         |
+| MECP MAYDAY                              | Six sweeping siren cycles, ~5.0 seconds (matches URGENT)   | Same                                         |
 | RRC room messages, mentions and whispers | Reuses channel/reply/DM categories                         | `rrcInactiveNotifications.ts`                |
 | Reticulum game activity                  | Reuses DM                                                  | `reticulumGamesNotifications.ts`             |
 | Watched node online/offline              | OS default notification sound                              | `useNodeStatusNotifier.ts`                   |
 | Update-check results                     | OS default notification sound                              | Main `notify:message` IPC                    |
 | Reticulum voice call progress            | Dial, DTMF, modem handshake/carrier, ringback, busy/reject | Separate `reticulumVoiceCallTones.ts` engine |
+
+### Default MECP tone shapes
+
+Built-in profiles in `SOUND_PROFILES` (`chatNotifications.ts`); users can replace them under **App → Notifications**.
+
+- **SAFETY (`mecpSafety`, `shortLong`):** one 1175 Hz square short pulse (~80 ms) then one long (~320 ms), pause (~280 ms); that pair repeats **6** times (~4.4 s — double the prior ×3 length; square + higher pitch for urgency).
+- **MAYDAY (`mecpSiren`):** sawtooth sweep 800↔1200 Hz, **6** cycles at ~417 ms half-sweep each → ~5.0 s total (aligned with URGENT).
+- **URGENT (`mecpEas`):** simultaneous 853 Hz + 960 Hz, 5 s.
+- **ROUTINE (`mecp`):** rising triple 784/988/1175 Hz, repeated twice.
 
 ChatPanel handles foreground chat views; App handles inactive panels/protocols and hidden windows. The existing gates determine whether a sound is appropriate. Hidden Meshtastic and MECP desktop notifications are silent so they do not duplicate Web Audio playback. The audio context is reused and resumed when suspended. MECP drills stay silent; MAYDAY/URGENT bypass notification mutes, while ROUTINE/SAFETY respect them.
 

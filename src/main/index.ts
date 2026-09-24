@@ -13,6 +13,7 @@ import {
   Notification,
   powerMonitor,
   powerSaveBlocker,
+  protocol,
   safeStorage,
   screen,
   type Session,
@@ -124,6 +125,7 @@ import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
 import { registerNotificationSoundHandlers } from './ipc/notification-sound-handlers';
+import { registerOfflineMapsIpcHandlers } from './ipc/offline-maps-handlers';
 import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
 import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './ipc/reticulum-handlers';
 import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-handlers';
@@ -157,6 +159,8 @@ import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
+import { createMeshTilesProtocolHandler } from './offline-maps/protocol';
+import { createTileCache, type TileCache } from './offline-maps/tile-cache';
 import { readFileUpTo } from './readFileUpTo';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
 import { resolveRendererLoadUrl } from './resolveRendererLoadUrl';
@@ -194,6 +198,14 @@ try {
     sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
   );
 }
+
+// Custom scheme for offline map tiles (must register before app.whenReady).
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'mesh-tiles',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
+  },
+]);
 
 // Linux: SIGSEGV in Electron GPU process on some Wayland / driver stacks (electron#41980).
 // Must run before app.whenReady(). CLI flags --disable-gpu also work; env avoids wrapper scripts.
@@ -368,6 +380,7 @@ function isAnyMqttConnected(): boolean {
 
 let mainWindow: BrowserWindow | null = null;
 const rendererHeartbeatWatchdog = createRendererHeartbeatWatchdog();
+let offlineTileCache: TileCache | null = null;
 /** Win32 About: native About panel can hard-crash; use a small HTML BrowserWindow instead (#406). */
 let windowsAboutWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -2076,6 +2089,21 @@ function createWindow() {
   setupTray(mainWindow);
 
   initUpdater(mainWindow);
+
+  if (!offlineTileCache) {
+    offlineTileCache = createTileCache(app.getPath('userData'));
+    protocol.handle(
+      'mesh-tiles',
+      createMeshTilesProtocolHandler({
+        cache: offlineTileCache,
+        getAppVersion: () => app.getVersion(),
+      }),
+    );
+    registerOfflineMapsIpcHandlers(
+      () => mainWindow,
+      () => offlineTileCache,
+    );
+  }
 }
 
 // ─── Tray unread badge ──────────────────────────────────────────────

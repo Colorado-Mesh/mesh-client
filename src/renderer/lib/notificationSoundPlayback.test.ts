@@ -154,7 +154,7 @@ describe('configured notification playback', () => {
     );
     playMessageNotification('mecpSiren');
     await vi.waitFor(() => {
-      expect(createOscillator).toHaveBeenCalledTimes(4);
+      expect(createOscillator).toHaveBeenCalledTimes(6);
     });
     expect(levels[0]).toBe(0.1);
   });

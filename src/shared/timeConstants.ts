@@ -2,6 +2,9 @@
 export const MS_PER_SECOND = 1_000;
 export const MS_PER_MINUTE = 60 * MS_PER_SECOND;
 
+/** GitHub Releases API fetch abort (matches other main-process AbortSignal.timeout usage). */
+export const GITHUB_RELEASES_FETCH_TIMEOUT_MS = 10 * MS_PER_SECOND;
+
 /**
  * Compact chat: merged consecutive bubbles from the same sender show a muted timestamp when the gap
  * from the previous message is at least this long (same calendar day; day separators still break groups).

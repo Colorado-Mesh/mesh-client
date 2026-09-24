@@ -2290,7 +2290,32 @@
     "layerCongestionHalos": "Stauhalos",
     "waypointDefaultName": "Wegpunkt",
     "waypointDelete": "Wegpunkt löschen",
-    "noGpsNodes": "Noch keine Knoten mit GPS-Positionen"
+    "noGpsNodes": "Noch keine Knoten mit GPS-Positionen",
+    "offlineMaps": {
+      "heading": "Offline-Karten",
+      "autoCache": "Auto-Cache im Leerlauf",
+      "autoCacheAria": "Laden Sie die aktuelle Kartenansicht automatisch herunter, während Sie online sind",
+      "downloadView": "Aktuelle Ansicht herunterladen (.xls)",
+      "downloadAria": "Schätzen Sie die aktuelle Kartenansicht für die Offline-Nutzung und laden Sie sie herunter",
+      "estimating": "geschätzt …",
+      "confirm": "{{count}} Kacheln (~{{size}}), Zoom {{minZoom}}–{{maxZoom}}. Jetzt herunterladen?",
+      "confirmYes": "Herunterladen",
+      "confirmDownloadAria": "Offline-Karten-Download bestätigen",
+      "cancelConfirm": "Nicht jetzt",
+      "cancelConfirmAria": "Offline-Karten-Download-Bestätigung ab",
+      "progress": "{{completed}} / {{total}} Kacheln ({{failed}} fehlgeschlagen)",
+      "paused": "Pausiert — wartet auf Netzwerk...",
+      "cancel": "Download abbrechen",
+      "cancelAria": "Offline-Karten-Download abbrechen",
+      "cancelled": "Download abgebrochen!",
+      "done": "{{completed}} Kacheln heruntergeladen ({{failed}} fehlgeschlagen).",
+      "tooLarge": "Diese Fläche ist zu groß. Vergrößern oder verkleinern Sie den Zoombereich.",
+      "noViewport": "Schwenken Sie zuerst die Karte, damit ein Ansichtsfenster gespeichert wird.",
+      "cacheStats": "Cache: {{count}} Kacheln ({{size}})",
+      "clear": "Kachel-Cache leeren",
+      "clearAria": "Offline-Kartenkachel-Cache leeren",
+      "cleared": "Cache geleert."
+    }
   },
   "meshCongestion": {
     "blockTitle": "Warum Sie doppelten Traffic sehen",
@@ -5263,7 +5288,8 @@
     "menuToastUpToDateBody": "Sie haben die neueste Version.",
     "menuToastAvailableTitle": "Update verfügbar",
     "menuToastAvailableBody": "Version {{version}} liegt vor.",
-    "menuToastErrorTitle": "Update-Prüfung fehlgeschlagen"
+    "menuToastErrorTitle": "Update-Prüfung fehlgeschlagen",
+    "pausedOffline": "Updates pausiert (offline)"
   },
   "reticulumMap": {
     "title": "Entdeckungskarte",

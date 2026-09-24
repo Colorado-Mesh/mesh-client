@@ -2290,7 +2290,32 @@
     "layerCongestionHalos": "Congestiehalo's",
     "waypointDefaultName": "Waypoint",
     "waypointDelete": "Waypoint verwijderen",
-    "noGpsNodes": "Nog geen knooppunten met GPS-posities"
+    "noGpsNodes": "Nog geen knooppunten met GPS-posities",
+    "offlineMaps": {
+      "heading": "Offline kaarten",
+      "autoCache": "Auto-cache bij inactiviteit",
+      "autoCacheAria": "Download automatisch de huidige kaartweergave terwijl u online bent",
+      "downloadView": "Huidige weergave downloaden",
+      "downloadAria": "Huidige kaartweergave voor offline gebruik schatten en downloaden",
+      "estimating": "wordt geschat…",
+      "confirm": "{{count}} tiles (~{{size}}), zoom {{minZoom}}–{{maxZoom}}. Nu downloaden?",
+      "confirmYes": "Download",
+      "confirmDownloadAria": "Offline kaartdownload bevestigen",
+      "cancelConfirm": "Niet nu",
+      "cancelConfirmAria": "Annuleer offline kaart downloadbevestiging",
+      "progress": "{{completed}} / {{total}} tegels ({{failed}} mislukt)",
+      "paused": "Gepauzeerd — wachtend op netwerk...",
+      "cancel": "Download annuleren",
+      "cancelAria": "Offline kaartdownload annuleren",
+      "cancelled": "Download geannuleerd.",
+      "done": "Gedownloade {{completed}} tegels ({{failed}} mislukt).",
+      "tooLarge": "Dat gebied is te groot. Zoom in of verklein het zoombereik.",
+      "noViewport": "Paneer eerst de kaart zodat een viewport wordt opgeslagen.",
+      "cacheStats": "Cache: {{count}} tegels ({{size}})",
+      "clear": "Tegelcache wissen",
+      "clearAria": "Offline kaarttegelcache wissen",
+      "cleared": "Cache gewist"
+    }
   },
   "meshCongestion": {
     "blockTitle": "Waarom u dubbel verkeer ziet",
@@ -5263,7 +5288,8 @@
     "menuToastUpToDateBody": "Je hebt de nieuwste versie.",
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "Versie {{version}} is beschikbaar.",
-    "menuToastErrorTitle": "Updatecontrole mislukt"
+    "menuToastErrorTitle": "Updatecontrole mislukt",
+    "pausedOffline": "Updates gepauzeerd (offline)"
   },
   "reticulumMap": {
     "title": "Ontdekkingskaart",

@@ -914,6 +914,92 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('update:error', handler);
       return () => ipcRenderer.off('update:error', handler);
     },
+    onOffline: (cb: () => void) => {
+      const handler = () => {
+        cb();
+      };
+      ipcRenderer.on('update:offline', handler);
+      return () => ipcRenderer.off('update:offline', handler);
+    },
+  },
+
+  offlineMaps: {
+    estimate: (req: {
+      bounds: { north: number; south: number; east: number; west: number };
+      minZoom: number;
+      maxZoom: number;
+      basemapId: 'osm' | 'dark';
+      retina?: boolean;
+    }) => ipcRenderer.invoke('offline-maps:estimate', req),
+    download: (req: {
+      bounds: { north: number; south: number; east: number; west: number };
+      minZoom: number;
+      maxZoom: number;
+      basemapId: 'osm' | 'dark';
+      retina?: boolean;
+    }) => ipcRenderer.invoke('offline-maps:download', req),
+    cancel: (jobId: string) => ipcRenderer.invoke('offline-maps:cancel', jobId),
+    status: () => ipcRenderer.invoke('offline-maps:status'),
+    clear: (source?: 'osm' | 'dark' | 'all') => ipcRenderer.invoke('offline-maps:clear', source),
+    onProgress: (
+      cb: (info: {
+        jobId: string;
+        source: 'osm' | 'dark';
+        completed: number;
+        total: number;
+        failed: number;
+        bytes: number;
+        paused: boolean;
+      }) => void,
+    ) => {
+      const handler = (
+        _: unknown,
+        info: {
+          jobId: string;
+          source: 'osm' | 'dark';
+          completed: number;
+          total: number;
+          failed: number;
+          bytes: number;
+          paused: boolean;
+        },
+      ) => {
+        cb(info);
+      };
+      ipcRenderer.on('offline-maps:progress', handler);
+      return () => ipcRenderer.off('offline-maps:progress', handler);
+    },
+    onDone: (
+      cb: (info: {
+        jobId: string;
+        completed: number;
+        failed: number;
+        bytes: number;
+        cancelled: boolean;
+      }) => void,
+    ) => {
+      const handler = (
+        _: unknown,
+        info: {
+          jobId: string;
+          completed: number;
+          failed: number;
+          bytes: number;
+          cancelled: boolean;
+        },
+      ) => {
+        cb(info);
+      };
+      ipcRenderer.on('offline-maps:done', handler);
+      return () => ipcRenderer.off('offline-maps:done', handler);
+    },
+    onError: (cb: (info: { jobId: string; message: string }) => void) => {
+      const handler = (_: unknown, info: { jobId: string; message: string }) => {
+        cb(info);
+      };
+      ipcRenderer.on('offline-maps:error', handler);
+      return () => ipcRenderer.off('offline-maps:error', handler);
+    },
   },
 
   // ─── Connection status ─────────────────────────────────────────

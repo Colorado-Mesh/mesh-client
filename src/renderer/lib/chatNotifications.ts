@@ -61,6 +61,21 @@ type SoundProfile =
       repeatGap?: number;
     }
   | {
+      /** Short–long pairs with a pause between pairs (MECP SAFETY: dit–dah × N). */
+      kind: 'shortLong';
+      freq: number;
+      shortDur: number;
+      longDur: number;
+      /** Gap between the short and long pulse within one pair. */
+      pulseGap: number;
+      /** Pause after each short–long pair (including after the last for envelope cleanup). */
+      pairGap: number;
+      repeats: number;
+      gain?: number;
+      /** Waveform; square cuts through ambient noise better than sine for SAFETY. */
+      type?: OscillatorType;
+    }
+  | {
       kind: 'siren';
       lowFreq: number;
       highFreq: number;
@@ -90,20 +105,24 @@ const SOUND_PROFILES: Record<ChatNotificationType, SoundProfile> = {
     repeatGap: 0.18,
   },
   mecpSafety: {
-    kind: 'triple',
-    freqs: [784, 988, 1175],
-    dur: 0.12,
-    gap: 0.05,
-    gain: 0.5,
-    repeats: 2,
-    repeatGap: 0.18,
+    // dit–dah, pause × 6 (~4.4s — double the prior ×3 length); piercing square for urgency
+    kind: 'shortLong',
+    freq: 1175,
+    shortDur: 0.08,
+    longDur: 0.32,
+    pulseGap: 0.06,
+    pairGap: 0.28,
+    repeats: 6,
+    gain: 0.55,
+    type: 'square',
   },
   mecpSiren: {
     kind: 'siren',
     lowFreq: 800,
     highFreq: 1200,
-    sweepMs: 350,
-    cycles: 4,
+    // 6 cycles × 2 × 0.417s ≈ 5.0s — matches mecpEas (URGENT) length
+    sweepMs: 417,
+    cycles: 6,
     gain: 0.55,
   },
   // FCC EAS attention signal frequencies; shortened from the full ~8s broadcast tone.
@@ -261,6 +280,18 @@ function scheduleProfile(ctx: AudioContext, playback: Playback, profile: SoundPr
         playTonePulse(ctx, playback, freq, profile.dur, t, g);
         t += profile.dur + profile.gap;
       }
+    }
+    return;
+  }
+  if (profile.kind === 'shortLong') {
+    const g = profile.gain ?? 0.3;
+    const type = profile.type ?? 'sine';
+    let t = now;
+    for (let r = 0; r < profile.repeats; r++) {
+      playTonePulse(ctx, playback, profile.freq, profile.shortDur, t, g, type);
+      t += profile.shortDur + profile.pulseGap;
+      playTonePulse(ctx, playback, profile.freq, profile.longDur, t, g, type);
+      t += profile.longDur + profile.pairGap;
     }
     return;
   }

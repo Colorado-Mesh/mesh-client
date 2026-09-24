@@ -2290,7 +2290,32 @@
     "layerCongestionHalos": "Halos de congestionamento",
     "waypointDefaultName": "Ponto de referência",
     "waypointDelete": "Excluir ponto de referência",
-    "noGpsNodes": "Ainda não há nós com posições GPS"
+    "noGpsNodes": "Ainda não há nós com posições GPS",
+    "offlineMaps": {
+      "heading": "Mapas offline",
+      "autoCache": "Armazenamento automático em cache quando ocioso",
+      "autoCacheAria": "Baixe automaticamente a visualização do mapa atual enquanto estiver online",
+      "downloadView": "Baixar visualização atual",
+      "downloadAria": "Estimar e baixar a visualização atual do mapa para uso offline",
+      "estimating": "Estimativa",
+      "confirm": "{{count}} peças (~{{size}}), zoom {{minZoom}}–{{maxZoom}}. Transferir agora?",
+      "confirmYes": "Download",
+      "confirmDownloadAria": "Confirme o download do mapa offline",
+      "cancelConfirm": "Agora não",
+      "cancelConfirmAria": "Cancelar confirmação de download de mapa offline",
+      "progress": "{{completed}} / {{total}} peças ({{failed}} falhou)",
+      "paused": "Pausado — aguardando rede...",
+      "cancel": "Cancelar download",
+      "cancelAria": "Cancelar o download do mapa offline",
+      "cancelled": "Descarga cancelada.",
+      "done": "Transferiu {{completed}} blocos ({{failed}} falhou).",
+      "tooLarge": "Essa área é muito grande. Amplie ou reduza o intervalo de zoom.",
+      "noViewport": "Deslize o mapa primeiro para que uma janela de visualização seja salva.",
+      "cacheStats": "Cache: {{count}} tiles ({{size}})",
+      "clear": "Limpar cache de blocos",
+      "clearAria": "Limpar cache de mosaico de mapa offline",
+      "cleared": "Cache apagado."
+    }
   },
   "meshCongestion": {
     "blockTitle": "Por que você está vendo tráfego duplicado",
@@ -5263,7 +5288,8 @@
     "menuToastUpToDateBody": "Você está na versão mais recente.",
     "menuToastAvailableTitle": "Atualização disponível",
     "menuToastAvailableBody": "A versão {{version}} está disponível.",
-    "menuToastErrorTitle": "verificação de atualização falhou"
+    "menuToastErrorTitle": "verificação de atualização falhou",
+    "pausedOffline": "Atualizações pausadas (offline)"
   },
   "reticulumMap": {
     "title": "Mapa de descoberta",

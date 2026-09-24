@@ -1,4 +1,5 @@
 import type { GithubReleaseRow } from '@/shared/githubReleaseVersion';
+import { GITHUB_RELEASES_FETCH_TIMEOUT_MS } from '@/shared/timeConstants';
 
 export const GITHUB_RELEASES_PAGE_SIZE = 100;
 
@@ -68,7 +69,7 @@ export async function fetchAllGithubReleases(
   while (true) {
     const res = await fetchImpl(
       `https://api.github.com/repos/${repo}/releases?per_page=${pageSize}&page=${page}`,
-      { headers },
+      { headers, signal: AbortSignal.timeout(GITHUB_RELEASES_FETCH_TIMEOUT_MS) },
     );
     if (!res.ok) {
       throw new Error(`GitHub API responded with ${String(res.status)}`);

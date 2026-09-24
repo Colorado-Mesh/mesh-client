@@ -1938,19 +1938,19 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 
 ### Map tab without internet (offline / no WAN)
 
-**Basemap tiles:** The map background uses **OpenStreetMap** by default (or **Carto Dark** if selected). On the Map tab, use the **Layers** control under the **online/stale/offline** status counts (top right) to switch basemaps and toggle overlays (node markers, movement trails, waypoints, diagnostic halos). The `TileLayer` is defined in [`MapPanel.tsx`](https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MapPanel.tsx). **Without internet access, new tiles cannot be fetched**, so the basemap may look **blank, gray, or incomplete**, or show only **tiles previously cached** by the embedded browser (caching is best-effort and not guaranteed).
+**Basemap tiles:** The map background uses **OpenStreetMap** by default (or **Carto Dark** if selected). On the Map tab, use the **Layers** control under the **online/stale/offline** status counts (top right) to switch basemaps and toggle overlays (node markers, movement trails, waypoints, diagnostic halos). The `TileLayer` is defined in [`MapPanel.tsx`](https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MapPanel.tsx). Tiles are served through the privileged **`mesh-tiles:`** protocol and stored under the app **userData** `tile-cache/` directory (viewed tiles cache automatically while online; ~1 GiB LRU). Use **Layers → Offline maps → Download current view** while online to pre-fetch a region (estimate + confirm; a single job is capped at about **half** the cache budget so downloaded tiles are not immediately evicted). Downloads pause if the link drops and resume after a stable connection (~60s). Optional **Auto-cache** downloads the current view after a short settle when the viewport key changes. On high-DPI displays, **Carto Dark** region downloads may fetch `@2x` tiles. **Clear tile cache** frees disk. **Without internet access, uncached areas look blank**; previously downloaded or viewed tiles still render. Overlays (markers, trails, polylines, halos) come from local/SQLite state and still work offline. Agent detail: [`docs/agents/offline-maps.md`](agents/offline-maps.md).
 
 **Overlays:** **Node markers, polylines, position trails, and other vector layers** are separate from the tile layer. If nodes have latitude/longitude (from RF, MQTT, SQLite, or your session), those overlays can still **render on top of a missing or partial basemap**.
 
-**Your position offline:** Use **device GPS** when available, **Fixed Position** on the **Radio** tab, or **static coordinates** in app/GPS settings. See **GPS "Location unavailable" or stuck on the map** above for IP-based fallbacks and manual entry. Positions heard over the mesh do not require internet.
+**Your position offline:** Use **device GPS** when available, **Fixed Position** on the **Radio** tab, or **static coordinates** in app/GPS settings. The IP-geolocation fallback returns immediately with code `OFFLINE` when there is no WAN. See **GPS "Location unavailable" or stuck on the map** above. Positions heard over the mesh do not require internet.
 
 ### Verifying offline behavior (manual QA)
 
 With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if possible:
 
 1. Confirm the app **window loads** and core tabs work; connect via **USB serial** or **BLE** to a local radio if you need RF features.
-2. Open the **Map** tab: expect **missing or stale basemap tiles** as described above; **markers and trails** may still appear when position data exists.
-3. A non-fatal **update check** message in the console is expected without WAN; see **Update check fails / footer update status** above.
+2. Open the **Map** tab: expect **blank basemap** where tiles were never cached; **markers and trails** may still appear when position data exists. Pre-downloaded regions should still show tiles.
+3. The footer shows a muted **Updates paused (offline)** state (not amber **Update error**) when WAN is missing; update checks do not retry in a loop. If an update was already downloaded (**ready** / install prompt), that ready state is kept when going offline.
 
 ## App, updates, and localization
 
@@ -1982,7 +1982,7 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 ### Update check fails / footer update status
 
-The app functions fully offline; this is not a critical error. If "Update check failed" appears in the console, verify network connectivity. Update checks are rate-limited by the GitHub API and may silently skip when the limit is reached. The footer shows **Update error** when a check fails; use **Check for updates** in the app menu or retry from the footer when applicable.
+The app functions fully offline; this is not a critical error. When there is no WAN, the footer shows a muted **Updates paused (offline)** state and does not amber-nag or retry in a loop. If an update was already downloaded (**ready**), the footer keeps that ready/install state instead of switching to offline. When connectivity returns and stays stable (~60s), one quiet update check runs (including after a network-class failure while the browser still reports online). If a real (non-network) update error occurs, the footer shows **Update error**; use **Check for updates** in the app menu or retry from the footer when applicable. Update checks are rate-limited by the GitHub API and may silently skip when the limit is reached.
 
 **Footer shows vX.Y.Z then Update error after Cut release:** The GitHub release may have been published with an `untagged-*` tag instead of `vX.Y.Z` (draft-fork race). On GitHub → Releases, confirm the latest release tag is `vX.Y.Z`. Repair with `GH_TOKEN=YOUR_ADMIN_PAT node scripts/repair-published-release-tag.mjs --tag vX.Y.Z`, or edit the release in the GitHub UI. Future releases are blocked at CI verify when the draft tag is wrong.
 
@@ -2002,7 +2002,16 @@ Use **App → MECP → Export MECP log**, or open a GitHub/Developer support bun
 
 **MAYDAY/URGENT alerts ignore mute**
 
-Severity 0 MECP alerts play a sweeping siren; severity 1 plays a US EAS-style 853+960 Hz attention tone. Both ignore mute and still fire while Chat is focused on that conversation. Severity 2–3 play a loud repeated tone when unmuted (also while focused). Drill codes (D01/D02) never alert. Configure Meshtastic↔MeshCore RF bridging under **App → MECP RF rebroadcast** (default off; optional bidirectional).
+Default Web Audio tones (`chatNotifications.ts` profiles; overrideable in **App → Notifications**):
+
+| Severity  | Event key    | Default sound                                             |
+| --------- | ------------ | --------------------------------------------------------- |
+| 0 MAYDAY  | `mecpSiren`  | Six sweeping siren cycles (~5.0 s; same length as URGENT) |
+| 1 URGENT  | `mecpEas`    | US EAS-style 853+960 Hz attention tone, 5 seconds         |
+| 2 SAFETY  | `mecpSafety` | Short–long (dit–dah) pairs × 6, 1175 Hz square (~4.4s)    |
+| 3 ROUTINE | `mecp`       | Repeated ascending triple pulse                           |
+
+MAYDAY and URGENT ignore mute and still fire while Chat is focused on that conversation. SAFETY and ROUTINE play when unmuted (also while focused). Drill codes (D01/D02) never alert. Configure Meshtastic↔MeshCore RF bridging under **App → MECP RF rebroadcast** (default off; optional bidirectional). See [notification-sounds.md](notification-sounds.md) and [`docs/agents/mecp.md`](agents/mecp.md).
 
 ## Language / i18n
 

@@ -45,6 +45,7 @@ const harness = vi.hoisted(() => {
     openExternal: vi.fn<(url: string) => Promise<void>>(),
     fetchAllGithubReleases: vi.fn<(...args: unknown[]) => Promise<unknown[]>>(),
     isPackaged: true,
+    isOnline: true,
     electronUpdaterMissing: false,
   };
 });
@@ -63,6 +64,9 @@ vi.mock('electron', () => ({
   },
   shell: {
     openExternal: (url: string) => harness.openExternal(url),
+  },
+  net: {
+    isOnline: () => harness.isOnline,
   },
 }));
 
@@ -161,6 +165,7 @@ beforeEach(() => {
   harness.autoUpdater.autoDownload = undefined;
   harness.autoUpdater.autoInstallOnAppQuit = undefined;
   harness.isPackaged = true;
+  harness.isOnline = true;
   harness.electronUpdaterMissing = false;
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -242,11 +247,30 @@ describe('updater behavior (electron-updater path)', () => {
     expect(console.error).toHaveBeenCalled();
   });
 
-  it('surfaces a sanitized update:error when the update check fails', async () => {
+  it('surfaces a sanitized update:offline when the update check fails with a network error', async () => {
     setup('darwin');
     harness.autoUpdater.checkForUpdates.mockRejectedValueOnce(new Error('offline\nnow'));
     await handler('update:check')(trustedEvent);
-    expect(harness.send).toHaveBeenCalledWith('update:error', { message: 'offline now' });
+    expect(harness.send).toHaveBeenCalledWith('update:offline');
+    expect(harness.send).not.toHaveBeenCalledWith('update:error', expect.anything());
+  });
+
+  it('surfaces update:offline and skips checkForUpdates when net.isOnline is false', async () => {
+    harness.isOnline = false;
+    setup('darwin');
+    await handler('update:check')(trustedEvent);
+    expect(harness.send).toHaveBeenCalledWith('update:offline');
+    expect(harness.autoUpdater.checkForUpdates).not.toHaveBeenCalled();
+    expect(harness.send).not.toHaveBeenCalledWith('update:checking', expect.anything());
+  });
+
+  it('surfaces a sanitized update:error when the update check fails with a non-network error', async () => {
+    setup('darwin');
+    harness.autoUpdater.checkForUpdates.mockRejectedValueOnce(new Error('signature bad\ninjected'));
+    await handler('update:check')(trustedEvent);
+    expect(harness.send).toHaveBeenCalledWith('update:error', {
+      message: 'signature bad injected',
+    });
   });
 
   it.each(['darwin', 'win32', 'linux'] as const)(
@@ -367,13 +391,29 @@ describe('updater behavior (GitHub Releases API fallback)', () => {
     expect(harness.send).toHaveBeenCalledWith('update:not-available');
   });
 
-  it('emits update:error when the GitHub API fetch fails', async () => {
+  it('emits update:offline when the GitHub API fetch fails with a network error', async () => {
+    harness.fetchAllGithubReleases.mockRejectedValueOnce(new Error('getaddrinfo ENOTFOUND'));
+    setup('darwin');
+    await handler('update:check')(trustedEvent);
+    expect(harness.send).toHaveBeenCalledWith('update:offline');
+    expect(harness.send).not.toHaveBeenCalledWith('update:error', expect.anything());
+  });
+
+  it('emits update:error when the GitHub API fetch fails with a non-network error', async () => {
     harness.fetchAllGithubReleases.mockRejectedValueOnce(new Error('HTTP 503'));
     setup('darwin');
     await handler('update:check')(trustedEvent);
     expect(harness.send).toHaveBeenCalledWith('update:error', {
       message: 'Update check failed — check network connection',
     });
+  });
+
+  it('emits update:offline and skips GitHub fetch when net.isOnline is false', async () => {
+    harness.isOnline = false;
+    setup('linux');
+    await handler('update:check')(trustedEvent);
+    expect(harness.send).toHaveBeenCalledWith('update:offline');
+    expect(harness.fetchAllGithubReleases).not.toHaveBeenCalled();
   });
 
   it('keeps update:download and update:install inert in dev (not packaged)', async () => {

@@ -51,7 +51,7 @@ describe('ChatPayloadText', () => {
       'https://www.openstreetmap.org/?mlat=39.7392&mlon=-104.9903',
     );
     const tile = screen.getByRole('img', { name: 'Shared location map tile' });
-    expect(tile.getAttribute('src')).toContain('tile.openstreetmap.org');
+    expect(tile.getAttribute('src')).toContain('mesh-tiles://osm/');
   });
 
   it('LocationCard has no axe violations for cyan card contrast', async () => {

@@ -22,6 +22,11 @@ describe('index.html CSP', () => {
     expect(csp).toMatch(/img-src[^;]*\bhttps:/);
   });
 
+  it('img-src allows mesh-tiles custom scheme', () => {
+    const csp = readCspContent();
+    expect(csp).toMatch(/img-src[^;]*\bmesh-tiles:/);
+  });
+
   it('worker-src allows zip.js blob workers for RNode flasher', () => {
     const csp = readCspContent();
     expect(csp).toMatch(/worker-src[^;]*\bblob:/);

@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
 import type { UpdateState } from '../App';
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import UpdateStatusIndicator from './UpdateStatusIndicator';
 
 describe('UpdateStatusIndicator', () => {
@@ -131,4 +133,25 @@ describe('UpdateStatusIndicator', () => {
       expect(onInstall).toHaveBeenCalledTimes(1);
     },
   );
+
+  it('shows a muted offline state without amber warning chrome', async () => {
+    const onCheck = vi.fn();
+    const user = userEvent.setup();
+    const { container } = render(
+      <UpdateStatusIndicator
+        updateState={{ phase: 'offline' }}
+        onCheck={onCheck}
+        onDownload={noop}
+        onInstall={noop}
+        onViewRelease={noop}
+      />,
+    );
+    const btn = screen.getByRole('button', { name: 'Updates paused (offline)' });
+    expect(btn).toHaveClass('text-gray-400');
+    expect(container.querySelector('.text-amber-500')).toBeNull();
+    await user.click(btn);
+    expect(onCheck).toHaveBeenCalledTimes(1);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
 });
