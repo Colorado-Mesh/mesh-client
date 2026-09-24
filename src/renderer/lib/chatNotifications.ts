@@ -61,7 +61,7 @@ type SoundProfile =
       repeatGap?: number;
     }
   | {
-      /** Short–long pairs with a pause between pairs (MECP SAFETY: dit–dah × 3). */
+      /** Short–long pairs with a pause between pairs (MECP SAFETY: dit–dah × N). */
       kind: 'shortLong';
       freq: number;
       shortDur: number;
@@ -72,6 +72,8 @@ type SoundProfile =
       pairGap: number;
       repeats: number;
       gain?: number;
+      /** Waveform; square cuts through ambient noise better than sine for SAFETY. */
+      type?: OscillatorType;
     }
   | {
       kind: 'siren';
@@ -103,15 +105,16 @@ const SOUND_PROFILES: Record<ChatNotificationType, SoundProfile> = {
     repeatGap: 0.18,
   },
   mecpSafety: {
-    // dit–dah, pause × 3 (short-long Morse-like SAFETY cadence)
+    // dit–dah, pause × 6 (~4.4s — double the prior ×3 length); piercing square for urgency
     kind: 'shortLong',
-    freq: 880,
+    freq: 1175,
     shortDur: 0.08,
     longDur: 0.32,
     pulseGap: 0.06,
     pairGap: 0.28,
-    repeats: 3,
-    gain: 0.5,
+    repeats: 6,
+    gain: 0.55,
+    type: 'square',
   },
   mecpSiren: {
     kind: 'siren',
@@ -282,11 +285,12 @@ function scheduleProfile(ctx: AudioContext, playback: Playback, profile: SoundPr
   }
   if (profile.kind === 'shortLong') {
     const g = profile.gain ?? 0.3;
+    const type = profile.type ?? 'sine';
     let t = now;
     for (let r = 0; r < profile.repeats; r++) {
-      playTonePulse(ctx, playback, profile.freq, profile.shortDur, t, g);
+      playTonePulse(ctx, playback, profile.freq, profile.shortDur, t, g, type);
       t += profile.shortDur + profile.pulseGap;
-      playTonePulse(ctx, playback, profile.freq, profile.longDur, t, g);
+      playTonePulse(ctx, playback, profile.freq, profile.longDur, t, g, type);
       t += profile.longDur + profile.pairGap;
     }
     return;

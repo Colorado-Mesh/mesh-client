@@ -102,9 +102,11 @@ describe('playMessageNotification', () => {
 
   it('plays three short–long pairs for mecpSafety', () => {
     playMessageNotification('mecpSafety');
-    // 3 pairs × (short + long) = 6 oscillators at the same pitch
-    expect(oscillatorCount).toBe(6);
-    expect(oscillatorFrequencies).toEqual([880, 880, 880, 880, 880, 880]);
+    // 6 pairs × (short + long) = 12 oscillators at piercing SAFETY pitch
+    expect(oscillatorCount).toBe(12);
+    expect(oscillatorFrequencies).toEqual([
+      1175, 1175, 1175, 1175, 1175, 1175, 1175, 1175, 1175, 1175, 1175, 1175,
+    ]);
   });
 
   it('plays simultaneous 853+960 Hz EAS attention tones for mecpEas', () => {

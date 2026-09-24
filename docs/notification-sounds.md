@@ -10,7 +10,7 @@ Surveyed against `c63bccf3` (Electron 44.1.1), September 23, 2026.
 | DM                                       | 587/784 Hz double pulse, 135 ms overall                    | Same                                         |
 | Reply or mention                         | Same sound as DM                                           | Same                                         |
 | MECP ROUTINE                             | Repeated rising triple pulse                               | Same, selected by `mecpAlert.ts`             |
-| MECP SAFETY                              | Short–long (dit–dah) pairs × 3 with pauses                 | Same                                         |
+| MECP SAFETY                              | Short–long (dit–dah) pairs × 6, piercing square (~4.4s)    | Same                                         |
 | MECP URGENT                              | 853+960 Hz attention tone, 5 seconds                       | Same                                         |
 | MECP MAYDAY                              | Six sweeping siren cycles, ~5.0 seconds (matches URGENT)   | Same                                         |
 | RRC room messages, mentions and whispers | Reuses channel/reply/DM categories                         | `rrcInactiveNotifications.ts`                |
@@ -23,7 +23,7 @@ Surveyed against `c63bccf3` (Electron 44.1.1), September 23, 2026.
 
 Built-in profiles in `SOUND_PROFILES` (`chatNotifications.ts`); users can replace them under **App → Notifications**.
 
-- **SAFETY (`mecpSafety`, `shortLong`):** one 880 Hz short pulse (~80 ms) then one long (~320 ms), pause (~280 ms); that pair repeats **3** times (dit–dah, pause × 3).
+- **SAFETY (`mecpSafety`, `shortLong`):** one 1175 Hz square short pulse (~80 ms) then one long (~320 ms), pause (~280 ms); that pair repeats **6** times (~4.4 s — double the prior ×3 length; square + higher pitch for urgency).
 - **MAYDAY (`mecpSiren`):** sawtooth sweep 800↔1200 Hz, **6** cycles at ~417 ms half-sweep each → ~5.0 s total (aligned with URGENT).
 - **URGENT (`mecpEas`):** simultaneous 853 Hz + 960 Hz, 5 s.
 - **ROUTINE (`mecp`):** rising triple 784/988/1175 Hz, repeated twice.

@@ -2008,7 +2008,7 @@ Default Web Audio tones (`chatNotifications.ts` profiles; overrideable in **App 
 | --------- | ------------ | --------------------------------------------------------- |
 | 0 MAYDAY  | `mecpSiren`  | Six sweeping siren cycles (~5.0 s; same length as URGENT) |
 | 1 URGENT  | `mecpEas`    | US EAS-style 853+960 Hz attention tone, 5 seconds         |
-| 2 SAFETY  | `mecpSafety` | Short–long (dit–dah) pairs × 3 with pauses between pairs  |
+| 2 SAFETY  | `mecpSafety` | Short–long (dit–dah) pairs × 6, 1175 Hz square (~4.4s)    |
 | 3 ROUTINE | `mecp`       | Repeated ascending triple pulse                           |
 
 MAYDAY and URGENT ignore mute and still fire while Chat is focused on that conversation. SAFETY and ROUTINE play when unmuted (also while focused). Drill codes (D01/D02) never alert. Configure Meshtastic↔MeshCore RF bridging under **App → MECP RF rebroadcast** (default off; optional bidirectional). See [notification-sounds.md](notification-sounds.md) and [`docs/agents/mecp.md`](agents/mecp.md).
