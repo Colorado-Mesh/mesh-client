@@ -9,9 +9,10 @@ Surveyed against `c63bccf3` (Electron 44.1.1), September 23, 2026.
 | Channel message                          | 880 Hz, 150 ms pulse                                       | `chatNotifications.ts`                       |
 | DM                                       | 587/784 Hz double pulse, 135 ms overall                    | Same                                         |
 | Reply or mention                         | Same sound as DM                                           | Same                                         |
-| MECP ROUTINE / SAFETY                    | Repeated rising triple pulse                               | Same, selected by `mecpAlert.ts`             |
+| MECP ROUTINE                             | Repeated rising triple pulse                               | Same, selected by `mecpAlert.ts`             |
+| MECP SAFETY                              | Short–long (dit–dah) pairs × 3 with pauses                 | Same                                         |
 | MECP URGENT                              | 853+960 Hz attention tone, 5 seconds                       | Same                                         |
-| MECP MAYDAY                              | Four sweeping siren cycles, 2.8 seconds                    | Same                                         |
+| MECP MAYDAY                              | Six sweeping siren cycles, ~5.0 seconds (matches URGENT)   | Same                                         |
 | RRC room messages, mentions and whispers | Reuses channel/reply/DM categories                         | `rrcInactiveNotifications.ts`                |
 | Reticulum game activity                  | Reuses DM                                                  | `reticulumGamesNotifications.ts`             |
 | Watched node online/offline              | OS default notification sound                              | `useNodeStatusNotifier.ts`                   |

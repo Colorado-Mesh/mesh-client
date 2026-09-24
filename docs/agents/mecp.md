@@ -23,7 +23,7 @@ MECP/<severity>/<codes> [freetext]
 3. `useMecpAlertWatcher` (mounted once from `App.tsx`):
    - Seeds a dedup set at mount (no alert/audit on hydration)
    - New inbound MECP → durable audit append (`mecp:appendReceived`)
-   - Alerts: sev **0** `'mecpSiren'` + emergency toast; sev **1** US EAS-style 853+960 Hz `'mecpEas'` + toast (**ignore** mutes; **always** including focused chat); sev **2** `'mecpSafety'` / **3** `'mecp'` repeated burst when unmuted; drills never alert
+   - Alerts: sev **0** `'mecpSiren'` (~5s six-cycle siren) + emergency toast; sev **1** US EAS-style 853+960 Hz `'mecpEas'` (~5s) + toast (**ignore** mutes; **always** including focused chat); sev **2** `'mecpSafety'` (dit–dah × 3) / **3** `'mecp'` repeated burst when unmuted; drills never alert
    - Focused Chat still alerts via `ChatPanel` → `triggerMecpAlert` (deduped with the watcher)
    - Optional RF rebroadcast (§ below)
 

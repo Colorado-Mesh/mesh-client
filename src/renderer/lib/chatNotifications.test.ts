@@ -100,6 +100,13 @@ describe('playMessageNotification', () => {
     expect(oscillatorFrequencies).toEqual([784, 988, 1175, 784, 988, 1175]);
   });
 
+  it('plays three short–long pairs for mecpSafety', () => {
+    playMessageNotification('mecpSafety');
+    // 3 pairs × (short + long) = 6 oscillators at the same pitch
+    expect(oscillatorCount).toBe(6);
+    expect(oscillatorFrequencies).toEqual([880, 880, 880, 880, 880, 880]);
+  });
+
   it('plays simultaneous 853+960 Hz EAS attention tones for mecpEas', () => {
     playMessageNotification('mecpEas');
     expect(oscillatorCount).toBe(2);
@@ -146,8 +153,8 @@ describe('playMessageNotification', () => {
     vi.stubGlobal('AudioContext', MockAudioContextWithGainCapture);
     oscillatorCount = 0;
     playMessageNotification('mecpSiren');
-    // 4 cycles × 1 oscillator each
-    expect(oscillatorCount).toBe(4);
+    // 6 cycles × 1 oscillator each (aligned with ~5s URGENT/EAS length)
+    expect(oscillatorCount).toBe(6);
     expect(gainLevels.some((g) => g >= 0.5)).toBe(true);
   });
 
