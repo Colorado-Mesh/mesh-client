@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  flatpakWorkflowSidecarExecutableContractViolations,
   flatpakWorkflowTestBuildContractViolations,
   manifestCiBuildInfoExportViolations,
 } from './check-flatpak.mjs';
@@ -84,6 +85,57 @@ describe('flatpakWorkflowTestBuildContractViolations', () => {
     expect(violations.map((v) => v.message).join('\n')).toMatch(/write-flatpak-ci-build-info/);
     expect(violations.map((v) => v.message).join('\n')).toMatch(/upload-artifact: false/);
     expect(violations.map((v) => v.message).join('\n')).toMatch(/rename-test-build-artifacts/);
+  });
+});
+
+describe('flatpakWorkflowSidecarExecutableContractViolations', () => {
+  it('accepts the real flatpak workflow', () => {
+    const doc = yaml.load(
+      fs.readFileSync(path.join(ROOT, '.github/workflows/flatpak.yaml'), 'utf8'),
+    );
+    expect(flatpakWorkflowSidecarExecutableContractViolations(doc, 'flatpak.yaml')).toEqual([]);
+  });
+
+  it('rejects raw binary upload and test -f smoke', () => {
+    const doc = {
+      jobs: {
+        'reticulum-sidecar': {
+          steps: [
+            {
+              run: 'install -Dm755 target/release/mesh-client-reticulum resources/reticulum-sidecar/mesh-client-reticulum',
+            },
+            {
+              uses: 'actions/upload-artifact@v7',
+              with: { path: 'resources/reticulum-sidecar/mesh-client-reticulum' },
+            },
+          ],
+        },
+        flatpak: {
+          steps: [
+            {
+              run: `flatpak run --command=sh org.coloradomesh.MeshClient -c '
+            test -f /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum'`,
+            },
+          ],
+        },
+      },
+    };
+    const messages = flatpakWorkflowSidecarExecutableContractViolations(doc, 'fake.yaml').map(
+      (v) => v.message,
+    );
+    expect(messages.join('\n')).toMatch(/tar the sidecar/);
+    expect(messages.join('\n')).toMatch(/\.tar artifact/);
+    expect(messages.join('\n')).toMatch(/tar -xf/);
+    expect(messages.join('\n')).toMatch(/test -x/);
+  });
+});
+
+describe('manifest Reticulum sidecar executable bit', () => {
+  it('requires chmod 755 after resources copy in the real manifest', () => {
+    const manifest = fs.readFileSync(path.join(ROOT, 'org.coloradomesh.MeshClient.yml'), 'utf8');
+    expect(manifest).toContain(
+      'chmod 755 /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum',
+    );
   });
 });
 

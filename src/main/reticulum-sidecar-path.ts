@@ -300,8 +300,8 @@ async function runDevSidecarCargoBuild(projectDir: string, reason: string): Prom
 }
 
 export interface EnsureDevSidecarBinaryOpts {
-  /** Override project discovery (tests). */
-  projectDir?: string;
+  /** Override project discovery (tests). Pass `null` to simulate no Rust tree (Flatpak). */
+  projectDir?: string | null;
   /** Replace cargo build runner (tests). */
   runBuild?: (projectDir: string, reason: string) => Promise<void>;
 }
@@ -313,8 +313,11 @@ export async function ensureDevSidecarBinary(
 ): Promise<void> {
   if (app.isPackaged) return;
 
-  const projectDir = opts?.projectDir ?? findReticulumSidecarProjectDir();
+  const projectDir =
+    opts && 'projectDir' in opts ? opts.projectDir : findReticulumSidecarProjectDir();
   if (!projectDir) {
+    // Flatpak (and similar) ship stock Electron with a bundled binary but no Rust tree.
+    if (fs.existsSync(binaryPath)) return;
     throw new Error(
       'RETICULUM_SIDECAR_PROJECT_MISSING: reticulum-sidecar/ not found. Run `pnpm run reticulum:sidecar:build` from the mesh-client repo root.',
     );

@@ -84,11 +84,15 @@ jobs:
           install -Dm755 \
             "target/${{ matrix.cargo_target }}/release/mesh-client-reticulum" \
             "${GITHUB_WORKSPACE}/resources/reticulum-sidecar/mesh-client-reticulum"
+          # tar preserves Unix execute bits that raw artifact uploads discard.
+          tar -cf "${GITHUB_WORKSPACE}/mesh-client-reticulum-${{ matrix.arch }}.tar" \
+            -C "${GITHUB_WORKSPACE}/resources/reticulum-sidecar" mesh-client-reticulum
 
       - uses: actions/upload-artifact@v7
         with:
           name: mesh-client-reticulum-${{ matrix.arch }}
-          path: resources/reticulum-sidecar/mesh-client-reticulum
+          path: mesh-client-reticulum-${{ matrix.arch }}.tar
+          if-no-files-found: error
           retention-days: 1
 
   # Both arches use the flathub-infra container (Flathub remote, flatpak-builder, privileged
@@ -119,7 +123,14 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: mesh-client-reticulum-${{ matrix.arch }}
-          path: resources/reticulum-sidecar
+          path: .sidecar-artifacts
+
+      - name: Restore Reticulum sidecar (preserve +x)
+        run: |
+          mkdir -p resources/reticulum-sidecar
+          tar -xf ".sidecar-artifacts/mesh-client-reticulum-${{ matrix.arch }}.tar" \
+            -C resources/reticulum-sidecar
+          test -x resources/reticulum-sidecar/mesh-client-reticulum
 
       - name: Write schema upgrade installer notice
         env:
@@ -219,7 +230,7 @@ jobs:
 
           flatpak run --branch=stable --command=sh org.coloradomesh.MeshClient -c \
             'test -x /app/lib/mesh-client/electron/electron;
-            test -f /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum'
+            test -x /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum'
 
           set +e
           out=$(dbus-run-session xvfb-run -a timeout 20s flatpak run --branch=stable org.coloradomesh.MeshClient 2>&1)

@@ -240,6 +240,26 @@ describe('reticulum-sidecar-path', () => {
     expect(fs.existsSync(binary)).toBe(true);
   });
 
+  it('ensureDevSidecarBinary noops when unpackaged binary exists without Cargo.toml (Flatpak)', async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-reticulum-flatpak-ensure-'));
+    const binary = path.join(tmpDir, 'resources', 'reticulum-sidecar', sidecarBinaryName());
+    fs.mkdirSync(path.dirname(binary), { recursive: true });
+    fs.writeFileSync(binary, 'bundled');
+
+    const runBuild = vi.fn((): Promise<void> => Promise.reject(new Error('should not build')));
+    await expect(
+      ensureDevSidecarBinary(binary, { projectDir: null, runBuild }),
+    ).resolves.toBeUndefined();
+    expect(runBuild).not.toHaveBeenCalled();
+  });
+
+  it('ensureDevSidecarBinary throws PROJECT_MISSING when unpackaged and binary absent', async () => {
+    const missing = path.join(os.tmpdir(), 'mesh-reticulum-missing-binary-does-not-exist');
+    await expect(ensureDevSidecarBinary(missing, { projectDir: null })).rejects.toThrow(
+      /RETICULUM_SIDECAR_PROJECT_MISSING/,
+    );
+  });
+
   it('runCargoBuild terminates hung cargo and propagates timeout', async () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-reticulum-cargo-timeout-'));
     const projectDir = path.join(tmpDir, 'reticulum-sidecar');
