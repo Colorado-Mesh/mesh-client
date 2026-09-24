@@ -69,7 +69,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @vitejs/plugin-react                  | MIT             | ^6.1.1          | 6.1.1             | git+https://github.com/vitejs/vite-plugin-react.git                                  |
 | @vitest/coverage-v8                   | MIT             | ^4.1.11         | 4.1.11            | git+https://github.com/vitest-dev/vitest.git                                         |
 | concurrently                          | MIT             | ^9.2.4          | 9.2.4             | git+https://github.com/open-cli-tools/concurrently.git                               |
-| electron                              | MIT             | ^44.1.1         | 44.4.3            | git+https://github.com/electron/electron.git                                         |
+| electron                              | MIT             | ^44.1.1         | 44.4.5            | git+https://github.com/electron/electron.git                                         |
 | electron-builder                      | MIT             | ^26.16.1        | 26.16.1           | git+https://github.com/electron-userland/electron-builder.git                        |
 | esbuild                               | MIT             | ^0.28.2         | 0.28.2            | git+https://github.com/evanw/esbuild.git                                             |
 | eslint                                | MIT             | ^10.11.0        | 10.11.0           | git+https://github.com/eslint/eslint.git                                             |
@@ -87,7 +87,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | jsdom                                 | MIT             | ^29.1.1         | 29.1.1            | git+https://github.com/jsdom/jsdom.git                                               |
 | leaflet                               | BSD-2-Clause    | ^1.9.4          | 1.9.4             | git://github.com/Leaflet/Leaflet.git                                                 |
 | markdownlint-cli2                     | MIT             | ^0.23.3         | 0.23.3            | git+https://github.com/DavidAnson/markdownlint-cli2.git                              |
-| prettier                              | MIT             | ^3.9.8          | 3.9.8             | git+https://github.com/prettier/prettier.git                                         |
+| prettier                              | MIT             | ^3.9.9          | 3.9.9             | git+https://github.com/prettier/prettier.git                                         |
 | prettier-plugin-sh                    | MIT             | ^0.18.1         | 0.18.1            | git+https://github.com/un-ts/prettier.git                                            |
 | prettier-plugin-tailwindcss           | MIT             | ^0.7.4          | 0.7.4             | git+https://github.com/tailwindlabs/prettier-plugin-tailwindcss.git                  |
 | react                                 | MIT             | ^19.3.0         | 19.3.0            | git+https://github.com/react/react.git                                               |
