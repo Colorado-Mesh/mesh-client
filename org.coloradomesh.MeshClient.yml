@@ -73,6 +73,8 @@ modules:
       # pnpm --ignore-scripts skips electron's postinstall; unpack vendored release zips instead
       - cp -a electron-prebuilt /app/lib/mesh-client/electron
       - cp -a dist dist-electron node_modules resources /app/lib/mesh-client/
+      # Ensure Reticulum sidecar is executable (CI artifacts / cp can lose +x)
+      - chmod 755 /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum
       # Wrapper script
       - install -Dm755 flatpak/mesh-client-wrapper.sh /app/bin/mesh-client
       # Icons
