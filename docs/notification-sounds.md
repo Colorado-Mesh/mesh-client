@@ -19,6 +19,15 @@ Surveyed against `c63bccf3` (Electron 44.1.1), September 23, 2026.
 | Update-check results                     | OS default notification sound                              | Main `notify:message` IPC                    |
 | Reticulum voice call progress            | Dial, DTMF, modem handshake/carrier, ringback, busy/reject | Separate `reticulumVoiceCallTones.ts` engine |
 
+### Default MECP tone shapes
+
+Built-in profiles in `SOUND_PROFILES` (`chatNotifications.ts`); users can replace them under **App → Notifications**.
+
+- **SAFETY (`mecpSafety`, `shortLong`):** one 880 Hz short pulse (~80 ms) then one long (~320 ms), pause (~280 ms); that pair repeats **3** times (dit–dah, pause × 3).
+- **MAYDAY (`mecpSiren`):** sawtooth sweep 800↔1200 Hz, **6** cycles at ~417 ms half-sweep each → ~5.0 s total (aligned with URGENT).
+- **URGENT (`mecpEas`):** simultaneous 853 Hz + 960 Hz, 5 s.
+- **ROUTINE (`mecp`):** rising triple 784/988/1175 Hz, repeated twice.
+
 ChatPanel handles foreground chat views; App handles inactive panels/protocols and hidden windows. The existing gates determine whether a sound is appropriate. Hidden Meshtastic and MECP desktop notifications are silent so they do not duplicate Web Audio playback. The audio context is reused and resumed when suspended. MECP drills stay silent; MAYDAY/URGENT bypass notification mutes, while ROUTINE/SAFETY respect them.
 
 There is no single documented Electron API for opening each OS's alert-tone settings picker. The platform APIs differ:
