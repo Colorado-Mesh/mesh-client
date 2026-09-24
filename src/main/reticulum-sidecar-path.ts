@@ -300,10 +300,56 @@ async function runDevSidecarCargoBuild(projectDir: string, reason: string): Prom
 }
 
 export interface EnsureDevSidecarBinaryOpts {
-  /** Override project discovery (tests). Pass `null` to simulate no Rust tree (Flatpak). */
+  /**
+   * Override project discovery (tests).
+   * Pass `null` to skip discovery (Flatpak / no Rust tree).
+   * Omit or pass `undefined` to run `findReticulumSidecarProjectDir()`.
+   */
   projectDir?: string | null;
   /** Replace cargo build runner (tests). */
   runBuild?: (projectDir: string, reason: string) => Promise<void>;
+}
+
+function fsErrnoCode(err: unknown): string | undefined {
+  if (!err || typeof err !== 'object' || !('code' in err)) return undefined;
+  const code = err.code;
+  return typeof code === 'string' ? code : undefined;
+}
+
+/**
+ * No Rust tree: use a bundled binary if it is a regular executable file.
+ * Missing path → PROJECT_MISSING; present but not executable → NOT_EXECUTABLE;
+ * other filesystem errors propagate.
+ */
+function assertBundledSidecarBinary(binaryPath: string): void {
+  let st: fs.Stats;
+  try {
+    st = fs.statSync(binaryPath);
+  } catch (err) {
+    if (fsErrnoCode(err) === 'ENOENT') {
+      throw new Error(
+        'RETICULUM_SIDECAR_PROJECT_MISSING: reticulum-sidecar/ not found. Run `pnpm run reticulum:sidecar:build` from the mesh-client repo root.',
+      );
+    }
+    throw err;
+  }
+  if (!st.isFile()) {
+    throw new Error(
+      `RETICULUM_SIDECAR_BINARY_NOT_EXECUTABLE: expected a regular file at ${binaryPath}`,
+    );
+  }
+  // OS-specific: Windows does not use Unix execute bits the same way.
+  if (process.platform === 'win32') return;
+  try {
+    fs.accessSync(binaryPath, fs.constants.X_OK);
+  } catch (err) {
+    if (fsErrnoCode(err) === 'EACCES') {
+      throw new Error(
+        `RETICULUM_SIDECAR_BINARY_NOT_EXECUTABLE: ${binaryPath} exists but is not executable (fix packaging permissions or chmod 755)`,
+      );
+    }
+    throw err;
+  }
 }
 
 /** Dev-only: compile the sidecar when the debug binary is missing or unusable. */
@@ -313,14 +359,12 @@ export async function ensureDevSidecarBinary(
 ): Promise<void> {
   if (app.isPackaged) return;
 
+  // Only explicit null skips discovery; undefined / omitted still discover.
   const projectDir =
-    opts && 'projectDir' in opts ? opts.projectDir : findReticulumSidecarProjectDir();
+    opts?.projectDir === null ? null : (opts?.projectDir ?? findReticulumSidecarProjectDir());
   if (!projectDir) {
-    // Flatpak (and similar) ship stock Electron with a bundled binary but no Rust tree.
-    if (fs.existsSync(binaryPath)) return;
-    throw new Error(
-      'RETICULUM_SIDECAR_PROJECT_MISSING: reticulum-sidecar/ not found. Run `pnpm run reticulum:sidecar:build` from the mesh-client repo root.',
-    );
+    assertBundledSidecarBinary(binaryPath);
+    return;
   }
 
   const missing = !fs.existsSync(binaryPath);
