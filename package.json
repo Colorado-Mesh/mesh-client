@@ -216,7 +216,7 @@
     "jsdom": "^29.1.1",
     "leaflet": "^1.9.4",
     "markdownlint-cli2": "^0.23.3",
-    "prettier": "^3.9.8",
+    "prettier": "^3.9.9",
     "prettier-plugin-sh": "^0.18.1",
     "prettier-plugin-tailwindcss": "^0.7.4",
     "react": "^19.3.0",
