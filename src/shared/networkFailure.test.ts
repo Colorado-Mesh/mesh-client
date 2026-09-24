@@ -13,6 +13,7 @@ describe('isNetworkClassFailure', () => {
     'net::ERR_INTERNET_DISCONNECTED',
     'offline now',
     'Network Error',
+    'fetch timeout while connecting',
   ])('classifies %s as network-class', (msg) => {
     expect(isNetworkClassFailure(new Error(msg))).toBe(true);
   });
@@ -23,6 +24,8 @@ describe('isNetworkClassFailure', () => {
     'signature verification failed',
     'Cannot download status:404',
     'please abort the mission later',
+    'disk lock timeout',
+    'database query timeout exceeded',
   ])('does not classify %s as network-class', (msg) => {
     expect(isNetworkClassFailure(new Error(msg))).toBe(false);
   });
@@ -34,9 +37,15 @@ describe('isNetworkClassFailure', () => {
     expect(isNetworkClassFailure(err)).toBe(true);
   });
 
-  it('classifies AbortError name via message', () => {
-    const err = new Error('This operation was aborted');
+  it('classifies AbortError by name alone', () => {
+    const err = new Error('opaque');
     err.name = 'AbortError';
+    expect(isNetworkClassFailure(err)).toBe(true);
+  });
+
+  it('classifies TimeoutError by name alone', () => {
+    const err = new Error('opaque');
+    err.name = 'TimeoutError';
     expect(isNetworkClassFailure(err)).toBe(true);
   });
 });

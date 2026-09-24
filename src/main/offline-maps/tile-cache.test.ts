@@ -63,10 +63,11 @@ describe('tile-cache', () => {
     await cache.putCachedTile({ basemapId: 'osm', z: 2, x: 0, y: 1 }, Buffer.alloc(20));
     const first = await cache.getCachedTile({ basemapId: 'osm', z: 2, x: 0, y: 0 });
     const second = await cache.getCachedTile({ basemapId: 'osm', z: 2, x: 0, y: 1 });
-    // At least one may remain; total should be within budget after eviction.
+    // At least one may remain; total should be within budget after eviction (low-water ~90%).
     expect(Boolean(first) || Boolean(second)).toBe(true);
     const stats = await cache.listCachedStats();
     expect(stats.diskBytes).toBeLessThanOrEqual(30);
+    expect(stats.diskBytes).toBeLessThanOrEqual(Math.floor(30 * 0.9));
   });
 
   it('clears all and per-source', async () => {

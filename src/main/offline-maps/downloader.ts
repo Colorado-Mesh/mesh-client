@@ -244,19 +244,44 @@ export class OfflineMapsDownloader {
 
   private waitUntilOnline(job: ActiveJob): Promise<void> {
     return new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        if (job.resumeTimer) {
+          clearTimeout(job.resumeTimer);
+          job.resumeTimer = null;
+        }
+        job.abort.signal.removeEventListener('abort', onAbort);
+        resolve();
+      };
+      const onAbort = () => {
+        finish();
+      };
+
+      if (job.cancelled || job.abort.signal.aborted) {
+        finish();
+        return;
+      }
+      job.abort.signal.addEventListener('abort', onAbort);
+
       const tick = () => {
-        if (job.cancelled) {
-          resolve();
+        if (job.cancelled || job.abort.signal.aborted) {
+          finish();
           return;
         }
         if (this.isOnline()) {
           job.resumeTimer = setTimeout(() => {
             job.resumeTimer = null;
-            if (!this.isOnline() && !job.cancelled) {
-              void this.waitUntilOnline(job).then(resolve);
+            if (job.cancelled || job.abort.signal.aborted) {
+              finish();
               return;
             }
-            resolve();
+            if (!this.isOnline()) {
+              void this.waitUntilOnline(job).then(finish);
+              return;
+            }
+            finish();
           }, this.onlineDebounceMs);
           return;
         }

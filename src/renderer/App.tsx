@@ -2590,9 +2590,17 @@ function AppContent() {
   // ─── Auto-check for updates on startup (+ debounced recovery when WAN returns) ────
   useEffect(() => {
     let checkInFlight = false;
+    let pendingRecovery = false;
+    const schedulerBox: {
+      current: ReturnType<typeof createOnlineRecoveryScheduler> | null;
+    } = { current: null };
+
     const runCheck = () => {
-      if (checkInFlight) return;
       if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      if (checkInFlight) {
+        pendingRecovery = true;
+        return;
+      }
       checkInFlight = true;
       void window.electronAPI.update
         .check()
@@ -2602,6 +2610,10 @@ function AppContent() {
         })
         .finally(() => {
           checkInFlight = false;
+          if (!pendingRecovery) return;
+          pendingRecovery = false;
+          if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+          schedulerBox.current?.onOnline();
         });
     };
 
@@ -2611,6 +2623,7 @@ function AppContent() {
     }
 
     const scheduler = createOnlineRecoveryScheduler(runCheck);
+    schedulerBox.current = scheduler;
     const onOnline = () => {
       scheduler.onOnline();
     };
@@ -2625,7 +2638,10 @@ function AppContent() {
     // Main may emit update:offline while navigator.onLine is still true (DNS/flaky WAN).
     const offUpdateOffline = window.electronAPI.update.onOffline(() => {
       if (typeof navigator !== 'undefined' && !navigator.onLine) return;
-      if (checkInFlight) return;
+      if (checkInFlight) {
+        pendingRecovery = true;
+        return;
+      }
       scheduler.onOnline();
     });
     window.addEventListener('online', onOnline);

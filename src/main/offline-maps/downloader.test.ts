@@ -118,4 +118,25 @@ describe('OfflineMapsDownloader', () => {
     });
     expect(fetchImpl).toHaveBeenCalled();
   });
+
+  it('cancels an offline-paused job and reports cancelled onDone', async () => {
+    online = false;
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response(Buffer.from([1]), { status: 200 })));
+    const { downloader, onProgress, onDone } = makeDownloader(fetchImpl);
+    const jobId = downloader.start({
+      bounds: tinyBounds,
+      minZoom: 14,
+      maxZoom: 14,
+      basemapId: 'osm',
+    });
+    await vi.waitFor(() => {
+      expect(onProgress.mock.calls.some((c) => (c[0] as { paused: boolean }).paused)).toBe(true);
+    });
+    expect(downloader.cancel(jobId)).toBe(true);
+    await vi.waitFor(() => {
+      expect(onDone).toHaveBeenCalled();
+    });
+    expect(onDone.mock.calls[0][0]).toMatchObject({ jobId, cancelled: true });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
 });

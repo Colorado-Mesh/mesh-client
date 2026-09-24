@@ -18,15 +18,18 @@ function collectErrorMessages(err: unknown): string[] {
     }
     if (cur instanceof Error) {
       out.push(cur.message);
-      // Node fetch often wraps DNS/connect failures: AbortError / TypeError + cause.code
+      // Include name so AbortError / TimeoutError classify even with empty/opaque messages.
+      if (cur.name) out.push(cur.name);
+      // Node fetch often wraps DNS/connect failures: TypeError + cause.code
       const withCause = cur as Error & { cause?: unknown; code?: unknown };
       if (typeof withCause.code === 'string') out.push(withCause.code);
       cur = withCause.cause;
       continue;
     }
     if (typeof cur === 'object') {
-      const o = cur as { message?: unknown; code?: unknown; cause?: unknown };
+      const o = cur as { message?: unknown; name?: unknown; code?: unknown; cause?: unknown };
       if (typeof o.message === 'string') out.push(o.message);
+      if (typeof o.name === 'string') out.push(o.name);
       if (typeof o.code === 'string') out.push(o.code);
       cur = o.cause;
       continue;
@@ -49,13 +52,15 @@ function messageLooksNetworkClass(raw: string): boolean {
     msg.includes('network') ||
     msg.includes('offline') ||
     msg.includes('internet') ||
-    msg.includes('timed out') ||
-    msg.includes('timeout')
+    msg.includes('timed out')
   ) {
     return true;
   }
-  // Explicit abort/timeout cancellation — not unrelated strings containing "abort"
+  // Explicit abort / DOMException names — not unrelated strings containing "abort"
+  if (msg === 'aborterror' || msg === 'timeouterror') return true;
   if (/\baborted\b/.test(msg) || /\bcancel(?:led|ed)\b/.test(msg)) return true;
-  if (msg.includes('timeouterror') || msg.includes('aborterror')) return true;
+  // Request/network timeouts only — not local "disk lock timeout" / similar
+  if (/\b(request|fetch|connect(?:ion)?|socket|http)\b.*\btimeout\b/.test(msg)) return true;
+  if (/\btimeout\b.*\b(request|fetch|connect(?:ion)?|socket|http)\b/.test(msg)) return true;
   return false;
 }

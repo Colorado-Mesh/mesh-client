@@ -77,6 +77,8 @@ export class TileCache {
   private totalBytes = 0;
   private sourceStats = new Map<string, { tileCount: number; diskBytes: number }>();
   private statsInitialized = false;
+  private statsInit: Promise<void> | null = null;
+  private evictionInFlight: Promise<void> | null = null;
   private manifestChain: Promise<void> = Promise.resolve();
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -162,6 +164,14 @@ export class TileCache {
   }
 
   private async ensureStats(): Promise<void> {
+    if (this.statsInitialized) return;
+    this.statsInit ??= this.initializeStats().finally(() => {
+      this.statsInit = null;
+    });
+    await this.statsInit;
+  }
+
+  private async initializeStats(): Promise<void> {
     if (this.statsInitialized) return;
     await this.ensureRoot();
     const manifest = await this.readManifestFromDisk();
@@ -344,7 +354,18 @@ export class TileCache {
 
   private async evictIfNeeded(): Promise<void> {
     await this.ensureStats();
-    if (this.totalBytes <= this.maxBytes) return;
+    while (this.totalBytes > this.maxBytes) {
+      this.evictionInFlight ??= this.runEviction().finally(() => {
+        this.evictionInFlight = null;
+      });
+      await this.evictionInFlight;
+    }
+  }
+
+  /** Evict oldest tiles down to ~90% of maxBytes (hysteresis / low-water mark). */
+  private async runEviction(): Promise<void> {
+    const lowWater = Math.floor(this.maxBytes * 0.9);
+    if (this.totalBytes <= lowWater) return;
 
     interface Entry {
       file: string;
@@ -383,16 +404,20 @@ export class TileCache {
 
     await walk(this.rootDir, null);
     entries.sort((a, b) => a.mtimeMs - b.mtimeMs);
+    let removed = 0;
     for (const e of entries) {
-      if (this.totalBytes <= this.maxBytes) break;
+      if (this.totalBytes <= lowWater) break;
       try {
         await fs.unlink(e.file);
         this.applySourceDelta(e.basemapId, -1, -e.size);
+        removed += 1;
       } catch {
         // catch-no-log-ok race
       }
     }
-    this.schedulePersistSourceStats();
+    if (removed > 0) {
+      this.schedulePersistSourceStats();
+    }
   }
 }
 

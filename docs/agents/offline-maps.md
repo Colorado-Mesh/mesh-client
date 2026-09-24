@@ -21,7 +21,7 @@ Agent reference for wilderness / no-WAN basemap caching. Human QA: [troubleshoot
 - **Region download:** estimate → confirm → job with concurrency; pauses when `net.isOnline()` is false; resumes after ~60s stable online. Cancel combines job abort with per-tile fetch timeout (`AbortSignal.any`).
 - **Retina:** CARTO dark `@2x` only when the renderer passes `retina: true` (`devicePixelRatio > 1`). OSM ignores retina. Cache keys include `@2x` filename when set.
 - **Caps:** single-job estimate must stay ≤ `OFFLINE_MAP_MAX_ESTIMATE_BYTES` (= 50% of `TILE_CACHE_MAX_BYTES`, ~1 GiB LRU) and ≤ `OFFLINE_MAP_MAX_TILES` so a completed region is not immediately LRU-evicted.
-- **Manifest:** atomic write (temp + rename); serialized `mutateManifest`; in-memory byte/source counts; full tree scan only when over budget for eviction; debounced source-stat persist.
+- **Manifest:** atomic write (temp + rename); serialized `mutateManifest`; in-memory byte/source counts (single-flight `ensureStats`); full tree scan only when over budget for eviction (shared in-flight pass down to ~90% low-water); debounced source-stat persist.
 - **IPC validation:** finite lat/lon (lat ∈ [-90,90], \|lon\| ≤ 360), finite zooms; reject inverted north/south.
 
 ## Update footer (related)
