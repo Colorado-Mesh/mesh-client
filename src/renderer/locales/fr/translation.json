@@ -5263,7 +5263,8 @@
     "menuToastUpToDateBody": "Vous êtes sur la dernière version.",
     "menuToastAvailableTitle": "mise à jour disponible",
     "menuToastAvailableBody": "La version {{version}} est disponible.",
-    "menuToastErrorTitle": "Échec de la vérification de"
+    "menuToastErrorTitle": "Échec de la vérification de",
+    "pausedOffline": "Mises à jour interrompues (hors ligne)"
   },
   "reticulumMap": {
     "title": "Carte de découverte",

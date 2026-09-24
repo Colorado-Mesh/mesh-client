@@ -1009,6 +1009,7 @@ export interface ElectronAPI {
     onProgress: (cb: (info: { percent: number }) => void) => () => void;
     onDownloaded: (cb: () => void) => () => void;
     onError: (cb: (info: { message: string }) => void) => () => void;
+    onOffline: (cb: () => void) => () => void;
   };
 
   // ─── Meshtastic XMODEM (local radio file transfer) ───────────────────────────

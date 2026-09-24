@@ -914,6 +914,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('update:error', handler);
       return () => ipcRenderer.off('update:error', handler);
     },
+    onOffline: (cb: () => void) => {
+      const handler = () => {
+        cb();
+      };
+      ipcRenderer.on('update:offline', handler);
+      return () => ipcRenderer.off('update:offline', handler);
+    },
   },
 
   // ─── Connection status ─────────────────────────────────────────

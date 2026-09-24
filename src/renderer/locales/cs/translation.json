@@ -5306,7 +5306,8 @@
     "menuToastUpToDateBody": "Používáš nejnovější verzi.",
     "menuToastAvailableTitle": "Aktualizace k dispozici",
     "menuToastAvailableBody": "Verze {{version}} je k dispozici.",
-    "menuToastErrorTitle": "Kontrola aktualizace se nezdařila"
+    "menuToastErrorTitle": "Kontrola aktualizace se nezdařila",
+    "pausedOffline": "Aktualizace pozastaveny (offline)"
   },
   "reticulumMap": {
     "title": "Mapa objevů",

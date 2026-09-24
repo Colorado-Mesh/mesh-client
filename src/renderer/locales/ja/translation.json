@@ -5263,7 +5263,8 @@
     "menuToastUpToDateBody": "最新バージョンを使用しています。",
     "menuToastAvailableTitle": "利用可能なアップデート",
     "menuToastAvailableBody": "バージョン{{version}}が利用できます。",
-    "menuToastErrorTitle": "アップデートチェックに失敗しました"
+    "menuToastErrorTitle": "アップデートチェックに失敗しました",
+    "pausedOffline": "更新が一時停止されました（オフライン）"
   },
   "reticulumMap": {
     "title": "ディスカバリーマップ",

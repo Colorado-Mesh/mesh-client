@@ -1,3 +1,4 @@
+import { net } from 'electron';
 import http from 'http';
 import https from 'https';
 import si from 'systeminformation';
@@ -153,6 +154,14 @@ async function runGpsConnectivityPreflight(): Promise<void> {
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function getGpsFix(): Promise<GpsFixResult> {
+  if (!net.isOnline()) {
+    return {
+      status: 'error',
+      message: 'Location unavailable (offline).',
+      code: 'OFFLINE',
+    };
+  }
+
   await runGpsConnectivityPreflight();
 
   try {

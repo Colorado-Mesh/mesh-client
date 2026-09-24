@@ -115,4 +115,14 @@ describe('fetchAllGithubReleases', () => {
       /responded with 403/,
     );
   });
+
+  it('passes AbortSignal.timeout to fetch', async () => {
+    const fetchMock = vi.fn<typeof fetch>((_input, init) => {
+      expect(init?.signal).toBeDefined();
+      expect(init?.signal?.aborted).toBe(false);
+      return Promise.resolve(Response.json([releaseRow('1.0.0')]));
+    });
+    await fetchAllGithubReleases(REPO, 'mesh-client-test', fetchMock, TEST_PAGE_SIZE);
+    expect(fetchMock).toHaveBeenCalled();
+  });
 });

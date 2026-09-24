@@ -5923,6 +5923,7 @@
     "restartTitle": "Restart and install",
     "retryCheck": "Retry update check",
     "updateError": "Update error",
+    "pausedOffline": "Updates paused (offline)",
     "menuToastUpToDateTitle": "Mesh-Client",
     "menuToastUpToDateBody": "You're on the latest version.",
     "menuToastAvailableTitle": "Update available",

@@ -5263,7 +5263,8 @@
     "menuToastUpToDateBody": "최신 버전을 사용 중입니다.",
     "menuToastAvailableTitle": "업데이트 사용 가능",
     "menuToastAvailableBody": "{{version}} 버전을 사용할 수 있습니다.",
-    "menuToastErrorTitle": "자동 업데이트 확인에 실패했습니다!"
+    "menuToastErrorTitle": "자동 업데이트 확인에 실패했습니다!",
+    "pausedOffline": "업데이트 일시 중지됨 (오프라인)"
   },
   "reticulumMap": {
     "title": "디스커버리 맵",

@@ -5263,7 +5263,8 @@
     "menuToastUpToDateBody": "Você está na versão mais recente.",
     "menuToastAvailableTitle": "Atualização disponível",
     "menuToastAvailableBody": "A versão {{version}} está disponível.",
-    "menuToastErrorTitle": "verificação de atualização falhou"
+    "menuToastErrorTitle": "verificação de atualização falhou",
+    "pausedOffline": "Atualizações pausadas (offline)"
   },
   "reticulumMap": {
     "title": "Mapa de descoberta",

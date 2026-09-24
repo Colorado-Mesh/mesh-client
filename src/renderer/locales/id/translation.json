@@ -5263,7 +5263,8 @@
     "menuToastUpToDateBody": "Anda menggunakan versi terbaru.",
     "menuToastAvailableTitle": "Pembaruan tersedia",
     "menuToastAvailableBody": "Versi {{version}} tersedia.",
-    "menuToastErrorTitle": "Pemeriksaan pembaruan gagal"
+    "menuToastErrorTitle": "Pemeriksaan pembaruan gagal",
+    "pausedOffline": "Pembaruan dijeda (offline)"
   },
   "reticulumMap": {
     "title": "Peta penemuan",

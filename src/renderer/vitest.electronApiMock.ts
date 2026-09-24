@@ -228,6 +228,7 @@ export function createElectronAPIMock(): ElectronAPI {
       onProgress: vi.fn().mockReturnValue(() => {}),
       onDownloaded: vi.fn().mockReturnValue(() => {}),
       onError: vi.fn().mockReturnValue(() => {}),
+      onOffline: vi.fn().mockReturnValue(() => {}),
     },
     notifyDeviceConnected: vi.fn(),
     notifyDeviceDisconnected: vi.fn(),

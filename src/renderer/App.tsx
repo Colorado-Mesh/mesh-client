@@ -70,6 +70,7 @@ import { meshcoreWaitingMessagesVisibleForProtocol } from '@/renderer/lib/meshco
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
+import { createOnlineRecoveryScheduler } from '@/renderer/lib/onlineRecoveryDebounce';
 import {
   asChannelIndexPills,
   asEnvironmentTelemetryPoints,
@@ -352,7 +353,7 @@ export interface LocationFilter {
 }
 
 export interface UpdateState {
-  phase: 'idle' | 'available' | 'downloading' | 'ready' | 'error' | 'up-to-date';
+  phase: 'idle' | 'available' | 'downloading' | 'ready' | 'error' | 'up-to-date' | 'offline';
   version?: string;
   releaseUrl?: string;
   isPackaged?: boolean;
@@ -710,7 +711,9 @@ function AppContent() {
   const scrollToTopChatRef = useRef<(() => void) | null>(null);
   const scrollToTopRoomsRef = useRef<(() => void) | null>(null);
   const [showMainScrollTop, setShowMainScrollTop] = useState(false);
-  const [updateState, setUpdateState] = useState<UpdateState>({ phase: 'idle' });
+  const [updateState, setUpdateState] = useState<UpdateState>(() => ({
+    phase: typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'idle',
+  }));
   const menuUpdateNotifyCtrl = useMemo(
     () =>
       createUpdateMenuNotifyController(t, (title, body) =>
@@ -2557,6 +2560,9 @@ function AppContent() {
       setUpdateState((s) => ({ ...s, phase: 'error', errorMessage: info.message }));
       menuUpdateNotifyCtrl.flushSettled('error', { message: info.message });
     });
+    const offOffline = window.electronAPI.update.onOffline(() => {
+      setUpdateState((s) => ({ ...s, phase: 'offline', errorMessage: undefined }));
+    });
     return () => {
       offChecking();
       offAvailable();
@@ -2564,6 +2570,7 @@ function AppContent() {
       offProgress();
       offDownloaded();
       offError();
+      offOffline();
     };
   }, [menuUpdateNotifyCtrl]);
 
@@ -2576,16 +2583,36 @@ function AppContent() {
     }
   }, []);
 
-  // ─── Auto-check for updates on startup ────
+  // ─── Auto-check for updates on startup (+ debounced recovery when WAN returns) ────
   useEffect(() => {
-    const t = setTimeout(() => {
+    const runCheck = () => {
       void window.electronAPI.update.check().catch((e: unknown) => {
         console.warn('[App] update check failed ' + errLikeToLogString(e));
         setUpdateState((s) => ({ ...s, phase: 'error' }));
       });
-    }, 5000);
+    };
+
+    let startupTimer: ReturnType<typeof setTimeout> | null = null;
+    if (typeof navigator === 'undefined' || navigator.onLine) {
+      startupTimer = setTimeout(runCheck, 5000);
+    }
+
+    const scheduler = createOnlineRecoveryScheduler(runCheck);
+    const onOnline = () => {
+      scheduler.onOnline();
+    };
+    const onOffline = () => {
+      scheduler.onOffline();
+      setUpdateState((s) => ({ ...s, phase: 'offline', errorMessage: undefined }));
+    };
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+
     return () => {
-      clearTimeout(t);
+      if (startupTimer != null) clearTimeout(startupTimer);
+      scheduler.dispose();
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
     };
   }, []);
 

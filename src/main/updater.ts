@@ -1,5 +1,5 @@
 import type { BrowserWindow, IpcMainInvokeEvent } from 'electron';
-import { app, ipcMain, shell } from 'electron';
+import { app, ipcMain, net, shell } from 'electron';
 import type { AppUpdater } from 'electron-updater';
 
 import { fetchAllGithubReleases } from '@/shared/fetchGithubReleases';
@@ -8,6 +8,7 @@ import {
   pickLatestPublishedRelease,
   semverGt,
 } from '@/shared/githubReleaseVersion';
+import { isNetworkClassFailure } from '@/shared/networkFailure';
 
 import { sanitizeLogMessage } from './log-service';
 import { assertIpcSender } from './validate-ipc-sender';
@@ -41,6 +42,22 @@ async function fetchGithubReleases(): Promise<GithubReleaseRow[]> {
   return fetchAllGithubReleases(REPO, `mesh-client/${app.getVersion()}`);
 }
 
+function emitOffline(send: SendFn, detail: string): void {
+  console.debug('[updater] offline / network skip:', sanitizeLogMessage(detail));
+  send('update:offline');
+}
+
+function reportCheckFailure(send: SendFn, err: unknown, warnPrefix: string): void {
+  const msg = err instanceof Error ? err.message : String(err);
+  const safe = sanitizeLogMessage(msg);
+  if (isNetworkClassFailure(err)) {
+    emitOffline(send, safe);
+    return;
+  }
+  console.warn(warnPrefix, safe);
+  send('update:error', { message: safe });
+}
+
 async function openAppReleasePage(send: SendFn): Promise<void> {
   try {
     await shell.openExternal(lastAppReleaseUrl ?? RELEASES_URL);
@@ -52,12 +69,25 @@ async function openAppReleasePage(send: SendFn): Promise<void> {
   }
 }
 
+function beginCheckOrOffline(send: SendFn, notifyOnSettled: boolean): boolean {
+  if (!net.isOnline()) {
+    emitOffline(send, 'net.isOnline()===false');
+    return false;
+  }
+  send('update:checking', { notifyOnSettled });
+  return true;
+}
+
 /**
  * GitHub Releases API check — used in dev, and as a fallback when packaged but
  * electron-updater is missing or failed to load (so IPC handlers still register).
  */
 function registerGithubReleaseApiHandlers(send: SendFn, uiReportsPackaged: boolean): void {
   const doCheck = async () => {
+    if (!net.isOnline()) {
+      emitOffline(send, 'net.isOnline()===false');
+      return;
+    }
     lastAppReleaseUrl = null;
     try {
       const releases = await fetchGithubReleases();
@@ -75,6 +105,10 @@ function registerGithubReleaseApiHandlers(send: SendFn, uiReportsPackaged: boole
         send('update:not-available');
       }
     } catch (e: unknown) {
+      if (isNetworkClassFailure(e)) {
+        emitOffline(send, e instanceof Error ? e.message : String(e));
+        return;
+      }
       console.warn(
         '[updater] GitHub API fetch failed:',
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
@@ -87,13 +121,13 @@ function registerGithubReleaseApiHandlers(send: SendFn, uiReportsPackaged: boole
     void doCheck();
   };
   checkFromMenu = () => {
-    send('update:checking', { notifyOnSettled: true });
+    if (!beginCheckOrOffline(send, true)) return;
     void doCheck();
   };
 
   ipcMain.handle('update:check', async (event: IpcMainInvokeEvent) => {
     assertIpcSender(event, 'update:check');
-    send('update:checking', { notifyOnSettled: false });
+    if (!beginCheckOrOffline(send, false)) return;
     await doCheck();
   });
 
@@ -171,12 +205,19 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
   });
 
   updater.on('error', (err: Error) => {
-    const safe = sanitizeLogMessage(err.message);
+    if (isNetworkClassFailure(err)) {
+      emitOffline(send, err.message);
+      return;
+    }
     console.error('[updater] error:', sanitizeLogMessage(err.message));
-    send('update:error', { message: safe });
+    send('update:error', { message: sanitizeLogMessage(err.message) });
   });
 
   const doCheck = async () => {
+    if (!net.isOnline()) {
+      emitOffline(send, 'net.isOnline()===false');
+      return;
+    }
     try {
       const result: unknown = await updater.checkForUpdates();
       const download =
@@ -190,17 +231,13 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
         try {
           await download;
         } catch (e: unknown) {
-          const msg = e instanceof Error ? e.message : String(e);
-          const safe = sanitizeLogMessage(msg);
-          console.warn('[updater] auto-download failed:', safe);
-          send('update:error', { message: safe });
+          // catch-no-log-ok reportCheckFailure logs warn/debug
+          reportCheckFailure(send, e, '[updater] auto-download failed:');
         }
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      const safe = sanitizeLogMessage(msg);
-      console.warn('[updater] checkForUpdates failed:', safe);
-      send('update:error', { message: safe });
+      // catch-no-log-ok reportCheckFailure logs warn/debug
+      reportCheckFailure(send, e, '[updater] checkForUpdates failed:');
     }
   };
 
@@ -208,13 +245,13 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
     void doCheck();
   };
   checkFromMenu = () => {
-    send('update:checking', { notifyOnSettled: true });
+    if (!beginCheckOrOffline(send, true)) return;
     void doCheck();
   };
 
   ipcMain.handle('update:check', async (event: IpcMainInvokeEvent) => {
     assertIpcSender(event, 'update:check');
-    send('update:checking', { notifyOnSettled: false });
+    if (!beginCheckOrOffline(send, false)) return;
     await doCheck();
   });
 
@@ -223,10 +260,8 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
     try {
       await updater.downloadUpdate();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      const safe = sanitizeLogMessage(msg);
-      console.warn('[updater] update:download failed:', safe);
-      send('update:error', { message: safe });
+      // catch-no-log-ok reportCheckFailure logs warn/debug
+      reportCheckFailure(send, e, '[updater] update:download failed:');
     }
   });
 
@@ -255,7 +290,10 @@ export function initUpdater(win: BrowserWindow): void {
   }
 
   const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
-  setInterval(() => checkNow?.(), CHECK_INTERVAL_MS).unref();
+  setInterval(() => {
+    if (!net.isOnline()) return;
+    checkNow?.();
+  }, CHECK_INTERVAL_MS).unref();
 
   ipcMain.handle('update:open-releases', async (event: IpcMainInvokeEvent, url?: string) => {
     assertIpcSender(event, 'update:open-releases');

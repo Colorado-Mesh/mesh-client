@@ -5263,7 +5263,8 @@
     "menuToastUpToDateBody": "你是最新版本。",
     "menuToastAvailableTitle": "更新可用",
     "menuToastAvailableBody": "版本 {{version}} 可用。",
-    "menuToastErrorTitle": "更新检查失败"
+    "menuToastErrorTitle": "更新检查失败",
+    "pausedOffline": "已暂停更新（离线）"
   },
   "reticulumMap": {
     "title": "探索地图",

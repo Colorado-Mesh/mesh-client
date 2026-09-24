@@ -5263,7 +5263,8 @@
     "menuToastUpToDateBody": "En son versiyona sahipsiniz.",
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "{{version}} sürümü mevcut.",
-    "menuToastErrorTitle": "Güncelleme kontrolü başarısız oldu"
+    "menuToastErrorTitle": "Güncelleme kontrolü başarısız oldu",
+    "pausedOffline": "Güncellemeler duraklatıldı (çevrimdışı)"
   },
   "reticulumMap": {
     "title": "Keşif haritası",

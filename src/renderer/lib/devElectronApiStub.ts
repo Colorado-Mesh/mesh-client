@@ -213,6 +213,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       onProgress: noopUnsub,
       onDownloaded: noopUnsub,
       onError: noopUnsub,
+      onOffline: noopUnsub,
     },
     notifyDeviceConnected: noop,
     notifyDeviceDisconnected: noop,
