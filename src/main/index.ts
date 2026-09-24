@@ -13,6 +13,7 @@ import {
   Notification,
   powerMonitor,
   powerSaveBlocker,
+  protocol,
   safeStorage,
   screen,
   type Session,
@@ -157,6 +158,8 @@ import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
+import { createMeshTilesProtocolHandler } from './offline-maps/protocol';
+import { createTileCache, type TileCache } from './offline-maps/tile-cache';
 import { readFileUpTo } from './readFileUpTo';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
 import { resolveRendererLoadUrl } from './resolveRendererLoadUrl';
@@ -194,6 +197,14 @@ try {
     sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
   );
 }
+
+// Custom scheme for offline map tiles (must register before app.whenReady).
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'mesh-tiles',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
+  },
+]);
 
 // Linux: SIGSEGV in Electron GPU process on some Wayland / driver stacks (electron#41980).
 // Must run before app.whenReady(). CLI flags --disable-gpu also work; env avoids wrapper scripts.
@@ -368,6 +379,13 @@ function isAnyMqttConnected(): boolean {
 
 let mainWindow: BrowserWindow | null = null;
 const rendererHeartbeatWatchdog = createRendererHeartbeatWatchdog();
+/** Disk-backed map tile cache for `mesh-tiles:` (created at window setup). */
+let offlineTileCache: TileCache | null = null;
+
+/** Shared tile cache for offline-maps IPC (Phase B2). */
+export function getOfflineTileCache(): TileCache | null {
+  return offlineTileCache;
+}
 /** Win32 About: native About panel can hard-crash; use a small HTML BrowserWindow instead (#406). */
 let windowsAboutWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -2076,6 +2094,17 @@ function createWindow() {
   setupTray(mainWindow);
 
   initUpdater(mainWindow);
+
+  if (!offlineTileCache) {
+    offlineTileCache = createTileCache(app.getPath('userData'));
+    protocol.handle(
+      'mesh-tiles',
+      createMeshTilesProtocolHandler({
+        cache: offlineTileCache,
+        getAppVersion: () => app.getVersion(),
+      }),
+    );
+  }
 }
 
 // ─── Tray unread badge ──────────────────────────────────────────────

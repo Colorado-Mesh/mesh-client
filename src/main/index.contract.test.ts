@@ -489,6 +489,13 @@ describe('Native crash observability (source contract)', () => {
     expect(INDEX_SOURCE).toContain("'[main] child-process-gone:'");
   });
 
+  it('registers mesh-tiles as a privileged scheme before ready and handles it', () => {
+    expect(INDEX_SOURCE).toContain("scheme: 'mesh-tiles'");
+    expect(INDEX_SOURCE).toContain('protocol.registerSchemesAsPrivileged');
+    expect(INDEX_SOURCE).toContain("protocol.handle(\n      'mesh-tiles'");
+    expect(INDEX_SOURCE).toContain('createMeshTilesProtocolHandler');
+  });
+
   it('flushes logs on uncaught errors and records will-quit breadcrumbs', () => {
     expect(INDEX_SOURCE).toContain('void flushLogBeforeQuit()');
     expect(INDEX_SOURCE).toContain('flushLogBeforeQuit()');

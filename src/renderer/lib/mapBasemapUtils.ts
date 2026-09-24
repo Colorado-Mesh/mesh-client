@@ -1,3 +1,5 @@
+import { MESH_TILES_URL_TEMPLATES } from '@/shared/offlineMaps/basemapRegistry';
+
 export type MapBasemapId = 'dark' | 'osm';
 
 export interface MapBasemapConfig {
@@ -10,14 +12,14 @@ export interface MapBasemapConfig {
 export const MAP_BASEMAPS: Record<MapBasemapId, MapBasemapConfig> = {
   dark: {
     id: 'dark',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    url: MESH_TILES_URL_TEMPLATES.dark,
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
     isDark: true,
   },
   osm: {
     id: 'osm',
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    url: MESH_TILES_URL_TEMPLATES.osm,
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     isDark: false,
