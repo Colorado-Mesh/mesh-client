@@ -2290,7 +2290,32 @@
     "layerCongestionHalos": "Halo kemacetan",
     "waypointDefaultName": "Titik jalan",
     "waypointDelete": "Hapus Titik Jalan",
-    "noGpsNodes": "Belum ada node dengan posisi GPS"
+    "noGpsNodes": "Belum ada node dengan posisi GPS",
+    "offlineMaps": {
+      "heading": "Peta Offline",
+      "autoCache": "Singgahan otomatis saat menganggur",
+      "autoCacheAria": "Unduh tampilan peta saat ini secara otomatis saat online",
+      "downloadView": "Unduh tampilan saat ini",
+      "downloadAria": "Perkirakan dan unduh tampilan peta saat ini untuk penggunaan offline",
+      "estimating": "Memperkirakan...",
+      "confirm": "{{count}} tiles (~{{size}}), zoom {{minZoom}}–{{maxZoom}}. Unduh sekarang?",
+      "confirmYes": "Unduh",
+      "confirmDownloadAria": "Konfirmasi unduhan peta offline",
+      "cancelConfirm": "Tidak sekarang",
+      "cancelConfirmAria": "Batalkan konfirmasi unduhan peta offline",
+      "progress": "{{completed}} / {{total}} ubin ({{failed}} gagal)",
+      "paused": "Dijeda — menunggu jaringan…",
+      "cancel": "Batalkan unduh",
+      "cancelAria": "Batalkan unduhan peta offline",
+      "cancelled": "Unduhan dibatalkan.",
+      "done": "Mengunduh {{completed}} ubin ({{failed}} gagal).",
+      "tooLarge": "Area itu terlalu luas. Perbesar atau kurangi rentang zoom.",
+      "noViewport": "Pan peta terlebih dahulu sehingga viewport disimpan.",
+      "cacheStats": "Cache: {{count}} tiles ({{size}})",
+      "clear": "Bersihkan singgahan ubin",
+      "clearAria": "Bersihkan cache ubin peta offline",
+      "cleared": "Cache ubin dikosongkan."
+    }
   },
   "meshCongestion": {
     "blockTitle": "Mengapa Anda melihat lalu lintas duplikat",

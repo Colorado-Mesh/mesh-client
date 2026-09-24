@@ -10,6 +10,7 @@ import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
 import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
 
 import { useToast } from '../Toast';
+import { OfflineMapsSection } from './OfflineMapsSection';
 
 const MAP_STYLE_ID = 'map-styles';
 const LORA_MAP_STYLE_ID = 'map-lora-panel-styles';
@@ -223,6 +224,7 @@ export function MapBasemapControl() {
               <option value="osm">{t('mapPanel.basemapOsm')}</option>
             </select>
           </div>
+          <OfflineMapsSection />
         </div>
       ) : null}
     </div>

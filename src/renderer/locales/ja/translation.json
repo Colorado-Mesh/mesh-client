@@ -2290,7 +2290,32 @@
     "layerCongestionHalos": "輻輳ハロー",
     "waypointDefaultName": "ウェイポイント",
     "waypointDelete": "ウェイポイントの削除",
-    "noGpsNodes": "GPS 位置を持つノードはまだありません"
+    "noGpsNodes": "GPS 位置を持つノードはまだありません",
+    "offlineMaps": {
+      "heading": "オフラインマップ",
+      "autoCache": "アイドル時に自動キャッシュ",
+      "autoCacheAria": "オンライン中に現在のマップビューを自動的にダウンロードする",
+      "downloadView": "現在のビューをダウンロード",
+      "downloadAria": "オフラインで使用するための現在のマップビューの見積もりとダウンロード",
+      "estimating": "推定中…",
+      "confirm": "{{count}}タイル(~ {{size}} )、ズーム{{minZoom}} – {{maxZoom}}。今すぐダウンロードしますか？",
+      "confirmYes": "ダウンロード",
+      "confirmDownloadAria": "オフラインマップダウンロードの確認",
+      "cancelConfirm": "今ではない",
+      "cancelConfirmAria": "オフラインマップダウンロードの確認をキャンセルする",
+      "progress": "{{completed}}/{{total}}タイル（ {{failed}}失敗）",
+      "paused": "一時停止—ネットワークを待っています…",
+      "cancel": "ダウンロードをキャンセル",
+      "cancelAria": "オフラインマップダウンロードをキャンセル",
+      "cancelled": "ダウンロード中止",
+      "done": "{{completed}}タイルをダウンロードしました（ {{failed}}に失敗しました）。",
+      "tooLarge": "そのエリアは広すぎます。ズームインまたはズーム範囲を縮小します。",
+      "noViewport": "ビューポートが保存されるように、最初にマップをパンします。",
+      "cacheStats": "キャッシュ： {{count}}タイル（ {{size}} ）",
+      "clear": "タイルキャッシュをクリア",
+      "clearAria": "オフラインマップタイルキャッシュをクリア",
+      "cleared": "キャッシュはクリアされました。"
+    }
   },
   "meshCongestion": {
     "blockTitle": "重複したトラフィックが表示される理由",

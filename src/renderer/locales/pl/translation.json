@@ -2342,7 +2342,32 @@
     "layerCongestionHalos": "Halo z przeciążeniami",
     "waypointDefaultName": "Punkt orientacyjny",
     "waypointDelete": "Usuń punkt orientacyjny",
-    "noGpsNodes": "Nie ma jeszcze węzłów z pozycjami GPS"
+    "noGpsNodes": "Nie ma jeszcze węzłów z pozycjami GPS",
+    "offlineMaps": {
+      "heading": "MAPY OFFLINE",
+      "autoCache": "Automatyczna pamięć podręczna w stanie bezczynności",
+      "autoCacheAria": "Automatycznie pobierz bieżący widok mapy w trybie online",
+      "downloadView": "Pobierz bieżący widok",
+      "downloadAria": "Oszacuj i pobierz bieżący widok mapy do użytku offline",
+      "estimating": "Dane do obliczeń",
+      "confirm": "Płytki {{count}} (~{{size}}), Zoom {{minZoom}}–{{maxZoom}}. Pobierz teraz?",
+      "confirmYes": "Pobierz",
+      "confirmDownloadAria": "Potwierdź pobranie mapy offline",
+      "cancelConfirm": "Nie teraz",
+      "cancelConfirmAria": "Anuluj potwierdzenie pobierania mapy offline",
+      "progress": "Płytki {{completed}} / {{total}} ({{failed}} nie powiodło się)",
+      "paused": "Wstrzymano — oczekiwanie na połączenie z siecią…",
+      "cancel": "Anuluj pobieranie",
+      "cancelAria": "Anuluj pobieranie mapy offline",
+      "cancelled": "Pobieranie anulowane.",
+      "done": "Pobrano kafelki {{completed}} ({{failed}} nie powiodło się).",
+      "tooLarge": "Ten obszar jest zbyt duży. Powiększ lub zmniejsz zakres powiększenia.",
+      "noViewport": "Najpierw przesuń mapę, aby zapisać rzutnię.",
+      "cacheStats": "Pamięć podręczna: kafle {{count}} ({{size}})",
+      "clear": "Wyczyść pamięć podręczną kafli",
+      "clearAria": "Wyczyść pamięć podręczną offline",
+      "cleared": "Pamieć podręczna opróżniona"
+    }
   },
   "meshCongestion": {
     "blockTitle": "Dlaczego widzisz zduplikowany ruch",

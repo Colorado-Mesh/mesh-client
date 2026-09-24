@@ -2290,7 +2290,32 @@
     "layerCongestionHalos": "Halos de congestión",
     "waypointDefaultName": "Punto de referencia",
     "waypointDelete": "Eliminar punto de ruta",
-    "noGpsNodes": "Aún no hay nodos con posiciones GPS"
+    "noGpsNodes": "Aún no hay nodos con posiciones GPS",
+    "offlineMaps": {
+      "heading": "Mapas sin conexión",
+      "autoCache": "Caché automático cuando está inactivo",
+      "autoCacheAria": "Descargue automáticamente la vista de mapa actual mientras está en línea",
+      "downloadView": "Descargar vista actual",
+      "downloadAria": "Estimar y descargar la vista de mapa actual para uso sin conexión",
+      "estimating": "calculando…",
+      "confirm": "{{count}} mosaicos (~{{size}}), zoom {{minZoom}}–{{maxZoom}}. ¿Descargar ahora?",
+      "confirmYes": "Descargar",
+      "confirmDownloadAria": "Confirma la descarga del mapa sin conexión",
+      "cancelConfirm": "Ahora no",
+      "cancelConfirmAria": "Cancelar la confirmación de descarga del mapa sin conexión",
+      "progress": "{{completed}} / {{total}} mosaicos ({{failed}} falló)",
+      "paused": "Pausado: esperando la red...",
+      "cancel": "Cancelar descarga",
+      "cancelAria": "Cancelar descarga de mapa sin conexión",
+      "cancelled": "Descarga cancelada",
+      "done": "Se han descargado {{completed}} mosaicos ({{failed}} ha fallado).",
+      "tooLarge": "Esa zona es demasiado grande. Amplíe o reduzca el rango de zoom.",
+      "noViewport": "Primero desplaza el mapa para que se guarde una ventana gráfica.",
+      "cacheStats": "Caché: {{count}} mosaicos ({{size}})",
+      "clear": "Borrar caché de mosaicos",
+      "clearAria": "Borrar caché de mosaicos de mapas sin conexión",
+      "cleared": "Carpeta del caché limpiada."
+    }
   },
   "meshCongestion": {
     "blockTitle": "Por qué ves tráfico duplicado",

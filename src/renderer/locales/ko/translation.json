@@ -2290,7 +2290,32 @@
     "layerCongestionHalos": "혼잡 후광",
     "waypointDefaultName": "웨이포인트",
     "waypointDelete": "웨이포인트 삭제",
-    "noGpsNodes": "아직 GPS 위치가 있는 노드가 없습니다."
+    "noGpsNodes": "아직 GPS 위치가 있는 노드가 없습니다.",
+    "offlineMaps": {
+      "heading": "오프라인 지도",
+      "autoCache": "유휴 상태일 때 자동 캐시",
+      "autoCacheAria": "온라인 상태에서 현재 지도 보기를 자동으로 다운로드합니다",
+      "downloadView": "현재 보기 다운로드",
+      "downloadAria": "오프라인에서 사용할 수 있도록 현재 지도 보기 추정 및 다운로드",
+      "estimating": "추정",
+      "confirm": "{{count}} TILES (~ {{size}}), ZOOM {{minZoom}} – {{maxZoom}}. 지금 다운로드하시겠습니까?",
+      "confirmYes": "다운로드",
+      "confirmDownloadAria": "오프라인 지도 다운로드 확인",
+      "cancelConfirm": "",
+      "cancelConfirmAria": "오프라인 지도 다운로드 확인 취소",
+      "progress": "{{completed}}/{{total}} 타일 ({{failed}} 실패)",
+      "paused": "일시 중지됨 — 네트워크 대기 중...",
+      "cancel": "다운로드 취소",
+      "cancelAria": "오프라인 지도 다운로드 취소",
+      "cancelled": "다운로드가 취소되었습니다.",
+      "done": "{{completed}} 타일 ({{failed}} 실패) 을 다운로드했습니다.",
+      "tooLarge": "면적이 너무 넓습니다. 확대하거나 축소할 수 있습니다.",
+      "noViewport": "뷰포트가 저장되도록 지도를 먼저 패닝합니다.",
+      "cacheStats": "캐시: {{count}} 타일 ({{size}})",
+      "clear": "타일 캐시 지우기",
+      "clearAria": "오프라인 지도 타일 캐시 지우기",
+      "cleared": "타일 캐시가 지워졌습니다."
+    }
   },
   "meshCongestion": {
     "blockTitle": "중복된 트래픽이 표시되는 이유",

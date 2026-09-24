@@ -2290,7 +2290,32 @@
     "layerCongestionHalos": "Tıkanıklık haleleri",
     "waypointDefaultName": "Yol noktası",
     "waypointDelete": "Yol Noktasını Sil",
-    "noGpsNodes": "Henüz GPS konumu olan düğüm yok"
+    "noGpsNodes": "Henüz GPS konumu olan düğüm yok",
+    "offlineMaps": {
+      "heading": "Çevrimdışı Haritalar",
+      "autoCache": "Boştayken otomatik önbellek",
+      "autoCacheAria": "Çevrimiçi iken mevcut harita görünümünü otomatik olarak indir",
+      "downloadView": "Mevcut görünümü indir",
+      "downloadAria": "Çevrimdışı kullanım için mevcut harita görünümünü tahmin edin ve indirin",
+      "estimating": "tahmin etme",
+      "confirm": "{{count}} karolar (~{{size}}), yakınlaştır {{minZoom}} – {{maxZoom}}. Şimdi indirilsin mi?",
+      "confirmYes": "İndir",
+      "confirmDownloadAria": "Çevrimdışı harita indirmeyi onaylayın",
+      "cancelConfirm": "Şimdi değil",
+      "cancelConfirmAria": "Çevrimdışı harita indirme onayını iptal et",
+      "progress": "{{completed}} / {{total}} döşemeler ({{failed}} başarısız oldu)",
+      "paused": "Duraklatıldı — ağ bekleniyor…",
+      "cancel": "İndirmeyi iptal et",
+      "cancelAria": "Çevrimdışı harita indirmeyi iptal et",
+      "cancelled": "İptal edilen kart listesini indirin",
+      "done": "{{completed}} kutucuklar indirildi ({{failed}} başarısız oldu).",
+      "tooLarge": "O alan çok büyük. Yakınlaştırın veya yakınlaştırma aralığını azaltın.",
+      "noViewport": "Bir görünüm penceresinin kaydedilmesi için önce haritayı kaydırın.",
+      "cacheStats": "Önbellek: {{count}} karo ({{size}})",
+      "clear": "Döşeme önbelleğini temizle",
+      "clearAria": "Çevrimdışı harita döşeme önbelleğini temizle",
+      "cleared": "Ön bellek temizlendi."
+    }
   },
   "meshCongestion": {
     "blockTitle": "Neden yinelenen trafik görüyorsunuz?",

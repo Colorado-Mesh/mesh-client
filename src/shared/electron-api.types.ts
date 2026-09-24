@@ -1012,6 +1012,67 @@ export interface ElectronAPI {
     onOffline: (cb: () => void) => () => void;
   };
 
+  // ─── Offline map tile cache ──────────────────────────────────────────────────
+  offlineMaps: {
+    estimate: (req: {
+      bounds: { north: number; south: number; east: number; west: number };
+      minZoom: number;
+      maxZoom: number;
+      basemapId: 'osm' | 'dark';
+    }) => Promise<{ tileCount: number; sizeEstimateBytes: number; withinCaps: boolean }>;
+    download: (req: {
+      bounds: { north: number; south: number; east: number; west: number };
+      minZoom: number;
+      maxZoom: number;
+      basemapId: 'osm' | 'dark';
+    }) => Promise<{ jobId: string }>;
+    cancel: (jobId: string) => Promise<{ cancelled: boolean }>;
+    status: () => Promise<{
+      activeJobs: {
+        jobId: string;
+        source: 'osm' | 'dark';
+        completed: number;
+        total: number;
+        failed: number;
+        bytes: number;
+        paused: boolean;
+      }[];
+      stats: { tileCount: number; diskBytes: number };
+      regions: {
+        id: string;
+        basemapId: 'osm' | 'dark';
+        bounds: { north: number; south: number; east: number; west: number };
+        minZoom: number;
+        maxZoom: number;
+        completedAt: number;
+        tileCount: number;
+      }[];
+      sources: Record<string, { tileCount: number; diskBytes: number }>;
+    }>;
+    clear: (source?: 'osm' | 'dark' | 'all') => Promise<{ ok: boolean }>;
+    onProgress: (
+      cb: (info: {
+        jobId: string;
+        source: 'osm' | 'dark';
+        completed: number;
+        total: number;
+        failed: number;
+        bytes: number;
+        paused: boolean;
+      }) => void,
+    ) => () => void;
+    onDone: (
+      cb: (info: {
+        jobId: string;
+        completed: number;
+        failed: number;
+        bytes: number;
+        cancelled: boolean;
+      }) => void,
+    ) => () => void;
+    onError: (cb: (info: { jobId: string; message: string }) => void) => () => void;
+  };
+
   // ─── Meshtastic XMODEM (local radio file transfer) ───────────────────────────
   meshtasticXmodem: {
     pickUploadFile: () => Promise<{ filename: string; data: Uint8Array } | null>;

@@ -2317,7 +2317,32 @@
     "layerCongestionHalos": "Halo přetížení",
     "waypointDefaultName": "Trasový bod",
     "waypointDelete": "Smazat trasový bod",
-    "noGpsNodes": "Zatím žádné uzly s pozicemi GPS"
+    "noGpsNodes": "Zatím žádné uzly s pozicemi GPS",
+    "offlineMaps": {
+      "heading": "Offline mapy",
+      "autoCache": "Automatická vyrovnávací paměť při nečinnosti",
+      "autoCacheAria": "Automaticky stáhnout aktuální zobrazení mapy, když jste online",
+      "downloadView": "Stáhnout aktuální zobrazení",
+      "downloadAria": "Odhadněte a stáhněte si aktuální zobrazení mapy pro offline použití",
+      "estimating": "Odhad",
+      "confirm": "{{count}} dlaždice (~{{size}}), zoom {{minZoom}}–{{maxZoom}}. Stáhnout?",
+      "confirmYes": "Stáhnout",
+      "confirmDownloadAria": "Potvrdit stažení offline mapy",
+      "cancelConfirm": "Nyní ne",
+      "cancelConfirmAria": "Zrušit potvrzení o stažení offline mapy",
+      "progress": "{{completed}} / {{total}} dlaždice ({{failed}} selhalo)",
+      "paused": "Pozastaveno — čeká se na síť...",
+      "cancel": "Zrušit stahování",
+      "cancelAria": "Zrušit stahování offline mapy",
+      "cancelled": "Stahování bylo zrušeno.",
+      "done": "Stažené dlaždice {{completed}} ({{failed}} se nezdařilo).",
+      "tooLarge": "Tato oblast je příliš velká. Přiblížení nebo zmenšení rozsahu přiblížení.",
+      "noViewport": "Nejprve posuňte mapu, aby se uložil výřez.",
+      "cacheStats": "Mezipaměť: {{count}} dlaždice ({{size}})",
+      "clear": "Vymazat mezipaměť dlaždic",
+      "clearAria": "Vymazat offline mezipaměť mapových dlaždic",
+      "cleared": "Mezipaměť vymazána."
+    }
   },
   "meshCongestion": {
     "blockTitle": "Proč vidíte duplicitní provoz",

@@ -2290,7 +2290,32 @@
     "layerCongestionHalos": "Halos de congestion",
     "waypointDefaultName": "Point de cheminement",
     "waypointDelete": "Supprimer un point de cheminement",
-    "noGpsNodes": "Aucun nœud avec des positions GPS pour l'instant"
+    "noGpsNodes": "Aucun nœud avec des positions GPS pour l'instant",
+    "offlineMaps": {
+      "heading": "Cartes hors-ligne",
+      "autoCache": "Mise en cache automatique lorsqu'il est inactif",
+      "autoCacheAria": "Téléchargez automatiquement la vue cartographique actuelle en ligne",
+      "downloadView": "Télécharger la vue actuelle",
+      "downloadAria": "Estimer et télécharger la vue cartographique actuelle pour une utilisation hors ligne",
+      "estimating": "estimation…",
+      "confirm": "{{count}} tuiles (~{{size}}), zoom {{minZoom}}–{{maxZoom}}. Télécharger maintenant ?",
+      "confirmYes": "Télécharger",
+      "confirmDownloadAria": "Confirmer le téléchargement de la carte hors ligne",
+      "cancelConfirm": "Pas maintenant",
+      "cancelConfirmAria": "Annuler la confirmation de téléchargement de la carte hors ligne",
+      "progress": "{{completed}} / {{total}} tuiles ({{failed}} a échoué)",
+      "paused": "En pause — en attente du réseau…",
+      "cancel": "Annuler le téléchargement",
+      "cancelAria": "Annuler le téléchargement de carte hors ligne",
+      "cancelled": "Téléchargement annulé",
+      "done": "Tuiles {{completed}} téléchargées ({{failed}} a échoué).",
+      "tooLarge": "Cette zone est trop grande. Effectuez un zoom avant ou réduisez la plage de zoom.",
+      "noViewport": "Effectuez d'abord un panoramique sur la carte pour enregistrer une fenêtre.",
+      "cacheStats": "Cache : {{count}} tuiles ({{size}})",
+      "clear": "Effacer le cache de tuiles",
+      "clearAria": "Effacer le cache de tuiles de carte hors ligne",
+      "cleared": "Cache vidé."
+    }
   },
   "meshCongestion": {
     "blockTitle": "Pourquoi voyez-vous du trafic en double ?",

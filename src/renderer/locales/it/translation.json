@@ -2290,7 +2290,32 @@
     "layerCongestionHalos": "Aloni di congestione",
     "waypointDefaultName": "Punto di passaggio",
     "waypointDelete": "Elimina punto di passaggio",
-    "noGpsNodes": "Nessun nodo con posizioni GPS ancora"
+    "noGpsNodes": "Nessun nodo con posizioni GPS ancora",
+    "offlineMaps": {
+      "heading": "Mostra mappe offline",
+      "autoCache": "Memorizza automaticamente nella cache quando è inattivo",
+      "autoCacheAria": "Scarica automaticamente la visualizzazione della mappa corrente mentre sei online",
+      "downloadView": "Scarica file corrente",
+      "downloadAria": "Stima e scarica la visualizzazione della mappa corrente per l'uso offline",
+      "estimating": "calcolo…",
+      "confirm": "{{count}} piastrelle (~{{size}}), zoom {{minZoom}}–{{maxZoom}}. Scaricalo ora?",
+      "confirmYes": "Download",
+      "confirmDownloadAria": "Conferma download mappa offline",
+      "cancelConfirm": "Non ora",
+      "cancelConfirmAria": "Annulla conferma download mappa offline",
+      "progress": "{{completed}} / {{total}} piastrelle ({{failed}} non riuscito)",
+      "paused": "Sospeso — in attesa della rete...",
+      "cancel": "Annulla download",
+      "cancelAria": "Annulla download mappa offline",
+      "cancelled": "Download cancellato",
+      "done": "Caricate {{completed}} tessere ({{failed}} non riuscito).",
+      "tooLarge": "Quell' area è troppo grande. Ingrandire o ridurre l'intervallo di zoom.",
+      "noViewport": "Scorrere prima la mappa in modo da salvare una finestra.",
+      "cacheStats": "Cache: {{count}} piastrelle ({{size}})",
+      "clear": "Svuota la cache delle tessere",
+      "clearAria": "Svuota la cache delle tessere della mappa offline",
+      "cleared": "Cache cancellata"
+    }
   },
   "meshCongestion": {
     "blockTitle": "Perché vedi traffico duplicato",

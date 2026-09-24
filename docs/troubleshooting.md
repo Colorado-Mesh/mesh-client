@@ -1938,19 +1938,19 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 
 ### Map tab without internet (offline / no WAN)
 
-**Basemap tiles:** The map background uses **OpenStreetMap** by default (or **Carto Dark** if selected). On the Map tab, use the **Layers** control under the **online/stale/offline** status counts (top right) to switch basemaps and toggle overlays (node markers, movement trails, waypoints, diagnostic halos). The `TileLayer` is defined in [`MapPanel.tsx`](https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MapPanel.tsx). **Without internet access, new tiles cannot be fetched**, so the basemap may look **blank, gray, or incomplete**, or show only **tiles previously cached** by the embedded browser (caching is best-effort and not guaranteed).
+**Basemap tiles:** The map background uses **OpenStreetMap** by default (or **Carto Dark** if selected). On the Map tab, use the **Layers** control under the **online/stale/offline** status counts (top right) to switch basemaps and toggle overlays (node markers, movement trails, waypoints, diagnostic halos). The `TileLayer` is defined in [`MapPanel.tsx`](https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MapPanel.tsx). Tiles are served through the privileged **`mesh-tiles:`** protocol and stored under the app **userData** `tile-cache/` directory (viewed tiles cache automatically while online). Use **Layers → Offline maps → Download current view** while online to pre-fetch a region (estimate + confirm; downloads pause if the link drops and resume after a stable connection). **Without internet access, uncached areas look blank**; previously downloaded or viewed tiles still render. Overlays (markers, trails, polylines, halos) come from local/SQLite state and still work offline.
 
 **Overlays:** **Node markers, polylines, position trails, and other vector layers** are separate from the tile layer. If nodes have latitude/longitude (from RF, MQTT, SQLite, or your session), those overlays can still **render on top of a missing or partial basemap**.
 
-**Your position offline:** Use **device GPS** when available, **Fixed Position** on the **Radio** tab, or **static coordinates** in app/GPS settings. See **GPS "Location unavailable" or stuck on the map** above for IP-based fallbacks and manual entry. Positions heard over the mesh do not require internet.
+**Your position offline:** Use **device GPS** when available, **Fixed Position** on the **Radio** tab, or **static coordinates** in app/GPS settings. The IP-geolocation fallback returns immediately with code `OFFLINE` when there is no WAN. See **GPS "Location unavailable" or stuck on the map** above. Positions heard over the mesh do not require internet.
 
 ### Verifying offline behavior (manual QA)
 
 With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if possible:
 
 1. Confirm the app **window loads** and core tabs work; connect via **USB serial** or **BLE** to a local radio if you need RF features.
-2. Open the **Map** tab: expect **missing or stale basemap tiles** as described above; **markers and trails** may still appear when position data exists.
-3. A non-fatal **update check** message in the console is expected without WAN; see **Update check fails / footer update status** above.
+2. Open the **Map** tab: expect **blank basemap** where tiles were never cached; **markers and trails** may still appear when position data exists. Pre-downloaded regions should still show tiles.
+3. The footer shows a muted **Updates paused (offline)** state (not amber **Update error**) when WAN is missing; update checks do not retry in a loop.
 
 ## App, updates, and localization
 
@@ -1982,7 +1982,7 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 ### Update check fails / footer update status
 
-The app functions fully offline; this is not a critical error. If "Update check failed" appears in the console, verify network connectivity. Update checks are rate-limited by the GitHub API and may silently skip when the limit is reached. The footer shows **Update error** when a check fails; use **Check for updates** in the app menu or retry from the footer when applicable.
+The app functions fully offline; this is not a critical error. When there is no WAN, the footer shows a muted **Updates paused (offline)** state and does not amber-nag or retry in a loop. When connectivity returns and stays stable (~60s), one quiet update check runs. If a real (non-network) update error occurs, the footer shows **Update error**; use **Check for updates** in the app menu or retry from the footer when applicable. Update checks are rate-limited by the GitHub API and may silently skip when the limit is reached.
 
 **Footer shows vX.Y.Z then Update error after Cut release:** The GitHub release may have been published with an `untagged-*` tag instead of `vX.Y.Z` (draft-fork race). On GitHub → Releases, confirm the latest release tag is `vX.Y.Z`. Repair with `GH_TOKEN=YOUR_ADMIN_PAT node scripts/repair-published-release-tag.mjs --tag vX.Y.Z`, or edit the release in the GitHub UI. Future releases are blocked at CI verify when the draft tag is wrong.
 

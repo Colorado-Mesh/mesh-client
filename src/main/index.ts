@@ -125,6 +125,7 @@ import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
 import { registerNotificationSoundHandlers } from './ipc/notification-sound-handlers';
+import { registerOfflineMapsIpcHandlers } from './ipc/offline-maps-handlers';
 import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
 import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './ipc/reticulum-handlers';
 import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-handlers';
@@ -379,13 +380,7 @@ function isAnyMqttConnected(): boolean {
 
 let mainWindow: BrowserWindow | null = null;
 const rendererHeartbeatWatchdog = createRendererHeartbeatWatchdog();
-/** Disk-backed map tile cache for `mesh-tiles:` (created at window setup). */
 let offlineTileCache: TileCache | null = null;
-
-/** Shared tile cache for offline-maps IPC (Phase B2). */
-export function getOfflineTileCache(): TileCache | null {
-  return offlineTileCache;
-}
 /** Win32 About: native About panel can hard-crash; use a small HTML BrowserWindow instead (#406). */
 let windowsAboutWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -2103,6 +2098,10 @@ function createWindow() {
         cache: offlineTileCache,
         getAppVersion: () => app.getVersion(),
       }),
+    );
+    registerOfflineMapsIpcHandlers(
+      () => mainWindow,
+      () => offlineTileCache,
     );
   }
 }

@@ -2290,7 +2290,32 @@
     "layerCongestionHalos": "拥堵光环",
     "waypointDefaultName": "航路点",
     "waypointDelete": "删除航点",
-    "noGpsNodes": "尚无具有 GPS 位置的节点"
+    "noGpsNodes": "尚无具有 GPS 位置的节点",
+    "offlineMaps": {
+      "heading": "离线地图",
+      "autoCache": "空闲时自动缓存",
+      "autoCacheAria": "在线时自动下载当前地图视图",
+      "downloadView": "下载当前视图",
+      "downloadAria": "估计并下载当前地图视图以供离线使用",
+      "estimating": "估算中…",
+      "confirm": "{{count}}平铺(~ {{size}}) ，缩放{{minZoom}} – {{maxZoom}}。立即下载？",
+      "confirmYes": "下载",
+      "confirmDownloadAria": "确认离线地图下载",
+      "cancelConfirm": "立即购买",
+      "cancelConfirmAria": "取消离线地图下载确认",
+      "progress": "{{completed}}/{{total}}平铺（ {{failed}}失败）",
+      "paused": "已暂停—正在等待网络…",
+      "cancel": "不再下载",
+      "cancelAria": "取消离线地图下载",
+      "cancelled": "下载已取消",
+      "done": "已下载{{completed}}图块（ {{failed}}失败）。",
+      "tooLarge": "那个区域太大了。放大或缩小缩放范围。",
+      "noViewport": "首先平移地图，以便保存视口。",
+      "cacheStats": "缓存： {{count}}平铺({{size}})",
+      "clear": "清除磁贴缓存",
+      "clearAria": "清除离线地图图块缓存",
+      "cleared": "缓存已清除。"
+    }
   },
   "meshCongestion": {
     "blockTitle": "为什么您会看到重复的流量",
