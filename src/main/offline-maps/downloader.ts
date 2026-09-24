@@ -31,6 +31,8 @@ export interface OfflineMapsEstimateRequest {
   minZoom: number;
   maxZoom: number;
   basemapId: OfflineMapBasemapId;
+  /** CARTO `@2x` only; ignored for OSM. */
+  retina?: boolean;
 }
 
 export interface OfflineMapsEstimateResult {
@@ -210,17 +212,17 @@ export class OfflineMapsDownloader {
       }
 
       if (!job.cancelled) {
-        const manifest = await this.deps.cache.readManifest();
-        manifest.regions.push({
-          id: job.id,
-          basemapId: job.request.basemapId,
-          bounds: job.request.bounds,
-          minZoom: job.request.minZoom,
-          maxZoom: job.request.maxZoom,
-          completedAt: Date.now(),
-          tileCount: job.completed,
+        await this.deps.cache.mutateManifest((manifest) => {
+          manifest.regions.push({
+            id: job.id,
+            basemapId: job.request.basemapId,
+            bounds: job.request.bounds,
+            minZoom: job.request.minZoom,
+            maxZoom: job.request.maxZoom,
+            completedAt: Date.now(),
+            tileCount: job.completed,
+          });
         });
-        await this.deps.cache.writeManifest(manifest);
       }
 
       this.deps.onDone({
@@ -266,12 +268,15 @@ export class OfflineMapsDownloader {
 
   private async fetchOne(job: ActiveJob, tile: WebMercatorTile): Promise<void> {
     if (job.cancelled) return;
-    const existing = await this.deps.cache.getCachedTile({
+    const retina = job.request.basemapId === 'dark' && job.request.retina === true;
+    const coords = {
       basemapId: job.request.basemapId,
       z: tile.z,
       x: tile.x,
       y: tile.y,
-    });
+      retina,
+    };
+    const existing = await this.deps.cache.getCachedTile(coords);
     if (existing) {
       job.completed += 1;
       job.bytes += existing.byteLength;
@@ -279,6 +284,7 @@ export class OfflineMapsDownloader {
     }
 
     const url = buildRemoteTileUrl(job.request.basemapId, tile.z, tile.x, tile.y, {
+      retina,
       subdomainIndex: (tile.x + tile.y) % 4,
     });
     try {
@@ -287,7 +293,10 @@ export class OfflineMapsDownloader {
           'User-Agent': meshTilesUserAgent(this.deps.getAppVersion()),
           Referer: OSM_TILE_HTTP_REFERRER,
         },
-        signal: AbortSignal.timeout(OFFLINE_MAP_TILE_FETCH_TIMEOUT_MS),
+        signal: AbortSignal.any([
+          job.abort.signal,
+          AbortSignal.timeout(OFFLINE_MAP_TILE_FETCH_TIMEOUT_MS),
+        ]),
       });
       if (job.cancelled || job.abort.signal.aborted) return;
       if (!res.ok) {
@@ -295,10 +304,7 @@ export class OfflineMapsDownloader {
         return;
       }
       const buf = Buffer.from(await res.arrayBuffer());
-      await this.deps.cache.putCachedTile(
-        { basemapId: job.request.basemapId, z: tile.z, x: tile.x, y: tile.y },
-        buf,
-      );
+      await this.deps.cache.putCachedTile(coords, buf);
       job.completed += 1;
       job.bytes += buf.byteLength;
     } catch (e: unknown) {

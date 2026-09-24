@@ -9,15 +9,26 @@ import { OfflineMapsDownloader } from '../offline-maps/downloader';
 import type { TileCache } from '../offline-maps/tile-cache';
 import { assertIpcSender } from '../validate-ipc-sender';
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
 function isLatLonBounds(value: unknown): value is LatLonBounds {
   if (typeof value !== 'object' || value === null) return false;
   const b = value as Record<string, unknown>;
-  return (
-    typeof b.north === 'number' &&
-    typeof b.south === 'number' &&
-    typeof b.east === 'number' &&
-    typeof b.west === 'number'
-  );
+  if (
+    !isFiniteNumber(b.north) ||
+    !isFiniteNumber(b.south) ||
+    !isFiniteNumber(b.east) ||
+    !isFiniteNumber(b.west)
+  ) {
+    return false;
+  }
+  if (b.north < -90 || b.north > 90 || b.south < -90 || b.south > 90) return false;
+  if (b.north < b.south) return false;
+  // Longitude may wrap the antimeridian; reject only absurd magnitudes.
+  if (Math.abs(b.east) > 360 || Math.abs(b.west) > 360) return false;
+  return true;
 }
 
 function parseDownloadArgs(raw: unknown): {
@@ -25,17 +36,20 @@ function parseDownloadArgs(raw: unknown): {
   minZoom: number;
   maxZoom: number;
   basemapId: OfflineMapBasemapId;
+  retina?: boolean;
 } | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const o = raw as Record<string, unknown>;
   if (!isLatLonBounds(o.bounds)) return null;
   if (!isOfflineMapBasemapId(o.basemapId)) return null;
-  if (typeof o.minZoom !== 'number' || typeof o.maxZoom !== 'number') return null;
+  if (!isFiniteNumber(o.minZoom) || !isFiniteNumber(o.maxZoom)) return null;
+  const retina = o.retina === true && o.basemapId === 'dark' ? true : undefined;
   return {
     bounds: o.bounds,
     minZoom: o.minZoom,
     maxZoom: o.maxZoom,
     basemapId: o.basemapId,
+    ...(retina ? { retina: true } : {}),
   };
 }
 

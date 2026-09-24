@@ -7,6 +7,7 @@ import {
   type OfflineMapBasemapId,
   OSM_TILE_HTTP_REFERRER,
 } from '@/shared/offlineMaps/basemapRegistry';
+import { OFFLINE_MAP_TILE_FETCH_TIMEOUT_MS } from '@/shared/offlineMaps/tileMath';
 
 import { sanitizeLogMessage } from '../log-service';
 import { parseTileCoords, type TileCache } from './tile-cache';
@@ -118,6 +119,7 @@ export function createMeshTilesProtocolHandler(
           'User-Agent': meshTilesUserAgent(deps.getAppVersion()),
           Referer: OSM_TILE_HTTP_REFERRER,
         },
+        signal: AbortSignal.timeout(OFFLINE_MAP_TILE_FETCH_TIMEOUT_MS),
       });
       if (!res.ok) {
         return emptyResponse(404);

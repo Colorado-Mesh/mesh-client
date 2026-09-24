@@ -2561,7 +2561,11 @@ function AppContent() {
       menuUpdateNotifyCtrl.flushSettled('error', { message: info.message });
     });
     const offOffline = window.electronAPI.update.onOffline(() => {
-      setUpdateState((s) => ({ ...s, phase: 'offline', errorMessage: undefined }));
+      setUpdateState((s) =>
+        s.phase === 'ready'
+          ? { ...s, errorMessage: undefined }
+          : { ...s, phase: 'offline', errorMessage: undefined },
+      );
     });
     return () => {
       offChecking();
@@ -2585,11 +2589,20 @@ function AppContent() {
 
   // ─── Auto-check for updates on startup (+ debounced recovery when WAN returns) ────
   useEffect(() => {
+    let checkInFlight = false;
     const runCheck = () => {
-      void window.electronAPI.update.check().catch((e: unknown) => {
-        console.warn('[App] update check failed ' + errLikeToLogString(e));
-        setUpdateState((s) => ({ ...s, phase: 'error' }));
-      });
+      if (checkInFlight) return;
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      checkInFlight = true;
+      void window.electronAPI.update
+        .check()
+        .catch((e: unknown) => {
+          console.warn('[App] update check failed ' + errLikeToLogString(e));
+          setUpdateState((s) => ({ ...s, phase: 'error' }));
+        })
+        .finally(() => {
+          checkInFlight = false;
+        });
     };
 
     let startupTimer: ReturnType<typeof setTimeout> | null = null;
@@ -2603,14 +2616,25 @@ function AppContent() {
     };
     const onOffline = () => {
       scheduler.onOffline();
-      setUpdateState((s) => ({ ...s, phase: 'offline', errorMessage: undefined }));
+      setUpdateState((s) =>
+        s.phase === 'ready'
+          ? { ...s, errorMessage: undefined }
+          : { ...s, phase: 'offline', errorMessage: undefined },
+      );
     };
+    // Main may emit update:offline while navigator.onLine is still true (DNS/flaky WAN).
+    const offUpdateOffline = window.electronAPI.update.onOffline(() => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      if (checkInFlight) return;
+      scheduler.onOnline();
+    });
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
 
     return () => {
       if (startupTimer != null) clearTimeout(startupTimer);
       scheduler.dispose();
+      offUpdateOffline();
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
     };

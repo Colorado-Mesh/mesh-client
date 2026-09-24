@@ -5,7 +5,11 @@ import {
   estimateTileCount,
   isRegionWithinCaps,
   latLonToTile,
+  normalizeLon,
+  OFFLINE_MAP_MAX_ESTIMATE_BYTES,
   OFFLINE_MAP_MAX_TILES,
+  TILE_CACHE_MAX_BYTES,
+  tileCountForBoundsAtZoom,
   tilesForBoundsAtZoom,
   WEB_MERCATOR_MAX_LAT,
 } from './tileMath';
@@ -17,15 +21,34 @@ describe('tileMath', () => {
     expect(t.y).toBe(edge.y);
   });
 
+  it('normalizes extreme longitudes without looping', () => {
+    expect(normalizeLon(540)).toBe(180);
+    expect(normalizeLon(-540)).toBe(-180);
+    expect(normalizeLon(181)).toBe(-179);
+  });
+
   it('estimates a known bbox at a single zoom', () => {
     const bounds = { north: 40.02, south: 40.0, east: -105.24, west: -105.28 };
     const count = estimateTileCount(bounds, 14, 14);
     expect(count).toBeGreaterThan(0);
     expect(count).toBe(tilesForBoundsAtZoom(bounds, 14).length);
+    expect(count).toBe(tileCountForBoundsAtZoom(bounds, 14));
+  });
+
+  it('counts antimeridian spans without allocating tiles', () => {
+    const bounds = { north: 10, south: 0, east: -170, west: 170 };
+    expect(tileCountForBoundsAtZoom(bounds, 4)).toBe(tilesForBoundsAtZoom(bounds, 4).length);
   });
 
   it('returns empty for inverted bounds', () => {
     expect(estimateTileCount({ north: 10, south: 20, east: 10, west: 0 }, 10, 10)).toBe(0);
+  });
+
+  it('keeps download caps under the tile-cache LRU budget', () => {
+    expect(OFFLINE_MAP_MAX_ESTIMATE_BYTES).toBeLessThan(TILE_CACHE_MAX_BYTES);
+    expect(OFFLINE_MAP_MAX_TILES).toBeLessThanOrEqual(
+      Math.floor(OFFLINE_MAP_MAX_ESTIMATE_BYTES / (10 * 1024)),
+    );
   });
 
   it('rejects oversize regions via caps', () => {

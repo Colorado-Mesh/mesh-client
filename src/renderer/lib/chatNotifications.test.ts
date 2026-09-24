@@ -9,6 +9,9 @@ describe('playMessageNotification', () => {
   let constructCount = 0;
   let oscillatorCount = 0;
   const oscillatorFrequencies: number[] = [];
+  const oscillatorTypes: OscillatorType[] = [];
+  const oscillatorStarts: number[] = [];
+  const oscillatorStops: number[] = [];
   let mockState: AudioContextState = 'running';
   let resumeMock: ReturnType<typeof vi.fn>;
 
@@ -16,6 +19,9 @@ describe('playMessageNotification', () => {
     constructCount = 0;
     oscillatorCount = 0;
     oscillatorFrequencies.length = 0;
+    oscillatorTypes.length = 0;
+    oscillatorStarts.length = 0;
+    oscillatorStops.length = 0;
     mockState = 'running';
     resumeMock = vi.fn(() => {
       mockState = 'running';
@@ -33,19 +39,33 @@ describe('playMessageNotification', () => {
         oscillatorCount += 1;
         const frequency = { value: 0 };
         oscillatorFrequencies.push(0);
+        oscillatorTypes.push('sine');
+        const idx = oscillatorCount - 1;
         return {
+          get type() {
+            return oscillatorTypes[idx] ?? 'sine';
+          },
+          set type(v: OscillatorType) {
+            oscillatorTypes[idx] = v;
+          },
           connect: vi.fn(),
           frequency: {
             set value(v: number) {
               frequency.value = v;
-              oscillatorFrequencies[oscillatorFrequencies.length - 1] = v;
+              oscillatorFrequencies[idx] = v;
             },
             get value() {
               return frequency.value;
             },
+            setValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
           },
-          start: vi.fn(),
-          stop: vi.fn(),
+          start: vi.fn((t: number) => {
+            oscillatorStarts[idx] = t;
+          }),
+          stop: vi.fn((t: number) => {
+            oscillatorStops[idx] = t;
+          }),
         };
       }
       createGain() {
@@ -100,13 +120,18 @@ describe('playMessageNotification', () => {
     expect(oscillatorFrequencies).toEqual([784, 988, 1175, 784, 988, 1175]);
   });
 
-  it('plays three short–long pairs for mecpSafety', () => {
+  it('plays six short–long square pairs for mecpSafety', () => {
     playMessageNotification('mecpSafety');
     // 6 pairs × (short + long) = 12 oscillators at piercing SAFETY pitch
     expect(oscillatorCount).toBe(12);
     expect(oscillatorFrequencies).toEqual([
       1175, 1175, 1175, 1175, 1175, 1175, 1175, 1175, 1175, 1175, 1175, 1175,
     ]);
+    expect(oscillatorTypes.every((t) => t === 'square')).toBe(true);
+    // short ~80ms then long ~320ms within the first pair
+    expect((oscillatorStops[0] ?? NaN) - (oscillatorStarts[0] ?? NaN)).toBeCloseTo(0.08, 5);
+    expect((oscillatorStops[1] ?? NaN) - (oscillatorStarts[1] ?? NaN)).toBeCloseTo(0.32, 5);
+    expect((oscillatorStarts[1] ?? NaN) - (oscillatorStarts[0] ?? NaN)).toBeCloseTo(0.14, 5); // short + pulseGap
   });
 
   it('plays simultaneous 853+960 Hz EAS attention tones for mecpEas', () => {
@@ -126,6 +151,7 @@ describe('playMessageNotification', () => {
       resume = vi.fn(() => Promise.resolve());
       createOscillator() {
         oscillatorCount += 1;
+        const idx = oscillatorCount - 1;
         const frequency = {
           value: 0,
           setValueAtTime: vi.fn(),
@@ -135,8 +161,12 @@ describe('playMessageNotification', () => {
           type: 'sine',
           connect: vi.fn(),
           frequency,
-          start: vi.fn(),
-          stop: vi.fn(),
+          start: vi.fn((t: number) => {
+            oscillatorStarts[idx] = t;
+          }),
+          stop: vi.fn((t: number) => {
+            oscillatorStops[idx] = t;
+          }),
         };
       }
       createGain() {
@@ -154,10 +184,15 @@ describe('playMessageNotification', () => {
     resetChatNotificationAudioContextForTests();
     vi.stubGlobal('AudioContext', MockAudioContextWithGainCapture);
     oscillatorCount = 0;
+    oscillatorStarts.length = 0;
+    oscillatorStops.length = 0;
     playMessageNotification('mecpSiren');
     // 6 cycles × 1 oscillator each (aligned with ~5s URGENT/EAS length)
     expect(oscillatorCount).toBe(6);
     expect(gainLevels.some((g) => g >= 0.5)).toBe(true);
+    // each cycle is 2 × 417ms sweep ≈ 0.834s
+    expect((oscillatorStops[0] ?? NaN) - (oscillatorStarts[0] ?? NaN)).toBeCloseTo(0.834, 3);
+    expect((oscillatorStarts[5] ?? NaN) - (oscillatorStarts[0] ?? NaN)).toBeCloseTo(5 * 0.834, 3);
   });
 
   it('defaults to channel profile when type is omitted', () => {

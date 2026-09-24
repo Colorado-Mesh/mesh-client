@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -73,6 +73,17 @@ export function OfflineMapsSection() {
   const [statusLine, setStatusLine] = useState<string | null>(null);
   const [stats, setStats] = useState<{ tileCount: number; diskBytes: number } | null>(null);
   const [autoCache, setAutoCache] = useState(readAutoCache);
+  const lastAutoCacheKeyRef = useRef<string | null>(null);
+  const progressRef = useRef<ProgressState | null>(null);
+  useEffect(() => {
+    progressRef.current = progress;
+  }, [progress]);
+
+  const downloadRetina =
+    basemapId === 'dark' &&
+    typeof window !== 'undefined' &&
+    typeof window.devicePixelRatio === 'number' &&
+    window.devicePixelRatio > 1;
 
   const refreshStatus = useCallback(async () => {
     try {
@@ -118,25 +129,38 @@ export function OfflineMapsSection() {
   }, [refreshStatus, t]);
 
   useEffect(() => {
-    if (!autoCache || !viewport || progress != null) return;
+    if (!autoCache || !viewport) return;
+    if (progressRef.current != null) return;
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+    const z = Math.floor(viewport.zoom);
+    const key = [
+      basemapId,
+      viewport.center[0].toFixed(4),
+      viewport.center[1].toFixed(4),
+      String(z),
+      downloadRetina ? '2x' : '1x',
+    ].join(':');
+    if (lastAutoCacheKeyRef.current === key) return;
     const timer = setTimeout(() => {
       void (async () => {
         try {
-          const z = Math.floor(viewport.zoom);
+          if (progressRef.current != null) return;
           const bounds = boundsFromViewport(viewport.center, viewport.zoom);
           const est = await window.electronAPI.offlineMaps.estimate({
             bounds,
             minZoom: z,
             maxZoom: Math.min(OFFLINE_MAP_MAX_ZOOM, z + 1),
             basemapId,
+            retina: downloadRetina || undefined,
           });
           if (!est.withinCaps || est.tileCount > 500) return;
+          lastAutoCacheKeyRef.current = key;
           await window.electronAPI.offlineMaps.download({
             bounds,
             minZoom: z,
             maxZoom: Math.min(OFFLINE_MAP_MAX_ZOOM, z + 1),
             basemapId,
+            retina: downloadRetina || undefined,
           });
         } catch (e: unknown) {
           console.debug('[OfflineMaps] auto-cache skipped ' + errLikeToLogString(e));
@@ -146,7 +170,7 @@ export function OfflineMapsSection() {
     return () => {
       clearTimeout(timer);
     };
-  }, [autoCache, viewport, basemapId, progress]);
+  }, [autoCache, viewport, basemapId, downloadRetina]);
 
   const startEstimate = async () => {
     setEstimating(true);
@@ -166,6 +190,7 @@ export function OfflineMapsSection() {
         minZoom,
         maxZoom,
         basemapId,
+        retina: downloadRetina || undefined,
       });
       if (!est.withinCaps) {
         setStatusLine(t('mapPanel.offlineMaps.tooLarge'));
@@ -194,6 +219,7 @@ export function OfflineMapsSection() {
         minZoom: confirm.minZoom,
         maxZoom: confirm.maxZoom,
         basemapId,
+        retina: downloadRetina || undefined,
       });
       setProgress({ jobId, completed: 0, total: confirm.tileCount, failed: 0, paused: false });
       setConfirm(null);

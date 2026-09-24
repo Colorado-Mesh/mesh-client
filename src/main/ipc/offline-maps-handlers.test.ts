@@ -40,6 +40,11 @@ describe('registerOfflineMapsIpcHandlers', () => {
       Promise.resolve({ version: 1 as const, lastUpdated: 0, sources: {}, regions: [] }),
     ),
     writeManifest: vi.fn(() => Promise.resolve()),
+    mutateManifest: vi.fn((fn: (m: { regions: unknown[] }) => void) => {
+      const m = { version: 1 as const, lastUpdated: 0, sources: {}, regions: [] as unknown[] };
+      fn(m);
+      return Promise.resolve();
+    }),
     clearCache: vi.fn(() => Promise.resolve()),
     clearSource: vi.fn(() => Promise.resolve()),
     getCachedTile: vi.fn(() => Promise.resolve(null)),
@@ -83,5 +88,30 @@ describe('registerOfflineMapsIpcHandlers', () => {
     );
     expect(result).toMatchObject({ withinCaps: true });
     expect((result as { tileCount: number }).tileCount).toBeGreaterThan(0);
+  });
+
+  it('rejects non-finite / out-of-range bounds', () => {
+    expect(() =>
+      harness.handlers.get('offline-maps:estimate')!(
+        {},
+        {
+          bounds: { north: NaN, south: 40.0, east: -105.0, west: -105.01 },
+          minZoom: 14,
+          maxZoom: 14,
+          basemapId: 'osm',
+        },
+      ),
+    ).toThrow(/Invalid estimate/);
+    expect(() =>
+      harness.handlers.get('offline-maps:estimate')!(
+        {},
+        {
+          bounds: { north: 40.01, south: 40.0, east: -105.0, west: -105.01 },
+          minZoom: Number.POSITIVE_INFINITY,
+          maxZoom: 14,
+          basemapId: 'osm',
+        },
+      ),
+    ).toThrow(/Invalid estimate/);
   });
 });

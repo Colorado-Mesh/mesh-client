@@ -929,12 +929,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       minZoom: number;
       maxZoom: number;
       basemapId: 'osm' | 'dark';
+      retina?: boolean;
     }) => ipcRenderer.invoke('offline-maps:estimate', req),
     download: (req: {
       bounds: { north: number; south: number; east: number; west: number };
       minZoom: number;
       maxZoom: number;
       basemapId: 'osm' | 'dark';
+      retina?: boolean;
     }) => ipcRenderer.invoke('offline-maps:download', req),
     cancel: (jobId: string) => ipcRenderer.invoke('offline-maps:cancel', jobId),
     status: () => ipcRenderer.invoke('offline-maps:status'),

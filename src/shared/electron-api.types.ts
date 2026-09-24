@@ -1019,12 +1019,16 @@ export interface ElectronAPI {
       minZoom: number;
       maxZoom: number;
       basemapId: 'osm' | 'dark';
+      /** CARTO `@2x` tiles when devicePixelRatio > 1; ignored for OSM. */
+      retina?: boolean;
     }) => Promise<{ tileCount: number; sizeEstimateBytes: number; withinCaps: boolean }>;
     download: (req: {
       bounds: { north: number; south: number; east: number; west: number };
       minZoom: number;
       maxZoom: number;
       basemapId: 'osm' | 'dark';
+      /** CARTO `@2x` tiles when devicePixelRatio > 1; ignored for OSM. */
+      retina?: boolean;
     }) => Promise<{ jobId: string }>;
     cancel: (jobId: string) => Promise<{ cancelled: boolean }>;
     status: () => Promise<{
