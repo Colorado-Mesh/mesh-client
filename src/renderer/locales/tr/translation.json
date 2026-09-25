@@ -5269,7 +5269,9 @@
     "remoteConnect": "Bağlan",
     "remoteDisconnect": "Bağlantıyı kes",
     "remoteVerifyOffWarning": "Doğrulama olmadan, bu bağlantıyı kesebilen herkes aktarılan konumları alır.",
-    "remoteAllowNameMismatch": "Farklı bir ad için verilen bir sertifikayı kabul edin (ATAK gibi yalnızca içe aktarılan CA)"
+    "remoteAllowNameMismatch": "Farklı bir ad için verilen bir sertifikayı kabul edin (ATAK gibi yalnızca içe aktarılan CA)",
+    "remoteNameMismatchNeedsCa": "Bu seçeneği kullanmak için sunucunun CA'sını içe aktarın.",
+    "remoteAutoConnectNeedsVerify": "Başlatma sırasında bağlantı, doğrulama açılana kadar kapalı kalır."
   },
   "telemetryPanel": {
     "title": "Telemetri",

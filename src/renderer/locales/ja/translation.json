@@ -5269,7 +5269,9 @@
     "remoteConnect": "接続",
     "remoteDisconnect": "接続を解除",
     "remoteVerifyOffWarning": "検証なしで、この接続を傍受できる人は誰でも中継された位置を受け取ります。",
-    "remoteAllowNameMismatch": "別の名前で発行された証明書を受け入れる（ ATAKのように、インポートされたCAのみ）"
+    "remoteAllowNameMismatch": "別の名前で発行された証明書を受け入れる（ ATAKのように、インポートされたCAのみ）",
+    "remoteNameMismatchNeedsCa": "このオプションを使用するには、サーバーのCAをインポートします。",
+    "remoteAutoConnectNeedsVerify": "起動時の接続は、検証を有効にするまでオフのままです。"
   },
   "telemetryPanel": {
     "title": "テレメトリー",

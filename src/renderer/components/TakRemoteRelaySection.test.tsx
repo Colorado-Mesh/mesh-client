@@ -52,7 +52,9 @@ describe('TakRemoteRelaySection', () => {
     expect(screen.getByLabelText('Server address')).toHaveValue('tak.example.org');
     expect(screen.getByLabelText('Port')).toHaveValue(8443);
     expect(screen.getByLabelText(/verify the server certificate/i)).not.toBeChecked();
-    expect(screen.getByLabelText(/connect on application launch/i)).toBeChecked();
+    // Without verification the relay is never started at launch.
+    expect(screen.getByLabelText(/connect on application launch/i)).not.toBeChecked();
+    expect(screen.getByLabelText(/connect on application launch/i)).toBeDisabled();
   });
 
   it('connects with the entered settings', async () => {
@@ -71,6 +73,7 @@ describe('TakRemoteRelaySection', () => {
   });
 
   it('checks the certificate name unless the ATAK-style mismatch is allowed', async () => {
+    vi.mocked(tak().remoteGetCredentials).mockResolvedValue({ caSubjects: ['Colorado TAK CA'] });
     const user = userEvent.setup();
     await renderSection();
     const mismatch = screen.getByLabelText(/issued for a different name/i);
@@ -81,6 +84,34 @@ describe('TakRemoteRelaySection', () => {
     await user.click(screen.getByRole('button', { name: 'Connect' }));
     expect(tak().remoteStart).toHaveBeenCalledWith(
       expect.objectContaining({ verifyServer: true, allowNameMismatch: true }),
+    );
+  });
+
+  it('disables the name option until a CA is imported', async () => {
+    const user = userEvent.setup();
+    await renderSection();
+    expect(screen.getByLabelText(/issued for a different name/i)).toBeDisabled();
+    expect(screen.getByText(/import the server's ca to use this option/i)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Server address'), '10.0.0.5');
+    await user.click(screen.getByRole('button', { name: 'Connect' }));
+    expect(tak().remoteStart).toHaveBeenCalledWith(
+      expect.objectContaining({ allowNameMismatch: false }),
+    );
+  });
+
+  it('does not connect at launch when verification is off', async () => {
+    const user = userEvent.setup();
+    await renderSection();
+    await user.click(screen.getByLabelText(/connect on application launch/i));
+    await user.click(screen.getByLabelText(/verify the server certificate/i));
+    expect(screen.getByLabelText(/connect on application launch/i)).toBeDisabled();
+    expect(screen.getByText(/stays off until verification is on/i)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Server address'), '10.0.0.5');
+    await user.click(screen.getByRole('button', { name: 'Connect' }));
+    expect(tak().remoteStart).toHaveBeenCalledWith(
+      expect.objectContaining({ verifyServer: false, autoConnect: false }),
     );
   });
 

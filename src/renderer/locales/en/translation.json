@@ -5929,6 +5929,8 @@
     "remotePortError": "Port must be between 1 and 65535",
     "remoteVerifyServer": "Verify the server certificate (recommended)",
     "remoteAllowNameMismatch": "Accept a certificate issued for a different name (imported CA only, as ATAK does)",
+    "remoteNameMismatchNeedsCa": "Import the server's CA to use this option.",
+    "remoteAutoConnectNeedsVerify": "Connecting at launch stays off until verification is on.",
     "remoteVerifyOffWarning": "Without verification, anyone who can intercept this connection receives the relayed positions.",
     "remoteAutoConnect": "Connect on application launch",
     "remoteCertificates": "Certificates",

@@ -5269,7 +5269,9 @@
     "remoteConnect": "Verbinden",
     "remoteDisconnect": "Verbindung trennen",
     "remoteVerifyOffWarning": "Ohne Überprüfung erhält jeder, der diese Verbindung abfangen kann, die weitergeleiteten Positionen.",
-    "remoteAllowNameMismatch": "Akzeptieren Sie ein Zertifikat, das für einen anderen Namen ausgestellt wurde (nur importierte CA, wie ATAK)"
+    "remoteAllowNameMismatch": "Akzeptieren Sie ein Zertifikat, das für einen anderen Namen ausgestellt wurde (nur importierte CA, wie ATAK)",
+    "remoteNameMismatchNeedsCa": "Importieren Sie die CA des Servers, um diese Option zu verwenden.",
+    "remoteAutoConnectNeedsVerify": "Die Verbindung beim Start bleibt deaktiviert, bis die Verifizierung aktiviert ist."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

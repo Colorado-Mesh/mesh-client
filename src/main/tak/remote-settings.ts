@@ -69,7 +69,8 @@ export function saveTakRemoteSettings(settings: TAKRemoteSettings): void {
     port: settings.port,
     verifyServer: settings.verifyServer,
     allowNameMismatch: settings.allowNameMismatch,
-    autoConnect: settings.autoConnect,
+    // An unverified relay is only started by hand, never at launch.
+    autoConnect: settings.autoConnect && settings.verifyServer,
   };
   const file = settingsPath();
   const tmp = `${file}.tmp`;

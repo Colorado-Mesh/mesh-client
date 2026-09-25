@@ -5269,7 +5269,9 @@
     "remoteConnect": "Sambungkan",
     "remoteDisconnect": "Putuskan",
     "remoteVerifyOffWarning": "Tanpa verifikasi, siapa pun yang dapat mencegat koneksi ini akan menerima posisi relay.",
-    "remoteAllowNameMismatch": "Terima sertifikat yang diterbitkan untuk nama yang berbeda (hanya CA yang diimpor, seperti yang dilakukan ATAK)"
+    "remoteAllowNameMismatch": "Terima sertifikat yang diterbitkan untuk nama yang berbeda (hanya CA yang diimpor, seperti yang dilakukan ATAK)",
+    "remoteNameMismatchNeedsCa": "Impor CA server untuk menggunakan opsi ini.",
+    "remoteAutoConnectNeedsVerify": "Terhubung saat peluncuran tetap nonaktif hingga verifikasi aktif."
   },
   "telemetryPanel": {
     "title": "Telemetri",

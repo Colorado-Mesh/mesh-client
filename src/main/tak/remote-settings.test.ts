@@ -87,6 +87,11 @@ describe('remote settings persistence', () => {
     expect(fs.existsSync(`${settingsFile}.tmp`)).toBe(false);
   });
 
+  it('never saves an unverified relay to connect at launch', () => {
+    saveTakRemoteSettings({ ...VALID, verifyServer: false, autoConnect: true });
+    expect(loadTakRemoteSettings()).toMatchObject({ verifyServer: false, autoConnect: false });
+  });
+
   it('loads settings saved before allowNameMismatch with the name check on', () => {
     const older: Record<string, unknown> = { ...VALID };
     delete older.allowNameMismatch;

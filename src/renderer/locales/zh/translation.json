@@ -5269,7 +5269,9 @@
     "remoteConnect": "连接",
     "remoteDisconnect": "断开连接",
     "remoteVerifyOffWarning": "未经验证，任何可以拦截此连接的人都会收到中继位置。",
-    "remoteAllowNameMismatch": "接受为其他名称颁发的证书（仅导入CA ，与ATAK一样）"
+    "remoteAllowNameMismatch": "接受为其他名称颁发的证书（仅导入CA ，与ATAK一样）",
+    "remoteNameMismatchNeedsCa": "导入服务器的CA以使用此选项。",
+    "remoteAutoConnectNeedsVerify": "在验证开启之前，启动时连接将保持关闭状态。"
   },
   "telemetryPanel": {
     "title": "遥测",

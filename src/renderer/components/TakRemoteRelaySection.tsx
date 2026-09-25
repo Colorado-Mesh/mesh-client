@@ -69,6 +69,8 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
   const [password, setPassword] = useState('');
 
   const { status, credentials, isBusy, error } = relay;
+  // The name-mismatch opt-out only applies when trust is pinned to an imported CA.
+  const hasCa = (credentials?.caSubjects.length ?? 0) > 0;
   const active = status.state !== 'disconnected';
   const portNum = Number(port);
   const portValid = Number.isInteger(portNum) && portNum >= TCP_PORT_MIN && portNum <= TCP_PORT_MAX;
@@ -87,8 +89,9 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
       host: host.trim(),
       port: portNum,
       verifyServer,
-      allowNameMismatch,
-      autoConnect,
+      allowNameMismatch: allowNameMismatch && hasCa,
+      // An unverified relay is only started by hand, never at launch.
+      autoConnect: autoConnect && verifyServer,
     });
   };
 
@@ -186,11 +189,11 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
               id={`${id}-name-mismatch`}
               aria-label={t('takServerPanel.remoteAllowNameMismatch')}
               type="checkbox"
-              checked={allowNameMismatch}
+              checked={allowNameMismatch && hasCa}
               onChange={(e) => {
                 setAllowNameMismatch(e.target.checked);
               }}
-              disabled={active || isBusy}
+              disabled={active || isBusy || !hasCa}
               className="accent-brand-green disabled:opacity-50"
             />
             <label htmlFor={`${id}-name-mismatch`} className="cursor-pointer text-sm text-gray-300">
@@ -198,18 +201,26 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
             </label>
           </div>
         ) : (
-          <p className="text-xs text-amber-300">{t('takServerPanel.remoteVerifyOffWarning')}</p>
+          <p className="text-xs text-amber-300">
+            {t('takServerPanel.remoteVerifyOffWarning')}{' '}
+            {t('takServerPanel.remoteAutoConnectNeedsVerify')}
+          </p>
+        )}
+        {verifyServer && !hasCa && (
+          <p className="pl-6 text-xs text-gray-400">
+            {t('takServerPanel.remoteNameMismatchNeedsCa')}
+          </p>
         )}
         <div className="flex items-center gap-2">
           <input
             id={`${id}-autoconnect`}
             aria-label={t('takServerPanel.remoteAutoConnect')}
             type="checkbox"
-            checked={autoConnect}
+            checked={autoConnect && verifyServer}
             onChange={(e) => {
               setAutoConnect(e.target.checked);
             }}
-            disabled={active || isBusy}
+            disabled={active || isBusy || !verifyServer}
             className="accent-brand-green disabled:opacity-50"
           />
           <label htmlFor={`${id}-autoconnect`} className="cursor-pointer text-sm text-gray-300">

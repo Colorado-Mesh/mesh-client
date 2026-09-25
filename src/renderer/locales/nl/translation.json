@@ -5269,7 +5269,9 @@
     "remoteConnect": "Verbinden",
     "remoteDisconnect": "Verbinding verbreken",
     "remoteVerifyOffWarning": "Zonder verificatie ontvangt iedereen die deze verbinding kan onderscheppen de doorgegeven posities.",
-    "remoteAllowNameMismatch": "Accepteer een certificaat dat is uitgegeven voor een andere naam (alleen geïmporteerde CA, zoals ATAK doet)"
+    "remoteAllowNameMismatch": "Accepteer een certificaat dat is uitgegeven voor een andere naam (alleen geïmporteerde CA, zoals ATAK doet)",
+    "remoteNameMismatchNeedsCa": "Importeer de CA van de server om deze optie te gebruiken.",
+    "remoteAutoConnectNeedsVerify": "Verbinding maken bij de lancering blijft uitgeschakeld totdat de verificatie is ingeschakeld."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

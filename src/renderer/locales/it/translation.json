@@ -5269,7 +5269,9 @@
     "remoteConnect": "Connettiti",
     "remoteDisconnect": "Disconnetti",
     "remoteVerifyOffWarning": "Senza verifica, chiunque possa intercettare questa connessione riceve le posizioni trasmesse.",
-    "remoteAllowNameMismatch": "Accettare un certificato rilasciato per un nome diverso (solo CA importata, come fa ATAK)"
+    "remoteAllowNameMismatch": "Accettare un certificato rilasciato per un nome diverso (solo CA importata, come fa ATAK)",
+    "remoteNameMismatchNeedsCa": "Importa la CA del server per utilizzare questa opzione.",
+    "remoteAutoConnectNeedsVerify": "La connessione al lancio rimane disattivata fino all'attivazione della verifica."
   },
   "telemetryPanel": {
     "title": "Telemetria",

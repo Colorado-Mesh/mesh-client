@@ -5311,7 +5311,9 @@
     "remoteConnect": "Připojení",
     "remoteDisconnect": "Odpojení",
     "remoteVerifyOffWarning": "Bez ověření obdrží každý, kdo může toto spojení zachytit, přenášené pozice.",
-    "remoteAllowNameMismatch": "Přijmout certifikát vydaný pro jiný název (pouze importovaná CA, jak to dělá ATAK)"
+    "remoteAllowNameMismatch": "Přijmout certifikát vydaný pro jiný název (pouze importovaná CA, jak to dělá ATAK)",
+    "remoteNameMismatchNeedsCa": "Chcete-li použít tuto možnost, importujte certifikační autoritu serveru.",
+    "remoteAutoConnectNeedsVerify": "Připojení při spuštění zůstane vypnuté, dokud nebude zapnuté ověření."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

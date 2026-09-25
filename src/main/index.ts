@@ -6654,10 +6654,11 @@ void app
         );
       }
 
-      // Reconnect the remote TAK relay when it was saved with autoConnect.
+      // Reconnect the remote TAK relay when it was saved with autoConnect. An unverified relay
+      // is only started by hand, so a hand-edited settings file cannot make it connect at launch.
       try {
         const remoteSettings = loadTakRemoteSettings();
-        if (remoteSettings?.autoConnect) {
+        if (remoteSettings?.autoConnect && remoteSettings.verifyServer) {
           void ensureTakServerManager()
             .then((m) => {
               m.startRemote(remoteSettings);

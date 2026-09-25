@@ -5351,7 +5351,9 @@
     "remoteConnect": "Połącz",
     "remoteDisconnect": "Rozłącz",
     "remoteVerifyOffWarning": "Bez weryfikacji każdy, kto może przechwycić to połączenie, otrzymuje pozycje przekaźnikowe.",
-    "remoteAllowNameMismatch": "Zaakceptuj certyfikat wydany dla innej nazwy (tylko importowane CA, tak jak ATAK)"
+    "remoteAllowNameMismatch": "Zaakceptuj certyfikat wydany dla innej nazwy (tylko importowane CA, tak jak ATAK)",
+    "remoteNameMismatchNeedsCa": "Zaimportuj CA serwera, aby użyć tej opcji.",
+    "remoteAutoConnectNeedsVerify": "Połączenie podczas uruchamiania pozostaje wyłączone, dopóki nie zostanie włączona weryfikacja."
   },
   "telemetryPanel": {
     "title": "Telemetria",

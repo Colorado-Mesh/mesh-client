@@ -5269,7 +5269,9 @@
     "remoteConnect": "연결",
     "remoteDisconnect": "연결 해제",
     "remoteVerifyOffWarning": "검증 없이 이 연결을 가로챌 수 있는 사람은 릴레이된 포지션을 받습니다.",
-    "remoteAllowNameMismatch": "다른 이름으로 발급된 인증서 수락 (ATAK와 마찬가지로 가져온 CA만 해당)"
+    "remoteAllowNameMismatch": "다른 이름으로 발급된 인증서 수락 (ATAK와 마찬가지로 가져온 CA만 해당)",
+    "remoteNameMismatchNeedsCa": "이 옵션을 사용하려면 서버의 CA를 가져옵니다.",
+    "remoteAutoConnectNeedsVerify": "앱을 시작할 때의 자동 연결은 검증을 켤 때까지 꺼진 상태로 유지됩니다."
   },
   "telemetryPanel": {
     "title": "원격 측정",
