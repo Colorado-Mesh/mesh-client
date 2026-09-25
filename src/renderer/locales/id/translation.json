@@ -2250,6 +2250,10 @@
       "unclassified": {
         "label": "Peringatan dan kesalahan lainnya",
         "recommendation": "Garis log ini tidak cocok dengan diagnosis yang diketahui dan mungkin mencakup pesan pemulihan yang diharapkan. Tinjau stempel waktu dan konteks sekitarnya. Jika masalah berlanjut, ekspor log lengkap dengan laporan ini."
+      },
+      "tak-remote": {
+        "label": "Masalah Relai TAK Jarak Jauh",
+        "recommendation": "Relai TAK jarak jauh tidak dapat tersambung atau kehilangan koneksinya. Periksa alamat dan port server, dan bahwa sertifikat CA dan klien yang diimpor milik server tersebut."
       }
     },
     "recommendationGroups": {
@@ -5240,7 +5244,34 @@
     "durationSec": "{{s}}s",
     "durationMin": "{{m}}m",
     "durationHourMin": "{{h}}h {{m}}m",
-    "atakUndecodable": "Muatan tidak dikenali sebagai paket TAK"
+    "atakUndecodable": "Muatan tidak dikenali sebagai paket TAK",
+    "remoteTitle": "Server TAK Jarak Jauh",
+    "remoteDescription": "Streaming posisi node dari setiap protokol ke OpenTAKServer, FreeTAKServer, atau TAK Server melalui TLS. Bekerja dengan atau tanpa server lokal.",
+    "remoteConnected": "Terhubung ke {{host}}:{{port}}",
+    "remoteConnecting": "Menghubungkan ke {{host}}:{{port}}…",
+    "remoteDisconnected": "Tidak terhubung",
+    "remoteLastError": "Kesalahan terakhir: {{error}}",
+    "remoteHostLabel": "Alamat server",
+    "remoteHostError": "Masukkan nama host atau alamat IP",
+    "remotePortLabel": "Port",
+    "remotePortError": "Port harus antara 1 dan 65535",
+    "remoteVerifyServer": "Verifikasi sertifikat server (disarankan)",
+    "remoteAutoConnect": "Terhubung saat peluncuran aplikasi",
+    "remoteCertificates": "Certificates",
+    "remoteCaSummary": "CA Tepercaya: {{names}}",
+    "remoteNoCa": "Tidak ada CA yang diimpor. Server diperiksa terhadap toko kepercayaan sistem.",
+    "remoteClientSummary": "Sertifikat klien: {{subject}}, kedaluwarsa {{date}}",
+    "remoteNoClient": "Tidak ada sertifikat klien yang diimpor",
+    "remoteImportHint": "Pilih file .p12 atau file PEM. Paket data TAK termasuk truststore dan klien .p12, biasanya dengan kata sandi atakatak.",
+    "remotePasswordLabel": "Kata sandi sertifikat",
+    "remoteImport": "Sertifikat impor",
+    "remoteClear": "Hapus Sertifikat",
+    "remoteConnect": "Sambungkan",
+    "remoteDisconnect": "Putuskan",
+    "remoteVerifyOffWarning": "Tanpa verifikasi, siapa pun yang dapat mencegat koneksi ini akan menerima posisi relay.",
+    "remoteAllowNameMismatch": "Terima sertifikat yang diterbitkan untuk nama yang berbeda (hanya CA yang diimpor, seperti yang dilakukan ATAK)",
+    "remoteNameMismatchNeedsCa": "Impor CA server untuk menggunakan opsi ini.",
+    "remoteAutoConnectNeedsVerify": "Terhubung saat peluncuran tetap nonaktif hingga verifikasi aktif."
   },
   "telemetryPanel": {
     "title": "Telemetri",

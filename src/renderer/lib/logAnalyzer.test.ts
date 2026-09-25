@@ -310,6 +310,20 @@ describe('analyzeLogs', () => {
     expect(result.categories.find((c) => c.id === 'tak-server')).toBeDefined();
   });
 
+  it('does not flag TakRemote debug lines', () => {
+    const entries: LogEntry[] = [makeEntry('[TakRemote] Connecting to 10.0.0.5:8089', 'debug')];
+    const result = analyzeLogs(entries, 'meshcore');
+    expect(result.categories.find((c) => c.id === 'tak-remote')).toBeUndefined();
+  });
+
+  it('detects TakRemote warn lines', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[TakRemote] 10.0.0.5:8089 error: connect ECONNREFUSED 10.0.0.5:8089', 'warn'),
+    ];
+    const result = analyzeLogs(entries, 'reticulum');
+    expect(result.categories.find((c) => c.id === 'tak-remote')).toBeDefined();
+  });
+
   it('does not flag updater debug lines', () => {
     const entries: LogEntry[] = [makeEntry('[updater] would check (hypothetical debug)', 'debug')];
     const result = analyzeLogs(entries, 'meshtastic');

@@ -31,4 +31,6 @@ WAL SQLite; `user_version` in `database.ts`; migrations as `migration_N()`; `db-
 
 ## UI
 
+**TAK:** `useTakNodeReplicator` (mounted once in `AppContent`) sends node positions from all three protocols, RMAP stations, and our Reticulum position to main over `tak:pushNodeUpdates` while `useTakServer` or `useTakRemoteStatus` reports an active sink. Which nodes qualify (per-protocol online window, no (0, 0) placeholders) lives in `lib/takNodeFeed.ts`. The TAK panel's relay section uses `useTakRemoteRelay`; certificates and keys stay in main (`src/main/tak/remote-credentials.ts`).
+
 Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanels.ts` + capabilities. Tab visibility: `src/renderer/lib/tabSlotIds.ts` (`TAB_SLOT_IDS`) → `src/renderer/lib/appTabMappings.ts` (`TAB_CAPABILITY_REQUIREMENTS`, `computeTabMappings()` in `App.tsx`). Stores: module defaults; persist vs SQLite IPC as elsewhere. **MeshCore Open wire / path-hash UI** mounts from `RadioPanel`, which persists `meshcoreOpenWireCompatEnabled` and `meshcorePathHashMode` as app settings via `mergeAppSetting` (ownership stays on RadioPanel, not AppPanel).

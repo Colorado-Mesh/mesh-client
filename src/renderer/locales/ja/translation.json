@@ -2250,6 +2250,10 @@
       "unclassified": {
         "label": "その他の警告とエラー",
         "recommendation": "これらのログ行は、既知の診断と一致せず、予想される回復メッセージを含み得る。タイムスタンプと周囲のコンテキストを確認します。問題が解決しない場合は、このレポートで完全なログをエクスポートします。"
+      },
+      "tak-remote": {
+        "label": "リモートTAKリレーの問題",
+        "recommendation": "リモートTAKリレーが接続できなかったか、接続が失われました。サーバーアドレスとポートを確認し、インポートされたCAとクライアント証明書がそのサーバーに属していることを確認します。"
       }
     },
     "recommendationGroups": {
@@ -5240,7 +5244,34 @@
     "durationSec": "{{s}}s",
     "durationMin": "{{m}}分",
     "durationHourMin": "{{h}}h {{m}}m",
-    "atakUndecodable": "TAKパケットとして認識されないペイロード"
+    "atakUndecodable": "TAKパケットとして認識されないペイロード",
+    "remoteTitle": "リモートTAKサーバー",
+    "remoteDescription": "すべてのプロトコルからOpenTAKServer、FreeTAKServer、またはTAK ServerにTLSを介してノードの位置をストリーミングします。ローカルサーバーの有無にかかわらず動作します。",
+    "remoteConnected": "{{host}}に接続済み： {{port}}",
+    "remoteConnecting": "{{host}}に接続しています： {{port}} …",
+    "remoteDisconnected": "未接続",
+    "remoteLastError": "前回のエラー： {{error}}",
+    "remoteHostLabel": "IPアドレス",
+    "remoteHostError": "ホスト名またはIPアドレスを入力してください",
+    "remotePortLabel": "ポート",
+    "remotePortError": "ポートは1から65535の間でなければなりません",
+    "remoteVerifyServer": "サーバー証明書を確認する（推奨）",
+    "remoteAutoConnect": "アプリケーションの起動時に接続",
+    "remoteCertificates": "証明書",
+    "remoteCaSummary": "Trusted CA: {{names}}",
+    "remoteNoCa": "CAがインポートされていません。サーバーはシステムトラストストアと照合されます。",
+    "remoteClientSummary": "クライアント証明書： {{subject}}、有効期限{{date}}",
+    "remoteNoClient": "クライアント証明書がインポートされていません",
+    "remoteImportHint": ".p 12ファイルまたはPEMファイルを選択します。TAKデータパッケージには、トラストストアとクライアント.p 12が含まれ、通常はパスワードatakatakが使用されます。",
+    "remotePasswordLabel": "証明書のパスワード",
+    "remoteImport": "証明書をインポート",
+    "remoteClear": "証明書を削除",
+    "remoteConnect": "接続",
+    "remoteDisconnect": "接続を解除",
+    "remoteVerifyOffWarning": "検証なしで、この接続を傍受できる人は誰でも中継された位置を受け取ります。",
+    "remoteAllowNameMismatch": "別の名前で発行された証明書を受け入れる（ ATAKのように、インポートされたCAのみ）",
+    "remoteNameMismatchNeedsCa": "このオプションを使用するには、サーバーのCAをインポートします。",
+    "remoteAutoConnectNeedsVerify": "起動時の接続は、検証を有効にするまでオフのままです。"
   },
   "telemetryPanel": {
     "title": "テレメトリー",

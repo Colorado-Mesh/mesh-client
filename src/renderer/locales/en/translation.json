@@ -2325,6 +2325,10 @@
         "label": "TAK Server Issues",
         "recommendation": "TAK server error. Check certificate status and port availability."
       },
+      "tak-remote": {
+        "label": "Remote TAK Relay Issues",
+        "recommendation": "The remote TAK relay could not connect or lost its connection. Check the server address and port, and that the imported CA and client certificate belong to that server."
+      },
       "updater": {
         "label": "App Updater Errors",
         "recommendation": "App updater error. Check your internet connection or try a manual update from GitHub."
@@ -5912,7 +5916,34 @@
     "durationSec": "{{s}}s",
     "durationMin": "{{m}}m",
     "durationHourMin": "{{h}}h {{m}}m",
-    "atakUndecodable": "Payload not recognized as a TAK packet"
+    "atakUndecodable": "Payload not recognized as a TAK packet",
+    "remoteTitle": "Remote TAK Server",
+    "remoteDescription": "Stream node positions from every protocol to an OpenTAKServer, FreeTAKServer, or TAK Server over TLS. Works with or without the local server.",
+    "remoteConnected": "Connected to {{host}}:{{port}}",
+    "remoteConnecting": "Connecting to {{host}}:{{port}}…",
+    "remoteDisconnected": "Not connected",
+    "remoteLastError": "Last error: {{error}}",
+    "remoteHostLabel": "Server address",
+    "remoteHostError": "Enter a hostname or IP address",
+    "remotePortLabel": "Port",
+    "remotePortError": "Port must be between 1 and 65535",
+    "remoteVerifyServer": "Verify the server certificate (recommended)",
+    "remoteAllowNameMismatch": "Accept a certificate issued for a different name (imported CA only, as ATAK does)",
+    "remoteNameMismatchNeedsCa": "Import the server's CA to use this option.",
+    "remoteAutoConnectNeedsVerify": "Connecting at launch stays off until verification is on.",
+    "remoteVerifyOffWarning": "Without verification, anyone who can intercept this connection receives the relayed positions.",
+    "remoteAutoConnect": "Connect on application launch",
+    "remoteCertificates": "Certificates",
+    "remoteCaSummary": "Trusted CA: {{names}}",
+    "remoteNoCa": "No CA imported. The server is checked against the system trust store.",
+    "remoteClientSummary": "Client certificate: {{subject}}, expires {{date}}",
+    "remoteNoClient": "No client certificate imported",
+    "remoteImportHint": "Choose a .p12 file or PEM files. TAK data packages include a truststore and a client .p12, usually with the password atakatak.",
+    "remotePasswordLabel": "Certificate password",
+    "remoteImport": "Import Certificates",
+    "remoteClear": "Remove Certificates",
+    "remoteConnect": "Connect",
+    "remoteDisconnect": "Disconnect"
   },
   "telemetryPanel": {
     "title": "Telemetry",

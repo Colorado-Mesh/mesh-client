@@ -9,6 +9,7 @@ import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import type { TAKSettings } from '@/shared/tak-types';
 
 import { useTakServer } from '../hooks/useTakServer';
+import TakRemoteRelaySection from './TakRemoteRelaySection';
 
 interface AtakMessage {
   from: number;
@@ -278,6 +279,8 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
           )}
         </div>
       )}
+
+      <TakRemoteRelaySection />
 
       {/* ATAK Plugin Messages from Mesh */}
       {capabilities?.hasAtakPlugin && (

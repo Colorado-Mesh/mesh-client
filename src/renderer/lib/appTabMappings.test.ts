@@ -166,6 +166,15 @@ describe('computeTabMappings', () => {
     }
   });
 
+  it.each([
+    ['meshtastic', MESHTASTIC_CAPABILITIES],
+    ['meshcore', MESHCORE_CAPABILITIES],
+    ['reticulum', RETICULUM_CAPABILITIES],
+  ] as const)('shows the TAK tab for %s', (protocol, capabilities) => {
+    const tabs = computeTabMappings(identityT, protocol, capabilities);
+    expect(tabs.tabIndexToPanelIndex).toContain(TAB_SLOT_IDS.indexOf('TAK'));
+  });
+
   it('uses Network tab label for Reticulum radio slot', () => {
     const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
     const radioTabIndex = findFilteredTabIndexForPanel(tabs, RADIO_TAB_PANEL_INDEX);
@@ -190,6 +199,7 @@ describe('computeTabMappings', () => {
       'Rooms',
       'Telemetry',
       'Security',
+      'TAK',
       'App',
       'Diagnostics',
       'Stats',

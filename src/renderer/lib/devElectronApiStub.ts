@@ -339,9 +339,18 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       generateDataPackage: noopAsync,
       regenerateCertificates: noopAsync,
       pushNodeUpdate: noopAsync,
+      pushNodeUpdates: noopAsync,
       onStatus: noopUnsub,
       onClientConnected: noopUnsub,
       onClientDisconnected: noopUnsub,
+      remoteStart: noopAsync,
+      remoteStop: noopAsync,
+      remoteGetStatus: async () => ({ state: 'disconnected' as const, host: '', port: 8089 }),
+      remoteGetSettings: async () => null,
+      remoteGetCredentials: async () => ({ caSubjects: [] }),
+      remoteImportCredentials: async () => null,
+      remoteClearCredentials: async () => ({ caSubjects: [] }),
+      onRemoteStatus: noopUnsub,
     },
     bleCoexistence: {
       register: async () => ({

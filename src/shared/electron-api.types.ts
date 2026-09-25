@@ -61,7 +61,15 @@ import type {
   RrcUpsertHubRequest,
 } from './rrc-types';
 import type { SupportBundleMode } from './support-bundle.types';
-import type { TAKClientInfo, TAKServerStatus, TAKSettings } from './tak-types';
+import type {
+  TAKClientInfo,
+  TAKNodeUpdate,
+  TAKRemoteCredentialSummary,
+  TAKRemoteSettings,
+  TAKRemoteStatus,
+  TAKServerStatus,
+  TAKSettings,
+} from './tak-types';
 import type {
   VoiceAudioRequest,
   VoiceCallRequest,
@@ -1281,9 +1289,25 @@ export interface ElectronAPI {
     generateDataPackage: () => Promise<void>;
     regenerateCertificates: () => Promise<void>;
     pushNodeUpdate: (node: { node_id: number } & Record<string, unknown>) => Promise<void>;
+    /** Up to `TAK_NODE_UPDATE_BATCH_MAX` updates; dropped in main while no TAK sink is active. */
+    pushNodeUpdates: (nodes: TAKNodeUpdate[]) => Promise<void>;
     onStatus: (cb: (status: TAKServerStatus) => void) => () => void;
     onClientConnected: (cb: (client: TAKClientInfo) => void) => () => void;
     onClientDisconnected: (cb: (clientId: string) => void) => () => void;
+    /** Start (or restart) the relay to a remote TAK server; saves the settings. */
+    remoteStart: (settings: TAKRemoteSettings) => Promise<void>;
+    remoteStop: () => Promise<void>;
+    remoteGetStatus: () => Promise<TAKRemoteStatus>;
+    /** Saved relay settings, or null when none were saved. */
+    remoteGetSettings: () => Promise<TAKRemoteSettings | null>;
+    remoteGetCredentials: () => Promise<TAKRemoteCredentialSummary>;
+    /**
+     * Open a file chooser for PEM / DER / PKCS#12 credentials and store them in main.
+     * Resolves null when the chooser is cancelled. Key material never reaches the renderer.
+     */
+    remoteImportCredentials: (password?: string) => Promise<TAKRemoteCredentialSummary | null>;
+    remoteClearCredentials: () => Promise<TAKRemoteCredentialSummary>;
+    onRemoteStatus: (cb: (status: TAKRemoteStatus) => void) => () => void;
   };
 
   // ─── Reticulum sidecar ───────────────────────────────────────────────────────

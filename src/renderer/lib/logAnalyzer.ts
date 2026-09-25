@@ -256,6 +256,12 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     requireWarnOrError: true,
   },
   {
+    id: 'tak-remote',
+    patterns: [/\[TakRemote\]/i],
+    severity: 'warning',
+    requireWarnOrError: true,
+  },
+  {
     id: 'updater',
     patterns: [/\[updater\]/i],
     severity: 'warning',
