@@ -3376,29 +3376,33 @@ describe('ChatPanel tapback reaction picker', () => {
     });
   });
 
-  it('disables React on Meshtastic MQTT-origin messages with unsupported reason', async () => {
-    const onReact = vi.fn().mockResolvedValue(undefined);
-    const user = userEvent.setup();
-    render(
-      <ToastProvider>
-        <ChatPanel
-          {...defaultProps}
-          protocol="meshtastic"
-          onReact={onReact}
-          messages={[{ ...baseMessage, packetId: 42, receivedVia: 'mqtt' }]}
-        />
-      </ToastProvider>,
-    );
-    const unsupported =
-      'Reactions to MQTT-only messages are not supported. Send a normal reply instead.';
-    const reactBtn = screen.getByRole('button', { name: unsupported });
-    expect(reactBtn).toBeDisabled();
-    expect(reactBtn).toHaveAttribute('title', unsupported);
-    await user.click(reactBtn);
-    expect(onReact).not.toHaveBeenCalled();
-    expect(document.querySelector('emoji-picker')).not.toBeInTheDocument();
-    expect(window.electronAPI.showEmojiPanel).not.toHaveBeenCalled();
-  });
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'disables React on Meshtastic MQTT-origin messages with unsupported reason (%s)',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const onReact = vi.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            protocol="meshtastic"
+            onReact={onReact}
+            messages={[{ ...baseMessage, packetId: 42, receivedVia: 'mqtt' }]}
+          />
+        </ToastProvider>,
+      );
+      const unsupported =
+        'Reactions to MQTT-only messages are not supported. Send a normal reply instead.';
+      const reactBtn = screen.getByRole('button', { name: unsupported });
+      expect(reactBtn).toBeDisabled();
+      expect(reactBtn).toHaveAttribute('title', unsupported);
+      await user.click(reactBtn);
+      expect(onReact).not.toHaveBeenCalled();
+      expect(document.querySelector('emoji-picker')).not.toBeInTheDocument();
+      expect(window.electronAPI.showEmojiPanel).not.toHaveBeenCalled();
+    },
+  );
 
   it('keeps React enabled for MeshCore MQTT-origin messages', async () => {
     const user = userEvent.setup();

@@ -1009,6 +1009,9 @@ function ChatPanel({
   const savedWasPinnedToBottomRef = useRef(false);
   /** Distinguishes a tab return (isActive false→true) from a view switch while already active. */
   const wasActiveRef = useRef(isActive);
+  /** Latest isActive for async handlers (e.g. reaction reject after leaving Chat). */
+  const isActiveRef = useRef(isActive);
+  isActiveRef.current = isActive;
   const reactionPickerRef = useRef<HTMLElement | null>(null);
   const reactionPickerTarget = useRef<{ id: number; channel: number } | null>(null);
   const reactionHiddenInputRef = useRef<HTMLInputElement | null>(null);
@@ -1544,10 +1547,11 @@ function ChatPanel({
     setTriggerScrollToUnread((n) => n + 1);
   }, [viewKey]);
 
-  // Clear sticky action errors when switching channel/DM or leaving Chat (panel stays mounted).
+  // Clear sticky action errors when switching channel/DM/starred or leaving Chat (panel stays mounted).
+  // viewMode is included because starred keeps the same viewKey as the prior channel/DM.
   useEffect(() => {
     setChatActionError(null);
-  }, [viewKey]);
+  }, [viewKey, viewMode]);
 
   useEffect(() => {
     if (!isActive) setChatActionError(null);
@@ -2098,6 +2102,8 @@ function ChatPanel({
       await onReact(glyph, packetId, sendChannel);
     } catch (err) {
       console.error('[ChatPanel] React failed: ' + errLikeToLogString(err));
+      // Do not restore a banner if Chat was left while the reaction was in flight.
+      if (!isActiveRef.current) return;
       setChatActionError({
         message: translateChatSendError(t, err, { fallbackKey: 'chatPanel.reactionFailed' }),
         viewKey,
