@@ -20,8 +20,6 @@ use super::registry::GattRegistry;
 use super::LazyBtleplugBackend;
 
 struct LiveSession {
-    #[allow(dead_code)] // retained for diagnostics / future session listing
-    session_id: String,
     profile: GattProfile,
     address: String,
     conn: BackendConnId,
@@ -346,7 +344,6 @@ impl GattManager {
             sessions.insert(
                 session_id.clone(),
                 LiveSession {
-                    session_id: session_id.clone(),
                     profile,
                     address: key.clone(),
                     conn: conn.clone(),

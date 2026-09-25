@@ -43,17 +43,9 @@ pub struct LtkDesyncHandleResult {
 }
 
 /// Classify `error_message`; if LTK desync, attempt OS unbond and build the event payload.
-#[allow(dead_code)] // convenience wrapper; API uses handle_ltk_desync_named
-pub async fn handle_ltk_desync(
-    identifier: &str,
-    error_message: &str,
-) -> Result<LtkDesyncHandleResult, BleBondError> {
-    handle_ltk_desync_named(identifier, None, error_message).await
-}
-
-/// Like [`handle_ltk_desync`], with an optional OS Bluetooth display name
-/// (e.g. `RNode 41F4`) for platforms where CoreBluetooth UUIDs are not usable
-/// as unpair identifiers.
+///
+/// `display_name` is an optional OS Bluetooth display name (e.g. `RNode 41F4`) for
+/// platforms where CoreBluetooth UUIDs are not usable as unpair identifiers.
 pub async fn handle_ltk_desync_named(
     identifier: &str,
     display_name: Option<&str>,
@@ -84,12 +76,6 @@ pub async fn handle_ltk_desync_named(
             purge_error: Some(e.to_string()),
         }),
     }
-}
-
-/// Remove the OS BLE bond for `identifier` (MAC, UUID, or `ble://` URI).
-#[allow(dead_code)] // convenience wrapper; callers use unbond_device_named
-pub async fn unbond_device(identifier: &str) -> Result<(), BleBondError> {
-    unbond_device_named(identifier, None).await
 }
 
 /// Remove the OS BLE bond, preferring `display_name` when the identifier is a

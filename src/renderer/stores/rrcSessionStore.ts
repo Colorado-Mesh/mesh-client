@@ -44,15 +44,6 @@ export { RRC_HUB_STREAM_ROOM };
 /** Soft cap on simultaneous connected hub sessions — mirrors sidecar `MAX_HUB_SESSIONS`. */
 export const MAX_RRC_HUB_SESSIONS = 8;
 
-/**
- * @deprecated Legacy single-inbox key — use `@<hash>` via `rrcDmRoomKey`.
- * Kept for migration / old tests.
- */
-export const RRC_WHISPERS_ROOM = '[whispers]';
-
-/** @deprecated Prefer `RrcDmPeer` from `rrcDmRoom`. */
-export type RrcWhisperPeer = RrcDmPeer;
-
 function normRoom(room: string): string {
   return room.trim().toLowerCase();
 }

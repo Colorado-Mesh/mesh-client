@@ -7,6 +7,5 @@ pub mod unbond;
 pub use error_classifier::{BleFailureClass, classify_ble_error};
 #[allow(unused_imports)] // public API for callers / future GATT paths
 pub use unbond::{
-    BleBondError, LtkDesyncHandleResult, handle_ltk_desync, handle_ltk_desync_named, unbond_device,
-    unbond_device_named,
+    BleBondError, LtkDesyncHandleResult, handle_ltk_desync_named, unbond_device_named,
 };
