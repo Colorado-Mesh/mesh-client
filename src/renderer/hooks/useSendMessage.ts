@@ -2,7 +2,10 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useToast } from '../components/Toast';
-import { messageToDbRow } from '../hooks/meshcore/meshcoreHookPreamble';
+import {
+  MESHCORE_DM_ACK_TIMEOUT_MIN_MS,
+  messageToDbRow,
+} from '../hooks/meshcore/meshcoreHookPreamble';
 import { isMeshcoreOpenWireCompatEnabled } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
@@ -15,7 +18,9 @@ import {
   trackMeshcoreTcpUserTxSend,
 } from '../lib/meshcore/meshcoreTcpInitBurst';
 import { resolveMeshcoreOutboundWireText } from '../lib/meshcoreChannelText';
+import { scheduleMeshcoreDmAckPending } from '../lib/meshcoreDmAckDelivery';
 import { listChatMessagesFromStore } from '../lib/meshcoreStoreDedup';
+import type { SendResult } from '../lib/protocols/Protocol';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import { sendReticulumChatMessage } from '../lib/reticulum/sendReticulumChatMessage';
 import { tryGetMeshcoreSession } from '../lib/sessions/meshcoreSession';
@@ -47,6 +52,63 @@ function persistMeshcoreOutboundRow(
   void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(chat)).catch((e: unknown) => {
     console.warn('[useSendMessage] saveMeshcoreMessage failed ' + errLikeToLogString(e));
   });
+}
+
+/** Companion `estTimeout` when present; otherwise the hop-ACK floor used when firmware omits one. */
+function resolveMeshcoreDmAckWaitMs(estTimeoutMs: number | undefined): number {
+  if (typeof estTimeoutMs === 'number' && Number.isFinite(estTimeoutMs) && estTimeoutMs > 0) {
+    return Math.trunc(estTimeoutMs);
+  }
+  return MESHCORE_DM_ACK_TIMEOUT_MIN_MS;
+}
+
+/**
+ * MeshCore DMs with an expected ACK CRC stay `sending` until event 130 or the runtime
+ * hop-ACK timer. Channel floods and sends without a CRC are delivered when the companion
+ * accepts the frame. Returns true when the row is waiting on that tracker.
+ */
+function settleMeshcoreOutboundAfterCompanionAccept(opts: {
+  identityId: IdentityId;
+  resolvedId: string;
+  record: MessageRecord;
+  myNodeNum: number;
+  senderName: string;
+  packetId?: number;
+  estTimeoutMs?: number;
+  isDm: boolean;
+  destination?: number;
+}): boolean {
+  const packetIdU32 = opts.packetId != null ? opts.packetId >>> 0 : undefined;
+  if (opts.isDm && packetIdU32 != null) {
+    persistMeshcoreOutboundRow(
+      { ...opts.record, id: opts.resolvedId, status: 'sending' },
+      opts.myNodeNum,
+      opts.senderName,
+      'sending',
+      packetIdU32,
+    );
+    const scheduled = scheduleMeshcoreDmAckPending({
+      identityId: opts.identityId,
+      ackKeyU32: packetIdU32,
+      estTimeoutMs: resolveMeshcoreDmAckWaitMs(opts.estTimeoutMs),
+      destNodeId: opts.destination,
+    });
+    if (!scheduled) {
+      console.warn(
+        '[useSendMessage] MeshCore DM hop-ACK tracker is not registered; message stays pending',
+      );
+    }
+    return true;
+  }
+  updateMessageStatus(opts.identityId, opts.resolvedId, 'acked');
+  persistMeshcoreOutboundRow(
+    { ...opts.record, id: opts.resolvedId, status: 'acked' },
+    opts.myNodeNum,
+    opts.senderName,
+    'acked',
+    packetIdU32,
+  );
+  return false;
 }
 
 function trySendViaMeshtasticSession(
@@ -236,19 +298,22 @@ export function useSendMessage(
       if (isMeshcore && isMeshcoreTcpOpenHopDeadAccepted()) {
         void (async () => {
           try {
-            const applyOpenHopSendResult = (res: { packetId?: number }): void => {
+            const applyOpenHopSendResult = (res: SendResult): void => {
               const resolvedId = res.packetId != null ? String(res.packetId >>> 0) : provisionalId;
               if (res.packetId != null && resolvedId !== provisionalId) {
                 renameMessageId(identityId, provisionalId, resolvedId);
               }
-              updateMessageStatus(identityId, resolvedId, 'acked');
-              persistMeshcoreOutboundRow(
-                { ...record, id: resolvedId, status: 'acked' },
+              settleMeshcoreOutboundAfterCompanionAccept({
+                identityId,
+                resolvedId,
+                record,
                 myNodeNum,
-                meshcoreSenderName,
-                'acked',
-                res.packetId != null ? res.packetId >>> 0 : undefined,
-              );
+                senderName: meshcoreSenderName,
+                packetId: res.packetId,
+                estTimeoutMs: res.estTimeoutMs,
+                isDm: isMeshcoreDm,
+                destination,
+              });
             };
             const runTx = tryGetMeshcoreSession()?.runMeshcoreUserTxWithLiveTcp;
             if (!runTx) {
@@ -333,20 +398,20 @@ export function useSendMessage(
               }
             }
 
-            updateMessageStatus(identityId, resolvedId, 'acked');
             if (identity.protocol.type === 'meshcore') {
-              const rowForDb: MessageRecord = {
-                ...record,
-                id: resolvedId,
-                status: 'acked',
-              };
-              persistMeshcoreOutboundRow(
-                rowForDb,
+              settleMeshcoreOutboundAfterCompanionAccept({
+                identityId,
+                resolvedId,
+                record,
                 myNodeNum,
-                meshcoreSenderName,
-                'acked',
-                res.packetId != null ? res.packetId >>> 0 : undefined,
-              );
+                senderName: meshcoreSenderName,
+                packetId: res.packetId,
+                estTimeoutMs: res.estTimeoutMs,
+                isDm: isMeshcoreDm,
+                destination,
+              });
+            } else {
+              updateMessageStatus(identityId, resolvedId, 'acked');
             }
             if (isMeshtastic && meshtasticTempPacketId != null) {
               const rowPacketId = res.packetId ?? meshtasticTempPacketId;
