@@ -426,6 +426,19 @@ describe('TakServerManager remote relay', () => {
     expect(statuses.at(-1)).toMatchObject({ state: 'disconnected' });
   });
 
+  it('stops counting as a sink when the relay gives up on its own', () => {
+    const manager = new TakServerManager();
+    manager.startRemote(SETTINGS);
+    remoteClients[0]?.emit('status', {
+      state: 'disconnected',
+      host: 'tak.example.org',
+      port: 8089,
+      error: 'bad certificate',
+    });
+    expect(manager.hasActiveSink()).toBe(false);
+    expect(manager.getRemoteStatus().error).toBe('bad certificate');
+  });
+
   it('replaces the running relay when started again', () => {
     const manager = new TakServerManager();
     manager.startRemote(SETTINGS);

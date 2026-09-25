@@ -92,6 +92,9 @@ export class TakServerManager extends EventEmitter {
     });
     remote.on('status', (status: TAKRemoteStatus) => {
       this.remoteStatus = status;
+      // The client only reports disconnected once it has stopped for good (unusable
+      // credentials); stopRemote() detaches it before stopping, so this is that case.
+      if (status.state === 'disconnected' && this.remote === remote) this.remote = null;
       this.emit('remote-status', { ...status });
     });
     remote.on('connected', () => {

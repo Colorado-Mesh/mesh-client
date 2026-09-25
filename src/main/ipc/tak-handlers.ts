@@ -270,6 +270,8 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
   ipcMain.handle('tak:remoteClearCredentials', (event) => {
     assertIpcSender(event, 'tak:remoteClearCredentials');
     console.debug('[IPC] tak:remoteClearCredentials');
+    // A running relay holds the credentials in memory; stop it so it cannot reconnect with them.
+    getTakServerManager()?.stopRemote();
     clearTakRemoteCredentials();
     return summarizeTakRemoteCredentials(loadTakRemoteCredentials());
   });

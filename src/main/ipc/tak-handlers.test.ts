@@ -184,6 +184,13 @@ describe('remote relay handlers', () => {
     expect(startRemote).toHaveBeenCalledWith(settings);
   });
 
+  it('stops a running relay before clearing its credentials', async () => {
+    const stopRemote = vi.fn();
+    const { get } = await register({ stopRemote });
+    get('tak:remoteClearCredentials')(event);
+    expect(stopRemote).toHaveBeenCalled();
+  });
+
   it('reports an idle relay before the TAK module loads', async () => {
     const { get } = await register(null);
     expect(get('tak:remoteGetStatus')(event)).toEqual({
