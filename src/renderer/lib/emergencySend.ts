@@ -2,6 +2,11 @@ import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types'
 
 import { errLikeToLogString } from './errLikeToLogString';
 import { withMeshtasticTextSendPacing } from './meshtasticTextSendPacing';
+import {
+  assertReticulumSendAcked,
+  resolveReticulumIdentityId,
+  RETICULUM_RECEIPT_TIMEOUT_MS,
+} from './reticulumOutboundReceipt';
 
 export interface EmergencySendDeps {
   isSendAvailable: boolean;
@@ -17,13 +22,15 @@ export interface EmergencySendDeps {
   channel: number;
   toNode: number | null;
   replyId?: number | null;
+  /** Test override for the Reticulum remote-receipt wait. */
+  reticulumReceiptTimeoutMs?: number;
 }
 
 export type EmergencySendOutcome = 'sent' | 'queued';
 
 /**
  * Send an emergency (MECP) text, falling back to the durable emergency-priority outbox when the
- * radio is unavailable or the live send throws. Mirrors ChatComposer's queue-on-failure path, but
+ * radio is unavailable, the live send throws, or (Reticulum) no remote receipt arrives. Mirrors ChatComposer's queue-on-failure path, but
  * rows are tagged `priority: 'emergency'` so they skip the 24h drain cap and retry indefinitely.
  * Failure point: `queueOutbox` rejecting — propagated so the caller can surface it (the message
  * is neither sent nor persisted).
@@ -73,6 +80,15 @@ export async function sendTextWithOutboxFallback(
   try {
     if (deps.protocol === 'meshtastic') {
       await withMeshtasticTextSendPacing(send);
+    } else if (deps.protocol === 'reticulum') {
+      // LXMF send returns a pending store id; only a remote receipt counts as delivered.
+      const identityId = resolveReticulumIdentityId();
+      const sendResult = await send();
+      await assertReticulumSendAcked(
+        identityId,
+        sendResult,
+        deps.reticulumReceiptTimeoutMs ?? RETICULUM_RECEIPT_TIMEOUT_MS,
+      );
     } else {
       await send();
     }

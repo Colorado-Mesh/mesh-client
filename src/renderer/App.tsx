@@ -18,6 +18,11 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
+import type { ChatOutboxSendFn } from '@/renderer/hooks/useChatOutbox';
+import {
+  isChatOutboxSendAvailable,
+  useEmergencyOutboxDrain,
+} from '@/renderer/hooks/useEmergencyOutboxDrain';
 import { useMecpAlertWatcher } from '@/renderer/hooks/useMecpAlertWatcher';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { resolveInactiveChatNotificationType } from '@/renderer/lib/chatInactiveNotifications';
@@ -48,7 +53,7 @@ import {
   setDebugSnapshotMeshtasticContext,
 } from '@/renderer/lib/debugSnapshotMeshtasticContext';
 import { setDebugSnapshotUiContext } from '@/renderer/lib/debugSnapshotUiContext';
-import { sendEmergencyText } from '@/renderer/lib/emergencySend';
+import { sendTextWithOutboxFallback } from '@/renderer/lib/emergencySend';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { readStoredStaticGps, resolveOurPosition } from '@/renderer/lib/gpsSource';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
@@ -1325,8 +1330,23 @@ function AppContent() {
       messages: meshtasticStoreMessages,
       ownNodeIds: meshtasticOwnNodeIdSet,
       ownSenderId: meshtasticRuntime.state.myNodeNum,
+      resolveLastKnown: (senderId: string) => {
+        const hex = senderId.startsWith('!') ? senderId.slice(1) : senderId;
+        const asNum = senderId.startsWith('!')
+          ? Number.parseInt(hex, 16)
+          : Number.parseInt(senderId, 10);
+        const node = Number.isFinite(asNum) ? meshtasticUiNodes.get(asNum) : undefined;
+        if (node?.latitude == null || node.longitude == null) return null;
+        if (!Number.isFinite(node.latitude) || !Number.isFinite(node.longitude)) return null;
+        return { lat: node.latitude, lon: node.longitude };
+      },
     }),
-    [meshtasticStoreMessages, meshtasticOwnNodeIdSet, meshtasticRuntime.state.myNodeNum],
+    [
+      meshtasticStoreMessages,
+      meshtasticOwnNodeIdSet,
+      meshtasticRuntime.state.myNodeNum,
+      meshtasticUiNodes,
+    ],
   );
   const mecpMeshcoreSlice = useMemo(
     () => ({
@@ -1334,8 +1354,23 @@ function AppContent() {
       messages: meshcoreStoreMessages,
       ownNodeIds: meshcoreOwnNodeIdSet,
       ownSenderId: meshcoreRuntime.selfNodeId,
+      resolveLastKnown: (senderId: string) => {
+        const asNum = Number.parseInt(senderId, 10);
+        const byId = Number.isFinite(asNum) ? meshcoreUiNodes.get(asNum) : undefined;
+        const node =
+          byId ??
+          [...meshcoreUiNodes.values()].find(
+            (n) =>
+              String(n.node_id) === senderId ||
+              (typeof n.public_key_hex === 'string' &&
+                n.public_key_hex.toLowerCase() === senderId.toLowerCase()),
+          );
+        if (node?.latitude == null || node.longitude == null) return null;
+        if (!Number.isFinite(node.latitude) || !Number.isFinite(node.longitude)) return null;
+        return { lat: node.latitude, lon: node.longitude };
+      },
     }),
-    [meshcoreStoreMessages, meshcoreOwnNodeIdSet, meshcoreRuntime.selfNodeId],
+    [meshcoreStoreMessages, meshcoreOwnNodeIdSet, meshcoreRuntime.selfNodeId, meshcoreUiNodes],
   );
   const mecpReticulumSlice = useMemo(
     () => ({
@@ -1343,6 +1378,7 @@ function AppContent() {
       messages: reticulumStoreMessages,
       ownNodeIds: reticulumOwnNodeIdSet,
       ownSenderId: reticulumRuntime.state.myNodeNum,
+      resolveLastKnown: () => null,
     }),
     [reticulumStoreMessages, reticulumOwnNodeIdSet, reticulumRuntime.state.myNodeNum],
   );
@@ -1596,13 +1632,39 @@ function AppContent() {
 
   const incidentBadgeCount = useIncidentStore(openMaydayUrgentCount);
 
-  // Mirrors ChatPanel's outbox availability (operational or MQTT, but not MQTT-only MeshCore).
-  const activeLinkOperational =
-    activeConnectionView.state.status === 'configured' ||
-    activeConnectionView.state.status === 'stale';
-  const activeMqttConnected = activeConnectionView.mqttStatus === 'connected';
-  const activeChatSendAvailable =
-    activeLinkOperational || (activeMqttConnected && protocol !== 'meshcore');
+  const chatSendAvailableByProtocol = useMemo(
+    () =>
+      protocolRecord(
+        isChatOutboxSendAvailable('meshtastic', meshtasticConnectionView),
+        isChatOutboxSendAvailable('meshcore', meshcoreConnectionView),
+        isChatOutboxSendAvailable('reticulum', reticulumConnectionView),
+      ),
+    [meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView],
+  );
+  const meshtasticSendMessage = useSendMessage(meshtasticIdentityId);
+  const meshcoreSendMessage = useSendMessage(meshcoreIdentityId);
+  const reticulumSendMessage = useSendMessage(reticulumIdentityId);
+  const outboxSendFnByProtocol = useMemo(() => {
+    const wrap =
+      (send: typeof meshtasticSendMessage): ChatOutboxSendFn =>
+      (text, channel, destination, replyId) =>
+        send(text, channel, destination, replyId == null ? undefined : String(replyId));
+    return protocolRecord(
+      wrap(meshtasticSendMessage),
+      wrap(meshcoreSendMessage),
+      wrap(reticulumSendMessage),
+    );
+  }, [meshtasticSendMessage, meshcoreSendMessage, reticulumSendMessage]);
+  const emergencyOutboxDrains = useMemo(
+    () =>
+      REGISTERED_MESH_PROTOCOLS.map((p) => ({
+        protocol: p,
+        isSendAvailable: selectByProtocol(chatSendAvailableByProtocol, p),
+        sendFn: selectByProtocol(outboxSendFnByProtocol, p),
+      })),
+    [chatSendAvailableByProtocol, outboxSendFnByProtocol],
+  );
+  useEmergencyOutboxDrain({ drains: emergencyOutboxDrains });
 
   const handleIncidentAck = useCallback(
     (incident: EmergencyIncident) => {
@@ -1613,24 +1675,32 @@ function AppContent() {
       );
       const text = composeIncidentAck(incident);
       const beaconAck = incidentNeedsBeaconAck(incident);
-      void sendEmergencyText(text, {
-        isSendAvailable: route.viaActiveProtocol && activeChatSendAvailable,
-        sendFn: (payload, channel, destination) => handleSend(payload, channel, destination),
-        queueOutbox: async (entry) => {
-          const row = await window.electronAPI.chat.outbox.add(entry);
-          requestChatOutboxDrain(route.protocol);
-          return row;
+      // ACKs are routine traffic: queue as normal priority so they never compete with reports.
+      void sendTextWithOutboxFallback(
+        text,
+        {
+          isSendAvailable: selectByProtocol(chatSendAvailableByProtocol, route.protocol),
+          sendFn: selectByProtocol(outboxSendFnByProtocol, route.protocol),
+          queueOutbox: async (entry) => {
+            const row = await window.electronAPI.chat.outbox.add(entry);
+            requestChatOutboxDrain(route.protocol);
+            return row;
+          },
+          protocol: route.protocol,
+          viewKey: route.toNode != null ? `dm:${route.toNode}` : `ch:${route.channel}`,
+          channel: route.channel,
+          toNode: route.toNode,
         },
-        protocol: route.protocol,
-        viewKey: route.toNode != null ? `dm:${route.toNode}` : `ch:${route.channel}`,
-        channel: route.channel,
-        toNode: route.toNode,
-      })
+        'normal',
+      )
         .then((outcome) => {
-          if (beaconAck) {
-            useIncidentStore.getState().confirmBeacon(incident.id);
-          } else {
-            useIncidentStore.getState().recordAck(incident.id, 'local');
+          // Only mark acknowledged once the ACK actually left; a queued ACK may never send.
+          if (outcome === 'sent') {
+            if (beaconAck) {
+              useIncidentStore.getState().confirmBeacon(incident.id);
+            } else {
+              useIncidentStore.getState().recordAck(incident.id, 'local');
+            }
           }
           addToast(
             t(outcome === 'sent' ? 'incidentPanel.ackSent' : 'incidentPanel.ackQueued', {
@@ -1644,7 +1714,14 @@ function AppContent() {
           addToast(t('incidentPanel.ackFailed'), 'error');
         });
     },
-    [protocol, capabilitiesByProtocol, activeChatSendAvailable, handleSend, addToast, t],
+    [
+      protocol,
+      capabilitiesByProtocol,
+      chatSendAvailableByProtocol,
+      outboxSendFnByProtocol,
+      addToast,
+      t,
+    ],
   );
 
   const chatUnreadByProtocol = useMemo(

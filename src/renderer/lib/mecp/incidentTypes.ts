@@ -17,6 +17,8 @@ export interface EmergencyIncident {
   freetext: string;
   senderId: string;
   senderName: string;
+  /** Bridge / relay node ids that forwarded a copy (original senderId stays the victim). */
+  relaySenderIds?: string[];
   channel: string | null;
   receivedAt: number;
   lastSeenAt: number;

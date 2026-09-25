@@ -1925,13 +1925,15 @@ function ChatPanel({
     }
   }, [showSearch]);
 
-  const handleSendChunk = useCallback(
-    async (text: string, opts?: ChatComposerSendOpts) => {
+  /** Live send for one chunk; resolves to the send id (Reticulum pending store id) when any. */
+  const sendChunkForResult = useCallback(
+    async (text: string, opts?: ChatComposerSendOpts): Promise<string | undefined> => {
       const sendChannel = channel;
       const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
       if (dmOnlyChat && destination == null) {
-        setChatActionError({ message: t('chatPanel.selectDmFirst'), viewKey });
-        return;
+        const message = t('chatPanel.selectDmFirst');
+        setChatActionError({ message, viewKey });
+        throw new Error(message);
       }
       if (
         protocol === 'meshcore' &&
@@ -1939,16 +1941,13 @@ function ChatPanel({
         meshcorePayloadIsTapbackEmojiOnly(text)
       ) {
         await onReact(text, opts.replyId, sendChannel);
-        return;
+        return undefined;
       }
+      let sendResult: string | undefined;
       const doSend = async () => {
-        const sendOutcome = onSend(
-          text,
-          sendChannel,
-          destination,
-          opts?.replyHash ?? opts?.replyId ?? undefined,
+        sendResult = await Promise.resolve(
+          onSend(text, sendChannel, destination, opts?.replyHash ?? opts?.replyId ?? undefined),
         );
-        await Promise.resolve(sendOutcome);
       };
       if (
         protocol === 'meshcore' &&
@@ -1966,13 +1965,14 @@ function ChatPanel({
           const msg = err instanceof Error ? err.message : '';
           if (msg === 'meshcore.errors.floodScopeBusy') {
             setChatActionError({ message: t('meshcore.errors.floodScopeBusy'), viewKey });
-            return;
+            return undefined;
           }
           throw err;
         }
-        return;
+        return sendResult;
       }
       await doSend();
+      return sendResult;
     },
     [
       activeDmNode,
@@ -1989,9 +1989,16 @@ function ChatPanel({
     ],
   );
 
+  const handleSendChunk = useCallback(
+    async (text: string, opts?: ChatComposerSendOpts): Promise<void> => {
+      await sendChunkForResult(text, opts);
+    },
+    [sendChunkForResult],
+  );
+
   const sendQuickStatusText = useCallback(
     async (text: string) => {
-      if (viewMode === 'dm' && activeDmNode == null) {
+      if ((viewMode === 'dm' || dmOnlyChat) && activeDmNode == null) {
         setChatActionError({ message: t('chatPanel.selectDmFirst'), viewKey });
         return;
       }
@@ -2000,10 +2007,7 @@ function ChatPanel({
           text,
           {
             isSendAvailable: outboxSendAvailable,
-            sendFn: async (payload) => {
-              await handleSendChunk(payload);
-              return undefined;
-            },
+            sendFn: (payload) => sendChunkForResult(payload),
             queueOutbox,
             protocol,
             viewKey,
@@ -2021,10 +2025,11 @@ function ChatPanel({
     [
       activeDmNode,
       channel,
-      handleSendChunk,
+      dmOnlyChat,
       outboxSendAvailable,
       protocol,
       queueOutbox,
+      sendChunkForResult,
       t,
       viewKey,
       viewMode,
@@ -3967,17 +3972,14 @@ function ChatPanel({
           initialSeverity={mecpMaydayMode ? 0 : undefined}
           autoAttachGps={mecpMaydayMode}
           onSend={async (text) => {
-            if (viewMode === 'dm' && activeDmNode == null) {
+            if ((viewMode === 'dm' || dmOnlyChat) && activeDmNode == null) {
               const message = t('chatPanel.selectDmFirst');
               setChatActionError({ message, viewKey });
               throw new Error(message);
             }
             await sendEmergencyText(text, {
               isSendAvailable: outboxSendAvailable,
-              sendFn: async (payload) => {
-                await handleSendChunk(payload);
-                return undefined;
-              },
+              sendFn: (payload) => sendChunkForResult(payload),
               queueOutbox,
               protocol,
               viewKey,

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { useMessageStore } from '@/renderer/stores/messageStore';
 import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
 
 import {
@@ -8,6 +9,7 @@ import {
   sendTextWithOutboxFallback,
 } from './emergencySend';
 import { resetMeshtasticTextSendPacingForTests } from './meshtasticTextSendPacing';
+import { OFFLINE_RETICULUM_IDENTITY_ID } from './offlineProtocolIdentities';
 import { mockConsoleWarn } from './vitestConsoleMock';
 
 function makeDeps(overrides: Partial<EmergencySendDeps> = {}): EmergencySendDeps {
@@ -85,6 +87,86 @@ describe('sendEmergencyText', () => {
       queueOutbox: vi.fn().mockRejectedValue(new Error('db closed')),
     });
     await expect(sendEmergencyText('MECP report', deps)).rejects.toThrow('db closed');
+  });
+});
+
+describe('sendEmergencyText (Reticulum receipt)', () => {
+  const identityId = OFFLINE_RETICULUM_IDENTITY_ID;
+
+  function pendingMessage(id: string, status: 'sending' | 'acked' | 'failed') {
+    return {
+      [identityId]: {
+        [id]: {
+          id,
+          from: 1,
+          to: 123,
+          payload: 'MECP/0/M01',
+          channelIndex: 0,
+          timestamp: Date.now(),
+          status,
+        },
+      },
+    };
+  }
+
+  beforeEach(() => {
+    useMessageStore.setState({ messages: {} });
+  });
+
+  it('reports sent only after the remote receipt acks the attempt', async () => {
+    const sendFn = vi.fn(() => {
+      useMessageStore.setState({ messages: pendingMessage('rt-1', 'sending') });
+      return 'rt-1';
+    });
+    const deps = makeDeps({ protocol: 'reticulum', toNode: 123, sendFn });
+    const outcome = sendEmergencyText('MECP/0/M01', deps);
+    await Promise.resolve();
+    useMessageStore.setState({ messages: pendingMessage('rt-1', 'acked') });
+    await expect(outcome).resolves.toBe('sent');
+    expect(deps.queueOutbox).not.toHaveBeenCalled();
+  });
+
+  it('queues an emergency row when the receipt times out', async () => {
+    const { restore } = mockConsoleWarn();
+    try {
+      const sendFn = vi.fn(() => {
+        useMessageStore.setState({ messages: pendingMessage('rt-2', 'sending') });
+        return 'rt-2';
+      });
+      const deps = makeDeps({
+        protocol: 'reticulum',
+        toNode: 123,
+        sendFn,
+        reticulumReceiptTimeoutMs: 10,
+      });
+      await expect(sendEmergencyText('MECP/0/M01', deps)).resolves.toBe('queued');
+      expect(deps.queueOutbox).toHaveBeenCalledWith(
+        expect.objectContaining({ priority: 'emergency', protocol: 'reticulum' }),
+      );
+    } finally {
+      restore();
+    }
+  });
+
+  it('queues when the receipt fails or the send returns no attempt id', async () => {
+    const { restore } = mockConsoleWarn();
+    try {
+      const failing = makeDeps({
+        protocol: 'reticulum',
+        sendFn: vi.fn(() => {
+          useMessageStore.setState({ messages: pendingMessage('rt-3', 'failed') });
+          return 'rt-3';
+        }),
+      });
+      await expect(sendEmergencyText('MECP/0/M01', failing)).resolves.toBe('queued');
+      const noId = makeDeps({
+        protocol: 'reticulum',
+        sendFn: vi.fn().mockResolvedValue(undefined),
+      });
+      await expect(sendEmergencyText('MECP/0/M01', noId)).resolves.toBe('queued');
+    } finally {
+      restore();
+    }
   });
 });
 

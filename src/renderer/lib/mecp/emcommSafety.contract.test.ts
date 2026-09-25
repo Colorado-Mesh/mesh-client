@@ -115,6 +115,21 @@ describe('EMCOMM safety invariants (source contracts)', () => {
     expect(readSrc('renderer/hooks/useOperationalAlerts.ts')).not.toMatch(/outbox/i);
   });
 
+  it('S11: incident ACKs queue as normal priority and only record ACK when actually sent', () => {
+    const app = readSrc('renderer/App.tsx');
+    const ack = /const handleIncidentAck = useCallback\([\s\S]*?\n {2}\);/.exec(app)?.[0] ?? '';
+    expect(ack).toMatch(/sendTextWithOutboxFallback\(/);
+    expect(ack).toMatch(/'normal',\s*\)/);
+    expect(ack).not.toMatch(/sendEmergencyText\(/);
+    expect(ack).toMatch(/if \(outcome === 'sent'\) \{[\s\S]*?confirmBeacon[\s\S]*?recordAck/);
+  });
+
+  it('S11: App mounts the emergency outbox drain once for all protocols', () => {
+    const app = readSrc('renderer/App.tsx');
+    expect(app.match(/useEmergencyOutboxDrain\(\{/g)).toHaveLength(1);
+    expect(app).toMatch(/REGISTERED_MESH_PROTOCOLS\.map\(\(p\) => \(\{/);
+  });
+
   it('S12: startup and session prune pass incident-exempt node ids; main excludes them', () => {
     const hook = readSrc('renderer/hooks/useAppStartupDbPrune.ts');
     expect(hook).toMatch(/nodesExemptFromPositionPrune\(/);

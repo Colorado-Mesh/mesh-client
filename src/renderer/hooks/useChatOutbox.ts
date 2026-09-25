@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
-import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import type { MeshProtocol } from '@/renderer/lib/types';
-import type { MessageStatus } from '@/renderer/stores/messageStore';
-import { useMessageStore } from '@/renderer/stores/messageStore';
 import type { OutboxEntry, OutboxEntryInput, OutboxStatus } from '@/shared/electron-api.types';
 import { isMeshProtocol } from '@/shared/meshProtocol';
 
-import { registerChatOutboxDrainListener } from '../lib/chatOutboxDrain';
+import {
+  registerChatOutboxDrainListener,
+  subscribeChatOutboxRowsChanged,
+  withChatOutboxDrainLock,
+} from '../lib/chatOutboxDrain';
 import {
   CHAT_OUTBOX_REMOVE_FAILED_KEY,
   isEncryptionBlockedSendError,
@@ -17,6 +17,11 @@ import {
 import { recordMeshcoreSend } from '../lib/meshcoreSendRateNotice';
 import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
 import { getRadioCapabilities } from '../lib/radio/providerFactory';
+import {
+  assertReticulumSendAcked,
+  resolveReticulumIdentityId,
+  RETICULUM_RECEIPT_TIMEOUT_MS,
+} from '../lib/reticulumOutboundReceipt';
 
 export type { OutboxEntry };
 
@@ -26,19 +31,56 @@ const MAX_ATTEMPTS = 5;
 /** Drop outbox rows older than this from automatic drain (manual retry still allowed). */
 export const OUTBOX_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 /**
- * Max live emergency rows (queued/sending/failed/blocked) per protocol outbox. Enqueueing past
- * the cap blocks the oldest other emergency row so a stuck backlog cannot grow unbounded.
+ * Max live (non-blocked) emergency rows per protocol outbox. Enqueueing past the cap blocks the
+ * least-urgent, oldest other emergency row so a stuck backlog cannot grow unbounded. MAYDAY
+ * (sev 0) rows are never blocked by the cap — the outbox may temporarily exceed it instead.
  */
 export const EMERGENCY_OUTBOX_SOFT_CAP = 20;
 const EMERGENCY_CAP_BLOCKED_KEY = 'chatPanel.outboxEmergencyCapBlocked';
+const MAX_TIMER_DELAY_MS = 2_147_483_647;
+const MECP_MAYDAY_PAYLOAD_RE = /^MECP\/0\b/i;
+const MECP_SEVERITY_PAYLOAD_RE = /^MECP\/(\d)\b/i;
 
 export function isEmergencyOutboxPriority(row: Pick<OutboxEntry, 'priority'>): boolean {
   return row.priority === 'emergency';
 }
 
+/** True when an outbox payload is an MECP severity-0 (MAYDAY) report. */
+export function isMaydayEmergencyOutboxPayload(payload: string): boolean {
+  return MECP_MAYDAY_PAYLOAD_RE.test(payload);
+}
+
+/** MECP severity digit, or +Infinity for non-MECP payloads (least urgent for cap eviction). */
+function emergencyPayloadSeverity(payload: string): number {
+  const match = MECP_SEVERITY_PAYLOAD_RE.exec(payload);
+  return match?.[1] != null ? Number(match[1]) : Number.POSITIVE_INFINITY;
+}
+
+/**
+ * Earliest future `nextRetryAt` among emergency `queued` / `failed` rows, or null when none are
+ * waiting on backoff.
+ */
+export function earliestEmergencyRetryAt(
+  rows: readonly OutboxEntry[],
+  now: number = Date.now(),
+): number | null {
+  let earliest: number | null = null;
+  for (const r of rows) {
+    if (!isEmergencyOutboxPriority(r)) continue;
+    if (r.status !== 'queued' && r.status !== 'failed') continue;
+    if (r.nextRetryAt == null || r.nextRetryAt <= now) continue;
+    if (earliest == null || r.nextRetryAt < earliest) earliest = r.nextRetryAt;
+  }
+  return earliest;
+}
+
+/** Clamp a wall-clock target to a safe `setTimeout` delay. */
+export function outboxRetryTimerDelayMs(at: number, now: number = Date.now()): number {
+  return Math.min(Math.max(0, at - now), MAX_TIMER_DELAY_MS);
+}
+
 /** Legacy mesh-client `[i/N] ` chunk prefix on outbox payloads queued before single-packet. */
 const LEGACY_MULTIPART_PREFIX_RE = /^\[\d+\/\d+\]\s/;
-const RETICULUM_RECEIPT_TIMEOUT_MS = 30_000;
 
 /**
  * True for durable outbox rows from before MeshCore single-packet: grouped multi-chunk sends
@@ -68,6 +110,14 @@ function isEligibleForDrain(row: OutboxEntry, now: number): boolean {
     (row.nextRetryAt == null || row.nextRetryAt <= now) &&
     (isEmergencyOutboxPriority(row) || now - row.createdAt <= OUTBOX_MAX_AGE_MS)
   );
+}
+
+/** Drain order: emergency rows first, then oldest first. */
+function compareDrainOrder(a: OutboxEntry, b: OutboxEntry): number {
+  const pa = isEmergencyOutboxPriority(a) ? 0 : 1;
+  const pb = isEmergencyOutboxPriority(b) ? 0 : 1;
+  if (pa !== pb) return pa - pb;
+  return a.createdAt - b.createdAt;
 }
 
 function retryDelayMs(attemptCount: number): number {
@@ -157,9 +207,11 @@ async function quarantineLegacyMultipartOutboxRow(
 }
 
 /**
- * When emergency rows (any status, including `newRow`) exceed {@link EMERGENCY_OUTBOX_SOFT_CAP},
- * block the oldest still-active emergency row other than `newRow`. Failure point: list /
- * updateStatus IPC — logged; the new row stays queued so enqueue never fails on cap bookkeeping.
+ * When non-blocked emergency rows (including `newRow`) exceed {@link EMERGENCY_OUTBOX_SOFT_CAP},
+ * block one other queued/failed emergency row: least urgent MECP severity first, then oldest.
+ * MAYDAY (sev 0) rows are never chosen — if only MAYDAYs remain the outbox stays over cap.
+ * Failure point: list / updateStatus IPC — logged; the new row stays queued so enqueue never
+ * fails on cap bookkeeping.
  */
 async function enforceEmergencyOutboxSoftCap(
   newRow: OutboxEntry,
@@ -167,14 +219,29 @@ async function enforceEmergencyOutboxSoftCap(
 ): Promise<void> {
   try {
     const listed = await window.electronAPI.chat.outbox.list(newRow.protocol);
-    const emergency = listed.filter((r) => isEmergencyOutboxPriority(r) && r.id !== newRow.id);
-    if (emergency.length + 1 <= EMERGENCY_OUTBOX_SOFT_CAP) return;
+    const activeOthers = listed.filter(
+      (r) => isEmergencyOutboxPriority(r) && r.id !== newRow.id && r.status !== 'blocked',
+    );
+    if (activeOthers.length + 1 <= EMERGENCY_OUTBOX_SOFT_CAP) return;
     let victim: OutboxEntry | undefined;
-    for (const r of emergency) {
-      if (r.status === 'blocked') continue;
-      if (victim == null || r.createdAt < victim.createdAt) victim = r;
+    let victimSeverity = Number.NEGATIVE_INFINITY;
+    for (const r of activeOthers) {
+      if (r.status === 'sending') continue;
+      if (isMaydayEmergencyOutboxPayload(r.payload)) continue;
+      const severity = emergencyPayloadSeverity(r.payload);
+      if (
+        victim == null ||
+        severity > victimSeverity ||
+        (severity === victimSeverity && r.createdAt < victim.createdAt)
+      ) {
+        victim = r;
+        victimSeverity = severity;
+      }
     }
-    if (victim == null) return;
+    if (victim == null) {
+      console.warn('[useChatOutbox] emergency soft cap exceeded; only MAYDAY rows remain');
+      return;
+    }
     await window.electronAPI.chat.outbox.updateStatus(
       victim.id,
       'blocked',
@@ -186,7 +253,7 @@ async function enforceEmergencyOutboxSoftCap(
       error: EMERGENCY_CAP_BLOCKED_KEY,
       nextRetryAt: null,
     });
-    console.warn('[useChatOutbox] emergency soft cap blocked oldest row', victim.id);
+    console.warn('[useChatOutbox] emergency soft cap blocked row', victim.id);
   } catch (err: unknown) {
     console.warn('[useChatOutbox] emergency soft cap enforcement failed', newRow.id, err);
   }
@@ -195,7 +262,7 @@ async function enforceEmergencyOutboxSoftCap(
 async function sendOneOutboxRow(
   row: OutboxEntry,
   protocol: MeshProtocol,
-  sendFn: UseChatOutboxOptions['sendFn'],
+  sendFn: ChatOutboxSendFn,
   reticulumReceiptTimeoutMs: number,
   updateRow: (id: number, patch: Partial<OutboxEntry>) => void,
   removeRow: (id: number) => void,
@@ -211,22 +278,7 @@ async function sendOneOutboxRow(
       row.replyId ?? undefined,
     );
     if (protocol === 'reticulum') {
-      const attemptStoreId =
-        typeof sendResult === 'string' && sendResult !== '' ? sendResult : null;
-      if (reticulumIdentityId == null || attemptStoreId == null) {
-        throw new Error('chatPanel.reticulumSendTimeout');
-      }
-      const receiptState = await waitForReticulumOutboundTerminal(
-        reticulumIdentityId,
-        attemptStoreId,
-        reticulumReceiptTimeoutMs,
-      );
-      if (receiptState === 'failed') {
-        throw new Error('chatPanel.reticulumSendFailed');
-      }
-      if (receiptState !== 'acked') {
-        throw new Error('chatPanel.reticulumSendTimeout');
-      }
+      await assertReticulumSendAcked(reticulumIdentityId, sendResult, reticulumReceiptTimeoutMs);
     }
     // Keep the app-wide single-packet fast-send clock honest: a drained row is airtime too.
     if (isMeshProtocol(row.protocol) && getRadioCapabilities(row.protocol).composerMaxChunks <= 1) {
@@ -239,17 +291,105 @@ async function sendOneOutboxRow(
   }
 }
 
+export type ChatOutboxSendFn = (
+  text: string,
+  channel: number,
+  destination?: number,
+  replyId?: number,
+) => Promise<string | undefined> | string | undefined;
+
+type OutboxRowPatchFn = (id: number, patch: Partial<OutboxEntry>) => void;
+
+export interface DrainChatOutboxOnceOptions {
+  protocol: MeshProtocol;
+  sendFn: ChatOutboxSendFn;
+  /** Re-checked before every row so a mid-drain disconnect stops further sends. */
+  isSendAvailable: () => boolean;
+  reticulumReceiptTimeoutMs?: number;
+  /** Restrict which eligible rows are sent (App-level drain passes emergency-only). */
+  rowFilter?: (row: OutboxEntry) => boolean;
+  onRowsListed?: (rows: OutboxEntry[]) => void;
+  updateRow?: OutboxRowPatchFn;
+  removeRow?: (id: number) => void;
+}
+
+export interface DrainChatOutboxOnceResult {
+  /** Rows after this drain (listed at start, then patched by each send outcome). */
+  rows: OutboxEntry[];
+  /** Rows sent or quarantined during this drain. */
+  attempted: number;
+}
+
+/**
+ * One outbox drain pass for `protocol`, serialized by {@link withChatOutboxDrainLock} so
+ * ChatPanel and the App-level emergency drain never send the same row twice. Rows are re-listed
+ * from SQLite after acquiring the lock and sent emergency-first, then oldest-first.
+ * Failure point: list / recover IPC — rejects to the caller (row statuses are left untouched).
+ */
+export function drainChatOutboxOnce({
+  protocol,
+  sendFn,
+  isSendAvailable,
+  reticulumReceiptTimeoutMs = RETICULUM_RECEIPT_TIMEOUT_MS,
+  rowFilter,
+  onRowsListed,
+  updateRow,
+  removeRow,
+}: DrainChatOutboxOnceOptions): Promise<DrainChatOutboxOnceResult> {
+  return withChatOutboxDrainLock(protocol, async () => {
+    if (!isSendAvailable()) return { rows: [], attempted: 0 };
+    const listed = await window.electronAPI.chat.outbox.list(protocol);
+    let current = await recoverStuckSendingRows(listed);
+    onRowsListed?.(current);
+    const trackUpdate: OutboxRowPatchFn = (id, patch) => {
+      current = current.map((r) => (r.id === id ? { ...r, ...patch } : r));
+      updateRow?.(id, patch);
+    };
+    const trackRemove = (id: number) => {
+      current = current.filter((r) => r.id !== id);
+      removeRow?.(id);
+    };
+    const now = Date.now();
+    const eligible = current
+      .filter((r) => isEligibleForDrain(r, now) && (rowFilter == null || rowFilter(r)))
+      .sort(compareDrainOrder);
+    let attempted = 0;
+    for (const row of eligible) {
+      if (!isSendAvailable()) break;
+      attempted += 1;
+      // Upgrade path: do not TX legacy MeshCore multi-split rows queued before single-packet.
+      if (isLegacySinglePacketMultipartOutboxRow(row)) {
+        await quarantineLegacyMultipartOutboxRow(row, trackUpdate);
+        continue;
+      }
+      const sendRow = () =>
+        sendOneOutboxRow(
+          row,
+          protocol,
+          sendFn,
+          reticulumReceiptTimeoutMs,
+          trackUpdate,
+          trackRemove,
+        );
+      // Meshtastic-only pacing, shared with ChatComposer so live sends and outbox drain cannot
+      // race firmware's TEXT_MESSAGE_APP RATE_LIMIT_EXCEEDED window. Single-packet protocols
+      // drain without a client interval — they only advance the fast-send clock after success.
+      if (protocol === 'meshtastic') {
+        await withMeshtasticTextSendPacing(sendRow);
+      } else {
+        await sendRow();
+      }
+    }
+    return { rows: current, attempted };
+  });
+}
+
 export interface UseChatOutboxOptions {
   protocol: MeshProtocol;
   isSendAvailable: boolean;
   /** Test override for deterministic timeout coverage. */
   reticulumReceiptTimeoutMs?: number;
-  sendFn: (
-    text: string,
-    channel: number,
-    destination?: number,
-    replyId?: number,
-  ) => Promise<string | undefined> | string | undefined;
+  sendFn: ChatOutboxSendFn;
 }
 
 export interface UseChatOutbox {
@@ -267,13 +407,42 @@ export function useChatOutbox({
   sendFn,
 }: UseChatOutboxOptions): UseChatOutbox {
   const [rows, setRows] = useState<OutboxEntry[]>([]);
+  const rowsRef = useRef<OutboxEntry[]>(rows);
   const drainingRef = useRef(false);
   const isSendAvailableRef = useRef(isSendAvailable);
   const sendFnRef = useRef(sendFn);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const drainOnceRef = useRef<() => Promise<void>>(() => Promise.resolve());
   useEffect(() => {
     isSendAvailableRef.current = isSendAvailable;
     sendFnRef.current = sendFn;
   }, [isSendAvailable, sendFn]);
+  useEffect(() => {
+    rowsRef.current = rows;
+  }, [rows]);
+
+  const scheduleRetryTimer = useCallback((snapshot: readonly OutboxEntry[]) => {
+    if (retryTimerRef.current != null) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    const at = earliestEmergencyRetryAt(snapshot);
+    if (at == null) return;
+    retryTimerRef.current = setTimeout(() => {
+      retryTimerRef.current = null;
+      void drainOnceRef.current();
+    }, outboxRetryTimerDelayMs(at));
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (retryTimerRef.current != null) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+    },
+    [],
+  );
 
   // Load outbox rows on mount; reset any 'sending' rows left from a prior crash to 'queued'
   useEffect(() => {
@@ -297,6 +466,21 @@ export function useChatOutbox({
       });
   }, [protocol]);
 
+  // App-level emergency drain changed rows out of band — reload so the UI is not stale.
+  useEffect(() => {
+    return subscribeChatOutboxRowsChanged(protocol, () => {
+      window.electronAPI.chat.outbox
+        .list(protocol)
+        .then((loaded) => {
+          setRows(loaded);
+          scheduleRetryTimer(loaded);
+        })
+        .catch((err: unknown) => {
+          console.warn('[useChatOutbox] reload after external drain failed', err);
+        });
+    });
+  }, [protocol, scheduleRetryTimer]);
+
   const updateRow = useCallback((id: number, patch: Partial<OutboxEntry>) => {
     setRows((prev) => prev.map((r: OutboxEntry) => (r.id === id ? { ...r, ...patch } : r)));
   }, []);
@@ -309,47 +493,39 @@ export function useChatOutbox({
     if (drainingRef.current || !isSendAvailable) return;
     drainingRef.current = true;
     try {
-      const listed = await window.electronAPI.chat.outbox.list(protocol);
-      const freshRows = await recoverStuckSendingRows(listed);
-      setRows(freshRows);
-      const now = Date.now();
-      for (const row of freshRows.filter((r) => isEligibleForDrain(r, now))) {
-        if (!isSendAvailableRef.current) break;
-        // Upgrade path: do not TX legacy MeshCore multi-split rows queued before single-packet.
-        if (isLegacySinglePacketMultipartOutboxRow(row)) {
-          await quarantineLegacyMultipartOutboxRow(row, updateRow);
-          continue;
-        }
-        const sendRow = () =>
-          sendOneOutboxRow(
-            row,
-            protocol,
-            sendFnRef.current,
-            reticulumReceiptTimeoutMs,
-            updateRow,
-            removeRow,
-          );
-        // Meshtastic-only pacing, shared with ChatComposer so live sends and outbox drain cannot
-        // race firmware's TEXT_MESSAGE_APP RATE_LIMIT_EXCEEDED window. Single-packet protocols
-        // drain without a client interval — they only advance the fast-send clock after success.
-        if (protocol === 'meshtastic') {
-          await withMeshtasticTextSendPacing(sendRow);
-        } else {
-          await sendRow();
-        }
-      }
+      const result = await drainChatOutboxOnce({
+        protocol,
+        sendFn: (text, channel, destination, replyId) =>
+          sendFnRef.current(text, channel, destination, replyId),
+        isSendAvailable: () => isSendAvailableRef.current,
+        reticulumReceiptTimeoutMs,
+        onRowsListed: setRows,
+        updateRow,
+        removeRow,
+      });
+      scheduleRetryTimer(result.rows);
     } catch (err: unknown) {
       console.warn('[useChatOutbox] drainOnce failed', err);
     } finally {
       drainingRef.current = false;
     }
-  }, [protocol, isSendAvailable, reticulumReceiptTimeoutMs, updateRow, removeRow]);
+  }, [
+    protocol,
+    isSendAvailable,
+    reticulumReceiptTimeoutMs,
+    updateRow,
+    removeRow,
+    scheduleRetryTimer,
+  ]);
+
+  useEffect(() => {
+    drainOnceRef.current = drainOnce;
+  }, [drainOnce]);
 
   // Drain when send becomes available, or when protocol changes while already connected
   useEffect(() => {
     if (isSendAvailable) {
       // Fire-and-forget drain; setState happens asynchronously inside drainOnce.
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- availability-driven outbox drain
       void drainOnce();
     }
     // drainOnce intentionally omitted: only trigger on availability/protocol change
@@ -373,10 +549,12 @@ export function useChatOutbox({
       if (isSendAvailable) {
         // Attempt immediate drain on next tick
         setTimeout(() => void drainOnce(), 0);
+      } else {
+        scheduleRetryTimer([...rowsRef.current, newRow]);
       }
       return newRow;
     },
-    [drainOnce, isSendAvailable, updateRow],
+    [drainOnce, isSendAvailable, updateRow, scheduleRetryTimer],
   );
 
   const retry = useCallback(
@@ -410,68 +588,4 @@ export function useChatOutbox({
   );
 
   return { rows, queue, retry, cancel, drainNow: drainOnce };
-}
-
-function resolveReticulumIdentityId(): string | null {
-  return (
-    normalizeIdentityId(getIdentityIdForProtocol('reticulum')) ??
-    getOfflineIdentityIdForProtocol('reticulum')
-  );
-}
-
-function normalizeIdentityId(identityId: string | null): string | null {
-  if (identityId == null || identityId === '') return null;
-  return identityId;
-}
-
-function captureReticulumMessageIds(identityId: string): Set<string> {
-  return new Set(Object.keys(useMessageStore.getState().messages[identityId] ?? {}));
-}
-
-/**
- * Follow one outbound attempt by store id. Pending → LXMF hash rekey is detected when
- * the tracked id disappears and exactly one new id appears in the same store update.
- */
-async function waitForReticulumOutboundTerminal(
-  identityId: string,
-  attemptStoreId: string,
-  timeoutMs: number,
-): Promise<'acked' | 'failed' | 'timeout'> {
-  let trackedId = attemptStoreId;
-  let knownIds = captureReticulumMessageIds(identityId);
-
-  const readStatus = (): MessageStatus | undefined => {
-    const byId = useMessageStore.getState().messages[identityId];
-    if (!byId) return undefined;
-    const currentIds = new Set(Object.keys(byId));
-    const added: string[] = [];
-    for (const id of currentIds) {
-      if (!knownIds.has(id)) added.push(id);
-    }
-    if (!currentIds.has(trackedId) && added.length === 1) {
-      const renamedId = added[0];
-      if (renamedId != null) {
-        trackedId = renamedId;
-      }
-    }
-    knownIds = currentIds;
-    return byId[trackedId]?.status;
-  };
-
-  const immediate = readStatus();
-  if (immediate === 'acked' || immediate === 'failed') return immediate;
-  return await new Promise<'acked' | 'failed' | 'timeout'>((resolve) => {
-    const timeout = setTimeout(() => {
-      unsubscribe();
-      resolve('timeout');
-    }, timeoutMs);
-    const unsubscribe = useMessageStore.subscribe(() => {
-      const status = readStatus();
-      if (status === 'acked' || status === 'failed') {
-        clearTimeout(timeout);
-        unsubscribe();
-        resolve(status);
-      }
-    });
-  });
 }

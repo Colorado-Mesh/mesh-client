@@ -86,6 +86,19 @@ describe('incidentFingerprint', () => {
     expect(incidentFingerprint({ ...base, freetext: '3pax ridge' })).not.toBe(a);
     expect(incidentFingerprint({ ...base, senderId: '!beef' })).not.toBe(a);
   });
+
+  it('ignores GPS coordinates in freetext so updated position does not fork the id', () => {
+    const a = incidentFingerprint({
+      ...base,
+      freetext: '2pax ridge 39.7,-105.0',
+    });
+    const b = incidentFingerprint({
+      ...base,
+      freetext: '2pax ridge 40.1,-104.5',
+    });
+    expect(a).toBe(b);
+    expect(a).toBe(incidentFingerprint({ ...base, freetext: '2pax ridge' }));
+  });
 });
 
 describe('encode / byte limit', () => {

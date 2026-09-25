@@ -31,7 +31,7 @@ beforeEach(() => {
   appendReceived.mockClear();
   triggerMecpAlert.mockClear();
   executeMecpRebroadcast.mockClear();
-  useIncidentStore.getState().clearAll();
+  useIncidentStore.setState({ incidents: {}, resolvedTombstones: {} });
   window.electronAPI = {
     ...window.electronAPI,
     mecp: {
@@ -151,6 +151,23 @@ describe('useMecpAlertWatcher', () => {
     expect(open[0]?.messageIds).toEqual(['h1']);
     expect(triggerMecpAlert).not.toHaveBeenCalled();
     expect(appendReceived).not.toHaveBeenCalled();
+  });
+
+  it('does not seed own messages into the incident store', () => {
+    const own = new Set<number>([9]);
+    renderHook(() => {
+      useMecpAlertWatcher(
+        {
+          protocol: 'meshtastic',
+          messages: [msg({ id: 'own', payload: 'MECP/0/M01', from: 9 })],
+          ownNodeIds: own,
+          ownSenderId: 9,
+        },
+        { protocol: 'meshcore', messages: [], ownNodeIds: own },
+        { protocol: 'reticulum', messages: [], ownNodeIds: own },
+      );
+    });
+    expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(0);
   });
 
   it('does not open an incident for a hydrated B02 beacon ACK', () => {

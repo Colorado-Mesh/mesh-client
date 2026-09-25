@@ -186,6 +186,82 @@ describe('incidentStore', () => {
     expect(incidents[first]).toBeDefined();
   });
 
+  it('merges GPS updates from the same sender into one incident', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const a = s.upsertFromMecp(report('MECP/0/M01 help 39.7,-105.0', { messageId: '1' }))!;
+    const b = s.upsertFromMecp(
+      report('MECP/0/M01 help 40.1,-104.5', { messageId: '2', receivedAt: 2_000 }),
+    );
+    expect(b).toBe(a);
+    const inc = useIncidentStore.getState().incidents[a];
+    expect(inc.lat).toBeCloseTo(40.1);
+    expect(inc.lon).toBeCloseTo(-104.5);
+    expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(1);
+  });
+
+  it('merges bridged copies from a different relay sender id within the window', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const a = s.upsertFromMecp(
+      report('MECP/0/M01 trapped', {
+        senderId: '!victim',
+        protocol: 'meshtastic',
+        messageId: 'mt',
+        receivedAt: 1_000,
+      }),
+    )!;
+    const b = s.upsertFromMecp(
+      report('MECP/0/M01 trapped', {
+        senderId: '!bridge',
+        protocol: 'meshcore',
+        messageId: 'mc',
+        receivedAt: 2_000,
+      }),
+    );
+    expect(b).toBe(a);
+    const inc = useIncidentStore.getState().incidents[a];
+    expect(inc.senderId).toBe('!victim');
+    expect(inc.relaySenderIds).toEqual(['!bridge']);
+    expect(inc.protocolsSeen).toEqual(['meshtastic', 'meshcore']);
+  });
+
+  it('never evicts open MAYDAY when the cap is exceeded', async () => {
+    const { useIncidentStore, MAX_INCIDENTS } = await loadStore();
+    const s = useIncidentStore.getState();
+    const mayday = s.upsertFromMecp(report('MECP/0/M01 critical', { receivedAt: 0 }))!;
+    for (let i = 1; i <= MAX_INCIDENTS + 5; i++) {
+      s.upsertFromMecp(report(`MECP/3/L01 flood${i}`, { receivedAt: i }));
+    }
+    const incidents = useIncidentStore.getState().incidents;
+    expect(incidents[mayday]).toBeDefined();
+    expect(incidents[mayday].severity).toBe(0);
+    expect(Object.keys(incidents).length).toBeGreaterThanOrEqual(MAX_INCIDENTS);
+  });
+
+  it('seed path skips tombstoned resolved fingerprints', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const id = s.upsertFromMecp(report('MECP/0/M01 old', { receivedAt: Date.now() }))!;
+    s.resolveIncident(id);
+    expect(useIncidentStore.getState().resolvedTombstones[id]).toBeDefined();
+    expect(
+      s.upsertFromMecp(
+        report('MECP/0/M01 old', { receivedAt: Date.now(), messageId: 'seed-echo' }),
+      ),
+    ).toBeNull(); // within grace, not reopen
+    // Explicit seed flag must not recreate after resolve even past grace:
+    expect(
+      s.upsertFromMecp({
+        ...report('MECP/0/M01 old', {
+          receivedAt: Date.now() + 10 * 60_000,
+          messageId: 'seed-2',
+        }),
+        fromSeed: true,
+      }),
+    ).toBeNull();
+  });
+
   it('persists incidents to localStorage and rehydrates', async () => {
     const { useIncidentStore } = await loadStore();
     const id = useIncidentStore.getState().upsertFromMecp(report('MECP/1/T04'))!;

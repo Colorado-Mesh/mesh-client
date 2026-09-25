@@ -30,6 +30,8 @@ export interface MecpWatcherProtocolSlice {
   messages: readonly MessageRecord[];
   ownNodeIds: ReadonlySet<number>;
   ownSenderId?: number | null;
+  /** Optional last-known position lookup for the message sender (map pins without GPS in freetext). */
+  resolveLastKnown?: (senderId: string) => { lat: number; lon: number } | null;
 }
 
 function messageDedupKey(protocol: string, id: string): string {
@@ -37,17 +39,25 @@ function messageDedupKey(protocol: string, id: string): string {
 }
 
 /** Upsert into the Incident Command store (no alert/audit). Safe for hydrate + live paths. */
-function upsertIncidentFromMessage(slice: MecpWatcherProtocolSlice, msg: MessageRecord): void {
+function upsertIncidentFromMessage(
+  slice: MecpWatcherProtocolSlice,
+  msg: MessageRecord,
+  opts?: { fromSeed?: boolean },
+): void {
   const parsed = tryParseMecp(msg.payload);
   if (parsed?.severity == null) return;
+  const senderId = String(msg.from);
+  const lastKnown = slice.resolveLastKnown?.(senderId) ?? null;
   useIncidentStore.getState().upsertFromMecp({
     protocol: slice.protocol,
     parsed,
-    senderId: String(msg.from),
+    senderId,
     senderName: msg.senderName,
     channel: msg.channelIndex != null ? String(msg.channelIndex) : null,
     messageId: msg.id,
     receivedAt: typeof msg.timestamp === 'number' ? msg.timestamp : Date.now(),
+    lastKnown,
+    fromSeed: opts?.fromSeed,
   });
 }
 
@@ -251,14 +261,18 @@ export function useMecpAlertWatcher(
   const seededRef = useRef(false);
 
   // Seed once from the current snapshot so hydration does not alert/audit.
-  // Still upsert open incidents silently so the Incident tab has a COP on cold start (S4).
+  // Still upsert recent non-own incidents silently so the Incident tab has a COP on cold start (S4).
   useEffect(() => {
     if (seededRef.current) return;
     const seed = new Set<string>();
     for (const slice of [meshtastic, meshcore, reticulum]) {
       for (const msg of slice.messages) {
         seed.add(messageDedupKey(slice.protocol, msg.id));
-        upsertIncidentFromMessage(slice, msg);
+        const parsed = tryParseMecp(msg.payload);
+        if (!parsed) continue;
+        const own = isOwnMessage(msg, slice.ownNodeIds, slice.ownSenderId);
+        if (shouldSkipMecpInboundHandling(msg, parsed, own)) continue;
+        upsertIncidentFromMessage(slice, msg, { fromSeed: true });
       }
     }
     seenRef.current = seed;

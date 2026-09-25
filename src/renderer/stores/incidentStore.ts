@@ -8,10 +8,10 @@ import {
   extractMecpCoords,
   incidentFingerprint,
   type MecpParsed,
-  normalizeMecpFreetext,
+  normalizeMecpFreetextForMatch,
 } from '@/renderer/lib/mecp/mecpMessages';
 import type { MeshProtocol } from '@/shared/meshProtocol';
-import { MS_PER_MINUTE } from '@/shared/timeConstants';
+import { MS_PER_HOUR, MS_PER_MINUTE } from '@/shared/timeConstants';
 
 export type {
   EmergencyIncident,
@@ -24,6 +24,12 @@ export const MAX_INCIDENTS = 200;
 export const MAX_MESSAGE_IDS_PER_INCIDENT = 50;
 /** Copies arriving shortly after Resolve (e.g. rebroadcast echoes) must not reopen the incident. */
 export const INCIDENT_REOPEN_GRACE_MS = 5 * MS_PER_MINUTE;
+/** Bridged copies from a different sender id merge when payload matches within this window. */
+export const CROSS_PROTOCOL_MERGE_WINDOW_MS = 10 * MS_PER_MINUTE;
+/** Hydration seed ignores MECP older than this (avoids resurrecting ancient MAYDAYs). */
+export const INCIDENT_SEED_MAX_AGE_MS = 24 * MS_PER_HOUR;
+/** Cap tombstone map size (oldest resolvedAt pruned first). */
+export const MAX_RESOLVED_TOMBSTONES = 500;
 
 export interface MecpIncidentInput {
   protocol: MeshProtocol;
@@ -35,10 +41,20 @@ export interface MecpIncidentInput {
   receivedAt?: number;
   /** Sender's last known node position, used when the report carries no coordinates. */
   lastKnown?: { lat: number; lon: number } | null;
+  /**
+   * When true (hydration seed), skip own/history/old messages and honor resolved tombstones.
+   * Live path leaves this unset.
+   */
+  fromSeed?: boolean;
 }
 
 interface IncidentStoreState {
   incidents: Record<string, EmergencyIncident>;
+  /**
+   * Fingerprints (or ids) of resolved/pruned incidents so hydration cannot reopen them.
+   * Survives `clearAll` of live rows.
+   */
+  resolvedTombstones: Record<string, number>;
   /**
    * Ingest an inbound MECP report. Returns the affected incident id, or null when no row
    * was created/updated. B02/B03/R01 never open rows: B02/R01 record an ACK on the matching
@@ -62,23 +78,63 @@ function sameCodeSet(a: readonly string[], b: readonly string[]): boolean {
   return b.every((c) => set.has(c));
 }
 
-/** Only runs when over the cap: drop oldest resolved first, then oldest by lastSeenAt. */
+function isOpenCritical(inc: EmergencyIncident): boolean {
+  return isUnresolved(inc) && !inc.isDrill && inc.severity <= 1;
+}
+
+/**
+ * Evict when over the cap: resolved first, then drills, then higher severity number (ROUTINE
+ * before SAFETY), then oldest. Never evict open MAYDAY/URGENT — allow temporary over-cap.
+ */
 function pruneIncidents(
   incidents: Record<string, EmergencyIncident>,
-): Record<string, EmergencyIncident> {
+  tombstones: Record<string, number>,
+): { incidents: Record<string, EmergencyIncident>; resolvedTombstones: Record<string, number> } {
   const ids = Object.keys(incidents);
-  if (ids.length <= MAX_INCIDENTS) return incidents;
+  if (ids.length <= MAX_INCIDENTS) return { incidents, resolvedTombstones: tombstones };
   const ranked = ids
     .map((id) => incidents[id])
     .sort((a, b) => {
-      const ar = a.status === 'resolved' ? 0 : 1;
-      const br = b.status === 'resolved' ? 0 : 1;
+      const aCrit = isOpenCritical(a) ? 1 : 0;
+      const bCrit = isOpenCritical(b) ? 1 : 0;
+      if (aCrit !== bCrit) return aCrit - bCrit; // non-critical first (evictable)
+      const ar = a.status === 'resolved' ? 0 : a.isDrill ? 1 : 2;
+      const br = b.status === 'resolved' ? 0 : b.isDrill ? 1 : 2;
       if (ar !== br) return ar - br;
+      if (a.severity !== b.severity) return b.severity - a.severity; // higher sev number first
       return (a.resolvedAt ?? a.lastSeenAt) - (b.resolvedAt ?? b.lastSeenAt);
     });
   const next: Record<string, EmergencyIncident> = {};
-  for (const inc of ranked.slice(ids.length - MAX_INCIDENTS)) {
+  const nextTombs = { ...tombstones };
+  const keepFrom = Math.max(0, ranked.length - MAX_INCIDENTS);
+  for (let i = 0; i < ranked.length; i++) {
+    const inc = ranked[i];
+    if (i < keepFrom && isOpenCritical(inc)) {
+      // Never drop open sev 0/1 — keep even if over cap.
+      next[inc.id] = inc;
+      continue;
+    }
+    if (i < keepFrom) {
+      if (inc.status === 'resolved' || isUnresolved(inc)) {
+        nextTombs[inc.id] = inc.resolvedAt ?? inc.lastSeenAt;
+      }
+      continue;
+    }
     next[inc.id] = inc;
+  }
+  return {
+    incidents: next,
+    resolvedTombstones: pruneTombstones(nextTombs),
+  };
+}
+
+function pruneTombstones(tombs: Record<string, number>): Record<string, number> {
+  const ids = Object.keys(tombs);
+  if (ids.length <= MAX_RESOLVED_TOMBSTONES) return tombs;
+  const ranked = ids.sort((a, b) => tombs[a] - tombs[b]);
+  const next: Record<string, number> = {};
+  for (const id of ranked.slice(ids.length - MAX_RESOLVED_TOMBSTONES)) {
+    next[id] = tombs[id];
   }
   return next;
 }
@@ -94,6 +150,41 @@ function withAck(inc: EmergencyIncident, peerId: string): EmergencyIncident {
   };
 }
 
+function findExistingIncident(
+  all: Record<string, EmergencyIncident>,
+  opts: {
+    id: string;
+    senderId: string;
+    severity: Severity;
+    codes: string[];
+    freetext: string;
+    now: number;
+  },
+): EmergencyIncident | undefined {
+  const byId = all[opts.id];
+  if (byId) return byId;
+
+  const matchText = normalizeMecpFreetextForMatch(opts.freetext);
+
+  let sameSender: EmergencyIncident | undefined;
+  let crossProtocol: EmergencyIncident | undefined;
+  for (const inc of Object.values(all)) {
+    if (!isUnresolved(inc)) continue;
+    if (!sameCodeSet(inc.codes, opts.codes)) continue;
+    if (normalizeMecpFreetextForMatch(inc.freetext) !== matchText) continue;
+    // Codes + stripped freetext match; severity may differ (escalation). Same sender always
+    // wins; different sender within the bridge window is treated as a relayed copy.
+    if (inc.senderId === opts.senderId) {
+      sameSender = inc;
+      break;
+    }
+    if (opts.now - inc.receivedAt <= CROSS_PROTOCOL_MERGE_WINDOW_MS && !crossProtocol) {
+      crossProtocol = inc;
+    }
+  }
+  return sameSender ?? crossProtocol;
+}
+
 /**
  * Prefer selectors (`useIncidentStore((s) => s.incidents[id])`, `openIncidentCount`) over
  * bare `useIncidentStore()` so components re-render only on the slice they read.
@@ -102,6 +193,7 @@ export const useIncidentStore = create<IncidentStoreState>()(
   persist(
     (set, get) => ({
       incidents: {},
+      resolvedTombstones: {},
 
       upsertFromMecp: (input) => {
         const { parsed, protocol, senderId } = input;
@@ -109,6 +201,7 @@ export const useIncidentStore = create<IncidentStoreState>()(
         const severity: Severity = parsed.severity;
         const now = input.receivedAt ?? Date.now();
         const all = get().incidents;
+        const tombs = get().resolvedTombstones;
 
         if (isBeaconCancel(parsed.codes)) {
           const beacons = Object.values(all).filter(
@@ -138,16 +231,28 @@ export const useIncidentStore = create<IncidentStoreState>()(
 
         const freetext = parsed.freetext ?? '';
         const id = incidentFingerprint({ severity, codes: parsed.codes, freetext, senderId });
-        const normalizedText = normalizeMecpFreetext(freetext);
-        const existing =
-          all[id] ??
-          Object.values(all).find(
-            (inc) =>
-              isUnresolved(inc) &&
-              inc.senderId === senderId &&
-              sameCodeSet(inc.codes, parsed.codes) &&
-              normalizeMecpFreetext(inc.freetext) === normalizedText,
-          );
+
+        if (input.fromSeed) {
+          if (tombs[id] != null) return null;
+          if (now > 0 && Date.now() - now > INCIDENT_SEED_MAX_AGE_MS) return null;
+        }
+
+        const existing = findExistingIncident(all, {
+          id,
+          senderId,
+          severity,
+          codes: parsed.codes,
+          freetext,
+          now,
+        });
+
+        if (
+          input.fromSeed &&
+          existing &&
+          (tombs[existing.id] != null || existing.status === 'resolved')
+        ) {
+          return null;
+        }
 
         const msgCoords = extractMecpCoords(freetext);
         const coords = msgCoords ?? input.lastKnown ?? null;
@@ -155,6 +260,7 @@ export const useIncidentStore = create<IncidentStoreState>()(
         const beacon = isBeacon(parsed.codes);
 
         if (!existing) {
+          if (input.fromSeed && tombs[id] != null) return null;
           const created: EmergencyIncident = {
             id,
             protocol,
@@ -177,19 +283,28 @@ export const useIncidentStore = create<IncidentStoreState>()(
             isDrill: parsed.isDrill,
             status: 'open',
           };
-          set((s) => ({ incidents: pruneIncidents({ ...s.incidents, [id]: created }) }));
+          set((s) => {
+            const pruned = pruneIncidents({ ...s.incidents, [id]: created }, s.resolvedTombstones);
+            return pruned;
+          });
           return id;
         }
 
+        const isRelay = existing.senderId !== senderId;
         const reopen =
           existing.status === 'resolved' &&
           now - (existing.resolvedAt ?? 0) > INCIDENT_REOPEN_GRACE_MS;
+        if (existing.status === 'resolved' && !reopen) return null;
+
         const messageIds =
           input.messageId && !existing.messageIds.includes(input.messageId)
             ? [...existing.messageIds, input.messageId].slice(-MAX_MESSAGE_IDS_PER_INCIDENT)
             : existing.messageIds;
         // Message coordinates always win over lastKnown; never downgrade message → lastKnown.
         const keepCoords = existing.coordsSource === 'message' && !msgCoords;
+        const relaySenderIds = isRelay
+          ? [...new Set([...(existing.relaySenderIds ?? []), senderId])].slice(-20)
+          : existing.relaySenderIds;
         const merged: EmergencyIncident = {
           ...existing,
           protocol,
@@ -198,16 +313,30 @@ export const useIncidentStore = create<IncidentStoreState>()(
             : [...existing.protocolsSeen, protocol],
           severity: Math.min(existing.severity, severity) as Severity,
           lastSeenAt: Math.max(existing.lastSeenAt, now),
-          senderName: input.senderName ?? existing.senderName,
+          // Keep original victim identity; relays are recorded separately.
+          senderName: isRelay ? existing.senderName : (input.senderName ?? existing.senderName),
           channel: input.channel ?? existing.channel,
           messageIds,
+          ...(relaySenderIds ? { relaySenderIds } : {}),
           ...(keepCoords || !coords
             ? {}
             : { lat: coords.lat, lon: coords.lon, coordsSource: coordsSource }),
+          freetext: msgCoords ? freetext : existing.freetext,
           beaconActive: existing.beaconActive || beacon,
           ...(reopen ? { status: 'open' as const, resolvedAt: undefined } : {}),
         };
-        set((s) => ({ incidents: { ...s.incidents, [existing.id]: merged } }));
+        set((s) => {
+          let nextTombs = s.resolvedTombstones;
+          if (reopen && s.resolvedTombstones[existing.id] != null) {
+            nextTombs = Object.fromEntries(
+              Object.entries(s.resolvedTombstones).filter(([key]) => key !== existing.id),
+            );
+          }
+          return {
+            incidents: { ...s.incidents, [existing.id]: merged },
+            resolvedTombstones: nextTombs,
+          };
+        });
         return existing.id;
       },
 
@@ -239,16 +368,21 @@ export const useIncidentStore = create<IncidentStoreState>()(
         set((s) => {
           const inc = s.incidents[incidentId];
           if (!inc || inc.status === 'resolved') return s;
+          const resolvedAt = at ?? Date.now();
           return {
             incidents: {
               ...s.incidents,
               [incidentId]: {
                 ...inc,
                 status: 'resolved',
-                resolvedAt: at ?? Date.now(),
+                resolvedAt,
                 beaconActive: false,
               },
             },
+            resolvedTombstones: pruneTombstones({
+              ...s.resolvedTombstones,
+              [incidentId]: resolvedAt,
+            }),
           };
         }),
 
@@ -256,8 +390,18 @@ export const useIncidentStore = create<IncidentStoreState>()(
     }),
     {
       name: INCIDENT_STORE_KEY,
-      version: 1,
-      partialize: (state) => ({ incidents: state.incidents }),
+      version: 2,
+      partialize: (state) => ({
+        incidents: state.incidents,
+        resolvedTombstones: state.resolvedTombstones,
+      }),
+      migrate: (persisted) => {
+        const p = persisted as Partial<IncidentStoreState> | undefined;
+        return {
+          incidents: p?.incidents ?? {},
+          resolvedTombstones: p?.resolvedTombstones ?? {},
+        };
+      },
     },
   ),
 );
