@@ -809,7 +809,8 @@
       "reactionTargetMissing": "Nie znaleziono wiadomości, na którą należy zareagować.",
       "bleUnavailable": "Bluetooth nie jest gotowy. Połącz się ponownie i spróbuj ponownie.",
       "roomSessionExpired": "Sesja w pokoju wygasła — zaloguj się ponownie, aby opublikować.",
-      "noSavedRoomCredential": "Brak zapisanego hasła do pokoju. Najpierw zaloguj się do pokoju."
+      "noSavedRoomCredential": "Brak zapisanego hasła do pokoju. Najpierw zaloguj się do pokoju.",
+      "mqttOriginReactionUnsupported": "Reakcje na komunikaty tylko MQTT nie są obsługiwane. Zamiast tego wyślij normalną odpowiedź."
     },
     "reticulumDmDestHashesAria": "Docelowy LXMF i skróty tożsamości",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",

@@ -8,6 +8,7 @@ import {
   CHAT_SEND_ERROR_BLE_KEY,
   CHAT_SEND_ERROR_ENCRYPTION_KEY,
   CHAT_SEND_ERROR_FALLBACK_KEY,
+  CHAT_SEND_ERROR_MQTT_ORIGIN_REACTION_KEY,
   CHAT_SEND_ERROR_NOT_CONNECTED_KEY,
   CHAT_SEND_ERROR_TIMEOUT_KEY,
   isEncryptionBlockedSendError,
@@ -19,6 +20,8 @@ import {
 const EN: Record<string, string> = {
   [CHAT_SEND_ERROR_NOT_CONNECTED_KEY]: 'Not connected — connect the radio and try again.',
   [CHAT_SEND_ERROR_FALLBACK_KEY]: 'Send failed',
+  [CHAT_SEND_ERROR_MQTT_ORIGIN_REACTION_KEY]:
+    'Reactions to MQTT-only messages are not supported. Send a normal reply instead.',
   'chatPanel.reticulumSendFailed': 'Failed to send',
   'meshcore.errors.requestTimedOutApprox': 'Request timed out (~{{seconds}}s)',
 };
@@ -56,8 +59,30 @@ describe('chatSendErrorI18n', () => {
     ['timeout while initializing encryption', CHAT_SEND_ERROR_TIMEOUT_KEY],
     ['delivered; outbox remove failed: db locked', CHAT_OUTBOX_REMOVE_FAILED_KEY],
     ['User denied Geolocation', 'chatPanel.shareLocationUnavailable'],
+    [
+      'Tapbacks to MQTT-origin messages are not currently supported. Send a normal reply instead.',
+      CHAT_SEND_ERROR_MQTT_ORIGIN_REACTION_KEY,
+    ],
+    [CHAT_SEND_ERROR_MQTT_ORIGIN_REACTION_KEY, CHAT_SEND_ERROR_MQTT_ORIGIN_REACTION_KEY],
   ])('maps %s to a locale key', (raw, key) => {
     expect(resolveChatSendErrorKey(raw)).toBe(key);
+  });
+
+  it('translates MQTT-origin reaction reject to the specific reason', () => {
+    expect(
+      translateChatSendError(
+        t,
+        new Error(
+          'Tapbacks to MQTT-origin messages are not currently supported. Send a normal reply instead.',
+        ),
+        { fallbackKey: 'chatPanel.reactionFailed' },
+      ),
+    ).toBe(t(CHAT_SEND_ERROR_MQTT_ORIGIN_REACTION_KEY));
+    expect(
+      translateChatSendError(t, new Error(CHAT_SEND_ERROR_MQTT_ORIGIN_REACTION_KEY), {
+        fallbackKey: 'chatPanel.reactionFailed',
+      }),
+    ).toBe(t(CHAT_SEND_ERROR_MQTT_ORIGIN_REACTION_KEY));
   });
 
   it('persists keys instead of raw Error.message', () => {

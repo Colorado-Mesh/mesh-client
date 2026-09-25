@@ -771,7 +771,8 @@
       "reactionTargetMissing": "Tepki verilecek mesaj bulunamadı.",
       "bleUnavailable": "Bluetooth hazır değil. Yeniden bağlanın ve tekrar deneyin.",
       "roomSessionExpired": "Oda oturumunun süresi doldu — yayınlamak için tekrar giriş yapın.",
-      "noSavedRoomCredential": "Kaydedilmiş oda şifresi yok. Önce odaya giriş yapın."
+      "noSavedRoomCredential": "Kaydedilmiş oda şifresi yok. Önce odaya giriş yapın.",
+      "mqttOriginReactionUnsupported": "Yalnızca MQTT mesajlarına verilen tepkiler desteklenmez. Bunun yerine normal bir yanıt gönderin."
     },
     "reticulumDmDestHashesAria": "Hedef LXMF ve kimlik karmaları",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",

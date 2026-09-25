@@ -791,7 +791,8 @@
       "reactionTargetMissing": "Zpráva, na kterou chcete reagovat, nebyla nalezena.",
       "bleUnavailable": "Bluetooth není připraven. Připojte se znovu a zkuste to znovu.",
       "roomSessionExpired": "Relace místnosti vypršela — pro zveřejnění se znovu přihlaste.",
-      "noSavedRoomCredential": "Žádné uložené heslo místnosti. Nejprve se přihlaste do místnosti."
+      "noSavedRoomCredential": "Žádné uložené heslo místnosti. Nejprve se přihlaste do místnosti.",
+      "mqttOriginReactionUnsupported": "Reakce na zprávy pouze MQTT nejsou podporovány. Místo toho odešli normální odpověď."
     },
     "reticulumDmDestHashesAria": "Cílový LXMF a hash identity",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",

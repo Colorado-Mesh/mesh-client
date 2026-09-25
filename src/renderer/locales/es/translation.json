@@ -771,7 +771,8 @@
       "reactionTargetMissing": "No se ha encontrado el mensaje para reaccionar.",
       "bleUnavailable": "El Bluetooth no está listo. Vuelve a conectarte e inténtalo de nuevo.",
       "roomSessionExpired": "La sesión de la sala ha caducado. Vuelve a iniciar sesión para publicar.",
-      "noSavedRoomCredential": "No se ha guardado la contraseña de la sala. Inicie sesión en la sala primero."
+      "noSavedRoomCredential": "No se ha guardado la contraseña de la sala. Inicie sesión en la sala primero.",
+      "mqttOriginReactionUnsupported": "Las reacciones a los mensajes solo MQTT no son compatibles. En su lugar, envía una respuesta normal."
     },
     "reticulumDmDestHashesAria": "LXMF de destino y hashes de identidad",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",

@@ -771,7 +771,8 @@
       "reactionTargetMissing": "Het bericht om op te reageren is niet gevonden.",
       "bleUnavailable": "Bluetooth is niet gereed. Maak opnieuw verbinding en probeer het opnieuw.",
       "roomSessionExpired": "Roomsessie verlopen — log opnieuw in om te posten.",
-      "noSavedRoomCredential": "Geen opgeslagen ruimtewachtwoord. Log eerst in op de ruimte."
+      "noSavedRoomCredential": "Geen opgeslagen ruimtewachtwoord. Log eerst in op de ruimte.",
+      "mqttOriginReactionUnsupported": "Reacties op alleen MQTT-berichten worden niet ondersteund. Stuur in plaats daarvan een normaal antwoord."
     },
     "reticulumDmDestHashesAria": "Bestemming LXMF en identiteitshashes",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",

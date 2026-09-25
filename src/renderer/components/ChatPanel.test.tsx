@@ -3375,6 +3375,94 @@ describe('ChatPanel tapback reaction picker', () => {
       expect(composeTextarea()).toBe(document.activeElement);
     });
   });
+
+  it('disables React on Meshtastic MQTT-origin messages with unsupported reason', async () => {
+    const onReact = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="meshtastic"
+          onReact={onReact}
+          messages={[{ ...baseMessage, packetId: 42, receivedVia: 'mqtt' }]}
+        />
+      </ToastProvider>,
+    );
+    const unsupported =
+      'Reactions to MQTT-only messages are not supported. Send a normal reply instead.';
+    const reactBtn = screen.getByRole('button', { name: unsupported });
+    expect(reactBtn).toBeDisabled();
+    expect(reactBtn).toHaveAttribute('title', unsupported);
+    await user.click(reactBtn);
+    expect(onReact).not.toHaveBeenCalled();
+    expect(document.querySelector('emoji-picker')).not.toBeInTheDocument();
+    expect(window.electronAPI.showEmojiPanel).not.toHaveBeenCalled();
+  });
+
+  it('keeps React enabled for MeshCore MQTT-origin messages', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="meshcore"
+          messages={[{ ...baseMessage, packetId: 42, receivedVia: 'mqtt' }]}
+        />
+      </ToastProvider>,
+    );
+    const reactBtn = screen.getByTitle('React');
+    expect(reactBtn).not.toBeDisabled();
+    await user.click(reactBtn);
+    await waitFor(() => {
+      expect(document.querySelector('emoji-picker')).toBeInTheDocument();
+    });
+  });
+
+  it('clears reaction action error when Chat becomes inactive', async () => {
+    const onReact = vi
+      .fn()
+      .mockRejectedValue(new Error('chatPanel.sendErrors.mqttOriginReactionUnsupported'));
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="meshtastic"
+          onReact={onReact}
+          messages={[{ ...baseMessage, packetId: 42, receivedVia: 'rf' }]}
+          isActive
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByTitle('React'));
+    await waitFor(() => {
+      expect(document.querySelector('emoji-picker')).toBeInTheDocument();
+    });
+    const picker = document.querySelector('emoji-picker');
+    expect(picker).not.toBeNull();
+    picker!.dispatchEvent(
+      new CustomEvent('emoji-click', { detail: { emoji: { unicode: '👍' } }, bubbles: true }),
+    );
+    const unsupported =
+      'Reactions to MQTT-only messages are not supported. Send a normal reply instead.';
+    expect(await screen.findByRole('alert')).toHaveTextContent(unsupported);
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="meshtastic"
+          onReact={onReact}
+          messages={[{ ...baseMessage, packetId: 42, receivedVia: 'rf' }]}
+          isActive={false}
+        />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+  });
 });
 
 describe('ChatPanel RF hop label', () => {

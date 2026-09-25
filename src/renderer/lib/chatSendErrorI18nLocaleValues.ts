@@ -448,4 +448,36 @@ export const CHAT_SEND_ERROR_LOCALE_TEXT_TO_KEY: Record<string, string> = {
   '送信できません—暗号化キーがありません。': 'chatPanel.sendErrors.encryptionBlocked',
   送信に失敗しました: 'chatPanel.sendFailed',
   '送信に失敗しました。': 'chatPanel.reticulumSendFailed',
+  'Las reacciones a los mensajes solo MQTT no son compatibles. En su lugar, envía una respuesta normal.':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
+  'Le reazioni ai messaggi solo MQTT non sono supportate. Invia invece una risposta normale.':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
+  'Les réactions aux messages MQTT uniquement ne sont pas prises en charge. Envoyez plutôt une réponse normale.':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
+  'MQTT 전용 메시지에 대한 반응은 지원되지 않습니다. 일반 답장을 보내세요.':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
+  'MQTTのみのメッセージへの応答はサポートされていません。代わりに通常の返信を送信してください。':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
+  'Não há suporte para reações a mensagens somente MQTT. Em vez disso, envie uma resposta normal.':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
+  'Reacties op alleen MQTT-berichten worden niet ondersteund. Stuur in plaats daarvan een normaal antwoord.':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
+  'Reactions to MQTT-only messages are not supported. Send a normal reply instead.':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
+  'Reakce na zprávy pouze MQTT nejsou podporovány. Místo toho odešli normální odpověď.':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
+  'Reakcje na komunikaty tylko MQTT nie są obsługiwane. Zamiast tego wyślij normalną odpowiedź.':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
+  'Reaksi terhadap pesan khusus MQTT tidak didukung. Kirim balasan biasa saja.':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
+  'Reaktionen auf reine MQTT-Nachrichten werden nicht unterstützt. Senden Sie stattdessen eine normale Antwort.':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
+  'Yalnızca MQTT mesajlarına verilen tepkiler desteklenmez. Bunun yerine normal bir yanıt gönderin.':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
+  'Реакции на сообщения только MQTT не поддерживаются. Вместо этого отправьте обычный ответ.':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
+  'Реакції на повідомлення лише MQTT не підтримуються. Натомість надішліть звичайну відповідь.':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
+  '不支持对仅MQTT消息的反应。请改为发送普通回复。':
+    'chatPanel.sendErrors.mqttOriginReactionUnsupported',
 };

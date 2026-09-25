@@ -771,7 +771,8 @@
       "reactionTargetMissing": "Il messaggio a cui reagire non è stato trovato.",
       "bleUnavailable": "Il Bluetooth non è pronto. Riconnettiti e riprova.",
       "roomSessionExpired": "Sessione room scaduta — accedi di nuovo per pubblicare.",
-      "noSavedRoomCredential": "Nessuna password della stanza salvata. Accedi prima alla stanza."
+      "noSavedRoomCredential": "Nessuna password della stanza salvata. Accedi prima alla stanza.",
+      "mqttOriginReactionUnsupported": "Le reazioni ai messaggi solo MQTT non sono supportate. Invia invece una risposta normale."
     },
     "reticulumDmDestHashesAria": "Destinazione LXMF e hash di identità",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",

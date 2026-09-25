@@ -737,6 +737,7 @@
       "timeout": "Send timed out. Try again.",
       "invalidReaction": "That reaction is not valid.",
       "reactionTargetMissing": "The message to react to was not found.",
+      "mqttOriginReactionUnsupported": "Reactions to MQTT-only messages are not supported. Send a normal reply instead.",
       "bleUnavailable": "Bluetooth is not ready. Reconnect and try again.",
       "roomSessionExpired": "Room session expired — log in again to post.",
       "noSavedRoomCredential": "No saved room password. Log in to the room first."

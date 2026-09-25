@@ -12,6 +12,8 @@ export const CHAT_SEND_ERROR_EMPTY_KEY = 'chatPanel.sendErrors.emptyPayload';
 export const CHAT_SEND_ERROR_DEST_KEY_KEY = 'chatPanel.sendErrors.missingDestinationKey';
 export const CHAT_SEND_ERROR_INVALID_REACTION_KEY = 'chatPanel.sendErrors.invalidReaction';
 export const CHAT_SEND_ERROR_REACTION_TARGET_KEY = 'chatPanel.sendErrors.reactionTargetMissing';
+export const CHAT_SEND_ERROR_MQTT_ORIGIN_REACTION_KEY =
+  'chatPanel.sendErrors.mqttOriginReactionUnsupported';
 export const CHAT_SEND_ERROR_BLE_KEY = 'chatPanel.sendErrors.bleUnavailable';
 export const CHAT_SEND_ERROR_ROOM_SESSION_KEY = 'chatPanel.sendErrors.roomSessionExpired';
 export const CHAT_SEND_ERROR_NO_ROOM_CREDENTIAL_KEY = 'chatPanel.sendErrors.noSavedRoomCredential';
@@ -51,6 +53,8 @@ const EXACT_ENGLISH_TO_KEY: Record<string, string> = {
     CHAT_SEND_ERROR_ENCRYPTION_KEY,
   'Invalid reaction emoji': CHAT_SEND_ERROR_INVALID_REACTION_KEY,
   'Reaction target message not found': CHAT_SEND_ERROR_REACTION_TARGET_KEY,
+  'Tapbacks to MQTT-origin messages are not currently supported. Send a normal reply instead.':
+    CHAT_SEND_ERROR_MQTT_ORIGIN_REACTION_KEY,
   'no encryption key': CHAT_SEND_ERROR_ENCRYPTION_KEY,
   'No saved room credential': CHAT_SEND_ERROR_NO_ROOM_CREDENTIAL_KEY,
 };

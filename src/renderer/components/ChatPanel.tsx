@@ -1544,6 +1544,15 @@ function ChatPanel({
     setTriggerScrollToUnread((n) => n + 1);
   }, [viewKey]);
 
+  // Clear sticky action errors when switching channel/DM or leaving Chat (panel stays mounted).
+  useEffect(() => {
+    setChatActionError(null);
+  }, [viewKey]);
+
+  useEffect(() => {
+    if (!isActive) setChatActionError(null);
+  }, [isActive]);
+
   const prevViewKeyForReadRef = useRef<string | null>(null);
   // Mark read when the user switches channel/DM while chat is active — not on tab re-entry alone.
   useEffect(() => {
@@ -3715,51 +3724,72 @@ function ChatPanel({
                                     size={14}
                                   />
                                 </button>
-                                {/* React */}
-                                <button
-                                  type="button"
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    if (!chatPanelIsLinux())
-                                      reactionHiddenInputRef.current?.focus();
-                                  }}
-                                  onClick={() => {
-                                    setReplyTo(null);
-                                    const id = msg.packetId ?? msg.timestamp;
-                                    if (chatPanelIsLinux()) {
-                                      if (showPicker) {
-                                        clearReactionCapture({ refocusComposer: true });
-                                        setPickerOpenFor(null);
-                                      } else {
-                                        reactionPickerTarget.current = { id, channel: msg.channel };
-                                        reactionCapturePendingRef.current = true;
-                                        setPickerOpenFor(id);
-                                      }
-                                    } else {
-                                      reactionPickerTarget.current = { id, channel: msg.channel };
-                                      reactionCapturePendingRef.current = true;
-                                      void window.electronAPI
-                                        .showEmojiPanel()
-                                        .catch((e: unknown) => {
-                                          console.debug(
-                                            '[ChatPanel] showEmojiPanel failed ' +
-                                              errLikeToLogString(e),
-                                          );
-                                        });
-                                    }
-                                  }}
-                                  {...{ [PARENT_HOVER_ATTR]: '' }}
-                                  className="message-action rounded p-1 text-xs text-gray-600"
-                                  aria-label={t('chatPanel.addReaction')}
-                                  title={t('chatPanel.reactButton')}
-                                >
-                                  <Smile
-                                    aria-hidden
-                                    className="h-3.5 w-3.5"
-                                    trigger={parentIconTrigger}
-                                    size={14}
-                                  />
-                                </button>
+                                {/* React — Meshtastic MQTT-origin parents cannot receive tapbacks (#341). */}
+                                {(() => {
+                                  const mqttOriginReactionUnsupported =
+                                    protocol === 'meshtastic' && msg.receivedVia === 'mqtt';
+                                  const reactLabel = mqttOriginReactionUnsupported
+                                    ? t('chatPanel.sendErrors.mqttOriginReactionUnsupported')
+                                    : t('chatPanel.addReaction');
+                                  const reactTitle = mqttOriginReactionUnsupported
+                                    ? t('chatPanel.sendErrors.mqttOriginReactionUnsupported')
+                                    : t('chatPanel.reactButton');
+                                  return (
+                                    <button
+                                      type="button"
+                                      disabled={mqttOriginReactionUnsupported}
+                                      onMouseDown={(e) => {
+                                        if (mqttOriginReactionUnsupported) return;
+                                        e.preventDefault();
+                                        if (!chatPanelIsLinux())
+                                          reactionHiddenInputRef.current?.focus();
+                                      }}
+                                      onClick={() => {
+                                        if (mqttOriginReactionUnsupported) return;
+                                        setReplyTo(null);
+                                        const id = msg.packetId ?? msg.timestamp;
+                                        if (chatPanelIsLinux()) {
+                                          if (showPicker) {
+                                            clearReactionCapture({ refocusComposer: true });
+                                            setPickerOpenFor(null);
+                                          } else {
+                                            reactionPickerTarget.current = {
+                                              id,
+                                              channel: msg.channel,
+                                            };
+                                            reactionCapturePendingRef.current = true;
+                                            setPickerOpenFor(id);
+                                          }
+                                        } else {
+                                          reactionPickerTarget.current = {
+                                            id,
+                                            channel: msg.channel,
+                                          };
+                                          reactionCapturePendingRef.current = true;
+                                          void window.electronAPI
+                                            .showEmojiPanel()
+                                            .catch((e: unknown) => {
+                                              console.debug(
+                                                '[ChatPanel] showEmojiPanel failed ' +
+                                                  errLikeToLogString(e),
+                                              );
+                                            });
+                                        }
+                                      }}
+                                      {...{ [PARENT_HOVER_ATTR]: '' }}
+                                      className="message-action rounded p-1 text-xs text-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+                                      aria-label={reactLabel}
+                                      title={reactTitle}
+                                    >
+                                      <Smile
+                                        aria-hidden
+                                        className="h-3.5 w-3.5"
+                                        trigger={parentIconTrigger}
+                                        size={14}
+                                      />
+                                    </button>
+                                  );
+                                })()}
                                 {/* Quick DM */}
                                 {!isOwn &&
                                   !(
