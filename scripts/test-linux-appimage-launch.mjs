@@ -154,8 +154,14 @@ async function waitForStartupLog(logPath) {
   return { ok: false, text: lastText };
 }
 
-/** @param {import('child_process').ChildProcess} child */
-async function killChild(child) {
+/**
+ * Terminate the child, marking teardown as intentional so its exit is not
+ * treated as a crash. Pass the shared `state` used by launchAndAssert.
+ * @param {import('child_process').ChildProcess} child
+ * @param {{ teardownStarted: boolean }} state
+ */
+async function killChild(child, state) {
+  state.teardownStarted = true;
   if (child.exitCode !== null || child.signalCode !== null) return;
   child.kill('SIGTERM');
   const deadline = Date.now() + KILL_GRACE_MS;
@@ -181,9 +187,12 @@ async function launchAndAssert(payloadRoot, userDataDir) {
   const logPath = path.join(userDataDir, LOG_FILENAME);
   /** @type {string} */
   let stderrBuf = '';
+  /** Shared teardown flag so our own SIGTERM/SIGKILL is not counted as a crash. */
+  const state = { teardownStarted: false };
   /** @type {{ code: number | null, signal: NodeJS.Signals | null } | null} */
-  let earlyExit = null;
+  let crashExit = null;
 
+  const spawnedAt = Date.now();
   const child = spawn(appRun, buildLaunchArgs(userDataDir), {
     cwd: payloadRoot,
     env: buildLaunchEnv(),
@@ -194,25 +203,31 @@ async function launchAndAssert(payloadRoot, userDataDir) {
     stderrBuf += String(d);
   });
   child.on('exit', (code, signal) => {
-    // Record only an *early* exit; a SIGTERM/SIGKILL from our own teardown is expected.
-    if (signal !== 'SIGTERM' && signal !== 'SIGKILL') {
-      earlyExit = { code, signal };
+    // Any exit before we start teardown is a crash — including signal exits
+    // (OOM kill, external SIGTERM). Only exits after killChild() are expected.
+    if (!state.teardownStarted) {
+      crashExit = { code, signal };
     }
   });
+
+  /** Fail with the crash exit details plus captured stderr. @param {string} phase */
+  const failCrash = async (phase) => {
+    await killChild(child, state);
+    fail(
+      `App exited ${phase} (code=${crashExit?.code}, signal=${crashExit?.signal}).\n` +
+        `--- stderr (last 2KB) ---\n${stderrBuf.slice(-2048)}`,
+    );
+  };
 
   // Wait for the startup log while also watching for an early crash exit.
   const logResult = await waitForStartupLog(logPath);
 
-  if (earlyExit) {
-    await killChild(child);
-    fail(
-      `App exited during startup (code=${earlyExit.code}, signal=${earlyExit.signal}).\n` +
-        `--- stderr (last 2KB) ---\n${stderrBuf.slice(-2048)}`,
-    );
+  if (crashExit) {
+    await failCrash('during startup');
   }
 
   if (!logResult.ok) {
-    await killChild(child);
+    await killChild(child, state);
     fail(
       `No main-process startup lines in ${LOG_FILENAME} within ${LOG_WAIT_MS}ms.\n` +
         `--- log (last 2KB) ---\n${logResult.text.slice(-2048)}\n` +
@@ -220,18 +235,28 @@ async function launchAndAssert(payloadRoot, userDataDir) {
     );
   }
 
-  // Ensure it is still alive after the startup threshold (catches delayed crashes).
-  const remaining = STARTUP_ALIVE_MS - LOG_WAIT_MS;
-  if (remaining > 0) await sleepMs(remaining);
-  if (earlyExit) {
-    await killChild(child);
-    fail(
-      `App crashed shortly after startup (code=${earlyExit.code}, signal=${earlyExit.signal}).\n` +
-        `--- stderr (last 2KB) ---\n${stderrBuf.slice(-2048)}`,
-    );
+  // Hold until STARTUP_ALIVE_MS has genuinely elapsed *since spawn* (the log can
+  // appear in well under a second), polling for a delayed crash the whole time.
+  while (Date.now() - spawnedAt < STARTUP_ALIVE_MS) {
+    if (crashExit) {
+      await failCrash('shortly after startup');
+    }
+    await sleepMs(200);
+  }
+  // Hold until STARTUP_ALIVE_MS has genuinely elapsed *since spawn* (the log can
+  // appear in well under a second), polling for a delayed crash the whole time.
+  while (Date.now() - spawnedAt < STARTUP_ALIVE_MS) {
+    if (crashExit) {
+      await failCrash('shortly after startup');
+    }
+    await sleepMs(200);
+  }
+  // Final guard in case the exit fired between the last poll and here.
+  if (crashExit) {
+    await failCrash('shortly after startup');
   }
 
-  await killChild(child);
+  await killChild(child, state);
   console.debug(`[test-linux-appimage-launch] OK — app booted and logged startup lines`);
 }
 
