@@ -1009,6 +1009,9 @@ function ChatPanel({
   const savedWasPinnedToBottomRef = useRef(false);
   /** Distinguishes a tab return (isActive false→true) from a view switch while already active. */
   const wasActiveRef = useRef(isActive);
+  /** Latest isActive for async handlers (e.g. reaction reject after leaving Chat). */
+  const isActiveRef = useRef(isActive);
+  isActiveRef.current = isActive;
   const reactionPickerRef = useRef<HTMLElement | null>(null);
   const reactionPickerTarget = useRef<{ id: number; channel: number } | null>(null);
   const reactionHiddenInputRef = useRef<HTMLInputElement | null>(null);
@@ -1543,6 +1546,16 @@ function ChatPanel({
     setUnreadDividerTimestamp(snapshot);
     setTriggerScrollToUnread((n) => n + 1);
   }, [viewKey]);
+
+  // Clear sticky action errors when switching channel/DM/starred or leaving Chat (panel stays mounted).
+  // viewMode is included because starred keeps the same viewKey as the prior channel/DM.
+  useEffect(() => {
+    setChatActionError(null);
+  }, [viewKey, viewMode]);
+
+  useEffect(() => {
+    if (!isActive) setChatActionError(null);
+  }, [isActive]);
 
   const prevViewKeyForReadRef = useRef<string | null>(null);
   // Mark read when the user switches channel/DM while chat is active — not on tab re-entry alone.
@@ -2089,6 +2102,8 @@ function ChatPanel({
       await onReact(glyph, packetId, sendChannel);
     } catch (err) {
       console.error('[ChatPanel] React failed: ' + errLikeToLogString(err));
+      // Do not restore a banner if Chat was left while the reaction was in flight.
+      if (!isActiveRef.current) return;
       setChatActionError({
         message: translateChatSendError(t, err, { fallbackKey: 'chatPanel.reactionFailed' }),
         viewKey,
@@ -3715,51 +3730,72 @@ function ChatPanel({
                                     size={14}
                                   />
                                 </button>
-                                {/* React */}
-                                <button
-                                  type="button"
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    if (!chatPanelIsLinux())
-                                      reactionHiddenInputRef.current?.focus();
-                                  }}
-                                  onClick={() => {
-                                    setReplyTo(null);
-                                    const id = msg.packetId ?? msg.timestamp;
-                                    if (chatPanelIsLinux()) {
-                                      if (showPicker) {
-                                        clearReactionCapture({ refocusComposer: true });
-                                        setPickerOpenFor(null);
-                                      } else {
-                                        reactionPickerTarget.current = { id, channel: msg.channel };
-                                        reactionCapturePendingRef.current = true;
-                                        setPickerOpenFor(id);
-                                      }
-                                    } else {
-                                      reactionPickerTarget.current = { id, channel: msg.channel };
-                                      reactionCapturePendingRef.current = true;
-                                      void window.electronAPI
-                                        .showEmojiPanel()
-                                        .catch((e: unknown) => {
-                                          console.debug(
-                                            '[ChatPanel] showEmojiPanel failed ' +
-                                              errLikeToLogString(e),
-                                          );
-                                        });
-                                    }
-                                  }}
-                                  {...{ [PARENT_HOVER_ATTR]: '' }}
-                                  className="message-action rounded p-1 text-xs text-gray-600"
-                                  aria-label={t('chatPanel.addReaction')}
-                                  title={t('chatPanel.reactButton')}
-                                >
-                                  <Smile
-                                    aria-hidden
-                                    className="h-3.5 w-3.5"
-                                    trigger={parentIconTrigger}
-                                    size={14}
-                                  />
-                                </button>
+                                {/* React — Meshtastic MQTT-origin parents cannot receive tapbacks (#341). */}
+                                {(() => {
+                                  const mqttOriginReactionUnsupported =
+                                    protocol === 'meshtastic' && msg.receivedVia === 'mqtt';
+                                  const reactLabel = mqttOriginReactionUnsupported
+                                    ? t('chatPanel.sendErrors.mqttOriginReactionUnsupported')
+                                    : t('chatPanel.addReaction');
+                                  const reactTitle = mqttOriginReactionUnsupported
+                                    ? t('chatPanel.sendErrors.mqttOriginReactionUnsupported')
+                                    : t('chatPanel.reactButton');
+                                  return (
+                                    <button
+                                      type="button"
+                                      disabled={mqttOriginReactionUnsupported}
+                                      onMouseDown={(e) => {
+                                        if (mqttOriginReactionUnsupported) return;
+                                        e.preventDefault();
+                                        if (!chatPanelIsLinux())
+                                          reactionHiddenInputRef.current?.focus();
+                                      }}
+                                      onClick={() => {
+                                        if (mqttOriginReactionUnsupported) return;
+                                        setReplyTo(null);
+                                        const id = msg.packetId ?? msg.timestamp;
+                                        if (chatPanelIsLinux()) {
+                                          if (showPicker) {
+                                            clearReactionCapture({ refocusComposer: true });
+                                            setPickerOpenFor(null);
+                                          } else {
+                                            reactionPickerTarget.current = {
+                                              id,
+                                              channel: msg.channel,
+                                            };
+                                            reactionCapturePendingRef.current = true;
+                                            setPickerOpenFor(id);
+                                          }
+                                        } else {
+                                          reactionPickerTarget.current = {
+                                            id,
+                                            channel: msg.channel,
+                                          };
+                                          reactionCapturePendingRef.current = true;
+                                          void window.electronAPI
+                                            .showEmojiPanel()
+                                            .catch((e: unknown) => {
+                                              console.debug(
+                                                '[ChatPanel] showEmojiPanel failed ' +
+                                                  errLikeToLogString(e),
+                                              );
+                                            });
+                                        }
+                                      }}
+                                      {...{ [PARENT_HOVER_ATTR]: '' }}
+                                      className="message-action rounded p-1 text-xs text-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+                                      aria-label={reactLabel}
+                                      title={reactTitle}
+                                    >
+                                      <Smile
+                                        aria-hidden
+                                        className="h-3.5 w-3.5"
+                                        trigger={parentIconTrigger}
+                                        size={14}
+                                      />
+                                    </button>
+                                  );
+                                })()}
                                 {/* Quick DM */}
                                 {!isOwn &&
                                   !(

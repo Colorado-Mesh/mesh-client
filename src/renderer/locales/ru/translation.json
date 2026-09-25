@@ -809,7 +809,8 @@
       "reactionTargetMissing": "Сообщение, на которое нужно отреагировать, не найдено.",
       "bleUnavailable": "Bluetooth не готов. Подключитесь заново и повторите попытку.",
       "roomSessionExpired": "Сессия комнаты истекла — войдите снова, чтобы опубликовать.",
-      "noSavedRoomCredential": "Нет сохраненного пароля комнаты. Сначала войдите в комнату."
+      "noSavedRoomCredential": "Нет сохраненного пароля комнаты. Сначала войдите в комнату.",
+      "mqttOriginReactionUnsupported": "Реакции на сообщения только MQTT не поддерживаются. Вместо этого отправьте обычный ответ."
     },
     "reticulumDmDestHashesAria": "Целевой LXMF и хэши удостоверений",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",

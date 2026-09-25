@@ -16,6 +16,7 @@ import {
   isShareMyLocationEnabled,
 } from '@/renderer/lib/appSettingsStorage';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
+import { CHAT_SEND_ERROR_MQTT_ORIGIN_REACTION_KEY } from '@/renderer/lib/chatSendErrorI18n';
 import { getConnectedMeshcoreBleMac } from '@/renderer/lib/connectedMeshcoreBleMac';
 import { setDebugSnapshotMeshtasticContext } from '@/renderer/lib/debugSnapshotMeshtasticContext';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -4343,11 +4344,8 @@ export function useMeshtasticRuntime() {
       }
       const replyTargetsMqttOnly = repliedMsg?.receivedVia === 'mqtt';
       if (hasMqtt && replyTargetsMqttOnly) {
-        return Promise.reject(
-          new Error(
-            'Tapbacks to MQTT-origin messages are not currently supported. Send a normal reply instead.',
-          ),
-        );
+        // Meshtastic MQTT server does not support tapbacks (#341).
+        return Promise.reject(new Error(CHAT_SEND_ERROR_MQTT_ORIGIN_REACTION_KEY));
       }
       const parsed = reactionGlyphFromPicker(glyph);
       if (!parsed) {

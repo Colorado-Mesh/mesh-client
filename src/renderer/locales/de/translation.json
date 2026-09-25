@@ -771,7 +771,8 @@
       "reactionTargetMissing": "Die Nachricht, auf die reagiert werden soll, wurde nicht gefunden.",
       "bleUnavailable": "Bluetooth ist nicht bereit. Verbinden Sie sich erneut und versuchen Sie es erneut.",
       "roomSessionExpired": "Die Raumsitzung ist abgelaufen - melden Sie sich erneut an, um zu posten.",
-      "noSavedRoomCredential": "Kein gespeichertes Raumpasswort. Logge dich zuerst in den Raum ein."
+      "noSavedRoomCredential": "Kein gespeichertes Raumpasswort. Logge dich zuerst in den Raum ein.",
+      "mqttOriginReactionUnsupported": "Reaktionen auf reine MQTT-Nachrichten werden nicht unterstützt. Senden Sie stattdessen eine normale Antwort."
     },
     "reticulumDmDestHashesAria": "Ziel-LXMF und Identitäts-Hashes",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",

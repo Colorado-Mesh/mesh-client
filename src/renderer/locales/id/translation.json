@@ -771,7 +771,8 @@
       "reactionTargetMissing": "Pesan untuk bereaksi tidak ditemukan.",
       "bleUnavailable": "Bluetooth belum siap. Sambungkan kembali dan coba lagi.",
       "roomSessionExpired": "Sesi ruangan kedaluwarsa — masuk lagi untuk memposting.",
-      "noSavedRoomCredential": "Tidak ada kata sandi ruangan yang disimpan. Masuk ke ruangan terlebih dahulu."
+      "noSavedRoomCredential": "Tidak ada kata sandi ruangan yang disimpan. Masuk ke ruangan terlebih dahulu.",
+      "mqttOriginReactionUnsupported": "Reaksi terhadap pesan khusus MQTT tidak didukung. Kirim balasan biasa saja."
     },
     "reticulumDmDestHashesAria": "Tujuan LXMF dan hash identitas",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",

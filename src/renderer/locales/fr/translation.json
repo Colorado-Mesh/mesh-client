@@ -771,7 +771,8 @@
       "reactionTargetMissing": "Le message auquel réagir est introuvable.",
       "bleUnavailable": "Bluetooth n'est pas prêt. Reconnectez-vous et réessayez.",
       "roomSessionExpired": "La session de la salle a expiré — reconnectez-vous pour publier.",
-      "noSavedRoomCredential": "Aucun mot de passe de salle enregistré. Connectez-vous d'abord à la salle."
+      "noSavedRoomCredential": "Aucun mot de passe de salle enregistré. Connectez-vous d'abord à la salle.",
+      "mqttOriginReactionUnsupported": "Les réactions aux messages MQTT uniquement ne sont pas prises en charge. Envoyez plutôt une réponse normale."
     },
     "reticulumDmDestHashesAria": "Hachages LXMF et d'identité de destination",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
