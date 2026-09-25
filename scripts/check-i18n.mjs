@@ -30,7 +30,9 @@
  *    flasher.noSerialPorts French inverted "trouvé(s):" empty-state wording;
  *    TX/RX Texas on any key; tcp:// / Wi-Fi / I2P spacing; flood/advert/room/backbone
  *    by English meaning; routing-port identifiers verbatim by English value; gamesPanel
- *    resign/draw/challenge/threefold; rrc leftover-English errors.
+ *    resign/draw/challenge/threefold; rrc leftover-English errors;
+ *    single-character dash placeholders (common.emDash, signalMeter.noData, and
+ *    any other English value that is only a dash) must match English.
  *
  * Backfill untranslated modulePanel copy: pnpm run i18n:auto-translate -- --audit --prefix modulePanel.
  *

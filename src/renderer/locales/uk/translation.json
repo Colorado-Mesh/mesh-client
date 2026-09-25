@@ -870,7 +870,7 @@
     "hoursAgo": "{{count}} год тому",
     "daysAgo": "{{count}} дн. тому",
     "days": "днів",
-    "emDash": "-",
+    "emDash": "—",
     "saving": "Триває збереження…",
     "peers": "Вузли",
     "colorGreen": "Зелений",
@@ -4533,7 +4533,7 @@
     "jumpToNode": "Перейти до вузла {{name}}",
     "pingTraceNodeTooltip": "Запустити ping/trace до {{name}}",
     "jumpToNodeTooltip": "Відомості про відкритий вузол для {{name}}",
-    "meshtasticHopsAbsent": "-",
+    "meshtasticHopsAbsent": "—",
     "colTimeTooltip": "Коли пакет був захоплений. При наведенні в рядку відображається точний час.",
     "colHbTooltip": "Hop count: довжина шляху MeshCore або Meshtastic hopStart − hopLimit на RF.",
     "colTypeTooltip": "Тип корисного навантаження пакета (MeshCore) або ім'я порту Meshtastic.",
@@ -5609,7 +5609,7 @@
     "rssi": "RSSI (індикатор потужності прийнятого сигналу)",
     "snr": "Відношення сигнал/ шум",
     "rssiValue": "{{value}} дБм",
-    "noData": "-",
+    "noData": "—",
     "aria": "Вимірювач сигналу: RSSI {{rssi}}, SNR {{snr}}, рівень {{level}}"
   },
   "gpxExport": {

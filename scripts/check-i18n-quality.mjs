@@ -4576,6 +4576,22 @@ function checkGamesPanelQualityIssues(ctx) {
   return issues;
 }
 
+/** English values that are only a hyphen, en dash, em dash, or minus sign. */
+const BARE_DASH_PLACEHOLDER_RE = /^[-–—−]$/;
+
+/**
+ * Punctuation placeholders (common.emDash, signalMeter.noData, and any other
+ * English value that is a single dash) must stay identical to English.
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkBareDashPlaceholderIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  if (locale === 'en' || !BARE_DASH_PLACEHOLDER_RE.test(enVal)) return [];
+  if (val === enVal) return [];
+  return [`${flatKey} dash placeholder must equal English ${JSON.stringify(enVal)}`];
+}
+
 const LOCALE_STRING_QUALITY_CHECKS = [
   checkCatEncodingAndMeshtasticIssues,
   checkMustTranslateAndFormFieldIssues,
@@ -4611,6 +4627,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkRrcPanelQualityIssues,
   checkFloodRoutingUiIssues,
   checkGamesPanelQualityIssues,
+  checkBareDashPlaceholderIssues,
 ];
 
 /**
