@@ -871,6 +871,45 @@ describe('RrcPanel', () => {
     expect(window.electronAPI.reticulum.rrc.disconnect).not.toHaveBeenCalled();
   });
 
+  it('keeps selected-room messages unread while blurred and clears them on return', async () => {
+    const hasFocus = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    render(<RrcPanel isActive />);
+    const stream = await screen.findByTestId('rrc-message-stream');
+    Object.defineProperty(stream, 'scrollHeight', { value: 400, configurable: true });
+    Object.defineProperty(stream, 'clientHeight', { value: 400, configurable: true });
+    Object.defineProperty(stream, 'scrollTop', { value: 0, writable: true, configurable: true });
+
+    act(() => {
+      hasFocus.mockReturnValue(false);
+      window.dispatchEvent(new Event('blur'));
+      store.addMessage(
+        {
+          id: 'blurred-room-message',
+          room: '#lobby',
+          kind: 'msg',
+          body: 'Arrived while working in another app',
+          sender_hash: 'dddddddddddddddddddddddddddddddd',
+          timestamp: Date.now(),
+        },
+        { bumpUnread: true },
+      );
+    });
+    expect(useRrcSessionStore.getState().totalUnread()).toBe(1);
+    expect(useRrcSessionStore.getState().rrcPanelFocused).toBe(true);
+
+    act(() => {
+      hasFocus.mockReturnValue(true);
+      window.dispatchEvent(new Event('focus'));
+    });
+    await waitFor(() => {
+      expect(useRrcSessionStore.getState().totalUnread()).toBe(0);
+    });
+  });
+
   it('clears unread when returning to pinned active room after traffic while away', async () => {
     const store = useRrcSessionStore.getState();
     store.applyStatus('active', hubA, 'Hub A');
