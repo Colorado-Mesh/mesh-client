@@ -15,6 +15,7 @@ const DEFAULT_REMOTE_SETTINGS: TAKRemoteSettings = {
   host: '',
   port: 8089,
   verifyServer: true,
+  allowNameMismatch: false,
   autoConnect: false,
 };
 
@@ -63,6 +64,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
   const [host, setHost] = useState(initial.host);
   const [port, setPort] = useState(String(initial.port));
   const [verifyServer, setVerifyServer] = useState(initial.verifyServer);
+  const [allowNameMismatch, setAllowNameMismatch] = useState(initial.allowNameMismatch);
   const [autoConnect, setAutoConnect] = useState(initial.autoConnect);
   const [password, setPassword] = useState('');
 
@@ -81,7 +83,13 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
 
   const handleConnect = () => {
     if (!hostValid || !portValid) return;
-    void relay.connect({ host: host.trim(), port: portNum, verifyServer, autoConnect });
+    void relay.connect({
+      host: host.trim(),
+      port: portNum,
+      verifyServer,
+      allowNameMismatch,
+      autoConnect,
+    });
   };
 
   const handleImport = async () => {
@@ -172,7 +180,24 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
             {t('takServerPanel.remoteVerifyServer')}
           </label>
         </div>
-        {!verifyServer && (
+        {verifyServer ? (
+          <div className="flex items-center gap-2 pl-6">
+            <input
+              id={`${id}-name-mismatch`}
+              aria-label={t('takServerPanel.remoteAllowNameMismatch')}
+              type="checkbox"
+              checked={allowNameMismatch}
+              onChange={(e) => {
+                setAllowNameMismatch(e.target.checked);
+              }}
+              disabled={active || isBusy}
+              className="accent-brand-green disabled:opacity-50"
+            />
+            <label htmlFor={`${id}-name-mismatch`} className="cursor-pointer text-sm text-gray-300">
+              {t('takServerPanel.remoteAllowNameMismatch')}
+            </label>
+          </div>
+        ) : (
           <p className="text-xs text-amber-300">{t('takServerPanel.remoteVerifyOffWarning')}</p>
         )}
         <div className="flex items-center gap-2">

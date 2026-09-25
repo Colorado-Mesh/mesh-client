@@ -18,7 +18,13 @@ import {
   validateTakRemoteSettings,
 } from './remote-settings';
 
-const VALID = { host: 'tak.example.org', port: 8089, verifyServer: true, autoConnect: false };
+const VALID = {
+  host: 'tak.example.org',
+  port: 8089,
+  verifyServer: true,
+  allowNameMismatch: false,
+  autoConnect: false,
+};
 const settingsFile = path.join(userData, 'tak-remote-settings.json');
 
 afterAll(() => {
@@ -47,6 +53,7 @@ describe('validateTakRemoteSettings', () => {
     ['a string port', { ...VALID, port: '8089' }],
     ['a missing verifyServer', { ...VALID, verifyServer: undefined }],
     ['a non-boolean autoConnect', { ...VALID, autoConnect: 'yes' }],
+    ['a non-boolean allowNameMismatch', { ...VALID, allowNameMismatch: 1 }],
   ])('rejects %s', (_label, settings) => {
     expect(() => {
       validateTakRemoteSettings(settings);
@@ -78,6 +85,13 @@ describe('remote settings persistence', () => {
     } as typeof VALID & { extra: string });
     expect(loadTakRemoteSettings()).toEqual(VALID);
     expect(fs.existsSync(`${settingsFile}.tmp`)).toBe(false);
+  });
+
+  it('loads settings saved before allowNameMismatch with the name check on', () => {
+    const older: Record<string, unknown> = { ...VALID };
+    delete older.allowNameMismatch;
+    fs.writeFileSync(settingsFile, JSON.stringify(older));
+    expect(loadTakRemoteSettings()).toEqual({ ...VALID, allowNameMismatch: false });
   });
 
   it('throws on a corrupt settings file instead of connecting with bad values', () => {

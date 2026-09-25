@@ -116,6 +116,7 @@ describe('useTakRemoteRelay', () => {
         host: 'tak.example.org',
         port: 8089,
         verifyServer: true,
+        allowNameMismatch: false,
         autoConnect: false,
       });
     });

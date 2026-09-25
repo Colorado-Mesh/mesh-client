@@ -71,6 +71,7 @@ vi.mock('./tak/remote-credentials', () => ({
 }));
 
 import { regenerateCerts } from './tak/certificate-manager';
+import { loadTakRemoteCredentials } from './tak/remote-credentials';
 import { saveTakRemoteSettings } from './tak/remote-settings';
 import { TakServerManager } from './tak-server-manager';
 
@@ -353,7 +354,13 @@ describe('TakServerManager multi-protocol node cache', () => {
 });
 
 describe('TakServerManager remote relay', () => {
-  const SETTINGS = { host: 'tak.example.org', port: 8089, verifyServer: true, autoConnect: true };
+  const SETTINGS = {
+    host: 'tak.example.org',
+    port: 8089,
+    verifyServer: true,
+    allowNameMismatch: false,
+    autoConnect: true,
+  };
   const POSITION = { latitude: 39.7, longitude: -105, last_heard: 100 };
 
   function uids(lines: string[]): string[] {
@@ -460,6 +467,21 @@ describe('TakServerManager remote relay', () => {
     expect(remoteClients).toHaveLength(2);
     expect(remoteClients[0]?.stop).toHaveBeenCalled();
     expect(remoteClients[1]?.options.host).toBe('tak.example.org');
+    expect(manager.hasActiveSink()).toBe(true);
+  });
+
+  it('leaves the running relay alone when replacement credentials cannot be read', () => {
+    const manager = new TakServerManager();
+    manager.startRemote(SETTINGS);
+    vi.mocked(loadTakRemoteCredentials).mockImplementationOnce(() => {
+      throw new Error('keychain locked');
+    });
+
+    expect(() => {
+      manager.restartRemote();
+    }).toThrow(/keychain locked/);
+    expect(remoteClients).toHaveLength(1);
+    expect(remoteClients[0]?.stop).not.toHaveBeenCalled();
     expect(manager.hasActiveSink()).toBe(true);
   });
 

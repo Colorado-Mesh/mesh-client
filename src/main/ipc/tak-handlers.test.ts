@@ -179,6 +179,7 @@ describe('remote relay handlers', () => {
       host: 'tak.example.org',
       port: 8089,
       verifyServer: true,
+      allowNameMismatch: false,
       autoConnect: false,
     };
     await get('tak:remoteStart')(event, settings);

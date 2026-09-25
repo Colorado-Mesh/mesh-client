@@ -5268,7 +5268,8 @@
     "remoteClear": "인증서 제거",
     "remoteConnect": "연결",
     "remoteDisconnect": "연결 해제",
-    "remoteVerifyOffWarning": "검증 없이 이 연결을 가로챌 수 있는 사람은 릴레이된 포지션을 받습니다."
+    "remoteVerifyOffWarning": "검증 없이 이 연결을 가로챌 수 있는 사람은 릴레이된 포지션을 받습니다.",
+    "remoteAllowNameMismatch": "다른 이름으로 발급된 인증서 수락 (ATAK와 마찬가지로 가져온 CA만 해당)"
   },
   "telemetryPanel": {
     "title": "원격 측정",

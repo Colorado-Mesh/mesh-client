@@ -33,6 +33,9 @@ export function validateTakRemoteSettings(
   if (typeof s.verifyServer !== 'boolean') {
     throw new Error('tak:remoteStart: verifyServer must be boolean');
   }
+  if (typeof s.allowNameMismatch !== 'boolean') {
+    throw new Error('tak:remoteStart: allowNameMismatch must be boolean');
+  }
   if (typeof s.autoConnect !== 'boolean') {
     throw new Error('tak:remoteStart: autoConnect must be boolean');
   }
@@ -48,6 +51,10 @@ export function loadTakRemoteSettings(): TAKRemoteSettings | null {
   const file = settingsPath();
   if (!fs.existsSync(file)) return null;
   const raw: unknown = JSON.parse(fs.readFileSync(file, 'utf-8'));
+  // Settings saved before allowNameMismatch existed keep the stricter default.
+  if (raw && typeof raw === 'object' && !('allowNameMismatch' in raw)) {
+    (raw as Record<string, unknown>).allowNameMismatch = false;
+  }
   validateTakRemoteSettings(raw);
   return raw;
 }
@@ -61,6 +68,7 @@ export function saveTakRemoteSettings(settings: TAKRemoteSettings): void {
     host: settings.host.trim(),
     port: settings.port,
     verifyServer: settings.verifyServer,
+    allowNameMismatch: settings.allowNameMismatch,
     autoConnect: settings.autoConnect,
   };
   const file = settingsPath();

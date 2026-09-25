@@ -5268,7 +5268,8 @@
     "remoteClear": "Rimuovi i certificati",
     "remoteConnect": "Connettiti",
     "remoteDisconnect": "Disconnetti",
-    "remoteVerifyOffWarning": "Senza verifica, chiunque possa intercettare questa connessione riceve le posizioni trasmesse."
+    "remoteVerifyOffWarning": "Senza verifica, chiunque possa intercettare questa connessione riceve le posizioni trasmesse.",
+    "remoteAllowNameMismatch": "Accettare un certificato rilasciato per un nome diverso (solo CA importata, come fa ATAK)"
   },
   "telemetryPanel": {
     "title": "Telemetria",

@@ -5268,7 +5268,8 @@
     "remoteClear": "删除证书",
     "remoteConnect": "连接",
     "remoteDisconnect": "断开连接",
-    "remoteVerifyOffWarning": "未经验证，任何可以拦截此连接的人都会收到中继位置。"
+    "remoteVerifyOffWarning": "未经验证，任何可以拦截此连接的人都会收到中继位置。",
+    "remoteAllowNameMismatch": "接受为其他名称颁发的证书（仅导入CA ，与ATAK一样）"
   },
   "telemetryPanel": {
     "title": "遥测",

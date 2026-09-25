@@ -45,11 +45,16 @@ export interface TAKRemoteSettings {
   /** TLS streaming port; TAK servers default to 8089. */
   port: number;
   /**
-   * Verify the server certificate. With an imported CA the chain must lead to that CA and the
-   * hostname is not checked, which matches ATAK; without one, the system roots and the hostname
-   * are checked.
+   * Verify the server certificate: its chain must lead to the imported CA (or the system roots
+   * when none is imported) and it must name the configured host.
    */
   verifyServer: boolean;
+  /**
+   * With an imported CA, accept a server certificate issued for a different name, as ATAK does.
+   * TAK servers are often issued a certificate for a name like "takserver" while clients dial an
+   * IP. Has no effect without an imported CA or when verifyServer is off.
+   */
+  allowNameMismatch: boolean;
   /** Connect when the app starts. */
   autoConnect: boolean;
 }

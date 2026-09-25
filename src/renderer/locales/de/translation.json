@@ -5268,7 +5268,8 @@
     "remoteClear": "Alle Zertifikate entfernen",
     "remoteConnect": "Verbinden",
     "remoteDisconnect": "Verbindung trennen",
-    "remoteVerifyOffWarning": "Ohne Überprüfung erhält jeder, der diese Verbindung abfangen kann, die weitergeleiteten Positionen."
+    "remoteVerifyOffWarning": "Ohne Überprüfung erhält jeder, der diese Verbindung abfangen kann, die weitergeleiteten Positionen.",
+    "remoteAllowNameMismatch": "Akzeptieren Sie ein Zertifikat, das für einen anderen Namen ausgestellt wurde (nur importierte CA, wie ATAK)"
   },
   "telemetryPanel": {
     "title": "Telemetrie",

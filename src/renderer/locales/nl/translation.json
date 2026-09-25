@@ -5268,7 +5268,8 @@
     "remoteClear": "alle certificaten verwijderen.",
     "remoteConnect": "Verbinden",
     "remoteDisconnect": "Verbinding verbreken",
-    "remoteVerifyOffWarning": "Zonder verificatie ontvangt iedereen die deze verbinding kan onderscheppen de doorgegeven posities."
+    "remoteVerifyOffWarning": "Zonder verificatie ontvangt iedereen die deze verbinding kan onderscheppen de doorgegeven posities.",
+    "remoteAllowNameMismatch": "Accepteer een certificaat dat is uitgegeven voor een andere naam (alleen geïmporteerde CA, zoals ATAK doet)"
   },
   "telemetryPanel": {
     "title": "Telemetrie",

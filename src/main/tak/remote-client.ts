@@ -30,6 +30,8 @@ export interface TakRemoteClientOptions {
   host: string;
   port: number;
   verifyServer: boolean;
+  /** See TAKRemoteSettings.allowNameMismatch; only honored with an imported CA. */
+  allowNameMismatch: boolean;
   credentials: TakRemoteCredentials;
 }
 
@@ -51,7 +53,8 @@ const SOCKET_ERROR_TEXT: Record<string, string> = {
   UNABLE_TO_VERIFY_LEAF_SIGNATURE: UNTRUSTED_SERVER,
   UNABLE_TO_GET_ISSUER_CERT_LOCALLY: UNTRUSTED_SERVER,
   CERT_HAS_EXPIRED: 'The server certificate has expired',
-  ERR_TLS_CERT_ALTNAME_INVALID: 'The server certificate is not for this address',
+  ERR_TLS_CERT_ALTNAME_INVALID:
+    'The server certificate is for a different name; allow a name mismatch if this TAK server is set up that way',
 };
 
 /**
@@ -136,7 +139,11 @@ export class TakRemoteClient extends EventEmitter {
   }
 
   private open(): void {
-    const { host, port, verifyServer, credentials } = this.options;
+    const { host, port, verifyServer, allowNameMismatch, credentials } = this.options;
+    // The name check is skipped only on request, and only when trust is pinned to an imported
+    // CA: TAK servers are often issued a certificate for a name like "takserver" while clients
+    // dial an IP, and ATAK does not check the name. Against the system roots it always applies.
+    const skipNameCheck = verifyServer && allowNameMismatch && Boolean(credentials.ca);
     this.setStatus({ ...this.status, state: 'connecting', connectedAt: undefined });
     console.debug(`[TakRemote] Connecting to ${sanitizeLogMessage(host)}:${port}`);
 
@@ -149,11 +156,7 @@ export class TakRemoteClient extends EventEmitter {
         cert: credentials.cert,
         key: credentials.key,
         rejectUnauthorized: verifyServer,
-        // With an imported CA the chain is pinned to that CA and the hostname is not checked:
-        // TAK server certificates are usually issued for a name like "takserver" while clients
-        // dial an IP, and ATAK does not check it either. Without a CA, Node's default check
-        // (system roots plus hostname) applies.
-        ...(credentials.ca ? { checkServerIdentity: () => undefined } : {}),
+        ...(skipNameCheck ? { checkServerIdentity: () => undefined } : {}),
       });
     } catch (err) {
       // tls.connect throws synchronously on unusable credentials; retrying cannot fix that.

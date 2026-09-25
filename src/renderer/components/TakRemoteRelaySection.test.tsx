@@ -45,6 +45,7 @@ describe('TakRemoteRelaySection', () => {
       host: 'tak.example.org',
       port: 8443,
       verifyServer: false,
+      allowNameMismatch: false,
       autoConnect: true,
     });
     await renderSection();
@@ -64,8 +65,30 @@ describe('TakRemoteRelaySection', () => {
       host: '192.168.1.20',
       port: 8089,
       verifyServer: true,
+      allowNameMismatch: false,
       autoConnect: true,
     });
+  });
+
+  it('checks the certificate name unless the ATAK-style mismatch is allowed', async () => {
+    const user = userEvent.setup();
+    await renderSection();
+    const mismatch = screen.getByLabelText(/issued for a different name/i);
+    expect(mismatch).not.toBeChecked();
+
+    await user.type(screen.getByLabelText('Server address'), '10.0.0.5');
+    await user.click(mismatch);
+    await user.click(screen.getByRole('button', { name: 'Connect' }));
+    expect(tak().remoteStart).toHaveBeenCalledWith(
+      expect.objectContaining({ verifyServer: true, allowNameMismatch: true }),
+    );
+  });
+
+  it('hides the name option while verification is off', async () => {
+    const user = userEvent.setup();
+    await renderSection();
+    await user.click(screen.getByLabelText(/verify the server certificate/i));
+    expect(screen.queryByLabelText(/issued for a different name/i)).not.toBeInTheDocument();
   });
 
   it('warns when server verification is turned off', async () => {

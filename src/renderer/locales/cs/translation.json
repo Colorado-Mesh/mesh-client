@@ -5310,7 +5310,8 @@
     "remoteClear": "\"Odstranit všechny certifikáty\"",
     "remoteConnect": "Připojení",
     "remoteDisconnect": "Odpojení",
-    "remoteVerifyOffWarning": "Bez ověření obdrží každý, kdo může toto spojení zachytit, přenášené pozice."
+    "remoteVerifyOffWarning": "Bez ověření obdrží každý, kdo může toto spojení zachytit, přenášené pozice.",
+    "remoteAllowNameMismatch": "Přijmout certifikát vydaný pro jiný název (pouze importovaná CA, jak to dělá ATAK)"
   },
   "telemetryPanel": {
     "title": "Telemetrie",

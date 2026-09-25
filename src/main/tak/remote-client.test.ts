@@ -104,6 +104,7 @@ describe('TakRemoteClient over loopback TLS', () => {
       host: '127.0.0.1',
       port,
       verifyServer: true,
+      allowNameMismatch: false,
       credentials: { ca: pki.ca.certPem, cert: pki.client.certPem, key: pki.client.keyPem },
       ...overrides,
     });
@@ -111,9 +112,17 @@ describe('TakRemoteClient over loopback TLS', () => {
     return c;
   }
 
-  it('connects with mTLS to a server whose certificate names a different host', async () => {
-    const { port, received } = await startServer();
+  it('checks the server name by default, even with an imported CA', async () => {
+    const { port } = await startServer();
     const c = client(port);
+    c.start();
+    const status = await waitForStatus(c, (s) => s.error !== undefined);
+    expect(status.error).toMatch(/different name/);
+  });
+
+  it('connects over mTLS to a "takserver" certificate when a name mismatch is allowed', async () => {
+    const { port, received } = await startServer();
+    const c = client(port, { allowNameMismatch: true });
     const connected = new Promise<void>((resolve) => c.once('connected', resolve));
     c.start();
     await connected;
@@ -128,6 +137,7 @@ describe('TakRemoteClient over loopback TLS', () => {
   it('does not trust a server when no CA was imported', async () => {
     const { port } = await startServer();
     const c = client(port, {
+      allowNameMismatch: true,
       credentials: { cert: pki.client.certPem, key: pki.client.keyPem },
     });
     c.start();
@@ -143,7 +153,7 @@ describe('TakRemoteClient over loopback TLS', () => {
       dropped = true;
       setTimeout(() => socket.destroy(), 50);
     });
-    const c = client(port);
+    const c = client(port, { allowNameMismatch: true });
     c.start();
     await waitForStatus(c, (s) => s.state === 'connected');
     await waitForStatus(c, (s) => s.state === 'connecting');
@@ -153,7 +163,7 @@ describe('TakRemoteClient over loopback TLS', () => {
 
   it('does not reconnect after stop()', async () => {
     const { port, counts } = await startServer();
-    const c = client(port);
+    const c = client(port, { allowNameMismatch: true });
     c.start();
     await waitForStatus(c, (s) => s.state === 'connected');
     c.stop();
@@ -164,7 +174,7 @@ describe('TakRemoteClient over loopback TLS', () => {
 
   it('explains a server that requires a client certificate', async () => {
     const { port } = await startServer();
-    const c = client(port, { credentials: { ca: pki.ca.certPem } });
+    const c = client(port, { allowNameMismatch: true, credentials: { ca: pki.ca.certPem } });
     c.start();
     const status = await waitForStatus(c, (s) => s.error !== undefined);
     expect(status.error).toMatch(/client certificate/);
@@ -213,7 +223,13 @@ describe('TakRemoteClient reconnect and output', () => {
       return s as unknown as tls.TLSSocket;
     });
     const c = new TakRemoteClient(
-      { host: 'tak.example.org', port: 8089, verifyServer: true, credentials: {} },
+      {
+        host: 'tak.example.org',
+        port: 8089,
+        verifyServer: true,
+        allowNameMismatch: false,
+        credentials: {},
+      },
       connect,
     );
     return { c, sockets, connect };
@@ -304,6 +320,35 @@ describe('TakRemoteClient reconnect and output', () => {
     c.stop();
   });
 
+  it.each([
+    [true, true, true, true],
+    [true, true, false, false],
+    [true, false, true, false],
+    [false, true, true, false],
+  ])(
+    'skips the name check only with verification, the opt-out, and a CA (verify=%s allow=%s ca=%s)',
+    (verifyServer, allowNameMismatch, withCa, skipped) => {
+      const connect = vi.fn<(options: tls.ConnectionOptions) => tls.TLSSocket>(
+        () => fakeSocket() as unknown as tls.TLSSocket,
+      );
+      const c = new TakRemoteClient(
+        {
+          host: '10.0.0.5',
+          port: 8089,
+          verifyServer,
+          allowNameMismatch,
+          credentials: withCa ? { ca: pki.ca.certPem } : {},
+        },
+        connect,
+      );
+      c.start();
+      const options = connect.mock.calls[0]?.[0] as tls.ConnectionOptions | undefined;
+      expect(options?.rejectUnauthorized).toBe(verifyServer);
+      expect(options?.checkServerIdentity !== undefined).toBe(skipped);
+      c.stop();
+    },
+  );
+
   it('times out a handshake that never completes', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { c, sockets } = withFakeSockets();
@@ -324,7 +369,7 @@ describe('describeTakRemoteError', () => {
     ['ECONNREFUSED', /refused/],
     ['ENOTFOUND', /not found/],
     ['UNABLE_TO_VERIFY_LEAF_SIGNATURE', /import the server's CA/],
-    ['ERR_TLS_CERT_ALTNAME_INVALID', /not for this address/],
+    ['ERR_TLS_CERT_ALTNAME_INVALID', /different name/],
   ])('describes %s', (code, text) => {
     expect(describeTakRemoteError(err('raw', code))).toMatch(text);
   });

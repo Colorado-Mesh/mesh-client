@@ -81,8 +81,10 @@ export class TakServerManager extends EventEmitter {
    * Start (or restart with new settings) the relay to a remote TAK server. Credentials are read
    * from disk here, so an import takes effect on the next start. The relay is independent of
    * the local server: either can run without the other.
+   * Throws, leaving any running relay untouched, when the stored credentials cannot be read.
    */
   startRemote(settings: TAKRemoteSettings): void {
+    const credentials = loadTakRemoteCredentials();
     saveTakRemoteSettings(settings);
     this.stopRemote();
     this.remoteSettings = settings;
@@ -90,7 +92,8 @@ export class TakServerManager extends EventEmitter {
       host: settings.host.trim(),
       port: settings.port,
       verifyServer: settings.verifyServer,
-      credentials: loadTakRemoteCredentials(),
+      allowNameMismatch: settings.allowNameMismatch,
+      credentials,
     });
     remote.on('status', (status: TAKRemoteStatus) => {
       this.remoteStatus = status;
