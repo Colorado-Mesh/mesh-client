@@ -78,7 +78,7 @@ export interface ProtocolCapabilities {
   hasSecurityPanel: boolean;
   /** Whether PKC remote node administration is available (Meshtastic 2.5+) */
   hasRemoteAdmin: boolean;
-  /** Whether the TAK server panel is available (Meshtastic only) */
+  /** Whether the TAK panel (local CoT server + remote relay) is available */
   hasTakPanel: boolean;
   /** Whether Remote Hardware (GPIO) control is available */
   hasRemoteHardware: boolean;
@@ -294,7 +294,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasFullPositionConfig: false,
   hasSecurityPanel: true,
   hasRemoteAdmin: false,
-  hasTakPanel: false,
+  hasTakPanel: true,
   hasRemoteHardware: false,
   hasSerial: false,
   hasRangeTest: false,
@@ -376,7 +376,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasFullPositionConfig: false,
   hasSecurityPanel: false,
   hasRemoteAdmin: false,
-  hasTakPanel: false,
+  hasTakPanel: true,
   hasRemoteHardware: false,
   hasSerial: false,
   hasRangeTest: false,

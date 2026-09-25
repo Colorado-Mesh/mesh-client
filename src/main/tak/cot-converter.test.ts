@@ -119,3 +119,45 @@ describe('meshNodeToCot', () => {
     expect(cot).toContain('callsign="42"');
   });
 });
+
+describe('meshNodeToCot per protocol', () => {
+  it('defaults to the Meshtastic uid prefix and short_name callsign', () => {
+    const cot = meshNodeToCot(makeNode({ node_id: 7, short_name: 'ALPH', long_name: 'Alpha' }));
+    expect(cot).toContain('uid="MESH-7"');
+    expect(cot).toContain('callsign="ALPH"');
+  });
+
+  it('uses the MC- prefix and long_name callsign for MeshCore nodes', () => {
+    const cot = meshNodeToCot(
+      makeNode({ node_id: 7, short_name: '', long_name: 'Ridge Repeater' }),
+      'meshcore',
+    );
+    expect(cot).toContain('uid="MC-7"');
+    expect(cot).toContain('callsign="Ridge Repeater"');
+  });
+
+  it('uses the RN- prefix and long_name callsign for Reticulum nodes', () => {
+    const cot = meshNodeToCot(
+      makeNode({ node_id: 7, short_name: 'Mesa', long_name: 'Mesa RNode' }),
+      'reticulum',
+    );
+    expect(cot).toContain('uid="RN-7"');
+    expect(cot).toContain('callsign="Mesa RNode"');
+  });
+
+  it.each(['meshcore', 'reticulum'] as const)(
+    'falls back to node_id for %s nodes without a long_name',
+    (protocol) => {
+      const cot = meshNodeToCot(
+        makeNode({ node_id: 99, short_name: 'X', long_name: '' }),
+        protocol,
+      );
+      expect(cot).toContain('callsign="99"');
+    },
+  );
+
+  it('escapes XML special chars in a MeshCore long_name callsign', () => {
+    const cot = meshNodeToCot(makeNode({ long_name: 'A&B "base"' }), 'meshcore');
+    expect(cot).toContain('callsign="A&amp;B &quot;base&quot;"');
+  });
+});

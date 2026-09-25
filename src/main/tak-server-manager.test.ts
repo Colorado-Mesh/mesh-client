@@ -229,3 +229,59 @@ describe('TakServerManager.regenerateCertificates', () => {
     expect(internal.certBundle).toEqual(NEW_CERT_BUNDLE);
   });
 });
+
+describe('TakServerManager multi-protocol node cache', () => {
+  function connectMockClient(manager: TakServerManager): tls.TLSSocket {
+    const internals = manager as unknown as {
+      clients: Map<string, unknown>;
+      _handleClient: (socket: tls.TLSSocket) => void;
+    };
+    internals.clients = new Map();
+    const socket = mockTlsSocket();
+    internals._handleClient(socket);
+    return socket;
+  }
+
+  function writtenUids(socket: tls.TLSSocket): string[] {
+    return vi
+      .mocked(socket.write)
+      .mock.calls.map((c) => /uid="([^"]+)"/.exec(String(c[0]))?.[1] ?? '');
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('keeps nodes with the same id from different protocols apart', () => {
+    const manager = new TakServerManager();
+    const position = { latitude: 39.7, longitude: -105.0, last_heard: 100 };
+    manager.onNodeUpdate({ node_id: 42, ...position });
+    manager.onNodeUpdate({ node_id: 42, protocol: 'meshcore', ...position });
+    manager.onNodeUpdate({ node_id: 42, protocol: 'reticulum', ...position });
+
+    const socket = connectMockClient(manager);
+
+    expect(writtenUids(socket).sort()).toEqual(['MC-42', 'MESH-42', 'RN-42']);
+  });
+
+  it('broadcasts a live update with the protocol uid prefix', () => {
+    const manager = new TakServerManager();
+    const socket = connectMockClient(manager);
+    vi.mocked(socket.write).mockClear();
+
+    manager.onNodeUpdate({
+      node_id: 5,
+      protocol: 'meshcore',
+      latitude: 40,
+      longitude: -105,
+      long_name: 'Ridge',
+    });
+
+    expect(writtenUids(socket)).toEqual(['MC-5']);
+    expect(String(vi.mocked(socket.write).mock.calls[0]?.[0])).toContain('callsign="Ridge"');
+  });
+});

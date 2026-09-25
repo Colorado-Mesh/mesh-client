@@ -6,6 +6,7 @@ import path from 'path';
 import tls from 'tls';
 
 import type { MeshNode } from '../renderer/lib/types';
+import type { MeshProtocol } from '../shared/meshProtocol';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '../shared/tak-types';
 import { sanitizeLogMessage } from './log-service';
 import { type CertBundle, loadOrGenerateCerts, regenerateCerts } from './tak/certificate-manager';
@@ -19,6 +20,13 @@ interface ConnectedClient {
   idleTimer: ReturnType<typeof setTimeout> | null;
 }
 
+/** A node update from any protocol feed; `protocol` defaults to Meshtastic (MQTT feed). */
+export type TakNodeUpdate = Partial<MeshNode> & { node_id: number; protocol?: MeshProtocol };
+
+interface CachedTakNode extends MeshNode {
+  protocol: MeshProtocol;
+}
+
 const NODE_CACHE_MAX_SIZE = 2000;
 /** Local ATAK/iTAK connections; cap prevents unbounded TLS client growth. */
 const MAX_TAK_CLIENTS = 16;
@@ -29,7 +37,8 @@ export class TakServerManager extends EventEmitter {
   private server: tls.Server | null = null;
   private clients = new Map<string, ConnectedClient>();
   private settings: TAKSettings | null = null;
-  private nodeCache = new Map<number, MeshNode>();
+  /** Keyed by `${protocol}:${node_id}`; node ids from different protocols can collide. */
+  private nodeCache = new Map<string, CachedTakNode>();
   private certBundle: CertBundle | null = null;
   private _status: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
 
@@ -116,21 +125,26 @@ export class TakServerManager extends EventEmitter {
 
   private pruneNodeCache(): void {
     if (this.nodeCache.size <= NODE_CACHE_MAX_SIZE) return;
-    const sorted = [...this.nodeCache.entries()].sort((a, b) => a[1].last_heard - b[1].last_heard);
+    // A partial update may not carry last_heard yet; treat it as oldest so it prunes first.
+    const sorted = [...this.nodeCache.entries()].sort(
+      (a, b) => (a[1].last_heard || 0) - (b[1].last_heard || 0),
+    );
     const toRemove = sorted.slice(0, this.nodeCache.size - NODE_CACHE_MAX_SIZE);
     for (const [id] of toRemove) this.nodeCache.delete(id);
   }
 
-  onNodeUpdate(node: Partial<MeshNode> & { node_id: number }): void {
-    const existing = this.nodeCache.get(node.node_id) ?? ({} as MeshNode);
-    const merged = { ...existing, ...node };
-    this.nodeCache.set(node.node_id, merged);
+  onNodeUpdate(node: TakNodeUpdate): void {
+    const protocol = node.protocol ?? 'meshtastic';
+    const key = `${protocol}:${node.node_id}`;
+    const existing = this.nodeCache.get(key) ?? ({} as CachedTakNode);
+    const merged: CachedTakNode = { ...existing, ...node, protocol };
+    this.nodeCache.set(key, merged);
     this.pruneNodeCache();
 
     if (merged.latitude == null || merged.longitude == null) return;
     if (this.clients.size === 0) return;
 
-    const cot = meshNodeToCot(merged);
+    const cot = meshNodeToCot(merged, protocol);
     if (!cot) return;
 
     const data = cot + '\n';
@@ -258,7 +272,7 @@ export class TakServerManager extends EventEmitter {
     // Flush cached node positions to new client
     for (const node of this.nodeCache.values()) {
       if (node.latitude == null || node.longitude == null) continue;
-      const cot = meshNodeToCot(node);
+      const cot = meshNodeToCot(node, node.protocol);
       if (!cot) continue;
       try {
         socket.write(cot + '\n');

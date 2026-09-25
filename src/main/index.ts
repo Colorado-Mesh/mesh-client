@@ -3034,7 +3034,11 @@ mqttManager.on('nodeUpdate', (n: CachedNode) => {
   if (mainWindow)
     mainWindow.webContents.send('mqtt:node-update', { ...n, protocol: 'meshtastic' as const });
   else console.debug('[main] mqtt:node-update dropped (mainWindow not ready)');
-  takServerManager?.onNodeUpdate({ ...n, altitude: n.altitude ?? undefined });
+  takServerManager?.onNodeUpdate({
+    ...n,
+    altitude: n.altitude ?? undefined,
+    protocol: 'meshtastic',
+  });
 });
 mqttManager.on(
   'traceRouteReply',

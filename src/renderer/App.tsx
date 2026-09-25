@@ -4739,7 +4739,11 @@ function AppContent() {
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <TakServerPanel
-                              atakMessages={meshtasticRuntime.atakMessages}
+                              atakMessages={
+                                capabilities.hasAtakPlugin
+                                  ? meshtasticRuntime.atakMessages
+                                  : undefined
+                              }
                               capabilities={capabilities}
                             />
                           </Suspense>
