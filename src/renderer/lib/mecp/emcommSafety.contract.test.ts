@@ -50,13 +50,13 @@ describe('EMCOMM safety invariants (source contracts)', () => {
     expect(types).toMatch(/export type OutboxPriority = 'normal' \| 'emergency';/);
   });
 
-  it('S2: useChatOutbox exempts emergency rows from the age cap and exports the soft cap', () => {
+  it('S2: useChatOutbox exempts App-managed (emergency + ACK) rows from the age/attempt caps', () => {
     const hook = readSrc('renderer/hooks/useChatOutbox.ts');
     expect(hook).toMatch(/export const EMERGENCY_OUTBOX_SOFT_CAP = \d+;/);
     expect(hook).toMatch(
-      /isEmergencyOutboxPriority\(row\) \|\| now - row\.createdAt <= OUTBOX_MAX_AGE_MS/,
+      /isAppManagedOutboxRow\(row\) \|\| now - row\.createdAt <= OUTBOX_MAX_AGE_MS/,
     );
-    expect(hook).toMatch(/isEmergencyOutboxPriority\(row\) \|\| nextAttemptCount < MAX_ATTEMPTS/);
+    expect(hook).toMatch(/isAppManagedOutboxRow\(row\) \|\| nextAttemptCount < MAX_ATTEMPTS/);
   });
 
   it('S1: emergencySend module exists and MECP compose routes through it', () => {
